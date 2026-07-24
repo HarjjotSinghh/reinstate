@@ -50,7 +50,7 @@ fmt-check: ## Fail if gofmt needed
 
 lint: ## golangci-lint (required when installed)
 	@command -v golangci-lint >/dev/null 2>&1 || { echo "golangci-lint required"; exit 1; }
-	golangci-lint run ./...
+	golangci-lint run --timeout=5m ./...
 
 docs-check: ## Documentation consistency tests
 	go test ./internal/doctest -count=1

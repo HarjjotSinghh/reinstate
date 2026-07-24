@@ -29,8 +29,9 @@ func TestCLISyntheticSyncPath(t *testing.T) {
 	// into a custom tree and exercising list with no sessions is ok for init/status,
 	// but we need sessions for push. Plant under $HOME/.claude for the test process.
 	userHome := t.TempDir()
+	// UserHomeDir uses HOME on Unix and USERPROFILE on Windows.
 	t.Setenv("HOME", userHome)
-	// On macOS UserHomeDir uses HOME
+	t.Setenv("USERPROFILE", userHome)
 	claudeRoot := filepath.Join(userHome, ".claude", "projects", "fixture-project")
 	if err := os.MkdirAll(claudeRoot, 0o700); err != nil {
 		t.Fatal(err)

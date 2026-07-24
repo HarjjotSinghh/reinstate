@@ -1,6 +1,8 @@
 module github.com/HarjjotSinghh/reinstate
 
-go 1.25.12
+go 1.24.0
+
+toolchain go1.25.12
 
 require (
 	filippo.io/age v1.2.1
