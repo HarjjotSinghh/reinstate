@@ -1,0 +1,21 @@
+Reinstate
+Copyright (c) 2026 Harjot Singh Rana
+
+This product includes software developed by Harjot Singh Rana and contributors.
+Licensed under the MIT License. See the LICENSE file for details.
+
+---
+
+### Third-party acknowledgements
+
+Reinstate is inspired by the broader ecosystem of AI coding agent tooling and
+community sync projects, including (non-exhaustive, no affiliation implied):
+
+- claude-sync (tawanorg) — reference patterns for encrypted object-storage sync
+- Agent Client Protocol (Zed) and various session managers in the ecosystem
+- age encryption (Filippo Valsorda et al.)
+
+Product and company names (Claude Code, Codex, Gemini CLI, OpenCode, Grok Build,
+Cursor, etc.) are trademarks of their respective owners. Reinstate is an
+independent open-source project and is not affiliated with, endorsed by, or
+sponsored by those vendors.

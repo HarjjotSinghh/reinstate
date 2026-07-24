@@ -1,0 +1,40 @@
+name: Feature request
+description: Suggest an idea for Reinstate
+title: "feat: "
+labels: ["enhancement", "triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What pain does this solve?
+      placeholder: I want shell hooks so push/pull is automatic…
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Rough priority fit
+      options:
+        - MVP / blocking daily use
+        - Nice-to-have soon
+        - Future / exploratory
+    validations:
+      required: true
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I checked ROADMAP.md and existing issues
+          required: true

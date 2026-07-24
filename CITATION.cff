@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+title: "Reinstate"
+message: "If you use this software, please cite it as below."
+type: software
+authors:
+  - family-names: "Rana"
+    given-names: "Harjot Singh"
+    alias: "HarjjotSinghh"
+    website: "https://harjot.co"
+repository-code: "https://github.com/HarjjotSinghh/reinstate"
+url: "https://github.com/HarjjotSinghh/reinstate"
+abstract: >-
+  Reinstate is a local-first, vendor-neutral sync layer for AI coding agent
+  sessions, MCP configs, skills, and settings across devices. It supports
+  Claude Code, Codex, Gemini CLI, OpenCode, Grok Build, and more — with
+  end-to-end encryption and bring-your-own storage.
+keywords:
+  - ai-coding-agents
+  - session-sync
+  - claude-code
+  - codex
+  - gemini-cli
+  - mcp
+  - encryption
+  - developer-tools
+license: MIT
+version: 0.1.0
+date-released: "2026-07-25"

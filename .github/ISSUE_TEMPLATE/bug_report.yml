@@ -1,0 +1,84 @@
+name: Bug report
+description: Report a bug in Reinstate
+title: "bug: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. **Do not** include secrets, passphrases, or full session transcripts.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Clear description of the bug
+      placeholder: reinstate pull rewrote the wrong Claude project slug on macOS…
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps
+      placeholder: |
+        1. reinstate init …
+        2. reinstate push on Windows
+        3. reinstate pull on macOS
+        4. claude --resume fails to list session
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Reinstate version
+      placeholder: "output of: reinstate version"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: OS / devices
+      placeholder: "Windows 11 desktop → macOS 15 laptop"
+    validations:
+      required: true
+  - type: dropdown
+    id: agent
+    attributes:
+      label: Agent(s) involved
+      multiple: true
+      options:
+        - Claude Code
+        - Codex CLI
+        - Gemini CLI
+        - OpenCode
+        - Grok Build
+        - Other / config only
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / output
+      description: Redact paths if sensitive; never paste keys
+      render: shell
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and discussions
+          required: true
+        - label: This is not a security vulnerability (those go to SECURITY.md)
+          required: true

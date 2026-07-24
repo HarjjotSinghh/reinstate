@@ -1,0 +1,23 @@
+# Used with actions/labeler if enabled later
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "docs/**"
+          - "README.md"
+          - "**/*.md"
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/workflows/**"
+
+adapter:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "internal/adapter/**"
+          - "testdata/adapters/**"
+
+crypto:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "internal/crypto/**"

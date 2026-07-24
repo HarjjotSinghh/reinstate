@@ -1,0 +1,140 @@
+# Contributing to Reinstate
+
+Thanks for your interest in contributing! Reinstate is built in public for
+developers who live on more than one machine and more than one AI coding agent.
+
+This guide covers how to report bugs, propose features, and submit code.
+
+## Table of contents
+
+- [Code of Conduct](#code-of-conduct)
+- [Ways to contribute](#ways-to-contribute)
+- [Development setup](#development-setup)
+- [Pull request process](#pull-request-process)
+- [Adapter contributions](#adapter-contributions)
+- [Coding standards](#coding-standards)
+- [Commit messages](#commit-messages)
+- [Security](#security)
+
+## Code of Conduct
+
+Participation is governed by our [Code of Conduct](CODE_OF_CONDUCT.md).
+Be kind, be constructive, and assume good intent.
+
+## Ways to contribute
+
+| Area | How |
+| ---- | --- |
+| **Bugs** | [Open a bug report](https://github.com/HarjjotSinghh/reinstate/issues/new?template=bug_report.yml) |
+| **Features** | [Feature request](https://github.com/HarjjotSinghh/reinstate/issues/new?template=feature_request.yml) |
+| **New agents** | [Adapter request](https://github.com/HarjjotSinghh/reinstate/issues/new?template=adapter_request.yml) |
+| **Docs** | PRs to `docs/` and README are always welcome |
+| **Code** | Fork → branch → PR (see below) |
+| **Discussions** | Ideas and Q&A in [GitHub Discussions](https://github.com/HarjjotSinghh/reinstate/discussions) |
+
+Good first issues are labeled [`good first issue`](https://github.com/HarjjotSinghh/reinstate/labels/good%20first%20issue)
+and [`help wanted`](https://github.com/HarjjotSinghh/reinstate/labels/help%20wanted).
+
+## Development setup
+
+### Prerequisites
+
+- Go **1.22+** (see `go.mod`)
+- `make`
+- Optional: Node.js 20+ (for npm packaging / scripts)
+
+### Clone and build
+
+```bash
+git clone https://github.com/HarjjotSinghh/reinstate.git
+cd reinstate
+make deps
+make build
+./bin/reinstate version
+```
+
+### Run tests
+
+```bash
+make test
+make test-race
+make lint   # if golangci-lint is installed
+```
+
+### Local smoke test
+
+```bash
+# Dry-run against a fixture tree (no real credentials)
+make fixture-test
+```
+
+## Pull request process
+
+1. **Open an issue first** for larger changes so we can align on design.
+2. Fork the repo and create a branch from `main`:
+   ```bash
+   git checkout -b feat/my-change
+   ```
+3. Make focused commits (one logical change per commit when possible).
+4. Add or update tests for behavioral changes.
+5. Update docs if you change CLI flags, config, or adapters.
+6. Ensure `make test` and `make lint` pass.
+7. Open a PR against `main` using the PR template.
+8. Address review feedback. Maintainers aim for a first response within
+   **5 business days**.
+
+### PR checklist (summary)
+
+- [ ] Tests added/updated
+- [ ] Docs updated if user-facing
+- [ ] No secrets or real session files committed
+- [ ] Conventional commit title preferred
+- [ ] Linked issue (`Closes #123`) when applicable
+
+## Adapter contributions
+
+New agent adapters are a first-class contribution path. See
+[docs/adapters.md](docs/adapters.md) for the adapter interface and golden-fixture
+requirements.
+
+Minimum for a new adapter PR:
+
+1. Implementation under `internal/adapter/<name>/`
+2. Golden fixtures under `testdata/adapters/<name>/`
+3. Docs entry in `docs/adapters.md` and the README support matrix
+4. Defensive parsing (unknown line types must not crash)
+5. Explicit **exclude list** for credential / cache paths
+
+## Coding standards
+
+- Prefer clear, boring code over clever abstractions
+- Keep the CLI surface small: `init`, `push`, `pull`, `status`, `diff`, `conflicts`
+- Security defaults must be safe (encryption on, credentials excluded)
+- No network calls in unit tests without explicit test doubles
+- Never log passphrases, keys, or full session contents
+
+## Commit messages
+
+We prefer [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+feat(adapter): add Gemini CLI session adapter
+fix(pathmap): rewrite Windows cwd into macOS home tokens
+docs: clarify R2 setup in getting-started
+chore(ci): pin golangci-lint version
+```
+
+Types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `perf`, `ci`, `build`, `revert`.
+
+## Security
+
+Do **not** open public issues for vulnerabilities. Follow [SECURITY.md](SECURITY.md).
+
+## License
+
+By contributing, you agree that your contributions will be licensed under the
+[MIT License](LICENSE).
+
+---
+
+Questions? Open a Discussion or ping [@HarjjotSinghh](https://github.com/HarjjotSinghh).

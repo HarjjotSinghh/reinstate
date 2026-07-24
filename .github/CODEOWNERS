@@ -1,0 +1,9 @@
+# Default owners for everything in the repo
+*       @HarjjotSinghh
+
+# Critical paths
+/.github/                 @HarjjotSinghh
+/SECURITY.md              @HarjjotSinghh
+/LICENSE                  @HarjjotSinghh
+/docs/security-model.md   @HarjjotSinghh
+/internal/crypto/         @HarjjotSinghh

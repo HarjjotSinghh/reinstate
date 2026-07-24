@@ -1,0 +1,57 @@
+# Binaries
+/bin/
+/dist/
+/out/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/reinstate
+cmd/reinstate/reinstate
+
+# Test / coverage
+*.test
+*.out
+coverage.txt
+coverage.html
+.coverage/
+
+# Go workspace
+go.work
+go.work.sum
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Local env / secrets — never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+auth.json
+.credentials.json
+
+# Reinstate local state (if running from repo)
+.reinstate/
+*.age
+
+# Dependencies
+/vendor/
+
+# Node (if npm packaging added)
+node_modules/
+npm-debug.log*
+
+# Serena / agent local
+.serena/
+
+# Research references stay in repo but ignore stray exports
+# references/ is intentional project research — keep tracked if desired
