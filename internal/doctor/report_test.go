@@ -1,6 +1,7 @@
 package doctor
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -41,7 +42,7 @@ func TestRedactSecretsAndPaths(t *testing.T) {
 
 func TestDoctorMissingConfigExit(t *testing.T) {
 	home := t.TempDir()
-	rep, err := Run(t.Context(), Options{Home: home})
+	rep, err := Run(context.Background(), Options{Home: home})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +72,7 @@ func TestDoctorHealthyWithConfig(t *testing.T) {
 	if err := config.SaveConfig(home, c); err != nil {
 		t.Fatal(err)
 	}
-	rep, err := Run(t.Context(), Options{Home: home, SelfTest: true})
+	rep, err := Run(context.Background(), Options{Home: home, SelfTest: true})
 	if err != nil {
 		t.Fatal(err)
 	}
