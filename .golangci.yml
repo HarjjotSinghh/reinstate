@@ -21,6 +21,3 @@ formatters:
     goimports:
       local-prefixes:
         - github.com/HarjjotSinghh/reinstate
-
-issues:
-  exclude-use-default: false
