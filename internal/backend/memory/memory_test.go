@@ -30,7 +30,7 @@ func TestMemoryCRUDAndPreconditions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer rc.Close()
+	defer func() { _ = rc.Close() }()
 	b, _ := io.ReadAll(rc)
 	if string(b) != "two" || m.ETag != meta2.ETag {
 		t.Fatalf("%s %+v", b, m)

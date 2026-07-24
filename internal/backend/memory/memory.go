@@ -40,9 +40,8 @@ func (s *Store) Put(ctx context.Context, key string, r io.Reader, size int64, op
 	if err != nil {
 		return backend.ObjectMeta{}, err
 	}
-	if size >= 0 && int64(len(b)) != size && size != 0 {
-		// allow size 0 meaning unknown
-	}
+	// size 0 means unknown; non-zero mismatch is still accepted for tests.
+	_ = size
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	cur, exists := s.data[key]

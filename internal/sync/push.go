@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"time"
@@ -13,6 +12,7 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/backend"
 	"github.com/HarjjotSinghh/reinstate/internal/crypto"
 	"github.com/HarjjotSinghh/reinstate/internal/device"
+	"github.com/HarjjotSinghh/reinstate/internal/fsx"
 	"github.com/HarjjotSinghh/reinstate/internal/schema"
 )
 
@@ -116,7 +116,7 @@ func (e *Engine) loadManifest(ctx context.Context) (*schema.Manifest, string, er
 	if err != nil {
 		return nil, "", err
 	}
-	defer rc.Close()
+	defer func() { _ = rc.Close() }()
 	var plain bytes.Buffer
 	if err := crypto.Decrypt(rc, &plain, e.Passphrase); err != nil {
 		return nil, "", err
@@ -172,7 +172,7 @@ func (e *Engine) PullSession(ctx context.Context, item PullItem, destDir string,
 	if err != nil {
 		return env, nil, err
 	}
-	defer rc.Close()
+	defer func() { _ = rc.Close() }()
 	var plain bytes.Buffer
 	if err := crypto.Decrypt(rc, &plain, e.Passphrase); err != nil {
 		return env, nil, err
@@ -196,7 +196,8 @@ func (e *Engine) PullSession(ctx context.Context, item PullItem, destDir string,
 		if len(env.Files) > 0 {
 			name = filepath.Base(env.Files[0].Path)
 		}
-		if err := os.WriteFile(filepath.Join(destDir, name), payload, 0o600); err != nil {
+		// Atomic restore: previous file remains intact if the write fails.
+		if err := fsx.AtomicRestoreFile(filepath.Join(destDir, name), payload, false); err != nil {
 			return env, nil, err
 		}
 	}
@@ -208,6 +209,3 @@ func (e *Engine) FetchManifest(ctx context.Context) (*schema.Manifest, error) {
 	m, _, err := e.loadManifest(ctx)
 	return m, err
 }
-
-// Ensure no unused import
-var _ = io.EOF

@@ -1,8 +1,9 @@
 package cli
 
 import (
-	"github.com/HarjjotSinghh/reinstate/internal/version"
 	"github.com/spf13/cobra"
+
+	"github.com/HarjjotSinghh/reinstate/internal/version"
 )
 
 func newVersionCmd() *cobra.Command {

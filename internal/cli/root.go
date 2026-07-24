@@ -51,7 +51,7 @@ func Execute(opts Options) int {
 		WriteError(root.ErrOrStderr(), jsonMode, ee)
 		return ee.Code
 	}
-	fmt.Fprintln(root.ErrOrStderr(), err.Error())
+	_, _ = fmt.Fprintln(root.ErrOrStderr(), err.Error())
 	return ExitCodeFrom(err)
 }
 

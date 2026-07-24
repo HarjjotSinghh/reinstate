@@ -4,18 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 )
-
-// Streams for injection in tests.
-type Streams struct {
-	Out io.Writer
-	Err io.Writer
-}
-
-func defaultStreams() Streams {
-	return Streams{Out: os.Stdout, Err: os.Stderr}
-}
 
 // WriteJSON encodes v as JSON without ANSI and appends a newline.
 func WriteJSON(w io.Writer, v any) error {
@@ -27,7 +16,7 @@ func WriteJSON(w io.Writer, v any) error {
 
 // PrintHuman writes a plain human line to w.
 func PrintHuman(w io.Writer, format string, args ...any) {
-	fmt.Fprintf(w, format+"\n", args...)
+	_, _ = fmt.Fprintf(w, format+"\n", args...)
 }
 
 // ErrorJSON is the stable JSON error envelope.
@@ -77,5 +66,5 @@ func WriteError(w io.Writer, jsonMode bool, err error) {
 		})
 		return
 	}
-	fmt.Fprintln(w, ee.Message)
+	_, _ = fmt.Fprintln(w, ee.Message)
 }

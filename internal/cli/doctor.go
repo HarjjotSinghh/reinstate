@@ -4,8 +4,9 @@ import (
 	"context"
 	"os"
 
-	"github.com/HarjjotSinghh/reinstate/internal/doctor"
 	"github.com/spf13/cobra"
+
+	"github.com/HarjjotSinghh/reinstate/internal/doctor"
 )
 
 func newDoctorCmd() *cobra.Command {

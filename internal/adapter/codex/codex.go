@@ -124,7 +124,7 @@ func (a *Adapter) PlanExport(ctx context.Context, s adapter.Session, opts adapte
 func (a *Adapter) Export(ctx context.Context, plan adapter.ExportPlan, w io.Writer) error {
 	_ = ctx
 	tw := tar.NewWriter(w)
-	defer tw.Close()
+	defer func() { _ = tw.Close() }()
 	for _, f := range plan.Files {
 		b, err := os.ReadFile(f)
 		if err != nil {

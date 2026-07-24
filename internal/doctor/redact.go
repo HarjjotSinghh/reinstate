@@ -19,6 +19,9 @@ func Redact(s string) string {
 		return s
 	}
 	out := s
+	if rh := strings.TrimSpace(os.Getenv("REINSTATE_HOME")); rh != "" {
+		out = strings.ReplaceAll(out, rh, "${REINSTATE_HOME}")
+	}
 	if home, err := os.UserHomeDir(); err == nil && home != "" {
 		out = strings.ReplaceAll(out, home, "${HOME}")
 		// username segment

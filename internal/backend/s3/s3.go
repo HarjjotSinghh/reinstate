@@ -9,13 +9,14 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/HarjjotSinghh/reinstate/internal/backend"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/smithy-go"
+
+	"github.com/HarjjotSinghh/reinstate/internal/backend"
 )
 
 // Config for an S3-compatible endpoint.

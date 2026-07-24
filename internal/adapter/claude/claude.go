@@ -129,7 +129,7 @@ func (a *Adapter) Export(ctx context.Context, plan adapter.ExportPlan, w io.Writ
 	_ = ctx
 	// tar of transformed files
 	tw := tar.NewWriter(w)
-	defer tw.Close()
+	defer func() { _ = tw.Close() }()
 	for _, f := range plan.Files {
 		b, err := os.ReadFile(f)
 		if err != nil {

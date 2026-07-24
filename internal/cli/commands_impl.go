@@ -6,7 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
+
+	"github.com/google/uuid"
+	"github.com/spf13/cobra"
 
 	"github.com/HarjjotSinghh/reinstate/internal/adapter"
 	"github.com/HarjjotSinghh/reinstate/internal/adapter/claude"
@@ -18,8 +20,6 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/credentials"
 	"github.com/HarjjotSinghh/reinstate/internal/schema"
 	"github.com/HarjjotSinghh/reinstate/internal/sync"
-	"github.com/google/uuid"
-	"github.com/spf13/cobra"
 )
 
 func defaultRegistry() *adapter.Registry {
@@ -83,10 +83,10 @@ func newInitCmd() *cobra.Command {
 				cfg.Storage.Prefix = "profiles/" + profileID
 			}
 			if accessKey != "" && secretKey != "" {
-				store := credentials.NewMemory()
-				// Prefer env store persistence note — store in memory for process; also write nothing secret to config.
-				_ = store.Set(credRef, credentials.StorageCredentials{AccessKeyID: accessKey, SecretAccessKey: secretKey})
-				// Persist via env is user's responsibility; we only validate.
+				store := credentials.NewFileStore(filepath.Join(home, "credentials"))
+				if err := store.Set(credRef, credentials.StorageCredentials{AccessKeyID: accessKey, SecretAccessKey: secretKey}); err != nil {
+					return NewExitError(ExitAuthStorage, err.Error())
+				}
 			}
 			if err := config.SaveConfig(home, cfg); err != nil {
 				return err
@@ -94,17 +94,21 @@ func newInitCmd() *cobra.Command {
 			if err := config.SaveState(home, schema.NewState()); err != nil {
 				return err
 			}
-			// Optional probe when credentials present
-			if accessKey != "" && secretKey != "" && endpoint != "" && bucket != "" {
+			// Optional probe when credentials present (real S3 backend only)
+			if accessKey != "" && secretKey != "" && endpoint != "" && bucket != "" && os.Getenv("REINSTATE_BACKEND") != "memory" {
 				ctx := context.Background()
 				client, err := s3.New(ctx, s3.Config{
 					Endpoint: endpoint, Region: region, Bucket: bucket, Prefix: cfg.Storage.Prefix,
 					AccessKey: accessKey, SecretKey: secretKey,
 				})
-				if err == nil {
-					probe := "probes/" + uuid.NewString()
-					_, _ = client.Put(ctx, probe, strings.NewReader("ok"), 2, backend.PutOptions{IfNoneMatch: true})
-					_ = client.Delete(ctx, probe)
+				if err != nil {
+					return NewExitError(ExitAuthStorage, err.Error())
+				}
+				probe := "probes/" + uuid.NewString()
+				if _, err := client.Put(ctx, probe, strings.NewReader("ok"), 2, backend.PutOptions{IfNoneMatch: true}); err != nil {
+					PrintHuman(cmd.ErrOrStderr(), "warning: storage probe put failed: %v", err)
+				} else if err := client.Delete(ctx, probe); err != nil {
+					PrintHuman(cmd.ErrOrStderr(), "warning: storage probe delete failed: %v", err)
 				}
 			}
 			PrintHuman(cmd.OutOrStdout(), "initialized reinstate home (config.toml + state.json). Passphrase is not stored; you will enter it on push/pull.")
@@ -165,21 +169,23 @@ func engineFromConfig(passphrase string) (*sync.Engine, *schema.Config, string, 
 	if err != nil {
 		return nil, nil, "", NewExitError(ExitConfig, err.Error())
 	}
-	// Backend selection: memory when REINSTATE_BACKEND=memory (tests), else S3.
+	// Backend selection: disk-backed "memory" for local e2e, else S3.
 	var b backend.Backend
 	if os.Getenv("REINSTATE_BACKEND") == "memory" {
-		// process-local shared memory via temp file map is complex; use ephemeral memory.
-		b = memory.New()
+		disk, err := memory.NewDisk(filepath.Join(home, "cache", "memory-backend"))
+		if err != nil {
+			return nil, nil, "", NewExitError(ExitRuntime, err.Error())
+		}
+		b = disk
 	} else {
-		ak := os.Getenv("REINSTATE_S3_ACCESS_KEY_ID")
-		sk := os.Getenv("REINSTATE_S3_SECRET_ACCESS_KEY")
-		if ak == "" || sk == "" {
-			return nil, nil, "", NewExitError(ExitAuthStorage, "missing REINSTATE_S3_ACCESS_KEY_ID / REINSTATE_S3_SECRET_ACCESS_KEY")
+		creds, err := credentials.Resolve(home, cfg.Storage.CredentialRef)
+		if err != nil {
+			return nil, nil, "", NewExitError(ExitAuthStorage, err.Error())
 		}
 		client, err := s3.New(context.Background(), s3.Config{
 			Endpoint: cfg.Storage.Endpoint, Region: cfg.Storage.Region,
 			Bucket: cfg.Storage.Bucket, Prefix: cfg.Storage.Prefix,
-			AccessKey: ak, SecretKey: sk,
+			AccessKey: creds.AccessKeyID, SecretKey: creds.SecretAccessKey,
 		})
 		if err != nil {
 			return nil, nil, "", NewExitError(ExitAuthStorage, err.Error())
@@ -454,6 +460,5 @@ func newConflictsCmd() *cobra.Command {
 	resolve.Flags().BoolVar(&keepRemote, "keep-remote", false, "keep remote")
 	resolve.Flags().BoolVar(&keepBoth, "keep-both", false, "keep both")
 	root.AddCommand(list, show, resolve)
-	_ = time.Now
 	return root
 }

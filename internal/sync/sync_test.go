@@ -108,6 +108,50 @@ func TestAtomicRestorePreservesOnFailure(t *testing.T) {
 	}
 }
 
+func TestPullSessionUsesAtomicWrite(t *testing.T) {
+	// PullSession must write via AtomicRestoreFile so a failed write leaves prior content.
+	dir := t.TempDir()
+	session := filepath.Join(dir, "session-001.jsonl")
+	plain := []byte(`{"type":"user","text":"synthetic"}`)
+	if err := os.WriteFile(session, plain, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	store := memory.New()
+	eng := &Engine{Backend: store, Passphrase: "test-pass-phrase-32", Platform: "darwin-arm64"}
+	ctx := context.Background()
+	id, err := eng.PushSession(ctx, PushItem{
+		Agent: "claude", SessionID: "session-001", ProjectID: "p", LocalPath: session,
+	}, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dest := filepath.Join(dir, "restored")
+	// seed prior content that must survive a failed atomic restore path check
+	if err := os.MkdirAll(dest, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	prior := filepath.Join(dest, "session-001.jsonl")
+	if err := os.WriteFile(prior, []byte("prior"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, payload, err := eng.PullSession(ctx, PullItem{
+		Agent: "claude", SessionID: "session-001", SnapshotID: id, ProjectID: "p",
+	}, dest, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(payload, plain) {
+		t.Fatalf("payload %q", payload)
+	}
+	got, err := os.ReadFile(prior)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, plain) {
+		t.Fatalf("restored file %q", got)
+	}
+}
+
 func TestRefuseCredentialPush(t *testing.T) {
 	dir := t.TempDir()
 	p := filepath.Join(dir, "auth.json")

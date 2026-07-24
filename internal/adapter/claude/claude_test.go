@@ -5,7 +5,6 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/HarjjotSinghh/reinstate/internal/adapter"
@@ -47,9 +46,8 @@ func TestClaudeDiscoverExportRestore(t *testing.T) {
 	if err := a.Export(context.Background(), plan, &buf); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(buf.String(), "${REPO:fixture-project}") && !bytes.Contains(buf.Bytes(), []byte("fixture-project")) {
-		// tar may binary; check normalize happened by re-reading via restore
-	}
+	// tar is binary; path rewrite is asserted after restore below.
+	_ = buf
 	// restore into new root
 	outRoot := t.TempDir()
 	a2 := &Adapter{

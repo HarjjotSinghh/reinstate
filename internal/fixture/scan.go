@@ -29,13 +29,7 @@ func ScanBytes(path string, b []byte) error {
 			return fmt.Errorf("%s: matches secret pattern %s", path, re.String())
 		}
 	}
-	// Real home paths should not be hard-coded with usernames that look production.
-	if strings.Contains(s, "/Users/") && !strings.Contains(s, "/Users/fixture") && !strings.Contains(s, "/Users/test") {
-		// allow synthetic fixture homes
-		if strings.Contains(s, "/Users/") && !strings.Contains(s, "fixture-user") && !strings.Contains(s, "Synthetic") {
-			// soft: only fail if looks like a real path with common names
-		}
-	}
+	// Synthetic fixtures may use /Users/fixture-user; real home paths are not scanned here beyond secret patterns.
 	return nil
 }
 

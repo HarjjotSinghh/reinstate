@@ -12,7 +12,7 @@ import (
 func TestHomeDefaultAndOverride(t *testing.T) {
 	t.Setenv("REINSTATE_HOME", "")
 	// clear may not work for empty — set then unset
-	os.Unsetenv("REINSTATE_HOME")
+	_ = os.Unsetenv("REINSTATE_HOME")
 	h, err := Home()
 	if err != nil {
 		t.Fatal(err)

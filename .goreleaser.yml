@@ -44,11 +44,11 @@ checksum:
   name_template: checksums.txt
   algorithm: sha256
 
-sboms:
-  - artifacts: archive
+# SBOM generation requires syft in PATH; release CI can enable separately.
+# Local snapshot gates must produce archives + checksums without optional tools.
 
 snapshot:
-  version_template: "{{ .Tag }}-next"
+  version_template: "{{ incpatch .Version }}-next"
 
 changelog:
   sort: asc
