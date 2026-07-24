@@ -33,6 +33,7 @@
 | Moat | Adapter coverage, path remapping, E2EE/BYO storage, capability-aware resume, portable handoffs — **not** blob storage | High |
 | Relationship to DevSync | **Reinstate expands** the earlier DevSync MCP-config idea; MCP/skills remain the capability plane | High |
 | Product name | **Reinstate** (decided; `reinstate.dev` acquired) — not DevSync, not Rethra/Carryover | Decided |
+| Short CLI alias | **`rein`** (same binary as `reinstate`) | Decided |
 | Build a whole new coding agent? | **Minority view (DeepSeek)**; majority: wrap/sync existing agents | Medium |
 | Center product on sessions vs durable artifacts? | **Tension:** most say sessions are the *hook*; MiniMax argues skills/rules/MCP should be *center of gravity* | See disagreements |
 
@@ -102,7 +103,8 @@ Market with sessions; moat with profile + capability-aware resume + path remappi
 
 ### C. Brand (decided)
 
-**Product name is Reinstate.** Chosen over Carryover and other candidates in the ChatGPT naming thread. Domain: `reinstate.dev`. CLI verb: `reinstate resume`, `reinstate sync`, etc.
+**Product name is Reinstate.** Chosen over Carryover and other candidates in the ChatGPT naming thread. Domain: `reinstate.dev`.  
+**Short CLI alias is `rein`.** Prefer `rein resume`, `rein sync`, etc. Full command `reinstate` remains equivalent.
 
 - **Meaning fit:** restore session + tools + config + workspace to a usable state on another device  
 - **Not** “DevSync” as the public product name (DevSync/Devsynq remains the prior MCP-config lineage / collision caution)  

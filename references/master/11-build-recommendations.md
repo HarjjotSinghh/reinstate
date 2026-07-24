@@ -23,7 +23,7 @@
 
 ## Build this first (ordered)
 
-1. **`reinstate doctor` + device profiles** — detect agents, MCP/skills drift, path maps (no cloud required)  
+1. **`rein doctor` + device profiles** — detect agents, MCP/skills drift, path maps (no cloud required)  
 2. **Claude Code same-agent cross-OS resume** with path remapping + E2EE + BYO storage  
 3. **Codex same-agent resume** (second storage shape forces real adapters)  
 4. **Atomic safety** — dry-run, backups, conflict forks  
@@ -109,7 +109,7 @@ reinstate-cloud/           # private hosted (later)
 - [ ] Claude adapter: list/read/write with path rewrite  
 - [ ] age encryption + passphrase flow  
 - [ ] S3/R2 backend interface  
-- [ ] `reinstate doctor` for one machine  
+- [ ] `rein doctor` for one machine (install `rein` + `reinstate` names)  
 - [ ] Backup-before-write  
 - [ ] End-to-end Windows→Mac resume demo script  
 - [ ] SECURITY.md threat model stub  

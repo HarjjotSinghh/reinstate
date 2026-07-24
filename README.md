@@ -9,7 +9,7 @@
 **Sessions · MCP servers · Skills · Settings** — across every coding agent and every machine you own.
 Encrypted so only you can read it.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/HarjjotSinghh/reinstate)](https://goreportcard.com/report/github.com/HarjjotSinghh/reinstate)
 [![Release](https://img.shields.io/github/v/release/HarjjotSinghh/reinstate?include_prereleases&sort=semver)](https://github.com/HarjjotSinghh/reinstate/releases)
 [![CI](https://img.shields.io/github/actions/workflow/status/HarjjotSinghh/reinstate/ci.yml?branch=main&label=CI)](https://github.com/HarjjotSinghh/reinstate/actions/workflows/ci.yml)
@@ -54,23 +54,37 @@ You open your **MacBook** on the couch.
 
 Git has the code. The agent does **not** have the conversation — the rejected approaches, the files already read three times, the style constraints you established mid-thread. Vendor tools save sessions **locally**. Switching machines is context death.
 
-```
-Desktop (Windows)          Laptop (macOS)
-┌─────────────────┐        ┌─────────────────┐
-│ 20 sessions     │   ✗    │ empty history   │
-│ MCP + skills A  │ ─────► │ MCP + skills B  │
-│ full context    │        │ start from zero │
-└─────────────────┘        └─────────────────┘
+```mermaid
+flowchart LR
+  subgraph Desktop["🖥️ Desktop (Windows)"]
+    D["20 sessions<br/>MCP + skills A<br/>full context"]
+  end
+  subgraph Laptop["💻 Laptop (macOS)"]
+    L["empty history<br/>MCP + skills B<br/>start from zero"]
+  end
+  D -.-x|context dies| L
+  style D fill:#1f2937,stroke:#f87171,color:#f9fafb
+  style L fill:#1f2937,stroke:#f87171,color:#f9fafb
 ```
 
 **Reinstate** makes state portable:
 
-```
-Desktop                    Encrypted cloud              Laptop
-┌──────────┐   push   ┌─────────────────┐   pull   ┌──────────┐
-│ sessions │ ───────► │ your R2/S3/etc  │ ───────► │ resume   │
-│ + config │  age E2E │ ciphertext only │  remap   │ same IDs │
-└──────────┘          └─────────────────┘  paths   └──────────┘
+```mermaid
+flowchart LR
+  subgraph Desktop["🖥️ Desktop"]
+    A["sessions + config"]
+  end
+  subgraph Cloud["☁️ Encrypted cloud"]
+    B["your R2 / S3 / WebDAV<br/>ciphertext only"]
+  end
+  subgraph Laptop["💻 Laptop"]
+    C["resume · same IDs"]
+  end
+  A -->|push · age E2E| B
+  B -->|pull · remap paths| C
+  style A fill:#064e3b,stroke:#34d399,color:#ecfdf5
+  style B fill:#0c4a6e,stroke:#22d3ee,color:#e0f2fe
+  style C fill:#312e81,stroke:#818cf8,color:#e0e7ff
 ```
 
 ---
@@ -84,7 +98,7 @@ Desktop                    Encrypted cloud              Laptop
 | **Path remapping** | Windows ↔ macOS project paths rewritten so `--resume` actually finds sessions |
 | **Zero-knowledge** | Client-side encryption; bring-your-own storage |
 | **Config + sessions** | MCP servers, skills, agents, settings — one environment everywhere |
-| **Open source** | MIT · auditable · no vendor lock-in |
+| **Open source** | Apache-2.0 · auditable · patent grant · no vendor lock-in |
 
 Native vendor sync will always own *one* ecosystem. DIY Syncthing/Drive hacks break on absolute paths and credential sprawl. Reinstate targets the empty quadrant: **universal × cross-device × encrypted × resume-aware**.
 
@@ -161,10 +175,24 @@ Details: **[docs/adapters.md](docs/adapters.md)**
 
 ## How it works
 
-```
-Adapters → Normalize (paths) → Encrypt (age) → Sync engine → Your bucket
-                ↑                                         │
-                └──────── pull / decrypt / remap ←────────┘
+```mermaid
+flowchart TB
+  subgraph Agents["Coding agents on disk"]
+    CC[Claude Code]
+    CX[Codex]
+    GM[Gemini CLI]
+    OC[OpenCode]
+  end
+  subgraph Pipeline["Reinstate"]
+    AD[Adapters]
+    NM[Normalize paths]
+    EN[Encrypt · age]
+    SY[Sync engine · manifest]
+  end
+  BK[(Your bucket<br/>R2 / S3 / WebDAV)]
+  Agents --> AD --> NM --> EN --> SY
+  SY <-->|ciphertext only| BK
+  SY -->|pull · decrypt · remap · atomic restore| Agents
 ```
 
 1. **Adapters** read each tool’s local session layout  
@@ -172,7 +200,7 @@ Adapters → Normalize (paths) → Encrypt (age) → Sync engine → Your bucket
 3. **Crypto** encrypts before any upload  
 4. **Sync** uses a local manifest; restores are atomic with backups  
 
-Deep dive: **[docs/architecture.md](docs/architecture.md)**
+Deep dive: **[docs/architecture.md](docs/architecture.md)** · research diagram:
 
 <p align="center">
   <img src="assets/05_architecture.png" alt="Reinstate architecture" width="720" />
@@ -215,15 +243,31 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 
 ## Project activity
 
-<!-- These graphs populate once the repo is public and has traffic -->
-
 ### Star history
 
-[![Star History Chart](https://api.star-history.com/svg?repos=HarjjotSinghh/reinstate&type=Date)](https://star-history.com/#HarjjotSinghh/reinstate&Date)
+<p align="center">
+  <a href="https://www.star-history.com/#HarjjotSinghh/reinstate&Date">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=HarjjotSinghh/reinstate&type=Date&theme=dark&legend=top-left" />
+      <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=HarjjotSinghh/reinstate&type=Date&legend=top-left" />
+      <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=HarjjotSinghh/reinstate&type=Date&legend=top-left" width="600" />
+    </picture>
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://www.star-history.com/#HarjjotSinghh/reinstate&Date"><strong>↗ Open interactive star history</strong></a>
+  ·
+  <a href="https://github.com/HarjjotSinghh/reinstate/stargazers">Stargazers</a>
+</p>
 
 ### Contributors
 
-[![Contributors](https://contrib.rocks/image?repo=HarjjotSinghh/reinstate)](https://github.com/HarjjotSinghh/reinstate/graphs/contributors)
+<p align="center">
+  <a href="https://github.com/HarjjotSinghh/reinstate/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=HarjjotSinghh/reinstate&max=100&columns=20" alt="Contributors" />
+  </a>
+</p>
 
 ### Category context
 
@@ -231,17 +275,16 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
   <img src="assets/03_traction.png" alt="Category traction context" width="640" />
 </p>
 
-### Insights (after the repo is public)
+### Insights
 
 | Metric | Link |
 | ------ | ---- |
-| Pulse | [github.com/…/pulse](https://github.com/HarjjotSinghh/reinstate/pulse) |
+| Pulse | [pulse](https://github.com/HarjjotSinghh/reinstate/pulse) |
 | Traffic | [graphs/traffic](https://github.com/HarjjotSinghh/reinstate/graphs/traffic) |
 | Commits | [graphs/commit-activity](https://github.com/HarjjotSinghh/reinstate/graphs/commit-activity) |
 | Code frequency | [graphs/code-frequency](https://github.com/HarjjotSinghh/reinstate/graphs/code-frequency) |
 | Network | [network](https://github.com/HarjjotSinghh/reinstate/network) |
-| Star history | [star-history.com](https://star-history.com/#HarjjotSinghh/reinstate&Date) |
-| Repobeats | Generate embed at [repobeats.axiom.co](https://repobeats.axiom.co) after traffic exists |
+| Stars | [stargazers](https://github.com/HarjjotSinghh/reinstate/stargazers) · [star-history](https://www.star-history.com/#HarjjotSinghh/reinstate&Date) |
 
 ---
 
@@ -317,7 +360,7 @@ If you use Reinstate in research or publications:
   title  = {Reinstate: Encrypted multi-agent session sync for AI coding tools},
   year   = {2026},
   url    = {https://github.com/HarjjotSinghh/reinstate},
-  license = {MIT}
+  license = {Apache-2.0}
 }
 ```
 
@@ -327,9 +370,19 @@ Also see [CITATION.cff](CITATION.cff).
 
 ## License
 
-[MIT](LICENSE) © 2026 [Harjot Singh Rana](https://github.com/HarjjotSinghh)
+Licensed under the [Apache License, Version 2.0](LICENSE) © 2026 [Harjot Singh Rana](https://github.com/HarjjotSinghh).
 
-See also [NOTICE](NOTICE) for third-party acknowledgements. Product names of third-party agents are trademarks of their respective owners; Reinstate is an independent project and is not affiliated with or endorsed by those vendors.
+```
+Copyright 2026 Harjot Singh Rana
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+```
+
+See [NOTICE](NOTICE) for third-party acknowledgements. Product names of third-party agents are trademarks of their respective owners; Reinstate is an independent project and is not affiliated with or endorsed by those vendors.
 
 ---
 

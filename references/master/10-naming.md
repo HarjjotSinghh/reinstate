@@ -5,12 +5,15 @@
 | Field | Value |
 |-------|--------|
 | **Product name** | **Reinstate** |
+| **Short alias** | **`rein`** (decided — daily CLI) |
 | **Status** | **Chosen** (user + ChatGPT consensus over Carryover) |
 | **Domain** | `reinstate.dev` — **acquire/acquired** (recommended and confirmed in thread) |
-| **CLI** | `reinstate` |
+| **CLI (full)** | `reinstate` |
+| **CLI (short)** | `rein` — same binary; preferred in docs and day-to-day use |
+| **Config dir** | `~/.reinstate/` (full name; not `~/.rein/`) |
 | **Primary pitch** | *Reinstate restores your coding-agent workspace on any device.* |
 
-This is **not** an open naming exercise anymore. DevSync, Rethra, Carryover, etc. are historical candidates or lineage — not the product name.
+This is **not** an open naming exercise anymore. DevSync, Rethra, Carryover, etc. are historical candidates or lineage — not the product name. Short alias **`rein`** is fixed.
 
 ---
 
@@ -50,19 +53,41 @@ Product sense (full stack, not just “move chat”):
 
 ### Example language
 
+Daily CLI (**prefer short alias**):
+
+```bash
+rein init
+rein sync
+rein list
+rein resume
+rein doctor
+rein status
+```
+
+Full name (equivalent; docs/install may show either):
+
 ```bash
 reinstate init
-reinstate sync
-reinstate list
 reinstate resume
-reinstate doctor
-reinstate status
 ```
+
+Product language:
 
 - “Reinstate this session on my MacBook.”  
 - “Your workspace has been reinstated.”  
 - “Three capabilities are missing before this session can be reinstated.”  
 - “Reinstate supports Claude Code, Codex, and Gemini.”  
+- “Run `rein pull` on the laptop.”  
+
+### Short alias: `rein`
+
+| Item | Decision |
+|------|----------|
+| Alias | **`rein`** |
+| Why | Natural truncation; easy to type/say; works as a verb |
+| Rejected shorts | `rst` (reset/reST clash), `rstate` (longer), `rnst` (unpronounceable) |
+| Collisions | Word “rein” and various packages exist; product remains **Reinstate**; config uses `~/.reinstate/` |
+| Ship | Install both `reinstate` and `rein` (symlink or second name to same binary) |
 
 ---
 
@@ -121,7 +146,10 @@ Do **not** re-litigate unless legal forces a rename.
 | Item | Copy |
 |------|------|
 | Name | Reinstate |
+| Short alias | `rein` |
 | Domain | reinstate.dev |
 | Tagline | Restores your coding-agent workspace on any device |
 | Category | Agent continuity / portable agent workspace control plane |
+| CLI | `rein` (short) / `reinstate` (full) |
+| Config | `~/.reinstate/` |
 | Not | Cloud chat storage for terminals |

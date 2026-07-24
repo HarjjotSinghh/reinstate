@@ -1,7 +1,7 @@
 // Command reinstate is the CLI entrypoint for Reinstate —
 // encrypted multi-agent session sync for AI coding tools.
 //
-// Copyright (c) 2026 Harjot Singh Rana. MIT License.
+// Copyright 2026 Harjot Singh Rana. Licensed under Apache-2.0.
 package main
 
 import (

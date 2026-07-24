@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Relicensed core from MIT to **Apache License 2.0** (research recommendation)
+- README diagrams: ASCII boxes → Mermaid flowcharts
+- Star history embed: dark/light `<picture>` + interactive fallback link
+
 ### Added
 
 - Initial open-source repository structure
@@ -14,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Community health files (CODE_OF_CONDUCT, CONTRIBUTING, SECURITY, SUPPORT)
 - GitHub issue/PR templates and CI workflow scaffolding
 - CLI package layout (`cmd/reinstate`, `internal/*`)
-- MIT license
+- Apache License 2.0
 
 ### Planned for 0.1.0
 

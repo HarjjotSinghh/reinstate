@@ -40,7 +40,7 @@ problem we optimize for.
 
 ## Is this affiliated with Anthropic / OpenAI / Google / xAI?
 
-**No.** Independent MIT-licensed project by Harjot Singh Rana.
+**No.** Independent Apache-2.0 project by Harjot Singh Rana.
 
 ## Production ready?
 

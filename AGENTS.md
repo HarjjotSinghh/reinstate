@@ -6,7 +6,7 @@
 configs across devices with E2E encryption and BYO storage.
 
 - **Author:** Harjot Singh Rana ([@HarjjotSinghh](https://github.com/HarjjotSinghh))
-- **License:** MIT
+- **License:** Apache-2.0
 - **Language:** Go 1.22+
 - **Module:** `github.com/HarjjotSinghh/reinstate`
 

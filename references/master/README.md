@@ -7,6 +7,7 @@ This directory consolidates every major claim, competitor, technical detail, str
 ## What this product is about
 
 **Product name:** **Reinstate** (`reinstate.dev`)  
+**Short CLI alias:** **`rein`** (same binary as `reinstate`)  
 **Lineage:** Expands the earlier **DevSync** MCP-config idea into sessions + skills + configs + verified resume.  
 **Core problem:** AI coding-agent sessions (Claude Code, Codex, Gemini CLI, OpenCode, Grok Build, …) and their surrounding environment (MCP, skills, hooks, configs) are trapped on the machine where they were created. Multi-device developers lose reasoning context when switching machines.
 

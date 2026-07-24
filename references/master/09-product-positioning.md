@@ -8,7 +8,8 @@ Supporting lines:
 
 - Resume any agent, anywhere — with the right conversation, repo state, and toolchain.  
 - Verified continuity, not cloud chat storage.  
-- Your agent workspace, carried forward and made ready to continue.
+- Your agent workspace, carried forward and made ready to continue.  
+- Short CLI: **`rein`** (`rein push` · `rein pull` · `rein resume`).
 
 **Not:**
 

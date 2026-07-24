@@ -232,18 +232,20 @@ Compiled denylist:
 
 ---
 
-## CLI sketch (product: **Reinstate**)
+## CLI sketch (product: **Reinstate**, short alias: **`rein`**)
+
+Prefer `rein` in examples; `reinstate` is the full binary name (same tool).
 
 ```bash
-reinstate init
-reinstate doctor
-reinstate push
-reinstate pull --dry-run
-reinstate status
-reinstate conflicts
-reinstate list
-reinstate resume <id>
-reinstate checkpoint <id>
-reinstate handoff <id> --to codex
-reinstate migrate <id> --to claude   # experimental
+rein init
+rein doctor
+rein push
+rein pull --dry-run
+rein status
+rein conflicts
+rein list
+rein resume <id>
+rein checkpoint <id>
+rein handoff <id> --to codex
+rein migrate <id> --to claude   # experimental
 ```

@@ -61,4 +61,4 @@ There is **no paid support SLA** for the free open-source CLI today.
 
 A hosted zero-knowledge convenience layer may be offered later (see
 [ROADMAP.md](ROADMAP.md)). Until then, the CLI + bring-your-own storage is free
-and fully open source under MIT.
+and fully open source under Apache-2.0.

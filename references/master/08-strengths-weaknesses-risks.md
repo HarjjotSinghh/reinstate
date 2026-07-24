@@ -7,12 +7,12 @@
 | **Validated multi-device pain** | FRs across Claude, Codex, Gemini/Antigravity; Reddit multi-PC threads |
 | **Empty quadrant** | Universal × offline stored sync × path-aware × encrypted is under-owned |
 | **Vendors won’t multi-agent sync** | Structural moat; each vendor locks its own cloud |
-| **Demoable magic moment** | Windows session → `reinstate` → Mac resume in a Loom |
+| **Demoable magic moment** | Windows session → `rein push` / `rein pull` → Mac resume in a Loom |
 | **DevSync heritage** | Capability plane (MCP/skills) already part of the idea; differentiates from transcript-only tools |
 | **Friendly technical substrate** | JSONL/append logs, hooks, SessionStore, OpenCode APIs, proven claude-sync patterns |
 | **Modest user asks** | Storage, export/import, path mapping — plumbing, not multiplayer magic |
 | **Timing** | Agent CLIs scaled; vendors educating market on continuity |
-| **Name fit (Reinstate)** | Verb for restore-to-usable-state; CLI-native (`reinstate resume`) |
+| **Name fit (Reinstate + `rein`)** | Verb for restore-to-usable-state; short daily CLI (`rein resume`) |
 | **Personal founder ICP** | Exact Windows + MacBook + multi-agent daily use |
 
 ---
