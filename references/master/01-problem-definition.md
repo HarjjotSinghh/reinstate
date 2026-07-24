@@ -1,5 +1,7 @@
 # Problem Definition
 
+**Product:** [Reinstate](./10-naming.md) — restores coding-agent workspaces across devices.
+
 ## The user story (foundational)
 
 - Work all day on a **Windows desktop** across many agent sessions and projects.

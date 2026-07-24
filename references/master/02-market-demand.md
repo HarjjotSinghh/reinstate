@@ -1,5 +1,7 @@
 # Market Demand Evidence
 
+**Product:** Reinstate answers demand for portable, cross-device agent continuity that vendors leave open for multi-agent / offline / path-aware cases.
+
 ![Demand timeline](./assets/02_demand_timeline.png)
 
 ## Why this evidence is strong

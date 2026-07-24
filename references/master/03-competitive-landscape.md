@@ -1,5 +1,7 @@
 # Competitive Landscape
 
+**Product:** Reinstate aims at the empty quadrant — universal × cross-device × offline × encrypted × path-aware — not single-vendor native sync.
+
 ![Traction](./assets/03_traction.png)
 
 ## Four categories (Kimi framework)
@@ -154,4 +156,4 @@ Closest single threats: **SpecStory** (session product), **claude-sync** (OSS pa
                  └────────────────────┴────────────────────┘
 ```
 
-Own the bottom-right with path remapping + E2EE + profile (config/skills) + capability-aware resume.
+**Reinstate** should own the bottom-right: path remapping + E2EE + profile (config/skills) + capability-aware resume.

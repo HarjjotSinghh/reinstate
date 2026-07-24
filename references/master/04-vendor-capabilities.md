@@ -1,6 +1,6 @@
 # Vendor Capabilities Matrix
 
-*As of research window mid/late 2026. Verify before building adapters.*
+**For Reinstate adapter design.** *As of research window mid/late 2026. Verify before building adapters.*
 
 ## Snapshot matrix
 

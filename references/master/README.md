@@ -6,10 +6,13 @@ This directory consolidates every major claim, competitor, technical detail, str
 
 ## What this product is about
 
-**Product name:** **Reinstate** (expansion of the earlier DevSync/MCP-config idea; domain candidate: `reinstate.dev`)  
+**Product name:** **Reinstate** (`reinstate.dev`)  
+**Lineage:** Expands the earlier **DevSync** MCP-config idea into sessions + skills + configs + verified resume.  
 **Core problem:** AI coding-agent sessions (Claude Code, Codex, Gemini CLI, OpenCode, Grok Build, …) and their surrounding environment (MCP, skills, hooks, configs) are trapped on the machine where they were created. Multi-device developers lose reasoning context when switching machines.
 
-**Consensus verdict across sources:** **Yes, build it** — but not as naive “Dropbox for transcripts.” Build a **vendor-neutral, local-first control plane for verified continuity** (sessions + capabilities + workspace/environment validation).
+**Canonical pitch:** *Reinstate restores your coding-agent workspace on any device.*
+
+**Consensus verdict across sources:** **Yes, build Reinstate** — but not as naive “Dropbox for transcripts.” Build a **vendor-neutral, local-first control plane for verified continuity** (sessions + capabilities + workspace/environment validation).
 
 ## Directory map
 
