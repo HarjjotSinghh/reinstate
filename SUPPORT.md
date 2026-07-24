@@ -34,7 +34,8 @@ Please search existing issues and discussions before opening a new one.
 
 **Out of scope**
 
-- Support for Claude Code / Codex / Gemini / etc. themselves (use vendor channels)
+- Support for Claude Code / Codex / other agents themselves (use vendor channels)
+- Features beyond Phase 1 scope (MCP/skills multi-agent sync — see ROADMAP.md)
 - Debugging your application code or agent prompts
 - Hosting / cloud account billing (R2, AWS, GCS) beyond config examples
 - Real-time pair-programming or multi-writer collaboration

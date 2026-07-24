@@ -4,79 +4,91 @@
 
 Last updated: **2026-07-25** · Maintainer: [Harjot Singh Rana](https://github.com/HarjjotSinghh)
 
-This roadmap is a living document. Priorities shift based on real usage signals
-(especially "first successful cross-device resume" activation) and vendor format
-churn. Open an issue or discussion to influence it.
+This roadmap is a living document. Priorities follow real activation signals
+(especially first successful cross-device resume) and vendor format churn.
 
 ---
 
 ## Vision
 
-> **Reinstate is the sync layer for your entire AI development environment —
-> sessions, MCP servers, skills, and settings — across every coding agent and
-> every machine you own, encrypted so only you can read it.**
+> **Reinstate is a local-first, encrypted sync layer for AI coding agent state
+> across the machines you own.** Phase 1 ships same-vendor **session** sync for
+> Claude Code and Codex. Broader environment sync (MCP, skills, settings) and
+> additional agents come after a trustworthy `v0.1.0`.
 
 We do **not** aim to be:
 
-- Dropbox for raw `~/.claude` trees without path intelligence
+- Dropbox for raw agent trees without path intelligence
 - A vendor-locked cloud for a single agent
 - A real-time multiplayer agent runtime
 - A cross-agent session *translator* (Claude → Codex replay)
 
 ---
 
-## Phase 0 — MVP (v0.1) 🚧
+## Phase 0 — Foundation 🚧
+
+**Gate:** contracts, diagnostics, installers, fixtures, CI/release trust, and
+docs are honest and verified. No claim of end-to-end session resume yet.
+
+| Item | Status |
+| ---- | ------ |
+| Authority docs + ADR + compatibility matrix | 🚧 |
+| CLI routing, exit codes, version JSON | 📋 |
+| Versioned config/state + atomic writes | 📋 |
+| Device detection (macOS / Windows / WSL2) | 📋 |
+| Redacted `doctor` + synthetic self-test | 📋 |
+| Synthetic fixtures + secret scanner | 📋 |
+| Hard CI gates + goreleaser snapshot | 📋 |
+| Checksum-verifying installers | 📋 |
+| Versioned AI-agent setup prompts | 📋 |
+
+## Phase 1 — Claude + Codex sessions (`v0.1.0`) 📋
 
 **Gate:** a stranger can install, `init`, and resume a cross-OS Claude Code
-session in under five minutes; Codex follows the same path.
+session; Codex follows the same path. Encryption on; credentials never synced.
 
 | Item | Status |
 | ---- | ------ |
-| CLI skeleton: `version`, `init`, `push`, `pull`, `status`, `diff`, `conflicts` | 🚧 |
-| Interactive init wizard (backend, passphrase, scope, path_map) | 📋 |
-| Claude Code adapter (JSONL sessions + path remapping) | 📋 |
-| Codex adapter (rollouts + state index awareness) | 📋 |
-| age encryption (passphrase-derived keys) | 📋 |
-| S3-compatible backend (R2 first) | 📋 |
-| Atomic restore + timestamped backups | 📋 |
-| Conflict detection (never silent overwrite) | 📋 |
-| Docs + release automation | 🚧 |
+| R2/S3-compatible backend + memory test double | 📋 |
+| Credentials / interactive `init` | 📋 |
+| age passphrase envelopes | 📋 |
+| Project identity + path mapping | 📋 |
+| Manifests, push/pull, conflicts | 📋 |
+| Atomic restore + backups + locks | 📋 |
+| Claude Code adapter (detect/export/restore) | 📋 |
+| Codex adapter (detect/export/restore) | 📋 |
+| Complete CLI + human docs + release candidate | 📋 |
 
-## Phase 1 — Universal environment (v0.2–0.3) 📋
+### SemVer progression toward `v0.1.0`
 
-**Gate:** fresh machine bootstrap restores sessions *and* MCP/skills/config.
+```text
+v0.1.0-alpha.*  foundation + installers + prompts
+v0.1.0-beta.*   Claude then Codex end-to-end
+v0.1.0-rc.1     release candidate
+v0.1.0          Phase 1 stable
+```
+
+## Phase 2 — Broader environment 📋
+
+**Gate:** fresh machine bootstrap restores sessions *and* selected config
+scopes after Phase 1 is stable.
 
 | Item | Status |
 | ---- | ------ |
+| MCP servers, skills, instruction files | 📋 |
+| Scopes: `--scope sessions \| config \| all` | 📋 |
 | Gemini CLI adapter | 📋 |
 | OpenCode adapter | 📋 |
-| Config scope: MCP servers, skills, agents, instruction files | 📋 |
-| Scopes: `--scope sessions \| config \| all` | 📋 |
-| WebDAV + GCS backends | 📋 |
-| GitHub Gist backend (size-limited) | 📋 |
+| Additional backends (WebDAV, GCS) | 📋 |
 
-## Phase 2 — Habit & trust (v0.4–0.5) 📋
-
-**Gate:** two weeks of unattended auto-sync on dual machines with zero manual
-intervention and zero unresolved conflicts.
+## Phase 3 — Habit & trust 💭
 
 | Item | Status |
 | ---- | ------ |
-| Shell hooks (pull on start / push on exit) | 📋 |
-| Grok Build adapter (once format stabilizes) | 📋 |
-| Cursor transcript adapter (read-only / best-effort) | 💭 |
-| Append-aware delta / CAS chunking for large Codex histories | 📋 |
-| Opt-in secret redaction pass | 📋 |
-| Device registry / key rotation helpers | 📋 |
-
-## Phase 3 — Convenience layer 💭
-
-| Item | Status |
-| ---- | ------ |
-| Hosted zero-knowledge relay + blob store (paid convenience) | 💭 |
-| Local web session browser / library UI | 💭 |
-| Optional team share of selected sessions | 💭 |
-| Mobile companion (view-only) | 💭 |
+| Shell hooks (pull on start / push on exit) | 💭 |
+| Grok Build / Cursor adapters (when formats stabilize) | 💭 |
+| Device registry / key rotation helpers | 💭 |
+| Hosted zero-knowledge convenience layer | 💭 |
 
 ## Explicit non-goals (near term) ❌
 
@@ -85,24 +97,19 @@ intervention and zero unresolved conflicts.
 | Cross-agent session translation | Formats/tool schemas differ; resume is same-vendor |
 | Multi-tenant real-time CRDT collab | Sequential dual-machine use is the dominant pattern |
 | Replacing git | Git remains source truth; Reinstate is context truth |
-| Shipping vendor API keys or auth proxies | Local-only file access |
+| Shipping vendor API keys or auth proxies | Local-only file access; credentials never synced |
 
 ---
 
 ## Stable release policy
 
 - **Pre-1.0:** minor versions may include breaking CLI/config changes (documented in CHANGELOG)
-- **1.0 criteria (target):**
-  - Claude Code + Codex + Gemini adapters stable for ≥2 major vendor releases
-  - Path remapping proven Windows ↔ macOS in production use
-  - Security model documented and externally reviewable
-  - Install → first resume under 5 minutes on clean machines
-- Releases: GitHub Releases + checksums; see [RELEASING.md](RELEASING.md)
+- **`v0.1.0` criteria:** Claude + Codex session sync, path remapping Windows ↔ macOS,
+  security model enforced in tests, install → first resume under 5 minutes on clean machines
+- Releases: GitHub Releases + checksums + SBOM; see [RELEASING.md](RELEASING.md)
 
 ## How to propose roadmap items
 
 1. Open a feature request issue
 2. Tag with `roadmap`
 3. Discuss trade-offs (maintenance cost of adapters is real)
-
-Stars and issues both help prioritize — thank you for using Reinstate.

@@ -6,7 +6,7 @@
 
 ### The sync layer for your entire AI development environment
 
-**Sessions · MCP servers · Skills · Settings** — across every coding agent and every machine you own.
+**Encrypted session sync** for Claude Code and Codex — across every machine you own. MCP/skills follow after `v0.1.0`.
 Encrypted so only you can read it.
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
@@ -48,7 +48,7 @@ Encrypted so only you can read it.
 
 ## The problem
 
-You grind eight hours on your **Windows desktop** across Claude Code, Codex, Gemini CLI, OpenCode, Grok Build… twenty sessions, four projects, full context.
+You grind eight hours on your **Windows desktop** across Claude Code, Codex, with more agents planned after Phase 1… twenty sessions, four projects, full context.
 
 You open your **MacBook** on the couch.
 
@@ -111,7 +111,7 @@ Native vendor sync will always own *one* ecosystem. DIY Syncthing/Drive hacks br
 ## Features
 
 - **Cross-device session sync** — continue the same agent thread on another machine
-- **Multi-agent adapters** — Claude Code, Codex, Gemini CLI, OpenCode, Grok Build (phased)
+- **Multi-agent adapters** — Claude Code, Codex, with more agents planned after Phase 1 (phased)
 - **End-to-end encryption** — [age](https://github.com/FiloSottile/age), passphrase-derived keys
 - **Bring-your-own storage** — Cloudflare R2, AWS S3, GCS, S3-compatible, WebDAV
 - **OS-aware path remapping** — the hard problem treated as the product

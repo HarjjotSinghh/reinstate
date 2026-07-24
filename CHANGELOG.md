@@ -7,36 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-
-- Relicensed core from MIT to **Apache License 2.0** (research recommendation)
-- README diagrams: ASCII boxes → Mermaid flowcharts
-- Star history embed: dark/light `<picture>` + interactive fallback link
-
 ### Added
 
-- Initial open-source repository structure
-- Project documentation (README, architecture, adapters, security model)
-- Community health files (CODE_OF_CONDUCT, CONTRIBUTING, SECURITY, SUPPORT)
-- GitHub issue/PR templates and CI workflow scaffolding
-- CLI package layout (`cmd/reinstate`, `internal/*`)
-- Apache License 2.0
+- Phase 0 / Phase 1 authority plan and product contracts
+- ADR documenting Phase 0 foundation and Phase 1 Claude/Codex sessions scope
+- Compatibility matrix and support states
+
+### Changed
+
+- Relicensed core from MIT to **Apache License 2.0**
+- README diagrams: ASCII boxes → Mermaid flowcharts
+- Roadmap and support docs aligned to Phase 0 foundation + Phase 1 sessions
+
+### Removed
+
+- Invented `v0.0.0` changelog release history (no tag/release existed)
 
 ### Planned for 0.1.0
 
-- `reinstate init | push | pull | status | diff | conflicts`
-- Claude Code + Codex adapters
-- age encryption + R2/S3 backend
-- Cross-OS path remapping
-
-## [0.0.0] - 2026-07-25
-
-### Added
-
-- Project bootstrap by **Harjot Singh Rana**
-- Public roadmap and governance
+- `rein` / `reinstate` CLI: `init`, `push`, `pull`, `status`, `diff`, `conflicts`, `doctor`, `list`
+- Claude Code + Codex session adapters (same-vendor only)
+- age encryption + R2/S3-compatible backend
+- Cross-OS path remapping and atomic restore
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.0.0...HEAD
-[0.0.0]: https://github.com/HarjjotSinghh/reinstate/releases/tag/v0.0.0
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/HEAD...HEAD
