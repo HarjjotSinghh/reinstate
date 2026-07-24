@@ -1,0 +1,2 @@
+{"type":"user","uuid":"syn-w001","message":{"role":"user","content":"Synthetic fixture on Windows path C:\\\\Users\\\\fixture-user\\\\code\\\\demo"}}
+{"type":"assistant","uuid":"syn-w002","message":{"role":"assistant","content":"Synthetic reply"}}

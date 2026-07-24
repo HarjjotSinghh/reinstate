@@ -1,0 +1,2 @@
+{"type":"user","uuid":"syn-001","message":{"role":"user","content":"Synthetic fixture: list files in ${HOME}/code/demo"}}
+{"type":"assistant","uuid":"syn-002","message":{"role":"assistant","content":"Synthetic reply with path /Users/fixture-user/code/demo/main.go"}}

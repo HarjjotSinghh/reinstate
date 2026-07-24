@@ -4,6 +4,7 @@
 MODULE  := github.com/HarjjotSinghh/reinstate
 BIN_DIR := bin
 BINARY  := $(BIN_DIR)/reinstate
+ALIAS   := $(BIN_DIR)/rein
 CMD     := ./cmd/reinstate
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo 0.0.0-dev)
 COMMIT  ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
@@ -13,7 +14,7 @@ LDFLAGS := -s -w \
 	-X $(MODULE)/internal/version.Commit=$(COMMIT) \
 	-X $(MODULE)/internal/version.Date=$(DATE)
 
-.PHONY: all deps build test test-race vet lint clean run version fixture-test help
+.PHONY: all deps build test test-race vet lint fmt fmt-check docs-check fixture-scan vuln verify clean run version help snapshot
 
 all: build
 
@@ -24,9 +25,10 @@ deps: ## Download Go modules
 	go mod download
 	go mod tidy
 
-build: ## Build reinstate binary into ./bin
+build: ## Build reinstate binary into ./bin (+ rein symlink)
 	@mkdir -p $(BIN_DIR)
 	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o $(BINARY) $(CMD)
+	@ln -sfn reinstate $(ALIAS)
 
 run: build ## Build and print version
 	$(BINARY) version
@@ -40,11 +42,34 @@ test-race: ## Run tests with race detector
 vet: ## go vet
 	go vet ./...
 
-lint: ## golangci-lint if installed
-	@command -v golangci-lint >/dev/null 2>&1 && golangci-lint run ./... || echo "golangci-lint not installed; skip"
+fmt: ## gofmt write
+	gofmt -w .
 
-fixture-test: test ## Alias for adapter fixture tests (expand later)
-	@echo "fixture tests: ok (scaffold)"
+fmt-check: ## Fail if gofmt needed
+	@test -z "$$(gofmt -l . | tee /dev/stderr)"
+
+lint: ## golangci-lint (required when installed)
+	@command -v golangci-lint >/dev/null 2>&1 || { echo "golangci-lint required"; exit 1; }
+	golangci-lint run ./...
+
+docs-check: ## Documentation consistency tests
+	go test ./internal/doctest -count=1
+
+fixture-scan: ## Scan fixtures for secrets
+	go test ./internal/fixture -count=1
+
+vuln: ## govulncheck when installed
+	@if command -v govulncheck >/dev/null 2>&1; then govulncheck ./...; else echo "govulncheck not installed; skip"; fi
+
+verify: fmt-check vet test docs-check fixture-scan ## Full local gate (lint/vuln soft if tools missing)
+	@if command -v golangci-lint >/dev/null 2>&1; then $(MAKE) lint; else echo "lint: golangci-lint not installed (CI enforces)"; fi
+	@$(MAKE) vuln
+	@$(MAKE) build
+	@echo "verify ok"
+
+snapshot: ## goreleaser snapshot (requires goreleaser)
+	@command -v goreleaser >/dev/null 2>&1 || { echo "goreleaser required for snapshot"; exit 1; }
+	goreleaser release --snapshot --clean
 
 version: build ## Print embedded version
 	$(BINARY) version
@@ -52,5 +77,5 @@ version: build ## Print embedded version
 clean: ## Remove build artifacts
 	rm -rf $(BIN_DIR) dist coverage.out
 
-install: build ## Install to GOPATH/bin or /usr/local/bin
+install: build ## Install to GOPATH/bin
 	install -m 755 $(BINARY) "$${GOBIN:-$${GOPATH:-$$HOME/go}/bin}/reinstate"

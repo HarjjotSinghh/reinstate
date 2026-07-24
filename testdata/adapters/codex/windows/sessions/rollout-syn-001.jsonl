@@ -1,0 +1,3 @@
+{"type":"session_meta","id":"rollout-syn-001","cwd":"C:\\\\Users\\\\fixture-user\\\\code\\\\demo","title":"Synthetic Codex Windows session"}
+{"type":"message","role":"user","content":"Synthetic fixture request"}
+{"type":"message","role":"assistant","content":"Synthetic fixture response"}
