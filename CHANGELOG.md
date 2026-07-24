@@ -12,6 +12,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Phase 0 / Phase 1 authority plan and product contracts
 - ADR documenting Phase 0 foundation and Phase 1 Claude/Codex sessions scope
 - Compatibility matrix and support states
+- Cobra CLI with stable exit codes (`rein` / `reinstate`)
+- Versioned config (TOML) and state (JSON) with atomic writes
+- Device detection (macOS/Windows/Linux/WSL2; WSL1 refused)
+- Redacted `doctor` / `setup check` and synthetic self-test
+- Synthetic fixtures + secret scanner
+- Hardened CI (fmt/vet/test/race/docs/fixtures/lint/security) and GoReleaser config
+- Checksum-verifying installers (`scripts/install.sh`, `scripts/install.ps1`)
+- Versioned AI-agent setup prompts under `docs/prompts/`
+- S3-compatible backend client + memory test backend
+- age scrypt envelopes with tamper/wrong-passphrase tests
+- Path mapping, project identity, manifests, push/pull/conflicts
+- Claude Code and Codex adapters (fixture-backed)
 
 ### Changed
 
@@ -22,13 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - Invented `v0.0.0` changelog release history (no tag/release existed)
-
-### Planned for 0.1.0
-
-- `rein` / `reinstate` CLI: `init`, `push`, `pull`, `status`, `diff`, `conflicts`, `doctor`, `list`
-- Claude Code + Codex session adapters (same-vendor only)
-- age encryption + R2/S3-compatible backend
-- Cross-OS path remapping and atomic restore
 
 ---
 
