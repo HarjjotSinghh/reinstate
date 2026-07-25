@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-rc.1] - 2026-07-25
+
 ### Added
 
 - Phase 0 / Phase 1 authority plan and product contracts
@@ -66,4 +68,5 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/commits/main
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.1...HEAD
+[0.1.0-rc.1]: https://github.com/HarjjotSinghh/reinstate/releases/tag/v0.1.0-rc.1
