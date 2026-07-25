@@ -37,13 +37,28 @@ function Test-PathContains([string]$PathValue, [string]$Entry) {
     return $false
 }
 
+function Get-Sha256([string]$Path) {
+    $stream = [IO.File]::OpenRead($Path)
+    try {
+        $sha256 = [Security.Cryptography.SHA256]::Create()
+        try {
+            $hashBytes = $sha256.ComputeHash($stream)
+        } finally {
+            $sha256.Dispose()
+        }
+    } finally {
+        $stream.Dispose()
+    }
+    return [BitConverter]::ToString($hashBytes).Replace("-", "").ToLowerInvariant()
+}
+
 $Tmp = New-Item -ItemType Directory -Path ([IO.Path]::GetTempPath()) -Name ("reinstate-bootstrap-" + [guid]::NewGuid().ToString())
 try {
     $installerPath = Join-Path $Tmp "install.ps1"
     Write-Host "Downloading verified Reinstate installer $Version..."
     Invoke-WebRequest -UseBasicParsing -Uri $InstallerUrl -OutFile $installerPath
 
-    $actualInstallerSha256 = (Get-FileHash -Algorithm SHA256 -Path $installerPath).Hash.ToLowerInvariant()
+    $actualInstallerSha256 = Get-Sha256 $installerPath
     if ($actualInstallerSha256 -ne $PinnedInstallerSha256.ToLowerInvariant()) {
         throw "installer checksum mismatch (expected $PinnedInstallerSha256, actual $actualInstallerSha256)"
     }
