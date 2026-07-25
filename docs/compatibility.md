@@ -39,13 +39,23 @@ Every adapter discovery result reports one of:
 | `UNSUPPORTED` | Known-incompatible layout/version | Fail closed; link to this page |
 | `NOT_INSTALLED` | No local installation/root found | Informational |
 
-Release candidate `v0.1.0-rc.2` compatibility evidence covers Claude Code
-`2.1.219` and Codex CLI `0.133.0` on macOS arm64 plus deterministic synthetic
-fixtures.
-Other versions are `UNTESTED` and must not be called stable until their release
-matrix rows pass. Native Windows, macOS amd64, and WSL2 remain release gates;
-this repository does not fabricate those results. Phase 1 has no unsafe
-compatibility override.
+Current source compatibility evidence covers these inclusive stable-version
+ranges on macOS arm64 plus deterministic synthetic fixtures:
+
+| Agent | Tested stable range |
+| ----- | ------------------- |
+| Claude Code | `2.1.219`–`2.1.220` |
+| OpenAI Codex CLI | `0.133.0`–`0.145.0` |
+
+Release candidate `v0.1.0-rc.3` contains these expanded compatibility ranges.
+Versions outside them, including prereleases, are `UNTESTED` and must not be
+called stable until their release matrix rows pass. Native Windows, macOS
+amd64, and WSL2 remain release gates; this repository does not fabricate those
+results. Phase 1 has no unsafe compatibility override.
+
+`rein setup check` exits with compatibility code `5` when an installed adapter
+is `UNTESTED` or `UNSUPPORTED`, because writes are blocked. An agent that is not
+installed remains an informational `NOT_INSTALLED` result.
 
 ## Path mapping
 

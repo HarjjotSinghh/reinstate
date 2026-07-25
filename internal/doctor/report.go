@@ -94,33 +94,10 @@ func Run(ctx context.Context, opts Options) (*Report, error) {
 		install, compatibility, err := selected.Detect(ctx)
 		name := selected.Name()
 		if err != nil {
-			rep.Agents[name] = string(adapter.CompatibilityUntested)
-			rep.Checks = append(rep.Checks, Check{
-				Name: "agent." + name, Status: "warn", Message: Redact(err.Error()),
-			})
-			continue
+			compatibility = adapter.CompatibilityUntested
 		}
 		rep.Agents[name] = string(compatibility)
-		switch compatibility {
-		case adapter.CompatibilitySupported:
-			rep.Checks = append(rep.Checks, Check{
-				Name: "agent." + name, Status: "ok",
-				Message: fmt.Sprintf("%s (%s)", compatibility, install.Version),
-			})
-		case adapter.CompatibilityNotInstalled:
-			rep.Checks = append(rep.Checks, Check{
-				Name: "agent." + name, Status: "skip", Message: "not installed",
-			})
-		case adapter.CompatibilityUntested:
-			rep.Checks = append(rep.Checks, Check{
-				Name: "agent." + name, Status: "warn", Message: "layout/version untested; writes blocked",
-			})
-		default:
-			rep.Checks = append(rep.Checks, Check{
-				Name: "agent." + name, Status: "fail", Message: "unsupported layout/version",
-				Code: exitcode.Compatibility,
-			})
-		}
+		rep.Checks = append(rep.Checks, adapterCheck(name, install, compatibility, err))
 	}
 
 	if err := credentials.NewKeyringStore().Probe(); err != nil {
@@ -147,6 +124,33 @@ func Run(ctx context.Context, opts Options) (*Report, error) {
 
 	rep.Summary = summarize(rep)
 	return rep, nil
+}
+
+func adapterCheck(name string, install adapter.Install, compatibility adapter.Compatibility, detectErr error) Check {
+	check := Check{Name: "agent." + name}
+	if detectErr != nil {
+		check.Status = "fail"
+		check.Message = Redact(detectErr.Error())
+		check.Code = exitcode.Compatibility
+		return check
+	}
+	switch compatibility {
+	case adapter.CompatibilitySupported:
+		check.Status = "ok"
+		check.Message = fmt.Sprintf("%s (%s)", compatibility, install.Version)
+	case adapter.CompatibilityNotInstalled:
+		check.Status = "skip"
+		check.Message = "not installed"
+	case adapter.CompatibilityUntested:
+		check.Status = "fail"
+		check.Message = "layout/version untested; writes blocked"
+		check.Code = exitcode.Compatibility
+	default:
+		check.Status = "fail"
+		check.Message = "unsupported layout/version"
+		check.Code = exitcode.Compatibility
+	}
+	return check
 }
 
 func summarize(rep *Report) string {

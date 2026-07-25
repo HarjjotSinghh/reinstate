@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/HarjjotSinghh/reinstate/internal/adapter"
 	"github.com/HarjjotSinghh/reinstate/internal/config"
 	"github.com/HarjjotSinghh/reinstate/internal/exitcode"
 	"github.com/HarjjotSinghh/reinstate/internal/schema"
@@ -80,4 +81,26 @@ func TestDoctorHealthyWithConfig(t *testing.T) {
 		t.Fatalf("selftest=%q checks=%+v", rep.SelfTest, rep.Checks)
 	}
 	_ = filepath.Join(home, "cache")
+}
+
+func TestUntestedAdapterFailsReadiness(t *testing.T) {
+	check := adapterCheck(
+		"claude",
+		adapter.Install{Agent: "claude", Version: "2.1.221"},
+		adapter.CompatibilityUntested,
+		nil,
+	)
+	if check.Status != "fail" {
+		t.Fatalf("status = %q, want fail", check.Status)
+	}
+	if check.Code != exitcode.Compatibility {
+		t.Fatalf("code = %d, want %d", check.Code, exitcode.Compatibility)
+	}
+	rep := &Report{Checks: []Check{check}}
+	if got := summarize(rep); got == "all checks passed" {
+		t.Fatalf("untested adapter produced misleading summary %q", got)
+	}
+	if got := ExitCode(rep); got != exitcode.Compatibility {
+		t.Fatalf("exit = %d, want %d", got, exitcode.Compatibility)
+	}
 }

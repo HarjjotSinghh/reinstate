@@ -106,6 +106,32 @@ func TestInitDoesNotExposeSecretFlags(t *testing.T) {
 	}
 }
 
+func TestConflictReadCommandsRequireConfig(t *testing.T) {
+	t.Setenv("REINSTATE_HOME", t.TempDir())
+	for _, args := range [][]string{
+		{"conflicts", "list"},
+		{"conflicts", "show", "missing"},
+	} {
+		t.Run(strings.Join(args, "_"), func(t *testing.T) {
+			_, errb, code := runCLI(t, "reinstate", args...)
+			if code != ExitConfig {
+				t.Fatalf("%v exit=%d want %d stderr=%q", args, code, ExitConfig, errb)
+			}
+		})
+	}
+}
+
+func TestSetupCheckJSONPreservesFailureExit(t *testing.T) {
+	t.Setenv("REINSTATE_HOME", t.TempDir())
+	out, errb, code := runCLI(t, "reinstate", "setup", "check", "--json")
+	if code != ExitConfig {
+		t.Fatalf("exit=%d want %d stdout=%q stderr=%q", code, ExitConfig, out, errb)
+	}
+	if !strings.Contains(out, `"summary"`) || !strings.Contains(out, `"status": "fail"`) {
+		t.Fatalf("missing JSON failure report: %q", out)
+	}
+}
+
 func TestRequireAgentInactive(t *testing.T) {
 	if err := requireAgentInactive(context.Background(), func(context.Context, string) (bool, error) {
 		return false, nil

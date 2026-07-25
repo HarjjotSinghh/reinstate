@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-rc.3] - 2026-07-26
+
+### Fixed
+
+- Accept the tested Claude Code `2.1.219`–`2.1.220` and Codex CLI
+  `0.133.0`–`0.145.0` ranges instead of requiring one exact vendor version.
+- Make `setup check` fail with compatibility exit code `5` when an installed
+  adapter is untested and therefore blocked from push/pull.
+- Require a valid Reinstate config before `conflicts list` or `conflicts show`
+  can report an empty result.
+- Exclude Claude Code `subagents/` artifacts from the top-level resumable
+  session list.
+- Override the website's transitive `path-to-regexp` dependency to patched
+  version `6.3.0`.
+
 ## [0.1.0-rc.2] - 2026-07-25
 
 ### Fixed
@@ -75,6 +90,7 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.2...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.3...HEAD
+[0.1.0-rc.3]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.2...v0.1.0-rc.3
 [0.1.0-rc.2]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.1...v0.1.0-rc.2
 [0.1.0-rc.1]: https://github.com/HarjjotSinghh/reinstate/releases/tag/v0.1.0-rc.1

@@ -43,6 +43,12 @@ The explicit non-interactive fallback reads
 persisting them.
 Override home with `REINSTATE_HOME` (absolute path).
 
+`rein setup check` returns compatibility exit code `5` when an installed agent
+is `UNTESTED` or `UNSUPPORTED`; its summary never says all checks passed while
+that agent is blocked from push/pull. `rein conflicts list` and
+`rein conflicts show` require a valid config, so a missing config cannot look
+like an empty conflict set.
+
 Before overwriting an existing target, mutating `pull` and
 `conflicts resolve --keep-remote` operations refuse to restore while the
 selected Claude Code or Codex process is active. Close the agent and retry.

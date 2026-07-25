@@ -768,10 +768,11 @@ func newConflictsCmd(processChecker AgentProcessChecker) *cobra.Command {
 	list := &cobra.Command{
 		Use:   "list",
 		Short: "List conflicts",
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			home, err := config.Home()
+			home, err := configuredHome()
 			if err != nil {
-				return NewExitError(ExitConfig, err.Error())
+				return err
 			}
 			cs, err := sync.ListConflicts(home)
 			if err != nil {
@@ -791,7 +792,7 @@ func newConflictsCmd(processChecker AgentProcessChecker) *cobra.Command {
 		Use:  "show <id>",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			home, err := config.Home()
+			home, err := configuredHome()
 			if err != nil {
 				return err
 			}
@@ -872,6 +873,17 @@ func newConflictsCmd(processChecker AgentProcessChecker) *cobra.Command {
 	resolve.Flags().BoolVar(&keepBoth, "keep-both", false, "keep both")
 	root.AddCommand(list, show, resolve)
 	return root
+}
+
+func configuredHome() (string, error) {
+	home, err := config.Home()
+	if err != nil {
+		return "", NewExitError(ExitConfig, err.Error())
+	}
+	if _, err := config.LoadConfig(home); err != nil {
+		return "", NewExitError(ExitConfig, err.Error())
+	}
+	return home, nil
 }
 
 func resolveKeepLocal(

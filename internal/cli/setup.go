@@ -28,9 +28,12 @@ func newSetupCmd() *cobra.Command {
 				return err
 			}
 			if asJSON {
-				return WriteJSON(c.OutOrStdout(), rep)
+				if err := WriteJSON(c.OutOrStdout(), rep); err != nil {
+					return err
+				}
+			} else {
+				PrintHuman(c.OutOrStdout(), "%s", doctor.FormatHuman(rep))
 			}
-			PrintHuman(c.OutOrStdout(), "%s", doctor.FormatHuman(rep))
 			code := doctor.ExitCode(rep)
 			if code != ExitOK {
 				return NewExitError(code, rep.Summary)

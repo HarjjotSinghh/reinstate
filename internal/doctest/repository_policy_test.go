@@ -1,6 +1,8 @@
 package doctest
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -51,6 +53,49 @@ func TestWorkflowActionsArePinnedAndPermissionsAreExplicit(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestWebsitePathToRegexpIsPatched(t *testing.T) {
+	type lockfile struct {
+		Packages map[string]struct {
+			Name    string `json:"name"`
+			Version string `json:"version"`
+		} `json:"packages"`
+	}
+	var lock lockfile
+	if err := json.Unmarshal([]byte(read(t, "website/package-lock.json")), &lock); err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for path, pkg := range lock.Packages {
+		if path != "node_modules/path-to-regexp" && pkg.Name != "path-to-regexp" {
+			continue
+		}
+		found = true
+		if versionLessThan(pkg.Version, "6.3.0") {
+			t.Errorf("%s pins vulnerable path-to-regexp %s; require >= 6.3.0", path, pkg.Version)
+		}
+	}
+	if !found {
+		t.Fatal("package-lock does not contain path-to-regexp; review this policy test")
+	}
+}
+
+func versionLessThan(version, floor string) bool {
+	var got [3]int
+	var want [3]int
+	if _, err := fmt.Sscanf(version, "%d.%d.%d", &got[0], &got[1], &got[2]); err != nil {
+		return true
+	}
+	if _, err := fmt.Sscanf(floor, "%d.%d.%d", &want[0], &want[1], &want[2]); err != nil {
+		return true
+	}
+	for i := range got {
+		if got[i] != want[i] {
+			return got[i] < want[i]
+		}
+	}
+	return false
 }
 
 func TestReleaseWorkflowRestoresAnnotatedTagBeforeVerification(t *testing.T) {

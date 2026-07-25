@@ -108,6 +108,66 @@ func TestCommittedPlatformFixturesDiscover(t *testing.T) {
 	}
 }
 
+func TestClaudeSupportedVersionRange(t *testing.T) {
+	tests := []struct {
+		version string
+		want    bool
+	}{
+		{version: "2.1.218", want: false},
+		{version: "2.1.219", want: true},
+		{version: "2.1.220", want: true},
+		{version: "2.1.221", want: false},
+		{version: "2.2.0", want: false},
+		{version: "2.1.220-beta.1", want: false},
+		{version: "not-a-version", want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.version, func(t *testing.T) {
+			if got := isSupportedVersion(tt.version); got != tt.want {
+				t.Fatalf("isSupportedVersion(%q) = %v, want %v", tt.version, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestClaudeDiscoverSkipsSubagentArtifacts(t *testing.T) {
+	root := t.TempDir()
+	project := filepath.Join(root, "projects", "fixture-project")
+	if err := os.MkdirAll(filepath.Join(project, "session-main", "subagents", "workflows", "wf-1"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(root, "projects", "subagents"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	for path, content := range map[string]string{
+		filepath.Join(project, "session-main.jsonl"):                                            `{"type":"user"}` + "\n",
+		filepath.Join(project, "session-main", "subagents", "agent-worker.jsonl"):               `{"type":"user"}` + "\n",
+		filepath.Join(project, "session-main", "subagents", "workflows", "wf-1", "agent.jsonl"): `{"type":"user"}` + "\n",
+		filepath.Join(root, "projects", "subagents", "project-session.jsonl"):                   `{"type":"user"}` + "\n",
+	} {
+		if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	sessions, err := (&Adapter{Root: root}).Discover(context.Background(), adapter.DiscoverOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sessions) != 2 {
+		t.Fatalf("discovered %d sessions, want two top-level sessions: %+v", len(sessions), sessions)
+	}
+	got := map[string]bool{}
+	for _, session := range sessions {
+		got[session.ID] = true
+	}
+	for _, expected := range []string{"session-main", "project-session"} {
+		if !got[expected] {
+			t.Fatalf("missing top-level session %q: %+v", expected, sessions)
+		}
+	}
+}
+
 func TestClaudeRestoreBacksUpExistingSession(t *testing.T) {
 	root := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(root, "projects", "p"), 0o700); err != nil {
@@ -207,6 +267,30 @@ func TestClaudeDefaultRootUnknownVersionIsUntested(t *testing.T) {
 	}
 	if compatibility != adapter.CompatibilityUntested {
 		t.Fatalf("unknown version reported %s", compatibility)
+	}
+}
+
+func TestClaudeDefaultRootSupportedVersionFileDoesNotRequireExecutable(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	t.Setenv("PATH", "")
+	root := filepath.Join(home, ".claude")
+	if err := os.MkdirAll(filepath.Join(root, "projects"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "version"), []byte("2.1.220\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	install, compatibility, err := (&Adapter{}).Detect(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if compatibility != adapter.CompatibilitySupported {
+		t.Fatalf("supported version file reported %s", compatibility)
+	}
+	if install.Version != "2.1.220" {
+		t.Fatalf("detected version %q", install.Version)
 	}
 }
 
