@@ -39,8 +39,9 @@ Every adapter discovery result reports one of:
 | `UNSUPPORTED` | Known-incompatible layout/version | Fail closed; link to this page |
 | `NOT_INSTALLED` | No local installation/root found | Informational |
 
-Pre-release compatibility evidence currently covers Claude Code `2.1.219` and
-Codex CLI `0.133.0` on macOS arm64 plus deterministic synthetic fixtures.
+Release candidate `v0.1.0-rc.1` compatibility evidence covers Claude Code
+`2.1.219` and Codex CLI `0.133.0` on macOS arm64 plus deterministic synthetic
+fixtures.
 Other versions are `UNTESTED` and must not be called stable until their release
 matrix rows pass. Native Windows, macOS amd64, and WSL2 remain release gates;
 this repository does not fabricate those results. Phase 1 has no unsafe

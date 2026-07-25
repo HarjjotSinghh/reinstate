@@ -39,12 +39,17 @@ git push origin main
 ### 2. Tag and push
 
 ```bash
-git tag -s vX.Y.Z -m "Reinstate vX.Y.Z"
+export REINSTATE_SIGNING_KEY="$HOME/.ssh/id_ed25519"
+git -c gpg.format=ssh \
+  -c user.signingkey="$REINSTATE_SIGNING_KEY" \
+  tag -s vX.Y.Z -m "Reinstate vX.Y.Z"
 git push origin vX.Y.Z
 ```
 
 The tag must point at the reviewed commit on protected `main`. Do not move or
-reuse a published tag.
+reuse a published tag. The matching public key and maintainer principal must
+be present in `.github/allowed_signers` so CI can verify the signature without
+depending on machine-local keyring state.
 
 ### 3. GitHub Release workflow
 
