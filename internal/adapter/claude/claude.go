@@ -22,7 +22,10 @@ import (
 
 const maxJSONLRecordBytes = 16 << 20
 
-const verifiedClaudeVersion = "2.1.219"
+const (
+	minimumVerifiedClaudeVersion = "2.1.219"
+	maximumVerifiedClaudeVersion = "2.1.220"
+)
 
 // Adapter implements adapter.Adapter for Claude Code.
 type Adapter struct {
@@ -81,7 +84,7 @@ func (a *Adapter) Detect(ctx context.Context) (adapter.Install, adapter.Compatib
 	if inst.Version == "unknown" {
 		inst.Version = "layout-projects-jsonl-v1"
 	}
-	if !explicitRoot && inst.Version != verifiedClaudeVersion {
+	if !explicitRoot {
 		output, versionErr := exec.CommandContext(ctx, "claude", "--version").Output()
 		if versionErr != nil {
 			return inst, adapter.CompatibilityUntested, nil
@@ -91,14 +94,15 @@ func (a *Adapter) Detect(ctx context.Context) (adapter.Install, adapter.Compatib
 			return inst, adapter.CompatibilityUntested, nil
 		}
 		inst.Version = fields[0]
-		if inst.Version != verifiedClaudeVersion {
+		if !isSupportedVersion(inst.Version) {
 			return inst, adapter.CompatibilityUntested, nil
 		}
 	}
-	if !explicitRoot && inst.Version != verifiedClaudeVersion {
-		return inst, adapter.CompatibilityUntested, nil
-	}
 	return inst, adapter.CompatibilitySupported, nil
+}
+
+func isSupportedVersion(version string) bool {
+	return adapter.StableVersionInRange(version, minimumVerifiedClaudeVersion, maximumVerifiedClaudeVersion)
 }
 
 func (a *Adapter) Discover(ctx context.Context, opts adapter.DiscoverOptions) ([]adapter.Session, error) {
@@ -118,6 +122,15 @@ func (a *Adapter) Discover(ctx context.Context, opts adapter.DiscoverOptions) ([
 			return err
 		}
 		if info.IsDir() {
+			if info.Name() == "subagents" {
+				relativeDirectory, relErr := filepath.Rel(projects, path)
+				if relErr != nil {
+					return relErr
+				}
+				if strings.Count(filepath.ToSlash(relativeDirectory), "/") >= 2 {
+					return filepath.SkipDir
+				}
+			}
 			return nil
 		}
 		if !strings.HasSuffix(info.Name(), ".jsonl") {

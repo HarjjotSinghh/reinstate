@@ -94,6 +94,29 @@ func TestCommittedPlatformFixturesDiscover(t *testing.T) {
 	}
 }
 
+func TestCodexSupportedVersionRange(t *testing.T) {
+	tests := []struct {
+		version string
+		want    bool
+	}{
+		{version: "0.132.9", want: false},
+		{version: "0.133.0", want: true},
+		{version: "0.140.0", want: true},
+		{version: "0.145.0", want: true},
+		{version: "0.145.1", want: false},
+		{version: "0.146.0", want: false},
+		{version: "0.145.0-beta.1", want: false},
+		{version: "not-a-version", want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.version, func(t *testing.T) {
+			if got := isSupportedVersion(tt.version); got != tt.want {
+				t.Fatalf("isSupportedVersion(%q) = %v, want %v", tt.version, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestCodexRestoreRejectsUnexpectedArchiveEntry(t *testing.T) {
 	root := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(root, "sessions"), 0o700); err != nil {

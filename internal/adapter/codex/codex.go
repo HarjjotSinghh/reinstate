@@ -22,7 +22,10 @@ import (
 
 const maxJSONLRecordBytes = 16 << 20
 
-const verifiedCodexVersion = "0.133.0"
+const (
+	minimumVerifiedCodexVersion = "0.133.0"
+	maximumVerifiedCodexVersion = "0.145.0"
+)
 
 // Adapter implements adapter.Adapter for Codex.
 type Adapter struct {
@@ -80,11 +83,15 @@ func (a *Adapter) Detect(ctx context.Context) (adapter.Install, adapter.Compatib
 			return inst, adapter.CompatibilityUntested, nil
 		}
 		inst.Version = fields[1]
-		if inst.Version != verifiedCodexVersion {
+		if !isSupportedVersion(inst.Version) {
 			return inst, adapter.CompatibilityUntested, nil
 		}
 	}
 	return inst, adapter.CompatibilitySupported, nil
+}
+
+func isSupportedVersion(version string) bool {
+	return adapter.StableVersionInRange(version, minimumVerifiedCodexVersion, maximumVerifiedCodexVersion)
 }
 
 func (a *Adapter) Discover(ctx context.Context, opts adapter.DiscoverOptions) ([]adapter.Session, error) {

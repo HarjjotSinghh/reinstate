@@ -2,6 +2,8 @@
 
 - **Layout:** `~/.claude/projects/<project>/*.jsonl` (and config variants)
 - **Transform:** schema-aware path fields only; prose preserved
+- **Session scope:** top-level resumable sessions only; nested `subagents/`
+  artifacts are not listed or synced as independent sessions
 - **Exclusions:** `auth.json`, credentials, `.env`, caches
 - **Fixtures:** `testdata/adapters/claude/`
 
