@@ -3,6 +3,18 @@
 | Document | Description |
 | -------- | ----------- |
 | [Getting started](getting-started.md) | Install and dual-device setup |
+| [Agent-assisted install](install/agent-assisted.md) | Version-pinned Claude/Codex setup prompts |
+| [macOS install](install/manual-macos.md) | Verified manual install |
+| [Windows install](install/manual-windows.md) | Verified native PowerShell install |
+| [WSL2 install](install/manual-wsl.md) | Verified Linux install under WSL2 |
+| [Verify installation](install/verify-installation.md) | Setup and dry-run gates |
+| [Backup and recovery](backup-and-recovery.md) | Restore and conflict recovery |
+| [Uninstall](uninstall.md) | Binary and data cleanup boundaries |
+| [Development workflow](contributing/development.md) | Build, test, and package contributions |
+| [Documentation workflow](contributing/documentation.md) | Keep docs, prompts, and claims honest |
+| [Testing and fixtures](contributing/testing.md) | Synthetic-data and adapter test policy |
+| [Contributing an adapter](adapters/contributing-an-adapter.md) | Fail-closed adapter requirements |
+| [Release process](contributing/release-process.md) | Version and release contribution boundaries |
 | [Architecture](architecture.md) | System design |
 | [Adapters](adapters.md) | Agent support matrix |
 | [Compatibility](compatibility.md) | Environments and compatibility states |

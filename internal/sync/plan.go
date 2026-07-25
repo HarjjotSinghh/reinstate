@@ -12,6 +12,12 @@ type PushItem struct {
 	SessionID string
 	ProjectID string
 	LocalPath string
+	// RelativePath is the portable vendor-native path represented by LocalPath.
+	RelativePath string
+	// BaseKnown distinguishes a first sync (known empty base) from low-level
+	// callers that deliberately opt out of local-state conflict enforcement.
+	BaseKnown    bool
+	BaseRevision string
 }
 
 // PullItem is one session planned for download.
@@ -62,10 +68,11 @@ func FromAdapterSessions(sessions []adapter.Session) []PushItem {
 	out := make([]PushItem, 0, len(sessions))
 	for _, s := range sessions {
 		out = append(out, PushItem{
-			Agent:     s.Agent,
-			SessionID: s.ID,
-			ProjectID: s.ProjectID,
-			LocalPath: s.Path,
+			Agent:        s.Agent,
+			SessionID:    s.ID,
+			ProjectID:    s.ProjectID,
+			LocalPath:    s.Path,
+			RelativePath: s.RelativePath,
 		})
 	}
 	return out

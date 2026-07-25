@@ -4,8 +4,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// stub_commands.go retained for completion only; full commands live in commands_impl.go.
-
 func newCompletionCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:       "completion [bash|zsh|fish|powershell]",

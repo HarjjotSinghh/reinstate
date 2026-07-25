@@ -33,6 +33,9 @@ type Session struct {
 	UpdatedAt int64
 	SizeBytes int64
 	Path      string
+	// RelativePath preserves the vendor-native path below the adapter root.
+	// It always uses forward slashes so snapshots are portable across OSes.
+	RelativePath string
 }
 
 // DiscoverOptions filters discovery.
@@ -57,6 +60,8 @@ type Snapshot struct {
 	Agent     string
 	SessionID string
 	ProjectID string
+	// RelativePath is the validated vendor-native path stored in the envelope.
+	RelativePath string
 }
 
 // RestoreOptions controls restore.
@@ -65,13 +70,20 @@ type RestoreOptions struct {
 	Force           bool
 	CompatibilityOK bool // explicit override for UNTESTED
 	BackupRoot      string
+	// DestinationRelativePath overrides the vendor destination for keep-both.
+	DestinationRelativePath string
+	// ForkSessionID rewrites the structural session identity for keep-both.
+	ForkSessionID string
 }
 
 // RestorePlan describes restore destinations.
 type RestorePlan struct {
-	Session Session
-	Files   []string
-	Refuse  string
+	Session         Session
+	Files           []string
+	Refuse          string
+	BackupRoot      string
+	ArchivePath     string
+	SourceSessionID string
 }
 
 // Exclusion is a path that must never be synced.

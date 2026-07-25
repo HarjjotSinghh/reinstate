@@ -21,7 +21,8 @@ Binary names: `rein` and `reinstate` (identical behavior).
 rein version [--json]
 rein doctor [--json] [--self-test]
 rein setup check [--json]
-rein init --endpoint URL --bucket NAME [--region auto] [--prefix ...]
+rein init [--endpoint URL] [--bucket NAME] [--region auto] [--prefix ...]
+          [--profile-id UUID] [--project ID=/absolute/local/path] [--yes]
 rein list [--agent claude|codex|all] [--json]
 rein status [--json]
 rein diff [--json]
@@ -31,6 +32,18 @@ rein conflicts list|show|resolve ...
 rein completion bash|zsh|fish|powershell
 ```
 
-Non-interactive encryption uses `REINSTATE_PASSPHRASE` (never a CLI flag).
-Storage credentials use `REINSTATE_S3_ACCESS_KEY_ID` / `REINSTATE_S3_SECRET_ACCESS_KEY`.
+Interactive encryption uses a hidden terminal prompt. Non-interactive
+automation must open a secret file/pipe and set `REINSTATE_PASSPHRASE_FD` to
+that descriptor number; `REINSTATE_PASSPHRASE` and secret CLI flags are not
+accepted.
+
+Interactive `init` stores storage credentials in the native OS keyring.
+The explicit non-interactive fallback reads
+`REINSTATE_S3_ACCESS_KEY_ID` / `REINSTATE_S3_SECRET_ACCESS_KEY` without
+persisting them.
 Override home with `REINSTATE_HOME` (absolute path).
+
+Before overwriting an existing target, mutating `pull` and
+`conflicts resolve --keep-remote` operations refuse to restore while the
+selected Claude Code or Codex process is active. Close the agent and retry.
+New-session restores, `--keep-both`, and `pull --dry-run` remain available.

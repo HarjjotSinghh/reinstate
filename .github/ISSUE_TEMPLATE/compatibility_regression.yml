@@ -1,0 +1,91 @@
+name: Compatibility regression
+description: Report a previously working Claude Code or Codex device journey
+title: "compat: "
+labels: ["compatibility", "bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Submit metadata and redacted errors only. Never upload real session files, credentials, passphrases, or transcript content.
+  - type: input
+    id: reinstate_version
+    attributes:
+      label: Reinstate version
+      placeholder: "output of: reinstate version"
+    validations:
+      required: true
+  - type: dropdown
+    id: agent
+    attributes:
+      label: Agent
+      options:
+        - Claude Code
+        - Codex CLI
+    validations:
+      required: true
+  - type: input
+    id: agent_version
+    attributes:
+      label: Exact agent version
+      placeholder: "claude --version or codex --version"
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Source device and OS
+      placeholder: "native Windows 11 24H2 amd64"
+    validations:
+      required: true
+  - type: input
+    id: destination
+    attributes:
+      label: Destination device and OS
+      placeholder: "macOS 15 arm64"
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Windows environment
+      options:
+        - Not Windows
+        - Native Windows
+        - WSL2
+    validations:
+      required: true
+  - type: dropdown
+    id: stage
+    attributes:
+      label: Failing stage
+      options:
+        - Install
+        - Init / credentials
+        - Doctor / compatibility detection
+        - Push
+        - Pull dry-run
+        - Restore
+        - Vendor resume UI
+        - Conflict resolution
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Redacted failure
+      description: Include exit code and redacted error text; do not paste transcripts
+    validations:
+      required: true
+  - type: checkboxes
+    id: redaction
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed credentials, passphrases, private paths, and transcript content
+          required: true

@@ -17,7 +17,7 @@
 
 ## Test plan
 
-- [ ] `make test` passes
+- [ ] `make verify` passes
 - [ ] `make build` succeeds
 - [ ] Added/updated tests for behavior changes
 - [ ] Manual verification steps (describe below)
@@ -30,11 +30,17 @@
 
 - [ ] I have read [CONTRIBUTING.md](../CONTRIBUTING.md)
 - [ ] Docs updated if user-facing
+- [ ] CHANGELOG updated for user-visible behavior
+- [ ] Config/schema migration impact documented, or marked not applicable
+- [ ] Compatibility impact recorded for each affected OS/agent pair
+- [ ] Security impact reviewed (credentials, plaintext, paths, permissions)
+- [ ] New fixtures are synthetic and pass `make fixture-scan`
 - [ ] No secrets, credentials, or real session transcripts committed
 - [ ] Conventional commit title preferred (`feat:`, `fix:`, `docs:`, …)
 
 ## Adapter PRs only
 
-- [ ] Golden fixtures under `testdata/adapters/<name>/`
+- [ ] Synthetic fixtures under `testdata/adapters/<name>/`
 - [ ] Credential paths excluded
-- [ ] Support matrix updated in `docs/adapters.md` and README
+- [ ] Exact tested agent version/layout recorded
+- [ ] Support matrix updated in `docs/adapters.md`, `docs/compatibility.md`, and README

@@ -30,17 +30,27 @@ func Encrypt(r io.Reader, w io.Writer, passphrase string) error {
 
 // Decrypt streams age ciphertext with a passphrase.
 func Decrypt(r io.Reader, w io.Writer, passphrase string) error {
-	if passphrase == "" {
-		return fmt.Errorf("empty passphrase")
-	}
-	identity, err := age.NewScryptIdentity(passphrase)
+	rc, err := DecryptReader(r, passphrase)
 	if err != nil {
 		return err
 	}
-	rc, err := age.Decrypt(r, identity)
-	if err != nil {
-		return fmt.Errorf("decrypt: %w", err)
-	}
 	_, err = io.Copy(w, rc)
 	return err
+}
+
+// DecryptReader authenticates an age stream and returns its plaintext reader.
+// Callers can consume large payloads without buffering the entire plaintext.
+func DecryptReader(r io.Reader, passphrase string) (io.Reader, error) {
+	if passphrase == "" {
+		return nil, fmt.Errorf("empty passphrase")
+	}
+	identity, err := age.NewScryptIdentity(passphrase)
+	if err != nil {
+		return nil, err
+	}
+	rc, err := age.Decrypt(r, identity)
+	if err != nil {
+		return nil, fmt.Errorf("decrypt: %w", err)
+	}
+	return rc, nil
 }

@@ -2,7 +2,9 @@ package cli
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 )
@@ -89,5 +91,36 @@ func TestReinAndReinstateSame(t *testing.T) {
 	_ = json.Unmarshal([]byte(out2), &b)
 	if a["version"] != b["version"] {
 		t.Fatalf("version mismatch %q vs %q", a["version"], b["version"])
+	}
+}
+
+func TestInitDoesNotExposeSecretFlags(t *testing.T) {
+	out, _, code := runCLI(t, "reinstate", "init", "--help")
+	if code != ExitOK {
+		t.Fatalf("exit=%d out=%q", code, out)
+	}
+	for _, forbidden := range []string{"--access-key", "--secret-key", "--passphrase"} {
+		if strings.Contains(out, forbidden) {
+			t.Fatalf("init help exposes secret-bearing flag %q: %s", forbidden, out)
+		}
+	}
+}
+
+func TestRequireAgentInactive(t *testing.T) {
+	if err := requireAgentInactive(context.Background(), func(context.Context, string) (bool, error) {
+		return false, nil
+	}, "claude"); err != nil {
+		t.Fatalf("inactive agent rejected: %v", err)
+	}
+	if err := requireAgentInactive(context.Background(), func(context.Context, string) (bool, error) {
+		return true, nil
+	}, "codex"); err == nil || !strings.Contains(err.Error(), "appears to be running") {
+		t.Fatalf("active agent accepted: %v", err)
+	}
+	probeErr := errors.New("probe failed")
+	if err := requireAgentInactive(context.Background(), func(context.Context, string) (bool, error) {
+		return false, probeErr
+	}, "claude"); !errors.Is(err, probeErr) {
+		t.Fatalf("probe failure was not preserved: %v", err)
 	}
 }

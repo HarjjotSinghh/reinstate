@@ -32,32 +32,33 @@ docs are honest and verified. No claim of end-to-end session resume yet.
 
 | Item | Status |
 | ---- | ------ |
-| Authority docs + ADR + compatibility matrix | 🚧 |
-| CLI routing, exit codes, version JSON | 📋 |
-| Versioned config/state + atomic writes | 📋 |
-| Device detection (macOS / Windows / WSL2) | 📋 |
-| Redacted `doctor` + synthetic self-test | 📋 |
-| Synthetic fixtures + secret scanner | 📋 |
-| Hard CI gates + goreleaser snapshot | 📋 |
-| Checksum-verifying installers | 📋 |
-| Versioned AI-agent setup prompts | 📋 |
+| Authority docs + ADR + compatibility matrix | ✅ |
+| CLI routing, exit codes, version JSON | ✅ |
+| Versioned config/state + atomic writes | ✅ |
+| Device detection (macOS / Windows / WSL2) | ✅ |
+| Redacted `doctor` + sandboxed round-trip self-test | ✅ |
+| Synthetic fixtures + secret scanner | ✅ |
+| Hard CI gates + GoReleaser snapshot | 🚧 |
+| Checksum-verifying installers | 🚧 |
+| Versioned AI-agent setup prompts | ✅ |
 
-## Phase 1 — Claude + Codex sessions (`v0.1.0`) 📋
+## Phase 1 — Claude + Codex sessions (`v0.1.0`) 🚧
 
 **Gate:** a stranger can install, `init`, and resume a cross-OS Claude Code
 session; Codex follows the same path. Encryption on; credentials never synced.
 
 | Item | Status |
 | ---- | ------ |
-| R2/S3-compatible backend + memory test double | 📋 |
-| Credentials / interactive `init` | 📋 |
-| age passphrase envelopes | 📋 |
-| Project identity + path mapping | 📋 |
-| Manifests, push/pull, conflicts | 📋 |
-| Atomic restore + backups + locks | 📋 |
-| Claude Code adapter (detect/export/restore) | 📋 |
-| Codex adapter (detect/export/restore) | 📋 |
-| Complete CLI + human docs + release candidate | 📋 |
+| R2/S3-compatible backend + memory test double | ✅ |
+| OS-keyring credentials / interactive `init` | ✅ |
+| age passphrase envelopes | ✅ |
+| Project identity + path mapping | ✅ |
+| Manifests, push/pull, executable conflicts | ✅ |
+| Atomic restore + backups + locks | ✅ |
+| Claude Code adapter (detect/export/restore) | 🚧 |
+| Codex adapter (detect/export/restore) | 🚧 |
+| Complete CLI + human docs | ✅ |
+| Native Windows, macOS amd64, WSL2 acceptance + release candidate | 🚧 |
 
 ### SemVer progression toward `v0.1.0`
 

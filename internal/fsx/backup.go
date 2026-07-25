@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -13,6 +14,32 @@ func BackupDir(src, destRoot, name string) (string, error) {
 	ts := time.Now().UTC().Format("20060102T150405Z")
 	dest := filepath.Join(destRoot, fmt.Sprintf("%s-%s", ts, name))
 	if err := copyDir(src, dest); err != nil {
+		return "", err
+	}
+	return dest, nil
+}
+
+// BackupFile copies src into a timestamped backup directory while preserving
+// its validated vendor-relative path.
+func BackupFile(src, destRoot, relative string) (string, error) {
+	if destRoot == "" {
+		return "", fmt.Errorf("backup root required")
+	}
+	clean := filepath.Clean(filepath.FromSlash(relative))
+	if clean == "." || clean == ".." || filepath.IsAbs(clean) ||
+		strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("unsafe backup path %q", relative)
+	}
+	ts := time.Now().UTC().Format("20060102T150405.000000000Z")
+	dest := filepath.Join(destRoot, ts, clean)
+	info, err := os.Stat(src)
+	if err != nil {
+		return "", err
+	}
+	if info.IsDir() {
+		return "", fmt.Errorf("backup source must be a file")
+	}
+	if err := copyFile(src, dest, info.Mode()); err != nil {
 		return "", err
 	}
 	return dest, nil

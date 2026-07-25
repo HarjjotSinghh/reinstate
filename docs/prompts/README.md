@@ -14,4 +14,5 @@ Rules common to all prompts:
 - Never read or sync auth files / credential stores
 - Never accept passphrases in chat
 - Install only from a verified GitHub Release (checksums)
-- Finish with `rein doctor --self-test` and a redacted report
+- Continue through init, doctor, dry-run, sync, and post-restore discovery
+- Finish with a redacted report; stopping at “run `rein init`” is incomplete

@@ -19,7 +19,7 @@ skills / environment**, not replaying one model's transcript into another.
 
 ## Is my data sent to Reinstate servers?
 
-**No** for the open-source CLI. You point at **your** R2/S3/WebDAV/etc. A future
+**No** for the open-source CLI. You point at **your** R2/S3-compatible bucket. A future
 optional hosted convenience layer would still be zero-knowledge (ciphertext
 only); it is not required.
 

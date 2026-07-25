@@ -62,13 +62,16 @@ func (m *MemoryStore) Delete(ref string) error {
 // Explicit fallback when keyring is unavailable.
 type EnvStore struct{}
 
+func envCredentials() (string, string) {
+	return os.Getenv("REINSTATE_S3_ACCESS_KEY_ID"), os.Getenv("REINSTATE_S3_SECRET_ACCESS_KEY")
+}
+
 func (EnvStore) Set(ref string, c StorageCredentials) error {
 	return fmt.Errorf("env store is read-only; set REINSTATE_S3_ACCESS_KEY_ID and REINSTATE_S3_SECRET_ACCESS_KEY")
 }
 
 func (EnvStore) Get(ref string) (StorageCredentials, error) {
-	ak := os.Getenv("REINSTATE_S3_ACCESS_KEY_ID")
-	sk := os.Getenv("REINSTATE_S3_SECRET_ACCESS_KEY")
+	ak, sk := envCredentials()
 	if ak == "" || sk == "" {
 		return StorageCredentials{}, fmt.Errorf("env credentials not set")
 	}

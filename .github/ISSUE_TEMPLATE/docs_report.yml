@@ -1,0 +1,39 @@
+name: Documentation report
+description: Report incorrect, missing, or confusing documentation
+title: "docs: "
+labels: ["documentation", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for improving Reinstate's docs. Never include credentials, passphrases, private paths, or transcript content.
+  - type: input
+    id: location
+    attributes:
+      label: Document and section
+      placeholder: "docs/getting-started.md — Device B"
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong or unclear?
+    validations:
+      required: true
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Suggested correction
+      description: Optional wording, example, or link
+  - type: input
+    id: version
+    attributes:
+      label: Reinstate version
+      placeholder: "reinstate version"
+  - type: checkboxes
+    id: redaction
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed credentials, passphrases, private paths, and transcript content
+          required: true

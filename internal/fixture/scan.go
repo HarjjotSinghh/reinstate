@@ -16,10 +16,17 @@ var patterns = []*regexp.Regexp{
 	regexp.MustCompile(`(?i)-----BEGIN (RSA |OPENSSH |EC )?PRIVATE KEY-----`),
 	regexp.MustCompile(`(?i)"(access_key|secret_access_key|password|passphrase|oauth_token)"\s*:\s*"[^"]+"`),
 	regexp.MustCompile(`(?i)Bearer\s+[A-Za-z0-9\-._~+/]{20,}=*`),
+	regexp.MustCompile(`(?i)[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}`),
 }
 
 // AuthFileNames must never appear as real credential content fixtures.
 var AuthFileNames = []string{"auth.json", ".credentials.json", "credentials.json"}
+
+var (
+	unixHomePattern    = regexp.MustCompile(`/(Users|home)/([^/\s"']+)`)
+	windowsHomePattern = regexp.MustCompile(`(?i)[A-Z]:\\+Users\\+([^\\\s"']+)`)
+	githubRepoPattern  = regexp.MustCompile(`(?i)github\.com/([^/\s"']+)/`)
+)
 
 // ScanBytes reports secret-like content.
 func ScanBytes(path string, b []byte) error {
@@ -29,8 +36,27 @@ func ScanBytes(path string, b []byte) error {
 			return fmt.Errorf("%s: matches secret pattern %s", path, re.String())
 		}
 	}
-	// Synthetic fixtures may use /Users/fixture-user; real home paths are not scanned here beyond secret patterns.
+	for _, match := range unixHomePattern.FindAllStringSubmatch(s, -1) {
+		if !syntheticIdentity(match[2]) {
+			return fmt.Errorf("%s: contains a non-synthetic home path", path)
+		}
+	}
+	for _, match := range windowsHomePattern.FindAllStringSubmatch(s, -1) {
+		if !syntheticIdentity(match[1]) {
+			return fmt.Errorf("%s: contains a non-synthetic Windows home path", path)
+		}
+	}
+	for _, match := range githubRepoPattern.FindAllStringSubmatch(s, -1) {
+		if !syntheticIdentity(match[1]) {
+			return fmt.Errorf("%s: contains a non-synthetic repository owner", path)
+		}
+	}
 	return nil
+}
+
+func syntheticIdentity(value string) bool {
+	value = strings.ToLower(value)
+	return value == "fixture-user" || value == "synthetic-user" || value == "example"
 }
 
 // ScanTree walks dir and scans all regular files.
@@ -59,10 +85,7 @@ func ScanTree(root string) error {
 		base := filepath.Base(path)
 		for _, a := range AuthFileNames {
 			if base == a {
-				// allow empty marker files that only say REDACTED
-				if !strings.Contains(string(b), "REDACTED") && len(strings.TrimSpace(string(b))) > 0 {
-					return fmt.Errorf("%s: auth filename fixtures must be empty or REDACTED-only", path)
-				}
+				return fmt.Errorf("%s: auth filenames are not allowed in fixtures", path)
 			}
 		}
 		return ScanBytes(path, b)

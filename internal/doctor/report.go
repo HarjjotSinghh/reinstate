@@ -5,12 +5,15 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
 
+	"github.com/HarjjotSinghh/reinstate/internal/adapter"
+	"github.com/HarjjotSinghh/reinstate/internal/adapter/claude"
+	"github.com/HarjjotSinghh/reinstate/internal/adapter/codex"
 	"github.com/HarjjotSinghh/reinstate/internal/config"
+	"github.com/HarjjotSinghh/reinstate/internal/credentials"
 	"github.com/HarjjotSinghh/reinstate/internal/device"
 	"github.com/HarjjotSinghh/reinstate/internal/exitcode"
 	"github.com/HarjjotSinghh/reinstate/internal/version"
@@ -85,26 +88,50 @@ func Run(ctx context.Context, opts Options) (*Report, error) {
 		rep.Checks = append(rep.Checks, Check{Name: "device", Status: "ok", Message: info.PlatformID})
 	}
 
-	// Agent roots (existence only — no session reads)
-	for _, agent := range []string{"claude", "codex"} {
-		root := probeAgentRoot(agent)
-		if root == "" {
-			rep.Agents[agent] = string(compatNotInstalled)
+	// Adapter compatibility probes inspect only roots/layout markers.
+	adapters := []adapter.Adapter{&claude.Adapter{}, &codex.Adapter{}}
+	for _, selected := range adapters {
+		install, compatibility, err := selected.Detect(ctx)
+		name := selected.Name()
+		if err != nil {
+			rep.Agents[name] = string(adapter.CompatibilityUntested)
 			rep.Checks = append(rep.Checks, Check{
-				Name: "agent." + agent, Status: "skip", Message: "not installed",
+				Name: "agent." + name, Status: "warn", Message: Redact(err.Error()),
 			})
 			continue
 		}
-		rep.Agents[agent] = "PRESENT"
-		rep.Checks = append(rep.Checks, Check{
-			Name: "agent." + agent, Status: "ok", Message: "root present (path redacted)",
-		})
+		rep.Agents[name] = string(compatibility)
+		switch compatibility {
+		case adapter.CompatibilitySupported:
+			rep.Checks = append(rep.Checks, Check{
+				Name: "agent." + name, Status: "ok",
+				Message: fmt.Sprintf("%s (%s)", compatibility, install.Version),
+			})
+		case adapter.CompatibilityNotInstalled:
+			rep.Checks = append(rep.Checks, Check{
+				Name: "agent." + name, Status: "skip", Message: "not installed",
+			})
+		case adapter.CompatibilityUntested:
+			rep.Checks = append(rep.Checks, Check{
+				Name: "agent." + name, Status: "warn", Message: "layout/version untested; writes blocked",
+			})
+		default:
+			rep.Checks = append(rep.Checks, Check{
+				Name: "agent." + name, Status: "fail", Message: "unsupported layout/version",
+				Code: exitcode.Compatibility,
+			})
+		}
 	}
 
-	// Keyring availability (informational; no secrets)
-	rep.Checks = append(rep.Checks, Check{
-		Name: "keyring", Status: "ok", Message: "keyring abstraction available (not probed for secrets)",
-	})
+	if err := credentials.NewKeyringStore().Probe(); err != nil {
+		rep.Checks = append(rep.Checks, Check{
+			Name: "keyring", Status: "warn", Message: Redact(err.Error()),
+		})
+	} else {
+		rep.Checks = append(rep.Checks, Check{
+			Name: "keyring", Status: "ok", Message: "OS keyring provider reachable",
+		})
+	}
 
 	if opts.SelfTest {
 		if err := SelfTest(home); err != nil {
@@ -120,34 +147,6 @@ func Run(ctx context.Context, opts Options) (*Report, error) {
 
 	rep.Summary = summarize(rep)
 	return rep, nil
-}
-
-const compatNotInstalled = "NOT_INSTALLED"
-
-func probeAgentRoot(agent string) string {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return ""
-	}
-	var candidates []string
-	switch agent {
-	case "claude":
-		candidates = []string{
-			filepath.Join(home, ".claude"),
-			filepath.Join(home, ".config", "claude"),
-		}
-	case "codex":
-		candidates = []string{
-			filepath.Join(home, ".codex"),
-			filepath.Join(home, ".config", "codex"),
-		}
-	}
-	for _, c := range candidates {
-		if st, err := os.Stat(c); err == nil && st.IsDir() {
-			return c
-		}
-	}
-	return ""
 }
 
 func summarize(rep *Report) string {

@@ -12,7 +12,7 @@ printed to the terminal. This document is the contract we design against.
 | Network eavesdropper | TLS to backend + encrypted payloads |
 | Accidental sync of API keys / OAuth | Hard denylist of credential paths (default on) |
 | Overwriting good local history | Timestamped backups + conflict forks |
-| Weak passphrase | Documented guidance; Argon2 KDF; user responsibility |
+| Weak passphrase | age scrypt recipient + long-passphrase guidance; user responsibility |
 | Compromised local machine | **Out of scope** (OS-level compromise) |
 | Malicious release artifact | Checksums / supply-chain process (see SECURITY.md) |
 
@@ -34,16 +34,19 @@ printed to the terminal. This document is the contract we design against.
 
 | Property | Default |
 | -------- | ------- |
-| Algorithm | age (X25519 / scrypt or Argon2-derived as configured) |
+| Algorithm | age passphrase encryption (`scrypt` recipient) |
 | Key UX | Passphrase — same phrase on every device derives the same key |
 | At rest (remote) | Ciphertext only |
-| At rest (local keys) | Restricted file permissions (`0600`) |
+| At rest (local secrets) | Passphrase is not stored; storage keys use the OS keyring |
 | In transit | HTTPS/TLS to object storage |
 
 ### Passphrase guidance
 
 - Prefer a long passphrase (diceware / password manager)
 - Never commit passphrases to git or shell history
+- Interactive commands read it from a hidden terminal prompt
+- Automation must use `REINSTATE_PASSPHRASE_FD` pointing at a pre-opened
+  descriptor; ordinary environment variables and CLI flags are rejected
 - Losing the passphrase = losing ability to decrypt remote data (by design)
 
 ## What is never synced (defaults)
@@ -56,7 +59,7 @@ printed to the terminal. This document is the contract we design against.
 | Plugin `node_modules`, `.venv` | Huge, non-portable, regenerable |
 | User-configured globs | Local policy |
 
-Overrides that *enable* syncing credentials must be explicit and warn loudly.
+Credential and authentication files cannot be enabled for sync in Phase 1.
 
 ## Secrets inside transcripts
 
@@ -64,7 +67,7 @@ Agents sometimes echo `.env` values or tokens into session logs. Reinstate:
 
 1. Encrypts everything it does sync (reduces blast radius of cloud leaks)
 2. Offers opt-in redaction patterns (Phase 2+) for high-entropy strings
-3. Encourages `--scope sessions` awareness — you choose what leaves the machine
+3. Syncs only explicitly discovered Claude Code/Codex session artifacts in Phase 1
 
 **You remain responsible** for not pasting production secrets into agent chats.
 

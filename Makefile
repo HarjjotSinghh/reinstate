@@ -6,6 +6,11 @@ BIN_DIR := bin
 BINARY  := $(BIN_DIR)/reinstate
 ALIAS   := $(BIN_DIR)/rein
 CMD     := ./cmd/reinstate
+GO      ?= go
+GOTOOLCHAIN ?= go1.25.12
+GOENV   := GOTOOLCHAIN=$(GOTOOLCHAIN)
+GOLANGCI_LINT_VERSION := v2.1.6
+GOVULNCHECK_VERSION   := v1.6.0
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo 0.0.0-dev)
 COMMIT  ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 DATE    ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -22,25 +27,25 @@ help: ## Show targets
 	@grep -E '^[a-zA-Z_-]+:.*?##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-16s %s\n", $$1, $$2}'
 
 deps: ## Download Go modules
-	go mod download
-	go mod tidy
+	$(GOENV) $(GO) mod download
+	$(GOENV) $(GO) mod tidy
 
 build: ## Build reinstate binary into ./bin (+ rein symlink)
 	@mkdir -p $(BIN_DIR)
-	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o $(BINARY) $(CMD)
+	CGO_ENABLED=0 $(GOENV) $(GO) build -ldflags "$(LDFLAGS)" -o $(BINARY) $(CMD)
 	@ln -sfn reinstate $(ALIAS)
 
 run: build ## Build and print version
 	$(BINARY) version
 
 test: ## Run unit tests
-	go test ./... -count=1
+	$(GOENV) $(GO) test ./... -count=1
 
 test-race: ## Run tests with race detector
-	go test ./... -race -count=1
+	$(GOENV) $(GO) test ./... -race -count=1 -timeout=20m
 
 vet: ## go vet
-	go vet ./...
+	$(GOENV) $(GO) vet ./...
 
 fmt: ## gofmt write
 	gofmt -w .
@@ -48,22 +53,19 @@ fmt: ## gofmt write
 fmt-check: ## Fail if gofmt needed
 	@test -z "$$(gofmt -l . | tee /dev/stderr)"
 
-lint: ## golangci-lint (required when installed)
-	@command -v golangci-lint >/dev/null 2>&1 || { echo "golangci-lint required"; exit 1; }
-	golangci-lint run --timeout=5m ./...
+lint: ## Run the pinned golangci-lint release
+	$(GOENV) $(GO) run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION) run --timeout=5m ./...
 
 docs-check: ## Documentation consistency tests
-	go test ./internal/doctest -count=1
+	./scripts/check-docs.sh
 
 fixture-scan: ## Scan fixtures for secrets
-	go test ./internal/fixture -count=1
+	$(GOENV) $(GO) test ./internal/fixture -count=1
 
-vuln: ## govulncheck when installed
-	@if command -v govulncheck >/dev/null 2>&1; then govulncheck ./...; else echo "govulncheck not installed; skip"; fi
+vuln: ## Run the pinned govulncheck release
+	$(GOENV) $(GO) run golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION) ./...
 
-verify: fmt-check vet test docs-check fixture-scan ## Full local gate (lint/vuln soft if tools missing)
-	@if command -v golangci-lint >/dev/null 2>&1; then $(MAKE) lint; else echo "lint: golangci-lint not installed (CI enforces)"; fi
-	@$(MAKE) vuln
+verify: fmt-check vet lint test test-race vuln docs-check fixture-scan ## Full local merge gate
 	@$(MAKE) build
 	@echo "verify ok"
 

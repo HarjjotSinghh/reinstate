@@ -7,7 +7,7 @@ configs across devices with E2E encryption and BYO storage.
 
 - **Author:** Harjot Singh Rana ([@HarjjotSinghh](https://github.com/HarjjotSinghh))
 - **License:** Apache-2.0
-- **Language:** Go 1.22+
+- **Toolchain:** Go 1.25.12+ (1.24 is end-of-life and not a release target)
 - **Module:** `github.com/HarjjotSinghh/reinstate`
 
 ## Non-negotiables
@@ -28,7 +28,7 @@ internal/pathmap/    Portable path rewriting
 internal/sync/       Push/pull/manifest
 internal/version/    Build version
 docs/                Human documentation
-testdata/            Golden fixtures
+testdata/            Deterministic synthetic fixtures
 references/          Product research (not runtime code)
 ```
 
@@ -38,6 +38,7 @@ references/          Product research (not runtime code)
 make build    # ./bin/reinstate
 make test
 make vet
+make verify
 ```
 
 ## Docs to update when you change UX
@@ -50,8 +51,8 @@ make vet
 
 Read `references/` for research background. Positioning:
 
-> Universal, vendor-neutral, encrypted sync of sessions + MCP/skills/config —
-> not Dropbox for a single agent folder.
+> Universal, vendor-neutral encrypted sync. Phase 1 ships same-vendor Claude
+> Code and Codex sessions only; MCP, skills, and config are later phases.
 
 ## Style
 

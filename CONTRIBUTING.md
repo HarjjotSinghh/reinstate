@@ -10,6 +10,7 @@ This guide covers how to report bugs, propose features, and submit code.
 - [Code of Conduct](#code-of-conduct)
 - [Ways to contribute](#ways-to-contribute)
 - [Development setup](#development-setup)
+- [Contributor guides](#contributor-guides)
 - [Pull request process](#pull-request-process)
 - [Adapter contributions](#adapter-contributions)
 - [Coding standards](#coding-standards)
@@ -39,9 +40,8 @@ and [`help wanted`](https://github.com/HarjjotSinghh/reinstate/labels/help%20wan
 
 ### Prerequisites
 
-- Go **1.22+** (see `go.mod`)
+- Go **1.25.12+** (the pinned toolchain is declared in `go.mod`)
 - `make`
-- Optional: Node.js 20+ (for npm packaging / scripts)
 
 ### Clone and build
 
@@ -58,15 +58,22 @@ make build
 ```bash
 make test
 make test-race
-make lint   # if golangci-lint is installed
+make lint
+make verify
 ```
 
 ### Local smoke test
 
 ```bash
-# Dry-run against a fixture tree (no real credentials)
-make fixture-test
+# Scan synthetic fixtures for accidental secrets
+make fixture-scan
 ```
+
+## Contributor guides
+
+- [Development workflow](docs/contributing/development.md)
+- [Documentation workflow](docs/contributing/documentation.md)
+- [Release process](docs/contributing/release-process.md)
 
 ## Pull request process
 
@@ -78,7 +85,7 @@ make fixture-test
 3. Make focused commits (one logical change per commit when possible).
 4. Add or update tests for behavioral changes.
 5. Update docs if you change CLI flags, config, or adapters.
-6. Ensure `make test` and `make lint` pass.
+6. Ensure `make verify` passes.
 7. Open a PR against `main` using the PR template.
 8. Address review feedback. Maintainers aim for a first response within
    **5 business days**.
@@ -86,7 +93,10 @@ make fixture-test
 ### PR checklist (summary)
 
 - [ ] Tests added/updated
+- [ ] `make verify` passes
 - [ ] Docs updated if user-facing
+- [ ] CHANGELOG updated for user-visible behavior
+- [ ] Config/schema migration impact documented
 - [ ] No secrets or real session files committed
 - [ ] Conventional commit title preferred
 - [ ] Linked issue (`Closes #123`) when applicable
@@ -94,14 +104,17 @@ make fixture-test
 ## Adapter contributions
 
 New agent adapters are a first-class contribution path. See
-[docs/adapters.md](docs/adapters.md) for the adapter interface and golden-fixture
-requirements.
+[docs/adapters.md](docs/adapters.md) for the adapter interface and synthetic-fixture
+requirements, then read
+[Contributing an adapter](docs/adapters/contributing-an-adapter.md) and the
+[fixture policy](docs/contributing/testing.md).
 
 Minimum for a new adapter PR:
 
 1. Implementation under `internal/adapter/<name>/`
-2. Golden fixtures under `testdata/adapters/<name>/`
-3. Docs entry in `docs/adapters.md` and the README support matrix
+2. Synthetic fixtures under `testdata/adapters/<name>/`
+3. Docs entry in `docs/adapters.md`, `docs/compatibility.md`, and the README
+   support matrix
 4. Defensive parsing (unknown line types must not crash)
 5. Explicit **exclude list** for credential / cache paths
 
@@ -134,6 +147,9 @@ Do **not** open public issues for vulnerabilities. Follow [SECURITY.md](SECURITY
 
 By contributing, you agree that your contributions will be licensed under the
 [Apache License 2.0](LICENSE).
+
+No CLA is required. Do not add `Signed-off-by` lines unless the repository
+explicitly adopts DCO in a future governance change.
 
 ---
 

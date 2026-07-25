@@ -15,7 +15,21 @@ Default home:
 | `device.json` | JSON | optional device metadata |
 | `cache/`, `backups/`, `conflicts/`, `locks/`, `logs/` | dirs | runtime |
 
-Secrets are **never** valid config fields. Use credential refs + env/keyring.
+Secrets are **never** valid config fields. Interactive setup stores S3/R2
+credentials in macOS Keychain, Windows Credential Manager, or the supported OS
+keyring provider. Non-interactive setup may use the explicit
+`REINSTATE_S3_ACCESS_KEY_ID` and `REINSTATE_S3_SECRET_ACCESS_KEY` provider; the
+values are not written to disk.
+
+Every device in one sync set must use the same `profile_id`, bucket, and prefix.
+Copy the non-secret profile UUID printed by the first device and pass it as
+`rein init --profile-id UUID` on later devices.
+
+Project paths are portable only when each device defines the same canonical ID:
+
+```bash
+rein init --project github.com/acme/app=/absolute/local/path
+```
 
 ## Encryption
 

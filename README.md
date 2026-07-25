@@ -4,7 +4,7 @@
 
 # Reinstate
 
-### The sync layer for your entire AI development environment
+### Encrypted cross-device session sync for AI coding agents
 
 **Encrypted session sync** for Claude Code and Codex — across every machine you own. MCP/skills follow after `v0.1.0`.
 Encrypted so only you can read it.
@@ -57,7 +57,7 @@ Git has the code. The agent does **not** have the conversation — the rejected 
 ```mermaid
 flowchart LR
   subgraph Desktop["🖥️ Desktop (Windows)"]
-    D["20 sessions<br/>MCP + skills A<br/>full context"]
+    D["20 sessions<br/>full context"]
   end
   subgraph Laptop["💻 Laptop (macOS)"]
     L["empty history<br/>MCP + skills B<br/>start from zero"]
@@ -72,10 +72,10 @@ flowchart LR
 ```mermaid
 flowchart LR
   subgraph Desktop["🖥️ Desktop"]
-    A["sessions + config"]
+    A["Claude/Codex sessions"]
   end
   subgraph Cloud["☁️ Encrypted cloud"]
-    B["your R2 / S3 / WebDAV<br/>ciphertext only"]
+    B["your R2 / S3-compatible bucket<br/>ciphertext only"]
   end
   subgraph Laptop["💻 Laptop"]
     C["resume · same IDs"]
@@ -97,7 +97,7 @@ flowchart LR
 | **Offline-capable origin** | Works when the other machine is **off** (stored sync, not a live relay) |
 | **Path remapping** | Windows ↔ macOS project paths rewritten so `--resume` actually finds sessions |
 | **Zero-knowledge** | Client-side encryption; bring-your-own storage |
-| **Config + sessions** | MCP servers, skills, agents, settings — one environment everywhere |
+| **Sessions first** | Phase 1 deliberately excludes credentials, MCP, skills, and settings |
 | **Open source** | Apache-2.0 · auditable · patent grant · no vendor lock-in |
 
 Native vendor sync will always own *one* ecosystem. DIY Syncthing/Drive hacks break on absolute paths and credential sprawl. Reinstate targets the empty quadrant: **universal × cross-device × encrypted × resume-aware**.
@@ -113,9 +113,8 @@ Native vendor sync will always own *one* ecosystem. DIY Syncthing/Drive hacks br
 - **Cross-device session sync** — continue the same agent thread on another machine
 - **Multi-agent adapters** — Claude Code, Codex, with more agents planned after Phase 1 (phased)
 - **End-to-end encryption** — [age](https://github.com/FiloSottile/age), passphrase-derived keys
-- **Bring-your-own storage** — Cloudflare R2, AWS S3, GCS, S3-compatible, WebDAV
+- **Bring-your-own storage** — Cloudflare R2, AWS S3, and S3-compatible storage
 - **OS-aware path remapping** — the hard problem treated as the product
-- **Selective scopes** — `sessions` | `config` | `all`
 - **Safe by default** — credential denylist, atomic restore, conflict forks, local backups
 - **Simple CLI** — `init` · `push` · `pull` · `status` · `diff` · `conflicts`
 
@@ -136,22 +135,23 @@ make build
 ./bin/reinstate version
 
 # Go install (when module is published)
-go install github.com/HarjjotSinghh/reinstate/cmd/reinstate@latest
+go install github.com/HarjjotSinghh/reinstate/cmd/reinstate@vX.Y.Z
 ```
 
 ### Device A
 
 ```bash
-reinstate init          # backend + passphrase + path map
-reinstate push          # encrypt & upload
+reinstate init --project github.com/acme/app=/absolute/path/to/app
+reinstate push --all    # hidden passphrase prompt, encrypt, upload
 ```
 
 ### Device B
 
 ```bash
-reinstate init          # SAME backend + SAME passphrase
-reinstate pull --dry-run
-reinstate pull
+reinstate init --profile-id <DEVICE_A_PROFILE_ID> \
+  --project github.com/acme/app=/different/local/path
+reinstate pull --all --dry-run
+reinstate pull --all
 claude --resume         # or: codex resume
 ```
 
@@ -163,10 +163,10 @@ Full walkthrough: **[docs/getting-started.md](docs/getting-started.md)**
 
 | Agent | Sessions | Config / MCP | Status |
 | ----- | :------: | :----------: | ------ |
-| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | ✅ | ✅ | Priority (v0.1) |
-| [OpenAI Codex CLI](https://github.com/openai/codex) | ✅ | ✅ | Priority (v0.1) |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | 📋 | 📋 | Phase 1 |
-| [OpenCode](https://opencode.ai) | 📋 | 📋 | Phase 1 |
+| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | ✅ | 📋 | Phase 1 |
+| [OpenAI Codex CLI](https://github.com/openai/codex) | ✅ | 📋 | Phase 1 |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | 📋 | 📋 | Later phase |
+| [OpenCode](https://opencode.ai) | 📋 | 📋 | Later phase |
 | [Grok Build](https://x.ai) | 📋 | 📋 | Phase 2 |
 
 Details: **[docs/adapters.md](docs/adapters.md)**
@@ -189,7 +189,7 @@ flowchart TB
     EN[Encrypt · age]
     SY[Sync engine · manifest]
   end
-  BK[(Your bucket<br/>R2 / S3 / WebDAV)]
+  BK[(Your bucket<br/>R2 / S3-compatible)]
   Agents --> AD --> NM --> EN --> SY
   SY <-->|ciphertext only| BK
   SY -->|pull · decrypt · remap · atomic restore| Agents

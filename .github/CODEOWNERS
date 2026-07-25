@@ -3,7 +3,16 @@
 
 # Critical paths
 /.github/                 @HarjjotSinghh
+/.goreleaser.yml          @HarjjotSinghh
+/RELEASING.md             @HarjjotSinghh
 /SECURITY.md              @HarjjotSinghh
 /LICENSE                  @HarjjotSinghh
+/scripts/install.sh       @HarjjotSinghh
+/scripts/install.ps1      @HarjjotSinghh
+/docs/compatibility.md    @HarjjotSinghh
+/docs/prompts/            @HarjjotSinghh
 /docs/security-model.md   @HarjjotSinghh
+/internal/adapter/        @HarjjotSinghh
 /internal/crypto/         @HarjjotSinghh
+/internal/credentials/    @HarjjotSinghh
+/internal/sync/           @HarjjotSinghh

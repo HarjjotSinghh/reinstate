@@ -1,0 +1,2 @@
+{"type":"session_meta","payload":{"id":"rollout-syn-001","cwd":"/home/fixture-user/code/demo"}}
+{"type":"message","role":"user","content":"Synthetic Codex WSL2 fixture request"}

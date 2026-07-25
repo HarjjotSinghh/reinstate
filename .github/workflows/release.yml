@@ -8,6 +8,7 @@ on:
 permissions:
   contents: write
   id-token: write
+  attestations: write
 
 jobs:
   release:
@@ -15,12 +16,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
 
       - name: Set up Go
-        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version: "1.25.12"
           cache: true
@@ -32,14 +33,49 @@ jobs:
           echo "tag=$TAG"
           echo "$TAG" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$' >/dev/null
 
+      - name: Validate signed tag, main ancestry, and changelog
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          git verify-tag "$TAG"
+          TAG_COMMIT="$(git rev-list -n 1 "$TAG")"
+          test "$TAG_COMMIT" = "$(git rev-parse HEAD)"
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$TAG_COMMIT" origin/main
+          grep -F "## [$VERSION]" CHANGELOG.md >/dev/null
+          git diff --exit-code
+
       - name: Run tests
         run: go test ./... -count=1
 
+      - name: Install Syft
+        uses: anchore/sbom-action/download-syft@a930d0ac434e3182448fe678398ba5713717112a # v0.21.0
+
       - name: GoReleaser
-        uses: goreleaser/goreleaser-action@286f3b13b1b49da4ac219696163fb8c1c93e1200 # v6.0.0
+        uses: goreleaser/goreleaser-action@1a80836c5c9d9e5755a25cb59ec6f45a3b5f41a8 # v7.2.1
         with:
           distribution: goreleaser
-          version: "~> v2"
+          version: "v2.17.0"
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate release artifacts
+        run: ./scripts/check-release-artifacts.sh dist
+
+      - name: Test POSIX installer contract
+        run: ./scripts/test-install.sh dist
+
+      - name: Test PowerShell release verification
+        shell: pwsh
+        run: ./scripts/test-install.ps1 -DistDir dist
+
+      - name: Attest release artifacts
+        uses: actions/attest@c32b4b8b198b65d0bd9d63490e847ff7b53989d4 # v4.0.0
+        with:
+          subject-path: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/*.sbom.json
+            dist/checksums.txt

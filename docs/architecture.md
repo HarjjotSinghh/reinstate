@@ -23,7 +23,7 @@ protocols.
 └──────────────────────┬───────────────────────────┘
                        ▼
 ┌──────────────────────────────────────────────────┐
-│  Encryption (age / Argon2 passphrase KDF)         │
+│  Encryption (age / scrypt passphrase recipient)   │
 │  client-side only — remote never sees plaintext   │
 └──────────────────────┬───────────────────────────┘
                        ▼
@@ -34,7 +34,7 @@ protocols.
 └──────────────────────┬───────────────────────────┘
                        ▼
 ┌──────────────────────────────────────────────────┐
-│  Backends: R2 · S3 · GCS · WebDAV · Gist · ...    │
+│  Backends: R2 · S3-compatible (Phase 1)           │
 └──────────────────────────────────────────────────┘
 ```
 
@@ -141,7 +141,7 @@ internal/
   crypto/               # age encryption
   pathmap/              # portable path rewriting
   sync/                 # manifest, push/pull, conflicts
-  backend/              # R2/S3/WebDAV/...
+  backend/              # R2/S3-compatible
 docs/                   # human docs
-testdata/               # golden fixtures (per adapter)
+testdata/               # deterministic synthetic fixtures (per adapter/OS)
 ```

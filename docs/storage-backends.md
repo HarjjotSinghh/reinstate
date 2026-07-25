@@ -14,7 +14,8 @@ prefix = "profiles/<opaque-profile-id>"
 credential_ref = "reinstate/<profile-id>/s3"
 ```
 
-Credentials via environment:
+Interactive `rein init` stores credentials in the native OS keyring. For
+deliberate non-interactive automation only, use the environment provider:
 
 ```bash
 export REINSTATE_S3_ACCESS_KEY_ID=...

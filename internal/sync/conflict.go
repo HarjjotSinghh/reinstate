@@ -15,6 +15,7 @@ type Conflict struct {
 	ID             string `json:"id"`
 	Agent          string `json:"agent"`
 	SessionID      string `json:"session_id"`
+	ProjectID      string `json:"project_id"`
 	LocalRevision  string `json:"local_revision"`
 	RemoteRevision string `json:"remote_revision"`
 	RemoteSnapshot string `json:"remote_snapshot"`
@@ -77,18 +78,43 @@ func ListConflicts(home string) ([]Conflict, error) {
 	return out, nil
 }
 
-// Resolve removes the conflict record after applying strategy bookkeeping.
-// Actual file restore is performed by the caller using pull/backup helpers.
-func Resolve(home string, id string, how Resolution) error {
+// GetConflict loads one conflict record by ID.
+func GetConflict(home, id string) (Conflict, error) {
+	path := filepath.Join(home, "conflicts", id+".json")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return Conflict{}, err
+	}
+	var conflict Conflict
+	if err := json.Unmarshal(raw, &conflict); err != nil {
+		return Conflict{}, err
+	}
+	if conflict.ID != id {
+		return Conflict{}, fmt.Errorf("conflict identity mismatch")
+	}
+	return conflict, nil
+}
+
+// Resolve runs the concrete resolution before recording the audit result and
+// removing the conflict. Any failure preserves the original conflict record.
+func Resolve(home string, id string, how Resolution, apply func(Conflict, Resolution) error) error {
 	if how != KeepLocal && how != KeepRemote && how != KeepBoth {
 		return fmt.Errorf("invalid resolution")
 	}
 	path := filepath.Join(home, "conflicts", id+".json")
-	if _, err := os.Stat(path); err != nil {
+	conflict, err := GetConflict(home, id)
+	if err != nil {
 		return err
 	}
-	// keep an audit trail
+	if apply == nil {
+		return fmt.Errorf("resolution executor required")
+	}
+	if err := apply(conflict, how); err != nil {
+		return err
+	}
 	audit := filepath.Join(home, "conflicts", id+"."+string(how)+".resolved")
-	_ = fsx.WriteFileAtomic(audit, []byte(time.Now().UTC().Format(time.RFC3339)+"\n"), 0o600)
+	if err := fsx.WriteFileAtomic(audit, []byte(time.Now().UTC().Format(time.RFC3339)+"\n"), 0o600); err != nil {
+		return err
+	}
 	return os.Remove(path)
 }

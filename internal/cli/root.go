@@ -7,7 +7,12 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
 )
+
+// AgentProcessChecker reports whether the selected coding agent is active.
+type AgentProcessChecker func(context.Context, string) (bool, error)
 
 // Options configure root command construction.
 type Options struct {
@@ -16,8 +21,11 @@ type Options struct {
 	// Stdout/Stderr override streams for tests.
 	Stdout io.Writer
 	Stderr io.Writer
+	Stdin  io.Reader
 	// Args overrides os.Args[1:] when non-nil.
 	Args []string
+	// AgentProcessChecker overrides process detection in deterministic tests.
+	AgentProcessChecker AgentProcessChecker
 }
 
 // Execute builds and runs the root command, returning a process exit code.
@@ -61,6 +69,10 @@ func NewRoot(opts Options) *cobra.Command {
 	if name == "" {
 		name = "reinstate"
 	}
+	processChecker := opts.AgentProcessChecker
+	if processChecker == nil {
+		processChecker = processcheck.AgentActive
+	}
 	var jsonGlobal bool
 	root := &cobra.Command{
 		Use:           name,
@@ -79,6 +91,9 @@ func NewRoot(opts Options) *cobra.Command {
 	}
 	if opts.Stderr != nil {
 		root.SetErr(opts.Stderr)
+	}
+	if opts.Stdin != nil {
+		root.SetIn(opts.Stdin)
 	}
 	root.PersistentFlags().BoolVar(&jsonGlobal, "json", false, "prefer JSON output where supported")
 	root.SetHelpCommand(&cobra.Command{
@@ -104,8 +119,8 @@ func NewRoot(opts Options) *cobra.Command {
 		newStatusCmd(),
 		newDiffCmd(),
 		newPushCmd(),
-		newPullCmd(),
-		newConflictsCmd(),
+		newPullCmd(processChecker),
+		newConflictsCmd(processChecker),
 		newCompletionCmd(),
 	)
 	// Map missing-command and usage to ExitError for consistent codes.
