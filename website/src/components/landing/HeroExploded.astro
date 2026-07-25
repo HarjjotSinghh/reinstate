@@ -15,22 +15,23 @@ const desk = {
 const monitor = box(0, 14, 10, 18, 118, 124);
 const monitorFoot = box(-4, 46, 0, 30, 54, 10);
 const tower = box(78, 36, 0, 176, 126, 42);
-/* exploded layers: one shared vertical axis, even gaps → intentional, not unstable.
+const underdesk = box(240, 96, -132, 56, 56, 40);
+/* lifting apart, but still ONE stack: small even gaps, one shared axis.
    sessions (brand green) on top, settings (paper) at the bottom */
 const streams = [
   { key: 'sessions', tone: 'a' },
   { key: 'mcp', tone: 'b' },
   { key: 'skills', tone: 'c' },
   { key: 'settings', tone: 'd' },
-].map((s, i) => ({ ...s, g: box(84, 44, 54 + (3 - i) * 62, 160, 108, 15) }));
+].map((s, i) => ({ ...s, g: box(84, 44, 54 + (3 - i) * 26, 160, 108, 15) }));
 const mug = box(252, 152, 0, 30, 30, 34);
 const board = box(96, 176, 0, 150, 40, 9);
 
-/* ---- act 2 · the sealed object ---- */
-const crateBig = box(0, 0, -96, 148, 148, 96);
-const crateSmall = box(26, 26, 0, 96, 96, 58);
-/* seated on the small crate (top z=58), not floating */
-const seal = box(14, 14, 58, 120, 120, 120);
+/* ---- act 2 · the checkpoint on its nightstand ---- */
+const plinth = box(-6, -6, -106, 160, 160, 10);
+const cabinet = box(0, 0, -96, 148, 148, 96);
+/* seated on the cabinet top (z=0), not floating */
+const seal = box(14, 14, 0, 120, 120, 120);
 
 /* ---- act 3 · the couch table ---- */
 const table = {
@@ -88,15 +89,15 @@ const S = 1.02;
 const at = (gx: number, gy: number, p: [number, number]) => [gx + p[0] * S, gy + p[1] * S] as const;
 
 /* arrow anchors, computed from the geometry so they land exactly on the art */
-const pushStart = at(392, 452, P(244, 98, 247.5)); // top layer, right face center
-const pushEnd = at(866, 452, P(30, 74, 178)); // into the checkpoint's top face
-const pullStart = at(866, 452, P(126, 44, 178)); // out of the top face
+const pushStart = at(392, 452, P(244, 98, 139.5)); // top layer, right face center
+const pushEnd = at(866, 452, P(30, 74, 120)); // into the checkpoint's top face
+const pullStart = at(866, 452, P(126, 44, 120)); // out of the top face
 const pullEnd = at(1176, 452, P(52, 60, 78)); // onto the restored stack's top face
 
 /* contact shadows: under each object's projected footprint center */
 const shadows = [
   { cx: 452, cy: 720, rx: 215, ry: 12 }, // desk
-  { cx: 866, cy: 625, rx: 112, ry: 10 }, // pedestal
+  { cx: 866, cy: 636, rx: 112, ry: 10 }, // nightstand
   { cx: 1203, cy: 695, rx: 178, ry: 11 }, // table
   { cx: 140, cy: 710, rx: 64, ry: 9 }, // plant
 ];
@@ -148,11 +149,12 @@ const shadows = [
           <rect x="118" y="44" width="288" height="212" rx="6" fill="var(--sv-frame)" stroke={SK} stroke-width="3" />
           <rect x="126" y="52" width="272" height="196" rx="4" fill="var(--sv-night)" />
           <g clip-path="url(#pane)" class="stars" fill="var(--sv-star)">
+            <circle cx="340" cy="88" r="9" opacity="0.9" />
             <circle cx="172" cy="94" r="2.6" />
             <circle cx="248" cy="72" r="2" />
             <circle cx="316" cy="112" r="2.4" />
             <circle cx="204" cy="150" r="1.8" />
-            <circle cx="360" cy="80" r="2" />
+            <circle cx="360" cy="170" r="2" />
             <circle cx="286" cy="176" r="2.2" />
             <g fill="var(--sv-city)">
               <rect x="134" y="196" width="34" height="52" />
@@ -168,6 +170,13 @@ const shadows = [
           <rect x="104" y="256" width="316" height="14" rx="3" fill="var(--sv-frame)" stroke={SK} stroke-width="3" />
         </g>
 
+        {/* pendant lamp: a ceiling anchor, spotlighting the checkpoint */}
+        <g class="lamp">
+          <line x1="866" y1="0" x2="866" y2="98" stroke={SK} stroke-width="2.5" />
+          <polygon points="840,138 892,138 878,100 854,100" fill="var(--sv-dev-2)" stroke={SK} stroke-width="3" stroke-linejoin="round" />
+          <circle cx="866" cy="142" r="5" fill="var(--sv-star)" />
+        </g>
+
         {/* poster: the brand frame, actually legible now */}
         <g class="poster">
           <rect x="1088" y="56" width="196" height="150" rx="5" fill="var(--sv-frame)" stroke={SK} stroke-width="3" />
@@ -180,6 +189,9 @@ const shadows = [
           <text class="pbrand" x="1186" y="176" text-anchor="middle" fill="#e9efe3">reinstate</text>
         </g>
 
+        {/* lamplight pool */}
+        <ellipse cx="866" cy="430" rx="190" ry="130" fill={PRIM} opacity="0.05" />
+
         {/* ---------- contact shadows ---------- */}
         <g class="shadows" fill={INK}>
           {shadows.map((s) => (
@@ -187,25 +199,29 @@ const shadows = [
           ))}
         </g>
 
-        {/* plant */}
+        {/* plant: leaves grow OUT of the soil, not from behind the pot */}
         <g class="plant" transform="translate(140 596) scale(1.02)">
-          <g class="leaves" stroke={SK} stroke-width="3" stroke-linejoin="round">
-            <path d="M0 26 C -34 -38, -22 -96, 6 -126 C 22 -80, 20 -20, 0 26 z" fill="var(--sv-leaf-1)" />
-            <path d="M0 26 C -66 -8, -96 -52, -100 -90 C -58 -72, -20 -26, 0 26 z" fill="var(--sv-leaf-2)" />
-            <path d="M0 26 C 54 -2, 86 -42, 92 -82 C 50 -66, 18 -22, 0 26 z" fill="var(--sv-leaf-2)" />
-            <path d="M0 26 C 34 -38, 62 -74, 92 -88 C 74 -42, 38 2, 0 26 z" fill="var(--sv-leaf-1)" />
-          </g>
           <g class="unit pot">
             <polygon class="f-side" points={pot.side} />
             <polygon class="f-front" points={pot.front} />
             <polygon class="f-top" points={pot.top} />
           </g>
-          {/* soil: hides where the leaves meet the pot */}
           <polygon points="0,16 38.1,38 0,60 -38.1,38" fill="var(--sv-seal-3)" />
+          <g class="leaves" transform="translate(0 10)" stroke={SK} stroke-width="3" stroke-linejoin="round">
+            <path d="M0 26 C -34 -38, -22 -96, 6 -126 C 22 -80, 20 -20, 0 26 z" fill="var(--sv-leaf-1)" />
+            <path d="M0 26 C -66 -8, -96 -52, -100 -90 C -58 -72, -20 -26, 0 26 z" fill="var(--sv-leaf-2)" />
+            <path d="M0 26 C 54 -2, 86 -42, 92 -82 C 50 -66, 18 -22, 0 26 z" fill="var(--sv-leaf-2)" />
+            <path d="M0 26 C 34 -38, 62 -74, 92 -88 C 74 -42, 38 2, 0 26 z" fill="var(--sv-leaf-1)" />
+          </g>
         </g>
 
         {/* ---------- ACT 1 · the desk ---------- */}
         <g transform="translate(392 452) scale(1.02)">
+          <g class="unit furn">
+            <polygon class="f-side" points={underdesk.side} />
+            <polygon class="f-front" points={underdesk.front} />
+            <polygon class="f-top" points={underdesk.top} />
+          </g>
           <g class="unit furn">
             {desk.legs.map((l) => (
               <g>
@@ -266,7 +282,7 @@ const shadows = [
                 <polygon class="f-top" points={s.g.top} />
                 <text
                   class="tlabel"
-                  transform={frontText(84, 44, 54 + (3 - i) * 62, 108, 15)}
+                  transform={frontText(84, 44, 54 + (3 - i) * 26, 108, 15)}
                   x="80"
                   y="11.5"
                   text-anchor="middle"
@@ -278,18 +294,23 @@ const shadows = [
           }
         </g>
 
-        {/* ---------- ACT 2 · sealed ---------- */}
+        {/* ---------- ACT 2 · sealed, on the nightstand ---------- */}
         <g transform="translate(866 452) scale(1.02)">
           <g class="unit furn">
-            <polygon class="f-side" points={crateBig.side} />
-            <polygon class="f-front" points={crateBig.front} />
-            <polygon class="f-top" points={crateBig.top} />
+            <polygon class="f-side" points={plinth.side} />
+            <polygon class="f-front" points={plinth.front} />
+            <polygon class="f-top" points={plinth.top} />
           </g>
           <g class="unit furn">
-            <polygon class="f-side" points={crateSmall.side} />
-            <polygon class="f-front" points={crateSmall.front} />
-            <polygon class="f-top" points={crateSmall.top} />
+            <polygon class="f-side" points={cabinet.side} />
+            <polygon class="f-front" points={cabinet.front} />
+            <polygon class="f-top" points={cabinet.top} />
           </g>
+          {/* drawer seam + knobs, on the cabinet's front face */}
+          <line x1="-121.2" y1="126" x2="-6.9" y2="192" stroke={SK} stroke-width="2.5" />
+          <circle cx="-64.1" cy="135" r="4" fill="var(--sv-furn-1)" stroke={SK} stroke-width="2" />
+          <circle cx="-64.1" cy="183" r="4" fill="var(--sv-furn-1)" stroke={SK} stroke-width="2" />
+
           <g class="sealwrap">
             <g class="unit sealbox">
               <polygon class="f-side" points={seal.side} />
@@ -298,13 +319,13 @@ const shadows = [
             </g>
             {/* applied to the cube, not floating: brand diamond on top, lock + session on the face */}
             <polygon
-              points="0,-124 34.6,-104 0,-84 -34.6,-104"
+              points="0,-66 34.6,-46 0,-26 -34.6,-46"
               fill="none"
               stroke={PRIM}
               stroke-width="4.5"
               stroke-linejoin="round"
             />
-            <g transform={frontText(14, 14, 58, 120, 120)}>
+            <g transform={frontText(14, 14, 0, 120, 120)}>
               <path d="M51 44 v-7 a 9 9 0 0 1 18 0 v 7" fill="none" stroke={PRIM} stroke-width="4" stroke-linecap="round" />
               <rect x="47" y="44" width="26" height="20" rx="5" fill={PRIM} />
               <rect x="22" y="78" width="76" height="22" rx="11" fill={PRIM} />
@@ -375,7 +396,7 @@ const shadows = [
         {/* ---------- connectors: anchored to the geometry, one rhythm ---------- */}
         <path
           class="wire"
-          d={`M ${pushStart[0].toFixed(0)} ${pushStart[1].toFixed(0)} C 585 262, 720 256, ${pushEnd[0].toFixed(0)} ${pushEnd[1].toFixed(0)}`}
+          d={`M ${pushStart[0].toFixed(0)} ${pushStart[1].toFixed(0)} C 600 380, 700 340, ${pushEnd[0].toFixed(0)} ${pushEnd[1].toFixed(0)}`}
           fill="none"
           stroke={PRIM_DEEP}
           stroke-width="3.6"
@@ -384,7 +405,7 @@ const shadows = [
         />
         <path
           class="wire"
-          d={`M ${pullStart[0].toFixed(0)} ${pullStart[1].toFixed(0)} C 1005 272, 1135 322, ${pullEnd[0].toFixed(0)} ${pullEnd[1].toFixed(0)}`}
+          d={`M ${pullStart[0].toFixed(0)} ${pullStart[1].toFixed(0)} C 1005 340, 1135 360, ${pullEnd[0].toFixed(0)} ${pullEnd[1].toFixed(0)}`}
           fill="none"
           stroke={PRIM_DEEP}
           stroke-width="3.6"
@@ -394,12 +415,12 @@ const shadows = [
 
         {/* command labels: terminal chips riding the arcs, one baseline */}
         <g class="cmdchip">
-          <rect x="585" y="292" width="150" height="34" rx="17" fill="var(--paper-2)" stroke="var(--rule)" stroke-width="1.5" />
-          <text x="660" y="315" text-anchor="middle"><tspan class="ta">$</tspan> rein push</text>
+          <rect x="585" y="336" width="150" height="34" rx="17" fill="var(--paper-2)" stroke="var(--rule)" stroke-width="1.5" />
+          <text x="660" y="359" text-anchor="middle"><tspan class="ta">$</tspan> rein push</text>
         </g>
         <g class="cmdchip">
-          <rect x="1000" y="292" width="146" height="34" rx="17" fill="var(--paper-2)" stroke="var(--rule)" stroke-width="1.5" />
-          <text x="1073" y="315" text-anchor="middle"><tspan class="ta">$</tspan> rein pull</text>
+          <rect x="1000" y="336" width="146" height="34" rx="17" fill="var(--paper-2)" stroke="var(--rule)" stroke-width="1.5" />
+          <text x="1073" y="359" text-anchor="middle"><tspan class="ta">$</tspan> rein pull</text>
         </g>
       </svg>
     </figure>
