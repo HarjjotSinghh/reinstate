@@ -1,6 +1,6 @@
 # Product strategy
 
-**Status:** accepted direction (2026-07-25)  
+**Status:** accepted direction (2026-07-25)
 **Complements:** [ROADMAP.md](../ROADMAP.md), [PRODUCT.md](../PRODUCT.md),
 [architecture.md](architecture.md)
 
@@ -41,17 +41,17 @@ product identity.
 
 Hierarchy of value:
 
-1. Task continuity  
-2. Agent interoperability  
-3. Environment restoration  
-4. Device synchronization  
-5. (Later) Team continuity  
+1. Task continuity
+2. Agent interoperability
+3. Environment restoration
+4. Device synchronization
+5. (Later) Team continuity
 
 ### One-line spine
 
 > **Reinstate is not another place to code. It makes every place you code continuous.**
 
-Reinstate owns continuity **before and after** execution.  
+Reinstate owns continuity **before and after** execution.
 Coding agents own the **execution loop**.
 
 ---
@@ -85,11 +85,11 @@ Reinstate must not win by recreating “another picker.”
 
 ## Feature themes for same-device users
 
-1. **Where was that conversation?** — searchable development memory  
-2. **Switch agents without re-explaining** — portable checkpoints  
-3. **Crash / reboot / context limit recovery** — `rein last`  
-4. **Parallel tasks** — task-level control plane across terminals  
-5. **Environment drift** — pre-resume mismatch report  
+1. **Where was that conversation?** — searchable development memory
+2. **Switch agents without re-explaining** — portable checkpoints
+3. **Crash / reboot / context limit recovery** — `rein last`
+4. **Parallel tasks** — task-level control plane across terminals
+5. **Environment drift** — pre-resume mismatch report
 
 ---
 
@@ -142,14 +142,14 @@ Encrypted multi-device sync, backup, device management, later team handoffs.
 
 Do not build unless usage forces a revisit:
 
-- Custom code editor  
-- Full terminal emulator  
-- Browser automation environment  
-- Worktree orchestration platform  
-- Multi-agent scheduler / PR suite  
-- Proprietary model router  
-- Agent marketplace  
-- Full IDE / ADE replacement  
+- Custom code editor
+- Full terminal emulator
+- Browser automation environment
+- Worktree orchestration platform
+- Multi-agent scheduler / PR suite
+- Proprietary model router
+- Agent marketplace
+- Full IDE / ADE replacement
 
 Integrate with Orca, Conductor, T3 Code, editors, and agents instead.
 
@@ -163,9 +163,9 @@ Long-term strategic option:
 
 Build a Reinstate-owned runtime only if **all** are true:
 
-1. Users frequently choose cross-agent continuation  
-2. Existing agents cannot consume portable handoffs reliably  
-3. A Reinstate runtime would improve continuity, not just UI duplication  
+1. Users frequently choose cross-agent continuation
+2. Existing agents cannot consume portable handoffs reliably
+3. A Reinstate runtime would improve continuity, not just UI duplication
 
 ---
 
@@ -184,13 +184,13 @@ Multiple physical devices are **not** required for ICP fit.
 
 Landing survey options:
 
-- Continue sessions across computers  
-- Find and resume old sessions  
-- Move sessions between coding agents  
-- Back up sessions automatically  
-- Sync MCP / skills / configuration  
-- Recover after crashes or reinstalls  
-- Hand work to another developer  
+- Continue sessions across computers
+- Find and resume old sessions
+- Move sessions between coding agents
+- Back up sessions automatically
+- Sync MCP / skills / configuration
+- Recover after crashes or reinstalls
+- Hand work to another developer
 
 Opt-in local telemetry (metadata only, never transcripts): search, resume,
 handoff attempts, mismatch detections, remote resumes.
@@ -199,13 +199,15 @@ handoff attempts, mismatch detections, remote resumes.
 
 ## Relationship to Phase 0 / Phase 1
 
-Phase 0–1 shipped the **trustworthy engine**: adapters, path map, encryption,
-sync, doctor, installers. That engine is the substrate for:
+Phase 0–1 implement the **trustworthy engine**: adapters, path map, encryption,
+sync, doctor, and installers. Local verification is green; native platform,
+two-device, remote CI, and public release gates remain. That engine is the
+substrate for:
 
-- Phase 2 local index / switcher  
-- Phase 3 verified resume  
-- Phase 4 handoffs  
-- Phase 5 automated multi-device habit  
-- Phase 6 thin console / ACP  
+- Phase 2 local index / switcher
+- Phase 3 verified resume
+- Phase 4 handoffs
+- Phase 5 automated multi-device habit
+- Phase 6 thin console / ACP
 
 Do not rewrite the core for marketing pivots. **Reuse primitives.**

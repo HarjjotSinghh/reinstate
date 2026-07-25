@@ -26,18 +26,18 @@ Product layers and non-goals: [product-strategy.md](product-strategy.md),
 └──────────────────────┬───────────────────────────┘
                        ▼
 ┌──────────────────────────────────────────────────┐
-│  Encryption (age / Argon2 passphrase KDF)         │
+│  Encryption (age / scrypt passphrase recipient)   │
 │  client-side only — remote never sees plaintext   │
 └──────────────────────┬───────────────────────────┘
                        ▼
 ┌──────────────────────────────────────────────────┐
 │  Sync Engine                                      │
-│  SQLite manifest · CAS chunks · tail-append JSONL │
+│  immutable snapshots · encrypted JSON manifest    │
 │  conflict detection · atomic restore + backup     │
 └──────────────────────┬───────────────────────────┘
                        ▼
 ┌──────────────────────────────────────────────────┐
-│  Backends: R2 · S3 · GCS · WebDAV · Gist · ...    │
+│  Backends: R2 · S3-compatible (Phase 1)           │
 └──────────────────────────────────────────────────┘
 ```
 
@@ -64,11 +64,17 @@ Product layers and non-goals: [product-strategy.md](product-strategy.md),
    └────────────┘   └──────────────┘   └────────────┘
 ```
 
-**Before execution:** find session, load history, fingerprint workspace, check
-skills/MCP, build portable checkpoint if needed, choose destination agent.  
+The continuity stack is the target architecture for later phases. Phase 1
+implements the adapter and encrypted-sync path. Local indexing, workspace
+fingerprints, checkpoints, executors, and ACP integration are roadmap work.
+
+**Target flow before execution:** find session, load history, fingerprint
+workspace, check skills/MCP, build a portable checkpoint if needed, and choose
+the destination agent.
 **During execution:** Claude Code / Codex / Gemini / OpenCode (or another ADE)
-own the agent loop.  
-**After execution:** capture updates, update index, optional encrypted sync.
+own the agent loop.
+**Target flow after execution:** capture updates, update the index, and
+optionally sync encrypted state.
 
 ### SessionExecutor (target contract)
 
@@ -115,11 +121,13 @@ Adapters implement a small Go interface under `internal/adapter/`.
 
 The make-or-break feature for Windows ↔ macOS dual setups:
 
-- Store portable tokens: `${HOME}`, user-defined `${WORK}`, etc.
-- On **push**: rewrite absolute paths → tokens (paths *and* transcript content)
+- Store portable tokens: `${HOME}`, `${REPO:<id>}`, and user-defined
+  `${WORK:<alias>}`.
+- On **push**: rewrite recognized structural path fields → tokens
 - On **pull**: rewrite tokens → this machine's absolute paths
 - Maintain a **canonical project ID** (git remote + name, or user alias) mapped
   to per-device roots so munged slugs / hashes recompute correctly
+- Do not rewrite arbitrary prose, prompts, tool output, or unknown fields
 
 ### 3. Encryption (`internal/crypto`)
 
@@ -129,18 +137,23 @@ The make-or-break feature for Windows ↔ macOS dual setups:
 
 ### 4. Sync engine (`internal/sync`)
 
-- Per-device SQLite **manifest** of remote object versions
-- Content-addressed chunks for large histories (Codex multi-GB cases)
-- JSONL **tail-append** awareness so routine syncs stay small
-- `status` / `diff` offline-capable from the local manifest
+- Versioned local sync state stored as atomic JSON
+- Immutable, UUID-addressed encrypted snapshots
+- Encrypted remote JSON manifest with conditional ETag updates and bounded
+  compare-and-swap retries
+- Streamed full-snapshot upload/download with authenticated metadata, size, and
+  SHA-256 validation
+- Full snapshots in Phase 1; chunking and append-aware deltas are roadmap work
+- `status` and `diff` currently read the remote manifest and therefore require
+  backend access
 
 ### 5. Restore path
 
-1. Pull ciphertext → decrypt
-2. Path-rewrite into local layout
-3. If target exists: copy to `~/.reinstate/backups/<timestamp>/`
-4. Atomic write (temp + rename)
-5. Refuse or warn if agent process holds the file open (liveness check)
+1. Pull ciphertext → decrypt → authenticate metadata and payload
+2. Let the matching adapter validate and rewrite known structural path fields
+3. If the destination exists, create a timestamped private backup
+4. Refuse overwrite while the matching agent process is active
+5. Restore with private permissions and atomic replacement
 
 ## What is explicitly not synced
 
@@ -164,7 +177,8 @@ reality without tripling complexity.
 | Language | Go | Single static binary, cross-compile, proven by peers |
 | Crypto | age | Passphrase UX + auditability |
 | Storage | S3-compatible first | R2 free tier; rclone-style backends later |
-| Manifest | SQLite | Offline status/diff |
+| Local state | Versioned JSON | Small, inspectable, atomically replaced |
+| Remote index | Encrypted JSON manifest | Conditional updates and conflict detection |
 
 ## Related diagrams
 
@@ -186,7 +200,7 @@ internal/
   crypto/               # age encryption
   pathmap/              # portable path rewriting
   sync/                 # manifest, push/pull, conflicts
-  backend/              # R2/S3/WebDAV/...
+  backend/              # R2/S3-compatible
 docs/                   # human docs
-testdata/               # golden fixtures (per adapter)
+testdata/               # deterministic synthetic fixtures (per adapter/OS)
 ```

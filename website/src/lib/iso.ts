@@ -1,4 +1,4 @@
-/** Build-time 30° axonometric projector (DESIGN.md §6). */
+/** Build-time 30° axonometric projector (website/AGENTS.md design rules). */
 
 const CX = Math.cos(Math.PI / 6);
 

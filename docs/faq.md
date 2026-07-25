@@ -2,10 +2,10 @@
 
 ## What is Reinstate?
 
-The **continuity layer for coding-agent work**: find, search, resume, and hand
-off sessions across agents, projects, environments, and devices. Multi-device
-sync uses end-to-end encryption and bring-your-own storage. Single-device users
-still get a universal session index and verified resume.
+The **continuity layer for coding-agent work**. Phase 1 implements encrypted,
+bring-your-own-storage sync for same-vendor Claude Code and Codex sessions.
+Universal local search, verified resume, and cross-agent handoffs are later
+phases.
 
 Spine: *Reinstate is not another place to code — it makes every place you code continuous.*
 
@@ -54,7 +54,7 @@ syncable** across those tools.
 
 ## Is my data sent to Reinstate servers?
 
-**No** for the open-source CLI. You point at **your** R2/S3/WebDAV/etc. A future
+**No** for the open-source CLI. You point at **your** R2/S3-compatible bucket. A future
 optional hosted convenience layer would still be zero-knowledge (ciphertext
 only); it is not required.
 
@@ -65,13 +65,15 @@ passphrase in a password manager.
 
 ## Does this work offline?
 
-Local status/diff from the manifest works offline. Push/pull need network to
-your storage backend.
+Session files remain local, but the current `status`, `diff`, `push`, and `pull`
+commands read the remote manifest and need access to your storage backend.
+Offline indexing and search are Phase 2 work.
 
 ## Windows + Mac?
 
-Yes — that dual setup is a primary design target. Path remapping is the hard
-problem we optimize for.
+It is the primary design target, and path remapping is implemented. Exact
+native Windows, macOS amd64, WSL2, and two-device release-candidate acceptance
+are still open gates; see the [roadmap](../ROADMAP.md).
 
 ## Is this affiliated with Anthropic / OpenAI / Google / xAI?
 

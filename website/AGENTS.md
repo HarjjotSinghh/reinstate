@@ -1,9 +1,9 @@
 ## Design system
 
-**Read [`../DESIGN.md`](../DESIGN.md) before writing any markup or CSS.** It is the source of
-truth for tokens, typography, illustration, motion, and components, and it is extracted from
-the canonical hero at `src/pages/preview/exploded.astro`. Build every new surface to match
-that page.
+**This file is the tracked source of truth for website tokens, typography,
+illustration, motion, and components.** The rules are extracted from the
+canonical hero at `src/pages/preview/exploded.astro`. Build every new surface
+to match that page.
 
 The rules that break the design fastest if ignored:
 

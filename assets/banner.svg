@@ -147,7 +147,7 @@
     <rect x="598.6" y="235" width="2.8" height="8" rx="1.4" fill="#ecfeff"/>
     <text x="600" y="272" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" fill="#67e8f9">ciphertext</text>
   </g>
-  <text x="600" y="332" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#22d3ee">YOUR BUCKET · R2 / S3 / WEBDAV</text>
+  <text x="600" y="332" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#22d3ee">YOUR BUCKET · R2 / S3-COMPATIBLE</text>
 
   <!-- ── laptop card ────────────────────────────────────────── -->
   <g filter="url(#soft)">

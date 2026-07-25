@@ -36,7 +36,7 @@ archive the other.
 
 Large `~/.codex/sessions` trees need delta/CAS sync (roadmap). Until then:
 
-- Use `--scope` filters / retention policies when available
+- Select a specific session instead of `--all`; retention controls are planned
 - Exclude very old rollouts via config globs
 
 ## Accidentally almost synced credentials
@@ -49,8 +49,11 @@ Defaults block common credential paths. If you overrode excludes:
 
 ## Agent was running during pull
 
-Close the agent (or wait for idle), then re-pull. Mid-write interleaving can
-corrupt append-only JSONL.
+Close every process for the selected agent, then re-pull. Before overwriting
+an existing target, Reinstate blocks mutating pulls and `--keep-remote`
+conflict resolution while Claude Code or Codex may still be writing its
+session file. New-session restores, `--keep-both`, and `--dry-run` remain
+available.
 
 ## Still stuck?
 

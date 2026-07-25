@@ -1,5 +1,9 @@
+version: "2"
+
 run:
   timeout: 5m
+  # Language version for analysis; CI installs Go 1.25.12 for builds/govulncheck.
+  go: "1.25"
 
 linters:
   enable:
@@ -8,12 +12,12 @@ linters:
     - ineffassign
     - staticcheck
     - unused
+
+formatters:
+  enable:
     - gofmt
     - goimports
-
-linters-settings:
-  goimports:
-    local-prefixes: github.com/HarjjotSinghh/reinstate
-
-issues:
-  exclude-use-default: false
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/HarjjotSinghh/reinstate

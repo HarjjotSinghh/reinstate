@@ -76,4 +76,4 @@ Root directory for the Vercel project must be `website/`.
 
 ## Design
 
-See repo root `PRODUCT.md` and `DESIGN.md`.
+See the repository-root `PRODUCT.md` and `website/AGENTS.md`.

@@ -12,18 +12,26 @@ How maintainers cut a **Reinstate** release.
 
 - [ ] `main` is green on CI
 - [ ] CHANGELOG `[Unreleased]` section is accurate
-- [ ] Version bumped in relevant files (`go.mod` module path stable; version in
-      `cmd/reinstate` / `internal/version`)
 - [ ] No open P0 security issues
+- [ ] macOS arm64, macOS amd64, native Windows amd64, and WSL2 acceptance rows pass
+- [ ] Claude Code and Codex exact versions/layouts are recorded in compatibility docs
+- [ ] Wrong-passphrase, tamper, backup, rollback, conflict, and installer tests pass
+- [ ] Snapshot archives, source archive, checksums, and SBOMs were inspected
+- [ ] Builds and vulnerability scans use the pinned Go 1.25.12 toolchain
 
 ## Steps
 
 ### 1. Prepare the release commit
 
 ```bash
-# Update CHANGELOG: move Unreleased → ## [x.y.z] - YYYY-MM-DD
-# Bump version constants if needed
-git add -A
+# Update CHANGELOG and compatibility evidence.
+go test ./... -count=1
+go test ./... -race -count=1 -timeout=20m
+go vet ./...
+goreleaser release --snapshot --clean
+sh scripts/test-install.sh dist
+
+git add CHANGELOG.md docs/compatibility.md
 git commit -m "chore(release): vX.Y.Z"
 git push origin main
 ```
@@ -31,21 +39,26 @@ git push origin main
 ### 2. Tag and push
 
 ```bash
-git tag -a vX.Y.Z -m "Reinstate vX.Y.Z"
+git tag -s vX.Y.Z -m "Reinstate vX.Y.Z"
 git push origin vX.Y.Z
 ```
 
-### 3. GitHub Release
+The tag must point at the reviewed commit on protected `main`. Do not move or
+reuse a published tag.
 
-The `release` workflow (when enabled) builds multi-arch binaries and attaches
-checksums. Otherwise create a Release manually from the tag:
+### 3. GitHub Release workflow
 
-1. GitHub → Releases → Draft a new release
-2. Target tag `vX.Y.Z`
-3. Title: `vX.Y.Z`
-4. Body: paste the CHANGELOG section for this version
-5. Attach artifacts / let the workflow upload them
-6. Mark as **Latest release** (or pre-release if `alpha`/`beta`/`rc`)
+The release workflow builds binary and source archives, generates checksums and
+per-binary-archive SBOMs, tests installer contracts, publishes a draft release,
+and creates GitHub artifact attestations.
+
+Before publishing the draft:
+
+1. Confirm asset names match `reinstate_<version-without-v>_<os>_<arch>`.
+2. Run both official installers against the exact draft assets.
+3. Verify checksums and `gh attestation verify` for each archive.
+4. Confirm archive contents include binary, license, notice, README, and changelog.
+5. Mark prerelease tags as pre-release; publish stable only after every release gate.
 
 ### 4. Announce (optional)
 
@@ -62,18 +75,5 @@ checksums. Otherwise create a Release manually from the tag:
 
 ## Rollback
 
-GitHub Releases cannot unpublish downloads easily — prefer a new patch that
-fixes the issue. If a tag must be moved (rare, pre-1.0 only), coordinate in
-maintainers chat and document in CHANGELOG.
-
-## npm / package registries
-
-If/when npm packages are published (`@harjjotsinghh/reinstate` or similar):
-
-```bash
-# after git tag
-npm publish --access public
-```
-
-Binary-first distribution remains the primary path (static Go binaries + curl
-install script).
+Published releases are immutable. If a defect escapes, issue a new patch or
+prerelease. Do not move the tag or replace assets.

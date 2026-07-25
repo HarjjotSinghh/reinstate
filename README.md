@@ -7,7 +7,8 @@
 ### Pick up any coding task exactly where you left it
 
 **The continuity layer for coding-agent work** — search, resume, and hand off sessions across agents, projects, environments, and devices.
-Multi-device sync is encrypted (BYO storage) so only you can read it.
+Phase 1 starts with encrypted same-vendor Claude Code and Codex session sync
+across devices; search, verified resume, and portable handoffs follow.
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/HarjjotSinghh/reinstate)](https://goreportcard.com/report/github.com/HarjjotSinghh/reinstate)
@@ -48,7 +49,7 @@ Multi-device sync is encrypted (BYO storage) so only you can read it.
 
 ## The problem
 
-You grind eight hours on your **Windows desktop** across Claude Code, Codex, Gemini CLI, OpenCode, Grok Build… twenty sessions, four projects, full context.
+You grind eight hours on your **Windows desktop** across Claude Code, Codex, with more agents planned after Phase 1… twenty sessions, four projects, full context.
 
 You open your **MacBook** on the couch.
 
@@ -57,7 +58,7 @@ Git has the code. The agent does **not** have the conversation — the rejected 
 ```mermaid
 flowchart LR
   subgraph Desktop["🖥️ Desktop (Windows)"]
-    D["20 sessions<br/>MCP + skills A<br/>full context"]
+    D["20 sessions<br/>full context"]
   end
   subgraph Laptop["💻 Laptop (macOS)"]
     L["empty history<br/>MCP + skills B<br/>start from zero"]
@@ -72,10 +73,10 @@ flowchart LR
 ```mermaid
 flowchart LR
   subgraph Desktop["🖥️ Desktop"]
-    A["sessions + config"]
+    A["Claude/Codex sessions"]
   end
   subgraph Cloud["☁️ Encrypted cloud"]
-    B["your R2 / S3 / WebDAV<br/>ciphertext only"]
+    B["your R2 / S3-compatible bucket<br/>ciphertext only"]
   end
   subgraph Laptop["💻 Laptop"]
     C["resume · same IDs"]
@@ -97,7 +98,7 @@ flowchart LR
 | **Offline-capable origin** | Works when the other machine is **off** (stored sync, not a live relay) |
 | **Path remapping** | Windows ↔ macOS project paths rewritten so `--resume` actually finds sessions |
 | **Zero-knowledge** | Client-side encryption; bring-your-own storage |
-| **Config + sessions** | MCP servers, skills, agents, settings — one environment everywhere |
+| **Sessions first** | Phase 1 deliberately excludes credentials, MCP, skills, and settings |
 | **Open source** | Apache-2.0 · auditable · patent grant · no vendor lock-in |
 
 Native vendor sync will always own *one* ecosystem. DIY Syncthing/Drive hacks break on absolute paths and credential sprawl. Reinstate targets the empty quadrant: **universal × cross-device × encrypted × resume-aware**.
@@ -111,21 +112,21 @@ Native vendor sync will always own *one* ecosystem. DIY Syncthing/Drive hacks br
 ## Features
 
 - **Cross-device session sync** — continue the same agent thread on another machine
-- **Multi-agent adapters** — Claude Code, Codex, Gemini CLI, OpenCode, Grok Build (phased)
+- **Multi-agent adapters** — Claude Code, Codex, with more agents planned after Phase 1 (phased)
 - **End-to-end encryption** — [age](https://github.com/FiloSottile/age), passphrase-derived keys
-- **Bring-your-own storage** — Cloudflare R2, AWS S3, GCS, S3-compatible, WebDAV
+- **Bring-your-own storage** — Cloudflare R2, AWS S3, and S3-compatible storage
 - **OS-aware path remapping** — the hard problem treated as the product
-- **Selective scopes** — `sessions` | `config` | `all`
 - **Safe by default** — credential denylist, atomic restore, conflict forks, local backups
-- **Simple CLI** — `rein init` · `push` · `pull` · `status` · `diff` · `conflicts`  
+- **Simple CLI** — `rein init` · `push` · `pull` · `status` · `diff` · `conflicts`
   (`rein` is the short alias; `reinstate` is the full command — same binary)
 
 ---
 
 ## Quick start
 
-> **Note:** v0.1 CLI is under active development. The UX below is the target
-> interface. Star & watch the repo for the first stable release.
+> **Note:** the v0.1 CLI surface below is implemented, but native acceptance and
+> public release certification are still in progress. Star & watch the repo for
+> the first stable release.
 >
 > **CLI:** prefer short alias **`rein`**. Full name **`reinstate`** works the same.
 
@@ -140,23 +141,24 @@ make build
 ./bin/reinstate version   # full name (same tool)
 
 # Go install (when module is published)
-go install github.com/HarjjotSinghh/reinstate/cmd/reinstate@latest
+go install github.com/HarjjotSinghh/reinstate/cmd/reinstate@vX.Y.Z
 # optional: ln -s "$(go env GOPATH)/bin/reinstate" "$(go env GOPATH)/bin/rein"
 ```
 
 ### Device A
 
 ```bash
-rein init          # backend + passphrase + path map
-rein push          # encrypt & upload
+rein init --project github.com/acme/app=/absolute/path/to/app
+rein push --all    # hidden passphrase prompt, encrypt, upload
 ```
 
 ### Device B
 
 ```bash
-rein init          # SAME backend + SAME passphrase
-rein pull --dry-run
-rein pull
+rein init --profile-id <DEVICE_A_PROFILE_ID> \
+  --project github.com/acme/app=/different/local/path
+rein pull --all --dry-run
+rein pull --all
 claude --resume    # or: codex resume
 ```
 
@@ -168,10 +170,10 @@ Full walkthrough: **[docs/getting-started.md](docs/getting-started.md)**
 
 | Agent | Sessions | Config / MCP | Status |
 | ----- | :------: | :----------: | ------ |
-| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | ✅ | ✅ | Priority (v0.1) |
-| [OpenAI Codex CLI](https://github.com/openai/codex) | ✅ | ✅ | Priority (v0.1) |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | 📋 | 📋 | Phase 1 |
-| [OpenCode](https://opencode.ai) | 📋 | 📋 | Phase 1 |
+| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | ✅ | 📋 | Phase 1 |
+| [OpenAI Codex CLI](https://github.com/openai/codex) | ✅ | 📋 | Phase 1 |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | 📋 | 📋 | Later phase |
+| [OpenCode](https://opencode.ai) | 📋 | 📋 | Later phase |
 | [Grok Build](https://x.ai) | 📋 | 📋 | Phase 2 |
 
 Details: **[docs/adapters.md](docs/adapters.md)**
@@ -194,16 +196,16 @@ flowchart TB
     EN[Encrypt · age]
     SY[Sync engine · manifest]
   end
-  BK[(Your bucket<br/>R2 / S3 / WebDAV)]
+  BK[(Your bucket<br/>R2 / S3-compatible)]
   Agents --> AD --> NM --> EN --> SY
   SY <-->|ciphertext only| BK
   SY -->|pull · decrypt · remap · atomic restore| Agents
 ```
 
-1. **Adapters** read each tool’s local session layout  
-2. **Pathmap** rewrites absolute paths to portable tokens and back  
-3. **Crypto** encrypts before any upload  
-4. **Sync** uses a local manifest; restores are atomic with backups  
+1. **Adapters** read each tool’s local session layout
+2. **Pathmap** rewrites absolute paths to portable tokens and back
+3. **Crypto** encrypts before any upload
+4. **Sync** uses a local manifest; restores are atomic with backups
 
 Deep dive: **[docs/architecture.md](docs/architecture.md)** · research diagram:
 
@@ -230,7 +232,7 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 
 | Doc | Description |
 | --- | ----------- |
-| **Website** | [reinstate-web.vercel.app](https://reinstate-web.vercel.app) — landing + waitlist + docs (`website/`) |
+| **Website** | [reinstate-web.vercel.app](https://reinstate-web.vercel.app) — landing + waitlist |
 | [Getting started](docs/getting-started.md) | Install, init, dual-device setup |
 | [Architecture](docs/architecture.md) | Pipeline, packages, design principles |
 | [Adapters](docs/adapters.md) | Per-agent layouts & support matrix |
@@ -298,10 +300,10 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 
 | Phase | Focus | Status |
 | ----- | ----- | ------ |
-| **0** | Claude + Codex, push/pull, path remap, encryption | 🚧 |
-| **1** | Gemini + OpenCode, config/MCP scope | 📋 |
-| **2** | Shell hooks, Grok, delta sync, redaction | 📋 |
-| **3** | Hosted ZK convenience, session browser, teams | 💭 |
+| **0** | Contracts, diagnostics, installers, fixtures, release trust | 🚧 |
+| **1** | Claude + Codex encrypted same-vendor session sync | 🚧 |
+| **2–4** | Local index, verified resume, portable handoffs | 📋 |
+| **5–7** | Automatic sync, thin Console/ACP client, teams | 📋 / 💭 |
 
 Full detail: **[ROADMAP.md](ROADMAP.md)**
 
@@ -311,11 +313,13 @@ Full detail: **[ROADMAP.md](ROADMAP.md)**
 
 | Channel | Tag | Notes |
 | ------- | --- | ----- |
-| **Latest** | [![Release](https://img.shields.io/github/v/release/HarjjotSinghh/reinstate?label=latest)](https://github.com/HarjjotSinghh/reinstate/releases/latest) | Production-minded builds |
+| **Latest** | [![Release](https://img.shields.io/github/v/release/HarjjotSinghh/reinstate?label=latest)](https://github.com/HarjjotSinghh/reinstate/releases/latest) | Stable builds, once published |
 | **Pre-release** | [![Pre-release](https://img.shields.io/github/v/release/HarjjotSinghh/reinstate?include_prereleases&label=pre)](https://github.com/HarjjotSinghh/reinstate/releases) | Early adopters |
 | **SemVer** | pre-1.0 | Breaking changes possible in minors — see CHANGELOG |
 
-Install from [GitHub Releases](https://github.com/HarjjotSinghh/reinstate/releases) (checksums attached when CI release workflow is enabled).
+Install from [GitHub Releases](https://github.com/HarjjotSinghh/reinstate/releases).
+Every published release must include checksums, SBOMs, a source archive, and an
+artifact attestation.
 
 ---
 
