@@ -1,137 +1,206 @@
 # Getting Started
 
-**Reinstate** syncs AI coding agent sessions (and later: MCP configs, skills,
-settings) across your machines — encrypted, vendor-neutral, bring-your-own
-storage.
+Reinstate synchronizes Claude Code and Codex CLI sessions across your machines
+through client-side encrypted, user-owned object storage.
 
-> **Status:** repository and docs are live; the v0.1 CLI is pre-release.
-> Commands below describe the implemented Phase 1 sessions workflow. Follow
-> [ROADMAP.md](../ROADMAP.md) for ship status.
+> **Release status:** the public installers currently pin
+> `v0.1.0-rc.2`. It is a release candidate until the native Mac/Windows
+> [Phase 1 acceptance runbook](testing/phase-1-mac-windows-acceptance.md) passes.
 
 ## Prerequisites
 
-- Two (or more) machines you develop on (e.g. Windows desktop + MacBook)
-- At least one supported agent installed (Claude Code and/or Codex first)
-- An S3-compatible object-storage backend you control
-  - **Recommended:** Cloudflare R2 (10GB free tier is plenty for sessions)
+- macOS, native 64-bit Windows, Linux, or WSL2
+- Claude Code and/or Codex CLI
+- an S3-compatible bucket you control
+- the endpoint, bucket name, access-key ID, and secret access key
+- one long encryption passphrase that you can enter privately on every device
 
-## Install (target)
+Cloudflare R2 is the recommended Phase 1 backend. Reinstate does not need your
+Anthropic or OpenAI account credentials.
 
-### Release binary (recommended)
+## Install
 
-```bash
-# Pin the exact release; do not install an unverified moving branch.
-VERSION=vX.Y.Z  # replace with an exact published tag
-curl -fsSLO \
-  "https://raw.githubusercontent.com/HarjjotSinghh/reinstate/$VERSION/scripts/install.sh"
-REINSTATE_VERSION="$VERSION" sh ./install.sh
+### macOS, Linux, or WSL2
 
-# Or download from GitHub Releases
-# https://github.com/HarjjotSinghh/reinstate/releases
+```sh
+curl -fsSL https://reinstate.dev/install.sh | sh
 ```
 
-### From source
+The default installation directory is `~/.local/bin`. The bootstrap prints an
+absolute `rein init` command that works immediately and adds the directory to
+the appropriate shell startup file for new terminals.
 
-```bash
-git clone https://github.com/HarjjotSinghh/reinstate.git
-cd reinstate
-make build
-sudo cp bin/reinstate /usr/local/bin/   # optional
-reinstate version
+### Native Windows PowerShell
+
+```powershell
+irm https://reinstate.dev/install.ps1 | iex
 ```
 
-### Go install
+The default installation directory is
+`%LOCALAPPDATA%\Programs\Reinstate\bin`. The bootstrap adds it to the user PATH
+and the current PowerShell process.
 
-```bash
-go install github.com/HarjjotSinghh/reinstate/cmd/reinstate@vX.Y.Z
+Both public bootstraps:
+
+1. pin `v0.1.0-rc.2`;
+2. download the canonical installer from that exact signed Git tag;
+3. verify the canonical installer SHA-256;
+4. download only the matching GitHub Release asset and `checksums.txt`;
+5. verify the binary checksum and reported version; and
+6. preserve an existing different version until you approve replacement.
+
+They install the CLI only. Interactive configuration starts when you run
+`rein init`.
+
+### Inspect before executing
+
+macOS/Linux:
+
+```sh
+curl -fsSL https://reinstate.dev/install.sh -o reinstate-install.sh
+less reinstate-install.sh
+sh reinstate-install.sh
 ```
 
-## First device (desktop)
+Windows PowerShell:
 
-```bash
-# Interactive setup stores S3/R2 credentials in the OS keyring.
-reinstate init \
-  --project github.com/acme/app=/absolute/path/to/app
-
-# Save the printed profile_id somewhere non-secret for Device B.
-reinstate doctor --self-test
-reinstate push --all --dry-run
-reinstate push --all
-
-# Optional: inspect remote vs local
-reinstate status
+```powershell
+$Installer = Join-Path $env:TEMP "reinstate-install.ps1"
+Invoke-WebRequest https://reinstate.dev/install.ps1 -OutFile $Installer
+Get-Content $Installer
+& ([ScriptBlock]::Create([IO.File]::ReadAllText($Installer)))
 ```
 
-### What `init` asks
+## Verify the binary
 
-1. **Backend** — R2 / S3-compatible endpoint and bucket
-2. **Credentials** — stored in the OS keyring (never uploaded)
-3. **Profile** — generated on Device A; reused on every later device
-4. **Path map** — the same canonical project ID mapped to each local root
-   (`C:\Users\you\work` ↔ `/Users/you/Projects`)
-
-## Second device (laptop)
-
-```bash
-reinstate init \
-  --profile-id <PROFILE_UUID_FROM_DEVICE_A> \
-  --project github.com/acme/app=/different/local/path
-
-reinstate doctor --self-test
-reinstate status                    # hidden passphrase prompt validates remote access
-reinstate pull --all --dry-run      # validates/decrypts; does not mutate
-reinstate pull --all                # backs up, atomically restores, verifies discovery
+```sh
+rein version --json
+rein setup check
 ```
 
-Then resume in your agent as usual:
+Before `init`, `setup check` should identify only that the Reinstate config is
+missing. Platform, keyring, or installed-agent compatibility failures need to
+be resolved before synchronization.
 
-```bash
+## Configure the first device
+
+Use the same canonical project ID on every device but map it to each device's
+real absolute path:
+
+```sh
+rein init \
+  --project local/my-project=/absolute/path/to/my-project
+```
+
+`init` prompts for the S3/R2 endpoint, bucket, and credentials. Credential
+input is hidden and stored in the native OS keyring. It probes the bucket before
+writing local configuration.
+
+Save the printed `profile_id`. It is not secret, and every later device in the
+same sync set must reuse it.
+
+Then verify:
+
+```sh
+rein setup check
+rein doctor --self-test
+rein list --agent all
+```
+
+The encryption passphrase is not stored. You enter it through a hidden prompt
+when `status`, `push`, or `pull` needs to decrypt remote state.
+
+## Push one session
+
+Create or resume a harmless session in your mapped project, then find its ID:
+
+```sh
+rein list --agent claude
+rein list --agent codex
+```
+
+Use an explicit agent and session ID until you intentionally decide to sync
+everything:
+
+```sh
+rein push --agent claude --session SESSION_ID --dry-run
+rein push --agent claude --session SESSION_ID
+```
+
+`--all` is available, but neither Reinstate nor an AI setup agent should choose
+it for you.
+
+## Configure an additional device
+
+Run the platform installer, then reuse the first device's profile UUID and the
+same canonical project ID:
+
+```sh
+rein init \
+  --profile-id DEVICE_A_PROFILE_UUID \
+  --project local/my-project=/different/absolute/path
+```
+
+Enter the same endpoint, bucket, credentials, and encryption passphrase.
+
+Validate without mutation:
+
+```sh
+rein setup check
+rein doctor --self-test
+rein status
+rein pull --agent claude --session SESSION_ID --dry-run
+```
+
+Close the selected coding agent before a pull that will replace an existing
+local session, then restore:
+
+```sh
+rein pull --agent claude --session SESSION_ID
+rein list --agent claude
+```
+
+Confirm through the vendor's normal resume UI:
+
+```sh
 claude --resume
 # or
 codex resume
 ```
 
-## The magic moment
+Reinstate never needs to print transcript contents to prove success.
 
-```
-Windows desktop (8h of sessions)  →  reinstate push
-MacBook on the couch              →  reinstate pull
-                                    →  claude --resume  # same thread
-```
+## Agent-assisted setup
 
-Path remapping rewrites embedded `cwd` / project slugs so resume finds the
-session even when absolute paths differ across OSes.
+The copy-paste prompts are version-pinned and use the same public bootstrap:
 
-## Daily workflow
+- [Claude Code setup prompt](prompts/claude-code-setup.md)
+- [Codex setup prompt](prompts/codex-setup.md)
 
-```bash
-# Manual
-reinstate push --all
-reinstate pull --all
+The agent may inspect, install, and run redacted checks. You must enter storage
+credentials and the encryption passphrase privately, never in agent chat.
 
-# Automated (shell hooks — roadmap)
-# pull on shell start, push on exit
-reinstate hooks install
-```
+## Phase 1 sign-off
 
-Phase 1 syncs Claude Code and Codex session files only. MCP, skills, agent
-configuration, and background hooks are later phases.
+Use the
+[MacBook + Windows acceptance runbook](testing/phase-1-mac-windows-acceptance.md)
+to test both installers, both agent prompts, bidirectional sync, backups,
+conflicts, wrong-passphrase refusal, and ciphertext-only remote storage.
 
 ## Safety defaults
 
-- Encryption is **on** — no plaintext cloud copies
-- Credential files (`auth.json`, tokens) are **never** synced
-- Pull never silent-overwrites: conflicts fork; backups are created first
-- First pull on a new device defaults to dry-run confirmation
+- remote manifests and snapshots are encrypted;
+- auth and credential files are hard-excluded;
+- pull validates before mutation and backs up existing targets;
+- divergent sessions create conflict records instead of silent overwrite;
+- a mutating pull refuses to replace an active agent's session; and
+- no plaintext passphrase is accepted through a normal argument or environment
+  variable.
 
 ## Next steps
 
-- [Architecture](architecture.md)
+- [CLI reference](cli-reference.md)
+- [Configuration](configuration.md)
+- [Backup and recovery](backup-and-recovery.md)
 - [Security model](security-model.md)
-- [Supported adapters](adapters.md)
 - [Troubleshooting](troubleshooting.md)
-- [Comparison](comparison.md)
-
-## Need help?
-
-See [SUPPORT.md](../SUPPORT.md).

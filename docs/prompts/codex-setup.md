@@ -1,64 +1,86 @@
 # Codex — Reinstate end-user setup prompt
 
-**Prompt version:** 2
-**Release placeholder:** replace `<REINSTATE_VERSION>` with an exact published
-tag such as `v0.1.0-rc.1` before pasting.
+**Prompt version:** 3
+**Pinned Reinstate release:** `v0.1.0-rc.2`
 
 Copy everything below the line into Codex.
 
 ---
 
-Install and configure Reinstate end to end on this device using only the exact
-official release `<REINSTATE_VERSION>`. If the placeholder is unchanged, stop
-and request an exact version. Never substitute `latest` or `main`.
+Install and configure Reinstate end to end on this device through the official
+public bootstrap pinned to `v0.1.0-rc.2`. Never substitute `latest`, `main`, or
+another version.
 
 Hard safety rules:
 
-- Keep normal approval/sandbox controls enabled.
+- Keep normal approval and sandbox controls enabled.
+- Do not clone the repository or build from source.
 - Never inspect or sync `auth.json`, credentials, API/OAuth tokens, OS
-  keychains, `.env`, or transcript content.
-- Never ask me to put storage secrets or the encryption passphrase in chat.
-- Do not modify unrelated repositories or publish/commit/push anything.
+  keychains, `.env` files, or transcript contents.
+- Never ask me to put storage credentials or the encryption passphrase in chat.
+  I will enter them privately into Reinstate's hidden terminal prompts.
+- Do not modify unrelated repositories or publish, commit, push, purchase, or
+  install unrelated software.
 
 Execution contract:
 
 1. Report Codex version, OS, architecture, shell, native Windows versus WSL,
-   existing Reinstate binary, and the proposed user-local install path.
-2. Download only from
-   `https://github.com/HarjjotSinghh/reinstate/releases/download/<REINSTATE_VERSION>/`.
-   The asset contract is
-   `reinstate_<VERSION_WITHOUT_LEADING_V>_<os>_<arch>.tar.gz` (`.zip` on
-   Windows). Also download `checksums.txt`.
-3. Verify SHA-256 before extraction. Refuse a missing checksum entry or
-   mismatch. Preserve an existing installation until verification succeeds.
-4. Install without elevation to `~/.local/bin` or
-   `%LOCALAPPDATA%\Programs\Reinstate\bin`, explain PATH changes, then run
-   `rein version` and `rein setup check`.
-5. Ask whether this is Device A or an additional device. Collect only
-   non-secret setup metadata: endpoint, bucket, canonical project ID, local
-   absolute project path, and (for later devices) Device A's `profile_id`.
-6. Prepare one command and pause for me to run it:
+   any existing Reinstate binary, and the expected user-local install path.
+2. Select exactly one bootstrap:
+   - macOS/Linux/WSL:
+     `https://reinstate.dev/install.sh`
+   - native Windows PowerShell:
+     `https://reinstate.dev/install.ps1`
+3. Download the bootstrap to a temporary file and inspect it before execution.
+   Require all of the following:
+   - exact release `v0.1.0-rc.2`;
+   - canonical installer fetched from that exact Git tag;
+   - canonical installer checksum verification before execution;
+   - no `latest` resolver; and
+   - binary downloads restricted to
+     `https://github.com/HarjjotSinghh/reinstate/releases/download/v0.1.0-rc.2/`.
+   Stop if any requirement fails.
+4. With normal approval, execute the inspected bootstrap. Keep its checksum,
+   version, and replacement checks enabled. Install without elevation to
+   `~/.local/bin` or `%LOCALAPPDATA%\Programs\Reinstate\bin`, and explain any
+   PATH update.
+5. Run `rein version --json` and require `0.1.0-rc.2`. Run
+   `rein setup check`. Before initialization, a missing-config result is
+   expected; platform, keyring, or Codex compatibility failures are blockers.
+6. Ask whether this is Device A or an additional device. Collect only the
+   non-secret endpoint, bucket, canonical project ID, local absolute project
+   path, and—for later devices—Device A's non-secret `profile_id`. Ask whether
+   I want one explicitly selected Codex session or all discovered sessions.
+   Default to one session. Never choose `--all` for me.
+7. Prepare one command and pause for me to run it:
    - Device A: `rein init --project ID=ABSOLUTE_PATH`
-   - later device: `rein init --profile-id UUID --project ID=ABSOLUTE_PATH`
-   I will enter storage credentials in Reinstate's hidden terminal prompts.
-   Never read or echo them.
-7. Continue with `rein doctor --self-test`.
-8. On Device A, run `rein push --all --dry-run`; summarize the plan and ask
-   before `rein push --all`.
-9. On an additional device, run `rein status`, then
-   `rein pull --all --dry-run`; summarize destinations/backups and ask before
-   `rein pull --all`. If Reinstate refuses an existing-target restore because
-   Codex is active, do not bypass it; tell me to close Codex and run the
-   approved command.
-10. I will type the same encryption passphrase into hidden prompts. Never route
-    it through command arguments, ordinary environment variables, chat, or
-    logs.
-11. Verify `rein list --agent codex --json` discovers the restored session
-    metadata at its date-partitioned rollout path. Ask me to confirm it appears
-    in Codex's normal resume UI; do not print transcript content.
-12. Return a redacted completion report with exact release/checksum, install
-    path, profile ID, project mapping, completed gates, changed files, and
-    remaining human-only steps.
+   - additional device:
+     `rein init --profile-id UUID --project ID=ABSOLUTE_PATH`
 
-Failure is not success: stop with the exact redacted error if storage probing,
-decryption, artifact validation, restore, or post-restore discovery fails.
+   I will enter storage credentials in Reinstate's hidden prompts. Never read
+   or echo them.
+8. Continue with `rein setup check` and `rein doctor --self-test`. Both must
+   pass.
+9. On Device A, use
+   `rein push --agent codex --session SESSION_ID --dry-run` for a selected
+   session, or `rein push --all --dry-run` only if I explicitly selected all.
+   Summarize metadata and request approval before the matching mutating command.
+10. On an additional device, run `rein status`, followed by
+    `rein pull --agent codex --session SESSION_ID --dry-run` for a selected
+    session, or `rein pull --all --dry-run` only if I explicitly selected all.
+    Summarize destinations/backups and request approval before the matching
+    mutating command. If Reinstate refuses an existing-target restore because
+    Codex is active, do not bypass it; tell me to close Codex and retry the
+    approved command.
+11. I will type the same encryption passphrase into hidden prompts. Never route
+    it through arguments, an ordinary environment variable, chat, or logs.
+12. Verify `rein list --agent codex --json` discovers the restored session at a
+    date-partitioned rollout path. Ask me to confirm it through Codex's normal
+    resume UI without printing transcript content.
+13. Return a redacted completion report containing the exact release,
+    bootstrap URL, checksum result, install path, non-secret profile ID,
+    project mapping, completed gates, changed files, and human-only actions.
+
+Failure is not success. Stop with the exact redacted error if artifact
+validation, initialization, storage probing, decryption, restore, or
+post-restore discovery fails.

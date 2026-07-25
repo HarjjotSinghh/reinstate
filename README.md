@@ -125,24 +125,31 @@ Native vendor sync will always own *one* ecosystem. DIY Syncthing/Drive hacks br
 ## Quick start
 
 > **Note:** the v0.1 CLI surface below is implemented, but native acceptance and
-> public release certification are still in progress. Star & watch the repo for
-> the first stable release.
+> stable release certification are still in progress. The commands below pin
+> the published release candidate `v0.1.0-rc.2`.
 >
 > **CLI:** prefer short alias **`rein`**. Full name **`reinstate`** works the same.
 
 ### Install
 
-```bash
-# From source
-git clone https://github.com/HarjjotSinghh/reinstate.git
-cd reinstate
-make build
-./bin/rein version        # short alias
-./bin/reinstate version   # full name (same tool)
+macOS, Linux, or WSL2:
 
-# Go install (when module is published)
-go install github.com/HarjjotSinghh/reinstate/cmd/reinstate@vX.Y.Z
-# optional: ln -s "$(go env GOPATH)/bin/reinstate" "$(go env GOPATH)/bin/rein"
+```bash
+curl -fsSL https://reinstate.dev/install.sh | sh
+```
+
+Native Windows PowerShell:
+
+```powershell
+irm https://reinstate.dev/install.ps1 | iex
+```
+
+Both bootstraps pin and verify `v0.1.0-rc.2`, install without elevation, and
+print the next command:
+
+```bash
+rein version --json
+rein init
 ```
 
 ### Device A

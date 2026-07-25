@@ -1,6 +1,7 @@
 #!/usr/bin/env sh
 # Reinstate installer — downloads one exact GitHub Release and verifies SHA-256.
-# Usage: curl -fsSL https://raw.githubusercontent.com/HarjjotSinghh/reinstate/vX.Y.Z/scripts/install.sh | REINSTATE_VERSION=vX.Y.Z sh
+# Public: curl -fsSL https://reinstate.dev/install.sh | sh
+# Exact-tag audit: curl -fsSL https://raw.githubusercontent.com/HarjjotSinghh/reinstate/vX.Y.Z/scripts/install.sh | REINSTATE_VERSION=vX.Y.Z sh
 set -eu
 
 REPO="HarjjotSinghh/reinstate"

@@ -79,7 +79,7 @@ func TestLocalMarkdownLinksResolve(t *testing.T) {
 		}
 		if entry.IsDir() {
 			switch entry.Name() {
-			case ".git", "bin", "dist", "vendor":
+			case ".git", "bin", "dist", "node_modules", "vendor":
 				return filepath.SkipDir
 			}
 			return nil
