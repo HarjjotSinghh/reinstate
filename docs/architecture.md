@@ -1,8 +1,11 @@
 # Architecture
 
-Reinstate is intentionally boring infrastructure. Differentiation lives in
-**adapter quality**, **path normalization**, and **trust posture** — not exotic
-protocols.
+Reinstate is intentionally boring **continuity infrastructure**. Differentiation
+lives in **adapter quality**, **path normalization**, **environment verification**,
+and **trust posture** — not exotic protocols or a proprietary coding harness.
+
+Product layers and non-goals: [product-strategy.md](product-strategy.md),
+[ROADMAP.md](../ROADMAP.md).
 
 ```
 ┌─────────────┐   ┌─────────────┐   ┌─────────────┐
@@ -40,15 +43,57 @@ protocols.
 
 ![Reinstate MVP architecture](../assets/05_architecture.png)
 
+## Continuity stack
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│  CLI / TUI / (later) Console                                │
+│  search · inspect · resume · fork · handoff · sync          │
+└───────────────────────────┬─────────────────────────────────┘
+                            │
+┌───────────────────────────▼─────────────────────────────────┐
+│  Session index + workspace fingerprints + checkpoints       │
+└───────────────────────────┬─────────────────────────────────┘
+                            │
+          ┌─────────────────┼─────────────────┐
+          ▼                 ▼                 ▼
+   ┌────────────┐   ┌──────────────┐   ┌────────────┐
+   │  Adapters  │   │  Executors   │   │ Sync / E2E │
+   │ discover   │   │ launch native│   │ encrypt    │
+   │ transform  │   │ agent / ACP  │   │ push/pull  │
+   └────────────┘   └──────────────┘   └────────────┘
+```
+
+**Before execution:** find session, load history, fingerprint workspace, check
+skills/MCP, build portable checkpoint if needed, choose destination agent.  
+**During execution:** Claude Code / Codex / Gemini / OpenCode (or another ADE)
+own the agent loop.  
+**After execution:** capture updates, update index, optional encrypted sync.
+
+### SessionExecutor (target contract)
+
+```text
+capabilities() → ExecutorCapabilities
+canResume(session) → CompatibilityResult
+launch(preparedSession) → ExecutionHandle
+```
+
+Implementations: Claude Code, Codex, Gemini CLI, OpenCode; later ACP-compatible
+agents. Reinstate Console may become a thin ACP **client**, not a full harness.
+
 ## Design principles
 
 1. **Local-first** — agents remain the sole executors of sessions; Reinstate
-   relocates files, it does not re-interpret or re-run them.
+   owns continuity before/after, not the model loop.
 2. **Zero-knowledge remote** — only ciphertext on object storage.
-3. **Same-vendor resume** — restore puts bytes where `claude --resume` /
-   `codex resume` already know how to read them.
-4. **Fail-safe conflicts** — never overwrite; fork and surface.
-5. **Adapter isolation** — format churn in one agent cannot break others.
+3. **Native resume is same-vendor** — restore puts bytes where `claude --resume`
+   / `codex resume` already know how to read them.
+4. **Cross-agent = portable handoffs** — explicit checkpoints, never silent
+   transcript translation.
+5. **Fail-safe conflicts** — never overwrite; fork and surface.
+6. **Adapter isolation** — format churn in one agent cannot break others.
+7. **Not an ADE** — no custom editor, terminal emulator, multi-agent scheduler,
+   or model router as product spine.
 
 ## Pipeline stages
 
@@ -134,7 +179,7 @@ reality without tripling complexity.
 ## Package layout
 
 ```
-cmd/reinstate/          # CLI entrypoint
+cmd/reinstate/          # CLI entrypoint (install as reinstate + rein)
 internal/
   adapter/              # per-agent adapters
   config/               # local config + path_map

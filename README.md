@@ -4,10 +4,10 @@
 
 # Reinstate
 
-### The sync layer for your entire AI development environment
+### Pick up any coding task exactly where you left it
 
-**Sessions · MCP servers · Skills · Settings** — across every coding agent and every machine you own.
-Encrypted so only you can read it.
+**The continuity layer for coding-agent work** — search, resume, and hand off sessions across agents, projects, environments, and devices.
+Multi-device sync is encrypted (BYO storage) so only you can read it.
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/HarjjotSinghh/reinstate)](https://goreportcard.com/report/github.com/HarjjotSinghh/reinstate)
@@ -117,7 +117,8 @@ Native vendor sync will always own *one* ecosystem. DIY Syncthing/Drive hacks br
 - **OS-aware path remapping** — the hard problem treated as the product
 - **Selective scopes** — `sessions` | `config` | `all`
 - **Safe by default** — credential denylist, atomic restore, conflict forks, local backups
-- **Simple CLI** — `init` · `push` · `pull` · `status` · `diff` · `conflicts`
+- **Simple CLI** — `rein init` · `push` · `pull` · `status` · `diff` · `conflicts`  
+  (`rein` is the short alias; `reinstate` is the full command — same binary)
 
 ---
 
@@ -125,6 +126,8 @@ Native vendor sync will always own *one* ecosystem. DIY Syncthing/Drive hacks br
 
 > **Note:** v0.1 CLI is under active development. The UX below is the target
 > interface. Star & watch the repo for the first stable release.
+>
+> **CLI:** prefer short alias **`rein`**. Full name **`reinstate`** works the same.
 
 ### Install
 
@@ -133,26 +136,28 @@ Native vendor sync will always own *one* ecosystem. DIY Syncthing/Drive hacks br
 git clone https://github.com/HarjjotSinghh/reinstate.git
 cd reinstate
 make build
-./bin/reinstate version
+./bin/rein version        # short alias
+./bin/reinstate version   # full name (same tool)
 
 # Go install (when module is published)
 go install github.com/HarjjotSinghh/reinstate/cmd/reinstate@latest
+# optional: ln -s "$(go env GOPATH)/bin/reinstate" "$(go env GOPATH)/bin/rein"
 ```
 
 ### Device A
 
 ```bash
-reinstate init          # backend + passphrase + path map
-reinstate push          # encrypt & upload
+rein init          # backend + passphrase + path map
+rein push          # encrypt & upload
 ```
 
 ### Device B
 
 ```bash
-reinstate init          # SAME backend + SAME passphrase
-reinstate pull --dry-run
-reinstate pull
-claude --resume         # or: codex resume
+rein init          # SAME backend + SAME passphrase
+rein pull --dry-run
+rein pull
+claude --resume    # or: codex resume
 ```
 
 Full walkthrough: **[docs/getting-started.md](docs/getting-started.md)**
@@ -225,6 +230,7 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 
 | Doc | Description |
 | --- | ----------- |
+| **Website** | [reinstate-web.vercel.app](https://reinstate-web.vercel.app) — landing + waitlist + docs (`website/`) |
 | [Getting started](docs/getting-started.md) | Install, init, dual-device setup |
 | [Architecture](docs/architecture.md) | Pipeline, packages, design principles |
 | [Adapters](docs/adapters.md) | Per-agent layouts & support matrix |

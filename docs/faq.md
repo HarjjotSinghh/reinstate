@@ -2,9 +2,29 @@
 
 ## What is Reinstate?
 
-A local-first, open-source CLI that syncs AI coding agent **sessions** (and
-config: MCP servers, skills, settings) across your devices with end-to-end
-encryption and bring-your-own storage.
+The **continuity layer for coding-agent work**: find, search, resume, and hand
+off sessions across agents, projects, environments, and devices. Multi-device
+sync uses end-to-end encryption and bring-your-own storage. Single-device users
+still get a universal session index and verified resume.
+
+Spine: *Reinstate is not another place to code — it makes every place you code continuous.*
+
+## What is `rein` vs `reinstate`?
+
+**Same tool.**
+
+| Name | Role |
+| ---- | ---- |
+| **Reinstate** | Product / brand / docs / repo |
+| **`reinstate`** | Full CLI binary name |
+| **`rein`** | Short alias (preferred day-to-day) |
+
+```bash
+rein version
+reinstate version   # identical behavior
+```
+
+Config and data live under `~/.reinstate/` either way.
 
 ## Why not just use git?
 
@@ -14,8 +34,23 @@ asking a new agent to re-derive context is slow and incomplete.
 
 ## Will this resume a Claude session inside Codex?
 
-**No.** Same-vendor resume only. Cross-agent value is portable **config /
-skills / environment**, not replaying one model's transcript into another.
+**Native resume:** no — same-vendor only (Claude → Claude Code, Codex → Codex).
+
+**Portable handoff (roadmap):** yes, as an *explicit* checkpoint (goal,
+decisions, files touched, tests, next action) — not a silent perfect transcript
+translation. See [product-strategy.md](product-strategy.md).
+
+## Do I need two computers?
+
+**No.** Multi-device sync is the flagship wedge, but one machine with multiple
+agents, sessions, projects, or worktrees is a first-class user. Phase 2+ local
+index/search/resume does not require remote storage.
+
+## Is Reinstate another ADE / agent IDE?
+
+**No.** We do not replace Claude Code, Codex, Orca, Conductor, or Cursor as
+execution environments. We make work **discoverable, verifiable, portable, and
+syncable** across those tools.
 
 ## Is my data sent to Reinstate servers?
 

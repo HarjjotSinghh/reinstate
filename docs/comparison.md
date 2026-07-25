@@ -1,7 +1,10 @@
 # Comparison
 
-How **Reinstate** sits next to native vendor sync, single-tool sync utilities,
-and DIY file sync.
+How **Reinstate** sits next to native vendor sync, session browsers, full agentic
+development environments (ADEs), single-tool sync utilities, and DIY file sync.
+
+Reinstate is a **continuity layer** (find / verify / resume / hand off / sync) —
+not another place to code.
 
 ![Landscape: agent scope vs state portability](../assets/01_landscape.png)
 
@@ -18,16 +21,29 @@ and DIY file sync.
 | Delta / large history | N/A | Full-file gzip | Full-file | File-level | **CAS + tail-append (target)** |
 | Team session sharing | Rare | No | Rare | Manual | Roadmap |
 
-## vs native vendor sync
+## vs native vendor session UIs
 
-**Claude Code** Remote Control / teleport and **Codex** account-linked surfaces
-are excellent *inside one ecosystem*. They will not:
+**Claude Code** / **Codex** / **Gemini** session resume, search, and fork are
+excellent *inside one ecosystem*. They will not:
 
-- Resume your Claude sessions from a Codex machine state
-- Sync MCP/skills across competing tools
-- Keep ciphertext on storage *you* control
+- Index sessions across competing agents in one switcher
+- Verify workspace + MCP/skills before resume in a vendor-neutral way
+- Move work across devices with ciphertext on storage *you* control
+- Produce explicit portable handoffs between agents
 
-Reinstate's moat is **universality + neutrality + BYO encrypted storage**.
+Reinstate's moat is **universality + environment verification + neutrality + BYO E2EE**.
+
+## vs session browsers (e.g. SpecStory-class tools)
+
+Unified browse/search/resume validates demand. Reinstate differentiates by
+**verified environment continuity** (repo/branch/MCP/skills/runtime) and
+optional **encrypted multi-device sync** — not by being “another picker.”
+
+## vs full ADEs (Orca, Conductor, T3 Code, …)
+
+Those products own **where coding happens** (UI, worktrees, terminals, multi-agent
+layouts). Reinstate owns **whether work survives and can move**. Integrate;
+do not compete as a full harness.
 
 ## vs claude-sync
 
