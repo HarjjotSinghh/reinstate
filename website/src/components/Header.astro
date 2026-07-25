@@ -1,0 +1,242 @@
+---
+const path = Astro.url.pathname;
+const onDocs = path.startsWith('/docs');
+---
+
+<header class="nav">
+  <div class="shell nav-inner">
+    <a href="/" class="mark">
+      <span class="glyph" aria-hidden="true"></span>
+      reinstate
+    </a>
+
+    <nav class="links" aria-label="Primary">
+      <a href="/#how">How it works</a>
+      <a href="/docs/getting-started" class:list={[onDocs && 'is-active']}>Docs</a>
+      <a href="/docs/security-model">Security</a>
+      <a
+        href="https://github.com/HarjjotSinghh/reinstate"
+        rel="noopener noreferrer"
+        target="_blank">GitHub</a
+      >
+    </nav>
+
+    <button class="themetoggle" id="themetoggle" type="button" aria-label="Switch colour theme">
+      <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="4.5"></circle>
+        <path
+          d="M12 2.5v2.2M12 19.3v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"
+        ></path>
+      </svg>
+      <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M20 14.2A8.2 8.2 0 0 1 9.8 4a8.4 8.4 0 1 0 10.2 10.2z"></path>
+      </svg>
+    </button>
+
+    <a class="navcta" href="/#join">Join the waitlist</a>
+
+    <button
+      type="button"
+      class="navburger"
+      id="nav-toggle"
+      aria-label="Open menu"
+      aria-expanded="false"
+      aria-controls="mobile-nav"
+    >
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9">
+        <path d="M4 7h16M4 12h16M4 17h16"></path>
+      </svg>
+    </button>
+  </div>
+
+  <div id="mobile-nav" class="mobile-nav" hidden>
+    <nav class="shell mobile-links" aria-label="Mobile">
+      <a href="/#how">How it works</a>
+      <a href="/docs/getting-started">Docs</a>
+      <a href="/docs/security-model">Security</a>
+      <a href="https://github.com/HarjjotSinghh/reinstate" rel="noopener noreferrer" target="_blank"
+        >GitHub</a
+      >
+    </nav>
+  </div>
+</header>
+
+<script>
+  const root = document.documentElement;
+  const toggle = document.getElementById('themetoggle');
+  const navToggle = document.getElementById('nav-toggle');
+  const mobileNav = document.getElementById('mobile-nav');
+
+  const sync = () =>
+    toggle?.setAttribute('aria-pressed', String(root.classList.contains('dark')));
+  sync();
+
+  toggle?.addEventListener('click', () => {
+    const dark = root.classList.toggle('dark');
+    try {
+      localStorage.setItem('rein-theme', dark ? 'dark' : 'light');
+    } catch {
+      /* private mode */
+    }
+    sync();
+  });
+
+  navToggle?.addEventListener('click', () => {
+    if (!mobileNav || !navToggle) return;
+    const open = mobileNav.hasAttribute('hidden');
+    if (open) {
+      mobileNav.hidden = false;
+      navToggle.setAttribute('aria-expanded', 'true');
+    } else {
+      mobileNav.hidden = true;
+      navToggle.setAttribute('aria-expanded', 'false');
+    }
+  });
+</script>
+
+<style>
+  .nav {
+    border-bottom: 1px solid var(--rule);
+    background: var(--paper);
+    position: sticky;
+    top: 0;
+    z-index: 40;
+  }
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    min-height: 4.25rem;
+  }
+  .mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-family: var(--font-display);
+    font-size: 1.16rem;
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    text-decoration: none;
+  }
+  .glyph {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    background: var(--ink);
+    border: 4px solid var(--prim);
+  }
+  .links {
+    display: flex;
+    gap: 1.4rem;
+    margin-left: auto;
+    font-size: 0.9rem;
+    color: var(--ink-2);
+  }
+  .links a {
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .links a:hover,
+  .links a.is-active {
+    color: var(--ink);
+  }
+  .themetoggle {
+    display: grid;
+    place-items: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: var(--paper-2);
+    color: var(--ink-2);
+    cursor: pointer;
+    transition:
+      color 0.2s,
+      border-color 0.2s,
+      transform 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .themetoggle:hover {
+    color: var(--ink);
+    border-color: var(--ink-3);
+  }
+  .themetoggle:active {
+    transform: scale(0.94);
+  }
+  .themetoggle svg {
+    width: 1rem;
+    height: 1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+  }
+  .i-moon {
+    display: none;
+  }
+  :global(html.dark) .i-moon {
+    display: block;
+  }
+  :global(html.dark) .i-sun {
+    display: none;
+  }
+  .navcta {
+    padding: 0.55rem 1.05rem;
+    border-radius: 8px;
+    background: var(--ink);
+    color: var(--paper);
+    font-size: 0.875rem;
+    font-weight: 550;
+    text-decoration: none;
+    white-space: nowrap;
+    transition:
+      transform 0.14s cubic-bezier(0.16, 1, 0.3, 1),
+      background 0.2s,
+      color 0.2s;
+  }
+  .navcta:hover {
+    background: var(--prim);
+    color: var(--on-prim);
+  }
+  .navcta:active {
+    transform: scale(0.97);
+  }
+  .navburger {
+    display: none;
+    place-items: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    background: var(--paper-2);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .mobile-nav {
+    border-top: 1px solid var(--rule);
+    padding-block: 0.75rem;
+  }
+  .mobile-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .mobile-links a {
+    padding: 0.55rem 0;
+    text-decoration: none;
+    color: var(--ink-2);
+  }
+  .mobile-links a:hover {
+    color: var(--ink);
+  }
+  @media (max-width: 940px) {
+    .links {
+      display: none;
+    }
+    .themetoggle {
+      margin-left: auto;
+    }
+    .navburger {
+      display: grid;
+    }
+  }
+</style>

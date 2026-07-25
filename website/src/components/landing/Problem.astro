@@ -1,0 +1,115 @@
+---
+---
+
+<section class="section problem" id="problem" aria-labelledby="problem-title">
+  <div class="shell">
+    <h2 id="problem-title" class="display">
+      Git has the code. The agent does not have the conversation.
+    </h2>
+    <p class="lede">
+      You grind for hours on a Windows desktop across Claude Code, Codex, Gemini CLI. Open the
+      MacBook: empty history, different MCP setup, start from zero. Vendor tools save sessions
+      locally. Switching machines is context death.
+    </p>
+
+    <div class="pair">
+      <article class="panel bad">
+        <p class="kicker mono">Without Reinstate</p>
+        <h3>Context dies at the desk</h3>
+        <ul>
+          <li>Sessions stuck on the origin machine</li>
+          <li>MCP and skills drift between devices</li>
+          <li>Absolute paths break naive file sync</li>
+          <li>Live remote tools need the desktop awake</li>
+        </ul>
+      </article>
+      <article class="panel good">
+        <p class="kicker mono">With Reinstate</p>
+        <h3>Portable state you control</h3>
+        <ul>
+          <li>Push encrypted sessions to your storage</li>
+          <li>Pull on the laptop when the desktop is off</li>
+          <li>Path remap so Windows ↔ macOS resume works</li>
+          <li>Same IDs, same agent, continue the thread</li>
+        </ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<style>
+  .problem .display {
+    max-width: 18ch;
+    font-size: clamp(1.75rem, 3vw, 2.75rem);
+    margin: 0;
+  }
+  .lede {
+    margin: 1.25rem 0 0;
+    max-width: 58ch;
+    color: var(--ink-2);
+    font-size: clamp(1rem, 0.4vw + 0.92rem, 1.1rem);
+    line-height: 1.6;
+    text-wrap: pretty;
+  }
+  .pair {
+    margin-top: 2.5rem;
+    display: grid;
+    gap: 1rem;
+  }
+  @media (min-width: 800px) {
+    .pair {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  .panel {
+    padding: 1.5rem 1.5rem 1.65rem;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    background: var(--paper-2);
+  }
+  .panel.good {
+    border-color: color-mix(in oklch, var(--prim-deep) 45%, var(--rule));
+  }
+  .kicker {
+    margin: 0;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--ink-3);
+  }
+  .panel.good .kicker {
+    color: var(--prim-deep);
+  }
+  h3 {
+    margin: 0.55rem 0 0;
+    font-size: 1.15rem;
+    font-weight: 560;
+    letter-spacing: -0.02em;
+  }
+  ul {
+    margin: 1rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.45rem;
+  }
+  li {
+    position: relative;
+    padding-left: 1rem;
+    color: var(--ink-2);
+    font-size: 0.92rem;
+    line-height: 1.45;
+  }
+  li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.55em;
+    width: 5px;
+    height: 5px;
+    border-radius: 1px;
+    background: var(--ink-3);
+  }
+  .panel.good li::before {
+    background: var(--prim-deep);
+  }
+</style>

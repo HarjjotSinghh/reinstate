@@ -1,0 +1,449 @@
+---
+export const prerender = true;
+import PreviewLayout from '../../layouts/PreviewLayout.astro';
+
+const sessions = [
+  { repo: 'acme-api', agent: 'claude code' },
+  { repo: 'dashboard', agent: 'codex' },
+  { repo: 'infra-tf', agent: 'gemini cli' },
+  { repo: 'docs-site', agent: 'opencode' },
+  { repo: 'scratch', agent: 'grok build' },
+];
+---
+
+<PreviewLayout title="B · Diptych — Reinstate" themeColor="#08090b">
+  <div class="page">
+    <section class="hero">
+      <div class="bg" aria-hidden="true">
+        <div class="bgl"></div>
+        <div class="bgr"></div>
+      </div>
+      <div class="seam" aria-hidden="true"><i></i></div>
+
+      <header class="topbar">
+        <a href="/" class="wordmark">reinstate<b>.</b></a>
+        <nav class="topnav">
+          <a href="/docs/getting-started">Docs</a>
+          <a href="https://github.com/HarjjotSinghh/reinstate" rel="noopener noreferrer" target="_blank">GitHub</a>
+        </nav>
+      </header>
+
+      <div class="center">
+        <h1>Restore your AI coding workspace on any device</h1>
+        <p class="sub">
+          Sessions, MCP servers, skills, and settings, across every coding agent and
+          every machine you own. Encrypted so only you can read it.
+        </p>
+        <form class="join" onsubmit="event.preventDefault()">
+          <label class="sr" for="b-email">Email address</label>
+          <input id="b-email" type="email" placeholder="you@yourdomain.dev" autocomplete="email" />
+          <button type="submit">Join the waitlist</button>
+        </form>
+        <p class="trust">End&#8209;to&#8209;end encrypted with age. Your own S3, R2, or B2 bucket. Apache&#8209;2.0.</p>
+      </div>
+
+      <div class="panel left">
+        <div class="pmeta">
+          <span class="clock">23:41</span>
+          <span>desktop · windows</span>
+        </div>
+        <ul class="slist">
+          {
+            sessions.map((s, i) => (
+              <li style={`--i:${i}`}>
+                <span class="dot" aria-hidden="true"></span>
+                <span class="repo">{s.repo}</span>
+                <span class="agent">{s.agent}</span>
+              </li>
+            ))
+          }
+        </ul>
+        <p class="pfoot">Context stops at the lid.</p>
+      </div>
+
+      <div class="panel right">
+        <div class="pmeta">
+          <span class="clock">23:47</span>
+          <span>laptop · macos</span>
+        </div>
+        <ul class="slist live">
+          {
+            sessions.map((s, i) => (
+              <li style={`--i:${i}`}>
+                <span class="dot" aria-hidden="true"></span>
+                <span class="repo">{s.repo}</span>
+                <span class="agent">{s.agent}</span>
+              </li>
+            ))
+          }
+        </ul>
+        <p class="pfoot"><code>rein pull</code> · paths remapped · context intact</p>
+      </div>
+    </section>
+  </div>
+</PreviewLayout>
+
+<style>
+  .page {
+    --ink: oklch(0.97 0 0);
+    --muted: oklch(0.73 0.008 250);
+    --dim: oklch(0.55 0.01 250);
+    --prim: oklch(0.9 0.22 128);
+    --prim-ink: oklch(0.2 0.05 128);
+    --cold: oklch(0.16 0.015 255);
+    --warm: oklch(0.125 0.004 128);
+
+    min-height: 100svh;
+    background: var(--warm);
+    color: var(--ink);
+    overflow-x: clip;
+  }
+
+  .hero {
+    position: relative;
+    min-height: 100svh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto 1fr auto;
+    align-items: start;
+  }
+
+  .bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .bgl {
+    background: var(--cold);
+  }
+  .bgr {
+    background: var(--warm);
+  }
+
+  .seam {
+    position: absolute;
+    z-index: 1;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: oklch(1 0 0 / 0.11);
+    transform: translateX(-0.5px);
+  }
+  .seam i {
+    position: absolute;
+    left: -1px;
+    width: 3px;
+    height: 20%;
+    border-radius: 2px;
+    background: linear-gradient(180deg, transparent, var(--prim), transparent);
+    animation: pulse 4.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  }
+
+  .topbar {
+    position: relative;
+    z-index: 3;
+    grid-column: 1 / -1;
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.35rem clamp(1.25rem, 4vw, 2.5rem);
+  }
+  .wordmark {
+    font-size: 0.95rem;
+    font-weight: 550;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+  }
+  .wordmark b {
+    color: var(--prim);
+  }
+  .topnav {
+    display: flex;
+    gap: 1.25rem;
+    font-size: 0.875rem;
+    color: var(--muted);
+  }
+  .topnav a {
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .topnav a:hover {
+    color: var(--ink);
+  }
+
+  .center {
+    position: relative;
+    z-index: 3;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    align-self: center;
+    justify-self: center;
+    width: min(52rem, calc(100% - 2.5rem));
+    text-align: center;
+    padding-block: clamp(2rem, 5vw, 3.5rem);
+  }
+
+  .center h1 {
+    margin: 0;
+    font-size: clamp(2.2rem, 5.2vw, 4.35rem);
+    line-height: 1.03;
+    letter-spacing: -0.032em;
+    font-weight: 540;
+    text-wrap: balance;
+    animation: rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .sub {
+    margin: 1.15rem auto 0;
+    max-width: 48ch;
+    font-size: clamp(0.95rem, 0.5vw + 0.85rem, 1.1rem);
+    line-height: 1.6;
+    color: var(--muted);
+    text-wrap: pretty;
+    animation: rise 0.8s 0.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .join {
+    margin: 1.75rem auto 0;
+    display: flex;
+    gap: 0.5rem;
+    max-width: 28rem;
+    animation: rise 0.8s 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .join input {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0.75rem 0.9rem;
+    border-radius: 7px;
+    border: 1px solid oklch(1 0 0 / 0.17);
+    background: oklch(1 0 0 / 0.05);
+    color: var(--ink);
+    font-size: 0.925rem;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .join input::placeholder {
+    color: var(--dim);
+  }
+  .join input:focus {
+    outline: none;
+    border-color: var(--prim);
+    background: oklch(1 0 0 / 0.08);
+  }
+  .join button {
+    padding: 0.75rem 1.15rem;
+    border: none;
+    border-radius: 7px;
+    background: var(--prim);
+    color: var(--prim-ink);
+    font-size: 0.925rem;
+    font-weight: 560;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), filter 0.2s;
+  }
+  .join button:hover {
+    filter: brightness(1.08);
+  }
+  .join button:active {
+    transform: scale(0.98);
+  }
+
+  .trust {
+    margin: 1rem 0 0;
+    font-size: 0.78rem;
+    color: var(--dim);
+    animation: rise 0.8s 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .panel {
+    position: relative;
+    z-index: 2;
+    grid-row: 3;
+    align-self: end;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    padding: 1.5rem clamp(1.25rem, 4vw, 2.5rem) clamp(1.75rem, 3.5vw, 2.5rem);
+    min-width: 0;
+  }
+  .left {
+    grid-column: 1;
+  }
+  .right {
+    grid-column: 2;
+  }
+
+  .pmeta {
+    display: flex;
+    align-items: baseline;
+    gap: 0.7rem;
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+  .clock {
+    font-size: 0.95rem;
+    letter-spacing: -0.01em;
+    text-transform: none;
+    color: var(--muted);
+  }
+  .right .clock {
+    color: var(--prim);
+  }
+
+  .slist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .slist li {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid oklch(1 0 0 / 0.055);
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.8rem;
+    min-width: 0;
+  }
+  .repo {
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .agent {
+    margin-left: auto;
+    color: var(--dim);
+    font-size: 0.7rem;
+    white-space: nowrap;
+  }
+  .dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: oklch(0.42 0.012 255);
+    flex: none;
+  }
+
+  .left .slist li {
+    opacity: calc(0.8 - var(--i) * 0.12);
+    filter: saturate(0.2);
+  }
+
+  .live li {
+    animation: land 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(0.55s + var(--i) * 0.1s);
+  }
+  .live .dot {
+    background: var(--prim);
+  }
+  .live .repo {
+    color: var(--ink);
+  }
+
+  .pfoot {
+    margin: 0.25rem 0 0;
+    font-size: 0.78rem;
+    color: var(--dim);
+  }
+  .pfoot code {
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    color: var(--prim);
+  }
+
+  .sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 900px) {
+    .hero {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto auto;
+      min-height: 0;
+    }
+    .bg {
+      display: none;
+    }
+    .seam {
+      display: none;
+    }
+    .topbar,
+    .center {
+      grid-column: 1;
+    }
+    .center {
+      grid-row: 2;
+      text-align: left;
+      justify-self: stretch;
+      width: auto;
+      padding: clamp(3.5rem, 12vw, 5rem) clamp(1.25rem, 5vw, 2rem) clamp(2rem, 6vw, 3rem);
+    }
+    .sub,
+    .join {
+      margin-inline: 0;
+    }
+    .join {
+      flex-wrap: wrap;
+    }
+    .left {
+      grid-row: 3;
+      grid-column: 1;
+      background: var(--cold);
+    }
+    .right {
+      grid-row: 4;
+      grid-column: 1;
+      background: var(--warm);
+      border-top: 1px solid oklch(1 0 0 / 0.09);
+    }
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes land {
+    from {
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes pulse {
+    0% {
+      top: -20%;
+      opacity: 0;
+    }
+    10%,
+    80% {
+      opacity: 1;
+    }
+    100% {
+      top: 100%;
+      opacity: 0;
+    }
+  }
+</style>

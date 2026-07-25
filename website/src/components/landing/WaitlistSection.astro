@@ -1,0 +1,50 @@
+---
+import WaitlistForm from '../WaitlistForm.astro';
+---
+
+<section class="section waitband" id="waitlist" aria-labelledby="wait-title">
+  <div class="shell panel">
+    <div>
+      <h2 id="wait-title" class="display">Get early access</h2>
+      <p>
+        v0.1 CLI is under active development. Join the waitlist for release notes and early access.
+        We will not sell your email.
+      </p>
+    </div>
+    <div class="form">
+      <WaitlistForm id="footer-waitlist" compact />
+    </div>
+  </div>
+</section>
+
+<style>
+  .panel {
+    display: grid;
+    gap: 1.75rem;
+    padding: clamp(1.5rem, 3vw, 2.5rem);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    background: var(--paper-2);
+  }
+  @media (min-width: 860px) {
+    .panel {
+      grid-template-columns: 1.1fr 1fr;
+      align-items: end;
+      gap: 2.5rem;
+    }
+  }
+  .display {
+    margin: 0;
+    font-size: clamp(1.5rem, 2.5vw, 2.25rem);
+  }
+  p {
+    margin: 0.75rem 0 0;
+    max-width: 42ch;
+    color: var(--ink-2);
+    font-size: 0.98rem;
+    line-height: 1.55;
+  }
+  .form {
+    width: 100%;
+  }
+</style>

@@ -1,0 +1,285 @@
+---
+export const prerender = true;
+import '@fontsource-variable/bricolage-grotesque';
+import '@fontsource-variable/gabarito';
+import '@fontsource-variable/anybody';
+import '@fontsource-variable/archivo';
+import '@fontsource-variable/familjen-grotesk';
+import '@fontsource-variable/schibsted-grotesk';
+import '@fontsource-variable/sora';
+import '@fontsource-variable/unbounded';
+import '@fontsource-variable/funnel-display';
+import '@fontsource-variable/host-grotesk';
+import '@fontsource-variable/big-shoulders-display';
+import PreviewLayout from '../../layouts/PreviewLayout.astro';
+
+const options = [
+  {
+    n: 'A',
+    name: 'Bricolage Grotesque',
+    stack: "'Bricolage Grotesque Variable'",
+    w: 700,
+    ls: '-0.04em',
+    note: 'Current pick. Quirky grotesque with flared stems and a wide lowercase g. Warm, slightly odd, engineered.',
+  },
+  {
+    n: 'B',
+    name: 'Funnel Display',
+    stack: "'Funnel Display Variable'",
+    w: 800,
+    ls: '-0.035em',
+    note: 'New, low-saturation. Tight apertures, compact counters. Reads confident and modern without shouting.',
+  },
+  {
+    n: 'C',
+    name: 'Familjen Grotesk',
+    stack: "'Familjen Grotesk Variable'",
+    w: 700,
+    ls: '-0.03em',
+    note: 'Swedish grotesque with cut terminals and a distinctive R leg. Editorial, precise, quietly characterful.',
+  },
+  {
+    n: 'D',
+    name: 'Archivo',
+    stack: "'Archivo Variable'",
+    w: 700,
+    ls: '-0.035em',
+    note: 'Workhorse grotesque built for high performance at display sizes. Neutral, sturdy, very legible.',
+  },
+  {
+    n: 'E',
+    name: 'Anybody',
+    stack: "'Anybody Variable'",
+    w: 700,
+    ls: '-0.03em',
+    note: 'Technical display with a mechanical skeleton and a width axis. Machine-shop energy, matches the axonometric art.',
+  },
+  {
+    n: 'F',
+    name: 'Host Grotesk',
+    stack: "'Host Grotesk Variable'",
+    w: 700,
+    ls: '-0.035em',
+    note: 'Contemporary grotesque, slightly condensed. Clean and current, closest to a Linear or Vercel register.',
+  },
+  {
+    n: 'G',
+    name: 'Schibsted Grotesk',
+    stack: "'Schibsted Grotesk Variable'",
+    w: 700,
+    ls: '-0.032em',
+    note: 'Newsroom grotesque. Open shapes, high legibility, feels institutional and trustworthy.',
+  },
+  {
+    n: 'H',
+    name: 'Gabarito',
+    stack: "'Gabarito Variable'",
+    w: 700,
+    ls: '-0.035em',
+    note: 'Geometric and friendly with rounded joints. The most approachable option, closest to a consumer product.',
+  },
+  {
+    n: 'I',
+    name: 'Sora',
+    stack: "'Sora Variable'",
+    w: 700,
+    ls: '-0.03em',
+    note: 'Geometric with squared-off curves. Cool and technical, leans hard into the developer-tool register.',
+  },
+  {
+    n: 'J',
+    name: 'Unbounded',
+    stack: "'Unbounded Variable'",
+    w: 700,
+    ls: '-0.04em',
+    note: 'Loud display face with very wide proportions. Highest personality, lowest restraint. Would need short headlines.',
+  },
+  {
+    n: 'K',
+    name: 'Big Shoulders Display',
+    stack: "'Big Shoulders Display Variable'",
+    w: 700,
+    ls: '-0.02em',
+    note: 'Tall and condensed. Fits long headlines in few lines. Signage energy, feels industrial.',
+  },
+];
+---
+
+<PreviewLayout title="Heading font options — Reinstate" themeColor="#eff0ea">
+  <div class="page">
+    <header class="top">
+      <h1 class="pagetitle">Heading font options</h1>
+      <p class="lede">
+        Body stays Geist, mono stays Geist Mono. Only the display face changes. Each block
+        shows the real headline, the real sub, and the real wordmark at working sizes.
+        Tell me a letter.
+      </p>
+      <a class="back" href="/preview/exploded">← back to the hero</a>
+    </header>
+
+    <ul class="list">
+      {
+        options.map((o) => (
+          <li class="opt">
+            <div class="meta">
+              <span class="key">{o.n}</span>
+              <div>
+                <h2>{o.name}</h2>
+                <p>{o.note}</p>
+              </div>
+            </div>
+            <div class="sample">
+              <span class="wm" style={`font-family:${o.stack},sans-serif;font-weight:${o.w};letter-spacing:${o.ls}`}>
+                <i aria-hidden="true" />reinstate
+              </span>
+              <p
+                class="head"
+                style={`font-family:${o.stack},sans-serif;font-weight:${o.w};letter-spacing:${o.ls}`}
+              >
+                Restore your AI coding workspace on any device
+              </p>
+              <p class="sub">
+                Sessions, MCP servers, skills, and settings, across every coding agent and
+                every machine you own. Encrypted so only you can read it.
+              </p>
+              <p class="mono">rein push · rein pull · age · x25519</p>
+            </div>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</PreviewLayout>
+
+<style>
+  .page {
+    --paper: oklch(0.947 0.006 145);
+    --paper-2: oklch(0.998 0.002 145);
+    --ink: oklch(0.19 0.022 158);
+    --ink-2: oklch(0.41 0.018 158);
+    --ink-3: oklch(0.56 0.014 158);
+    --rule: oklch(0.87 0.008 145);
+    --prim: oklch(0.87 0.21 128);
+    --prim-deep: oklch(0.58 0.155 134);
+
+    min-height: 100svh;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+    padding: clamp(2.5rem, 6vw, 4.5rem) clamp(1.25rem, 4vw, 3rem) 9rem;
+  }
+
+  .top {
+    max-width: 44rem;
+  }
+  .pagetitle {
+    margin: 0;
+    font-size: clamp(1.75rem, 3vw, 2.5rem);
+    letter-spacing: -0.03em;
+    font-weight: 600;
+  }
+  .lede {
+    margin: 0.9rem 0 0;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--ink-2);
+  }
+  .back {
+    display: inline-block;
+    margin-top: 1rem;
+    font-size: 0.875rem;
+    color: var(--prim-deep);
+    text-decoration: none;
+    border-bottom: 1px solid currentColor;
+  }
+
+  .list {
+    list-style: none;
+    margin: clamp(2.5rem, 5vw, 4rem) 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0;
+  }
+
+  .opt {
+    display: grid;
+    gap: clamp(1.25rem, 3vw, 2.5rem);
+    padding: clamp(1.75rem, 4vw, 2.75rem) 0;
+    border-top: 1px solid var(--rule);
+  }
+  @media (min-width: 1000px) {
+    .opt {
+      grid-template-columns: minmax(0, 17rem) minmax(0, 1fr);
+    }
+  }
+
+  .meta {
+    display: flex;
+    gap: 0.85rem;
+    align-items: flex-start;
+  }
+  .key {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    border-radius: 7px;
+    background: var(--ink);
+    color: var(--paper-2);
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+  .meta h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 560;
+    letter-spacing: -0.015em;
+  }
+  .meta p {
+    margin: 0.4rem 0 0;
+    font-size: 0.85rem;
+    line-height: 1.55;
+    color: var(--ink-3);
+    text-wrap: pretty;
+  }
+
+  .sample {
+    min-width: 0;
+  }
+  .wm {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.15rem;
+  }
+  .wm i {
+    width: 19px;
+    height: 19px;
+    border-radius: 6px;
+    background: var(--ink);
+    box-shadow: inset 0 0 0 4px var(--prim);
+  }
+  .head {
+    margin: 0.85rem 0 0;
+    max-width: 18ch;
+    font-size: clamp(2rem, 3.6vw, 3.35rem);
+    line-height: 0.98;
+    text-wrap: balance;
+  }
+  .sub {
+    margin: 1rem 0 0;
+    max-width: 52ch;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--ink-2);
+    text-wrap: pretty;
+  }
+  .mono {
+    margin: 0.85rem 0 0;
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.82rem;
+    color: var(--ink-3);
+  }
+</style>

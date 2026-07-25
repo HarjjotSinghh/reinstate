@@ -1,0 +1,148 @@
+---
+import '@fontsource-variable/geist';
+import '@fontsource-variable/geist-mono';
+
+interface Props {
+  title: string;
+  themeColor?: string;
+}
+
+const { title, themeColor = '#0b0b0b' } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content={themeColor} />
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script is:inline>
+      (function () {
+        try {
+          var stored = localStorage.getItem('rein-theme');
+          var dark = stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (dark) document.documentElement.classList.add('dark');
+        } catch (e) {}
+      })();
+    </script>
+    <style is:global>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+
+      body {
+        font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+        font-feature-settings: 'ss01' on, 'cv11' on;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+
+      img,
+      svg {
+        display: block;
+        max-width: 100%;
+      }
+
+      button,
+      input {
+        font: inherit;
+        color: inherit;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      :focus-visible {
+        outline: 2px solid currentColor;
+        outline-offset: 3px;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+        }
+      }
+
+      /* Variant switcher, shared across all four comps */
+      .vswitch {
+        position: fixed;
+        z-index: 90;
+        left: 50%;
+        bottom: 1.25rem;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        padding: 4px;
+        border-radius: 999px;
+        background: rgba(12, 12, 12, 0.82);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        backdrop-filter: blur(12px);
+        font-family: 'Geist Mono Variable', ui-monospace, monospace;
+        font-size: 11px;
+        letter-spacing: 0.02em;
+        color: #d6d6d6;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+      }
+
+      .vswitch a {
+        text-decoration: none;
+        padding: 6px 11px;
+        border-radius: 999px;
+        white-space: nowrap;
+        transition: background 0.18s cubic-bezier(0.16, 1, 0.3, 1), color 0.18s;
+      }
+
+      .vswitch a:hover {
+        background: rgba(255, 255, 255, 0.09);
+        color: #fff;
+      }
+
+      .vswitch a[aria-current='page'] {
+        background: #b8ff3c;
+        color: #14210a;
+        font-weight: 500;
+      }
+
+      @media (max-width: 640px) {
+        .vswitch {
+          font-size: 10px;
+        }
+        .vswitch a {
+          padding: 6px 8px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <slot />
+    <nav class="vswitch" aria-label="Hero direction">
+      <a href="/preview/exploded" aria-current={Astro.url.pathname === '/preview/exploded' ? 'page' : undefined}>1 · Exploded</a>
+      <a href="/preview/spread" aria-current={Astro.url.pathname === '/preview/spread' ? 'page' : undefined}>2 · Spread</a>
+      <a href="/preview/route" aria-current={Astro.url.pathname === '/preview/route' ? 'page' : undefined}>3 · Route</a>
+      <a href="/preview/nightshift" aria-current={Astro.url.pathname === '/preview/nightshift' ? 'page' : undefined}>4 · Night shift</a>
+      <a href="/preview/relay" aria-current={Astro.url.pathname === '/preview/relay' ? 'page' : undefined}>· Relay</a>
+    </nav>
+  </body>
+</html>

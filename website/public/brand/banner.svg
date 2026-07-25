@@ -1,0 +1,184 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="380" viewBox="0 0 1200 380" role="img" aria-label="Reinstate — encrypted multi-agent session sync across devices">
+  <title>Reinstate</title>
+  <desc>Desktop and laptop synced through encrypted bring-your-own storage</desc>
+
+  <defs>
+    <!-- backdrop -->
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#080d18"/>
+      <stop offset="45%" stop-color="#0b1220"/>
+      <stop offset="100%" stop-color="#0d1526"/>
+    </linearGradient>
+
+    <!-- brand sweep: emerald -> cyan -> indigo -->
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="48%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+
+    <linearGradient id="title" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ecfdf5"/>
+      <stop offset="40%" stop-color="#a5f3fc"/>
+      <stop offset="100%" stop-color="#c7d2fe"/>
+    </linearGradient>
+
+    <linearGradient id="pushLine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#34d399" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#22d3ee"/>
+    </linearGradient>
+    <linearGradient id="pullLine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+
+    <!-- glass surfaces -->
+    <linearGradient id="glass" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0%" stop-color="#1e293b" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.95"/>
+    </linearGradient>
+    <linearGradient id="edgeL" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#34d399" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#34d399" stop-opacity="0.15"/>
+    </linearGradient>
+    <linearGradient id="edgeR" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#818cf8" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#818cf8" stop-opacity="0.15"/>
+    </linearGradient>
+    <linearGradient id="chrome" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.07"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.02"/>
+    </linearGradient>
+
+    <radialGradient id="vaultFill" cx="50%" cy="35%" r="70%">
+      <stop offset="0%" stop-color="#164e63"/>
+      <stop offset="100%" stop-color="#0b1220"/>
+    </radialGradient>
+
+    <radialGradient id="glowC" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.30"/>
+      <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowE" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#34d399" stop-opacity="0.26"/>
+      <stop offset="100%" stop-color="#34d399" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowI" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#818cf8" stop-opacity="0.26"/>
+      <stop offset="100%" stop-color="#818cf8" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- dot grid -->
+    <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse">
+      <circle cx="1.2" cy="1.2" r="1.2" fill="#7dd3fc" opacity="0.10"/>
+    </pattern>
+
+    <!-- vignette so the grid fades at the edges -->
+    <radialGradient id="vig" cx="50%" cy="45%" r="72%">
+      <stop offset="55%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.55"/>
+    </radialGradient>
+
+    <marker id="arrowC" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#22d3ee"/>
+    </marker>
+    <marker id="arrowI" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#818cf8"/>
+    </marker>
+
+    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+
+  <!-- ── backdrop ───────────────────────────────────────────── -->
+  <rect width="1200" height="380" fill="url(#bg)"/>
+  <rect width="1200" height="380" fill="url(#dots)"/>
+  <ellipse cx="150" cy="70" rx="340" ry="220" fill="url(#glowE)"/>
+  <ellipse cx="600" cy="250" rx="380" ry="230" fill="url(#glowC)"/>
+  <ellipse cx="1080" cy="120" rx="340" ry="230" fill="url(#glowI)"/>
+  <rect width="1200" height="380" fill="url(#vig)"/>
+  <rect x="0" y="0" width="1200" height="3" fill="url(#brand)"/>
+
+  <!-- ── wordmark ───────────────────────────────────────────── -->
+  <g font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, Inter, Helvetica, Arial, sans-serif">
+    <text x="600" y="78" text-anchor="middle" font-size="56" font-weight="800" letter-spacing="-1.6" fill="url(#title)">Reinstate</text>
+    <text x="600" y="110" text-anchor="middle" font-size="17" font-weight="500" letter-spacing="0.2" fill="#94a3b8">The sync layer for your entire AI development environment</text>
+  </g>
+
+  <!-- ── flow: desktop → vault → laptop ─────────────────────── -->
+  <g stroke-linecap="round">
+    <path d="M356 232 H508" stroke="url(#pushLine)" stroke-width="2.5" stroke-dasharray="7 7" fill="none" marker-end="url(#arrowC)"/>
+    <path d="M692 232 H844" stroke="url(#pullLine)" stroke-width="2.5" stroke-dasharray="7 7" fill="none" marker-end="url(#arrowI)"/>
+  </g>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" text-anchor="middle">
+    <text x="432" y="222" fill="#5eead4">rein push</text>
+    <text x="432" y="252" fill="#64748b" font-size="10.5">encrypt · age</text>
+    <text x="768" y="222" fill="#a5b4fc">rein pull</text>
+    <text x="768" y="252" fill="#64748b" font-size="10.5">remap · restore</text>
+  </g>
+
+  <!-- ── desktop card ───────────────────────────────────────── -->
+  <g filter="url(#soft)">
+    <rect x="118" y="160" width="238" height="146" rx="14" fill="url(#glass)" stroke="url(#edgeL)" stroke-width="1.5"/>
+    <path d="M118 174a14 14 0 0 1 14-14h210a14 14 0 0 1 14 14v18H118z" fill="url(#chrome)"/>
+    <circle cx="138" cy="176" r="4" fill="#ef4444" opacity="0.85"/>
+    <circle cx="152" cy="176" r="4" fill="#f59e0b" opacity="0.85"/>
+    <circle cx="166" cy="176" r="4" fill="#22c55e" opacity="0.85"/>
+    <text x="336" y="180" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" fill="#64748b">windows</text>
+    <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11">
+      <text x="138" y="216" fill="#5eead4">claude-code</text><text x="230" y="216" fill="#475569">12 sessions</text>
+      <text x="138" y="236" fill="#5eead4">codex</text><text x="230" y="236" fill="#475569">05 sessions</text>
+      <text x="138" y="256" fill="#5eead4">gemini-cli</text><text x="230" y="256" fill="#475569">03 sessions</text>
+    </g>
+    <rect x="138" y="272" width="200" height="1" fill="#1e293b"/>
+    <text x="138" y="292" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" fill="#94a3b8">mcp + skills + settings</text>
+  </g>
+  <text x="237" y="332" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#34d399">DESKTOP</text>
+
+  <!-- ── encrypted vault ────────────────────────────────────── -->
+  <g filter="url(#soft)">
+    <circle cx="600" cy="232" r="66" fill="url(#vaultFill)" stroke="url(#brand)" stroke-width="2"/>
+    <circle cx="600" cy="232" r="80" fill="none" stroke="#22d3ee" stroke-width="1" opacity="0.28" stroke-dasharray="3 9"/>
+    <!-- padlock -->
+    <path d="M586 222v-9a14 14 0 0 1 28 0v9" fill="none" stroke="#67e8f9" stroke-width="3.2" stroke-linecap="round"/>
+    <rect x="580" y="222" width="40" height="30" rx="7" fill="#0e7490" stroke="#a5f3fc" stroke-width="1.6"/>
+    <circle cx="600" cy="235" r="3.4" fill="#ecfeff"/>
+    <rect x="598.6" y="235" width="2.8" height="8" rx="1.4" fill="#ecfeff"/>
+    <text x="600" y="272" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" fill="#67e8f9">ciphertext</text>
+  </g>
+  <text x="600" y="332" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#22d3ee">YOUR BUCKET · R2 / S3 / WEBDAV</text>
+
+  <!-- ── laptop card ────────────────────────────────────────── -->
+  <g filter="url(#soft)">
+    <rect x="844" y="160" width="238" height="146" rx="14" fill="url(#glass)" stroke="url(#edgeR)" stroke-width="1.5"/>
+    <path d="M844 174a14 14 0 0 1 14-14h210a14 14 0 0 1 14 14v18H844z" fill="url(#chrome)"/>
+    <circle cx="864" cy="176" r="4" fill="#ef4444" opacity="0.85"/>
+    <circle cx="878" cy="176" r="4" fill="#f59e0b" opacity="0.85"/>
+    <circle cx="892" cy="176" r="4" fill="#22c55e" opacity="0.85"/>
+    <text x="1062" y="180" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" fill="#64748b">macos</text>
+    <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11">
+      <text x="864" y="216" fill="#c7d2fe">$ claude --resume</text>
+      <text x="864" y="236" fill="#a5b4fc">› same session ids</text>
+      <text x="864" y="256" fill="#a5b4fc">› paths remapped</text>
+    </g>
+    <rect x="864" y="272" width="200" height="1" fill="#1e293b"/>
+    <text x="864" y="292" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" fill="#94a3b8">context intact</text>
+    <circle cx="1056" cy="288" r="4" fill="#34d399"/>
+  </g>
+  <text x="963" y="332" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#818cf8">LAPTOP</text>
+
+  <!-- ── footer chips ───────────────────────────────────────── -->
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" text-anchor="middle">
+    <g fill="#0f172a" fill-opacity="0.7" stroke="#1e293b">
+      <rect x="332" y="348" width="112" height="22" rx="11"/>
+      <rect x="454" y="348" width="126" height="22" rx="11"/>
+      <rect x="590" y="348" width="124" height="22" rx="11"/>
+      <rect x="724" y="348" width="144" height="22" rx="11"/>
+    </g>
+    <text x="388" y="363" fill="#5eead4">age E2E</text>
+    <text x="517" y="363" fill="#7dd3fc">path remap</text>
+    <text x="652" y="363" fill="#a5b4fc">BYO storage</text>
+    <text x="796" y="363" fill="#94a3b8">Apache-2.0</text>
+  </g>
+</svg>

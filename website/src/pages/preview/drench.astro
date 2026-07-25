@@ -1,0 +1,326 @@
+---
+export const prerender = true;
+import PreviewLayout from '../../layouts/PreviewLayout.astro';
+
+const lines = [
+  { host: 'desktop', cmd: 'rein init', note: 'generates your age key, locally' },
+  { host: 'desktop', cmd: 'rein push', note: 'encrypted objects to your bucket' },
+  { host: 'laptop', cmd: 'rein pull', note: 'paths remapped for this machine' },
+  { host: 'laptop', cmd: 'claude --resume', note: 'the thread continues' },
+];
+
+const agents = ['Claude Code', 'Codex', 'Gemini CLI', 'OpenCode', 'Grok Build'];
+---
+
+<PreviewLayout title="C · Drench — Reinstate" themeColor="#b8ff3c">
+  <div class="page">
+    <div class="field">
+      <header class="topbar">
+        <a href="/" class="wordmark">reinstate<b>.</b></a>
+        <nav class="topnav">
+          <a href="/docs/getting-started">Docs</a>
+          <a href="https://github.com/HarjjotSinghh/reinstate" rel="noopener noreferrer" target="_blank">GitHub</a>
+        </nav>
+      </header>
+
+      <div class="inner">
+        <h1>Restore your AI coding workspace on any device</h1>
+        <p class="sub">
+          Sessions, MCP servers, skills, and settings, across every coding agent and
+          every machine you own. Encrypted so only you can read it.
+        </p>
+        <ul class="agents" aria-label="Supported agents">
+          {agents.map((a) => <li>{a}</li>)}
+        </ul>
+      </div>
+    </div>
+
+    <div class="slab">
+      <div class="inner slabinner">
+        <ol class="script" aria-label="What the CLI does">
+          {
+            lines.map((l, i) => (
+              <li style={`--i:${i}`}>
+                <span class="host">{l.host}</span>
+                <span class="cmd"><i aria-hidden="true">$</i> {l.cmd}</span>
+                <span class="note">{l.note}</span>
+              </li>
+            ))
+          }
+        </ol>
+
+        <div class="cta">
+          <h2>Early access</h2>
+          <form class="join" onsubmit="event.preventDefault()">
+            <label class="sr" for="c-email">Email address</label>
+            <input id="c-email" type="email" placeholder="you@yourdomain.dev" autocomplete="email" />
+            <button type="submit">Join the waitlist</button>
+          </form>
+          <p class="trust">
+            Encrypted with age before it leaves the machine. Bring your own S3, R2, or B2.
+            Apache&#8209;2.0, one Go binary, no server of ours in the path.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</PreviewLayout>
+
+<style>
+  .page {
+    --prim: oklch(0.9 0.22 128);
+    --prim-deep: oklch(0.83 0.21 128);
+    --ink: oklch(0.19 0.05 128);
+    --ink-soft: oklch(0.34 0.06 128);
+    --slab: oklch(0.14 0.014 128);
+    --slab-2: oklch(0.19 0.016 128);
+    --slab-ink: oklch(0.96 0.01 128);
+    --slab-dim: oklch(0.66 0.015 128);
+
+    min-height: 100svh;
+    background: var(--slab);
+    color: var(--ink);
+    overflow-x: clip;
+  }
+
+  .inner {
+    max-width: 78rem;
+    margin-inline: auto;
+    padding-inline: clamp(1.25rem, 4vw, 3rem);
+  }
+
+  /* The drench */
+  .field {
+    background: var(--prim);
+    background-image: radial-gradient(oklch(0.83 0.21 128) 1px, transparent 1.2px);
+    background-size: 26px 26px;
+    padding-bottom: clamp(3rem, 7vw, 5.5rem);
+  }
+
+  .topbar {
+    max-width: 78rem;
+    margin-inline: auto;
+    padding: 1.4rem clamp(1.25rem, 4vw, 3rem);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .wordmark {
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    text-decoration: none;
+  }
+  .wordmark b {
+    color: var(--slab);
+  }
+  .topnav {
+    display: flex;
+    gap: 1.35rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  .topnav a {
+    text-decoration: none;
+    border-bottom: 1.5px solid transparent;
+    padding-bottom: 1px;
+    transition: border-color 0.2s;
+  }
+  .topnav a:hover {
+    border-bottom-color: var(--ink);
+  }
+
+  h1 {
+    margin: clamp(2.5rem, 7vw, 5rem) 0 0;
+    max-width: 15ch;
+    font-size: clamp(2.6rem, 8.4vw, 5.9rem);
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+    font-weight: 620;
+    text-wrap: balance;
+    animation: rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .sub {
+    margin: clamp(1.5rem, 3vw, 2rem) 0 0;
+    max-width: 50ch;
+    font-size: clamp(1.02rem, 0.6vw + 0.9rem, 1.25rem);
+    line-height: 1.55;
+    font-weight: 450;
+    color: var(--ink-soft);
+    text-wrap: pretty;
+    animation: rise 0.8s 0.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .agents {
+    list-style: none;
+    margin: clamp(2rem, 4vw, 3rem) 0 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    animation: rise 0.8s 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .agents li {
+    padding: 0.38rem 0.75rem;
+    border: 1.5px solid var(--ink);
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+  }
+
+  /* The slab */
+  .slab {
+    background: var(--slab);
+    color: var(--slab-ink);
+    padding-block: clamp(2.75rem, 6vw, 4.5rem) clamp(4.5rem, 8vw, 6rem);
+  }
+
+  .slabinner {
+    display: grid;
+    gap: clamp(2rem, 5vw, 4rem);
+    align-items: start;
+  }
+  @media (min-width: 950px) {
+    .slabinner {
+      grid-template-columns: minmax(0, 1.35fr) minmax(19rem, 0.9fr);
+    }
+  }
+
+  .script {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: step;
+  }
+  .script li {
+    display: grid;
+    grid-template-columns: 5.5rem minmax(0, 1fr);
+    gap: 0.25rem 1rem;
+    padding: 0.9rem 0;
+    border-top: 1px solid oklch(1 0 0 / 0.1);
+    align-items: baseline;
+  }
+  .script li:last-child {
+    border-bottom: 1px solid oklch(1 0 0 / 0.1);
+  }
+  .host {
+    grid-row: span 2;
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--slab-dim);
+    padding-top: 0.25rem;
+  }
+  .cmd {
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: clamp(0.95rem, 0.6vw + 0.8rem, 1.2rem);
+    letter-spacing: -0.01em;
+    color: var(--slab-ink);
+  }
+  .cmd i {
+    font-style: normal;
+    color: var(--prim);
+  }
+  .note {
+    grid-column: 2;
+    font-size: 0.85rem;
+    color: var(--slab-dim);
+  }
+
+  .cta h2 {
+    margin: 0 0 0.9rem;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 550;
+    color: var(--prim);
+  }
+
+  .join {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .join input {
+    flex: 1 1 11rem;
+    min-width: 0;
+    padding: 0.78rem 0.9rem;
+    border-radius: 7px;
+    border: 1px solid oklch(1 0 0 / 0.18);
+    background: var(--slab-2);
+    color: var(--slab-ink);
+    font-size: 0.925rem;
+    transition: border-color 0.2s;
+  }
+  .join input::placeholder {
+    color: var(--slab-dim);
+  }
+  .join input:focus {
+    outline: none;
+    border-color: var(--prim);
+  }
+  .join button {
+    padding: 0.78rem 1.2rem;
+    border: none;
+    border-radius: 7px;
+    background: var(--prim);
+    color: var(--ink);
+    font-size: 0.925rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    cursor: pointer;
+    transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), filter 0.2s;
+  }
+  .join button:hover {
+    filter: brightness(1.07);
+  }
+  .join button:active {
+    transform: scale(0.98);
+  }
+
+  .trust {
+    margin: 1.1rem 0 0;
+    max-width: 42ch;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: var(--slab-dim);
+    text-wrap: pretty;
+  }
+
+  .sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 560px) {
+    .script li {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .host {
+      grid-row: auto;
+      padding-top: 0;
+    }
+    .note {
+      grid-column: 1;
+    }
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+</style>

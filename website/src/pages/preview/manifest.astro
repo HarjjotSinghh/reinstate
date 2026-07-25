@@ -1,0 +1,466 @@
+---
+export const prerender = true;
+import PreviewLayout from '../../layouts/PreviewLayout.astro';
+
+const streams = [
+  { name: 'sessions', local: 'captured', object: 'age · x25519', remote: 'resumed' },
+  { name: 'mcp', local: 'captured', object: 'age · x25519', remote: 'resumed' },
+  { name: 'skills', local: 'captured', object: 'age · x25519', remote: 'resumed' },
+  { name: 'settings', local: 'captured', object: 'age · x25519', remote: 'path-remapped' },
+];
+
+const rail = ['rein init', 'rein push', 'rein pull', 'claude --resume'];
+---
+
+<PreviewLayout title="A · Manifest — Reinstate" themeColor="#0b0b0b">
+  <div class="page">
+    <div class="rules" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span>
+    </div>
+
+    <header class="topbar">
+      <a href="/" class="wordmark">reinstate<b>.</b></a>
+      <div class="topmeta">
+        <span>apache&#8209;2.0</span>
+        <span class="sep" aria-hidden="true"></span>
+        <span>go · single binary</span>
+        <span class="sep" aria-hidden="true"></span>
+        <a href="/docs/getting-started">docs</a>
+        <a href="https://github.com/HarjjotSinghh/reinstate" rel="noopener noreferrer" target="_blank">github</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="lede">
+        <h1>
+          Restore your AI coding<br class="brk" /> workspace on any device
+        </h1>
+        <div class="ledefoot">
+          <p class="sub">
+            Sessions, MCP servers, skills, and settings, across every coding agent and
+            every machine you own. Encrypted so only you can read it.
+          </p>
+          <form class="join" onsubmit="event.preventDefault()">
+            <label class="sr" for="a-email">Email address</label>
+            <input id="a-email" type="email" placeholder="you@yourdomain.dev" autocomplete="email" />
+            <button type="submit">Join the waitlist</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="manifest" aria-label="Synchronised state">
+        <div class="mhead">
+          <span>stream</span>
+          <span>on desktop</span>
+          <span>encrypted object</span>
+          <span>on laptop</span>
+        </div>
+        {
+          streams.map((s, i) => (
+            <div class="mrow" style={`--i:${i}`}>
+              <span class="mname">{s.name}<i>/</i></span>
+              <span class="mcell">{s.local}</span>
+              <span class="mcell mobj">
+                <em class="wire" aria-hidden="true"></em>
+                {s.object}
+              </span>
+              <span class="mcell mout">{s.remote}</span>
+            </div>
+          ))
+        }
+        <p class="mfoot">
+          Keys never leave your machine. Objects land in the bucket you already pay for,
+          S3, R2, or B2, and Reinstate rewrites every absolute path on the way out.
+        </p>
+      </section>
+
+      <section class="rail" aria-label="Command sequence">
+        {
+          rail.map((cmd, i) => (
+            <span class="railitem">
+              <b>{cmd}</b>
+              {i < rail.length - 1 && <i aria-hidden="true">→</i>}
+            </span>
+          ))
+        }
+      </section>
+    </main>
+  </div>
+</PreviewLayout>
+
+<style>
+  .page {
+    --bg: oklch(0.135 0.004 128);
+    --ink: oklch(0.975 0 0);
+    --muted: oklch(0.7 0.006 128);
+    --dim: oklch(0.52 0.006 128);
+    --line: oklch(0.26 0.006 128);
+    --line-soft: oklch(0.205 0.005 128);
+    --prim: oklch(0.9 0.22 128);
+    --prim-ink: oklch(0.2 0.05 128);
+
+    position: relative;
+    min-height: 100svh;
+    background: var(--bg);
+    color: var(--ink);
+    overflow-x: clip;
+    padding-bottom: 7rem;
+  }
+
+  /* Structural column ruling: the page grid made visible */
+  .rules {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    max-width: 84rem;
+    margin-inline: auto;
+    padding-inline: clamp(1rem, 4vw, 3rem);
+    pointer-events: none;
+  }
+  .rules span {
+    border-left: 1px solid var(--line-soft);
+  }
+  .rules span:last-child {
+    border-right: 1px solid var(--line-soft);
+  }
+  @media (max-width: 900px) {
+    .rules span:nth-child(n + 5) {
+      display: none;
+    }
+    .rules {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  .topbar,
+  main {
+    position: relative;
+    max-width: 84rem;
+    margin-inline: auto;
+    padding-inline: clamp(1rem, 4vw, 3rem);
+  }
+
+  .topbar {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding-block: 1.5rem 1.25rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .wordmark {
+    font-size: 0.95rem;
+    font-weight: 550;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+  }
+  .wordmark b {
+    color: var(--prim);
+  }
+
+  .topmeta {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.72rem;
+    color: var(--dim);
+    letter-spacing: 0.01em;
+  }
+  .topmeta a {
+    text-decoration: none;
+    color: var(--muted);
+    border-bottom: 1px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .topmeta a:hover {
+    color: var(--ink);
+    border-bottom-color: var(--prim);
+  }
+  .sep {
+    width: 10px;
+    height: 1px;
+    background: var(--line);
+  }
+  @media (max-width: 620px) {
+    .topmeta .sep,
+    .topmeta span:not(.sep) {
+      display: none;
+    }
+  }
+
+  .lede {
+    padding-block: clamp(3.5rem, 9vw, 7rem) clamp(2.5rem, 6vw, 4.5rem);
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(2.4rem, 6.2vw, 5.1rem);
+    line-height: 1.02;
+    letter-spacing: -0.032em;
+    font-weight: 540;
+    text-wrap: balance;
+    max-width: 17ch;
+    animation: rise 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  @media (max-width: 760px) {
+    .brk {
+      display: none;
+    }
+  }
+
+  .ledefoot {
+    margin-top: clamp(2rem, 4vw, 3.25rem);
+    display: grid;
+    gap: clamp(1.75rem, 4vw, 3.5rem);
+    grid-template-columns: minmax(0, 1fr);
+    align-items: end;
+    border-top: 1px solid var(--line);
+    padding-top: 1.5rem;
+  }
+  @media (min-width: 900px) {
+    .ledefoot {
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 26rem);
+    }
+  }
+
+  .sub {
+    margin: 0;
+    max-width: 56ch;
+    font-size: clamp(1rem, 0.55vw + 0.9rem, 1.15rem);
+    line-height: 1.6;
+    color: var(--muted);
+    text-wrap: pretty;
+    animation: rise 0.75s 0.08s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .join {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    animation: rise 0.75s 0.16s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .join input {
+    flex: 1 1 12rem;
+    min-width: 0;
+    padding: 0.72rem 0.85rem;
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    color: var(--ink);
+    font-size: 0.925rem;
+    transition: border-color 0.2s;
+  }
+  .join input::placeholder {
+    color: var(--dim);
+  }
+  .join input:focus {
+    outline: none;
+    border-color: var(--prim);
+  }
+  .join button {
+    padding: 0.72rem 1.1rem;
+    border: 1px solid var(--prim);
+    border-radius: 6px;
+    background: var(--prim);
+    color: var(--prim-ink);
+    font-size: 0.925rem;
+    font-weight: 550;
+    letter-spacing: -0.01em;
+    cursor: pointer;
+    transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), filter 0.2s;
+  }
+  .join button:hover {
+    filter: brightness(1.08);
+  }
+  .join button:active {
+    transform: scale(0.98);
+  }
+
+  .sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* Manifest: the proof object */
+  .manifest {
+    border-top: 1px solid var(--line);
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+  }
+
+  .mhead,
+  .mrow {
+    display: grid;
+    grid-template-columns: minmax(7rem, 1.1fr) minmax(6rem, 1fr) minmax(11rem, 1.5fr) minmax(7rem, 1fr);
+    gap: 1rem;
+    align-items: center;
+    padding-block: 0.95rem;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .mhead {
+    font-size: 0.68rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--dim);
+    padding-block: 0.7rem;
+  }
+
+  .mrow {
+    font-size: clamp(0.8rem, 0.3vw + 0.75rem, 0.925rem);
+    color: var(--muted);
+    animation: rowin 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(0.25s + var(--i) * 0.09s);
+  }
+  .mrow:hover {
+    background: oklch(0.18 0.005 128);
+  }
+
+  .mname {
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .mname i {
+    color: var(--dim);
+    font-style: normal;
+  }
+
+  .mcell {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobj {
+    position: relative;
+    padding-left: 2.5rem;
+    color: var(--dim);
+  }
+  .wire {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 1.9rem;
+    height: 1px;
+    background: var(--line);
+  }
+  .wire::after {
+    content: '';
+    position: absolute;
+    top: -1.5px;
+    left: 0;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--prim);
+    animation: travel 2.6s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+    animation-delay: calc(0.6s + var(--i) * 0.22s);
+  }
+
+  .mout {
+    color: var(--prim);
+  }
+
+  @media (max-width: 760px) {
+    .mhead {
+      display: none;
+    }
+    .mrow {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      row-gap: 0.35rem;
+      padding-block: 1rem;
+    }
+    .mobj {
+      padding-left: 0;
+    }
+    .wire {
+      display: none;
+    }
+  }
+
+  .mfoot {
+    margin: 0;
+    padding-block: 1.5rem 0;
+    max-width: 62ch;
+    font-family: 'Geist Variable', ui-sans-serif, sans-serif;
+    font-size: 0.9rem;
+    line-height: 1.65;
+    color: var(--dim);
+    text-wrap: pretty;
+  }
+
+  .rail {
+    margin-top: clamp(2.5rem, 6vw, 4rem);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.8rem;
+  }
+  .railitem {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .railitem b {
+    font-weight: 450;
+    padding: 0.42rem 0.7rem;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    color: var(--ink);
+    background: oklch(0.17 0.004 128);
+  }
+  .railitem i {
+    font-style: normal;
+    color: var(--prim);
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes rowin {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes travel {
+    0% {
+      transform: translateX(0);
+      opacity: 0;
+    }
+    12% {
+      opacity: 1;
+    }
+    72% {
+      opacity: 1;
+    }
+    82%,
+    100% {
+      transform: translateX(1.9rem);
+      opacity: 0;
+    }
+  }
+</style>

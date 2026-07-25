@@ -1,0 +1,467 @@
+---
+export const prerender = true;
+import '@fontsource-variable/gabarito';
+import PreviewLayout from '../../layouts/PreviewLayout.astro';
+
+const notes = [
+  { text: 'the approach you rejected at 1am', pos: 'n1', tone: 'a' },
+  { text: 'the 14 files it already read', pos: 'n2', tone: 'b' },
+  { text: 'the style rule you set mid-thread', pos: 'n3', tone: 'c' },
+  { text: 'your MCP servers, already wired', pos: 'n4', tone: 'b' },
+];
+---
+
+<PreviewLayout title="4 · Carrier — Reinstate" themeColor="#eef5ee">
+  <div class="page">
+    <header class="nav">
+      <a href="/" class="mark">reinstate</a>
+      <nav class="links">
+        <a href="/docs/getting-started">Docs</a>
+        <a href="/docs/security-model">Security</a>
+        <a href="https://github.com/HarjjotSinghh/reinstate" rel="noopener noreferrer" target="_blank">GitHub</a>
+      </nav>
+      <a class="navcta" href="#join">Join the waitlist</a>
+    </header>
+
+    <main>
+      <div class="stage">
+        {
+          notes.map((n) => (
+            <span class={`note ${n.pos}`} data-tone={n.tone}>
+              <i class="pin" aria-hidden="true" />
+              {n.text}
+            </span>
+          ))
+        }
+
+        <div class="bot">
+          <svg viewBox="0 0 240 230" role="img" aria-labelledby="ctitle cdesc">
+            <title id="ctitle">The Reinstate carrier</title>
+            <desc id="cdesc">
+              A small machine carrying four labelled blocks of your agent state on its back.
+            </desc>
+
+            <ellipse class="shadow" cx="120" cy="214" rx="62" ry="9" />
+
+            <g class="pack">
+              <rect x="150" y="86" width="54" height="17" rx="5" />
+              <rect x="150" y="106" width="54" height="17" rx="5" />
+              <rect x="150" y="126" width="54" height="17" rx="5" />
+              <rect x="150" y="146" width="54" height="17" rx="5" />
+            </g>
+
+            <g class="body">
+              <path class="ant" d="M 96 50 V 30" />
+              <circle class="antdot" cx="96" cy="24" r="9" />
+              <rect class="hull" x="34" y="48" width="126" height="122" rx="34" />
+              <rect class="visor" x="52" y="72" width="90" height="52" rx="22" />
+              <circle class="eye" cx="80" cy="98" r="9" />
+              <circle class="eye" cx="114" cy="98" r="9" />
+              <rect class="mouth" x="82" y="138" width="30" height="7" rx="3.5" />
+              <rect class="foot" x="52" y="170" width="34" height="20" rx="9" />
+              <rect class="foot" x="108" y="170" width="34" height="20" rx="9" />
+            </g>
+          </svg>
+        </div>
+      </div>
+
+      <h1>Restore your AI coding workspace on any device</h1>
+      <p class="sub">
+        Sessions, MCP servers, skills, and settings, across every coding agent and
+        every machine you own. Encrypted so only you can read it.
+      </p>
+
+      <form class="join" id="join" onsubmit="event.preventDefault()">
+        <label class="sr" for="h-email">Email address</label>
+        <input id="h-email" type="email" placeholder="you@yourdomain.dev" autocomplete="email" />
+        <button type="submit">Join the waitlist</button>
+      </form>
+
+      <p class="micro">
+        <code>rein push</code> on the desktop, <code>rein pull</code> on the laptop. Sealed with age,
+        stored in your own bucket.
+      </p>
+    </main>
+  </div>
+</PreviewLayout>
+
+<style>
+  .page {
+    --bg: oklch(0.962 0.018 166);
+    --card: oklch(0.995 0.006 166);
+    --ink: oklch(0.21 0.028 168);
+    --ink-2: oklch(0.42 0.024 168);
+    --ink-3: oklch(0.56 0.02 168);
+    --rule: oklch(0.88 0.02 166);
+    --prim: oklch(0.87 0.21 128);
+    --prim-deep: oklch(0.6 0.16 134);
+    --sun: oklch(0.9 0.13 96);
+    --mist: oklch(0.88 0.06 200);
+
+    position: relative;
+    min-height: 100svh;
+    background: var(--bg);
+    color: var(--ink);
+    overflow-x: clip;
+    padding-bottom: 6rem;
+    font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+  }
+
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    max-width: 78rem;
+    margin-inline: auto;
+    padding: 1.4rem clamp(1.25rem, 4vw, 2.5rem);
+  }
+  .mark {
+    font-family: 'Gabarito Variable', ui-sans-serif, sans-serif;
+    font-size: 1.22rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    text-decoration: none;
+  }
+  .links {
+    display: flex;
+    gap: 1.4rem;
+    margin-left: auto;
+    font-size: 0.9rem;
+    color: var(--ink-2);
+  }
+  .links a {
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .links a:hover {
+    color: var(--ink);
+  }
+  .navcta {
+    padding: 0.55rem 1.05rem;
+    border-radius: 999px;
+    background: var(--ink);
+    color: var(--card);
+    font-size: 0.865rem;
+    font-weight: 560;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: transform 0.14s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s, color 0.2s;
+  }
+  .navcta:hover {
+    background: var(--prim);
+    color: var(--ink);
+  }
+  .navcta:active {
+    transform: scale(0.97);
+  }
+  @media (max-width: 780px) {
+    .links {
+      display: none;
+    }
+    .navcta {
+      margin-left: auto;
+    }
+  }
+
+  main {
+    max-width: 62rem;
+    margin-inline: auto;
+    padding: clamp(1rem, 3vw, 2rem) clamp(1.25rem, 4vw, 2.5rem) 0;
+    text-align: center;
+  }
+
+  .stage {
+    position: relative;
+    display: grid;
+    place-items: center;
+    padding-block: clamp(1rem, 3vw, 2rem);
+    min-height: clamp(15rem, 30vw, 19rem);
+  }
+
+  .bot {
+    width: clamp(11rem, 20vw, 15rem);
+    animation: bob 5.5s ease-in-out infinite;
+  }
+  .bot svg {
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  .shadow {
+    fill: oklch(0.21 0.028 168 / 0.1);
+  }
+  .hull {
+    fill: var(--ink);
+  }
+  .visor {
+    fill: oklch(0.31 0.03 168);
+  }
+  .eye {
+    fill: var(--prim);
+    animation: blink 6.5s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  .mouth {
+    fill: oklch(0.46 0.03 168);
+  }
+  .foot {
+    fill: var(--ink);
+  }
+  .ant {
+    stroke: var(--ink);
+    stroke-width: 5;
+    stroke-linecap: round;
+  }
+  .antdot {
+    fill: var(--prim);
+    stroke: var(--ink);
+    stroke-width: 4;
+  }
+  .pack rect {
+    stroke: var(--ink);
+    stroke-width: 4;
+  }
+  .pack rect:nth-child(1) {
+    fill: var(--prim);
+  }
+  .pack rect:nth-child(2) {
+    fill: var(--sun);
+  }
+  .pack rect:nth-child(3) {
+    fill: var(--mist);
+  }
+  .pack rect:nth-child(4) {
+    fill: var(--card);
+  }
+
+  .note {
+    position: absolute;
+    z-index: 2;
+    max-width: 12.5rem;
+    padding: 0.7rem 0.85rem 0.75rem;
+    border-radius: 3px;
+    background: var(--card);
+    box-shadow: 0 6px 16px oklch(0.21 0.028 168 / 0.13);
+    font-size: 0.85rem;
+    line-height: 1.4;
+    text-align: left;
+    color: var(--ink-2);
+    animation: pin 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .note[data-tone='a'] {
+    background: oklch(0.94 0.09 128);
+    color: oklch(0.26 0.05 132);
+  }
+  .note[data-tone='b'] {
+    background: oklch(0.96 0.055 96);
+    color: oklch(0.3 0.045 96);
+  }
+  .note[data-tone='c'] {
+    background: oklch(0.95 0.035 200);
+    color: oklch(0.3 0.04 210);
+  }
+  .pin {
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    width: 10px;
+    height: 10px;
+    margin-left: -5px;
+    border-radius: 50%;
+    background: var(--ink);
+    box-shadow: 0 1px 3px oklch(0.21 0.028 168 / 0.4);
+  }
+
+  .n1 {
+    top: 4%;
+    left: 2%;
+    transform: rotate(-5deg);
+    animation-delay: 0.15s;
+  }
+  .n2 {
+    top: 12%;
+    right: 3%;
+    transform: rotate(4.5deg);
+    animation-delay: 0.28s;
+  }
+  .n3 {
+    bottom: 8%;
+    left: 7%;
+    transform: rotate(3.5deg);
+    animation-delay: 0.41s;
+  }
+  .n4 {
+    bottom: 3%;
+    right: 6%;
+    transform: rotate(-4deg);
+    animation-delay: 0.54s;
+  }
+
+  h1 {
+    margin: clamp(1.5rem, 3vw, 2.25rem) auto 0;
+    max-width: 16ch;
+    font-family: 'Gabarito Variable', ui-sans-serif, sans-serif;
+    font-size: clamp(2.4rem, 6.2vw, 5rem);
+    line-height: 1;
+    letter-spacing: -0.035em;
+    font-weight: 700;
+    text-wrap: balance;
+    animation: rise 0.8s 0.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .sub {
+    margin: 1.2rem auto 0;
+    max-width: 50ch;
+    font-size: clamp(1rem, 0.5vw + 0.92rem, 1.15rem);
+    line-height: 1.6;
+    color: var(--ink-2);
+    text-wrap: pretty;
+    animation: rise 0.8s 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .join {
+    margin: clamp(1.75rem, 3.5vw, 2.5rem) auto 0;
+    display: flex;
+    gap: 0.45rem;
+    max-width: 29rem;
+    padding: 0.35rem;
+    border-radius: 999px;
+    background: var(--card);
+    box-shadow: 0 2px 10px oklch(0.21 0.028 168 / 0.09);
+    animation: rise 0.8s 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .join input {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0.62rem 0.95rem;
+    border: none;
+    background: transparent;
+    font-size: 0.95rem;
+    color: var(--ink);
+  }
+  .join input::placeholder {
+    color: var(--ink-3);
+  }
+  .join input:focus {
+    outline: none;
+  }
+  .join:focus-within {
+    box-shadow: 0 0 0 3px oklch(0.6 0.16 134 / 0.22);
+  }
+  .join button {
+    padding: 0.62rem 1.25rem;
+    border: none;
+    border-radius: 999px;
+    background: var(--ink);
+    color: var(--card);
+    font-size: 0.92rem;
+    font-weight: 560;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: transform 0.14s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s, color 0.2s;
+  }
+  .join button:hover {
+    background: var(--prim);
+    color: var(--ink);
+  }
+  .join button:active {
+    transform: scale(0.97);
+  }
+
+  .micro {
+    margin: 1rem auto 0;
+    max-width: 46ch;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--ink-3);
+  }
+  .micro code {
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.95em;
+    color: var(--ink);
+  }
+
+  .sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 860px) {
+    .note {
+      max-width: 9.5rem;
+      font-size: 0.76rem;
+    }
+    .n1,
+    .n3 {
+      left: 0;
+    }
+    .n2,
+    .n4 {
+      right: 0;
+    }
+  }
+  @media (max-width: 620px) {
+    .stage {
+      min-height: 0;
+    }
+    .note {
+      position: static;
+      transform: none;
+      max-width: none;
+    }
+    .pin {
+      display: none;
+    }
+    .stage {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .bot {
+      order: -1;
+      width: 11rem;
+    }
+  }
+
+  @keyframes bob {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+  @keyframes blink {
+    0%,
+    92%,
+    100% {
+      transform: scaleY(1);
+    }
+    95% {
+      transform: scaleY(0.12);
+    }
+  }
+  @keyframes pin {
+    from {
+      opacity: 0;
+      transform: translateY(-10px) rotate(0deg);
+    }
+  }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+</style>

@@ -1,0 +1,139 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="shell footer-grid">
+    <div class="brand">
+      <a href="/" class="mark">
+        <span class="glyph" aria-hidden="true"></span>
+        reinstate
+      </a>
+      <p>
+        The sync layer for your entire AI development environment. Sessions, MCP, skills, and
+        settings. Encrypted so only you can read it.
+      </p>
+      <p class="by">
+        Built by
+        <a href="https://harjot.co" rel="noopener noreferrer" target="_blank">Harjot Singh Rana</a>
+      </p>
+    </div>
+
+    <div>
+      <p class="col-title">Product</p>
+      <ul>
+        <li><a href="/#how">How it works</a></li>
+        <li><a href="/#security">Security</a></li>
+        <li><a href="/#join">Waitlist</a></li>
+        <li>
+          <a href="https://github.com/HarjjotSinghh/reinstate" rel="noopener noreferrer" target="_blank"
+            >GitHub</a
+          >
+        </li>
+      </ul>
+    </div>
+
+    <div>
+      <p class="col-title">Docs</p>
+      <ul>
+        <li><a href="/docs/getting-started">Getting started</a></li>
+        <li><a href="/docs/architecture">Architecture</a></li>
+        <li><a href="/docs/security-model">Security model</a></li>
+        <li><a href="/docs/faq">FAQ</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="shell foot-bar">
+    <p>© {year} Harjot Singh Rana. Apache-2.0.</p>
+    <p class="mono">
+      short alias <strong>rein</strong> · full name <strong>reinstate</strong>
+    </p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    border-top: 1px solid var(--rule);
+    background: var(--paper);
+  }
+  .footer-grid {
+    display: grid;
+    gap: 2.5rem;
+    padding-block: 3.5rem;
+  }
+  @media (min-width: 800px) {
+    .footer-grid {
+      grid-template-columns: 1.6fr 1fr 1fr;
+    }
+  }
+  .mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    text-decoration: none;
+  }
+  .glyph {
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    background: var(--ink);
+    border: 3.5px solid var(--prim);
+  }
+  .brand p {
+    margin: 0.9rem 0 0;
+    max-width: 42ch;
+    color: var(--ink-2);
+    font-size: 0.92rem;
+    line-height: 1.55;
+  }
+  .by {
+    font-size: 0.85rem !important;
+  }
+  .by a {
+    color: var(--ink);
+    text-underline-offset: 3px;
+  }
+  .col-title {
+    margin: 0 0 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 560;
+    color: var(--ink);
+  }
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.45rem;
+  }
+  ul a {
+    color: var(--ink-2);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  ul a:hover {
+    color: var(--ink);
+  }
+  .foot-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    justify-content: space-between;
+    padding-block: 1.1rem;
+    border-top: 1px solid var(--rule);
+    font-size: 0.78rem;
+    color: var(--ink-3);
+  }
+  .mono {
+    font-family: var(--font-mono);
+  }
+  .mono strong {
+    color: var(--ink-2);
+    font-weight: 500;
+  }
+</style>

@@ -1,0 +1,1076 @@
+---
+export const prerender = true;
+import '@fontsource-variable/funnel-display';
+import PreviewLayout from '../../layouts/PreviewLayout.astro';
+
+/* ---------- build-time axonometric projector ---------- */
+const CX = Math.cos(Math.PI / 6);
+const P = (x: number, y: number, z: number): [number, number] => [(x - y) * CX, (x + y) * 0.5 - z];
+const fmt = (pts: [number, number][]) => pts.map(([a, b]) => `${a.toFixed(1)},${b.toFixed(1)}`).join(' ');
+
+function box(x: number, y: number, z: number, w: number, d: number, h: number) {
+  const A = P(x, y, z + h);
+  const B = P(x + w, y, z + h);
+  const C = P(x + w, y + d, z + h);
+  const D = P(x, y + d, z + h);
+  const B0 = P(x + w, y, z);
+  const C0 = P(x + w, y + d, z);
+  const D0 = P(x, y + d, z);
+  return {
+    top: fmt([A, B, C, D]),
+    front: fmt([D, C, C0, D0]),
+    side: fmt([B, C, C0, B0]),
+  };
+}
+
+/* ---- act 1 · the desk ---- */
+const desk = {
+  top: box(0, 0, -16, 330, 195, 16),
+  legs: [
+    box(18, 18, -132, 18, 18, 116),
+    box(294, 18, -132, 18, 18, 116),
+    box(18, 159, -132, 18, 18, 116),
+    box(294, 159, -132, 18, 18, 116),
+  ],
+};
+const monitor = box(0, 34, 10, 18, 118, 124);
+const monitorFoot = box(-4, 66, 0, 30, 54, 10);
+const tower = box(78, 36, 0, 176, 126, 42);
+const streams = [
+  { key: 'sessions', tone: 'a' },
+  { key: 'mcp', tone: 'b' },
+  { key: 'skills', tone: 'c' },
+  { key: 'settings', tone: 'd' },
+].map((s, i) => ({ ...s, g: box(84 + i * 16, 44, 54 + i * 62, 160, 108, 15) }));
+const mug = box(252, 152, 0, 30, 30, 34);
+const board = box(96, 176, 0, 150, 40, 9);
+
+/* ---- act 2 · the sealed object ---- */
+const crateBig = box(0, 0, -96, 148, 148, 96);
+const crateSmall = box(26, 26, 0, 96, 96, 58);
+const seal = box(14, 14, 122, 120, 120, 120);
+
+/* ---- act 3 · the couch table ---- */
+const table = {
+  top: box(0, 0, -16, 248, 186, 16),
+  legs: [
+    box(16, 16, -130, 16, 16, 114),
+    box(216, 16, -130, 16, 16, 114),
+    box(16, 154, -130, 16, 16, 114),
+    box(216, 154, -130, 16, 16, 114),
+  ],
+};
+const deck = box(24, 30, 0, 196, 126, 18);
+const lidBack = box(38, 8, 18, 178, 13, 66);
+const restacked = ['a', 'b', 'c', 'd'].map((tone, i) => ({
+  tone,
+  g: box(40, 38, 30 + i * 16, 160, 108, 15),
+}));
+
+/* ---- props ---- */
+const pot = box(0, 0, -74, 76, 76, 74);
+const stack = [box(0, 0, -102, 130, 130, 34), box(8, 10, -68, 118, 116, 30), box(4, 6, -38, 126, 122, 26)];
+
+const legend = [
+  { key: 'sessions', tone: 'a', note: 'threads and dead ends' },
+  { key: 'mcp', tone: 'b', note: 'servers, args, env' },
+  { key: 'skills', tone: 'c', note: 'the ones you wrote' },
+  { key: 'settings', tone: 'd', note: 'per agent, per project' },
+];
+
+const SK = 'var(--sv-stroke)';
+const INK = 'var(--sv-ink)';
+const DIM = 'var(--sv-dim)';
+const PRIM = 'var(--sv-prim)';
+const PRIM_DEEP = 'var(--sv-prim-deep)';
+---
+
+<PreviewLayout title="Reinstate — restore your AI coding workspace on any device" themeColor="#eff0ea">
+  <div class="page">
+    <header class="nav">
+      <a href="/" class="mark"><span class="glyph" aria-hidden="true"></span> reinstate</a>
+      <nav class="links">
+        <a href="/docs/getting-started">Docs</a>
+        <a href="/docs/architecture">Architecture</a>
+        <a href="/docs/security-model">Security</a>
+        <a href="https://github.com/HarjjotSinghh/reinstate" rel="noopener noreferrer" target="_blank">GitHub</a>
+      </nav>
+      <button class="themetoggle" id="themetoggle" type="button" aria-label="Switch colour theme">
+        <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.5" />
+          <path d="M12 2.5v2.2M12 19.3v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6" />
+        </svg>
+        <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20 14.2A8.2 8.2 0 0 1 9.8 4a8.4 8.4 0 1 0 10.2 10.2z" />
+        </svg>
+      </button>
+      <a class="navcta" href="#join">Join the waitlist</a>
+    </header>
+
+    <main>
+      <span class="badge"><i aria-hidden="true"></i> Pull apart, seal, put back</span>
+      <h1>Restore your AI coding workspace on any device</h1>
+      <p class="sub">
+        Sessions, MCP servers, skills, and settings, across every coding agent and
+        every machine you own. Encrypted so only you can read it.
+      </p>
+      <form class="join" id="join" onsubmit="event.preventDefault()">
+        <label class="sr" for="x-email">Email address</label>
+        <input id="x-email" type="email" placeholder="you@yourdomain.dev" autocomplete="email" />
+        <button type="submit">Join the waitlist</button>
+      </form>
+      <p class="micro">Apache&#8209;2.0 · one Go binary · your bucket, your keys</p>
+    </main>
+
+    <figure class="scene">
+      <svg viewBox="0 0 1640 880" role="img" aria-labelledby="etitle edesc" preserveAspectRatio="xMidYMax meet">
+        <title id="etitle">One room, two machines, 23:41 to 23:47</title>
+        <desc id="edesc">
+          A desk at night. Four layers of agent state, sessions, MCP servers, skills and
+          settings, lift out of the desktop, seal into one encrypted object, and drop back
+          into a laptop on the table across the room with every path remapped.
+        </desc>
+
+        <defs>
+          <marker id="arw" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L12 6 L0 12 z" fill={PRIM_DEEP} />
+          </marker>
+          <clipPath id="pane"><rect x="126" y="52" width="272" height="196" rx="4" /></clipPath>
+        </defs>
+
+        {/* ---------- room ---------- */}
+        <rect x="0" y="0" width="1640" height="322" fill="var(--sv-wall)" />
+        <rect x="0" y="322" width="1640" height="558" fill="var(--sv-floor)" />
+        <line x1="0" y1="322" x2="1640" y2="322" stroke={SK} stroke-width="3" />
+        <rect x="0" y="322" width="1640" height="16" fill="var(--sv-skirt)" />
+        <line x1="0" y1="338" x2="1640" y2="338" stroke={SK} stroke-width="3" />
+
+        <g class="floorlines" stroke="var(--sv-floorline)" stroke-width="1.5" fill="none">
+          <path d="M-200 880 L560 338 M120 880 L760 338 M460 880 L960 338 M820 880 L1160 338 M1180 880 L1360 338 M1540 880 L1560 338" />
+          <path d="M0 430 H1640 M0 530 H1640 M0 660 H1640 M0 810 H1640" />
+        </g>
+
+        {/* window */}
+        <g class="window">
+          <rect x="118" y="44" width="288" height="212" rx="6" fill="var(--sv-frame)" stroke={SK} stroke-width="3" />
+          <rect x="126" y="52" width="272" height="196" rx="4" fill="var(--sv-night)" />
+          <g clip-path="url(#pane)" class="stars" fill="var(--sv-star)">
+            <circle cx="172" cy="94" r="2.6" />
+            <circle cx="248" cy="72" r="2" />
+            <circle cx="316" cy="112" r="2.4" />
+            <circle cx="204" cy="150" r="1.8" />
+            <circle cx="360" cy="80" r="2" />
+            <circle cx="286" cy="176" r="2.2" />
+            <g fill="var(--sv-city)">
+              <rect x="134" y="196" width="34" height="52" />
+              <rect x="176" y="168" width="26" height="80" />
+              <rect x="210" y="204" width="40" height="44" />
+              <rect x="258" y="180" width="30" height="68" />
+              <rect x="296" y="212" width="44" height="36" />
+              <rect x="348" y="186" width="28" height="62" />
+            </g>
+          </g>
+          <line x1="262" y1="52" x2="262" y2="248" stroke={SK} stroke-width="3" />
+          <line x1="126" y1="150" x2="398" y2="150" stroke={SK} stroke-width="3" />
+          <rect x="104" y="256" width="316" height="14" rx="3" fill="var(--sv-frame)" stroke={SK} stroke-width="3" />
+        </g>
+
+        {/* clock at 23:41 */}
+        <g class="clock">
+          <circle cx="1452" cy="128" r="56" fill="var(--sv-frame)" stroke={SK} stroke-width="3" />
+          <circle cx="1452" cy="128" r="4" fill={SK} />
+          <path d="M1452 128 V 92" stroke={SK} stroke-width="5" stroke-linecap="round" />
+          <path d="M1452 128 L1420 142" stroke={SK} stroke-width="5" stroke-linecap="round" />
+          <path d="M1452 128 L1486 110" stroke={PRIM_DEEP} stroke-width="3" stroke-linecap="round" />
+        </g>
+
+        {/* poster */}
+        <g class="poster">
+          <rect x="1088" y="56" width="196" height="150" rx="5" fill="var(--sv-frame)" stroke={SK} stroke-width="3" />
+          <rect x="1102" y="70" width="168" height="122" fill="var(--sv-night)" />
+          <g transform="translate(1186 131) scale(0.44)">
+            <polygon points="0,-46 66,-8 0,30 -66,-8" fill={PRIM} stroke={SK} stroke-width="6" stroke-linejoin="round" />
+            <polygon points="0,10 66,-28 66,20 0,58" fill="var(--sv-seal-2)" stroke={SK} stroke-width="6" stroke-linejoin="round" />
+            <polygon points="0,10 -66,-28 -66,20 0,58" fill="var(--sv-seal-3)" stroke={SK} stroke-width="6" stroke-linejoin="round" />
+          </g>
+        </g>
+
+        {/* shelf */}
+        <g class="shelf">
+          <rect x="620" y="176" width="300" height="12" rx="3" fill="var(--sv-furn-1)" stroke={SK} stroke-width="3" />
+          <g stroke={SK} stroke-width="3">
+            <rect x="640" y="122" width="22" height="54" fill="var(--sv-t-a)" />
+            <rect x="666" y="112" width="18" height="64" fill="var(--sv-frame)" />
+            <rect x="688" y="130" width="26" height="46" fill="var(--sv-t-b)" />
+            <rect x="718" y="118" width="20" height="58" fill="var(--sv-t-c)" />
+            <rect x="820" y="136" width="80" height="40" rx="4" fill="var(--sv-furn-2)" />
+          </g>
+        </g>
+
+        {/* rug */}
+        <polygon
+          points="700,690 1120,570 1500,700 1060,840"
+          fill="var(--sv-rug)"
+          stroke={SK}
+          stroke-width="3"
+          stroke-linejoin="round"
+        />
+
+        {/* ---------- props behind ---------- */}
+        <g class="unit furn" transform="translate(1466 452) scale(0.9)">
+          {stack.map((b) => (
+            <g>
+              <polygon class="f-side" points={b.side} />
+              <polygon class="f-front" points={b.front} />
+              <polygon class="f-top" points={b.top} />
+            </g>
+          ))}
+        </g>
+
+        {/* plant */}
+        <g class="plant" transform="translate(140 596) scale(1.02)">
+          <g class="leaves" stroke={SK} stroke-width="3" stroke-linejoin="round">
+            <path d="M0 26 C -34 -38, -22 -96, 6 -126 C 22 -80, 20 -20, 0 26 z" fill="var(--sv-leaf-1)" />
+            <path d="M0 26 C -66 -8, -96 -52, -100 -90 C -58 -72, -20 -26, 0 26 z" fill="var(--sv-leaf-2)" />
+            <path d="M0 26 C 54 -2, 86 -42, 92 -82 C 50 -66, 18 -22, 0 26 z" fill="var(--sv-leaf-2)" />
+            <path d="M0 26 C 34 -38, 62 -74, 92 -88 C 74 -42, 38 2, 0 26 z" fill="var(--sv-leaf-1)" />
+          </g>
+          <g class="unit pot">
+            <polygon class="f-side" points={pot.side} />
+            <polygon class="f-front" points={pot.front} />
+            <polygon class="f-top" points={pot.top} />
+          </g>
+        </g>
+
+        {/* ---------- ACT 1 · the desk ---------- */}
+        <g transform="translate(392 452) scale(1.02)">
+          <g class="unit furn">
+            {desk.legs.map((l) => (
+              <g>
+                <polygon class="f-side" points={l.side} />
+                <polygon class="f-front" points={l.front} />
+              </g>
+            ))}
+            <polygon class="f-side" points={desk.top.side} />
+            <polygon class="f-front" points={desk.top.front} />
+            <polygon class="f-top" points={desk.top.top} />
+          </g>
+
+          <g class="unit dev">
+            <polygon class="f-side" points={mug.side} />
+            <polygon class="f-front" points={mug.front} />
+            <polygon class="f-top" points={mug.top} />
+          </g>
+          <g class="unit dev">
+            <polygon class="f-side" points={board.side} />
+            <polygon class="f-front" points={board.front} />
+            <polygon class="f-top" points={board.top} />
+          </g>
+
+          <g class="unit dev">
+            <polygon class="f-side" points={monitorFoot.side} />
+            <polygon class="f-front" points={monitorFoot.front} />
+            <polygon class="f-top" points={monitorFoot.top} />
+          </g>
+          <g class="unit dev screen">
+            <polygon class="f-side" points={monitor.side} />
+            <polygon class="f-front" points={monitor.front} />
+            <polygon class="f-top" points={monitor.top} />
+          </g>
+          <g class="unit dev">
+            <polygon class="f-side" points={tower.side} />
+            <polygon class="f-front" points={tower.front} />
+            <polygon class="f-top" points={tower.top} />
+          </g>
+
+          {
+            streams.map((s, i) => (
+              <g class={`unit tray t-${s.tone}`} style={`--i:${i}`}>
+                <polygon class="f-side" points={s.g.side} />
+                <polygon class="f-front" points={s.g.front} />
+                <polygon class="f-top" points={s.g.top} />
+              </g>
+            ))
+          }
+        </g>
+
+        {/* ---------- ACT 2 · sealed ---------- */}
+        <g transform="translate(866 452) scale(1.02)">
+          <g class="unit furn">
+            <polygon class="f-side" points={crateBig.side} />
+            <polygon class="f-front" points={crateBig.front} />
+            <polygon class="f-top" points={crateBig.top} />
+          </g>
+          <g class="unit furn">
+            <polygon class="f-side" points={crateSmall.side} />
+            <polygon class="f-front" points={crateSmall.front} />
+            <polygon class="f-top" points={crateSmall.top} />
+          </g>
+          <g class="unit sealbox">
+            <polygon class="f-side" points={seal.side} />
+            <polygon class="f-front" points={seal.front} />
+            <polygon class="f-top" points={seal.top} />
+          </g>
+          <g class="lockbadge" transform="translate(0 -74)">
+            <circle cx="0" cy="0" r="42" fill={PRIM} stroke={SK} stroke-width="3.4" />
+            <path
+              d="M -15 -4 v -11 a 15 15 0 0 1 30 0 v 11"
+              fill="none"
+              stroke="var(--sv-lock)"
+              stroke-width="6"
+              stroke-linecap="round"
+            />
+            <rect x="-19" y="-4" width="38" height="28" rx="7" fill="var(--sv-lock)" />
+            <circle cx="0" cy="11" r="3.6" fill={PRIM} />
+          </g>
+        </g>
+
+        {/* ---------- ACT 3 · the table ---------- */}
+        <g transform="translate(1176 452) scale(1.02)">
+          <g class="unit furn">
+            {table.legs.map((l) => (
+              <g>
+                <polygon class="f-side" points={l.side} />
+                <polygon class="f-front" points={l.front} />
+              </g>
+            ))}
+            <polygon class="f-side" points={table.top.side} />
+            <polygon class="f-front" points={table.top.front} />
+            <polygon class="f-top" points={table.top.top} />
+          </g>
+          <g class="unit dev">
+            <polygon class="f-side" points={lidBack.side} />
+            <polygon class="f-front" points={lidBack.front} />
+            <polygon class="f-top" points={lidBack.top} />
+          </g>
+          <g class="unit dev">
+            <polygon class="f-side" points={deck.side} />
+            <polygon class="f-front" points={deck.front} />
+            <polygon class="f-top" points={deck.top} />
+          </g>
+          {
+            restacked.map((s, i) => (
+              <g class={`unit tray back t-${s.tone}`} style={`--i:${i}`}>
+                <polygon class="f-side" points={s.g.side} />
+                <polygon class="f-front" points={s.g.front} />
+                <polygon class="f-top" points={s.g.top} />
+              </g>
+            ))
+          }
+        </g>
+
+        {/* ---------- connectors ---------- */}
+        <path
+          class="wire"
+          d="M 590 340 C 654 268, 716 250, 774 296"
+          fill="none"
+          stroke={PRIM_DEEP}
+          stroke-width="3.6"
+          stroke-linecap="round"
+          marker-end="url(#arw)"
+        />
+        <text class="wiretext" x="676" y="240" text-anchor="middle" fill={INK}>rein push</text>
+
+        <path
+          class="wire"
+          d="M 968 300 C 1030 262, 1078 300, 1108 384"
+          fill="none"
+          stroke={PRIM_DEEP}
+          stroke-width="3.6"
+          stroke-linecap="round"
+          marker-end="url(#arw)"
+        />
+        <text class="wiretext" x="1046" y="248" text-anchor="middle" fill={INK}>rein pull</text>
+      </svg>
+    </figure>
+
+    <section class="under">
+      <ul class="legend" aria-label="What moves">
+        {
+          legend.map((l) => (
+            <li>
+              <i class={`sw t-${l.tone}`} aria-hidden="true" />
+              <b>{l.key}</b>
+              <span>{l.note}</span>
+            </li>
+          ))
+        }
+      </ul>
+
+      <ol class="steps">
+        <li>
+          <b>pull apart on the desktop</b>
+          <span>23:41 · nothing has left the machine yet</span>
+        </li>
+        <li>
+          <b>seal into one object</b>
+          <span>age · x25519 · your key never moves</span>
+        </li>
+        <li>
+          <b>put back on the laptop</b>
+          <span>23:47 · paths remapped · the thread continues</span>
+        </li>
+      </ol>
+
+      <div class="strip">
+        <span>Reinstates</span>
+        <ul>
+          <li>Claude Code</li>
+          <li>Codex</li>
+          <li>Gemini CLI</li>
+          <li>OpenCode</li>
+          <li>Grok Build</li>
+        </ul>
+      </div>
+    </section>
+  </div>
+</PreviewLayout>
+
+<script>
+  const btn = document.getElementById('themetoggle');
+  const root = document.documentElement;
+  const sync = () => btn?.setAttribute('aria-pressed', String(root.classList.contains('dark')));
+  sync();
+  btn?.addEventListener('click', () => {
+    const dark = root.classList.toggle('dark');
+    try {
+      localStorage.setItem('rein-theme', dark ? 'dark' : 'light');
+    } catch (e) {
+      /* private mode, theme just won't persist */
+    }
+    sync();
+  });
+</script>
+
+<style>
+  .page {
+    /* ---- light (default) ---- */
+    --paper: #e4e7dd;
+    --paper-2: #f4f6ef;
+    --ink: oklch(0.19 0.022 158);
+    --ink-2: oklch(0.41 0.018 158);
+    --ink-3: oklch(0.54 0.014 158);
+    --rule: oklch(0.8 0.012 145);
+    --prim: oklch(0.87 0.21 128);
+    --prim-deep: oklch(0.58 0.155 134);
+    --on-prim: oklch(0.19 0.022 158);
+
+    /* ---- scene ---- */
+    --sv-stroke: #131f1a;
+    --sv-ink: oklch(0.19 0.022 158);
+    --sv-dim: oklch(0.56 0.014 158);
+    --sv-prim: #b8ff3c;
+    --sv-prim-deep: #4f8a1e;
+    --sv-lock: #131f1a;
+
+    --sv-wall: #e4e7dd;
+    --sv-floor: #d3d8c9;
+    --sv-floorline: #c3c9b8;
+    --sv-skirt: #c8cebd;
+    --sv-frame: #f4f6ef;
+    --sv-night: #16231f;
+    --sv-star: #cfe9a8;
+    --sv-city: #24352e;
+    --sv-rug: #c2cbb2;
+
+    --sv-furn-1: #c1c9ae;
+    --sv-furn-2: #a6b090;
+    --sv-furn-3: #8a9673;
+    --sv-glass: #3f6b1f;
+
+    --sv-dev-1: #3b4c43;
+    --sv-dev-2: #2a3831;
+    --sv-dev-3: #1e2925;
+    --sv-seal-1: #2a3831;
+    --sv-seal-2: #1a2621;
+    --sv-seal-3: #121b17;
+
+    --sv-leaf-1: #7fae3f;
+    --sv-leaf-2: #5f8f2c;
+    --sv-pot-1: #c98f5a;
+    --sv-pot-2: #b07845;
+    --sv-pot-3: #966235;
+
+    --sv-t-a: #b8ff3c;
+    --sv-t-b: #ffce4a;
+    --sv-t-c: #7ecdf5;
+    --sv-t-d: #fdfef9;
+    --font-display: 'Funnel Display Variable', ui-sans-serif, system-ui, sans-serif;
+
+    position: relative;
+    min-height: 100svh;
+    background: var(--paper);
+    color: var(--ink);
+    overflow-x: clip;
+    font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+
+  :global(html.dark) .page {
+    --paper: #1d2723;
+    --paper-2: #26332e;
+    --ink: oklch(0.965 0.008 145);
+    --ink-2: oklch(0.76 0.014 150);
+    --ink-3: oklch(0.62 0.016 150);
+    --rule: oklch(0.31 0.02 158);
+    --prim: oklch(0.88 0.21 128);
+    --prim-deep: oklch(0.84 0.19 128);
+    --on-prim: oklch(0.17 0.04 132);
+
+    --sv-stroke: #e9efe3;
+    --sv-ink: oklch(0.965 0.008 145);
+    --sv-dim: oklch(0.66 0.016 150);
+    --sv-prim: #c4ff56;
+    --sv-prim-deep: #c4ff56;
+    --sv-lock: #16211b;
+
+    --sv-wall: #1d2723;
+    --sv-floor: #16201c;
+    --sv-floorline: #253029;
+    --sv-skirt: #253029;
+    --sv-frame: #2b3831;
+    --sv-night: #0c1512;
+    --sv-star: #c4ff56;
+    --sv-city: #1a2620;
+    --sv-rug: #223029;
+
+    --sv-furn-1: #44564b;
+    --sv-furn-2: #35453c;
+    --sv-furn-3: #29362f;
+    --sv-glass: #6ba32f;
+
+    --sv-dev-1: #46584e;
+    --sv-dev-2: #35453c;
+    --sv-dev-3: #27332c;
+    --sv-seal-1: #2b3a33;
+    --sv-seal-2: #1f2b26;
+    --sv-seal-3: #16201c;
+
+    --sv-leaf-1: #6f9c36;
+    --sv-leaf-2: #4f7a25;
+    --sv-pot-1: #9d6c40;
+    --sv-pot-2: #855a33;
+    --sv-pot-3: #6d4927;
+  }
+
+  .nav,
+  main,
+  .scene,
+  .under {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ---------- nav ---------- */
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    max-width: 88rem;
+    margin-inline: auto;
+    padding: 1.35rem clamp(1.25rem, 4vw, 3rem);
+  }
+  .mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-family: var(--font-display);
+    font-size: 1.16rem;
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    text-decoration: none;
+  }
+  .glyph {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    background: var(--ink);
+    border: 4px solid var(--prim);
+  }
+  .links {
+    display: flex;
+    gap: 1.4rem;
+    margin-left: auto;
+    font-size: 0.9rem;
+    color: var(--ink-2);
+  }
+  .links a {
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .links a:hover {
+    color: var(--ink);
+  }
+  .themetoggle {
+    display: grid;
+    place-items: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: var(--paper-2);
+    color: var(--ink-2);
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s, transform 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .themetoggle:hover {
+    color: var(--ink);
+    border-color: var(--ink-3);
+  }
+  .themetoggle:active {
+    transform: scale(0.94);
+  }
+  .themetoggle svg {
+    width: 1rem;
+    height: 1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+  }
+  .i-moon {
+    display: none;
+  }
+  :global(html.dark) .i-moon {
+    display: block;
+  }
+  :global(html.dark) .i-sun {
+    display: none;
+  }
+  .navcta {
+    padding: 0.55rem 1.05rem;
+    border-radius: 8px;
+    background: var(--ink);
+    color: var(--paper);
+    font-size: 0.875rem;
+    font-weight: 550;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: transform 0.14s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s, color 0.2s;
+  }
+  .navcta:hover {
+    background: var(--prim);
+    color: var(--on-prim);
+  }
+  .navcta:active {
+    transform: scale(0.97);
+  }
+  @media (max-width: 940px) {
+    .links {
+      display: none;
+    }
+    .themetoggle {
+      margin-left: auto;
+    }
+  }
+
+  /* ---------- lede ---------- */
+  main {
+    max-width: 88rem;
+    margin-inline: auto;
+    padding: clamp(1.75rem, 4vw, 3.25rem) clamp(1.25rem, 4vw, 3rem) 0;
+    text-align: center;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.36rem 0.85rem 0.36rem 0.7rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: var(--paper-2);
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--ink-2);
+  }
+  .badge i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--prim-deep);
+  }
+
+  h1 {
+    margin: clamp(1rem, 2.2vw, 1.5rem) auto 0;
+    max-width: 16ch;
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 6vw, 5.2rem);
+    line-height: 0.96;
+    letter-spacing: -0.038em;
+    font-weight: 800;
+    text-wrap: balance;
+    animation: rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .sub {
+    margin: 1.4rem auto 0;
+    max-width: 50ch;
+    font-size: clamp(1rem, 0.5vw + 0.92rem, 1.15rem);
+    line-height: 1.6;
+    color: var(--ink-2);
+    text-wrap: pretty;
+    animation: rise 0.8s 0.09s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .join {
+    margin: clamp(1.5rem, 2.6vw, 2rem) auto 0;
+    display: flex;
+    gap: 0.4rem;
+    max-width: 29rem;
+    padding: 0.35rem;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    background: var(--paper-2);
+    animation: rise 0.8s 0.17s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .join input {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0.62rem 0.9rem;
+    border: none;
+    background: transparent;
+    font-size: 0.95rem;
+    color: var(--ink);
+  }
+  .join input::placeholder {
+    color: var(--ink-3);
+  }
+  .join input:focus {
+    outline: none;
+  }
+  .join:focus-within {
+    border-color: var(--prim-deep);
+  }
+  .join button {
+    padding: 0.62rem 1.2rem;
+    border: none;
+    border-radius: 9px;
+    background: var(--ink);
+    color: var(--paper);
+    font-size: 0.92rem;
+    font-weight: 560;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: transform 0.14s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s, color 0.2s;
+  }
+  .join button:hover {
+    background: var(--prim);
+    color: var(--on-prim);
+  }
+  .join button:active {
+    transform: scale(0.97);
+  }
+
+  .micro {
+    margin: 0.85rem 0 0;
+    font-size: 0.8rem;
+    color: var(--ink-3);
+  }
+
+  .sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* ---------- scene ---------- */
+  .scene {
+    margin: clamp(1rem, 3vw, 2.25rem) 0 0;
+    width: 100%;
+  }
+  .scene svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+  }
+
+  .unit polygon {
+    stroke: var(--sv-stroke);
+    stroke-width: 3.2;
+    stroke-linejoin: round;
+  }
+
+  .furn .f-top {
+    fill: var(--sv-furn-1);
+  }
+  .furn .f-front {
+    fill: var(--sv-furn-2);
+  }
+  .furn .f-side {
+    fill: var(--sv-furn-3);
+  }
+  .dev .f-top {
+    fill: var(--sv-dev-1);
+  }
+  .dev .f-front {
+    fill: var(--sv-dev-2);
+  }
+  .dev .f-side {
+    fill: var(--sv-dev-3);
+  }
+  .screen .f-side {
+    fill: var(--sv-glass);
+  }
+  .sealbox .f-top {
+    fill: var(--sv-seal-1);
+  }
+  .sealbox .f-front {
+    fill: var(--sv-seal-2);
+  }
+  .sealbox .f-side {
+    fill: var(--sv-seal-3);
+  }
+  .pot .f-top {
+    fill: var(--sv-pot-1);
+  }
+  .pot .f-front {
+    fill: var(--sv-pot-2);
+  }
+  .pot .f-side {
+    fill: var(--sv-pot-3);
+  }
+
+  .t-a .f-top {
+    fill: #b8ff3c;
+  }
+  .t-a .f-front {
+    fill: #96d92a;
+  }
+  .t-a .f-side {
+    fill: #78b31d;
+  }
+  .t-b .f-top {
+    fill: #ffce4a;
+  }
+  .t-b .f-front {
+    fill: #e0ad2c;
+  }
+  .t-b .f-side {
+    fill: #bd8d1b;
+  }
+  .t-c .f-top {
+    fill: #7ecdf5;
+  }
+  .t-c .f-front {
+    fill: #57aad6;
+  }
+  .t-c .f-side {
+    fill: #3d8ab5;
+  }
+  .t-d .f-top {
+    fill: #fdfef9;
+  }
+  .t-d .f-front {
+    fill: #e2e6dc;
+  }
+  .t-d .f-side {
+    fill: #c3c9bc;
+  }
+
+  .tray {
+    animation: lift 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(0.4s + var(--i) * 0.11s);
+  }
+  .tray.back {
+    animation-name: drop;
+    animation-delay: calc(1.25s + var(--i) * 0.08s);
+  }
+  .sealbox {
+    animation: pop 0.8s 0.95s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .lockbadge {
+    animation: pop 0.7s 1.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .wire {
+    stroke-dasharray: 13 11;
+    animation: flow 2.4s linear infinite;
+  }
+  .wiretext {
+    font-size: 21px;
+    letter-spacing: -0.01em;
+  }
+
+  /* ---------- under the scene ---------- */
+  .under {
+    max-width: 88rem;
+    margin-inline: auto;
+    padding: 0 clamp(1.25rem, 4vw, 3rem) 5rem;
+  }
+
+  .legend,
+  .steps {
+    list-style: none;
+    margin: 0;
+    padding: 1.25rem 0;
+    display: grid;
+    gap: 1rem 1.75rem;
+    border-top: 1px solid var(--rule);
+  }
+  .legend {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+  .steps {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    counter-reset: step;
+  }
+
+  .legend li {
+    display: flex;
+    align-items: baseline;
+    gap: 0.55rem;
+    min-width: 0;
+    font-size: 0.85rem;
+  }
+  .sw {
+    flex: none;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--sv-stroke);
+    border-radius: 3px;
+    transform: translateY(1px);
+  }
+  .sw.t-a {
+    background: var(--sv-t-a);
+  }
+  .sw.t-b {
+    background: var(--sv-t-b);
+  }
+  .sw.t-c {
+    background: var(--sv-t-c);
+  }
+  .sw.t-d {
+    background: var(--sv-t-d);
+  }
+  .legend b {
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .legend span {
+    color: var(--ink-3);
+  }
+
+  .steps li {
+    counter-increment: step;
+    display: grid;
+    gap: 0.25rem;
+    padding-left: 1.6rem;
+    position: relative;
+    min-width: 0;
+  }
+  .steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--prim-deep);
+  }
+  .steps b {
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  .steps span {
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.76rem;
+    color: var(--ink-3);
+  }
+
+  .strip {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.9rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--rule);
+    font-size: 0.875rem;
+  }
+  .strip > span {
+    color: var(--ink-3);
+    font-size: 0.8rem;
+  }
+  .strip ul {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+  }
+  .strip li {
+    padding: 0.3rem 0.7rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: var(--paper-2);
+    font-weight: 500;
+    color: var(--ink-2);
+  }
+
+  @media (max-width: 900px) {
+    .scene {
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+    }
+    .scene svg {
+      min-width: 1100px;
+    }
+    .wiretext {
+      font-size: 25px;
+    }
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes lift {
+    from {
+      opacity: 0;
+      transform: translate(-24px, 40px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes drop {
+    from {
+      opacity: 0;
+      transform: translate(26px, -46px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes pop {
+    from {
+      opacity: 0;
+      transform: translateY(28px) scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes flow {
+    to {
+      stroke-dashoffset: -48;
+    }
+  }
+</style>

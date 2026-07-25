@@ -1,0 +1,575 @@
+---
+export const prerender = true;
+import PreviewLayout from '../../layouts/PreviewLayout.astro';
+
+const chips = ['pull', 'status', 'agents', 'doctor'];
+---
+
+<PreviewLayout title="2 · Console — Reinstate" themeColor="#0c100d">
+  <div class="page">
+    <div class="aurora" aria-hidden="true"></div>
+
+    <header class="nav">
+      <a href="/" class="mark"><span class="glyph" aria-hidden="true"></span> reinstate</a>
+      <nav class="links">
+        <a href="/docs/getting-started">Docs</a>
+        <a href="/docs/security-model">Security</a>
+        <a href="https://github.com/HarjjotSinghh/reinstate" rel="noopener noreferrer" target="_blank">GitHub</a>
+      </nav>
+      <a class="navcta" href="#join">Join the waitlist</a>
+    </header>
+
+    <main>
+      <span class="badge"><i aria-hidden="true"></i> Try the CLI right here</span>
+      <h1>Restore your AI coding workspace on any device</h1>
+      <p class="sub">
+        Sessions, MCP servers, skills, and settings, across every coding agent and
+        every machine you own. Encrypted so only you can read it.
+      </p>
+
+      <section class="term" aria-label="Interactive Reinstate console">
+        <div class="chrome">
+          <span class="host">laptop · macos · 23:47</span>
+          <span class="statepill" data-state>idle</span>
+        </div>
+
+        <div class="out" id="out" role="log" aria-live="polite" aria-label="Console output"></div>
+
+        <form class="cmd" id="cmd">
+          <span class="prompt" aria-hidden="true">rein</span>
+          <label class="sr" for="cmdin">Reinstate command</label>
+          <input
+            id="cmdin"
+            name="cmdin"
+            type="text"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="pull"
+          />
+          <button type="submit">Run <kbd>↵</kbd></button>
+        </form>
+
+        <div class="chips">
+          <span>try</span>
+          {chips.map((c) => <button type="button" class="chip" data-cmd={c}>rein {c}</button>)}
+        </div>
+      </section>
+
+      <form class="join" id="join" onsubmit="event.preventDefault()">
+        <label class="sr" for="f-email">Email address</label>
+        <input id="f-email" type="email" placeholder="you@yourdomain.dev" autocomplete="email" />
+        <button type="submit">Join the waitlist</button>
+      </form>
+      <p class="micro">
+        Encrypted with age before it leaves the machine · your own S3, R2, or B2 · Apache&#8209;2.0
+      </p>
+    </main>
+  </div>
+</PreviewLayout>
+
+<script>
+  type Line = { t: 'dim' | 'ok' | 'txt' | 'head'; s: string };
+
+  const SCRIPTS: Record<string, Line[]> = {
+    pull: [
+      { t: 'dim', s: 'reading remote manifest from s3://your-bucket/reinstate' },
+      { t: 'txt', s: 'found 4 streams · sessions, mcp, skills, settings' },
+      { t: 'dim', s: 'decrypting with age identity ~/.config/reinstate/key.txt' },
+      { t: 'txt', s: 'remapping C:\\Users\\you\\dev  ->  /Users/you/dev' },
+      { t: 'ok', s: 'restored. run `claude --resume` to continue the thread.' },
+    ],
+    status: [
+      { t: 'head', s: 'stream      local        remote       state' },
+      { t: 'txt', s: 'sessions    23:47        23:41        ahead' },
+      { t: 'txt', s: 'mcp         23:47        23:41        in sync' },
+      { t: 'txt', s: 'skills      23:47        23:41        in sync' },
+      { t: 'txt', s: 'settings    23:47        23:41        remapped' },
+      { t: 'dim', s: 'nothing to push. working tree is clean.' },
+    ],
+    agents: [
+      { t: 'dim', s: 'scanning for agent state directories' },
+      { t: 'ok', s: 'claude code    ~/.claude' },
+      { t: 'ok', s: 'codex          ~/.codex' },
+      { t: 'ok', s: 'gemini cli     ~/.gemini' },
+      { t: 'ok', s: 'opencode       ~/.opencode' },
+      { t: 'ok', s: 'grok build     ~/.grok' },
+    ],
+    doctor: [
+      { t: 'ok', s: 'age identity present, permissions 0600' },
+      { t: 'ok', s: 'remote reachable, write access confirmed' },
+      { t: 'ok', s: 'path map covers every tracked project root' },
+      { t: 'dim', s: 'no plaintext ever written to the remote' },
+      { t: 'ok', s: 'all checks passed.' },
+    ],
+  };
+
+  const out = document.getElementById('out') as HTMLDivElement | null;
+  const form = document.getElementById('cmd') as HTMLFormElement | null;
+  const input = document.getElementById('cmdin') as HTMLInputElement | null;
+  const pill = document.querySelector('[data-state]') as HTMLElement | null;
+  if (!out || !form || !input || !pill) throw new Error('console: missing nodes');
+
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let token = 0;
+
+  function push(cls: string, text: string) {
+    const el = document.createElement('p');
+    el.className = `line ${cls}`;
+    el.textContent = text;
+    out!.appendChild(el);
+    out!.scrollTop = out!.scrollHeight;
+  }
+
+  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+  async function run(raw: string) {
+    const name = raw.trim().replace(/^rein\s+/, '').split(/\s+/)[0] || 'pull';
+    const script = SCRIPTS[name];
+    const mine = ++token;
+
+    out!.replaceChildren();
+    push('echo', `$ rein ${name}`);
+
+    if (!script) {
+      push('err', `unknown command: ${name}`);
+      push('dim', `try: ${Object.keys(SCRIPTS).join(', ')}`);
+      pill!.textContent = 'idle';
+      pill!.dataset.tone = '';
+      return;
+    }
+
+    pill!.textContent = 'running';
+    pill!.dataset.tone = 'busy';
+
+    for (const line of script) {
+      if (mine !== token) return;
+      if (!reduce) await wait(280);
+      if (mine !== token) return;
+      push(line.t, line.s);
+    }
+
+    pill!.textContent = 'done';
+    pill!.dataset.tone = 'ok';
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    run(input!.value || 'pull');
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('.chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      input!.value = chip.dataset.cmd || '';
+      run(input!.value);
+    });
+  });
+
+  run('pull');
+</script>
+
+<style>
+  .page {
+    --bg: oklch(0.155 0.012 158);
+    --panel: oklch(0.195 0.014 158);
+    --panel-2: oklch(0.235 0.014 158);
+    --ink: oklch(0.965 0.005 158);
+    --muted: oklch(0.75 0.012 158);
+    --dim: oklch(0.6 0.012 158);
+    --edge: oklch(0.32 0.016 158);
+    --prim: oklch(0.88 0.21 128);
+    --prim-ink: oklch(0.2 0.05 128);
+    --warn: oklch(0.75 0.14 55);
+
+    position: relative;
+    min-height: 100svh;
+    background: var(--bg);
+    color: var(--ink);
+    overflow-x: clip;
+    padding-bottom: 6rem;
+    font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+  }
+
+  .aurora {
+    position: absolute;
+    z-index: 0;
+    top: -18rem;
+    left: 50%;
+    width: min(80rem, 130vw);
+    height: 46rem;
+    transform: translateX(-50%);
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 46% 44% at 50% 60%, oklch(0.88 0.21 128 / 0.16), transparent 70%),
+      radial-gradient(ellipse 30% 34% at 26% 46%, oklch(0.7 0.16 190 / 0.1), transparent 70%);
+  }
+
+  .nav,
+  main {
+    position: relative;
+    z-index: 1;
+    max-width: 68rem;
+    margin-inline: auto;
+    padding-inline: clamp(1.25rem, 4vw, 2.5rem);
+  }
+
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding-block: 1.35rem;
+  }
+  .mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-size: 1.02rem;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    text-decoration: none;
+  }
+  .glyph {
+    width: 19px;
+    height: 19px;
+    border-radius: 6px;
+    background: var(--prim);
+    box-shadow: inset 0 0 0 4px var(--bg);
+  }
+  .links {
+    display: flex;
+    gap: 1.4rem;
+    margin-left: auto;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  .links a {
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .links a:hover {
+    color: var(--ink);
+  }
+  .navcta {
+    padding: 0.5rem 0.95rem;
+    border-radius: 8px;
+    background: var(--prim);
+    color: var(--prim-ink);
+    font-size: 0.865rem;
+    font-weight: 570;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: transform 0.14s cubic-bezier(0.16, 1, 0.3, 1), filter 0.2s;
+  }
+  .navcta:hover {
+    filter: brightness(1.08);
+  }
+  .navcta:active {
+    transform: scale(0.97);
+  }
+  @media (max-width: 780px) {
+    .links {
+      display: none;
+    }
+    .navcta {
+      margin-left: auto;
+    }
+  }
+
+  main {
+    text-align: center;
+    padding-top: clamp(2rem, 5vw, 3.5rem);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.34rem 0.8rem 0.34rem 0.65rem;
+    border: 1px solid var(--edge);
+    border-radius: 999px;
+    background: oklch(0.195 0.014 158 / 0.7);
+    font-size: 0.775rem;
+    color: var(--muted);
+  }
+  .badge i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--prim);
+    box-shadow: 0 0 0 3px oklch(0.88 0.21 128 / 0.18);
+  }
+
+  h1 {
+    margin: clamp(1.1rem, 2.5vw, 1.75rem) auto 0;
+    max-width: 17ch;
+    font-size: clamp(2.3rem, 5.6vw, 4.5rem);
+    line-height: 1.02;
+    letter-spacing: -0.034em;
+    font-weight: 580;
+    text-wrap: balance;
+    animation: rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .sub {
+    margin: 1.1rem auto 0;
+    max-width: 50ch;
+    font-size: clamp(0.98rem, 0.5vw + 0.9rem, 1.12rem);
+    line-height: 1.6;
+    color: var(--muted);
+    text-wrap: pretty;
+    animation: rise 0.8s 0.09s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  /* Console */
+  .term {
+    margin: clamp(2rem, 4.5vw, 3rem) auto 0;
+    max-width: 46rem;
+    text-align: left;
+    border: 1px solid var(--edge);
+    border-radius: 14px;
+    background: var(--panel);
+    overflow: hidden;
+    box-shadow: 0 1px 0 oklch(1 0 0 / 0.05) inset;
+    animation: rise 0.85s 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .chrome {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.6rem 0.9rem;
+    border-bottom: 1px solid var(--edge);
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.72rem;
+    color: var(--dim);
+  }
+  .statepill {
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid var(--edge);
+    color: var(--dim);
+  }
+  .statepill[data-tone='busy'] {
+    color: var(--warn);
+    border-color: oklch(0.75 0.14 55 / 0.4);
+  }
+  .statepill[data-tone='ok'] {
+    color: var(--prim);
+    border-color: oklch(0.88 0.21 128 / 0.4);
+  }
+
+  .out {
+    height: 13.5rem;
+    overflow-y: auto;
+    padding: 0.9rem 1rem;
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: clamp(0.78rem, 0.35vw + 0.7rem, 0.9rem);
+    line-height: 1.75;
+  }
+  .out :global(.line) {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    animation: linein 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .out :global(.echo) {
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .out :global(.dim) {
+    color: var(--dim);
+  }
+  .out :global(.txt) {
+    color: var(--muted);
+  }
+  .out :global(.head) {
+    color: var(--dim);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-size: 0.72em;
+  }
+  .out :global(.ok) {
+    color: var(--prim);
+  }
+  .out :global(.err) {
+    color: oklch(0.7 0.17 25);
+  }
+
+  .cmd {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.7rem 0.6rem 0.9rem;
+    border-top: 1px solid var(--edge);
+    background: var(--panel-2);
+  }
+  .prompt {
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.88rem;
+    color: var(--prim);
+    font-weight: 500;
+  }
+  .cmd input {
+    flex: 1 1 auto;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.88rem;
+    color: var(--ink);
+  }
+  .cmd input::placeholder {
+    color: var(--dim);
+  }
+  .cmd input:focus {
+    outline: none;
+  }
+  .cmd button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.42rem 0.75rem;
+    border: 1px solid var(--edge);
+    border-radius: 7px;
+    background: var(--panel);
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s, transform 0.12s;
+  }
+  .cmd button:hover {
+    color: var(--ink);
+    border-color: var(--muted);
+  }
+  .cmd button:active {
+    transform: scale(0.97);
+  }
+  .cmd kbd {
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.7rem;
+    color: var(--dim);
+  }
+
+  .chips {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    padding: 0.75rem 0.9rem;
+    border-top: 1px solid var(--edge);
+  }
+  .chips > span {
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.72rem;
+    color: var(--dim);
+    margin-right: 0.15rem;
+  }
+  .chip {
+    padding: 0.32rem 0.65rem;
+    border: 1px solid var(--edge);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.76rem;
+    cursor: pointer;
+    transition: color 0.18s, border-color 0.18s, background 0.18s, transform 0.12s;
+  }
+  .chip:hover {
+    color: var(--prim-ink);
+    background: var(--prim);
+    border-color: var(--prim);
+  }
+  .chip:active {
+    transform: scale(0.96);
+  }
+
+  .join {
+    margin: clamp(2rem, 4vw, 2.75rem) auto 0;
+    display: flex;
+    gap: 0.5rem;
+    max-width: 28rem;
+  }
+  .join input {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid var(--edge);
+    border-radius: 9px;
+    background: var(--panel);
+    color: var(--ink);
+    font-size: 0.925rem;
+    transition: border-color 0.2s;
+  }
+  .join input::placeholder {
+    color: var(--dim);
+  }
+  .join input:focus {
+    outline: none;
+    border-color: var(--prim);
+  }
+  .join button {
+    padding: 0.75rem 1.15rem;
+    border: none;
+    border-radius: 9px;
+    background: var(--prim);
+    color: var(--prim-ink);
+    font-size: 0.925rem;
+    font-weight: 570;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: transform 0.13s cubic-bezier(0.16, 1, 0.3, 1), filter 0.2s;
+  }
+  .join button:hover {
+    filter: brightness(1.08);
+  }
+  .join button:active {
+    transform: scale(0.97);
+  }
+
+  .micro {
+    margin: 0.9rem 0 0;
+    font-size: 0.78rem;
+    color: var(--dim);
+  }
+
+  .sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 560px) {
+    .join {
+      flex-wrap: wrap;
+    }
+    .out {
+      height: 15rem;
+    }
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes linein {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+</style>

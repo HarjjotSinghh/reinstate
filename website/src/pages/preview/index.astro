@@ -1,0 +1,200 @@
+---
+export const prerender = true;
+import PreviewLayout from '../../layouts/PreviewLayout.astro';
+
+const variants = [
+  {
+    href: '/preview/exploded',
+    tag: '1',
+    name: 'Exploded',
+    line: 'Axonometric cutaway: four coloured trays pulled out of the desktop chassis and rising into one sealed capsule, each on a leader line. Engineering drawing, not decoration.',
+    swatch: ['#eff0ea', '#1c3327', '#b8ff3c'],
+  },
+  {
+    href: '/preview/spread',
+    tag: '2',
+    name: 'Spread',
+    line: 'The card idea, fixed. Four session cards fanned like a hand, every line readable, each one liftable on hover. Pine drench, Young Serif.',
+    swatch: ['#1b2b21', '#eef2e4', '#b8ff3c'],
+  },
+  {
+    href: '/preview/route',
+    tag: '3',
+    name: 'Route',
+    line: 'Transit-map illustration across the full width: agent directories join one bus, hit the age chip, land in your bucket, fan back out restored. Live pulses on the traces.',
+    swatch: ['#fbfcf8', '#16211b', '#b8ff3c'],
+  },
+  {
+    href: '/preview/nightshift',
+    tag: '4',
+    name: 'Night shift',
+    line: 'Cinematic scene: the desk at 23:41 with the monitor still lit, the couch at 23:47 with the laptop open, four labelled parcels riding the arc between them.',
+    swatch: ['#0d1418', '#2a3a44', '#b8ff3c'],
+  },
+];
+
+const earlier = [
+  { href: '/preview/relay', name: 'Relay (kept)' },
+  { href: '/preview/vault', name: 'Vault' },
+  { href: '/preview/console', name: 'Console' },
+  { href: '/preview/carrier', name: 'Carrier' },
+  { href: '/preview/manifest', name: 'Manifest' },
+  { href: '/preview/diptych', name: 'Diptych' },
+  { href: '/preview/drench', name: 'Drench' },
+  { href: '/preview/datasheet', name: 'Datasheet' },
+];
+---
+
+<PreviewLayout title="Hero directions — Reinstate">
+  <main class="wrap">
+    <h1>Round three</h1>
+    <p class="sub">
+      Illustration-led, no mascot, no plain terminal, and every card readable. Same words
+      in all four. Pick one and it becomes the whole site.
+    </p>
+    <ul class="list">
+      {
+        variants.map((v) => (
+          <li>
+            <a href={v.href}>
+              <span class="tag">{v.tag}</span>
+              <span class="body">
+                <strong>{v.name}</strong>
+                <span class="line">{v.line}</span>
+              </span>
+              <span class="sw" aria-hidden="true">
+                {v.swatch.map((c) => (
+                  <i style={`background:${c}`} />
+                ))}
+              </span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <p class="earlierlead">Earlier rounds</p>
+    <ul class="earlier">
+      {
+        earlier.map((r) => (
+          <li>
+            <a href={r.href}>{r.name}</a>
+          </li>
+        ))
+      }
+    </ul>
+  </main>
+</PreviewLayout>
+
+<style>
+  .wrap {
+    min-height: 100svh;
+    background: oklch(0.135 0.004 128);
+    color: oklch(0.97 0 0);
+    padding: clamp(3rem, 10vw, 7rem) clamp(1.25rem, 5vw, 3rem) 9rem;
+  }
+  h1 {
+    margin: 0;
+    font-size: clamp(2rem, 4vw, 3rem);
+    letter-spacing: -0.03em;
+    font-weight: 540;
+    line-height: 1.05;
+  }
+  .sub {
+    margin: 1rem 0 0;
+    max-width: 54ch;
+    color: oklch(0.7 0.006 128);
+    line-height: 1.6;
+  }
+  .list {
+    list-style: none;
+    margin: clamp(2.5rem, 6vw, 4rem) 0 0;
+    padding: 0;
+    max-width: 62rem;
+    border-top: 1px solid oklch(0.26 0.006 128);
+  }
+  .list a {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1.4rem 0.75rem 1.4rem 0;
+    border-bottom: 1px solid oklch(0.26 0.006 128);
+    text-decoration: none;
+    transition: background 0.2s, padding-left 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .list a:hover {
+    background: oklch(0.175 0.005 128);
+    padding-left: 0.75rem;
+  }
+  .tag {
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.85rem;
+    color: oklch(0.9 0.22 128);
+    flex: none;
+    width: 1.25rem;
+  }
+  .body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+  }
+  .body strong {
+    font-size: 1.05rem;
+    font-weight: 550;
+    letter-spacing: -0.015em;
+  }
+  .line {
+    font-size: 0.875rem;
+    color: oklch(0.66 0.006 128);
+    line-height: 1.55;
+    max-width: 68ch;
+  }
+  .sw {
+    margin-left: auto;
+    display: flex;
+    gap: 3px;
+    flex: none;
+  }
+  .sw i {
+    width: 14px;
+    height: 30px;
+    border-radius: 2px;
+    display: block;
+  }
+  .earlierlead {
+    margin: 2.5rem 0 0.75rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: oklch(0.52 0.006 128);
+  }
+  .earlier {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+  }
+  .earlier a {
+    display: block;
+    padding: 0.35rem 0.7rem;
+    border: 1px solid oklch(0.26 0.006 128);
+    border-radius: 999px;
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.75rem;
+    color: oklch(0.62 0.006 128);
+    text-decoration: none;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .earlier a:hover {
+    color: oklch(0.97 0 0);
+    border-color: oklch(0.45 0.006 128);
+  }
+  @media (max-width: 560px) {
+    .sw {
+      display: none;
+    }
+  }
+</style>

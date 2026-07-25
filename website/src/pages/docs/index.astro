@@ -1,0 +1,35 @@
+---
+export const prerender = true;
+
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import { getOrderedDocs, docSlug, docTitle, docDescription } from '../../lib/docs';
+
+const docs = await getOrderedDocs();
+---
+
+<DocsLayout
+  title="Documentation"
+  description="Install, init, dual-device setup, security model, adapters, and FAQ for Reinstate."
+>
+  <h1>Documentation</h1>
+  <p>
+    Reinstate is a local-first, open-source CLI that syncs AI coding agent sessions (and config:
+    MCP servers, skills, settings) across your devices with end-to-end encryption and
+    bring-your-own storage.
+  </p>
+  <p>
+    Prefer the short CLI alias <code>rein</code>. Full name <code>reinstate</code> is the same binary.
+  </p>
+
+  <h2>Guides</h2>
+  <ul>
+    {
+      docs.map((entry) => (
+        <li>
+          <a href={`/docs/${docSlug(entry)}`}>{docTitle(entry)}</a>
+          {docDescription(entry) ? ` — ${docDescription(entry)}` : ''}
+        </li>
+      ))
+    }
+  </ul>
+</DocsLayout>

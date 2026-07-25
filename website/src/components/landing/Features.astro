@@ -1,0 +1,115 @@
+---
+const features = [
+  {
+    title: 'Cross-device session sync',
+    body: 'Continue the same agent thread on another machine with the conversation, not a cold re-prompt.',
+  },
+  {
+    title: 'Multi-agent adapters',
+    body: 'Claude Code and Codex first; Gemini CLI, OpenCode, and Grok Build on the roadmap. Not locked to one vendor.',
+  },
+  {
+    title: 'End-to-end encryption',
+    body: 'age with passphrase-derived keys. Ciphertext only on remote storage. Zero-knowledge by design.',
+  },
+  {
+    title: 'Bring-your-own storage',
+    body: 'Cloudflare R2, S3, GCS, S3-compatible, or WebDAV. You own the bucket and the credentials.',
+  },
+  {
+    title: 'OS-aware path remapping',
+    body: 'Windows ↔ macOS project roots rewritten so resume actually finds sessions. The hard problem is the product.',
+  },
+  {
+    title: 'Config + sessions',
+    body: 'MCP servers, skills, agents, and settings travel with history. One environment everywhere you code.',
+  },
+];
+---
+
+<section class="section features" id="features" aria-labelledby="features-title">
+  <div class="shell">
+    <h2 id="features-title" class="display">Built for the empty quadrant</h2>
+    <p class="lede">
+      Universal × cross-device × works when the other machine is off × encrypted × path-aware.
+      Native vendor sync owns one ecosystem. DIY file sync breaks on paths and secrets.
+    </p>
+
+    <div class="grid">
+      {
+        features.map((f) => (
+          <article>
+            <h3>{f.title}</h3>
+            <p>{f.body}</p>
+          </article>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .display {
+    margin: 0;
+    max-width: 14ch;
+    font-size: clamp(1.75rem, 3vw, 2.75rem);
+  }
+  .lede {
+    margin: 1.1rem 0 0;
+    max-width: 58ch;
+    color: var(--ink-2);
+    font-size: 1.02rem;
+    line-height: 1.6;
+    text-wrap: pretty;
+  }
+  .grid {
+    margin-top: 2.5rem;
+    display: grid;
+    gap: 0;
+    border-top: 1px solid var(--rule);
+  }
+  @media (min-width: 720px) {
+    .grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  @media (min-width: 1024px) {
+    .grid {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+  }
+  article {
+    padding: 1.35rem 1.1rem 1.5rem 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  @media (min-width: 720px) {
+    article {
+      padding-right: 1.5rem;
+    }
+    article:nth-child(odd) {
+      padding-right: 1.75rem;
+      border-right: 1px solid var(--rule);
+    }
+  }
+  @media (min-width: 1024px) {
+    article:nth-child(odd) {
+      border-right: none;
+    }
+    article:not(:nth-child(3n)) {
+      border-right: 1px solid var(--rule);
+      padding-right: 1.75rem;
+    }
+  }
+  h3 {
+    margin: 0;
+    font-size: 1.02rem;
+    font-weight: 560;
+    letter-spacing: -0.015em;
+  }
+  p {
+    margin: 0.55rem 0 0;
+    color: var(--ink-2);
+    font-size: 0.92rem;
+    line-height: 1.55;
+  }
+</style>

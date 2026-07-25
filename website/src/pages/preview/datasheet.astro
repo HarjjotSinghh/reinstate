@@ -1,0 +1,408 @@
+---
+export const prerender = true;
+import PreviewLayout from '../../layouts/PreviewLayout.astro';
+
+const spec = [
+  { k: 'Encryption', v: 'age · x25519' },
+  { k: 'Storage', v: 'S3 · R2 · B2 · filesystem' },
+  { k: 'Agents', v: 'Claude Code · Codex · Gemini CLI · OpenCode · Grok Build' },
+  { k: 'Runtime', v: 'single Go binary' },
+  { k: 'License', v: 'Apache-2.0' },
+];
+---
+
+<PreviewLayout title="D · Datasheet — Reinstate" themeColor="#f7f9f4">
+  <div class="page">
+    <header class="topbar">
+      <a href="/" class="wordmark">reinstate<b>.</b></a>
+      <div class="topmeta">
+        <span>sync layer</span>
+        <span>rev. 0.1 · alpha</span>
+        <a href="/docs/getting-started">docs</a>
+        <a href="https://github.com/HarjjotSinghh/reinstate" rel="noopener noreferrer" target="_blank">github</a>
+      </div>
+    </header>
+
+    <main class="sheet">
+      <div class="lede">
+        <h1>Restore your AI coding workspace on any device</h1>
+        <p class="sub">
+          Sessions, MCP servers, skills, and settings, across every coding agent and
+          every machine you own. Encrypted so only you can read it.
+        </p>
+
+        <form class="join" onsubmit="event.preventDefault()">
+          <label class="sr" for="d-email">Email address</label>
+          <input id="d-email" type="email" placeholder="you@yourdomain.dev" autocomplete="email" />
+          <button type="submit">Join the waitlist</button>
+        </form>
+
+        <p class="ledefoot">
+          No account, no server of ours in the path. Read the <a href="/docs/security-model"
+            >security model</a
+          > before you trust it.
+        </p>
+      </div>
+
+      <figure class="fig">
+        <svg viewBox="0 0 460 566" role="img" aria-labelledby="figtitle figdesc" class="figsvg">
+          <title id="figtitle">Path of a session between two machines</title>
+          <desc id="figdesc">
+            Device A encrypts its agent state with age, uploads it to a bucket you own, and
+            device B pulls it back with every absolute path rewritten for that machine.
+          </desc>
+
+          <g class="wire">
+            <line x1="133" y1="72" x2="133" y2="164" />
+            <line x1="133" y1="234" x2="133" y2="326" />
+            <line x1="133" y1="396" x2="133" y2="482" />
+            <path d="M129 160 l4 6 l4 -6" />
+            <path d="M129 322 l4 6 l4 -6" />
+            <path d="M129 478 l4 6 l4 -6" />
+          </g>
+
+          <g class="node">
+            <rect x="8" y="8" width="250" height="64" rx="4" />
+            <text class="nt" x="24" y="34">Device A</text>
+            <text class="ns" x="24" y="54">windows · desktop · 23:41</text>
+          </g>
+
+          <g class="node prim">
+            <rect x="8" y="170" width="250" height="64" rx="4" />
+            <text class="nt" x="24" y="196">Encrypted object</text>
+            <text class="ns" x="24" y="216">age · x25519 · no plaintext</text>
+          </g>
+
+          <g class="node">
+            <rect x="8" y="332" width="250" height="64" rx="4" />
+            <text class="nt" x="24" y="358">Your bucket</text>
+            <text class="ns" x="24" y="378">S3 · R2 · B2 · filesystem</text>
+          </g>
+
+          <g class="node">
+            <rect x="8" y="488" width="250" height="64" rx="4" />
+            <text class="nt" x="24" y="514">Device B</text>
+            <text class="ns" x="24" y="534">macos · laptop · 23:47</text>
+          </g>
+
+          <g class="seg">
+            <text x="146" y="122">rein push</text>
+            <text x="146" y="284">upload</text>
+            <text x="146" y="444">rein pull</text>
+          </g>
+
+          <g class="lead">
+            <path d="M258 202 H 300" />
+            <text class="lt" x="306" y="198">keys never leave</text>
+            <text class="lt" x="306" y="214">your machine</text>
+            <path d="M258 520 H 300" />
+            <text class="lt" x="306" y="516">absolute paths</text>
+            <text class="lt" x="306" y="532">rewritten on land</text>
+          </g>
+        </svg>
+        <figcaption>Fig. 1 — one session, two machines, nothing readable in between.</figcaption>
+      </figure>
+    </main>
+
+    <dl class="spec" aria-label="Specification">
+      {
+        spec.map((s) => (
+          <div class="specitem">
+            <dt>{s.k}</dt>
+            <dd>{s.v}</dd>
+          </div>
+        ))
+      }
+    </dl>
+  </div>
+</PreviewLayout>
+
+<style>
+  .page {
+    --bg: oklch(0.978 0.008 128);
+    --panel: oklch(1 0 0);
+    --ink: oklch(0.21 0.012 128);
+    --muted: oklch(0.44 0.012 128);
+    --dim: oklch(0.56 0.012 128);
+    --rule: oklch(0.88 0.012 128);
+    --rule-soft: oklch(0.93 0.01 128);
+    --prim-fill: oklch(0.88 0.21 128);
+    --prim-text: oklch(0.47 0.13 128);
+    --prim-ink: oklch(0.22 0.05 128);
+
+    min-height: 100svh;
+    background: var(--bg);
+    color: var(--ink);
+    overflow-x: clip;
+    padding-bottom: 7rem;
+  }
+
+  .topbar,
+  .sheet,
+  .spec {
+    max-width: 82rem;
+    margin-inline: auto;
+    padding-inline: clamp(1.25rem, 4vw, 3rem);
+  }
+
+  .topbar {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding-block: 1.4rem 1.1rem;
+    border-bottom: 1.5px solid var(--ink);
+  }
+  .wordmark {
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    text-decoration: none;
+  }
+  .wordmark b {
+    color: var(--prim-text);
+  }
+  .topmeta {
+    display: flex;
+    align-items: baseline;
+    gap: 1.15rem;
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.03em;
+    color: var(--dim);
+  }
+  .topmeta a {
+    color: var(--ink);
+    text-decoration: none;
+    border-bottom: 1px solid var(--rule);
+    transition: border-color 0.2s;
+  }
+  .topmeta a:hover {
+    border-bottom-color: var(--ink);
+  }
+  @media (max-width: 620px) {
+    .topmeta span {
+      display: none;
+    }
+  }
+
+  .sheet {
+    display: grid;
+    gap: clamp(2.5rem, 6vw, 5rem);
+    padding-block: clamp(3rem, 7vw, 5.5rem) clamp(2.5rem, 6vw, 4rem);
+    align-items: start;
+  }
+  @media (min-width: 960px) {
+    .sheet {
+      grid-template-columns: minmax(0, 1.55fr) minmax(20rem, 0.85fr);
+    }
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(2.3rem, 5.4vw, 4.3rem);
+    line-height: 1.04;
+    letter-spacing: -0.032em;
+    font-weight: 570;
+    text-wrap: balance;
+    max-width: 16ch;
+    animation: rise 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .sub {
+    margin: clamp(1.4rem, 3vw, 2rem) 0 0;
+    max-width: 54ch;
+    font-size: clamp(1rem, 0.5vw + 0.9rem, 1.15rem);
+    line-height: 1.62;
+    color: var(--muted);
+    text-wrap: pretty;
+    animation: rise 0.75s 0.08s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .join {
+    margin-top: clamp(1.75rem, 3.5vw, 2.5rem);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    max-width: 30rem;
+    animation: rise 0.75s 0.16s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .join input {
+    flex: 1 1 12rem;
+    min-width: 0;
+    padding: 0.76rem 0.9rem;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    background: var(--panel);
+    color: var(--ink);
+    font-size: 0.925rem;
+    transition: border-color 0.2s;
+  }
+  .join input::placeholder {
+    color: var(--dim);
+  }
+  .join input:focus {
+    outline: none;
+    border-color: var(--prim-text);
+  }
+  .join button {
+    padding: 0.76rem 1.15rem;
+    border: 1px solid var(--ink);
+    border-radius: 6px;
+    background: var(--ink);
+    color: var(--bg);
+    font-size: 0.925rem;
+    font-weight: 550;
+    letter-spacing: -0.01em;
+    cursor: pointer;
+    transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s, color 0.2s;
+  }
+  .join button:hover {
+    background: var(--prim-fill);
+    border-color: var(--prim-fill);
+    color: var(--prim-ink);
+  }
+  .join button:active {
+    transform: scale(0.98);
+  }
+
+  .ledefoot {
+    margin: 1.1rem 0 0;
+    font-size: 0.875rem;
+    color: var(--dim);
+  }
+  .ledefoot a {
+    color: var(--prim-text);
+    text-decoration: none;
+    border-bottom: 1px solid currentColor;
+  }
+
+  .sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* Figure */
+  .fig {
+    margin: 0;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    background: var(--panel);
+    padding: clamp(1rem, 2.5vw, 1.75rem);
+    animation: rise 0.75s 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .figsvg {
+    width: 100%;
+    height: auto;
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+  }
+  .fig figcaption {
+    margin-top: 0.9rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--rule-soft);
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.01em;
+    color: var(--dim);
+  }
+
+  .node rect {
+    fill: var(--panel);
+    stroke: var(--ink);
+    stroke-width: 1.25;
+  }
+  .node.prim rect {
+    fill: var(--prim-fill);
+    stroke: var(--prim-ink);
+  }
+  .nt {
+    font-size: 15px;
+    font-weight: 550;
+    fill: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .ns {
+    font-size: 11px;
+    fill: var(--muted);
+  }
+  .node.prim .nt,
+  .node.prim .ns {
+    fill: var(--prim-ink);
+  }
+
+  .wire line {
+    stroke: var(--ink);
+    stroke-width: 1.25;
+  }
+  .wire path {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 1.25;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .seg text {
+    font-size: 11px;
+    fill: var(--prim-text);
+    letter-spacing: 0.02em;
+  }
+
+  .lead path {
+    stroke: var(--dim);
+    stroke-width: 1;
+    stroke-dasharray: 3 3;
+  }
+  .lt {
+    font-size: 10.5px;
+    fill: var(--dim);
+  }
+
+  /* Specification strip */
+  .spec {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    border-top: 1.5px solid var(--ink);
+  }
+  .specitem {
+    padding: 1.1rem 1.1rem 1.25rem 0;
+    border-right: 1px solid var(--rule);
+    min-width: 0;
+  }
+  .specitem:last-child {
+    border-right: none;
+  }
+  .specitem + .specitem {
+    padding-left: 1.1rem;
+  }
+  .specitem dt {
+    font-size: 0.7rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 0.4rem;
+  }
+  .specitem dd {
+    margin: 0;
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+</style>

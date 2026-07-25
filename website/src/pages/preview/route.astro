@@ -1,0 +1,489 @@
+---
+export const prerender = true;
+import '@fontsource-variable/gabarito';
+import PreviewLayout from '../../layouts/PreviewLayout.astro';
+
+const srcRows = [
+  { y: 90, path: 'M210 90 H300 Q320 90 320 110 V170 Q320 190 340 190 H430', label: '~/.claude', sub: 'claude code' },
+  { y: 190, path: 'M210 190 H430', label: '~/.codex', sub: 'codex' },
+  { y: 290, path: 'M210 290 H300 Q320 290 320 270 V210 Q320 190 340 190 H430', label: '~/.gemini', sub: 'gemini cli' },
+];
+
+const dstRows = [
+  { y: 90, path: 'M820 190 H860 Q880 190 880 170 V110 Q880 90 900 90 H920', label: '~/.claude', sub: 'resumed' },
+  { y: 190, path: 'M820 190 H920', label: '~/.codex', sub: 'resumed' },
+  { y: 290, path: 'M820 190 H860 Q880 190 880 210 V270 Q880 290 900 290 H920', label: '~/.gemini', sub: 'resumed' },
+];
+---
+
+<PreviewLayout title="3 · Route — Reinstate" themeColor="#fbfcf8">
+  <div class="page">
+    <header class="nav">
+      <a href="/" class="mark"><span class="glyph" aria-hidden="true"></span> reinstate</a>
+      <nav class="links">
+        <a href="/docs/getting-started">Docs</a>
+        <a href="/docs/architecture">Architecture</a>
+        <a href="/docs/adapters">Adapters</a>
+        <a href="https://github.com/HarjjotSinghh/reinstate" rel="noopener noreferrer" target="_blank">GitHub</a>
+      </nav>
+      <a class="navcta" href="#join">Join the waitlist</a>
+    </header>
+
+    <main>
+      <div class="head">
+        <div class="lede">
+          <h1>Restore your AI coding workspace on any device</h1>
+          <p class="sub">
+            Sessions, MCP servers, skills, and settings, across every coding agent and
+            every machine you own. Encrypted so only you can read it.
+          </p>
+          <form class="join" id="join" onsubmit="event.preventDefault()">
+            <label class="sr" for="r-email">Email address</label>
+            <input id="r-email" type="email" placeholder="you@yourdomain.dev" autocomplete="email" />
+            <button type="submit">Join the waitlist</button>
+          </form>
+        </div>
+
+        <dl class="spec">
+          <div><dt>Cipher</dt><dd>age · x25519</dd></div>
+          <div><dt>Transport</dt><dd>your bucket, direct</dd></div>
+          <div><dt>Runtime</dt><dd>one Go binary</dd></div>
+          <div><dt>License</dt><dd>Apache-2.0</dd></div>
+        </dl>
+      </div>
+    </main>
+
+    <figure class="map">
+      <svg viewBox="0 0 1200 400" role="img" aria-labelledby="mtitle mdesc">
+        <title id="mtitle">The route your agent state takes between machines</title>
+        <desc id="mdesc">
+          Agent directories on the desktop join one bus, pass through age encryption, land in
+          a bucket you own, and fan back out into the same directories on the laptop.
+        </desc>
+
+        <g class="traces">
+          {srcRows.map((r) => <path class="trace" d={r.path} />)}
+          <path class="trace" d="M580 190 H680" />
+          {dstRows.map((r) => <path class="trace" d={r.path} />)}
+        </g>
+        <g class="pulses">
+          {srcRows.map((r, i) => <path class="pulse" d={r.path} style={`--d:${i * 0.4}s`} />)}
+          <path class="pulse" d="M580 190 H680" style="--d:1.2s" />
+          {dstRows.map((r, i) => <path class="pulse" d={r.path} style={`--d:${1.5 + i * 0.4}s`} />)}
+        </g>
+
+        {/* source nodes */}
+        {
+          srcRows.map((r) => (
+            <g class="node">
+              <rect x="60" y={r.y - 27} width="150" height="54" rx="10" />
+              <text class="nl" x="76" y={r.y - 4}>
+                {r.label}
+              </text>
+              <text class="ns" x="76" y={r.y + 15}>
+                {r.sub}
+              </text>
+              <circle class="via" cx="210" cy={r.y} r="4.5" />
+            </g>
+          ))
+        }
+
+        {/* encrypt chip */}
+        <g class="chip">
+          <path class="pin" d="M455 140 v -16 M495 140 v -16 M535 140 v -16 M455 240 v 16 M495 240 v 16 M535 240 v 16" />
+          <rect x="430" y="140" width="150" height="100" rx="14" />
+          <text class="cl" x="505" y="182">age</text>
+          <text class="cs" x="505" y="206">x25519 · local key</text>
+        </g>
+
+        {/* bucket */}
+        <g class="drum">
+          <path class="body" d="M680 140 h140 v100 a70 20 0 0 1 -140 0 z" />
+          <ellipse class="lid" cx="750" cy="140" rx="70" ry="20" />
+          <text class="dl" x="750" y="200">your bucket</text>
+          <text class="ds" x="750" y="222">S3 · R2 · B2</text>
+        </g>
+
+        {/* destination nodes */}
+        {
+          dstRows.map((r) => (
+            <g class="node live">
+              <circle class="via" cx="920" cy={r.y} r="4.5" />
+              <rect x="920" y={r.y - 27} width="180" height="54" rx="10" />
+              <text class="nl" x="938" y={r.y - 4}>
+                {r.label}
+              </text>
+              <text class="ns" x="938" y={r.y + 15}>
+                {r.sub}
+              </text>
+            </g>
+          ))
+        }
+
+        <text class="stage" x="135" y="352">desktop · 23:41</text>
+        <text class="stage" x="505" y="300">seal</text>
+        <text class="stage" x="1010" y="352">laptop · 23:47</text>
+        <text class="remap" x="1010" y="374">every absolute path remapped</text>
+      </svg>
+      <figcaption>
+        One route, drawn end to end. Nothing in the middle can read what it carries.
+      </figcaption>
+    </figure>
+  </div>
+</PreviewLayout>
+
+<style>
+  .page {
+    --paper: oklch(0.984 0.005 145);
+    --paper-2: oklch(1 0 0);
+    --ink: oklch(0.19 0.02 158);
+    --ink-2: oklch(0.42 0.016 158);
+    --ink-3: oklch(0.57 0.014 158);
+    --rule: oklch(0.9 0.008 145);
+    --prim: oklch(0.86 0.21 128);
+    --prim-deep: oklch(0.56 0.15 134);
+
+    position: relative;
+    min-height: 100svh;
+    background: var(--paper);
+    background-image: radial-gradient(oklch(0.88 0.01 145) 1px, transparent 1.1px);
+    background-size: 30px 30px;
+    color: var(--ink);
+    overflow-x: clip;
+    padding-bottom: 7rem;
+    font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+  }
+
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    max-width: 84rem;
+    margin-inline: auto;
+    padding: 1.35rem clamp(1.25rem, 4vw, 3rem);
+  }
+  .mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-family: 'Gabarito Variable', ui-sans-serif, sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    text-decoration: none;
+  }
+  .glyph {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    background: var(--ink);
+    box-shadow: inset 0 0 0 4px var(--prim);
+  }
+  .links {
+    display: flex;
+    gap: 1.4rem;
+    margin-left: auto;
+    font-size: 0.9rem;
+    color: var(--ink-2);
+  }
+  .links a {
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .links a:hover {
+    color: var(--ink);
+  }
+  .navcta {
+    padding: 0.55rem 1.05rem;
+    border-radius: 999px;
+    background: var(--ink);
+    color: var(--paper-2);
+    font-size: 0.875rem;
+    font-weight: 550;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: transform 0.14s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s, color 0.2s;
+  }
+  .navcta:hover {
+    background: var(--prim);
+    color: var(--ink);
+  }
+  .navcta:active {
+    transform: scale(0.97);
+  }
+  @media (max-width: 900px) {
+    .links {
+      display: none;
+    }
+    .navcta {
+      margin-left: auto;
+    }
+  }
+
+  main {
+    max-width: 84rem;
+    margin-inline: auto;
+    padding: clamp(2rem, 5vw, 3.5rem) clamp(1.25rem, 4vw, 3rem) 0;
+  }
+
+  .head {
+    display: grid;
+    gap: clamp(2rem, 4vw, 3.5rem);
+    align-items: end;
+  }
+  @media (min-width: 1000px) {
+    .head {
+      grid-template-columns: minmax(0, 1.35fr) minmax(16rem, 0.65fr);
+    }
+  }
+
+  h1 {
+    margin: 0;
+    max-width: 15ch;
+    font-family: 'Gabarito Variable', ui-sans-serif, sans-serif;
+    font-size: clamp(2.5rem, 5.8vw, 5rem);
+    line-height: 0.98;
+    letter-spacing: -0.038em;
+    font-weight: 700;
+    text-wrap: balance;
+    animation: rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .sub {
+    margin: 1.2rem 0 0;
+    max-width: 52ch;
+    font-size: clamp(1rem, 0.5vw + 0.92rem, 1.15rem);
+    line-height: 1.6;
+    color: var(--ink-2);
+    text-wrap: pretty;
+    animation: rise 0.8s 0.09s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .join {
+    margin-top: clamp(1.6rem, 3vw, 2.2rem);
+    display: flex;
+    gap: 0.4rem;
+    max-width: 29rem;
+    padding: 0.35rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: var(--paper-2);
+    animation: rise 0.8s 0.17s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .join input {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0.62rem 0.95rem;
+    border: none;
+    background: transparent;
+    font-size: 0.95rem;
+    color: var(--ink);
+  }
+  .join input::placeholder {
+    color: var(--ink-3);
+  }
+  .join input:focus {
+    outline: none;
+  }
+  .join:focus-within {
+    border-color: var(--prim-deep);
+    box-shadow: 0 0 0 3px oklch(0.56 0.15 134 / 0.16);
+  }
+  .join button {
+    padding: 0.62rem 1.25rem;
+    border: none;
+    border-radius: 999px;
+    background: var(--ink);
+    color: var(--paper-2);
+    font-size: 0.92rem;
+    font-weight: 560;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: transform 0.14s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s, color 0.2s;
+  }
+  .join button:hover {
+    background: var(--prim);
+    color: var(--ink);
+  }
+  .join button:active {
+    transform: scale(0.97);
+  }
+
+  .spec {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem 1.25rem;
+    margin: 0;
+    padding: 1.25rem 0 0;
+    border-top: 1px solid var(--rule);
+    animation: rise 0.8s 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .spec dt {
+    font-size: 0.7rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 0.3rem;
+  }
+  .spec dd {
+    margin: 0;
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.82rem;
+    color: var(--ink);
+  }
+
+  .sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* map */
+  .map {
+    margin: clamp(2rem, 5vw, 3.5rem) auto 0;
+    max-width: 84rem;
+    padding-inline: clamp(1.25rem, 4vw, 3rem);
+    animation: rise 0.9s 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .map svg {
+    width: 100%;
+    height: auto;
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+  }
+  .map figcaption {
+    margin-top: 0.75rem;
+    font-size: 0.82rem;
+    color: var(--ink-3);
+  }
+
+  .trace {
+    fill: none;
+    stroke: oklch(0.82 0.014 150);
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .pulse {
+    fill: none;
+    stroke: var(--prim);
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-dasharray: 34 460;
+    animation: dash 3.6s linear infinite;
+    animation-delay: var(--d);
+  }
+
+  .node rect {
+    fill: var(--paper-2);
+    stroke: var(--ink);
+    stroke-width: 2.2;
+  }
+  .node.live rect {
+    fill: var(--prim);
+    stroke: var(--ink);
+  }
+  .nl {
+    fill: var(--ink);
+    font-size: 16px;
+    font-weight: 500;
+  }
+  .ns {
+    fill: var(--ink-3);
+    font-size: 12.5px;
+  }
+  .node.live .ns {
+    fill: oklch(0.34 0.06 132);
+  }
+  .via {
+    fill: var(--ink);
+  }
+
+  .chip rect {
+    fill: var(--ink);
+    stroke: none;
+  }
+  .chip .pin {
+    stroke: var(--ink);
+    stroke-width: 5;
+    stroke-linecap: round;
+  }
+  .cl {
+    fill: var(--prim);
+    font-size: 26px;
+    text-anchor: middle;
+    letter-spacing: 0.02em;
+  }
+  .cs {
+    fill: oklch(0.72 0.014 150);
+    font-size: 12.5px;
+    text-anchor: middle;
+  }
+
+  .drum .body {
+    fill: oklch(0.9 0.012 150);
+    stroke: var(--ink);
+    stroke-width: 2.2;
+  }
+  .drum .lid {
+    fill: var(--paper-2);
+    stroke: var(--ink);
+    stroke-width: 2.2;
+  }
+  .dl {
+    fill: var(--ink);
+    font-size: 15px;
+    text-anchor: middle;
+    font-weight: 500;
+  }
+  .ds {
+    fill: var(--ink-3);
+    font-size: 12px;
+    text-anchor: middle;
+  }
+
+  .stage {
+    fill: var(--ink-3);
+    font-size: 13px;
+    text-anchor: middle;
+  }
+  .remap {
+    fill: var(--prim-deep);
+    font-size: 12.5px;
+    text-anchor: middle;
+  }
+
+  @media (max-width: 640px) {
+    .ns,
+    .ds,
+    .cs,
+    .remap {
+      display: none;
+    }
+    .nl {
+      font-size: 20px;
+    }
+    .stage {
+      font-size: 17px;
+    }
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes dash {
+    from {
+      stroke-dashoffset: 494;
+    }
+    to {
+      stroke-dashoffset: -60;
+    }
+  }
+</style>

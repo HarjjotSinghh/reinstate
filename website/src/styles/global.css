@@ -1,0 +1,277 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@import "@fontsource-variable/funnel-display";
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
+
+/* DESIGN.md tokens — light default, dark twin on html.dark */
+
+:root {
+  --paper: #e4e7dd;
+  --paper-2: #f4f6ef;
+  --ink: oklch(0.19 0.022 158);
+  --ink-2: oklch(0.41 0.018 158);
+  --ink-3: oklch(0.54 0.014 158);
+  --rule: oklch(0.8 0.012 145);
+  --prim: oklch(0.87 0.21 128);
+  --prim-deep: oklch(0.58 0.155 134);
+  --on-prim: oklch(0.19 0.022 158);
+
+  --sv-stroke: #131f1a;
+  --sv-ink: oklch(0.19 0.022 158);
+  --sv-dim: oklch(0.56 0.014 158);
+  --sv-prim: #b8ff3c;
+  --sv-prim-deep: #4f8a1e;
+  --sv-lock: #131f1a;
+
+  --sv-wall: #e4e7dd;
+  --sv-floor: #d3d8c9;
+  --sv-floorline: #c3c9b8;
+  --sv-skirt: #c8cebd;
+  --sv-frame: #f4f6ef;
+  --sv-night: #16231f;
+  --sv-star: #cfe9a8;
+  --sv-city: #24352e;
+  --sv-rug: #c2cbb2;
+
+  --sv-furn-1: #c1c9ae;
+  --sv-furn-2: #a6b090;
+  --sv-furn-3: #8a9673;
+  --sv-glass: #3f6b1f;
+
+  --sv-dev-1: #3b4c43;
+  --sv-dev-2: #2a3831;
+  --sv-dev-3: #1e2925;
+  --sv-seal-1: #2a3831;
+  --sv-seal-2: #1a2621;
+  --sv-seal-3: #121b17;
+
+  --sv-leaf-1: #7fae3f;
+  --sv-leaf-2: #5f8f2c;
+  --sv-pot-1: #c98f5a;
+  --sv-pot-2: #b07845;
+  --sv-pot-3: #966235;
+
+  --sv-t-a: #b8ff3c;
+  --sv-t-b: #ffce4a;
+  --sv-t-c: #7ecdf5;
+  --sv-t-d: #fdfef9;
+
+  --font-display: "Funnel Display Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, monospace;
+
+  --color-bg: var(--paper);
+  --color-surface: var(--paper-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--ink-2);
+  --color-border: var(--rule);
+  --color-primary: var(--prim);
+  --color-primary-ink: var(--on-prim);
+  --color-danger: oklch(0.55 0.18 25);
+}
+
+html.dark {
+  --paper: #1d2723;
+  --paper-2: #26332e;
+  --ink: oklch(0.965 0.008 145);
+  --ink-2: oklch(0.76 0.014 150);
+  --ink-3: oklch(0.62 0.016 150);
+  --rule: oklch(0.31 0.02 158);
+  --prim: oklch(0.88 0.21 128);
+  --prim-deep: oklch(0.84 0.19 128);
+  --on-prim: oklch(0.17 0.04 132);
+
+  --sv-stroke: #e9efe3;
+  --sv-ink: oklch(0.965 0.008 145);
+  --sv-dim: oklch(0.66 0.016 150);
+  --sv-prim: #c4ff56;
+  --sv-prim-deep: #c4ff56;
+  --sv-lock: #16211b;
+
+  --sv-wall: #1d2723;
+  --sv-floor: #16201c;
+  --sv-floorline: #253029;
+  --sv-skirt: #253029;
+  --sv-frame: #2b3831;
+  --sv-night: #0c1512;
+  --sv-star: #c4ff56;
+  --sv-city: #1a2620;
+  --sv-rug: #223029;
+
+  --sv-furn-1: #44564b;
+  --sv-furn-2: #35453c;
+  --sv-furn-3: #29362f;
+  --sv-glass: #6ba32f;
+
+  --sv-dev-1: #46584e;
+  --sv-dev-2: #35453c;
+  --sv-dev-3: #27332c;
+  --sv-seal-1: #2b3a33;
+  --sv-seal-2: #1f2b26;
+  --sv-seal-3: #16201c;
+
+  --sv-leaf-1: #6f9c36;
+  --sv-leaf-2: #4f7a25;
+  --sv-pot-1: #9d6c40;
+  --sv-pot-2: #855a33;
+  --sv-pot-3: #6d4927;
+
+  --color-danger: oklch(0.7 0.16 25);
+}
+
+@theme {
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --color-bg: var(--paper);
+  --color-surface: var(--paper-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--ink-2);
+  --color-border: var(--rule);
+  --color-primary: var(--prim);
+  --color-primary-ink: var(--on-prim);
+  --color-danger: var(--color-danger);
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01" on, "cv11" on;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+
+  img,
+  svg {
+    display: block;
+    max-width: 100%;
+  }
+
+  button,
+  input {
+    font: inherit;
+    color: inherit;
+  }
+
+  a {
+    color: inherit;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--prim-deep);
+    outline-offset: 3px;
+  }
+
+  ::selection {
+    background: color-mix(in oklch, var(--prim) 40%, transparent);
+    color: var(--ink);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Shell utilities */
+.shell {
+  max-width: 88rem;
+  margin-inline: auto;
+  padding-inline: clamp(1.25rem, 4vw, 3rem);
+}
+
+.section {
+  padding-block: clamp(3rem, 7vw, 6rem);
+  border-top: 1px solid var(--rule);
+}
+
+.display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+  text-wrap: balance;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* Docs prose */
+.prose-rein {
+  --tw-prose-body: var(--ink-2);
+  --tw-prose-headings: var(--ink);
+  --tw-prose-links: var(--prim-deep);
+  --tw-prose-bold: var(--ink);
+  --tw-prose-counters: var(--ink-3);
+  --tw-prose-bullets: var(--ink-3);
+  --tw-prose-hr: var(--rule);
+  --tw-prose-quotes: var(--ink);
+  --tw-prose-quote-borders: var(--prim-deep);
+  --tw-prose-captions: var(--ink-3);
+  --tw-prose-code: var(--ink);
+  --tw-prose-pre-code: var(--ink);
+  --tw-prose-pre-bg: var(--paper-2);
+  --tw-prose-th-borders: var(--rule);
+  --tw-prose-td-borders: var(--rule);
+}
+
+.prose-rein :where(h1, h2, h3) {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.prose-rein :where(code):not(:where(pre *)) {
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: 0.35rem;
+  padding: 0.1em 0.35em;
+  font-size: 0.9em;
+  font-weight: 500;
+  font-family: var(--font-mono);
+}
+
+.prose-rein :where(code):not(:where(pre *))::before,
+.prose-rein :where(code):not(:where(pre *))::after {
+  content: none;
+}
+
+.prose-rein :where(a) {
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.prose-rein :where(a:hover) {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.prose-rein :where(pre) {
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+}

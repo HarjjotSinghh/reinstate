@@ -1,0 +1,103 @@
+---
+const points = [
+  {
+    title: 'E2E encryption',
+    body: 'Ciphertext only on remote storage. Keys derived from your passphrase; lose the passphrase, lose decryptability.',
+  },
+  {
+    title: 'Credential denylist',
+    body: 'auth.json and tokens stay local by default. Secrets are not part of the sync surface.',
+  },
+  {
+    title: 'No vendor API keys required',
+    body: 'Reinstate reads local agent files. It does not need Anthropic, OpenAI, or Google credentials.',
+  },
+  {
+    title: 'Fail-safe restore',
+    body: 'Timestamped backups, conflict forks, atomic writes. Safe defaults over silent merge.',
+  },
+];
+---
+
+<section class="section security" id="security" aria-labelledby="security-title">
+  <div class="shell layout">
+    <div>
+      <h2 id="security-title" class="display">Zero-knowledge, open source</h2>
+      <p class="lede">
+        Apache-2.0. Auditable. Patent grant. No vendor lock-in. A future optional hosted convenience
+        layer would still only store ciphertext, and is not required.
+      </p>
+      <a class="doclink" href="/docs/security-model">Read the security model</a>
+    </div>
+    <dl>
+      {
+        points.map((p) => (
+          <div>
+            <dt>{p.title}</dt>
+            <dd>{p.body}</dd>
+          </div>
+        ))
+      }
+    </dl>
+  </div>
+</section>
+
+<style>
+  .layout {
+    display: grid;
+    gap: 2.5rem;
+  }
+  @media (min-width: 900px) {
+    .layout {
+      grid-template-columns: 1fr 1.2fr;
+      align-items: start;
+      gap: 3.5rem;
+    }
+  }
+  .display {
+    margin: 0;
+    max-width: 12ch;
+    font-size: clamp(1.75rem, 3vw, 2.75rem);
+  }
+  .lede {
+    margin: 1.1rem 0 0;
+    max-width: 42ch;
+    color: var(--ink-2);
+    font-size: 1.02rem;
+    line-height: 1.6;
+    text-wrap: pretty;
+  }
+  .doclink {
+    display: inline-block;
+    margin-top: 1.35rem;
+    font-size: 0.92rem;
+    font-weight: 550;
+    color: var(--ink);
+    text-underline-offset: 3px;
+  }
+  .doclink:hover {
+    color: var(--prim-deep);
+  }
+  dl {
+    margin: 0;
+    display: grid;
+    gap: 1.35rem;
+  }
+  @media (min-width: 640px) {
+    dl {
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem 1.75rem;
+    }
+  }
+  dt {
+    font-size: 0.95rem;
+    font-weight: 560;
+    letter-spacing: -0.01em;
+  }
+  dd {
+    margin: 0.4rem 0 0;
+    color: var(--ink-2);
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+</style>

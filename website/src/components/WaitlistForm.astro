@@ -1,0 +1,157 @@
+---
+interface Props {
+  id?: string;
+  compact?: boolean;
+}
+
+const { id = 'waitlist-form', compact = false } = Astro.props;
+---
+
+<form id={id} class:list={['waitlist-form', compact && 'is-compact']} novalidate>
+  <div class="row">
+    <label class="sr" for={`${id}-email`}>Email address</label>
+    <input
+      id={`${id}-email`}
+      name="email"
+      type="email"
+      autocomplete="email"
+      required
+      placeholder="you@yourdomain.dev"
+    />
+    <button type="submit">Join the waitlist</button>
+  </div>
+  <p class="status" role="status" aria-live="polite"></p>
+</form>
+
+<script>
+  function bind(form: HTMLFormElement) {
+    const status = form.querySelector<HTMLElement>('.status');
+    const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+    const emailInput = form.querySelector<HTMLInputElement>('input[name="email"]');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!emailInput || !status || !submit) return;
+
+      status.textContent = '';
+      status.classList.remove('is-error', 'is-ok');
+      submit.disabled = true;
+
+      try {
+        const res = await fetch('/api/waitlist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: emailInput.value }),
+        });
+        const data = (await res.json()) as {
+          ok?: boolean;
+          error?: string;
+          message?: string;
+        };
+
+        if (!res.ok || !data.ok) {
+          status.textContent = data.error ?? 'Something went wrong. Try again.';
+          status.classList.add('is-error');
+          return;
+        }
+
+        status.textContent = data.message ?? 'You are on the list.';
+        status.classList.add('is-ok');
+        emailInput.value = '';
+      } catch {
+        status.textContent = 'Network error. Check your connection and try again.';
+        status.classList.add('is-error');
+      } finally {
+        submit.disabled = false;
+      }
+    });
+  }
+
+  document.querySelectorAll<HTMLFormElement>('.waitlist-form').forEach(bind);
+</script>
+
+<style>
+  .waitlist-form {
+    width: 100%;
+  }
+  .row {
+    display: flex;
+    gap: 0.4rem;
+    padding: 0.35rem;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    background: var(--paper-2);
+  }
+  .row:focus-within {
+    border-color: var(--prim-deep);
+  }
+  input {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0.62rem 0.9rem;
+    border: none;
+    background: transparent;
+    font-size: 0.95rem;
+    color: var(--ink);
+  }
+  input::placeholder {
+    color: var(--ink-3);
+  }
+  input:focus {
+    outline: none;
+  }
+  button {
+    padding: 0.62rem 1.2rem;
+    border: none;
+    border-radius: 9px;
+    background: var(--ink);
+    color: var(--paper);
+    font-size: 0.92rem;
+    font-weight: 560;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      transform 0.14s cubic-bezier(0.16, 1, 0.3, 1),
+      background 0.2s,
+      color 0.2s;
+  }
+  button:hover {
+    background: var(--prim);
+    color: var(--on-prim);
+  }
+  button:active {
+    transform: scale(0.97);
+  }
+  button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .status {
+    min-height: 1.25rem;
+    margin: 0.55rem 0 0;
+    font-size: 0.85rem;
+    color: var(--ink-3);
+  }
+  .status.is-error {
+    color: var(--color-danger);
+  }
+  .status.is-ok {
+    color: var(--prim-deep);
+  }
+  .sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  @media (max-width: 520px) {
+    .row {
+      flex-direction: column;
+    }
+    button {
+      width: 100%;
+    }
+  }
+</style>

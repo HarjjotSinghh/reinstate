@@ -1,0 +1,491 @@
+---
+export const prerender = true;
+import '@fontsource-variable/bricolage-grotesque';
+import PreviewLayout from '../../layouts/PreviewLayout.astro';
+
+const bands = [
+  { name: 'sessions', off: -39, dur: '3.4s', w: 3 },
+  { name: 'mcp', off: -13, dur: '3.9s', w: 2.25 },
+  { name: 'skills', off: 13, dur: '3.1s', w: 2.25 },
+  { name: 'settings', off: 39, dur: '4.3s', w: 3 },
+];
+
+const agents = ['Claude Code', 'Codex', 'Gemini CLI', 'OpenCode', 'Grok Build'];
+---
+
+<PreviewLayout title="1 · Relay — Reinstate" themeColor="#f2f4ec">
+  <div class="page">
+    <span class="blob bl" aria-hidden="true"></span>
+    <span class="blob br" aria-hidden="true"></span>
+
+    <header class="nav">
+      <a href="/" class="mark">
+        <span class="glyph" aria-hidden="true"></span>
+        reinstate
+      </a>
+      <nav class="links">
+        <a href="/docs/getting-started">Docs</a>
+        <a href="/docs/security-model">Security</a>
+        <a href="https://github.com/HarjjotSinghh/reinstate" rel="noopener noreferrer" target="_blank">GitHub</a>
+      </nav>
+      <a class="navcta" href="#join">Join the waitlist</a>
+    </header>
+
+    <main>
+      <div class="lede">
+        <span class="badge"><i aria-hidden="true"></i> Encrypted. Portable. Yours.</span>
+        <h1>Restore your AI coding workspace on any device</h1>
+        <p class="sub">
+          Sessions, MCP servers, skills, and settings, across every coding agent and
+          every machine you own. Encrypted so only you can read it.
+        </p>
+        <form class="join" id="join" onsubmit="event.preventDefault()">
+          <label class="sr" for="e-email">Email address</label>
+          <input id="e-email" type="email" placeholder="you@yourdomain.dev" autocomplete="email" />
+          <button type="submit">Join the waitlist</button>
+        </form>
+        <p class="micro">Apache&#8209;2.0 · one Go binary · your bucket, your keys</p>
+      </div>
+
+      <figure class="scene">
+        <svg viewBox="0 96 1200 264" role="img" aria-labelledby="rtitle rdesc">
+          <title id="rtitle">Context moving from a desktop to a laptop</title>
+          <desc id="rdesc">
+            Four streams, sessions, MCP servers, skills, and settings, leave the desktop,
+            pass through an age encryption seal, and arrive on the laptop.
+          </desc>
+
+          <g class="bands">
+            {
+              bands.map((b) => (
+                <path
+                  d={`M 268 ${200 + b.off} C 430 ${200 + b.off - 46}, 770 ${200 + b.off + 46}, 932 ${200 + b.off}`}
+                  stroke-width={b.w}
+                  style={`--dur:${b.dur}`}
+                />
+              ))
+            }
+          </g>
+
+          <g class="labels">
+            {
+              bands.map((b) => (
+                <text x="332" y={200 + b.off - 13}>
+                  {b.name}
+                </text>
+              ))
+            }
+          </g>
+
+          {/* desktop */}
+          <g class="dev">
+            <rect class="screen" x="40" y="118" width="224" height="150" rx="10" />
+            <rect class="glass" x="54" y="132" width="196" height="122" rx="5" />
+            <rect class="ln" x="70" y="150" width="86" height="7" rx="3.5" />
+            <rect class="ln" x="70" y="167" width="140" height="7" rx="3.5" />
+            <rect class="ln dim" x="70" y="184" width="112" height="7" rx="3.5" />
+            <rect class="ln dim" x="70" y="201" width="150" height="7" rx="3.5" />
+            <rect class="ln dim" x="70" y="218" width="64" height="7" rx="3.5" />
+            <rect class="stand" x="138" y="268" width="28" height="30" rx="4" />
+            <rect class="stand" x="104" y="296" width="96" height="12" rx="6" />
+            <text class="devlabel" x="152" y="336">desktop · 23:41</text>
+          </g>
+
+          {/* laptop */}
+          <g class="dev">
+            <rect class="screen" x="936" y="126" width="212" height="142" rx="10" />
+            <rect class="glass live" x="950" y="140" width="184" height="114" rx="5" />
+            <rect class="ln on" x="966" y="158" width="82" height="7" rx="3.5" />
+            <rect class="ln on" x="966" y="175" width="132" height="7" rx="3.5" />
+            <rect class="ln on" x="966" y="192" width="106" height="7" rx="3.5" />
+            <rect class="ln on" x="966" y="209" width="142" height="7" rx="3.5" />
+            <rect class="ln on" x="966" y="226" width="60" height="7" rx="3.5" />
+            <path class="base" d="M 916 276 H 1168 L 1180 296 H 904 Z" />
+            <text class="devlabel" x="1042" y="336">laptop · 23:47</text>
+          </g>
+
+          {/* seal */}
+          <g class="seal">
+            <circle class="halo" cx="600" cy="200" r="64" />
+            <rect class="box" x="566" y="166" width="68" height="68" rx="17" />
+            <path class="shackle" d="M 584 172 v -14 a 16 16 0 0 1 32 0 v 14" />
+            <circle class="hole" cx="600" cy="204" r="6" />
+            <rect class="hole" x="597" y="204" width="6" height="14" rx="3" />
+            <text class="sealtext" x="600" y="272">age · x25519</text>
+          </g>
+        </svg>
+      </figure>
+
+      <ul class="agents" aria-label="Supported agents">
+        <li class="agentlead">Works with</li>
+        {agents.map((a) => <li>{a}</li>)}
+      </ul>
+    </main>
+  </div>
+</PreviewLayout>
+
+<style>
+  .page {
+    --paper: oklch(0.958 0.014 122);
+    --paper-2: oklch(0.985 0.008 122);
+    --ink: oklch(0.22 0.035 152);
+    --ink-2: oklch(0.4 0.025 152);
+    --ink-3: oklch(0.55 0.02 152);
+    --rule: oklch(0.87 0.018 122);
+    --prim: oklch(0.87 0.21 128);
+    --prim-deep: oklch(0.62 0.16 132);
+
+    position: relative;
+    min-height: 100svh;
+    background: var(--paper);
+    color: var(--ink);
+    overflow-x: clip;
+    padding-bottom: 6rem;
+    font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+  }
+
+  .blob {
+    position: absolute;
+    z-index: 0;
+    pointer-events: none;
+    border-radius: 999px;
+    filter: blur(2px);
+  }
+  .bl {
+    left: -8rem;
+    top: 16rem;
+    width: 26rem;
+    height: 26rem;
+    background: radial-gradient(circle at 50% 50%, oklch(0.87 0.21 128 / 0.32), transparent 62%);
+  }
+  .br {
+    right: -10rem;
+    top: -6rem;
+    width: 30rem;
+    height: 30rem;
+    background: radial-gradient(circle at 50% 50%, oklch(0.62 0.16 132 / 0.16), transparent 62%);
+  }
+
+  .nav,
+  main {
+    position: relative;
+    z-index: 1;
+    max-width: 80rem;
+    margin-inline: auto;
+    padding-inline: clamp(1.25rem, 4vw, 2.5rem);
+  }
+
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding-block: 1.35rem;
+  }
+  .mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-family: 'Bricolage Grotesque Variable', ui-sans-serif, sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    text-decoration: none;
+  }
+  .glyph {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    background: var(--ink);
+    box-shadow: inset 0 0 0 4px var(--prim);
+  }
+  .links {
+    display: flex;
+    gap: 1.5rem;
+    margin-left: auto;
+    font-size: 0.9rem;
+    font-weight: 450;
+    color: var(--ink-2);
+  }
+  .links a {
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .links a:hover {
+    color: var(--ink);
+  }
+  .navcta {
+    padding: 0.55rem 1rem;
+    border-radius: 999px;
+    background: var(--ink);
+    color: var(--paper-2);
+    font-size: 0.875rem;
+    font-weight: 550;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s, color 0.2s;
+  }
+  .navcta:hover {
+    background: var(--prim);
+    color: var(--ink);
+  }
+  .navcta:active {
+    transform: scale(0.97);
+  }
+  @media (max-width: 780px) {
+    .links {
+      display: none;
+    }
+    .navcta {
+      margin-left: auto;
+    }
+  }
+
+  .lede {
+    text-align: center;
+    padding-block: clamp(2.5rem, 6vw, 4.5rem) clamp(1.5rem, 3vw, 2.5rem);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.36rem 0.85rem 0.36rem 0.7rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: var(--paper-2);
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--ink-2);
+    letter-spacing: -0.005em;
+  }
+  .badge i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--prim-deep);
+    box-shadow: 0 0 0 3px oklch(0.62 0.16 132 / 0.18);
+  }
+
+  h1 {
+    margin: clamp(1.25rem, 3vw, 2rem) auto 0;
+    max-width: 15ch;
+    font-family: 'Bricolage Grotesque Variable', ui-sans-serif, sans-serif;
+    font-size: clamp(2.5rem, 6.6vw, 5.4rem);
+    line-height: 0.98;
+    letter-spacing: -0.038em;
+    font-weight: 700;
+    text-wrap: balance;
+    animation: rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .sub {
+    margin: 1.25rem auto 0;
+    max-width: 52ch;
+    font-size: clamp(1rem, 0.5vw + 0.92rem, 1.15rem);
+    line-height: 1.6;
+    color: var(--ink-2);
+    text-wrap: pretty;
+    animation: rise 0.8s 0.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .join {
+    margin: clamp(1.75rem, 3.5vw, 2.5rem) auto 0;
+    display: flex;
+    gap: 0.4rem;
+    max-width: 30rem;
+    padding: 0.35rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: var(--paper-2);
+    box-shadow: 0 1px 2px oklch(0.22 0.035 152 / 0.06);
+    animation: rise 0.8s 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .join input {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0.6rem 0.9rem;
+    border: none;
+    background: transparent;
+    font-size: 0.95rem;
+    color: var(--ink);
+  }
+  .join input::placeholder {
+    color: var(--ink-3);
+  }
+  .join input:focus {
+    outline: none;
+  }
+  .join:focus-within {
+    border-color: var(--prim-deep);
+    box-shadow: 0 0 0 3px oklch(0.62 0.16 132 / 0.16);
+  }
+  .join button {
+    padding: 0.6rem 1.2rem;
+    border: none;
+    border-radius: 999px;
+    background: var(--ink);
+    color: var(--paper-2);
+    font-size: 0.9rem;
+    font-weight: 560;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: transform 0.14s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s, color 0.2s;
+  }
+  .join button:hover {
+    background: var(--prim);
+    color: var(--ink);
+  }
+  .join button:active {
+    transform: scale(0.97);
+  }
+
+  .micro {
+    margin: 0.9rem 0 0;
+    font-size: 0.8rem;
+    color: var(--ink-3);
+  }
+
+  .sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* Scene */
+  .scene {
+    margin: clamp(1rem, 3vw, 2rem) 0 0;
+    animation: rise 0.9s 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .scene svg {
+    width: 100%;
+    height: auto;
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+  }
+
+  .screen {
+    fill: var(--ink);
+  }
+  .glass {
+    fill: oklch(0.28 0.03 152);
+  }
+  .glass.live {
+    fill: oklch(0.24 0.045 150);
+  }
+  .ln {
+    fill: oklch(0.55 0.02 152);
+  }
+  .ln.dim {
+    fill: oklch(0.4 0.02 152);
+  }
+  .ln.on {
+    fill: var(--prim);
+  }
+  .ln.on:nth-of-type(even) {
+    fill: oklch(0.75 0.1 130);
+  }
+  .stand,
+  .base {
+    fill: var(--ink);
+  }
+  .devlabel {
+    fill: var(--ink-3);
+    font-size: 15px;
+    text-anchor: middle;
+    letter-spacing: 0.02em;
+  }
+
+  .bands path {
+    fill: none;
+    stroke: var(--prim-deep);
+    stroke-linecap: round;
+    stroke-dasharray: 14 12;
+    animation: flow var(--dur) linear infinite;
+  }
+  .bands path:nth-child(1),
+  .bands path:nth-child(4) {
+    stroke: var(--prim);
+  }
+
+  .labels text {
+    fill: var(--ink-2);
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    stroke: var(--paper);
+    stroke-width: 5;
+    paint-order: stroke fill;
+  }
+
+  .halo {
+    fill: var(--paper);
+  }
+  .box {
+    fill: var(--prim);
+    stroke: var(--ink);
+    stroke-width: 2.5;
+  }
+  .shackle {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 6;
+    stroke-linecap: round;
+  }
+  .hole {
+    fill: var(--ink);
+  }
+  .sealtext {
+    fill: var(--ink-2);
+    font-size: 15px;
+    text-anchor: middle;
+    letter-spacing: 0.02em;
+  }
+
+  @media (max-width: 700px) {
+    .labels,
+    .devlabel {
+      display: none;
+    }
+  }
+
+  .agents {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem 0.85rem;
+    margin: clamp(1.5rem, 4vw, 2.75rem) 0 0;
+    padding: 0;
+    font-size: 0.875rem;
+    color: var(--ink-2);
+  }
+  .agentlead {
+    color: var(--ink-3);
+    font-size: 0.8rem;
+  }
+  .agents li:not(.agentlead) {
+    padding: 0.3rem 0.7rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: var(--paper-2);
+    font-weight: 500;
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes flow {
+    to {
+      stroke-dashoffset: -52;
+    }
+  }
+</style>

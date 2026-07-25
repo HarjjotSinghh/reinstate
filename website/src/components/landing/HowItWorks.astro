@@ -1,0 +1,55 @@
+---
+const steps = [
+  {
+    title: 'Adapters read local state',
+    body: 'Each coding agent writes sessions and config to disk in its own layout. Reinstate adapters know where to look.',
+  },
+  {
+    title: 'Paths become portable',
+    body: 'Absolute project paths are rewritten to tokens, then remapped on pull so resume finds the same work on another OS.',
+  },
+  {
+    title: 'Encrypt, then upload',
+    body: 'age encryption runs on the client with a passphrase-derived key. Remote storage only ever sees ciphertext.',
+  },
+  {
+    title: 'Atomic restore',
+    body: 'Pull decrypts, remaps, writes with backups and conflict forks. Never a silent overwrite of local history.',
+  },
+];
+---
+
+<section id="how" class="border-b border-border bg-surface/40">
+  <div class="mx-auto max-w-6xl px-4 py-20 sm:px-6 md:py-28">
+    <h2 class="text-balance text-3xl font-semibold tracking-tight text-ink md:text-4xl">
+      How it works
+    </h2>
+    <p class="mt-4 max-w-xl measure text-pretty text-muted">
+      Not a live relay. Not Dropbox for session JSONL. A local-first sync engine that treats
+      resume and path differences as the product.
+    </p>
+
+    <ol class="mt-12 grid gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-2">
+      {
+        steps.map((step, i) => (
+          <li class="bg-bg p-6 md:p-8">
+            <span class="font-mono text-sm text-primary">{String(i + 1).padStart(2, '0')}</span>
+            <h3 class="mt-3 text-lg font-medium text-ink">{step.title}</h3>
+            <p class="mt-2 text-sm leading-relaxed text-muted">{step.body}</p>
+          </li>
+        ))
+      }
+    </ol>
+
+    <figure class="mt-12 overflow-hidden rounded-xl border border-border bg-surface">
+      <img
+        src="/brand/05_architecture.png"
+        alt="Reinstate architecture: adapters, pathmap, encryption, and sync against your bucket"
+        class="h-auto w-full"
+        loading="lazy"
+        width="1200"
+        height="675"
+      />
+    </figure>
+  </div>
+</section>

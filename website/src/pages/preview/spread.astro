@@ -1,0 +1,495 @@
+---
+export const prerender = true;
+import '@fontsource/young-serif';
+import PreviewLayout from '../../layouts/PreviewLayout.astro';
+
+const cards = [
+  {
+    repo: 'acme-api',
+    agent: 'claude code',
+    stamp: '23:41',
+    state: 'sealed',
+    lines: ['rejected: auth rewrite in middleware', 'keep: table-driven tests only', 'read: 14 files, do not re-read'],
+  },
+  {
+    repo: 'infra-tf',
+    agent: 'gemini cli',
+    stamp: '23:38',
+    state: 'sealed',
+    lines: ['module boundary agreed', 'no remote state migration', 'plan output pending review'],
+  },
+  {
+    repo: 'docs-site',
+    agent: 'opencode',
+    stamp: '23:12',
+    state: 'sealed',
+    lines: ['voice: concrete, no hype verbs', 'mdx frontmatter fixed', 'sidebar order locked'],
+  },
+  {
+    repo: 'dashboard',
+    agent: 'codex',
+    stamp: '22:54',
+    state: 'sealed',
+    lines: ['chart lib chosen, do not revisit', 'server components only', 'skip the storybook detour'],
+  },
+];
+---
+
+<PreviewLayout title="2 · Spread — Reinstate" themeColor="#1b2b21">
+  <div class="page">
+    <header class="nav">
+      <a href="/" class="mark">reinstate</a>
+      <nav class="links">
+        <a href="/docs/getting-started">Docs</a>
+        <a href="/docs/architecture">Architecture</a>
+        <a href="/docs/security-model">Security</a>
+        <a href="https://github.com/HarjjotSinghh/reinstate" rel="noopener noreferrer" target="_blank">GitHub</a>
+      </nav>
+      <a class="navcta" href="#join">Join the waitlist</a>
+    </header>
+
+    <main>
+      <div class="lede">
+        <span class="badge"><i aria-hidden="true"></i> Nothing leaves in plaintext</span>
+        <h1>Restore your AI coding workspace on any device</h1>
+        <p class="sub">
+          Sessions, MCP servers, skills, and settings, across every coding agent and
+          every machine you own. Encrypted so only you can read it.
+        </p>
+        <form class="join" id="join" onsubmit="event.preventDefault()">
+          <label class="sr" for="s-email">Email address</label>
+          <input id="s-email" type="email" placeholder="you@yourdomain.dev" autocomplete="email" />
+          <button type="submit">Join the waitlist</button>
+        </form>
+      </div>
+
+      <div class="fanwrap">
+        <svg class="thread" viewBox="0 0 1200 260" aria-hidden="true" preserveAspectRatio="none">
+          <path class="arc" d="M 40 210 C 300 66, 900 66, 1160 210" />
+        </svg>
+
+        <div class="fan">
+          {
+            cards.map((c, i) => (
+              <article class="card" style={`--i:${i}`} tabindex="0">
+                <header>
+                  <span class="repo">{c.repo}</span>
+                  <span class="stamp">{c.stamp}</span>
+                </header>
+                <ul>
+                  {c.lines.map((l) => (
+                    <li>{l}</li>
+                  ))}
+                </ul>
+                <footer>
+                  <span class="agent">{c.agent}</span>
+                  <span class="wax" aria-label={c.state}>
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M8 11 V8 a4 4 0 0 1 8 0 v3" />
+                      <rect x="6" y="11" width="12" height="9" rx="2.5" />
+                    </svg>
+                  </span>
+                </footer>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+
+      <p class="caption">
+        Four sessions, sealed on the desktop at 23:41 and opened on the laptop at 23:47.
+        Same threads, same decisions, new absolute paths.
+      </p>
+    </main>
+  </div>
+</PreviewLayout>
+
+<style>
+  .page {
+    --bg: oklch(0.245 0.042 158);
+    --pine: oklch(0.18 0.035 158);
+    --slate: oklch(0.33 0.03 158);
+    --bone: oklch(0.955 0.014 128);
+    --bone-2: oklch(0.9 0.016 128);
+    --bone-dim: oklch(0.74 0.02 150);
+    --prim: oklch(0.87 0.21 128);
+
+    position: relative;
+    min-height: 100svh;
+    background: var(--bg);
+    color: var(--bone);
+    overflow-x: clip;
+    padding-bottom: 6rem;
+    font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+  }
+
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    max-width: 84rem;
+    margin-inline: auto;
+    padding: 1.4rem clamp(1.25rem, 4vw, 3rem);
+  }
+  .mark {
+    font-family: 'Young Serif', ui-serif, Georgia, serif;
+    font-size: 1.2rem;
+    text-decoration: none;
+  }
+  .links {
+    display: flex;
+    gap: 1.4rem;
+    margin-left: auto;
+    font-size: 0.9rem;
+    color: var(--bone-dim);
+  }
+  .links a {
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .links a:hover {
+    color: var(--bone);
+  }
+  .navcta {
+    padding: 0.52rem 1rem;
+    border-radius: 999px;
+    background: var(--prim);
+    color: var(--pine);
+    font-size: 0.865rem;
+    font-weight: 570;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: transform 0.14s cubic-bezier(0.16, 1, 0.3, 1), filter 0.2s;
+  }
+  .navcta:hover {
+    filter: brightness(1.07);
+  }
+  .navcta:active {
+    transform: scale(0.97);
+  }
+  @media (max-width: 900px) {
+    .links {
+      display: none;
+    }
+    .navcta {
+      margin-left: auto;
+    }
+  }
+
+  main {
+    max-width: 84rem;
+    margin-inline: auto;
+    padding: clamp(1.5rem, 4vw, 3rem) clamp(1.25rem, 4vw, 3rem) 0;
+  }
+
+  .lede {
+    text-align: center;
+    max-width: 46rem;
+    margin-inline: auto;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.34rem 0.85rem 0.34rem 0.7rem;
+    border: 1px solid var(--slate);
+    border-radius: 999px;
+    font-size: 0.78rem;
+    color: var(--bone-dim);
+  }
+  .badge i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--prim);
+    box-shadow: 0 0 0 3px oklch(0.87 0.21 128 / 0.2);
+  }
+
+  h1 {
+    margin: clamp(1.1rem, 2.5vw, 1.6rem) auto 0;
+    max-width: 15ch;
+    font-family: 'Young Serif', ui-serif, Georgia, serif;
+    font-size: clamp(2.4rem, 5.8vw, 4.6rem);
+    line-height: 1.01;
+    letter-spacing: -0.022em;
+    font-weight: 400;
+    text-wrap: balance;
+    animation: rise 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .sub {
+    margin: 1.15rem auto 0;
+    max-width: 48ch;
+    font-size: clamp(1rem, 0.5vw + 0.92rem, 1.12rem);
+    line-height: 1.6;
+    color: var(--bone-dim);
+    text-wrap: pretty;
+    animation: rise 0.85s 0.09s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .join {
+    margin: clamp(1.6rem, 3vw, 2.2rem) auto 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    max-width: 28rem;
+    animation: rise 0.85s 0.17s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .join input {
+    flex: 1 1 12rem;
+    min-width: 0;
+    padding: 0.76rem 0.95rem;
+    border: 1px solid var(--slate);
+    border-radius: 999px;
+    background: oklch(0.29 0.04 158 / 0.55);
+    color: var(--bone);
+    font-size: 0.93rem;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .join input::placeholder {
+    color: oklch(0.63 0.02 150);
+  }
+  .join input:focus {
+    outline: none;
+    border-color: var(--prim);
+    background: oklch(0.29 0.04 158);
+  }
+  .join button {
+    padding: 0.76rem 1.3rem;
+    border: none;
+    border-radius: 999px;
+    background: var(--bone);
+    color: var(--pine);
+    font-size: 0.93rem;
+    font-weight: 570;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: transform 0.13s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s;
+  }
+  .join button:hover {
+    background: var(--prim);
+  }
+  .join button:active {
+    transform: scale(0.97);
+  }
+
+  .sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* Fan */
+  .fanwrap {
+    position: relative;
+    margin-top: clamp(2.5rem, 6vw, 4.5rem);
+  }
+
+  .thread {
+    position: absolute;
+    inset: auto 0 32%;
+    width: 100%;
+    height: 8rem;
+    pointer-events: none;
+  }
+  .arc {
+    fill: none;
+    stroke: var(--prim);
+    stroke-width: 2;
+    stroke-dasharray: 10 10;
+    opacity: 0.5;
+    vector-effect: non-scaling-stroke;
+    animation: flow 3.2s linear infinite;
+  }
+
+  .fan {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 0;
+  }
+
+  .card {
+    position: relative;
+    flex: 0 1 17.5rem;
+    min-width: 0;
+    margin-inline: -0.9rem;
+    padding: 1rem 1.15rem 0.9rem;
+    border-radius: 12px;
+    background: var(--bone);
+    color: var(--pine);
+    box-shadow: 0 10px 30px oklch(0.12 0.03 158 / 0.4);
+    transform: rotate(var(--rot)) translateY(var(--ty));
+    transform-origin: 50% 120%;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s;
+    animation: deal 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(0.28s + var(--i) * 0.09s);
+  }
+  .card:nth-child(1) {
+    --rot: -7deg;
+    --ty: 1.5rem;
+    z-index: 1;
+  }
+  .card:nth-child(2) {
+    --rot: -2.4deg;
+    --ty: 0.2rem;
+    z-index: 2;
+  }
+  .card:nth-child(3) {
+    --rot: 2.4deg;
+    --ty: 0.2rem;
+    z-index: 2;
+  }
+  .card:nth-child(4) {
+    --rot: 7deg;
+    --ty: 1.5rem;
+    z-index: 1;
+  }
+  .card:hover,
+  .card:focus-visible {
+    transform: rotate(0deg) translateY(-0.9rem);
+    box-shadow: 0 18px 40px oklch(0.12 0.03 158 / 0.5);
+    z-index: 5;
+    outline: none;
+  }
+  .card:focus-visible {
+    box-shadow: 0 0 0 3px var(--prim), 0 18px 40px oklch(0.12 0.03 158 / 0.5);
+  }
+
+  .card header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid oklch(0.18 0.035 158 / 0.16);
+  }
+  .repo {
+    font-family: 'Young Serif', ui-serif, Georgia, serif;
+    font-size: 1.1rem;
+    letter-spacing: -0.01em;
+  }
+  .stamp,
+  .agent {
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.7rem;
+    color: oklch(0.44 0.03 158);
+  }
+
+  .card ul {
+    list-style: none;
+    margin: 0.75rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0.4rem;
+  }
+  .card li {
+    position: relative;
+    padding-left: 0.9rem;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: oklch(0.35 0.03 158);
+  }
+  .card li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.5em;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: oklch(0.62 0.16 132);
+  }
+
+  .card footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 0.9rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid oklch(0.18 0.035 158 / 0.12);
+  }
+  .wax {
+    display: grid;
+    place-items: center;
+    width: 1.7rem;
+    height: 1.7rem;
+    border-radius: 50%;
+    background: var(--prim);
+  }
+  .wax svg {
+    width: 62%;
+    height: 62%;
+    fill: none;
+    stroke: var(--pine);
+    stroke-width: 2.1;
+    stroke-linecap: round;
+  }
+  .wax rect {
+    fill: var(--pine);
+    stroke: none;
+  }
+
+  .caption {
+    margin: clamp(2rem, 5vw, 3.5rem) auto 0;
+    max-width: 58ch;
+    text-align: center;
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.78rem;
+    line-height: 1.7;
+    color: oklch(0.64 0.02 150);
+  }
+
+  @media (max-width: 1080px) {
+    .fan {
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+    }
+    .card {
+      flex: 0 1 19rem;
+      margin-inline: 0;
+      --rot: 0deg;
+      --ty: 0;
+    }
+    .card:nth-child(1),
+    .card:nth-child(2),
+    .card:nth-child(3),
+    .card:nth-child(4) {
+      --rot: 0deg;
+      --ty: 0;
+    }
+    .thread {
+      display: none;
+    }
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes deal {
+    from {
+      opacity: 0;
+      transform: translateY(3rem) rotate(0deg) scale(0.96);
+    }
+  }
+  @keyframes flow {
+    to {
+      stroke-dashoffset: -40;
+    }
+  }
+</style>

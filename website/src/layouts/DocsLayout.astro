@@ -1,0 +1,137 @@
+---
+export const prerender = true;
+
+import BaseLayout from './BaseLayout.astro';
+import { getOrderedDocs, docSlug, docTitle } from '../lib/docs';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description } = Astro.props;
+const docs = await getOrderedDocs();
+const path = Astro.url.pathname.replace(/\/$/, '') || '/docs';
+---
+
+<BaseLayout title={`${title} · Reinstate Docs`} description={description}>
+  <div class="shell docs">
+    <aside class="side">
+      <nav aria-label="Documentation">
+        <p class="side-label mono">Documentation</p>
+        <ul>
+          {
+            docs.map((entry) => {
+              const href = `/docs/${docSlug(entry)}`;
+              const active = path === href;
+              return (
+                <li>
+                  <a href={href} class:list={[active && 'is-active']}>
+                    {docTitle(entry)}
+                  </a>
+                </li>
+              );
+            })
+          }
+        </ul>
+        <a class="wait" href="/#join">Join waitlist</a>
+      </nav>
+    </aside>
+
+    <div class="body">
+      <div class="mobile-nav">
+        {
+          docs.map((entry) => (
+            <a href={`/docs/${docSlug(entry)}`}>{docTitle(entry)}</a>
+          ))
+        }
+      </div>
+      <article class="prose prose-rein max-w-3xl">
+        <slot />
+      </article>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .docs {
+    display: flex;
+    gap: 2.5rem;
+    padding-block: 2.5rem 4rem;
+  }
+  .side {
+    display: none;
+    width: 14rem;
+    flex: none;
+  }
+  @media (min-width: 1024px) {
+    .side {
+      display: block;
+    }
+  }
+  .side nav {
+    position: sticky;
+    top: 5.5rem;
+  }
+  .side-label {
+    margin: 0 0 0.85rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.15rem;
+  }
+  .side a {
+    display: block;
+    padding: 0.4rem 0.55rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    color: var(--ink-2);
+    transition: background 0.15s, color 0.15s;
+  }
+  .side a:hover,
+  .side a.is-active {
+    background: var(--paper-2);
+    color: var(--ink);
+  }
+  .wait {
+    display: inline-block !important;
+    margin-top: 1.5rem;
+    font-size: 0.88rem !important;
+    font-weight: 550;
+    color: var(--prim-deep) !important;
+    padding-left: 0.55rem;
+  }
+  .body {
+    min-width: 0;
+    flex: 1;
+  }
+  .mobile-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 1.5rem;
+  }
+  @media (min-width: 1024px) {
+    .mobile-nav {
+      display: none;
+    }
+  }
+  .mobile-nav a {
+    padding: 0.3rem 0.65rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: var(--paper-2);
+    font-size: 0.78rem;
+    color: var(--ink-2);
+    text-decoration: none;
+  }
+</style>
