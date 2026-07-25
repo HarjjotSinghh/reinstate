@@ -56,3 +56,4 @@ npm-debug.log*
 # Research references stay in repo but ignore stray exports
 # references/ is intentional project research — keep tracked if desired
 dist/
+.playwright-mcp/

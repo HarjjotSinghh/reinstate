@@ -156,7 +156,7 @@ Compact handoff can beat giant replay on cost and reliability.
 ## Capability-aware resume (killer feature)
 
 ```text
-reinstate resume <session>
+rein resume <session>
 → Detect target agent + device profile
 → Diff required MCP/skills vs installed
 → Diff repo HEAD/dirty vs checkpoint

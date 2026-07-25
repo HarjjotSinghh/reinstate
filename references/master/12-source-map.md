@@ -6,6 +6,7 @@ Maps every original reference file to what it contributed to this master synthes
 |---------------|------|------------------------------|
 | **chatgpt-deep-research.md** | Deep research report | Ecosystem matrix; SpecStory/CASR/Kontinuo/ACP/Warp; security table; strong vs weak product; portable checkpoint fields; final rec table |
 | **chatgpt.md** | Long product design chat | Six-state model; 3 resume modes; capability-aware resume; architecture phases; security deep dive; **Reinstate naming decision**; Carryover comparison; `reinstate.dev`; open-core vs closed vs OSS; business scores |
+| **(product decision)** | Short alias | **`rein`** chosen as daily CLI alias for Reinstate — see `10-naming.md` |
 | **claude-deep-research.md** | Competitive/technical landscape | Vendor capability matrix; storage formats; competitor teardown (broad list); demand FRs; strategic assessment; staged recommendations; caveats |
 | **claude.md** / **claude.pdf** | Expanded Claude research conversation | Overlaps deep research; extra competitor names; repeated matrices — treat deep research as clean extract |
 | **deepseek.md** | Strategic alternative | **Approach A vs B** (sync wrapper vs **own cloud agent**); architecture for own agent; risks |

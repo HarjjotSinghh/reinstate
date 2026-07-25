@@ -50,7 +50,8 @@ git clone https://github.com/HarjjotSinghh/reinstate.git
 cd reinstate
 make deps
 make build
-./bin/reinstate version
+./bin/rein version          # short alias (preferred)
+./bin/reinstate version     # full name
 ```
 
 ### Run tests

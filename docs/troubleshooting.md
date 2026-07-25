@@ -3,10 +3,10 @@
 ## Install / binary not found
 
 ```bash
-which reinstate
+which rein reinstate
 echo "$PATH"
 # rebuild from source
-make build && ./bin/reinstate version
+make build && ./bin/rein version
 ```
 
 ## `pull` does not make `claude --resume` see sessions
@@ -15,7 +15,7 @@ Usually a **path remap** issue:
 
 1. Confirm project root mapping in config (`path_map`)
 2. Check that munged Claude project dirs were rewritten for this OS
-3. Run `reinstate status` and `reinstate diff`
+3. Run `rein status` and `rein diff`
 4. Verify session files landed under the expected `~/.claude/projects/...`
 
 Open an issue with OS pair (e.g. Windows 11 → macOS 15), agent version, and
