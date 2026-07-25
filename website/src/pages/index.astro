@@ -3,10 +3,6 @@ export const prerender = true;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
 import HeroExploded from '../components/landing/HeroExploded.astro';
-import Problem from '../components/landing/Problem.astro';
-import Features from '../components/landing/Features.astro';
-import Security from '../components/landing/Security.astro';
-import WaitlistSection from '../components/landing/WaitlistSection.astro';
 ---
 
 <BaseLayout
@@ -14,8 +10,4 @@ import WaitlistSection from '../components/landing/WaitlistSection.astro';
   description="Sessions, MCP servers, skills, and settings across every coding agent and every machine you own. Encrypted so only you can read it."
 >
   <HeroExploded />
-  <Problem />
-  <Features />
-  <Security />
-  <WaitlistSection />
 </BaseLayout>
