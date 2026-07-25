@@ -61,6 +61,42 @@ jobs:
       - name: Build
         run: go build -o bin/reinstate ./cmd/reinstate
 
+  website:
+    name: Website
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22.12.0"
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+
+      - name: Install website dependencies
+        working-directory: website
+        run: npm ci
+
+      - name: Test website
+        working-directory: website
+        run: npm test
+
+      - name: Build website
+        working-directory: website
+        run: npm run build
+
+      - name: Verify public installer assets
+        working-directory: website
+        run: |
+          test -s dist/client/install.sh
+          test -s dist/client/install.ps1
+          cmp public/install.sh dist/client/install.sh
+          cmp public/install.ps1 dist/client/install.ps1
+          grep -F 'v0.1.0-rc.2' dist/client/install.sh
+          grep -F 'v0.1.0-rc.2' dist/client/install.ps1
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
