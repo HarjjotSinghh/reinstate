@@ -2,6 +2,7 @@ package doctest
 
 import (
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -15,6 +16,47 @@ import (
 )
 
 const publicBootstrapVersion = "v0.1.0-rc.2"
+
+func TestPublicBootstrapVercelHeaders(t *testing.T) {
+	var config struct {
+		Headers []struct {
+			Source  string `json:"source"`
+			Headers []struct {
+				Key   string `json:"key"`
+				Value string `json:"value"`
+			} `json:"headers"`
+		} `json:"headers"`
+	}
+	if err := json.Unmarshal([]byte(read(t, "website/vercel.json")), &config); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, route := range []string{"/install.sh", "/install.ps1"} {
+		found := false
+		for _, definition := range config.Headers {
+			if definition.Source != route {
+				continue
+			}
+			found = true
+			headers := map[string]string{}
+			for _, header := range definition.Headers {
+				headers[strings.ToLower(header.Key)] = strings.ToLower(header.Value)
+			}
+			if headers["content-type"] != "text/plain; charset=utf-8" {
+				t.Errorf("%s Content-Type = %q", route, headers["content-type"])
+			}
+			if headers["x-content-type-options"] != "nosniff" {
+				t.Errorf("%s X-Content-Type-Options = %q", route, headers["x-content-type-options"])
+			}
+			if !strings.Contains(headers["cache-control"], "must-revalidate") {
+				t.Errorf("%s Cache-Control = %q", route, headers["cache-control"])
+			}
+		}
+		if !found {
+			t.Errorf("missing Vercel headers for %s", route)
+		}
+	}
+}
 
 func TestPublicBootstrapStaticContract(t *testing.T) {
 	tests := []struct {
