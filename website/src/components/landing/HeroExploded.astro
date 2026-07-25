@@ -12,16 +12,17 @@ const desk = {
     box(294, 159, -132, 18, 18, 116),
   ],
 };
-const monitor = box(0, 34, 10, 18, 118, 124);
-const monitorFoot = box(-4, 66, 0, 30, 54, 10);
+const monitor = box(0, 14, 10, 18, 118, 124);
+const monitorFoot = box(-4, 46, 0, 30, 54, 10);
 const tower = box(78, 36, 0, 176, 126, 42);
-/* exploded layers: one shared vertical axis, even gaps → intentional, not unstable */
+/* exploded layers: one shared vertical axis, even gaps → intentional, not unstable.
+   sessions (brand green) on top, settings (paper) at the bottom */
 const streams = [
   { key: 'sessions', tone: 'a' },
   { key: 'mcp', tone: 'b' },
   { key: 'skills', tone: 'c' },
   { key: 'settings', tone: 'd' },
-].map((s, i) => ({ ...s, g: box(84, 44, 54 + i * 62, 160, 108, 15) }));
+].map((s, i) => ({ ...s, g: box(84, 44, 54 + (3 - i) * 62, 160, 108, 15) }));
 const mug = box(252, 152, 0, 30, 30, 34);
 const board = box(96, 176, 0, 150, 40, 9);
 
@@ -41,14 +42,16 @@ const table = {
     box(216, 154, -130, 16, 16, 114),
   ],
 };
-const deck = box(24, 30, 0, 196, 126, 18);
-/* taller lid → a real screen band stays visible above the restored layers */
-const lidBack = box(38, 8, 18, 178, 13, 110);
-/* put back: flush stack resting on the deck (top z=18) */
-const restacked = ['a', 'b', 'c', 'd'].map((tone, i) => ({
-  tone,
-  g: box(40, 38, 18 + i * 15, 160, 108, 15),
-}));
+/* deeper deck → visible palm-rest strip in front of the restored layers */
+const deck = box(24, 30, 0, 196, 140, 18);
+const lidBack = box(38, 8, 18, 178, 13, 88);
+/* put back: flush stack resting on the deck (top z=18), sessions on top */
+const restacked = [
+  { key: 'settings', tone: 'd' },
+  { key: 'skills', tone: 'c' },
+  { key: 'mcp', tone: 'b' },
+  { key: 'sessions', tone: 'a' },
+].map((s, i) => ({ ...s, g: box(40, 38, 18 + i * 15, 160, 108, 15) }));
 
 /* ---- props ---- */
 const pot = box(0, 0, -74, 76, 76, 74);
@@ -114,7 +117,7 @@ const shadows = [
     </div>
 
     <figure class="scene">
-      <svg viewBox="0 0 1640 880" role="img" aria-labelledby="etitle edesc" preserveAspectRatio="xMidYMax meet">
+      <svg viewBox="0 0 1640 760" role="img" aria-labelledby="etitle edesc" preserveAspectRatio="xMidYMax meet">
         <title id="etitle">One room, two machines, 23:41 to 23:47</title>
         <desc id="edesc">
           A desk at night. Four layers of agent state, sessions, MCP servers, skills and
@@ -131,13 +134,13 @@ const shadows = [
 
         {/* ---------- room ---------- */}
         <rect x="0" y="0" width="1640" height="322" fill="var(--sv-wall)" />
-        <rect x="0" y="322" width="1640" height="558" fill="var(--sv-floor)" />
+        <rect x="0" y="322" width="1640" height="438" fill="var(--sv-floor)" />
         <line x1="0" y1="322" x2="1640" y2="322" stroke={SK} stroke-width="2.5" />
         <rect x="0" y="322" width="1640" height="16" fill="var(--sv-skirt)" />
 
         <g class="floorlines" stroke="var(--sv-floorline)" stroke-width="1.5" fill="none">
-          <path d="M-200 880 L560 338 M120 880 L760 338 M460 880 L960 338 M820 880 L1160 338 M1180 880 L1360 338 M1540 880 L1560 338" />
-          <path d="M0 430 H1640 M0 530 H1640 M0 660 H1640 M0 810 H1640" />
+          <path d="M-200 760 L560 338 M120 760 L760 338 M460 760 L960 338 M820 760 L1160 338 M1180 760 L1360 338 M1540 760 L1560 338" />
+          <path d="M0 430 H1640 M0 530 H1640 M0 640 H1640" />
         </g>
 
         {/* window */}
@@ -238,15 +241,15 @@ const shadows = [
           </g>
 
           {/* the session, projected onto the monitor glass */}
-          <g transform={sideText(0, 34, 10, 18, 118, 124)}>
-            <rect x="8" y="12" width="72" height="20" rx="10" fill={PRIM} />
-            <text x="44" y="26" text-anchor="middle" font-size="11" font-weight="600" fill="#131f1a">ses_7f3a</text>
+          <g transform={sideText(0, 14, 10, 18, 118, 124)}>
+            <rect x="8" y="10" width="72" height="20" rx="10" fill={PRIM} />
+            <text x="44" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="#131f1a">ses_7f3a</text>
             <g fill="var(--sv-star)" opacity="0.45">
-              <rect x="8" y="44" width="88" height="5" rx="2.5" />
-              <rect x="8" y="57" width="62" height="5" rx="2.5" />
-              <rect x="8" y="70" width="76" height="5" rx="2.5" />
+              <rect x="8" y="40" width="88" height="5" rx="2.5" />
+              <rect x="8" y="52" width="62" height="5" rx="2.5" />
+              <rect x="8" y="64" width="76" height="5" rx="2.5" />
             </g>
-            <text x="8" y="108" font-size="12" fill="var(--sv-star)">⏸ 23:41</text>
+            <text x="8" y="88" font-size="12" fill="var(--sv-star)">⏸ 23:41</text>
           </g>
 
           <g class="unit dev">
@@ -263,7 +266,7 @@ const shadows = [
                 <polygon class="f-top" points={s.g.top} />
                 <text
                   class="tlabel"
-                  transform={frontText(84, 44, 54 + i * 62, 108, 15)}
+                  transform={frontText(84, 44, 54 + (3 - i) * 62, 108, 15)}
                   x="80"
                   y="11.5"
                   text-anchor="middle"
@@ -293,12 +296,12 @@ const shadows = [
               <polygon class="f-front" points={seal.front} />
               <polygon class="f-top" points={seal.top} />
             </g>
-            {/* applied to the cube, not floating: brand square on top, lock + session on the face */}
+            {/* applied to the cube, not floating: brand diamond on top, lock + session on the face */}
             <polygon
-              points="34.6,-124 34.6,-84 -34.6,-84 -34.6,-124"
+              points="0,-124 34.6,-104 0,-84 -34.6,-104"
               fill="none"
               stroke={PRIM}
-              stroke-width="5"
+              stroke-width="4.5"
               stroke-linejoin="round"
             />
             <g transform={frontText(14, 14, 58, 120, 120)}>
@@ -330,11 +333,10 @@ const shadows = [
           </g>
 
           {/* the same session, resumed — projected onto the laptop screen */}
-          <g transform={frontText(38, 8, 18, 13, 110)}>
-            <rect x="12" y="10" width="72" height="20" rx="10" fill={PRIM} />
-            <text x="48" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="#131f1a">ses_7f3a</text>
-            <text x="96" y="24" font-size="11" fill="#e9efe3">▶ 23:47</text>
-            <rect x="12" y="38" width="120" height="5" rx="2.5" fill="var(--sv-star)" opacity="0.45" />
+          <g transform={frontText(38, 8, 18, 13, 88)}>
+            <rect x="12" y="6" width="72" height="20" rx="10" fill={PRIM} />
+            <text x="48" y="20" text-anchor="middle" font-size="11" font-weight="600" fill="#131f1a">ses_7f3a</text>
+            <text x="96" y="20" font-size="11" fill="#e9efe3">▶ 23:47</text>
           </g>
 
           <g class="unit dev">
@@ -342,6 +344,14 @@ const shadows = [
             <polygon class="f-front" points={deck.front} />
             <polygon class="f-top" points={deck.top} />
           </g>
+          {/* touchpad on the palm-rest strip */}
+          <polygon
+            points="-48.5,104 -3.5,130 -15.6,137 -60.6,111"
+            fill="var(--sv-dev-2)"
+            stroke={SK}
+            stroke-width="2.5"
+            stroke-linejoin="round"
+          />
           {
             restacked.map((s, i) => (
               <g class={`unit tray back t-${s.tone}`} style={`--i:${i}`}>
@@ -355,7 +365,7 @@ const shadows = [
                   y="11.5"
                   text-anchor="middle"
                 >
-                  {legend[i].key}
+                  {s.key}
                 </text>
               </g>
             ))
@@ -382,14 +392,14 @@ const shadows = [
           marker-end="url(#arw)"
         />
 
-        {/* command labels: terminal chips, one baseline */}
+        {/* command labels: terminal chips riding the arcs, one baseline */}
         <g class="cmdchip">
-          <rect x="585" y="284" width="150" height="34" rx="17" fill="var(--paper-2)" stroke="var(--rule)" stroke-width="1.5" />
-          <text x="660" y="307" text-anchor="middle"><tspan class="ta">$</tspan> rein push</text>
+          <rect x="585" y="292" width="150" height="34" rx="17" fill="var(--paper-2)" stroke="var(--rule)" stroke-width="1.5" />
+          <text x="660" y="315" text-anchor="middle"><tspan class="ta">$</tspan> rein push</text>
         </g>
         <g class="cmdchip">
-          <rect x="1000" y="284" width="146" height="34" rx="17" fill="var(--paper-2)" stroke="var(--rule)" stroke-width="1.5" />
-          <text x="1073" y="307" text-anchor="middle"><tspan class="ta">$</tspan> rein pull</text>
+          <rect x="1000" y="292" width="146" height="34" rx="17" fill="var(--paper-2)" stroke="var(--rule)" stroke-width="1.5" />
+          <text x="1073" y="315" text-anchor="middle"><tspan class="ta">$</tspan> rein pull</text>
         </g>
       </svg>
     </figure>
@@ -491,7 +501,6 @@ const shadows = [
     --font-display: 'Funnel Display Variable', ui-sans-serif, system-ui, sans-serif;
 
     position: relative;
-    min-height: 100svh;
     background: var(--paper);
     color: var(--ink);
     overflow-x: clip;
@@ -557,7 +566,7 @@ const shadows = [
   .lede {
     max-width: 88rem;
     margin-inline: auto;
-    padding: clamp(1.75rem, 4vw, 3.25rem) clamp(1.25rem, 4vw, 3rem) 0;
+    padding: clamp(1.25rem, 3vw, 2.25rem) clamp(1.25rem, 4vw, 3rem) 0;
     text-align: center;
   }
 
@@ -581,11 +590,11 @@ const shadows = [
   }
 
   h1 {
-    margin: clamp(1rem, 2.2vw, 1.5rem) auto 0;
-    max-width: 16ch;
+    margin: clamp(0.75rem, 1.6vw, 1.1rem) auto 0;
+    max-width: min(17ch, 100%);
     font-family: var(--font-display);
-    font-size: clamp(2.5rem, 6vw, 5.2rem);
-    line-height: 0.96;
+    font-size: clamp(2.25rem, 5vw, 4.4rem);
+    line-height: 0.98;
     letter-spacing: -0.038em;
     font-weight: 800;
     text-wrap: balance;
@@ -593,7 +602,7 @@ const shadows = [
   }
 
   .sub {
-    margin: 1.4rem auto 0;
+    margin: 1rem auto 0;
     max-width: 50ch;
     font-size: clamp(1rem, 0.5vw + 0.92rem, 1.15rem);
     line-height: 1.6;
@@ -603,13 +612,13 @@ const shadows = [
   }
 
   .join-wrap {
-    margin: clamp(1.5rem, 2.6vw, 2rem) auto 0;
+    margin: clamp(1.1rem, 2vw, 1.5rem) auto 0;
     max-width: 29rem;
     animation: rise 0.8s 0.17s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   .micro {
-    margin: 0.85rem 0 0;
+    margin: 0.75rem 0 0;
     font-size: 0.8rem;
     color: var(--ink-3);
   }
@@ -625,7 +634,7 @@ const shadows = [
 
   /* ---------- scene ---------- */
   .scene {
-    margin: clamp(1rem, 3vw, 2.25rem) 0 0;
+    margin: clamp(0.25rem, 1.5vw, 1rem) 0 0;
     width: 100%;
   }
   .scene svg {
@@ -766,14 +775,14 @@ const shadows = [
   .under {
     max-width: 88rem;
     margin-inline: auto;
-    padding: 0 clamp(1.25rem, 4vw, 3rem) 5rem;
+    padding: 0 clamp(1.25rem, 4vw, 3rem) 3.5rem;
   }
 
   .legend,
   .steps {
     list-style: none;
     margin: 0;
-    padding: 1.25rem 0;
+    padding: 1rem 0;
     display: grid;
     gap: 1rem 1.75rem;
     border-top: 1px solid var(--rule);
@@ -856,7 +865,7 @@ const shadows = [
     align-items: center;
     flex-wrap: wrap;
     gap: 0.5rem 0.9rem;
-    padding-top: 1.25rem;
+    padding-top: 1rem;
     border-top: 1px solid var(--rule);
     font-size: 0.875rem;
   }
