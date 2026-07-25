@@ -47,12 +47,11 @@ ranges on macOS arm64 plus deterministic synthetic fixtures:
 | Claude Code | `2.1.219`–`2.1.220` |
 | OpenAI Codex CLI | `0.133.0`–`0.145.0` |
 
-The published `v0.1.0-rc.2` still contains the earlier exact-version gate; the
-expanded ranges are unreleased until the next release candidate is tagged.
-Versions outside these ranges, including prereleases, are `UNTESTED` and must
-not be called stable until their release matrix rows pass. Native Windows,
-macOS amd64, and WSL2 remain release gates; this repository does not fabricate
-those results. Phase 1 has no unsafe compatibility override.
+Release candidate `v0.1.0-rc.3` contains these expanded compatibility ranges.
+Versions outside them, including prereleases, are `UNTESTED` and must not be
+called stable until their release matrix rows pass. Native Windows, macOS
+amd64, and WSL2 remain release gates; this repository does not fabricate those
+results. Phase 1 has no unsafe compatibility override.
 
 `rein setup check` exits with compatibility code `5` when an installed adapter
 is `UNTESTED` or `UNSUPPORTED`, because writes are blocked. An agent that is not

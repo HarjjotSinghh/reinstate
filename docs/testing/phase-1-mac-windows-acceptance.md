@@ -4,7 +4,7 @@ Use this runbook to decide whether Reinstate Phase 1 is actually functional.
 It tests the public installers, Claude Code and Codex setup prompts, encrypted
 two-device synchronization, restore safety, and failure behavior.
 
-**Release under test:** `v0.1.0-rc.2`  
+**Release under test:** `v0.1.0-rc.3`
 **Device A:** macOS  
 **Device B:** native 64-bit Windows  
 **Scope:** Claude Code and Codex CLI sessions only
@@ -60,10 +60,11 @@ You need:
 - Claude Code and Codex CLI installed on both devices; and
 - Git installed on both devices.
 
-The RC compatibility evidence currently recognizes:
+The RC compatibility evidence currently recognizes these inclusive stable
+version ranges:
 
-- Claude Code `2.1.219`
-- Codex CLI `0.133.0`
+- Claude Code `2.1.219`–`2.1.220`
+- Codex CLI `0.133.0`–`0.145.0`
 
 Check the installed tools.
 
@@ -94,7 +95,7 @@ Mandatory result:
 - Windows reports a 64-bit operating system; and
 - both agent CLIs run on both devices.
 
-If an agent version differs from the recognized version, continue through
+If an agent version falls outside the recognized range, continue through
 read-only checks, but do not call Phase 1 complete when `rein setup check`
 reports `UNTESTED`.
 
@@ -173,7 +174,7 @@ Expected:
 - HTTP status `200`;
 - `rein` and `reinstate` resolve under `~/.local/bin`;
 - the installer reports both checksum checks as successful; and
-- JSON contains `"version": "0.1.0-rc.2"`.
+- JSON contains `"version": "0.1.0-rc.3"`.
 
 Run the same one-liner again. It must report the same version already installed
 and must not duplicate its PATH entry.
@@ -199,7 +200,7 @@ Expected:
 - both commands resolve under
   `%LOCALAPPDATA%\Programs\Reinstate\bin`;
 - checksum verification succeeds;
-- JSON contains `"version": "0.1.0-rc.2"`; and
+- JSON contains `"version": "0.1.0-rc.3"`; and
 - no elevated PowerShell prompt appears.
 
 Run the one-liner again. It must not duplicate the user PATH entry:
@@ -618,8 +619,8 @@ Mark every mandatory row.
 
 | Gate | Result | Evidence |
 | ---- | ------ | -------- |
-| `install.sh` returns 200 and installs RC2 on Mac | | |
-| `install.ps1` returns 200 and installs RC2 on Windows | | |
+| `install.sh` returns 200 and installs RC3 on Mac | | |
+| `install.ps1` returns 200 and installs RC3 on Windows | | |
 | Both installers are idempotent and PATH-safe | | |
 | Pre-init missing-config failure is accurate | | |
 | Post-init setup check and self-test pass on both devices | | |

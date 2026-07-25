@@ -15,7 +15,11 @@ import (
 	"testing"
 )
 
-const publicBootstrapVersion = "v0.1.0-rc.2"
+const (
+	publicBootstrapVersion       = "v0.1.0-rc.3"
+	publicPOSIXInstallerSHA256   = "3bab3e8e397fbf5b7d39ccb3e040f4fbde798902dd87b7ebfd852c3997a7b46a"
+	publicWindowsInstallerSHA256 = "4ac266d4f59ff60f70d8da463d33751546cab8121e12769c0b00d0004c5d6050"
+)
 
 func TestPublicBootstrapVercelHeaders(t *testing.T) {
 	var config struct {
@@ -140,7 +144,7 @@ func TestPOSIXPublicBootstrapContract(t *testing.T) {
 
 	canonical := []byte(`#!/bin/sh
 set -eu
-if [ "${REINSTATE_VERSION:-}" != "v0.1.0-rc.2" ]; then
+if [ "${REINSTATE_VERSION:-}" != "v0.1.0-rc.3" ]; then
   echo "wrong bootstrap version: ${REINSTATE_VERSION:-missing}" >&2
   exit 91
 fi
@@ -278,7 +282,7 @@ func TestWindowsPublicBootstrapContract(t *testing.T) {
 	}
 
 	canonical := []byte(`
-if ($env:REINSTATE_VERSION -ne "v0.1.0-rc.2") {
+if ($env:REINSTATE_VERSION -ne "v0.1.0-rc.3") {
     throw "wrong bootstrap version: $env:REINSTATE_VERSION"
 }
 New-Item -ItemType Directory -Force -Path $env:INSTALL_DIR | Out-Null
@@ -389,9 +393,9 @@ func materializeBootstrapForTest(t *testing.T, relativePath, origin, expectedHas
 		var pinnedHash string
 		switch filepath.Ext(relativePath) {
 		case ".sh":
-			pinnedHash = "8f68b0ad0707e5e710cb365849cf833f16eaea1ac76407905763747dae986c25"
+			pinnedHash = publicPOSIXInstallerSHA256
 		case ".ps1":
-			pinnedHash = "4d6e422f36ef20f4378786b34a75c042223ebff3db13b3a05f7a97e1126d6781"
+			pinnedHash = publicWindowsInstallerSHA256
 		default:
 			t.Fatalf("unsupported bootstrap extension: %s", relativePath)
 		}

@@ -126,7 +126,7 @@ Native vendor sync will always own *one* ecosystem. DIY Syncthing/Drive hacks br
 
 > **Note:** the v0.1 CLI surface below is implemented, but native acceptance and
 > stable release certification are still in progress. The commands below pin
-> the published release candidate `v0.1.0-rc.2`.
+> the published release candidate `v0.1.0-rc.3`.
 >
 > **CLI:** prefer short alias **`rein`**. Full name **`reinstate`** works the same.
 
@@ -144,7 +144,7 @@ Native Windows PowerShell:
 irm https://reinstate.dev/install.ps1 | iex
 ```
 
-Both bootstraps pin and verify `v0.1.0-rc.2`, install without elevation, and
+Both bootstraps pin and verify `v0.1.0-rc.3`, install without elevation, and
 print the next command:
 
 ```bash

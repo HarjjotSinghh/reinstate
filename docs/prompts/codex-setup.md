@@ -1,14 +1,14 @@
 # Codex — Reinstate end-user setup prompt
 
 **Prompt version:** 3
-**Pinned Reinstate release:** `v0.1.0-rc.2`
+**Pinned Reinstate release:** `v0.1.0-rc.3`
 
 Copy everything below the line into Codex.
 
 ---
 
 Install and configure Reinstate end to end on this device through the official
-public bootstrap pinned to `v0.1.0-rc.2`. Never substitute `latest`, `main`, or
+public bootstrap pinned to `v0.1.0-rc.3`. Never substitute `latest`, `main`, or
 another version.
 
 Hard safety rules:
@@ -33,18 +33,18 @@ Execution contract:
      `https://reinstate.dev/install.ps1`
 3. Download the bootstrap to a temporary file and inspect it before execution.
    Require all of the following:
-   - exact release `v0.1.0-rc.2`;
+   - exact release `v0.1.0-rc.3`;
    - canonical installer fetched from that exact Git tag;
    - canonical installer checksum verification before execution;
    - no `latest` resolver; and
    - binary downloads restricted to
-     `https://github.com/HarjjotSinghh/reinstate/releases/download/v0.1.0-rc.2/`.
+     `https://github.com/HarjjotSinghh/reinstate/releases/download/v0.1.0-rc.3/`.
    Stop if any requirement fails.
 4. With normal approval, execute the inspected bootstrap. Keep its checksum,
    version, and replacement checks enabled. Install without elevation to
    `~/.local/bin` or `%LOCALAPPDATA%\Programs\Reinstate\bin`, and explain any
    PATH update.
-5. Run `rein version --json` and require `0.1.0-rc.2`. Run
+5. Run `rein version --json` and require `0.1.0-rc.3`. Run
    `rein setup check`. Before initialization, a missing-config result is
    expected; platform, keyring, or Codex compatibility failures are blockers.
 6. Ask whether this is Device A or an additional device. Collect only the
