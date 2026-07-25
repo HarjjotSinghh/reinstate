@@ -4,17 +4,7 @@ $ErrorActionPreference = "Stop"
 
 $Version = "v0.1.0-rc.2"
 $PinnedInstallerSha256 = "4d6e422f36ef20f4378786b34a75c042223ebff3db13b3a05f7a97e1126d6781"
-$Origin = if ($env:REINSTATE_BOOTSTRAP_ORIGIN) {
-    $env:REINSTATE_BOOTSTRAP_ORIGIN.TrimEnd("/")
-} else {
-    "https://raw.githubusercontent.com/HarjjotSinghh/reinstate"
-}
-$ExpectedInstallerSha256 = if ($env:REINSTATE_BOOTSTRAP_INSTALLER_SHA256) {
-    $env:REINSTATE_BOOTSTRAP_INSTALLER_SHA256
-} else {
-    $PinnedInstallerSha256
-}
-$InstallerUrl = "$Origin/${Version}/scripts/install.ps1"
+$InstallerUrl = "https://raw.githubusercontent.com/HarjjotSinghh/reinstate/${Version}/scripts/install.ps1"
 $DefaultBase = if ($env:LOCALAPPDATA) { $env:LOCALAPPDATA } else { $env:USERPROFILE }
 $InstallDir = if ($env:INSTALL_DIR) {
     $env:INSTALL_DIR
@@ -54,15 +44,21 @@ try {
     Invoke-WebRequest -UseBasicParsing -Uri $InstallerUrl -OutFile $installerPath
 
     $actualInstallerSha256 = (Get-FileHash -Algorithm SHA256 -Path $installerPath).Hash.ToLowerInvariant()
-    if ($actualInstallerSha256 -ne $ExpectedInstallerSha256.ToLowerInvariant()) {
-        throw "installer checksum mismatch (expected $ExpectedInstallerSha256, actual $actualInstallerSha256)"
+    if ($actualInstallerSha256 -ne $PinnedInstallerSha256.ToLowerInvariant()) {
+        throw "installer checksum mismatch (expected $PinnedInstallerSha256, actual $actualInstallerSha256)"
     }
     Write-Host "installer checksum ok"
 
     $hadVersion = Test-Path Env:REINSTATE_VERSION
     $previousVersion = $env:REINSTATE_VERSION
+    $hadReleaseBase = Test-Path Env:REINSTATE_RELEASE_BASE_URL
+    $previousReleaseBase = $env:REINSTATE_RELEASE_BASE_URL
+    $hadSkipVersionCheck = Test-Path Env:REINSTATE_SKIP_VERSION_CHECK
+    $previousSkipVersionCheck = $env:REINSTATE_SKIP_VERSION_CHECK
     try {
         $env:REINSTATE_VERSION = $Version
+        $env:REINSTATE_RELEASE_BASE_URL = ""
+        $env:REINSTATE_SKIP_VERSION_CHECK = "0"
         $installer = [ScriptBlock]::Create([IO.File]::ReadAllText($installerPath))
         & $installer
     } finally {
@@ -70,6 +66,16 @@ try {
             $env:REINSTATE_VERSION = $previousVersion
         } else {
             Remove-Item Env:REINSTATE_VERSION -ErrorAction SilentlyContinue
+        }
+        if ($hadReleaseBase) {
+            $env:REINSTATE_RELEASE_BASE_URL = $previousReleaseBase
+        } else {
+            Remove-Item Env:REINSTATE_RELEASE_BASE_URL -ErrorAction SilentlyContinue
+        }
+        if ($hadSkipVersionCheck) {
+            $env:REINSTATE_SKIP_VERSION_CHECK = $previousSkipVersionCheck
+        } else {
+            Remove-Item Env:REINSTATE_SKIP_VERSION_CHECK -ErrorAction SilentlyContinue
         }
     }
 

@@ -41,6 +41,8 @@ func TestPublicBootstrapStaticContract(t *testing.T) {
 				"releases/latest",
 				"api.github.com/repos",
 				"\nrein init",
+				"REINSTATE_BOOTSTRAP_ORIGIN",
+				"REINSTATE_BOOTSTRAP_INSTALLER_SHA256",
 			},
 		},
 		{
@@ -61,6 +63,8 @@ func TestPublicBootstrapStaticContract(t *testing.T) {
 				"api.github.com/repos",
 				"\nrein init",
 				"& rein init",
+				"REINSTATE_BOOTSTRAP_ORIGIN",
+				"REINSTATE_BOOTSTRAP_INSTALLER_SHA256",
 			},
 		},
 	}
@@ -118,6 +122,9 @@ cp "$INSTALL_DIR/reinstate" "$INSTALL_DIR/rein"
 	}))
 	defer server.Close()
 
+	bootstrapPath := materializeBootstrapForTest(
+		t, "website/public/install.sh", server.URL, sha256Hex(canonical),
+	)
 	home := t.TempDir()
 	installDir := filepath.Join(t.TempDir(), "reinstate bin")
 	initMarker := filepath.Join(t.TempDir(), "init-ran")
@@ -125,12 +132,10 @@ cp "$INSTALL_DIR/reinstate" "$INSTALL_DIR/rein"
 		"HOME="+home,
 		"INSTALL_DIR="+installDir,
 		"SHELL=/bin/zsh",
-		"REINSTATE_BOOTSTRAP_ORIGIN="+server.URL,
-		"REINSTATE_BOOTSTRAP_INSTALLER_SHA256="+sha256Hex(canonical),
 		"REINSTATE_INIT_MARKER="+initMarker,
 	)
 
-	output, err := runPOSIXPublicBootstrap(environment)
+	output, err := runPOSIXPublicBootstrap(bootstrapPath, environment)
 	if err != nil {
 		t.Fatalf("public bootstrap failed: %v\n%s", err, output)
 	}
@@ -155,7 +160,7 @@ cp "$INSTALL_DIR/reinstate" "$INSTALL_DIR/rein"
 		t.Fatalf("bootstrap omitted immediate next command %q:\n%s", expectedNext, output)
 	}
 
-	output, err = runPOSIXPublicBootstrap(environment)
+	output, err = runPOSIXPublicBootstrap(bootstrapPath, environment)
 	if err != nil {
 		t.Fatalf("second public bootstrap failed: %v\n%s", err, output)
 	}
@@ -176,11 +181,9 @@ cp "$INSTALL_DIR/reinstate" "$INSTALL_DIR/rein"
 		"HOME="+skipHome,
 		"INSTALL_DIR="+skipInstallDir,
 		"SHELL=/bin/zsh",
-		"REINSTATE_BOOTSTRAP_ORIGIN="+server.URL,
-		"REINSTATE_BOOTSTRAP_INSTALLER_SHA256="+sha256Hex(canonical),
 		"REINSTATE_SKIP_PATH_UPDATE=1",
 	)
-	if output, err = runPOSIXPublicBootstrap(skipEnvironment); err != nil {
+	if output, err = runPOSIXPublicBootstrap(bootstrapPath, skipEnvironment); err != nil {
 		t.Fatalf("opt-out bootstrap failed: %v\n%s", err, output)
 	}
 	if _, err := os.Stat(filepath.Join(skipHome, ".zshrc")); !os.IsNotExist(err) {
@@ -199,16 +202,17 @@ func TestPOSIXPublicBootstrapRejectsInstallerHashMismatch(t *testing.T) {
 	}))
 	defer server.Close()
 
+	bootstrapPath := materializeBootstrapForTest(
+		t, "website/public/install.sh", server.URL, "",
+	)
 	home := t.TempDir()
 	installDir := filepath.Join(t.TempDir(), "bin")
 	environment := publicBootstrapEnv(
 		"HOME="+home,
 		"INSTALL_DIR="+installDir,
 		"SHELL=/bin/zsh",
-		"REINSTATE_BOOTSTRAP_ORIGIN="+server.URL,
-		"REINSTATE_BOOTSTRAP_INSTALLER_SHA256="+strings.Repeat("0", 64),
 	)
-	output, err := runPOSIXPublicBootstrap(environment)
+	output, err := runPOSIXPublicBootstrap(bootstrapPath, environment)
 	if err == nil || !strings.Contains(strings.ToLower(string(output)), "checksum mismatch") {
 		t.Fatalf("bootstrap accepted installer hash mismatch: err=%v\n%s", err, output)
 	}
@@ -248,14 +252,14 @@ Set-Content -Path (Join-Path $env:INSTALL_DIR "rein.exe") -Value "fixture"
 	defer server.Close()
 
 	installDir := filepath.Join(t.TempDir(), "Reinstate Bin")
-	bootstrapPath := filepath.Join(repoRoot(t), "website", "public", "install.ps1")
+	bootstrapPath := materializeBootstrapForTest(
+		t, "website/public/install.ps1", server.URL, sha256Hex(canonical),
+	)
 	command := exec.Command(powerShell, "-NoProfile", "-Command",
 		"& $env:REINSTATE_BOOTSTRAP_SCRIPT; & $env:REINSTATE_BOOTSTRAP_SCRIPT")
 	command.Env = publicBootstrapEnv(
 		"INSTALL_DIR="+installDir,
 		"REINSTATE_BOOTSTRAP_SCRIPT="+bootstrapPath,
-		"REINSTATE_BOOTSTRAP_ORIGIN="+server.URL,
-		"REINSTATE_BOOTSTRAP_INSTALLER_SHA256="+sha256Hex(canonical),
 		"REINSTATE_BOOTSTRAP_PATH_SCOPE=Process",
 	)
 	output, err := command.CombinedOutput()
@@ -280,8 +284,6 @@ Set-Content -Path (Join-Path $env:INSTALL_DIR "rein.exe") -Value "fixture"
 		"PATH="+upperPath,
 		"INSTALL_DIR="+installDir,
 		"REINSTATE_BOOTSTRAP_SCRIPT="+bootstrapPath,
-		"REINSTATE_BOOTSTRAP_ORIGIN="+server.URL,
-		"REINSTATE_BOOTSTRAP_INSTALLER_SHA256="+sha256Hex(canonical),
 		"REINSTATE_BOOTSTRAP_PATH_SCOPE=Process",
 	)
 	output, err = command.CombinedOutput()
@@ -308,12 +310,12 @@ func TestWindowsPublicBootstrapRejectsInstallerHashMismatch(t *testing.T) {
 	defer server.Close()
 
 	installDir := filepath.Join(t.TempDir(), "bin")
-	command := exec.Command(powerShell, "-NoProfile", "-File",
-		filepath.Join(repoRoot(t), "website", "public", "install.ps1"))
+	bootstrapPath := materializeBootstrapForTest(
+		t, "website/public/install.ps1", server.URL, "",
+	)
+	command := exec.Command(powerShell, "-NoProfile", "-File", bootstrapPath)
 	command.Env = publicBootstrapEnv(
 		"INSTALL_DIR="+installDir,
-		"REINSTATE_BOOTSTRAP_ORIGIN="+server.URL,
-		"REINSTATE_BOOTSTRAP_INSTALLER_SHA256="+strings.Repeat("0", 64),
 		"REINSTATE_BOOTSTRAP_PATH_SCOPE=Process",
 	)
 	output, err := command.CombinedOutput()
@@ -325,26 +327,46 @@ func TestWindowsPublicBootstrapRejectsInstallerHashMismatch(t *testing.T) {
 	}
 }
 
-func runPOSIXPublicBootstrap(environment []string) ([]byte, error) {
-	command := exec.Command("sh", filepath.Join(repoRootForCommand(), "website", "public", "install.sh"))
+func runPOSIXPublicBootstrap(scriptPath string, environment []string) ([]byte, error) {
+	command := exec.Command("sh", scriptPath)
 	command.Env = environment
 	return command.CombinedOutput()
 }
 
-func repoRootForCommand() string {
-	_, file, _, ok := runtime.Caller(0)
-	if !ok {
-		panic("runtime.Caller failed")
+func materializeBootstrapForTest(t *testing.T, relativePath, origin, expectedHash string) string {
+	t.Helper()
+	body := read(t, relativePath)
+	const officialOrigin = "https://raw.githubusercontent.com/HarjjotSinghh/reinstate"
+	if !strings.Contains(body, officialOrigin) {
+		t.Fatalf("%s is missing official origin", relativePath)
 	}
-	return filepath.Clean(filepath.Join(filepath.Dir(file), "..", ".."))
+	body = strings.ReplaceAll(body, officialOrigin, origin)
+	if expectedHash != "" {
+		var pinnedHash string
+		switch filepath.Ext(relativePath) {
+		case ".sh":
+			pinnedHash = "8f68b0ad0707e5e710cb365849cf833f16eaea1ac76407905763747dae986c25"
+		case ".ps1":
+			pinnedHash = "4d6e422f36ef20f4378786b34a75c042223ebff3db13b3a05f7a97e1126d6781"
+		default:
+			t.Fatalf("unsupported bootstrap extension: %s", relativePath)
+		}
+		if !strings.Contains(body, pinnedHash) {
+			t.Fatalf("%s is missing pinned installer hash", relativePath)
+		}
+		body = strings.ReplaceAll(body, pinnedHash, expectedHash)
+	}
+	path := filepath.Join(t.TempDir(), filepath.Base(relativePath))
+	if err := os.WriteFile(path, []byte(body), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	return path
 }
 
 func publicBootstrapEnv(extra ...string) []string {
 	blocked := []string{
 		"HOME",
 		"INSTALL_DIR",
-		"REINSTATE_BOOTSTRAP_INSTALLER_SHA256",
-		"REINSTATE_BOOTSTRAP_ORIGIN",
 		"REINSTATE_BOOTSTRAP_PATH_SCOPE",
 		"REINSTATE_BOOTSTRAP_SCRIPT",
 		"REINSTATE_INIT_MARKER",

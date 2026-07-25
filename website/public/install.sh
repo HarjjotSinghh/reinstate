@@ -5,9 +5,7 @@ set -eu
 
 VERSION="v0.1.0-rc.2"
 PINNED_INSTALLER_SHA256="8f68b0ad0707e5e710cb365849cf833f16eaea1ac76407905763747dae986c25"
-ORIGIN="${REINSTATE_BOOTSTRAP_ORIGIN:-https://raw.githubusercontent.com/HarjjotSinghh/reinstate}"
-EXPECTED_INSTALLER_SHA256="${REINSTATE_BOOTSTRAP_INSTALLER_SHA256:-$PINNED_INSTALLER_SHA256}"
-INSTALLER_URL="${ORIGIN}/${VERSION}/scripts/install.sh"
+INSTALLER_URL="https://raw.githubusercontent.com/HarjjotSinghh/reinstate/${VERSION}/scripts/install.sh"
 INSTALL_DIR="${INSTALL_DIR:-${HOME}/.local/bin}"
 
 cleanup() {
@@ -42,15 +40,18 @@ installer_path="${TMP}/install.sh"
 echo "Downloading verified Reinstate installer ${VERSION}..."
 curl -fsSL -o "$installer_path" "$INSTALLER_URL"
 actual_installer_sha256=$(sha256_file "$installer_path")
-if [ "$actual_installer_sha256" != "$EXPECTED_INSTALLER_SHA256" ]; then
+if [ "$actual_installer_sha256" != "$PINNED_INSTALLER_SHA256" ]; then
   echo "installer checksum mismatch" >&2
-  echo "expected: ${EXPECTED_INSTALLER_SHA256}" >&2
+  echo "expected: ${PINNED_INSTALLER_SHA256}" >&2
   echo "actual:   ${actual_installer_sha256}" >&2
   exit 1
 fi
 echo "installer checksum ok"
 
-REINSTATE_VERSION="$VERSION" sh "$installer_path"
+REINSTATE_VERSION="$VERSION" \
+  REINSTATE_RELEASE_BASE_URL= \
+  REINSTATE_SKIP_VERSION_CHECK=0 \
+  sh "$installer_path"
 
 case ":${PATH:-}:" in
   *":${INSTALL_DIR}:"*) path_is_current=1 ;;
