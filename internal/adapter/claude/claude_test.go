@@ -270,6 +270,30 @@ func TestClaudeDefaultRootUnknownVersionIsUntested(t *testing.T) {
 	}
 }
 
+func TestClaudeDefaultRootSupportedVersionFileDoesNotRequireExecutable(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	t.Setenv("PATH", "")
+	root := filepath.Join(home, ".claude")
+	if err := os.MkdirAll(filepath.Join(root, "projects"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "version"), []byte("2.1.220\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	install, compatibility, err := (&Adapter{}).Detect(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if compatibility != adapter.CompatibilitySupported {
+		t.Fatalf("supported version file reported %s", compatibility)
+	}
+	if install.Version != "2.1.220" {
+		t.Fatalf("detected version %q", install.Version)
+	}
+}
+
 func TestClaudeTransformLeavesPathLikeTranscriptContentUntouched(t *testing.T) {
 	input := []byte(
 		`{"type":"meta","cwd":"/Users/fixture-user/code/demo"}` + "\n" +

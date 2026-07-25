@@ -84,7 +84,7 @@ func (a *Adapter) Detect(ctx context.Context) (adapter.Install, adapter.Compatib
 	if inst.Version == "unknown" {
 		inst.Version = "layout-projects-jsonl-v1"
 	}
-	if !explicitRoot {
+	if !explicitRoot && !isSupportedVersion(inst.Version) {
 		output, versionErr := exec.CommandContext(ctx, "claude", "--version").Output()
 		if versionErr != nil {
 			return inst, adapter.CompatibilityUntested, nil
@@ -97,6 +97,9 @@ func (a *Adapter) Detect(ctx context.Context) (adapter.Install, adapter.Compatib
 		if !isSupportedVersion(inst.Version) {
 			return inst, adapter.CompatibilityUntested, nil
 		}
+	}
+	if !explicitRoot && !isSupportedVersion(inst.Version) {
+		return inst, adapter.CompatibilityUntested, nil
 	}
 	return inst, adapter.CompatibilitySupported, nil
 }
