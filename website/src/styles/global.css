@@ -4,7 +4,7 @@
 @import "@fontsource-variable/geist";
 @import "@fontsource-variable/geist-mono";
 
-/* DESIGN.md tokens — light default, dark twin on html.dark */
+/* Website design tokens — light default, dark twin on html.dark */
 
 :root {
   --paper: #e4e7dd;

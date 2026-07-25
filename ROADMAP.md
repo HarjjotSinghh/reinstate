@@ -8,14 +8,14 @@ This roadmap is a living document. Priorities follow real activation signals —
 especially **successfully resumed tasks per active user** — and vendor format
 churn. Open an issue or discussion to influence it.
 
-Strategic depth (positioning, ICP, validation, product boundaries):  
+Strategic depth (positioning, ICP, validation, product boundaries):
 [docs/product-strategy.md](docs/product-strategy.md)
 
 ---
 
 ## Vision
 
-> **Reinstate is the continuity layer for coding-agent work.**  
+> **Reinstate is the continuity layer for coding-agent work.**
 > Pick up any coding task exactly where you left it — across agents, projects,
 > environments, and devices.
 
@@ -25,7 +25,7 @@ Explain it as:
 > environments, and devices — with environment verification so continuation is
 > correct, not just possible.
 
-**Multi-device encrypted sync is the entry wedge, not the entire product.**  
+**Multi-device encrypted sync is the entry wedge, not the entire product.**
 Single-device users still live with fragmented agents, sessions, projects,
 worktrees, and environments. Same primitives serve both.
 
@@ -66,7 +66,7 @@ Not “number of devices connected.” That includes one-laptop and ten-device u
 
 ---
 
-## Phase 0 — Foundation ✅
+## Phase 0 — Foundation 🚧
 
 **Gate:** contracts, diagnostics, installers, fixtures, CI/release trust, and
 honest docs.
@@ -79,19 +79,20 @@ honest docs.
 | Device detection (macOS / Windows / WSL2; WSL1 refused) | ✅ |
 | Redacted `doctor` + synthetic self-test | ✅ |
 | Synthetic fixtures + secret scanner | ✅ |
-| Hard CI gates + GoReleaser snapshot path | ✅ |
-| Checksum-verifying installers + setup prompts | ✅ |
+| Hard CI/release definitions + local GoReleaser snapshot | ✅ |
+| Checksum-verifying installers + tested setup prompts | ✅ |
+| Clean native Windows, macOS amd64, and WSL2 acceptance | 🚧 |
 
 ---
 
-## Phase 1 — Encrypted session sync (Claude + Codex) ✅ / 🚧
+## Phase 1 — Encrypted session sync (Claude + Codex) 🚧
 
 **Gate:** install, `init`, and same-vendor Claude Code (then Codex) resume across
 OS with encryption on and credentials never synced.
 
-*Status note (2026-07-25): core product works end-to-end in local and
-cross-platform personal testing (Windows + macOS). Public SemVer release and
-full CI/release certification remain release gates.*
+*Status note (2026-07-25): implementation and local synthetic/macOS-arm64
+verification are green. Native Windows, macOS amd64, WSL2, two-device vendor
+resume, remote CI, and public SemVer release certification remain gates.*
 
 | Item | Status |
 | ---- | ------ |
@@ -101,10 +102,11 @@ full CI/release certification remain release gates.*
 | Project identity + path mapping | ✅ |
 | Manifests, push/pull, conflicts | ✅ |
 | Atomic restore + backups + locks | ✅ |
-| Claude Code adapter (detect/export/restore) | ✅ |
-| Codex adapter (detect/export/restore) | ✅ |
-| Complete CLI surface for sync + human docs | 🚧 |
-| Public `v0.1.0` release gates (signed artifacts, dual-OS matrix CI) | 📋 |
+| Claude Code adapter implementation + synthetic fixtures | ✅ |
+| Codex adapter implementation + synthetic fixtures | ✅ |
+| Exact-version native device resume matrix | 🚧 |
+| Complete CLI surface for sync + human docs | ✅ |
+| Public `v0.1.0` release gates (signed artifacts, full OS matrix CI) | 🚧 |
 
 ---
 
@@ -311,13 +313,13 @@ Landing / docs survey:
 
 > What problem would you use Reinstate to solve?
 
-- Continue sessions across computers  
-- Find and resume old sessions  
-- Move sessions between coding agents  
-- Back up sessions automatically  
-- Sync MCP servers, skills, and configuration  
-- Recover sessions after crashes or reinstalls  
-- Hand work to another developer  
+- Continue sessions across computers
+- Find and resume old sessions
+- Move sessions between coding agents
+- Back up sessions automatically
+- Sync MCP servers, skills, and configuration
+- Recover sessions after crashes or reinstalls
+- Hand work to another developer
 
 Opt-in local signals (never transcripts): searches, old sessions resumed,
 handoffs attempted, config mismatches, remote resumes.
@@ -328,15 +330,17 @@ handoffs attempted, config mismatches, remote resumes.
 
 - **Pre-1.0:** minor versions may include breaking CLI/config changes (CHANGELOG)
 - **`v0.1.0`:** Phase 1 public — Claude + Codex session sync, path remap,
-  security model enforced, install → first cross-device resume path documented
+  security model enforced, and every required native cross-device resume row
+  verified on one exact release candidate
 - **Later minors:** Phase 2+ land behind flags or clear SemVer notes
-- Releases: GitHub Releases + checksums; see [RELEASING.md](RELEASING.md)
+- Releases: signed GitHub tags, checksums, SBOMs, source archive, and artifact
+  attestations; see [RELEASING.md](RELEASING.md)
 
 ## How to propose roadmap items
 
-1. Open a feature request issue  
-2. Tag with `roadmap`  
+1. Open a feature request issue
+2. Tag with `roadmap`
 3. Prefer expansions that reuse session discovery, index, checkpoint, and
-   executor primitives — not unrelated product surface  
+   executor primitives — not unrelated product surface
 
 Stars and issues both help prioritize — thank you for using Reinstate.

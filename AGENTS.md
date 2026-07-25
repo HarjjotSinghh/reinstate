@@ -10,7 +10,7 @@ and devices — with E2E encryption and BYO storage for multi-device sync.
 
 - **Author:** Harjot Singh Rana ([@HarjjotSinghh](https://github.com/HarjjotSinghh))
 - **License:** Apache-2.0
-- **Language:** Go 1.22+ (see `go.mod` for pin)
+- **Toolchain:** Go 1.25.12+ (1.24 is end-of-life and not a release target)
 - **Module:** `github.com/HarjjotSinghh/reinstate`
 
 ## Non-negotiables
@@ -41,7 +41,7 @@ internal/pathmap/    Portable path rewriting
 internal/sync/       Push/pull/manifest
 internal/version/    Build version
 docs/                Human documentation
-testdata/            Golden fixtures
+testdata/            Deterministic synthetic fixtures
 references/          Product research (not runtime code)
 ```
 
@@ -51,6 +51,7 @@ references/          Product research (not runtime code)
 make build    # ./bin/reinstate + ./bin/rein (symlink)
 make test
 make vet
+make verify
 ./bin/rein version
 ```
 
@@ -67,6 +68,9 @@ Read `references/` and `docs/product-strategy.md`. Positioning:
 > Continuity layer for coding-agent work — local session index and verified
 > resume for everyone; encrypted multi-device sync as the wedge; not Dropbox for
 > a single agent folder; not another ADE.
+
+Phase 1 remains deliberately narrow: same-vendor Claude Code and Codex session
+sync. Portable handoffs, MCP, skills, config, and broader indexing come later.
 
 ## Style
 

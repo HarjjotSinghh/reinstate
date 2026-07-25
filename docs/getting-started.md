@@ -4,24 +4,27 @@
 settings) across your machines — encrypted, vendor-neutral, bring-your-own
 storage.
 
-> **Status:** repository and docs are live; the v0.1 CLI is under active
-> development. Commands below describe the **target UX**. Follow
+> **Status:** repository and docs are live; the v0.1 CLI is pre-release.
+> Commands below describe the implemented Phase 1 sessions workflow. Follow
 > [ROADMAP.md](../ROADMAP.md) for ship status.
 
 ## Prerequisites
 
 - Two (or more) machines you develop on (e.g. Windows desktop + MacBook)
 - At least one supported agent installed (Claude Code and/or Codex first)
-- An object-storage backend **or** WebDAV endpoint you control
+- An S3-compatible object-storage backend you control
   - **Recommended:** Cloudflare R2 (10GB free tier is plenty for sessions)
 
 ## Install (target)
 
-### Binary (recommended)
+### Release binary (recommended)
 
 ```bash
-# macOS / Linux (install script will ship with first release)
-curl -fsSL https://raw.githubusercontent.com/HarjjotSinghh/reinstate/main/scripts/install.sh | sh
+# Pin the exact release; do not install an unverified moving branch.
+VERSION=vX.Y.Z  # replace with an exact published tag
+curl -fsSLO \
+  "https://raw.githubusercontent.com/HarjjotSinghh/reinstate/$VERSION/scripts/install.sh"
+REINSTATE_VERSION="$VERSION" sh ./install.sh
 
 # Or download from GitHub Releases
 # https://github.com/HarjjotSinghh/reinstate/releases
@@ -40,17 +43,20 @@ reinstate version
 ### Go install
 
 ```bash
-go install github.com/HarjjotSinghh/reinstate/cmd/reinstate@latest
+go install github.com/HarjjotSinghh/reinstate/cmd/reinstate@vX.Y.Z
 ```
 
 ## First device (desktop)
 
 ```bash
-# Interactive wizard: storage backend, passphrase, sync scope, path map
-reinstate init
+# Interactive setup stores S3/R2 credentials in the OS keyring.
+reinstate init \
+  --project github.com/acme/app=/absolute/path/to/app
 
-# Push local agent sessions (encrypted)
-reinstate push
+# Save the printed profile_id somewhere non-secret for Device B.
+reinstate doctor --self-test
+reinstate push --all --dry-run
+reinstate push --all
 
 # Optional: inspect remote vs local
 reinstate status
@@ -58,22 +64,23 @@ reinstate status
 
 ### What `init` asks
 
-1. **Backend** — R2 / S3 / GCS / S3-compatible / WebDAV
-2. **Credentials** — stored locally with restricted permissions (never uploaded)
-3. **Encryption** — passphrase (same passphrase = same key on every device)
-4. **Scope** — `sessions` | `config` | `all` (start with `sessions`)
-5. **Path map** — map project roots that differ across machines
+1. **Backend** — R2 / S3-compatible endpoint and bucket
+2. **Credentials** — stored in the OS keyring (never uploaded)
+3. **Profile** — generated on Device A; reused on every later device
+4. **Path map** — the same canonical project ID mapped to each local root
    (`C:\Users\you\work` ↔ `/Users/you/Projects`)
 
 ## Second device (laptop)
 
 ```bash
-reinstate init
-# Use the SAME backend + SAME passphrase
-# Wizard verifies the passphrase can decrypt remote ciphertext
+reinstate init \
+  --profile-id <PROFILE_UUID_FROM_DEVICE_A> \
+  --project github.com/acme/app=/different/local/path
 
-reinstate pull --dry-run   # always preview first
-reinstate pull             # creates a timestamped local backup if needed
+reinstate doctor --self-test
+reinstate status                    # hidden passphrase prompt validates remote access
+reinstate pull --all --dry-run      # validates/decrypts; does not mutate
+reinstate pull --all                # backs up, atomically restores, verifies discovery
 ```
 
 Then resume in your agent as usual:
@@ -95,31 +102,20 @@ MacBook on the couch              →  reinstate pull
 Path remapping rewrites embedded `cwd` / project slugs so resume finds the
 session even when absolute paths differ across OSes.
 
-## Daily workflow (Phase 2+)
+## Daily workflow
 
 ```bash
 # Manual
-reinstate push
-reinstate pull
+reinstate push --all
+reinstate pull --all
 
 # Automated (shell hooks — roadmap)
 # pull on shell start, push on exit
 reinstate hooks install
 ```
 
-## Scopes
-
-| Scope | What syncs |
-| ----- | ---------- |
-| `sessions` | Agent conversation / rollout files (default) |
-| `config` | MCP servers, skills, agents, portable settings |
-| `all` | Both |
-
-```bash
-reinstate push --scope sessions
-reinstate push --scope config
-reinstate push --scope all
-```
+Phase 1 syncs Claude Code and Codex session files only. MCP, skills, agent
+configuration, and background hooks are later phases.
 
 ## Safety defaults
 

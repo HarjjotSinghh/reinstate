@@ -1,0 +1,70 @@
+version: 2
+
+project_name: reinstate
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: reinstate
+    main: ./cmd/reinstate
+    binary: reinstate
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X github.com/HarjjotSinghh/reinstate/internal/version.Version={{.Version}}
+      - -X github.com/HarjjotSinghh/reinstate/internal/version.Commit={{.ShortCommit}}
+      - -X github.com/HarjjotSinghh/reinstate/internal/version.Date={{.Date}}
+
+archives:
+  - id: default
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - LICENSE
+      - NOTICE
+      - README.md
+      - CHANGELOG.md
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+sboms:
+  - artifacts: archive
+
+source:
+  enabled: true
+  name_template: "{{ .ProjectName }}_{{ .Version }}_source"
+  format: tar.gz
+  prefix_template: "{{ .ProjectName }}-{{ .Version }}/"
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+
+release:
+  draft: true
+  prerelease: auto

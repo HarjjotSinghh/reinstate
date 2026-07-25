@@ -43,7 +43,7 @@ Reinstate is designed around a **local-first, zero-knowledge** trust model:
 
 - **Client-side encryption** before any byte leaves the machine (age with
   passphrase-derived keys by default)
-- **Bring-your-own storage** (R2 / S3 / GCS / WebDAV / Gist) — ciphertext only
+- **Bring-your-own storage** (R2 / S3-compatible) — ciphertext only
   at rest on remote backends
 - **Hard exclusions** for credential files (`auth.json`, OAuth tokens, API key
   configs) — never synced by default
