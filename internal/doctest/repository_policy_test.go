@@ -53,6 +53,24 @@ func TestWorkflowActionsArePinnedAndPermissionsAreExplicit(t *testing.T) {
 	}
 }
 
+func TestReleaseWorkflowRestoresAnnotatedTagBeforeVerification(t *testing.T) {
+	workflow := read(t, ".github/workflows/release.yml")
+	restore := `git fetch --force origin "refs/tags/$TAG:refs/tags/$TAG"`
+	verify := `git verify-tag "$TAG"`
+
+	restoreAt := strings.Index(workflow, restore)
+	if restoreAt < 0 {
+		t.Fatalf("release workflow must restore the annotated tag after checkout; missing %q", restore)
+	}
+	verifyAt := strings.Index(workflow, verify)
+	if verifyAt < 0 {
+		t.Fatalf("release workflow must verify the release tag; missing %q", verify)
+	}
+	if restoreAt > verifyAt {
+		t.Fatal("release workflow must restore the annotated tag before verifying its signature")
+	}
+}
+
 func TestLocalMarkdownLinksResolve(t *testing.T) {
 	root := repoRoot(t)
 	err := filepath.WalkDir(root, func(path string, entry os.DirEntry, walkErr error) error {

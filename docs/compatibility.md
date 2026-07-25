@@ -39,7 +39,7 @@ Every adapter discovery result reports one of:
 | `UNSUPPORTED` | Known-incompatible layout/version | Fail closed; link to this page |
 | `NOT_INSTALLED` | No local installation/root found | Informational |
 
-Release candidate `v0.1.0-rc.1` compatibility evidence covers Claude Code
+Release candidate `v0.1.0-rc.2` compatibility evidence covers Claude Code
 `2.1.219` and Codex CLI `0.133.0` on macOS arm64 plus deterministic synthetic
 fixtures.
 Other versions are `UNTESTED` and must not be called stable until their release
