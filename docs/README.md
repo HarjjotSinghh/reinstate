@@ -1,12 +1,14 @@
 # Documentation
 
+**CLI:** prefer short alias **`rein`**. Full name **`reinstate`** is equivalent.
+
 | Document | Description |
 | -------- | ----------- |
 | [Getting started](getting-started.md) | Install and dual-device setup |
 | [Agent-assisted install](install/agent-assisted.md) | Version-pinned Claude/Codex setup prompts |
-| [macOS install](install/manual-macos.md) | Verified manual install |
-| [Windows install](install/manual-windows.md) | Verified native PowerShell install |
-| [WSL2 install](install/manual-wsl.md) | Verified Linux install under WSL2 |
+| [macOS install](install/manual-macos.md) | Manual install instructions |
+| [Windows install](install/manual-windows.md) | Native PowerShell install instructions |
+| [WSL2 install](install/manual-wsl.md) | Linux install instructions under WSL2 |
 | [Verify installation](install/verify-installation.md) | Setup and dry-run gates |
 | [Backup and recovery](backup-and-recovery.md) | Restore and conflict recovery |
 | [Uninstall](uninstall.md) | Binary and data cleanup boundaries |
@@ -15,7 +17,8 @@
 | [Testing and fixtures](contributing/testing.md) | Synthetic-data and adapter test policy |
 | [Contributing an adapter](adapters/contributing-an-adapter.md) | Fail-closed adapter requirements |
 | [Release process](contributing/release-process.md) | Version and release contribution boundaries |
-| [Architecture](architecture.md) | System design |
+| [Architecture](architecture.md) | System design + continuity stack |
+| [Product strategy](product-strategy.md) | Positioning, ICP, layers, non-goals |
 | [Adapters](adapters.md) | Agent support matrix |
 | [Compatibility](compatibility.md) | Environments and compatibility states |
 | [Security model](security-model.md) | Threat model and defaults |
@@ -28,6 +31,7 @@ Project-level docs live in the repository root:
 
 - [README](../README.md)
 - [ROADMAP](../ROADMAP.md)
+- [PRODUCT](../PRODUCT.md)
 - [CONTRIBUTING](../CONTRIBUTING.md)
 - [SECURITY](../SECURITY.md)
 - [SUPPORT](../SUPPORT.md)

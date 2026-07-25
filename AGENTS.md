@@ -2,8 +2,11 @@
 
 ## Project
 
-**Reinstate** is an open-source CLI that syncs AI coding agent sessions and
-configs across devices with E2E encryption and BYO storage.
+**Reinstate** is an open-source **continuity layer for coding-agent work**:
+search, resume, and hand off sessions across agents, projects, environments,
+and devices — with E2E encryption and BYO storage for multi-device sync.
+
+**CLI:** prefer short alias **`rein`**. Full name **`reinstate`** is the same binary.
 
 - **Author:** Harjot Singh Rana ([@HarjjotSinghh](https://github.com/HarjjotSinghh))
 - **License:** Apache-2.0
@@ -14,9 +17,19 @@ configs across devices with E2E encryption and BYO storage.
 
 1. **Never commit secrets**, real session transcripts, API keys, or passphrases.
 2. **Security defaults stay safe** — encryption on; credentials excluded.
-3. **Same-vendor resume only** — do not invent cross-agent session translation.
-4. **Path remapping is first-class** — Windows ↔ macOS is the default scenario.
-5. Prefer small, reviewable PRs over large rewrites.
+3. **Native resume is same-vendor** — do not invent silent cross-agent transcript
+   translation. Cross-agent work uses **explicit portable handoffs** only.
+4. **Path remapping is first-class** — Windows ↔ macOS is the flagship multi-device case.
+5. **Continuity, not a harness** — do not grow into a full ADE (editor/terminal/multi-agent scheduler). Agents execute; Reinstate finds, verifies, hands off, syncs.
+6. Prefer small, reviewable PRs over large rewrites.
+
+## Product direction
+
+Authoritative roadmap and strategy:
+
+- `ROADMAP.md` — phases 0–7
+- `docs/product-strategy.md` — positioning, ICP, non-goals
+- `PRODUCT.md` — brand and marketing constraints
 
 ## Layout
 
@@ -35,10 +48,11 @@ references/          Product research (not runtime code)
 ## Commands
 
 ```bash
-make build    # ./bin/reinstate
+make build    # ./bin/reinstate + ./bin/rein (symlink)
 make test
 make vet
 make verify
+./bin/rein version
 ```
 
 ## Docs to update when you change UX
@@ -49,10 +63,14 @@ make verify
 
 ## Product context
 
-Read `references/` for research background. Positioning:
+Read `references/` and `docs/product-strategy.md`. Positioning:
 
-> Universal, vendor-neutral encrypted sync. Phase 1 ships same-vendor Claude
-> Code and Codex sessions only; MCP, skills, and config are later phases.
+> Continuity layer for coding-agent work — local session index and verified
+> resume for everyone; encrypted multi-device sync as the wedge; not Dropbox for
+> a single agent folder; not another ADE.
+
+Phase 1 remains deliberately narrow: same-vendor Claude Code and Codex session
+sync. Portable handoffs, MCP, skills, config, and broader indexing come later.
 
 ## Style
 

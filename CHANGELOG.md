@@ -31,6 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cross-platform installer contract tests, release SBOMs, and artifact attestations
 - Safe installer replacement checks, native Windows `rein.exe`, and release verification scripts
 - Deterministic six-environment adapter fixtures and structured contributor/compatibility workflows
+- Short CLI alias **`rein`** (same binary as `reinstate`)
+- [Product strategy](docs/product-strategy.md) defining the continuity-layer
+  positioning, first ICP, product layers, and non-goals
 
 ### Changed
 
@@ -39,12 +42,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Roadmap and support docs aligned to Phase 0 foundation + Phase 1 sessions
 - Copy-paste setup prompts now continue through init, dry-run, sync, and restore verification
 - Codex restores preserve date-partitioned rollout paths; both adapters fail closed on unverified versions
+- Star history embed: dark/light `<picture>` + interactive fallback link
+- Docs and CLI help prefer short alias **`rein`** (`reinstate` remains full name)
+- **Product positioning:** continuity layer for coding-agent work (not multi-device-only);
+  multi-device E2EE sync remains the entry wedge
+- Roadmap expanded: Phase 2 local session index → verified resume → portable
+  handoffs → automatic sync → thin Console/ACP client → team continuity
 
 ### Removed
 
 - Invented `v0.0.0` changelog release history (no tag/release existed)
 - Secret-bearing init flags, plaintext credential files, and ordinary environment passphrases
 
+### Planned
+
+See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
+
+- **Phase 1 public `v0.1.0`:** Claude + Codex encrypted sync (engine largely in place)
+- **Phase 2:** local universal session switcher (`sessions` / `search` / `resume` / `last`)
+- **Phase 3:** verified resume (workspace + capability fingerprint)
+- **Phase 4:** portable cross-agent handoffs (explicit checkpoints)
+- **Phase 5+:** auto multi-device habit, thin Console/ACP client, team continuity
+
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/HEAD...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/commits/main

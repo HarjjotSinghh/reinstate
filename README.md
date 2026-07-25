@@ -4,10 +4,11 @@
 
 # Reinstate
 
-### Encrypted cross-device session sync for AI coding agents
+### Pick up any coding task exactly where you left it
 
-**Encrypted session sync** for Claude Code and Codex — across every machine you own. MCP/skills follow after `v0.1.0`.
-Encrypted so only you can read it.
+**The continuity layer for coding-agent work** — search, resume, and hand off sessions across agents, projects, environments, and devices.
+Phase 1 starts with encrypted same-vendor Claude Code and Codex session sync
+across devices; search, verified resume, and portable handoffs follow.
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/HarjjotSinghh/reinstate)](https://goreportcard.com/report/github.com/HarjjotSinghh/reinstate)
@@ -116,14 +117,18 @@ Native vendor sync will always own *one* ecosystem. DIY Syncthing/Drive hacks br
 - **Bring-your-own storage** — Cloudflare R2, AWS S3, and S3-compatible storage
 - **OS-aware path remapping** — the hard problem treated as the product
 - **Safe by default** — credential denylist, atomic restore, conflict forks, local backups
-- **Simple CLI** — `init` · `push` · `pull` · `status` · `diff` · `conflicts`
+- **Simple CLI** — `rein init` · `push` · `pull` · `status` · `diff` · `conflicts`
+  (`rein` is the short alias; `reinstate` is the full command — same binary)
 
 ---
 
 ## Quick start
 
-> **Note:** v0.1 CLI is under active development. The UX below is the target
-> interface. Star & watch the repo for the first stable release.
+> **Note:** the v0.1 CLI surface below is implemented, but native acceptance and
+> public release certification are still in progress. Star & watch the repo for
+> the first stable release.
+>
+> **CLI:** prefer short alias **`rein`**. Full name **`reinstate`** works the same.
 
 ### Install
 
@@ -132,27 +137,29 @@ Native vendor sync will always own *one* ecosystem. DIY Syncthing/Drive hacks br
 git clone https://github.com/HarjjotSinghh/reinstate.git
 cd reinstate
 make build
-./bin/reinstate version
+./bin/rein version        # short alias
+./bin/reinstate version   # full name (same tool)
 
 # Go install (when module is published)
 go install github.com/HarjjotSinghh/reinstate/cmd/reinstate@vX.Y.Z
+# optional: ln -s "$(go env GOPATH)/bin/reinstate" "$(go env GOPATH)/bin/rein"
 ```
 
 ### Device A
 
 ```bash
-reinstate init --project github.com/acme/app=/absolute/path/to/app
-reinstate push --all    # hidden passphrase prompt, encrypt, upload
+rein init --project github.com/acme/app=/absolute/path/to/app
+rein push --all    # hidden passphrase prompt, encrypt, upload
 ```
 
 ### Device B
 
 ```bash
-reinstate init --profile-id <DEVICE_A_PROFILE_ID> \
+rein init --profile-id <DEVICE_A_PROFILE_ID> \
   --project github.com/acme/app=/different/local/path
-reinstate pull --all --dry-run
-reinstate pull --all
-claude --resume         # or: codex resume
+rein pull --all --dry-run
+rein pull --all
+claude --resume    # or: codex resume
 ```
 
 Full walkthrough: **[docs/getting-started.md](docs/getting-started.md)**
@@ -195,10 +202,10 @@ flowchart TB
   SY -->|pull · decrypt · remap · atomic restore| Agents
 ```
 
-1. **Adapters** read each tool’s local session layout  
-2. **Pathmap** rewrites absolute paths to portable tokens and back  
-3. **Crypto** encrypts before any upload  
-4. **Sync** uses a local manifest; restores are atomic with backups  
+1. **Adapters** read each tool’s local session layout
+2. **Pathmap** rewrites absolute paths to portable tokens and back
+3. **Crypto** encrypts before any upload
+4. **Sync** uses a local manifest; restores are atomic with backups
 
 Deep dive: **[docs/architecture.md](docs/architecture.md)** · research diagram:
 
@@ -225,6 +232,7 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 
 | Doc | Description |
 | --- | ----------- |
+| **Website** | [reinstate-web.vercel.app](https://reinstate-web.vercel.app) — landing + waitlist |
 | [Getting started](docs/getting-started.md) | Install, init, dual-device setup |
 | [Architecture](docs/architecture.md) | Pipeline, packages, design principles |
 | [Adapters](docs/adapters.md) | Per-agent layouts & support matrix |
@@ -292,10 +300,10 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 
 | Phase | Focus | Status |
 | ----- | ----- | ------ |
-| **0** | Claude + Codex, push/pull, path remap, encryption | 🚧 |
-| **1** | Gemini + OpenCode, config/MCP scope | 📋 |
-| **2** | Shell hooks, Grok, delta sync, redaction | 📋 |
-| **3** | Hosted ZK convenience, session browser, teams | 💭 |
+| **0** | Contracts, diagnostics, installers, fixtures, release trust | 🚧 |
+| **1** | Claude + Codex encrypted same-vendor session sync | 🚧 |
+| **2–4** | Local index, verified resume, portable handoffs | 📋 |
+| **5–7** | Automatic sync, thin Console/ACP client, teams | 📋 / 💭 |
 
 Full detail: **[ROADMAP.md](ROADMAP.md)**
 
@@ -305,11 +313,13 @@ Full detail: **[ROADMAP.md](ROADMAP.md)**
 
 | Channel | Tag | Notes |
 | ------- | --- | ----- |
-| **Latest** | [![Release](https://img.shields.io/github/v/release/HarjjotSinghh/reinstate?label=latest)](https://github.com/HarjjotSinghh/reinstate/releases/latest) | Production-minded builds |
+| **Latest** | [![Release](https://img.shields.io/github/v/release/HarjjotSinghh/reinstate?label=latest)](https://github.com/HarjjotSinghh/reinstate/releases/latest) | Stable builds, once published |
 | **Pre-release** | [![Pre-release](https://img.shields.io/github/v/release/HarjjotSinghh/reinstate?include_prereleases&label=pre)](https://github.com/HarjjotSinghh/reinstate/releases) | Early adopters |
 | **SemVer** | pre-1.0 | Breaking changes possible in minors — see CHANGELOG |
 
-Install from [GitHub Releases](https://github.com/HarjjotSinghh/reinstate/releases) (checksums attached when CI release workflow is enabled).
+Install from [GitHub Releases](https://github.com/HarjjotSinghh/reinstate/releases).
+Every published release must include checksums, SBOMs, a source archive, and an
+artifact attestation.
 
 ---
 

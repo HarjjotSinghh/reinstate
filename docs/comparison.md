@@ -1,7 +1,10 @@
 # Comparison
 
-How **Reinstate** sits next to native vendor sync, single-tool sync utilities,
-and DIY file sync.
+How **Reinstate** sits next to native vendor sync, session browsers, full agentic
+development environments (ADEs), single-tool sync utilities, and DIY file sync.
+
+Reinstate is a **continuity layer** (find / verify / resume / hand off / sync) —
+not another place to code.
 
 ![Landscape: agent scope vs state portability](../assets/01_landscape.png)
 
@@ -15,27 +18,41 @@ and DIY file sync.
 | E2E encryption | Vendor-held plaintext | age | Often yes | Usually no | **age, BYO keys** |
 | Bring-your-own storage | No | R2/S3/GCS/WebDAV | Gists / various | Your sync tool | **R2/S3-compatible (v0.1)** |
 | Cross-OS path remapping | N/A | Partial | Weak | None | **First-class** |
-| Delta / large history | N/A | Full-file gzip | Full-file | File-level | **CAS + tail-append (target)** |
+| Delta / large history | N/A | Full-file gzip | Full-file | File-level | **Full snapshot now; append-aware planned** |
 | Team session sharing | Rare | No | Rare | Manual | Roadmap |
 
-## vs native vendor sync
+## vs native vendor session UIs
 
-**Claude Code** Remote Control / teleport and **Codex** account-linked surfaces
-are excellent *inside one ecosystem*. They will not:
+**Claude Code** / **Codex** / **Gemini** session resume, search, and fork are
+excellent *inside one ecosystem*. They will not:
 
-- Resume your Claude sessions from a Codex machine state
-- Sync MCP/skills across competing tools
-- Keep ciphertext on storage *you* control
+- Index sessions across competing agents in one switcher
+- Verify workspace + MCP/skills before resume in a vendor-neutral way
+- Move work across devices with ciphertext on storage *you* control
+- Produce explicit portable handoffs between agents
 
-Reinstate's target moat is **universality + neutrality + BYO encrypted
-storage**. Phase 1 proves that model with Claude Code and Codex sessions.
+Reinstate's moat is **universality + environment verification + neutrality + BYO E2EE**.
+Phase 1 proves the encrypted-sync foundation with same-vendor Claude Code and
+Codex sessions; environment verification and portable handoffs follow.
+
+## vs session browsers (e.g. SpecStory-class tools)
+
+Unified browse/search/resume validates demand. Reinstate differentiates by
+**verified environment continuity** (repo/branch/MCP/skills/runtime) and
+optional **encrypted multi-device sync** — not by being “another picker.”
+
+## vs full ADEs (Orca, Conductor, T3 Code, …)
+
+Those products own **where coding happens** (UI, worktrees, terminals, multi-agent
+layouts). Reinstate owns **whether work survives and can move**. Integrate;
+do not compete as a full harness.
 
 ## vs claude-sync
 
 claude-sync is a strong Claude-only reference (encryption, R2, path mapping).
-Reinstate aims to become a **superset**. Phase 1 ships multiple session
-adapters and path remapping generalized for Windows ↔ macOS; config scope is
-post-v0.1 roadmap work.
+Reinstate aims to become a **superset**. Phase 1 implements Claude Code and
+Codex session adapters plus cross-OS path remapping; native acceptance is still
+in progress, and config scope is post-v0.1 roadmap work.
 
 ## vs config-only tools (mcp-sync, etc.)
 
