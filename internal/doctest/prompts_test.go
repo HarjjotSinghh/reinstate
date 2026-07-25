@@ -12,13 +12,16 @@ func TestEndUserPromptContracts(t *testing.T) {
 	} {
 		body := read(t, path)
 		required := []string{
-			"<REINSTATE_VERSION>",
+			"v0.1.0-rc.2",
+			"https://reinstate.dev/install.sh",
+			"https://reinstate.dev/install.ps1",
 			"github.com/HarjjotSinghh/reinstate/releases/download/",
 			"checksum",
 			"rein init",
 			"rein doctor --self-test",
-			"rein push --all --dry-run",
-			"rein pull --all --dry-run",
+			"rein push --agent",
+			"rein pull --agent",
+			"--dry-run",
 			"hidden",
 			"credential",
 			"passphrase",
@@ -34,6 +37,7 @@ func TestEndUserPromptContracts(t *testing.T) {
 			"--dangerously-skip-permissions",
 			"REINSTATE_PASSPHRASE=",
 			"releases/latest",
+			"<REINSTATE_VERSION>",
 		} {
 			if strings.Contains(body, forbidden) {
 				t.Errorf("%s contains forbidden end-user instruction %q", path, forbidden)

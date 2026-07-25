@@ -5,6 +5,7 @@
 | Document | Description |
 | -------- | ----------- |
 | [Getting started](getting-started.md) | Install and dual-device setup |
+| [Phase 1 Mac + Windows acceptance](https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/phase-1-mac-windows-acceptance.md) | Strict two-device release checklist |
 | [Architecture](architecture.md) | System design |
 | [Adapters](adapters.md) | Agent support matrix |
 | [Security model](security-model.md) | Threat model and defaults |

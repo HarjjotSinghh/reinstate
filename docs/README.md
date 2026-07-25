@@ -10,6 +10,7 @@
 | [Windows install](install/manual-windows.md) | Native PowerShell install instructions |
 | [WSL2 install](install/manual-wsl.md) | Linux install instructions under WSL2 |
 | [Verify installation](install/verify-installation.md) | Setup and dry-run gates |
+| [Phase 1 Mac + Windows acceptance](testing/phase-1-mac-windows-acceptance.md) | Strict two-device release checklist |
 | [Backup and recovery](backup-and-recovery.md) | Restore and conflict recovery |
 | [Uninstall](uninstall.md) | Binary and data cleanup boundaries |
 | [Development workflow](contributing/development.md) | Build, test, and package contributions |
