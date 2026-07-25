@@ -35,17 +35,19 @@ const frameFeet = [
 /* the chair stands off the near (+y) edge and faces the table: the backrest is
    on the seat's NEAR edge, so it turns its back to us and its seat to the desk.
    Back is narrower than the seat, so the seat slab still reads around it. */
+/* scaled up against the table: the backrest now clears the desktop, which is
+   what sells the chair as furniture rather than a stool */
 const chair = {
-  base: box(130, 226, FLOOR, 44, 44, 6),
-  post: box(144, 240, FLOOR + 6, 14, 14, 46),
+  base: box(122, 218, FLOOR, 56, 56, 7),
+  post: box(140, 236, FLOOR + 7, 18, 18, 52),
   /* seat is compact; the backrest is the tall element, as on a real task chair */
-  seat: box(122, 216, -80, 60, 56, 9),
+  seat: box(110, 204, -73, 76, 70, 11),
   /* stub + floating backrest: the gap between seat and back is what makes an
      office chair read as a chair instead of a slab on a pedestal */
-  stub: box(142, 268, -71, 22, 6, 15),
-  back: box(122, 266, -56, 60, 9, 68),
+  stub: box(136, 268, -62, 26, 7, 17),
+  back: box(112, 266, -45, 72, 11, 80),
 };
-const chairShadow = foot(130, 226, FLOOR, 44, 44);
+const chairShadow = foot(122, 218, FLOOR, 56, 56);
 
 /* ---- act 1 · the desktop ---- */
 /* foot plate → neck → panel, turned sideways: the glass is the +x face, so the
@@ -54,8 +56,8 @@ const chairShadow = foot(130, 226, FLOOR, 44, 44);
    Everything on the desktop keeps a real margin to the table edge — nothing
    sits flush with it, nothing overhangs (desk is 300 × 186). */
 const monitorFoot = box(30, 70, 0, 44, 46, 7);
-const monitorStem = box(45, 85, 7, 15, 16, 59);
-const monitorPanel = box(45, 23, 66, 15, 140, 79);
+const monitorStem = box(45, 85, 7, 15, 16, 34);
+const monitorPanel = box(45, 23, 41, 15, 140, 79);
 /* the dock the state lifts out of, and the tower standing on the floor below */
 const dock = box(84, 24, 0, 148, 98, 16);
 const towerPC = box(218, 86, FLOOR, 60, 60, 112);
@@ -93,19 +95,21 @@ const rugInner = foot(-20, -20, -106, 188, 188);
 
 /* ---- act 3 · the laptop ---- */
 /* one continuous body: deck → hinge barrel → lid, each resting on the last */
-/* lid is 148 × 84 — near enough the desktop monitor's 140 × 79 that the two
-   machines read as the same class of screen. */
-const deck = box(64, 44, 0, 152, 132, 15);
-const hinge = box(64, 32, 15, 152, 12, 9);
-const lidBack = box(66, 34, 24, 148, 9, 84);
-/* the laptop has its own keyboard and trackpad on the palm rest, so the deck
-   never reads as a blank slab while the stack drops in */
+/* lid is 148 × 94 — a laptop 16:10, and near enough the desktop monitor's
+   140 × 79 that the two machines read as the same class of screen. The deck is
+   shallower than the lid is wide, so the body stops looking like a runway. */
+const deck = box(64, 40, 0, 152, 124, 15);
+const hinge = box(64, 28, 15, 152, 12, 9);
+const lidBack = box(66, 30, 24, 148, 9, 94);
+/* a recessed keyboard well with light keys inside it — thin dark strips on a
+   dark deck read as scratches, not as a keyboard */
+const deckWell = foot(76, 132, 15, 128, 22);
 const deckKeys = [
-  foot(78, 140, 15, 124, 6),
-  foot(78, 148, 15, 124, 6),
-  foot(78, 156, 15, 100, 6),
+  foot(80, 134, 15, 120, 5),
+  foot(80, 141, 15, 120, 5),
+  foot(80, 148, 15, 96, 5),
 ];
-const touchpad = foot(104, 166, 15, 56, 8);
+const touchpad = foot(112, 156, 15, 56, 8);
 /* the mirror of the tower: same floor slot, closed storage instead of a machine */
 const crate = box(218, 86, FLOOR, 60, 60, 66);
 /* put back: flush stack resting on the deck (top z=15), sessions on top */
@@ -114,7 +118,7 @@ const restacked = [
   { key: 'skills', tone: 'c' },
   { key: 'mcp', tone: 'b' },
   { key: 'sessions', tone: 'a' },
-].map((s, i) => ({ ...s, g: box(74, 50, 15 + i * 14, SLAB_W, SLAB_D, SLAB_H) }));
+].map((s, i) => ({ ...s, g: box(74, 42, 15 + i * 14, SLAB_W, SLAB_D, SLAB_H) }));
 
 /* ---- props ---- */
 const pot = box(0, 0, -74, 76, 76, 74);
@@ -170,7 +174,7 @@ const GY = 452;
 const pushStart = at(GX_L, GY, P(224, 73, 110.5)); // top layer, right face centre
 const pushEnd = at(GX_C, GY, P(30, 74, 120)); // into the checkpoint's top face
 const pullStart = at(GX_C, GY, P(126, 44, 120)); // out of the top face
-const pullEnd = at(GX_R, GY, P(92, 70, 70)); // onto the restored stack's top face
+const pullEnd = at(GX_R, GY, P(92, 62, 70)); // onto the restored stack's top face
 
 /* contact shadows: the object's own base rectangle, projected flat on the floor.
    Drawn inside each group, so they track the geometry instead of being guessed. */
@@ -223,6 +227,7 @@ const floorGrid = [
           </marker>
           <clipPath id="pane"><rect x="126" y="52" width="272" height="196" rx="4" /></clipPath>
           <clipPath id="floorclip"><rect x="0" y="338" width="1640" height="518" /></clipPath>
+          <clipPath id="art"><rect x="1282" y="74" width="192" height="162" /></clipPath>
         </defs>
 
         {/* ---------- room ---------- */}
@@ -287,20 +292,33 @@ const floorGrid = [
           <rect x="104" y="256" width="316" height="14" rx="3" fill="var(--sv-frame)" stroke={SK} stroke-width="3" />
         </g>
 
-        {/* poster: the brand frame, sized and placed to mirror the window */}
+        {/* framed print: a minimal landscape, the daylight counterpart to the
+            night city in the window opposite. Art, not a logo drop. */}
         <g class="poster">
           <rect x="1268" y="60" width="220" height="190" rx="5" fill="var(--sv-frame)" stroke={SK} stroke-width="3" />
           <rect x="1282" y="74" width="192" height="162" fill="var(--sv-night)" />
-          <g transform="translate(1378 142) scale(0.68)">
-            <polygon points="0,-46 66,-8 0,30 -66,-8" fill={PRIM} stroke={SK} stroke-width="6" stroke-linejoin="round" />
-            <polygon points="0,10 66,-28 66,20 0,58" fill="var(--sv-seal-2)" stroke={SK} stroke-width="6" stroke-linejoin="round" />
-            <polygon points="0,10 -66,-28 -66,20 0,58" fill="var(--sv-seal-3)" stroke={SK} stroke-width="6" stroke-linejoin="round" />
+          <g clip-path="url(#art)">
+            <circle cx="1372" cy="142" r="44" fill={PRIM} stroke={SK} stroke-width="4" />
+            <path
+              d="M1270 240 L1270 204 C 1310 168 1356 170 1398 206 L1398 240 Z"
+              fill="var(--sv-leaf-2)"
+              stroke={SK}
+              stroke-width="4"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M1352 240 L1352 212 C 1392 180 1436 182 1486 214 L1486 240 Z"
+              fill="var(--sv-leaf-1)"
+              stroke={SK}
+              stroke-width="4"
+              stroke-linejoin="round"
+            />
           </g>
-          <text class="pbrand" x="1378" y="216" text-anchor="middle" fill="#e9efe3">reinstate</text>
+          <rect x="1282" y="74" width="192" height="162" fill="none" stroke={SK} stroke-width="2" />
         </g>
 
         {/* plant: leaves grow OUT of the soil, not from behind the pot */}
-        <g class="plant" transform="translate(150 414) scale(1.02)">
+        <g class="plant" transform="translate(95 433) scale(0.85)">
           <polygon class="cast" points={potShadow} />
           <g class="unit pot">
             <polygon class="f-side" points={pot.side} />
@@ -372,7 +390,7 @@ const floorGrid = [
           </g>
 
           {/* the session, inset inside the bezel — glass, not a painted face */}
-          <g transform={sideText(45, 23, 66, 15, 140, 79)}>
+          <g transform={sideText(45, 23, 41, 15, 140, 79)}>
             <polygon points="8,8 132,8 132,66 8,66" fill="var(--sv-night)" />
             <rect x="16" y="15" width="68" height="18" rx="9" fill={PRIM} />
             <text x="50" y="28" text-anchor="middle" font-size="10.5" font-weight="600" fill="#131f1a">ses_7f3a</text>
@@ -546,8 +564,8 @@ const floorGrid = [
           </g>
 
           {/* the same session, resumed — inset inside the lid bezel */}
-          <g transform={frontText(66, 34, 24, 9, 84)}>
-            <polygon points="8,8 140,8 140,68 8,68" fill="var(--sv-night)" />
+          <g transform={frontText(66, 30, 24, 9, 94)}>
+            <polygon points="8,8 140,8 140,78 8,78" fill="var(--sv-night)" />
             <rect x="18" y="16" width="68" height="18" rx="9" fill={PRIM} />
             <text x="52" y="29" text-anchor="middle" font-size="10.5" font-weight="600" fill="#131f1a">ses_7f3a</text>
             <text x="92" y="29" font-size="10.5" fill="#e9efe3">▶ 23:47</text>
@@ -559,7 +577,8 @@ const floorGrid = [
             <polygon class="f-top" points={deck.top} />
           </g>
           {/* the laptop's own keyboard and trackpad on the palm rest */}
-          <g class="keys" fill="var(--sv-dev-3)" opacity="0.75">
+          <polygon points={deckWell} fill="var(--sv-dev-3)" stroke={SK} stroke-width="2.5" stroke-linejoin="round" />
+          <g fill="var(--sv-dev-0)" opacity="0.9">
             {deckKeys.map((r) => <polygon points={r} />)}
           </g>
           <polygon
@@ -577,7 +596,7 @@ const floorGrid = [
                 <polygon class="f-top" points={s.g.top} />
                 <text
                   class="tlabel"
-                  transform={frontText(74, 50, 15 + i * 14, SLAB_D, SLAB_H)}
+                  transform={frontText(74, 42, 15 + i * 14, SLAB_D, SLAB_H)}
                   x="66"
                   y="10"
                   text-anchor="middle"
@@ -618,7 +637,7 @@ const floorGrid = [
         </g>
 
         {/* floor lamp, far right — standing on the floor, lighting the restored act */}
-        <g class="floorlamp" transform="translate(1490 250) scale(1.02)">
+        <g class="floorlamp" transform="translate(1545 187) scale(1.25)">
           <polygon class="cast hard" points={lampShadow} />
           <g class="unit furn">
             <polygon class="f-side" points={lampBase.side} />
@@ -646,7 +665,7 @@ const floorGrid = [
         {/* ---------- connectors: anchored to the geometry, one rhythm ---------- */}
         <path
           class="wire"
-          d={`M ${pushStart[0].toFixed(0)} ${pushStart[1].toFixed(0)} C 570 428, 690 368, ${pushEnd[0].toFixed(0)} ${pushEnd[1].toFixed(0)}`}
+          d={`M ${pushStart[0].toFixed(0)} ${pushStart[1].toFixed(0)} C 555 385, 700 335, ${pushEnd[0].toFixed(0)} ${pushEnd[1].toFixed(0)}`}
           fill="none"
           stroke={PRIM_DEEP}
           stroke-width="3.6"
@@ -655,7 +674,7 @@ const floorGrid = [
         />
         <path
           class="wire"
-          d={`M ${pullStart[0].toFixed(0)} ${pullStart[1].toFixed(0)} C 1000 368, 1120 404, ${pullEnd[0].toFixed(0)} ${pullEnd[1].toFixed(0)}`}
+          d={`M ${pullStart[0].toFixed(0)} ${pullStart[1].toFixed(0)} C 1005 350, 1130 385, ${pullEnd[0].toFixed(0)} ${pullEnd[1].toFixed(0)}`}
           fill="none"
           stroke={PRIM_DEEP}
           stroke-width="3.6"
