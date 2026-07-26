@@ -6,6 +6,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -162,7 +163,11 @@ func TestClaudeDiscoverUsesCanonicalProjectID(t *testing.T) {
 
 func TestClaudePlanRestoreUsesDestinationProjectDirectory(t *testing.T) {
 	longProjectPath := "/" + strings.Repeat("a", 205)
-	longProjectKey := "-" + strings.Repeat("a", 199) + "-bn8w8e"
+	longProjectHash := "bn8w8e"
+	if runtime.GOOS == "windows" {
+		longProjectHash = "piz35x"
+	}
+	longProjectKey := "-" + strings.Repeat("a", 199) + "-" + longProjectHash
 	tests := []struct {
 		name        string
 		projectPath string
