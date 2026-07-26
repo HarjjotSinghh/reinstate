@@ -13,6 +13,7 @@ describe('landing-page product claims', () => {
     expect(hero).toContain('Capture. Encrypt. Reinstate.');
     expect(hero).toContain('Start on one device.');
     expect(hero).toContain('Continue on another. Same session.');
+    expect(hero).toContain('max-width: min(31ch, 100%)');
     expect(hero).toContain(
       'Move encrypted Claude Code or Codex sessions between macOS and Windows.',
     );
