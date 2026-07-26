@@ -1,0 +1,133 @@
+---
+/**
+ * Pure Tight mark — selected Reinstate logo.
+ *
+ * tiled=true  → dark square tile + light strokes (app icon / favicon style)
+ * tiled=false → bare dual frames + >_ (nav, footer); front face is opaque so
+ *               the back frame does not show through the overlap.
+ */
+interface Props {
+  /** CSS length or number (px). Default 22. */
+  size?: number | string;
+  class?: string;
+  /** Accessible label; omit when nested inside a labeled link. */
+  label?: string;
+  /** Draw the outer container tile. Default true. */
+  tiled?: boolean;
+  /** Corner radius of the outer tile when tiled. */
+  tileRadius?: number;
+}
+
+const {
+  size = 22,
+  class: className = '',
+  label,
+  tiled = true,
+  tileRadius = 14,
+} = Astro.props;
+
+const dim = typeof size === 'number' ? `${size}` : size;
+const aria = label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': 'true' };
+---
+
+{
+  tiled ? (
+    <svg
+      class:list={['logo-mark', 'logo-mark--tiled', className]}
+      width={dim}
+      height={dim}
+      viewBox="0 0 64 64"
+      xmlns="http://www.w3.org/2000/svg"
+      {...aria}
+    >
+      <rect width="64" height="64" rx={tileRadius} fill="#131f1a"></rect>
+      <rect
+        x="14"
+        y="14"
+        width="28"
+        height="28"
+        rx="5.5"
+        fill="none"
+        stroke="#f4f6ef"
+        stroke-width="3.6"></rect>
+      <rect
+        x="22"
+        y="22"
+        width="28"
+        height="28"
+        rx="5.5"
+        fill="#131f1a"
+        stroke="#f4f6ef"
+        stroke-width="3.6"></rect>
+      <path
+        d="M30.5 33 L34.5 37 L30.5 41"
+        fill="none"
+        stroke="#f4f6ef"
+        stroke-width="2.7"
+        stroke-linecap="round"
+        stroke-linejoin="round"></path>
+      <path
+        d="M37 41 H42.5"
+        fill="none"
+        stroke="#f4f6ef"
+        stroke-width="2.7"
+        stroke-linecap="round"></path>
+    </svg>
+  ) : (
+    <svg
+      class:list={['logo-mark', 'logo-mark--bare', className]}
+      width={dim}
+      height={dim}
+      viewBox="0 0 64 64"
+      xmlns="http://www.w3.org/2000/svg"
+      {...aria}
+    >
+      {/*
+        Painter order: back frame first, then opaque front face (paper fill)
+        so the back stroke is fully occluded in the overlap, then prompt.
+      */}
+      <rect
+        x="10"
+        y="10"
+        width="32"
+        height="32"
+        rx="6"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="4"></rect>
+      {/* Explicit paper fill — must not inherit fill="none" */}
+      <rect
+        x="20"
+        y="20"
+        width="32"
+        height="32"
+        rx="6"
+        fill="var(--paper)"
+        stroke="currentColor"
+        stroke-width="4"></rect>
+      <path
+        d="M28.5 31 L34 36.5 L28.5 42"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="3.2"
+        stroke-linecap="round"
+        stroke-linejoin="round"></path>
+      <path
+        d="M37.5 42 H45"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="3.2"
+        stroke-linecap="round"></path>
+    </svg>
+  )
+}
+
+<style>
+  .logo-mark {
+    display: block;
+    flex-shrink: 0;
+  }
+  .logo-mark--tiled {
+    border-radius: 22%;
+  }
+</style>

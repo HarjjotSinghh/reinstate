@@ -51,13 +51,11 @@ const chairShadow = foot(122, 218, FLOOR, 56, 56);
 
 /* ---- act 1 · the desktop ---- */
 /* foot plate → neck → panel, turned sideways: the glass is the +x face, so the
-   screen reads clear of the lifted stack. Panel is 140 × 79 — a true 16:9 — and
-   its centre line sits on the desk's centre line (depth 186, so y 23..163).
-   Everything on the desktop keeps a real margin to the table edge — nothing
-   sits flush with it, nothing overhangs (desk is 300 × 186). */
-const monitorFoot = box(30, 70, 0, 44, 46, 7);
-const monitorStem = box(45, 85, 7, 15, 16, 34);
-const monitorPanel = box(45, 23, 41, 15, 140, 79);
+   screen reads clear of the lifted stack. Panel ~16:9, centred on the desk
+   depth (186). Margin to every table edge — nothing flush, nothing overhangs. */
+const monitorFoot = box(26, 64, 0, 50, 54, 8);
+const monitorStem = box(40, 80, 8, 18, 20, 42);
+const monitorPanel = box(40, 10, 50, 18, 164, 96);
 /* the dock the state lifts out of, and the tower standing on the floor below */
 const dock = box(84, 24, 0, 148, 98, 16);
 const towerPC = box(218, 86, FLOOR, 60, 60, 112);
@@ -68,21 +66,21 @@ const kbdRows = [
   foot(102, 155, 8, 100, 6),
 ];
 const mouse = box(244, 134, 0, 26, 32, 10);
-/* both stacks are the SAME slab — 132 × 86 × 13 — so the two ends of the room
-   are literally the same four objects, lifted apart here and flush over there.
-   Sized so the laptop lid that carries them stays the size of the monitor. */
-const SLAB_W = 132;
-const SLAB_D = 86;
-const SLAB_H = 13;
-/* lifting apart, but still ONE stack: small even gaps, one shared axis.
-   Listed bottom-up (settings at the floor of the stack, sessions on top) so the
-   render order IS the painter order — a higher slab always overlaps a lower one. */
+/* tray slabs: tall enough for legible labels, spaced so lines don't collide.
+   Desktop stack is full-size; laptop stack is a touch smaller and sits forward
+   on the palm rest so it never covers the lid chrome. */
+const SLAB_W = 128;
+const SLAB_D = 82;
+const SLAB_H = 16;
+const LIFT_PITCH = 28; /* air between lifted layers */
+const FLUSH_PITCH = SLAB_H;
+/* Listed bottom-up (settings → sessions) so render order = painter order. */
 const streams = [
   { key: 'settings', tone: 'd' },
   { key: 'skills', tone: 'c' },
   { key: 'mcp', tone: 'b' },
   { key: 'sessions', tone: 'a' },
-].map((s, i) => ({ ...s, g: box(92, 30, 32 + i * 24, SLAB_W, SLAB_D, SLAB_H) }));
+].map((s, i) => ({ ...s, g: box(94, 32, 28 + i * LIFT_PITCH, SLAB_W, SLAB_D, SLAB_H) }));
 
 /* ---- act 2 · the checkpoint on its nightstand ---- */
 const plinth = box(-6, -6, -106, 160, 160, 10);
@@ -94,31 +92,31 @@ const rug = foot(-36, -36, -106, 220, 220);
 const rugInner = foot(-20, -20, -106, 188, 188);
 
 /* ---- act 3 · the laptop ---- */
-/* one continuous body: deck → hinge barrel → lid, each resting on the last */
-/* lid is 148 × 94 — a laptop 16:10, and near enough the desktop monitor's
-   140 × 79 that the two machines read as the same class of screen. The deck is
-   shallower than the lid is wide, so the body stops looking like a runway. */
-const deck = box(64, 40, 0, 152, 124, 15);
-const hinge = box(64, 28, 15, 152, 12, 9);
-const lidBack = box(66, 30, 24, 148, 9, 94);
+/* deck → hinge → taller lid. Lid clears the flush stack so ses_7f3a / time
+   stay fully readable above the trays. */
+const deck = box(58, 36, 0, 164, 132, 15);
+const hinge = box(58, 24, 15, 164, 12, 9);
+const lidBack = box(60, 26, 24, 160, 10, 118);
 /* a recessed keyboard well with light keys inside it — thin dark strips on a
    dark deck read as scratches, not as a keyboard */
-const deckWell = foot(76, 132, 15, 128, 22);
+const deckWell = foot(72, 138, 15, 132, 22);
 const deckKeys = [
-  foot(80, 134, 15, 120, 5),
-  foot(80, 141, 15, 120, 5),
-  foot(80, 148, 15, 96, 5),
+  foot(76, 140, 15, 124, 5),
+  foot(76, 147, 15, 124, 5),
+  foot(76, 154, 15, 100, 5),
 ];
-const touchpad = foot(112, 156, 15, 56, 8);
+const touchpad = foot(110, 164, 15, 56, 8);
 /* the mirror of the tower: same floor slot, closed storage instead of a machine */
 const crate = box(218, 86, FLOOR, 60, 60, 66);
-/* put back: flush stack resting on the deck (top z=15), sessions on top */
+/* flush stack on the palm rest (forward of the lid), slightly smaller footprint */
+const LAP_SLAB_W = 118;
+const LAP_SLAB_D = 74;
 const restacked = [
   { key: 'settings', tone: 'd' },
   { key: 'skills', tone: 'c' },
   { key: 'mcp', tone: 'b' },
   { key: 'sessions', tone: 'a' },
-].map((s, i) => ({ ...s, g: box(74, 42, 15 + i * 14, SLAB_W, SLAB_D, SLAB_H) }));
+].map((s, i) => ({ ...s, g: box(80, 58, 15 + i * FLUSH_PITCH, LAP_SLAB_W, LAP_SLAB_D, SLAB_H) }));
 
 /* ---- props ---- */
 const pot = box(0, 0, -74, 76, 76, 74);
@@ -127,13 +125,6 @@ const pot = box(0, 0, -74, 76, 76, 74);
    Local screen space runs y 2 (shade top) → 273 (base on the floor). */
 const lampBase = box(0, 0, -244, 58, 58, 11);
 const lampPole = box(23, 23, -233, 12, 12, 186);
-
-const legend = [
-  { key: 'sessions', tone: 'a', note: 'threads and dead ends' },
-  { key: 'mcp', tone: 'b', note: 'servers, args, env' },
-  { key: 'skills', tone: 'c', note: 'the ones you wrote' },
-  { key: 'settings', tone: 'd', note: 'per agent, per project' },
-];
 
 const SK = 'var(--sv-stroke)';
 const INK = 'var(--sv-ink)';
@@ -171,10 +162,10 @@ const GX_R = Math.round(MID + SPAN - TOFF);
 const GY = 452;
 
 /* arrow anchors, computed from the geometry so they land exactly on the art */
-const pushStart = at(GX_L, GY, P(224, 73, 110.5)); // top layer, right face centre
+const pushStart = at(GX_L, GY, P(94 + SLAB_W, 32 + SLAB_D / 2, 28 + 3 * LIFT_PITCH + SLAB_H / 2));
 const pushEnd = at(GX_C, GY, P(30, 74, 120)); // into the checkpoint's top face
 const pullStart = at(GX_C, GY, P(126, 44, 120)); // out of the top face
-const pullEnd = at(GX_R, GY, P(92, 62, 70)); // onto the restored stack's top face
+const pullEnd = at(GX_R, GY, P(80 + LAP_SLAB_W / 2, 58 + LAP_SLAB_D / 2, 15 + 4 * FLUSH_PITCH));
 
 /* contact shadows: the object's own base rectangle, projected flat on the floor.
    Drawn inside each group, so they track the geometry instead of being guessed. */
@@ -201,7 +192,7 @@ const floorGrid = [
 <div class="hero-block">
     <div class="lede">
       <span class="badge"><i aria-hidden="true"></i> Pull apart, seal, put back</span>
-      <h1>Restore your AI coding workspace on any device</h1>
+      <h1>Restore your AI coding<br />workspace on any device</h1>
       <p class="sub">
         Sessions, MCP servers, skills, and settings, across every coding agent and
         every machine you own. Encrypted so only you can read it.
@@ -213,7 +204,8 @@ const floorGrid = [
     </div>
 
     <figure class="scene">
-      <svg viewBox="0 0 1640 856" role="img" aria-labelledby="etitle edesc" preserveAspectRatio="xMidYMax meet">
+      {/* viewBox extends upward so wall art can sit ~170px higher without clipping */}
+      <svg viewBox="0 -170 1640 1026" role="img" aria-labelledby="etitle edesc" preserveAspectRatio="xMidYMax meet">
         <title id="etitle">One room, two machines, 23:41 to 23:47</title>
         <desc id="edesc">
           A desk at night. Four layers of agent state, sessions, MCP servers, skills and
@@ -225,13 +217,15 @@ const floorGrid = [
           <marker id="arw" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
             <path d="M0 0 L12 6 L0 12 z" fill={PRIM_DEEP} />
           </marker>
+          {/* local coords match geometry inside transformed groups (clip follows CTM) */}
           <clipPath id="pane"><rect x="126" y="52" width="272" height="196" rx="4" /></clipPath>
           <clipPath id="floorclip"><rect x="0" y="338" width="1640" height="518" /></clipPath>
+          {/* art inset matches the painting canvas; mountains stay fully inside */}
           <clipPath id="art"><rect x="1282" y="74" width="192" height="162" /></clipPath>
         </defs>
 
-        {/* ---------- room ---------- */}
-        <rect x="0" y="0" width="1640" height="322" fill="var(--sv-wall)" />
+        {/* ---------- room (wall extends into the lifted viewBox) ---------- */}
+        <rect x="0" y="-170" width="1640" height="492" fill="var(--sv-wall)" />
         <rect x="0" y="322" width="1640" height="534" fill="var(--sv-floor)" />
         <line x1="0" y1="322" x2="1640" y2="322" stroke={SK} stroke-width="2.5" />
         <rect x="0" y="322" width="1640" height="16" fill="var(--sv-skirt)" />
@@ -240,8 +234,11 @@ const floorGrid = [
           <path d={floorGrid} />
         </g>
 
-        {/* window */}
-        <g class="window" transform="translate(0 10)">
+        {/* window + painting high on the wall, pushed to the outer edges so the
+            centred headline never collides with them. */}
+        <g class="wall-art" transform="translate(0 -135)">
+        {/* window — shifted left for clearance */}
+        <g class="window" transform="translate(-55 10)">
           <rect x="118" y="44" width="288" height="212" rx="6" fill="var(--sv-frame)" stroke={SK} stroke-width="3" />
           <rect x="126" y="52" width="272" height="196" rx="4" fill="var(--sv-night)" />
           <g clip-path="url(#pane)" class="stars" fill="var(--sv-star)">
@@ -293,21 +290,23 @@ const floorGrid = [
         </g>
 
         {/* framed print: a minimal landscape, the daylight counterpart to the
-            night city in the window opposite. Art, not a logo drop. */}
-        <g class="poster">
+            night city in the window opposite. Shifted right for clearance. */}
+        <g class="poster" transform="translate(70 0)">
           <rect x="1268" y="60" width="220" height="190" rx="5" fill="var(--sv-frame)" stroke={SK} stroke-width="3" />
           <rect x="1282" y="74" width="192" height="162" fill="var(--sv-night)" />
           <g clip-path="url(#art)">
-            <circle cx="1372" cy="142" r="44" fill={PRIM} stroke={SK} stroke-width="4" />
+            <circle cx="1378" cy="128" r="40" fill={PRIM} stroke={SK} stroke-width="4" />
+            {/* both hills fully self-contained inside art rect (1282–1474 × 74–236):
+                rounded peaks, both outer slopes land on the ground line — no hard clips */}
             <path
-              d="M1270 240 L1270 204 C 1310 168 1356 170 1398 206 L1398 240 Z"
+              d="M1288 236 C 1288 236 1305 188 1340 175 C 1375 162 1400 188 1410 236 Z"
               fill="var(--sv-leaf-2)"
               stroke={SK}
               stroke-width="4"
               stroke-linejoin="round"
             />
             <path
-              d="M1352 240 L1352 212 C 1392 180 1436 182 1486 214 L1486 240 Z"
+              d="M1355 236 C 1355 236 1380 178 1415 168 C 1450 158 1468 200 1470 236 Z"
               fill="var(--sv-leaf-1)"
               stroke={SK}
               stroke-width="4"
@@ -315,6 +314,7 @@ const floorGrid = [
             />
           </g>
           <rect x="1282" y="74" width="192" height="162" fill="none" stroke={SK} stroke-width="2" />
+        </g>
         </g>
 
         {/* plant: leaves grow OUT of the soil, not from behind the pot */}
@@ -389,17 +389,17 @@ const floorGrid = [
             <polygon class="f-top" points={monitorPanel.top} />
           </g>
 
-          {/* the session, inset inside the bezel — glass, not a painted face */}
-          <g transform={sideText(45, 23, 41, 15, 140, 79)}>
-            <polygon points="8,8 132,8 132,66 8,66" fill="var(--sv-night)" />
-            <rect x="16" y="15" width="68" height="18" rx="9" fill={PRIM} />
-            <text x="50" y="28" text-anchor="middle" font-size="10.5" font-weight="600" fill="#131f1a">ses_7f3a</text>
-            <text x="89" y="28" font-size="10.5" fill="var(--sv-star)">⏸ 23:41</text>
+          {/* session chrome inset in the glass — badge left, time end-anchored right */}
+          <g transform={sideText(40, 10, 50, 18, 164, 96)}>
+            <polygon points="14,14 148,14 148,78 14,78" fill="var(--sv-night)" />
+            <rect x="20" y="24" width="58" height="17" rx="8.5" fill={PRIM} />
+            <text x="49" y="36" text-anchor="middle" font-size="9.5" font-weight="600" fill="#131f1a">ses_7f3a</text>
+            <text x="140" y="36" text-anchor="end" font-size="9.5" fill="var(--sv-star)">⏸ 23:41</text>
             <g fill="var(--sv-star)" opacity="0.45">
-              <rect x="16" y="41" width="98" height="5" rx="2.5" />
-              <rect x="16" y="52" width="66" height="5" rx="2.5" />
+              <rect x="20" y="52" width="96" height="5" rx="2.5" />
+              <rect x="20" y="64" width="64" height="5" rx="2.5" />
             </g>
-            <rect class="cursor" x="88" y="51" width="6" height="7" fill="var(--sv-star)" />
+            <rect class="cursor" x="90" y="63" width="6" height="7" fill="var(--sv-star)" />
           </g>
 
           {/* the dock the state lifts out of */}
@@ -425,9 +425,9 @@ const floorGrid = [
                 <polygon class="f-top" points={s.g.top} />
                 <text
                   class="tlabel"
-                  transform={frontText(92, 30, 32 + i * 24, SLAB_D, SLAB_H)}
-                  x="66"
-                  y="10"
+                  transform={frontText(94, 32, 28 + i * LIFT_PITCH, SLAB_D, SLAB_H)}
+                  x={SLAB_D / 2}
+                  y="11.5"
                   text-anchor="middle"
                 >
                   {s.key}
@@ -516,8 +516,19 @@ const floorGrid = [
             />
             <g transform={frontText(14, 14, 0, 120, 120)}>
               <rect x="16" y="52" width="88" height="24" rx="12" fill={PRIM} />
-              <path d="M31 62 v-4.5 a 5.5 5.5 0 0 1 11 0 v 4.5" fill="none" stroke="#131f1a" stroke-width="2.6" stroke-linecap="round" />
-              <rect x="30" y="61" width="13" height="10" rx="2.5" fill="#131f1a" />
+              {/* Squat lock centred in the badge's 24px-tall left gutter. */}
+              <g aria-hidden="true">
+                <path
+                  d="M30.1 62 V60.9 a3.4 3.4 0 0 1 6.8 0 V62"
+                  fill="none"
+                  stroke="var(--sv-lock)"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                />
+                <rect x="25.75" y="61.75" width="15.5" height="9.25" rx="2.5" fill="var(--sv-lock)" />
+                <circle cx="33.5" cy="65.35" r="1.2" fill={PRIM} />
+                <rect x="32.7" y="66.1" width="1.6" height="2.1" rx="0.8" fill={PRIM} />
+              </g>
               <text x="72" y="69" text-anchor="middle" font-size="11.5" font-weight="600" fill="#131f1a">ses_7f3a</text>
             </g>
           </g>
@@ -563,12 +574,16 @@ const floorGrid = [
             <polygon class="f-top" points={lidBack.top} />
           </g>
 
-          {/* the same session, resumed — inset inside the lid bezel */}
-          <g transform={frontText(66, 30, 24, 9, 94)}>
-            <polygon points="8,8 140,8 140,78 8,78" fill="var(--sv-night)" />
-            <rect x="18" y="16" width="68" height="18" rx="9" fill={PRIM} />
-            <text x="52" y="29" text-anchor="middle" font-size="10.5" font-weight="600" fill="#131f1a">ses_7f3a</text>
-            <text x="92" y="29" font-size="10.5" fill="#e9efe3">▶ 23:47</text>
+          {/* session chrome at the TOP of the lid — badge left, time end-anchored right */}
+          <g transform={frontText(60, 26, 24, 10, 118)}>
+            <polygon points="14,14 146,14 146,98 14,98" fill="var(--sv-night)" />
+            <rect x="20" y="22" width="58" height="17" rx="8.5" fill={PRIM} />
+            <text x="49" y="34" text-anchor="middle" font-size="9.5" font-weight="600" fill="#131f1a">ses_7f3a</text>
+            <text x="138" y="34" text-anchor="end" font-size="9.5" fill="#e9efe3">▶ 23:47</text>
+            <g fill="#e9efe3" opacity="0.4">
+              <rect x="20" y="50" width="100" height="5" rx="2.5" />
+              <rect x="20" y="62" width="68" height="5" rx="2.5" />
+            </g>
           </g>
 
           <g class="unit dev">
@@ -596,9 +611,9 @@ const floorGrid = [
                 <polygon class="f-top" points={s.g.top} />
                 <text
                   class="tlabel"
-                  transform={frontText(74, 42, 15 + i * 14, SLAB_D, SLAB_H)}
-                  x="66"
-                  y="10"
+                  transform={frontText(80, 58, 15 + i * FLUSH_PITCH, LAP_SLAB_D, SLAB_H)}
+                  x={LAP_SLAB_D / 2}
+                  y="11.5"
                   text-anchor="middle"
                 >
                   {s.key}
@@ -693,46 +708,6 @@ const floorGrid = [
         </g>
       </svg>
     </figure>
-
-    <section class="under" id="how">
-      <ul class="legend" aria-label="What moves">
-        {
-          legend.map((l) => (
-            <li>
-              <i class={`sw t-${l.tone}`} aria-hidden="true" />
-              <b>{l.key}</b>
-              <span>{l.note}</span>
-            </li>
-          ))
-        }
-      </ul>
-
-      <ol class="steps">
-        <li>
-          <b>pull apart on the desktop</b>
-          <span>23:41 · nothing has left the machine yet</span>
-        </li>
-        <li>
-          <b>seal into one object</b>
-          <span>age · x25519 · your key never moves</span>
-        </li>
-        <li>
-          <b>put back on the laptop</b>
-          <span>23:47 · paths remapped · the thread continues</span>
-        </li>
-      </ol>
-
-      <div class="strip">
-        <span>Reinstates</span>
-        <ul>
-          <li>Claude Code</li>
-          <li>Codex</li>
-          <li>Gemini CLI</li>
-          <li>OpenCode</li>
-          <li>Grok Build</li>
-        </ul>
-      </div>
-    </section>
 </div>
 
 <style>
@@ -758,8 +733,8 @@ const floorGrid = [
     --sv-shadow: #131f1a;
 
     --sv-wall: #e4e7dd;
-    --sv-floor: #d3d8c9;
-    --sv-floorline: #c3c9b8;
+    --sv-floor: #dde1d6;
+    --sv-floorline: #cbd1c2;
     --sv-skirt: #c8cebd;
     --sv-frame: #f4f6ef;
     --sv-night: #16231f;
@@ -790,7 +765,7 @@ const floorGrid = [
     --sv-t-b: #f2cd6d;
     --sv-t-c: #8fc8ea;
     --sv-t-d: #f2f4ea;
-    --font-display: 'Funnel Display Variable', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Questrial', ui-sans-serif, system-ui, sans-serif;
 
     position: relative;
     background: var(--paper);
@@ -822,8 +797,8 @@ const floorGrid = [
     --sv-shadow: #050b09;
 
     --sv-wall: #1d2723;
-    --sv-floor: #16201c;
-    --sv-floorline: #212c27;
+    --sv-floor: #19231f;
+    --sv-floorline: #27322d;
     --sv-skirt: #253029;
     --sv-frame: #4a5a51;
     --sv-night: #0a1310;
@@ -850,8 +825,7 @@ const floorGrid = [
     --sv-pot-3: #5f6849;
   }
 
-  .lede,
-  .under {
+  .lede {
     position: relative;
     z-index: 2;
   }
@@ -867,7 +841,7 @@ const floorGrid = [
   .lede {
     max-width: 88rem;
     margin-inline: auto;
-    padding: clamp(1.25rem, 3vw, 2.25rem) clamp(1.25rem, 4vw, 3rem) 0;
+    padding: 48px 24px 0;
     text-align: center;
   }
 
@@ -892,12 +866,13 @@ const floorGrid = [
 
   h1 {
     margin: clamp(0.75rem, 1.6vw, 1.1rem) auto 0;
-    max-width: min(17ch, 100%);
+    /* Fits "Restore your AI coding" / "workspace on any device" as exactly 2 lines */
+    max-width: min(22ch, 100%);
     font-family: var(--font-display);
-    font-size: clamp(2.25rem, 5vw, 4.4rem);
+    font-size: clamp(2.25rem, 4.4vw, 3.85rem);
     line-height: 0.98;
     letter-spacing: -0.038em;
-    font-weight: 800;
+    font-weight: 400;
     text-wrap: balance;
     animation: rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
@@ -934,8 +909,10 @@ const floorGrid = [
   }
 
   /* ---------- scene ---------- */
+  /* Extra negative margin offsets the taller viewBox so desks stay put while
+     window + painting ride ~170px higher beside the lede. */
   .scene {
-    margin: clamp(-19rem, -16vw, -3rem) 0 0;
+    margin: clamp(calc(-19rem - 10rem), calc(-16vw - 10.5vw), calc(-3rem - 6rem)) 0 0;
     width: 100%;
   }
   .scene svg {
@@ -1063,10 +1040,11 @@ const floorGrid = [
   }
 
   .tlabel {
-    font-size: 11px;
-    font-weight: 500;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
     fill: #131f1a;
-    opacity: 0.72;
+    opacity: 0.78;
   }
   .pbrand {
     font-size: 12px;
@@ -1112,125 +1090,6 @@ const floorGrid = [
     transform-box: fill-box;
     transform-origin: 50% 100%;
     animation: sway 7s ease-in-out infinite alternate;
-  }
-
-  /* ---------- under the scene ---------- */
-  .under {
-    max-width: 88rem;
-    margin-inline: auto;
-    padding: 0 clamp(1.25rem, 4vw, 3rem) 3.5rem;
-  }
-
-  .legend,
-  .steps {
-    list-style: none;
-    margin: 0;
-    padding: 1rem 0;
-    display: grid;
-    gap: 1rem 1.75rem;
-    border-top: 1px solid var(--rule);
-  }
-  .legend {
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  }
-  .steps {
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    counter-reset: step;
-  }
-
-  .legend li {
-    display: flex;
-    align-items: baseline;
-    gap: 0.55rem;
-    min-width: 0;
-    font-size: 0.85rem;
-  }
-  .sw {
-    flex: none;
-    width: 12px;
-    height: 12px;
-    border: 2px solid var(--sv-stroke);
-    border-radius: 3px;
-    transform: translateY(1px);
-  }
-  .sw.t-a {
-    background: var(--sv-t-a);
-  }
-  .sw.t-b {
-    background: var(--sv-t-b);
-  }
-  .sw.t-c {
-    background: var(--sv-t-c);
-  }
-  .sw.t-d {
-    background: var(--sv-t-d);
-  }
-  .legend b {
-    font-family: 'Geist Mono Variable', ui-monospace, monospace;
-    font-weight: 500;
-    color: var(--ink);
-  }
-  .legend span {
-    color: var(--ink-3);
-  }
-
-  .steps li {
-    counter-increment: step;
-    display: grid;
-    gap: 0.25rem;
-    padding-left: 1.6rem;
-    position: relative;
-    min-width: 0;
-  }
-  .steps li::before {
-    content: counter(step);
-    position: absolute;
-    left: 0;
-    top: 0;
-    font-family: 'Geist Mono Variable', ui-monospace, monospace;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--prim-deep);
-  }
-  .steps b {
-    font-family: 'Geist Mono Variable', ui-monospace, monospace;
-    font-size: 0.9rem;
-    font-weight: 500;
-  }
-  .steps span {
-    font-family: 'Geist Mono Variable', ui-monospace, monospace;
-    font-size: 0.76rem;
-    color: var(--ink-3);
-  }
-
-  .strip {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.5rem 0.9rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--rule);
-    font-size: 0.875rem;
-  }
-  .strip > span {
-    color: var(--ink-3);
-    font-size: 0.8rem;
-  }
-  .strip ul {
-    list-style: none;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-    margin: 0;
-    padding: 0;
-  }
-  .strip li {
-    padding: 0.3rem 0.7rem;
-    border: 1px solid var(--rule);
-    border-radius: 999px;
-    background: var(--paper-2);
-    font-weight: 500;
-    color: var(--ink-2);
   }
 
   @media (max-width: 900px) {

@@ -1,0 +1,1361 @@
+---
+import { box, fmt, P } from '../../lib/iso';
+
+/* The hero's floor, continued — literally. This whole block IS the floor:
+   the background paints the same plane (same colour, same 30° grid, same
+   pitch, phase-matched to the hero's SVG grid at the seam), and the problem
+   heading now stands directly on that floor. The scene SVG is transparent
+   and only carries the props, so the grid never breaks.
+
+   The scenery is new, deeper into the office: the planning corner where the
+   problem lives — a whiteboard of crossed-out workarounds, a bookcase of old
+   backups, the couch corner, moving boxes, and the cable that tried to make
+   it across the room and didn't. */
+
+const foot = (x: number, y: number, z: number, w: number, d: number) =>
+  fmt([P(x, y, z), P(x + w, y, z), P(x + w, y + d, z), P(x, y + d, z)]);
+
+/* every prop group uses a local floor at z=0 and builds upward */
+const S = 1.02; /* same scale as the hero, so furniture sizes agree */
+
+/* The hero's grid uses 98-unit intercepts and a 947/1640 screen-space slope.
+   This pattern keeps those exact coordinates past the SVG seam instead of
+   restarting an independently phased CSS gradient. */
+const GRID_PITCH = 98;
+const GRID_SLOPE = 947 / 1640;
+const GRID_TILE_W = GRID_PITCH / GRID_SLOPE;
+const GRID_POS_WRAP_X = (GRID_PITCH - 20) / GRID_SLOPE;
+const GRID_NEG_WRAP_X = 6 / GRID_SLOPE;
+
+/* ---- the easel whiteboard: the plan that isn't working ---- */
+const wbPanel = box(-130, -8, 60, 260, 16, 164);
+const wbLegL = box(-108, -4, 0, 14, 12, 62);
+const wbLegR = box(94, -4, 0, 14, 12, 62);
+const wbLedge = box(-112, 8, 52, 224, 12, 9);
+const wbShadow = foot(-130, -8, 0, 260, 16);
+const wbLegShadows = [foot(-108, -4, 0, 14, 12), foot(94, -4, 0, 14, 12)];
+const rug = foot(-190, -120, 0, 380, 240);
+const rugInner = foot(-170, -100, 0, 340, 200);
+
+/* ---- the bookcase: an open frame, tall airy rows, every book fits ----
+   Rows: z 16–112 (books ≤58), z 122–210 (books ≤50), z 220–296 (items ≤44).
+   Painter order matters: the right wall is closest to the viewer, so it is
+   drawn AFTER the books — otherwise books on the right end paint over it.
+   Right-end items keep a wide margin from the wall so nothing reads as
+   puncturing the frame. */
+const shelfBack = box(12, 2, 16, 206, 6, 280);
+const shelfBase = box(12, 0, 0, 206, 64, 16);
+const shelfWallL = box(0, 0, 0, 12, 64, 296);
+const shelfWallR = box(218, 0, 0, 12, 64, 296);
+const shelfSlabs = [box(12, 0, 112, 206, 64, 10), box(12, 0, 210, 206, 64, 10)];
+const shelfTop = box(0, 0, 296, 230, 64, 10);
+const shelfShadow = foot(0, 0, 0, 230, 64);
+type Book = { x: number; z: number; w: number; h: number; tone: string };
+const books: Book[] = [
+  { x: 16, z: 16, w: 18, h: 56, tone: 'a' },
+  { x: 36, z: 16, w: 14, h: 48, tone: 'd' },
+  { x: 52, z: 16, w: 22, h: 58, tone: 'b' },
+  { x: 76, z: 16, w: 16, h: 44, tone: 'c' },
+  { x: 94, z: 16, w: 15, h: 52, tone: 'd' },
+  { x: 138, z: 16, w: 20, h: 40, tone: 'b' },
+  { x: 16, z: 122, w: 17, h: 46, tone: 'c' },
+  { x: 35, z: 122, w: 19, h: 50, tone: 'a' },
+  { x: 56, z: 122, w: 15, h: 42, tone: 'b' },
+  { x: 16, z: 220, w: 20, h: 40, tone: 'd' },
+  { x: 38, z: 220, w: 15, h: 34, tone: 'a' },
+].map((b) => ({ ...b, g: box(b.x, 13, b.z, b.w, 38, b.h) }) as Book & { g: ReturnType<typeof box> });
+/* two books lying flat, and the backup-drive graveyard */
+const flatA = { tone: 'b', g: box(60, 12, 220, 44, 40, 8) };
+const flatB = { tone: 'c', g: box(64, 14, 228, 38, 34, 8) };
+const crate = box(120, 10, 122, 62, 44, 30);
+const hdd = box(116, 14, 220, 50, 36, 20);
+const hddLed = P(148, 50, 230);
+const coilCenter = P(178, 32, 220);
+const shelfPot = box(150, 16, 306, 32, 32, 22);
+const shelfPotTop = P(166, 32, 328);
+
+/* ---- the couch corner: back and arms share width, rear plane, and top ---- */
+const couchBase = box(0, 0, 0, 240, 95, 38);
+const couchBack = box(0, -18, 38, 240, 18, 60);
+const couchArmL = box(0, 0, 38, 28, 95, 60);
+const couchArmR = box(212, 0, 38, 28, 95, 60);
+const cushionL = box(30, 8, 38, 88, 80, 16);
+const cushionR = box(122, 8, 38, 88, 80, 16);
+const couchShadow = foot(0, -18, 0, 240, 113);
+const sideTable = box(262, 12, 0, 62, 62, 52);
+const sideTableShadow = foot(262, 12, 0, 62, 62);
+const mug = box(284, 26, 52, 18, 18, 17);
+const mugHandle = P(302, 35, 62);
+
+/* ---- the coffee table: pizza box, book stack, second mug ---- */
+const ctTop = box(0, 0, 34, 150, 80, 10);
+const ctLegs = [
+  box(8, 8, 0, 8, 8, 34),
+  box(134, 8, 0, 8, 8, 34),
+  box(8, 64, 0, 8, 8, 34),
+  box(134, 64, 0, 8, 8, 34),
+];
+const ctShadow = foot(0, 0, 0, 150, 80);
+const pizza = box(18, 10, 44, 64, 52, 8);
+const stackA = { tone: 'c', g: box(100, 14, 44, 40, 28, 6) };
+const stackB = { tone: 'b', g: box(103, 16, 50, 34, 24, 6) };
+const mug2 = box(112, 50, 44, 16, 16, 15);
+const mug2Handle = P(128, 58, 52);
+
+/* ---- the coat stand, just inside the room ---- */
+const csBase = box(6, 6, 0, 48, 48, 8);
+const csPole = box(26, 26, 8, 10, 10, 148);
+const csPegR = box(36, 28, 92, 24, 7, 7);
+const csPegL = box(12, 28, 140, 22, 7, 7);
+const csPegY = box(28, 34, 124, 7, 24, 7);
+const csKnob = box(27, 27, 156, 8, 8, 12);
+const csShadow = foot(6, 6, 0, 48, 48);
+const tote = box(24, 52, 86, 24, 13, 32);
+
+/* ---- the moving boxes: "switching machines", packed ---- */
+const mv1 = box(0, 0, 0, 96, 80, 62);
+const mvTape1 = foot(40, 0, 62, 16, 80);
+const mv2 = box(12, 8, 62, 72, 62, 46);
+const mvTape2 = foot(38, 8, 108, 16, 62);
+const mvShadow = foot(0, 0, 0, 96, 80);
+
+/* ---- the snake plant ---- */
+const pot2 = box(0, 0, 0, 62, 62, 56);
+const pot2Shadow = foot(0, 0, 0, 62, 62);
+const soil2 = P(31, 31, 56);
+
+/* ---- failed drafts, dropped by the whiteboard (scene-absolute) ---- */
+const papers = [
+  { quad: foot(938, -100, 0, 24, 16), ink: 'M 894 416 L 912 422' },
+  { quad: foot(1003, -95, 0, 20, 14), ink: 'M 944 450 L 960 457' },
+  { quad: foot(981, -21, 0, 22, 15), ink: 'M 866 477 L 884 483' },
+];
+
+/* ---- group anchors on the floor ---- */
+const GX_WB = 820;
+const GY_WB = 300;
+const GX_SHELF = 1290;
+const GY_SHELF = 325;
+const GX_COUCH = 330;
+const GY_COUCH = 390;
+const GX_CT = 450;
+const GY_CT = 580;
+const GX_PLANT = 1100;
+const GY_PLANT = 440;
+const GX_BOXES = 1240;
+const GY_BOXES = 570;
+const GX_COAT = 215;
+const GY_COAT = 190;
+
+const SK = 'var(--sv-stroke)';
+const DIM = 'var(--sv-dim)';
+const INK = 'var(--sv-ink)';
+const PRIM_DEEP = 'var(--sv-prim-deep)';
+
+/* ---- projected-text helpers (same 30° projector as lib/iso) ---- */
+const CX = Math.cos(Math.PI / 6);
+const m2 = (m: number[]) => `matrix(${m.map((n) => +n.toFixed(2)).join(' ')})`;
+const frontText = (x: number, y: number, z: number, d: number, h: number) => {
+  const [e, f] = P(x, y + d, z + h);
+  return m2([CX, 0.5, 0, 1, e, f]);
+};
+
+/* The loose cable enters from the room above, settles into a broad floor
+   curve, then ends at an ordinary unplugged connector near the couch. */
+const cable =
+  'M -12 -20 C 112 -30, 220 -10, 268 56 C 312 116, 336 208, 398 278 C 456 344, 524 386, 610 372';
+
+const panels = [
+  {
+    kicker: 'before · without Reinstate',
+    title: 'Context dies at the desk',
+    good: false,
+    items: [
+      'Sessions stuck on one machine',
+      'Paths break naive file sync',
+      'Desktop must stay awake',
+    ],
+  },
+  {
+    kicker: 'after · with Reinstate',
+    title: 'Portable state you control',
+    good: true,
+    items: [
+      'Encrypted push to your storage',
+      'Pull anywhere, desktop off',
+      'Windows ↔ macOS path remap',
+    ],
+  },
+];
+
+/* ---- card art: before — the state piles up on the machine ---- */
+const cbMachine = box(0, 0, 0, 84, 56, 40);
+const cbTrayA = box(14, 10, 40, 56, 38, 10);
+const cbTrayB = box(16, 12, 50, 52, 34, 10);
+const cbTrayC = box(18, 14, 60, 48, 30, 10);
+const cbShadow = foot(0, 0, 0, 84, 56);
+const cbLooseA = { tone: 'd', g: box(-52, -18, 0, 30, 22, 4) };
+const cbLooseB = { tone: 'c', g: box(-44, -12, 4, 26, 18, 4) };
+const cbDrive = box(-42, 18, 0, 22, 20, 18);
+const cbDriveLed = P(-20, 38, 9);
+
+/* ---- card art: after — the checkpoint, wired across ---- */
+const caCube = box(0, 0, 0, 54, 54, 54);
+const caShadow = foot(0, 0, 0, 54, 54);
+const caLapDeck = box(92, 4, 0, 38, 30, 6);
+const caLapLid = box(92, 2, 6, 38, 5, 28);
+const caLapShadow = foot(92, 4, 0, 38, 30);
+const caLapKeyboard = foot(98, 8, 6.2, 27, 11);
+const caLapKeys = Array.from({ length: 3 }, (_, row) =>
+  Array.from({ length: 4 }, (_, col) =>
+    foot(99 + col * 6.2, 8.8 + row * 3.35, 6.4, 4.6, 2.25),
+  ),
+).flat();
+const caLapTrackpad = foot(103, 21.5, 6.3, 17, 6.5);
+const caPathA = { tone: 'd', g: box(58, 48, 0, 18, 12, 3) };
+const caPathB = { tone: 'c', g: box(80, 50, 0, 16, 10, 3) };
+const caStore = box(138, -18, 0, 22, 22, 22);
+const caStoreLed = P(154, 4, 11);
+---
+
+<div class="problem-block" id="how">
+  <div class="floor-grid" aria-hidden="true">
+    <svg
+      viewBox="0 856 1640 32000"
+      preserveAspectRatio="xMinYMin slice"
+      focusable="false"
+    >
+      <defs>
+        <pattern
+          id="continued-floor-grid"
+          x="0"
+          y="0"
+          width={GRID_TILE_W}
+          height={GRID_PITCH}
+          patternUnits="userSpaceOnUse"
+        >
+          <path
+            d={`M0 20 L${GRID_POS_WRAP_X} 98 M${GRID_POS_WRAP_X} 0 L${GRID_TILE_W} 20`}
+          />
+          <path
+            d={`M0 6 L${GRID_NEG_WRAP_X} 0 M${GRID_NEG_WRAP_X} 98 L${GRID_TILE_W} 6`}
+          />
+        </pattern>
+      </defs>
+      <rect
+        x="0"
+        y="856"
+        width="1640"
+        height="32000"
+        fill="url(#continued-floor-grid)"
+        stroke="none"
+      />
+    </svg>
+  </div>
+
+  <section class="problem-section" id="problem" aria-labelledby="problem-title">
+    <div class="lede">
+      <span class="badge"><i aria-hidden="true"></i> 02:13 · the plan isn't working</span>
+      <h2 id="problem-title">Git has the code and its history.<br />It does not have the conversation.</h2>
+      <p class="sub">
+        You grind for hours on the desktop across Claude Code, Codex, Gemini CLI. Open the
+        MacBook: empty history, different MCP setup, start from zero. Vendor tools save
+        sessions locally — switching machines is context death.
+      </p>
+    </div>
+
+    <figure class="scene">
+      {/* viewBox extends slightly upward for the cable's entry; the negative
+          margin on .scene keeps the layout put */}
+      <svg viewBox="0 -80 1640 825" role="img" aria-labelledby="ptitle pdesc" preserveAspectRatio="xMidYMax meet">
+        <title id="ptitle">Deeper into the office: the planning corner</title>
+        <desc id="pdesc">
+          The floor from the hero scene continues into a corner of the office: an easel
+          whiteboard covered in crossed-out workarounds — scp, Dropbox, rsync — a bookcase
+          holding old backup drives, a couch with a coffee table and a warm mug, moving
+          boxes, and a cable that snakes in from the desks above and ends unplugged in the
+          middle of the floor.
+        </desc>
+
+        {/* ---------- the cable that tried: on the floor, below the furniture ---------- */}
+        <path
+          d={cable}
+          fill="none"
+          stroke="var(--sv-dev-2)"
+          stroke-width="7"
+          stroke-linecap="round"
+        />
+        <g transform="translate(610 372) rotate(-10)">
+          <rect
+            x="0"
+            y="-8"
+            width="23"
+            height="16"
+            rx="3"
+            fill="var(--sv-dev-1)"
+            stroke={SK}
+            stroke-width="3"
+          />
+          <path d="M23 -4 H33 M23 4 H33" stroke={SK} stroke-width="3" stroke-linecap="round" />
+        </g>
+
+        {/* ---------- the coat stand, far left ---------- */}
+        <g transform={`translate(${GX_COAT} ${GY_COAT}) scale(${S})`}>
+          <polygon class="cast hard" points={csShadow} />
+          <g class="unit furn">
+            <polygon class="f-side" points={csBase.side} />
+            <polygon class="f-front" points={csBase.front} />
+            <polygon class="f-top" points={csBase.top} />
+          </g>
+          <g class="unit dev">
+            <polygon class="f-side" points={csPole.side} />
+            <polygon class="f-front" points={csPole.front} />
+            <polygon class="f-top" points={csPole.top} />
+          </g>
+          <g class="unit dev">
+            <polygon class="f-side" points={csPegR.side} />
+            <polygon class="f-front" points={csPegR.front} />
+            <polygon class="f-top" points={csPegR.top} />
+          </g>
+          <g class="unit dev">
+            <polygon class="f-side" points={csPegL.side} />
+            <polygon class="f-front" points={csPegL.front} />
+            <polygon class="f-top" points={csPegL.top} />
+          </g>
+          <g class="unit dev">
+            <polygon class="f-side" points={csPegY.side} />
+            <polygon class="f-front" points={csPegY.front} />
+            <polygon class="f-top" points={csPegY.top} />
+          </g>
+          <g class="unit pot">
+            <polygon class="f-side" points={tote.side} />
+            <polygon class="f-front" points={tote.front} />
+            <polygon class="f-top" points={tote.top} />
+          </g>
+          <path d="M -28 -64 Q -19 -80 -10 -64" fill="none" stroke={SK} stroke-width="2.5" />
+          <g class="unit dev">
+            <polygon class="f-side" points={csKnob.side} />
+            <polygon class="f-front" points={csKnob.front} />
+            <polygon class="f-top" points={csKnob.top} />
+          </g>
+        </g>
+
+        {/* ---------- the couch corner, left ---------- */}
+        <g transform={`translate(${GX_COUCH} ${GY_COUCH}) scale(${S})`}>
+          <polygon class="cast" points={couchShadow} />
+          <polygon class="cast hard" points={sideTableShadow} />
+          <g class="unit furn">
+            <polygon class="f-side" points={couchBack.side} />
+            <polygon class="f-front" points={couchBack.front} />
+            <polygon class="f-top" points={couchBack.top} />
+          </g>
+          <g class="unit furn">
+            <polygon class="f-side" points={couchBase.side} />
+            <polygon class="f-front" points={couchBase.front} />
+            <polygon class="f-top" points={couchBase.top} />
+          </g>
+          <g class="unit soft">
+            <polygon class="f-side" points={cushionL.side} />
+            <polygon class="f-front" points={cushionL.front} />
+            <polygon class="f-top" points={cushionL.top} />
+          </g>
+          <g class="unit soft">
+            <polygon class="f-side" points={cushionR.side} />
+            <polygon class="f-front" points={cushionR.front} />
+            <polygon class="f-top" points={cushionR.top} />
+          </g>
+          <g class="unit furn">
+            <polygon class="f-side" points={couchArmL.side} />
+            <polygon class="f-front" points={couchArmL.front} />
+            <polygon class="f-top" points={couchArmL.top} />
+          </g>
+          <g class="unit furn">
+            <polygon class="f-side" points={couchArmR.side} />
+            <polygon class="f-front" points={couchArmR.front} />
+            <polygon class="f-top" points={couchArmR.top} />
+          </g>
+          <g class="unit furn">
+            <polygon class="f-side" points={sideTable.side} />
+            <polygon class="f-front" points={sideTable.front} />
+            <polygon class="f-top" points={sideTable.top} />
+          </g>
+          <g class="unit dev board">
+            <polygon class="f-side" points={mug.side} />
+            <polygon class="f-front" points={mug.front} />
+            <polygon class="f-top" points={mug.top} />
+          </g>
+          <path
+            d={`M ${mugHandle[0].toFixed(1)} ${mugHandle[1].toFixed(1)} c 8 -1 8 9 0 9`}
+            fill="none"
+            stroke={SK}
+            stroke-width="2.5"
+          />
+          <path
+            class="steam"
+            d={`M ${(mugHandle[0] - 14).toFixed(1)} ${(mugHandle[1] - 14).toFixed(1)} c -4 -7 4 -10 0 -18`}
+            fill="none"
+            stroke={DIM}
+            stroke-width="2.5"
+            stroke-linecap="round"
+          />
+        </g>
+
+        {/* ---------- the coffee table, in front of the couch ---------- */}
+        <g transform={`translate(${GX_CT} ${GY_CT}) scale(${S})`}>
+          <polygon class="cast" points={ctShadow} />
+          <g class="unit furn">
+            {ctLegs.map((l) => (
+              <g>
+                <polygon class="f-side" points={l.side} />
+                <polygon class="f-front" points={l.front} />
+              </g>
+            ))}
+            <polygon class="f-side" points={ctTop.side} />
+            <polygon class="f-front" points={ctTop.front} />
+            <polygon class="f-top" points={ctTop.top} />
+          </g>
+          {/* the 2am pizza box */}
+          <g class="unit pot">
+            <polygon class="f-side" points={pizza.side} />
+            <polygon class="f-front" points={pizza.front} />
+            <polygon class="f-top" points={pizza.top} />
+          </g>
+          <g class={`unit tray t-${stackA.tone}`}>
+            <polygon class="f-side" points={stackA.g.side} />
+            <polygon class="f-front" points={stackA.g.front} />
+            <polygon class="f-top" points={stackA.g.top} />
+          </g>
+          <g class={`unit tray t-${stackB.tone}`}>
+            <polygon class="f-side" points={stackB.g.side} />
+            <polygon class="f-front" points={stackB.g.front} />
+            <polygon class="f-top" points={stackB.g.top} />
+          </g>
+          <g class="unit dev board">
+            <polygon class="f-side" points={mug2.side} />
+            <polygon class="f-front" points={mug2.front} />
+            <polygon class="f-top" points={mug2.top} />
+          </g>
+          <path
+            d={`M ${mug2Handle[0].toFixed(1)} ${mug2Handle[1].toFixed(1)} c 7 -1 7 8 0 8`}
+            fill="none"
+            stroke={SK}
+            stroke-width="2.5"
+          />
+        </g>
+
+        {/* ---------- the whiteboard, centre ---------- */}
+        <g transform={`translate(${GX_WB} ${GY_WB}) scale(${S})`}>
+          <polygon points={rug} fill="var(--sv-rug)" stroke={SK} stroke-width="3" stroke-linejoin="round" />
+          <polygon points={rugInner} fill="none" stroke={SK} stroke-width="1.5" opacity="0.5" />
+          <polygon class="cast" points={wbShadow} />
+          {wbLegShadows.map((s) => <polygon class="cast hard" points={s} />)}
+
+          <g class="unit furn">
+            <polygon class="f-side" points={wbLegL.side} />
+            <polygon class="f-front" points={wbLegL.front} />
+            <polygon class="f-top" points={wbLegL.top} />
+          </g>
+          <g class="unit furn">
+            <polygon class="f-side" points={wbLegR.side} />
+            <polygon class="f-front" points={wbLegR.front} />
+            <polygon class="f-top" points={wbLegR.top} />
+          </g>
+          <g class="unit wb">
+            <polygon class="f-side" points={wbPanel.side} />
+            <polygon class="f-front" points={wbPanel.front} />
+            <polygon class="f-top" points={wbPanel.top} />
+          </g>
+          <g class="unit furn">
+            <polygon class="f-side" points={wbLedge.side} />
+            <polygon class="f-front" points={wbLedge.front} />
+            <polygon class="f-top" points={wbLedge.top} />
+          </g>
+
+          {/* the plan, marker on the board: two machines, no way across */}
+          <g transform={frontText(-130, -8, 60, 16, 164)}>
+            <text x="20" y="30" font-size="13" font-weight="700" fill={INK}>get session → other machine</text>
+            <rect x="20" y="44" width="34" height="22" rx="2" fill="none" stroke={INK} stroke-width="2.5" />
+            <line x1="37" y1="66" x2="37" y2="74" stroke={INK} stroke-width="2.5" />
+            <line x1="27" y1="74" x2="47" y2="74" stroke={INK} stroke-width="2.5" />
+            <line x1="65" y1="55" x2="116" y2="55" stroke={DIM} stroke-width="2.5" stroke-dasharray="6 5" />
+            <path d="M110 50 L118 55 L110 60" fill="none" stroke={DIM} stroke-width="2.5" stroke-linejoin="round" />
+            <path d="M124 46 L140 64 M124 64 L140 46" stroke={PRIM_DEEP} stroke-width="3.5" stroke-linecap="round" />
+            <rect x="151" y="44" width="42" height="22" rx="2" fill="none" stroke={INK} stroke-width="2.5" />
+            <path d="M147 66 L197 66 L192 74 L152 74 Z" fill="none" stroke={INK} stroke-width="2.5" stroke-linejoin="round" />
+
+            <g font-size="10.5" fill={INK}>
+              <text x="20" y="103">scp -r ~/.claude/ <tspan fill={PRIM_DEEP} font-weight="700">✕</tspan></text>
+              <text x="20" y="124">dropbox the folder <tspan fill={PRIM_DEEP} font-weight="700">✕</tspan></text>
+              <text x="20" y="145">rsync + cron <tspan fill={PRIM_DEEP} font-weight="700">✕</tspan></text>
+            </g>
+            <rect x="198" y="96" width="38" height="38" fill="var(--sv-t-b)" stroke={SK} stroke-width="2.5" />
+            <line x1="204" y1="108" x2="229" y2="108" stroke={SK} stroke-width="1.5" opacity="0.6" />
+            <line x1="204" y1="116" x2="225" y2="116" stroke={SK} stroke-width="1.5" opacity="0.6" />
+            <line x1="204" y1="124" x2="221" y2="124" stroke={SK} stroke-width="1.5" opacity="0.6" />
+          </g>
+        </g>
+
+        {/* ---------- the snake plant ---------- */}
+        <g transform={`translate(${GX_PLANT} ${GY_PLANT}) scale(${S})`}>
+          <polygon class="cast" points={pot2Shadow} />
+          <g class="unit pot">
+            <polygon class="f-side" points={pot2.side} />
+            <polygon class="f-front" points={pot2.front} />
+            <polygon class="f-top" points={pot2.top} />
+          </g>
+          <g transform={`translate(${soil2[0].toFixed(1)} ${soil2[1].toFixed(1)})`}>
+            <g class="sway" stroke={SK} stroke-width="3" stroke-linejoin="round">
+              <path d="M0 4 C -8 -50, -6 -110, 2 -152 C 10 -104, 8 -44, 0 4 z" fill="var(--sv-leaf-1)" />
+              <path d="M0 4 C -24 -34, -30 -84, -24 -124 C -8 -84, -2 -36, 0 4 z" fill="var(--sv-leaf-2)" />
+              <path d="M0 4 C 22 -30, 30 -76, 26 -116 C 8 -78, 2 -32, 0 4 z" fill="var(--sv-leaf-2)" />
+              <path d="M0 4 C -14 -30, -18 -62, -12 -92 C -2 -62, 2 -26, 0 4 z" fill="var(--sv-leaf-1)" />
+              <path d="M0 4 C 12 -26, 16 -56, 12 -86 C 2 -56, -2 -24, 0 4 z" fill="var(--sv-leaf-1)" />
+            </g>
+          </g>
+        </g>
+
+        {/* ---------- the bookcase, right ---------- */}
+        <g transform={`translate(${GX_SHELF} ${GY_SHELF}) scale(${S})`}>
+          <polygon class="cast" points={shelfShadow} />
+          {/* Open frame: board bodies sit behind the contents; their nearest
+              front lips are repainted below so books cannot puncture them. */}
+          <g class="unit furn">
+            <polygon class="f-side" points={shelfBack.side} />
+            <polygon class="f-front" points={shelfBack.front} />
+            <polygon class="f-top" points={shelfBack.top} />
+          </g>
+          <g class="unit furn">
+            <polygon class="f-side" points={shelfBase.side} />
+            <polygon class="f-front" points={shelfBase.front} />
+            <polygon class="f-top" points={shelfBase.top} />
+          </g>
+          <g class="unit furn">
+            <polygon class="f-side" points={shelfWallL.side} />
+            <polygon class="f-front" points={shelfWallL.front} />
+            <polygon class="f-top" points={shelfWallL.top} />
+          </g>
+          {
+            shelfSlabs.map((sl) => (
+              <g class="unit furn">
+                <polygon class="f-side" points={sl.side} />
+                <polygon class="f-front" points={sl.front} />
+                <polygon class="f-top" points={sl.top} />
+              </g>
+            ))
+          }
+
+          {
+            books.map((b) => (
+              <g class={`unit tray t-${b.tone}`}>
+                <polygon class="f-side" points={b.g.side} />
+                <polygon class="f-front" points={b.g.front} />
+                <polygon class="f-top" points={b.g.top} />
+              </g>
+            ))
+          }
+          <g class={`unit tray t-${flatA.tone}`}>
+            <polygon class="f-side" points={flatA.g.side} />
+            <polygon class="f-front" points={flatA.g.front} />
+            <polygon class="f-top" points={flatA.g.top} />
+          </g>
+          <g class={`unit tray t-${flatB.tone}`}>
+            <polygon class="f-side" points={flatB.g.side} />
+            <polygon class="f-front" points={flatB.g.front} />
+            <polygon class="f-top" points={flatB.g.top} />
+          </g>
+
+          {/* the backup-drive graveyard */}
+          <g class="unit furn">
+            <polygon class="f-side" points={crate.side} />
+            <polygon class="f-front" points={crate.front} />
+            <polygon class="f-top" points={crate.top} />
+          </g>
+          <text transform={frontText(120, 10, 122, 44, 30)} x="31" y="19" font-size="7.5" fill="var(--sv-furn-3)" letter-spacing="0.1em" text-anchor="middle">
+            BACKUPS
+          </text>
+          <g class="unit dev">
+            <polygon class="f-side" points={hdd.side} />
+            <polygon class="f-front" points={hdd.front} />
+            <polygon class="f-top" points={hdd.top} />
+          </g>
+          <circle cx={hddLed[0].toFixed(1)} cy={hddLed[1].toFixed(1)} r="2.5" fill={DIM} />
+          <g fill="none" stroke="var(--sv-dev-2)" stroke-width="3">
+            <ellipse cx={coilCenter[0].toFixed(1)} cy={coilCenter[1].toFixed(1)} rx="14" ry="7" />
+            <ellipse cx={coilCenter[0].toFixed(1)} cy={coilCenter[1].toFixed(1)} rx="8" ry="4" />
+          </g>
+
+          {/* Repaint only the nearest shelf lips over the contents. This
+              preserves the clearance while keeping every book readable. */}
+          <g class="unit furn" aria-hidden="true">
+            <polygon class="f-front" points={shelfBase.front} />
+            {shelfSlabs.map((sl) => <polygon class="f-front" points={sl.front} />)}
+          </g>
+          <g class="unit furn">
+            <polygon class="f-side" points={shelfWallR.side} />
+            <polygon class="f-front" points={shelfWallR.front} />
+            <polygon class="f-top" points={shelfWallR.top} />
+          </g>
+          <g class="unit furn">
+            <polygon class="f-side" points={shelfTop.side} />
+            <polygon class="f-front" points={shelfTop.front} />
+            <polygon class="f-top" points={shelfTop.top} />
+          </g>
+          <g class="unit pot">
+            <polygon class="f-side" points={shelfPot.side} />
+            <polygon class="f-front" points={shelfPot.front} />
+            <polygon class="f-top" points={shelfPot.top} />
+          </g>
+          <g transform={`translate(${shelfPotTop[0].toFixed(1)} ${shelfPotTop[1].toFixed(1)})`} stroke={SK} stroke-width="2.5" stroke-linejoin="round">
+            <path d="M0 2 C -10 -14, -10 -30, -2 -40 C 4 -26, 4 -10, 0 2 z" fill="var(--sv-leaf-1)" />
+            <path d="M0 2 C -16 -6, -22 -18, -22 -30 C -10 -22, -2 -8, 0 2 z" fill="var(--sv-leaf-2)" />
+            <path d="M0 2 C 12 -4, 18 -14, 18 -26 C 8 -18, 2 -6, 0 2 z" fill="var(--sv-leaf-2)" />
+          </g>
+        </g>
+
+        {/* ---------- the moving boxes ---------- */}
+        <g transform={`translate(${GX_BOXES} ${GY_BOXES}) scale(${S})`}>
+          <polygon class="cast" points={mvShadow} />
+          <g class="unit furn">
+            <polygon class="f-side" points={mv1.side} />
+            <polygon class="f-front" points={mv1.front} />
+            <polygon class="f-top" points={mv1.top} />
+          </g>
+          <polygon points={mvTape1} fill="var(--sv-t-b)" opacity="0.85" />
+          <g transform={frontText(0, 0, 0, 80, 62)}>
+            <rect x="30" y="24" width="36" height="18" fill="var(--paper-2)" stroke={SK} stroke-width="1.5" />
+            <text x="48" y="36" text-anchor="middle" font-size="7" fill={INK} letter-spacing="0.06em">FRAGILE</text>
+          </g>
+          <g class="unit furn">
+            <polygon class="f-side" points={mv2.side} />
+            <polygon class="f-front" points={mv2.front} />
+            <polygon class="f-top" points={mv2.top} />
+          </g>
+          <polygon points={mvTape2} fill="var(--sv-t-b)" opacity="0.85" />
+        </g>
+
+        {/* ---------- failed drafts on the rug ---------- */}
+        {
+          papers.map((p) => (
+            <g>
+              <polygon points={p.quad} fill="var(--sv-t-d)" stroke={SK} stroke-width="1.5" stroke-linejoin="round" />
+              <path d={p.ink} stroke={SK} stroke-width="1.2" opacity="0.45" fill="none" />
+            </g>
+          ))
+        }
+        <circle cx="815" cy="485" r="5.5" fill="var(--sv-t-d)" stroke={SK} stroke-width="1.5" />
+        <path d="M811 483 q 4 -3 8 0" stroke={SK} stroke-width="1" fill="none" opacity="0.5" />
+        <circle cx="995" cy="420" r="5" fill="var(--sv-t-d)" stroke={SK} stroke-width="1.5" />
+        <path d="M991 418 q 4 -3 8 0" stroke={SK} stroke-width="1" fill="none" opacity="0.5" />
+
+        {/* the verdict chip, same style as the hero's command chips */}
+        <g class="cmdchip">
+          <rect x="520" y="410" width="300" height="34" rx="17" fill="var(--paper-2)" stroke="var(--rule)" stroke-width="1.5" />
+          <text x="670" y="433" text-anchor="middle"><tspan class="ta">✕</tspan> no route off this machine</text>
+        </g>
+      </svg>
+    </figure>
+
+    <div class="below">
+      <div class="pair">
+        <article class="panel bad">
+          <div class="cardhead">
+            <span class="cardicon" aria-hidden="true">✕</span>
+            <p class="kicker">{panels[0].kicker}</p>
+          </div>
+          <figure class="cardart" aria-hidden="true">
+            <svg viewBox="0 0 240 145">
+              <g transform="translate(72 66)">
+                <polygon class="cast" points={cbShadow} />
+                <g class={`unit tray t-${cbLooseA.tone}`}>
+                  <polygon class="f-side" points={cbLooseA.g.side} />
+                  <polygon class="f-front" points={cbLooseA.g.front} />
+                  <polygon class="f-top" points={cbLooseA.g.top} />
+                </g>
+                <g class={`unit tray t-${cbLooseB.tone}`}>
+                  <polygon class="f-side" points={cbLooseB.g.side} />
+                  <polygon class="f-front" points={cbLooseB.g.front} />
+                  <polygon class="f-top" points={cbLooseB.g.top} />
+                </g>
+                <g class="unit dev">
+                  <polygon class="f-side" points={cbDrive.side} />
+                  <polygon class="f-front" points={cbDrive.front} />
+                  <polygon class="f-top" points={cbDrive.top} />
+                </g>
+                <circle cx={cbDriveLed[0].toFixed(1)} cy={cbDriveLed[1].toFixed(1)} r="2" fill="var(--sv-prim)" />
+                <g class="unit dev">
+                  <polygon class="f-side" points={cbMachine.side} />
+                  <polygon class="f-front" points={cbMachine.front} />
+                  <polygon class="f-top" points={cbMachine.top} />
+                </g>
+                <g class="unit tray t-a">
+                  <polygon class="f-side" points={cbTrayA.side} />
+                  <polygon class="f-front" points={cbTrayA.front} />
+                  <polygon class="f-top" points={cbTrayA.top} />
+                </g>
+                <g class="unit tray t-b">
+                  <polygon class="f-side" points={cbTrayB.side} />
+                  <polygon class="f-front" points={cbTrayB.front} />
+                  <polygon class="f-top" points={cbTrayB.top} />
+                </g>
+                <g class="unit tray t-c">
+                  <polygon class="f-side" points={cbTrayC.side} />
+                  <polygon class="f-front" points={cbTrayC.front} />
+                  <polygon class="f-top" points={cbTrayC.top} />
+                </g>
+                {/* a clearly visible cable leaves the machine but has nowhere to plug in */}
+                <circle cx="54" cy="18" r="3" fill="var(--sv-ink)" />
+                <path d="M 54 18 C 74 20, 70 46, 86 51 C 92 53, 97 51, 102 48" fill="none" stroke="var(--sv-ink)" stroke-width="4.5" stroke-linecap="round" />
+                <g transform="translate(102 48) rotate(-12)">
+                  <rect x="0" y="-6" width="14" height="12" rx="2" fill="var(--paper-2)" stroke="var(--sv-ink)" stroke-width="2.5" />
+                  <path d="M14 -3 H22 M14 3 H22" stroke="var(--sv-ink)" stroke-width="2.5" stroke-linecap="round" />
+                </g>
+                <path d="M128 38 L138 48 M128 48 L138 38" stroke={PRIM_DEEP} stroke-width="3" stroke-linecap="round" />
+              </g>
+            </svg>
+          </figure>
+          <h3>{panels[0].title}</h3>
+          <ul>
+            {panels[0].items.map((item) => (
+              <li>
+                <span class="mark" aria-hidden="true">✕</span>
+                {item}
+              </li>
+            ))}
+          </ul>
+        </article>
+
+        <span class="vs" aria-hidden="true">vs</span>
+
+        <article class="panel good">
+          <div class="cardhead">
+            <span class="cardicon" aria-hidden="true">✓</span>
+            <p class="kicker">{panels[1].kicker}</p>
+          </div>
+          <figure class="cardart" aria-hidden="true">
+            <svg viewBox="0 0 240 145">
+              <g transform="translate(68 58)">
+                <polygon class="cast" points={caShadow} />
+                <polygon class="cast" points={caLapShadow} />
+                <g class={`unit tray t-${caPathA.tone}`}>
+                  <polygon class="f-side" points={caPathA.g.side} />
+                  <polygon class="f-front" points={caPathA.g.front} />
+                  <polygon class="f-top" points={caPathA.g.top} />
+                </g>
+                <g class={`unit tray t-${caPathB.tone}`}>
+                  <polygon class="f-side" points={caPathB.g.side} />
+                  <polygon class="f-front" points={caPathB.g.front} />
+                  <polygon class="f-top" points={caPathB.g.top} />
+                </g>
+                <g class="unit dev">
+                  <polygon class="f-side" points={caLapLid.side} />
+                  <polygon class="f-front" points={caLapLid.front} />
+                  <polygon class="f-top" points={caLapLid.top} />
+                </g>
+                <g class="unit dev">
+                  <polygon class="f-side" points={caLapDeck.side} />
+                  <polygon class="f-front" points={caLapDeck.front} />
+                  <polygon class="f-top" points={caLapDeck.top} />
+                </g>
+                <polygon points={caLapKeyboard} fill="var(--sv-dev-3)" stroke={SK} stroke-width="1.4" stroke-linejoin="round" />
+                <g fill="var(--sv-dev-0)">
+                  {caLapKeys.map((key) => <polygon points={key} />)}
+                </g>
+                <polygon points={caLapTrackpad} fill="none" stroke="var(--sv-dev-0)" stroke-width="1.3" stroke-linejoin="round" />
+                <g class="unit sealbox">
+                  <polygon class="f-side" points={caCube.side} />
+                  <polygon class="f-front" points={caCube.front} />
+                  <polygon class="f-top" points={caCube.top} />
+                </g>
+                <polygon
+                  points="0,-40.5 23.4,-27 0,-13.5 -23.4,-27"
+                  fill="none"
+                  stroke="var(--sv-prim)"
+                  stroke-width="3.5"
+                  stroke-linejoin="round"
+                />
+                <g transform={frontText(0, 0, 0, 54, 54)}>
+                  <rect x="15" y="22" width="24" height="14" rx="7" fill="var(--sv-prim)" />
+                  <path d="M22.5 29 l3 3 l6 -6" fill="none" stroke="#131f1a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+                </g>
+                {/* the wire that connects — drawn after the cube, so it reads
+                    as plugged into its side, running onto the laptop deck */}
+                <path class="wire" d="M 30 20 C 48 14, 58 34, 66 50" fill="none" stroke={PRIM_DEEP} stroke-width="3" stroke-linecap="round" />
+                <path d="M60 45 L69 53 L58 55" fill="none" stroke={PRIM_DEEP} stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                <g class="unit dev">
+                  <polygon class="f-side" points={caStore.side} />
+                  <polygon class="f-front" points={caStore.front} />
+                  <polygon class="f-top" points={caStore.top} />
+                </g>
+                <circle cx={caStoreLed[0].toFixed(1)} cy={caStoreLed[1].toFixed(1)} r="2.2" fill="var(--sv-prim)" />
+              </g>
+            </svg>
+          </figure>
+          <h3>{panels[1].title}</h3>
+          <ul>
+            {panels[1].items.map((item) => (
+              <li>
+                <span class="mark" aria-hidden="true">✓</span>
+                {item}
+              </li>
+            ))}
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+</div>
+
+<style>
+  .problem-block {
+    /* tokens identical to the hero's: one room, one palette */
+    --paper: #e4e7dd;
+    --paper-2: #f4f6ef;
+    --ink: oklch(0.19 0.022 158);
+    --ink-2: oklch(0.41 0.018 158);
+    --ink-3: oklch(0.54 0.014 158);
+    --rule: oklch(0.8 0.012 145);
+    --prim: oklch(0.87 0.21 128);
+    --prim-deep: oklch(0.58 0.155 134);
+    --on-prim: oklch(0.19 0.022 158);
+
+    --sv-stroke: #131f1a;
+    --sv-ink: oklch(0.19 0.022 158);
+    --sv-dim: oklch(0.56 0.014 158);
+    --sv-prim: #b8ff3c;
+    --sv-prim-deep: #4f8a1e;
+    --sv-shadow: #131f1a;
+
+    --sv-wall: #e4e7dd;
+    --sv-floor: #dde1d6;
+    --sv-floorline: #cbd1c2;
+    --sv-skirt: #c8cebd;
+    --sv-frame: #f4f6ef;
+    --sv-night: #16231f;
+    --sv-star: #cfe9a8;
+    --sv-city: #24352e;
+    --sv-rug: #c2cbb2;
+
+    --sv-furn-1: #c1c9ae;
+    --sv-furn-2: #a6b090;
+    --sv-furn-3: #8a9673;
+
+    --sv-dev-0: #55685d;
+    --sv-dev-1: #3b4c43;
+    --sv-dev-2: #2a3831;
+    --sv-dev-3: #1e2925;
+    --sv-seal-1: #41544a;
+    --sv-seal-2: #1f2c26;
+    --sv-seal-3: #121b17;
+
+    --sv-leaf-1: #7fae3f;
+    --sv-leaf-2: #5f8f2c;
+    --sv-pot-1: #aab38f;
+    --sv-pot-2: #93a176;
+    --sv-pot-3: #7a8a5e;
+
+    --sv-t-a: #b8ff3c;
+    --sv-t-b: #f2cd6d;
+    --sv-t-c: #8fc8ea;
+    --sv-t-d: #f2f4ea;
+    --font-display: 'Questrial', ui-sans-serif, system-ui, sans-serif;
+
+    position: relative;
+    scroll-margin-top: 4.5rem;
+    overflow-x: clip;
+    font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+    color: var(--ink);
+    transition: background 0.3s ease, color 0.3s ease;
+
+    /* THE FLOOR. The colour lives here; the grid is the coordinate-matched
+       SVG layer above it so the hero/problem seam cannot drift. */
+    background-color: var(--sv-floor);
+  }
+
+  :global(html.dark) .problem-block {
+    --paper: #1d2723;
+    --paper-2: #26332e;
+    --ink: oklch(0.965 0.008 145);
+    --ink-2: oklch(0.76 0.014 150);
+    --ink-3: oklch(0.62 0.016 150);
+    --rule: oklch(0.31 0.02 158);
+    --prim: oklch(0.88 0.21 128);
+    --prim-deep: oklch(0.84 0.19 128);
+    --on-prim: oklch(0.17 0.04 132);
+
+    --sv-stroke: #0d1613;
+    --sv-ink: oklch(0.965 0.008 145);
+    --sv-dim: oklch(0.66 0.016 150);
+    --sv-prim: #c4ff56;
+    --sv-prim-deep: #a8e83c;
+    --sv-shadow: #050b09;
+
+    --sv-wall: #1d2723;
+    --sv-floor: #19231f;
+    --sv-floorline: #27322d;
+    --sv-skirt: #253029;
+    --sv-frame: #4a5a51;
+    --sv-night: #0a1310;
+    --sv-star: #c4ff56;
+    --sv-city: #16211c;
+    --sv-rug: #223029;
+
+    --sv-furn-1: #6d8073;
+    --sv-furn-2: #56685c;
+    --sv-furn-3: #435248;
+
+    --sv-dev-0: #6b7e72;
+    --sv-dev-1: #52655a;
+    --sv-dev-2: #3d4e45;
+    --sv-dev-3: #2e3c34;
+    --sv-seal-1: #486054;
+    --sv-seal-2: #33453c;
+    --sv-seal-3: #23312b;
+
+    --sv-leaf-1: #7fae3f;
+    --sv-leaf-2: #5f8f2c;
+    --sv-pot-1: #8d9670;
+    --sv-pot-2: #757e5b;
+    --sv-pot-3: #5f6849;
+  }
+
+  .lede,
+  .below {
+    position: relative;
+    z-index: 2;
+  }
+  .floor-grid {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .floor-grid svg {
+    display: block;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    fill: none;
+    stroke: var(--sv-floorline);
+    stroke-width: 1.5;
+  }
+  .scene {
+    position: relative;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ---------- lede ---------- */
+  .lede {
+    max-width: 88rem;
+    margin-inline: auto;
+    padding: clamp(2.5rem, 5vw, 4rem) clamp(1.25rem, 4vw, 3rem) 1.5rem;
+    text-align: center;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.36rem 0.85rem 0.36rem 0.7rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: var(--paper-2);
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--ink-2);
+  }
+  .badge i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ink-3);
+  }
+
+  h2 {
+    margin: clamp(0.75rem, 1.6vw, 1.1rem) auto 0;
+    max-width: min(44ch, 100%);
+    font-family: var(--font-display);
+    font-size: clamp(1.9rem, 3.4vw, 3rem);
+    line-height: 0.98;
+    letter-spacing: -0.038em;
+    font-weight: 400;
+    text-wrap: balance;
+  }
+
+  .sub {
+    margin: 1rem auto 0;
+    max-width: 72ch;
+    font-size: clamp(1rem, 0.5vw + 0.92rem, 1.15rem);
+    line-height: 1.6;
+    color: var(--ink-2);
+    text-wrap: pretty;
+  }
+
+  /* ---------- scene (transparent: the floor behind it is the page) ---------- */
+  .scene {
+    /* pulls the extended viewBox back up: 80/1640 of the width */
+    margin: -4.88% 0 0;
+    width: 100%;
+  }
+  .scene svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+  }
+
+  .unit polygon {
+    stroke: var(--sv-stroke);
+    stroke-width: 3.2;
+    stroke-linejoin: round;
+  }
+
+  .furn .f-top {
+    fill: var(--sv-furn-1);
+  }
+  .furn .f-front {
+    fill: var(--sv-furn-2);
+  }
+  .furn .f-side {
+    fill: var(--sv-furn-3);
+  }
+  .dev .f-top {
+    fill: var(--sv-dev-1);
+  }
+  .dev .f-front {
+    fill: var(--sv-dev-2);
+  }
+  .dev .f-side {
+    fill: var(--sv-dev-3);
+  }
+  .board .f-top {
+    fill: var(--sv-dev-0);
+  }
+  .board .f-front {
+    fill: var(--sv-dev-1);
+  }
+  .board .f-side {
+    fill: var(--sv-dev-2);
+  }
+  .soft .f-top {
+    fill: var(--sv-t-d);
+  }
+  .soft .f-front {
+    fill: #dde2d2;
+  }
+  .soft .f-side {
+    fill: #bcc4b0;
+  }
+  .wb .f-top {
+    fill: var(--sv-frame);
+  }
+  .wb .f-front {
+    fill: var(--sv-frame);
+  }
+  .wb .f-side {
+    fill: var(--sv-furn-3);
+  }
+  .pot .f-top {
+    fill: var(--sv-pot-1);
+  }
+  .pot .f-front {
+    fill: var(--sv-pot-2);
+  }
+  .pot .f-side {
+    fill: var(--sv-pot-3);
+  }
+  .sealbox .f-top {
+    fill: var(--sv-seal-1);
+  }
+  .sealbox .f-front {
+    fill: var(--sv-seal-2);
+  }
+  .sealbox .f-side {
+    fill: var(--sv-seal-3);
+  }
+
+  .wire {
+    stroke-dasharray: 9 7;
+  }
+
+  .t-a .f-top {
+    fill: #b8ff3c;
+  }
+  .t-a .f-front {
+    fill: #96d92a;
+  }
+  .t-a .f-side {
+    fill: #78b31d;
+  }
+  .t-b .f-top {
+    fill: #f2cd6d;
+  }
+  .t-b .f-front {
+    fill: #d9b054;
+  }
+  .t-b .f-side {
+    fill: #b8923d;
+  }
+  .t-c .f-top {
+    fill: #8fc8ea;
+  }
+  .t-c .f-front {
+    fill: #6fa8cc;
+  }
+  .t-c .f-side {
+    fill: #5488ab;
+  }
+  .t-d .f-top {
+    fill: #f2f4ea;
+  }
+  .t-d .f-front {
+    fill: #dde2d2;
+  }
+  .t-d .f-side {
+    fill: #bcc4b0;
+  }
+
+  .cast {
+    fill: var(--sv-shadow);
+    opacity: 0.085;
+  }
+  .cast.hard {
+    opacity: 0.2;
+  }
+  :global(html.dark) .problem-block .cast {
+    opacity: 0.45;
+  }
+  :global(html.dark) .problem-block .cast.hard {
+    opacity: 0.7;
+  }
+  :global(html.dark) .problem-block .soft .f-top {
+    fill: #d8dfd0;
+  }
+  :global(html.dark) .problem-block .soft .f-front {
+    fill: #b9c2ac;
+  }
+  :global(html.dark) .problem-block .soft .f-side {
+    fill: #99a38c;
+  }
+
+  .cmdchip text {
+    font-size: 17px;
+    fill: var(--sv-ink);
+  }
+  .cmdchip .ta {
+    fill: var(--sv-prim-deep);
+    font-weight: 700;
+  }
+
+  /* ---------- alive, quietly ---------- */
+  .spark {
+    animation: sparkflick 3.8s steps(1, end) infinite;
+  }
+  .sway {
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+    animation: sway 7s ease-in-out infinite alternate;
+  }
+  .steam {
+    animation: steam 3.4s ease-in-out infinite;
+  }
+
+  /* ---------- the panels, still on the floor ---------- */
+  .below {
+    max-width: 88rem;
+    margin-inline: auto;
+    padding: 0 clamp(1.25rem, 4vw, 3rem) clamp(3.5rem, 7vw, 6rem);
+  }
+
+  .pair {
+    position: relative;
+    display: grid;
+    gap: 1rem;
+    padding-top: 1.5rem;
+  }
+  @media (min-width: 800px) {
+    .pair {
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+  }
+
+  /* the comparison marker: this is a versus, not two feature cards */
+  .vs {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 1.5px solid var(--rule);
+    background: var(--paper);
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ink-3);
+  }
+
+  .panel {
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    background: color-mix(in oklab, var(--paper-2) 50%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: clamp(1.25rem, 2.5vw, 2rem);
+  }
+  .cardhead {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+  .cardicon {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border: 2px solid var(--sv-stroke);
+    border-radius: 6px;
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--ink-3);
+  }
+  .good .cardicon {
+    background: var(--prim);
+    color: #131f1a;
+  }
+  .panel .kicker {
+    margin: 0;
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.76rem;
+    letter-spacing: 0.04em;
+    color: var(--ink-3);
+  }
+  .panel.good .kicker {
+    color: var(--prim-deep);
+  }
+  .cardart {
+    margin: 1.25rem 0 0;
+    display: flex;
+    justify-content: center;
+  }
+  .cardart svg {
+    display: block;
+    width: min(22rem, 96%);
+    height: auto;
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+  }
+  .panel h3 {
+    margin: 1.25rem 0 0;
+    font-family: var(--font-display);
+    font-size: 1.65rem;
+    font-weight: 400;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+  }
+  .panel ul {
+    list-style: none;
+    margin: 1.1rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0.6rem;
+  }
+  .panel li {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    font-size: 0.92rem;
+    line-height: 1.45;
+    color: var(--ink-2);
+  }
+  .mark {
+    flex: none;
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--ink-3);
+  }
+  .good .mark {
+    color: var(--prim-deep);
+  }
+
+  @media (max-width: 900px) {
+    /* The hero switches to an 1100px scrollable canvas here. Keep the
+       continuation on that same canvas width; this scene itself still scales
+       with the viewport and the wrapper clips the excess grid. */
+    .floor-grid svg {
+      min-width: 1100px;
+    }
+    .cmdchip text {
+      font-size: 22px;
+    }
+    .panel h3 {
+      font-size: 1.45rem;
+    }
+  }
+
+  @media (max-width: 560px) {
+    /* phones: the versus stacks, medallion tucks between the cards */
+    .vs {
+      width: 40px;
+      height: 40px;
+      font-size: 0.78rem;
+    }
+    .cardart svg {
+      width: min(17rem, 88%);
+    }
+  }
+
+  @keyframes sway {
+    from {
+      transform: rotate(-1.5deg);
+    }
+    to {
+      transform: rotate(1.5deg);
+    }
+  }
+  @keyframes sparkflick {
+    0%,
+    55%,
+    100% {
+      opacity: 0;
+    }
+    60%,
+    70% {
+      opacity: 0.9;
+    }
+    75% {
+      opacity: 0.2;
+    }
+    80%,
+    88% {
+      opacity: 0.7;
+    }
+  }
+  @keyframes steam {
+    0%,
+    100% {
+      opacity: 0.15;
+      transform: translateY(0);
+    }
+    50% {
+      opacity: 0.6;
+      transform: translateY(-4px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .spark,
+    .sway,
+    .steam {
+      animation: none;
+    }
+  }
+</style>

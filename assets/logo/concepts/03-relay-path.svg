@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Reinstate — Relay Path (mono)</title>
+  <desc id="desc">Two environments linked by a verified continuity path — monochrome.</desc>
+  <!-- Concept 03 · Relay Path · monochrome -->
+  <rect width="64" height="64" rx="14" fill="#131f1a"/>
+  <rect x="10" y="22" width="16" height="20" rx="4" fill="#f4f6ef"/>
+  <rect x="38" y="22" width="16" height="20" rx="4" fill="#f4f6ef"/>
+  <path d="M26 32h12" fill="none" stroke="#f4f6ef" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="32" cy="32" r="5.5" fill="#f4f6ef"/>
+  <path d="M29.2 32.2l2 2 3.8-4.4" fill="none" stroke="#131f1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="18" cy="32" r="2.5" fill="#131f1a"/>
+  <circle cx="46" cy="32" r="2.5" fill="#131f1a"/>
+</svg>

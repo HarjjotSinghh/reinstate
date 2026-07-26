@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Reinstate Caret Track mark">
+  <path d="M8 44 H56" stroke="#131f1a" stroke-width="3.8" stroke-linecap="round"/>
+  <path d="M14 44 V39" stroke="#131f1a" stroke-width="3.4" stroke-linecap="round"/>
+  <path d="M22 44 V36" stroke="#131f1a" stroke-width="3.4" stroke-linecap="round"/>
+  <path d="M30 44 V32" stroke="#131f1a" stroke-width="3.4" stroke-linecap="round"/>
+  <rect x="38" y="18" width="12" height="26" rx="1.5" fill="#131f1a"/>
+</svg>

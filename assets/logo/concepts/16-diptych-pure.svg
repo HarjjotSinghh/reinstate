@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Reinstate — Diptych Pure</title>
+  <desc id="desc">Dual outline frames with classic terminal prompt greater-than and cursor.</desc>
+  <rect width="64" height="64" rx="14" fill="#131f1a"/>
+  <rect x="11" y="11" width="30" height="30" rx="6" fill="none" stroke="#f4f6ef" stroke-width="3.6"/>
+  <rect x="23" y="23" width="30" height="30" rx="6" fill="#131f1a" stroke="#f4f6ef" stroke-width="3.6"/>
+  <!-- >_ slightly smaller, centered in front frame -->
+  <path d="M32 34 L36.5 38.5 L32 43" fill="none" stroke="#f4f6ef" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M39.5 43 H45.5" fill="none" stroke="#f4f6ef" stroke-width="2.8" stroke-linecap="round"/>
+</svg>

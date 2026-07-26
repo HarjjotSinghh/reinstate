@@ -1,6 +1,7 @@
 ---
 export const prerender = true;
 import PreviewLayout from '../../layouts/PreviewLayout.astro';
+import BrandLockup from '../../components/BrandLockup.astro';
 
 const sessions = [
   { repo: 'acme-api', agent: 'claude code' },
@@ -21,7 +22,7 @@ const sessions = [
       <div class="seam" aria-hidden="true"><i></i></div>
 
       <header class="topbar">
-        <a href="/" class="wordmark">reinstate<b>.</b></a>
+        <BrandLockup href="/" class="wordmark" size={22} />
         <nav class="topnav">
           <a href="/docs/getting-started">Docs</a>
           <a href="https://github.com/HarjjotSinghh/reinstate" rel="noopener noreferrer" target="_blank">GitHub</a>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" role="img">
+  <title>Reinstate</title>
+  <rect width="800" height="800" fill="#1d2723"/>
+  <g aria-label="Reinstate logo">
+<rect x="112.00" y="112.00" width="576.00" height="576.00" rx="126.00" fill="#131f1a"/>
+<rect x="238.00" y="238.00" width="252.00" height="252.00" rx="49.50" fill="none" stroke="#f4f6ef" stroke-width="32.40"/>
+<rect x="310.00" y="310.00" width="252.00" height="252.00" rx="49.50" fill="#131f1a" stroke="#f4f6ef" stroke-width="32.40"/>
+<path d="M386.50,409.00 L422.50,445.00 L386.50,481.00" fill="none" stroke="#f4f6ef" stroke-width="24.30" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M445.00,481.00 H494.50" fill="none" stroke="#f4f6ef" stroke-width="24.30" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</svg>

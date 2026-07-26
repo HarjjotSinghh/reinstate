@@ -1,14 +1,13 @@
 ---
+import BrandLockup from './BrandLockup.astro';
+
 const year = new Date().getFullYear();
 ---
 
 <footer class="site-footer">
   <div class="shell footer-grid">
     <div class="brand">
-      <a href="/" class="mark">
-        <span class="glyph" aria-hidden="true"></span>
-        reinstate
-      </a>
+      <BrandLockup href="/" class="mark" size={30} tiled={false} />
       <p>
         The sync layer for your entire AI development environment. Sessions, MCP, skills, and
         settings. Encrypted so only you can read it.
@@ -68,21 +67,7 @@ const year = new Date().getFullYear();
     }
   }
   .mark {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.55rem;
-    font-family: var(--font-display);
     font-size: 1.1rem;
-    font-weight: 800;
-    letter-spacing: -0.035em;
-    text-decoration: none;
-  }
-  .glyph {
-    width: 18px;
-    height: 18px;
-    border-radius: 5px;
-    background: var(--ink);
-    border: 3.5px solid var(--prim);
   }
   .brand p {
     margin: 0.9rem 0 0;

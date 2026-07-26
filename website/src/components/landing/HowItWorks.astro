@@ -21,7 +21,7 @@ const steps = [
 
 <section id="how" class="border-b border-border bg-surface/40">
   <div class="mx-auto max-w-6xl px-4 py-20 sm:px-6 md:py-28">
-    <h2 class="text-balance text-3xl font-semibold tracking-tight text-ink md:text-4xl">
+    <h2 class="display text-balance text-3xl tracking-tight text-ink md:text-4xl">
       How it works
     </h2>
     <p class="mt-4 max-w-xl measure text-pretty text-muted">
@@ -34,7 +34,7 @@ const steps = [
         steps.map((step, i) => (
           <li class="bg-bg p-6 md:p-8">
             <span class="font-mono text-sm text-primary">{String(i + 1).padStart(2, '0')}</span>
-            <h3 class="mt-3 text-lg font-medium text-ink">{step.title}</h3>
+            <h3 class="display mt-3 text-lg text-ink">{step.title}</h3>
             <p class="mt-2 text-sm leading-relaxed text-muted">{step.body}</p>
           </li>
         ))

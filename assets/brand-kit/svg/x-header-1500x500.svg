@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="500" viewBox="0 0 1500 500" role="img">
+  <title>Reinstate</title>
+  <rect width="1500" height="500" fill="#e4e7dd"/>
+  <rect x="0" y="275" width="1500" height="225" fill="#d3d8c9"/>
+<line x1="0" y1="275" x2="1500" y2="275" stroke="#c3c9bc" stroke-width="2"/>
+<rect x="0" y="0" width="8" height="500" fill="#b8ff3c"/>
+<g transform="translate(869.9999999999999,310.0) scale(1.0416666666666667)" stroke-linejoin="round">
+<line x1="0.0" y1="-40.0" x2="-207.8" y2="80.0" stroke="#c3c9b8" stroke-width="1.8"/>
+<line x1="34.6" y1="-20.0" x2="-173.2" y2="100.0" stroke="#c3c9b8" stroke-width="1.8"/>
+<line x1="69.3" y1="0.0" x2="-138.6" y2="120.0" stroke="#c3c9b8" stroke-width="1.8"/>
+<line x1="103.9" y1="20.0" x2="-103.9" y2="140.0" stroke="#c3c9b8" stroke-width="1.8"/>
+<line x1="138.6" y1="40.0" x2="-69.3" y2="160.0" stroke="#c3c9b8" stroke-width="1.8"/>
+<line x1="173.2" y1="60.0" x2="-34.6" y2="180.0" stroke="#c3c9b8" stroke-width="1.8"/>
+<line x1="207.8" y1="80.0" x2="0.0" y2="200.0" stroke="#c3c9b8" stroke-width="1.8"/>
+<line x1="242.5" y1="100.0" x2="34.6" y2="220.0" stroke="#c3c9b8" stroke-width="1.8"/>
+<line x1="277.1" y1="120.0" x2="69.3" y2="240.0" stroke="#c3c9b8" stroke-width="1.8"/>
+<line x1="0.0" y1="-40.0" x2="277.1" y2="120.0" stroke="#c3c9b8" stroke-width="1.8"/>
+<line x1="-34.6" y1="-20.0" x2="242.5" y2="140.0" stroke="#c3c9b8" stroke-width="1.8"/>
+<line x1="-69.3" y1="0.0" x2="207.8" y2="160.0" stroke="#c3c9b8" stroke-width="1.8"/>
+<line x1="-103.9" y1="20.0" x2="173.2" y2="180.0" stroke="#c3c9b8" stroke-width="1.8"/>
+<line x1="-138.6" y1="40.0" x2="138.6" y2="200.0" stroke="#c3c9b8" stroke-width="1.8"/>
+<line x1="-173.2" y1="60.0" x2="103.9" y2="220.0" stroke="#c3c9b8" stroke-width="1.8"/>
+<line x1="-207.8" y1="80.0" x2="69.3" y2="240.0" stroke="#c3c9b8" stroke-width="1.8"/>
+<polygon points="147.2,35.0 86.6,70.0 86.6,140.0 147.2,105.0" fill="#121b17" stroke="#131f1a" stroke-width="3.0" stroke-linejoin="round"/>
+<polygon points="26.0,35.0 86.6,70.0 86.6,140.0 26.0,105.0" fill="#1a2621" stroke="#131f1a" stroke-width="3.0" stroke-linejoin="round"/>
+<polygon points="86.6,0.0 147.2,35.0 86.6,70.0 26.0,35.0" fill="#2a3831" stroke="#131f1a" stroke-width="3.0" stroke-linejoin="round"/>
+<polygon points="105.7,26.0 93.5,33.0 93.5,43.0 105.7,36.0" fill="#78b31d" stroke="#131f1a" stroke-width="2.4" stroke-linejoin="round"/>
+<polygon points="74.5,22.0 93.5,33.0 93.5,43.0 74.5,32.0" fill="#96d92a" stroke="#131f1a" stroke-width="2.4" stroke-linejoin="round"/>
+<polygon points="86.6,15.0 105.7,26.0 93.5,33.0 74.5,22.0" fill="#b8ff3c" stroke="#131f1a" stroke-width="2.4" stroke-linejoin="round"/>
+<polygon points="52.0,26.0 1.7,55.0 1.7,69.0 52.0,40.0" fill="#c3c9bc" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="-76.2,10.0 1.7,55.0 1.7,69.0 -76.2,24.0" fill="#e2e6dc" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="-26.0,-19.0 52.0,26.0 1.7,55.0 -76.2,10.0" fill="#fdfef9" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="52.0,0.0 1.7,29.0 1.7,43.0 52.0,14.0" fill="#3d8ab5" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="-76.2,-16.0 1.7,29.0 1.7,43.0 -76.2,-2.0" fill="#57aad6" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="-26.0,-45.0 52.0,0.0 1.7,29.0 -76.2,-16.0" fill="#7ecdf5" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="52.0,-26.0 1.7,3.0 1.7,17.0 52.0,-12.0" fill="#bd8d1b" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="-76.2,-42.0 1.7,3.0 1.7,17.0 -76.2,-28.0" fill="#e0ad2c" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="-26.0,-71.0 52.0,-26.0 1.7,3.0 -76.2,-42.0" fill="#ffce4a" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="52.0,-52.0 1.7,-23.0 1.7,-9.0 52.0,-38.0" fill="#78b31d" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="-76.2,-68.0 1.7,-23.0 1.7,-9.0 -76.2,-54.0" fill="#96d92a" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="-26.0,-97.0 52.0,-52.0 1.7,-23.0 -76.2,-68.0" fill="#b8ff3c" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="17.3,88.0 -22.5,111.0 -22.5,123.0 17.3,100.0" fill="#c3c9bc" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="-83.1,76.0 -22.5,111.0 -22.5,123.0 -83.1,88.0" fill="#e2e6dc" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="-43.3,53.0 17.3,88.0 -22.5,111.0 -83.1,76.0" fill="#fdfef9" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="17.3,76.0 -22.5,99.0 -22.5,111.0 17.3,88.0" fill="#3d8ab5" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="-83.1,64.0 -22.5,99.0 -22.5,111.0 -83.1,76.0" fill="#57aad6" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="-43.3,41.0 17.3,76.0 -22.5,99.0 -83.1,64.0" fill="#7ecdf5" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="17.3,64.0 -22.5,87.0 -22.5,99.0 17.3,76.0" fill="#bd8d1b" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="-83.1,52.0 -22.5,87.0 -22.5,99.0 -83.1,64.0" fill="#e0ad2c" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="-43.3,29.0 17.3,64.0 -22.5,87.0 -83.1,52.0" fill="#ffce4a" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="17.3,52.0 -22.5,75.0 -22.5,87.0 17.3,64.0" fill="#78b31d" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="-83.1,40.0 -22.5,75.0 -22.5,87.0 -83.1,52.0" fill="#96d92a" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="-43.3,17.0 17.3,52.0 -22.5,75.0 -83.1,40.0" fill="#b8ff3c" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+</g>
+<g aria-label="Reinstate logo">
+<rect x="42.00" y="90.00" width="100.00" height="100.00" rx="21.88" fill="#131f1a"/>
+<rect x="63.88" y="111.88" width="43.75" height="43.75" rx="8.59" fill="none" stroke="#f4f6ef" stroke-width="5.62"/>
+<rect x="76.38" y="124.38" width="43.75" height="43.75" rx="8.59" fill="#131f1a" stroke="#f4f6ef" stroke-width="5.62"/>
+<path d="M89.66,141.56 L95.91,147.81 L89.66,154.06" fill="none" stroke="#f4f6ef" stroke-width="4.22" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M99.81,154.06 H108.41" fill="none" stroke="#f4f6ef" stroke-width="4.22" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="158" y="130.0" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="52" font-weight="800" fill="#131f1a" letter-spacing="-0.04em">reinstate</text>
+<text x="158" y="210.0" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="600" fill="#4a5a52">Continuity for every agent session</text>
+<text x="158" y="260.0" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="500" fill="#4a5a52">encrypted · portable · open source</text>
+<text x="158" y="390.0" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="500" fill="#4a5a52">reinstate.dev  ·  rein</text>
+</svg>

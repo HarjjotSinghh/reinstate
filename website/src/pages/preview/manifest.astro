@@ -1,6 +1,7 @@
 ---
 export const prerender = true;
 import PreviewLayout from '../../layouts/PreviewLayout.astro';
+import BrandLockup from '../../components/BrandLockup.astro';
 
 const streams = [
   { name: 'sessions', local: 'captured', object: 'age · x25519', remote: 'resumed' },
@@ -21,7 +22,7 @@ const rail = ['rein init', 'rein push', 'rein pull', 'claude --resume'];
     </div>
 
     <header class="topbar">
-      <a href="/" class="wordmark">reinstate<b>.</b></a>
+      <BrandLockup href="/" class="wordmark" size={22} />
       <div class="topmeta">
         <span>apache&#8209;2.0</span>
         <span class="sep" aria-hidden="true"></span>

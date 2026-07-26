@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Reinstate — Nested Checkpoint</title>
+  <desc id="desc">Outer environment frame, inner live session, restore arc between them — monochrome.</desc>
+  <!--
+    Concept 06 · Nested Checkpoint
+    Outer frame = environment (repo/MCP/skills). Inner square = active session.
+    Arc reconnects them — verified restore, not silent chat recovery.
+  -->
+  <rect width="64" height="64" rx="14" fill="#131f1a"/>
+  <!-- outer frame -->
+  <rect x="12" y="12" width="40" height="40" rx="7" fill="none" stroke="#f4f6ef" stroke-width="3.5"/>
+  <!-- gap bottom-right of outer -->
+  <rect x="40" y="40" width="14" height="14" fill="#131f1a"/>
+  <!-- inner session block -->
+  <rect x="22" y="22" width="16" height="16" rx="3.5" fill="#f4f6ef"/>
+  <!-- restore arc from outer gap into space near inner -->
+  <path
+    d="M46 50 C46 40 40 34 30 34"
+    fill="none"
+    stroke="#f4f6ef"
+    stroke-width="3.5"
+    stroke-linecap="round"/>
+  <!-- small tip into the gap between frames -->
+  <circle cx="30" cy="34" r="2.2" fill="#f4f6ef"/>
+</svg>

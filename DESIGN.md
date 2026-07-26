@@ -109,7 +109,7 @@ both themes. `--ink-3` on `--paper` is the lowest permitted body pairing.
 
 | Role | Family | Weights | Notes |
 |---|---|---|---|
-| Display | **Funnel Display** (`@fontsource-variable/funnel-display`) | 800 | Headings, wordmark, and nothing else |
+| Display | **Questrial** (`@fontsource/questrial`) | 400 only | Marketing headings + wordmark (`--font-display`). **Not** used in docs prose. |
 | Body / UI | **Geist** (`@fontsource-variable/geist`) | 400–560 | All prose, labels, buttons |
 | Mono | **Geist Mono** (`@fontsource-variable/geist-mono`) | 400–600 | Commands, paths, captions, legends, in-illustration text |
 

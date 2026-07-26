@@ -14,7 +14,7 @@ const {
   title = 'Reinstate — restore your AI coding workspace on any device',
   description =
     'Sessions, MCP servers, skills, and settings across every coding agent and every machine you own. Encrypted so only you can read it.',
-  ogImage = '/brand/banner.svg',
+  ogImage = '/brand/og.png',
   bare = false,
 } = Astro.props;
 
@@ -31,8 +31,9 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://reinstate.d
     <meta name="theme-color" content="#e4e7dd" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#1d2723" media="(prefers-color-scheme: dark)" />
     <link rel="canonical" href={canonical} />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" href="/favicon.ico" />
+    {/* Single SVG icon only — a parallel favicon.ico wins in some browsers and never swaps with theme. */}
+    <link id="favicon" rel="icon" type="image/svg+xml" href="/favicon-light.svg" />
+    <link rel="apple-touch-icon" href="/favicon-dark.svg" />
 
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
@@ -45,13 +46,43 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://reinstate.d
 
     <title>{title}</title>
 
-    {/* Light is default. Only apply dark when explicitly stored. */}
+    {/* Light is default. Only apply dark when explicitly stored. Favicon follows theme. */}
     <script is:inline>
       (function () {
+        /**
+         * Browsers ignore href changes on existing <link rel=icon>.
+         * Replace the node so the tab icon actually updates.
+         */
+        window.__reinSetFavicon = function (dark) {
+          try {
+            var href =
+              (dark ? '/favicon-dark.svg' : '/favicon-light.svg') +
+              '?v=3&t=' +
+              Date.now();
+            document
+              .querySelectorAll(
+                'link[rel="icon"], link[rel="shortcut icon"]'
+              )
+              .forEach(function (el) {
+                el.parentNode && el.parentNode.removeChild(el);
+              });
+            var link = document.createElement('link');
+            link.id = 'favicon';
+            link.rel = 'icon';
+            link.type = 'image/svg+xml';
+            link.href = href;
+            document.head.appendChild(link);
+          } catch (e) {
+            /* ignore */
+          }
+        };
+
         try {
           var stored = localStorage.getItem('rein-theme');
-          if (stored === 'dark') document.documentElement.classList.add('dark');
+          var dark = stored === 'dark';
+          if (dark) document.documentElement.classList.add('dark');
           else document.documentElement.classList.remove('dark');
+          window.__reinSetFavicon(dark);
         } catch (e) {
           /* private mode */
         }

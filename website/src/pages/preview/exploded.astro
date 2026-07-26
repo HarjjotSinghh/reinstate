@@ -1,7 +1,8 @@
 ---
 export const prerender = true;
-import '@fontsource-variable/funnel-display';
+import '@fontsource/questrial/latin-400.css';
 import PreviewLayout from '../../layouts/PreviewLayout.astro';
+import BrandLockup from '../../components/BrandLockup.astro';
 
 /* ---------- build-time axonometric projector ---------- */
 const CX = Math.cos(Math.PI / 6);
@@ -88,7 +89,7 @@ const PRIM_DEEP = 'var(--sv-prim-deep)';
 <PreviewLayout title="Reinstate — restore your AI coding workspace on any device" themeColor="#eff0ea">
   <div class="page">
     <header class="nav">
-      <a href="/" class="mark"><span class="glyph" aria-hidden="true"></span> reinstate</a>
+      <BrandLockup href="/" class="mark" size={22} />
       <nav class="links">
         <a href="/docs/getting-started">Docs</a>
         <a href="/docs/architecture">Architecture</a>
@@ -429,7 +430,13 @@ const PRIM_DEEP = 'var(--sv-prim-deep)';
 <script>
   const btn = document.getElementById('themetoggle');
   const root = document.documentElement;
-  const sync = () => btn?.setAttribute('aria-pressed', String(root.classList.contains('dark')));
+  const sync = () => {
+    const dark = root.classList.contains('dark');
+    btn?.setAttribute('aria-pressed', String(dark));
+    if (typeof window.__reinSetFavicon === 'function') {
+      window.__reinSetFavicon(dark);
+    }
+  };
   sync();
   btn?.addEventListener('click', () => {
     const dark = root.classList.toggle('dark');
@@ -495,7 +502,7 @@ const PRIM_DEEP = 'var(--sv-prim-deep)';
     --sv-t-b: #ffce4a;
     --sv-t-c: #7ecdf5;
     --sv-t-d: #fdfef9;
-    --font-display: 'Funnel Display Variable', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Questrial', ui-sans-serif, system-ui, sans-serif;
 
     position: relative;
     min-height: 100svh;
@@ -576,7 +583,7 @@ const PRIM_DEEP = 'var(--sv-prim-deep)';
     gap: 0.55rem;
     font-family: var(--font-display);
     font-size: 1.16rem;
-    font-weight: 800;
+    font-weight: 400;
     letter-spacing: -0.035em;
     text-decoration: none;
   }
@@ -698,7 +705,7 @@ const PRIM_DEEP = 'var(--sv-prim-deep)';
     font-size: clamp(2.5rem, 6vw, 5.2rem);
     line-height: 0.96;
     letter-spacing: -0.038em;
-    font-weight: 800;
+    font-weight: 400;
     text-wrap: balance;
     animation: rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
   }

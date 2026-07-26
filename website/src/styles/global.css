@@ -1,6 +1,6 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
-@import "@fontsource-variable/funnel-display";
+@import "@fontsource/questrial/latin-400.css";
 @import "@fontsource-variable/geist";
 @import "@fontsource-variable/geist-mono";
 
@@ -57,7 +57,7 @@
   --sv-t-c: #7ecdf5;
   --sv-t-d: #fdfef9;
 
-  --font-display: "Funnel Display Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Questrial", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono Variable", ui-monospace, monospace;
 
@@ -123,6 +123,7 @@ html.dark {
 @theme {
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
+  --font-display: var(--font-display);
   --color-bg: var(--paper);
   --color-surface: var(--paper-2);
   --color-ink: var(--ink);
@@ -173,6 +174,19 @@ html.dark {
     color: inherit;
   }
 
+  /*
+   * Marketing / product UI: all headings use Questrial.
+   * Docs prose overrides below (.prose-rein) so long-form stays Geist.
+   */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+  }
+
   :focus-visible {
     outline: 2px solid var(--prim-deep);
     outline-offset: 3px;
@@ -211,10 +225,16 @@ html.dark {
 
 .display {
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 400; /* Questrial is single-cut; size carries hierarchy */
   letter-spacing: -0.035em;
   line-height: 1.02;
   text-wrap: balance;
+}
+
+/* Utility for Tailwind-ish surfaces that still need the display face */
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 400;
 }
 
 .mono {
@@ -240,10 +260,21 @@ html.dark {
   --tw-prose-td-borders: var(--rule);
 }
 
+/* Docs only: keep headings on body face for long-form readability */
 .prose-rein :where(h1, h2, h3) {
-  font-family: var(--font-display);
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  font-family: var(--font-sans);
+  font-weight: 560;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+/* Docs chrome (sidebar, mobile nav) stays system UI / Geist, not display */
+.docs h1,
+.docs h2,
+.docs h3 {
+  font-family: var(--font-sans);
+  font-weight: 560;
+  letter-spacing: -0.02em;
 }
 
 .prose-rein :where(code):not(:where(pre *)) {

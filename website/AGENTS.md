@@ -12,7 +12,7 @@ The rules that break the design fastest if ignored:
 - **Light is the default theme, dark is a first-class twin.** Every token needs both values.
   Theme state lives on `html.dark`, persists to `localStorage['rein-theme']`, and is seeded
   by an inline head script.
-- **Display type is Funnel Display via `--font-display`; body is Geist; mono is Geist Mono.**
+- **Display type is Questrial via `--font-display` for marketing headings/wordmark; docs headings stay Geist; body is Geist; mono is Geist Mono.**
 - **Illustration is true axonometric**, projected at build time from `(x, y, z)`, with `3.2px`
   outlines and three flat tones per solid. Pass SVG colours as `fill="var(--token)"`
   attributes, not CSS classes; scoped styles do not reach every SVG presentation property.

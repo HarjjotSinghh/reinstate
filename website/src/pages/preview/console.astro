@@ -1,6 +1,7 @@
 ---
 export const prerender = true;
 import PreviewLayout from '../../layouts/PreviewLayout.astro';
+import BrandLockup from '../../components/BrandLockup.astro';
 
 const chips = ['pull', 'status', 'agents', 'doctor'];
 ---
@@ -10,7 +11,7 @@ const chips = ['pull', 'status', 'agents', 'doctor'];
     <div class="aurora" aria-hidden="true"></div>
 
     <header class="nav">
-      <a href="/" class="mark"><span class="glyph" aria-hidden="true"></span> reinstate</a>
+      <BrandLockup href="/" class="mark" size={22} />
       <nav class="links">
         <a href="/docs/getting-started">Docs</a>
         <a href="/docs/security-model">Security</a>

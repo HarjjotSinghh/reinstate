@@ -1,14 +1,13 @@
 ---
+import BrandLockup from './BrandLockup.astro';
+
 const path = Astro.url.pathname;
 const onDocs = path.startsWith('/docs');
 ---
 
 <header class="nav">
   <div class="shell nav-inner">
-    <a href="/" class="mark">
-      <span class="glyph" aria-hidden="true"></span>
-      reinstate
-    </a>
+    <BrandLockup href="/" class="mark" size={32} tiled={false} />
 
     <nav class="links" aria-label="Primary">
       <a href="/#how">How it works</a>
@@ -67,8 +66,14 @@ const onDocs = path.startsWith('/docs');
   const navToggle = document.getElementById('nav-toggle');
   const mobileNav = document.getElementById('mobile-nav');
 
-  const sync = () =>
-    toggle?.setAttribute('aria-pressed', String(root.classList.contains('dark')));
+  const sync = () => {
+    const dark = root.classList.contains('dark');
+    toggle?.setAttribute('aria-pressed', String(dark));
+    // Defined in BaseLayout boot script — recreates <link rel=icon> (href edits are ignored).
+    if (typeof window.__reinSetFavicon === 'function') {
+      window.__reinSetFavicon(dark);
+    }
+  };
   sync();
 
   toggle?.addEventListener('click', () => {
@@ -109,21 +114,8 @@ const onDocs = path.startsWith('/docs');
     min-height: 4.25rem;
   }
   .mark {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.55rem;
-    font-family: var(--font-display);
+    /* BrandLockup owns layout; keep size/weight hooks for nav */
     font-size: 1.16rem;
-    font-weight: 800;
-    letter-spacing: -0.035em;
-    text-decoration: none;
-  }
-  .glyph {
-    width: 20px;
-    height: 20px;
-    border-radius: 6px;
-    background: var(--ink);
-    border: 4px solid var(--prim);
   }
   .links {
     display: flex;

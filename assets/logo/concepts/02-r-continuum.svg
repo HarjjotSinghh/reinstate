@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Reinstate — R Continuum (mono)</title>
+  <desc id="desc">Geometric R monogram with resume path — fully monochrome.</desc>
+  <!-- Concept 02 · R Continuum · monochrome -->
+  <rect width="64" height="64" rx="14" fill="#131f1a"/>
+  <path fill="#f4f6ef" d="
+    M17 48 V16 h17.5
+    c8.2 0 14 5.2 14 12.6
+    c0 5.6-3.4 9.8-9 11.4
+    L49 48 h-8.5
+    L32.2 38 H25 v10 H17 Z
+    M25 16 v14 h8.5
+    c3.9 0 6.3-2.1 6.3-5.2
+    S37.4 20 33.5 20 H25 Z"/>
+  <path d="M35 38.5 c7 0 11.5 4 13.2 10" fill="none" stroke="#f4f6ef" stroke-width="3.2" stroke-linecap="round"/>
+  <circle cx="48.8" cy="49" r="2.4" fill="#f4f6ef"/>
+</svg>

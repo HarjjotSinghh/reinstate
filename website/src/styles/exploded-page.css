@@ -52,7 +52,7 @@
     --sv-t-b: #ffce4a;
     --sv-t-c: #7ecdf5;
     --sv-t-d: #fdfef9;
-    --font-display: 'Funnel Display Variable', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Questrial', ui-sans-serif, system-ui, sans-serif;
 
     position: relative;
     min-height: 100svh;
@@ -133,16 +133,9 @@
     gap: 0.55rem;
     font-family: var(--font-display);
     font-size: 1.16rem;
-    font-weight: 800;
+    font-weight: 400;
     letter-spacing: -0.035em;
     text-decoration: none;
-  }
-  .glyph {
-    width: 20px;
-    height: 20px;
-    border-radius: 6px;
-    background: var(--ink);
-    border: 4px solid var(--prim);
   }
   .links {
     display: flex;
@@ -255,7 +248,7 @@
     font-size: clamp(2.5rem, 6vw, 5.2rem);
     line-height: 0.96;
     letter-spacing: -0.038em;
-    font-weight: 800;
+    font-weight: 400;
     text-wrap: balance;
     animation: rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
   }

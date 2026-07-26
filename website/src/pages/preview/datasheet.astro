@@ -1,6 +1,7 @@
 ---
 export const prerender = true;
 import PreviewLayout from '../../layouts/PreviewLayout.astro';
+import BrandLockup from '../../components/BrandLockup.astro';
 
 const spec = [
   { k: 'Encryption', v: 'age · x25519' },
@@ -14,7 +15,7 @@ const spec = [
 <PreviewLayout title="D · Datasheet — Reinstate" themeColor="#f7f9f4">
   <div class="page">
     <header class="topbar">
-      <a href="/" class="wordmark">reinstate<b>.</b></a>
+      <BrandLockup href="/" class="wordmark" size={22} />
       <div class="topmeta">
         <span>sync layer</span>
         <span>rev. 0.1 · alpha</span>

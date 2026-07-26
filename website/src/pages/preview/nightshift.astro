@@ -2,6 +2,7 @@
 export const prerender = true;
 import '@fontsource-variable/bricolage-grotesque';
 import PreviewLayout from '../../layouts/PreviewLayout.astro';
+import BrandLockup from '../../components/BrandLockup.astro';
 
 const ARC = 'M 352 208 C 520 40, 980 40, 1146 262';
 const parcels = [
@@ -15,7 +16,7 @@ const parcels = [
 <PreviewLayout title="4 · Night shift — Reinstate" themeColor="#0d1418">
   <div class="page">
     <header class="nav">
-      <a href="/" class="mark"><span class="glyph" aria-hidden="true"></span> reinstate</a>
+      <BrandLockup href="/" class="mark" size={22} />
       <nav class="links">
         <a href="/docs/getting-started">Docs</a>
         <a href="/docs/architecture">Architecture</a>

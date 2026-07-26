@@ -1,0 +1,55 @@
+---
+/**
+ * Logo + wordmark lockup for nav, footer, and preview chrome.
+ */
+import LogoMark from './LogoMark.astro';
+
+interface Props {
+  href?: string;
+  class?: string;
+  /** Logo mark size in px. */
+  size?: number;
+  /** Show the "reinstate" wordmark text. */
+  wordmark?: boolean;
+  /**
+   * When false, render the bare mark (frames + >_ only, no outer tile).
+   * Use for header/footer. Default true keeps the app-icon tile.
+   */
+  tiled?: boolean;
+}
+
+const {
+  href = '/',
+  class: className = '',
+  size = 22,
+  wordmark = true,
+  tiled = true,
+} = Astro.props;
+
+const Tag = href ? 'a' : 'span';
+---
+
+<Tag href={href || undefined} class:list={['brand-lockup', !tiled && 'brand-lockup--bare', className]}>
+  <LogoMark size={size} tiled={tiled} />
+  {wordmark && <span class="word">reinstate</span>}
+</Tag>
+
+<style>
+  .brand-lockup {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-family: var(--font-display);
+    font-size: 1.16rem;
+    font-weight: 400;
+    letter-spacing: -0.035em;
+    text-decoration: none;
+    color: inherit;
+  }
+  .brand-lockup--bare {
+    color: var(--ink);
+  }
+  .word {
+    line-height: 1;
+  }
+</style>

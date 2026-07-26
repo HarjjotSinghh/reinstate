@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Reinstate Pulse Lock mark">
+  <path d="M8 34 H20" stroke="#131f1a" stroke-width="3.8" stroke-linecap="round"/>
+  <path d="M44 34 H56" stroke="#131f1a" stroke-width="3.8" stroke-linecap="round"/>
+  <path
+    d="M20 34 L24 34 L28 20 L36 48 L40 34 L44 34"
+    stroke="#131f1a"
+    stroke-width="3.8"
+    stroke-linecap="round"
+    stroke-linejoin="round"/>
+  <path d="M20 34 V41" stroke="#131f1a" stroke-width="3.8" stroke-linecap="round"/>
+  <path d="M44 34 V41" stroke="#131f1a" stroke-width="3.8" stroke-linecap="round"/>
+</svg>

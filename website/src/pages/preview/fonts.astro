@@ -12,6 +12,7 @@ import '@fontsource-variable/funnel-display';
 import '@fontsource-variable/host-grotesk';
 import '@fontsource-variable/big-shoulders-display';
 import PreviewLayout from '../../layouts/PreviewLayout.astro';
+import LogoMark from '../../components/LogoMark.astro';
 
 const options = [
   {
@@ -130,7 +131,8 @@ const options = [
             </div>
             <div class="sample">
               <span class="wm" style={`font-family:${o.stack},sans-serif;font-weight:${o.w};letter-spacing:${o.ls}`}>
-                <i aria-hidden="true" />reinstate
+                <LogoMark size={22} />
+                reinstate
               </span>
               <p
                 class="head"
@@ -251,15 +253,8 @@ const options = [
   .wm {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.55rem;
     font-size: 1.15rem;
-  }
-  .wm i {
-    width: 19px;
-    height: 19px;
-    border-radius: 6px;
-    background: var(--ink);
-    box-shadow: inset 0 0 0 4px var(--prim);
   }
   .head {
     margin: 0.85rem 0 0;

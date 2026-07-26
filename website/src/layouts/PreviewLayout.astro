@@ -18,13 +18,33 @@ const { title, themeColor = '#0b0b0b' } = Astro.props;
     <meta name="robots" content="noindex" />
     <meta name="theme-color" content={themeColor} />
     <title>{title}</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link id="favicon" rel="icon" type="image/svg+xml" href="/favicon-light.svg" />
     <script is:inline>
       (function () {
+        window.__reinSetFavicon = function (dark) {
+          try {
+            var href =
+              (dark ? '/favicon-dark.svg' : '/favicon-light.svg') +
+              '?v=3&t=' +
+              Date.now();
+            document
+              .querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]')
+              .forEach(function (el) {
+                el.parentNode && el.parentNode.removeChild(el);
+              });
+            var link = document.createElement('link');
+            link.id = 'favicon';
+            link.rel = 'icon';
+            link.type = 'image/svg+xml';
+            link.href = href;
+            document.head.appendChild(link);
+          } catch (e) {}
+        };
         try {
           var stored = localStorage.getItem('rein-theme');
-          var dark = stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var dark = stored === 'dark';
           if (dark) document.documentElement.classList.add('dark');
+          window.__reinSetFavicon(dark);
         } catch (e) {}
       })();
     </script>

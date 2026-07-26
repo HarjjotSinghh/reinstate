@@ -1,6 +1,7 @@
 ---
 export const prerender = true;
 import PreviewLayout from '../../layouts/PreviewLayout.astro';
+import BrandLockup from '../../components/BrandLockup.astro';
 
 const variants = [
   {
@@ -47,6 +48,9 @@ const earlier = [
 
 <PreviewLayout title="Hero directions — Reinstate">
   <main class="wrap">
+    <header class="preview-brand">
+      <BrandLockup href="/" size={24} />
+    </header>
     <h1>Round three</h1>
     <p class="sub">
       Illustration-led, no mascot, no plain terminal, and every card readable. Same words
@@ -92,6 +96,9 @@ const earlier = [
     background: oklch(0.135 0.004 128);
     color: oklch(0.97 0 0);
     padding: clamp(3rem, 10vw, 7rem) clamp(1.25rem, 5vw, 3rem) 9rem;
+  }
+  .preview-brand {
+    margin-bottom: 2rem;
   }
   h1 {
     margin: 0;

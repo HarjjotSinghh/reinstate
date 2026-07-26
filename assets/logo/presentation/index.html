@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reinstate — Logo Concepts · Monochrome Round</title>
+  <style>
+    :root {
+      --paper: #e4e7dd;
+      --paper-2: #f4f6ef;
+      --ink: #131f1a;
+      --ink-2: #4a5a52;
+      --ink-3: #6b7a72;
+      --rule: #c3c9bc;
+      --dark: #1d2723;
+      --dark-2: #26332e;
+      --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      --display: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font);
+      background: var(--paper);
+      color: var(--ink);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .nav {
+      position: sticky; top: 0; z-index: 20;
+      background: color-mix(in srgb, var(--paper) 94%, transparent);
+      border-bottom: 1px solid var(--rule);
+    }
+    .nav-inner {
+      max-width: 76rem; margin: 0 auto;
+      padding: 0.7rem clamp(1.25rem, 4vw, 3rem);
+      display: flex; align-items: center; gap: 1rem; overflow-x: auto;
+    }
+    .nav a {
+      font-family: var(--mono); font-size: 0.68rem;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      color: var(--ink-2); text-decoration: none; white-space: nowrap;
+    }
+    .nav a:hover { color: var(--ink); }
+    .nav .brand {
+      font-weight: 800; letter-spacing: -0.03em; font-size: 0.95rem;
+      color: var(--ink); text-transform: none; margin-right: 0.4rem;
+    }
+
+    .cover {
+      min-height: 88vh; display: grid; place-items: center;
+      padding: clamp(2rem, 5vw, 4rem);
+      border-bottom: 1px solid var(--rule);
+      background: linear-gradient(180deg, var(--paper-2), var(--paper));
+      position: relative; overflow: hidden;
+    }
+    .cover::before {
+      content: ""; position: absolute; inset: 0;
+      background-image:
+        linear-gradient(var(--rule) 1px, transparent 1px),
+        linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+      background-size: 48px 48px; opacity: 0.3; pointer-events: none;
+    }
+    .cover-inner { position: relative; max-width: 48rem; text-align: center; }
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      font-family: var(--mono); font-size: 0.72rem;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--ink-2); margin-bottom: 1.4rem;
+    }
+    .eyebrow .dot {
+      width: 0.45rem; height: 0.45rem; background: var(--ink);
+    }
+    .cover h1 {
+      font-weight: 800;
+      font-size: clamp(2.5rem, 7vw, 4.5rem);
+      letter-spacing: -0.04em; line-height: 0.96;
+      margin-bottom: 1.2rem;
+    }
+    .cover .lede {
+      font-size: clamp(1.05rem, 2vw, 1.2rem);
+      color: var(--ink-2); max-width: 34rem;
+      margin: 0 auto 2.2rem; text-wrap: pretty;
+    }
+    .meta-row {
+      display: flex; flex-wrap: wrap; justify-content: center;
+      gap: 1.25rem 2.25rem; font-family: var(--mono);
+      font-size: 0.75rem; color: var(--ink-3);
+    }
+    .meta-row strong { color: var(--ink); font-weight: 600; }
+
+    section {
+      max-width: 76rem; margin: 0 auto;
+      padding: clamp(2.75rem, 6vw, 5rem) clamp(1.25rem, 4vw, 3rem);
+    }
+    .section-label {
+      font-family: var(--mono); font-size: 0.7rem;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--ink-3); margin-bottom: 0.65rem;
+    }
+    h2 {
+      font-weight: 800;
+      font-size: clamp(1.65rem, 3.2vw, 2.35rem);
+      letter-spacing: -0.035em; line-height: 1.05;
+      margin-bottom: 0.7rem;
+    }
+    .section-intro {
+      color: var(--ink-2); max-width: 40rem;
+      margin-bottom: 2.25rem; font-size: 1.02rem;
+    }
+    hr.rule {
+      border: none; border-top: 1px solid var(--rule);
+      max-width: 76rem; margin: 0 auto;
+    }
+
+    .note {
+      border: 1px solid var(--rule); border-radius: 12px;
+      background: var(--paper-2); padding: 1.25rem 1.5rem;
+      margin-bottom: 2rem; font-size: 0.95rem; color: var(--ink-2);
+    }
+    .note strong { color: var(--ink); }
+
+    /* Gallery */
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.85rem;
+    }
+    @media (min-width: 720px) {
+      .gallery { grid-template-columns: repeat(4, 1fr); }
+    }
+    .g-card {
+      border: 1px solid var(--rule); border-radius: 12px;
+      background: var(--paper-2); overflow: hidden;
+      text-decoration: none; color: inherit;
+      transition: border-color 0.15s;
+    }
+    .g-card:hover { border-color: var(--ink); }
+    .g-card.fav { border-color: var(--ink); border-width: 2px; }
+    .g-thumb {
+      background: var(--dark); display: grid; place-items: center;
+      padding: 1.5rem; min-height: 9.5rem;
+      border-bottom: 1px solid var(--rule);
+    }
+    .g-thumb img { width: 88px; height: 88px; display: block; }
+    .g-meta { padding: 0.85rem 0.95rem; }
+    .g-meta .num {
+      font-family: var(--mono); font-size: 0.65rem;
+      color: var(--ink-3); letter-spacing: 0.06em;
+    }
+    .g-meta h3 {
+      font-weight: 800; font-size: 0.98rem;
+      letter-spacing: -0.02em; margin: 0.15rem 0 0.25rem;
+    }
+    .g-meta p { font-size: 0.78rem; color: var(--ink-2); }
+    .badge {
+      display: inline-block; font-family: var(--mono);
+      font-size: 0.6rem; letter-spacing: 0.05em;
+      text-transform: uppercase; padding: 0.15rem 0.4rem;
+      border: 1px solid var(--ink); border-radius: 999px;
+      margin-top: 0.4rem; font-weight: 700;
+    }
+
+    /* Concept detail */
+    .concept {
+      display: grid; gap: 2rem;
+      padding: clamp(1.75rem, 4vw, 2.75rem) 0;
+      border-bottom: 1px solid var(--rule);
+    }
+    .concept:last-of-type { border-bottom: none; }
+    @media (min-width: 900px) {
+      .concept {
+        grid-template-columns: 1fr 1.1fr;
+        align-items: start; gap: 2.75rem;
+      }
+    }
+    .concept-header {
+      display: flex; flex-wrap: wrap; align-items: baseline;
+      gap: 0.6rem 0.9rem; margin-bottom: 0.65rem;
+    }
+    .concept-num {
+      font-family: var(--mono); font-size: 0.72rem; color: var(--ink-3);
+    }
+    .concept h3 {
+      font-weight: 800; font-size: clamp(1.4rem, 2.4vw, 1.75rem);
+      letter-spacing: -0.03em;
+    }
+    .tag {
+      font-family: var(--mono); font-size: 0.65rem;
+      padding: 0.18rem 0.45rem; border-radius: 999px;
+      border: 1px solid var(--rule); color: var(--ink-2);
+    }
+    .tag.fav {
+      background: var(--ink); color: var(--paper); border-color: var(--ink);
+      font-weight: 700;
+    }
+    .why { color: var(--ink-2); margin-bottom: 1.1rem; max-width: 32rem; }
+    .spec-list {
+      list-style: none; display: grid; gap: 0.5rem; font-size: 0.9rem;
+    }
+    .spec-list li {
+      display: grid; grid-template-columns: 6.2rem 1fr; gap: 0.7rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid color-mix(in srgb, var(--rule) 70%, transparent);
+    }
+    .spec-list .k {
+      font-family: var(--mono); font-size: 0.7rem;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      color: var(--ink-3); padding-top: 0.15rem;
+    }
+
+    .stage { display: grid; gap: 0.7rem; }
+    .stage-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+    .panel {
+      border: 1px solid var(--rule); border-radius: 12px;
+      overflow: hidden; background: var(--paper-2);
+    }
+    .panel-label {
+      font-family: var(--mono); font-size: 0.62rem;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--ink-3); padding: 0.45rem 0.7rem;
+      border-bottom: 1px solid var(--rule); background: var(--paper);
+    }
+    .panel-body {
+      display: grid; place-items: center;
+      min-height: 10rem; padding: 1.25rem;
+    }
+    .panel-body.dark { background: var(--dark); }
+    .panel-body.paper { background: var(--paper); }
+    .panel-body img { width: 96px; height: 96px; display: block; }
+    .sizes {
+      display: flex; align-items: center; justify-content: space-around;
+      gap: 1rem; width: 100%; flex-wrap: wrap;
+    }
+    .size-item {
+      display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+    }
+    .size-item span {
+      font-family: var(--mono); font-size: 0.62rem; color: var(--ink-3);
+    }
+    .lockup {
+      display: flex; align-items: center; gap: 0.8rem;
+    }
+    .lockup img { width: 44px !important; height: 44px !important; }
+    .lockup .name {
+      font-weight: 800; font-size: 1.55rem;
+      letter-spacing: -0.04em; color: var(--ink); line-height: 1;
+    }
+    .panel-body.dark .lockup .name { color: #e9efe3; }
+    .lockup .alias {
+      font-family: var(--mono); font-size: 0.7rem;
+      color: var(--ink-3); margin-top: 0.2rem;
+    }
+    .panel-body.dark .lockup .alias { color: #8a9a90; }
+
+    .decision {
+      background: var(--dark); color: #e9efe3;
+      border-radius: 16px; padding: clamp(1.6rem, 4vw, 2.4rem);
+      border: 1px solid #2b3831;
+    }
+    .decision h2 { color: #e9efe3; }
+    .decision .section-intro { color: #8a9a90; }
+    .decision ol {
+      list-style: none; counter-reset: d;
+      display: grid; gap: 0.7rem;
+    }
+    @media (min-width: 720px) {
+      .decision ol { grid-template-columns: 1fr 1fr; }
+    }
+    .decision li {
+      counter-increment: d; display: flex; gap: 0.8rem;
+      padding: 0.95rem; background: var(--dark-2);
+      border: 1px solid #2b3831; border-radius: 10px; font-size: 0.9rem;
+    }
+    .decision li::before {
+      content: counter(d, decimal-leading-zero);
+      font-family: var(--mono); font-size: 0.7rem;
+      color: #c8d4c8; font-weight: 700; padding-top: 0.15rem;
+    }
+
+    footer {
+      max-width: 76rem; margin: 0 auto;
+      padding: 1.75rem clamp(1.25rem, 4vw, 3rem) 3rem;
+      font-family: var(--mono); font-size: 0.7rem; color: var(--ink-3);
+      display: flex; flex-wrap: wrap; gap: 1rem;
+      justify-content: space-between;
+      border-top: 1px solid var(--rule);
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav" aria-label="Presentation">
+    <div class="nav-inner">
+      <a class="brand" href="#cover">reinstate</a>
+      <a href="#gallery">All 12</a>
+      <a href="#set-a">01–04</a>
+      <a href="#set-b">05–08</a>
+      <a href="#set-c">09–12</a>
+      <a href="#next">Next</a>
+    </div>
+  </nav>
+
+  <header class="cover" id="cover">
+    <div class="cover-inner">
+      <div class="eyebrow"><span class="dot"></span> Logo concepts · Round 3 · Monochrome</div>
+      <h1>Twelve marks.<br />Zero colour.</h1>
+      <p class="lede">
+        Fully monochrome icons for Reinstate. Round 3 abandons frames and arrows —
+        new metaphors: thread, caret, packet, pulse. Ink and paper only.
+      </p>
+      <div class="meta-row">
+        <div><strong>Constraint</strong> · pure mono</div>
+        <div><strong>Latest</strong> · 09–12 new directions</div>
+        <div><strong>Prior</strong> · 01–08 still available</div>
+        <div><strong>Files</strong> · assets/logo/concepts/</div>
+      </div>
+    </div>
+  </header>
+
+  <section id="gallery">
+    <p class="section-label">Overview</p>
+    <h2>All concepts at a glance</h2>
+    <p class="section-intro">
+      Click any card for detail. <strong>09–12 are completely new directions</strong>
+      (thread, CLI caret, folded packet, pulse lock) — not frame/arrow variations.
+    </p>
+    <div class="note">
+      <strong>Monochrome rule for this round:</strong> only ink <code>#131f1a</code> and paper
+      <code>#f4f6ef</code> / dark ground. No chartreuse, no stream colours. Final brand colour
+      can be applied after you lock a mark.
+    </div>
+
+    <div class="gallery">
+      <a class="g-card" href="#c01">
+        <div class="g-thumb"><img src="01-stack-seal.png" alt="Stack Seal" width="88" height="88" /></div>
+        <div class="g-meta">
+          <div class="num">01</div>
+          <h3>Stack Seal</h3>
+          <p>Four layers + seal</p>
+        </div>
+      </a>
+      <a class="g-card" href="#c02">
+        <div class="g-thumb"><img src="02-r-continuum.png" alt="R Continuum" width="88" height="88" /></div>
+        <div class="g-meta">
+          <div class="num">02</div>
+          <h3>R Continuum</h3>
+          <p>Lettermark + resume</p>
+        </div>
+      </a>
+      <a class="g-card" href="#c03">
+        <div class="g-thumb"><img src="03-relay-path.png" alt="Relay Path" width="88" height="88" /></div>
+        <div class="g-meta">
+          <div class="num">03</div>
+          <h3>Relay Path</h3>
+          <p>Verified handoff</p>
+        </div>
+      </a>
+      <a class="g-card fav" href="#c04">
+        <div class="g-thumb"><img src="04-restore-frame.png" alt="Restore Frame" width="88" height="88" /></div>
+        <div class="g-meta">
+          <div class="num">04</div>
+          <h3>Restore Frame</h3>
+          <p>Your current favorite</p>
+          <span class="badge">Preferred</span>
+        </div>
+      </a>
+      <a class="g-card" href="#c05">
+        <div class="g-thumb"><img src="05-monoline-reentry.png" alt="Monoline Reentry" width="88" height="88" /></div>
+        <div class="g-meta">
+          <div class="num">05 · new</div>
+          <h3>Monoline Reentry</h3>
+          <p>Open frame, one weight</p>
+        </div>
+      </a>
+      <a class="g-card" href="#c06">
+        <div class="g-thumb"><img src="06-nested-checkpoint.png" alt="Nested Checkpoint" width="88" height="88" /></div>
+        <div class="g-meta">
+          <div class="num">06 · new</div>
+          <h3>Nested Checkpoint</h3>
+          <p>Session inside environment</p>
+        </div>
+      </a>
+      <a class="g-card" href="#c07">
+        <div class="g-thumb"><img src="07-offset-diptych.png" alt="Offset Diptych" width="88" height="88" /></div>
+        <div class="g-meta">
+          <div class="num">07 · new</div>
+          <h3>Offset Diptych</h3>
+          <p>Two devices / path map</p>
+        </div>
+      </a>
+      <a class="g-card" href="#c08">
+        <div class="g-thumb"><img src="08-inset-return.png" alt="Inset Return" width="88" height="88" /></div>
+        <div class="g-meta">
+          <div class="num">08</div>
+          <h3>Inset Return</h3>
+          <p>Solid tile + return</p>
+        </div>
+      </a>
+      <a class="g-card" href="#c09">
+        <div class="g-thumb"><img src="09-thread-hitch.png" alt="Thread Hitch" width="88" height="88" /></div>
+        <div class="g-meta">
+          <div class="num">09 · new</div>
+          <h3>Thread Hitch</h3>
+          <p>Pick up the thread</p>
+        </div>
+      </a>
+      <a class="g-card" href="#c10">
+        <div class="g-thumb"><img src="10-caret-track.png" alt="Caret Track" width="88" height="88" /></div>
+        <div class="g-meta">
+          <div class="num">10 · new</div>
+          <h3>Caret Track</h3>
+          <p>CLI present moment</p>
+        </div>
+      </a>
+      <a class="g-card" href="#c11">
+        <div class="g-thumb"><img src="11-folded-packet.png" alt="Folded Packet" width="88" height="88" /></div>
+        <div class="g-meta">
+          <div class="num">11 · new</div>
+          <h3>Folded Packet</h3>
+          <p>Portable handoff</p>
+        </div>
+      </a>
+      <a class="g-card" href="#c12">
+        <div class="g-thumb"><img src="12-pulse-lock.png" alt="Pulse Lock" width="88" height="88" /></div>
+        <div class="g-meta">
+          <div class="num">12 · new</div>
+          <h3>Pulse Lock</h3>
+          <p>Live + sealed</p>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <hr class="rule" />
+
+  <!-- SET A -->
+  <section id="set-a" style="padding-bottom:0">
+    <p class="section-label">Set A · Converted to mono</p>
+    <h2>Original four, colour removed</h2>
+    <p class="section-intro">Same ideas as Round 1 — ink and paper only.</p>
+  </section>
+
+  <section class="concept" id="c01" style="padding-top:1rem">
+    <div>
+      <div class="concept-header">
+        <span class="concept-num">01 / 08</span>
+        <h3>Stack Seal</h3>
+        <span class="tag">Product motif</span>
+      </div>
+      <p class="why">Four continuity layers sealed for transport. Strong narrative when colour returns later; mono relies on lock detail.</p>
+      <ul class="spec-list">
+        <li><span class="k">Metaphor</span><span class="v">Sealed continuity package</span></li>
+        <li><span class="k">Mono note</span><span class="v">Loses stream colour identity — lock carries meaning</span></li>
+        <li><span class="k">File</span><span class="v">01-stack-seal.svg</span></li>
+      </ul>
+    </div>
+    <div class="stage">
+      <div class="stage-row">
+        <div class="panel">
+          <div class="panel-label">Icon · dark</div>
+          <div class="panel-body dark"><img src="01-stack-seal.png" alt="" width="96" height="96" /></div>
+        </div>
+        <div class="panel">
+          <div class="panel-label">Mark · paper</div>
+          <div class="panel-body paper"><img src="../concepts/01-stack-seal-mark.svg" alt="" width="96" height="96" /></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-label">Scale · 96 / 48 / 24</div>
+        <div class="panel-body paper">
+          <div class="sizes">
+            <div class="size-item"><img src="01-stack-seal.png" width="96" height="96" alt="" /><span>96</span></div>
+            <div class="size-item"><img src="01-stack-seal.png" width="48" height="48" alt="" style="width:48px;height:48px" /><span>48</span></div>
+            <div class="size-item"><img src="01-stack-seal.png" width="24" height="24" alt="" style="width:24px;height:24px" /><span>24</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="concept" id="c02">
+    <div>
+      <div class="concept-header">
+        <span class="concept-num">02 / 08</span>
+        <h3>R Continuum</h3>
+        <span class="tag">Lettermark</span>
+      </div>
+      <p class="why">Geometric R for rein / Reinstate. Resume joint on the leg. Strong monochrome lettermark.</p>
+      <ul class="spec-list">
+        <li><span class="k">Metaphor</span><span class="v">Name + resume path</span></li>
+        <li><span class="k">Mono note</span><span class="v">Works well without accent colour</span></li>
+        <li><span class="k">File</span><span class="v">02-r-continuum.svg</span></li>
+      </ul>
+    </div>
+    <div class="stage">
+      <div class="stage-row">
+        <div class="panel">
+          <div class="panel-label">Icon · dark</div>
+          <div class="panel-body dark"><img src="02-r-continuum.png" alt="" width="96" height="96" /></div>
+        </div>
+        <div class="panel">
+          <div class="panel-label">Mark · paper</div>
+          <div class="panel-body paper"><img src="../concepts/02-r-continuum-mark.svg" alt="" width="96" height="96" /></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-label">Lockup</div>
+        <div class="panel-body paper" style="min-height:5.5rem">
+          <div class="lockup">
+            <img src="02-r-continuum.png" alt="" />
+            <div><div class="name">reinstate</div><div class="alias">rein · monochrome</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="concept" id="c03">
+    <div>
+      <div class="concept-header">
+        <span class="concept-num">03 / 08</span>
+        <h3>Relay Path</h3>
+        <span class="tag">Handoff</span>
+      </div>
+      <p class="why">Two workspaces linked by a verified path. Story-clear for multi-device sync.</p>
+      <ul class="spec-list">
+        <li><span class="k">Metaphor</span><span class="v">Verified handoff</span></li>
+        <li><span class="k">Mono note</span><span class="v">Check badge still reads without colour</span></li>
+        <li><span class="k">File</span><span class="v">03-relay-path.svg</span></li>
+      </ul>
+    </div>
+    <div class="stage">
+      <div class="stage-row">
+        <div class="panel">
+          <div class="panel-label">Icon · dark</div>
+          <div class="panel-body dark"><img src="03-relay-path.png" alt="" width="96" height="96" /></div>
+        </div>
+        <div class="panel">
+          <div class="panel-label">Mark · paper</div>
+          <div class="panel-body paper"><img src="../concepts/03-relay-path-mark.svg" alt="" width="96" height="96" /></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="concept" id="c04">
+    <div>
+      <div class="concept-header">
+        <span class="concept-num">04 / 08</span>
+        <h3>Restore Frame</h3>
+        <span class="tag fav">Your favorite</span>
+      </div>
+      <p class="why">
+        Workspace frame with a path re-entering it — reinstate the environment.
+        Clean mono, strong at small sizes, maps to the product verb.
+      </p>
+      <ul class="spec-list">
+        <li><span class="k">Metaphor</span><span class="v">Restore into the frame</span></li>
+        <li><span class="k">Mono note</span><span class="v">Does not need colour to work</span></li>
+        <li><span class="k">File</span><span class="v">04-restore-frame.svg</span></li>
+      </ul>
+    </div>
+    <div class="stage">
+      <div class="stage-row">
+        <div class="panel">
+          <div class="panel-label">Icon · dark</div>
+          <div class="panel-body dark"><img src="04-restore-frame.png" alt="" width="96" height="96" /></div>
+        </div>
+        <div class="panel">
+          <div class="panel-label">Mark · paper</div>
+          <div class="panel-body paper"><img src="../concepts/04-restore-frame-mark.svg" alt="" width="96" height="96" /></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-label">Scale · 96 / 48 / 24</div>
+        <div class="panel-body paper">
+          <div class="sizes">
+            <div class="size-item"><img src="04-restore-frame.png" width="96" height="96" alt="" /><span>96</span></div>
+            <div class="size-item"><img src="04-restore-frame.png" width="48" height="48" alt="" style="width:48px;height:48px" /><span>48</span></div>
+            <div class="size-item"><img src="04-restore-frame.png" width="24" height="24" alt="" style="width:24px;height:24px" /><span>24</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-label">Lockup · dark</div>
+        <div class="panel-body dark" style="min-height:5.5rem">
+          <div class="lockup">
+            <img src="04-restore-frame.png" alt="" />
+            <div><div class="name">reinstate</div><div class="alias">rein · restore the workspace</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule" />
+
+  <!-- SET B -->
+  <section id="set-b" style="padding-bottom:0">
+    <p class="section-label">Set B · New monochrome directions</p>
+    <h2>Four more concepts</h2>
+    <p class="section-intro">
+      Built around the Restore Frame idea you liked: open frame, nested session,
+      dual device, and solid inset return.
+    </p>
+  </section>
+
+  <section class="concept" id="c05" style="padding-top:1rem">
+    <div>
+      <div class="concept-header">
+        <span class="concept-num">05 / 08 · new</span>
+        <h3>Monoline Reentry</h3>
+        <span class="tag">Frame family</span>
+      </div>
+      <p class="why">
+        Open frame (gap at the corner) with the restore path drawn at the same stroke weight —
+        a single monoline system. Sibling to 04, slightly more technical.
+      </p>
+      <ul class="spec-list">
+        <li><span class="k">Metaphor</span><span class="v">Incomplete frame completed by resume</span></li>
+        <li><span class="k">Vs 04</span><span class="v">Open C-frame vs closed frame + gap mask</span></li>
+        <li><span class="k">File</span><span class="v">05-monoline-reentry.svg</span></li>
+      </ul>
+    </div>
+    <div class="stage">
+      <div class="stage-row">
+        <div class="panel">
+          <div class="panel-label">Icon · dark</div>
+          <div class="panel-body dark"><img src="05-monoline-reentry.png" alt="" width="96" height="96" /></div>
+        </div>
+        <div class="panel">
+          <div class="panel-label">Mark · paper</div>
+          <div class="panel-body paper"><img src="../concepts/05-monoline-reentry-mark.svg" alt="" width="96" height="96" /></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-label">Scale · 96 / 48 / 24</div>
+        <div class="panel-body paper">
+          <div class="sizes">
+            <div class="size-item"><img src="05-monoline-reentry.png" width="96" height="96" alt="" /><span>96</span></div>
+            <div class="size-item"><img src="05-monoline-reentry.png" width="48" height="48" alt="" style="width:48px;height:48px" /><span>48</span></div>
+            <div class="size-item"><img src="05-monoline-reentry.png" width="24" height="24" alt="" style="width:24px;height:24px" /><span>24</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="concept" id="c06">
+    <div>
+      <div class="concept-header">
+        <span class="concept-num">06 / 08 · new</span>
+        <h3>Nested Checkpoint</h3>
+        <span class="tag">Frame family</span>
+      </div>
+      <p class="why">
+        Outer frame = environment. Inner solid = live session. Arc reconnects them —
+        environment verification, not just chat recovery. Distinct from pure restore arrow.
+      </p>
+      <ul class="spec-list">
+        <li><span class="k">Metaphor</span><span class="v">Session inside verified environment</span></li>
+        <li><span class="k">Strength</span><span class="v">Two levels of meaning at a glance</span></li>
+        <li><span class="k">File</span><span class="v">06-nested-checkpoint.svg</span></li>
+      </ul>
+    </div>
+    <div class="stage">
+      <div class="stage-row">
+        <div class="panel">
+          <div class="panel-label">Icon · dark</div>
+          <div class="panel-body dark"><img src="06-nested-checkpoint.png" alt="" width="96" height="96" /></div>
+        </div>
+        <div class="panel">
+          <div class="panel-label">Mark · paper</div>
+          <div class="panel-body paper"><img src="../concepts/06-nested-checkpoint-mark.svg" alt="" width="96" height="96" /></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-label">Lockup</div>
+        <div class="panel-body paper" style="min-height:5.5rem">
+          <div class="lockup">
+            <img src="06-nested-checkpoint.png" alt="" />
+            <div><div class="name">reinstate</div><div class="alias">rein · verify · resume</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="concept" id="c07">
+    <div>
+      <div class="concept-header">
+        <span class="concept-num">07 / 08 · new</span>
+        <h3>Offset Diptych</h3>
+        <span class="tag">Multi-device</span>
+      </div>
+      <p class="why">
+        Two frames offset like source and destination machines (or agents).
+        Path remapping as geometry. Continuity link between them.
+      </p>
+      <ul class="spec-list">
+        <li><span class="k">Metaphor</span><span class="v">Desktop ↔ laptop / agent A → B</span></li>
+        <li><span class="k">Strength</span><span class="v">Ownable dual-frame silhouette</span></li>
+        <li><span class="k">File</span><span class="v">07-offset-diptych.svg</span></li>
+      </ul>
+    </div>
+    <div class="stage">
+      <div class="stage-row">
+        <div class="panel">
+          <div class="panel-label">Icon · dark</div>
+          <div class="panel-body dark"><img src="07-offset-diptych.png" alt="" width="96" height="96" /></div>
+        </div>
+        <div class="panel">
+          <div class="panel-label">Mark · paper</div>
+          <div class="panel-body paper"><img src="../concepts/07-offset-diptych-mark.svg" alt="" width="96" height="96" /></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="concept" id="c08">
+    <div>
+      <div class="concept-header">
+        <span class="concept-num">08 / 08 · new</span>
+        <h3>Inset Return</h3>
+        <span class="tag">Solid glyph</span>
+      </div>
+      <p class="why">
+        Solid workspace tile with the return path drawn inside. Maximum contrast,
+        favicon-proof, feels like a sealed package you reopen. Closest solid cousin to 04.
+      </p>
+      <ul class="spec-list">
+        <li><span class="k">Metaphor</span><span class="v">Sealed workspace + restore inside</span></li>
+        <li><span class="k">Strength</span><span class="v">Simplest silhouette for tiny sizes</span></li>
+        <li><span class="k">File</span><span class="v">08-inset-return.svg</span></li>
+      </ul>
+    </div>
+    <div class="stage">
+      <div class="stage-row">
+        <div class="panel">
+          <div class="panel-label">Icon · dark</div>
+          <div class="panel-body dark"><img src="08-inset-return.png" alt="" width="96" height="96" /></div>
+        </div>
+        <div class="panel">
+          <div class="panel-label">Mark · paper</div>
+          <div class="panel-body paper"><img src="../concepts/08-inset-return-mark.svg" alt="" width="96" height="96" /></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-label">Scale · 96 / 48 / 24</div>
+        <div class="panel-body paper">
+          <div class="sizes">
+            <div class="size-item"><img src="08-inset-return.png" width="96" height="96" alt="" /><span>96</span></div>
+            <div class="size-item"><img src="08-inset-return.png" width="48" height="48" alt="" style="width:48px;height:48px" /><span>48</span></div>
+            <div class="size-item"><img src="08-inset-return.png" width="24" height="24" alt="" style="width:24px;height:24px" /><span>24</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-label">Lockup · dark</div>
+        <div class="panel-body dark" style="min-height:5.5rem">
+          <div class="lockup">
+            <img src="08-inset-return.png" alt="" />
+            <div><div class="name">reinstate</div><div class="alias">rein · solid mono</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule" />
+
+  <!-- SET C -->
+  <section id="set-c" style="padding-bottom:0">
+    <p class="section-label">Set C · Completely new directions</p>
+    <h2>Round 3 — four fresh metaphors</h2>
+    <p class="section-intro">
+      No frames, no restore arrows, no monograms, no layer stacks.
+      Thread · caret · packet · pulse.
+    </p>
+  </section>
+
+  <section class="concept" id="c09" style="padding-top:1rem">
+    <div>
+      <div class="concept-header">
+        <span class="concept-num">09 / 12 · new</span>
+        <h3>Thread Hitch</h3>
+        <span class="tag">Organic · continuity</span>
+      </div>
+      <p class="why">
+        Pick up the thread of a task. A continuous line hitches through a ring —
+        workspace identity + session continuity. Soft and ownable; opposite of
+        the rigid frame family.
+      </p>
+      <ul class="spec-list">
+        <li><span class="k">Metaphor</span><span class="v">Hitch · pick up the thread</span></li>
+        <li><span class="k">Feel</span><span class="v">Fluid, hand-drawn geometry, memorable</span></li>
+        <li><span class="k">Risk</span><span class="v">Can read as “swirl / @ / spiral” if not careful</span></li>
+        <li><span class="k">File</span><span class="v">09-thread-hitch.svg</span></li>
+      </ul>
+    </div>
+    <div class="stage">
+      <div class="stage-row">
+        <div class="panel">
+          <div class="panel-label">Icon · dark</div>
+          <div class="panel-body dark"><img src="09-thread-hitch.png" alt="" width="96" height="96" /></div>
+        </div>
+        <div class="panel">
+          <div class="panel-label">Mark · paper</div>
+          <div class="panel-body paper"><img src="../concepts/09-thread-hitch-mark.svg" alt="" width="96" height="96" /></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-label">Scale · 96 / 48 / 24</div>
+        <div class="panel-body paper">
+          <div class="sizes">
+            <div class="size-item"><img src="09-thread-hitch.png" width="96" height="96" alt="" /><span>96</span></div>
+            <div class="size-item"><img src="09-thread-hitch.png" width="48" height="48" alt="" style="width:48px;height:48px" /><span>48</span></div>
+            <div class="size-item"><img src="09-thread-hitch.png" width="24" height="24" alt="" style="width:24px;height:24px" /><span>24</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-label">Lockup</div>
+        <div class="panel-body paper" style="min-height:5.5rem">
+          <div class="lockup">
+            <img src="09-thread-hitch.png" alt="" />
+            <div><div class="name">reinstate</div><div class="alias">rein · pick up the thread</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="concept" id="c10">
+    <div>
+      <div class="concept-header">
+        <span class="concept-num">10 / 12 · new</span>
+        <h3>Caret Track</h3>
+        <span class="tag">CLI-native</span>
+      </div>
+      <p class="why">
+        A block caret on a continuity track — “you are here” in the work, with
+        past checkpoints behind it. Speaks to terminal agents without drawing a
+        fake terminal window.
+      </p>
+      <ul class="spec-list">
+        <li><span class="k">Metaphor</span><span class="v">Present caret · history track</span></li>
+        <li><span class="k">Feel</span><span class="v">Builder-native, sparse, infrastructure</span></li>
+        <li><span class="k">Risk</span><span class="v">Can read as equalizer / bar chart at a glance</span></li>
+        <li><span class="k">File</span><span class="v">10-caret-track.svg</span></li>
+      </ul>
+    </div>
+    <div class="stage">
+      <div class="stage-row">
+        <div class="panel">
+          <div class="panel-label">Icon · dark</div>
+          <div class="panel-body dark"><img src="10-caret-track.png" alt="" width="96" height="96" /></div>
+        </div>
+        <div class="panel">
+          <div class="panel-label">Mark · paper</div>
+          <div class="panel-body paper"><img src="../concepts/10-caret-track-mark.svg" alt="" width="96" height="96" /></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-label">Scale · 96 / 48 / 24</div>
+        <div class="panel-body paper">
+          <div class="sizes">
+            <div class="size-item"><img src="10-caret-track.png" width="96" height="96" alt="" /><span>96</span></div>
+            <div class="size-item"><img src="10-caret-track.png" width="48" height="48" alt="" style="width:48px;height:48px" /><span>48</span></div>
+            <div class="size-item"><img src="10-caret-track.png" width="24" height="24" alt="" style="width:24px;height:24px" /><span>24</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="concept" id="c11">
+    <div>
+      <div class="concept-header">
+        <span class="concept-num">11 / 12 · new</span>
+        <h3>Folded Packet</h3>
+        <span class="tag">Portable object</span>
+      </div>
+      <p class="why">
+        A folded geometric packet — the portable handoff itself. Not a path into
+        a window: the sealed thing you carry between machines. Hex silhouette +
+        crease + band.
+      </p>
+      <ul class="spec-list">
+        <li><span class="k">Metaphor</span><span class="v">Sealed portable checkpoint</span></li>
+        <li><span class="k">Feel</span><span class="v">Object-like, sharp, brand-world ready</span></li>
+        <li><span class="k">Risk</span><span class="v">Hex can feel crypto/web3 if over-styled later</span></li>
+        <li><span class="k">File</span><span class="v">11-folded-packet.svg</span></li>
+      </ul>
+    </div>
+    <div class="stage">
+      <div class="stage-row">
+        <div class="panel">
+          <div class="panel-label">Icon · dark</div>
+          <div class="panel-body dark"><img src="11-folded-packet.png" alt="" width="96" height="96" /></div>
+        </div>
+        <div class="panel">
+          <div class="panel-label">Mark · paper</div>
+          <div class="panel-body paper"><img src="../concepts/11-folded-packet-mark.svg" alt="" width="96" height="96" /></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-label">Lockup · dark</div>
+        <div class="panel-body dark" style="min-height:5.5rem">
+          <div class="lockup">
+            <img src="11-folded-packet.png" alt="" />
+            <div><div class="name">reinstate</div><div class="alias">rein · portable handoff</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="concept" id="c12">
+    <div>
+      <div class="concept-header">
+        <span class="concept-num">12 / 12 · new</span>
+        <h3>Pulse Lock</h3>
+        <span class="tag">Live + sealed</span>
+      </div>
+      <p class="why">
+        A continuity pulse (session is alive) sealed through a lock bar
+        (encrypted at rest). Not a medical brand — a signal that work is living
+        and protected. Differentiates “sync dump” from “live continuity.”
+      </p>
+      <ul class="spec-list">
+        <li><span class="k">Metaphor</span><span class="v">Live pulse · sealed channel</span></li>
+        <li><span class="k">Feel</span><span class="v">Active, trustworthy, simple</span></li>
+        <li><span class="k">Risk</span><span class="v">ECG / health-tech association if left unbranded</span></li>
+        <li><span class="k">File</span><span class="v">12-pulse-lock.svg</span></li>
+      </ul>
+    </div>
+    <div class="stage">
+      <div class="stage-row">
+        <div class="panel">
+          <div class="panel-label">Icon · dark</div>
+          <div class="panel-body dark"><img src="12-pulse-lock.png" alt="" width="96" height="96" /></div>
+        </div>
+        <div class="panel">
+          <div class="panel-label">Mark · paper</div>
+          <div class="panel-body paper"><img src="../concepts/12-pulse-lock-mark.svg" alt="" width="96" height="96" /></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-label">Scale · 96 / 48 / 24</div>
+        <div class="panel-body paper">
+          <div class="sizes">
+            <div class="size-item"><img src="12-pulse-lock.png" width="96" height="96" alt="" /><span>96</span></div>
+            <div class="size-item"><img src="12-pulse-lock.png" width="48" height="48" alt="" style="width:48px;height:48px" /><span>48</span></div>
+            <div class="size-item"><img src="12-pulse-lock.png" width="24" height="24" alt="" style="width:24px;height:24px" /><span>24</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule" />
+
+  <section id="next">
+    <div class="decision">
+      <p class="section-label" style="color:#8a9a90">Decision</p>
+      <h2>What I need from you</h2>
+      <p class="section-intro">
+        Round 3 is intentionally different. Tell me which direction lands — or what still
+        feels wrong — and we either refine one or run another wild round.
+      </p>
+      <ol>
+        <li>React to 09–12 (like / skip / hybrid)</li>
+        <li>Or name a metaphor you want next (e.g. map, vault, bookmark)</li>
+        <li>Optional: kill entire families (frames, pulses, etc.)</li>
+        <li>When one wins: mono masters + social kit</li>
+        <li>Colour only after the mark is locked</li>
+        <li>Wordmark pairing with Funnel Display</li>
+      </ol>
+    </div>
+  </section>
+
+  <footer>
+    <div>Reinstate · Logo Concepts · Round 2 Monochrome</div>
+    <div>assets/logo/concepts/ · ink only</div>
+  </footer>
+</body>
+</html>

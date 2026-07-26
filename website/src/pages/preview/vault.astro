@@ -2,6 +2,7 @@
 export const prerender = true;
 import '@fontsource/young-serif';
 import PreviewLayout from '../../layouts/PreviewLayout.astro';
+import BrandLockup from '../../components/BrandLockup.astro';
 
 const cards = [
   {
@@ -28,7 +29,7 @@ const cards = [
 <PreviewLayout title="3 · Vault — Reinstate" themeColor="#1b2b21">
   <div class="page">
     <header class="nav">
-      <a href="/" class="mark">reinstate</a>
+      <BrandLockup href="/" class="mark" size={22} />
       <nav class="links">
         <a href="/docs/getting-started">Docs</a>
         <a href="/docs/security-model">Security</a>

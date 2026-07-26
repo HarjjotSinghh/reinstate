@@ -1,6 +1,7 @@
 ---
 export const prerender = true;
 import PreviewLayout from '../../layouts/PreviewLayout.astro';
+import BrandLockup from '../../components/BrandLockup.astro';
 
 const lines = [
   { host: 'desktop', cmd: 'rein init', note: 'generates your age key, locally' },
@@ -16,7 +17,7 @@ const agents = ['Claude Code', 'Codex', 'Gemini CLI', 'OpenCode', 'Grok Build'];
   <div class="page">
     <div class="field">
       <header class="topbar">
-        <a href="/" class="wordmark">reinstate<b>.</b></a>
+        <BrandLockup href="/" class="wordmark" size={22} />
         <nav class="topnav">
           <a href="/docs/getting-started">Docs</a>
           <a href="https://github.com/HarjjotSinghh/reinstate" rel="noopener noreferrer" target="_blank">GitHub</a>

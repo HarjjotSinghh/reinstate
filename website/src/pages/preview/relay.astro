@@ -2,6 +2,7 @@
 export const prerender = true;
 import '@fontsource-variable/bricolage-grotesque';
 import PreviewLayout from '../../layouts/PreviewLayout.astro';
+import BrandLockup from '../../components/BrandLockup.astro';
 
 const bands = [
   { name: 'sessions', off: -39, dur: '3.4s', w: 3 },
@@ -19,10 +20,7 @@ const agents = ['Claude Code', 'Codex', 'Gemini CLI', 'OpenCode', 'Grok Build'];
     <span class="blob br" aria-hidden="true"></span>
 
     <header class="nav">
-      <a href="/" class="mark">
-        <span class="glyph" aria-hidden="true"></span>
-        reinstate
-      </a>
+      <BrandLockup href="/" class="mark" size={22} />
       <nav class="links">
         <a href="/docs/getting-started">Docs</a>
         <a href="/docs/security-model">Security</a>

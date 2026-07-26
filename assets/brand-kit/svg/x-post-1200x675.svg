@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img">
+  <title>Reinstate</title>
+  <rect width="1200" height="675" fill="#e4e7dd"/>
+  <rect x="0" y="0" width="10" height="675" fill="#b8ff3c"/>
+<g aria-label="Reinstate logo">
+<rect x="24.00" y="24.00" width="96.00" height="96.00" rx="21.00" fill="#131f1a"/>
+<rect x="45.00" y="45.00" width="42.00" height="42.00" rx="8.25" fill="none" stroke="#f4f6ef" stroke-width="5.40"/>
+<rect x="57.00" y="57.00" width="42.00" height="42.00" rx="8.25" fill="#131f1a" stroke="#f4f6ef" stroke-width="5.40"/>
+<path d="M69.75,73.50 L75.75,79.50 L69.75,85.50" fill="none" stroke="#f4f6ef" stroke-width="4.05" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M79.50,85.50 H87.75" fill="none" stroke="#f4f6ef" stroke-width="4.05" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="140" y="82" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="34" font-weight="800" fill="#131f1a" letter-spacing="-0.04em">reinstate</text>
+<text x="48" y="270.0" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="42" font-weight="800" fill="#131f1a" letter-spacing="-0.03em"><tspan x="48" y="270.0">Your session is not stuck</tspan><tspan x="48" dy="48.3">on one machine.</tspan></text>
+<text x="48" y="394.6" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="500" fill="#4a5a52">Search, resume, and hand off coding-agent work, verified and encrypted.</text>
+<text x="48" y="627" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="500" fill="#4a5a52">reinstate.dev</text>
+<g transform="translate(1000,585) scale(0.9)" stroke-linejoin="round">
+<polygon points="60.6,23.0 22.5,45.0 22.5,57.0 60.6,35.0" fill="#c3c9bc" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="-38.1,10.0 22.5,45.0 22.5,57.0 -38.1,22.0" fill="#e2e6dc" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="0.0,-12.0 60.6,23.0 22.5,45.0 -38.1,10.0" fill="#fdfef9" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="60.6,3.0 22.5,25.0 22.5,37.0 60.6,15.0" fill="#3d8ab5" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="-38.1,-10.0 22.5,25.0 22.5,37.0 -38.1,2.0" fill="#57aad6" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="0.0,-32.0 60.6,3.0 22.5,25.0 -38.1,-10.0" fill="#7ecdf5" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="60.6,-17.0 22.5,5.0 22.5,17.0 60.6,-5.0" fill="#bd8d1b" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="-38.1,-30.0 22.5,5.0 22.5,17.0 -38.1,-18.0" fill="#e0ad2c" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="0.0,-52.0 60.6,-17.0 22.5,5.0 -38.1,-30.0" fill="#ffce4a" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="60.6,-37.0 22.5,-15.0 22.5,-3.0 60.6,-25.0" fill="#78b31d" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="-38.1,-50.0 22.5,-15.0 22.5,-3.0 -38.1,-38.0" fill="#96d92a" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+<polygon points="0.0,-72.0 60.6,-37.0 22.5,-15.0 -38.1,-50.0" fill="#b8ff3c" stroke="#131f1a" stroke-width="2.8" stroke-linejoin="round"/>
+</g>
+</svg>
