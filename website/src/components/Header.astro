@@ -2,10 +2,11 @@
 import BrandLockup from './BrandLockup.astro';
 
 const path = Astro.url.pathname;
+const onHome = path === '/';
 const onDocs = path.startsWith('/docs');
 ---
 
-<header class="nav">
+<header class:list={['nav', onHome && 'is-home']}>
   <div class="nav-frame">
     <div class="shell nav-inner">
       <BrandLockup href="/" class="mark" size={36} tiled={false} />
@@ -67,6 +68,8 @@ const onDocs = path.startsWith('/docs');
   const toggle = document.getElementById('themetoggle');
   const navToggle = document.getElementById('nav-toggle');
   const mobileNav = document.getElementById('mobile-nav');
+  const nav = document.querySelector('.nav');
+  let navFrameRequested = false;
 
   const sync = () => {
     const dark = root.classList.contains('dark');
@@ -77,6 +80,20 @@ const onDocs = path.startsWith('/docs');
     }
   };
   sync();
+
+  const syncNavFrame = () => {
+    nav?.classList.toggle('is-scrolled', window.scrollY > 12);
+    navFrameRequested = false;
+  };
+
+  const requestNavFrameSync = () => {
+    if (navFrameRequested) return;
+    navFrameRequested = true;
+    window.requestAnimationFrame(syncNavFrame);
+  };
+
+  syncNavFrame();
+  window.addEventListener('scroll', requestNavFrameSync, { passive: true });
 
   toggle?.addEventListener('click', () => {
     const dark = root.classList.toggle('dark');
@@ -93,10 +110,12 @@ const onDocs = path.startsWith('/docs');
     const open = mobileNav.hasAttribute('hidden');
     if (open) {
       mobileNav.hidden = false;
+      nav?.classList.add('is-open');
       navToggle.setAttribute('aria-expanded', 'true');
       navToggle.setAttribute('aria-label', 'Close menu');
     } else {
       mobileNav.hidden = true;
+      nav?.classList.remove('is-open');
       navToggle.setAttribute('aria-expanded', 'false');
       navToggle.setAttribute('aria-label', 'Open menu');
     }
@@ -112,14 +131,18 @@ const onDocs = path.startsWith('/docs');
     background: transparent;
   }
   .nav-frame {
-    max-width: 88rem;
+    max-width: 58rem;
     margin-inline: auto;
     border: 1px solid var(--rule);
     border-radius: 14px;
     background: var(--paper-2);
     transition:
-      background 0.3s ease,
-      border-color 0.3s ease;
+      background 0.18s ease,
+      border-color 0.18s ease;
+  }
+  .nav.is-home:not(.is-scrolled):not(.is-open) .nav-frame {
+    border-color: transparent;
+    background: transparent;
   }
   .nav-inner {
     display: flex;
@@ -262,6 +285,11 @@ const onDocs = path.startsWith('/docs');
     }
     .navburger {
       flex: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .nav-frame {
+      transition: none;
     }
   }
 </style>

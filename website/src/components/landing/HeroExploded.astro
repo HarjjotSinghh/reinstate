@@ -219,33 +219,35 @@ const floorGrid = [
           </button>
         </div>
 
-        <nav class="hero-links" aria-label="Installation resources">
-          <a href="/docs/getting-started">
-            Read setup guide
-            <svg viewBox="0 0 16 16" aria-hidden="true">
-              <path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5"></path>
-            </svg>
-          </a>
-          <a
-            href="https://github.com/HarjjotSinghh/reinstate"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            View on GitHub
-            <svg viewBox="0 0 16 16" aria-hidden="true">
-              <path d="M6 3h7v7M13 3 6.5 9.5"></path>
-              <path d="M11.5 9.5V13h-8V5h3.5"></path>
-            </svg>
-          </a>
-        </nav>
-      </div>
+        <div class="conversion-meta">
+          <nav class="hero-links" aria-label="Installation resources">
+            <a href="/docs/getting-started">
+              Read setup guide
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5"></path>
+              </svg>
+            </a>
+            <a
+              href="https://github.com/HarjjotSinghh/reinstate"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              View on GitHub
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M6 3h7v7M13 3 6.5 9.5"></path>
+                <path d="M11.5 9.5V13h-8V5h3.5"></path>
+              </svg>
+            </a>
+          </nav>
 
-      <div class="availability" aria-label="Current compatibility">
-        <span class="available">
-          <i aria-hidden="true"></i>
-          <strong>Available now:</strong> Claude Code · Codex
-        </span>
-        <span class="platform">macOS ↔ Windows</span>
+          <div class="availability" aria-label="Current compatibility">
+            <span class="available">
+              <i aria-hidden="true"></i>
+              <strong>Available now:</strong> Claude Code · Codex
+            </span>
+            <span class="platform">macOS ↔ Windows</span>
+          </div>
+        </div>
       </div>
 
       <ol class="mechanism" aria-label="How Reinstate works">
@@ -1020,7 +1022,7 @@ const floorGrid = [
     justify-items: center;
     gap: 0.25rem;
     margin: clamp(1.1rem, 2vw, 1.45rem) auto 0;
-    max-width: 62rem;
+    max-width: 43rem;
     animation: rise 0.8s 0.17s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
@@ -1103,8 +1105,17 @@ const floorGrid = [
     outline-offset: 3px;
   }
 
+  .conversion-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1.25rem;
+    width: 100%;
+  }
+
   .hero-links {
     display: flex;
+    flex: none;
     flex-wrap: wrap;
     justify-content: center;
     gap: 0 1.15rem;
@@ -1137,13 +1148,13 @@ const floorGrid = [
 
   .availability {
     display: flex;
+    min-width: 0;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 0.55rem 1rem;
-    margin: 0.7rem auto 0;
+    gap: 0.35rem 0.7rem;
+    margin: 0;
     color: var(--ink-2);
-    font-size: 0.88rem;
-    animation: rise 0.8s 0.23s cubic-bezier(0.16, 1, 0.3, 1) both;
+    font-size: 0.78rem;
   }
   .available {
     display: inline-flex;
@@ -1162,15 +1173,16 @@ const floorGrid = [
     font-weight: 600;
   }
   .platform {
-    padding-left: 1rem;
+    padding-left: 0.7rem;
     border-left: 1px solid var(--rule);
   }
 
   .mechanism {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    width: min(100%, 62rem);
-    margin: 0.9rem auto 0;
+    width: 100%;
+    max-width: 50rem;
+    margin: clamp(1.35rem, 2vw, 1.65rem) auto 0;
     padding: 0;
     overflow: hidden;
     border: 1px solid var(--rule);
@@ -1479,6 +1491,10 @@ const floorGrid = [
     }
     .hero-conversion {
       width: 100%;
+    }
+    .conversion-meta {
+      flex-direction: column;
+      gap: 0;
     }
     .install-command .prompt {
       padding-left: 0.75rem;

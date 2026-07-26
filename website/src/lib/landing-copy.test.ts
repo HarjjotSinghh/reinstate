@@ -31,6 +31,8 @@ describe('landing-page product claims', () => {
     expect(hero).toContain('aria-label="Copy install command"');
     expect(hero).toContain('Read setup guide');
     expect(hero).toContain('View on GitHub');
+    expect(hero).toContain('class="conversion-meta"');
+    expect(hero).toContain('max-width: 50rem');
     expect(hero).not.toContain('class="cta primary"');
     expect(hero).not.toContain('class="copy-label"');
   });
@@ -39,6 +41,11 @@ describe('landing-page product claims', () => {
     expect(hero).toContain('class="step-icon"');
     expect(hero).toContain('class="mechanism"');
     expect(header).toContain('class="nav-frame"');
+    expect(header).toContain("const onHome = path === '/'");
+    expect(header).toContain("'is-home'");
+    expect(header).toContain("'is-scrolled'");
+    expect(header).toContain('window.scrollY > 12');
+    expect(header).toContain('max-width: 58rem');
   });
 
   it('does not put the released CLI behind a waitlist', () => {
