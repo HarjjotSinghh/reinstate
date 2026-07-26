@@ -45,6 +45,37 @@ func BackupFile(src, destRoot, relative string) (string, error) {
 	return dest, nil
 }
 
+// BackupFiles copies selected files from srcRoot into one timestamped backup set.
+func BackupFiles(srcRoot, destRoot, name string, relatives ...string) (string, error) {
+	if srcRoot == "" || destRoot == "" {
+		return "", fmt.Errorf("backup source and destination roots are required")
+	}
+	if name == "" || filepath.Base(name) != name {
+		return "", fmt.Errorf("backup name must be a single path component")
+	}
+	ts := time.Now().UTC().Format("20060102T150405.000000000Z")
+	dest := filepath.Join(destRoot, fmt.Sprintf("%s-%s", ts, name))
+	for _, relative := range relatives {
+		clean := filepath.Clean(filepath.FromSlash(relative))
+		if clean == "." || clean == ".." || filepath.IsAbs(clean) ||
+			strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+			return "", fmt.Errorf("unsafe backup path %q", relative)
+		}
+		src := filepath.Join(srcRoot, clean)
+		info, err := os.Stat(src)
+		if err != nil {
+			return "", err
+		}
+		if info.IsDir() {
+			return "", fmt.Errorf("backup source must be a file")
+		}
+		if err := copyFile(src, filepath.Join(dest, clean), info.Mode()); err != nil {
+			return "", err
+		}
+	}
+	return dest, nil
+}
+
 func copyDir(src, dst string) error {
 	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {

@@ -5,8 +5,16 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/HarjjotSinghh/reinstate/internal/backend"
+	"github.com/HarjjotSinghh/reinstate/internal/backend/memory"
+	"github.com/HarjjotSinghh/reinstate/internal/config"
+	"github.com/HarjjotSinghh/reinstate/internal/schema"
 )
 
 func runCLI(t *testing.T, name string, args ...string) (stdout, stderr string, code int) {
@@ -104,6 +112,323 @@ func TestInitDoesNotExposeSecretFlags(t *testing.T) {
 			t.Fatalf("init help exposes secret-bearing flag %q: %s", forbidden, out)
 		}
 	}
+}
+
+func TestInitWithProfileIDRejectsMissingRemoteManifest(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("REINSTATE_HOME", home)
+	t.Setenv("REINSTATE_BACKEND", "memory")
+	t.Setenv("REINSTATE_S3_ACCESS_KEY_ID", "AKIA_TEST")
+	t.Setenv("REINSTATE_S3_SECRET_ACCESS_KEY", "SECRET_TEST")
+
+	_, errb, code := runCLI(
+		t,
+		"reinstate",
+		"init",
+		"--profile-id", "33333333-3333-4333-8333-333333333333",
+		"--endpoint", "https://example.r2.cloudflarestorage.com",
+		"--bucket", "reinstate-test",
+		"--yes",
+	)
+	if code != ExitAuthStorage || !strings.Contains(errb, "remote profile manifest not found") {
+		t.Fatalf("init exit=%d want %d stderr=%q", code, ExitAuthStorage, errb)
+	}
+	if _, err := os.Stat(config.ConfigPath(home)); !os.IsNotExist(err) {
+		t.Fatalf("failed additional-device init wrote config: %v", err)
+	}
+}
+
+func TestInitWithProfileIDRecordsRemoteManifestRequirement(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("REINSTATE_HOME", home)
+	t.Setenv("REINSTATE_BACKEND", "memory")
+	t.Setenv("REINSTATE_S3_ACCESS_KEY_ID", "AKIA_TEST")
+	t.Setenv("REINSTATE_S3_SECRET_ACCESS_KEY", "SECRET_TEST")
+	profileID := "33333333-3333-4333-8333-333333333333"
+	prefix := "profiles/" + profileID
+
+	store, err := memory.NewDisk(filepath.Join(home, "cache", "memory-backend"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.Put(
+		context.Background(),
+		prefix+"/manifest.age",
+		strings.NewReader("synthetic encrypted manifest"),
+		0,
+		backend.PutOptions{},
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	out, errb, code := runCLI(
+		t,
+		"reinstate",
+		"init",
+		"--profile-id", profileID,
+		"--endpoint", "https://example.r2.cloudflarestorage.com",
+		"--bucket", "reinstate-test",
+		"--yes",
+	)
+	if code != ExitOK {
+		t.Fatalf("init exit=%d stdout=%q stderr=%q", code, out, errb)
+	}
+	rawConfig, err := os.ReadFile(config.ConfigPath(home))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(rawConfig), "remote_profile_required = true") {
+		t.Fatalf("additional-device config does not require the remote profile:\n%s", rawConfig)
+	}
+}
+
+func TestInitRefusesToOverwriteInitializedHome(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("REINSTATE_HOME", home)
+	t.Setenv("REINSTATE_BACKEND", "memory")
+	t.Setenv("REINSTATE_S3_ACCESS_KEY_ID", "AKIA_TEST")
+	t.Setenv("REINSTATE_S3_SECRET_ACCESS_KEY", "SECRET_TEST")
+
+	existing := schema.DefaultConfig(
+		"11111111-1111-4111-8111-111111111111",
+		"22222222-2222-4222-8222-222222222222",
+	)
+	existing.Storage.Endpoint = "https://original.example.invalid"
+	existing.Storage.Bucket = "original-bucket"
+	existing.Storage.Prefix = "profiles/11111111-1111-4111-8111-111111111111"
+	existing.Storage.CredentialRef = "reinstate/11111111-1111-4111-8111-111111111111/s3"
+	if err := config.SaveConfig(home, existing); err != nil {
+		t.Fatal(err)
+	}
+	state := schema.NewState()
+	state.LastManifestRev = "original-revision"
+	if err := config.SaveState(home, state); err != nil {
+		t.Fatal(err)
+	}
+	configBefore, err := os.ReadFile(config.ConfigPath(home))
+	if err != nil {
+		t.Fatal(err)
+	}
+	stateBefore, err := os.ReadFile(config.StatePath(home))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, errb, code := runCLI(
+		t,
+		"reinstate",
+		"init",
+		"--endpoint", "https://replacement.example.invalid",
+		"--bucket", "replacement-bucket",
+		"--yes",
+	)
+	if code != ExitSafety || !strings.Contains(errb, "already initialized") {
+		t.Fatalf("init exit=%d want %d stderr=%q", code, ExitSafety, errb)
+	}
+	configAfter, err := os.ReadFile(config.ConfigPath(home))
+	if err != nil {
+		t.Fatal(err)
+	}
+	stateAfter, err := os.ReadFile(config.StatePath(home))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(configAfter) != string(configBefore) || string(stateAfter) != string(stateBefore) {
+		t.Fatal("refused init changed existing config or state")
+	}
+	backups, err := filepath.Glob(filepath.Join(home, "backups", "*"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(backups) != 0 {
+		t.Fatalf("refused init created backups: %v", backups)
+	}
+}
+
+func TestInitForceBacksUpExistingConfigAndState(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("REINSTATE_HOME", home)
+	t.Setenv("REINSTATE_BACKEND", "memory")
+	t.Setenv("REINSTATE_S3_ACCESS_KEY_ID", "AKIA_TEST")
+	t.Setenv("REINSTATE_S3_SECRET_ACCESS_KEY", "SECRET_TEST")
+
+	existing := schema.DefaultConfig(
+		"11111111-1111-4111-8111-111111111111",
+		"22222222-2222-4222-8222-222222222222",
+	)
+	existing.Storage.Endpoint = "https://original.example.invalid"
+	existing.Storage.Bucket = "original-bucket"
+	existing.Storage.Prefix = "profiles/11111111-1111-4111-8111-111111111111"
+	existing.Storage.CredentialRef = "reinstate/11111111-1111-4111-8111-111111111111/s3"
+	if err := config.SaveConfig(home, existing); err != nil {
+		t.Fatal(err)
+	}
+	state := schema.NewState()
+	state.LastManifestRev = "original-revision"
+	if err := config.SaveState(home, state); err != nil {
+		t.Fatal(err)
+	}
+	configBefore, err := os.ReadFile(config.ConfigPath(home))
+	if err != nil {
+		t.Fatal(err)
+	}
+	stateBefore, err := os.ReadFile(config.StatePath(home))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	out, errb, code := runCLI(
+		t,
+		"reinstate",
+		"init",
+		"--endpoint", "https://replacement.example.invalid",
+		"--bucket", "replacement-bucket",
+		"--yes",
+		"--force",
+	)
+	if code != ExitOK {
+		t.Fatalf("init --force exit=%d stdout=%q stderr=%q", code, out, errb)
+	}
+	if !strings.Contains(out, "backups/") {
+		t.Fatalf("init --force did not report the backup set location: %q", out)
+	}
+	backupSets, err := os.ReadDir(filepath.Join(home, "backups"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(backupSets) != 1 || !backupSets[0].IsDir() {
+		t.Fatalf("backup sets = %v, want one directory", backupSets)
+	}
+	backupRoot := filepath.Join(home, "backups", backupSets[0].Name())
+	configBackup, err := os.ReadFile(filepath.Join(backupRoot, "config.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	stateBackup, err := os.ReadFile(filepath.Join(backupRoot, "state.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(configBackup) != string(configBefore) || string(stateBackup) != string(stateBefore) {
+		t.Fatal("forced init backup does not preserve previous config and state")
+	}
+	newConfig, err := config.LoadConfig(home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if newConfig.ProfileID == existing.ProfileID ||
+		newConfig.Storage.Endpoint != "https://replacement.example.invalid" {
+		t.Fatalf("forced init did not replace config: %+v", newConfig)
+	}
+}
+
+func TestStatusAllowsMissingManifestForNewFirstDevice(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("REINSTATE_HOME", home)
+	t.Setenv("REINSTATE_BACKEND", "memory")
+	t.Setenv("REINSTATE_S3_ACCESS_KEY_ID", "AKIA_TEST")
+	t.Setenv("REINSTATE_S3_SECRET_ACCESS_KEY", "SECRET_TEST")
+	setTestPassphraseFD(t)
+
+	out, errb, code := runCLI(
+		t,
+		"reinstate",
+		"init",
+		"--endpoint", "https://example.r2.cloudflarestorage.com",
+		"--bucket", "reinstate-test",
+		"--yes",
+	)
+	if code != ExitOK {
+		t.Fatalf("init exit=%d stdout=%q stderr=%q", code, out, errb)
+	}
+	out, errb, code = runCLI(t, "reinstate", "status")
+	if code != ExitOK || !strings.Contains(out, "(0 sessions)") {
+		t.Fatalf("status exit=%d want %d stdout=%q stderr=%q", code, ExitOK, out, errb)
+	}
+}
+
+func TestStatusRejectsMissingManifestForJoinedProfile(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("REINSTATE_HOME", home)
+	t.Setenv("REINSTATE_BACKEND", "memory")
+	writeTestConfigState(t, home, true)
+	setTestPassphraseFD(t)
+
+	_, errb, code := runCLI(t, "reinstate", "status")
+	if code != ExitAuthStorage || !strings.Contains(errb, "remote profile manifest not found") {
+		t.Fatalf("status exit=%d want %d stderr=%q", code, ExitAuthStorage, errb)
+	}
+}
+
+func TestStatusRejectsMissingManifestForEstablishedFirstDevice(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("REINSTATE_HOME", home)
+	t.Setenv("REINSTATE_BACKEND", "memory")
+	writeTestConfigState(t, home, false)
+	state, err := config.LoadState(home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	state.LastManifestRev = "synthetic-prior-manifest-revision"
+	if err := config.SaveState(home, state); err != nil {
+		t.Fatal(err)
+	}
+	setTestPassphraseFD(t)
+
+	_, errb, code := runCLI(t, "reinstate", "status")
+	if code != ExitAuthStorage || !strings.Contains(errb, "remote profile manifest not found") {
+		t.Fatalf("status exit=%d want %d stderr=%q", code, ExitAuthStorage, errb)
+	}
+}
+
+func TestDiffMissingManifestUsesAuthStorageExit(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("REINSTATE_HOME", home)
+	t.Setenv("REINSTATE_BACKEND", "memory")
+	userHome := t.TempDir()
+	t.Setenv("HOME", userHome)
+	t.Setenv("USERPROFILE", userHome)
+	writeTestConfigState(t, home, true)
+	setTestPassphraseFD(t)
+
+	_, errb, code := runCLI(t, "reinstate", "diff")
+	if code != ExitAuthStorage || !strings.Contains(errb, "remote profile manifest not found") {
+		t.Fatalf("diff exit=%d want %d stderr=%q", code, ExitAuthStorage, errb)
+	}
+}
+
+func writeTestConfigState(t *testing.T, home string, remoteProfileRequired bool) {
+	t.Helper()
+	cfg := schema.DefaultConfig(
+		"33333333-3333-4333-8333-333333333333",
+		"44444444-4444-4444-8444-444444444444",
+	)
+	cfg.RemoteProfileRequired = remoteProfileRequired
+	cfg.Storage.Endpoint = "https://example.r2.cloudflarestorage.com"
+	cfg.Storage.Bucket = "reinstate-test"
+	cfg.Storage.Prefix = "profiles/" + cfg.ProfileID
+	cfg.Storage.CredentialRef = "reinstate/" + cfg.ProfileID + "/s3"
+	if err := config.SaveConfig(home, cfg); err != nil {
+		t.Fatal(err)
+	}
+	if err := config.SaveState(home, schema.NewState()); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func setTestPassphraseFD(t *testing.T) {
+	t.Helper()
+	passphraseFile, err := os.CreateTemp(t.TempDir(), "passphrase-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = passphraseFile.Close() })
+	if _, err := passphraseFile.WriteString("synthetic-test-passphrase-not-secret\n"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := passphraseFile.Seek(0, 0); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("REINSTATE_PASSPHRASE_FD", strconv.Itoa(int(passphraseFile.Fd())))
 }
 
 func TestConflictReadCommandsRequireConfig(t *testing.T) {

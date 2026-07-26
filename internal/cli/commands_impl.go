@@ -23,6 +23,7 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/config"
 	"github.com/HarjjotSinghh/reinstate/internal/credentials"
 	"github.com/HarjjotSinghh/reinstate/internal/crypto"
+	"github.com/HarjjotSinghh/reinstate/internal/fsx"
 	"github.com/HarjjotSinghh/reinstate/internal/lock"
 	"github.com/HarjjotSinghh/reinstate/internal/schema"
 	"github.com/HarjjotSinghh/reinstate/internal/sync"
@@ -49,6 +50,7 @@ func newInitCmd() *cobra.Command {
 		endpoint, bucket, region, prefix, configuredProfileID string
 		projectMappings                                       []string
 		nonInteractive                                        bool
+		force                                                 bool
 	)
 	cmd := &cobra.Command{
 		Use:   "init",
@@ -57,6 +59,16 @@ func newInitCmd() *cobra.Command {
 			home, err := config.Home()
 			if err != nil {
 				return NewExitError(ExitConfig, err.Error())
+			}
+			existingFiles, err := existingInitFiles(home)
+			if err != nil {
+				return NewExitError(ExitRuntime, err.Error())
+			}
+			if len(existingFiles) != 0 && !force {
+				return NewExitError(
+					ExitSafety,
+					"reinstate home is already initialized; rerun init with --force to back up and replace existing config/state",
+				)
 			}
 			if err := config.EnsureLayout(home); err != nil {
 				return err
@@ -133,6 +145,7 @@ func newInitCmd() *cobra.Command {
 			if prefix == "" {
 				cfg.Storage.Prefix = "profiles/" + profileID
 			}
+			cfg.RemoteProfileRequired = configuredProfileID != ""
 			for _, mapping := range projectMappings {
 				project, parseErr := parseProjectMapping(mapping)
 				if parseErr != nil {
@@ -142,14 +155,30 @@ func newInitCmd() *cobra.Command {
 			}
 			// A failed backend probe is fatal. Do not leave a config that looks
 			// initialized but cannot reach storage.
-			if os.Getenv("REINSTATE_BACKEND") != "memory" {
-				ctx := context.Background()
+			ctx := context.Background()
+			if os.Getenv("REINSTATE_BACKEND") == "memory" {
+				if configuredProfileID != "" {
+					disk, err := memory.NewDisk(filepath.Join(home, "cache", "memory-backend"))
+					if err != nil {
+						return NewExitError(ExitRuntime, err.Error())
+					}
+					manifestKey := strings.Trim(cfg.Storage.Prefix, "/") + "/manifest.age"
+					if err := requireRemoteProfileManifest(ctx, disk, manifestKey); err != nil {
+						return NewExitError(ExitAuthStorage, err.Error())
+					}
+				}
+			} else {
 				client, err := s3.New(ctx, s3.Config{
 					Endpoint: endpoint, Region: region, Bucket: bucket, Prefix: cfg.Storage.Prefix,
 					AccessKey: accessKey, SecretKey: secretKey,
 				})
 				if err != nil {
 					return NewExitError(ExitAuthStorage, err.Error())
+				}
+				if configuredProfileID != "" {
+					if err := requireRemoteProfileManifest(ctx, client, "manifest.age"); err != nil {
+						return NewExitError(ExitAuthStorage, err.Error())
+					}
 				}
 				probe := "probes/" + uuid.NewString()
 				if _, err := client.Put(ctx, probe, strings.NewReader("ok"), 2, backend.PutOptions{IfNoneMatch: true}); err != nil {
@@ -159,6 +188,26 @@ func newInitCmd() *cobra.Command {
 				}
 			}
 			keyringStore := credentials.NewKeyringStore()
+			if len(existingFiles) != 0 {
+				backupPath, err := fsx.BackupFiles(
+					home,
+					filepath.Join(home, "backups"),
+					"reinitialize",
+					existingFiles...,
+				)
+				if err != nil {
+					return NewExitError(ExitRuntime, "back up existing init state: "+err.Error())
+				}
+				backupRelative, err := filepath.Rel(home, backupPath)
+				if err != nil {
+					return NewExitError(ExitRuntime, "report init backup path: "+err.Error())
+				}
+				PrintHuman(
+					cmd.OutOrStdout(),
+					"backed up existing config/state to %s before reinitializing",
+					filepath.ToSlash(backupRelative),
+				)
+			}
 			if storeInKeyring {
 				if err := keyringStore.Set(credRef, credentials.StorageCredentials{
 					AccessKeyID: accessKey, SecretAccessKey: secretKey,
@@ -188,7 +237,29 @@ func newInitCmd() *cobra.Command {
 	cmd.Flags().StringVar(&configuredProfileID, "profile-id", "", "existing profile UUID from the first device")
 	cmd.Flags().StringArrayVar(&projectMappings, "project", nil, "portable project mapping ID=/absolute/local/path (repeatable)")
 	cmd.Flags().BoolVar(&nonInteractive, "yes", false, "non-interactive mode; requires endpoint, bucket, and environment credential provider")
+	cmd.Flags().BoolVar(&force, "force", false, "back up and replace an already-initialized home")
 	return cmd
+}
+
+func existingInitFiles(home string) ([]string, error) {
+	var existing []string
+	for _, name := range []string{"config.toml", "state.json"} {
+		if _, err := os.Lstat(filepath.Join(home, name)); err == nil {
+			existing = append(existing, name)
+		} else if !os.IsNotExist(err) {
+			return nil, err
+		}
+	}
+	return existing, nil
+}
+
+func requireRemoteProfileManifest(ctx context.Context, store backend.Backend, key string) error {
+	if _, err := store.Head(ctx, key); errors.Is(err, backend.ErrNotFound) {
+		return fmt.Errorf("remote profile manifest not found at configured storage coordinates")
+	} else if err != nil {
+		return fmt.Errorf("remote profile manifest probe failed: %w", err)
+	}
+	return nil
 }
 
 func parseProjectMapping(value string) (schema.ProjectConfig, error) {
@@ -265,6 +336,12 @@ func engineFromConfig(cmd *cobra.Command, passphrase string) (*sync.Engine, *sch
 	if err != nil {
 		return nil, nil, "", NewExitError(ExitConfig, err.Error())
 	}
+	requireRemoteManifest := cfg.RemoteProfileRequired
+	if state, stateErr := config.LoadState(home); stateErr == nil {
+		requireRemoteManifest = requireRemoteManifest ||
+			state.LastManifestRev != "" ||
+			len(state.Sessions) != 0
+	}
 	// Backend selection: disk-backed "memory" for local e2e, else S3.
 	var b backend.Backend
 	enginePrefix := ""
@@ -298,7 +375,17 @@ func engineFromConfig(cmd *cobra.Command, passphrase string) (*sync.Engine, *sch
 		passphrase = string(secret)
 		crypto.Zero(secret)
 	}
-	return &sync.Engine{Backend: b, Passphrase: passphrase, Prefix: enginePrefix}, cfg, home, nil
+	var envelopeCodec sync.EnvelopeCodec
+	if commandContext := cmd.Context(); commandContext != nil {
+		envelopeCodec, _ = commandContext.Value(envelopeCodecContextKey{}).(sync.EnvelopeCodec)
+	}
+	return &sync.Engine{
+		Backend:               b,
+		Passphrase:            passphrase,
+		Prefix:                enginePrefix,
+		RequireRemoteManifest: requireRemoteManifest,
+		Codec:                 envelopeCodec,
+	}, cfg, home, nil
 }
 
 func newStatusCmd() *cobra.Command {
@@ -370,7 +457,7 @@ func newDiffCmd() *cobra.Command {
 			remote := []string{}
 			man, err := eng.FetchManifest(context.Background())
 			if err != nil {
-				return err
+				return NewExitError(ExitAuthStorage, err.Error())
 			}
 			for key, session := range man.Sessions {
 				if agentName != "" && session.Agent != agentName {
@@ -534,6 +621,11 @@ func newPushCmd() *cobra.Command {
 			}
 			if !dryRun {
 				state.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+				if len(uploaded) != 0 {
+					state.LastManifestRev = uploaded[len(uploaded)-1]
+				} else {
+					state.LastManifestRev = remoteManifest.Revision
+				}
 				if err := config.SaveState(home, state); err != nil {
 					return err
 				}

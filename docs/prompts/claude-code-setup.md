@@ -1,6 +1,6 @@
 # Claude Code — Reinstate end-user setup prompt
 
-**Prompt version:** 4
+**Prompt version:** 5
 **Pinned Reinstate release:** `v0.1.0-rc.4`
 
 Copy everything below the line into Claude Code.
@@ -53,9 +53,11 @@ Complete this workflow:
 5. Run `rein version --json`. Require version `0.1.0-rc.4`. Run
    `rein setup check`; before initialization, only a missing-config failure is
    expected. Any platform, keyring, or Claude compatibility failure must be
-   reported and must not be called success.
+   reported and must not be called success. If the home is already initialized,
+   stop and report it; never re-run `init` or choose an overwrite option for me.
 6. Ask whether this is the first or an additional device. Collect only:
-   - the non-secret S3/R2 endpoint and bucket;
+   - the non-secret S3/R2 service endpoint and bucket as separate values; the
+     endpoint must not include a trailing `/<bucket>` path;
    - the canonical project ID and this device's absolute project path; and
    - on an additional device, the non-secret `profile_id` printed by Device A.
    Ask whether I want one explicitly selected Claude session or all discovered
@@ -84,7 +86,9 @@ Complete this workflow:
     the matching mutating command. I will enter the same passphrase privately.
     If Reinstate refuses an existing-target restore because Claude Code is
     active, do not bypass it; tell me to close Claude Code and retry the
-    approved command.
+    approved command. If the remote manifest is missing or status reports an
+    empty revision/zero sessions when sessions are expected, stop and report
+    the exact redacted failure.
 11. Verify `rein list --agent claude --json` discovers the expected restored
     session metadata at the destination device's Claude project directory, not
     a directory copied from the source device. Have me confirm the exact

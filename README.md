@@ -152,12 +152,25 @@ rein version --json
 rein init
 ```
 
+Published RC4 can wait indefinitely for replacement approval when an unattended
+process inherits a readable `/dev/tty`. For deliberate RC4 automation, review
+the version change first and set `REINSTATE_CONFIRM_REPLACE=1`. The current
+unreleased installer instead waits at most 30 seconds; set
+`REINSTATE_CONFIRM_TIMEOUT_SECONDS=1..300` to choose a shorter or longer bound.
+Shells without timed-read support refuse immediately and preserve the installed
+binary.
+
 ### Device A
 
 ```bash
 rein init --project github.com/acme/app=/absolute/path/to/app
 rein push --all    # hidden passphrase prompt, encrypt, upload
 ```
+
+Use the S3/R2 service endpoint as the endpoint and enter the bucket separately.
+Safety note: published RC4 can silently overwrite an initialized home, so do
+not re-run `init` there. Current unreleased source refuses by default and makes
+the explicit `--force` path back up prior config/state before replacement.
 
 ### Device B
 
@@ -168,6 +181,10 @@ rein pull --all --dry-run
 rein pull --all
 claude --resume    # or: codex resume
 ```
+
+Published RC4 does not verify the remote profile during additional-device
+`init`; require `status` to show the expected sessions. Current unreleased
+source verifies the encrypted manifest before saving local config.
 
 Full walkthrough: **[docs/getting-started.md](docs/getting-started.md)**
 

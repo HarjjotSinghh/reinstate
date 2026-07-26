@@ -91,6 +91,36 @@ func TestConfigRoundTripAndSecrets(t *testing.T) {
 	}
 }
 
+func TestRC4ConfigWithoutRemoteProfileRequiredDefaultsFalse(t *testing.T) {
+	home := t.TempDir()
+	raw := []byte(`
+schema_version = 1
+profile_id = "11111111-1111-4111-8111-111111111111"
+device_id = "22222222-2222-4222-8222-222222222222"
+
+[storage]
+type = "s3"
+endpoint = "https://example.r2.cloudflarestorage.com"
+region = "auto"
+bucket = "reinstate-test"
+prefix = "profiles/11111111-1111-4111-8111-111111111111"
+credential_ref = "reinstate/11111111-1111-4111-8111-111111111111/s3"
+
+[encryption]
+type = "age-scrypt"
+`)
+	if err := os.WriteFile(ConfigPath(home), raw, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := LoadConfig(home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.RemoteProfileRequired {
+		t.Fatal("RC4 config without remote_profile_required loaded as true")
+	}
+}
+
 func TestStateRoundTripAndMigrationError(t *testing.T) {
 	home := t.TempDir()
 	s := schema.NewState()

@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Keep local and CI verification release-equivalent while avoiding redundant
+  documentation-contract, fixture-scan, and production-KDF work.
+  High-level deterministic tests use real age envelopes at a reduced test-only
+  scrypt cost; the ordinary full suite still covers the production default.
+- Add `make quick` as an explicitly non-release fast development gate.
+
+### Fixed
+
+- Refuse to overwrite an initialized Reinstate home unless `rein init --force`
+  is explicitly selected, and back up the previous `config.toml` and
+  `state.json` together before replacement.
+- Require `rein init --profile-id` to find the existing encrypted remote
+  manifest before writing local configuration, catching endpoint, bucket, and
+  prefix mistakes during setup.
+- Return an error when a joined or established profile's `status`, `diff`,
+  `pull`, or `push` cannot find `manifest.age`, instead of reporting a healthy
+  empty profile. A new first-device profile may still report an empty remote
+  and create its manifest on the first push.
+- Bound POSIX installer replacement prompts to 30 seconds by default, reject
+  invalid timeout overrides, and fail closed immediately when the active shell
+  cannot perform a timed TTY read, preventing unattended `/dev/tty` hangs and
+  detecting timed-read support correctly across macOS Bash 3 and Linux Bash 5.
+
 ## [0.1.0-rc.4] - 2026-07-26
 
 ### Fixed

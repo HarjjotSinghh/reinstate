@@ -65,6 +65,7 @@ func TestCLISyntheticSyncPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	testCodec := &fastAgeEnvelopeCodec{}
 	runWithChecker := func(processChecker AgentProcessChecker, args ...string) (stdout, stderr string, code int) {
 		passphraseFile, err := os.CreateTemp(t.TempDir(), "passphrase-*")
 		if err != nil {
@@ -82,6 +83,7 @@ func TestCLISyntheticSyncPath(t *testing.T) {
 		code = Execute(Options{
 			Name: "reinstate", Stdout: &out, Stderr: &errb, Args: args,
 			AgentProcessChecker: processChecker,
+			EnvelopeCodec:       testCodec,
 		})
 		return out.String(), errb.String(), code
 	}
@@ -143,6 +145,25 @@ func TestCLISyntheticSyncPath(t *testing.T) {
 	var pushRes map[string]any
 	if err := json.Unmarshal([]byte(out), &pushRes); err != nil {
 		t.Fatalf("push json: %v %q", err, out)
+	}
+	snapshots, ok := pushRes["snapshots"].([]any)
+	if !ok || len(snapshots) != 1 {
+		t.Fatalf("push snapshots = %#v, want one", pushRes["snapshots"])
+	}
+	pushedSnapshot, ok := snapshots[0].(string)
+	if !ok || pushedSnapshot == "" {
+		t.Fatalf("push snapshot = %#v, want non-empty ID", snapshots[0])
+	}
+	stateAfterPush, err := config.LoadState(home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stateAfterPush.LastManifestRev != pushedSnapshot {
+		t.Fatalf(
+			"last_manifest_revision = %q, want latest snapshot/manifest revision %q",
+			stateAfterPush.LastManifestRev,
+			pushedSnapshot,
+		)
 	}
 	out, errb, code = run("push", "--agent", "claude", "--session", "session-e2e", "--json")
 	if code != ExitOK {
@@ -246,6 +267,9 @@ func TestCLISyntheticSyncPath(t *testing.T) {
 	out, errb, code = run("list", "--agent", "claude", "--json")
 	if code != ExitOK || !strings.Contains(out, "session-e2e") {
 		t.Fatalf("Claude cannot discover restored session: exit=%d err=%q out=%q", code, errb, out)
+	}
+	if testCodec.encryptions.Load() == 0 {
+		t.Fatal("CLI synthetic sync path did not exercise the injected age envelope codec")
 	}
 }
 
