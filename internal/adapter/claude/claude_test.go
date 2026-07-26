@@ -6,6 +6,8 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/HarjjotSinghh/reinstate/internal/adapter"
@@ -14,7 +16,7 @@ import (
 func TestClaudeDiscoverExportRestore(t *testing.T) {
 	// use synthetic fixture tree
 	root := t.TempDir()
-	proj := filepath.Join(root, "projects", "fixture-project")
+	proj := filepath.Join(root, "projects", "-Users-fixture-user-code-demo")
 	if err := os.MkdirAll(proj, 0o700); err != nil {
 		t.Fatal(err)
 	}
@@ -39,7 +41,7 @@ func TestClaudeDiscoverExportRestore(t *testing.T) {
 	if err != nil || len(sessions) != 1 {
 		t.Fatalf("%+v %v", sessions, err)
 	}
-	if sessions[0].RelativePath != "projects/fixture-project/session-001.jsonl" {
+	if sessions[0].RelativePath != "projects/-Users-fixture-user-code-demo/session-001.jsonl" {
 		t.Fatalf("relative path = %q", sessions[0].RelativePath)
 	}
 	plan, err := a.PlanExport(context.Background(), sessions[0], adapter.ExportOptions{})
@@ -81,7 +83,7 @@ func TestClaudeDiscoverExportRestore(t *testing.T) {
 	if !bytes.Contains(restored, []byte("hello prose not a path")) {
 		t.Fatalf("prose lost: %s", restored)
 	}
-	wantPath := filepath.Join(outRoot, "projects", "fixture-project", "session-001.jsonl")
+	wantPath := filepath.Join(outRoot, "projects", "-Users-fixture-user-code-demo", "session-001.jsonl")
 	if rplan.Session.Path != wantPath {
 		t.Fatalf("restore path = %q, want %q", rplan.Session.Path, wantPath)
 	}
@@ -127,6 +129,234 @@ func TestClaudeSupportedVersionRange(t *testing.T) {
 				t.Fatalf("isSupportedVersion(%q) = %v, want %v", tt.version, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestClaudeDiscoverUsesCanonicalProjectID(t *testing.T) {
+	root := t.TempDir()
+	projectPath := "/Users/GOAT/My Projects/reinstate"
+	projectDirectory := filepath.Join(root, "projects", "-Users-GOAT-My-Projects-reinstate")
+	if err := os.MkdirAll(projectDirectory, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(projectDirectory, "session-001.jsonl"), []byte(`{"type":"user"}`+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	sessions, err := (&Adapter{
+		Root:     root,
+		Projects: map[string]string{"local/reinstate": projectPath},
+	}).Discover(context.Background(), adapter.DiscoverOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sessions) != 1 {
+		t.Fatalf("discovered %d sessions, want 1", len(sessions))
+	}
+	if sessions[0].ProjectID != "local/reinstate" {
+		t.Fatalf("project id = %q, want canonical mapping", sessions[0].ProjectID)
+	}
+	if sessions[0].RelativePath != "projects/-Users-GOAT-My-Projects-reinstate/session-001.jsonl" {
+		t.Fatalf("relative path = %q", sessions[0].RelativePath)
+	}
+}
+
+func TestClaudeDiscoverSkipsUnmappedProjects(t *testing.T) {
+	root := t.TempDir()
+	for _, directory := range []string{
+		"-Users-GOAT-Projects-reinstate",
+		"-Users-GOAT-Projects-unmapped",
+	} {
+		projectDirectory := filepath.Join(root, "projects", directory)
+		if err := os.MkdirAll(projectDirectory, 0o700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(projectDirectory, directory+".jsonl"), []byte(`{"type":"user"}`+"\n"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	sessions, err := (&Adapter{
+		Root: root,
+		Projects: map[string]string{
+			"local/reinstate": "/Users/GOAT/Projects/reinstate",
+		},
+	}).Discover(context.Background(), adapter.DiscoverOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sessions) != 1 {
+		t.Fatalf("discovered %d sessions, want only the configured project: %+v", len(sessions), sessions)
+	}
+	if sessions[0].ProjectID != "local/reinstate" {
+		t.Fatalf("project id = %q, want canonical mapping", sessions[0].ProjectID)
+	}
+}
+
+func TestClaudeMapperNormalizesResolvedProjectRoot(t *testing.T) {
+	parent := t.TempDir()
+	physicalRoot := filepath.Join(parent, "physical-project")
+	configuredRoot := filepath.Join(parent, "configured-project")
+	if err := os.MkdirAll(filepath.Join(physicalRoot, "src"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(physicalRoot, configuredRoot); err != nil {
+		t.Skipf("symlinks unavailable on this platform: %v", err)
+	}
+	resolvedPhysicalRoot, err := filepath.EvalSymlinks(physicalRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mapper := (&Adapter{
+		Projects: map[string]string{"local/reinstate": configuredRoot},
+	}).mapper()
+	portable := mapper.Normalize(filepath.Join(resolvedPhysicalRoot, "src", "main.go"))
+	if portable != "${REPO:local/reinstate}/src/main.go" {
+		t.Fatalf("normalized physical path = %q", portable)
+	}
+	restored := mapper.Denormalize(portable)
+	want := filepath.Join(configuredRoot, "src", "main.go")
+	if filepath.Clean(restored) != filepath.Clean(want) {
+		t.Fatalf("denormalized path = %q, want configured root %q", restored, want)
+	}
+}
+
+func TestClaudePlanRestoreUsesDestinationProjectDirectory(t *testing.T) {
+	longProjectPath := "/" + strings.Repeat("a", 205)
+	longProjectHash := "bn8w8e"
+	if runtime.GOOS == "windows" {
+		longProjectHash = "piz35x"
+	}
+	longProjectKey := "-" + strings.Repeat("a", 199) + "-" + longProjectHash
+	tests := []struct {
+		name        string
+		projectPath string
+		wantKey     string
+	}{
+		{
+			name:        "macOS spaces",
+			projectPath: "/Users/GOAT/My Projects/reinstate",
+			wantKey:     "-Users-GOAT-My-Projects-reinstate",
+		},
+		{
+			name:        "Windows drive and separators",
+			projectPath: `C:\Users\GOAT\My Projects\reinstate`,
+			wantKey:     "C--Users-GOAT-My-Projects-reinstate",
+		},
+		{
+			name:        "Unicode UTF-16 code units",
+			projectPath: "/Users/GOAT/Projects/火🔥",
+			wantKey:     "-Users-GOAT-Projects----",
+		},
+		{
+			name:        "long path hash",
+			projectPath: longProjectPath,
+			wantKey:     longProjectKey,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			root := t.TempDir()
+			if err := os.MkdirAll(filepath.Join(root, "projects"), 0o700); err != nil {
+				t.Fatal(err)
+			}
+			plan, err := (&Adapter{
+				Root:     root,
+				Projects: map[string]string{"local/reinstate": tt.projectPath},
+			}).PlanRestore(context.Background(), adapter.Snapshot{
+				SessionID:    "session-001",
+				ProjectID:    "local/reinstate",
+				RelativePath: "projects/-Users-source-Mac-reinstate/session-001.jsonl",
+			}, adapter.RestoreOptions{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := filepath.Join(root, "projects", tt.wantKey, "session-001.jsonl")
+			if plan.Session.Path != want {
+				t.Fatalf("restore path = %q, want %q", plan.Session.Path, want)
+			}
+			if plan.ArchivePath != "projects/-Users-source-Mac-reinstate/session-001.jsonl" {
+				t.Fatalf("archive path = %q", plan.ArchivePath)
+			}
+		})
+	}
+}
+
+func TestClaudePlanRestoreRejectsUnmappedProject(t *testing.T) {
+	tests := []struct {
+		name      string
+		projects  map[string]string
+		projectID string
+		wantError bool
+	}{
+		{
+			name:      "configured mappings reject a legacy source key",
+			projects:  map[string]string{"local/reinstate": `C:\Users\GOAT\Projects\reinstate`},
+			projectID: "-Users-GOAT-Projects-reinstate",
+			wantError: true,
+		},
+		{
+			name:      "canonical snapshot requires a destination mapping",
+			projectID: "local/reinstate",
+			wantError: true,
+		},
+		{
+			name:      "legacy snapshot remains usable without canonical mappings",
+			projectID: "-Users-GOAT-Projects-reinstate",
+			wantError: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			root := t.TempDir()
+			if err := os.MkdirAll(filepath.Join(root, "projects"), 0o700); err != nil {
+				t.Fatal(err)
+			}
+			_, err := (&Adapter{
+				Root:     root,
+				Projects: tt.projects,
+			}).PlanRestore(context.Background(), adapter.Snapshot{
+				SessionID:    "session-001",
+				ProjectID:    tt.projectID,
+				RelativePath: "projects/-Users-GOAT-Projects-reinstate/session-001.jsonl",
+			}, adapter.RestoreOptions{})
+			if tt.wantError && err == nil {
+				t.Fatal("expected unmapped Claude project to fail closed")
+			}
+			if !tt.wantError && err != nil {
+				t.Fatalf("legacy restore failed: %v", err)
+			}
+		})
+	}
+}
+
+func TestClaudeKeepBothUsesDestinationProjectDirectory(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "projects"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	const forkID = "session-001-remote-deadbeef"
+	plan, err := (&Adapter{
+		Root:     root,
+		Projects: map[string]string{"local/reinstate": `C:\Users\GOAT\Projects\reinstate`},
+	}).PlanRestore(context.Background(), adapter.Snapshot{
+		SessionID:    "session-001",
+		ProjectID:    "local/reinstate",
+		RelativePath: "projects/-Users-GOAT-Projects-reinstate/session-001.jsonl",
+	}, adapter.RestoreOptions{
+		ForkSessionID:           forkID,
+		DestinationRelativePath: "projects/-Users-GOAT-Projects-reinstate/" + forkID + ".jsonl",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := filepath.Join(root, "projects", "C--Users-GOAT-Projects-reinstate", forkID+".jsonl")
+	if plan.Session.Path != want {
+		t.Fatalf("keep-both path = %q, want %q", plan.Session.Path, want)
+	}
+	if plan.Session.ID != forkID {
+		t.Fatalf("keep-both id = %q", plan.Session.ID)
 	}
 }
 
