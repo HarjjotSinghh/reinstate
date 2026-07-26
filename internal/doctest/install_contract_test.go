@@ -83,9 +83,11 @@ func testPOSIXInstallerContract(t *testing.T) {
 	}
 	assertContainsFile(t, destination, marker)
 	timeoutMessage := "replacement confirmation timed out after 1s"
+	// Bash exercises the bounded-read path on both macOS and Linux. The Dash
+	// case below separately locks the unsupported-shell fail-closed behavior.
 	output, err, observed := runPOSIXInstallerWithIdleTTY(
 		t,
-		"sh",
+		"bash",
 		installDir,
 		server.URL,
 		"v0.2.0",
