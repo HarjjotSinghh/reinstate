@@ -86,9 +86,16 @@ flow is **not** version-blocked.
 
 | Item | Value |
 | ---- | ----- |
-| `REINSTATE_HOME` | `$HOME/.reinstate-phase1-acceptance` |
+| `REINSTATE_HOME` (active, after rotation) | `$HOME/.reinstate-phase1-acceptance-rc3` |
+| `REINSTATE_HOME` (retired, retained) | `$HOME/.reinstate-phase1-acceptance` |
 | Project | `$HOME/Projects/reinstate-phase1-acceptance` |
 | Canonical project ID | `local/reinstate-phase1-acceptance` |
+
+The run used the canonical home through §9, then rotated to the `-rc3` home
+after the Device B passphrase exposure (§9a). The retired home and its remote
+prefix are retained, not deleted. The project directory is unchanged across the
+rotation, and the canonical project ID and both session IDs are identical in
+both profiles.
 
 The canonical paths were inspected before reuse. `$HOME/.reinstate-phase1-acceptance`
 contained only three files, all under `cache/selftest/`, left by an earlier
@@ -289,9 +296,17 @@ Supporting local evidence, gathered by the executor:
 - credentials were placed in the OS keyring under
   `credential_ref=reinstate/<profile-id>/s3`, not written into `config.toml`.
 
-**To close this gate:** download one `snapshots/<uuid>.age` object from the R2
-dashboard and run, locally, a marker-presence count plus `file(1)`. Report only
-booleans. Do not commit the downloaded object.
+**The structural confirmation above applies to the retired prefix
+`profiles/47e43f49-…/` only.** After the §9a rotation, the live data lives under
+`profiles/72733dd3-ee7c-45bd-89a6-5e448108367f/`, which has **not** been
+inspected at all. Both halves of §10 are therefore outstanding for the profile
+that actually matters.
+
+**To close this gate:** inspect `profiles/72733dd3-…/` in the R2 dashboard,
+confirm `manifest.age`, two opaque `.age` snapshots and no credential-shaped
+objects, then download one `snapshots/<uuid>.age` and run, locally, a
+marker-presence count plus `file(1)`. Report only booleans. Do not commit the
+downloaded object.
 
 ### §11–§17 (Windows and cross-device)
 
@@ -443,6 +458,86 @@ behaviour is untested.
   push path rather than a plan-specific one
 - **Recommended next investigation:** branch the summary string on `dry_run`,
   and consider having §8 of the runbook state the exact expected dry-run text
+
+## 9a. Passphrase exposure incident and profile rotation
+
+During Device B §12, the wrong-passphrase negative test passed correctly:
+Reinstate refused, exited non-zero, and mutated nothing. The **intended real
+passphrase was then typed after Reinstate had already exited**, so PowerShell
+received it as a command line. It was recorded in PowerShell history and
+relayed into an agent conversation.
+
+Device B read-only verification established the blast radius:
+
+| Check | Result |
+| ----- | ------ |
+| Selected session files on Windows | 0 changed / 0 created |
+| Isolated backups on Windows | 0 |
+| Pull or resume performed | none |
+| R2 credentials exposed | no — they stayed in hidden prompts and the OS keyring |
+
+**No Reinstate defect is implicated.** The tool's refusal path behaved exactly
+as specified; the exposure happened in the surrounding shell after the process
+had exited.
+
+**Consequences, applied:**
+
+- encryption passphrase for profile `47e43f49-35ea-49b1-a269-fb7cd8ee41a8` is
+  treated as compromised and is **not** reused or retried;
+- that profile and its remote prefix are **retained, not deleted**, so the
+  exposure can be reviewed later;
+- because the acceptance bucket is shared rather than dedicated (see the §8
+  deviation), anyone holding both bucket read access and the exposed passphrase
+  could decrypt the two disposable marker sessions stored under that prefix.
+  Their contents are the acceptance markers only — no proprietary data — but
+  the combination is precisely the risk the dedicated-bucket requirement in
+  runbook §3 exists to prevent;
+- a fresh profile is created under an isolated home
+  `$HOME/.reinstate-phase1-acceptance-rc3` with a new passphrase, reusing the
+  same canonical project ID and the same two session IDs;
+- Device B retries against `%USERPROFILE%\.reinstate-phase1-acceptance-rc3`.
+
+**Additional containment identified by Device A:** the Windows Codex session in
+which the passphrase was relayed now contains that secret in its transcript.
+That session must never be pushed through Reinstate, or the compromised
+passphrase would be encrypted into a snapshot and synced. It is not one of the
+two selected acceptance session IDs, and `--all` is prohibited, so no push path
+currently reaches it.
+
+Tracked by Device B as `RC3-WIN-F1`.
+
+### Rotated profile — re-verified on Device A
+
+`PHASE1_PROFILE_ID = 72733dd3-ee7c-45bd-89a6-5e448108367f`
+(supersedes `47e43f49-35ea-49b1-a269-fb7cd8ee41a8`)
+
+Same endpoint and bucket, new prefix, new passphrase entered only at hidden
+prompts. All §6/§8/§9 gates were re-run against the rotated home and passed
+again:
+
+| Gate | Result | Exit | Evidence |
+| ---- | ------ | ---- | -------- |
+| Pre-init `setup check` in clean `-rc3` home | PASS | 3 | `config missing`; adapters still `SUPPORTED` |
+| `rein init --project …` | PASS | 0 | new `profile_id`; `credential_ref=reinstate/<profile-id>/s3` |
+| Post-init `setup check` | PASS | 0 | `summary: all checks passed` |
+| `doctor --self-test` | PASS | 0 | `self_test: synthetic self-test passed` |
+| Claude dry-run / real push | PASS | 0 | `dry_run=true` then `pushed 1 snapshot(s), skipped 0 unchanged` |
+| Codex dry-run / real push | PASS | 0 | same pattern |
+| Manifest holds exactly 2 sessions | PASS | 0 | `remote revision: 5fb472b0-… (2 sessions)` |
+| No secret material in `config.toml` | PASS | — | pattern scan for secrets and long base64 tokens returned 0 matches; credentials live in the OS keyring |
+
+Rotated snapshot mapping:
+
+| Agent | Session ID | Snapshot ID |
+| ----- | ---------- | ----------- |
+| claude | `a36153a6-d70a-43ec-8dcf-7a3c6787ac56` | `1d681f3f-52bb-4685-8a76-5eecb74d4da9` |
+| codex | `019f9b4d-d8d2-79e1-9e23-810786676f5a` | `5fb472b0-9674-49c5-93fe-701c59184d74` |
+
+Remote revision: `5fb472b0-9674-49c5-93fe-701c59184d74`.
+
+The dry-run-uploads-nothing gate was again established behaviourally: each real
+push that followed a dry-run of unchanged content reported `skipped 0
+unchanged`, which it could not have done had the dry-run already uploaded.
 
 ## 10. Section 19 sign-off checklist
 
