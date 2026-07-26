@@ -42,7 +42,10 @@ confirm_replace() {
     else
       read_timeout_status=$?
     fi
-    if [ "$read_timeout_status" -ne 1 ]; then
+    # Bash 3 returns 1 for EOF here while Bash 5 may return 0 because the
+    # descriptor is immediately ready. Statuses greater than 1 indicate that
+    # the shell rejected the -t option (for example, Dash).
+    if [ "$read_timeout_status" -gt 1 ]; then
       echo "interactive replacement confirmation is unavailable because this shell lacks bounded reads; refusing to replace existing Reinstate ${existing_version}; set REINSTATE_CONFIRM_REPLACE=1 after reviewing the version change" >&2
       return 1
     fi
