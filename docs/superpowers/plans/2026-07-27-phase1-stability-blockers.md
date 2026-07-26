@@ -44,7 +44,7 @@ user explicitly requests them. Execute this plan in the current agent session.
 - Modify: `internal/doctest/install_contract_test.go`
 - Test: `internal/doctest/install_contract_test.go`
 
-- [ ] **Step 1: Add the idle-TTY contract case**
+- [x] **Step 1: Add the idle-TTY contract case**
 
   Add a helper that runs `scripts/install.sh` under the platform's `script(1)`
   pseudo-terminal, keeps its input pipe open without sending bytes, and returns
@@ -59,7 +59,7 @@ user explicitly requests them. Execute this plan in the current agent session.
   Require the command to finish before the test deadline, refuse replacement,
   preserve the installed binary, and print a timeout/refusal message.
 
-- [ ] **Step 2: Add timeout-value validation coverage**
+- [x] **Step 2: Add timeout-value validation coverage**
 
   Run an upgrade with:
 
@@ -69,7 +69,7 @@ user explicitly requests them. Execute this plan in the current agent session.
 
   Require a non-zero exit, an actionable validation message, and no replacement.
 
-- [ ] **Step 3: Verify RED**
+- [x] **Step 3: Verify RED**
 
   Run:
 
@@ -87,28 +87,28 @@ user explicitly requests them. Execute this plan in the current agent session.
 - Modify: `scripts/install.sh`
 - Test: `internal/doctest/install_contract_test.go`
 
-- [ ] **Step 1: Validate the timeout**
+- [x] **Step 1: Validate the timeout**
 
   In `confirm_replace`, read
   `REINSTATE_CONFIRM_TIMEOUT_SECONDS` with a 30-second default. Accept only
   integer values from 1 through 300. Invalid values must refuse replacement
   before reading the TTY.
 
-- [ ] **Step 2: Detect timed-read support**
+- [x] **Step 2: Detect timed-read support**
 
   Probe the active shell's `read -t` behavior against `/dev/null`. A normal EOF
   status proves support; an unsupported-option status must fail closed
   immediately and direct the operator to
   `REINSTATE_CONFIRM_REPLACE=1` after reviewing the version change.
 
-- [ ] **Step 3: Bound the real TTY read**
+- [x] **Step 3: Bound the real TTY read**
 
   Use the validated timeout for the controlling-terminal read. On timeout or
   closed input, print a newline plus an actionable refusal and return non-zero.
   Preserve the existing accepted answers and the explicit
   `REINSTATE_CONFIRM_REPLACE=1` bypass.
 
-- [ ] **Step 4: Verify GREEN**
+- [x] **Step 4: Verify GREEN**
 
   Run:
 
@@ -128,19 +128,19 @@ user explicitly requests them. Execute this plan in the current agent session.
 - Modify: `docs/testing/results/2026-07-26-phase1-rc5-blocker-fix-handoff.md`
 - Test: `internal/doctest/install_contract_test.go`
 
-- [ ] **Step 1: Update user-facing installation guidance**
+- [x] **Step 1: Update user-facing installation guidance**
 
   Document the 30-second default, the 1-300 second override, and the
   `REINSTATE_CONFIRM_REPLACE=1` explicit approval path. State that unsupported
   timed-read shells refuse immediately rather than waiting forever.
 
-- [ ] **Step 2: Update release evidence**
+- [x] **Step 2: Update release evidence**
 
   Add N1 to `[Unreleased]` as fixed and revise the handoff so no known local
   product blocker remains open. Keep Phase 1 explicitly not stable until a
   fresh physical Mac/Windows RC5 run passes every mandatory row.
 
-- [ ] **Step 3: Run documentation checks**
+- [x] **Step 3: Run documentation checks**
 
   Run:
 
@@ -157,7 +157,7 @@ user explicitly requests them. Execute this plan in the current agent session.
 
 - Modify only if verification exposes a real regression.
 
-- [ ] **Step 1: Run focused and full verification**
+- [x] **Step 1: Run focused and full verification**
 
   ```bash
   go test ./internal/doctest -count=1
@@ -166,25 +166,66 @@ user explicitly requests them. Execute this plan in the current agent session.
 
   Expected: PASS with no reachable vulnerability.
 
-- [ ] **Step 2: Cross-build every release target**
+- [x] **Step 2: Cross-build every release target**
 
   Compile Darwin amd64/arm64, Windows amd64, and Linux amd64/arm64 with
   `CGO_ENABLED=0` and Go 1.25.12.
 
-- [ ] **Step 3: Run isolated native Mac acceptance-style checks**
+- [x] **Step 3: Run isolated native Mac acceptance-style checks**
 
   Re-run the F1-F3 synthetic binary checks and add the N1 idle-TTY installer
   check. Do not touch real Reinstate homes, real agent trees, Keychain, or
   remote storage.
 
-- [ ] **Step 4: Review and commit locally**
+- [x] **Step 4: Review and commit locally**
 
   Inspect the exact diff and secret scan, then create focused Conventional
   Commits. Leave the branch clean and ahead of `origin/main`; do not push,
   merge, tag, publish, or create RC5 artifacts.
 
-- [ ] **Step 5: Record the remaining truth**
+- [x] **Step 5: Record the remaining truth**
 
   Update the handoff with commit IDs and fresh evidence. The remaining gate is
   external acceptance: protected-main CI, signed RC5 artifacts, and the complete
   fresh-profile two-device run.
+
+### Task 5: Reduce verification latency without weakening release crypto
+
+**Files:**
+
+- Modify: `Makefile`
+- Modify: `.github/workflows/ci.yml`
+- Modify: `internal/sync/push.go`
+- Modify: `internal/cli/root.go`
+- Modify: `internal/cli/commands_impl.go`
+- Modify: `internal/doctor/selftest.go`
+- Modify: high-level tests and contributor documentation
+
+- [x] **Step 1: Remove duplicate gates**
+
+  Run documentation contracts once through `go test ./...`, reuse the Make race
+  target in CI, and keep release verification defined in one place.
+
+- [x] **Step 2: Preserve real envelopes with test-only KDF cost**
+
+  Inject an internal envelope codec into high-level CLI, doctor, conflict, and
+  sync tests. Use the real age format and decryption path with work factor 1
+  only in tests. Keep production callers nil-defaulted to the production crypto
+  implementation.
+
+- [x] **Step 3: Keep production crypto coverage**
+
+  Run `internal/crypto` in the ordinary full suite with the production default.
+  Exclude its stateless wrappers and `internal/doctest` subprocess contracts
+  from the race target.
+
+- [x] **Step 4: Add a fast edit-loop command**
+
+  Add `make quick` for formatting, vet, and focused product tests. Document
+  clearly that it cannot approve a merge or release.
+
+- [x] **Step 5: Re-run the complete optimized gate**
+
+  Run `make quick`, `make test-race`, and `make verify`; record both Go package
+  time and wall time so environmental CPU contention is not presented as code
+  cost.
