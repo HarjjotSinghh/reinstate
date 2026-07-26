@@ -48,14 +48,13 @@ func TestCLISyntheticSyncPath(t *testing.T) {
 	}
 	claudeProjectsRoot := filepath.Join(userHome, ".claude", "projects")
 	sourceClaudeRoot := filepath.Join(claudeProjectsRoot, claudeProjectDirectoryForTest(sourceProject))
-	claudeRoot := sourceClaudeRoot
-	if err := os.MkdirAll(claudeRoot, 0o700); err != nil {
+	if err := os.MkdirAll(sourceClaudeRoot, 0o700); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(userHome, ".claude", "version"), []byte("2.1.219\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	sessionPath := filepath.Join(claudeRoot, "session-e2e.jsonl")
+	sessionPath := filepath.Join(sourceClaudeRoot, "session-e2e.jsonl")
 	meta, err := json.Marshal(map[string]any{"type": "meta", "cwd": sourceProject})
 	if err != nil {
 		t.Fatal(err)
@@ -187,6 +186,12 @@ func TestCLISyntheticSyncPath(t *testing.T) {
 
 	// A mutating pull must refuse to replace an existing session while the
 	// selected vendor process is active.
+	if err := os.MkdirAll(filepath.Dir(targetSessionPath), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(targetSessionPath, []byte(`{"type":"user","message":{"content":"existing destination"}}`+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	out, errb, code = runWithChecker(func(_ context.Context, _ string) (bool, error) {
 		return true, nil
 	}, "pull", "--agent", "claude", "--session", "session-e2e", "--json")
@@ -198,6 +203,9 @@ func TestCLISyntheticSyncPath(t *testing.T) {
 	// successful pull must restore into Claude's vendor tree, not merely cache
 	// decrypted bytes under REINSTATE_HOME.
 	if err := os.Remove(sessionPath); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(targetSessionPath); err != nil {
 		t.Fatal(err)
 	}
 

@@ -105,16 +105,26 @@ rein init \
 rein setup check
 rein doctor --self-test
 rein status
+
+# Claude Code
 rein pull --agent claude --session SESSION_ID --dry-run
+
+# Codex
+rein pull --agent codex --session SESSION_ID --dry-run
 ```
 
 Close the selected agent before replacing an existing local session, then run:
 
 ```sh
+# Claude Code
 rein pull --agent claude --session SESSION_ID
 rein list --agent claude
 claude --resume SESSION_ID
-# or: codex resume SESSION_ID
+
+# Codex
+rein pull --agent codex --session SESSION_ID
+rein list --agent codex
+codex resume SESSION_ID
 ```
 
 ## Agent-assisted setup

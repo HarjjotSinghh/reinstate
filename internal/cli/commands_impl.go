@@ -701,7 +701,7 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 					}
 					restored, err := verifyRestoredSession(context.Background(), a, restorePlan)
 					if err != nil {
-						return err
+						return fmt.Errorf("verify restored session: %w", err)
 					}
 					localHash, err := hashFile(restored.Path)
 					if err != nil {

@@ -149,22 +149,26 @@ Validate without mutation:
 rein setup check
 rein doctor --self-test
 rein status
+
+# Claude Code
 rein pull --agent claude --session SESSION_ID --dry-run
+
+# Codex
+rein pull --agent codex --session SESSION_ID --dry-run
 ```
 
 Close the selected coding agent before a pull that will replace an existing
 local session, then restore:
 
 ```sh
+# Claude Code
 rein pull --agent claude --session SESSION_ID
 rein list --agent claude
-```
-
-Confirm through the vendor's normal resume UI:
-
-```sh
 claude --resume SESSION_ID
-# or
+
+# Codex
+rein pull --agent codex --session SESSION_ID
+rein list --agent codex
 codex resume SESSION_ID
 ```
 

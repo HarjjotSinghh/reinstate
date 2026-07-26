@@ -11,9 +11,15 @@ import (
 
 // Mapper holds project roots and home for normalize/denormalize.
 type Mapper struct {
-	Home     string
-	Projects map[string]string // canonical project id -> local absolute root
-	Aliases  map[string]string // WORK alias -> local absolute root
+	Home string
+	// Projects maps canonical project IDs to configured local roots and is used
+	// when denormalizing portable paths on the destination device.
+	Projects map[string]string
+	// NormalizeProjects optionally maps the same IDs to resolved physical roots.
+	// This lets paths emitted beneath a symlink target normalize to the canonical
+	// project while preserving the configured root for destination rewrites.
+	NormalizeProjects map[string]string
+	Aliases           map[string]string // WORK alias -> local absolute root
 	// GOOS overrides path style for tests ("windows" | "darwin" | "linux").
 	GOOS string
 }
@@ -35,10 +41,12 @@ func (m Mapper) Normalize(platformPath string) string {
 	p := filepath.Clean(platformPath)
 	// longest project root first
 	bestID, bestRoot := "", ""
-	for id, root := range m.Projects {
-		r := filepath.Clean(root)
-		if hasPrefixPath(p, r, m.goos()) && len(r) > len(bestRoot) {
-			bestID, bestRoot = id, r
+	for _, projects := range []map[string]string{m.NormalizeProjects, m.Projects} {
+		for id, root := range projects {
+			r := filepath.Clean(root)
+			if hasPrefixPath(p, r, m.goos()) && len(r) > len(bestRoot) {
+				bestID, bestRoot = id, r
+			}
 		}
 	}
 	if bestID != "" {

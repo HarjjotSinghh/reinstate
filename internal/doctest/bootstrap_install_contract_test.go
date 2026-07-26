@@ -18,7 +18,7 @@ import (
 const (
 	publicBootstrapVersion       = "v0.1.0-rc.4"
 	publicPOSIXInstallerSHA256   = "3bab3e8e397fbf5b7d39ccb3e040f4fbde798902dd87b7ebfd852c3997a7b46a"
-	publicWindowsInstallerSHA256 = "4ac266d4f59ff60f70d8da463d33751546cab8121e12769c0b00d0004c5d6050"
+	publicWindowsInstallerSHA256 = "ce46d3a22d4d9349c7e6847ed65b5e8ff93b51e7f035ad3ff93b7dc19d2f1232"
 )
 
 func TestPublicBootstrapVercelHeaders(t *testing.T) {

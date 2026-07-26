@@ -159,7 +159,11 @@ func (a *Adapter) Discover(ctx context.Context, opts adapter.DiscoverOptions) ([
 		if proj == "." {
 			proj = "unknown"
 		}
-		if canonicalID, ok := projectIDsByDirectory[filepath.ToSlash(proj)]; ok {
+		canonicalID, mapped := projectIDsByDirectory[filepath.ToSlash(proj)]
+		if len(projectIDsByDirectory) > 0 && !mapped {
+			return nil
+		}
+		if mapped {
 			proj = canonicalID
 		}
 		if opts.ProjectID != "" && proj != opts.ProjectID {
@@ -241,7 +245,19 @@ func absJavaScriptStringHash(units []uint16) int64 {
 }
 
 func (a *Adapter) mapper() pathmap.Mapper {
-	return pathmap.Mapper{Home: a.Home, Projects: a.Projects}
+	normalizationProjects := make(map[string]string, len(a.Projects))
+	for canonicalID, localRoot := range a.Projects {
+		resolvedRoot := filepath.Clean(localRoot)
+		if resolved, err := filepath.EvalSymlinks(resolvedRoot); err == nil {
+			resolvedRoot = resolved
+		}
+		normalizationProjects[canonicalID] = resolvedRoot
+	}
+	return pathmap.Mapper{
+		Home:              a.Home,
+		Projects:          a.Projects,
+		NormalizeProjects: normalizationProjects,
+	}
 }
 
 func (a *Adapter) PlanExport(ctx context.Context, s adapter.Session, opts adapter.ExportOptions) (adapter.ExportPlan, error) {
@@ -349,6 +365,11 @@ func (a *Adapter) PlanRestore(ctx context.Context, snap adapter.Snapshot, opts a
 	if _, err := safeRestorePath(inst.Root, archiveRelative, "projects"); err != nil {
 		return adapter.RestorePlan{}, err
 	}
+	archiveParts := strings.Split(path.Clean(filepath.ToSlash(archiveRelative)), "/")
+	if len(archiveParts) < 3 {
+		return adapter.RestorePlan{}, fmt.Errorf("unexpected Claude snapshot path %q", archiveRelative)
+	}
+	archiveProjectDirectory := archiveParts[1]
 	destinationID := snap.SessionID
 	if opts.ForkSessionID != "" {
 		destinationID = opts.ForkSessionID
@@ -370,9 +391,10 @@ func (a *Adapter) PlanRestore(ctx context.Context, snap adapter.Snapshot, opts a
 		}
 		destinationRelative = path.Join("projects", claudeProjectDirectory(localRoot), destinationName)
 	} else {
-		if len(a.Projects) > 0 {
+		if len(a.Projects) > 0 || snap.ProjectID != archiveProjectDirectory {
 			return adapter.RestorePlan{}, fmt.Errorf(
-				"claude snapshot project %q has no canonical mapping on this device; push it again from the source device with this Reinstate release",
+				"claude snapshot project %q has no local mapping on this device; configure it with rein init --project %s=/absolute/path (or the equivalent config mapping) before pull; legacy snapshots may need to be pushed again from the source device with this Reinstate release",
+				snap.ProjectID,
 				snap.ProjectID,
 			)
 		}

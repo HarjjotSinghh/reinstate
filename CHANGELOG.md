@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   accepting a matching session ID elsewhere in the agent tree.
 - Fail closed with a repush instruction when a legacy Claude snapshot lacks a
   canonical project mapping, avoiding false-success cross-device restores.
+- Exclude unmapped Claude projects when canonical mappings are configured and
+  require a destination mapping for canonical snapshots, including empty-map
+  configurations.
+- Normalize Claude transcript paths through resolved project roots while
+  denormalizing them through the destination device's configured root.
 - Report `would push` during `push --dry-run` instead of claiming that a
   snapshot was uploaded.
 

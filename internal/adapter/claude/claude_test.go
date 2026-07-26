@@ -161,6 +161,67 @@ func TestClaudeDiscoverUsesCanonicalProjectID(t *testing.T) {
 	}
 }
 
+func TestClaudeDiscoverSkipsUnmappedProjects(t *testing.T) {
+	root := t.TempDir()
+	for _, directory := range []string{
+		"-Users-GOAT-Projects-reinstate",
+		"-Users-GOAT-Projects-unmapped",
+	} {
+		projectDirectory := filepath.Join(root, "projects", directory)
+		if err := os.MkdirAll(projectDirectory, 0o700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(projectDirectory, directory+".jsonl"), []byte(`{"type":"user"}`+"\n"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	sessions, err := (&Adapter{
+		Root: root,
+		Projects: map[string]string{
+			"local/reinstate": "/Users/GOAT/Projects/reinstate",
+		},
+	}).Discover(context.Background(), adapter.DiscoverOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sessions) != 1 {
+		t.Fatalf("discovered %d sessions, want only the configured project: %+v", len(sessions), sessions)
+	}
+	if sessions[0].ProjectID != "local/reinstate" {
+		t.Fatalf("project id = %q, want canonical mapping", sessions[0].ProjectID)
+	}
+}
+
+func TestClaudeMapperNormalizesResolvedProjectRoot(t *testing.T) {
+	parent := t.TempDir()
+	physicalRoot := filepath.Join(parent, "physical-project")
+	configuredRoot := filepath.Join(parent, "configured-project")
+	if err := os.MkdirAll(filepath.Join(physicalRoot, "src"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(physicalRoot, configuredRoot); err != nil {
+		t.Skipf("symlinks unavailable on this platform: %v", err)
+	}
+	resolvedPhysicalRoot, err := filepath.EvalSymlinks(physicalRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mapper := (&Adapter{
+		Projects: map[string]string{"local/reinstate": configuredRoot},
+	}).mapper()
+	portable := mapper.Normalize(filepath.Join(resolvedPhysicalRoot, "src", "main.go"))
+	if portable != "${REPO:local/reinstate}/src/main.go" {
+		t.Fatalf("normalized physical path = %q", portable)
+	}
+	restored := mapper.Denormalize(portable)
+	want := filepath.Join(configuredRoot, "src", "main.go")
+	if filepath.Clean(restored) != filepath.Clean(want) {
+		t.Fatalf("denormalized path = %q, want configured root %q", restored, want)
+	}
+}
+
 func TestClaudePlanRestoreUsesDestinationProjectDirectory(t *testing.T) {
 	longProjectPath := "/" + strings.Repeat("a", 205)
 	longProjectHash := "bn8w8e"
@@ -223,20 +284,50 @@ func TestClaudePlanRestoreUsesDestinationProjectDirectory(t *testing.T) {
 }
 
 func TestClaudePlanRestoreRejectsUnmappedProject(t *testing.T) {
-	root := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(root, "projects"), 0o700); err != nil {
-		t.Fatal(err)
+	tests := []struct {
+		name      string
+		projects  map[string]string
+		projectID string
+		wantError bool
+	}{
+		{
+			name:      "configured mappings reject a legacy source key",
+			projects:  map[string]string{"local/reinstate": `C:\Users\GOAT\Projects\reinstate`},
+			projectID: "-Users-GOAT-Projects-reinstate",
+			wantError: true,
+		},
+		{
+			name:      "canonical snapshot requires a destination mapping",
+			projectID: "local/reinstate",
+			wantError: true,
+		},
+		{
+			name:      "legacy snapshot remains usable without canonical mappings",
+			projectID: "-Users-GOAT-Projects-reinstate",
+			wantError: false,
+		},
 	}
-	_, err := (&Adapter{
-		Root:     root,
-		Projects: map[string]string{"local/reinstate": `C:\Users\GOAT\Projects\reinstate`},
-	}).PlanRestore(context.Background(), adapter.Snapshot{
-		SessionID:    "session-001",
-		ProjectID:    "-Users-GOAT-Projects-reinstate",
-		RelativePath: "projects/-Users-GOAT-Projects-reinstate/session-001.jsonl",
-	}, adapter.RestoreOptions{})
-	if err == nil {
-		t.Fatal("expected unmapped Claude project to fail closed")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			root := t.TempDir()
+			if err := os.MkdirAll(filepath.Join(root, "projects"), 0o700); err != nil {
+				t.Fatal(err)
+			}
+			_, err := (&Adapter{
+				Root:     root,
+				Projects: tt.projects,
+			}).PlanRestore(context.Background(), adapter.Snapshot{
+				SessionID:    "session-001",
+				ProjectID:    tt.projectID,
+				RelativePath: "projects/-Users-GOAT-Projects-reinstate/session-001.jsonl",
+			}, adapter.RestoreOptions{})
+			if tt.wantError && err == nil {
+				t.Fatal("expected unmapped Claude project to fail closed")
+			}
+			if !tt.wantError && err != nil {
+				t.Fatalf("legacy restore failed: %v", err)
+			}
+		})
 	}
 }
 
