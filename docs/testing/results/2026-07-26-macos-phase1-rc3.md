@@ -1,31 +1,42 @@
 # Phase 1 Acceptance — Device A (macOS) — v0.1.0-rc.3
 
-**Report status:** IN PROGRESS / BLOCKED
+**Report status:** FINAL — verdict FAIL
 **Executed:** 2026-07-26, 05:48–06:40 IST (UTC+05:30)
 **Device role:** Device A (macOS)
 **Runbook authority:** `docs/testing/phase-1-mac-windows-acceptance.md` @ tag `v0.1.0-rc.3`
 
 ## 1. Verdict
 
-**BLOCKED** — Device A work is complete through §9; §10 is partial and every
-cross-device gate awaits Device B.
+**FAIL.**
 
-**No Reinstate defect has been found.** Runbook sections 2 through 9 all pass
-on macOS against the published `v0.1.0-rc.3`: the public installer, the
-pre-init failure contract, session discovery, `init`, `setup check`,
-`doctor --self-test`, scoped dry-runs and pushes, and a remote manifest holding
-exactly the two selected sessions and nothing else.
+Phase 1 fails on a reproducible synchronization defect found by Device B and
+recorded there as **`RC3-WIN-F3`**: restoring a macOS-origin Claude session onto
+Windows writes the target beneath the **Mac** project slug instead of deriving
+the destination from the canonical project's Windows `local_root`. Reinstate
+reports the pull as successful (exit `0`), but Claude Code cannot discover the
+session — the mapped-project resume UI shows no conversations, and direct-ID
+resume exits `1`.
 
-Three items keep this from being a PASS:
+That is the flagship Windows ↔ macOS path-remapping case failing while
+reporting success, which makes it release-blocking regardless of how clean the
+rest of the run looks.
 
-1. **§10 is half-done.** The bucket has `manifest.age` and two opaque `.age`
-   snapshots and no credential-shaped objects, but no object was downloaded, so
-   the marker-absence and not-readable-JSON checks never ran. Encryption is
-   assumed, not demonstrated.
-2. **Every Device B gate is untested** — §11–§17 and the Windows half of the
-   sign-off checklist.
-3. **Three findings are open**, none release-blocking: `RC3-MAC-F1`,
-   `RC3-MAC-F2`, `RC3-MAC-F3`.
+**Everything Device A tested passed.** Runbook sections 2 through 9 all pass on
+macOS against the published `v0.1.0-rc.3` — public installer, pre-init failure
+contract, session discovery, `init`, `setup check`, `doctor --self-test`,
+scoped dry-runs and pushes, and a remote manifest holding exactly the two
+selected sessions. None of the Mac-side findings are release-blocking, and none
+of them caused this verdict.
+
+Also unresolved, and separate from the verdict:
+
+1. **§10 was never completed on any live profile.** Encryption is assumed, not
+   demonstrated, on all three profiles.
+2. **§14–§17 never ran** — no A2 update, no Windows→Mac restore, no
+   unchanged-session no-op, no conflict test. M2 through M4 of this executor's
+   assignment are untested.
+3. **Six findings are open** across both devices: `RC3-MAC-F1/F2/F3` and
+   `RC3-WIN-F1/F2/F4`, none release-blocking on their own.
 
 ## 2. Executive summary
 
@@ -539,6 +550,54 @@ The dry-run-uploads-nothing gate was again established behaviourally: each real
 push that followed a dry-run of unchanged content reported `skipped 0
 unchanged`, which it could not have done had the dry-run already uploaded.
 
+## 9b. Device B handoff
+
+Windows report: `docs/testing/results/2026-07-26-windows-phase1-rc3.md` on
+branch `test/phase1-rc3-windows-report`, commit `340b51e`. Device B verdict:
+**FAIL**. Device B environment: Windows 11 Pro 25H2, build `10.0.26200.8328`,
+native 64-bit PowerShell 5.1 (not WSL), Claude Code `2.1.220` (upgraded from
+`2.1.211` before any mutation), Codex CLI `0.145.0`, Git `2.52.0.windows.1`,
+Reinstate `0.1.0-rc.3` commit `94cc1e2`.
+
+A third profile was created during Device B recovery. Three profiles now exist,
+all retained:
+
+| Role | Profile ID | Mac home |
+| ---- | ---------- | -------- |
+| Retired (passphrase exposed) | `47e43f49-35ea-49b1-a269-fb7cd8ee41a8` | `$HOME/.reinstate-phase1-acceptance` |
+| Replacement (superseded) | `72733dd3-ee7c-45bd-89a6-5e448108367f` | `$HOME/.reinstate-phase1-acceptance-rc3` |
+| Controlled fresh (current) | `9e17efb0-400e-4002-b986-b79f3b7b08e5` | `$HOME/.reinstate-phase1-acceptance-rc3-r2` |
+
+Controlled-fresh snapshots: Claude `05c43895-0b73-427b-b30c-2ca1b243690f`,
+Codex `93ff151c-6511-4c01-bf6f-55c0a5b7b94e`, remote revision
+`93ff151c-6511-4c01-bf6f-55c0a5b7b94e`.
+
+### Device B findings, as reported
+
+| ID | Summary | Release-blocking |
+| -- | ------- | ---------------- |
+| `RC3-WIN-F1` | acceptance passphrase exposed outside the hidden prompt | no |
+| `RC3-WIN-F2` | replacement-profile decryption refused, exit `4` | no |
+| `RC3-WIN-F3` | **Claude restore stranded under the Mac project slug** | **yes** |
+| `RC3-WIN-F4` | Codex picker UUID search can select the wrong session | no |
+
+### Device A note on `RC3-WIN-F2`
+
+`RC3-WIN-F2` states that decryption was refused with exit `4` "on both Windows
+and Mac" for profile `72733dd3-…`. Device A's own evidence for that profile is
+the opposite and is recorded in §9a: four scoped pushes and one `rein status`
+all returned exit `0`, and `rein status` reported `remote revision: 5fb472b0-…
+(2 sessions)`. Encryption, upload and manifest read all demonstrably worked for
+that profile on the Mac at push time.
+
+Both records can be true. Encryption succeeded when the passphrase used at push
+time was supplied; the later refusals occur when a different string is entered.
+Device B's own stated likely cause — "a passphrase or test-state mismatch" — is
+consistent with Device A's evidence, and the non-release-blocking
+classification is correct. The distinction worth preserving is that this is a
+passphrase-state problem, not evidence that RC3 cannot decrypt what it wrote:
+Device A proved a successful encrypt-and-read round trip on that exact profile.
+
 ## 10. Section 19 sign-off checklist
 
 Copied verbatim from the tagged runbook. `n/a (blocked)` means the gate was
@@ -546,45 +605,62 @@ never reached; it is **not** a pass.
 
 | Gate | Result | Evidence |
 | ---- | ------ | -------- |
-| `install.sh` returns 200 and installs RC3 on Mac | PASS | `HTTP/2 200`; `version 0.1.0-rc.3`, commit `94cc1e2` |
-| `install.ps1` returns 200 and installs RC3 on Windows | NOT TESTED | no Windows device |
-| Both installers are idempotent and PATH-safe | PARTIAL | macOS PASS (re-run reports already installed; 0 PATH blocks written). Windows not tested |
-| Pre-init missing-config failure is accurate | PASS | exit `3`, `config missing`, platform + adapters still OK |
-| Post-init setup check and self-test pass on both devices | PARTIAL | Mac PASS: `setup check` exit 0 all passed, `self_test: synthetic self-test passed`. Windows not tested |
-| Claude setup prompt completes on the Mac | PARTIAL | the §8 command sequence (init → setup check → self-test → dry-run → push) completed with the required results; the prompt was not executed verbatim inside a separate Claude session |
-| Codex setup prompt completes on Windows | NOT TESTED | no Windows device |
-| Only two selected test sessions reach the remote manifest | PASS | `rein status` → `remote revision: 26897d25-… (2 sessions)`, both selected IDs, nothing else |
-| Remote manifest/snapshots are ciphertext-only | PARTIAL | structure confirmed (`manifest.age`, two opaque `.age` snapshots, no credential objects); **byte-level marker-absence check not run** |
-| Wrong passphrase fails without mutation | NOT TESTED | Device B gate |
-| Claude Mac-to-Windows resume succeeds | NOT TESTED | Device B gate |
-| Codex Mac-to-Windows resume succeeds | NOT TESTED | Device B gate |
-| Active-agent overwrite is refused | NOT TESTED | Device B gate |
-| Existing Windows target is backed up before restore | NOT TESTED | Device B gate |
-| Claude Windows-to-Mac resume succeeds | n/a (blocked) | requires W-side push |
-| Codex Windows-to-Mac resume succeeds | n/a (blocked) | requires W-side push |
-| Existing Mac targets are backed up before restore | n/a (blocked) | no pull performed |
-| Unchanged pushes skip without new snapshots | n/a (blocked) | no push performed |
-| Divergence records a conflict without overwrite | n/a (blocked) | no sync established |
-| `--keep-both` preserves both branches | n/a (blocked) | no conflict created |
-| All required GitHub checks are green | NOT VERIFIED | not re-fetched by this executor |
+Source of each row: **[A]** verified locally by Device A, **[B]** reported by
+the Device B handoff, **[—]** not tested by either.
 
-**Phase 1 remains OPEN.**
+| Gate | Result | Evidence |
+| ---- | ------ | -------- |
+| `install.sh` returns 200 and installs RC3 on Mac | PASS [A] | `HTTP/2 200`; `version 0.1.0-rc.3`, commit `94cc1e2`; both checksum layers |
+| `install.ps1` returns 200 and installs RC3 on Windows | PASS [B] | HEAD 200; both checksum layers; exact RC3; no elevation prompt |
+| Both installers are idempotent and PATH-safe | PASS [A][B] | Mac: re-run reports already installed, 0 PATH blocks written. Windows: two runs, PATH entry count `1` before and after |
+| Pre-init missing-config failure is accurate | PASS [A][B] | exit `3`, `config missing`, platform and both adapters still reported correctly on both devices |
+| Post-init setup check and self-test pass on both devices | PASS [A][B] | Mac: `setup check` exit 0, `self_test: synthetic self-test passed`, re-verified after profile rotation. Windows: same on the controlled-fresh profile |
+| Claude setup prompt completes on the Mac | PARTIAL [A] | the §8 command sequence completed with all required results; the prompt was not executed verbatim inside a separate Claude session |
+| Codex setup prompt completes on Windows | PASS [B] | prompt version 3 pinned to RC3; workflow completed |
+| Only two selected test sessions reach the remote manifest | PASS [A][B] | Mac `rein status` → 2 sessions on every profile; Windows confirms 2 on the controlled-fresh profile |
+| Remote manifest/snapshots are ciphertext-only | **NOT TESTED** [—] | structure only, and only on the retired prefix. No byte-level marker-absence inspection on any profile |
+| Wrong passphrase fails without mutation | PASS [B] | exit `4`; selected targets `0/0`; isolated backups `0` before and after |
+| Claude Mac-to-Windows resume succeeds | **FAIL** [B] | restored file exists but Claude cannot discover it; mapped-project UI empty, direct-ID resume exit `1` — `RC3-WIN-F3` |
+| Codex Mac-to-Windows resume succeeds | PASS [B] | exact-ID resume exit `0`; mapped project opened; A1 marker visually confirmed |
+| Active-agent overwrite is refused | NOT TESTED [—] | §14 never executed |
+| Existing Windows target is backed up before restore | NOT TESTED [—] | §14 never executed |
+| Claude Windows-to-Mac resume succeeds | NOT TESTED [—] | §15 never executed; no B1 markers were created |
+| Codex Windows-to-Mac resume succeeds | NOT TESTED [—] | §15 never executed |
+| Existing Mac targets are backed up before restore | NOT TESTED [—] | no pull was performed on the Mac; `backups/` is empty |
+| Unchanged pushes skip without new snapshots | NOT TESTED [—] | §16 requires a completed pull first |
+| Divergence records a conflict without overwrite | NOT TESTED [—] | §17 never executed |
+| `--keep-both` preserves both branches | NOT TESTED [—] | §17 never executed |
+| All required GitHub checks are green | PASS [B] | PR and release workflow metadata verified by Device B |
+
+Tally: 10 PASS, 1 PARTIAL, 1 **FAIL**, 9 NOT TESTED.
+
+**Phase 1 does not pass.** One mandatory row fails outright, nine were never
+exercised, and the ciphertext-only row — the gate protecting the project's
+central privacy claim — has no substantive evidence on any of the three
+profiles.
 
 ## 11. What a human must do to unblock
 
-1. **Close §10.** Download one `snapshots/<uuid>.age` object from the R2
-   dashboard, then locally run a marker-presence count for both A1 markers and
-   `file(1)` on it. Report booleans only; do not commit the object. Until this
-   runs, "ciphertext-only" is unproven.
-2. **Run Device B (§11–§13).** Windows installs via `install.ps1`, runs
-   `rein init --profile-id 47e43f49-35ea-49b1-a269-fb7cd8ee41a8`, performs the
-   wrong-passphrase negative test, pulls both selected sessions, and confirms
-   both A1 markers through `claude --resume` and `codex resume`.
-3. **Return to Device A for §14–§17** — the A2 update, the Windows→Mac restore
-   with backup verification, the unchanged-session no-op, and the conflict
-   keep-both flow.
+1. **Fix `RC3-WIN-F3` and cut a new RC.** The Claude restore planner must derive
+   the destination from the canonical project's destination-device `local_root`
+   instead of replaying the snapshot's archived relative path. Binary behaviour
+   changes, so runbook §19 requires a new RC and a rerun of the failed gate plus
+   every downstream gate. A regression test should assert that a macOS-origin
+   Claude session restored on Windows is discoverable by the normal
+   `claude --resume` UI — not merely that a file was written.
+2. **Do not let a successful exit code stand in for a successful restore.** The
+   pull returned `0` while producing an unusable result. Whatever check is added
+   should fail the pull itself, not just the test.
+3. **Close §10 on the controlled-fresh profile.** Download one
+   `snapshots/<uuid>.age` from `profiles/9e17efb0-…/`, run a marker-presence
+   count for both A1 markers plus `file(1)`, record booleans. Until then the
+   ciphertext-only claim is untested on every profile.
+4. **Run §14–§17 after the fix** — A2 update, Windows→Mac restore with backup
+   verification, unchanged-session no-op, and conflict keep-both recovery. None
+   have ever been exercised.
 
-Carry two caveats into Device B: the Codex session is the 03:33 same-day
-session rather than a freshly created one (`RC3-MAC-F2`), and the bucket is
-shared rather than dedicated, so cleanup targets
-`profiles/47e43f49-35ea-49b1-a269-fb7cd8ee41a8/` only.
+Carry-forward caveats: the Codex session is the 03:33 same-day session rather
+than a freshly created one (`RC3-MAC-F2`); the bucket is shared rather than
+dedicated, so cleanup targets only the three profile prefixes
+`47e43f49-…`, `72733dd3-…` and `9e17efb0-…`, never the bucket; and the retired
+profile's passphrase remains compromised (`RC3-WIN-F1`).
