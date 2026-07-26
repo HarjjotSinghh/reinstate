@@ -9,6 +9,11 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"unicode/utf16"
+
+	"github.com/HarjjotSinghh/reinstate/internal/adapter"
+	"github.com/HarjjotSinghh/reinstate/internal/adapter/claude"
+	"github.com/HarjjotSinghh/reinstate/internal/config"
 )
 
 // TestCLISyntheticSyncPath drives the real CLI entrypoint (Execute) for
@@ -33,7 +38,17 @@ func TestCLISyntheticSyncPath(t *testing.T) {
 	// UserHomeDir uses HOME on Unix and USERPROFILE on Windows.
 	t.Setenv("HOME", userHome)
 	t.Setenv("USERPROFILE", userHome)
-	claudeRoot := filepath.Join(userHome, ".claude", "projects", "fixture-project")
+	sourceProject := filepath.Join(userHome, "Projects", "reinstate-phase1-mac")
+	targetProject := filepath.Join(userHome, "Projects", "reinstate-phase1-windows")
+	if err := os.MkdirAll(sourceProject, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(targetProject, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	claudeProjectsRoot := filepath.Join(userHome, ".claude", "projects")
+	sourceClaudeRoot := filepath.Join(claudeProjectsRoot, claudeProjectDirectoryForTest(sourceProject))
+	claudeRoot := sourceClaudeRoot
 	if err := os.MkdirAll(claudeRoot, 0o700); err != nil {
 		t.Fatal(err)
 	}
@@ -41,7 +56,13 @@ func TestCLISyntheticSyncPath(t *testing.T) {
 		t.Fatal(err)
 	}
 	sessionPath := filepath.Join(claudeRoot, "session-e2e.jsonl")
-	if err := os.WriteFile(sessionPath, []byte(`{"type":"user","message":{"content":"synthetic e2e"}}`+"\n"), 0o600); err != nil {
+	meta, err := json.Marshal(map[string]any{"type": "meta", "cwd": sourceProject})
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := append(meta, '\n')
+	content = append(content, []byte(`{"type":"user","message":{"content":"synthetic e2e"}}`+"\n")...)
+	if err := os.WriteFile(sessionPath, content, 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -71,7 +92,13 @@ func TestCLISyntheticSyncPath(t *testing.T) {
 	}
 
 	// init
-	out, errb, code := run("init", "--endpoint", "https://example.r2.cloudflarestorage.com", "--bucket", "reinstate-test", "--yes")
+	out, errb, code := run(
+		"init",
+		"--endpoint", "https://example.r2.cloudflarestorage.com",
+		"--bucket", "reinstate-test",
+		"--project", "local/reinstate="+sourceProject,
+		"--yes",
+	)
 	if code != ExitOK {
 		t.Fatalf("init exit=%d out=%q err=%q", code, out, errb)
 	}
@@ -94,7 +121,16 @@ func TestCLISyntheticSyncPath(t *testing.T) {
 		t.Fatalf("list missing session: %q", out)
 	}
 
-	// dry-run push
+	// Human dry-run output must describe a plan, not claim an upload happened.
+	out, errb, code = run("push", "--agent", "claude", "--session", "session-e2e", "--dry-run")
+	if code != ExitOK {
+		t.Fatalf("push dry-run exit=%d err=%q out=%q", code, errb, out)
+	}
+	if !strings.Contains(out, "would push 1 snapshot(s)") || strings.Contains(out, "pushed 1 snapshot(s)") {
+		t.Fatalf("push dry-run described a completed upload: %q", out)
+	}
+
+	// JSON dry-run remains machine-readable and non-mutating.
 	out, errb, code = run("push", "--agent", "claude", "--session", "session-e2e", "--dry-run", "--json")
 	if code != ExitOK {
 		t.Fatalf("push dry-run exit=%d err=%q out=%q", code, errb, out)
@@ -120,6 +156,25 @@ func TestCLISyntheticSyncPath(t *testing.T) {
 	if secondPush["skipped"] != float64(1) {
 		t.Fatalf("unchanged session was not skipped: %v", secondPush)
 	}
+
+	// Simulate the destination device by keeping the canonical project ID while
+	// changing its local root from the source Mac path to a Windows-side path.
+	cfg, err := config.LoadConfig(home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cfg.Projects) != 1 || cfg.Projects[0].ID != "local/reinstate" {
+		t.Fatalf("unexpected project mappings: %+v", cfg.Projects)
+	}
+	cfg.Projects[0].LocalRoot = targetProject
+	if err := config.SaveConfig(home, cfg); err != nil {
+		t.Fatal(err)
+	}
+	targetSessionPath := filepath.Join(
+		claudeProjectsRoot,
+		claudeProjectDirectoryForTest(targetProject),
+		"session-e2e.jsonl",
+	)
 
 	// status
 	out, errb, code = run("status", "--json")
@@ -152,7 +207,10 @@ func TestCLISyntheticSyncPath(t *testing.T) {
 		t.Fatalf("pull dry-run exit=%d err=%q out=%q", code, errb, out)
 	}
 	if _, err := os.Stat(sessionPath); !os.IsNotExist(err) {
-		t.Fatalf("dry-run mutated Claude session path: %v", err)
+		t.Fatalf("dry-run recreated source Claude session path: %v", err)
+	}
+	if _, err := os.Stat(targetSessionPath); !os.IsNotExist(err) {
+		t.Fatalf("dry-run mutated destination Claude session path: %v", err)
 	}
 
 	// real pull must restore the session where Claude discovery can find it.
@@ -160,15 +218,77 @@ func TestCLISyntheticSyncPath(t *testing.T) {
 	if code != ExitOK {
 		t.Fatalf("pull exit=%d err=%q out=%q", code, errb, out)
 	}
-	restored, err := os.ReadFile(sessionPath)
+	restored, err := os.ReadFile(targetSessionPath)
 	if err != nil {
-		t.Fatalf("Claude session was not restored: %v", err)
+		t.Fatalf("Claude session was not restored under the destination project: %v", err)
 	}
 	if !bytes.Contains(restored, []byte("synthetic e2e")) {
 		t.Fatalf("restored Claude session lost content: %q", restored)
 	}
+	var restoredMeta map[string]any
+	firstRecord := bytes.SplitN(restored, []byte("\n"), 2)[0]
+	if err := json.Unmarshal(firstRecord, &restoredMeta); err != nil {
+		t.Fatalf("restored Claude metadata is invalid: %v", err)
+	}
+	restoredCWD, _ := restoredMeta["cwd"].(string)
+	if filepath.Clean(restoredCWD) != filepath.Clean(targetProject) ||
+		filepath.Clean(restoredCWD) == filepath.Clean(sourceProject) {
+		t.Fatalf("restored Claude cwd = %q, want destination %q", restoredCWD, targetProject)
+	}
 	out, errb, code = run("list", "--agent", "claude", "--json")
 	if code != ExitOK || !strings.Contains(out, "session-e2e") {
 		t.Fatalf("Claude cannot discover restored session: exit=%d err=%q out=%q", code, errb, out)
+	}
+}
+
+func claudeProjectDirectoryForTest(projectPath string) string {
+	if resolved, err := filepath.EvalSymlinks(projectPath); err == nil {
+		projectPath = resolved
+	}
+	var directory strings.Builder
+	for _, unit := range utf16.Encode([]rune(projectPath)) {
+		if unit >= 'a' && unit <= 'z' || unit >= 'A' && unit <= 'Z' || unit >= '0' && unit <= '9' {
+			directory.WriteByte(byte(unit))
+		} else {
+			directory.WriteByte('-')
+		}
+	}
+	return directory.String()
+}
+
+func TestVerifyRestoredSessionRequiresPlannedDestination(t *testing.T) {
+	root := t.TempDir()
+	wrongDirectory := filepath.Join(root, "projects", "source-project")
+	if err := os.MkdirAll(wrongDirectory, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(wrongDirectory, "session-001.jsonl"), []byte(`{"type":"user"}`+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	plannedPath := filepath.Join(root, "projects", "destination-project", "session-001.jsonl")
+	plan := adapter.RestorePlan{Session: adapter.Session{
+		ID:           "session-001",
+		Agent:        "claude",
+		Path:         plannedPath,
+		RelativePath: "projects/destination-project/session-001.jsonl",
+	}}
+	selectedAdapter := &claude.Adapter{Root: root}
+
+	if _, err := verifyRestoredSession(context.Background(), selectedAdapter, plan); err == nil {
+		t.Fatal("expected a matching ID at the wrong path to fail restore verification")
+	}
+
+	if err := os.MkdirAll(filepath.Dir(plannedPath), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(plannedPath, []byte(`{"type":"user"}`+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	restored, err := verifyRestoredSession(context.Background(), selectedAdapter, plan)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if restored.Path != plannedPath {
+		t.Fatalf("verified path = %q, want %q", restored.Path, plannedPath)
 	}
 }

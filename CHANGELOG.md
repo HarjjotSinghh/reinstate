@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-rc.4] - 2026-07-26
+
+### Fixed
+
+- Map Claude Code sessions to the configured canonical project ID and derive
+  restore destinations from each device's `local_root`, including Claude's
+  exact Windows/macOS directory-key rules for spaces, Unicode, and long paths.
+- Verify restored sessions at the exact planned vendor path instead of
+  accepting a matching session ID elsewhere in the agent tree.
+- Fail closed with a repush instruction when a legacy Claude snapshot lacks a
+  canonical project mapping, avoiding false-success cross-device restores.
+- Report `would push` during `push --dry-run` instead of claiming that a
+  snapshot was uploaded.
+
+### Changed
+
+- Pin the public installers and end-user setup prompts to `v0.1.0-rc.4`.
+- Harden the two-device acceptance runbook with a fresh-profile requirement,
+  exact-ID Codex resume, Claude sibling-session disambiguation, hidden-prompt
+  passphrase guards, and byte-level ciphertext checks.
+- Add coordinated Mac Claude Code and native-Windows Codex verification prompts
+  that produce separate sanitized acceptance reports.
+
 ## [0.1.0-rc.3] - 2026-07-26
 
 ### Fixed
@@ -90,7 +113,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.3...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.4...HEAD
+[0.1.0-rc.4]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.3...v0.1.0-rc.4
 [0.1.0-rc.3]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.2...v0.1.0-rc.3
 [0.1.0-rc.2]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.1...v0.1.0-rc.2
 [0.1.0-rc.1]: https://github.com/HarjjotSinghh/reinstate/releases/tag/v0.1.0-rc.1

@@ -2,7 +2,7 @@
 # Usage: irm https://reinstate.dev/install.ps1 | iex
 $ErrorActionPreference = "Stop"
 
-$Version = "v0.1.0-rc.3"
+$Version = "v0.1.0-rc.4"
 $PinnedInstallerSha256 = "4ac266d4f59ff60f70d8da463d33751546cab8121e12769c0b00d0004c5d6050"
 $InstallerUrl = "https://raw.githubusercontent.com/HarjjotSinghh/reinstate/${Version}/scripts/install.ps1"
 $DefaultBase = if ($env:LOCALAPPDATA) { $env:LOCALAPPDATA } else { $env:USERPROFILE }

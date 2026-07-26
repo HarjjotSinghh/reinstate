@@ -13,10 +13,19 @@ make build && ./bin/rein version
 
 Usually a **path remap** issue:
 
-1. Confirm project root mapping in config (`path_map`)
-2. Check that munged Claude project dirs were rewritten for this OS
-3. Run `rein status` and `rein diff`
-4. Verify session files landed under the expected `~/.claude/projects/...`
+1. Run `rein version --json` and require `0.1.0-rc.4` or newer.
+2. Confirm the same canonical project ID maps to this device's absolute
+   `local_root` in `config.toml`.
+3. Run a scoped `rein pull --agent claude --session SESSION_ID --dry-run` and
+   verify the planned destination is under this device's Claude project
+   directory, not the source device's directory key.
+4. Close Claude Code, run the scoped pull, then require both
+   `rein list --agent claude --json` and
+   `claude --resume SESSION_ID` to find the exact restored session.
+
+Do not manually move the session file. RC4 rejects legacy snapshots whose
+Claude project identity cannot be mapped safely; reinstall RC4 on the source
+device and push that selected session again to a fresh RC4 profile.
 
 Open an issue with OS pair (e.g. Windows 11 → macOS 15), agent version, and
 **redacted** paths.
@@ -25,6 +34,10 @@ Open an issue with OS pair (e.g. Windows 11 → macOS 15), agent version, and
 
 You must use the **exact same passphrase** as device 1. There is no recovery
 from a wrong phrase against existing ciphertext.
+
+Wait until Reinstate is visibly showing its hidden prompt before typing the
+passphrase. If the process has already exited, rerun the command; otherwise the
+secret can become a shell-history entry instead of input to Reinstate.
 
 ## Conflicts after using both machines the same day
 

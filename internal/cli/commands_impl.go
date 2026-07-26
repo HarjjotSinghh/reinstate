@@ -543,6 +543,10 @@ func newPushCmd() *cobra.Command {
 					"snapshots": uploaded, "skipped": skipped, "dry_run": dryRun,
 				})
 			}
+			if dryRun {
+				PrintHuman(cmd.OutOrStdout(), "would push %d snapshot(s), would skip %d unchanged, dry_run=true", len(uploaded), skipped)
+				return nil
+			}
 			PrintHuman(cmd.OutOrStdout(), "pushed %d snapshot(s), skipped %d unchanged, dry_run=%v", len(uploaded), skipped, dryRun)
 			return nil
 		},
@@ -695,19 +699,9 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 					if err := os.Remove(artifactPath); err != nil && !os.IsNotExist(err) {
 						return err
 					}
-					discovered, err := a.Discover(context.Background(), adapter.DiscoverOptions{})
+					restored, err := verifyRestoredSession(context.Background(), a, restorePlan)
 					if err != nil {
 						return err
-					}
-					var restored *adapter.Session
-					for i := range discovered {
-						if discovered[i].ID == s.SessionID {
-							restored = &discovered[i]
-							break
-						}
-					}
-					if restored == nil {
-						return fmt.Errorf("adapter could not discover restored %s session %s", s.Agent, s.SessionID)
 					}
 					localHash, err := hashFile(restored.Path)
 					if err != nil {
@@ -974,9 +968,8 @@ func resolveKeepRemote(
 		return fmt.Errorf("adapter unavailable for %s", remote.Agent)
 	}
 	options := adapter.RestoreOptions{BackupRoot: filepath.Join(home, "backups")}
-	targetID := remote.SessionID
 	if keepBoth {
-		targetID = remote.SessionID + "-remote-" + shortID(remote.SnapshotID)
+		targetID := remote.SessionID + "-remote-" + shortID(remote.SnapshotID)
 		options.ForkSessionID = targetID
 		options.DestinationRelativePath = forkRelativePath(env.Files[0].Path, targetID)
 	}
@@ -1002,7 +995,7 @@ func resolveKeepRemote(
 	if closeErr != nil {
 		return closeErr
 	}
-	restored, err := discoverSession(ctx, registry, remote.Agent, targetID)
+	restored, err := verifyRestoredSession(ctx, selectedAdapter, restorePlan)
 	if err != nil {
 		return fmt.Errorf("verify resolved session: %w", err)
 	}
@@ -1011,6 +1004,29 @@ func resolveKeepRemote(
 		return err
 	}
 	return updateSessionState(home, restored.Agent, restored.ID, localHash, remote.SnapshotID)
+}
+
+func verifyRestoredSession(ctx context.Context, selectedAdapter adapter.Adapter, plan adapter.RestorePlan) (adapter.Session, error) {
+	discovered, err := selectedAdapter.Discover(ctx, adapter.DiscoverOptions{})
+	if err != nil {
+		return adapter.Session{}, err
+	}
+	expectedPath := filepath.Clean(plan.Session.Path)
+	expectedRelative := filepath.ToSlash(plan.Session.RelativePath)
+	for _, session := range discovered {
+		if session.ID != plan.Session.ID ||
+			filepath.Clean(session.Path) != expectedPath ||
+			(expectedRelative != "" && filepath.ToSlash(session.RelativePath) != expectedRelative) {
+			continue
+		}
+		return session, nil
+	}
+	return adapter.Session{}, fmt.Errorf(
+		"adapter could not discover restored %s session %s at planned destination %s",
+		plan.Session.Agent,
+		plan.Session.ID,
+		plan.Session.Path,
+	)
 }
 
 func discoverSession(ctx context.Context, registry *adapter.Registry, agentName, sessionID string) (adapter.Session, error) {
