@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
+	syncengine "github.com/HarjjotSinghh/reinstate/internal/sync"
 )
 
 // AgentProcessChecker reports whether the selected coding agent is active.
@@ -26,7 +27,12 @@ type Options struct {
 	Args []string
 	// AgentProcessChecker overrides process detection in deterministic tests.
 	AgentProcessChecker AgentProcessChecker
+	// EnvelopeCodec overrides envelope crypto in deterministic tests.
+	// The production command leaves it nil.
+	EnvelopeCodec syncengine.EnvelopeCodec
 }
+
+type envelopeCodecContextKey struct{}
 
 // Execute builds and runs the root command, returning a process exit code.
 func Execute(opts Options) int {
@@ -86,6 +92,11 @@ func NewRoot(opts Options) *cobra.Command {
 			return NewExitError(ExitUsage, "missing command")
 		},
 	}
+	rootContext := context.Background()
+	if opts.EnvelopeCodec != nil {
+		rootContext = context.WithValue(rootContext, envelopeCodecContextKey{}, opts.EnvelopeCodec)
+	}
+	root.SetContext(rootContext)
 	if opts.Stdout != nil {
 		root.SetOut(opts.Stdout)
 	}

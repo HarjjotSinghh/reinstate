@@ -2,7 +2,10 @@ package crypto
 
 import (
 	"bytes"
+	"io"
 	"testing"
+
+	"filippo.io/age"
 )
 
 func TestEncryptDecryptRoundTrip(t *testing.T) {
@@ -26,18 +29,15 @@ func TestEncryptDecryptRoundTrip(t *testing.T) {
 }
 
 func TestWrongPassphraseFails(t *testing.T) {
-	var buf bytes.Buffer
-	_ = Encrypt(bytes.NewReader([]byte("x")), &buf, "right")
+	cipher := encryptFastForTest(t, []byte("x"), "right")
 	var out bytes.Buffer
-	if err := Decrypt(bytes.NewReader(buf.Bytes()), &out, "wrong"); err == nil {
+	if err := Decrypt(bytes.NewReader(cipher), &out, "wrong"); err == nil {
 		t.Fatal("expected failure")
 	}
 }
 
 func TestTamperFails(t *testing.T) {
-	var buf bytes.Buffer
-	_ = Encrypt(bytes.NewReader([]byte("payload-data-here")), &buf, "pass")
-	b := buf.Bytes()
+	b := encryptFastForTest(t, []byte("payload-data-here"), "pass")
 	if len(b) < 10 {
 		t.Fatal("short")
 	}
@@ -46,6 +46,28 @@ func TestTamperFails(t *testing.T) {
 	if err := Decrypt(bytes.NewReader(b), &out, "pass"); err == nil {
 		t.Fatal("expected tamper failure")
 	}
+}
+
+func encryptFastForTest(t *testing.T, plain []byte, passphrase string) []byte {
+	t.Helper()
+	recipient, err := age.NewScryptRecipient(passphrase)
+	if err != nil {
+		t.Fatal(err)
+	}
+	recipient.SetWorkFactor(1)
+	var ciphertext bytes.Buffer
+	writer, err := age.Encrypt(&ciphertext, recipient)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := io.Copy(writer, bytes.NewReader(plain)); err != nil {
+		_ = writer.Close()
+		t.Fatal(err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return ciphertext.Bytes()
 }
 
 func TestSHA256Hex(t *testing.T) {

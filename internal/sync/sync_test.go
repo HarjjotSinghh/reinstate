@@ -499,6 +499,12 @@ func (fastAgeEnvelopeCodec) DecryptReader(source io.Reader, passphrase string) (
 }
 
 func testEngine(engine *Engine) *Engine {
-	engine.codec = fastAgeEnvelopeCodec{}
+	engine.Codec = fastAgeEnvelopeCodec{}
 	return engine
+}
+
+func TestEngineDefaultsToProductionAgeEnvelopeCodec(t *testing.T) {
+	if _, ok := (&Engine{}).envelopeCodec().(ageEnvelopeCodec); !ok {
+		t.Fatal("nil codec no longer defaults to the production age implementation")
+	}
 }

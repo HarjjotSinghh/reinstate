@@ -45,10 +45,13 @@ type Engine struct {
 	Platform              string
 	MaxPayloadSize        int64
 	RequireRemoteManifest bool
-	codec                 envelopeCodec
+	// Codec overrides the age envelope implementation for deterministic tests.
+	// Production callers leave it nil.
+	Codec EnvelopeCodec
 }
 
-type envelopeCodec interface {
+// EnvelopeCodec encrypts and authenticates sync envelopes.
+type EnvelopeCodec interface {
 	Encrypt(io.Reader, io.Writer, string) error
 	DecryptReader(io.Reader, string) (io.Reader, error)
 }
@@ -63,9 +66,9 @@ func (ageEnvelopeCodec) DecryptReader(source io.Reader, passphrase string) (io.R
 	return crypto.DecryptReader(source, passphrase)
 }
 
-func (e *Engine) envelopeCodec() envelopeCodec {
-	if e.codec != nil {
-		return e.codec
+func (e *Engine) envelopeCodec() EnvelopeCodec {
+	if e.Codec != nil {
+		return e.Codec
 	}
 	return ageEnvelopeCodec{}
 }

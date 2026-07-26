@@ -73,12 +73,18 @@ func TestDoctorHealthyWithConfig(t *testing.T) {
 	if err := config.SaveConfig(home, c); err != nil {
 		t.Fatal(err)
 	}
-	rep, err := Run(context.Background(), Options{Home: home, SelfTest: true})
+	testCodec := &fastAgeEnvelopeCodec{}
+	rep, err := Run(context.Background(), Options{
+		Home: home, SelfTest: true, EnvelopeCodec: testCodec,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if rep.SelfTest != "ok" {
 		t.Fatalf("selftest=%q checks=%+v", rep.SelfTest, rep.Checks)
+	}
+	if testCodec.encryptions.Load() == 0 {
+		t.Fatal("doctor self-test did not exercise the injected age envelope codec")
 	}
 	_ = filepath.Join(home, "cache")
 }

@@ -375,11 +375,16 @@ func engineFromConfig(cmd *cobra.Command, passphrase string) (*sync.Engine, *sch
 		passphrase = string(secret)
 		crypto.Zero(secret)
 	}
+	var envelopeCodec sync.EnvelopeCodec
+	if commandContext := cmd.Context(); commandContext != nil {
+		envelopeCodec, _ = commandContext.Value(envelopeCodecContextKey{}).(sync.EnvelopeCodec)
+	}
 	return &sync.Engine{
 		Backend:               b,
 		Passphrase:            passphrase,
 		Prefix:                enginePrefix,
 		RequireRemoteManifest: requireRemoteManifest,
+		Codec:                 envelopeCodec,
 	}, cfg, home, nil
 }
 

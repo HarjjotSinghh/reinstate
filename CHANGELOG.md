@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Keep local and CI verification release-equivalent while avoiding redundant
+  documentation-contract, fixture-scan, and production-KDF work.
+  High-level deterministic tests use real age envelopes at a reduced test-only
+  scrypt cost; the ordinary full suite still covers the production default.
+- Add `make quick` as an explicitly non-release fast development gate.
+
 ### Fixed
 
 - Refuse to overwrite an initialized Reinstate home unless `rein init --force`

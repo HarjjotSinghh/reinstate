@@ -44,19 +44,7 @@ jobs:
 
       - name: Race
         if: runner.os == 'Linux'
-        run: go test ./... -race -count=1 -timeout=20m
-
-      - name: Docs check (POSIX)
-        if: runner.os != 'Windows'
-        run: ./scripts/check-docs.sh
-
-      - name: Docs check (PowerShell)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: ./scripts/check-docs.ps1
-
-      - name: Fixture secret scan
-        run: go test ./internal/fixture -count=1
+        run: make test-race
 
       - name: Build
         run: go build -o bin/reinstate ./cmd/reinstate

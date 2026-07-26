@@ -124,7 +124,10 @@ func newConflictFixture(t *testing.T) conflictFixture {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = os.Remove(artifactPath) })
-	engine := &syncengine.Engine{Backend: memory.New(), Passphrase: "test-passphrase"}
+	engine := &syncengine.Engine{
+		Backend: memory.New(), Passphrase: "test-passphrase",
+		Codec: &fastAgeEnvelopeCodec{},
+	}
 	snapshotID, err := engine.PushSession(context.Background(), syncengine.PushItem{
 		Agent: "claude", SessionID: "s", ProjectID: "p",
 		LocalPath: artifactPath, RelativePath: sessions[0].RelativePath,

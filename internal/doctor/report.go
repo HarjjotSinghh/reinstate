@@ -16,6 +16,7 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/credentials"
 	"github.com/HarjjotSinghh/reinstate/internal/device"
 	"github.com/HarjjotSinghh/reinstate/internal/exitcode"
+	syncengine "github.com/HarjjotSinghh/reinstate/internal/sync"
 	"github.com/HarjjotSinghh/reinstate/internal/version"
 )
 
@@ -43,6 +44,9 @@ type Report struct {
 type Options struct {
 	Home     string
 	SelfTest bool
+	// EnvelopeCodec overrides self-test crypto in deterministic tests.
+	// Production callers leave it nil.
+	EnvelopeCodec syncengine.EnvelopeCodec
 }
 
 // Run builds a redacted report. It never reads real vendor session contents.
@@ -111,7 +115,7 @@ func Run(ctx context.Context, opts Options) (*Report, error) {
 	}
 
 	if opts.SelfTest {
-		if err := SelfTest(home); err != nil {
+		if err := selfTest(home, opts.EnvelopeCodec); err != nil {
 			rep.SelfTest = "fail"
 			rep.Checks = append(rep.Checks, Check{
 				Name: "self_test", Status: "fail", Message: Redact(err.Error()), Code: exitcode.Runtime,

@@ -57,11 +57,27 @@ make build
 ### Run tests
 
 ```bash
+make quick
 make test
 make test-race
 make lint
 make verify
 ```
+
+Use `make quick` while iterating. It runs formatting, vet, and the product
+packages while omitting the slow production-KDF and subprocess/document
+contract packages, and it reuses Go's test cache for unchanged packages. It is
+deliberately not a release gate.
+
+`make test` runs every package, including documentation, installer, and fixture
+secret-scan contracts.
+`make test-race` race-instruments product packages while excluding
+`internal/doctest`, whose subprocess/document contracts cannot expose product
+memory races, and the stateless `internal/crypto` wrapper. High-level CLI,
+doctor, and sync tests use the real age envelope format with a reduced
+test-only scrypt cost. `make test` still exercises the production crypto
+default. This preserves the useful functional and race signals without
+repeating expensive KDF and documentation work.
 
 ### Local smoke test
 

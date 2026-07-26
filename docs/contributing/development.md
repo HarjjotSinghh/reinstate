@@ -25,11 +25,23 @@ real session fixtures. The committed `testdata/` tree must remain synthetic.
 ## Required local gate
 
 ```bash
+make quick
 make verify
 ```
 
+`make quick` is the fast edit-loop gate: formatting, vet, and focused product
+packages. It intentionally omits the slow production-KDF and
+subprocess/document packages and reuses Go's cache, so it cannot approve a
+merge or release.
+
 That gate runs formatting, vet, pinned lint, unit/integration tests, race tests,
 `govulncheck`, documentation contracts, fixture secret scanning, and a build.
+Documentation and fixture contracts run once through the full test target; the
+race target filters documentation because its shell/document subprocesses are
+not Go product race surfaces. It also omits the stateless crypto wrapper.
+High-level CLI, doctor, and sync tests retain the age envelope format with a
+reduced test-only scrypt cost, while the ordinary full test target covers the
+production crypto default.
 Run focused package tests while iterating, but run the full gate before a PR.
 
 For installer or release work, also run:
