@@ -1,4 +1,4 @@
-# Reinstate native Windows installer — exact release, SHA-256 verified, no elevation.
+# Reinstate native Windows installer - exact release, SHA-256 verified, no elevation.
 # Public: irm https://reinstate.dev/install.ps1 | iex
 # Exact-tag audit: $env:REINSTATE_VERSION="vX.Y.Z"; irm https://raw.githubusercontent.com/HarjjotSinghh/reinstate/vX.Y.Z/scripts/install.ps1 | iex
 $ErrorActionPreference = "Stop"

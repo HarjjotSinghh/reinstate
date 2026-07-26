@@ -4,7 +4,7 @@ Reinstate synchronizes Claude Code and Codex CLI sessions across your machines
 through client-side encrypted, user-owned object storage.
 
 > **Release status:** the public installers currently pin
-> `v0.1.0-rc.3`. It is a release candidate until the native Mac/Windows
+> `v0.1.0-rc.4`. It is a release candidate until the native Mac/Windows
 > [Phase 1 acceptance runbook](testing/phase-1-mac-windows-acceptance.md) passes.
 
 ## Prerequisites
@@ -42,7 +42,7 @@ and the current PowerShell process.
 
 Both public bootstraps:
 
-1. pin `v0.1.0-rc.3`;
+1. pin `v0.1.0-rc.4`;
 2. download the canonical installer from that exact signed Git tag;
 3. verify the canonical installer SHA-256;
 4. download only the matching GitHub Release asset and `checksums.txt`;
@@ -149,23 +149,27 @@ Validate without mutation:
 rein setup check
 rein doctor --self-test
 rein status
+
+# Claude Code
 rein pull --agent claude --session SESSION_ID --dry-run
+
+# Codex
+rein pull --agent codex --session SESSION_ID --dry-run
 ```
 
 Close the selected coding agent before a pull that will replace an existing
 local session, then restore:
 
 ```sh
+# Claude Code
 rein pull --agent claude --session SESSION_ID
 rein list --agent claude
-```
+claude --resume SESSION_ID
 
-Confirm through the vendor's normal resume UI:
-
-```sh
-claude --resume
-# or
-codex resume
+# Codex
+rein pull --agent codex --session SESSION_ID
+rein list --agent codex
+codex resume SESSION_ID
 ```
 
 Reinstate never needs to print transcript contents to prove success.
