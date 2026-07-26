@@ -39,6 +39,23 @@ Wait until Reinstate is visibly showing its hidden prompt before typing the
 passphrase. If the process has already exited, rerun the command; otherwise the
 secret can become a shell-history entry instead of input to Reinstate.
 
+## Remote profile manifest not found
+
+Reinstate could reach the configured storage location but did not find the
+profile's encrypted `manifest.age`. Check all three non-secret coordinates:
+
+1. `profile_id` and `storage.prefix` match the first device.
+2. `storage.bucket` is the same bucket used by the first device.
+3. `storage.endpoint` is the service endpoint only and does not end in the
+   bucket name.
+
+Do not work around this by creating an empty manifest or using a new profile
+ID. Correct the setup inputs and rerun `init --profile-id` in a disposable or
+intentionally reinitialized home. If reusing an initialized home, review it
+first. Current unreleased source provides `init --force`, which backs up config
+and state but still replaces them. Published RC4 has no overwrite guard or
+backup flag, so use a fresh home instead.
+
 ## Conflicts after using both machines the same day
 
 Expected if both sides modified the same session. Reinstate should create a

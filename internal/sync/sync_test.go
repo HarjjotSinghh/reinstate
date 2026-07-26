@@ -69,6 +69,40 @@ func TestPushPullRoundTripMemory(t *testing.T) {
 	}
 }
 
+func TestFetchManifestMissingRemoteProfilePolicy(t *testing.T) {
+	tests := []struct {
+		name                  string
+		requireRemoteManifest bool
+		wantNotFound          bool
+	}{
+		{name: "new first-device profile", requireRemoteManifest: false, wantNotFound: false},
+		{name: "joined or established profile", requireRemoteManifest: true, wantNotFound: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			eng := testEngine(&Engine{
+				Backend:               memory.New(),
+				Passphrase:            "test-pass-phrase-32",
+				RequireRemoteManifest: tt.requireRemoteManifest,
+			})
+
+			manifest, err := eng.FetchManifest(context.Background())
+			if tt.wantNotFound {
+				if !errors.Is(err, ErrRemoteProfileNotFound) {
+					t.Fatalf("FetchManifest error = %v, want ErrRemoteProfileNotFound", err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("FetchManifest error = %v, want empty manifest", err)
+			}
+			if manifest.Revision != "" || len(manifest.Sessions) != 0 {
+				t.Fatalf("new profile manifest = %+v, want empty", manifest)
+			}
+		})
+	}
+}
+
 func TestConflictMetadataOnly(t *testing.T) {
 	home := t.TempDir()
 	c := Conflict{

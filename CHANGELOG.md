@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Refuse to overwrite an initialized Reinstate home unless `rein init --force`
+  is explicitly selected, and back up the previous `config.toml` and
+  `state.json` together before replacement.
+- Require `rein init --profile-id` to find the existing encrypted remote
+  manifest before writing local configuration, catching endpoint, bucket, and
+  prefix mistakes during setup.
+- Return an error when a joined or established profile's `status`, `diff`,
+  `pull`, or `push` cannot find `manifest.age`, instead of reporting a healthy
+  empty profile. A new first-device profile may still report an empty remote
+  and create its manifest on the first push.
+
 ## [0.1.0-rc.4] - 2026-07-26
 
 ### Fixed

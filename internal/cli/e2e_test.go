@@ -144,6 +144,25 @@ func TestCLISyntheticSyncPath(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &pushRes); err != nil {
 		t.Fatalf("push json: %v %q", err, out)
 	}
+	snapshots, ok := pushRes["snapshots"].([]any)
+	if !ok || len(snapshots) != 1 {
+		t.Fatalf("push snapshots = %#v, want one", pushRes["snapshots"])
+	}
+	pushedSnapshot, ok := snapshots[0].(string)
+	if !ok || pushedSnapshot == "" {
+		t.Fatalf("push snapshot = %#v, want non-empty ID", snapshots[0])
+	}
+	stateAfterPush, err := config.LoadState(home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stateAfterPush.LastManifestRev != pushedSnapshot {
+		t.Fatalf(
+			"last_manifest_revision = %q, want latest snapshot/manifest revision %q",
+			stateAfterPush.LastManifestRev,
+			pushedSnapshot,
+		)
+	}
 	out, errb, code = run("push", "--agent", "claude", "--session", "session-e2e", "--json")
 	if code != ExitOK {
 		t.Fatalf("second push exit=%d err=%q out=%q", code, errb, out)

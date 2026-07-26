@@ -1,6 +1,6 @@
 # Codex — Reinstate end-user setup prompt
 
-**Prompt version:** 4
+**Prompt version:** 5
 **Pinned Reinstate release:** `v0.1.0-rc.4`
 
 Copy everything below the line into Codex.
@@ -50,11 +50,15 @@ Execution contract:
 5. Run `rein version --json` and require `0.1.0-rc.4`. Run
    `rein setup check`. Before initialization, a missing-config result is
    expected; platform, keyring, or Codex compatibility failures are blockers.
+   If the home is already initialized, stop and report it; never re-run `init`
+   or choose an overwrite option for me.
 6. Ask whether this is Device A or an additional device. Collect only the
-   non-secret endpoint, bucket, canonical project ID, local absolute project
-   path, and—for later devices—Device A's non-secret `profile_id`. Ask whether
-   I want one explicitly selected Codex session or all discovered sessions.
-   Default to one session. Never choose `--all` for me.
+   non-secret S3/R2 service endpoint, bucket, canonical project ID, local
+   absolute project path, and—for later devices—Device A's non-secret
+   `profile_id`. Treat endpoint and bucket as separate values; the endpoint
+   must not include a trailing `/<bucket>` path. Ask whether I want one
+   explicitly selected Codex session or all discovered sessions. Default to
+   one session. Never choose `--all` for me.
 7. Prepare one command and pause for me to run it:
    - Device A: `rein init --project ID=ABSOLUTE_PATH`
    - additional device:
@@ -76,7 +80,9 @@ Execution contract:
     Summarize destinations/backups and request approval before the matching
     mutating command. If Reinstate refuses an existing-target restore because
     Codex is active, do not bypass it; tell me to close Codex and retry the
-    approved command.
+    approved command. If the remote manifest is missing or status reports an
+    empty revision/zero sessions when sessions are expected, stop and report
+    the exact redacted failure.
 11. I will type the same encryption passphrase into hidden prompts. Never route
     it through arguments, an ordinary environment variable, chat, or logs.
 12. Verify `rein list --agent codex --json` discovers the restored session at a
