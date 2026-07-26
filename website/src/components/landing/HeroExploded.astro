@@ -1,6 +1,5 @@
 ---
 import { box, fmt, P } from '../../lib/iso';
-import WaitlistForm from '../WaitlistForm.astro';
 
 /* floor plane of the desk group; every act sits its feet on its own z-floor */
 const FLOOR = -132;
@@ -74,12 +73,12 @@ const SLAB_D = 82;
 const SLAB_H = 16;
 const LIFT_PITCH = 28; /* air between lifted layers */
 const FLUSH_PITCH = SLAB_H;
-/* Listed bottom-up (settings → sessions) so render order = painter order. */
+/* Listed bottom-up (paths → session) so render order = painter order. */
 const streams = [
-  { key: 'settings', tone: 'd' },
-  { key: 'skills', tone: 'c' },
-  { key: 'mcp', tone: 'b' },
-  { key: 'sessions', tone: 'a' },
+  { key: 'paths', tone: 'd' },
+  { key: 'metadata', tone: 'c' },
+  { key: 'messages', tone: 'b' },
+  { key: 'session', tone: 'a' },
 ].map((s, i) => ({ ...s, g: box(94, 32, 28 + i * LIFT_PITCH, SLAB_W, SLAB_D, SLAB_H) }));
 
 /* ---- act 2 · the checkpoint on its nightstand ---- */
@@ -112,10 +111,10 @@ const crate = box(218, 86, FLOOR, 60, 60, 66);
 const LAP_SLAB_W = 118;
 const LAP_SLAB_D = 74;
 const restacked = [
-  { key: 'settings', tone: 'd' },
-  { key: 'skills', tone: 'c' },
-  { key: 'mcp', tone: 'b' },
-  { key: 'sessions', tone: 'a' },
+  { key: 'paths', tone: 'd' },
+  { key: 'metadata', tone: 'c' },
+  { key: 'messages', tone: 'b' },
+  { key: 'session', tone: 'a' },
 ].map((s, i) => ({ ...s, g: box(80, 58, 15 + i * FLUSH_PITCH, LAP_SLAB_W, LAP_SLAB_D, SLAB_H) }));
 
 /* ---- props ---- */
@@ -191,16 +190,111 @@ const floorGrid = [
 
 <div class="hero-block">
     <div class="lede">
-      <span class="badge"><i aria-hidden="true"></i> Pull apart, seal, put back</span>
-      <h1>Restore your AI coding<br />workspace on any device</h1>
+      <span class="badge"><i aria-hidden="true"></i> Capture. Encrypt. Reinstate.</span>
+      <h1>Switch devices without losing the thread.</h1>
       <p class="sub">
-        Sessions, MCP servers, skills, and settings, across every coding agent and
-        every machine you own. Encrypted so only you can read it.
+        Move encrypted Claude Code or Codex sessions between macOS and Windows.
+        Reinstate encrypts the session locally, then stores it in your own S3 or R2 bucket.
       </p>
-      <div class="join-wrap" id="join">
-        <WaitlistForm id="hero-waitlist" compact />
+
+      <div class="hero-conversion">
+        <div class="install-command" role="group" aria-label="Install command">
+          <span class="prompt" aria-hidden="true">$</span>
+          <code id="install-command-text">curl -fsSL https://reinstate.dev/install.sh | sh</code>
+          <button
+            id="copy-install"
+            type="button"
+            data-command="curl -fsSL https://reinstate.dev/install.sh | sh"
+            data-state="idle"
+            aria-label="Copy install command"
+          >
+            <svg class="copy-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="8.5" y="8.5" width="11" height="11" rx="1.5"></rect>
+              <path d="M15.5 8.5V5.8c0-.72-.58-1.3-1.3-1.3H5.8c-.72 0-1.3.58-1.3 1.3v8.4c0 .72.58 1.3 1.3 1.3h2.7"></path>
+            </svg>
+            <svg class="copied-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m5.5 12.5 4.1 4.1 8.9-9.2"></path>
+            </svg>
+            <span id="copy-status" class="sr" aria-live="polite"></span>
+          </button>
+        </div>
+
+        <nav class="hero-links" aria-label="Installation resources">
+          <a href="/docs/getting-started">
+            Read setup guide
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5"></path>
+            </svg>
+          </a>
+          <a
+            href="https://github.com/HarjjotSinghh/reinstate"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            View on GitHub
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M6 3h7v7M13 3 6.5 9.5"></path>
+              <path d="M11.5 9.5V13h-8V5h3.5"></path>
+            </svg>
+          </a>
+        </nav>
       </div>
-      <p class="micro">Apache&#8209;2.0 · one Go binary · your bucket, your keys</p>
+
+      <div class="availability" aria-label="Current compatibility">
+        <span class="available">
+          <i aria-hidden="true"></i>
+          <strong>Available now:</strong> Claude Code · Codex
+        </span>
+        <span class="platform">macOS ↔ Windows</span>
+      </div>
+
+      <ol class="mechanism" aria-label="How Reinstate works">
+        <li>
+          <span class="step-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <rect x="4.5" y="3.5" width="10" height="13" rx="1.5"></rect>
+              <path d="M9.5 8.5h8.2M17.7 8.5l-2.5-2.4M17.7 8.5l-2.5 2.4"></path>
+              <path d="M8 19.5h10.5v-7"></path>
+            </svg>
+          </span>
+          <span class="step-copy">
+            <span class="step-heading"><span class="step-no">1</span><strong>Capture</strong></span>
+            <small>Select a local session</small>
+          </span>
+        </li>
+        <li>
+          <span class="step-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <rect x="5" y="10" width="14" height="10" rx="2"></rect>
+              <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+              <path d="M12 14v2"></path>
+            </svg>
+          </span>
+          <span class="step-copy">
+            <span class="step-heading"><span class="step-no">2</span><strong>Encrypt</strong></span>
+            <small>Seal it before upload</small>
+          </span>
+        </li>
+        <li>
+          <span class="step-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <rect x="8.5" y="4" width="11" height="15" rx="1.5"></rect>
+              <path d="M4 9.5h9M4 9.5l3-3M4 9.5l3 3"></path>
+              <path d="M12.5 16h3"></path>
+            </svg>
+          </span>
+          <span class="step-copy">
+            <span class="step-heading"><span class="step-no">3</span><strong>Reinstate</strong></span>
+            <small>Pull and resume natively</small>
+          </span>
+        </li>
+      </ol>
+
+      <p class="micro">
+        <code>rein</code> is the CLI for Reinstate
+        <span aria-hidden="true">·</span>
+        Apache&#8209;2.0 · one Go binary · your bucket, your keys
+      </p>
     </div>
 
     <figure class="scene">
@@ -208,9 +302,10 @@ const floorGrid = [
       <svg viewBox="0 -170 1640 1026" role="img" aria-labelledby="etitle edesc" preserveAspectRatio="xMidYMax meet">
         <title id="etitle">One room, two machines, 23:41 to 23:47</title>
         <desc id="edesc">
-          A desk at night. Four layers of agent state, sessions, MCP servers, skills and
-          settings, lift out of the desktop, seal into one encrypted Reinstate checkpoint,
-          and drop back into a laptop on the table across the room with every path remapped.
+          A desk at night. Four layers of portable session state — paths, metadata,
+          messages, and the session record — lift out of the desktop, seal into one
+          encrypted Reinstate checkpoint, and drop back into a laptop on the table across
+          the room with every path remapped.
         </desc>
 
         <defs>
@@ -710,6 +805,40 @@ const floorGrid = [
     </figure>
 </div>
 
+<script>
+  const copyButton = document.getElementById('copy-install');
+  const commandText = document.getElementById('install-command-text');
+  const copyStatus = document.getElementById('copy-status');
+  let resetCopyState: number | undefined;
+
+  copyButton?.addEventListener('click', async () => {
+    if (!commandText || !copyStatus) return;
+
+    const command = copyButton.dataset.command ?? commandText.textContent ?? '';
+    window.clearTimeout(resetCopyState);
+
+    try {
+      await navigator.clipboard.writeText(command);
+      copyButton.dataset.state = 'copied';
+      copyButton.setAttribute('aria-label', 'Install command copied');
+      copyStatus.textContent = 'Install command copied';
+    } catch {
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(commandText);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+      copyStatus.textContent = 'Command selected. Press Control C or Command C to copy.';
+    }
+
+    resetCopyState = window.setTimeout(() => {
+      copyButton.dataset.state = 'idle';
+      copyButton.setAttribute('aria-label', 'Copy install command');
+      copyStatus.textContent = '';
+    }, 1800);
+  });
+</script>
+
 <style>
   .hero-block {
     /* ---- light (default) ---- */
@@ -841,7 +970,7 @@ const floorGrid = [
   .lede {
     max-width: 88rem;
     margin-inline: auto;
-    padding: 48px 24px 0;
+    padding: 42px 24px 0;
     text-align: center;
   }
 
@@ -866,8 +995,7 @@ const floorGrid = [
 
   h1 {
     margin: clamp(0.75rem, 1.6vw, 1.1rem) auto 0;
-    /* Fits "Restore your AI coding" / "workspace on any device" as exactly 2 lines */
-    max-width: min(22ch, 100%);
+    max-width: min(25ch, 100%);
     font-family: var(--font-display);
     font-size: clamp(2.25rem, 4.4vw, 3.85rem);
     line-height: 0.98;
@@ -879,7 +1007,7 @@ const floorGrid = [
 
   .sub {
     margin: 1rem auto 0;
-    max-width: 50ch;
+    max-width: 62ch;
     font-size: clamp(1rem, 0.5vw + 0.92rem, 1.15rem);
     line-height: 1.6;
     color: var(--ink-2);
@@ -887,16 +1015,241 @@ const floorGrid = [
     animation: rise 0.8s 0.09s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
-  .join-wrap {
-    margin: clamp(1.1rem, 2vw, 1.5rem) auto 0;
-    max-width: 29rem;
+  .hero-conversion {
+    display: grid;
+    justify-items: center;
+    gap: 0.25rem;
+    margin: clamp(1.1rem, 2vw, 1.45rem) auto 0;
+    max-width: 62rem;
     animation: rise 0.8s 0.17s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
-  .micro {
-    margin: 0.75rem 0 0;
+  .install-command {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    width: min(100%, 43rem);
+    min-height: 3rem;
+    overflow: hidden;
+    border: 1px solid color-mix(in oklab, var(--sv-stroke) 78%, var(--rule));
+    border-radius: 8px;
+    background: var(--sv-stroke);
+    color: #f2f4ea;
+    text-align: left;
+  }
+
+  .install-command .prompt {
+    padding-left: 1rem;
+    color: var(--sv-prim);
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-weight: 700;
+  }
+
+  .install-command code {
+    min-width: 0;
+    overflow-x: auto;
+    padding: 0.82rem 0.75rem;
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-size: clamp(0.76rem, 0.32vw + 0.72rem, 0.9rem);
+    line-height: 1;
+    scrollbar-width: none;
+    white-space: nowrap;
+  }
+  .install-command code::-webkit-scrollbar {
+    display: none;
+  }
+
+  .install-command button {
+    display: grid;
+    position: relative;
+    place-items: center;
+    align-self: stretch;
+    min-width: 3.2rem;
+    padding: 0;
+    border: 0;
+    border-left: 1px solid color-mix(in oklab, #f2f4ea 18%, transparent);
+    background: color-mix(in oklab, var(--sv-prim) 10%, transparent);
+    color: var(--sv-prim);
+    cursor: pointer;
+    transition:
+      background 0.18s ease,
+      color 0.18s ease;
+  }
+  .install-command button:hover {
+    background: var(--sv-prim);
+    color: var(--sv-stroke);
+  }
+  .install-command button svg {
+    width: 1.18rem;
+    height: 1.18rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .copied-icon {
+    display: none;
+  }
+  .install-command button[data-state='copied'] .copy-icon {
+    display: none;
+  }
+  .install-command button[data-state='copied'] .copied-icon {
+    display: block;
+  }
+  .install-command button:focus-visible,
+  .hero-links a:focus-visible {
+    outline: 3px solid var(--prim);
+    outline-offset: 3px;
+  }
+
+  .hero-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0 1.15rem;
+  }
+  .hero-links a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.32rem;
+    min-height: 2.75rem;
+    color: var(--ink-2);
+    font-size: 0.84rem;
+    font-weight: 550;
+    text-decoration: none;
+    transition:
+      color 0.18s ease;
+  }
+  .hero-links a:hover {
+    color: var(--ink);
+  }
+  .hero-links svg {
+    width: 0.86rem;
+    height: 0.86rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.45;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .availability {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.55rem 1rem;
+    margin: 0.7rem auto 0;
+    color: var(--ink-2);
+    font-size: 0.88rem;
+    animation: rise 0.8s 0.23s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .available {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.42rem;
+  }
+  .available i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--prim-deep);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--prim) 22%, transparent);
+  }
+  .available strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .platform {
+    padding-left: 1rem;
+    border-left: 1px solid var(--rule);
+  }
+
+  .mechanism {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: min(100%, 62rem);
+    margin: 0.9rem auto 0;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    background: var(--paper-2);
+    list-style: none;
+    text-align: left;
+    animation: rise 0.8s 0.29s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .mechanism li {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    gap: 0.75rem;
+    padding: 0.9rem 1rem;
+  }
+  .mechanism li + li {
+    border-left: 1px solid var(--rule);
+  }
+  .step-icon {
+    display: grid;
+    flex: 0 0 2.25rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    place-items: center;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    background: var(--paper);
+    color: var(--ink);
+  }
+  .step-icon svg {
+    width: 1.15rem;
+    height: 1.15rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.65;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .step-copy {
+    min-width: 0;
+  }
+  .step-heading {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+  .step-no {
+    color: var(--prim-deep);
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
     font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .mechanism strong,
+  .mechanism small {
+    display: block;
+  }
+  .mechanism strong {
+    color: var(--ink);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  .mechanism small {
+    margin-top: 0.16rem;
     color: var(--ink-3);
+    font-size: 0.76rem;
+    line-height: 1.3;
+  }
+
+  .micro {
+    margin: 0.8rem 0 0;
+    font-size: 0.82rem;
+    color: var(--ink-3);
+    animation: rise 0.8s 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .micro code {
+    color: var(--ink-2);
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-weight: 650;
   }
 
   .sr {
@@ -910,9 +1263,10 @@ const floorGrid = [
 
   /* ---------- scene ---------- */
   /* Extra negative margin offsets the taller viewBox so desks stay put while
-     window + painting ride ~170px higher beside the lede. */
+     window + painting ride beside the lede. Keep enough clearance below the
+     mechanism and proof line that the scene's command chips never overlap it. */
   .scene {
-    margin: clamp(calc(-19rem - 10rem), calc(-16vw - 10.5vw), calc(-3rem - 6rem)) 0 0;
+    margin: clamp(-31rem, -25vw, -16rem) 0 0;
     width: 100%;
   }
   .scene svg {
@@ -1093,6 +1447,17 @@ const floorGrid = [
   }
 
   @media (max-width: 900px) {
+    .lede {
+      padding-top: 2rem;
+    }
+    .mechanism {
+      grid-template-columns: 1fr;
+      max-width: 31rem;
+    }
+    .mechanism li + li {
+      border-top: 1px solid var(--rule);
+      border-left: 0;
+    }
     /* no room to tuck the scene behind the copy once it has to scroll */
     .scene {
       margin-top: 0.5rem;
@@ -1105,6 +1470,41 @@ const floorGrid = [
     }
     .cmdchip text {
       font-size: 20px;
+    }
+  }
+
+  @media (max-width: 560px) {
+    h1 br {
+      display: none;
+    }
+    .hero-conversion {
+      width: 100%;
+    }
+    .install-command .prompt {
+      padding-left: 0.75rem;
+    }
+    .install-command button {
+      min-width: 3rem;
+    }
+    .hero-links {
+      column-gap: 0.85rem;
+      width: 100%;
+    }
+    .availability {
+      display: grid;
+      justify-items: center;
+    }
+    .platform {
+      padding-top: 0.55rem;
+      padding-left: 0;
+      border-top: 1px solid var(--rule);
+      border-left: 0;
+    }
+    .micro span {
+      display: block;
+      height: 0.2rem;
+      overflow: hidden;
+      color: transparent;
     }
   }
 
@@ -1223,7 +1623,10 @@ const floorGrid = [
     .sway,
     h1,
     .sub,
-    .join-wrap {
+    .hero-conversion,
+    .availability,
+    .mechanism,
+    .micro {
       animation: none;
     }
   }
