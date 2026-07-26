@@ -11,7 +11,8 @@ const problem = readSource('../components/landing/ProblemExploded.astro');
 describe('landing-page product claims', () => {
   it('leads with the installable Phase 1 product', () => {
     expect(hero).toContain('Capture. Encrypt. Reinstate.');
-    expect(hero).toContain('Switch devices without losing the thread.');
+    expect(hero).toContain('Start on one device.');
+    expect(hero).toContain('Continue on another. Same session.');
     expect(hero).toContain(
       'Move encrypted Claude Code or Codex sessions between macOS and Windows.',
     );
