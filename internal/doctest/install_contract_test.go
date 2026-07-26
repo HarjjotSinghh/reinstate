@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -81,20 +82,40 @@ func testPOSIXInstallerContract(t *testing.T) {
 		t.Fatalf("unconfirmed replacement was not refused: err=%v\n%s", err, output)
 	}
 	assertContainsFile(t, destination, marker)
-	output, err, timedOut := runPOSIXInstallerWithIdleTTY(t, "sh", installDir, server.URL, "v0.2.0", []string{"REINSTATE_CONFIRM_TIMEOUT_SECONDS=1"})
-	if timedOut {
-		t.Fatalf("unattended replacement confirmation exceeded its deadline:\n%s", output)
+	timeoutMessage := "replacement confirmation timed out after 1s"
+	output, err, observed := runPOSIXInstallerWithIdleTTY(
+		t,
+		"sh",
+		installDir,
+		server.URL,
+		"v0.2.0",
+		"Replace Reinstate",
+		timeoutMessage,
+		[]string{"REINSTATE_CONFIRM_TIMEOUT_SECONDS=1"},
+	)
+	if !observed {
+		t.Fatalf("unattended replacement confirmation did not time out while TTY input remained open:\n%s", output)
 	}
-	if err == nil || !strings.Contains(string(output), "replacement confirmation timed out after 1s") {
+	if err == nil || !strings.Contains(string(output), timeoutMessage) {
 		t.Fatalf("unattended replacement was not refused after the configured timeout: err=%v\n%s", err, output)
 	}
 	assertContainsFile(t, destination, marker)
 	if _, lookupErr := exec.LookPath("dash"); lookupErr == nil {
-		output, err, timedOut = runPOSIXInstallerWithIdleTTY(t, "dash", installDir, server.URL, "v0.2.0", nil)
-		if timedOut {
-			t.Fatalf("shell without bounded reads exceeded the confirmation deadline:\n%s", output)
+		unsupportedMessage := "this shell lacks bounded reads"
+		output, err, observed = runPOSIXInstallerWithIdleTTY(
+			t,
+			"dash",
+			installDir,
+			server.URL,
+			"v0.2.0",
+			"",
+			unsupportedMessage,
+			nil,
+		)
+		if !observed {
+			t.Fatalf("shell without bounded reads did not refuse while TTY input remained open:\n%s", output)
 		}
-		if err == nil || !strings.Contains(string(output), "this shell lacks bounded reads") {
+		if err == nil || !strings.Contains(string(output), unsupportedMessage) {
 			t.Fatalf("shell without bounded reads did not fail closed: err=%v\n%s", err, output)
 		}
 		assertContainsFile(t, destination, marker)
@@ -268,7 +289,11 @@ func runPOSIXInstaller(t *testing.T, installDir, baseURL, version string, extraE
 	return command.CombinedOutput()
 }
 
-func runPOSIXInstallerWithIdleTTY(t *testing.T, shellName, installDir, baseURL, version string, extraEnv []string) ([]byte, error, bool) {
+func runPOSIXInstallerWithIdleTTY(
+	t *testing.T,
+	shellName, installDir, baseURL, version, readyOutput, expectedOutput string,
+	extraEnv []string,
+) ([]byte, error, bool) {
 	t.Helper()
 	scriptPath, err := exec.LookPath("script")
 	if err != nil {
@@ -304,7 +329,7 @@ func runPOSIXInstallerWithIdleTTY(t *testing.T, shellName, installDir, baseURL, 
 		_ = idleWriter.Close()
 	}()
 	command.Stdin = idleReader
-	var output bytes.Buffer
+	var output synchronizedBuffer
 	command.Stdout = &output
 	command.Stderr = &output
 	if err := command.Start(); err != nil {
@@ -321,12 +346,7 @@ func runPOSIXInstallerWithIdleTTY(t *testing.T, shellName, installDir, baseURL, 
 		result <- command.Wait()
 	}()
 
-	timer := time.NewTimer(3 * time.Second)
-	defer timer.Stop()
-	select {
-	case err := <-result:
-		return output.Bytes(), err, false
-	case <-timer.C:
+	closeInputAndWait := func() error {
 		if err := idleWriter.Close(); err != nil {
 			t.Fatal(err)
 		}
@@ -334,15 +354,70 @@ func runPOSIXInstallerWithIdleTTY(t *testing.T, shellName, installDir, baseURL, 
 		defer cleanupTimer.Stop()
 		select {
 		case err := <-result:
-			return output.Bytes(), err, true
+			return err
 		case <-cleanupTimer.C:
 			if err := command.Process.Kill(); err != nil {
 				t.Errorf("kill stuck pseudo-TTY installer: %v", err)
 			}
-			err := <-result
-			return output.Bytes(), err, true
+			return <-result
 		}
 	}
+
+	ticker := time.NewTicker(10 * time.Millisecond)
+	defer ticker.Stop()
+	setupDeadline := time.NewTimer(60 * time.Second)
+	defer setupDeadline.Stop()
+	var behaviorTimer *time.Timer
+	var behaviorDeadline <-chan time.Time
+	defer func() {
+		if behaviorTimer != nil {
+			behaviorTimer.Stop()
+		}
+	}()
+	for {
+		select {
+		case err := <-result:
+			return output.snapshot(), err, output.contains(expectedOutput)
+		case <-ticker.C:
+			if output.contains(expectedOutput) {
+				err := closeInputAndWait()
+				return output.snapshot(), err, true
+			}
+			if readyOutput != "" && behaviorTimer == nil && output.contains(readyOutput) {
+				behaviorTimer = time.NewTimer(5 * time.Second)
+				behaviorDeadline = behaviorTimer.C
+			}
+		case <-behaviorDeadline:
+			err := closeInputAndWait()
+			return output.snapshot(), err, false
+		case <-setupDeadline.C:
+			err := closeInputAndWait()
+			return output.snapshot(), err, false
+		}
+	}
+}
+
+type synchronizedBuffer struct {
+	mu     sync.Mutex
+	buffer bytes.Buffer
+}
+
+func (b *synchronizedBuffer) Write(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buffer.Write(p)
+}
+
+func (b *synchronizedBuffer) contains(value string) bool {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return strings.Contains(b.buffer.String(), value)
+}
+
+func (b *synchronizedBuffer) snapshot() []byte {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return bytes.Clone(b.buffer.Bytes())
 }
 
 func shellSingleQuote(value string) string {
