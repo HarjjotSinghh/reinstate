@@ -152,6 +152,14 @@ rein version --json
 rein init
 ```
 
+Published RC4 can wait indefinitely for replacement approval when an unattended
+process inherits a readable `/dev/tty`. For deliberate RC4 automation, review
+the version change first and set `REINSTATE_CONFIRM_REPLACE=1`. The current
+unreleased installer instead waits at most 30 seconds; set
+`REINSTATE_CONFIRM_TIMEOUT_SECONDS=1..300` to choose a shorter or longer bound.
+Shells without timed-read support refuse immediately and preserve the installed
+binary.
+
 ### Device A
 
 ```bash

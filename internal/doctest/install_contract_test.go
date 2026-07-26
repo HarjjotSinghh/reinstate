@@ -16,6 +16,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestInstallerConsumesGoReleaserAssetContract(t *testing.T) {
@@ -80,6 +81,31 @@ func testPOSIXInstallerContract(t *testing.T) {
 		t.Fatalf("unconfirmed replacement was not refused: err=%v\n%s", err, output)
 	}
 	assertContainsFile(t, destination, marker)
+	output, err, timedOut := runPOSIXInstallerWithIdleTTY(t, "sh", installDir, server.URL, "v0.2.0", []string{"REINSTATE_CONFIRM_TIMEOUT_SECONDS=1"})
+	if timedOut {
+		t.Fatalf("unattended replacement confirmation exceeded its deadline:\n%s", output)
+	}
+	if err == nil || !strings.Contains(string(output), "replacement confirmation timed out after 1s") {
+		t.Fatalf("unattended replacement was not refused after the configured timeout: err=%v\n%s", err, output)
+	}
+	assertContainsFile(t, destination, marker)
+	if _, lookupErr := exec.LookPath("dash"); lookupErr == nil {
+		output, err, timedOut = runPOSIXInstallerWithIdleTTY(t, "dash", installDir, server.URL, "v0.2.0", nil)
+		if timedOut {
+			t.Fatalf("shell without bounded reads exceeded the confirmation deadline:\n%s", output)
+		}
+		if err == nil || !strings.Contains(string(output), "this shell lacks bounded reads") {
+			t.Fatalf("shell without bounded reads did not fail closed: err=%v\n%s", err, output)
+		}
+		assertContainsFile(t, destination, marker)
+	}
+	for _, invalidTimeout := range []string{"invalid", "0", "301", "1000"} {
+		output, err = runPOSIXInstaller(t, installDir, server.URL, "v0.2.0", []string{"REINSTATE_CONFIRM_TIMEOUT_SECONDS=" + invalidTimeout})
+		if err == nil || !strings.Contains(string(output), "REINSTATE_CONFIRM_TIMEOUT_SECONDS must be an integer from 1 to 300") {
+			t.Fatalf("confirmation timeout %q was not rejected: err=%v\n%s", invalidTimeout, err, output)
+		}
+		assertContainsFile(t, destination, marker)
+	}
 	output, err = runPOSIXInstaller(t, installDir, server.URL, "v0.2.0", []string{"REINSTATE_CONFIRM_REPLACE=1"})
 	if err != nil {
 		t.Fatalf("confirmed replacement failed: %v\n%s", err, output)
@@ -233,13 +259,94 @@ func makeWindowsArchive(t *testing.T, releaseDir, version string) string {
 func runPOSIXInstaller(t *testing.T, installDir, baseURL, version string, extraEnv []string) ([]byte, error) {
 	t.Helper()
 	command := exec.Command("sh", filepath.Join(repoRoot(t), "scripts", "install.sh"))
-	command.Env = append(cleanEnv(os.Environ(), "REINSTATE_CONFIRM_REPLACE", "REINSTATE_SKIP_VERSION_CHECK"),
+	command.Env = append(cleanEnv(os.Environ(), "REINSTATE_CONFIRM_REPLACE", "REINSTATE_CONFIRM_TIMEOUT_SECONDS", "REINSTATE_SKIP_VERSION_CHECK"),
 		"REINSTATE_VERSION="+version,
 		"REINSTATE_RELEASE_BASE_URL="+baseURL,
 		"INSTALL_DIR="+installDir,
 	)
 	command.Env = append(command.Env, extraEnv...)
 	return command.CombinedOutput()
+}
+
+func runPOSIXInstallerWithIdleTTY(t *testing.T, shellName, installDir, baseURL, version string, extraEnv []string) ([]byte, error, bool) {
+	t.Helper()
+	scriptPath, err := exec.LookPath("script")
+	if err != nil {
+		t.Skip("script(1) is required for the idle-TTY installer contract")
+	}
+	shellPath, err := exec.LookPath(shellName)
+	if err != nil {
+		t.Skipf("%s is required for the idle-TTY installer contract", shellName)
+	}
+	installerPath := filepath.Join(repoRoot(t), "scripts", "install.sh")
+	var command *exec.Cmd
+	switch runtime.GOOS {
+	case "darwin":
+		command = exec.Command(scriptPath, "-q", "-e", "/dev/null", shellPath, installerPath)
+	case "linux":
+		shellCommand := "exec " + shellSingleQuote(shellPath) + " " + shellSingleQuote(installerPath)
+		command = exec.Command(scriptPath, "-q", "-e", "-c", shellCommand, "/dev/null")
+	default:
+		t.Skip("idle-TTY installer contract requires macOS or Linux")
+	}
+	command.Env = append(cleanEnv(os.Environ(), "REINSTATE_CONFIRM_REPLACE", "REINSTATE_CONFIRM_TIMEOUT_SECONDS", "REINSTATE_SKIP_VERSION_CHECK"),
+		"REINSTATE_VERSION="+version,
+		"REINSTATE_RELEASE_BASE_URL="+baseURL,
+		"INSTALL_DIR="+installDir,
+	)
+	command.Env = append(command.Env, extraEnv...)
+
+	idleReader, idleWriter, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		_ = idleWriter.Close()
+	}()
+	command.Stdin = idleReader
+	var output bytes.Buffer
+	command.Stdout = &output
+	command.Stderr = &output
+	if err := command.Start(); err != nil {
+		if closeErr := idleReader.Close(); closeErr != nil {
+			t.Errorf("close idle TTY reader after start failure: %v", closeErr)
+		}
+		t.Fatal(err)
+	}
+	if err := idleReader.Close(); err != nil {
+		t.Fatal(err)
+	}
+	result := make(chan error, 1)
+	go func() {
+		result <- command.Wait()
+	}()
+
+	timer := time.NewTimer(3 * time.Second)
+	defer timer.Stop()
+	select {
+	case err := <-result:
+		return output.Bytes(), err, false
+	case <-timer.C:
+		if err := idleWriter.Close(); err != nil {
+			t.Fatal(err)
+		}
+		cleanupTimer := time.NewTimer(2 * time.Second)
+		defer cleanupTimer.Stop()
+		select {
+		case err := <-result:
+			return output.Bytes(), err, true
+		case <-cleanupTimer.C:
+			if err := command.Process.Kill(); err != nil {
+				t.Errorf("kill stuck pseudo-TTY installer: %v", err)
+			}
+			err := <-result
+			return output.Bytes(), err, true
+		}
+	}
+}
+
+func shellSingleQuote(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "'\"'\"'") + "'"
 }
 
 func cleanEnv(environment []string, keys ...string) []string {

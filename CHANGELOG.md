@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `pull`, or `push` cannot find `manifest.age`, instead of reporting a healthy
   empty profile. A new first-device profile may still report an empty remote
   and create its manifest on the first push.
+- Bound POSIX installer replacement prompts to 30 seconds by default, reject
+  invalid timeout overrides, and fail closed immediately when the active shell
+  cannot perform a timed TTY read, preventing unattended `/dev/tty` hangs.
 
 ## [0.1.0-rc.4] - 2026-07-26
 

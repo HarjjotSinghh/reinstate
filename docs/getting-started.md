@@ -49,6 +49,15 @@ Both public bootstraps:
 5. verify the binary checksum and reported version; and
 6. preserve an existing different version until you approve replacement.
 
+Published RC4's POSIX replacement prompt can wait indefinitely if automation
+inherits a readable but unattended `/dev/tty`. After reviewing the requested
+version change, deliberate automation may set
+`REINSTATE_CONFIRM_REPLACE=1`. The current unreleased installer bounds the
+prompt to 30 seconds; `REINSTATE_CONFIRM_TIMEOUT_SECONDS` may be set to an
+integer from 1 through 300. It refuses immediately when the active shell cannot
+perform a timed TTY read. Timeout, unsupported-shell, and invalid-value paths
+all preserve the installed binary.
+
 They install the CLI only. Interactive configuration starts when you run
 `rein init`.
 
