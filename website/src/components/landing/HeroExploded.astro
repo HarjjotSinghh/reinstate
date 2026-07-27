@@ -1,5 +1,13 @@
 ---
+import { product } from '../../data/product';
 import { box, fmt, P } from '../../lib/iso';
+
+const verifiedDate = new Intl.DateTimeFormat('en', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  timeZone: 'UTC',
+}).format(new Date(`${product.lastVerified}T00:00:00Z`));
 
 /* floor plane of the desk group; every act sits its feet on its own z-floor */
 const FLOOR = -132;
@@ -304,6 +312,8 @@ const floorGrid = [
         <code>rein</code> is the CLI for Reinstate
         <span aria-hidden="true">·</span>
         Apache&#8209;2.0 · one Go binary · your bucket, your keys
+        <span aria-hidden="true">·</span>
+        Verified <time datetime={product.lastVerified}>{verifiedDate}</time>
       </p>
     </div>
 
@@ -1263,6 +1273,9 @@ const floorGrid = [
     color: var(--ink-2);
     font-family: 'Geist Mono Variable', ui-monospace, monospace;
     font-weight: 650;
+  }
+  .micro time {
+    color: var(--ink-2);
   }
 
   .sr {

@@ -222,6 +222,36 @@ function withoutEmbeddedContent(html) {
     .replace(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, '');
 }
 
+function inspectAnswerFirstContent(markup, context, errors) {
+  const h1 = /<h1\b[^>]*>[\s\S]*?<\/h1\s*>/i.exec(markup);
+  if (!h1) {
+    return;
+  }
+
+  const afterHeading = markup.slice(h1.index + h1[0].length);
+  const firstSection = afterHeading.search(/<h2\b/i);
+  const answerZone =
+    firstSection === -1 ? afterHeading : afterHeading.slice(0, firstSection);
+  const paragraphs = [
+    ...answerZone.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p\s*>/gi),
+  ].map((match) =>
+    cleanVisibleText(
+      withoutEmbeddedContent(match[1]).replace(/<[^>]+>/g, ' '),
+    ),
+  );
+  const directAnswer = paragraphs.find((paragraph) => paragraph.length >= 40);
+
+  if (!directAnswer) {
+    addError(
+      errors,
+      'AEO_DIRECT_ANSWER_MISSING',
+      context,
+      'The page has no substantive answer-first paragraph between its <h1> and first <h2>.',
+      'Add a visible, self-contained paragraph of at least 40 characters that answers the page intent before the first section heading.',
+    );
+  }
+}
+
 function metaTagsBy(markup, attribute, value) {
   const expected = value.toLowerCase();
   return findTags(markup, 'meta').filter(
@@ -1057,6 +1087,7 @@ function inspectHtml(html, context, route, errors) {
       'Give the page one primary heading and use lower heading levels for sections.',
     );
   }
+  inspectAnswerFirstContent(markup, context, errors);
 
   return {
     route,

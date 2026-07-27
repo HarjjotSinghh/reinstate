@@ -42,7 +42,7 @@ function indexableHtml({
     <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","@id":"${SITE}/#software","name":"Reinstate","url":"${SITE}/","description":"Encrypted coding-agent session sync.","applicationCategory":"DeveloperApplication","operatingSystem":["macOS","Windows"],"softwareVersion":"v0.1.0-rc.6","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@id":"${SITE}/#maintainer"},"license":"https://www.apache.org/licenses/LICENSE-2.0"}</script>
     ${extraJsonLd}
   </head>
-  <body><h1>Continue coding-agent work anywhere</h1><h2>What is <code>rein</code> vs <code>reinstate</code>?</h2><svg><title>Decorative continuity diagram</title></svg><img src="/diagram.png" alt="Session continuity diagram" width="1200" height="630" loading="lazy"></body>
+  <body><h1>Continue coding-agent work anywhere</h1><p class="direct-answer">Reinstate securely moves supported coding-agent sessions between configured devices so the same vendor can resume the original work.</p><h2>What is <code>rein</code> vs <code>reinstate</code>?</h2><svg><title>Decorative continuity diagram</title></svg><img src="/diagram.png" alt="Session continuity diagram" width="1200" height="630" loading="lazy"></body>
 </html>`;
 }
 
@@ -167,6 +167,25 @@ test('rejects duplicate descriptions across indexable pages', async (t) => {
 
   const result = await auditSeo(root);
   assert.ok(result.errors.some(({ code }) => code === 'DESCRIPTION_DUPLICATE'));
+});
+
+test('rejects an indexable page without an answer-first paragraph', async (t) => {
+  const root = await validFixture();
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await writeFixture(
+    root,
+    'index.html',
+    indexableHtml().replace(
+      '<p class="direct-answer">Reinstate securely moves supported coding-agent sessions between configured devices so the same vendor can resume the original work.</p>',
+      '',
+    ),
+  );
+
+  const result = await auditSeo(root);
+
+  assert.ok(
+    result.errors.some(({ code }) => code === 'AEO_DIRECT_ANSWER_MISSING'),
+  );
 });
 
 test('rejects schema names, HowTo steps, breadcrumbs, and dates absent from visible content', async (t) => {

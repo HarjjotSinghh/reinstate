@@ -14,6 +14,11 @@ draft: false
 noindex: false
 ---
 
+Reinstate answers common continuity questions with one present-scope rule:
+supported Claude Code and Codex sessions resume in the same vendor, while
+cross-agent translation and broader continuity features remain later roadmap
+work.
+
 ## What is Reinstate?
 
 Reinstate is an open-source continuity layer for coding-agent work. Phase 1
