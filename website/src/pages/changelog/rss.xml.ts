@@ -1,6 +1,6 @@
 import rss from '@astrojs/rss';
 import { product } from '../../data/product';
-import { releaseHistory } from '../../data/releases';
+import { releaseAnchor, releaseHistory } from '../../data/releases';
 
 export const prerender = true;
 
@@ -14,7 +14,7 @@ export async function GET(context: { site?: URL }) {
       title: `${product.name} ${release.version}`,
       description: release.summary,
       pubDate: new Date(`${release.date}T00:00:00Z`),
-      link: `/changelog#${release.version === product.currentRelease ? 'rc6' : 'release-history'}`,
+      link: `/changelog#${releaseAnchor(release.version)}`,
     })),
     customData: '<language>en</language>',
   });

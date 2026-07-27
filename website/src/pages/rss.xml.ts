@@ -1,6 +1,6 @@
 import rss from '@astrojs/rss';
 import { product } from '../data/product';
-import { releaseHistory } from '../data/releases';
+import { releaseAnchor, releaseHistory } from '../data/releases';
 import {
   editorialSlug,
   getIndexableBlogPosts,
@@ -25,7 +25,7 @@ export async function GET(context: { site?: URL }) {
         title: `${product.name} ${release.version}`,
         description: release.summary,
         pubDate: new Date(`${release.date}T00:00:00Z`),
-        link: `${product.repositoryUrl}/releases/tag/${release.version}`,
+        link: `/changelog#${releaseAnchor(release.version)}`,
       })),
       ...blogPosts.map((entry) => ({
         title: entry.data.title,

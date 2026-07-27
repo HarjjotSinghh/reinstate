@@ -1,11 +1,22 @@
 ---
 import PublicContentLayout from '../layouts/PublicContentLayout.astro';
+import { product } from '../data/product';
+import { releaseAnchor, releaseHistory } from '../data/releases';
 
 export const prerender = true;
 
 const title = 'Reinstate Changelog and Release Notes';
 const description =
-  'Read Reinstate release notes, including v0.1.0-rc.6 compatibility, path mapping, restore verification, security, and installer changes.';
+  `Read Reinstate release notes, including ${product.currentRelease} compatibility, path mapping, restore verification, security, and installer changes.`;
+const currentReleaseDate = new Intl.DateTimeFormat('en', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  timeZone: 'UTC',
+}).format(new Date(`${product.currentReleaseDate}T00:00:00Z`));
+const answer =
+  `The latest published Reinstate tag is ${product.currentRelease}, dated ${currentReleaseDate}. ` +
+  'RC6 tightens cross-device project mapping and restore verification, improves additional-device storage validation, and keeps the public installers and acceptance evidence pinned to one release candidate.';
 ---
 
 <PublicContentLayout
@@ -13,12 +24,12 @@ const description =
   {description}
   path="/changelog"
   eyebrow="Changelog"
-  answer="The latest published Reinstate release is v0.1.0-rc.6, released July 27, 2026. RC6 tightens cross-device project mapping and restore verification, improves additional-device storage validation, and keeps the public installers and acceptance evidence pinned to one release candidate."
+  {answer}
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'Changelog', path: '/changelog' },
   ]}
-  tags={['release notes', 'v0.1.0-rc.6', 'changelog', 'Reinstate releases']}
+  tags={['release notes', product.currentRelease, 'changelog', 'Reinstate releases']}
 >
   <h2 id="unreleased">Unreleased</h2>
   <p>
@@ -33,7 +44,9 @@ const description =
     > is authoritative if this summary and the current branch differ.
   </p>
 
-  <h2 id="rc6">v0.1.0-rc.6 · July 27, 2026</h2>
+  <h2 id={releaseAnchor(product.currentRelease)}>
+    {product.currentRelease} · {currentReleaseDate}
+  </h2>
   <h3>Cross-device path and restore correctness</h3>
   <ul>
     <li>
@@ -76,8 +89,8 @@ const description =
     </li>
   </ul>
   <p>
-    <a href="https://github.com/HarjjotSinghh/reinstate/releases/tag/v0.1.0-rc.6"
-      >View v0.1.0-rc.6 on GitHub</a
+    <a href={`${product.repositoryUrl}/tree/${product.currentRelease}`}
+      >View the {product.currentRelease} tag on GitHub</a
     >.
   </p>
 
@@ -92,36 +105,18 @@ const description =
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <td><a href="#rc6">v0.1.0-rc.6</a></td>
-          <td>2026-07-27</td>
-          <td>Canonical project mapping, exact restore checks, remote-manifest validation</td>
-        </tr>
-        <tr>
-          <td>v0.1.0-rc.5</td>
-          <td>2026-07-27</td>
-          <td>Safer re-initialization, joined-profile checks, bounded installer confirmation</td>
-        </tr>
-        <tr>
-          <td>v0.1.0-rc.4</td>
-          <td>2026-07-26</td>
-          <td>Destination-aware Claude path mapping and portable Codex structural paths</td>
-        </tr>
-        <tr>
-          <td>v0.1.0-rc.3</td>
-          <td>2026-07-26</td>
-          <td>Tested version ranges, fail-closed setup checks, dependency security patch</td>
-        </tr>
-        <tr>
-          <td>v0.1.0-rc.2</td>
-          <td>2026-07-25</td>
-          <td>Signed-tag verification correction</td>
-        </tr>
-        <tr>
-          <td>v0.1.0-rc.1</td>
-          <td>2026-07-25</td>
-          <td>Initial Phase 0 and Phase 1 release-candidate foundation</td>
-        </tr>
+        {
+          releaseHistory.map((release) => {
+            const anchor = releaseAnchor(release.version);
+            return (
+              <tr id={release.version === product.currentRelease ? undefined : anchor}>
+                <td><a href={`#${anchor}`}>{release.version}</a></td>
+                <td><time datetime={release.date}>{release.date}</time></td>
+                <td>{release.summary}</td>
+              </tr>
+            );
+          })
+        }
       </tbody>
     </table>
   </div>

@@ -34,3 +34,8 @@ export const releaseHistory = [
     summary: 'Initial Phase 0 and Phase 1 release-candidate foundation.',
   },
 ] as const;
+
+export function releaseAnchor(version: string): string {
+  const candidate = version.match(/-rc\.(\d+)$/)?.[1];
+  return candidate ? `rc${candidate}` : version.replace(/[^a-z0-9]+/gi, '-');
+}

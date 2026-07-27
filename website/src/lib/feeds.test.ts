@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 import { product } from '../data/product';
-import { releaseHistory } from '../data/releases';
+import { releaseAnchor, releaseHistory } from '../data/releases';
 
 describe('RSS discovery', () => {
   it('advertises combined, blog, and changelog feeds in the shared head', async () => {
@@ -24,7 +24,10 @@ describe('RSS discovery', () => {
 
     expect(releaseHistory[0].version).toBe(product.currentRelease);
     expect(source).toContain('releaseHistory.map');
-    expect(source).toContain('/changelog#');
+    expect(source).toContain('releaseAnchor(release.version)');
     expect(source).not.toContain('aggregateRating');
+    expect(new Set(releaseHistory.map(({ version }) => releaseAnchor(version))).size).toBe(
+      releaseHistory.length,
+    );
   });
 });
