@@ -32,3 +32,4 @@ pnpm-debug.log*
 artifacts/lighthouse/
 artifacts/discovery/
 .browser-cache/
+.cache/

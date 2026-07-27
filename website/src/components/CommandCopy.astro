@@ -1,12 +1,8 @@
----
-import { commandCopyLanguages } from '../lib/analytics';
----
+<script>
+  import { commandCopyLanguages } from '../lib/analytics';
 
-<script is:inline data-languages={JSON.stringify(commandCopyLanguages)}>
   (function () {
-    var commandLanguages = new Set(
-      JSON.parse(document.currentScript.dataset.languages)
-    );
+    var commandLanguages = new Set(commandCopyLanguages);
 
     function fallbackCopy(value) {
       var input = document.createElement('textarea');
