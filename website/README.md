@@ -31,6 +31,21 @@ npm run build
 npm run preview
 ```
 
+## SEO validation
+
+Run the production-build audit locally after changing routes, metadata,
+structured data, crawler policy, or social cards:
+
+```bash
+npm run build
+npm run check:seo
+```
+
+The dependency-free audit checks every generated indexable page, JSON-LD,
+canonical and title uniqueness, route-specific 1200×630 PNG social cards,
+robots crawler rules, and sitemap coverage. Failures include the generated file
+and a suggested fix. Its focused fixture tests are also included in `npm test`.
+
 ## Waitlist storage
 
 **Local / verification:** libSQL file

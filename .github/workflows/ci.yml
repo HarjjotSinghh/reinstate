@@ -75,6 +75,10 @@ jobs:
         working-directory: website
         run: npm run build
 
+      - name: Check website SEO
+        working-directory: website
+        run: npm run check:seo
+
       - name: Verify public installer assets
         working-directory: website
         run: |
