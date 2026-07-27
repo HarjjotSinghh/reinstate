@@ -84,6 +84,11 @@ Sitemap: ${PRODUCTION}/sitemap-index.xml
       userAgent,
     });
 
+    if (url.origin === 'https://www.reinstate.dev') {
+      return response(null, 'text/plain', 308, {
+        location: `${PRODUCTION}/`,
+      });
+    }
     if (
       transientRobotsFailure &&
       url.pathname === '/robots.txt' &&
@@ -215,6 +220,48 @@ test('passes a healthy deployment, retries transient reads, and records redacted
   assert.match(
     formatProductionDiscoverySummary(report, '/safe/evidence.json'),
     /PASS[\s\S]*Evidence: \/safe\/evidence\.json/,
+  );
+});
+
+test('requires the production www host to redirect permanently to the canonical apex', async () => {
+  const healthy = healthyFetch();
+  const passing = await runProductionDiscoverySmoke({
+    baseUrl: PRODUCTION,
+    concurrency: 2,
+    fetchImpl: healthy.fetchImpl,
+    launchPaths: ['/', '/docs'],
+    maxAttempts: 1,
+    timeoutMs: 1_000,
+  });
+
+  assert.equal(passing.summary.ok, true);
+  assert.ok(
+    passing.checks.some(
+      ({ id, status }) => id === 'canonical-host:www' && status === 308,
+    ),
+  );
+
+  const broken = healthyFetch();
+  const brokenFetch = async (input, init) => {
+    const url = new URL(input);
+    if (url.origin === 'https://www.reinstate.dev') {
+      return response(null, 'text/html', 200);
+    }
+    return broken.fetchImpl(input, init);
+  };
+  const failing = await runProductionDiscoverySmoke({
+    baseUrl: PRODUCTION,
+    concurrency: 2,
+    fetchImpl: brokenFetch,
+    launchPaths: ['/', '/docs'],
+    maxAttempts: 1,
+    timeoutMs: 1_000,
+  });
+  assert.ok(
+    failing.findings.some(
+      ({ checkId, code }) =>
+        checkId === 'canonical-host:www' && code === 'HTTP_STATUS',
+    ),
   );
 });
 

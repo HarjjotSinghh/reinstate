@@ -441,6 +441,8 @@ cookies, authorization, form data, or request bodies.
 The checker:
 
 - uses only idempotent `GET` and `HEAD` requests;
+- on the production origin, requires `https://www.reinstate.dev/` to return a
+  permanent `301` or `308` redirect directly to `https://reinstate.dev/`;
 - verifies every sitemap canonical with `GET` and every launch-critical
   canonical with `HEAD`;
 - requires one matching production canonical and an indexable robots policy;
@@ -496,6 +498,26 @@ or otherwise mutate the release.
 
 User-agent strings are spoofable. These requests test the public response policy
 only; they do not prove that a request came from OpenAI or Perplexity.
+
+### Canonical host policy
+
+The public canonical origin is `https://reinstate.dev`; `www` must never serve a
+second indexable copy. Keep both domains assigned to the Vercel project and, in
+**Project Settings → Domains**, edit `www.reinstate.dev` so its **Redirect to**
+target is `reinstate.dev`. Vercel documents this as the supported host-level
+redirect control. Do not duplicate it with page-level canonical tags alone.
+
+Verify the exact root and a representative deep link after every domain change:
+
+```sh
+curl -sS -o /dev/null -D - https://www.reinstate.dev/
+curl -sS -o /dev/null -D - https://www.reinstate.dev/docs/getting-started
+```
+
+Both requests must return `301` or `308`, preserve the path, and land on the
+HTTPS apex in one hop. The automated production smoke enforces the root host
+redirect; record the deep-link result in the launch evidence because redirects
+are configured outside this repository.
 
 An operator with production log and WAF access must separately review:
 
@@ -601,6 +623,7 @@ improvements without comparable evidence.
 - [Google Search Essentials](https://developers.google.com/search/docs/essentials)
 - [Google guidance for generative-AI search](https://developers.google.com/search/docs/fundamentals/ai-optimization-guide)
 - [Astro sitemap integration](https://docs.astro.build/en/guides/integrations-guide/sitemap/)
+- [Vercel domain redirects](https://vercel.com/docs/domains/working-with-domains/deploying-and-redirecting)
 - [OpenAI publishers and developers FAQ](https://help.openai.com/en/articles/12627856-publishers-and-developers-faq)
 - [OpenAI ChatGPT Search](https://help.openai.com/en/articles/9237897)
 - [Perplexity crawler documentation](https://docs.perplexity.ai/docs/resources/perplexity-crawlers)

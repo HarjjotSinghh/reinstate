@@ -852,6 +852,42 @@ export async function runProductionDiscoverySmoke({
     }
   }
 
+  if (safeBaseUrl === PRODUCTION_ORIGIN) {
+    const wwwResult = await request({
+      category: 'canonical-host',
+      id: 'canonical-host:www',
+      method: 'HEAD',
+      path: 'https://www.reinstate.dev/',
+    });
+    if (
+      requireStatus(
+        findings,
+        wwwResult.check,
+        wwwResult.response,
+        [301, 308],
+      )
+    ) {
+      let redirectTarget = null;
+      try {
+        redirectTarget = new URL(
+          wwwResult.response.headers.get('location') ?? '',
+          'https://www.reinstate.dev/',
+        ).toString();
+      } catch {
+        // Report the canonical-host finding below.
+      }
+      if (redirectTarget !== `${PRODUCTION_ORIGIN}/`) {
+        addFinding(
+          findings,
+          wwwResult.check,
+          'CANONICAL_HOST_REDIRECT',
+          `Expected www.reinstate.dev to redirect permanently to ${PRODUCTION_ORIGIN}/.`,
+        );
+      }
+    }
+    await discardResponse(wwwResult.response);
+  }
+
   const sitemapUrls = await fetchSitemapInventory({
     concurrency,
     findings,
