@@ -39,7 +39,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@astrojs/mdx": "^7.0.3",
+    "@astrojs/mdx": "^7.0.4",
     "@astrojs/rss": "^4.0.19",
     "@astrojs/sitemap": "^3.7.3",
     "@astrojs/vercel": "^11.0.3",
