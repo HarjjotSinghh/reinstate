@@ -13,6 +13,9 @@ reference. Repository-local agent workflows live in
 Operational follow-up uses:
 
 - [the production operations runbook](operations.md);
+- [the release and launch distribution runbook](launch-distribution.md);
+- [the evidence-aware content roadmap](content-roadmap.md);
+- [the section-by-section implementation evidence matrix](implementation-status.md);
 - [the fixed AI-search query baseline](ai-search-query-baseline.md); and
 - [the monthly audit template](monthly-audit-template.md).
 
