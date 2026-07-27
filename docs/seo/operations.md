@@ -466,8 +466,14 @@ CLI tuning cannot exceed eight concurrent requests, three attempts, or a
 justifies a temporary change. Retries honor `Retry-After` up to a bounded delay.
 
 Unit tests use injected mock responses and make no external requests. Do not add
-the production command to ordinary CI: it is an explicit post-deployment
-observation whose target, release, operator, and time must be recorded.
+the production command to ordinary per-commit CI: it is an explicit
+post-deployment observation whose target, release, operator, and time must be
+recorded. The dedicated `website-production-monitor.yml` workflow is the
+exception: once per day it first uses a bounded HTTPS `curl` probe to require a
+`200` HTML response at the canonical origin, then runs the full read-only
+discovery smoke and retains its redacted JSON evidence for 30 days. A workflow
+failure is an uptime or discoverability incident to investigate; retries do not
+turn a failed endpoint into a passing observation.
 
 ### Evidence artifact handling
 
