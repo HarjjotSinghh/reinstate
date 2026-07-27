@@ -20,6 +20,5 @@ REINSTATE_OG_BASE_URL=http://127.0.0.1:4321 npm run generate:og-art
 
 If Chrome is not in the default macOS location, set
 `REINSTATE_CHROME_PATH` to its executable. The capture uses the light landing
-palette, reduced motion, a fixed viewport, deterministic crops, and PNG
-compression.
-
+palette, transparent section backgrounds, reduced motion, a fixed viewport,
+complete or safely isolated artwork bounds, and PNG compression.

@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
 import { staticOgPages } from '../data/og-pages';
@@ -26,6 +27,44 @@ describe('Open Graph art variants', () => {
     expect(
       new Set(staticOgPages.map((page) => ogArtVariantForRoute(page.route))),
     ).toEqual(new Set(ogArtVariants));
+  });
+
+  it('keeps every landing capture transparent and safely inside its bitmap', async () => {
+    for (const variant of ogArtVariants) {
+      const image = readFileSync(
+        new URL(`../assets/og-art/${variant}.png`, import.meta.url),
+      );
+      const { data, info } = await sharp(image)
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      let minX = info.width;
+      let minY = info.height;
+      let maxX = -1;
+      let maxY = -1;
+
+      for (let y = 0; y < info.height; y += 1) {
+        for (let x = 0; x < info.width; x += 1) {
+          const alpha = data[(y * info.width + x) * info.channels + 3];
+          if (alpha <= 8) continue;
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x);
+          maxY = Math.max(maxY, y);
+        }
+      }
+
+      expect(maxX, `${variant}: visible artwork`).toBeGreaterThanOrEqual(0);
+      expect(minX, `${variant}: left safe inset`).toBeGreaterThanOrEqual(5);
+      expect(minY, `${variant}: top safe inset`).toBeGreaterThanOrEqual(5);
+      expect(info.width - 1 - maxX, `${variant}: right safe inset`).toBeGreaterThanOrEqual(
+        5,
+      );
+      expect(
+        info.height - 1 - maxY,
+        `${variant}: bottom safe inset`,
+      ).toBeGreaterThanOrEqual(5);
+    }
   });
 
   it('renders all variants as distinct deterministic 1200 × 630 PNGs', async () => {
@@ -57,4 +96,3 @@ describe('Open Graph art variants', () => {
     expect(repeated.equals(images[0])).toBe(true);
   });
 });
-

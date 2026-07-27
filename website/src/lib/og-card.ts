@@ -101,11 +101,11 @@ const ogArtPlacement: Record<
   OgArtVariant,
   { width: number; height: number; right: number; bottom: number }
 > = {
-  'session-stack': { width: 380, height: 230, right: 0, bottom: 118 },
-  'stranded-workstation': { width: 400, height: 276, right: -4, bottom: 82 },
-  'device-handoff': { width: 480, height: 148, right: -8, bottom: 114 },
-  'local-encryption': { width: 330, height: 355, right: 6, bottom: 84 },
-  'owned-storage': { width: 330, height: 355, right: 6, bottom: 84 },
+  'session-stack': { width: 350, height: 212, right: 20, bottom: 128 },
+  'stranded-workstation': { width: 410, height: 206, right: 12, bottom: 112 },
+  'device-handoff': { width: 460, height: 141, right: 12, bottom: 120 },
+  'local-encryption': { width: 300, height: 322, right: 28, bottom: 102 },
+  'owned-storage': { width: 300, height: 322, right: 28, bottom: 102 },
 };
 
 export const repositorySocialPreview = {
@@ -163,6 +163,26 @@ function titleSize(title: string): number {
   return 70;
 }
 
+function estimatedLineCount(
+  value: string,
+  maxWidth: number,
+  fontSize: number,
+): number {
+  const averageGlyphWidth = fontSize * 0.44;
+  return Math.max(1, Math.ceil((value.length * averageGlyphWidth) / maxWidth));
+}
+
+function contentTop(page: OgPage): number {
+  const headingSize = titleSize(page.title);
+  const headingHeight =
+    estimatedLineCount(page.title, 760, headingSize) * headingSize * 0.98;
+  const descriptionHeight =
+    estimatedLineCount(page.description, 690, 23) * 23 * 1.35;
+  const blockHeight = 34 + 18 + headingHeight + 19 + descriptionHeight;
+
+  return Math.max(178, Math.min(222, Math.round(455 - blockHeight)));
+}
+
 export interface RenderOgCardOptions {
   artVariant?: OgArtVariant;
 }
@@ -217,9 +237,6 @@ export async function renderOgCard(
           width: '100%',
           height: '100%',
           display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          padding: '54px 62px 46px',
           position: 'relative',
         },
       },
@@ -228,6 +245,9 @@ export async function renderOgCard(
         {
           style: {
             display: 'flex',
+            position: 'absolute',
+            top: '54px',
+            left: '62px',
             alignItems: 'center',
             fontFamily: 'Questrial',
             fontSize: '32px',
@@ -248,8 +268,10 @@ export async function renderOgCard(
           style: {
             width: '760px',
             display: 'flex',
+            position: 'absolute',
+            top: `${contentTop(page)}px`,
+            left: '62px',
             flexDirection: 'column',
-            marginTop: '-6px',
           },
         },
         node(
@@ -305,20 +327,36 @@ export async function renderOgCard(
         'div',
         {
           style: {
-            width: '100%',
             display: 'flex',
+            position: 'absolute',
+            right: '62px',
+            bottom: '46px',
+            left: '62px',
             alignItems: 'center',
             justifyContent: 'space-between',
             color: '#53635b',
             fontSize: '16px',
           },
         },
-        node('div', { style: { display: 'flex' } }, routeLabel(page.route)),
         node(
           'div',
           {
             style: {
               display: 'flex',
+              minWidth: 0,
+              maxWidth: '760px',
+              flexShrink: 1,
+            },
+          },
+          routeLabel(page.route),
+        ),
+        node(
+          'div',
+          {
+            style: {
+              display: 'flex',
+              flexShrink: 0,
+              marginLeft: '20px',
               padding: '7px 11px',
               border: '2px solid #131f1a',
               borderRadius: '7px',
@@ -508,12 +546,12 @@ export async function renderRepositorySocialPreview(): Promise<Buffer> {
     ),
     node('img', {
       src: ogArtByVariant['device-handoff'],
-      width: 520,
-      height: 160,
+      width: 500,
+      height: 154,
       style: {
         position: 'absolute',
-        right: '-4px',
-        bottom: '102px',
+        right: '16px',
+        bottom: '106px',
       },
     }),
   );

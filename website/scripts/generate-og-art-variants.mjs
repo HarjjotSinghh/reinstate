@@ -32,8 +32,9 @@ const variants = [
   {
     name: 'stranded-workstation',
     selector: '.problem-section > .scene > svg',
-    crop: { left: 0.38, top: 0.03, width: 0.62, height: 0.85 },
-    width: 1_000,
+    crop: { left: 0, top: 0, width: 1, height: 1 },
+    width: 1_200,
+    safeInset: 48,
     source: 'ProblemExploded.astro — planning corner and failed-workaround scene',
   },
   {
@@ -46,15 +47,17 @@ const variants = [
   {
     name: 'local-encryption',
     selector: '.sec-vault-art',
-    crop: { left: 0.245, top: 0.02, width: 0.28, height: 0.94 },
+    crop: { left: 0.23, top: 0.02, width: 0.29, height: 0.94 },
     width: 760,
+    stageIndex: 1,
     source: 'SecurityVaultArt.astro — local encryption stage',
   },
   {
     name: 'owned-storage',
     selector: '.sec-vault-art',
-    crop: { left: 0.5, top: 0.02, width: 0.28, height: 0.94 },
+    crop: { left: 0.48, top: 0.02, width: 0.29, height: 0.94 },
     width: 760,
+    stageIndex: 2,
     source: 'SecurityVaultArt.astro — user-owned S3-compatible storage stage',
   },
 ];
@@ -79,11 +82,50 @@ async function capture(page, variant) {
     throw new Error(`Could not find landing-page art: ${variant.selector}`);
   }
 
-  const screenshot = await element.screenshot({ type: 'png' });
-  const metadata = await sharp(screenshot).metadata();
+  if (variant.stageIndex !== undefined) {
+    await element.evaluate((svg, stageIndex) => {
+      const stages = [...svg.querySelectorAll('.stage')];
+      const labels = [...svg.querySelectorAll('.lab')];
+      stages.forEach((stage, index) => {
+        stage.style.visibility = index === stageIndex ? 'visible' : 'hidden';
+      });
+      labels.forEach((label, index) => {
+        label.style.visibility =
+          Math.floor(index / 2) === stageIndex ? 'visible' : 'hidden';
+      });
+    }, variant.stageIndex);
+  }
 
-  return sharp(screenshot)
+  let screenshot;
+  try {
+    screenshot = await element.screenshot({
+      type: 'png',
+      omitBackground: true,
+    });
+  } finally {
+    if (variant.stageIndex !== undefined) {
+      await element.evaluate((svg) => {
+        for (const element of svg.querySelectorAll('.stage, .lab')) {
+          element.style.removeProperty('visibility');
+        }
+      });
+    }
+  }
+  const metadata = await sharp(screenshot).metadata();
+  const extracted = await sharp(screenshot)
     .extract(cropPixels(metadata, variant.crop))
+    .png()
+    .toBuffer();
+  const inset = variant.safeInset ?? 0;
+
+  return sharp(extracted)
+    .extend({
+      top: inset,
+      right: inset,
+      bottom: inset,
+      left: inset,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    })
     .resize({ width: variant.width, withoutEnlargement: false })
     .png({ compressionLevel: 9, palette: true })
     .toBuffer();
@@ -93,8 +135,14 @@ async function visuallyMatches(generated, committed) {
   if (generated.equals(committed)) return true;
 
   const [next, current] = await Promise.all([
-    sharp(generated).ensureAlpha().raw().toBuffer({ resolveWithObject: true }),
-    sharp(committed).ensureAlpha().raw().toBuffer({ resolveWithObject: true }),
+    sharp(generated)
+      .flatten({ background: '#e4e7dd' })
+      .raw()
+      .toBuffer({ resolveWithObject: true }),
+    sharp(committed)
+      .flatten({ background: '#e4e7dd' })
+      .raw()
+      .toBuffer({ resolveWithObject: true }),
   ]);
   if (
     next.info.width !== current.info.width ||
@@ -144,12 +192,37 @@ try {
       }
       .nav,
       .hero-block > .lede,
-      .problem-section > .lede {
+      .problem-section > .lede,
+      .floor-grid,
+      .sec-vault-art .routes,
+      .sec-vault-art .route-label {
         visibility: hidden !important;
+      }
+      html,
+      body,
+      .homepage,
+      .problem-block,
+      .problem-section,
+      .problem-section .panel,
+      .problem-section .cardart,
+      .terminal-proof,
+      .handoff-stage,
+      .handoff-illustration,
+      .security-section,
+      .security-scene,
+      .sec-vault,
+      .sec-vault-scene {
+        background: transparent !important;
+        background-image: none !important;
+        box-shadow: none !important;
       }
     `,
   });
-  await page.evaluate(() => document.fonts.ready);
+  await page.evaluate(async () => {
+    document.documentElement.style.background = 'transparent';
+    document.body.style.background = 'transparent';
+    await document.fonts.ready;
+  });
 
   for (const variant of variants) {
     const output = resolve(outputDirectory, `${variant.name}.png`);
