@@ -482,7 +482,7 @@ const caStoreLed = P(154, 4, 11);
           </g>
 
           {/* the plan, marker on the board: two machines, no way across */}
-          <g transform={frontText(-130, -8, 60, 16, 164)}>
+          <g class="whiteboard-writing" transform={frontText(-130, -8, 60, 16, 164)}>
             <text x="20" y="30" font-size="13" font-weight="700" fill={INK}>get session → other machine</text>
             <rect x="20" y="44" width="34" height="22" rx="2" fill="none" stroke={INK} stroke-width="2.5" />
             <line x1="37" y1="66" x2="37" y2="74" stroke={INK} stroke-width="2.5" />
@@ -777,6 +777,20 @@ const caStoreLed = P(154, 4, 11);
           </div>
           <figure class="cardart" aria-hidden="true">
             <svg viewBox="0 0 240 145">
+              <defs>
+                <marker
+                  id="portable-state-arrow"
+                  viewBox="0 0 10 10"
+                  refX="8.5"
+                  refY="5"
+                  markerWidth="8"
+                  markerHeight="8"
+                  orient="auto"
+                  markerUnits="userSpaceOnUse"
+                >
+                  <path d="M0 0 L10 5 L0 10 z" fill={PRIM_DEEP} />
+                </marker>
+              </defs>
               <g transform="translate(68 58)">
                 <polygon class="cast" points={caShadow} />
                 <polygon class="cast" points={caLapShadow} />
@@ -823,8 +837,15 @@ const caStoreLed = P(154, 4, 11);
                 </g>
                 {/* the wire that connects — drawn after the cube, so it reads
                     as plugged into its side, running onto the laptop deck */}
-                <path class="wire" d="M 30 20 C 48 14, 58 34, 66 50" fill="none" stroke={PRIM_DEEP} stroke-width="3" stroke-linecap="round" />
-                <path d="M60 45 L69 53 L58 55" fill="none" stroke={PRIM_DEEP} stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                <path
+                  class="wire"
+                  d="M 30 20 C 48 14, 58 34, 67 52"
+                  fill="none"
+                  stroke={PRIM_DEEP}
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  marker-end="url(#portable-state-arrow)"
+                />
                 <g class="unit dev">
                   <polygon class="f-side" points={caStore.side} />
                   <polygon class="f-front" points={caStore.front} />
@@ -879,6 +900,11 @@ const caStoreLed = P(154, 4, 11);
     --sv-star: #cfe9a8;
     --sv-city: #24352e;
     --sv-rug: #c2cbb2;
+    --sv-whiteboard: #f4f6ef;
+    --sv-whiteboard-edge: #a6b090;
+    --sv-whiteboard-ink: #1b2822;
+    --sv-whiteboard-dim: #66736c;
+    --sv-whiteboard-accent: #679c25;
 
     --sv-furn-1: #c1c9ae;
     --sv-furn-2: #a6b090;
@@ -1095,13 +1121,19 @@ const caStoreLed = P(154, 4, 11);
     fill: #bcc4b0;
   }
   .wb .f-top {
-    fill: var(--sv-frame);
+    fill: var(--sv-whiteboard);
   }
   .wb .f-front {
-    fill: var(--sv-frame);
+    fill: var(--sv-whiteboard);
   }
   .wb .f-side {
-    fill: var(--sv-furn-3);
+    fill: var(--sv-whiteboard-edge);
+  }
+  .whiteboard-writing {
+    --sv-ink: var(--sv-whiteboard-ink);
+    --sv-dim: var(--sv-whiteboard-dim);
+    --sv-prim-deep: var(--sv-whiteboard-accent);
+    --sv-stroke: var(--sv-whiteboard-ink);
   }
   .pot .f-top {
     fill: var(--sv-pot-1);
