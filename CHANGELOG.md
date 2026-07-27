@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add a production SEO, answer-engine optimization, and AI-search foundation
+  for the Astro website, including canonical metadata, crawler policy,
+  structured data, sitemap, RSS, public product pages, and automated CI checks.
+- Add unique 1200×630 social preview images for every indexable route, using
+  Reinstate's logo, typography, palette, and axonometric illustration language.
+- Add answer-first integration, compatibility, security, use-case, project,
+  open-source, and changelog pages with explicit release-candidate boundaries.
+
+### Changed
+
+- Expand documentation metadata with search intent, freshness, and topic fields
+  while exposing visible review dates and breadcrumbs.
+- Point the repository's website reference at the canonical `reinstate.dev`
+  domain.
+
 ### Fixed
 
 - Parse both structured Vercel CLI 57 deployment results and legacy bare-URL
