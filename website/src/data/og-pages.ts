@@ -117,6 +117,20 @@ export const staticOgPages: OgPage[] = [
       'Inspect Reinstate source, security policy, roadmap, governance, releases, and Apache-2.0 license.',
   },
   {
+    route: '/roadmap',
+    kind: 'Product roadmap',
+    title: 'From encrypted sync to work continuity',
+    description:
+      'Separate Reinstate RC6 capabilities and acceptance gates from planned search, handoff, and configuration phases.',
+  },
+  {
+    route: '/research',
+    kind: 'Primary-source evidence',
+    title: 'Reinstate research and compatibility evidence',
+    description:
+      'Inspect adapter tests, compatibility data, acceptance methodology, synthetic fixtures, and benchmark evidence rules.',
+  },
+  {
     route: '/changelog',
     kind: 'Releases',
     title: 'Reinstate changelog',

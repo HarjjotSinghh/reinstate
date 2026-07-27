@@ -1,0 +1,164 @@
+---
+import PublicContentLayout from '../../layouts/PublicContentLayout.astro';
+import compatibility from '../../data/compatibility.json';
+
+export const prerender = true;
+
+const title = 'Reinstate Research and Compatibility Evidence';
+const description =
+  'Inspect Reinstate adapter tests, compatibility data, acceptance methodology, security architecture, synthetic fixtures, and the evidence required before benchmark claims.';
+---
+
+<PublicContentLayout
+  {title}
+  {description}
+  path="/research"
+  eyebrow="Primary-source evidence"
+  answer="Reinstate publishes source, deterministic synthetic tests, compatibility records, architecture, and physical acceptance methodology so current claims can be checked. It does not yet publish restoration benchmarks or a completed RC6 cross-device compatibility report; those require reproducible results from the open release gates."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Research and evidence', path: '/research' },
+  ]}
+  tags={['coding-agent research', 'compatibility evidence', 'synthetic fixtures', 'methodology']}
+>
+  <h2 id="evidence-levels">Evidence levels</h2>
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">Level</th>
+          <th scope="col">What it can support</th>
+          <th scope="col">What it cannot support alone</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Released code and unit tests</td>
+          <td>Implemented contracts, parsing, exclusions, transformations, and failure behavior</td>
+          <td>Real-device compatibility or production reliability</td>
+        </tr>
+        <tr>
+          <td>Deterministic synthetic fixtures</td>
+          <td>Repeatable adapter, path-mapping, encryption, and restore regression checks</td>
+          <td>Distribution claims about private user sessions</td>
+        </tr>
+        <tr>
+          <td>Physical acceptance result</td>
+          <td>The exact recorded release, agent versions, devices, directions, and criteria</td>
+          <td>Every untested version, platform, device, or workload</td>
+        </tr>
+        <tr>
+          <td>Production field data</td>
+          <td>The measured population and date window when methodology and denominators are shown</td>
+          <td>Universal guarantees or causes not isolated by the data</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="current-assets">Current evidence assets</h2>
+  <dl class="pc-facts">
+    <div>
+      <dt>Compatibility data</dt>
+      <dd>
+        <a href="/compatibility.json">Machine-readable JSON</a>, reviewed
+        {' '}<time datetime={compatibility.lastReviewed}>{compatibility.lastReviewed}</time>
+      </dd>
+    </div>
+    <div>
+      <dt>Fixture commit</dt>
+      <dd>
+        <a
+          href={`https://github.com/HarjjotSinghh/reinstate/commit/${compatibility.fixtureCommit}`}
+          ><code>{compatibility.fixtureCommit.slice(0, 12)}</code></a
+        >
+      </dd>
+    </div>
+    <div>
+      <dt>Acceptance methodology</dt>
+      <dd>
+        <a
+          href="https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/phase-1-mac-windows-acceptance.md"
+          >RC6 MacBook + Windows runbook</a
+        >
+      </dd>
+    </div>
+    <div>
+      <dt>Architecture and security</dt>
+      <dd><a href="/docs/architecture">Architecture</a> and <a href="/docs/security-model">security model</a></dd>
+    </div>
+  </dl>
+
+  <h2 id="adapter-evidence">Adapter and compatibility evidence</h2>
+  <p>
+    The compatibility matrix links each supported agent range to the exact adapter test source.
+    Versions outside the inclusive stable ranges—including prereleases—are treated as
+    <code>UNTESTED</code> and mutating operations fail closed. The matrix separately marks open
+    physical platform gates instead of borrowing a source-test date as platform certification.
+  </p>
+  <ul>
+    {
+      compatibility.agents.map((agent) => (
+        <li>
+          <strong>{agent.name}:</strong> <code>{agent.minimumTestedVersion}</code>–
+          <code>{agent.maximumTestedVersion}</code>; <a href={agent.source}>test source</a>;
+          {' '}{agent.evidenceLevel}.
+        </li>
+      ))
+    }
+  </ul>
+
+  <h2 id="physical-results">Physical results and current limitation</h2>
+  <p>
+    The repository contains dated RC5 macOS and Windows observations. They are useful historical
+    evidence, but they do not close the RC6 acceptance matrix. The current RC6 runbook requires
+    both agents, both directions, checksum-verifying installers, wrong-passphrase refusal,
+    ciphertext-only remote objects, conflict handling, restore backups, and redacted evidence.
+  </p>
+  <p>
+    Review the
+    <a
+      href="https://github.com/HarjjotSinghh/reinstate/tree/main/docs/testing/results"
+      >raw acceptance-result directory</a
+    > and the <a href="/compatibility">qualified public compatibility summary</a>. Do not infer a
+    stable support claim from an older passing row.
+  </p>
+
+  <h2 id="data-safety">Why the fixtures are synthetic</h2>
+  <p>
+    Real coding-agent sessions can contain proprietary source code, prompts, internal paths,
+    terminal output, or credentials. Committed fixtures are deterministic and synthetic, and the
+    repository's secret checks protect against accidentally turning a compatibility test into a
+    data leak. Public evidence uses versions, exit codes, counts, snapshot identifiers, and
+    redacted paths rather than transcript text.
+  </p>
+
+  <h2 id="benchmark-contract">Benchmark publication contract</h2>
+  <p>Before publishing a speed, success-rate, or session-size result, Reinstate must disclose:</p>
+  <ul>
+    <li>the question and success criteria;</li>
+    <li>hardware, operating systems, agent versions, Reinstate version, and commit;</li>
+    <li>the synthetic dataset or safely consented data source;</li>
+    <li>exact commands, repetitions, warm-up and cache policy, and raw output;</li>
+    <li>every failure, exclusion, limitation, and denominator; and</li>
+    <li>a stable canonical page, methodology date, and downloadable evidence.</li>
+  </ul>
+  <div class="pc-callout">
+    <p>No benchmark claim yet</p>
+    <p>
+      This page deliberately reports no restoration speed, success rate, market coverage, or user
+      distribution. A blank metric is more accurate than a number without a reproducible method.
+    </p>
+  </div>
+
+  <section class="pc-related" aria-labelledby="related-heading">
+    <h2 id="related-heading">Inspect the evidence</h2>
+    <nav aria-label="Related pages">
+      <a href="/compatibility">Compatibility matrix</a>
+      <a href="/docs/architecture">Architecture</a>
+      <a href="/docs/security-model">Security model</a>
+      <a href="/open-source">Source and test map</a>
+    </nav>
+  </section>
+</PublicContentLayout>
+
