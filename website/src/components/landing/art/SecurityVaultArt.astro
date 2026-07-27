@@ -1,0 +1,981 @@
+---
+/**
+ * SecurityVaultArt
+ *
+ * Capture -> Encrypt -> Store -> Restore.
+ * The same package is followed through every stage: open local state, a sealed
+ * age payload, ciphertext in the user's bucket, then restored local state.
+ */
+import { box, fmt, P } from '../../../lib/iso';
+
+const foot = (x: number, y: number, z: number, w: number, d: number) =>
+  fmt([P(x, y, z), P(x + w, y, z), P(x + w, y + d, z), P(x, y + d, z)]);
+
+const CX = Math.cos(Math.PI / 6);
+const m2 = (m: number[]) => `matrix(${m.map((n) => +n.toFixed(2)).join(' ')})`;
+const frontText = (x: number, y: number, z: number, d: number, h: number) => {
+  const [e, f] = P(x, y + d, z + h);
+  return m2([CX, 0.5, 0, 1, e, f]);
+};
+const sideText = (x: number, y: number, z: number, w: number, d: number, h: number) => {
+  const [e, f] = P(x + w, y + d, z + h);
+  return m2([CX, -0.5, 0, 1, e, f]);
+};
+
+const SK = 'var(--sv-stroke)';
+const W = 58;
+const D = 42;
+const LH = 14; /* layer height */
+
+/* shared platform + laptop */
+const plat = box(-136, -62, -12, 288, 132, 22);
+const platCast = foot(-136, -62, -12, 288, 132);
+const platInset = foot(-120, -48, 10.4, 256, 104);
+/* Laptop shifts left to reserve a real package bay on the right. */
+const lid = box(-82, -42, 34, 128, 12, 84);
+const hinge = box(-82, -44, 26, 128, 10, 8);
+const deck = box(-86, -36, 10, 136, 90, 16);
+const well = foot(-80, -18, 26.2, 124, 50);
+const keyCaps = [
+  ...Array.from({ length: 11 }, (_, i) => foot(-75 + i * 10.4, -13, 26.6, 8, 4.8)),
+  ...Array.from({ length: 10 }, (_, i) => foot(-71 + i * 11, -5, 26.6, 8.5, 4.8)),
+  ...Array.from({ length: 9 }, (_, i) => foot(-66 + i * 11.8, 3, 26.6, 9.1, 4.8)),
+  foot(-62, 11, 26.6, 20, 4.8),
+  foot(-37, 11, 26.6, 50, 4.8),
+  foot(18, 11, 26.6, 20, 4.8),
+];
+const track = foot(-49, 34, 26.6, 62, 14);
+
+/**
+ * Open: lime / blue / off-white layers.
+ * Sealed: one dark shell (same outer footprint) + narrow lime strap + lock.
+ * Same makeSealed(px,py,z0) in stages 2 and 3 — only origin changes.
+ */
+const makeOpen = (px: number, py: number, z0: number) => ({
+  bot: box(px, py, z0, W, D, LH),
+  mid: box(px + 2, py + 2, z0 + LH, W - 4, D - 4, LH),
+  top: box(px + 4, py + 4, z0 + LH * 2, W - 8, D - 8, LH),
+  cast: foot(px - 1, py - 1, z0 - 0.4, W + 2, D + 2),
+});
+
+const makeSealed = (px: number, py: number, z0: number) => ({
+  /* single dark wrapper — not neon layers */
+  body: box(px, py, z0, W, D, LH * 3),
+  /* one narrow strap across the top, so this cannot read as a lime brick */
+  band: box(px + W / 2 - 5, py - 1, z0 + LH * 3, 10, D + 2, 4),
+  cast: foot(px - 1, py - 1, z0 - 0.4, W + 2, D + 2),
+  lock: { x: px, y: py, z: z0, d: D, h: LH * 3 },
+});
+
+/* open packages */
+/* The package sits fully inside the shared platform footprint. */
+const OPEN_X = 82;
+const OPEN_Y = -20;
+const OPEN_Z = 10;
+const openLocal = makeOpen(OPEN_X, OPEN_Y, OPEN_Z);
+const openRestore = makeOpen(OPEN_X, OPEN_Y, OPEN_Z);
+/* sealed: identical component — stage 2 at output, stage 3 in drawer */
+const sealedEnc = makeSealed(42, -18, 16); /* emerges from cube output */
+const sealedStore = makeSealed(-16, 46, 30); /* same geometry, drawer placement */
+
+/* key chip · slightly away from laptop */
+const keyChip = box(-132, 32, 10, 28, 20, 12);
+
+/* encryption cube · clean */
+const encPlinth = box(-68, -62, -12, 136, 124, 20);
+const encPlinthCast = foot(-68, -62, -12, 136, 124);
+const encCube = box(-38, -38, 8, 76, 76, 76);
+const encOut = box(37, -12, 30, 5, 24, 20);
+
+/* storage · one drawer body, one face, package with margin */
+const buckPlat = box(-110, -54, -12, 220, 114, 22);
+const buckPlatCast = foot(-110, -54, -12, 220, 114);
+const buckBody = box(-56, -34, 10, 116, 80, 72);
+const buckCap = box(-58, -36, 82, 120, 84, 8);
+const drawer = box(-38, 38, 16, 80, 38, 14);
+const drawerFace = box(-38, 70, 16, 80, 10, 18);
+const statusSlit = box(54, -16, 40, 5, 8, 6);
+
+const contact = (x: number, y: number, w: number, d: number) =>
+  foot(x, y, 9.2, w, d);
+
+const platformBolts = [
+  P(-115, -43, 11),
+  P(131, -43, 11),
+  P(-115, 51, 11),
+  P(131, 51, 11),
+];
+---
+
+<div class="sec-vault" data-security-vault-art>
+  <figure class="sec-vault-scene">
+    <svg
+      class="sec-vault-art"
+      viewBox="0 25 1480 495"
+      role="img"
+      aria-labelledby="vault-title vault-desc"
+      preserveAspectRatio="xMidYMid meet"
+    >
+      <title id="vault-title">Capture, encrypt, store in your bucket, restore anywhere</title>
+      <desc id="vault-desc">
+        Four stages, one package: open layered snapshot, same package sealed with age,
+        same sealed package in your bucket drawer over HTTPS, open layers restored on a
+        second laptop.
+      </desc>
+
+      <defs>
+        <marker
+          id="vault-arrow"
+          viewBox="0 0 12 12"
+          refX="9"
+          refY="6"
+          markerWidth="8"
+          markerHeight="8"
+          orient="auto"
+          markerUnits="userSpaceOnUse"
+        >
+          <path d="M0 1 L11 6 L0 11 z" fill="#B7FF38"></path>
+        </marker>
+      </defs>
+
+      <g transform="translate(740 230) scale(1.04) translate(-740 -230)">
+        {/* The route is one continuous encrypted hand-off. Dark rails keep the
+            lime signal legible in both themes and make every endpoint precise. */}
+        <g class="routes" aria-hidden="true">
+          <path class="flow-rail" d="M 307 245 C 360 198, 424 198, 482 236"></path>
+          <path class="flow" d="M 307 245 C 360 198, 424 198, 482 236" marker-end="url(#vault-arrow)"></path>
+          <circle class="route-node" cx="307" cy="245" r="5"></circle>
+          <circle class="route-node" cx="482" cy="236" r="5"></circle>
+
+          <path class="flow-rail" d="M 652 246 C 704 198, 782 198, 834 246"></path>
+          <path class="flow" d="M 652 246 C 704 198, 782 198, 834 246" marker-end="url(#vault-arrow)"></path>
+          <circle class="route-node" cx="652" cy="246" r="5"></circle>
+          <circle class="route-node" cx="834" cy="246" r="5"></circle>
+
+          <path class="flow-rail" d="M 997 246 C 1040 208, 1095 208, 1138 246"></path>
+          <path class="flow" d="M 997 246 C 1040 208, 1095 208, 1138 246" marker-end="url(#vault-arrow)"></path>
+          <circle class="route-node" cx="997" cy="246" r="5"></circle>
+          <circle class="route-node" cx="1138" cy="246" r="5"></circle>
+        </g>
+
+        <g class="route-label" transform="translate(357 177)">
+          <rect class="path-pill" width="74" height="20" rx="6"></rect>
+          <circle class="route-led" cx="11" cy="10" r="3"></circle>
+          <text class="path-text" x="43" y="12.5" text-anchor="middle">ON DEVICE</text>
+        </g>
+        <g class="route-label" transform="translate(693 172)">
+          <rect class="path-pill" width="100" height="20" rx="6"></rect>
+          <circle class="route-led" cx="11" cy="10" r="3"></circle>
+          <text class="path-text" x="56" y="12.5" text-anchor="middle">HTTPS · SEALED</text>
+        </g>
+        <g class="route-label" transform="translate(1034 176)">
+          <rect class="path-pill" width="66" height="20" rx="6"></rect>
+          <circle class="route-led" cx="11" cy="10" r="3"></circle>
+          <text class="path-text" x="39" y="12.5" text-anchor="middle">HTTPS</text>
+        </g>
+
+        {/* ════ 01 CAPTURE ════ */}
+        <g class="stage" transform="translate(185 248) scale(0.9)">
+          <polygon class="cast" points={platCast}></polygon>
+          <g class="unit platform">
+            <polygon class="f-side" points={plat.side}></polygon>
+            <polygon class="f-front" points={plat.front}></polygon>
+            <polygon class="f-top" points={plat.top}></polygon>
+          </g>
+          <polygon class="platform-inset" points={platInset}></polygon>
+          {platformBolts.map(([cx, cy]) => (
+            <circle class="platform-bolt" cx={cx} cy={cy} r="2.2"></circle>
+          ))}
+          <polygon class="contact" points={contact(-86, -36, 136, 90)}></polygon>
+          <g class="unit device">
+            <polygon class="f-side" points={deck.side}></polygon>
+            <polygon class="f-front" points={deck.front}></polygon>
+            <polygon class="f-top" points={deck.top}></polygon>
+          </g>
+          <g class="unit device">
+            <polygon class="f-side" points={hinge.side}></polygon>
+            <polygon class="f-front" points={hinge.front}></polygon>
+            <polygon class="f-top" points={hinge.top}></polygon>
+          </g>
+          <g class="unit device">
+            <polygon class="f-side" points={lid.side}></polygon>
+            <polygon class="f-front" points={lid.front}></polygon>
+            <polygon class="f-top" points={lid.top}></polygon>
+          </g>
+          <g class="screen" transform={frontText(-82, -42, 34, 12, 84)}>
+            <polygon points="10,10 118,10 118,74 10,74"></polygon>
+            <rect class="screen-bar" x="10" y="10" width="108" height="12"></rect>
+            <circle class="screen-dot hot" cx="18" cy="16" r="2"></circle>
+            <circle class="screen-dot" cx="25" cy="16" r="2"></circle>
+            <circle class="screen-dot" cx="32" cy="16" r="2"></circle>
+            <rect class="screen-prompt" x="18" y="30" width="7" height="5" rx="1"></rect>
+            <rect class="screen-line" x="30" y="30" width="64" height="5" rx="2.5"></rect>
+            <rect class="screen-line" x="18" y="42" width="76" height="5" rx="2.5"></rect>
+            <rect class="screen-line" x="18" y="54" width="48" height="5" rx="2.5"></rect>
+            <rect class="screen-cursor blink" x="71" y="52" width="6" height="8"></rect>
+          </g>
+          <polygon class="well" points={well}></polygon>
+          <g class="keys">
+            {keyCaps.map((r) => (
+              <polygon points={r}></polygon>
+            ))}
+          </g>
+          <polygon class="track" points={track}></polygon>
+
+          {/* key chip + clear keyhole (clear of laptop edge) */}
+          <polygon class="contact" points={contact(-132, 32, 28, 20)}></polygon>
+          <g class="unit prim-solid">
+            <polygon class="f-side" points={keyChip.side}></polygon>
+            <polygon class="f-front" points={keyChip.front}></polygon>
+            <polygon class="f-top" points={keyChip.top}></polygon>
+          </g>
+          <g class="keyhole" transform={frontText(-132, 32, 10, 20, 12)}>
+            <circle cx="14" cy="4.5" r="2.8"></circle>
+            <rect x="12.5" y="4.5" width="3" height="5.5" rx="0.7"></rect>
+          </g>
+
+          {/* OPEN package */}
+          <polygon class="contact" points={openLocal.cast}></polygon>
+          <g class="unit tray t-d">
+            <polygon class="f-side" points={openLocal.bot.side}></polygon>
+            <polygon class="f-front" points={openLocal.bot.front}></polygon>
+            <polygon class="f-top" points={openLocal.bot.top}></polygon>
+          </g>
+          <g class="unit tray t-c">
+            <polygon class="f-side" points={openLocal.mid.side}></polygon>
+            <polygon class="f-front" points={openLocal.mid.front}></polygon>
+            <polygon class="f-top" points={openLocal.mid.top}></polygon>
+          </g>
+          <g class="unit tray t-a">
+            <polygon class="f-side" points={openLocal.top.side}></polygon>
+            <polygon class="f-front" points={openLocal.top.front}></polygon>
+            <polygon class="f-top" points={openLocal.top.top}></polygon>
+          </g>
+          <g class="layer-label" transform={frontText(OPEN_X, OPEN_Y, OPEN_Z, D, LH)}>
+            <text x="7" y="10">PATHS</text>
+          </g>
+          <g
+            class="layer-label"
+            transform={frontText(OPEN_X + 2, OPEN_Y + 2, OPEN_Z + LH, D - 4, LH)}
+          >
+            <text x="7" y="10">MESSAGES</text>
+          </g>
+          <g
+            class="layer-label dark"
+            transform={frontText(OPEN_X + 4, OPEN_Y + 4, OPEN_Z + LH * 2, D - 8, LH)}
+          >
+            <text x="7" y="10">SESSION</text>
+          </g>
+        </g>
+        <g class="lab" transform="translate(55 389)">
+          <rect class="title-pill" width="260" height="34" rx="9"></rect>
+          <rect class="stage-index" x="6" y="5" width="28" height="24" rx="6"></rect>
+          <text class="index-text" x="20" y="21" text-anchor="middle">01</text>
+          <text class="title" x="130" y="22" transform="translate(12 0)" text-anchor="middle">Capture locally</text>
+        </g>
+        <g class="lab" transform="translate(185 431)">
+          <text class="sub" x="0" y="14" text-anchor="middle">Keys remain on this device</text>
+        </g>
+
+        {/* ════ 02 ENCRYPT · package emerges from output ════ */}
+        <g class="stage" transform="translate(542 248) scale(0.86)">
+          <polygon class="cast" points={encPlinthCast}></polygon>
+          <g class="unit platform">
+            <polygon class="f-side" points={encPlinth.side}></polygon>
+            <polygon class="f-front" points={encPlinth.front}></polygon>
+            <polygon class="f-top" points={encPlinth.top}></polygon>
+          </g>
+          <polygon class="platform-inset compact" points={foot(-56, -50, 8.4, 112, 100)}></polygon>
+          <polygon class="contact" points={contact(-38, -38, 76, 76)}></polygon>
+          <g class="unit sealbox">
+            <polygon class="f-side" points={encCube.side}></polygon>
+            <polygon class="f-front" points={encCube.front}></polygon>
+            <polygon class="f-top" points={encCube.top}></polygon>
+          </g>
+          <g class="unit board">
+            <polygon class="f-side" points={encOut.side}></polygon>
+            <polygon class="f-front" points={encOut.front}></polygon>
+            <polygon class="f-top" points={encOut.top}></polygon>
+          </g>
+          <g class="enc-vents" transform={frontText(-38, -38, 8, 76, 76)}>
+            <rect x="7" y="57" width="18" height="3" rx="1.5"></rect>
+            <rect x="7" y="64" width="25" height="3" rx="1.5"></rect>
+            <circle class="status-led" cx="50" cy="62" r="3"></circle>
+          </g>
+          {/* lock flat on front face only */}
+          <g class="lock-face" transform={frontText(-38, -38, 8, 76, 76)}>
+            <rect x="20" y="22" width="36" height="26" rx="4"></rect>
+            <path d="M34 34 v-3 a4 4 0 0 1 8 0 v3"></path>
+            <rect class="lock-body" x="32" y="34" width="12" height="9" rx="2"></rect>
+            <circle cx="38" cy="37.5" r="1.25"></circle>
+          </g>
+
+          {/* sealed package · dark shell + narrow strap, at output slot */}
+          <polygon class="contact" points={sealedEnc.cast}></polygon>
+          <g class="unit cipher">
+            <polygon class="f-side" points={sealedEnc.body.side}></polygon>
+            <polygon class="f-front" points={sealedEnc.body.front}></polygon>
+            <polygon class="f-top" points={sealedEnc.body.top}></polygon>
+          </g>
+          <g class="unit prim-solid">
+            <polygon class="f-side" points={sealedEnc.band.side}></polygon>
+            <polygon class="f-front" points={sealedEnc.band.front}></polygon>
+            <polygon class="f-top" points={sealedEnc.band.top}></polygon>
+          </g>
+          <g class="seal-icon" transform={frontText(42, -18, 16, 42, 42)}>
+            <g class="seal-lock-mark">
+              <path d="M13 20 v-3 a4 4 0 0 1 8 0 v3"></path>
+              <rect x="11" y="20" width="12" height="9" rx="1.5"></rect>
+              <text x="39" y="24" text-anchor="middle">age</text>
+            </g>
+          </g>
+
+        </g>
+        <g class="lab" transform="translate(412 389)">
+          <rect class="title-pill" width="260" height="34" rx="9"></rect>
+          <rect class="stage-index" x="6" y="5" width="28" height="24" rx="6"></rect>
+          <text class="index-text" x="20" y="21" text-anchor="middle">02</text>
+          <text class="title" x="130" y="22" transform="translate(12 0)" text-anchor="middle">Encrypt locally</text>
+        </g>
+        <g class="lab" transform="translate(542 431)">
+          <text class="sub" x="0" y="14" text-anchor="middle">Snapshot sealed with age</text>
+        </g>
+
+        {/* ════ 03 STORE · same sealed package in drawer ════ */}
+        <g class="stage" transform="translate(899 248) scale(0.86)">
+          <polygon class="cast" points={buckPlatCast}></polygon>
+          <g class="unit platform">
+            <polygon class="f-side" points={buckPlat.side}></polygon>
+            <polygon class="f-front" points={buckPlat.front}></polygon>
+            <polygon class="f-top" points={buckPlat.top}></polygon>
+          </g>
+          <polygon class="platform-inset compact" points={foot(-94, -42, 10.4, 188, 90)}></polygon>
+          <polygon class="contact" points={contact(-58, -36, 120, 84)}></polygon>
+          <g class="unit sealbox">
+            <polygon class="f-side" points={buckBody.side}></polygon>
+            <polygon class="f-front" points={buckBody.front}></polygon>
+            <polygon class="f-top" points={buckBody.top}></polygon>
+          </g>
+          <g class="unit sealbox">
+            <polygon class="f-side" points={buckCap.side}></polygon>
+            <polygon class="f-front" points={buckCap.front}></polygon>
+            <polygon class="f-top" points={buckCap.top}></polygon>
+          </g>
+          <g class="storage-mark" transform={sideText(-56, -34, 10, 116, 80, 72)}>
+            <rect class="storage-mark-panel" x="10" y="9" width="58" height="54" rx="5"></rect>
+            <path class="bucket-handle" d="M28 29 v-4 a11 11 0 0 1 22 0 v4"></path>
+            <path class="bucket-icon" d="M22 29 h34 l-4 23 h-26 z"></path>
+            <path class="bucket-line" d="M28 37 h22"></path>
+            <text x="39" y="60" text-anchor="middle">S3 / R2</text>
+          </g>
+          <g class="cavity" transform={frontText(-45, -20, 20, 48, 46)}>
+            <polygon points="6,6 88,6 88,42 6,42"></polygon>
+          </g>
+          {/* simple drawer tray */}
+          <polygon class="contact" points={contact(-40, 40, 84, 40)}></polygon>
+          <g class="unit device">
+            <polygon class="f-side" points={drawer.side}></polygon>
+            <polygon class="f-front" points={drawer.front}></polygon>
+            <polygon class="f-top" points={drawer.top}></polygon>
+          </g>
+          <g class="unit device">
+            <polygon class="f-side" points={drawerFace.side}></polygon>
+            <polygon class="f-front" points={drawerFace.front}></polygon>
+            <polygon class="f-top" points={drawerFace.top}></polygon>
+          </g>
+          <g class="drawer-detail" transform={frontText(-38, 70, 16, 10, 18)}>
+            <rect x="20" y="5" width="40" height="4" rx="2"></rect>
+          </g>
+          {/* recessed status slit */}
+          <g class="unit board">
+            <polygon class="f-side" points={statusSlit.side}></polygon>
+            <polygon class="f-front" points={statusSlit.front}></polygon>
+            <polygon class="f-top" points={statusSlit.top}></polygon>
+          </g>
+          <circle
+            cx={P(59, -13, 46)[0]}
+            cy={P(59, -13, 46)[1]}
+            r="2.8"
+            fill="#B7FF38"
+            stroke={SK}
+            stroke-width="1.4"
+          ></circle>
+
+          {/* exact same sealed package as stage 2 (makeSealed only) */}
+          <polygon class="contact" points={sealedStore.cast}></polygon>
+          <g class="unit cipher">
+            <polygon class="f-side" points={sealedStore.body.side}></polygon>
+            <polygon class="f-front" points={sealedStore.body.front}></polygon>
+            <polygon class="f-top" points={sealedStore.body.top}></polygon>
+          </g>
+          <g class="unit prim-solid">
+            <polygon class="f-side" points={sealedStore.band.side}></polygon>
+            <polygon class="f-front" points={sealedStore.band.front}></polygon>
+            <polygon class="f-top" points={sealedStore.band.top}></polygon>
+          </g>
+          <g class="seal-icon" transform={frontText(-16, 46, 30, 42, 42)}>
+            <g class="seal-lock-mark">
+              <path d="M13 20 v-3 a4 4 0 0 1 8 0 v3"></path>
+              <rect x="11" y="20" width="12" height="9" rx="1.5"></rect>
+              <text x="39" y="24" text-anchor="middle">age</text>
+            </g>
+          </g>
+        </g>
+        <g class="lab" transform="translate(769 389)">
+          <rect class="title-pill" width="260" height="34" rx="9"></rect>
+          <rect class="stage-index" x="6" y="5" width="28" height="24" rx="6"></rect>
+          <text class="index-text" x="20" y="21" text-anchor="middle">03</text>
+          <text class="title" x="130" y="22" transform="translate(12 0)" text-anchor="middle">Store in your bucket</text>
+        </g>
+        <g class="lab" transform="translate(899 431)">
+          <text class="sub" x="0" y="14" text-anchor="middle">S3-compatible object storage</text>
+        </g>
+
+        {/* ════ 04 RESTORE · same laptop + open package ════ */}
+        <g class="stage" transform="translate(1255 248) scale(0.9)">
+          <polygon class="cast" points={platCast}></polygon>
+          <g class="unit platform">
+            <polygon class="f-side" points={plat.side}></polygon>
+            <polygon class="f-front" points={plat.front}></polygon>
+            <polygon class="f-top" points={plat.top}></polygon>
+          </g>
+          <polygon class="platform-inset" points={platInset}></polygon>
+          {platformBolts.map(([cx, cy]) => (
+            <circle class="platform-bolt" cx={cx} cy={cy} r="2.2"></circle>
+          ))}
+          <polygon class="contact" points={contact(-86, -36, 136, 90)}></polygon>
+          <g class="unit device">
+            <polygon class="f-side" points={deck.side}></polygon>
+            <polygon class="f-front" points={deck.front}></polygon>
+            <polygon class="f-top" points={deck.top}></polygon>
+          </g>
+          <g class="unit device">
+            <polygon class="f-side" points={hinge.side}></polygon>
+            <polygon class="f-front" points={hinge.front}></polygon>
+            <polygon class="f-top" points={hinge.top}></polygon>
+          </g>
+          <g class="unit device">
+            <polygon class="f-side" points={lid.side}></polygon>
+            <polygon class="f-front" points={lid.front}></polygon>
+            <polygon class="f-top" points={lid.top}></polygon>
+          </g>
+          <g class="screen" transform={frontText(-82, -42, 34, 12, 84)}>
+            <polygon points="10,10 118,10 118,74 10,74"></polygon>
+            <rect class="screen-bar" x="10" y="10" width="108" height="12"></rect>
+            <circle class="screen-dot hot" cx="18" cy="16" r="2"></circle>
+            <circle class="screen-dot" cx="25" cy="16" r="2"></circle>
+            <circle class="screen-dot" cx="32" cy="16" r="2"></circle>
+            <rect class="badge" x="16" y="28" width="86" height="18" rx="9"></rect>
+            <text class="badge-text" x="59" y="41" text-anchor="middle">RESTORED</text>
+            <rect class="screen-line" x="18" y="54" width="76" height="4" rx="2"></rect>
+            <rect class="screen-line" x="18" y="63" width="54" height="4" rx="2"></rect>
+          </g>
+          <polygon class="well" points={well}></polygon>
+          <g class="keys">
+            {keyCaps.map((r) => (
+              <polygon points={r}></polygon>
+            ))}
+          </g>
+          <polygon class="track" points={track}></polygon>
+
+          <polygon class="contact" points={openRestore.cast}></polygon>
+          <g class="unit tray t-d">
+            <polygon class="f-side" points={openRestore.bot.side}></polygon>
+            <polygon class="f-front" points={openRestore.bot.front}></polygon>
+            <polygon class="f-top" points={openRestore.bot.top}></polygon>
+          </g>
+          <g class="unit tray t-c">
+            <polygon class="f-side" points={openRestore.mid.side}></polygon>
+            <polygon class="f-front" points={openRestore.mid.front}></polygon>
+            <polygon class="f-top" points={openRestore.mid.top}></polygon>
+          </g>
+          <g class="unit tray t-a">
+            <polygon class="f-side" points={openRestore.top.side}></polygon>
+            <polygon class="f-front" points={openRestore.top.front}></polygon>
+            <polygon class="f-top" points={openRestore.top.top}></polygon>
+          </g>
+          <g class="layer-label" transform={frontText(OPEN_X, OPEN_Y, OPEN_Z, D, LH)}>
+            <text x="7" y="10">PATHS</text>
+          </g>
+          <g
+            class="layer-label"
+            transform={frontText(OPEN_X + 2, OPEN_Y + 2, OPEN_Z + LH, D - 4, LH)}
+          >
+            <text x="7" y="10">MESSAGES</text>
+          </g>
+          <g
+            class="layer-label dark"
+            transform={frontText(OPEN_X + 4, OPEN_Y + 4, OPEN_Z + LH * 2, D - 8, LH)}
+          >
+            <text x="7" y="10">SESSION</text>
+          </g>
+        </g>
+        <g class="lab" transform="translate(1125 389)">
+          <rect class="title-pill" width="260" height="34" rx="9"></rect>
+          <rect class="stage-index" x="6" y="5" width="28" height="24" rx="6"></rect>
+          <text class="index-text" x="20" y="21" text-anchor="middle">04</text>
+          <text class="title" x="130" y="22" transform="translate(12 0)" text-anchor="middle">Restore anywhere</text>
+        </g>
+        <g class="lab" transform="translate(1255 431)">
+          <text class="sub" x="0" y="14" text-anchor="middle">Same session, new device</text>
+        </g>
+      </g>
+    </svg>
+  </figure>
+</div>
+
+<style>
+  .sec-vault {
+    --sv-stroke: #101814;
+    --sv-prim: #b7ff38;
+    --sv-prim-deep: #4f8a1e;
+    --sv-shadow: #101814;
+    --sv-furn-1: #c1c9ae;
+    --sv-furn-2: #a6b090;
+    --sv-furn-3: #8a9673;
+    --sv-dev-0: #5a6c62;
+    --sv-dev-1: #3f5047;
+    --sv-dev-2: #2d3c35;
+    --sv-dev-3: #1f2b26;
+    --sv-seal-1: #3d4f47;
+    --sv-seal-2: #24332c;
+    --sv-seal-3: #16221c;
+    --sv-night: #0f1814;
+    --sv-cavity: #101b17;
+    --sv-caption: #4d5e55;
+    --sv-line: #56675e;
+    --sv-panel: #d8ddcf;
+    display: block;
+    width: 100%;
+  }
+  :global(html.dark) .sec-vault {
+    --sv-stroke: #0d1613;
+    --sv-prim: #b7ff38;
+    --sv-prim-deep: #a8e83c;
+    --sv-shadow: #050b09;
+    --sv-furn-1: #6d8073;
+    --sv-furn-2: #56685c;
+    --sv-furn-3: #435248;
+    --sv-dev-0: #6b7e72;
+    --sv-dev-1: #52655a;
+    --sv-dev-2: #3d4e45;
+    --sv-dev-3: #2e3c34;
+    --sv-seal-1: #3d4f47;
+    --sv-seal-2: #24332c;
+    --sv-seal-3: #16221c;
+    --sv-night: #0a1310;
+    --sv-cavity: #101b17;
+    --sv-caption: #bcc8c1;
+    --sv-line: #8d9d94;
+    --sv-panel: #29372f;
+  }
+
+  .sec-vault-scene {
+    margin: 0;
+    max-width: 96rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--sv-caption) 42%, transparent) transparent;
+  }
+  .sec-vault-art {
+    display: block;
+    width: min(100%, 94rem);
+    height: auto;
+    margin-inline: auto;
+    overflow: visible;
+    pointer-events: none;
+    font-family: var(--font-mono);
+  }
+
+  .sec-vault-art .unit polygon {
+    stroke: var(--sv-stroke);
+    stroke-width: 3.2;
+    stroke-linejoin: round;
+  }
+
+  .platform-inset {
+    fill: none;
+    stroke: color-mix(in oklab, var(--sv-stroke) 34%, transparent);
+    stroke-width: 1.8;
+    stroke-linejoin: round;
+  }
+  .platform-inset.compact {
+    stroke-dasharray: 5 5;
+  }
+  .platform-bolt {
+    fill: var(--sv-furn-3);
+    stroke: var(--sv-stroke);
+    stroke-width: 1;
+  }
+
+  .platform .f-top {
+    fill: var(--sv-furn-1);
+  }
+  .platform .f-front {
+    fill: var(--sv-furn-2);
+  }
+  .platform .f-side {
+    fill: var(--sv-furn-3);
+  }
+  .device .f-top {
+    fill: var(--sv-dev-1);
+  }
+  .device .f-front {
+    fill: var(--sv-dev-2);
+  }
+  .device .f-side {
+    fill: var(--sv-dev-3);
+  }
+  .board .f-top {
+    fill: var(--sv-dev-0);
+  }
+  .board .f-front {
+    fill: var(--sv-dev-1);
+  }
+  .board .f-side {
+    fill: var(--sv-dev-2);
+  }
+  .sealbox .f-top {
+    fill: var(--sv-seal-1);
+  }
+  .sealbox .f-front {
+    fill: var(--sv-seal-2);
+  }
+  .sealbox .f-side {
+    fill: var(--sv-seal-3);
+  }
+  /* sealed package: dark charcoal wrapper (lime only on strap) */
+  .cipher .f-top {
+    fill: #2a3530;
+  }
+  .cipher .f-front {
+    fill: #1a2420;
+  }
+  .cipher .f-side {
+    fill: #121a17;
+  }
+  :global(html.dark) .sec-vault .cipher .f-top {
+    fill: #2e3b35;
+  }
+  :global(html.dark) .sec-vault .cipher .f-front {
+    fill: #1c2823;
+  }
+  :global(html.dark) .sec-vault .cipher .f-side {
+    fill: #121c18;
+  }
+  .prim-solid .f-top {
+    fill: #b7ff38;
+  }
+  .prim-solid .f-front {
+    fill: #96d92a;
+  }
+  .prim-solid .f-side {
+    fill: #6a9a22;
+  }
+
+  .t-a .f-top {
+    fill: #b7ff38;
+  }
+  .t-a .f-front {
+    fill: #96d92a;
+  }
+  .t-a .f-side {
+    fill: #78b31d;
+  }
+  .t-c .f-top {
+    fill: #8fc8ea;
+  }
+  .t-c .f-front {
+    fill: #6fa8cc;
+  }
+  .t-c .f-side {
+    fill: #5488ab;
+  }
+  .t-d .f-top {
+    fill: #e8ebe0;
+  }
+  .t-d .f-front {
+    fill: #cfd5c4;
+  }
+  .t-d .f-side {
+    fill: #b0b8a4;
+  }
+
+  .cast {
+    fill: var(--sv-shadow);
+    opacity: 0.14;
+  }
+  .contact {
+    fill: var(--sv-shadow);
+    opacity: 0.2;
+  }
+  :global(html.dark) .sec-vault .cast {
+    opacity: 0.4;
+  }
+  :global(html.dark) .sec-vault .contact {
+    opacity: 0.5;
+  }
+
+  .well {
+    fill: var(--sv-dev-3);
+    stroke: var(--sv-stroke);
+    stroke-width: 2.2;
+    stroke-linejoin: round;
+  }
+  .keys {
+    opacity: 1;
+  }
+  .keys polygon {
+    fill: color-mix(in oklab, var(--sv-dev-0) 76%, var(--sv-panel));
+    stroke: var(--sv-stroke);
+    stroke-width: 0.75;
+    stroke-linejoin: round;
+  }
+  .track {
+    fill: var(--sv-dev-1);
+    stroke: var(--sv-line);
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+  }
+  .screen > polygon {
+    fill: var(--sv-night);
+    stroke: var(--sv-stroke);
+    stroke-width: 2.2;
+  }
+  .screen .screen-line {
+    fill: #dce3d6;
+    opacity: 0.38;
+  }
+  .screen .screen-bar {
+    fill: var(--sv-dev-2);
+  }
+  .screen .screen-dot {
+    fill: #8fa099;
+  }
+  .screen .screen-dot.hot,
+  .screen .screen-prompt {
+    fill: #b7ff38;
+  }
+  .screen .screen-cursor {
+    fill: #dce3d6;
+  }
+  .screen .badge {
+    fill: #b7ff38;
+    stroke: var(--sv-stroke);
+    stroke-width: 1.6;
+  }
+  .screen .badge-text {
+    fill: #101814;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+  }
+  .layer-label text {
+    fill: #101814;
+    font-size: 5.7px;
+    font-weight: 760;
+    letter-spacing: 0.035em;
+  }
+  .layer-label.dark text {
+    fill: #101814;
+  }
+
+  .cavity polygon {
+    fill: var(--sv-cavity);
+    stroke: var(--sv-stroke);
+    stroke-width: 2;
+  }
+  .enc-vents rect {
+    fill: var(--sv-line);
+  }
+  .enc-vents .status-led {
+    fill: #b7ff38;
+    stroke: var(--sv-stroke);
+    stroke-width: 1.2;
+    animation: vault-status 1.8s steps(1) infinite;
+  }
+  .storage-mark .storage-mark-panel {
+    fill: var(--sv-cavity);
+    stroke: var(--sv-stroke);
+    stroke-width: 1.8;
+  }
+  .storage-mark .bucket-handle,
+  .storage-mark .bucket-icon,
+  .storage-mark .bucket-line {
+    fill: none;
+    stroke: #b7ff38;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .storage-mark text {
+    fill: #b7ff38;
+    font-size: 7.5px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+  }
+  .drawer-detail rect {
+    fill: var(--sv-line);
+  }
+
+  .keyhole circle,
+  .keyhole rect {
+    fill: #101814;
+  }
+
+  .lock-face > rect:first-child {
+    fill: var(--sv-seal-3);
+    stroke: var(--sv-stroke);
+    stroke-width: 2;
+  }
+  .lock-face path {
+    fill: none;
+    stroke: #b7ff38;
+    stroke-width: 2.3;
+    stroke-linecap: round;
+  }
+  .lock-face .lock-body {
+    fill: #b7ff38;
+    stroke: var(--sv-stroke);
+    stroke-width: 1.4;
+  }
+  .lock-face circle {
+    fill: var(--sv-stroke);
+  }
+
+  .seal-icon path {
+    fill: none;
+    stroke: #b7ff38;
+    stroke-width: 2.1;
+    stroke-linecap: round;
+  }
+  .seal-icon rect {
+    fill: #b7ff38;
+    stroke: var(--sv-stroke);
+    stroke-width: 1.3;
+  }
+  .seal-icon text {
+    fill: #b7ff38;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+
+  .flow-rail,
+  .flow {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    overflow: visible;
+  }
+  .flow-rail {
+    stroke: var(--sv-stroke);
+    stroke-width: 8.5;
+    opacity: 0.84;
+  }
+  .flow {
+    stroke: #b7ff38;
+    stroke-width: 4;
+    stroke-dasharray: 11 9;
+    animation: vault-flow 1.6s linear infinite;
+  }
+  .route-node {
+    fill: #b7ff38;
+    stroke: var(--sv-stroke);
+    stroke-width: 3;
+  }
+
+  /* Numbered stage plates form a clear visual baseline under the machines. */
+  .title-pill {
+    fill: #a8e63a;
+    stroke: #101814;
+    stroke-width: 2.4;
+  }
+  .stage-index {
+    fill: #101814;
+  }
+  .index-text {
+    fill: #b7ff38;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+  .title {
+    fill: #101814;
+    font-size: 14.5px;
+    font-weight: 760;
+    letter-spacing: 0.01em;
+  }
+  .sub {
+    fill: var(--sv-caption);
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.015em;
+  }
+  .path-pill {
+    fill: #15201b;
+    stroke: #b7ff38;
+    stroke-width: 1.8;
+  }
+  .path-text {
+    fill: #b7ff38;
+    font-size: 8px;
+    font-weight: 760;
+    letter-spacing: 0.045em;
+  }
+  .route-led {
+    fill: #b7ff38;
+    stroke: #101814;
+    stroke-width: 1.1;
+  }
+
+  .screen-cursor.blink {
+    animation: vault-blink 1.1s steps(1) infinite;
+  }
+
+  @keyframes vault-flow {
+    to {
+      stroke-dashoffset: -42;
+    }
+  }
+  @keyframes vault-blink {
+    0%,
+    49% {
+      opacity: 1;
+    }
+    50%,
+    100% {
+      opacity: 0;
+    }
+  }
+  @keyframes vault-status {
+    0%,
+    72% {
+      opacity: 1;
+    }
+    73%,
+    100% {
+      opacity: 0.3;
+    }
+  }
+  @media (max-width: 760px) {
+    .sec-vault-scene {
+      padding-bottom: 0.55rem;
+      scroll-snap-type: inline proximity;
+    }
+    .sec-vault-art {
+      min-width: 880px;
+      scroll-snap-align: start;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .flow,
+    .screen-cursor.blink,
+    .status-led {
+      animation: none !important;
+    }
+  }
+</style>

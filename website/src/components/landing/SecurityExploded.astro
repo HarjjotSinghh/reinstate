@@ -1,0 +1,648 @@
+---
+/**
+ * Security section: continues the office floor from problem/proof.
+ * Signature: keys stay on devices; ciphertext lands in your bucket.
+ * Art: landing/art/SecurityVaultArt.astro (new trust-room scene).
+ * Prior pipeline art kept at landing/art/SecurityPipelineArt.astro
+ * and landing/art/snapshots/ (see landing/art/README.md).
+ */
+import SecurityVaultArt from './art/SecurityVaultArt.astro';
+
+const points = [
+  {
+    k: '01',
+    title: 'Local encryption before anything leaves your device',
+    body:
+      'Reinstate seals every session snapshot on-device with age before upload. Your S3 or R2 bucket receives ciphertext only, never readable session content.',
+    icon: 'lock',
+  },
+  {
+    k: '02',
+    title: 'Your keys stay on devices you control',
+    body:
+      'Your passphrase never reaches Reinstate or your storage provider. Restore happens locally on a device you control; without the key, every uploaded snapshot stays sealed.',
+    icon: 'key',
+  },
+  {
+    k: '03',
+    title: 'Your storage',
+    body:
+      'Ciphertext lands in your own S3 or R2 bucket, under your region and access controls.',
+    icon: 'bucket',
+  },
+  {
+    k: '04',
+    title: 'No auth tokens',
+    body:
+      'API keys and OAuth tokens never sync. Credentials remain denylisted on every device.',
+    icon: 'shield',
+  },
+  {
+    k: '05',
+    title: 'Open-source client',
+    body:
+      'Apache-2.0 keeps the encryption and restore path open for anyone to inspect.',
+    icon: 'code',
+  },
+  {
+    k: '06',
+    title: 'Fail-safe restore',
+    body:
+      'Timestamped backups, conflict forks, and atomic writes protect existing state on restore.',
+    icon: 'backup',
+  },
+  {
+    k: '07',
+    title: 'No Reinstate servers',
+    body:
+      'No account, telemetry, or hosted session copy. Your private work stays off our servers.',
+    icon: 'ghost',
+  },
+] as const;
+
+const icons: Record<(typeof points)[number]['icon'], string> = {
+  lock: 'M7 10V8a5 5 0 0 1 10 0v2M6 10h12v10H6zM12 14v3',
+  bucket: 'M4 8h16l-1.2 12H5.2L4 8zM8 8V6a4 4 0 0 1 8 0v2M9 13h6',
+  key: 'M8 14a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm3.5-2.5L20 20m-3-3 3 3',
+  ghost: 'M5 10a7 7 0 0 1 14 0v9l-2.5-1.5L14 19l-2-1.5L10 19 7.5 17.5 5 19z',
+  shield: 'M12 3.5 19 6v5.2c0 4.1-2.8 7.5-7 9.3-4.2-1.8-7-5.2-7-9.3V6l7-2.5zM9.5 12l1.8 1.8L15 10',
+  code: 'M8 8 4 12l4 4M16 8l4 4-4 4M13 6l-2 12',
+  backup: 'M4 7h12v12H4zM8 7V5h12v12h-2M8 12h4M8 15h6',
+};
+---
+
+<section class="security-section" id="security" aria-labelledby="security-title">
+  <div class="security-shell">
+    <header class="security-lede">
+      <span class="badge"><i aria-hidden="true"></i> Trust · ownership · open source</span>
+      <h2 id="security-title">
+        <span class="h2-line">Sessions leave encrypted.</span>
+        <span class="h2-line">Your bucket never sees plaintext.</span>
+      </h2>
+      <p class="sub">
+        Your sessions can contain source code and private work. Reinstate encrypts them
+        locally before storage.<br />
+        Your bucket holds ciphertext. Only your devices hold the keys that restore it.
+      </p>
+    </header>
+
+    <div class="security-scene">
+      <SecurityVaultArt />
+    </div>
+
+    <div class="security-art-gap" aria-hidden="true"></div>
+
+    <div class="proof-matrix" role="list">
+      {
+        points.map((p) => (
+          <article
+            class={`proof-cell${p.k === '01' || p.k === '02' ? ' proof-cell--featured' : ''}`}
+            data-proof={p.k}
+            role="listitem"
+          >
+            <div class="proof-head">
+              <span class="proof-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d={icons[p.icon]}></path>
+                </svg>
+              </span>
+              <span class="proof-k" aria-hidden="true">
+                {p.k}
+              </span>
+            </div>
+            <h3>{p.title}</h3>
+            <p>{p.body}</p>
+          </article>
+        ))
+      }
+    </div>
+
+    <nav class="security-links" aria-label="Security resources">
+      <a class="slink primary" href="/docs/security-model">
+        <span class="slink-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path class="slink-doc" d="M7 3.5h7l4 4V20.5H7z"></path>
+            <path class="slink-doc" d="M14 3.5V8h4M9.5 12h5M9.5 15.5h5"></path>
+          </svg>
+        </span>
+        <span class="slink-label">Read the security model</span>
+      </a>
+      <a
+        class="slink"
+        href="https://github.com/HarjjotSinghh/reinstate/tree/main/internal/crypto"
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        <span class="slink-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path class="slink-code" d="M8 8 4 12l4 4M16 8l4 4-4 4M13 6l-2 12"></path>
+          </svg>
+        </span>
+        <span class="slink-label">View encryption code</span>
+        <span class="slink-arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M7 12h10m0 0-4-4m4 4-4 4"></path></svg>
+        </span>
+      </a>
+      <a
+        class="slink"
+        href="https://github.com/HarjjotSinghh/reinstate/security/advisories/new"
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        <span class="slink-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path
+              class="slink-shield"
+              d="M12 3.5 19 6v5.2c0 4.1-2.8 7.5-7 9.3-4.2-1.8-7-5.2-7-9.3V6l7-2.5z"
+            ></path>
+            <path class="slink-shield" d="M12 9v4M12 16h.01"></path>
+          </svg>
+        </span>
+        <span class="slink-label">Report a vulnerability</span>
+        <span class="slink-arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M7 12h10m0 0-4-4m4 4-4 4"></path></svg>
+        </span>
+      </a>
+    </nav>
+  </div>
+</section>
+
+<style>
+
+  .security-section {
+    /* inherit floor from .problem-block when slotted; also define local twins */
+    --paper: #e4e7dd;
+    --paper-2: #f4f6ef;
+    --on-prim: #131f1a;
+    --sv-stroke: #131f1a;
+    --sv-ink: oklch(0.19 0.022 158);
+    --sv-prim: #b8ff3c;
+    --sv-prim-deep: #4f8a1e;
+    --sv-shadow: #131f1a;
+    --sv-furn-1: #c1c9ae;
+    --sv-furn-2: #a6b090;
+    --sv-furn-3: #8a9673;
+    --sv-dev-0: #55685d;
+    --sv-dev-1: #3b4c43;
+    --sv-dev-2: #2a3831;
+    --sv-dev-3: #1e2925;
+    --sv-seal-1: #41544a;
+    --sv-seal-2: #1f2c26;
+    --sv-seal-3: #121b17;
+    --sv-pot-1: #aab38f;
+    --sv-pot-2: #93a176;
+    --sv-pot-3: #7a8a5e;
+    --sv-leaf-1: #7fae3f;
+    --sv-leaf-2: #5f8f2c;
+    --sv-night: #16231f;
+
+    position: relative;
+    z-index: 1;
+    scroll-margin-top: 5rem;
+    color: var(--ink);
+    overflow-x: clip;
+  }
+
+  :global(html.dark) .security-section {
+    --paper: #1d2723;
+    --paper-2: #26332e;
+    --on-prim: #131f1a;
+    --sv-stroke: #0d1613;
+    --sv-ink: oklch(0.965 0.008 145);
+    --sv-prim: #c4ff56;
+    --sv-prim-deep: #a8e83c;
+    --sv-shadow: #050b09;
+    --sv-furn-1: #6d8073;
+    --sv-furn-2: #56685c;
+    --sv-furn-3: #435248;
+    --sv-dev-0: #6b7e72;
+    --sv-dev-1: #52655a;
+    --sv-dev-2: #3d4e45;
+    --sv-dev-3: #2e3c34;
+    --sv-seal-1: #486054;
+    --sv-seal-2: #33453c;
+    --sv-seal-3: #23312b;
+    --sv-pot-1: #8d9670;
+    --sv-pot-2: #757e5b;
+    --sv-pot-3: #5f6849;
+    --sv-leaf-1: #7fae3f;
+    --sv-leaf-2: #5f8f2c;
+    --sv-night: #0a1310;
+  }
+
+  .security-shell {
+    max-width: 88rem;
+    margin-inline: auto;
+    padding: clamp(3.5rem, 6vw, 5.5rem) clamp(1.25rem, 4vw, 3rem)
+      clamp(4rem, 7vw, 6rem);
+  }
+
+  .security-lede {
+    display: grid;
+    justify-items: center;
+    text-align: center;
+    width: 100%;
+    max-width: min(100%, 68rem);
+    margin-inline: auto;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.36rem 0.85rem 0.36rem 0.7rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: var(--paper-2);
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--ink-2);
+  }
+  .badge i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--sv-prim-deep);
+  }
+
+  .security-lede h2 {
+    margin: clamp(0.85rem, 1.8vw, 1.2rem) auto 0;
+    max-width: none;
+    font-family: var(--font-display);
+    font-size: clamp(1.9rem, 3.4vw, 3rem);
+    font-weight: 400;
+    letter-spacing: -0.038em;
+    line-height: 1.02;
+  }
+  .h2-line {
+    display: block;
+    white-space: nowrap;
+  }
+  @media (max-width: 720px) {
+    .h2-line {
+      white-space: normal;
+    }
+  }
+
+  .sub {
+    margin: 1rem auto 0;
+    justify-self: center;
+    /* max-content + <br> = each sentence is one line on desktop */
+    width: max-content;
+    max-width: 100%;
+    font-size: clamp(1rem, 0.5vw + 0.92rem, 1.15rem);
+    line-height: 1.55;
+    color: color-mix(in oklab, var(--ink) 26%, var(--ink-2));
+  }
+  @media (max-width: 900px) {
+    .sub {
+      width: 100%;
+    }
+    .sub br {
+      display: none;
+    }
+  }
+
+  .security-scene {
+    margin: 1.25rem auto 0;
+    max-width: 96rem;
+    overflow: hidden;
+  }
+
+  /* layout-only spacer between art and matrix */
+  .security-art-gap {
+    display: block;
+    width: 100%;
+    height: 3.5rem;
+    min-height: 3.5rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    flex: none;
+    pointer-events: none;
+  }
+
+  /* Mirrored anchor bento: wide 01/02 cards bookend ownership proofs. */
+  .proof-matrix {
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas:
+      'one one three'
+      'four five six'
+      'seven two two';
+    grid-template-rows:
+      clamp(13rem, 15vw, 15rem)
+      clamp(10.5rem, 11vw, 12rem)
+      clamp(13rem, 15vw, 15rem);
+    gap: 0.75rem;
+  }
+  .proof-cell[data-proof='01'] {
+    grid-area: one;
+  }
+  .proof-cell[data-proof='02'] {
+    grid-area: two;
+  }
+  .proof-cell[data-proof='03'] {
+    grid-area: three;
+  }
+  .proof-cell[data-proof='04'] {
+    grid-area: four;
+  }
+  .proof-cell[data-proof='05'] {
+    grid-area: five;
+  }
+  .proof-cell[data-proof='06'] {
+    grid-area: six;
+  }
+  .proof-cell[data-proof='07'] {
+    grid-area: seven;
+  }
+  .proof-cell {
+    position: relative;
+    display: grid;
+    align-content: start;
+    gap: 0.5rem;
+    padding: 1.5rem 1.4rem 1.6rem;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    background: color-mix(in oklab, var(--paper-2) 72%, transparent);
+    overflow: hidden;
+    text-wrap: pretty;
+    transition:
+      background 0.18s,
+      transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .proof-cell--featured {
+    min-height: 0;
+    align-content: start;
+    gap: 0.8rem;
+    padding: 1.75rem 1.65rem 1.85rem;
+    background: color-mix(in oklab, var(--paper-2) 82%, var(--sv-prim) 8%);
+  }
+  .proof-cell--featured::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+    background: var(--sv-prim-deep);
+  }
+  .proof-cell--featured .proof-icon {
+    border-color: color-mix(in oklab, var(--sv-prim-deep) 70%, var(--rule));
+    background: color-mix(in oklab, var(--paper-2) 70%, var(--sv-prim) 22%);
+  }
+  :global(html.dark) .proof-cell--featured {
+    background: color-mix(in oklab, var(--paper-2) 88%, var(--sv-prim) 6%);
+  }
+  :global(html.dark) .proof-cell--featured::before {
+    background: var(--sv-prim);
+  }
+  .proof-cell--featured h3 {
+    max-width: none;
+    line-height: 1.08;
+  }
+  .proof-cell--featured p {
+    max-width: 90ch;
+    font-size: 1rem;
+    line-height: 1.58;
+  }
+  .proof-cell:hover {
+    background: color-mix(in oklab, var(--paper-2) 100%, transparent);
+  }
+  .proof-cell:hover .proof-icon {
+    border-color: color-mix(in oklab, var(--sv-prim-deep) 58%, var(--rule));
+    background: color-mix(in oklab, var(--paper-2) 76%, var(--sv-prim) 16%);
+    transform: scale(1.01);
+  }
+  .proof-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+  }
+  .proof-icon {
+    display: grid;
+    place-items: center;
+    width: 2.85rem;
+    height: 2.85rem;
+    border: 1.5px solid color-mix(in oklab, var(--sv-prim-deep) 48%, var(--rule));
+    border-radius: 10px;
+    background: color-mix(in oklab, var(--paper-2) 78%, var(--sv-prim) 14%);
+    color: var(--sv-prim-deep);
+    transition:
+      border-color 0.18s,
+      background 0.18s,
+      color 0.18s,
+      transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .proof-icon svg {
+    width: 1.5rem;
+    height: 1.5rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.95;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  :global(html.dark) .proof-icon {
+    border-color: color-mix(in oklab, var(--sv-prim) 54%, var(--rule));
+    background: color-mix(in oklab, var(--sv-night) 80%, var(--sv-prim) 12%);
+    color: var(--sv-prim);
+  }
+  :global(html.dark) .proof-cell:hover .proof-icon {
+    border-color: color-mix(in oklab, var(--sv-prim) 62%, var(--rule));
+    background: color-mix(in oklab, var(--sv-night) 78%, var(--sv-prim) 14%);
+    color: var(--sv-prim);
+  }
+  :global(html.dark) .proof-cell--featured .proof-icon {
+    border-color: color-mix(in oklab, var(--sv-prim) 74%, var(--rule));
+    background: color-mix(in oklab, var(--sv-night) 72%, var(--sv-prim) 18%);
+  }
+  .proof-k {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 650;
+    letter-spacing: 0.08em;
+    color: var(--sv-prim-deep);
+  }
+  .proof-cell h3 {
+    margin: 0;
+    padding-top: 0.35rem;
+    font-family: var(--font-display);
+    font-size: clamp(1.65rem, 1.55vw, 1.9rem);
+    font-weight: 400;
+    letter-spacing: -0.028em;
+    line-height: 1.12;
+  }
+  .proof-cell p {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: color-mix(in oklab, var(--ink) 30%, var(--ink-2));
+  }
+
+  .security-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem 0.85rem;
+    margin-top: 2.5rem;
+  }
+  .slink {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    box-sizing: border-box;
+    min-height: 2.55rem;
+    padding: 0 1rem 0 0.85rem;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    background: var(--paper-2);
+    color: var(--ink);
+    font-size: 0.9rem;
+    font-weight: 550;
+    text-decoration: none;
+    white-space: nowrap;
+    transition:
+      background 0.2s,
+      border-color 0.2s,
+      color 0.2s,
+      gap 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .slink-icon {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 1.05rem;
+    height: 1.05rem;
+  }
+  .slink-icon svg,
+  .slink-arrow svg {
+    width: 100%;
+    height: 100%;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.85;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .slink-arrow {
+    display: grid;
+    place-items: center;
+    width: 0.95rem;
+    height: 0.95rem;
+    opacity: 0.75;
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .slink-label {
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .slink:hover {
+    border-color: var(--ink-3);
+    gap: 0.55rem;
+  }
+  .slink:hover .slink-arrow {
+    transform: translateX(2px);
+    opacity: 1;
+  }
+  .slink:hover .slink-label {
+    transform: translateX(1px);
+  }
+  .slink:active {
+    transform: scale(0.97);
+  }
+  .slink.primary {
+    border-color: var(--sv-stroke);
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .slink.primary:hover {
+    background: var(--prim);
+    border-color: var(--sv-stroke);
+    color: var(--on-prim);
+  }
+  .slink.primary .slink-doc {
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .slink.primary:hover .slink-doc {
+    animation: sec-doc 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @media (max-width: 980px) {
+    .proof-matrix {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-areas:
+        'one two'
+        'three three'
+        'four five'
+        'six seven';
+      grid-template-rows: none;
+    }
+    .proof-cell {
+      min-height: 12rem;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .proof-matrix {
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        'one'
+        'two'
+        'three'
+        'four'
+        'five'
+        'six'
+        'seven';
+    }
+    .proof-cell,
+    .proof-cell--featured {
+      min-height: auto;
+    }
+    .security-links {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .slink {
+      justify-content: center;
+    }
+  }
+
+  @keyframes sec-doc {
+    0% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    45% {
+      transform: translateY(2px);
+      opacity: 0.4;
+    }
+    46% {
+      transform: translateY(-3px);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .slink.primary:hover .slink-doc {
+      animation: none !important;
+    }
+    .proof-cell,
+    .proof-icon,
+    .slink,
+    .slink-arrow,
+    .slink-label {
+      transition: none;
+    }
+    .slink:hover .slink-arrow,
+    .slink:hover .slink-label,
+    .proof-cell:hover .proof-icon {
+      transform: none;
+    }
+  }
+</style>

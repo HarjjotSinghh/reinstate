@@ -61,6 +61,10 @@ const frontText = (x: number, y: number, z: number, d: number, h: number) => {
   const [e, f] = P(x, y + d, z + h);
   return m2([CX, 0.5, 0, 1, e, f]);
 };
+const sideText = (x: number, y: number, z: number, w: number, d: number, h: number) => {
+  const [e, f] = P(x + w, y + d, z + h);
+  return m2([CX, -0.5, 0, 1, e, f]);
+};
 ---
 
 <section class="terminal-proof" id="proof" aria-labelledby="proof-title">
@@ -355,16 +359,16 @@ const frontText = (x: number, y: number, z: number, d: number, h: number) => {
           ></polygon>
           <g class="seal-detail" transform={frontText(-58, -58, 0, 116, 112)}>
             <rect x="15" y="22" width="86" height="44" rx="7"></rect>
-            <path d="M46 39 v-6 a12 12 0 0 1 24 0 v6"></path>
-            <rect class="seal-lock" x="41" y="39" width="34" height="23" rx="5"></rect>
-            <circle cx="58" cy="49" r="3"></circle>
-            <path d="M58 52 v5"></path>
+            <path d="M51 43 v-4 a7 7 0 0 1 14 0 v4"></path>
+            <rect class="seal-lock" x="48" y="43" width="20" height="14" rx="3.5"></rect>
+            <circle cx="58" cy="49" r="1.8"></circle>
+            <rect class="seal-key" x="57.2" y="50.2" width="1.6" height="3.2" rx=".8"></rect>
             <rect class="seal-line" x="15" y="79" width="58" height="5" rx="2.5"></rect>
             <rect class="seal-line" x="15" y="90" width="38" height="5" rx="2.5"></rect>
           </g>
-          <g class="age-stamp" transform="translate(-26 -68)">
-            <rect width="52" height="24" rx="6"></rect>
-            <text x="26" y="16" text-anchor="middle">age</text>
+          <g class="age-engraving" transform={sideText(-58, -58, 0, 116, 116, 112)}>
+            <rect x="28" y="37" width="60" height="34" rx="6"></rect>
+            <text x="58" y="60" text-anchor="middle">age</text>
           </g>
         </g>
 
@@ -696,6 +700,9 @@ const frontText = (x: number, y: number, z: number, d: number, h: number) => {
   .seal-detail circle {
     fill: var(--sv-stroke);
   }
+  .seal-detail .seal-key {
+    fill: var(--sv-stroke);
+  }
   .seal-detail .seal-line {
     fill: var(--sv-seal-1);
   }
@@ -802,15 +809,16 @@ const frontText = (x: number, y: number, z: number, d: number, h: number) => {
     animation-delay: -0.9s;
   }
 
-  .age-stamp rect {
+  .age-engraving rect {
     fill: var(--sv-prim);
     stroke: var(--sv-stroke);
-    stroke-width: 2.5;
+    stroke-width: 2;
   }
-  .age-stamp text {
+  .age-engraving text {
     fill: #131f1a;
-    font-size: 13px;
-    font-weight: 650;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
   }
 
   .workflow-grid {
