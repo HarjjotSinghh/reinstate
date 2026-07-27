@@ -63,7 +63,7 @@ describe('landing-page terminal proof', () => {
     expect(terminal).toContain('••••••••');
     expect(terminal).toContain('age encrypted');
     expect(terminal).toContain('your S3 or R2 bucket');
-    expect(terminal).toContain('End-to-end encrypted');
+    expect(terminal).toContain('E2E encrypted');
     expect(passphrase).toContain(
       'ReadHiddenSecret(input, promptOut, "Encryption passphrase: ")',
     );
