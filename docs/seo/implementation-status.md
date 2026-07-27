@@ -29,7 +29,7 @@ phase. It deliberately does not call those external actions complete.
 | 1 | Executive summary and priorities | Implemented | this matrix, `docs/seo/README.md`, commit history |
 | 2 | SEO/AEO/ASEO definitions and limits | Reference | vendored `docs/seo/seo-aeo-aseo-playbook.md`; AI-search runbook rejects special-tag mythology |
 | 3 | Product positioning | Implemented | `website/src/data/product.ts`, homepage, `/about/reinstate`, README truth sync |
-| 4 | Search-intent model | Implemented | content schemas require `targetQuery` and `searchIntent`; question inventory and content roadmap |
+| 4 | Search-intent model | Implemented | centralized 13-value intent taxonomy, required `targetQuery`/`searchIntent`, direct mappings for agent/platform/security/answer pages, question inventory, and content roadmap |
 | 5 | Initial strengths audit | Implemented | preserved shared layout/SSR strengths and documented baselines |
 | 6 | Initial gaps and risks | Implemented | technical foundation plus later audit commits; unresolved external items listed below |
 | 7 | URL and information architecture | Implemented / staged | shallow hubs, docs, guides, integrations, use cases, comparisons, `/roadmap`, and `/research`; unsupported thin evidence pages remain gated |
@@ -48,7 +48,7 @@ phase. It deliberately does not call those external actions complete.
 | 15 | Documentation schema | Implemented | WebPage/TechArticle, breadcrumbs, visible authorship/status/dates; FAQ extraction |
 | 16 | Blog schema | Implemented | BlogPosting plus WebPage/breadcrumb entities and editorial dates |
 | 17 | Content collections | Implemented | validated docs/guides/blog metadata, dates, intent, related links, HowTo steps, safe canonical/social overrides |
-| 18 | Canonicals and redirects | Implemented | no-trailing-slash policy, generated canonical gate, permanent `/docs/overview` redirect |
+| 18 | Canonicals and redirects | Implemented | no-trailing-slash policy, generated canonical gate, permanent `/docs/overview` redirect, and deployment-config tests for destination existence, sitemap exclusion, permanence, uniqueness, chains, loops, and cycles |
 | 19 | Status codes and error page | Implemented | branded 404, preview noindex, local preview 404 tests, production smoke tooling |
 | 20 | Internal linking | Implemented | contextual homepage/integration/guide links; orphan and depth ≤3 gate (currently ≤2) |
 | 21 | Page titles | Implemented | unique/count/length generated-site checks |
@@ -85,7 +85,7 @@ phase. It deliberately does not call those external actions complete.
 | 42 | Citation-ready claims | Implemented | direct factual answers, source-linked comparison/compatibility pages, claim guards |
 | 43 | Freshness system | Implemented | changelog/RSS/dates, sourced compatibility data, automatic 60/120-day audit |
 | 44 | Crawler accessibility | Implemented / external | crawler policy and production smoke tool; verified CDN/WAF logs require production access |
-| 45 | Third-party corroboration | Operationalized / external | release distribution plan and GitHub metadata proposal; independent mentions cannot be created honestly in code |
+| 45 | Third-party corroboration | Operationalized / external | release distribution plan, exact GitHub metadata proposal, and reproducible 1280×640 repository preview are ready; independent mentions and owner-applied profile changes remain external |
 | 46 | AI-query testing | Operationalized / external | fixed query set, grading rubric, evidence template; provider runs must be manual |
 | 47 | AI referrals | Implemented / external | privacy-safe Plausible hooks and taxonomy; production property/data require owner configuration |
 
@@ -98,7 +98,7 @@ phase. It deliberately does not call those external actions complete.
 | 50 | Content brief template | Implemented | executable template plus Claude Code and Codex briefs |
 | 51 | Editorial quality | Implemented | schemas, contract tests, freshness/source/product-truth gates |
 | 52 | Programmatic SEO policy | Reference | no mass/thin generation; every route must pass uniqueness, value, link, and truth gates |
-| 53 | Launch distribution | Operationalized / external | `launch-distribution.md`; actual posts/submissions wait for deployment/release authorization |
+| 53 | Launch distribution | Operationalized / external | `launch-distribution.md` includes owner steps plus evidence-gated RC6 GitHub release and launch-post drafts; actual publication waits for acceptance and authorization |
 | 54 | Digital PR angles | Operationalized | evidence-backed angles and prohibited generic/unsupported positioning |
 | 55 | Linkable assets | Implemented / staged | compatibility JSON, roadmap, and primary-evidence hub are live-ready; benchmark results and new research assets retain publication gates |
 
@@ -126,7 +126,7 @@ phase. It deliberately does not call those external actions complete.
 | 68 | Custom Reinstate skill pack | Implemented | all nine portable skills installed and synchronized |
 | 69 | Technical implementation prompt | Reference | retained in vendored playbook; implemented by this branch |
 | 70 | New guide prompt | Reference / implemented | used for complete session and storage guides |
-| 71 | Release discoverability prompt | Operationalized | release skill, launch runbook, IndexNow, production smoke process |
+| 71 | Release discoverability prompt | Operationalized | release skill, synchronized RC6 draft packet, GitHub preview generator, launch runbook, IndexNow, and production smoke process |
 | 72 | Monthly audit prompt | Operationalized | monthly audit template and site-audit workflow |
 
 ## Sections 73–79: CI, launch checklists, and anti-patterns
