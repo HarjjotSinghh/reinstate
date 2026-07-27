@@ -54,7 +54,7 @@ phase. It deliberately does not call those external actions complete.
 | 21 | Page titles | Implemented | unique/count/length generated-site checks |
 | 22 | Meta descriptions | Implemented | required content fields and generated-site uniqueness/count checks |
 | 23 | Heading structure | Implemented | single-H1 and ordered heading validation plus rendered-browser audits |
-| 24 | Images and media | Implemented | responsive WebP docs media, intrinsic sizes, lazy loading, alt/caption checks, and 64 unique 1200×630 route cards for all 64 generated HTML pages |
+| 24 | Images and media | Implemented | responsive WebP docs media, intrinsic sizes, lazy loading, alt/caption checks, and 64 unique 1200×630 route cards using five semantically assigned artwork variants captured from the live landing page |
 | 25 | Core Web Vitals/performance | Implemented / external | 18-template static budgets and 16-template Lighthouse lab gate; homepage lab LCP remains a documented 2,852 ms warning; field CWV/INP require production data |
 | 26 | Accessibility | Implemented / manual follow-up | skip link, semantics, reduced motion, corrected contrast/underlines, Lighthouse accessibility 100 on 16 indexable templates, and a 390 px visualizer interaction check; `manual-browser-acceptance.md` preserves keyboard, theme, real-device, screen-reader, zoom, and no-JS release evidence gates |
 | 27 | JavaScript/rendering | Implemented | core content prerendered in HTML; static preview and Lighthouse inspect rendered output |
