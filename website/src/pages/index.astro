@@ -16,10 +16,103 @@ import { homepageSchema } from '../lib/schema';
   description={product.defaultDescription}
   jsonLd={homepageSchema()}
 >
-  <HeroExploded />
-  <ProblemExploded>
-    <TerminalProof />
-    <SecurityExploded />
-  </ProblemExploded>
-  <ExploreReinstate />
+  <div class="homepage">
+    <HeroExploded />
+    <ProblemExploded>
+      <TerminalProof />
+      <SecurityExploded />
+    </ProblemExploded>
+    <ExploreReinstate />
+  </div>
 </BaseLayout>
+
+<style>
+  .homepage {
+    --paper: #e4e7dd;
+    --paper-2: #f4f6ef;
+    --ink: oklch(0.19 0.022 158);
+    --ink-2: oklch(0.41 0.018 158);
+    --ink-3: #59625d;
+    --rule: oklch(0.8 0.012 145);
+    --prim: oklch(0.87 0.21 128);
+    --prim-deep: #386c12;
+    --on-prim: oklch(0.19 0.022 158);
+    --sv-stroke: #131f1a;
+    --sv-ink: oklch(0.19 0.022 158);
+    --sv-dim: oklch(0.56 0.014 158);
+    --sv-prim: #b8ff3c;
+    --sv-prim-deep: #4f8a1e;
+    --sv-shadow: #131f1a;
+    --sv-wall: #e4e7dd;
+    --sv-floor: #dde1d6;
+    --sv-floorline: #cbd1c2;
+    --sv-skirt: #c8cebd;
+    --sv-frame: #f4f6ef;
+    --sv-night: #16231f;
+    --sv-star: #cfe9a8;
+    --sv-city: #24352e;
+    --sv-rug: #c2cbb2;
+    --sv-furn-1: #c1c9ae;
+    --sv-furn-2: #a6b090;
+    --sv-furn-3: #8a9673;
+    --sv-dev-0: #55685d;
+    --sv-dev-1: #3b4c43;
+    --sv-dev-2: #2a3831;
+    --sv-dev-3: #1e2925;
+    --sv-seal-1: #41544a;
+    --sv-seal-2: #1f2c26;
+    --sv-seal-3: #121b17;
+    --sv-leaf-1: #7fae3f;
+    --sv-leaf-2: #5f8f2c;
+    --sv-pot-1: #aab38f;
+    --sv-pot-2: #93a176;
+    --sv-pot-3: #7a8a5e;
+    --sv-t-a: #b8ff3c;
+    --sv-t-b: #f2cd6d;
+    --sv-t-c: #8fc8ea;
+    --sv-t-d: #f2f4ea;
+    --font-display: 'Questrial', ui-sans-serif, system-ui, sans-serif;
+  }
+
+  :global(html.dark) .homepage {
+    --paper: #1d2723;
+    --paper-2: #26332e;
+    --ink: oklch(0.965 0.008 145);
+    --ink-2: oklch(0.76 0.014 150);
+    --ink-3: oklch(0.72 0.016 150);
+    --rule: oklch(0.31 0.02 158);
+    --prim: oklch(0.88 0.21 128);
+    --prim-deep: oklch(0.84 0.19 128);
+    --on-prim: oklch(0.17 0.04 132);
+    --sv-stroke: #0d1613;
+    --sv-ink: oklch(0.965 0.008 145);
+    --sv-dim: oklch(0.66 0.016 150);
+    --sv-prim: #c4ff56;
+    --sv-prim-deep: #a8e83c;
+    --sv-shadow: #050b09;
+    --sv-wall: #1d2723;
+    --sv-floor: #19231f;
+    --sv-floorline: #27322d;
+    --sv-skirt: #253029;
+    --sv-frame: #4a5a51;
+    --sv-night: #0a1310;
+    --sv-star: #c4ff56;
+    --sv-city: #16211c;
+    --sv-rug: #223029;
+    --sv-furn-1: #6d8073;
+    --sv-furn-2: #56685c;
+    --sv-furn-3: #435248;
+    --sv-dev-0: #6b7e72;
+    --sv-dev-1: #52655a;
+    --sv-dev-2: #3d4e45;
+    --sv-dev-3: #2e3c34;
+    --sv-seal-1: #486054;
+    --sv-seal-2: #33453c;
+    --sv-seal-3: #23312b;
+    --sv-leaf-1: #7fae3f;
+    --sv-leaf-2: #5f8f2c;
+    --sv-pot-1: #8d9670;
+    --sv-pot-2: #757e5b;
+    --sv-pot-3: #5f6849;
+  }
+</style>

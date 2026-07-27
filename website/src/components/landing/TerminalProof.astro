@@ -455,27 +455,6 @@ const sideText = (x: number, y: number, z: number, w: number, d: number, h: numb
 
 <style>
   .terminal-proof {
-    /* Scene tokens aligned with HeroExploded / ProblemExploded.
-       Outlines stay near-black in both themes; solids lift in dark mode. */
-    --sv-stroke: #131f1a;
-    --sv-shadow: #131f1a;
-    --sv-prim: #b8ff3c;
-    --sv-prim-deep: #4f8a1e;
-    --sv-night: #16231f;
-
-    --sv-furn-1: #c1c9ae;
-    --sv-furn-2: #a6b090;
-    --sv-furn-3: #8a9673;
-
-    --sv-dev-0: #55685d;
-    --sv-dev-1: #3b4c43;
-    --sv-dev-2: #2a3831;
-    --sv-dev-3: #1e2925;
-
-    --sv-seal-1: #41544a;
-    --sv-seal-2: #1f2c26;
-    --sv-seal-3: #121b17;
-
     --proof-outline: var(--sv-stroke);
     --terminal-bg: #0c1512;
     --terminal-ink: #e9efe3;
@@ -490,27 +469,6 @@ const sideText = (x: number, y: number, z: number, w: number, d: number, h: numb
   }
 
   :global(html.dark) .terminal-proof {
-    /* dark is not "invert the outlines"; keep strokes near-black */
-    --sv-stroke: #0d1613;
-    --sv-shadow: #050b09;
-    --sv-prim: #c4ff56;
-    --sv-prim-deep: #a8e83c;
-    --sv-night: #0a1310;
-
-    --sv-furn-1: #6d8073;
-    --sv-furn-2: #56685c;
-    --sv-furn-3: #435248;
-
-    --sv-dev-0: #6b7e72;
-    --sv-dev-1: #52655a;
-    --sv-dev-2: #3d4e45;
-    --sv-dev-3: #2e3c34;
-
-    --sv-seal-1: #486054;
-    --sv-seal-2: #33453c;
-    --sv-seal-3: #23312b;
-
-    --proof-outline: var(--sv-stroke);
     --terminal-bg: #0a110f;
     --terminal-ink: #edf3e9;
     --terminal-muted: #b9c6ba;

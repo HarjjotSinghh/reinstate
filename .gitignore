@@ -58,6 +58,7 @@ npm-debug.log*
 dist/
 .playwright-mcp/
 website/artifacts/indexnow/
+website/artifacts/lighthouse-*/
 website/artifacts/production-discovery/*-immutable.json
 website/artifacts/production-discovery/*-production.json
 
