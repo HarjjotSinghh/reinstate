@@ -34,6 +34,7 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+[Rr]2.txt
 *.pem
 *.key
 auth.json
