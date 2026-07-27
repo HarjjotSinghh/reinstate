@@ -55,11 +55,13 @@ const docs = defineCollection({
   loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/docs' }),
   schema: z
     .object({
-      title: z.string().min(2).max(70),
+      title: z.string().min(10).max(70),
       description: z.string().min(70).max(180),
       order: z.number().int().positive(),
       author: z.string().min(2).max(80),
       status: z.enum(['current', 'planned', 'deprecated']),
+      schemaType: z.enum(['web-page', 'tech-article']),
+      version: z.string().min(1).max(40),
       updatedAt: z.coerce.date(),
       tags: z.array(z.string().min(1)).min(1),
       targetQuery: z.string().min(3),

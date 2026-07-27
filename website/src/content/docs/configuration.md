@@ -4,6 +4,8 @@ description: "Configure a Reinstate profile, S3-compatible storage coordinates, 
 order: 10
 author: "Harjot Singh Rana"
 status: current
+schemaType: web-page
+version: "v0.1.0-rc.6"
 updatedAt: 2026-07-27
 tags: ["configuration", "project-mapping", "profile-id", "s3", "keyring"]
 targetQuery: "configure Reinstate session sync"

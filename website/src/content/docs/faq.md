@@ -4,6 +4,8 @@ description: "Get direct answers about Reinstate's current session-sync scope, s
 order: 7
 author: "Harjot Singh Rana"
 status: current
+schemaType: web-page
+version: "v0.1.0-rc.6"
 updatedAt: 2026-07-27
 tags: ["faq", "session-sync", "claude-code", "codex", "security"]
 targetQuery: "what is Reinstate"

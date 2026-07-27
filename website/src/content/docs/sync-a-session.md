@@ -4,6 +4,8 @@ description: "Select, dry-run, encrypt, and push one supported Claude Code or Co
 order: 12
 author: "Harjot Singh Rana"
 status: current
+schemaType: web-page
+version: "v0.1.0-rc.6"
 updatedAt: 2026-07-27
 tags: ["push", "session-sync", "claude-code", "codex", "dry-run"]
 targetQuery: "push a coding agent session with Reinstate"

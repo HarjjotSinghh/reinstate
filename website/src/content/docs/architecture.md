@@ -4,6 +4,8 @@ description: "Understand Reinstate's adapters, structural path remapping, age en
 order: 2
 author: "Harjot Singh Rana"
 status: current
+schemaType: tech-article
+version: "v0.1.0-rc.6"
 updatedAt: 2026-07-27
 tags: ["architecture", "session-sync", "encryption", "path-remapping", "s3"]
 targetQuery: "how Reinstate works"

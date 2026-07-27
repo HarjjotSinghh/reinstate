@@ -4,6 +4,8 @@ description: "Learn how Reinstate adapters discover, normalize, and restore Clau
 order: 3
 author: "Harjot Singh Rana"
 status: current
+schemaType: tech-article
+version: "v0.1.0-rc.6"
 updatedAt: 2026-07-27
 tags: ["adapters", "claude-code", "codex", "same-vendor-resume"]
 targetQuery: "Reinstate supported coding agents"

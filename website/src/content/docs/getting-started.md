@@ -4,6 +4,8 @@ description: "Install Reinstate, configure encrypted S3-compatible storage, and 
 order: 1
 author: "Harjot Singh Rana"
 status: current
+schemaType: web-page
+version: "v0.1.0-rc.6"
 updatedAt: 2026-07-27
 tags: ["installation", "session-sync", "claude-code", "codex", "s3"]
 targetQuery: "how to sync coding-agent sessions across devices"

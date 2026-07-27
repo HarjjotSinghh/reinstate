@@ -4,6 +4,8 @@ description: "Understand Reinstate's S3-compatible storage fields, object layout
 order: 11
 author: "Harjot Singh Rana"
 status: current
+schemaType: web-page
+version: "v0.1.0-rc.6"
 updatedAt: 2026-07-27
 tags: ["storage", "s3", "cloudflare-r2", "encryption", "least-privilege"]
 targetQuery: "Reinstate session storage configuration"

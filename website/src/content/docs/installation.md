@@ -4,6 +4,8 @@ description: "Install the pinned Reinstate release candidate on macOS, native Wi
 order: 9
 author: "Harjot Singh Rana"
 status: current
+schemaType: web-page
+version: "v0.1.0-rc.6"
 updatedAt: 2026-07-27
 tags: ["installation", "cli", "macos", "windows", "wsl2"]
 targetQuery: "install Reinstate CLI"

@@ -59,17 +59,9 @@ const { id = 'waitlist-form', compact = false } = Astro.props;
         status.classList.add('is-ok');
         emailInput.value = '';
         const analyticsWindow = window as Window & {
-          plausible?: (
-            eventName: string,
-            options: { props: { location: string; target: string } },
-          ) => void;
+          reinstateTrack?: (eventName: string, target: string) => boolean;
         };
-        analyticsWindow.plausible?.('waitlist_submit', {
-          props: {
-            location: window.location.pathname,
-            target: form.id,
-          },
-        });
+        analyticsWindow.reinstateTrack?.('waitlist_submit', 'waitlist');
       } catch {
         status.textContent = 'Network error. Check your connection and try again.';
         status.classList.add('is-error');

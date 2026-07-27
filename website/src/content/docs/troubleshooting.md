@@ -4,6 +4,8 @@ description: "Fix installation, path remapping, passphrase, remote manifest, con
 order: 8
 author: "Harjot Singh Rana"
 status: current
+schemaType: web-page
+version: "v0.1.0-rc.6"
 updatedAt: 2026-07-27
 tags: ["troubleshooting", "session-sync", "path-remapping", "passphrase", "codex"]
 targetQuery: "fix Reinstate session sync"

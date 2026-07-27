@@ -4,6 +4,8 @@ description: "Explore the planned non-secret desired-state model for rendering M
 order: 5
 author: "Harjot Singh Rana"
 status: planned
+schemaType: tech-article
+version: "roadmap"
 updatedAt: 2026-07-27
 tags: ["roadmap", "mcp", "skills", "plugins", "agent-configuration"]
 targetQuery: "sync MCP servers and coding-agent configuration"

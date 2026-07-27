@@ -4,6 +4,8 @@ description: "Review Reinstate RC6 limitations for agents, operating systems, na
 order: 14
 author: "Harjot Singh Rana"
 status: current
+schemaType: web-page
+version: "v0.1.0-rc.6"
 updatedAt: 2026-07-27
 tags: ["limitations", "release-candidate", "compatibility", "same-vendor-resume", "roadmap"]
 targetQuery: "Reinstate limitations"
