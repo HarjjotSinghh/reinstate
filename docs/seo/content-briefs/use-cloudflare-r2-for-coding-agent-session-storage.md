@@ -20,8 +20,8 @@
 - Secondary questions: endpoint format; required token permissions; region;
   encrypted object layout; verification and cleanup.
 - Search intent: how-to
-- Expected next action: pass the storage probe and synthetic self-test, then
-  inspect a one-session push dry-run.
+- Expected next action: pass the real `init` storage probe and the separate
+  local synthetic self-test, then inspect a one-session push dry-run.
 - Existing-page overlap reviewed: `/docs/storage` owns common semantics; this
   guide owns R2 coordinates and provider-specific cautions.
 
@@ -44,8 +44,9 @@
 
 - H1: How to use R2 for encrypted coding-agent session storage
 - Direct answer: create a private R2 bucket and scoped API token, configure the
-  account service endpoint separately from the bucket, verify synthetic
-  storage, then dry-run a selected encrypted push.
+  account service endpoint separately from the bucket, pass Reinstate's real
+  storage probe and local synthetic self-test, then dry-run a selected
+  encrypted push.
 - Structure: prerequisites; key points; bucket/token; endpoint; init; self-test;
   push; objects; parameters; failures; rollback; FAQ.
 - Original value: calls out the endpoint/bucket distinction that otherwise
@@ -71,4 +72,3 @@
 - [x] Same-vendor and pre-1.0 limitations remain visible
 - [x] Visible steps and HowTo schema remain identical
 - [x] Route-specific social card and local discoverability gates pass
-

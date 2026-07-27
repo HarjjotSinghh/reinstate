@@ -53,6 +53,7 @@ describe('central product-truth drift guard', () => {
         path.pathname.endsWith('/data/product.ts') ||
         path.pathname.endsWith('/data/releases.ts') ||
         path.pathname.endsWith('/data/compatibility.json') ||
+        path.pathname.endsWith('/data/agent-version-history.ts') ||
         path.pathname.endsWith('/pages/changelog.astro') ||
         path.pathname.endsWith('/pages/research/index.astro')
       ) {
@@ -78,5 +79,22 @@ describe('central product-truth drift guard', () => {
     }
 
     expect(stale).toEqual([]);
+  });
+
+  it('keeps the doctor self-test distinct from real remote-storage evidence', async () => {
+    const reference = await readFile(
+      new URL('../content/docs/cli-reference.md', import.meta.url),
+      'utf8',
+    );
+    const doctorSection =
+      reference.match(
+        /### `rein doctor`([\s\S]*?)(?=\n### `rein setup check`)/,
+      )?.[1] ?? '';
+
+    expect(doctorSection).toContain('in-memory sync');
+    expect(doctorSection.toLowerCase()).toMatch(
+      /this\s+command does not prove remote storage access/,
+    );
+    expect(doctorSection).not.toContain('configured storage without');
   });
 });

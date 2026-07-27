@@ -112,16 +112,17 @@ make the version check pass.
 ### `rein doctor`
 
 **Purpose:** produce redacted diagnostics; `--self-test` additionally exercises
-synthetic encryption and configured storage without reading a real transcript.
+synthetic encryption, in-memory sync, adapter export/restore, and atomic local
+writes without reading a real transcript or contacting configured storage.
 
 ```sh
 rein doctor
 rein doctor --self-test --json
 ```
 
-**Expected result:** the report identifies the Reinstate home, configuration
-state, keyring and adapter checks, and a pass/fail summary. A self-test reports
-synthetic encryption and storage evidence without exposing credentials.
+**Expected result:** the report identifies the redacted Reinstate home,
+configuration state, keyring and adapter checks, and a pass/fail summary. A
+self-test reports a synthetic local round trip without exposing credentials.
 
 **Parameters:** `--self-test` enables the synthetic round trip; `--json`
 returns structured diagnostics.
@@ -130,12 +131,14 @@ returns structured diagnostics.
 Native Windows, WSL2, and macOS may therefore report different adapter or
 keyring evidence while using the same command syntax.
 
-**Failure modes:** missing configuration, unavailable keyring, inaccessible
-storage, or unsupported agent layout produces a failed check and a nonzero
-exit. Treat redaction failure as a security defect.
+**Failure modes:** missing configuration, unavailable keyring, unsupported
+agent layout, local filesystem failure, crypto failure, or synthetic
+export/restore mismatch produces a failed check and a nonzero exit. This
+command does not prove remote storage access; use `init`, `status`, or a scoped
+dry-run for that evidence. Treat redaction failure as a security defect.
 
 **Undo or recovery:** diagnostics are read-only apart from temporary,
-cleaned-up self-test storage objects. Correct the named prerequisite and rerun;
+cleaned-up local self-test files. Correct the named prerequisite and rerun;
 never publish unredacted private paths or infrastructure identifiers.
 
 ### `rein setup check`

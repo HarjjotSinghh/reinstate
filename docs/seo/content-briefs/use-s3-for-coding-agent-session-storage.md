@@ -20,8 +20,9 @@
 - Secondary questions: required operations; encryption boundary; retention;
   bucket versioning; what appears remotely; how to verify.
 - Search intent: how-to
-- Expected next action: configure a private bucket and pass a redacted storage
-  self-test before transferring a synthetic session.
+- Expected next action: configure a private bucket, pass the real `init`
+  storage probe and the separate redacted local self-test, then dry-run a
+  synthetic session transfer.
 - Existing-page overlap reviewed: `/docs/storage` owns the provider-neutral
   contract; this guide owns the AWS-specific procedure.
 
@@ -44,8 +45,9 @@
 
 - H1: How to use S3 for encrypted coding-agent session storage
 - Direct answer: create a private bucket, grant only required object
-  operations, initialize Reinstate with its service coordinates, run a
-  synthetic self-test, then dry-run one scoped push.
+  operations, initialize Reinstate with its service coordinates so the real
+  storage probe passes, run the local synthetic self-test, then dry-run one
+  scoped push.
 - Structure: prerequisites; key points; bucket/policy; init; verify; dry-run;
   expected objects; parameters; failure modes; rollback; retention; FAQ.
 - Original value: maps Reinstate's exact encrypted object layout and operation
@@ -72,4 +74,3 @@
 - [x] Current limitations and user-owned retention responsibility are visible
 - [x] HowTo schema mirrors visible steps
 - [x] Route-specific social card and local discoverability gates pass
-
