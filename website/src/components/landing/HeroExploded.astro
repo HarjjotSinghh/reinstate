@@ -386,27 +386,25 @@ const floorGrid = [
           <rect x="104" y="256" width="316" height="14" rx="3" fill="var(--sv-frame)" stroke={SK} stroke-width="3" />
         </g>
 
-        {/* framed print: a minimal landscape, the daylight counterpart to the
-            night city in the window opposite. Shifted right for clearance. */}
+        {/* framed print: landscape matte — sky + hills, always readable in dark */}
         <g class="poster" transform="translate(70 0)">
           <rect x="1268" y="60" width="220" height="190" rx="5" fill="var(--sv-frame)" stroke={SK} stroke-width="3" />
-          <rect x="1282" y="74" width="192" height="162" fill="var(--sv-night)" />
+          <rect x="1282" y="74" width="192" height="162" fill="var(--sv-furn-1)" />
           <g clip-path="url(#art)">
-            <circle cx="1378" cy="128" r="40" fill={PRIM} stroke={SK} stroke-width="4" />
-            {/* both hills fully self-contained inside art rect (1282–1474 × 74–236):
-                rounded peaks, both outer slopes land on the ground line — no hard clips */}
+            <rect x="1282" y="74" width="192" height="100" fill="var(--sv-floor)" />
+            <circle cx="1378" cy="118" r="36" fill={PRIM} stroke={SK} stroke-width="3.5" />
             <path
               d="M1288 236 C 1288 236 1305 188 1340 175 C 1375 162 1400 188 1410 236 Z"
               fill="var(--sv-leaf-2)"
               stroke={SK}
-              stroke-width="4"
+              stroke-width="3.5"
               stroke-linejoin="round"
             />
             <path
               d="M1355 236 C 1355 236 1380 178 1415 168 C 1450 158 1468 200 1470 236 Z"
               fill="var(--sv-leaf-1)"
               stroke={SK}
-              stroke-width="4"
+              stroke-width="3.5"
               stroke-linejoin="round"
             />
           </g>

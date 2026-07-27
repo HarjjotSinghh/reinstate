@@ -25,15 +25,16 @@ describe('landing-page terminal proof', () => {
     expect(terminal).toContain('class="sealed-checkpoint"');
   });
 
-  it('keeps the full transfer illustration in its own band above the terminals', () => {
-    expect(terminal).toContain('<figure class="handoff-illustration">');
-    expect(terminal.indexOf('class="handoff-illustration"')).toBeLessThan(
-      terminal.indexOf('class="workflow-grid"'),
+  it('puts terminals first and keeps a compact transfer illustration secondary', () => {
+    expect(terminal).toContain('<figure class="handoff-illustration"');
+    expect(terminal.indexOf('class="workflow-grid"')).toBeLessThan(
+      terminal.indexOf('class="handoff-illustration"'),
     );
 
     const artStyles = terminal.match(/\.handoff-art\s*\{([^}]*)\}/)?.[1] ?? '';
     expect(artStyles).not.toMatch(/position:\s*absolute/);
-    expect(artStyles).not.toMatch(/opacity:\s*0\./);
+    const figureStyles = terminal.match(/\.handoff-illustration\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(figureStyles).toMatch(/max-width/);
   });
 
   it('shows the released four-command Claude Code handoff', () => {
@@ -46,10 +47,11 @@ describe('landing-page terminal proof', () => {
       expect(terminal).toContain(command);
     }
 
-    expect(terminal).toContain(
-      'pushed 1 snapshot(s), skipped 0 unchanged, dry_run=false',
-    );
-    expect(terminal).toContain('pulled 1 snapshot(s) dry_run=false');
+    expect(terminal).toContain('pushed 1 snapshot, skipped 0 unchanged');
+    expect(terminal).toContain('pulled 1 snapshot');
+    expect(terminal).not.toContain('dry_run=false');
+    expect(terminal).not.toContain('snapshot(s)');
+    expect(terminal).toContain('claude  ses_7f3a  reinstate  2.1 MB  4h ago');
     expect(commands).toContain(
       'pushed %d snapshot(s), skipped %d unchanged, dry_run=%v',
     );
@@ -61,6 +63,7 @@ describe('landing-page terminal proof', () => {
     expect(terminal).toContain('••••••••');
     expect(terminal).toContain('age encrypted');
     expect(terminal).toContain('your S3 or R2 bucket');
+    expect(terminal).toContain('End-to-end encrypted');
     expect(passphrase).toContain(
       'ReadHiddenSecret(input, promptOut, "Encryption passphrase: ")',
     );
