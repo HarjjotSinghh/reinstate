@@ -1,5 +1,7 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
+import { extractFaqEntries } from './faq';
+import { faqPageSchema } from './schema';
 
 const docsDir = new URL('../content/docs/', import.meta.url);
 const intents = new Set([
@@ -47,5 +49,25 @@ describe('documentation content metadata', () => {
       expect(field(frontmatter, 'noindex'), `${file} noindex`).toMatch(/^(true|false)$/);
       expect(prose, `${file} must let DocsLayout own the single H1`).not.toMatch(/^#\s/m);
     }
+  });
+
+  it('derives FAQPage markup from every visible question and answer', async () => {
+    const source = await readFile(new URL('faq.md', docsDir), 'utf8');
+    const visibleQuestions = [
+      ...source.replace(/^---\n[\s\S]*?\n---\n/, '').matchAll(/^##\s+(.+\?)\s*$/gm),
+    ].map((match) => match[1]);
+    const entries = extractFaqEntries(source);
+    const schema = faqPageSchema('/docs/faq', entries);
+    const mainEntity = schema.mainEntity as Array<{
+      name: string;
+      acceptedAnswer: { text: string };
+    }>;
+
+    expect(entries.length).toBeGreaterThanOrEqual(20);
+    expect(entries).toHaveLength(visibleQuestions.length);
+    expect(mainEntity.map((entry) => entry.name)).toEqual(
+      entries.map((entry) => entry.question),
+    );
+    expect(mainEntity.every((entry) => entry.acceptedAnswer.text.length > 10)).toBe(true);
   });
 });

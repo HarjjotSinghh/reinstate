@@ -11,6 +11,16 @@ const personRef = { '@id': `${product.siteUrl}/#maintainer` };
 const websiteRef = { '@id': `${product.siteUrl}/#website` };
 const softwareRef = { '@id': `${product.siteUrl}/#software` };
 
+function socialImageSchema(path: string, title: string): SchemaNode {
+  return {
+    '@type': 'ImageObject',
+    url: siteUrl(ogImagePath(path)),
+    width: 1200,
+    height: 630,
+    caption: `Branded Reinstate social card for ${title}`,
+  };
+}
+
 export function homepageSchema(): SchemaNode[] {
   return [
     {
@@ -41,6 +51,11 @@ export function homepageSchema(): SchemaNode[] {
       softwareVersion: product.currentRelease,
       isAccessibleForFree: true,
       image: siteUrl(product.defaultOgImage),
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'USD',
+      },
       downloadUrl: product.releasesUrl,
       softwareHelp: siteUrl('/docs'),
       author: personRef,
@@ -91,12 +106,7 @@ export function webPageSchema({
     url,
     name: title,
     description,
-    primaryImageOfPage: {
-      '@type': 'ImageObject',
-      url: siteUrl(ogImagePath(path)),
-      width: 1200,
-      height: 630,
-    },
+    primaryImageOfPage: socialImageSchema(path, title),
     ...(updatedAt
       ? {
           dateModified:
@@ -143,12 +153,7 @@ export function techArticleSchema({
       : {}),
     dateModified:
       updatedAt instanceof Date ? updatedAt.toISOString() : new Date(updatedAt).toISOString(),
-    image: {
-      '@type': 'ImageObject',
-      url: siteUrl(ogImagePath(path)),
-      width: 1200,
-      height: 630,
-    },
+    image: socialImageSchema(path, title),
     author: personRef,
     isPartOf: websiteRef,
     about: softwareRef,
@@ -186,12 +191,7 @@ export function blogPostingSchema({
         : new Date(publishedAt).toISOString(),
     dateModified:
       updatedAt instanceof Date ? updatedAt.toISOString() : new Date(updatedAt).toISOString(),
-    image: {
-      '@type': 'ImageObject',
-      url: siteUrl(ogImagePath(path)),
-      width: 1200,
-      height: 630,
-    },
+    image: socialImageSchema(path, title),
     author: personRef,
     publisher: personRef,
     isPartOf: websiteRef,
@@ -199,5 +199,27 @@ export function blogPostingSchema({
     mainEntityOfPage: url,
     inLanguage: 'en',
     ...(tags.length > 0 ? { keywords: tags } : {}),
+  };
+}
+
+export interface FaqEntry {
+  question: string;
+  answer: string;
+}
+
+export function faqPageSchema(path: string, entries: FaqEntry[]): SchemaNode {
+  return {
+    '@type': 'FAQPage',
+    '@id': `${siteUrl(path)}#faq`,
+    url: siteUrl(path),
+    inLanguage: 'en',
+    mainEntity: entries.map((entry) => ({
+      '@type': 'Question',
+      name: entry.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: entry.answer,
+      },
+    })),
   };
 }

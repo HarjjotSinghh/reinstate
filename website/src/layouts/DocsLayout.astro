@@ -8,6 +8,7 @@ import {
   breadcrumbSchema,
   techArticleSchema,
   webPageSchema,
+  type SchemaNode,
 } from '../lib/schema';
 
 interface Props {
@@ -20,6 +21,7 @@ interface Props {
   tags?: string[];
   noindex?: boolean;
   article?: boolean;
+  extraJsonLd?: SchemaNode | SchemaNode[];
 }
 
 const {
@@ -32,6 +34,7 @@ const {
   tags = [],
   noindex = false,
   article = true,
+  extraJsonLd = [],
 } = Astro.props;
 const docs = await getOrderedDocs();
 const path = Astro.url.pathname.replace(/\/$/, '') || '/docs';
@@ -63,6 +66,7 @@ const jsonLd = [
         updatedAt: updatedDate,
       }),
   breadcrumbSchema(breadcrumbs),
+  ...(Array.isArray(extraJsonLd) ? extraJsonLd : [extraJsonLd]),
 ];
 ---
 

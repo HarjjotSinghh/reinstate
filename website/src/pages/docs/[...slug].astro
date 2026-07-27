@@ -10,6 +10,8 @@ import {
   docTitle,
   docDescription,
 } from '../../lib/docs';
+import { extractFaqEntries } from '../../lib/faq';
+import { faqPageSchema } from '../../lib/schema';
 
 export async function getStaticPaths() {
   const docs = await getOrderedDocs();
@@ -32,6 +34,10 @@ const { Content } = await render(entry);
 const title = docTitle(entry);
 const description = docDescription(entry);
 const path = `/docs/${docSlug(entry)}`;
+const extraJsonLd =
+  slug === 'faq'
+    ? faqPageSchema(path, extractFaqEntries(entry.body ?? ''))
+    : [];
 ---
 
 <DocsLayout
@@ -43,6 +49,7 @@ const path = `/docs/${docSlug(entry)}`;
   updatedAt={entry.data.updatedAt}
   tags={entry.data.tags}
   noindex={entry.data.noindex}
+  {extraJsonLd}
 >
   <Content />
 </DocsLayout>
