@@ -134,6 +134,7 @@ export function techArticleSchema({
   publishedAt,
   updatedAt,
   tags = [],
+  articleSection,
 }: {
   path: string;
   title: string;
@@ -141,6 +142,7 @@ export function techArticleSchema({
   publishedAt?: Date | string;
   updatedAt: Date | string;
   tags?: string[];
+  articleSection?: string;
 }): SchemaNode {
   const url = siteUrl(path);
   return {
@@ -165,6 +167,7 @@ export function techArticleSchema({
     about: softwareRef,
     mainEntityOfPage: url,
     inLanguage: 'en',
+    ...(articleSection ? { articleSection } : {}),
     ...(tags.length > 0 ? { keywords: tags } : {}),
   };
 }
@@ -209,6 +212,7 @@ export function blogPostingSchema({
   publishedAt,
   updatedAt,
   tags = [],
+  articleSection,
 }: {
   path: string;
   title: string;
@@ -216,6 +220,7 @@ export function blogPostingSchema({
   publishedAt: Date | string;
   updatedAt: Date | string;
   tags?: string[];
+  articleSection?: string;
 }): SchemaNode {
   const url = siteUrl(path);
   return {
@@ -237,6 +242,7 @@ export function blogPostingSchema({
     about: softwareRef,
     mainEntityOfPage: url,
     inLanguage: 'en',
+    ...(articleSection ? { articleSection } : {}),
     ...(tags.length > 0 ? { keywords: tags } : {}),
   };
 }

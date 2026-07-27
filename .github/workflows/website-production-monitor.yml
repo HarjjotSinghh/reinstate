@@ -1,0 +1,43 @@
+name: Website production discovery monitor
+
+on:
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: website-production-discovery
+  cancel-in-progress: false
+
+jobs:
+  discovery:
+    name: Production crawl and crawler-policy smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22.12.0"
+
+      - name: Check production discovery
+        working-directory: website
+        run: >-
+          node scripts/check-production-discovery.mjs
+          --base-url https://reinstate.dev
+          --output artifacts/production-discovery/scheduled.json
+
+      - name: Upload redacted evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: production-discovery-${{ github.run_id }}
+          path: website/artifacts/production-discovery/scheduled.json
+          if-no-files-found: warn
+          retention-days: 30

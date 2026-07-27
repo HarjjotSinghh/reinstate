@@ -83,6 +83,7 @@ const REQUIRED_SCHEMA_FIELDS = {
     'author',
     'publisher',
     'mainEntityOfPage',
+    'articleSection',
   ],
   BreadcrumbList: ['itemListElement'],
   FAQPage: ['@id', 'url', 'mainEntity'],

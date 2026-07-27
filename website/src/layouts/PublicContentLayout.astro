@@ -80,6 +80,10 @@ const schema: SchemaNode[] = [
             <dt>Release status</dt>
             <dd>{product.releaseStatus}</dd>
           </div>
+          <div>
+            <dt>Owner</dt>
+            <dd><a href={product.maintainer.url}>{product.maintainer.name}</a></dd>
+          </div>
         </dl>
       </div>
     </header>
@@ -145,7 +149,7 @@ const schema: SchemaNode[] = [
 
   .verification {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     max-width: 54rem;
     margin: clamp(2rem, 5vw, 3.5rem) 0 0;
     border-block: 1px solid var(--rule);

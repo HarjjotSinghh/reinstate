@@ -2,6 +2,10 @@
   "schemaVersion": 1,
   "reinstateVersion": "v0.1.0-rc.6",
   "lastReviewed": "2026-07-27",
+  "owner": {
+    "name": "Harjot Singh Rana",
+    "url": "https://harjot.co"
+  },
   "fixtureCommit": "4a7ccac3bf9b43feff701938d29859460aef817d",
   "agents": [
     {

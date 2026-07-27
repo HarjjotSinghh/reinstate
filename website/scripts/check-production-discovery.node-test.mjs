@@ -55,6 +55,7 @@ function healthyFetch({ transientRobotsFailure = false } = {}) {
 Allow: /
 Disallow: /api/
 Disallow: /preview/
+Disallow: /drafts/
 
 User-agent: OAI-SearchBot
 Allow: /
@@ -100,6 +101,12 @@ Sitemap: ${PRODUCTION}/sitemap-index.xml
     }
     if (url.pathname === '/sitemap-0.xml') {
       return response(sitemap, 'application/xml');
+    }
+    if (url.pathname === '/rss.xml') {
+      return response('<rss><channel><title>Reinstate</title></channel></rss>', 'application/rss+xml');
+    }
+    if (url.pathname === '/llms.txt') {
+      return response('# Reinstate\n', 'text/plain');
     }
     if (url.pathname === '/.well-known/reinstate-discovery-smoke-missing') {
       return response(null, 'text/html', 404);
@@ -241,6 +248,9 @@ test('reports unsafe sitemap, canonical, robots, image, missing-route, and crawl
           : `<urlset><url><loc>${PRODUCTION}/</loc></url><url><loc>${PRODUCTION}/api/waitlist</loc></url></urlset>`,
         'application/xml',
       );
+    }
+    if (url.pathname === '/rss.xml' || url.pathname === '/llms.txt') {
+      return response(secretBody, 'text/plain', 404);
     }
     if (url.pathname === '/.well-known/reinstate-discovery-smoke-missing') {
       return response(secretBody, 'text/html', 200);

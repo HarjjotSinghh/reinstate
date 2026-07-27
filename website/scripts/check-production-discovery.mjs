@@ -40,6 +40,18 @@ export const DEFAULT_LAUNCH_PATHS = [
 
 const CRAWLER_USER_AGENTS = ['OAI-SearchBot', 'PerplexityBot'];
 const CRAWLER_PATHS = ['/', '/docs', '/robots.txt', '/sitemap-index.xml'];
+const DISCOVERY_ASSETS = [
+  {
+    path: '/rss.xml',
+    contentTypes: ['application/rss+xml', 'application/xml', 'text/xml'],
+    marker: /<rss\b/i,
+  },
+  {
+    path: '/llms.txt',
+    contentTypes: ['text/plain'],
+    marker: /\bReinstate\b/,
+  },
+];
 const MISSING_PATH = '/.well-known/reinstate-discovery-smoke-missing';
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_CONCURRENCY = 4;
@@ -828,13 +840,14 @@ export async function runProductionDiscoverySmoke({
     }
     if (
       robotsAllows(groups, STANDARD_USER_AGENT, '/api/') ||
-      robotsAllows(groups, STANDARD_USER_AGENT, '/preview/')
+      robotsAllows(groups, STANDARD_USER_AGENT, '/preview/') ||
+      robotsAllows(groups, STANDARD_USER_AGENT, '/drafts/')
     ) {
       addFinding(
         findings,
         robotsResult.check,
         'ROBOTS_PRIVATE_PATHS',
-        'Wildcard robots policy must disallow /api/ and /preview/.',
+        'Wildcard robots policy must disallow /api/, /preview/, and /drafts/.',
       );
     }
   }
@@ -892,6 +905,41 @@ export async function runProductionDiscoverySmoke({
         : ['application/xml', 'text/xml'],
     );
   }
+
+  await mapLimit(DISCOVERY_ASSETS, concurrency, async (asset) => {
+    const { check, response } = await request({
+      category: 'discovery-asset',
+      id: `discovery:get:${asset.path}`,
+      path: asset.path,
+    });
+    if (
+      !requireStatus(findings, check, response, [200]) ||
+      !requireType(findings, check, response, asset.contentTypes)
+    ) {
+      await discardResponse(response);
+      return;
+    }
+    let body = '';
+    try {
+      body = await responseText(response, MAX_TEXT_BYTES);
+    } catch {
+      addFinding(
+        findings,
+        check,
+        'BODY_LIMIT',
+        `Discovery asset exceeds the response-size limit: ${asset.path}.`,
+      );
+      return;
+    }
+    if (!asset.marker.test(body)) {
+      addFinding(
+        findings,
+        check,
+        'DISCOVERY_ASSET_CONTENT',
+        `Discovery asset is missing its expected marker: ${asset.path}.`,
+      );
+    }
+  });
 
   await mapLimit(safeLaunchPaths, concurrency, async (path) => {
     const { check, response } = await request({

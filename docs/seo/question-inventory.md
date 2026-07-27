@@ -34,7 +34,7 @@ Status meanings:
 | --- | --- | --- | --- |
 | W01 | How do I sync a Claude Code session across devices? | `/guides/sync-claude-code-sessions-across-devices` | Evidence-gated |
 | W02 | How do I move a Codex session to another computer? | `/guides/sync-codex-sessions-across-devices` | Evidence-gated |
-| W03 | How do I continue an AI coding session on a laptop? | `/use-cases/work-and-personal-computers` | Implemented |
+| W03 | How do I continue an AI coding session on a laptop? | `/use-cases/desktop-and-laptop` | Implemented |
 | W04 | Can I move a session from macOS to Windows? | `/use-cases/macos-and-windows` | Evidence-gated |
 | W05 | What happens when project paths differ? | `/docs/architecture` | Implemented |
 | W06 | Can I restore without copying the whole repository? | `/docs/faq` | Implemented |
@@ -91,4 +91,3 @@ For every release or monthly audit:
 5. After deployment, run the fixed provider query set in
    `ai-search-query-baseline.md`; do not infer citation success from local HTML.
 6. Record incorrect or stale answers as content defects, not ranking problems.
-

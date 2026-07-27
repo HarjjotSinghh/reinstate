@@ -2,6 +2,7 @@ User-agent: *
 Allow: /
 Disallow: /api/
 Disallow: /preview/
+Disallow: /drafts/
 
 User-agent: OAI-SearchBot
 Allow: /
