@@ -26,9 +26,21 @@
 - [Claude Code](https://reinstate.dev/integrations/claude-code): Same-vendor Claude Code session sync
 - [Codex](https://reinstate.dev/integrations/codex): Same-vendor Codex session sync
 
+## Guides
+
+- [Guide index](https://reinstate.dev/guides): Current, reviewed session-sync workflows
+- [Sync Claude Code sessions across devices](https://reinstate.dev/guides/sync-claude-code-sessions-across-devices): Install, map, push, pull, verify, and resume with Claude Code
+- [Sync Codex sessions across devices](https://reinstate.dev/guides/sync-codex-sessions-across-devices): Install, map, push, pull, verify, and resume with Codex CLI
+
+## Engineering notes
+
+- [Blog](https://reinstate.dev/blog): Evidence-backed articles about coding-agent continuity
+- [Why Git alone does not sync coding-agent sessions](https://reinstate.dev/blog/why-git-does-not-sync-coding-agent-sessions): The boundary between source history and native agent-session continuity
+
 ## Source
 
 - [GitHub repository](https://github.com/HarjjotSinghh/reinstate)
 - [Releases](https://github.com/HarjjotSinghh/reinstate/releases)
 - [Security policy](https://github.com/HarjjotSinghh/reinstate/security/policy)
+- [RSS feed](https://reinstate.dev/rss.xml)
 - License: Apache-2.0

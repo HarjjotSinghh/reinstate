@@ -1,7 +1,17 @@
 import rss from '@astrojs/rss';
 import { product } from '../data/product';
+import {
+  editorialSlug,
+  getPublishedBlogPosts,
+  getPublishedGuides,
+} from '../lib/editorial';
 
-export function GET(context: { site?: URL }) {
+export async function GET(context: { site?: URL }) {
+  const [guides, blogPosts] = await Promise.all([
+    getPublishedGuides(),
+    getPublishedBlogPosts(),
+  ]);
+
   return rss({
     title: 'Reinstate updates',
     description:
@@ -15,6 +25,18 @@ export function GET(context: { site?: URL }) {
         pubDate: new Date(`${product.currentReleaseDate}T00:00:00Z`),
         link: `${product.repositoryUrl}/releases/tag/${product.currentRelease}`,
       },
+      ...blogPosts.map((entry) => ({
+        title: entry.data.title,
+        description: entry.data.description,
+        pubDate: entry.data.publishedAt,
+        link: `/blog/${editorialSlug(entry)}`,
+      })),
+      ...guides.map((entry) => ({
+        title: entry.data.title,
+        description: entry.data.description,
+        pubDate: entry.data.publishedAt,
+        link: `/guides/${editorialSlug(entry)}`,
+      })),
     ],
     customData: '<language>en</language>',
   });

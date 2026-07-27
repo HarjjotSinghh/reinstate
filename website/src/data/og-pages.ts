@@ -29,6 +29,20 @@ export const staticOgPages: OgPage[] = [
       'Install, configure, sync, restore, secure, and troubleshoot Reinstate across supported devices.',
   },
   {
+    route: '/guides',
+    kind: 'Guides',
+    title: 'Coding-agent session sync guides',
+    description:
+      'Verified workflows for encrypted session transfer, project path mapping, safe restore, and native resume.',
+  },
+  {
+    route: '/blog',
+    kind: 'Engineering notes',
+    title: 'Coding-agent continuity blog',
+    description:
+      'Evidence-backed engineering and product articles about secure coding-agent work continuity.',
+  },
+  {
     route: '/integrations',
     kind: 'Integrations',
     title: 'Coding-agent integrations',

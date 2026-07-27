@@ -11,15 +11,31 @@ function routeToSlug(route: string): string {
 }
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  const docs = await getCollection('docs', ({ data }) => !data.draft);
+  const [docs, guides, blogPosts] = await Promise.all([
+    getCollection('docs', ({ data }) => !data.draft),
+    getCollection('guides', ({ data }) => !data.draft),
+    getCollection('blog', ({ data }) => !data.draft),
+  ]);
   const docPages: OgPage[] = docs.map((entry) => ({
     route: `/docs/${entry.id.replace(/\.mdx?$/, '')}`,
     kind: 'Documentation',
     title: entry.data.title,
     description: entry.data.description,
   }));
+  const guidePages: OgPage[] = guides.map((entry) => ({
+    route: `/guides/${entry.id.replace(/\.mdx?$/, '')}`,
+    kind: 'Guide',
+    title: entry.data.title,
+    description: entry.data.description,
+  }));
+  const blogPages: OgPage[] = blogPosts.map((entry) => ({
+    route: `/blog/${entry.id.replace(/\.mdx?$/, '')}`,
+    kind: 'Engineering notes',
+    title: entry.data.title,
+    description: entry.data.description,
+  }));
 
-  return [...staticOgPages, ...docPages].map((page) => ({
+  return [...staticOgPages, ...docPages, ...guidePages, ...blogPages].map((page) => ({
     params: { slug: routeToSlug(page.route) },
     props: { page },
   }));
