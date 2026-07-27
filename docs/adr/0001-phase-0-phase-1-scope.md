@@ -20,7 +20,9 @@ MCP/skills scope with the unfinished scaffold, inventing release history
    **OpenAI Codex** over R2/S3-compatible storage with age encryption and
    cross-OS path mapping.
 3. The first stable public release is **`v0.1.0`**.
-4. MCP servers, skills, settings, and additional agents are **post-Phase-1**.
+4. MCP servers, skills, hooks/loops, plugins, marketplaces, settings, and
+   additional agents are **post-Phase-1**. Their eventual cross-harness
+   configuration layer is documented separately and does not expand `v0.1`.
 5. Authentication files and credentials are never synced.
 6. Same-vendor resume only — no cross-agent transcript translation.
 

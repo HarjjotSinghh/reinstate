@@ -60,6 +60,26 @@ printed to the terminal. This document is the contract we design against.
 | User-configured globs | Local policy |
 
 Credential and authentication files cannot be enabled for sync in Phase 1.
+The same boundary applies to the planned universal configuration profile: it
+may contain secret references, but raw API keys, OAuth tokens, cookies, and
+vendor credential stores are not portable configuration.
+
+## Future configuration reconciliation
+
+Applying MCP servers, skills, hooks/loops, plugins, marketplaces, and settings
+creates additional risks:
+
+| Risk | Required mitigation |
+| ---- | ------------------- |
+| A plugin or skill executes untrusted code | Pin source/version, verify digest/signature where available, show permissions and commands, require consent |
+| A config adapter overwrites unrelated settings | Manage known fields only, preview diff, back up, write atomically |
+| One harness cannot represent a field | Report unsupported/lossy mapping; never silently discard it |
+| Repeated OAuth prompts encourage unsafe token copying | Track auth state and launch supported login flows; reuse only when provider/protocol/harness explicitly supports it |
+| A second device inherits trust unexpectedly | Device-local allow/deny policy and explicit approval for executable capabilities |
+
+See [universal-configuration.md](universal-configuration.md). Encryption protects
+portable desired state in remote storage; it does not make arbitrary plugin
+sources or copied credentials safe.
 
 ## Secrets inside transcripts
 

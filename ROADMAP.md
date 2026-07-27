@@ -2,7 +2,7 @@
 
 > Status legend: ✅ done · 🚧 in progress · 📋 planned · 💭 exploring · ❌ won't do (for now)
 
-Last updated: **2026-07-25** · Maintainer: [Harjot Singh Rana](https://github.com/HarjjotSinghh)
+Last updated: **2026-07-27** · Maintainer: [Harjot Singh Rana](https://github.com/HarjjotSinghh)
 
 This roadmap is a living document. Priorities follow real activation signals —
 especially **successfully resumed tasks per active user** — and vendor format
@@ -29,6 +29,13 @@ Explain it as:
 Single-device users still live with fragmented agents, sessions, projects,
 worktrees, and environments. Same primitives serve both.
 
+Longer term, continuity includes the **agent development environment** around a
+session. Reinstate should let a developer declare MCP servers, skills,
+instructions, hooks/loops, plugins, marketplaces, and safe settings once, then
+reconcile that desired state across supported harnesses and devices. This is a
+configuration layer around existing tools, not a new harness or a reason to
+copy credentials.
+
 ### Value ladder
 
 1. One session → another (find and resume)
@@ -43,7 +50,7 @@ worktrees, and environments. Same primitives serve both.
 | ----- | ------------- | ---- |
 | **1. Session recovery** | Everyone | discover, search, preview, resume, fork, export |
 | **2. Agent portability** | Multi-agent users | handoffs, checkpoints, capability compare |
-| **3. Environment continuity** | Serious users | MCP/skills/hooks/runtime/repo validation |
+| **3. Environment continuity** | Serious users | MCP/skills/hooks/runtime/repo validation and repair |
 | **4. Cloud continuity** | Multi-device users | encrypted sync, backup, device handoff |
 | **5. Team continuity** | Teams (later) | shared checkpoints, onboarding, audit |
 
@@ -194,9 +201,54 @@ Fidelity model:
 
 ---
 
-## Phase 5 — Automatic cross-device sync (cloud continuity) 📋
+## Phase 5 — Universal configuration + automatic cross-device sync 📋
 
-Original multi-device superpower, now layered on a useful local product.
+Original multi-device superpower, now extended from sessions to the safe,
+portable parts of an AI development environment.
+
+**Gate:** define an MCP server such as Mobbin once, preview and apply the
+correct native configuration to at least Claude Code, Codex, Grok, and
+OpenCode, then reproduce the non-secret desired state on a second device.
+Unsupported mappings and missing authentication must be explicit.
+
+### 5A. Universal agent configuration
+
+| Item | Status |
+| ---- | ------ |
+| Canonical, versioned desired-state profile (“master config”) | 📋 |
+| Configuration-adapter contract: import, normalize, diff, render, validate | 📋 |
+| Target selection by harness, device, project, and profile | 📋 |
+| MCP server declarations and `rein mcp add/list/remove` workflow | 📋 |
+| Skills and instruction files | 📋 |
+| Hooks, reusable commands, and agent loops/workflows | 📋 |
+| Plugins/extensions and marketplace/registry declarations | 📋 |
+| Extensible capability schema for future harness features | 📋 |
+| `rein config import/diff/apply/status` with dry-run, backup, atomic write, rollback | 📋 |
+| Drift detection without overwriting unrelated native settings | 📋 |
+| Capability matrix with explicit unsupported/lossy mappings | 📋 |
+| Supply-chain policy: source/version pinning, digests, permissions, confirmation | 📋 |
+| Claude Code, Codex, Grok, OpenCode, and Gemini CLI config targets | 📋 |
+
+Harnesses use different schemas and install mechanisms. Reinstate will
+normalize portable intent and let adapters render each harness's native format;
+it will not copy Claude Code JSON wholesale into Codex or silently discard
+unsupported fields.
+
+### 5B. Authentication coordination
+
+| Item | Status |
+| ---- | ------ |
+| Portable secret references (never raw secret values in the profile) | 📋 |
+| Per-device/per-harness auth status without revealing tokens | 📋 |
+| OS-keychain or explicit secret-provider resolution | 📋 |
+| Guided official login flows for targets that require separate auth | 📋 |
+| Safe token reuse only where the protocol/provider/harness explicitly supports it | 💭 |
+
+The goal is **configure once, authenticate as few times as safely possible**.
+Raw API keys, OAuth tokens, cookies, and vendor credential stores remain
+excluded from sync.
+
+### 5C. Cloud continuity
 
 | Item | Status |
 | ---- | ------ |
@@ -205,8 +257,12 @@ Original multi-device superpower, now layered on a useful local product.
 | Key rotation helpers | 📋 |
 | Machine migration UX | 📋 |
 | Additional backends (WebDAV, GCS) | 📋 |
-| Config scopes: MCP, skills, instruction files (`--scope`) | 📋 |
+| Encrypted sync scopes for sessions and non-secret desired-state profiles | 📋 |
+| Cross-device configuration reconciliation and drift reports | 📋 |
 | Append-aware delta / CAS for large histories | 📋 |
+
+Detailed design direction:
+[docs/universal-configuration.md](docs/universal-configuration.md).
 
 ---
 
@@ -253,7 +309,8 @@ Claude Code / Codex / Gemini / OpenCode own the agent loop.
 | Perfect silent Claude↔Codex transcript translation | Formats and tools differ; use portable handoffs |
 | Multi-tenant real-time CRDT collab | Sequential dual-machine (and dual-agent) use first |
 | Replacing git | Git remains source truth; Reinstate is context truth |
-| Shipping vendor API keys or auth proxies | Local-only file access; credentials never synced |
+| Shipping vendor API keys or copying vendor auth stores | Use local secret references and supported login flows; credentials never synced |
+| Reinstate-owned plugin runtime or agent marketplace | Coordinate native harness mechanisms; do not become an execution ecosystem |
 
 ### When to revisit a Reinstate-owned harness
 
@@ -317,7 +374,8 @@ Landing / docs survey:
 - Find and resume old sessions
 - Move sessions between coding agents
 - Back up sessions automatically
-- Sync MCP servers, skills, and configuration
+- Configure MCP servers once across harnesses and devices
+- Install the same skills, loops, plugins, and marketplaces across harnesses
 - Recover sessions after crashes or reinstalls
 - Hand work to another developer
 

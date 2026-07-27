@@ -56,7 +56,20 @@ printed to the terminal. This document is the contract we design against.
 | Plugin `node_modules`, `.venv` | Huge, non-portable, regenerable |
 | User-configured globs | Local policy |
 
-Overrides that *enable* syncing credentials must be explicit and warn loudly.
+Credentials and authentication files cannot be enabled for sync. Planned
+universal configuration profiles may contain secret references, never secret
+values.
+
+## Future configuration reconciliation
+
+Applying skills, plugins, hooks/loops, marketplaces, and MCP declarations adds
+supply-chain and overwrite risk. Configuration adapters must manage known
+fields only, preview and back up writes, report lossy mappings, pin executable
+sources/versions, show permissions and commands, and require explicit consent.
+
+Reinstate may track auth status and coordinate official login flows. Token reuse
+is allowed only where the protocol, provider, or harness explicitly supports
+it; copying private credential stores is never the fallback.
 
 ## Secrets inside transcripts
 

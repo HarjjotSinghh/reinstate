@@ -21,6 +21,7 @@
 | [Architecture](architecture.md) | System design + continuity stack |
 | [Product strategy](product-strategy.md) | Positioning, ICP, layers, non-goals |
 | [Adapters](adapters.md) | Agent support matrix |
+| [Universal agent configuration](universal-configuration.md) | Planned cross-harness MCP/skills/loops/plugins/settings layer |
 | [Compatibility](compatibility.md) | Environments and compatibility states |
 | [Security model](security-model.md) | Threat model and defaults |
 | [Comparison](comparison.md) | vs alternatives |

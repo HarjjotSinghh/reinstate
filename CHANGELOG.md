@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Expand the post-Phase-1 roadmap from a generic MCP/skills sync bullet into
+  universal agent configuration: one non-secret desired-state profile rendered
+  across supported harnesses and encrypted across devices.
+- Document planned MCP, skills/instructions, hooks/loops, plugins,
+  marketplaces, safe settings, drift reconciliation, supply-chain controls,
+  and authentication coordination while keeping credentials excluded.
+
 ### Fixed
 
 - Validate an additional device's encrypted remote manifest with a readable
@@ -150,7 +159,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 - **Phase 2:** local universal session switcher (`sessions` / `search` / `resume` / `last`)
 - **Phase 3:** verified resume (workspace + capability fingerprint)
 - **Phase 4:** portable cross-agent handoffs (explicit checkpoints)
-- **Phase 5+:** auto multi-device habit, thin Console/ACP client, team continuity
+- **Phase 5+:** universal cross-harness configuration + auto multi-device habit,
+  thin Console/ACP client, team continuity
 
 ---
 

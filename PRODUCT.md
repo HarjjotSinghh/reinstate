@@ -40,6 +40,8 @@ They care about:
 - resuming without re-prompting from zero
 - switching agents without losing the task thread
 - catching environment drift (branch, MCP, skills, runtime)
+- configuring MCP servers and other agent capabilities once instead of
+  repeating setup in every harness
 - optionally moving work between Windows desktop and macOS laptop
 
 ### Secondary
@@ -57,11 +59,15 @@ Reinstate provides **continuity infrastructure**:
 
 1. **Session recovery** — discover, search, preview, resume, fork
 2. **Agent portability** — portable checkpoints / handoffs (not silent translation)
-3. **Environment continuity** — verify repo/branch/MCP/skills/runtime before resume
-4. **Cloud continuity** — E2EE BYO storage (R2/S3 first), path remapping, conflict-safe sync
+3. **Environment continuity** — verify and eventually reconcile repo/branch,
+   MCP/skills/hooks/loops/plugins/settings across supported harnesses
+4. **Cloud continuity** — E2EE BYO storage (R2/S3 first), path remapping,
+   conflict-safe session and non-secret desired-state sync
 5. **Team continuity** (later) — shared checkpoints, provenance, policy
 
 Agents remain the executors. Reinstate does **not** become a full ADE/IDE.
+It translates portable desired state into native harness configuration; it does
+not become a plugin runtime or marketplace.
 
 Site purpose: convert continuity-aware agent users into waitlist/docs/GitHub
 stars; establish trust (E2EE, BYO storage, open source); position against

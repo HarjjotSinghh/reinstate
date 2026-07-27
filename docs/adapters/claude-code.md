@@ -7,6 +7,15 @@
 - **Exclusions:** `auth.json`, credentials, `.env`, caches
 - **Fixtures:** `testdata/adapters/claude/`
 
+## Universal configuration (roadmap)
+
+A separate configuration adapter may eventually import and render Claude
+Code's supported MCP, skills/instructions, hooks/loops, plugin, marketplace, and
+safe setting declarations. Session support does not imply config support.
+Writes must preserve unrelated Claude-managed state and continue to exclude
+credentials and plugin caches. See
+[universal-configuration.md](../universal-configuration.md).
+
 Compatibility states: see [compatibility.md](../compatibility.md).
 
 ## Real-device validation (human gate)

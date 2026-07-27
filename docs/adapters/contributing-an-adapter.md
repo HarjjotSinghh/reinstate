@@ -18,3 +18,13 @@ Use only synthetic fixtures described in
 [Testing and fixture policy](../contributing/testing.md). A green parser test
 does not establish support: record the exact real vendor version and each
 verified device journey separately.
+
+## Configuration adapters (later phase)
+
+Universal configuration uses a related but distinct contract. A configuration
+adapter must declare support per capability (MCP, skill, hook/loop, plugin,
+marketplace, safe setting), round-trip only understood fields, preserve
+unmanaged native config, preview and back up writes, and report unsupported or
+lossy mappings. Never infer configuration support from session support.
+
+See [Universal agent configuration](../universal-configuration.md).

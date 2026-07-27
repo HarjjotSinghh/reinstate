@@ -1,7 +1,8 @@
 # Adapters
 
-Adapters translate between each coding agent's **on-disk layout** and
-Reinstate's normalized sync model.
+Session adapters translate between each coding agent's **on-disk session
+layout** and Reinstate's normalized sync model. Later configuration adapters
+will normalize portable intent and render each harness's native configuration.
 
 > Status: interfaces and docs first; implementations land per [ROADMAP.md](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md).
 
@@ -16,7 +17,12 @@ Reinstate's normalized sync model.
 | **Grok Build** | 📋 Phase 2 | 📋 | ✅ | `grok -r` / `/resume` | 📋 Planned |
 | **Cursor** | 💭 best-effort | 💭 | 💭 | N/A (IDE) | 💭 Exploring |
 
-Legend: ✅ designed · 🚧 building · 📋 planned · 💭 exploring
+Legend: ✅ implemented · 🚧 acceptance in progress · 📋 planned · 💭 exploring
+
+Configuration support is capability-specific. Each adapter will advertise
+support for MCP servers, skills/instructions, hooks/loops, plugins,
+marketplaces, and safe settings. Session support never implies configuration
+support. See [Universal agent configuration](universal-configuration.md).
 
 ## Per-agent notes
 

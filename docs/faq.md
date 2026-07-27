@@ -5,7 +5,9 @@
 The **continuity layer for coding-agent work**. Phase 1 implements encrypted,
 bring-your-own-storage sync for same-vendor Claude Code and Codex sessions.
 Universal local search, verified resume, and cross-agent handoffs are later
-phases.
+phases. A later universal configuration layer will also reconcile supported
+MCP servers, skills, hooks/loops, plugins, marketplaces, and safe settings
+across harnesses and devices.
 
 Spine: *Reinstate is not another place to code — it makes every place you code continuous.*
 
@@ -51,6 +53,26 @@ index/search/resume does not require remote storage.
 **No.** We do not replace Claude Code, Codex, Orca, Conductor, or Cursor as
 execution environments. We make work **discoverable, verifiable, portable, and
 syncable** across those tools.
+
+## Will Reinstate configure the same MCP server in every harness?
+
+**That is planned after Phase 1.** The target is to define a server once with
+`rein mcp add`, preview native changes, and apply it across selected Claude
+Code, Codex, Grok, OpenCode, Gemini CLI, and future adapters. The same model
+extends to skills, instructions, hooks/loops, plugins, marketplaces, and safe
+settings.
+
+Reinstate will normalize intent and render each harness's real schema; it will
+not blindly copy one tool's config file. See
+[universal-configuration.md](universal-configuration.md).
+
+## Will MCP authentication also carry across tools and devices?
+
+Reinstate should make authentication status visible and coordinate supported
+login flows, reducing repetition where the MCP protocol, provider, or harness
+allows safe reuse. It will not sync raw API keys, OAuth tokens, cookies, or
+vendor credential stores. When safe reuse is not supported, each target may
+still require its official login flow.
 
 ## Is my data sent to Reinstate servers?
 
