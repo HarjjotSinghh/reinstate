@@ -128,7 +128,7 @@ const frontText = (x: number, y: number, z: number, d: number, h: number) => {
               <rect x="8.7" y="10.4" width="6.6" height="5.2" rx="1"></rect>
               <path d="M10.2 10.4V9a1.8 1.8 0 0 1 3.6 0v1.4"></path>
             </svg>
-            End-to-end encrypted
+            E2E encrypted
           </span>
           <div class="bridge-details">
             <strong class="bridge-row">
@@ -220,7 +220,7 @@ const frontText = (x: number, y: number, z: number, d: number, h: number) => {
       <figure class="handoff-illustration" aria-hidden="true">
         <svg
           class="handoff-art"
-          viewBox="0 36 1240 350"
+          viewBox="-160 -30 1560 480"
           role="img"
           aria-labelledby="handoff-art-title handoff-art-desc"
           preserveAspectRatio="xMidYMid meet"
@@ -246,6 +246,8 @@ const frontText = (x: number, y: number, z: number, d: number, h: number) => {
           </marker>
         </defs>
 
+        {/* Zoom stays inside the expanded viewBox so layout margin can clear terminals. */}
+        <g transform="translate(620 200) scale(1.2) translate(-620 -200)">
         <g transform="translate(245 246) scale(.7)">
           <polygon class="cast" points={sourceShadow}></polygon>
           <g class="unit platform">
@@ -431,6 +433,7 @@ const frontText = (x: number, y: number, z: number, d: number, h: number) => {
           d="M692 190 C 766 134, 858 156, 914 212"
           marker-end="url(#proof-arrow)"
         ></path>
+        </g>
         </svg>
       </figure>
     </div>
@@ -553,20 +556,27 @@ const frontText = (x: number, y: number, z: number, d: number, h: number) => {
   .handoff-stage {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 3.5rem;
     margin-top: 1.75rem;
   }
 
   .handoff-illustration {
-    margin: 0.25rem auto 0;
+    display: block;
+    position: relative;
+    z-index: 0;
+    flex: none;
+    margin: 0 auto;
     padding: 0;
-    max-width: min(42rem, 100%);
-    opacity: 0.92;
+    width: 100%;
+    max-width: none;
+    /* hidden so scaled art can't paint over terminals; viewBox is roomy enough not to clip */
+    overflow: hidden;
+    opacity: 1;
   }
 
   .handoff-art {
     display: block;
-    width: 100%;
+    width: min(100%, 80rem);
     height: auto;
     margin-inline: auto;
     overflow: visible;
@@ -809,7 +819,7 @@ const frontText = (x: number, y: number, z: number, d: number, h: number) => {
     grid-template-columns: minmax(0, 1fr) 14rem minmax(0, 1fr);
     align-items: center;
     gap: clamp(0.85rem, 2vw, 1.5rem);
-    margin-top: 0; /* spacing from art comes from .handoff-stage gap */
+    margin: 0;
   }
 
   .terminal {
@@ -877,25 +887,27 @@ const frontText = (x: number, y: number, z: number, d: number, h: number) => {
     margin: 0;
     min-height: 14rem;
     padding: clamp(1.05rem, 2.2vw, 1.5rem);
-    overflow-x: auto;
+    overflow-x: hidden;
     background: var(--terminal-bg);
     color: var(--terminal-ink);
     font-family: var(--font-mono);
-    font-size: clamp(0.84rem, 0.35vw + 0.76rem, 0.95rem);
+    font-size: clamp(0.8rem, 0.28vw + 0.74rem, 0.9rem);
     line-height: 1.72;
     tab-size: 2;
   }
 
   pre code {
     display: block;
-    width: max-content;
-    min-width: 100%;
+    width: 100%;
+    max-width: 100%;
     font: inherit;
   }
 
   .line {
     display: block;
-    white-space: pre;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
   .command {
     color: var(--terminal-ink);
@@ -1028,8 +1040,8 @@ const frontText = (x: number, y: number, z: number, d: number, h: number) => {
     grid-template-columns: 1fr auto;
     gap: 1.25rem 1.5rem;
     align-items: center;
-    margin-top: 0.85rem;
-    padding-top: 1rem;
+    margin-top: 2.5rem;
+    padding-top: 0;
   }
 
   .proof-notes p {
@@ -1096,7 +1108,7 @@ const frontText = (x: number, y: number, z: number, d: number, h: number) => {
       justify-self: start;
     }
     .handoff-illustration {
-      max-width: min(28rem, 100%);
+      max-width: none;
     }
     .workflow-grid {
       grid-template-columns: minmax(0, 1fr);
