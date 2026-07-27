@@ -1,0 +1,122 @@
+---
+import PublicContentLayout from '../../layouts/PublicContentLayout.astro';
+
+export const prerender = true;
+
+const title = 'Sync Claude Code Sessions Across Devices | Reinstate';
+const description =
+  'Reinstate encrypts and syncs supported Claude Code sessions across configured macOS and Windows project paths for native Claude Code resume.';
+---
+
+<PublicContentLayout
+  {title}
+  {description}
+  path="/integrations/claude-code"
+  eyebrow="Integration · Claude Code"
+  answer="Reinstate syncs supported Claude Code sessions from one device to another, remaps configured project paths, and restores them to Claude Code’s native project layout. It supports Claude Code-to-Claude Code continuity only; it does not convert Claude transcripts into another agent’s format."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Integrations', path: '/integrations' },
+    { name: 'Claude Code', path: '/integrations/claude-code' },
+  ]}
+  tags={['Claude Code session sync', 'Claude Code resume', 'macOS', 'Windows']}
+>
+  <h2 id="support-at-a-glance">Claude Code support at a glance</h2>
+  <dl class="pc-facts">
+    <div>
+      <dt>Session direction</dt>
+      <dd>Claude Code → Claude Code</dd>
+    </div>
+    <div>
+      <dt>Tested stable range</dt>
+      <dd><code>2.1.219</code>–<code>2.1.220</code></dd>
+    </div>
+    <div>
+      <dt>Primary platforms</dt>
+      <dd>macOS and native Windows</dd>
+    </div>
+    <div>
+      <dt>Remote storage</dt>
+      <dd>Your S3-compatible or Cloudflare R2 bucket</dd>
+    </div>
+  </dl>
+  <p>
+    The tested range above is the current source compatibility evidence for macOS arm64 plus
+    deterministic synthetic fixtures. Native Windows, macOS amd64, WSL2, and physical two-device
+    acceptance remain release gates for stable v0.1. Versions outside the stated range are treated
+    as <code>UNTESTED</code> and writes are blocked.
+  </p>
+
+  <h2 id="how-it-works">How Claude Code session sync works</h2>
+  <p>
+    Claude Code groups local sessions under a directory key derived from the device's absolute
+    project path. Copying that directory unchanged from Windows to macOS is insufficient because
+    the same repository normally lives at a different absolute path.
+  </p>
+  <ol class="pc-steps">
+    <li>
+      During setup, map a stable project ID to the local project root on each device.
+    </li>
+    <li>
+      On push, Reinstate associates discovered Claude sessions with that canonical project ID and
+      encrypts the portable artifact locally.
+    </li>
+    <li>
+      On pull, Reinstate resolves the destination device's project root and recomputes Claude
+      Code's exact directory key for that path.
+    </li>
+    <li>
+      RC6 verifies the restored session at the planned destination. A matching session ID
+      elsewhere in Claude's project tree is not accepted as success.
+    </li>
+  </ol>
+
+  <div class="pc-callout">
+    <p>Why project mapping is first-class</p>
+    <p>
+      A repository might live at <code>C:\src\app</code> on Windows and
+      <code>/Users/you/src/app</code> on macOS. Reinstate uses the shared project ID—not either
+      machine's path—as portable identity.
+    </p>
+  </div>
+
+  <h2 id="security-boundary">What Reinstate does and does not sync</h2>
+  <p>
+    The adapter selects resumable Claude Code session artifacts. Reinstate excludes authentication
+    files, OAuth or keychain material, tokens, caches, logs, and regenerable dependencies.
+    Encrypted remote artifacts are stored in your bucket; the passphrase is not stored.
+  </p>
+  <p>
+    A transcript can still contain a secret that a person or tool printed into the conversation.
+    Encryption reduces cloud-storage exposure, but you remain responsible for keeping production
+    secrets out of agent chats. Read the complete <a href="/security">security overview</a>.
+  </p>
+
+  <h2 id="limitations">Current limitations</h2>
+  <ul>
+    <li>Claude Code sessions can be resumed only by Claude Code in Phase 1.</li>
+    <li>Unmapped projects are excluded when canonical project mappings are configured.</li>
+    <li>Untested or unsupported Claude Code layouts fail closed for push and pull.</li>
+    <li>Credentials, MCP servers, skills, plugins, hooks, and agent settings are not synced.</li>
+    <li>WSL1 is unsupported; native Windows and WSL2 are separate Reinstate devices.</li>
+    <li>Reinstate does not protect data on an already-compromised local machine.</li>
+  </ul>
+
+  <h2 id="start">Start with Claude Code</h2>
+  <p>
+    Install the current release candidate, run <code>rein init</code>, and give the same project a
+    stable ID on both devices. Use <code>rein push</code> on the source and a dry-run before
+    <code>rein pull</code> on the destination. The step-by-step guide includes the exact commands
+    and passphrase safety rules.
+  </p>
+
+  <section class="pc-related" aria-labelledby="related-heading">
+    <h2 id="related-heading">Claude Code resources</h2>
+    <nav aria-label="Related pages">
+      <a href="/docs/getting-started">Installation and setup</a>
+      <a href="/compatibility">Exact compatibility states</a>
+      <a href="/docs/adapters">Adapter internals</a>
+      <a href="/integrations/codex">Codex integration</a>
+    </nav>
+  </section>
+</PublicContentLayout>

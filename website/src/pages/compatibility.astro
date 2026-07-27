@@ -1,0 +1,176 @@
+---
+import PublicContentLayout from '../layouts/PublicContentLayout.astro';
+
+export const prerender = true;
+
+const title = 'Reinstate Compatibility: Agents, Versions, and Operating Systems';
+const description =
+  'Check Reinstate compatibility for Claude Code, Codex CLI, macOS, native Windows, WSL2, tested version ranges, path mapping, and unsupported setups.';
+---
+
+<PublicContentLayout
+  {title}
+  {description}
+  path="/compatibility"
+  eyebrow="Compatibility"
+  answer="Reinstate RC6 supports same-vendor session sync for tested Claude Code and Codex CLI versions, with macOS and native Windows as the primary Phase 1 platforms. Stable v0.1 certification still depends on the remaining native-device and two-device release gates."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Compatibility', path: '/compatibility' },
+  ]}
+  tags={['compatibility matrix', 'Claude Code versions', 'Codex versions', 'macOS', 'Windows']}
+>
+  <h2 id="agent-version-matrix">Agent and version matrix</h2>
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">Agent</th>
+          <th scope="col">Phase 1 session status</th>
+          <th scope="col">Tested stable range</th>
+          <th scope="col">Resume mode</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><a href="/integrations/claude-code">Claude Code</a></td>
+          <td>Primary release target</td>
+          <td><code>2.1.219</code>–<code>2.1.220</code></td>
+          <td>Claude Code → Claude Code</td>
+        </tr>
+        <tr>
+          <td><a href="/integrations/codex">OpenAI Codex CLI</a></td>
+          <td>Primary release target</td>
+          <td><code>0.133.0</code>–<code>0.145.0</code></td>
+          <td>Codex → Codex</td>
+        </tr>
+        <tr>
+          <td>Gemini CLI</td>
+          <td>Not in Phase 1</td>
+          <td>None</td>
+          <td>Not supported</td>
+        </tr>
+        <tr>
+          <td>OpenCode, Cursor, Grok Build</td>
+          <td>Not in Phase 1</td>
+          <td>None</td>
+          <td>Not supported</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    These ranges represent current source compatibility evidence on macOS arm64 and deterministic
+    synthetic fixtures. They are not a claim that every platform row has passed physical-device
+    certification. Prereleases and versions outside each inclusive range are
+    <code>UNTESTED</code>.
+  </p>
+
+  <h2 id="environment-matrix">Operating-system matrix</h2>
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">Environment</th>
+          <th scope="col">Claude Code</th>
+          <th scope="col">Codex CLI</th>
+          <th scope="col">RC6 status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>macOS native · arm64</td>
+          <td>Required</td>
+          <td>Required</td>
+          <td>Local verification green</td>
+        </tr>
+        <tr>
+          <td>macOS native · amd64</td>
+          <td>Required before stable</td>
+          <td>Required before stable</td>
+          <td>Release gate remains</td>
+        </tr>
+        <tr>
+          <td>Windows 11 native · amd64</td>
+          <td>Required</td>
+          <td>Required</td>
+          <td>Native acceptance gate remains</td>
+        </tr>
+        <tr>
+          <td>Windows 11 WSL2 · amd64</td>
+          <td>Documented and smoke-tested target</td>
+          <td>Documented and smoke-tested target</td>
+          <td>Release gate remains</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="states">What the compatibility states mean</h2>
+  <dl class="pc-facts">
+    <div>
+      <dt>Supported</dt>
+      <dd>Exact layout and version range has release evidence; discovery, push, and pull proceed.</dd>
+    </div>
+    <div>
+      <dt>Untested</dt>
+      <dd>Recognizable but unverified; discovery is read-only and writes fail closed.</dd>
+    </div>
+    <div>
+      <dt>Unsupported</dt>
+      <dd>Known-incompatible layout, version, environment, or agent; the operation stops.</dd>
+    </div>
+    <div>
+      <dt>Not installed</dt>
+      <dd>No local installation or session root found; reported as informational.</dd>
+    </div>
+  </dl>
+  <p>
+    <code>rein setup check</code> returns compatibility exit code <code>5</code> when an installed
+    adapter is <code>UNTESTED</code> or <code>UNSUPPORTED</code>. Phase 1 has no unsafe
+    compatibility override.
+  </p>
+
+  <h2 id="cross-platform-paths">How cross-platform path compatibility works</h2>
+  <p>
+    Reinstate rewrites known structural paths to portable tokens such as
+    <code>${'${HOME}'}</code>, <code>${'${REPO:<id>}'}</code>, and
+    <code>${'${WORK:<alias>}'}</code>. The destination device expands those tokens using its own
+    configured paths. Free-form transcript prose and unknown fields are left unchanged.
+  </p>
+  <div class="pc-callout">
+    <p>Native Windows and WSL2 are separate devices.</p>
+    <p>
+      Do not point both environments at one shared agent-state directory. Their path semantics and
+      vendor layouts differ, so each must have its own Reinstate device identity and mappings.
+    </p>
+  </div>
+
+  <h2 id="unsupported">Explicitly unsupported in Phase 1</h2>
+  <ul>
+    <li>WSL1.</li>
+    <li>Treating native Windows and WSL as one Reinstate device.</li>
+    <li>Automatically sharing one agent-state directory between Windows and WSL.</li>
+    <li>Exporting or restoring an untested agent layout.</li>
+    <li>Agents other than Claude Code and Codex CLI.</li>
+    <li>Silent translation between Claude Code and Codex native transcripts.</li>
+    <li>Syncing vendor credentials, raw secrets, MCP settings, skills, or plugins.</li>
+  </ul>
+
+  <h2 id="verify-your-device">Verify your own device</h2>
+  <p>
+    Run <code>rein setup check</code> before pushing real sessions. Treat its state as authoritative
+    for the installed version and local layout, and review the repository's compatibility evidence
+    when a vendor ships a new version.
+  </p>
+
+  <section class="pc-related" aria-labelledby="related-heading">
+    <h2 id="related-heading">Compatibility resources</h2>
+    <nav aria-label="Related pages">
+      <a href="/integrations">Agent integrations</a>
+      <a href="/docs/troubleshooting">Troubleshooting</a>
+      <a href="/security">Security model</a>
+      <a href="/changelog">Release changes</a>
+    </nav>
+  </section>
+</PublicContentLayout>

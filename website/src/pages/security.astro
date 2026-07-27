@@ -1,0 +1,231 @@
+---
+import PublicContentLayout from '../layouts/PublicContentLayout.astro';
+
+export const prerender = true;
+
+const title = 'Reinstate Security: Local Encryption and BYO Storage';
+const description =
+  'Learn how Reinstate encrypts coding-agent sessions locally with age, excludes credentials, uses your S3-compatible storage, and restores safely.';
+---
+
+<PublicContentLayout
+  {title}
+  {description}
+  path="/security"
+  eyebrow="Security"
+  answer="Reinstate encrypts selected Claude Code and Codex session artifacts locally with age passphrase encryption before uploading ciphertext to storage you control. Vendor credentials are excluded, storage keys remain in the OS keyring, and restores use backups, atomic writes, and explicit conflict handling."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Security', path: '/security' },
+  ]}
+  tags={['age encryption', 'end-to-end encryption', 'S3-compatible storage', 'coding-agent security']}
+>
+  <h2 id="security-properties">Security properties at a glance</h2>
+  <dl class="pc-facts">
+    <div>
+      <dt>Remote payloads</dt>
+      <dd>age-encrypted ciphertext</dd>
+    </div>
+    <div>
+      <dt>Storage ownership</dt>
+      <dd>Your S3-compatible or R2 bucket</dd>
+    </div>
+    <div>
+      <dt>Session passphrase</dt>
+      <dd>Not stored by Reinstate</dd>
+    </div>
+    <div>
+      <dt>Storage credentials</dt>
+      <dd>Operating-system keyring</dd>
+    </div>
+    <div>
+      <dt>Vendor API access</dt>
+      <dd>Not required</dd>
+    </div>
+    <div>
+      <dt>Formal security audit</dt>
+      <dd>Not claimed for pre-1.0</dd>
+    </div>
+  </dl>
+
+  <h2 id="data-flow">Where plaintext exists</h2>
+  <ol class="pc-steps">
+    <li>
+      A supported adapter reads selected local session files from Claude Code or Codex.
+    </li>
+    <li>
+      Reinstate normalizes known structural paths and builds the portable artifact on the local
+      machine.
+    </li>
+    <li>
+      The artifact is encrypted locally using an age scrypt recipient derived from your
+      passphrase.
+    </li>
+    <li>
+      Reinstate sends ciphertext over TLS to your configured S3-compatible endpoint.
+    </li>
+    <li>
+      Another configured device downloads the ciphertext, decrypts it locally, remaps paths, and
+      restores the native files.
+    </li>
+  </ol>
+  <p>
+    The object-storage provider does not receive plaintext session content or the passphrase from
+    Reinstate. It can still observe bucket access, object timing, size, and opaque object keys.
+  </p>
+
+  <h2 id="encryption">Encryption and key handling</h2>
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">Property</th>
+          <th scope="col">Current behavior</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Payload encryption</td>
+          <td>age passphrase encryption with an scrypt recipient</td>
+        </tr>
+        <tr>
+          <td>Multi-device decryption</td>
+          <td>Enter the same long passphrase on each trusted device</td>
+        </tr>
+        <tr>
+          <td>Passphrase storage</td>
+          <td>Not stored; interactive commands read a hidden terminal prompt</td>
+        </tr>
+        <tr>
+          <td>Automation</td>
+          <td>
+            Use a pre-opened file descriptor through <code>REINSTATE_PASSPHRASE_FD</code>;
+            ordinary environment variables and CLI passphrase flags are rejected
+          </td>
+        </tr>
+        <tr>
+          <td>Storage credentials</td>
+          <td>Stored in the native OS keyring, not in <code>config.toml</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="pc-callout">
+    <p>There is no passphrase recovery.</p>
+    <p>
+      Use a long, unique passphrase and keep it in a trusted password manager. Losing it means
+      losing the ability to decrypt remote artifacts; that is a consequence of the design, not an
+      account-recovery bug.
+    </p>
+  </div>
+
+  <h2 id="excluded-data">Credentials and files excluded from sync</h2>
+  <p>
+    Phase 1 hard-excludes agent authentication files, API keys, OAuth tokens, credential stores,
+    OS keyring contents, caches, logs, and regenerable dependency directories. Credential and
+    authentication paths cannot be opted back into sync.
+  </p>
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">Example</th>
+          <th scope="col">Reason</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>**/auth.json</code></td>
+          <td>May contain API or OAuth material</td>
+        </tr>
+        <tr>
+          <td><code>**/.credentials.json</code></td>
+          <td>May contain tokens</td>
+        </tr>
+        <tr>
+          <td>Claude OAuth or keychain material</td>
+          <td>Device-local credentials</td>
+        </tr>
+        <tr>
+          <td><code>node_modules</code>, <code>.venv</code>, caches</td>
+          <td>Large, regenerable, and non-portable</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    This boundary does not inspect the semantic meaning of every transcript line. If a tool prints
+    a production secret into an agent conversation, that secret becomes part of the encrypted
+    transcript. Avoid pasting secrets into agent chats and rotate any exposed credential.
+  </p>
+
+  <h2 id="restore-safety">Restore and conflict safety</h2>
+  <ul>
+    <li>Use <code>pull --dry-run</code> to inspect planned changes before a restore.</li>
+    <li>Existing local files receive timestamped backups before replacement.</li>
+    <li>Writes use a temporary file and atomic rename.</li>
+    <li>Divergent changes create explicit conflict records and forks.</li>
+    <li>Active Claude Code or Codex processes are refused before mutating session restores.</li>
+    <li>Artifact metadata and hashes are authenticated and validated before use.</li>
+  </ul>
+
+  <h2 id="threat-boundaries">Threats and boundaries</h2>
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">Threat</th>
+          <th scope="col">Mitigation or boundary</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Storage provider reads session content</td>
+          <td>Client-side encryption; remote payload is ciphertext</td>
+        </tr>
+        <tr>
+          <td>Network eavesdropping</td>
+          <td>TLS plus an already-encrypted payload</td>
+        </tr>
+        <tr>
+          <td>Accidental credential-tree sync</td>
+          <td>Hard exclusions and narrow adapter discovery</td>
+        </tr>
+        <tr>
+          <td>Overwrite of good local history</td>
+          <td>Dry-runs, backups, atomic writes, and conflict forks</td>
+        </tr>
+        <tr>
+          <td>Compromised local machine</td>
+          <td>Out of scope; plaintext is necessarily available during local use</td>
+        </tr>
+        <tr>
+          <td>Malicious or vulnerable release</td>
+          <td>Checksums and supply-chain controls reduce risk; independent verification is encouraged</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="audit-status">Audit status and responsible disclosure</h2>
+  <p>
+    Reinstate is open source under Apache-2.0, but source availability is not the same as a formal
+    audit. No independent formal audit is claimed for RC6. Review the code and threat model before
+    using sensitive transcripts.
+  </p>
+  <p>
+    Report suspected vulnerabilities privately using the repository's
+    <a href="https://github.com/HarjjotSinghh/reinstate/security/policy">security policy</a>. Do not
+    open a public issue for an unpatched vulnerability.
+  </p>
+
+  <section class="pc-related" aria-labelledby="related-heading">
+    <h2 id="related-heading">Security resources</h2>
+    <nav aria-label="Related pages">
+      <a href="/docs/security-model">Full threat model</a>
+      <a href="/docs/architecture">System architecture</a>
+      <a href="/open-source">Open-source project</a>
+      <a href="/compatibility">Compatibility gates</a>
+    </nav>
+  </section>
+</PublicContentLayout>

@@ -1,0 +1,147 @@
+---
+import PublicContentLayout from '../../layouts/PublicContentLayout.astro';
+
+export const prerender = true;
+
+const title = 'What Is Reinstate? Coding-Agent Work Continuity';
+const description =
+  'Reinstate is an open-source continuity layer for coding-agent work, beginning with encrypted Claude Code and Codex session sync across devices.';
+---
+
+<PublicContentLayout
+  {title}
+  {description}
+  path="/about/reinstate"
+  eyebrow="About Reinstate"
+  answer="Reinstate is an open-source continuity layer for coding-agent work. Today, its Phase 1 release candidate moves encrypted Claude Code and Codex sessions between configured devices; later phases add local search, verified resume, and explicit portable handoffs without turning Reinstate into another coding environment."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'About Reinstate', path: '/about/reinstate' },
+  ]}
+  tags={['Reinstate', 'coding-agent continuity', 'session sync', 'open source']}
+>
+  <h2 id="the-problem">The problem Reinstate solves</h2>
+  <p>
+    Git moves source code, but it does not move the local history of a long coding-agent task: the
+    rejected approaches, decisions, prompts, file context, and native session identifier. That
+    history becomes fragmented across agents, projects, worktrees, operating systems, and devices.
+  </p>
+  <p>
+    Reinstate owns continuity before and after execution. Coding agents continue to own the actual
+    execution loop. The goal is to let a developer find and continue a task in the right native
+    environment without re-explaining it from scratch.
+  </p>
+
+  <h2 id="available-today">What is available today</h2>
+  <p>
+    Phase 1 implements the trust-sensitive sync engine and CLI surface for supported Claude Code
+    and Codex CLI sessions:
+  </p>
+  <ul>
+    <li>Same-vendor session discovery, push, pull, status, diff, and conflict handling.</li>
+    <li>Local age encryption before upload to user-owned S3-compatible storage.</li>
+    <li>Canonical project identity and macOS ↔ Windows structural path remapping.</li>
+    <li>Credential exclusions, OS-keyring storage, restore backups, and atomic writes.</li>
+    <li>Checksum-verifying installers and compatibility checks that fail closed.</li>
+  </ul>
+  <div class="pc-callout">
+    <p>“Available” still means release candidate.</p>
+    <p>
+      The implementation and local verification are green, but native Windows, macOS amd64, WSL2,
+      physical two-device resume, remote CI, and stable public-release certification remain gates
+      before v0.1.0.
+    </p>
+  </div>
+
+  <h2 id="product-direction">Where the product goes next</h2>
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">Phase</th>
+          <th scope="col">Direction</th>
+          <th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>Encrypted same-vendor Claude Code and Codex session sync</td>
+          <td>Release candidate</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>Local universal session index, search, inspect, resume, and last-session commands</td>
+          <td>Planned</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>Verified resume against repo, branch, runtime, MCP, and skill state</td>
+          <td>Planned</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>Explicit portable cross-agent checkpoints and capability diffs</td>
+          <td>Planned</td>
+        </tr>
+        <tr>
+          <td>5+</td>
+          <td>Universal non-secret configuration, automatic sync, thin console, then team continuity</td>
+          <td>Planned</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    Roadmap work is not present-day functionality. In particular, Reinstate does not yet provide
+    cross-agent transcript translation, a local session search interface, environment repair,
+    configuration sync, or team handoffs.
+  </p>
+
+  <h2 id="not-an-ade">What Reinstate is not</h2>
+  <ul>
+    <li>Not a code editor, terminal emulator, or full agentic development environment.</li>
+    <li>Not a multi-agent scheduler, model router, or worktree orchestrator.</li>
+    <li>Not a Reinstate-owned plugin runtime or marketplace.</li>
+    <li>Not raw mirroring of entire vendor configuration or credential trees.</li>
+    <li>Not silent Claude Code ↔ Codex transcript conversion.</li>
+  </ul>
+  <p>
+    Reinstate should integrate with the places developers already code. Its product boundary is
+    whether work survives, can be found, and can continue safely—not where that work executes.
+  </p>
+
+  <h2 id="who-it-is-for">Who Reinstate is for</h2>
+  <p>
+    The primary audience is developers using terminal coding agents across multiple sessions,
+    projects, or environments. A work desktop and personal laptop is the flagship multi-device
+    case, especially across Windows and macOS, but physical device count is not the entire product
+    identity.
+  </p>
+  <p>
+    The long-term north-star metric is previously started coding tasks successfully resumed per
+    active user—not storage volume or device count.
+  </p>
+
+  <h2 id="project">Project and maintainer</h2>
+  <p>
+    Reinstate was created and is maintained by
+    <a href="https://harjot.co">Harjot Singh Rana</a>. The project is available on
+    <a href="https://github.com/HarjjotSinghh/reinstate">GitHub</a> under the Apache License 2.0 and
+    welcomes review, issues, and contributions.
+  </p>
+  <p>
+    Reinstate is independent of Anthropic, OpenAI, Google, xAI, and other agent vendors. Vendor
+    names describe compatibility targets, not sponsorship or endorsement.
+  </p>
+
+  <section class="pc-related" aria-labelledby="related-heading">
+    <h2 id="related-heading">Learn more</h2>
+    <nav aria-label="Related pages">
+      <a href="/open-source">Why open source</a>
+      <a href="/integrations">Current integrations</a>
+      <a href="/security">Security model</a>
+      <a href="/docs/getting-started">Try the release candidate</a>
+    </nav>
+  </section>
+</PublicContentLayout>

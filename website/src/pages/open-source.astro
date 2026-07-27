@@ -1,0 +1,166 @@
+---
+import PublicContentLayout from '../layouts/PublicContentLayout.astro';
+
+export const prerender = true;
+
+const title = 'Reinstate Is Open Source Under Apache-2.0';
+const description =
+  'Review, use, and contribute to Reinstate, an Apache-2.0 Go project for encrypted coding-agent session continuity with user-owned storage.';
+---
+
+<PublicContentLayout
+  {title}
+  {description}
+  path="/open-source"
+  eyebrow="Open source"
+  answer="Reinstate is fully open source under the Apache License 2.0. Its Go source, tests, security model, release automation, roadmap, and issue tracker are public, so developers can inspect the continuity layer that handles their sensitive coding-agent sessions."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Open source', path: '/open-source' },
+  ]}
+  tags={['open source', 'Apache-2.0', 'Go', 'coding agents']}
+>
+  <h2 id="project-facts">Project facts</h2>
+  <dl class="pc-facts">
+    <div>
+      <dt>License</dt>
+      <dd><a href="https://www.apache.org/licenses/LICENSE-2.0">Apache-2.0</a></dd>
+    </div>
+    <div>
+      <dt>Language</dt>
+      <dd>Go</dd>
+    </div>
+    <div>
+      <dt>Repository</dt>
+      <dd><a href="https://github.com/HarjjotSinghh/reinstate">GitHub</a></dd>
+    </div>
+    <div>
+      <dt>CLI</dt>
+      <dd><code>rein</code> or <code>reinstate</code></dd>
+    </div>
+    <div>
+      <dt>Maintainer</dt>
+      <dd><a href="https://harjot.co">Harjot Singh Rana</a></dd>
+    </div>
+    <div>
+      <dt>Contribution status</dt>
+      <dd>Issues and pull requests welcome</dd>
+    </div>
+  </dl>
+
+  <h2 id="why-open">Why a continuity layer should be inspectable</h2>
+  <p>
+    Coding-agent transcripts can contain source code, design decisions, internal paths, and
+    sensitive terminal output. Reinstate sits between those local files and remote object storage.
+    Publishing the implementation lets users verify what adapters select, which paths are
+    excluded, where encryption happens, and how restores avoid overwriting local history.
+  </p>
+  <p>
+    Open source makes independent review possible; it does not prove the absence of
+    vulnerabilities. RC6 has not claimed a formal third-party audit, so use the documented threat
+    model and your own risk assessment for sensitive work.
+  </p>
+
+  <h2 id="repository-map">Where to inspect the implementation</h2>
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">Repository area</th>
+          <th scope="col">Responsibility</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>cmd/reinstate</code></td>
+          <td>CLI entry point</td>
+        </tr>
+        <tr>
+          <td><code>internal/adapter</code></td>
+          <td>Claude Code and Codex local session discovery and restore adapters</td>
+        </tr>
+        <tr>
+          <td><code>internal/crypto</code></td>
+          <td>age encryption and secret-input handling</td>
+        </tr>
+        <tr>
+          <td><code>internal/pathmap</code></td>
+          <td>Portable Windows ↔ macOS structural path rewriting</td>
+        </tr>
+        <tr>
+          <td><code>internal/sync</code></td>
+          <td>Push, pull, manifests, artifacts, and conflicts</td>
+        </tr>
+        <tr>
+          <td><code>testdata</code></td>
+          <td>Deterministic synthetic fixtures rather than real transcripts</td>
+        </tr>
+        <tr>
+          <td><code>docs</code></td>
+          <td>Architecture, security, compatibility, product boundaries, and runbooks</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="build-and-test">Build and test locally</h2>
+  <p>
+    The project targets Go 1.25.12 or newer. Clone the repository, then use the maintained Make
+    targets:
+  </p>
+  <ul>
+    <li><code>make build</code> creates <code>bin/reinstate</code> and the short <code>rein</code> alias.</li>
+    <li><code>make test</code> runs the test suite.</li>
+    <li><code>make vet</code> runs Go's static checks.</li>
+    <li><code>make verify</code> runs the broader local verification gate.</li>
+  </ul>
+  <p>
+    Unit tests do not depend on live networks without fakes, and committed session fixtures must
+    remain deterministic, synthetic, and secret-scanned.
+  </p>
+
+  <h2 id="contribute">How to contribute</h2>
+  <ol class="pc-steps">
+    <li>
+      Read the roadmap and product strategy so a proposal fits the continuity-layer boundary.
+    </li>
+    <li>
+      Open or join an issue before a large change; small, reviewable pull requests are preferred.
+    </li>
+    <li>
+      Add table-driven tests for Go behavior and avoid live network dependencies in unit tests.
+    </li>
+    <li>
+      Update user documentation and the unreleased changelog when a change affects the CLI or web
+      experience.
+    </li>
+    <li>
+      Never commit real transcripts, API keys, passphrases, session credentials, or private
+      compatibility evidence.
+    </li>
+  </ol>
+  <p>
+    Start with the repository's
+    <a href="https://github.com/HarjjotSinghh/reinstate/blob/main/CONTRIBUTING.md"
+      >contribution guide</a
+    > and <a href="https://github.com/HarjjotSinghh/reinstate/issues">open issues</a>.
+  </p>
+
+  <h2 id="license">What Apache-2.0 means here</h2>
+  <p>
+    Apache-2.0 permits use, modification, and distribution under its conditions and includes an
+    express patent-license grant. The repository's
+    <a href="https://github.com/HarjjotSinghh/reinstate/blob/main/LICENSE">LICENSE</a> file is the
+    authoritative legal text; this page is a project overview, not legal advice.
+  </p>
+
+  <section class="pc-related" aria-labelledby="related-heading">
+    <h2 id="related-heading">Project resources</h2>
+    <nav aria-label="Related pages">
+      <a href="https://github.com/HarjjotSinghh/reinstate">Source repository</a>
+      <a href="/about/reinstate">About Reinstate</a>
+      <a href="/security">Security overview</a>
+      <a href="/changelog">Changelog</a>
+    </nav>
+  </section>
+</PublicContentLayout>

@@ -1,0 +1,148 @@
+---
+import PublicContentLayout from '../../layouts/PublicContentLayout.astro';
+
+export const prerender = true;
+
+const title = 'Coding-Agent Integrations: Claude Code and Codex | Reinstate';
+const description =
+  'See how Reinstate syncs encrypted Claude Code and Codex CLI sessions across macOS and Windows without translating vendor-native transcripts.';
+---
+
+<PublicContentLayout
+  {title}
+  {description}
+  path="/integrations"
+  eyebrow="Coding-agent integrations"
+  answer="Reinstate currently integrates with Claude Code and OpenAI Codex CLI for encrypted, same-vendor session sync across devices. It preserves each agent’s native session format: Claude Code sessions resume in Claude Code, and Codex sessions resume in Codex."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Integrations', path: '/integrations' },
+  ]}
+  tags={['Claude Code', 'Codex CLI', 'coding-agent integrations', 'session sync']}
+>
+  <h2 id="available-integrations">Available integrations</h2>
+  <p>
+    Phase 1 stays deliberately narrow. Reinstate discovers selected local session artifacts,
+    rewrites known structural paths for portability, encrypts the result locally, and restores it
+    into the same vendor's native layout on another configured device.
+  </p>
+
+  <div class="pc-grid">
+    <a class="pc-card" href="/integrations/claude-code">
+      <h3>Claude Code</h3>
+      <p>
+        Move supported Claude Code sessions between configured project roots while recomputing the
+        destination project directory key.
+      </p>
+      <span class="pc-link">Read Claude Code integration →</span>
+    </a>
+    <a class="pc-card" href="/integrations/codex">
+      <h3>OpenAI Codex CLI</h3>
+      <p>
+        Move supported Codex rollouts while preserving the native date-partitioned layout and
+        remapping the structural working directory.
+      </p>
+      <span class="pc-link">Read Codex integration →</span>
+    </a>
+  </div>
+
+  <h2 id="support-summary">What “supported” means</h2>
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">Capability</th>
+          <th scope="col">Claude Code</th>
+          <th scope="col">Codex CLI</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Local session discovery</td>
+          <td>Phase 1</td>
+          <td>Phase 1</td>
+        </tr>
+        <tr>
+          <td>Encrypted push and pull</td>
+          <td>Same-vendor sessions</td>
+          <td>Same-vendor sessions</td>
+        </tr>
+        <tr>
+          <td>macOS ↔ Windows path mapping</td>
+          <td>Configured projects</td>
+          <td>Configured projects</td>
+        </tr>
+        <tr>
+          <td>Native cross-agent translation</td>
+          <td>Not supported</td>
+          <td>Not supported</td>
+        </tr>
+        <tr>
+          <td>MCP, skills, plugins, or settings sync</td>
+          <td>Planned after Phase 1</td>
+          <td>Planned after Phase 1</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    Reinstate fails closed for recognized but untested agent versions: discovery can remain
+    read-only, while export and restore are blocked. See the exact ranges and release evidence on
+    the <a href="/compatibility">compatibility page</a>.
+  </p>
+
+  <h2 id="integration-flow">How an integration moves a session</h2>
+  <ol class="pc-steps">
+    <li>
+      <strong>Discover.</strong> An adapter finds session artifacts in the agent's local,
+      vendor-owned data layout.
+    </li>
+    <li>
+      <strong>Normalize.</strong> Reinstate replaces known structural absolute paths with portable
+      project tokens. It does not rewrite free-form transcript prose.
+    </li>
+    <li>
+      <strong>Encrypt and store.</strong> The portable artifact is sealed locally with age
+      passphrase encryption before it is uploaded to your S3-compatible bucket.
+    </li>
+    <li>
+      <strong>Restore.</strong> On the destination device, Reinstate expands project tokens using
+      that device's configured roots and writes to the native agent layout with backups and
+      conflict handling.
+    </li>
+    <li>
+      <strong>Resume natively.</strong> You continue using the same agent vendor. Reinstate remains
+      a continuity layer, not the place where the agent executes.
+    </li>
+  </ol>
+
+  <div class="pc-callout">
+    <p>Native resume is same-vendor only.</p>
+    <p>
+      Reinstate does not silently translate a Claude Code transcript into a Codex rollout or vice
+      versa. Explicit, portable cross-agent handoffs are planned for a later phase and will be
+      labeled as lossy checkpoints.
+    </p>
+  </div>
+
+  <h2 id="not-yet-supported">Integrations not yet supported</h2>
+  <p>
+    Gemini CLI, OpenCode, Cursor, and Grok Build are not Phase 1 session integrations. Future
+    support will be added per adapter and per capability; support for sessions will not
+    automatically imply support for configuration, plugins, or credentials.
+  </p>
+  <p>
+    Reinstate is independent of Anthropic and OpenAI. Reading local vendor session files does not
+    imply a partnership, endorsement, or access to vendor accounts.
+  </p>
+
+  <section class="pc-related" aria-labelledby="related-heading">
+    <h2 id="related-heading">Continue exploring</h2>
+    <nav aria-label="Related pages">
+      <a href="/compatibility">Compatibility matrix</a>
+      <a href="/security">Security model</a>
+      <a href="/docs/adapters">Adapter documentation</a>
+      <a href="/docs/getting-started">Getting started</a>
+    </nav>
+  </section>
+</PublicContentLayout>
