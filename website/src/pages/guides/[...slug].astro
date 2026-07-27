@@ -1,0 +1,58 @@
+---
+export const prerender = true;
+
+import { render } from 'astro:content';
+import EditorialLayout from '../../layouts/EditorialLayout.astro';
+import {
+  editorialSlug,
+  getPublishedGuides,
+  type GuideEntry,
+} from '../../lib/editorial';
+
+export async function getStaticPaths() {
+  const guides = await getPublishedGuides();
+  return guides.map((entry) => ({
+    params: { slug: editorialSlug(entry) },
+    props: { entry },
+  }));
+}
+
+interface Props {
+  entry: GuideEntry;
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const slug = editorialSlug(entry);
+const path = `/guides/${slug}`;
+const agentLabel =
+  entry.data.agent === 'claude-code'
+    ? 'Claude Code'
+    : entry.data.agent === 'codex'
+      ? 'Codex CLI'
+      : 'General';
+---
+
+<EditorialLayout
+  kind="guide"
+  title={entry.data.title}
+  description={entry.data.description}
+  answer={entry.data.answer}
+  {path}
+  author={entry.data.author}
+  publishedAt={entry.data.publishedAt}
+  updatedAt={entry.data.updatedAt}
+  reviewedAt={entry.data.reviewedAt}
+  tags={entry.data.tags}
+  noindex={entry.data.noindex}
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Guides', path: '/guides' },
+    { name: entry.data.title, path },
+  ]}
+  related={entry.data.related}
+  estimatedMinutes={entry.data.estimatedMinutes}
+  category={`${agentLabel} · ${entry.data.difficulty}`}
+>
+  <Content />
+</EditorialLayout>

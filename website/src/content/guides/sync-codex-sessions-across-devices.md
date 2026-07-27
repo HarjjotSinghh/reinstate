@@ -38,9 +38,9 @@ snapshot locally, and uploads ciphertext. It reverses that mapping on the
 destination before restoring the rollout to Codex's native date-partitioned
 session layout.
 
-This is **Codex to Codex** continuity. Phase 1 does not turn a Codex rollout
-into a Claude Code transcript, and it does not silently reconstruct a session
-for another coding agent.
+This is **Codex to Codex** same-vendor continuity. Phase 1 does not turn a Codex
+rollout into a Claude Code transcript, and it does not silently reconstruct a
+session for another coding agent.
 
 The current public installer pins `v0.1.0-rc.6`. It remains release-candidate
 software while the remaining native platform and physical two-device

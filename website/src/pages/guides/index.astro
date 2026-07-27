@@ -1,0 +1,78 @@
+---
+import PublicContentLayout from '../../layouts/PublicContentLayout.astro';
+import { editorialSlug, getIndexableGuides } from '../../lib/editorial';
+
+export const prerender = true;
+
+const title = 'Coding-Agent Session Sync Guides | Reinstate';
+const description =
+  'Follow verified, answer-first Reinstate guides for encrypted Claude Code and Codex session sync, project path mapping, safe restore, and native resume.';
+const guides = await getIndexableGuides();
+const agentLabel = (agent: string) =>
+  agent === 'claude-code' ? 'Claude Code' : agent === 'codex' ? 'Codex CLI' : 'General';
+---
+
+<PublicContentLayout
+  {title}
+  {description}
+  path="/guides"
+  eyebrow="Guides"
+  answer="Use these step-by-step guides to configure encrypted, same-vendor coding-agent session sync across two devices. Every command is checked against the current Reinstate release candidate and includes dry-run, path-mapping, security, and verification steps."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Guides', path: '/guides' },
+  ]}
+  article={false}
+>
+  <Fragment slot="heading">Guides</Fragment>
+
+  <h2 id="session-sync-guides">Session sync guides</h2>
+  <p>
+    Start with the coding agent whose session you need to move. Phase 1 preserves each vendor's
+    native format: Claude Code resumes Claude Code sessions, and Codex resumes Codex sessions.
+  </p>
+
+  <div class="pc-grid">
+    {
+      guides.map((entry) => (
+        <a class="pc-card" href={`/guides/${editorialSlug(entry)}`}>
+          <p class="pc-kicker">
+            {agentLabel(entry.data.agent)} · {entry.data.estimatedMinutes} min
+          </p>
+          <h2>{entry.data.title}</h2>
+          <p>{entry.data.description}</p>
+          <span class="pc-link">Read guide →</span>
+        </a>
+      ))
+    }
+  </div>
+
+  <h2 id="safe-start">Start with one harmless session</h2>
+  <p>
+    Evaluate Reinstate with a non-sensitive session and an explicit session ID. Confirm the
+    destination mapping in a dry run before a mutating pull, and keep the coding agent closed when
+    replacing an existing local session.
+  </p>
+
+  <section class="pc-related" aria-labelledby="guide-foundations">
+    <h2 id="guide-foundations">Before your first transfer</h2>
+    <nav aria-label="Guide foundations">
+      <a href="/docs/getting-started">Install and initialize Reinstate</a>
+      <a href="/compatibility">Check supported agent versions</a>
+      <a href="/security">Review the security boundary</a>
+      <a href="/docs/troubleshooting">Prepare for failure and recovery</a>
+    </nav>
+  </section>
+</PublicContentLayout>
+
+<style>
+  .pc-kicker {
+    margin: 0 0 0.65rem !important;
+    color: var(--prim-deep) !important;
+    font-family: var(--font-mono);
+    font-size: 0.7rem !important;
+    font-weight: 650;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+</style>

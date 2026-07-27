@@ -1,0 +1,78 @@
+---
+import PublicContentLayout from '../../layouts/PublicContentLayout.astro';
+import { editorialSlug, getIndexableBlogPosts } from '../../lib/editorial';
+
+export const prerender = true;
+
+const title = 'Coding-Agent Continuity Blog | Reinstate';
+const description =
+  'Read evidence-backed engineering and product articles about coding-agent session continuity, encrypted sync, path portability, and safe native resume.';
+const posts = await getIndexableBlogPosts();
+const formatDate = (date: Date) =>
+  new Intl.DateTimeFormat('en', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  }).format(date);
+---
+
+<PublicContentLayout
+  {title}
+  {description}
+  path="/blog"
+  eyebrow="Engineering notes"
+  answer="The Reinstate blog explains the engineering boundaries behind coding-agent continuity. Articles distinguish current release-candidate behavior from roadmap work and link claims to the implementation, documentation, or release evidence."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Blog', path: '/blog' },
+  ]}
+  article={false}
+>
+  <Fragment slot="heading">Blog</Fragment>
+
+  <h2 id="latest">Latest articles</h2>
+  <div class="pc-grid">
+    {
+      posts.map((entry) => (
+        <a class="pc-card" href={`/blog/${editorialSlug(entry)}`}>
+          <p class="pc-kicker">
+            {entry.data.category} · {formatDate(entry.data.publishedAt)}
+          </p>
+          <h2>{entry.data.title}</h2>
+          <p>{entry.data.description}</p>
+          <span class="pc-link">Read article →</span>
+        </a>
+      ))
+    }
+  </div>
+
+  <h2 id="editorial-contract">The editorial contract</h2>
+  <p>
+    Product claims are tied to a visible review date and the current release status. Current,
+    planned, and experimental capabilities are labeled separately. Reinstate does not publish
+    fabricated benchmarks, ratings, compatibility results, or cross-agent fidelity claims.
+  </p>
+
+  <section class="pc-related" aria-labelledby="explore">
+    <h2 id="explore">Explore Reinstate</h2>
+    <nav aria-label="Explore Reinstate">
+      <a href="/guides">Step-by-step guides</a>
+      <a href="/docs">Technical documentation</a>
+      <a href="/open-source">Open-source project</a>
+      <a href="/changelog">Release changelog</a>
+    </nav>
+  </section>
+</PublicContentLayout>
+
+<style>
+  .pc-kicker {
+    margin: 0 0 0.65rem !important;
+    color: var(--prim-deep) !important;
+    font-family: var(--font-mono);
+    font-size: 0.7rem !important;
+    font-weight: 650;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+</style>
