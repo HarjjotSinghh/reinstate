@@ -16,6 +16,10 @@ Operational follow-up uses:
 - [the fixed AI-search query baseline](ai-search-query-baseline.md); and
 - [the monthly audit template](monthly-audit-template.md).
 
+Production observations:
+
+- [2026-07-27 pre-deployment discovery baseline](baselines/2026-07-27-pre-deployment-production-discovery.md)
+
 ## Source-of-truth order
 
 Discoverability work must not turn roadmap direction into a current product
