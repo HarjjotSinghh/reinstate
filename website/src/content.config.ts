@@ -4,16 +4,9 @@ import {
   hasCompleteSocialOverride,
   isSafeContentCanonical,
 } from './lib/content-seo';
+import { searchIntents } from './lib/content-intent';
 
-const searchIntent = z.enum([
-  'navigational',
-  'problem',
-  'solution',
-  'how-to',
-  'troubleshooting',
-  'comparison',
-  'evaluation',
-]);
+const searchIntent = z.enum(searchIntents);
 
 const canonical = z
   .string()

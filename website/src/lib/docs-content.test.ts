@@ -1,18 +1,11 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
+import { searchIntents } from './content-intent';
 import { extractFaqEntries } from './faq';
 import { faqPageSchema } from './schema';
 
 const docsDir = new URL('../content/docs/', import.meta.url);
-const intents = new Set([
-  'navigational',
-  'problem',
-  'solution',
-  'how-to',
-  'troubleshooting',
-  'comparison',
-  'evaluation',
-]);
+const intents = new Set<string>(searchIntents);
 
 function field(frontmatter: string, name: string): string | undefined {
   return frontmatter.match(new RegExp(`^${name}:\\s*(.+)$`, 'm'))?.[1]?.trim();
@@ -69,5 +62,42 @@ describe('documentation content metadata', () => {
       entries.map((entry) => entry.question),
     );
     expect(mainEntity.every((entry) => entry.acceptedAnswer.text.length > 10)).toBe(true);
+  });
+
+  it('keeps explicit intent classes on content with an unambiguous primary role', async () => {
+    const expected = new Map([
+      [new URL('../content/docs/adapters.md', import.meta.url), 'agent-specific'],
+      [new URL('../content/docs/faq.md', import.meta.url), 'answer'],
+      [new URL('../content/docs/security-model.md', import.meta.url), 'security'],
+      [
+        new URL(
+          '../content/guides/move-a-coding-agent-session-from-mac-to-windows.md',
+          import.meta.url,
+        ),
+        'platform-specific',
+      ],
+      [
+        new URL(
+          '../content/guides/sync-claude-code-sessions-across-devices.md',
+          import.meta.url,
+        ),
+        'agent-specific',
+      ],
+      [
+        new URL(
+          '../content/guides/sync-codex-sessions-across-devices.md',
+          import.meta.url,
+        ),
+        'agent-specific',
+      ],
+    ]);
+
+    for (const [path, intent] of expected) {
+      const source = await readFile(path, 'utf8');
+      const frontmatter = source.match(/^---\n([\s\S]+?)\n---\n/)?.[1] ?? '';
+      expect(field(frontmatter, 'searchIntent')?.replace(/^["']|["']$/g, '')).toBe(
+        intent,
+      );
+    }
   });
 });

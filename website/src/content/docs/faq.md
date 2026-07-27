@@ -9,7 +9,7 @@ version: "v0.1.0-rc.6"
 updatedAt: 2026-07-27
 tags: ["faq", "session-sync", "claude-code", "codex", "security"]
 targetQuery: "what is Reinstate"
-searchIntent: "navigational"
+searchIntent: "answer"
 draft: false
 noindex: false
 ---

@@ -8,7 +8,7 @@ updatedAt: 2026-07-27
 reviewedAt: 2026-07-27
 tags: ["macOS", "Windows", "path remapping", "session sync", "Claude Code", "Codex CLI"]
 targetQuery: "move coding agent session from Mac to Windows"
-searchIntent: "how-to"
+searchIntent: "platform-specific"
 related:
   - title: "Desktop and laptop continuity"
     path: "/use-cases/desktop-and-laptop"

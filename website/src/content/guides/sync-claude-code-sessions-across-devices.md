@@ -8,7 +8,7 @@ updatedAt: 2026-07-27
 reviewedAt: 2026-07-27
 tags: ["Claude Code", "session sync", "multi-device", "path mapping", "end-to-end encryption"]
 targetQuery: "how to sync Claude Code sessions across devices"
-searchIntent: "how-to"
+searchIntent: "agent-specific"
 related:
   - title: "Claude Code integration details"
     path: "/integrations/claude-code"

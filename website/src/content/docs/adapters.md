@@ -9,7 +9,7 @@ version: "v0.1.0-rc.6"
 updatedAt: 2026-07-27
 tags: ["adapters", "claude-code", "codex", "same-vendor-resume"]
 targetQuery: "Reinstate supported coding agents"
-searchIntent: "evaluation"
+searchIntent: "agent-specific"
 draft: false
 noindex: false
 ---

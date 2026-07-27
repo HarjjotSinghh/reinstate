@@ -9,7 +9,7 @@ version: "v0.1.0-rc.6"
 updatedAt: 2026-07-27
 tags: ["security", "encryption", "credentials", "threat-model", "age"]
 targetQuery: "is Reinstate secure"
-searchIntent: "evaluation"
+searchIntent: "security"
 draft: false
 noindex: false
 ---

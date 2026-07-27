@@ -8,7 +8,7 @@ updatedAt: 2026-07-27
 reviewedAt: 2026-07-27
 tags: ["Codex CLI", "session sync", "multi-device", "path mapping", "end-to-end encryption"]
 targetQuery: "how to sync Codex sessions across devices"
-searchIntent: "how-to"
+searchIntent: "agent-specific"
 related:
   - title: "Codex integration details"
     path: "/integrations/codex"
