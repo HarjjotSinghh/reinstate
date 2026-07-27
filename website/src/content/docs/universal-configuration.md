@@ -2,6 +2,8 @@
 title: "Universal agent configuration roadmap"
 description: "Explore the planned non-secret desired-state model for rendering MCP servers, skills, hooks, plugins, marketplaces, and safe settings across coding agents."
 order: 5
+author: "Harjot Singh Rana"
+status: planned
 updatedAt: 2026-07-27
 tags: ["roadmap", "mcp", "skills", "plugins", "agent-configuration"]
 targetQuery: "sync MCP servers and coding-agent configuration"

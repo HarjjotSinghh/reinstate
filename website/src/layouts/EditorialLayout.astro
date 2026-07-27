@@ -111,14 +111,10 @@ const schema: SchemaNode[] = [
             <dt>By</dt>
             <dd><a href={product.maintainer.url} rel="author">{author}</a></dd>
           </div>
-          {
-            kind === 'blog' && (
-              <div>
-                <dt>Published</dt>
-                <dd><time datetime={publishedAt.toISOString()}>{formatDate(publishedAt)}</time></dd>
-              </div>
-            )
-          }
+          <div>
+            <dt>Published</dt>
+            <dd><time datetime={publishedAt.toISOString()}>{formatDate(publishedAt)}</time></dd>
+          </div>
           <div>
             <dt>Updated</dt>
             <dd><time datetime={updatedAt.toISOString()}>{formatDate(updatedAt)}</time></dd>

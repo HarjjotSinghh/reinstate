@@ -2,14 +2,14 @@ import rss from '@astrojs/rss';
 import { product } from '../data/product';
 import {
   editorialSlug,
-  getPublishedBlogPosts,
-  getPublishedGuides,
+  getIndexableBlogPosts,
+  getIndexableGuides,
 } from '../lib/editorial';
 
 export async function GET(context: { site?: URL }) {
   const [guides, blogPosts] = await Promise.all([
-    getPublishedGuides(),
-    getPublishedBlogPosts(),
+    getIndexableGuides(),
+    getIndexableBlogPosts(),
   ]);
 
   return rss({

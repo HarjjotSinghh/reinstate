@@ -2,6 +2,8 @@
 title: "How Reinstate syncs coding-agent sessions"
 description: "Understand Reinstate's adapters, structural path remapping, age encryption, immutable snapshots, conflict handling, and S3-compatible storage architecture."
 order: 2
+author: "Harjot Singh Rana"
+status: current
 updatedAt: 2026-07-27
 tags: ["architecture", "session-sync", "encryption", "path-remapping", "s3"]
 targetQuery: "how Reinstate works"

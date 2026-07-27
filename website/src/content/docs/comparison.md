@@ -2,6 +2,8 @@
 title: "Reinstate compared with vendor and file sync"
 description: "Compare Reinstate with native agent sync, session browsers, full agent development environments, single-agent utilities, and do-it-yourself file syncing."
 order: 6
+author: "Harjot Singh Rana"
+status: current
 updatedAt: 2026-07-27
 tags: ["comparison", "session-sync", "developer-tools", "coding-agents"]
 targetQuery: "Reinstate alternatives"

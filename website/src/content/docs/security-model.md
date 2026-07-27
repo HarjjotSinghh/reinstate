@@ -2,6 +2,8 @@
 title: "Reinstate security and encryption model"
 description: "See how Reinstate encrypts session data before upload, excludes credential files, stores storage keys, handles conflicts, and defines its threat boundaries."
 order: 4
+author: "Harjot Singh Rana"
+status: current
 updatedAt: 2026-07-27
 tags: ["security", "encryption", "credentials", "threat-model", "age"]
 targetQuery: "is Reinstate secure"

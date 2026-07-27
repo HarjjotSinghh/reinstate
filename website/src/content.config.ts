@@ -17,6 +17,8 @@ const docs = defineCollection({
     title: z.string().min(2).max(70),
     description: z.string().min(70).max(180),
     order: z.number().int().positive(),
+    author: z.string().min(2).max(80),
+    status: z.enum(['current', 'planned', 'deprecated']),
     updatedAt: z.coerce.date(),
     tags: z.array(z.string().min(1)).min(1),
     targetQuery: z.string().min(3),

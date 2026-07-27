@@ -33,6 +33,10 @@ describe('documentation content metadata', () => {
       const prose = source.replace(/```[\s\S]*?```/g, '');
 
       expect(field(frontmatter, 'title'), `${file} title`).toBeTruthy();
+      expect(field(frontmatter, 'author'), `${file} author`).toBeTruthy();
+      expect(field(frontmatter, 'status'), `${file} status`).toMatch(
+        /^(current|planned|deprecated)$/,
+      );
       expect(description?.length, `${file} description length`).toBeGreaterThanOrEqual(70);
       expect(description?.length, `${file} description length`).toBeLessThanOrEqual(180);
       expect(field(frontmatter, 'updatedAt'), `${file} updatedAt`).toMatch(/^\d{4}-\d{2}-\d{2}$/);

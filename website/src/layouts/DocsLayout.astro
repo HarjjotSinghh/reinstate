@@ -3,6 +3,7 @@ export const prerender = true;
 
 import BaseLayout from './BaseLayout.astro';
 import { getOrderedDocs, docSlug, docTitle } from '../lib/docs';
+import { product } from '../data/product';
 import {
   breadcrumbSchema,
   techArticleSchema,
@@ -13,6 +14,8 @@ interface Props {
   title: string;
   description: string;
   path: string;
+  author?: string;
+  status?: 'current' | 'planned' | 'deprecated';
   updatedAt: Date | string;
   tags?: string[];
   noindex?: boolean;
@@ -23,6 +26,8 @@ const {
   title,
   description,
   path: canonicalPath,
+  author = product.maintainer.name,
+  status = 'current',
   updatedAt,
   tags = [],
   noindex = false,
@@ -31,6 +36,11 @@ const {
 const docs = await getOrderedDocs();
 const path = Astro.url.pathname.replace(/\/$/, '') || '/docs';
 const updatedDate = updatedAt instanceof Date ? updatedAt : new Date(updatedAt);
+const statusLabel = {
+  current: 'Current release',
+  planned: 'Planned',
+  deprecated: 'Deprecated',
+}[status];
 const isDocsIndex = canonicalPath === '/docs';
 const breadcrumbs = [
   { name: 'Home', path: '/' },
@@ -119,16 +129,29 @@ const jsonLd = [
       <article class="prose prose-rein max-w-3xl">
         <header class="doc-heading">
           <h1>{title}</h1>
-          <p class="updated">
-            Updated <time datetime={updatedDate.toISOString()}>
-              {updatedDate.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                timeZone: 'UTC',
-              })}
-            </time>
-          </p>
+          <dl class="doc-meta">
+            <div>
+              <dt>Status</dt>
+              <dd><span class:list={['status', `status-${status}`]}>{statusLabel}</span></dd>
+            </div>
+            <div>
+              <dt>Maintained by</dt>
+              <dd><a href={product.maintainer.url} rel="author">{author}</a></dd>
+            </div>
+            <div>
+              <dt>Updated</dt>
+              <dd>
+                <time datetime={updatedDate.toISOString()}>
+                  {updatedDate.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    timeZone: 'UTC',
+                  })}
+                </time>
+              </dd>
+            </div>
+          </dl>
         </header>
         <slot />
       </article>
@@ -234,10 +257,41 @@ const jsonLd = [
   .doc-heading h1 {
     margin-bottom: 0.45rem;
   }
-  .updated {
+  .doc-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem 1.25rem;
     margin: 0;
     color: var(--ink-3);
     font-size: 0.8rem;
+  }
+  .doc-meta div {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .doc-meta dt {
+    font-weight: 650;
+  }
+  .doc-meta dd {
+    margin: 0;
+  }
+  .doc-meta a {
+    color: inherit;
+  }
+  .status {
+    display: inline-flex;
+    padding: 0.12rem 0.4rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    color: var(--ink-2);
+  }
+  .status-current {
+    border-color: color-mix(in srgb, var(--prim-deep) 45%, var(--rule));
+    color: var(--prim-deep);
+  }
+  .status-planned {
+    border-style: dashed;
   }
   .mobile-nav {
     display: flex;

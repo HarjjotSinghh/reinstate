@@ -2,6 +2,8 @@
 title: "Install and sync Reinstate across devices"
 description: "Install Reinstate, configure encrypted S3-compatible storage, and restore a Claude Code or Codex session safely on another development machine."
 order: 1
+author: "Harjot Singh Rana"
+status: current
 updatedAt: 2026-07-27
 tags: ["installation", "session-sync", "claude-code", "codex", "s3"]
 targetQuery: "how to sync coding-agent sessions across devices"

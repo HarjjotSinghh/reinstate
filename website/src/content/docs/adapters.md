@@ -2,6 +2,8 @@
 title: "Claude Code and Codex session adapters"
 description: "Learn how Reinstate adapters discover, normalize, and restore Claude Code and Codex sessions without translating native transcripts across vendors."
 order: 3
+author: "Harjot Singh Rana"
+status: current
 updatedAt: 2026-07-27
 tags: ["adapters", "claude-code", "codex", "same-vendor-resume"]
 targetQuery: "Reinstate supported coding agents"

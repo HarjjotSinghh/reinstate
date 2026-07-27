@@ -2,6 +2,8 @@
 title: "Troubleshoot Reinstate session sync"
 description: "Fix installation, path remapping, passphrase, remote manifest, conflict, large Codex history, credential, and active-agent errors without exposing secrets."
 order: 8
+author: "Harjot Singh Rana"
+status: current
 updatedAt: 2026-07-27
 tags: ["troubleshooting", "session-sync", "path-remapping", "passphrase", "codex"]
 targetQuery: "fix Reinstate session sync"
