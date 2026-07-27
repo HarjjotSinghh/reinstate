@@ -318,17 +318,273 @@ absolutes, or cross-agent transcript translation.
 | Asset | Current state | Publication gate |
 | --- | --- | --- |
 | Machine-readable compatibility matrix | Implemented | keep sources and review dates current |
-| Session format map | Planned | sanitized primary research and methodology |
+| Terminology glossary | Implemented at `/glossary` | keep definitions synchronized with current code and roadmap |
+| Reinstate encrypted snapshot format v1 | Implemented at `/research/encrypted-snapshot-format-v1` | update only from released schema/source evidence; never call it an open standard |
+| Agent-version change tracker | Implemented at `/compatibility/agent-version-history` | update compatibility data, adapter evidence, and tagged release notes together |
+| Vendor session-format map | Planned | sanitized primary research, method, exact vendor versions, and review of vendor terms |
 | Archive inspector | Planned | safe local-only tool and threat review |
 | Migration readiness checker | Planned | diagnostic behavior released and documented |
 | Storage validator | Partly available through `rein setup check` | public asset needs scoped UX and no secret collection |
-| Cross-device path mapper | Planned | released behavior plus synthetic fixtures |
+| Synthetic cross-device path mapper | Implemented at `/tools/path-mapping-visualizer` | fixed public fixtures only; no user input, persistence, or analytics |
+| Local private-path mapper | Planned | client-only proof, no network or persistence, redaction and browser-threat review |
 | Restoration benchmark | Not published | reproducible method, raw synthetic data, hardware/OS versions, failures |
 | Threat model | Architecture/security material exists | standalone review before calling it a formal threat model |
 | Adapter starter kit | Planned | supported extension contract and tested tutorial |
 
 Each published asset needs one canonical URL, author/owner, methodology,
 meaningful update date, limitations, and downloadable evidence when useful.
+
+## Evidence-safe launch packets
+
+These are channel-specific plans, not evidence that publication or outreach has
+happened. Every packet must link to the exact deployed commit and preserve the
+release-candidate, same-vendor, and open-acceptance boundaries.
+
+### Demo video plan
+
+Produce two short recordings only after the exact release and production site
+pass their launch gates:
+
+1. **Install and inspect, 90 seconds.** Show checksum-verifying installation,
+   `rein version --json`, `rein setup check`, one synthetic session in
+   `rein list`, and the compatibility page. Do not enter credentials, a
+   passphrase, a real bucket, or a real session on screen.
+2. **macOS → Windows restore, 3–5 minutes.** Use a fresh synthetic repository
+   and session. Show the canonical project ID, different redacted local roots,
+   scoped push/pull dry-runs, ciphertext-only object inspection, exact native
+   resume, and the open platform evidence rows.
+
+Video acceptance:
+
+- record the tag, commit, agent versions, OS builds, installer checksums, UTC
+  time, and evidence owners;
+- use a dedicated synthetic profile and rotate/delete its temporary storage
+  credentials after recording;
+- review every frame, terminal scrollback, window title, shell history, browser
+  autofill, and file path for secrets or personal data;
+- caption commands and expected outcomes, with a transcript linked from a
+  canonical website page;
+- state that a successful demo is one bounded observation, not a benchmark or
+  universal compatibility claim; and
+- publish only after both the demonstrated path and public installer pass the
+  same release's acceptance record.
+
+Retain the original capture privately, the redacted export, transcript, asset
+hash, video URL, and reviewer sign-off. Do not use an edited success montage to
+erase failed attempts from the underlying acceptance evidence.
+
+### Awesome-list outreach plan
+
+Awesome lists are editorial repositories, not backlink vending machines.
+Before opening one pull request:
+
+1. confirm the list accepts open-source developer tools in Reinstate's actual
+   category;
+2. read the current contribution rules, alphabetical format, license
+   requirements, and self-promotion policy;
+3. search the list and open pull requests for duplicates;
+4. wait until the documented public setup path works for the exact listed
+   release;
+5. propose one factual line using the canonical external description, source
+   URL, Apache-2.0 license, and current release-candidate qualification; and
+6. disclose maintainer affiliation in the pull request.
+
+Keep the rule URL, immutable proposed diff, pull-request URL, review outcome,
+and final live entry. Do not submit to loosely related lists, automate parallel
+pull requests, add stars, pressure maintainers, or rewrite the description to
+fit an unsupported category.
+
+### GitHub Discussion plan
+
+Open one repository Discussion only after Discussions are enabled and the
+trial path is usable. Prefer a category such as **Announcements** or
+**Show and tell** selected by the maintainer.
+
+The post should contain:
+
+- the concrete work/personal or macOS/Windows continuity problem;
+- current release, exact supported agent ranges, and open platform gates;
+- a 30-second architecture summary with links to the
+  [snapshot format](https://reinstate.dev/research/encrypted-snapshot-format-v1),
+  [path visualizer](https://reinstate.dev/tools/path-mapping-visualizer),
+  security model, and source;
+- a synthetic setup path and a request for one specific class of compatibility
+  feedback;
+- a warning not to post transcripts, credentials, bucket details, or private
+  paths; and
+- maintainer affiliation and the Apache-2.0 license.
+
+Pin a correction comment when a release or supported range changes. Archive or
+edit the title only with a dated explanation; do not silently leave stale
+version support in a high-ranking discussion.
+
+### Architecture post plan
+
+The first architecture article should answer:
+
+> How can an encrypted coding-agent session move between macOS and Windows
+> without rewriting transcript prose?
+
+Required sections:
+
+1. the continuity problem and same-vendor boundary;
+2. adapter discovery and explicit exclusions;
+3. canonical project identity and allow-listed structural fields;
+4. the manifest and encrypted snapshot v1 framing;
+5. age encryption, object-store metadata leakage, and credential separation;
+6. conflict detection, backups, atomic writes, and exact native rediscovery;
+7. deterministic synthetic fixtures and remaining physical acceptance gates;
+8. rejected approaches, including raw config-tree mirroring and global
+   path-string replacement; and
+9. source links, reproducible tests, limitations, and a correction policy.
+
+Publication requires maintainer technical review against the tagged source,
+one clean diagram with accessible text, a content brief, and a passing
+generated-site schema/link/metadata run. Do not introduce performance numbers
+until the benchmark publication contract has raw evidence.
+
+## Diagnostic and engineering-as-marketing plans
+
+The tools below remain small continuity diagnostics. They must not become a
+hosted transcript processor, agent runtime, credential collector, or raw
+vendor-config mirror.
+
+### Archive inspector
+
+Proposed job: tell a developer whether one local `.age` object is recognizable
+by a selected Reinstate release, without restoring it.
+
+Minimum safe contract:
+
+- local CLI first; no upload, remote URL, telemetry, or hidden network call;
+- require an explicit file and hidden passphrase input;
+- default output includes only envelope/manifest version, kind, agent,
+  redacted IDs, declared size, hash-verification result, and compatibility
+  decision;
+- never print transcript text, inner JSONL records, credentials, full private
+  paths, passphrases, or decrypted TAR bytes;
+- preserve input read-only and write no decrypted temp file unless an explicit
+  reviewed export mode is later designed;
+- reject wrong passphrases, oversized metadata/payloads, unsupported schemas,
+  identity mismatches, unsafe paths, multiple TAR entries, credential paths,
+  and hash failures;
+- publish synthetic fixtures for every pass/fail result; and
+- complete a threat review, cross-platform tests, CLI documentation, and
+  redaction tests before the page changes from `Planned`.
+
+The inspector may describe the current Reinstate format; it must not claim it
+can inspect arbitrary Claude Code, Codex, or third-party archives.
+
+### Migration readiness checker
+
+Proposed job: answer whether a profile and its encrypted heads can move from
+one explicit Reinstate release to another before replacing the binary.
+
+Required inputs and behavior:
+
+- source and target Reinstate versions, local config/state schema versions, and
+  read-only encrypted manifest/snapshot metadata;
+- an explicit compatibility matrix maintained in released code, not a guessed
+  SemVer rule;
+- statuses `READY`, `ACTION_REQUIRED`, `UNSUPPORTED`, and
+  `EVIDENCE_UNAVAILABLE`, each with a reason and non-mutating next step;
+- no mutation, migration, deletion, garbage collection, downgrade, or upload
+  in check mode;
+- backups, interruption behavior, rollback, and partial-migration recovery
+  designed before any future mutating command; and
+- fixtures spanning supported, unknown, corrupt, wrong-profile, and downgrade
+  cases.
+
+There is no public migration checker in RC6. Until a compatibility contract and
+tests ship, release notes and independent backups are the only supported
+pre-upgrade guidance.
+
+### Path mapper
+
+The first safe asset is the implemented
+[fixed synthetic visualizer](https://reinstate.dev/tools/path-mapping-visualizer).
+It accepts only
+two direction choices and the two current adapters, contains no private input,
+disables analytics, and explains the recognized-field boundary.
+
+A later local private-path checker must not launch merely by adding a text box.
+Before publication it needs:
+
+- client-only processing with a reviewed build that makes no network requests;
+- no analytics script, service worker, cookies, browser storage, crash
+  reporting, URL/query serialization, clipboard read, or autofill;
+- an explicit “synthetic example” default and a clear warning before private
+  input;
+- only released `${HOME}`, `${REPO:<id>}`, and `${WORK:<alias>}` behavior;
+- no filesystem existence claim from string transformation alone;
+- paste/type/Unicode/Windows drive/UNC/WSL/adversarial tests and a threat
+  review; and
+- a local CLI alternative for environments that do not trust browser input.
+
+Do not call either tool a path migration tool: Reinstate remaps recognized
+session structure, not repositories, Git state, runtimes, or full environments.
+
+## Gated research and public-relations angles
+
+These angles can become useful primary research only after their evidence
+gates close. They are prohibited launch claims today.
+
+### Open portability standard
+
+Potential future angle:
+
+> An open, implementation-neutral continuity checkpoint for handing coding work
+> between agents without pretending native transcripts are interchangeable.
+
+Current status: **not a standard and not an RC6 feature**. The published
+Reinstate snapshot v1 page documents one project's internal encrypted storage
+format. It is not a proposal for cross-agent interchange.
+
+Before using “open portability standard,” “standard,” “protocol,” or
+“interoperable” in outreach, require:
+
+- a separately versioned public problem statement and scope;
+- a vendor-neutral data model that keeps native resume distinct from lossy
+  handoff;
+- security/privacy threat model, extension and version-negotiation rules, test
+  vectors, and conformance criteria;
+- governance, license, change process, and trademark/namespace decisions;
+- at least two independent implementations with documented interoperability
+  results;
+- public failure cases, downgrade behavior, and capability-diff semantics; and
+- review from affected open-source maintainers without implying vendor
+  endorsement.
+
+Until then, acceptable language is “Reinstate plans explicit portable
+handoffs.” A repository name, JSON schema, or published spec does not by itself
+make a standard.
+
+### Proprietary coding-agent format research
+
+Potential future angle:
+
+> What changed in local coding-agent session formats, and which structural
+> fields matter for safe same-vendor continuity?
+
+Publication gates:
+
+- identify exact public agent versions, operating systems, dates, and
+  collection method;
+- use synthetic sessions generated for research—never real user, employer,
+  customer, or contributor transcripts;
+- inspect and publish only the minimum structural metadata needed for the
+  research question, with secrets and user paths redacted;
+- review applicable vendor terms, licenses, responsible-disclosure needs, and
+  redistribution limits before publishing fixtures or byte excerpts;
+- distinguish public observation from official documentation and never imply
+  vendor approval, partnership, or a stable proprietary contract;
+- publish reproducible scripts, hashes, schema diffs, failures, unknowns, and a
+  correction path where legally and safely permitted; and
+- coordinate vulnerability findings privately before public release.
+
+Do not describe reverse-engineered behavior as a vendor guarantee. Do not
+publish a fan-out page for every vendor version; maintain one dated canonical
+research record with meaningful diffs.
 
 ## Measurement and follow-up
 
