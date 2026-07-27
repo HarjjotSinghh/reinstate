@@ -85,6 +85,11 @@ Inspect these launch-critical canonicals:
 https://reinstate.dev/
 https://reinstate.dev/docs
 https://reinstate.dev/docs/getting-started
+https://reinstate.dev/guides
+https://reinstate.dev/guides/sync-claude-code-sessions-across-devices
+https://reinstate.dev/guides/sync-codex-sessions-across-devices
+https://reinstate.dev/blog
+https://reinstate.dev/blog/why-git-does-not-sync-coding-agent-sessions
 https://reinstate.dev/integrations
 https://reinstate.dev/integrations/claude-code
 https://reinstate.dev/integrations/codex
@@ -93,6 +98,7 @@ https://reinstate.dev/security
 https://reinstate.dev/about/reinstate
 https://reinstate.dev/open-source
 https://reinstate.dev/changelog
+https://reinstate.dev/privacy
 https://reinstate.dev/use-cases
 https://reinstate.dev/use-cases/work-and-personal-computers
 https://reinstate.dev/use-cases/macos-and-windows

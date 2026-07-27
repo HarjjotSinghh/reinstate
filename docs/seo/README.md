@@ -41,8 +41,11 @@ The first implementation pass covers:
 - index controls for preview and error routes;
 - enriched documentation metadata and breadcrumbs;
 - high-intent integration, compatibility, security, and fact pages;
+- answer-first guides and an evidence-backed engineering blog;
+- route-specific branded Open Graph images;
+- an explicit website privacy notice and security contact file;
 - RSS and `llms.txt` discovery files; and
-- generated-site SEO validation in CI.
+- generated-site SEO, internal-link, and static-performance validation in CI.
 
 Search Console, Bing Webmaster Tools, production bot logs, external profile
 updates, and referral analytics require production access or account-level
