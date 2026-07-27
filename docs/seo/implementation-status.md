@@ -56,7 +56,7 @@ phase. It deliberately does not call those external actions complete.
 | 23 | Heading structure | Implemented | single-H1 and ordered heading validation plus rendered-browser audits |
 | 24 | Images and media | Implemented | responsive WebP docs media, intrinsic sizes, lazy loading, alt/caption checks, 1200×630 route cards |
 | 25 | Core Web Vitals/performance | Implemented / external | static budgets and real Lighthouse lab gate; field CWV/INP require production data |
-| 26 | Accessibility | Implemented / manual follow-up | skip link, semantics, reduced motion, corrected contrast/underlines, Lighthouse accessibility 100 on five templates; screen-reader/zoom testing remains manual |
+| 26 | Accessibility | Implemented / manual follow-up | skip link, semantics, reduced motion, corrected contrast/underlines, Lighthouse accessibility 100 on five templates; `manual-browser-acceptance.md` preserves keyboard, theme, mobile, screen-reader, zoom, and no-JS release evidence gates |
 | 27 | JavaScript/rendering | Implemented | core content prerendered in HTML; static preview and Lighthouse inspect rendered output |
 | 28 | RSS | Implemented | indexable guides/blog feed with canonical URLs and metadata |
 | 29 | `llms.txt` | Implemented | optional factual resource; documentation explicitly states it is not a ranking control |
