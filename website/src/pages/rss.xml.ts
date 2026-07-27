@@ -7,6 +7,8 @@ import {
   getIndexableGuides,
 } from '../lib/editorial';
 
+export const prerender = true;
+
 export async function GET(context: { site?: URL }) {
   const [guides, blogPosts] = await Promise.all([
     getIndexableGuides(),

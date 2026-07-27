@@ -55,6 +55,9 @@ describe('central product-truth drift guard', () => {
         path.pathname.endsWith('/data/compatibility.json') ||
         path.pathname.endsWith('/data/agent-version-history.ts') ||
         path.pathname.endsWith('/pages/changelog.astro') ||
+        path.pathname.endsWith(
+          '/pages/compatibility/agent-version-history.astro',
+        ) ||
         path.pathname.endsWith('/pages/research/index.astro')
       ) {
         continue;

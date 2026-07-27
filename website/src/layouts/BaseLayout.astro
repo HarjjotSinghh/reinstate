@@ -8,7 +8,6 @@ import Analytics from '../components/Analytics.astro';
 import CommandCopy from '../components/CommandCopy.astro';
 import { product } from '../data/product';
 import questrialLatin from '@fontsource/questrial/files/questrial-latin-400-normal.woff2?url';
-import geistLatin from '@fontsource-variable/geist/files/geist-latin-wght-normal.woff2?url';
 
 interface Props {
   title?: string;
@@ -25,6 +24,7 @@ interface Props {
   tags?: string[];
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
   bare?: boolean;
+  analytics?: boolean;
 }
 
 const {
@@ -42,6 +42,7 @@ const {
   tags = [],
   jsonLd = [],
   bare = false,
+  analytics = true,
 } = Astro.props;
 const googleSiteVerification = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION;
 const bingSiteVerification = import.meta.env.PUBLIC_BING_SITE_VERIFICATION;
@@ -77,6 +78,24 @@ const bingSiteVerification = import.meta.env.PUBLIC_BING_SITE_VERIFICATION;
     {bingSiteVerification && (
       <meta name="msvalidate.01" content={bingSiteVerification} />
     )}
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title="Reinstate updates"
+      href="/rss.xml"
+    />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title="Reinstate blog"
+      href="/blog/rss.xml"
+    />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title="Reinstate changelog"
+      href="/changelog/rss.xml"
+    />
 
     {/* Single SVG icon only — a parallel favicon.ico wins in some browsers and never swaps with theme. */}
     <link id="favicon" rel="icon" type="image/svg+xml" href="/favicon-light.svg" />
@@ -88,14 +107,6 @@ const bingSiteVerification = import.meta.env.PUBLIC_BING_SITE_VERIFICATION;
       type="font/woff2"
       crossorigin="anonymous"
     />
-    <link
-      rel="preload"
-      href={geistLatin}
-      as="font"
-      type="font/woff2"
-      crossorigin="anonymous"
-    />
-
     {/* Light is default. Only apply dark when explicitly stored. Favicon follows theme. */}
     <script is:inline>
       (function () {
@@ -147,6 +158,6 @@ const bingSiteVerification = import.meta.env.PUBLIC_BING_SITE_VERIFICATION;
     </main>
     {!bare && <Footer />}
     <CommandCopy />
-    <Analytics />
+    {analytics && <Analytics />}
   </body>
 </html>
