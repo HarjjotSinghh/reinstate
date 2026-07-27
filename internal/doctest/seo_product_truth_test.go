@@ -37,6 +37,7 @@ func TestPublicSEOCommandsStayScopedAndClaimsStayQualified(t *testing.T) {
 	}
 
 	for _, path := range paths {
+		path = filepath.ToSlash(path)
 		body := read(t, path)
 		for _, forbidden := range []string{
 			"Credentials are never synced",
