@@ -8,6 +8,7 @@ const documents = [
   'storage.md',
   'sync-a-session.md',
   'restore-a-session.md',
+  'cli-reference.md',
   'limitations.md',
 ] as const;
 

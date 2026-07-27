@@ -1,7 +1,7 @@
 ---
 title: "Reinstate limitations and release-candidate boundaries"
 description: "Review Reinstate RC6 limitations for agents, operating systems, native resume, storage, snapshots, path remapping, security, and release certification."
-order: 14
+order: 15
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
