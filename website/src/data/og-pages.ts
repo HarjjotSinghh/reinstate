@@ -152,6 +152,20 @@ export const staticOgPages: OgPage[] = [
       'Use canonical project mappings to restore Claude Code or Codex sessions when local paths differ.',
   },
   {
+    route: '/use-cases/desktop-and-laptop',
+    kind: 'Use case',
+    title: 'Continue coding-agent sessions from desktop to laptop',
+    description:
+      'Move one encrypted same-vendor session between configured computers with path mapping and safe restore.',
+  },
+  {
+    route: '/use-cases/encrypted-session-backup',
+    kind: 'Use case',
+    title: 'Create an encrypted backup of coding-agent sessions',
+    description:
+      'Store selected Claude Code or Codex snapshots as client-encrypted objects in your own bucket.',
+  },
+  {
     route: '/compare',
     kind: 'Factual comparisons',
     title: 'Compare Reinstate with session-continuity workflows',
