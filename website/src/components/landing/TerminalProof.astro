@@ -71,13 +71,153 @@ const frontText = (x: number, y: number, z: number, d: number, h: number) => {
       </h2>
       <p>
         List and push on the first machine. Pull on the second. Reinstate remaps
-        the project path, then resumes the session with the agent that created
-        it in its native format.
+        the project path, restores the native session, and lets you continue
+        where you left off.
       </p>
     </header>
 
     <div class="handoff-stage">
-      <figure class="handoff-illustration">
+      {/* Terminals first: this is the proof. Illustration is secondary. */}
+      <div class="workflow-grid">
+        <article class="terminal source-terminal" aria-labelledby="source-terminal-title">
+          <header>
+            <div class="terminal-device">
+              <svg
+                class="terminal-device-icon"
+                width="26"
+                height="26"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="3.5" y="4" width="17" height="12" rx="1.5"></rect>
+                <path d="M9 20h6M12 16v4"></path>
+              </svg>
+              <div>
+                <span class="device">Device A</span>
+                <h3 id="source-terminal-title">Windows desktop</h3>
+              </div>
+            </div>
+            <span class="terminal-kind">PowerShell</span>
+          </header>
+          <pre aria-label="Commands run on the Windows source device"><code><span class="line command"><span class="prompt">PS C:\reinstate&gt;</span> rein list --agent claude</span>
+<span class="line output">claude  ses_7f3a  reinstate  2.1 MB  4h ago</span>
+<span class="line command"><span class="prompt">PS C:\reinstate&gt;</span> rein push --agent claude --session ses_7f3a</span>
+<span class="line output">Encryption passphrase: <span class="secret">••••••••</span></span>
+<span class="line success">pushed 1 snapshot, skipped 0 unchanged</span></code></pre>
+        </article>
+
+        <div class="sealed-checkpoint" aria-label="Encrypted storage bridge">
+          <span class="bridge-mark">
+            <svg
+              width="19"
+              height="19"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.9"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 3.5 19 6v5.2c0 4.1-2.8 7.5-7 9.3-4.2-1.8-7-5.2-7-9.3V6l7-2.5Z"></path>
+              <rect x="8.7" y="10.4" width="6.6" height="5.2" rx="1"></rect>
+              <path d="M10.2 10.4V9a1.8 1.8 0 0 1 3.6 0v1.4"></path>
+            </svg>
+            End-to-end encrypted
+          </span>
+          <div class="bridge-details">
+            <strong class="bridge-row">
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="8" cy="12" r="3.5"></circle>
+                <path d="M11.5 12H21M17 12v3M14 12v2"></path>
+              </svg>
+              <span>age encrypted</span>
+            </strong>
+            <span class="bridge-row">
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M5 8.5h14v10H5z"></path>
+                <path d="M8 8.5V6h8v2.5M9 13h6"></path>
+              </svg>
+              <span>your S3 or R2 bucket</span>
+            </span>
+            <span class="bridge-row">
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M4 7h13M14 4l3 3-3 3M20 17H7M10 14l-3 3 3 3"></path>
+              </svg>
+              <span>project map applied</span>
+            </span>
+          </div>
+        </div>
+
+        <article class="terminal destination-terminal" aria-labelledby="destination-terminal-title">
+          <header>
+            <div class="terminal-device">
+              <svg
+                class="terminal-device-icon"
+                width="26"
+                height="26"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="5" y="3.5" width="14" height="11" rx="1.5"></rect>
+                <path d="M3 18h18l-1.3 2H4.3L3 18Z"></path>
+              </svg>
+              <div>
+                <span class="device">Device B</span>
+                <h3 id="destination-terminal-title">MacBook</h3>
+              </div>
+            </div>
+            <span class="terminal-kind">zsh</span>
+          </header>
+          <pre aria-label="Commands run on the macOS destination device"><code><span class="line command"><span class="prompt">$</span> rein pull --agent claude --session ses_7f3a</span>
+<span class="line output">Encryption passphrase: <span class="secret">••••••••</span></span>
+<span class="line success">pulled 1 snapshot</span>
+<span class="line remap">project map: C:\reinstate → /Users/harjot/Code/reinstate</span>
+<span class="line command"><span class="prompt">$</span> claude --resume ses_7f3a</span></code></pre>
+        </article>
+      </div>
+
+      <figure class="handoff-illustration" aria-hidden="true">
         <svg
           class="handoff-art"
           viewBox="0 36 1240 350"
@@ -293,148 +433,16 @@ const frontText = (x: number, y: number, z: number, d: number, h: number) => {
         ></path>
         </svg>
       </figure>
-
-      <div class="workflow-grid">
-        <article class="terminal source-terminal" aria-labelledby="source-terminal-title">
-          <header>
-            <div class="terminal-device">
-              <svg
-                class="terminal-device-icon"
-                width="26"
-                height="26"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <rect x="3.5" y="4" width="17" height="12" rx="1.5"></rect>
-                <path d="M9 20h6M12 16v4"></path>
-              </svg>
-              <div>
-                <span class="device">Device A</span>
-                <h3 id="source-terminal-title">Windows desktop</h3>
-              </div>
-            </div>
-            <span class="terminal-kind">PowerShell</span>
-          </header>
-          <pre aria-label="Commands run on the Windows source device"><code><span class="line command"><span class="prompt">PS C:\reinstate&gt;</span> rein list --agent claude</span><span class="line output">claude  ses_7f3a  local/reinstate</span><span class="line command"><span class="prompt">PS C:\reinstate&gt;</span> rein push --agent claude --session ses_7f3a</span><span class="line output">Encryption passphrase: <span class="secret">••••••••</span></span><span class="line success">pushed 1 snapshot(s), skipped 0 unchanged, dry_run=false</span></code></pre>
-        </article>
-
-        <div class="sealed-checkpoint" aria-label="Encrypted storage bridge">
-          <span class="bridge-mark">
-            <svg
-              width="19"
-              height="19"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.9"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M12 3.5 19 6v5.2c0 4.1-2.8 7.5-7 9.3-4.2-1.8-7-5.2-7-9.3V6l7-2.5Z"></path>
-              <rect x="8.7" y="10.4" width="6.6" height="5.2" rx="1"></rect>
-              <path d="M10.2 10.4V9a1.8 1.8 0 0 1 3.6 0v1.4"></path>
-            </svg>
-            E2E
-          </span>
-          <div class="bridge-details">
-            <strong class="bridge-row">
-              <svg
-                width="17"
-                height="17"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <circle cx="8" cy="12" r="3.5"></circle>
-                <path d="M11.5 12H21M17 12v3M14 12v2"></path>
-              </svg>
-              <span>age encrypted</span>
-            </strong>
-            <span class="bridge-row">
-              <svg
-                width="17"
-                height="17"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M5 8.5h14v10H5z"></path>
-                <path d="M8 8.5V6h8v2.5M9 13h6"></path>
-              </svg>
-              <span>your S3 or R2 bucket</span>
-            </span>
-            <span class="bridge-row">
-              <svg
-                width="17"
-                height="17"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M4 7h13M14 4l3 3-3 3M20 17H7M10 14l-3 3 3 3"></path>
-              </svg>
-              <span>project map applied</span>
-            </span>
-          </div>
-        </div>
-
-        <article class="terminal destination-terminal" aria-labelledby="destination-terminal-title">
-          <header>
-            <div class="terminal-device">
-              <svg
-                class="terminal-device-icon"
-                width="26"
-                height="26"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <rect x="5" y="3.5" width="14" height="11" rx="1.5"></rect>
-                <path d="M3 18h18l-1.3 2H4.3L3 18Z"></path>
-              </svg>
-              <div>
-                <span class="device">Device B</span>
-                <h3 id="destination-terminal-title">MacBook</h3>
-              </div>
-            </div>
-            <span class="terminal-kind">zsh</span>
-          </header>
-          <pre aria-label="Commands run on the macOS destination device"><code><span class="line command"><span class="prompt">$</span> rein pull --agent claude --session ses_7f3a</span><span class="line output">Encryption passphrase: <span class="secret">••••••••</span></span><span class="line success">pulled 1 snapshot(s) dry_run=false</span><span class="line remap">project map: C:\reinstate → /Users/harjot/Code/reinstate</span><span class="line command"><span class="prompt">$</span> claude --resume ses_7f3a</span></code></pre>
-        </article>
-      </div>
     </div>
 
     <footer class="proof-notes">
-      <p>
-        <strong>Representative synthetic output.</strong>{' '}
-        Commands and summaries match the current CLI. The passphrase stays hidden;
-        transcript contents stay private.
+      <p class="synthetic-note">
+        Representative synthetic output. Commands and summaries match the current
+        CLI. The passphrase stays hidden; transcript contents stay private.
       </p>
-      <p>
-        Using Codex? The flow is identical. Finish with{' '}
-        <code>codex resume ses_7f3a</code>.
+      <p class="codex-note">
+        <span class="codex-badge">Codex</span>
+        The flow is identical. Finish with <code>codex resume ses_7f3a</code>.
       </p>
     </footer>
   </div>
@@ -545,18 +553,20 @@ const frontText = (x: number, y: number, z: number, d: number, h: number) => {
   .handoff-stage {
     display: flex;
     flex-direction: column;
-    gap: 28px;
-    margin-top: 28px;
+    gap: 1.5rem;
+    margin-top: 1.75rem;
   }
 
   .handoff-illustration {
-    margin: 0;
+    margin: 0.25rem auto 0;
     padding: 0;
+    max-width: min(42rem, 100%);
+    opacity: 0.92;
   }
 
   .handoff-art {
     display: block;
-    width: min(100%, 77.5rem);
+    width: 100%;
     height: auto;
     margin-inline: auto;
     overflow: visible;
@@ -865,14 +875,14 @@ const frontText = (x: number, y: number, z: number, d: number, h: number) => {
 
   pre {
     margin: 0;
-    min-height: 15.25rem;
-    padding: clamp(1rem, 2.2vw, 1.45rem);
+    min-height: 14rem;
+    padding: clamp(1.05rem, 2.2vw, 1.5rem);
     overflow-x: auto;
     background: var(--terminal-bg);
     color: var(--terminal-ink);
     font-family: var(--font-mono);
-    font-size: clamp(0.72rem, 0.38vw + 0.61rem, 0.82rem);
-    line-height: 1.62;
+    font-size: clamp(0.84rem, 0.35vw + 0.76rem, 0.95rem);
+    line-height: 1.72;
     tab-size: 2;
   }
 
@@ -899,14 +909,16 @@ const frontText = (x: number, y: number, z: number, d: number, h: number) => {
     color: var(--terminal-muted);
   }
   .success {
-    color: #d8e8cf;
+    color: #e8ffb0;
+    font-weight: 560;
   }
   .secret {
     letter-spacing: 0.08em;
     color: var(--terminal-muted);
   }
   .remap {
-    color: #b9d89a;
+    color: #c4ff56;
+    font-weight: 540;
   }
 
   .sealed-checkpoint {
@@ -953,16 +965,20 @@ const frontText = (x: number, y: number, z: number, d: number, h: number) => {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.35rem;
-    width: 5.15rem;
-    height: 2.8rem;
+    gap: 0.4rem;
+    width: auto;
+    max-width: 100%;
+    min-height: 2.8rem;
+    padding: 0.55rem 0.75rem;
     margin-bottom: 0.35rem;
     border: 3px solid var(--sv-stroke);
     border-radius: 8px;
     background: var(--prim);
     color: #131f1a;
-    font-size: 1rem;
+    font-size: 0.78rem;
     font-weight: 700;
+    line-height: 1.15;
+    text-wrap: balance;
   }
 
   .bridge-mark svg,
@@ -1009,9 +1025,10 @@ const frontText = (x: number, y: number, z: number, d: number, h: number) => {
     position: relative;
     z-index: 2;
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-    margin-top: 0.75rem;
+    grid-template-columns: 1fr auto;
+    gap: 1.25rem 1.5rem;
+    align-items: center;
+    margin-top: 0.85rem;
     padding-top: 1rem;
   }
 
@@ -1022,9 +1039,34 @@ const frontText = (x: number, y: number, z: number, d: number, h: number) => {
     font-size: 0.96rem;
     line-height: 1.55;
   }
-  .proof-notes strong {
+  .synthetic-note {
+    max-width: 48ch;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: var(--ink-3);
+    font-weight: 400;
+  }
+  .codex-note {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem 0.55rem;
+    justify-self: end;
+    max-width: 36ch;
+    font-size: 0.9rem;
+  }
+  .codex-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.22rem 0.55rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: var(--paper-2);
     color: var(--ink);
-    font-weight: 560;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
   }
   .proof-notes code {
     color: var(--ink);
@@ -1047,6 +1089,15 @@ const frontText = (x: number, y: number, z: number, d: number, h: number) => {
   }
 
   @media (max-width: 780px) {
+    .proof-notes {
+      grid-template-columns: 1fr;
+    }
+    .codex-note {
+      justify-self: start;
+    }
+    .handoff-illustration {
+      max-width: min(28rem, 100%);
+    }
     .workflow-grid {
       grid-template-columns: minmax(0, 1fr);
       gap: 1.2rem;
@@ -1106,7 +1157,7 @@ const frontText = (x: number, y: number, z: number, d: number, h: number) => {
     }
     pre {
       padding: 0.95rem;
-      font-size: 0.72rem;
+      font-size: 0.82rem;
     }
   }
 
