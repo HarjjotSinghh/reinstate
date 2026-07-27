@@ -1,6 +1,6 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
-import { blogPostingSchema, techArticleSchema } from './schema';
+import { blogPostingSchema, howToSchema, techArticleSchema } from './schema';
 
 const guidesDir = new URL('../content/guides/', import.meta.url);
 const blogDir = new URL('../content/blog/', import.meta.url);
@@ -42,6 +42,11 @@ describe('editorial content foundation', () => {
         );
         expect(field(frontmatter, 'draft'), `${file} draft`).toMatch(/^(true|false)$/);
         expect(field(frontmatter, 'noindex'), `${file} noindex`).toMatch(/^(true|false)$/);
+        if (directory === guidesDir) {
+          expect(field(frontmatter, 'estimatedTaskMinutes'), `${file} task duration`).toMatch(
+            /^\d+$/,
+          );
+        }
         expect(prose, `${file} must let EditorialLayout own the single H1`).not.toMatch(/^#\s/m);
       }
     }
@@ -63,6 +68,60 @@ describe('editorial content foundation', () => {
 
     expect(guides.join('\n')).toContain('claude --resume SESSION_ID');
     expect(guides.join('\n')).toContain('codex resume SESSION_ID');
+  });
+
+  it('gives every session-sync guide a complete, visible AEO task contract', async () => {
+    const guideNames = await markdownFiles(guidesDir);
+
+    for (const file of guideNames) {
+      const guide = await readFile(new URL(file, guidesDir), 'utf8');
+
+      for (const requiredSection of [
+        '## Key points',
+        '## Command placeholders and parameters',
+        '## Failure modes and common errors',
+        '## Safe rollback and undo',
+        '## Verification checklist',
+      ]) {
+        expect(guide, `${file} must include ${requiredSection}`).toContain(
+          requiredSection,
+        );
+      }
+
+      for (const requiredFact of [
+        'Expected result:',
+        'Installer-compatible',
+        'not a certified Phase 1 agent-resume target',
+        'physical two-device acceptance',
+        'does not provide a general `rein undo`',
+        '`--dry-run`',
+        'same-vendor',
+      ]) {
+        expect(guide, `${file} must include ${requiredFact}`).toContain(
+          requiredFact,
+        );
+      }
+
+      expect(
+        guide.match(/\*\*Expected result:\*\*/g)?.length,
+        `${file} expected outputs`,
+      ).toBe(5);
+      expect(guide, `${file} FAQ heading`).toMatch(/^## .+ FAQ$/m);
+
+      const anchors = [...guide.matchAll(/^\s+anchor: "([^"]+)"$/gm)].map(
+        (match) => match[1],
+      );
+      expect(anchors, `${file} structured steps`).toHaveLength(5);
+      expect(new Set(anchors).size, `${file} unique structured steps`).toBe(
+        anchors.length,
+      );
+      for (const anchor of anchors) {
+        expect(
+          guide,
+          `${file} must expose #${anchor} in visible content`,
+        ).toContain(`<h2 id="${anchor}">`);
+      }
+    }
   });
 
   it('grounds the Git article in implementation and product boundaries', async () => {
@@ -107,5 +166,41 @@ describe('editorial content foundation', () => {
     expect(post['@type']).toBe('BlogPosting');
     expect(post.datePublished).toBe(dates.publishedAt.toISOString());
     expect(post.dateModified).toBe(dates.updatedAt.toISOString());
+  });
+
+  it('builds HowTo schema from the same ordered guide steps shown to readers', () => {
+    const steps = [
+      {
+        name: 'Install the source tool',
+        text: 'Install the pinned release, verify its version, and stop if compatibility checks do not pass on the source device.',
+        anchor: 'install-source',
+      },
+      {
+        name: 'Restore on the destination',
+        text: 'Preview the destination plan, restore the exact selected session, and verify it through the vendor-native resume command.',
+        anchor: 'restore-destination',
+      },
+    ];
+    const schema = howToSchema({
+      path: '/guides/example',
+      title: 'Sync one coding-agent session',
+      description: 'A visible and testable session-sync procedure.',
+      estimatedTaskMinutes: 30,
+      steps,
+    });
+
+    expect(schema['@type']).toBe('HowTo');
+    expect(schema.totalTime).toBe('PT30M');
+    expect(schema.step).toEqual(
+      steps.map((step, index) => ({
+        '@type': 'HowToStep',
+        position: index + 1,
+        name: step.name,
+        text: step.text,
+        url: `https://reinstate.dev/guides/example#${step.anchor}`,
+      })),
+    );
+    expect(schema).not.toHaveProperty('review');
+    expect(schema).not.toHaveProperty('aggregateRating');
   });
 });

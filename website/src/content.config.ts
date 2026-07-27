@@ -33,6 +33,14 @@ const relatedLink = z.object({
   path: z.string().regex(/^\/[a-z0-9/-]*$/, 'Related links must use a site-relative path.'),
 });
 
+const howToStep = z.object({
+  name: z.string().min(8).max(90),
+  text: z.string().min(80).max(360),
+  anchor: z
+    .string()
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'How-to anchors must be lowercase URL fragments.'),
+});
+
 const editorialMetadata = z.object({
   title: z.string().min(10).max(70),
   description: z.string().min(70).max(180),
@@ -81,7 +89,9 @@ const guides = defineCollection({
       agent: z.enum(['claude-code', 'codex', 'general']),
       difficulty: z.enum(['beginner', 'intermediate', 'advanced']),
       estimatedMinutes: z.number().int().min(1).max(120),
+      estimatedTaskMinutes: z.number().int().min(1).max(240),
       prerequisites: z.array(z.string().min(2).max(140)).min(1).max(10),
+      howToSteps: z.array(howToStep).min(3).max(12),
     })
     .superRefine(validateEditorialDates),
 });

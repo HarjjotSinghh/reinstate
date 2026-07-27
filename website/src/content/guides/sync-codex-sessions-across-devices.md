@@ -23,10 +23,27 @@ noindex: false
 agent: "codex"
 difficulty: "intermediate"
 estimatedMinutes: 12
+estimatedTaskMinutes: 30
 prerequisites:
   - "Codex CLI installed on the source and destination devices"
   - "An S3-compatible bucket and its endpoint and credentials"
   - "The same long encryption passphrase available privately on both devices"
+howToSteps:
+  - name: "Install and check the source device"
+    text: "Install the pinned Reinstate release candidate, confirm its version, and run the read-only setup check before creating local configuration."
+    anchor: "install-source"
+  - name: "Map the source repository"
+    text: "Initialize Reinstate with one stable project ID mapped to the source repository's absolute path, then save the non-secret profile UUID."
+    anchor: "configure-source"
+  - name: "Dry-run and push one Codex session"
+    text: "List Codex sessions, select one exact session ID, inspect a non-mutating push plan, and upload only that encrypted native rollout snapshot."
+    anchor: "push-session"
+  - name: "Join the destination to the profile"
+    text: "Install Reinstate on the destination and reuse the source profile UUID, storage settings, passphrase, and project ID with the destination path."
+    anchor: "configure-destination"
+  - name: "Dry-run, pull, and resume natively"
+    text: "Inspect the destination restore plan, close Codex when replacement is required, pull the session, and resume the exact ID with Codex CLI."
+    anchor: "pull-and-resume"
 ---
 
 ## What this workflow does
@@ -47,11 +64,23 @@ software while the remaining native platform and physical two-device
 acceptance rows are completed. Confirm the supported Codex CLI range on the
 [compatibility page](/compatibility) before transferring real work.
 
+## Key points
+
+- Reinstate restores **Codex sessions into Codex CLI**. It does not translate
+  rollouts into Claude Code transcripts.
+- Use the same non-secret `profile_id` and canonical project ID on both
+  devices, while mapping each device's real local path separately.
+- Select one `SESSION_ID` and run both push and pull with `--dry-run` before
+  either mutating command.
+- Snapshots and manifests are encrypted locally; storage credentials stay in
+  the OS keyring, and the passphrase is not stored.
+- `v0.1.0-rc.6` is not a stable release and this guide is not evidence that the
+  outstanding physical two-device acceptance matrix has passed.
+
 ## Before you begin
 
 Prepare:
 
-- macOS, native 64-bit Windows, Linux, or WSL2 on each device;
 - Codex CLI installed on both devices;
 - a Cloudflare R2, Amazon S3, or compatible bucket you control;
 - the service endpoint, bucket name, access-key ID, and secret access key; and
@@ -65,7 +94,37 @@ passphrase out of prompts, shell history, screenshots, and issue reports.
 The examples use `local/my-project` as the canonical project ID. Choose your
 own stable identifier and reuse it exactly on each device.
 
-## 1. Install and check the source device
+### Platform and version qualifications
+
+| Environment | Installer path | Current qualification |
+| --- | --- | --- |
+| macOS native arm64 | POSIX installer | Current source compatibility evidence covers the documented Codex CLI range. |
+| macOS native amd64 | POSIX installer | A Phase 1 release gate remains open; do not infer certification from installer success. |
+| Windows 11 native amd64 | PowerShell installer | A primary Phase 1 target whose native acceptance gate remains open. |
+| Linux native | POSIX installer | Installer-compatible, but not a certified Phase 1 agent-resume target. |
+| WSL2 amd64 | POSIX installer | Installer-compatible and documented for smoke testing, but its Phase 1 gate remains open. WSL1 is unsupported. |
+
+The repository currently records Codex CLI `0.133.0`–`0.145.0` as the tested
+stable range. `rein setup check` is authoritative for the installed version:
+`UNTESTED` and `UNSUPPORTED` block transfer. These facts describe committed
+evidence, not completed physical RC6 acceptance on every platform.
+
+## Command placeholders and parameters
+
+| Value or flag | Meaning |
+| --- | --- |
+| `local/my-project` | A stable, non-secret project ID reused on every device. It is not a filesystem path. |
+| `/absolute/path/to/my-project` | The source device's real absolute checkout path. Replace it, including on Windows. |
+| `DEVICE_A_PROFILE_UUID` | The exact non-secret `profile_id` printed by the first successful `rein init`. |
+| `SESSION_ID` | The exact Codex session identifier selected from `rein list --agent codex`. |
+| `--project PROJECT_ID=ABSOLUTE_PATH` | Creates one canonical project mapping. The ID is shared; the absolute path is device-specific. |
+| `--profile-id UUID` | Joins an additional device to the first device's existing encrypted sync profile. |
+| `--agent codex` | Restricts discovery or transfer to the Codex adapter. |
+| `--session SESSION_ID` | Restricts transfer to one session. It is safer than selecting every session with `--all`. |
+| `--dry-run` | Authenticates, validates, and prints the plan without uploading or restoring the selected session. |
+| `--json` | Requests machine-readable output; this guide uses it only for the version check. |
+
+<h2 id="install-source">1. Install and check the source device</h2>
 
 On macOS, Linux, or WSL2:
 
@@ -79,6 +138,10 @@ On native Windows PowerShell:
 irm https://reinstate.dev/install.ps1 | iex
 ```
 
+If your policy prohibits executing a downloaded script directly, use the
+download-and-inspect variants in the
+[getting-started documentation](/docs/getting-started) before running it.
+
 Check the binary and local compatibility:
 
 ```sh
@@ -86,11 +149,13 @@ rein version --json
 rein setup check
 ```
 
-Before configuration exists, `rein setup check` should identify the missing
-Reinstate config. Fix platform, keyring, or Codex compatibility errors before
-you initialize sync.
+**Expected result:** `rein version --json` returns a JSON object whose version
+is `v0.1.0-rc.6` for the currently pinned installer. Before initialization,
+`rein setup check` exits with code `3` and reports `config missing`. That one
+pre-init failure is expected; a platform, keyring, or Codex compatibility
+failure is a separate blocker that must be resolved.
 
-## 2. Give the repository a portable identity
+<h2 id="configure-source">2. Give the repository a portable identity</h2>
 
 Configure the source device with a canonical project ID and its actual absolute
 path:
@@ -115,7 +180,20 @@ rein doctor --self-test
 rein list --agent codex
 ```
 
-## 3. Select and push one Codex session
+**Expected result:** successful initialization prints that `config.toml` and
+`state.json` were created, followed by
+`profile_id=<UUID> (use this exact ID on every device)`. Afterward, when
+configuration and every installed-agent compatibility check pass,
+`rein setup check` and `rein doctor --self-test` exit `0`. The list command
+prints each discovered Codex session as agent, session ID, and project ID; an
+empty list means there is not yet a discoverable Codex session in the mapped
+project.
+
+The `--project` value has the form `PROJECT_ID=ABSOLUTE_PATH`. The left side is
+portable and identical on both devices; the right side is local to this
+device. Do not put storage credentials or a passphrase in that value.
+
+<h2 id="push-session">3. Select and push one Codex session</h2>
 
 Create or resume a harmless Codex session in the mapped repository. List the
 sessions Reinstate can discover:
@@ -136,10 +214,17 @@ If the agent, session, and project are correct, push that session:
 rein push --agent codex --session SESSION_ID
 ```
 
+**Expected result:** the dry run includes
+`would push ... snapshot(s)` and `dry_run=true`; the counts depend on whether
+the session is unchanged. The mutating command reports
+`pushed ... snapshot(s)` and `dry_run=false`. A successful push does not prove
+the other device can resume the session; complete the destination verification
+below.
+
 Start with one explicit session. The broader `--all` option must be a conscious
 human choice, not an automatic selection by an installer or coding agent.
 
-## 4. Join the same profile from the destination
+<h2 id="configure-destination">4. Join the same profile from the destination</h2>
 
 Install Reinstate on the destination, then reuse the source profile UUID and
 canonical project ID:
@@ -172,7 +257,14 @@ rein pull --agent codex --session SESSION_ID --dry-run
 Do not continue if Codex compatibility is not `SUPPORTED` or the planned
 destination project is wrong.
 
-## 5. Pull and resume with Codex CLI
+**Expected result:** initialization verifies and joins the existing encrypted
+manifest instead of creating a different sync set. `rein status` reports the
+remote revision and session count. The pull preview reports
+`would pull ... snapshot(s), dry_run=true` and prints the selected
+`codex:SESSION_ID`, destination path, and backup root. The destination must be
+derived from this device's mapped repository, not copied from the source.
+
+<h2 id="pull-and-resume">5. Pull and resume with Codex CLI</h2>
 
 Close Codex before replacing an existing local copy of the selected session.
 Then restore and verify discovery:
@@ -185,6 +277,13 @@ codex resume SESSION_ID
 
 The final command is Codex CLI's native resume path. Reinstate prepares the
 vendor-native session; it does not execute or replace the Codex agent loop.
+
+**Expected result:** the pull reports
+`pulled ... snapshot(s), dry_run=false` and the resolved destination. The list
+command then includes the exact session ID, and Codex CLI opens that rollout
+when given `codex resume SESSION_ID`. Codex's own screen text varies by
+version, so the durable success condition is the exact resumed session and
+mapped project, not a particular banner.
 
 ## Why Codex working-directory remapping matters
 
@@ -220,6 +319,42 @@ undo disclosure inside the transcript or protect a compromised local machine.
 Review the [security model](/docs/security-model) before syncing sensitive
 work.
 
+## Failure modes and common errors
+
+| Symptom | Meaning | Safe next action |
+| --- | --- | --- |
+| `config missing` (exit `3`) | Local Reinstate configuration does not exist. This is expected only before first-device initialization. | Run `rein init` with the intended project mapping; do not create config files by hand. |
+| Compatibility exit `5` or `UNTESTED` | The installed Codex layout or version lacks release evidence. | Stop writes, check the [compatibility matrix](/compatibility), and use a documented supported version. |
+| `no matching local sessions found` (exit `2`) | The selected ID or adapter is not discoverable on the source. | Run `rein list --agent codex` from the mapped project and copy the exact ID. |
+| `remote profile manifest not found` (exit `4`) | The destination profile, bucket, prefix, or endpoint does not identify the first device's manifest. | Recheck the copied `profile_id`, bucket, prefix, and service endpoint. Do not create an empty manifest. |
+| Wrong-passphrase or authentication failure (exit `4`) | Reinstate cannot decrypt or authenticate the remote state. | Wait for the hidden prompt and retry with the original passphrase; never put it in a flag, environment value, or chat. |
+| `remote session not found` (exit `2`) | The selected session was not pushed to this remote profile. | Confirm `rein status`, the profile identity, and the exact source push result. |
+| Conflict exit `6` | Local and remote histories diverged. | Preserve both histories and the conflict record; inspect them with `rein conflicts` before choosing a resolution. |
+| Safety exit `7` while pulling | Codex may still be writing the target rollout. | Close every Codex process and rerun the exact scoped dry run before the pull. |
+| Pull succeeds but native resume misses the session | The path mapping, date partition, or destination working directory is wrong. | Confirm the destination mapping, rerun the scoped dry run, and follow the [troubleshooting guide](/docs/troubleshooting). |
+
+## Safe rollback and undo
+
+Reinstate RC6 does not provide a general `rein undo` or per-session remote
+delete command. Use these recovery boundaries instead:
+
+1. Prefer `--dry-run`: it does not upload or restore the selected session, so
+   there is nothing to undo.
+2. If initialization used the wrong values, stop before a push. A later
+   `rein init --force` backs up existing initialization state before
+   replacement, but review `rein init --help` and re-enter secrets privately.
+3. A push creates encrypted remote state. Do not delete `manifest.age` or an
+   individual storage object manually; that can leave the profile
+   inconsistent. Stop syncing and preserve the bucket while you determine the
+   correct cleanup procedure.
+4. Before replacing an existing rollout, pull plans name the backup root and a
+   mutating pull backs up the target when applicable. Close Codex, preserve
+   that backup, and do not copy files over the live rollout until you have
+   identified the authoritative copy.
+5. A conflict is a refusal, not a partial success. Keep the conflict record and
+   use `rein conflicts list`, `rein conflicts show <id>`, and an explicit
+   resolution only after reviewing which side contains the needed work.
+
 ## Verification checklist
 
 Treat the handoff as verified only when:
@@ -252,3 +387,35 @@ Work through these checks:
 5. Preserve any conflict record or backup until you know which session copy is
    authoritative.
 6. Continue with the [troubleshooting documentation](/docs/troubleshooting).
+
+## Codex session sync FAQ
+
+### Can Reinstate resume this Codex rollout in Claude Code?
+
+No. Reinstate Phase 1 restores a Codex rollout for native Codex CLI resume.
+Cross-agent work requires an explicit portable handoff in a later phase;
+Reinstate does not silently translate transcripts.
+
+### Do both computers need the same repository path?
+
+No. Both devices reuse the same canonical project ID, while each maps that ID
+to its own absolute checkout path. Reinstate expands the portable project token
+to the destination path while preserving Codex's native date partition.
+
+### Does the destination need OpenAI credentials from the source?
+
+No. Authenticate Codex normally on the destination. Reinstate neither requests
+nor syncs OpenAI credentials, Codex auth data, OS keyring contents, or API
+keys.
+
+### Is Linux or WSL2 a certified Phase 1 resume target?
+
+No. The POSIX installer works on Linux and WSL2, and WSL2 has a documented
+smoke-test path, but neither is a certified Phase 1 agent-resume target in the
+current committed evidence. WSL1 is unsupported.
+
+### Does a successful personal transfer mean RC6 passed release acceptance?
+
+No. It proves only the devices, versions, storage, and session you tested.
+Release qualification requires the committed acceptance runbook and recorded,
+sanitized evidence for every required matrix row.

@@ -23,10 +23,27 @@ noindex: false
 agent: "claude-code"
 difficulty: "intermediate"
 estimatedMinutes: 12
+estimatedTaskMinutes: 30
 prerequisites:
   - "Claude Code installed on the source and destination devices"
   - "An S3-compatible bucket and its endpoint and credentials"
   - "The same long encryption passphrase available privately on both devices"
+howToSteps:
+  - name: "Install and check the source device"
+    text: "Install the pinned Reinstate release candidate, confirm its version, and run the read-only setup check before creating local configuration."
+    anchor: "install-source"
+  - name: "Map the source repository"
+    text: "Initialize Reinstate with one stable project ID mapped to the source repository's absolute path, then save the non-secret profile UUID."
+    anchor: "configure-source"
+  - name: "Dry-run and push one Claude session"
+    text: "List Claude Code sessions, select one exact session ID, inspect a non-mutating push plan, and upload only that encrypted session snapshot."
+    anchor: "push-session"
+  - name: "Join the destination to the profile"
+    text: "Install Reinstate on the destination and reuse the source profile UUID, storage settings, passphrase, and project ID with the destination path."
+    anchor: "configure-destination"
+  - name: "Dry-run, pull, and resume natively"
+    text: "Inspect the destination restore plan, close Claude Code when replacement is required, pull the session, and resume the exact ID with Claude Code."
+    anchor: "pull-and-resume"
 ---
 
 ## What this workflow does
@@ -46,11 +63,23 @@ software while the remaining native platform and two-device acceptance rows
 are completed. Check the [compatibility page](/compatibility) before using a
 newer Claude Code version.
 
+## Key points
+
+- Reinstate restores **Claude Code sessions into Claude Code**. It does not
+  translate transcripts into Codex.
+- Use the same non-secret `profile_id` and canonical project ID on both
+  devices, while mapping each device's real local path separately.
+- Select one `SESSION_ID` and run both push and pull with `--dry-run` before
+  either mutating command.
+- Snapshots and manifests are encrypted locally; storage credentials stay in
+  the OS keyring, and the passphrase is not stored.
+- `v0.1.0-rc.6` is not a stable release and this guide is not evidence that the
+  outstanding physical two-device acceptance matrix has passed.
+
 ## Before you begin
 
 You need:
 
-- macOS, native 64-bit Windows, Linux, or WSL2 on each device;
 - Claude Code installed on both devices;
 - a Cloudflare R2, Amazon S3, or compatible bucket you control;
 - the service endpoint, bucket name, access-key ID, and secret access key; and
@@ -65,7 +94,37 @@ Choose one stable project ID before setup. The examples use
 `local/my-project`; replace it with a value you will reuse exactly on every
 device.
 
-## 1. Install and verify Reinstate on the source
+### Platform and version qualifications
+
+| Environment | Installer path | Current qualification |
+| --- | --- | --- |
+| macOS native arm64 | POSIX installer | Current source compatibility evidence covers the documented Claude Code range. |
+| macOS native amd64 | POSIX installer | A Phase 1 release gate remains open; do not infer certification from installer success. |
+| Windows 11 native amd64 | PowerShell installer | A primary Phase 1 target whose native acceptance gate remains open. |
+| Linux native | POSIX installer | Installer-compatible, but not a certified Phase 1 agent-resume target. |
+| WSL2 amd64 | POSIX installer | Installer-compatible and documented for smoke testing, but its Phase 1 gate remains open. WSL1 is unsupported. |
+
+The repository currently records Claude Code `2.1.219`–`2.1.220` as the tested
+stable range. `rein setup check` is authoritative for the installed version:
+`UNTESTED` and `UNSUPPORTED` block transfer. These facts describe committed
+evidence, not completed physical RC6 acceptance on every platform.
+
+## Command placeholders and parameters
+
+| Value or flag | Meaning |
+| --- | --- |
+| `local/my-project` | A stable, non-secret project ID reused on every device. It is not a filesystem path. |
+| `/absolute/path/to/my-project` | The source device's real absolute checkout path. Replace it, including on Windows. |
+| `DEVICE_A_PROFILE_UUID` | The exact non-secret `profile_id` printed by the first successful `rein init`. |
+| `SESSION_ID` | The exact Claude session identifier selected from `rein list --agent claude`. |
+| `--project PROJECT_ID=ABSOLUTE_PATH` | Creates one canonical project mapping. The ID is shared; the absolute path is device-specific. |
+| `--profile-id UUID` | Joins an additional device to the first device's existing encrypted sync profile. |
+| `--agent claude` | Restricts discovery or transfer to the Claude Code adapter. |
+| `--session SESSION_ID` | Restricts transfer to one session. It is safer than selecting every session with `--all`. |
+| `--dry-run` | Authenticates, validates, and prints the plan without uploading or restoring the selected session. |
+| `--json` | Requests machine-readable output; this guide uses it only for the version check. |
+
+<h2 id="install-source">1. Install and verify Reinstate on the source</h2>
 
 On macOS, Linux, or WSL2:
 
@@ -79,6 +138,10 @@ On native Windows PowerShell:
 irm https://reinstate.dev/install.ps1 | iex
 ```
 
+If your policy prohibits executing a downloaded script directly, use the
+download-and-inspect variants in the
+[getting-started documentation](/docs/getting-started) before running it.
+
 Verify the installed binary and the local environment:
 
 ```sh
@@ -86,11 +149,13 @@ rein version --json
 rein setup check
 ```
 
-Before initialization, `rein setup check` should report that Reinstate
-configuration is missing. Resolve any platform, keyring, or Claude Code
-compatibility failure before continuing.
+**Expected result:** `rein version --json` returns a JSON object whose version
+is `v0.1.0-rc.6` for the currently pinned installer. Before initialization,
+`rein setup check` exits with code `3` and reports `config missing`. That one
+pre-init failure is expected; a platform, keyring, or Claude Code compatibility
+failure is a separate blocker that must be resolved.
 
-## 2. Configure the source project path
+<h2 id="configure-source">2. Configure the source project path</h2>
 
 Map the canonical project ID to the source device's real absolute repository
 path:
@@ -115,7 +180,20 @@ rein doctor --self-test
 rein list --agent claude
 ```
 
-## 3. Push one Claude Code session
+**Expected result:** successful initialization prints that `config.toml` and
+`state.json` were created, followed by
+`profile_id=<UUID> (use this exact ID on every device)`. Afterward, when
+configuration and every installed-agent compatibility check pass,
+`rein setup check` and `rein doctor --self-test` exit `0`. The list command
+prints each discovered Claude session as agent, session ID, and project ID; an
+empty list means there is not yet a discoverable Claude session in the mapped
+project.
+
+The `--project` value has the form `PROJECT_ID=ABSOLUTE_PATH`. The left side is
+portable and identical on both devices; the right side is local to this
+device. Do not put storage credentials or a passphrase in that value.
+
+<h2 id="push-session">3. Push one Claude Code session</h2>
 
 Create or resume a harmless Claude Code session in the mapped repository, then
 list the discoverable sessions:
@@ -137,11 +215,18 @@ push that one session:
 rein push --agent claude --session SESSION_ID
 ```
 
+**Expected result:** the dry run includes
+`would push ... snapshot(s)` and `dry_run=true`; the counts depend on whether
+the session is unchanged. The mutating command reports
+`pushed ... snapshot(s)` and `dry_run=false`. A successful push does not prove
+the other device can resume the session; complete the destination verification
+below.
+
 Use an explicit session ID for the first transfer. `--all` exists, but neither
 Reinstate nor a setup agent should select every session without your deliberate
 choice.
 
-## 4. Configure the destination with the same identity
+<h2 id="configure-destination">4. Configure the destination with the same identity</h2>
 
 Install Reinstate on the second device, then map the same project ID to that
 device's actual repository path:
@@ -173,7 +258,14 @@ rein pull --agent claude --session SESSION_ID --dry-run
 Stop if compatibility is `UNTESTED` or `UNSUPPORTED`, the session is not
 associated with the expected project, or the dry-run destination is wrong.
 
-## 5. Pull and resume in Claude Code
+**Expected result:** initialization verifies and joins the existing encrypted
+manifest instead of creating a different sync set. `rein status` reports the
+remote revision and session count. The pull preview reports
+`would pull ... snapshot(s), dry_run=true` and prints the selected
+`claude:SESSION_ID`, destination path, and backup root. The destination must be
+derived from this device's mapped repository, not copied from the source.
+
+<h2 id="pull-and-resume">5. Pull and resume in Claude Code</h2>
 
 Close Claude Code before a pull that will replace an existing local copy of the
 same session. Then restore:
@@ -187,6 +279,13 @@ claude --resume SESSION_ID
 RC6 checks the planned Claude project directory after restore. Finding the same
 session ID somewhere else under Claude Code's project storage is not accepted
 as successful restoration.
+
+**Expected result:** the pull reports
+`pulled ... snapshot(s), dry_run=false` and the resolved destination. The list
+command then includes the exact session ID, and Claude Code opens that session
+when given `claude --resume SESSION_ID`. Claude Code's own screen text varies
+by version, so the durable success condition is the exact resumed session and
+mapped project, not a particular banner.
 
 ## How path remapping preserves native resume
 
@@ -215,6 +314,42 @@ into the conversation. Encryption protects the uploaded artifact from the
 storage provider, but it does not make a leaked production credential safe.
 Keep secrets out of agent chats and read the full
 [security model](/docs/security-model).
+
+## Failure modes and common errors
+
+| Symptom | Meaning | Safe next action |
+| --- | --- | --- |
+| `config missing` (exit `3`) | Local Reinstate configuration does not exist. This is expected only before first-device initialization. | Run `rein init` with the intended project mapping; do not create config files by hand. |
+| Compatibility exit `5` or `UNTESTED` | The installed Claude layout or version lacks release evidence. | Stop writes, check the [compatibility matrix](/compatibility), and use a documented supported version. |
+| `no matching local sessions found` (exit `2`) | The selected ID or adapter is not discoverable on the source. | Run `rein list --agent claude` from the mapped project and copy the exact ID. |
+| `remote profile manifest not found` (exit `4`) | The destination profile, bucket, prefix, or endpoint does not identify the first device's manifest. | Recheck the copied `profile_id`, bucket, prefix, and service endpoint. Do not create an empty manifest. |
+| Wrong-passphrase or authentication failure (exit `4`) | Reinstate cannot decrypt or authenticate the remote state. | Wait for the hidden prompt and retry with the original passphrase; never put it in a flag, environment value, or chat. |
+| `remote session not found` (exit `2`) | The selected session was not pushed to this remote profile. | Confirm `rein status`, the profile identity, and the exact source push result. |
+| Conflict exit `6` | Local and remote histories diverged. | Preserve both histories and the conflict record; inspect them with `rein conflicts` before choosing a resolution. |
+| Safety exit `7` while pulling | Claude Code may still be writing the target session. | Close every Claude Code process and rerun the exact scoped dry run before the pull. |
+| Pull succeeds but native resume misses the session | The path mapping or destination project key is wrong. | Confirm the destination `local_root`, rerun the scoped dry run, and follow the [troubleshooting guide](/docs/troubleshooting). |
+
+## Safe rollback and undo
+
+Reinstate RC6 does not provide a general `rein undo` or per-session remote
+delete command. Use these recovery boundaries instead:
+
+1. Prefer `--dry-run`: it does not upload or restore the selected session, so
+   there is nothing to undo.
+2. If initialization used the wrong values, stop before a push. A later
+   `rein init --force` backs up existing initialization state before
+   replacement, but review `rein init --help` and re-enter secrets privately.
+3. A push creates encrypted remote state. Do not delete `manifest.age` or an
+   individual storage object manually; that can leave the profile
+   inconsistent. Stop syncing and preserve the bucket while you determine the
+   correct cleanup procedure.
+4. Before replacing an existing session, pull plans name the backup root and a
+   mutating pull backs up the target when applicable. Close Claude Code,
+   preserve that backup, and do not copy files over the live session until you
+   have identified the authoritative copy.
+5. A conflict is a refusal, not a partial success. Keep the conflict record and
+   use `rein conflicts list`, `rein conflicts show <id>`, and an explicit
+   resolution only after reviewing which side contains the needed work.
 
 ## Verification checklist
 
@@ -245,3 +380,35 @@ Check the following in order:
    copy contains the work you need.
 6. Follow the [troubleshooting guide](/docs/troubleshooting) and preserve the
    generated backups.
+
+## Claude Code sync FAQ
+
+### Can Reinstate resume this Claude session in Codex?
+
+No. Reinstate Phase 1 restores a Claude Code session for native Claude Code
+resume. Cross-agent work requires an explicit portable handoff in a later
+phase; Reinstate does not silently translate transcripts.
+
+### Do both computers need the same repository path?
+
+No. Both devices reuse the same canonical project ID, while each maps that ID
+to its own absolute checkout path. That mapping is the mechanism that supports
+different Windows and macOS paths.
+
+### Does the destination need Anthropic credentials from the source?
+
+No. Authenticate Claude Code normally on the destination. Reinstate neither
+requests nor syncs Anthropic credentials, auth files, OS keyring contents, or
+OAuth material.
+
+### Is Linux or WSL2 a certified Phase 1 resume target?
+
+No. The POSIX installer works on Linux and WSL2, and WSL2 has a documented
+smoke-test path, but neither is a certified Phase 1 agent-resume target in the
+current committed evidence. WSL1 is unsupported.
+
+### Does a successful personal transfer mean RC6 passed release acceptance?
+
+No. It proves only the devices, versions, storage, and session you tested.
+Release qualification requires the committed acceptance runbook and recorded,
+sanitized evidence for every required matrix row.

@@ -7,6 +7,12 @@ export interface Breadcrumb {
   path: string;
 }
 
+export interface HowToStep {
+  name: string;
+  text: string;
+  anchor: string;
+}
+
 const personRef = { '@id': `${product.siteUrl}/#maintainer` };
 const websiteRef = { '@id': `${product.siteUrl}/#website` };
 const softwareRef = { '@id': `${product.siteUrl}/#software` };
@@ -160,6 +166,39 @@ export function techArticleSchema({
     mainEntityOfPage: url,
     inLanguage: 'en',
     ...(tags.length > 0 ? { keywords: tags } : {}),
+  };
+}
+
+export function howToSchema({
+  path,
+  title,
+  description,
+  estimatedTaskMinutes,
+  steps,
+}: {
+  path: string;
+  title: string;
+  description: string;
+  estimatedTaskMinutes: number;
+  steps: HowToStep[];
+}): SchemaNode {
+  const url = siteUrl(path);
+  return {
+    '@type': 'HowTo',
+    '@id': `${url}#howto`,
+    name: title,
+    description,
+    totalTime: `PT${estimatedTaskMinutes}M`,
+    step: steps.map((step, index) => ({
+      '@type': 'HowToStep',
+      position: index + 1,
+      name: step.name,
+      text: step.text,
+      url: `${url}#${step.anchor}`,
+    })),
+    about: softwareRef,
+    isPartOf: websiteRef,
+    inLanguage: 'en',
   };
 }
 

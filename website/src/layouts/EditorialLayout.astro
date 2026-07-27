@@ -1,10 +1,12 @@
 ---
+import { getCollection } from 'astro:content';
 import BaseLayout from './BaseLayout.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import { product, siteUrl } from '../data/product';
 import {
   blogPostingSchema,
   breadcrumbSchema,
+  howToSchema,
   techArticleSchema,
   webPageSchema,
   type Breadcrumb,
@@ -79,11 +81,38 @@ const articleSchema =
         tags,
       });
 
+const guideEntry =
+  kind === 'guide'
+    ? (await getCollection('guides')).find(
+        (entry) => `/guides/${entry.id.replace(/\.mdx?$/, '')}` === path,
+      )
+    : undefined;
+
+if (kind === 'guide' && !guideEntry) {
+  throw new Error(`Guide metadata was not found for ${path}.`);
+}
+
+const guidePrerequisites = guideEntry?.data.prerequisites ?? [];
+const guideHowToSteps = guideEntry?.data.howToSteps ?? [];
+const estimatedTaskMinutes = guideEntry?.data.estimatedTaskMinutes;
+
 const schema: SchemaNode[] = [
   webPageSchema({ path, title, description, updatedAt }),
   articleSchema,
   breadcrumbSchema(breadcrumbs),
 ];
+
+if (kind === 'guide' && estimatedTaskMinutes && guideHowToSteps.length > 0) {
+  schema.push(
+    howToSchema({
+      path,
+      title,
+      description,
+      estimatedTaskMinutes,
+      steps: guideHowToSteps,
+    }),
+  );
+}
 ---
 
 <BaseLayout
@@ -140,12 +169,48 @@ const schema: SchemaNode[] = [
         <p class="mono">CURRENT PRODUCT STATUS</p>
         <p>
           This content covers <a href={product.releasesUrl}>{product.currentRelease}</a>, a
-          {product.releaseStatus}. Stable-release platform acceptance is still in progress, and
+          {' '}{product.releaseStatus}. Stable-release platform acceptance is still in progress, and
           pre-1.0 interfaces or formats may change.
         </p>
       </aside>
 
       <div class="article-column">
+        {
+          kind === 'guide' && guideHowToSteps.length > 0 && (
+            <section class="guide-contract" aria-labelledby="guide-prerequisites">
+              <p class="mono">BEFORE YOU START</p>
+              <h2 id="guide-prerequisites">Prerequisites</h2>
+              <ul>
+                {guidePrerequisites.map((prerequisite) => <li>{prerequisite}</li>)}
+              </ul>
+
+              <h2>Steps at a glance</h2>
+              <p>
+                Allow about {estimatedTaskMinutes} minutes after the prerequisites are ready.
+                Network speed, storage configuration, or agent setup can extend that estimate.
+              </p>
+              <ol>
+                {guideHowToSteps.map((step) => (
+                  <li>
+                    <a href={`#${step.anchor}`}>{step.name}</a>
+                    <p>{step.text}</p>
+                  </li>
+                ))}
+              </ol>
+
+              <p class="schema-note">
+                This visible sequence is also published as truthful <code>HowTo</code>{' '}
+                structured data. Valid structured data can help machines understand the page,
+                but it does not guarantee a rich result. Google{' '}
+                <a href="https://developers.google.com/search/blog/2023/08/howto-faq-changes">
+                  retired How-to rich results
+                </a>{' '}
+                in 2023; the markup remains a Schema.org description for systems that consume it.
+              </p>
+            </section>
+          )
+        }
+
         <div class="prose prose-rein max-w-none">
           <slot />
         </div>
@@ -286,6 +351,68 @@ const schema: SchemaNode[] = [
   .article-column {
     min-width: 0;
     max-width: 48rem;
+  }
+
+  .guide-contract {
+    margin-bottom: clamp(2.5rem, 6vw, 4rem);
+    padding: clamp(1.25rem, 3vw, 1.75rem);
+    border: 1px solid var(--rule);
+    border-top: 4px solid var(--prim-deep);
+    border-radius: 10px;
+    background: var(--paper-2);
+  }
+
+  .guide-contract > .mono {
+    margin: 0;
+    color: var(--prim-deep);
+    font-size: 0.69rem;
+    font-weight: 650;
+    letter-spacing: 0.09em;
+  }
+
+  .guide-contract h2 {
+    margin: 1.25rem 0 0.75rem;
+    color: var(--ink);
+    font-size: clamp(1.35rem, 2.8vw, 1.8rem);
+  }
+
+  .guide-contract > p:not(.mono, .schema-note) {
+    margin: 0 0 0.85rem;
+    color: var(--ink-2);
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+
+  .guide-contract ul,
+  .guide-contract ol {
+    margin: 0;
+    padding-left: 1.35rem;
+  }
+
+  .guide-contract li + li {
+    margin-top: 0.75rem;
+  }
+
+  .guide-contract a {
+    color: var(--ink);
+    font-weight: 650;
+    text-underline-offset: 3px;
+  }
+
+  .guide-contract li p {
+    margin: 0.25rem 0 0;
+    color: var(--ink-2);
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+
+  .schema-note {
+    margin: 1.25rem 0 0;
+    padding-top: 1rem;
+    border-top: 1px solid var(--rule);
+    color: var(--ink-3);
+    font-size: 0.82rem;
+    line-height: 1.55;
   }
 
   .article-column :global(.prose > :first-child) {
