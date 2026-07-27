@@ -35,7 +35,7 @@ function indexableHtml({
     <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","operatingSystem":["macOS","Windows"]}</script>
     ${extraJsonLd}
   </head>
-  <body><h1>Continue coding-agent work anywhere</h1><svg><title>Decorative continuity diagram</title></svg></body>
+  <body><h1>Continue coding-agent work anywhere</h1><svg><title>Decorative continuity diagram</title></svg><img src="/diagram.png" alt="Session continuity diagram" width="1200" height="630" loading="lazy"></body>
 </html>`;
 }
 
@@ -64,6 +64,7 @@ async function validFixture() {
     '<!doctype html><html><head><title>Preview</title><meta name="robots" content="noindex, nofollow"></head><body><h1>Preview</h1></body></html>',
   );
   await writeFixture(root, 'social/home.png', pngHeader());
+  await writeFixture(root, 'diagram.png', pngHeader());
   await writeFixture(
     root,
     'robots.txt',
@@ -125,10 +126,15 @@ test('detects metadata, structured-data, crawler, sitemap, and image regressions
     'index.html',
     indexableHtml({
       extraJsonLd: `${invalidJsonLd}${unsupportedJsonLd}`,
-    }).replace(
-      '<meta name="description" content="Sync coding-agent sessions across devices.">',
-      '',
-    ),
+    })
+      .replace(
+        '<meta name="description" content="Sync coding-agent sessions across devices.">',
+        '',
+      )
+      .replace(
+        '<img src="/diagram.png" alt="Session continuity diagram" width="1200" height="630" loading="lazy">',
+        '<img src="/diagram.png">',
+      ),
   );
   await writeFixture(
     root,
@@ -169,6 +175,9 @@ Sitemap: ${SITE}/sitemap.xml
   for (const expected of [
     'CANONICAL_DUPLICATE',
     'DESCRIPTION_COUNT',
+    'IMAGE_ALT_MISSING',
+    'IMAGE_DIMENSION_MISSING',
+    'IMAGE_LOADING_MISSING',
     'JSONLD_INVALID',
     'JSONLD_UNSUPPORTED_AGENT',
     'JSONLD_UNSUPPORTED_OS',

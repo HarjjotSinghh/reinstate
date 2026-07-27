@@ -428,6 +428,61 @@ function validateSocialMetadata(markup, context, values, errors) {
   return socialValues;
 }
 
+function inspectContentImages(markup, context, errors) {
+  const images = findTags(markup, 'img');
+
+  for (const [index, image] of images.entries()) {
+    const label = `Content image ${index + 1}`;
+    const alt = image.attributes.alt;
+    const decorative =
+      image.attributes['aria-hidden']?.toLowerCase() === 'true' ||
+      ['none', 'presentation'].includes(
+        image.attributes.role?.toLowerCase() ?? '',
+      );
+
+    if (alt === undefined) {
+      addError(
+        errors,
+        'IMAGE_ALT_MISSING',
+        context,
+        `${label} has no alt attribute.`,
+        'Add concise alternative text, or use alt="" with aria-hidden="true" for a purely decorative image.',
+      );
+    } else if (!cleanText(alt) && !decorative) {
+      addError(
+        errors,
+        'IMAGE_ALT_EMPTY',
+        context,
+        `${label} has empty alternative text without being marked decorative.`,
+        'Describe the image purpose in alt text, or mark a decorative image aria-hidden="true".',
+      );
+    }
+
+    for (const dimension of ['width', 'height']) {
+      const value = image.attributes[dimension] ?? '';
+      if (!/^[1-9]\d*$/.test(value)) {
+        addError(
+          errors,
+          'IMAGE_DIMENSION_MISSING',
+          context,
+          `${label} has no positive integer ${dimension} attribute.`,
+          `Add the intrinsic ${dimension} to prevent layout shift.`,
+        );
+      }
+    }
+
+    if (!['eager', 'lazy'].includes(image.attributes.loading ?? '')) {
+      addError(
+        errors,
+        'IMAGE_LOADING_MISSING',
+        context,
+        `${label} has no explicit loading="eager" or loading="lazy" policy.`,
+        'Use eager for a genuinely above-the-fold image and lazy for below-the-fold media.',
+      );
+    }
+  }
+}
+
 function inspectHtml(html, context, route, errors) {
   const markup = withoutEmbeddedContent(html);
   const headMarkup =
@@ -467,6 +522,8 @@ function inspectHtml(html, context, route, errors) {
   if (noindex) {
     return { route, context, indexable: false };
   }
+
+  inspectContentImages(markup, context, errors);
 
   const titleTags = findTags(headMarkup, 'title');
   let title = '';

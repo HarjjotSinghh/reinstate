@@ -48,7 +48,28 @@ vendor-native sessions without becoming a coding harness.
 └──────────────────────────────────────────────────┘
 ```
 
-![Reinstate MVP architecture](/brand/05_architecture.png)
+<figure>
+  <picture>
+    <source
+      type="image/webp"
+      srcset="/brand/05_architecture-768.webp 768w, /brand/05_architecture-1536.webp 1536w"
+      sizes="(max-width: 768px) calc(100vw - 2rem), 768px"
+    />
+    <img
+      src="/brand/05_architecture.png"
+      alt="Reinstate architecture from Claude Code and Codex adapters through path normalization, client-side encryption, and immutable sync to user-owned storage"
+      width="2560"
+      height="1360"
+      loading="lazy"
+      decoding="async"
+    />
+  </picture>
+  <figcaption>
+    Reinstate keeps vendor-native sessions intact while adapters, structural
+    path remapping, client-side encryption, and immutable snapshots make
+    same-vendor resume portable across devices.
+  </figcaption>
+</figure>
 
 ## Design principles
 

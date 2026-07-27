@@ -15,7 +15,27 @@ candidate syncs same-vendor Claude Code and Codex sessions through encrypted,
 user-owned storage. It complements native agent features, full coding
 environments, session browsers, and Git instead of replacing them.
 
-![Landscape: agent scope vs state portability](/brand/01_landscape.png)
+<figure>
+  <picture>
+    <source
+      type="image/webp"
+      srcset="/brand/01_landscape-768.webp 768w, /brand/01_landscape-1536.webp 1536w"
+      sizes="(max-width: 768px) calc(100vw - 2rem), 768px"
+    />
+    <img
+      src="/brand/01_landscape.png"
+      alt="Landscape chart comparing coding-agent continuity products by number of supported agents and portability of session state"
+      width="2320"
+      height="1320"
+      loading="lazy"
+      decoding="async"
+    />
+  </picture>
+  <figcaption>
+    Reinstate is positioned around multi-agent continuity and portable state;
+    the current release scope remains same-vendor Claude Code and Codex resume.
+  </figcaption>
+</figure>
 
 ## Feature matrix
 
