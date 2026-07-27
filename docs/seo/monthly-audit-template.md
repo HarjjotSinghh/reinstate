@@ -177,6 +177,7 @@ AI-query run: [attach or link a completed baseline](ai-search-query-baseline.md)
 | ------ | ----- | ------- | ------ | ------------------ | -------------- |
 | Question-query impressions/clicks |  |  |  |  |  |
 | FAQ/troubleshooting entrances |  |  |  |  |  |
+| Google Generative AI report impressions/clicks |  |  |  |  |  |
 | Queries with AI mention |  |  |  |  |  |
 | Queries with AI citation |  |  |  |  |  |
 | C2 citation results |  |  |  |  |  |
@@ -257,6 +258,7 @@ reviewers.
 - [Google Search Essentials](https://developers.google.com/search/docs/essentials)
 - [Google robots meta specifications](https://developers.google.com/search/docs/crawling-indexing/robots-meta-tag)
 - [Google structured-data introduction](https://developers.google.com/search/docs/appearance/structured-data/intro-structured-data)
+- [Google guidance for generative-AI search](https://developers.google.com/search/docs/fundamentals/ai-optimization-guide)
 - [Schema.org](https://schema.org/)
 - [OpenAI publishers and developers FAQ](https://help.openai.com/en/articles/12627856-publishers-and-developers-faq)
 - [Perplexity crawler documentation](https://docs.perplexity.ai/docs/resources/perplexity-crawlers)

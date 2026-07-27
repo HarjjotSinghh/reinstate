@@ -118,6 +118,25 @@ Request indexing only for launch-critical pages or meaningful corrections, not
 for every deployment. Search Console actions and results require the verified
 account; this repository cannot assert that they succeeded.
 
+### Google generative-AI eligibility and reporting
+
+Google's current guidance treats generative-AI visibility as an extension of
+the core Search index, not a separate markup system. After verification, an
+authorized owner should:
+
+1. review the Search Console setting that controls inclusion in Search
+   generative-AI features;
+2. confirm the intended setting for `reinstate.dev`;
+3. review the Generative AI performance report when it is available;
+4. record its date range, query/page filters, impressions, clicks, and source;
+   and
+5. mark the report `Unavailable` when the property, feature, or sample is not
+   available instead of inferring AI visibility from ordinary Search totals.
+
+Do not treat `llms.txt`, special AI markup, or extra schema as a Google ranking
+control. Reinstate publishes `llms.txt` as a concise optional resource for
+systems that may choose to use it; Google states that Google Search ignores it.
+
 ## Bing Webmaster Tools and IndexNow
 
 ### Webmaster verification
@@ -240,13 +259,18 @@ An operator with production log and WAF access must separately review:
 Production log access, bot-IP verification, and WAF changes are not automatable
 or completed in this branch.
 
+For Perplexity WAF rules, verify the user-agent against the current IP ranges
+published in Perplexity's crawler documentation. Do not hard-code a copied IP
+list in this repository or allow traffic solely because it presents a
+spoofable user-agent string.
+
 ## Launch-day record
 
 | Check | Evidence | Owner | Time (UTC) | Result | Follow-up |
 | ----- | -------- | ----- | ---------- | ------ | --------- |
 | Production build/version |  |  |  | Not run |  |
 | Robots and sitemap fetch |  |  |  | Not run |  |
-| Google property/sitemap |  |  |  | Not run |  |
+| Google property/sitemap/generative-AI setting |  |  |  | Not run |  |
 | Bing property/sitemap |  |  |  | Not run |  |
 | Launch URL Inspection |  |  |  | Not run |  |
 | OAI-SearchBot smoke test |  |  |  | Not run |  |
@@ -296,7 +320,7 @@ improvements without comparable evidence.
 ## Official references
 
 - [Google Search Essentials](https://developers.google.com/search/docs/essentials)
-- [Google guidance for AI features](https://developers.google.com/search/docs/appearance/ai-features)
+- [Google guidance for generative-AI search](https://developers.google.com/search/docs/fundamentals/ai-optimization-guide)
 - [Astro sitemap integration](https://docs.astro.build/en/guides/integrations-guide/sitemap/)
 - [OpenAI publishers and developers FAQ](https://help.openai.com/en/articles/12627856-publishers-and-developers-faq)
 - [OpenAI ChatGPT Search](https://help.openai.com/en/articles/9237897)
