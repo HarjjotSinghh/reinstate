@@ -2,8 +2,8 @@ import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 import satori from 'satori';
 import sharp from 'sharp';
-import { product } from '../data/product';
-import type { OgPage } from '../data/og-pages';
+import { product } from '../data/product.ts';
+import type { OgPage } from '../data/og-pages.ts';
 
 const require = createRequire(import.meta.url);
 let fonts:
@@ -104,6 +104,50 @@ const continuityArt = svgDataUri(`
   </svg>
 `);
 
+export const repositorySocialPreview = {
+  width: 1280,
+  height: 640,
+  format: 'png',
+  maxBytes: 1_000_000,
+} as const;
+
+function satoriFonts(loadedFonts: ReturnType<typeof loadFonts>) {
+  return [
+    {
+      name: 'Questrial',
+      data: loadedFonts.questrial,
+      weight: 400 as const,
+      style: 'normal' as const,
+    },
+    {
+      name: 'Geist',
+      data: loadedFonts.geist,
+      weight: 400 as const,
+      style: 'normal' as const,
+    },
+    {
+      name: 'Geist',
+      data: loadedFonts.geistMedium,
+      weight: 600 as const,
+      style: 'normal' as const,
+    },
+  ];
+}
+
+async function renderPng(
+  element: SatoriNode,
+  width: number,
+  height: number,
+): Promise<Buffer> {
+  const svg = await satori(element as never, {
+    width,
+    height,
+    fonts: satoriFonts(loadFonts()),
+  });
+
+  return sharp(Buffer.from(svg)).png({ compressionLevel: 9 }).toBuffer();
+}
+
 function routeLabel(route: string): string {
   if (route === '/') return 'reinstate.dev';
   return `reinstate.dev${route}`;
@@ -116,7 +160,6 @@ function titleSize(title: string): number {
 }
 
 export async function renderOgCard(page: OgPage): Promise<Buffer> {
-  const loadedFonts = loadFonts();
   const element = node(
     'div',
     {
@@ -287,30 +330,180 @@ export async function renderOgCard(page: OgPage): Promise<Buffer> {
     }),
   );
 
-  const svg = await satori(element as never, {
-    width: 1200,
-    height: 630,
-    fonts: [
-      {
-        name: 'Questrial',
-        data: loadedFonts.questrial,
-        weight: 400,
-        style: 'normal',
-      },
-      {
-        name: 'Geist',
-        data: loadedFonts.geist,
-        weight: 400,
-        style: 'normal',
-      },
-      {
-        name: 'Geist',
-        data: loadedFonts.geistMedium,
-        weight: 600,
-        style: 'normal',
-      },
-    ],
-  });
+  return renderPng(element, 1200, 630);
+}
 
-  return sharp(Buffer.from(svg)).png({ compressionLevel: 9 }).toBuffer();
+export async function renderRepositorySocialPreview(): Promise<Buffer> {
+  const { width, height } = repositorySocialPreview;
+  const element = node(
+    'div',
+    {
+      style: {
+        width: `${width}px`,
+        height: `${height}px`,
+        display: 'flex',
+        position: 'relative',
+        overflow: 'hidden',
+        background: '#e4e7dd',
+        color: '#131f1a',
+        fontFamily: 'Geist',
+      },
+    },
+    node('div', {
+      style: {
+        position: 'absolute',
+        left: '-100px',
+        bottom: '-300px',
+        width: '980px',
+        height: '540px',
+        background: '#d3d8c9',
+        transform: 'rotate(30deg)',
+      },
+    }),
+    node('div', {
+      style: {
+        position: 'absolute',
+        top: '-114px',
+        right: '-104px',
+        width: '480px',
+        height: '272px',
+        background: '#b8ff3c',
+        border: '4px solid #131f1a',
+        transform: 'rotate(-30deg)',
+      },
+    }),
+    node(
+      'div',
+      {
+        style: {
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          padding: '52px 64px 46px',
+          position: 'relative',
+        },
+      },
+      node(
+        'div',
+        {
+          style: {
+            display: 'flex',
+            alignItems: 'center',
+            fontFamily: 'Questrial',
+            fontSize: '34px',
+            letterSpacing: '-1.1px',
+          },
+        },
+        node('img', {
+          src: logo,
+          width: 56,
+          height: 56,
+          style: { marginRight: '13px' },
+        }),
+        'Reinstate',
+      ),
+      node(
+        'div',
+        {
+          style: {
+            width: '770px',
+            display: 'flex',
+            flexDirection: 'column',
+            marginTop: '-2px',
+          },
+        },
+        node(
+          'div',
+          {
+            style: {
+              display: 'flex',
+              alignSelf: 'flex-start',
+              padding: '7px 12px',
+              border: '2px solid #131f1a',
+              borderRadius: '7px',
+              background: '#f4f6ef',
+              color: '#3e5148',
+              fontSize: '15px',
+              fontWeight: 600,
+              letterSpacing: '1.5px',
+              textTransform: 'uppercase',
+            },
+          },
+          'Open source · Apache-2.0',
+        ),
+        node(
+          'div',
+          {
+            style: {
+              display: 'flex',
+              marginTop: '19px',
+              maxWidth: '760px',
+              fontFamily: 'Questrial',
+              fontSize: '70px',
+              lineHeight: 0.98,
+              letterSpacing: '-2.2px',
+            },
+          },
+          'Continuity layer for coding-agent work',
+        ),
+        node(
+          'div',
+          {
+            style: {
+              display: 'flex',
+              marginTop: '20px',
+              maxWidth: '700px',
+              color: '#415049',
+              fontSize: '24px',
+              lineHeight: 1.34,
+            },
+          },
+          'Sync encrypted Claude Code and Codex sessions across devices through storage you control.',
+        ),
+      ),
+      node(
+        'div',
+        {
+          style: {
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            color: '#53635b',
+            fontSize: '17px',
+          },
+        },
+        node('div', { style: { display: 'flex' } }, 'reinstate.dev'),
+        node(
+          'div',
+          {
+            style: {
+              display: 'flex',
+              padding: '7px 11px',
+              border: '2px solid #131f1a',
+              borderRadius: '7px',
+              background: '#f4f6ef',
+              color: '#131f1a',
+              fontWeight: 600,
+            },
+          },
+          `${product.currentRelease} · pre-1.0`,
+        ),
+      ),
+    ),
+    node('img', {
+      src: continuityArt,
+      width: 376,
+      height: 421,
+      style: {
+        position: 'absolute',
+        right: '30px',
+        bottom: '86px',
+      },
+    }),
+  );
+
+  return renderPng(element, width, height);
 }

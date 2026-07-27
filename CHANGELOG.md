@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   structured data, sitemap, RSS, public product pages, and automated CI checks.
 - Add unique 1200×630 social preview images for every indexable route, using
   Reinstate's logo, typography, palette, and axonometric illustration language.
+- Add a reproducible 1280×640 GitHub repository preview plus an owner-operated,
+  evidence-gated metadata, release-summary, and launch-post runbook.
 - Add answer-first integration, compatibility, security, use-case, project,
   open-source, and changelog pages with explicit release-candidate boundaries.
 - Add reviewed Claude Code and Codex session-sync guides, an engineering blog,
