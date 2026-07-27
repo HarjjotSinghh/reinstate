@@ -277,6 +277,14 @@ const caStoreLed = P(154, 4, 11);
         </desc>
 
         {/* ---------- the cable that tried: on the floor, below the furniture ---------- */}
+        {/* black outline under grey core — rim = (11-7)/2 = 2 on each side */}
+        <path
+          d={cable}
+          fill="none"
+          stroke={SK}
+          stroke-width="11"
+          stroke-linecap="round"
+        />
         <path
           d={cable}
           fill="none"
@@ -285,6 +293,7 @@ const caStoreLed = P(154, 4, 11);
           stroke-linecap="round"
         />
         <g transform="translate(610 372) rotate(-10)">
+          {/* body stroke matches cable rim (~2) */}
           <rect
             x="0"
             y="-8"
@@ -293,9 +302,11 @@ const caStoreLed = P(154, 4, 11);
             rx="3"
             fill="var(--sv-dev-1)"
             stroke={SK}
-            stroke-width="3"
+            stroke-width="2"
           />
-          <path d="M23 -4 H33 M23 4 H33" stroke={SK} stroke-width="3" stroke-linecap="round" />
+          {/* prongs: same rim as cable (core 2.6 + 4) */}
+          <path d="M23 -4 H33 M23 4 H33" stroke={SK} stroke-width="6.6" stroke-linecap="round" />
+          <path d="M23 -4 H33 M23 4 H33" stroke="var(--sv-dev-2)" stroke-width="2.6" stroke-linecap="round" />
         </g>
 
         {/* ---------- the coat stand, far left ---------- */}
@@ -702,11 +713,45 @@ const caStoreLed = P(154, 4, 11);
                   <polygon class="f-top" points={cbTrayC.top} />
                 </g>
                 {/* a clearly visible cable leaves the machine but has nowhere to plug in */}
-                <circle cx="54" cy="18" r="3" fill="var(--sv-ink)" />
-                <path d="M 54 18 C 74 20, 70 46, 86 51 C 92 53, 97 51, 102 48" fill="none" stroke="var(--sv-ink)" stroke-width="4.5" stroke-linecap="round" />
-                <g transform="translate(102 48) rotate(-12)">
-                  <rect x="0" y="-6" width="14" height="12" rx="2" fill="var(--paper-2)" stroke="var(--sv-ink)" stroke-width="2.5" />
-                  <path d="M14 -3 H22 M14 3 H22" stroke="var(--sv-ink)" stroke-width="2.5" stroke-linecap="round" />
+                {/* rim = (7.5-4.5)/2 = 1.5 — plug body + prongs match this */}
+                <circle
+                  class="card-cable-node"
+                  cx="54"
+                  cy="18"
+                  r="3"
+                  fill="var(--sv-dev-2)"
+                  stroke={SK}
+                  stroke-width="1.5"
+                />
+                <path
+                  class="card-cable-outline"
+                  d="M 54 18 C 74 20, 70 46, 86 51 C 92 53, 97 51, 102 48"
+                  fill="none"
+                  stroke={SK}
+                  stroke-width="7.5"
+                  stroke-linecap="round"
+                />
+                <path
+                  class="card-cable"
+                  d="M 54 18 C 74 20, 70 46, 86 51 C 92 53, 97 51, 102 48"
+                  fill="none"
+                  stroke="var(--sv-dev-2)"
+                  stroke-width="4.5"
+                  stroke-linecap="round"
+                />
+                <g class="card-plug" transform="translate(102 48) rotate(-12)">
+                  <rect
+                    x="0"
+                    y="-6"
+                    width="14"
+                    height="12"
+                    rx="2"
+                    fill="var(--sv-dev-1)"
+                    stroke={SK}
+                    stroke-width="1.5"
+                  />
+                  <path d="M14 -3 H22 M14 3 H22" stroke={SK} stroke-width="5.2" stroke-linecap="round" />
+                  <path d="M14 -3 H22 M14 3 H22" stroke="var(--sv-dev-2)" stroke-width="2.2" stroke-linecap="round" />
                 </g>
                 <path d="M128 38 L138 48 M128 48 L138 38" stroke={PRIM_DEEP} stroke-width="3" stroke-linecap="round" />
               </g>
@@ -1228,10 +1273,16 @@ const caStoreLed = P(154, 4, 11);
     font-weight: 700;
     color: var(--ink-3);
   }
+  .bad .cardicon {
+    background: color-mix(in oklab, var(--ink) 16%, var(--paper-2));
+    color: var(--ink-2);
+  }
   .good .cardicon {
     background: var(--prim);
     color: #131f1a;
   }
+
+  /* cable core stays greige; outline uses --sv-stroke (near-black both themes) */
   .panel .kicker {
     margin: 0;
     font-family: 'Geist Mono Variable', ui-monospace, monospace;
