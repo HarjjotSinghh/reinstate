@@ -4,6 +4,9 @@ import tailwindcss from '@tailwindcss/vite';
 import mdx from '@astrojs/mdx';
 import vercel from '@astrojs/vercel';
 
+const ignoreGeneratedDevPath = (filePath) =>
+  /\/(?:\.vercel|dist)(?:\/|$)/.test(filePath.replaceAll('\\', '/'));
+
 // https://astro.build/config
 export default defineConfig({
   site: 'https://reinstate.dev',
@@ -12,6 +15,13 @@ export default defineConfig({
   integrations: [mdx()],
   vite: {
     plugins: [tailwindcss()],
+    server: {
+      watch: {
+        ignored: ignoreGeneratedDevPath,
+        usePolling: true,
+        interval: 100,
+      },
+    },
   },
   markdown: {
     shikiConfig: {

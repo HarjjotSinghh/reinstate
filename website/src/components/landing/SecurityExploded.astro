@@ -18,45 +18,31 @@ const points = [
   },
   {
     k: '02',
-    title: 'Your keys stay on devices you control',
+    title: 'Your encryption secret is never uploaded',
     body:
-      'Your passphrase never reaches Reinstate or your storage provider. Restore happens locally on a device you control; without the key, every uploaded snapshot stays sealed.',
+      'Enter the same passphrase privately on each device. Reinstate never uploads it or stores it in your bucket. Lose it and remote snapshots cannot be recovered.',
     icon: 'key',
   },
   {
     k: '03',
-    title: 'Your storage',
+    title: 'Your bucket, your controls',
     body:
       'Ciphertext lands in your own S3 or R2 bucket, under your region and access controls.',
     icon: 'bucket',
   },
   {
     k: '04',
-    title: 'No auth tokens',
+    title: 'No Reinstate account required',
     body:
-      'API keys and OAuth tokens never sync. Credentials remain denylisted on every device.',
+      'Authenticate directly with your storage provider. Agent auth files and storage credentials are never included in snapshots.',
     icon: 'shield',
   },
   {
     k: '05',
-    title: 'Open-source client',
+    title: 'Backed up before restore',
     body:
-      'Apache-2.0 keeps the encryption and restore path open for anyone to inspect.',
-    icon: 'code',
-  },
-  {
-    k: '06',
-    title: 'Fail-safe restore',
-    body:
-      'Timestamped backups, conflict forks, and atomic writes protect existing state on restore.',
+      'Existing session files are backed up before replacement. Validated restores use atomic writes, while conflicts create explicit forks.',
     icon: 'backup',
-  },
-  {
-    k: '07',
-    title: 'No Reinstate servers',
-    body:
-      'No account, telemetry, or hosted session copy. Your private work stays off our servers.',
-    icon: 'ghost',
   },
 ] as const;
 
@@ -64,9 +50,7 @@ const icons: Record<(typeof points)[number]['icon'], string> = {
   lock: 'M7 10V8a5 5 0 0 1 10 0v2M6 10h12v10H6zM12 14v3',
   bucket: 'M4 8h16l-1.2 12H5.2L4 8zM8 8V6a4 4 0 0 1 8 0v2M9 13h6',
   key: 'M8 14a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm3.5-2.5L20 20m-3-3 3 3',
-  ghost: 'M5 10a7 7 0 0 1 14 0v9l-2.5-1.5L14 19l-2-1.5L10 19 7.5 17.5 5 19z',
   shield: 'M12 3.5 19 6v5.2c0 4.1-2.8 7.5-7 9.3-4.2-1.8-7-5.2-7-9.3V6l7-2.5zM9.5 12l1.8 1.8L15 10',
-  code: 'M8 8 4 12l4 4M16 8l4 4-4 4M13 6l-2 12',
   backup: 'M4 7h12v12H4zM8 7V5h12v12h-2M8 12h4M8 15h6',
 };
 ---
@@ -76,13 +60,13 @@ const icons: Record<(typeof points)[number]['icon'], string> = {
     <header class="security-lede">
       <span class="badge"><i aria-hidden="true"></i> Trust · ownership · open source</span>
       <h2 id="security-title">
-        <span class="h2-line">Sessions leave encrypted.</span>
+        <span class="h2-line">Sessions leave your device encrypted.</span>
         <span class="h2-line">Your bucket never sees plaintext.</span>
       </h2>
       <p class="sub">
         Your sessions can contain source code and private work. Reinstate encrypts them
         locally before storage.<br />
-        Your bucket holds ciphertext. Only your devices hold the keys that restore it.
+        Your bucket holds ciphertext. Decryption happens locally with the passphrase you enter.
       </p>
     </header>
 
@@ -322,19 +306,17 @@ const icons: Record<(typeof points)[number]['icon'], string> = {
     pointer-events: none;
   }
 
-  /* Mirrored anchor bento: wide 01/02 cards bookend ownership proofs. */
+  /* Two primary guarantees followed by three concise implementation proofs. */
   .proof-matrix {
     margin: 0;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(12, minmax(0, 1fr));
     grid-template-areas:
-      'one one three'
-      'four five six'
-      'seven two two';
+      'one one one one one one two two two two two two'
+      'three three three three four four four four five five five five';
     grid-template-rows:
-      clamp(13rem, 15vw, 15rem)
-      clamp(10.5rem, 11vw, 12rem)
-      clamp(13rem, 15vw, 15rem);
+      minmax(13.5rem, auto)
+      minmax(14.25rem, auto);
     gap: 0.75rem;
   }
   .proof-cell[data-proof='01'] {
@@ -352,18 +334,12 @@ const icons: Record<(typeof points)[number]['icon'], string> = {
   .proof-cell[data-proof='05'] {
     grid-area: five;
   }
-  .proof-cell[data-proof='06'] {
-    grid-area: six;
-  }
-  .proof-cell[data-proof='07'] {
-    grid-area: seven;
-  }
   .proof-cell {
     position: relative;
     display: grid;
     align-content: start;
     gap: 0.5rem;
-    padding: 1.5rem 1.4rem 1.6rem;
+    padding: 1.5rem 1.4rem;
     border: 1px solid var(--rule);
     border-radius: 12px;
     background: color-mix(in oklab, var(--paper-2) 72%, transparent);
@@ -377,7 +353,7 @@ const icons: Record<(typeof points)[number]['icon'], string> = {
     min-height: 0;
     align-content: start;
     gap: 0.8rem;
-    padding: 1.75rem 1.65rem 1.85rem;
+    padding: 1.75rem 1.65rem;
     background: color-mix(in oklab, var(--paper-2) 82%, var(--sv-prim) 8%);
   }
   .proof-cell--featured::before {
@@ -476,8 +452,8 @@ const icons: Record<(typeof points)[number]['icon'], string> = {
   }
   .proof-cell p {
     margin: 0;
-    font-size: 0.9rem;
-    line-height: 1.5;
+    font-size: 0.98rem;
+    line-height: 1.58;
     color: color-mix(in oklab, var(--ink) 30%, var(--ink-2));
   }
 
@@ -574,9 +550,8 @@ const icons: Record<(typeof points)[number]['icon'], string> = {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       grid-template-areas:
         'one two'
-        'three three'
-        'four five'
-        'six seven';
+        'three four'
+        'five five';
       grid-template-rows: none;
     }
     .proof-cell {
@@ -592,9 +567,7 @@ const icons: Record<(typeof points)[number]['icon'], string> = {
         'two'
         'three'
         'four'
-        'five'
-        'six'
-        'seven';
+        'five';
     }
     .proof-cell,
     .proof-cell--featured {
