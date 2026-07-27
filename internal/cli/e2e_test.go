@@ -230,7 +230,16 @@ func TestCLISyntheticSyncPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// pull dry-run must validate and plan without restoring vendor state.
+	// Human pull dry-run must validate and plan without claiming a restore.
+	out, errb, code = run("pull", "--agent", "claude", "--session", "session-e2e", "--dry-run")
+	if code != ExitOK {
+		t.Fatalf("pull human dry-run exit=%d err=%q out=%q", code, errb, out)
+	}
+	if !strings.Contains(out, "would pull 1 snapshot(s)") || strings.Contains(out, "pulled 1 snapshot(s)") {
+		t.Fatalf("pull dry-run described a completed restore: %q", out)
+	}
+
+	// JSON pull dry-run remains machine-readable and non-mutating.
 	out, errb, code = run("pull", "--agent", "claude", "--session", "session-e2e", "--dry-run", "--json")
 	if code != ExitOK {
 		t.Fatalf("pull dry-run exit=%d err=%q out=%q", code, errb, out)

@@ -1,14 +1,14 @@
 # Claude Code — Reinstate end-user setup prompt
 
-**Prompt version:** 5
-**Pinned Reinstate release:** `v0.1.0-rc.5`
+**Prompt version:** 6
+**Pinned Reinstate release:** `v0.1.0-rc.6`
 
 Copy everything below the line into Claude Code.
 
 ---
 
 Set up Reinstate end to end on this device using the official public bootstrap,
-which must pin the exact release `v0.1.0-rc.5`. Never substitute `latest`,
+which must pin the exact release `v0.1.0-rc.6`. Never substitute `latest`,
 `main`, or another version.
 
 Safety rules:
@@ -25,6 +25,12 @@ Safety rules:
   me type a passphrase into the shell.
 - Do not publish, commit, push, purchase, install unrelated software, or modify
   unrelated repositories.
+- Before running the bootstrap or any Reinstate command, inspect whether
+  `REINSTATE_HOME` is already configured. Never unset, replace, or redirect it.
+  If it is set, require an absolute path, report that exact effective home, and
+  ask me to confirm it. If it is unset, report the default `~/.reinstate` and
+  ask me to confirm that instead. Stop on a relative or ambiguous value. Every
+  later `rein` command must inherit the confirmed value unchanged.
 
 Complete this workflow:
 
@@ -38,19 +44,20 @@ Complete this workflow:
      `https://reinstate.dev/install.ps1`
 3. Download the selected bootstrap to a temporary file before executing it.
    Inspect and report only its non-secret security contract:
-   - it pins `v0.1.0-rc.5`;
+   - it pins `v0.1.0-rc.6`;
    - it downloads the canonical installer from that exact Git tag;
    - it verifies the canonical installer checksum before execution;
    - it does not resolve `latest`; and
    - the canonical installer downloads binaries only from
-     `https://github.com/HarjjotSinghh/reinstate/releases/download/v0.1.0-rc.5/`.
+     `https://github.com/HarjjotSinghh/reinstate/releases/download/v0.1.0-rc.6/`.
    Stop if any condition is false.
 4. With normal approval, execute the inspected bootstrap. Do not bypass its
    checksum or replacement safeguards. It must install without elevation to
    `~/.local/bin` on macOS/WSL or
    `%LOCALAPPDATA%\Programs\Reinstate\bin` on native Windows and explain any
    PATH change.
-5. Run `rein version --json`. Require version `0.1.0-rc.5`. Run
+5. Reconfirm the exact effective Reinstate home, then run
+   `rein version --json`. Require version `0.1.0-rc.6`. Run
    `rein setup check`; before initialization, only a missing-config failure is
    expected. Any platform, keyring, or Claude compatibility failure must be
    reported and must not be called success. If the home is already initialized,
@@ -67,9 +74,11 @@ Complete this workflow:
    - additional device:
      `rein init --profile-id UUID --project ID=ABSOLUTE_PATH`
 
-   Pause and have me run it in a private interactive terminal. I will enter the
-   storage credentials into Reinstate's hidden prompts. Do not read or echo
-   them. Save Device A's printed profile UUID for the additional device.
+   Pause and have me run it in a private interactive terminal that inherits the
+   exact confirmed `REINSTATE_HOME`. Restate that effective home before I run
+   the command. I will enter the storage credentials into Reinstate's hidden
+   prompts. Do not read or echo them. Save Device A's printed profile UUID for
+   the additional device.
 8. After initialization, run `rein setup check` and
    `rein doctor --self-test`. Both must pass.
 9. On the first device, use

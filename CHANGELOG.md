@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-rc.6] - 2026-07-27
+
 ### Changed
 
 - Expand the post-Phase-1 roadmap from a generic MCP/skills sync bullet into
@@ -15,6 +17,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Document planned MCP, skills/instructions, hooks/loops, plugins,
   marketplaces, safe settings, drift reconciliation, supply-chain controls,
   and authentication coordination while keeping credentials excluded.
+- Pin the public installers, end-user setup prompts, compatibility evidence,
+  and fresh-device acceptance runbook to `v0.1.0-rc.6`.
+- Require setup agents to preserve and confirm an existing absolute
+  `REINSTATE_HOME` instead of silently falling back to the default home.
+- Add committed RC6 Mac Claude Code and native-Windows Codex acceptance prompts
+  that keep evidence and report ownership isolated by device.
+- Disable automatic Vercel Git deployments and require a signed-tag production
+  workflow that verifies both immutable and promoted installer routes byte for
+  byte.
 
 ### Fixed
 
@@ -22,6 +33,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   object request instead of a metadata-only `HeadObject` probe, avoiding
   Cloudflare R2's generic `400 Bad Request` failure while still leaving no
   local configuration behind when the probe fails.
+- Resolve Codex rollout working directories to configured canonical project
+  IDs, exclude unmapped projects, normalize resolved roots during export, and
+  reject duplicate mappings.
+- Report `would pull` during `pull --dry-run` instead of claiming that sessions
+  were restored.
+- Return the stable redacted `config missing` error without exposing the
+  absolute Reinstate home or `config.toml` path.
+- Delimit the PowerShell replacement prompt's target-version variable so the
+  requested version is visible before confirmation.
 
 ## [0.1.0-rc.5] - 2026-07-27
 
@@ -164,7 +184,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.5...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.6...HEAD
+[0.1.0-rc.6]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.5...v0.1.0-rc.6
 [0.1.0-rc.5]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.4...v0.1.0-rc.5
 [0.1.0-rc.4]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.3...v0.1.0-rc.4
 [0.1.0-rc.3]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.2...v0.1.0-rc.3

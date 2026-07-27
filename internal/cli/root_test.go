@@ -446,6 +446,21 @@ func TestConflictReadCommandsRequireConfig(t *testing.T) {
 	}
 }
 
+func TestStatusMissingConfigDoesNotLeakAbsolutePath(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("REINSTATE_HOME", home)
+	_, errb, code := runCLI(t, "reinstate", "status")
+	if code != ExitConfig {
+		t.Fatalf("exit=%d want %d stderr=%q", code, ExitConfig, errb)
+	}
+	if !strings.Contains(errb, "config missing") {
+		t.Fatalf("missing stable config error: %q", errb)
+	}
+	if strings.Contains(errb, home) || strings.Contains(errb, "config.toml") {
+		t.Fatalf("missing-config error leaked local path: %q", errb)
+	}
+}
+
 func TestSetupCheckJSONPreservesFailureExit(t *testing.T) {
 	t.Setenv("REINSTATE_HOME", t.TempDir())
 	out, errb, code := runCLI(t, "reinstate", "setup", "check", "--json")

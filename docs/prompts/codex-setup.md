@@ -1,14 +1,14 @@
 # Codex — Reinstate end-user setup prompt
 
-**Prompt version:** 5
-**Pinned Reinstate release:** `v0.1.0-rc.5`
+**Prompt version:** 6
+**Pinned Reinstate release:** `v0.1.0-rc.6`
 
 Copy everything below the line into Codex.
 
 ---
 
 Install and configure Reinstate end to end on this device through the official
-public bootstrap pinned to `v0.1.0-rc.5`. Never substitute `latest`, `main`, or
+public bootstrap pinned to `v0.1.0-rc.6`. Never substitute `latest`, `main`, or
 another version.
 
 Hard safety rules:
@@ -24,6 +24,12 @@ Hard safety rules:
   me type a passphrase into the PowerShell prompt.
 - Do not modify unrelated repositories or publish, commit, push, purchase, or
   install unrelated software.
+- Before running the bootstrap or any Reinstate command, inspect whether
+  `REINSTATE_HOME` is already configured. Never unset, replace, or redirect it.
+  If it is set, require an absolute path, report that exact effective home, and
+  ask me to confirm it. If it is unset, report the default `~/.reinstate` and
+  ask me to confirm that instead. Stop on a relative or ambiguous value. Every
+  later `rein` command must inherit the confirmed value unchanged.
 
 Execution contract:
 
@@ -36,18 +42,19 @@ Execution contract:
      `https://reinstate.dev/install.ps1`
 3. Download the bootstrap to a temporary file and inspect it before execution.
    Require all of the following:
-   - exact release `v0.1.0-rc.5`;
+   - exact release `v0.1.0-rc.6`;
    - canonical installer fetched from that exact Git tag;
    - canonical installer checksum verification before execution;
    - no `latest` resolver; and
    - binary downloads restricted to
-     `https://github.com/HarjjotSinghh/reinstate/releases/download/v0.1.0-rc.5/`.
+     `https://github.com/HarjjotSinghh/reinstate/releases/download/v0.1.0-rc.6/`.
    Stop if any requirement fails.
 4. With normal approval, execute the inspected bootstrap. Keep its checksum,
    version, and replacement checks enabled. Install without elevation to
    `~/.local/bin` or `%LOCALAPPDATA%\Programs\Reinstate\bin`, and explain any
    PATH update.
-5. Run `rein version --json` and require `0.1.0-rc.5`. Run
+5. Reconfirm the exact effective Reinstate home, then run
+   `rein version --json` and require `0.1.0-rc.6`. Run
    `rein setup check`. Before initialization, a missing-config result is
    expected; platform, keyring, or Codex compatibility failures are blockers.
    If the home is already initialized, stop and report it; never re-run `init`
@@ -64,8 +71,9 @@ Execution contract:
    - additional device:
      `rein init --profile-id UUID --project ID=ABSOLUTE_PATH`
 
-   I will enter storage credentials in Reinstate's hidden prompts. Never read
-   or echo them.
+   Restate the exact effective home and have me use a private interactive
+   terminal that inherits the confirmed `REINSTATE_HOME`. I will enter storage
+   credentials in Reinstate's hidden prompts. Never read or echo them.
 8. Continue with `rein setup check` and `rein doctor --self-test`. Both must
    pass.
 9. On Device A, use

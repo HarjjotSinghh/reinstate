@@ -62,17 +62,30 @@ Optional Resend notify (never required for signup success):
 
 ## Deploy
 
+Automatic Vercel Git deployments are disabled. Production must come from the
+signed release tag at the exact `origin/main` commit.
+
 ```bash
+# One-time project/environment setup:
 cd website
-vercel link   # once
-vercel env add WAITLIST_GIST_ID production   # or Turso vars
-vercel env add GITHUB_TOKEN production
-vercel --prod
+npx vercel link --project reinstate-web --scope harjjot
+npx vercel env add WAITLIST_GIST_ID production   # or Turso vars
+npx vercel env add GITHUB_TOKEN production
+cd ..
+
+# After the signed tag and GitHub prerelease exist:
+./scripts/deploy-website-production.sh vX.Y.Z
 ```
 
 Live project: **https://reinstate-web.vercel.app** (Vercel project `harjjot/reinstate-web`).
 
 Root directory for the Vercel project must be `website/`.
+
+The deployment script refuses dirty, non-`main`, unpushed, unsigned, or
+tag-mismatched source. It builds and tests locally, deploys without moving the
+production alias, byte-verifies both installers at the immutable deployment
+URL, promotes that deployment, and verifies the live routes again. Do not run
+`vercel --prod` directly.
 
 ## Design
 

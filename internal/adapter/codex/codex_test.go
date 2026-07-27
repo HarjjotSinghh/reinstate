@@ -34,7 +34,7 @@ func TestCodexDiscoverExportRestore(t *testing.T) {
 	if err != nil || len(sessions) != 1 {
 		t.Fatalf("%+v %v", sessions, err)
 	}
-	if sessions[0].ID != "rollout-syn-001" || sessions[0].ProjectID != "/Users/fixture-user/code/demo" {
+	if sessions[0].ID != "rollout-syn-001" || sessions[0].ProjectID != "github.com/example/demo" {
 		t.Fatalf("nested session_meta was not parsed: %+v", sessions[0])
 	}
 	if sessions[0].RelativePath != "sessions/2026/07/25/rollout-file-name.jsonl" {
@@ -66,6 +66,75 @@ func TestCodexDiscoverExportRestore(t *testing.T) {
 	wantPath := filepath.Join(out, "sessions", "2026", "07", "25", "rollout-file-name.jsonl")
 	if rplan.Session.Path != wantPath {
 		t.Fatalf("restore path = %q, want %q", rplan.Session.Path, wantPath)
+	}
+}
+
+func TestCodexDiscoverUsesCanonicalProjectMappingAndFiltersUnmapped(t *testing.T) {
+	root := t.TempDir()
+	sessDir := filepath.Join(root, "sessions", "2026", "07", "27")
+	if err := os.MkdirAll(sessDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	projectRoot := t.TempDir()
+	for name, cwd := range map[string]string{
+		"mapped.jsonl":   projectRoot,
+		"unmapped.jsonl": filepath.Join(t.TempDir(), "other"),
+	} {
+		content := `{"type":"session_meta","payload":{"id":"` + name + `","cwd":"` + filepath.ToSlash(cwd) + `"}}` + "\n"
+		if err := os.WriteFile(filepath.Join(sessDir, name), []byte(content), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	a := &Adapter{
+		Root: root,
+		Projects: map[string]string{
+			"local/reinstate-phase1-acceptance-rc6": projectRoot,
+		},
+	}
+	sessions, err := a.Discover(context.Background(), adapter.DiscoverOptions{
+		ProjectID: "local/reinstate-phase1-acceptance-rc6",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sessions) != 1 || sessions[0].ProjectID != "local/reinstate-phase1-acceptance-rc6" {
+		t.Fatalf("unexpected mapped sessions: %+v", sessions)
+	}
+}
+
+func TestCodexDiscoverRejectsDuplicateResolvedProjectRoots(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "sessions"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	projectRoot := t.TempDir()
+	a := &Adapter{
+		Root: root,
+		Projects: map[string]string{
+			"project/one": projectRoot,
+			"project/two": projectRoot,
+		},
+	}
+	if _, err := a.Discover(context.Background(), adapter.DiscoverOptions{}); err == nil {
+		t.Fatal("expected duplicate resolved project roots to be rejected")
+	}
+}
+
+func TestCodexMapperNormalizesResolvedProjectRoot(t *testing.T) {
+	physicalRoot := t.TempDir()
+	parent := t.TempDir()
+	symlinkRoot := filepath.Join(parent, "project-link")
+	if err := os.Symlink(physicalRoot, symlinkRoot); err != nil {
+		t.Skipf("symlinks unavailable: %v", err)
+	}
+	resolvedPhysicalRoot, err := filepath.EvalSymlinks(physicalRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a := &Adapter{Projects: map[string]string{"project/demo": symlinkRoot}}
+	got := a.mapper().Normalize(filepath.Join(resolvedPhysicalRoot, "src", "main.go"))
+	if got != "${REPO:project/demo}/src/main.go" {
+		t.Fatalf("resolved root normalized as %q", got)
 	}
 }
 
