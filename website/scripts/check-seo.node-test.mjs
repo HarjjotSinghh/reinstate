@@ -169,6 +169,41 @@ test('rejects duplicate descriptions across indexable pages', async (t) => {
   assert.ok(result.errors.some(({ code }) => code === 'DESCRIPTION_DUPLICATE'));
 });
 
+test('rejects schema names, HowTo steps, breadcrumbs, and dates absent from visible content', async (t) => {
+  const root = await validFixture();
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const hiddenSchema =
+    `<script type="application/ld+json">{"@context":"https://schema.org","@graph":[` +
+    `{"@type":"WebPage","@id":"${SITE}/#webpage","url":"${SITE}/","name":"Invisible page entity","description":"Hidden fixture","dateModified":"2026-07-26T00:00:00.000Z","isPartOf":{"@id":"${SITE}/#website"},"inLanguage":"en"},` +
+    `{"@type":"HowTo","@id":"${SITE}/#howto","name":"Invisible procedure","description":"Hidden procedure","step":[{"@type":"HowToStep","position":1,"name":"Invisible step","text":"This exact instruction is absent from the rendered page.","url":"${SITE}/#step"}]},` +
+    `{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Invisible breadcrumb","item":"${SITE}/"}]}` +
+    `]}</script>`;
+  await writeFixture(
+    root,
+    'index.html',
+    indexableHtml({ extraJsonLd: hiddenSchema }),
+  );
+
+  const result = await auditSeo(root);
+  const visibilityErrors = result.errors.filter(
+    ({ code }) => code === 'JSONLD_VISIBLE_MISMATCH',
+  );
+
+  assert.ok(
+    visibilityErrors.length >= 6,
+    `expected broad visible-schema mismatches, got ${JSON.stringify(visibilityErrors)}`,
+  );
+  assert.ok(
+    visibilityErrors.some(({ message }) => message.includes('dateModified')),
+  );
+  assert.ok(
+    visibilityErrors.some(({ message }) => message.includes('HowToStep')),
+  );
+  assert.ok(
+    visibilityErrors.some(({ message }) => message.includes('ListItem')),
+  );
+});
+
 test('accepts direct permanent redirects to built canonical destinations', async (t) => {
   const root = await validFixture();
   t.after(() => rm(root, { recursive: true, force: true }));

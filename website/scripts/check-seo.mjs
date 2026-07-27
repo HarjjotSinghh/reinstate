@@ -575,12 +575,20 @@ function inspectMetadataClaims(values, context, errors) {
   }
 }
 
-function inspectSchemaVisibility(value, visibleText, context, errors, location = '$') {
+function inspectSchemaVisibility(
+  value,
+  visibleText,
+  visibleDateTimes,
+  context,
+  errors,
+  location = '$',
+) {
   if (Array.isArray(value)) {
     value.forEach((item, index) =>
       inspectSchemaVisibility(
         item,
         visibleText,
+        visibleDateTimes,
         context,
         errors,
         `${location}[${index}]`,
@@ -593,23 +601,50 @@ function inspectSchemaVisibility(value, visibleText, context, errors, location =
   }
 
   for (const type of schemaTypes(value)) {
-    const visibleField =
+    const visibleFields =
       type === 'Question'
-        ? 'name'
+        ? ['name']
         : ['BlogPosting', 'TechArticle'].includes(type)
-          ? 'headline'
-          : null;
-    const visibleValue = visibleField
-      ? cleanVisibleText(String(value[visibleField] ?? ''))
-      : '';
-    if (visibleValue && !visibleText.includes(visibleValue)) {
-      addError(
-        errors,
-        'JSONLD_VISIBLE_MISMATCH',
-        context,
-        `JSON-LD ${location}.${visibleField} for ${type} is not present in visible page text: ${JSON.stringify(visibleValue)}.`,
-        'Render the same question/headline visibly or remove the mismatched schema node.',
+          ? ['headline']
+          : ['HowTo', 'ListItem', 'WebPage'].includes(type)
+            ? ['name']
+            : type === 'HowToStep'
+              ? ['name', 'text']
+              : [];
+    for (const visibleField of visibleFields) {
+      const visibleValue = cleanVisibleText(
+        String(value[visibleField] ?? ''),
       );
+      if (visibleValue && !visibleText.includes(visibleValue)) {
+        addError(
+          errors,
+          'JSONLD_VISIBLE_MISMATCH',
+          context,
+          `JSON-LD ${location}.${visibleField} for ${type} is not present in visible page text: ${JSON.stringify(visibleValue)}.`,
+          'Render the same schema value visibly or remove the mismatched schema node.',
+        );
+      }
+    }
+
+    for (const dateField of ['datePublished', 'dateModified']) {
+      const schemaDate = value[dateField];
+      if (
+        typeof schemaDate === 'string' &&
+        /^\d{4}-\d{2}-\d{2}/.test(schemaDate) &&
+        !visibleDateTimes.some(
+          (dateTime) =>
+            dateTime === schemaDate ||
+            dateTime.slice(0, 10) === schemaDate.slice(0, 10),
+        )
+      ) {
+        addError(
+          errors,
+          'JSONLD_VISIBLE_MISMATCH',
+          context,
+          `JSON-LD ${location}.${dateField} for ${type} has no matching visible <time datetime>: ${JSON.stringify(schemaDate)}.`,
+          'Render the publication or modification date visibly, or remove the unsupported schema date.',
+        );
+      }
     }
   }
 
@@ -617,6 +652,7 @@ function inspectSchemaVisibility(value, visibleText, context, errors, location =
     inspectSchemaVisibility(
       child,
       visibleText,
+      visibleDateTimes,
       context,
       errors,
       `${location}.${key}`,
@@ -631,6 +667,9 @@ function inspectJsonLd(html, context, errors) {
   const visibleText = cleanVisibleText(
     withoutEmbeddedContent(html).replace(/<[^>]+>/g, ' '),
   );
+  const visibleDateTimes = findTags(html, 'time')
+    .map((time) => time.attributes.datetime ?? '')
+    .filter(Boolean);
 
   for (const match of html.matchAll(scriptPattern)) {
     const attributes = parseAttributes(`<script ${match[1]}>`);
@@ -664,7 +703,13 @@ function inspectJsonLd(html, context, errors) {
       }
       inspectStructuredData(data, context, errors, declaredIds);
       inspectProductClaims(data, context, errors);
-      inspectSchemaVisibility(data, visibleText, context, errors);
+      inspectSchemaVisibility(
+        data,
+        visibleText,
+        visibleDateTimes,
+        context,
+        errors,
+      );
     } catch (error) {
       addError(
         errors,
