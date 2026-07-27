@@ -406,6 +406,31 @@ An operator with production log and WAF access must separately review:
 Production log access, bot-IP verification, and WAF changes are not automatable
 or completed in this branch.
 
+## Rendered-browser quality gate
+
+After a production build, run:
+
+```sh
+npm --prefix website run check:lighthouse
+```
+
+The command starts the repository's static preview server, opens five
+representative routes in headless Chrome, and writes full JSON evidence under
+`website/artifacts/lighthouse/`. CI uploads those reports even when the gate
+fails. The gate covers rendered SEO, accessibility, best practices,
+performance, LCP, CLS, named controls, labels, headings, language, image text
+alternatives, canonicals, and descriptions.
+
+Chrome must be installed or `CHROME_PATH` must point to a compatible executable.
+CI's Ubuntu runner supplies Chrome. A local machine without Chrome can install
+Chrome Headless Shell into an ignored cache with the Puppeteer browsers CLI and
+set `CHROME_PATH` for the run; do not commit the downloaded browser.
+
+Treat the result as a lab regression signal. It does not measure field INP,
+prove 75th-percentile Core Web Vitals, or replace keyboard, zoom, screen-reader,
+and real-device testing. Record production PageSpeed/Search Console field data
+only when a sufficient sample exists.
+
 For Perplexity WAF rules, verify the user-agent against the current IP ranges
 published in Perplexity's crawler documentation. Do not hard-code a copied IP
 list in this repository or allow traffic solely because it presents a

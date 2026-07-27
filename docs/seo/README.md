@@ -19,6 +19,7 @@ Operational follow-up uses:
 Production observations:
 
 - [2026-07-27 pre-deployment discovery baseline](baselines/2026-07-27-pre-deployment-production-discovery.md)
+- [2026-07-27 local rendered-browser baseline](baselines/2026-07-27-local-lighthouse.md)
 
 ## Source-of-truth order
 
