@@ -1,6 +1,6 @@
 # Local rendered-browser baseline — 2026-07-27
 
-This is a reproducible lab smoke test for commit `40549e7`, not field Core Web
+This is a reproducible lab smoke test for commit `a343a76`, not field Core Web
 Vitals and not a production ranking claim.
 
 ## Environment
@@ -21,11 +21,11 @@ reports are large and environment-dependent.
 
 | Route | Performance | Accessibility | Best practices | SEO | LCP | CLS |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `/` | 90 | 100 | 100 | 100 | 2,860 ms | 0.000 |
-| `/docs/getting-started` | 99 | 100 | 100 | 100 | 1,657 ms | 0.000 |
-| `/integrations/claude-code` | 98 | 100 | 100 | 100 | 1,954 ms | 0.013 |
-| `/guides/sync-claude-code-sessions-across-devices` | 97 | 100 | 100 | 100 | 2,107 ms | 0.000 |
-| `/compatibility` | 98 | 100 | 100 | 100 | 1,957 ms | 0.034 |
+| `/` | 92 | 100 | 100 | 100 | 2,852 ms | 0.000 |
+| `/docs/getting-started` | 99 | 100 | 100 | 100 | 1,967 ms | 0.000 |
+| `/integrations/claude-code` | 99 | 100 | 100 | 100 | 1,670 ms | 0.000 |
+| `/guides/sync-claude-code-sessions-across-devices` | 98 | 100 | 100 | 100 | 2,121 ms | 0.000 |
+| `/compatibility` | 99 | 100 | 100 | 100 | 1,969 ms | 0.000 |
 
 Scores can vary between lab runs. The command fails for SEO below 100,
 accessibility or best practices below 95, performance below 80, or a failed
@@ -44,4 +44,3 @@ The first run correctly failed light-theme muted text and green links for
 insufficient contrast. The shared tokens were darkened, persistent underlines
 were restored for inline prose links, and the complete five-route rerun reached
 100 accessibility on every representative route.
-
