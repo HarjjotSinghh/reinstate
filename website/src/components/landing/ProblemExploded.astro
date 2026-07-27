@@ -648,8 +648,8 @@ const caStoreLed = P(154, 4, 11);
 
         {/* the verdict chip, same style as the hero's command chips */}
         <g class="cmdchip">
-          <rect x="520" y="410" width="300" height="34" rx="17" fill="var(--paper-2)" stroke="var(--rule)" stroke-width="1.5" />
-          <text x="670" y="433" text-anchor="middle"><tspan class="ta">✕</tspan> no route off this machine</text>
+          <rect x="580" y="402" width="300" height="34" rx="17" fill="var(--paper-2)" stroke="var(--rule)" stroke-width="1.5" />
+          <text x="730" y="425" text-anchor="middle"><tspan class="ta">✕</tspan> no route off this machine</text>
         </g>
       </svg>
     </figure>
@@ -802,6 +802,7 @@ const caStoreLed = P(154, 4, 11);
       </div>
     </div>
   </section>
+  <slot />
 </div>
 
 <style>
@@ -993,8 +994,9 @@ const caStoreLed = P(154, 4, 11);
 
   /* ---------- scene (transparent: the floor behind it is the page) ---------- */
   .scene {
-    /* pulls the extended viewBox back up: 80/1640 of the width */
-    margin: -4.88% 0 0;
+    /* pulls the extended viewBox back up (80/1640 of width), then leaves
+       ~18px under the lede so padding isn't eaten by the pull */
+    margin: calc(-4.88% + 18px) 0 0;
     width: 100%;
   }
   .scene svg {

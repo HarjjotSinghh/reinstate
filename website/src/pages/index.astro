@@ -4,6 +4,7 @@ export const prerender = true;
 import BaseLayout from '../layouts/BaseLayout.astro';
 import HeroExploded from '../components/landing/HeroExploded.astro';
 import ProblemExploded from '../components/landing/ProblemExploded.astro';
+import TerminalProof from '../components/landing/TerminalProof.astro';
 ---
 
 <BaseLayout
@@ -11,5 +12,7 @@ import ProblemExploded from '../components/landing/ProblemExploded.astro';
   description="Sessions, MCP servers, skills, and settings across every coding agent and every machine you own. Encrypted so only you can read it."
 >
   <HeroExploded />
-  <ProblemExploded />
+  <ProblemExploded>
+    <TerminalProof />
+  </ProblemExploded>
 </BaseLayout>
