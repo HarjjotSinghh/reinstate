@@ -1,0 +1,168 @@
+---
+import ComparisonEvidence from '../../components/ComparisonEvidence.astro';
+import { product } from '../../data/product';
+import PublicContentLayout from '../../layouts/PublicContentLayout.astro';
+
+export const prerender = true;
+
+const title = 'Reinstate vs. Manual Coding-Agent Session Copying';
+const description =
+  'Compare Reinstate with manually copying Claude Code or Codex session files across devices, including paths, encryption, credentials, and recovery.';
+---
+
+<PublicContentLayout
+  {title}
+  {description}
+  path="/compare/reinstate-vs-manual-session-copying"
+  eyebrow="Workflow comparison"
+  answer="Manual copying can move any session files you can correctly identify, secure, adapt, and restore. Reinstate automates those steps for supported same-vendor Claude Code and Codex sessions, including structural path remapping, local encryption, credential exclusions, and safer restore behavior. It does not support every format or remove the need for independent backups."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Compare', path: '/compare' },
+    { name: 'Manual session copying', path: '/compare/reinstate-vs-manual-session-copying' },
+  ]}
+  article={false}
+>
+  <h2 id="short-answer">The practical difference</h2>
+  <p>
+    A manual workflow puts file discovery, selection, transport security, cross-platform path
+    changes, overwrite policy, and validation in your hands. That control is useful when you know
+    an unsupported format or need a one-off transfer. Reinstate supplies a repeatable workflow for
+    the session layouts and versions it explicitly supports.
+  </p>
+  <p>
+    This page uses “manual copying” to mean a user-operated transfer of selected local session
+    files. It does not assume a particular copy command, cloud drive, archive format, or security
+    design.
+  </p>
+
+  <h2 id="comparison-matrix">Capability comparison</h2>
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">Dimension</th>
+          <th scope="col">Reinstate {product.currentRelease}</th>
+          <th scope="col">Manual session copying</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Format scope</td>
+          <td>Tested Claude Code and Codex session layouts only</td>
+          <td>Any format the operator can correctly identify and handle</td>
+        </tr>
+        <tr>
+          <td>Discovery</td>
+          <td>Adapter discovers supported vendor-native session artifacts</td>
+          <td>Operator identifies every source file and relationship</td>
+        </tr>
+        <tr>
+          <td>macOS ↔ Windows paths</td>
+          <td>Configured canonical project IDs expand to each device's local root</td>
+          <td>Operator inspects and updates structural paths when required</td>
+        </tr>
+        <tr>
+          <td>Free-form transcript paths</td>
+          <td>Left unchanged; only known structural fields are remapped</td>
+          <td>Depends on the operator's chosen edits</td>
+        </tr>
+        <tr>
+          <td>Transport payload</td>
+          <td>Encrypted locally with age before upload to user-owned S3-compatible storage</td>
+          <td>Depends entirely on the selected archive and transport</td>
+        </tr>
+        <tr>
+          <td>Credentials</td>
+          <td>Known auth, credential, token, cache, and log paths are hard-excluded</td>
+          <td>Operator must decide what to exclude and verify the result</td>
+        </tr>
+        <tr>
+          <td>Restore preview</td>
+          <td><code>pull --dry-run</code> previews the planned restore</td>
+          <td>Available only if the operator builds a preview step</td>
+        </tr>
+        <tr>
+          <td>Overwrite protection</td>
+          <td>Timestamped backups, atomic writes, and explicit conflict records</td>
+          <td>Depends on the copy tool and procedure</td>
+        </tr>
+        <tr>
+          <td>Native resume</td>
+          <td>Restores to the same vendor's native layout for its own resume command</td>
+          <td>Works if the operator reproduces a valid native layout</td>
+        </tr>
+        <tr>
+          <td>Independent backup</td>
+          <td>Still recommended, especially before v1.0</td>
+          <td>Operator owns the complete backup and recovery design</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="when-manual-copying-fits">When manual copying can fit</h2>
+  <ul>
+    <li>You need to move a session format Reinstate does not support.</li>
+    <li>You fully understand the vendor's current storage layout and portability constraints.</li>
+    <li>You want total control over selection, transport, transformation, and restore behavior.</li>
+    <li>The transfer is rare enough that maintaining a repeatable workflow is unnecessary.</li>
+  </ul>
+
+  <h2 id="when-reinstate-fits">When Reinstate can fit</h2>
+  <ul>
+    <li>You regularly continue supported Claude Code or Codex work on another device.</li>
+    <li>Your project roots differ between macOS and Windows.</li>
+    <li>You want selected session artifacts encrypted before they reach remote storage.</li>
+    <li>You want adapter-aware discovery, a dry-run, backups, and explicit conflict handling.</li>
+  </ul>
+
+  <div class="pc-callout">
+    <p>Automation narrows the supported surface.</p>
+    <p>
+      Reinstate does not claim that manual copying is impossible or universally unsafe. A careful
+      operator can recreate some or all of these safeguards. The tradeoff is between manual
+      flexibility and a tested, repeatable workflow for the formats Reinstate supports.
+    </p>
+  </div>
+
+  <ComparisonEvidence
+    sources={[
+      {
+        label: 'Adapter documentation',
+        href: '/docs/adapters',
+        note: 'Supported native layouts, project-key handling, same-vendor resume, and hard exclusions.',
+      },
+      {
+        label: 'Getting started',
+        href: '/docs/getting-started',
+        note: 'Current push, dry-run, pull, restore, and native resume procedure.',
+      },
+      {
+        label: 'Security model',
+        href: '/docs/security-model',
+        note: 'age encryption, credential boundaries, timestamped backups, atomic writes, and conflict forks.',
+      },
+      {
+        label: 'Compatibility matrix',
+        href: '/compatibility',
+        note: 'Current tested agents, versions, operating systems, storage, and release limitations.',
+      },
+    ]}
+    limitations={[
+      'Manual copying is a user-defined workflow, so its security and reliability cannot be scored without inspecting the actual procedure.',
+      'Reinstate supports only documented Claude Code and Codex session layouts in Phase 1; it is not an arbitrary file synchronization tool.',
+      'Neither approach makes a Claude Code transcript natively resumable in Codex, or a Codex rollout natively resumable in Claude Code.',
+    ]}
+  />
+
+  <section class="pc-related" aria-labelledby="related-heading">
+    <h2 id="related-heading">Plan a supported transfer</h2>
+    <nav aria-label="Related pages">
+      <a href="/compare">All comparisons</a>
+      <a href="/compatibility">Check compatibility</a>
+      <a href="/use-cases/macos-and-windows">macOS and Windows use case</a>
+      <a href="/docs/troubleshooting">Troubleshooting</a>
+    </nav>
+  </section>
+</PublicContentLayout>

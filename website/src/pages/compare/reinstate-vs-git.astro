@@ -1,0 +1,184 @@
+---
+import ComparisonEvidence from '../../components/ComparisonEvidence.astro';
+import { product } from '../../data/product';
+import PublicContentLayout from '../../layouts/PublicContentLayout.astro';
+
+export const prerender = true;
+
+const title = 'Reinstate vs. Git for Coding-Agent Session Continuity';
+const description =
+  'Learn why Reinstate and Git are complementary: Git tracks repository history, while Reinstate transfers supported coding-agent session state.';
+---
+
+<PublicContentLayout
+  {title}
+  {description}
+  path="/compare/reinstate-vs-git"
+  eyebrow="Workflow comparison"
+  answer="Git records repository content and history; Reinstate transfers supported coding-agent session state. Git can put the same code on another computer, but agent conversations normally live in vendor-specific local storage outside the repository. Use Git for the project and Reinstate for supported same-vendor session continuity."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Compare', path: '/compare' },
+    { name: 'Git', path: '/compare/reinstate-vs-git' },
+  ]}
+  article={false}
+>
+  <h2 id="short-answer">Git has the project; Reinstate moves supported agent context</h2>
+  <p>
+    Git's data model stores repository snapshots and history as blobs, trees, commits, and tags.
+    That is the right foundation for versioning source code and collaborating on a project.
+    Reinstate does not replace it.
+  </p>
+  <p>
+    Claude Code and Codex keep their resumable session records in vendor-owned local layouts.
+    Reinstate's adapters find selected records, normalize known structural paths, encrypt them, and
+    restore them into the same vendor's native layout on another device.
+  </p>
+
+  <h2 id="comparison-matrix">Responsibility comparison</h2>
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">Dimension</th>
+          <th scope="col">Reinstate {product.currentRelease}</th>
+          <th scope="col">Git</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Primary job</td>
+          <td>Supported coding-agent session continuity across devices</td>
+          <td>Repository content, history, branching, merging, and exchange</td>
+        </tr>
+        <tr>
+          <td>Default content scope</td>
+          <td>Selected vendor-native Claude Code and Codex session artifacts</td>
+          <td>Files deliberately added to the repository object database</td>
+        </tr>
+        <tr>
+          <td>Repository source files</td>
+          <td>Not synchronized</td>
+          <td>Core responsibility</td>
+        </tr>
+        <tr>
+          <td>Agent conversation state</td>
+          <td>Core Phase 1 responsibility for supported layouts</td>
+          <td>Not included unless a user deliberately adds those files</td>
+        </tr>
+        <tr>
+          <td>Native agent resume</td>
+          <td>Restores the same vendor's session layout for its resume command</td>
+          <td>Not a Git operation</td>
+        </tr>
+        <tr>
+          <td>Cross-device project paths</td>
+          <td>Remaps known structural paths using configured project IDs</td>
+          <td>Repository checkout paths are outside Git's object model</td>
+        </tr>
+        <tr>
+          <td>Remote data protection</td>
+          <td>Session payload is encrypted locally with age before upload</td>
+          <td>Depends on repository contents, hosting, and the user's security design</td>
+        </tr>
+        <tr>
+          <td>Credentials</td>
+          <td>Known agent authentication and credential paths are hard-excluded</td>
+          <td>Users must avoid adding secrets and configure repository exclusions appropriately</td>
+        </tr>
+        <tr>
+          <td>Conflict model</td>
+          <td>Session revision checks, conflict records, forks, and restore backups</td>
+          <td>Repository branches and merge operations</td>
+        </tr>
+        <tr>
+          <td>Recommended relationship</td>
+          <td colspan="2">Use Git for code and Reinstate for supported agent sessions.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="why-not-commit-sessions">Could you commit session files to Git?</h2>
+  <p>
+    Git can track any file you deliberately add. That does not make raw agent-session directories
+    automatically portable or appropriate for a repository. You would still own file discovery,
+    credential and sensitive-content review, path adaptation, vendor-layout restoration, binary or
+    large-file behavior, and repository-access policy.
+  </p>
+  <p>
+    Reinstate takes a narrower route: its adapters select supported artifacts, exclude known
+    credential paths, transform only known structural fields, and place encrypted payloads in a
+    separate storage workflow. Session transcripts can still contain secrets an agent printed or a
+    user pasted, so encryption and access control remain necessary.
+  </p>
+
+  <h2 id="use-together">A two-layer workflow</h2>
+  <ol class="pc-steps">
+    <li>
+      <strong>Synchronize the repository with Git.</strong> Commit and exchange the project state
+      you want collaborators and devices to share.
+    </li>
+    <li>
+      <strong>Prepare the destination project.</strong> Check out the appropriate revision and
+      install the compatible agent independently.
+    </li>
+    <li>
+      <strong>Transfer the supported session with Reinstate.</strong> Push on one device, pull with
+      a dry-run on the other, and restore the native session.
+    </li>
+    <li>
+      <strong>Resume with the same vendor.</strong> Continue Claude Code in Claude Code or Codex in
+      Codex against the prepared repository.
+    </li>
+  </ol>
+
+  <div class="pc-callout">
+    <p>Git and Reinstate are complementary.</p>
+    <p>
+      A session without the matching repository state may have stale assumptions; a repository
+      without the session lacks the agent conversation. Keep both layers synchronized deliberately,
+      and keep independent backups while Reinstate is pre-1.0.
+    </p>
+  </div>
+
+  <ComparisonEvidence
+    sources={[
+      {
+        label: 'Git data model',
+        href: 'https://git-scm.com/docs/gitdatamodel',
+        note: 'Official Git documentation for blobs, trees, commits, tags, repository snapshots, and history.',
+      },
+      {
+        label: 'Git reference documentation',
+        href: 'https://git-scm.com/docs/git',
+        note: 'Official overview of the object database, index, working tree, and Git command families.',
+      },
+      {
+        label: 'Reinstate adapter documentation',
+        href: '/docs/adapters',
+        note: 'Native session discovery, portability fields, credential exclusions, and same-vendor resume.',
+      },
+      {
+        label: 'Reinstate security model',
+        href: '/docs/security-model',
+        note: 'Encryption, sensitive transcript boundaries, local backups, and conflict behavior.',
+      },
+    ]}
+    limitations={[
+      'Git can store raw session files when a user deliberately adds them; this page does not claim a technical prohibition.',
+      'Git hosting, repository encryption, secret scanning, and access controls vary and are outside this comparison.',
+      'Reinstate does not synchronize source code, branches, uncommitted changes, dependencies, or repository credentials.',
+    ]}
+  />
+
+  <section class="pc-related" aria-labelledby="related-heading">
+    <h2 id="related-heading">Use both layers deliberately</h2>
+    <nav aria-label="Related pages">
+      <a href="/compare">All comparisons</a>
+      <a href="/blog/why-git-does-not-sync-coding-agent-sessions">Why Git does not sync sessions</a>
+      <a href="/docs/getting-started">Getting started</a>
+      <a href="/docs/security-model">Security model</a>
+    </nav>
+  </section>
+</PublicContentLayout>

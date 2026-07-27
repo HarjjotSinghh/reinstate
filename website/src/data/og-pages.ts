@@ -151,5 +151,33 @@ export const staticOgPages: OgPage[] = [
     description:
       'Use canonical project mappings to restore Claude Code or Codex sessions when local paths differ.',
   },
+  {
+    route: '/compare',
+    kind: 'Factual comparisons',
+    title: 'Compare Reinstate with session-continuity workflows',
+    description:
+      'Sourced comparisons with manual session copying, remote desktop, and Git.',
+  },
+  {
+    route: '/compare/reinstate-vs-manual-session-copying',
+    kind: 'Workflow comparison',
+    title: 'Reinstate vs. manual session copying',
+    description:
+      'Compare discovery, path handling, encryption, credentials, and safe restore behavior.',
+  },
+  {
+    route: '/compare/reinstate-vs-remote-desktop',
+    kind: 'Workflow comparison',
+    title: 'Reinstate vs. remote desktop',
+    description:
+      'Compare local session transfer with controlling the computer where work already lives.',
+  },
+  {
+    route: '/compare/reinstate-vs-git',
+    kind: 'Workflow comparison',
+    title: 'Reinstate vs. Git',
+    description:
+      'Git tracks repository history; Reinstate transfers supported coding-agent session state.',
+  },
   ...previewOgPages,
 ];

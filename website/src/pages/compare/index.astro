@@ -1,0 +1,153 @@
+---
+import ComparisonEvidence from '../../components/ComparisonEvidence.astro';
+import PublicContentLayout from '../../layouts/PublicContentLayout.astro';
+
+export const prerender = true;
+
+const title = 'Compare Reinstate with Git and Session-Transfer Workflows';
+const description =
+  'Compare Reinstate with manual session copying, remote desktop, and Git using sourced facts, explicit limitations, and current release evidence.';
+---
+
+<PublicContentLayout
+  {title}
+  {description}
+  path="/compare"
+  eyebrow="Factual comparisons"
+  answer="Reinstate handles a narrow job: moving supported, vendor-native Claude Code and Codex session artifacts between devices through encrypted storage you control. These comparisons explain where that job overlaps with manual copying, remote desktop, and Git—and where those workflows solve a different problem."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Compare', path: '/compare' },
+  ]}
+  article={false}
+>
+  <h2 id="comparison-guides">Compare the workflows</h2>
+  <div class="pc-grid">
+    <a class="pc-card" href="/compare/reinstate-vs-manual-session-copying">
+      <h3>Reinstate vs. manual session copying</h3>
+      <p>
+        Compare discovery, path handling, encryption, credential exclusions, backups, and
+        conflict handling.
+      </p>
+      <span class="pc-link">Read the comparison →</span>
+    </a>
+    <a class="pc-card" href="/compare/reinstate-vs-remote-desktop">
+      <h3>Reinstate vs. remote desktop</h3>
+      <p>
+        Compare transferring session state with controlling the computer where that state already
+        lives.
+      </p>
+      <span class="pc-link">Read the comparison →</span>
+    </a>
+    <a class="pc-card" href="/compare/reinstate-vs-git">
+      <h3>Reinstate vs. Git</h3>
+      <p>
+        Understand why source history and coding-agent conversation continuity are complementary
+        layers.
+      </p>
+      <span class="pc-link">Read the comparison →</span>
+    </a>
+  </div>
+
+  <h2 id="choose-by-job">Choose by the job you need done</h2>
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">Need</th>
+          <th scope="col">Workflow to evaluate</th>
+          <th scope="col">Reason</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Version and collaborate on repository content</td>
+          <td>Git</td>
+          <td>Git records repository objects and project history.</td>
+        </tr>
+        <tr>
+          <td>Operate the exact environment on another computer</td>
+          <td>Remote desktop</td>
+          <td>The work continues on the host machine while you control it remotely.</td>
+        </tr>
+        <tr>
+          <td>Copy any session format you understand</td>
+          <td>Manual copying</td>
+          <td>You control every included file and every transport decision.</td>
+        </tr>
+        <tr>
+          <td>Resume a supported native session on another local machine</td>
+          <td>Reinstate</td>
+          <td>
+            Reinstate automates supported discovery, path remapping, encryption, transfer, and
+            native restore.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="reading-standard">How to read these comparisons</h2>
+  <ul>
+    <li>
+      <strong>They compare workflows, not brands.</strong> “Remote desktop” and “manual copying”
+      cover many implementations, so claims stay narrow and conditional.
+    </li>
+    <li>
+      <strong>Reinstate claims are release-specific.</strong> Capability statements describe the
+      current release candidate and link to compatibility or architecture evidence.
+    </li>
+    <li>
+      <strong>No score is a universal verdict.</strong> The right choice depends on whether you
+      need source control, remote control, arbitrary file transfer, or native session continuity.
+    </li>
+    <li>
+      <strong>Complementary tools can be used together.</strong> Reinstate does not replace Git,
+      repository hosting, backups, or access to a remote development machine.
+    </li>
+  </ul>
+
+  <div class="pc-callout">
+    <p>Current scope: same-vendor session continuity.</p>
+    <p>
+      Reinstate restores Claude Code sessions to Claude Code and Codex sessions to Codex. It does
+      not translate transcripts between agents, synchronize repository changes, or provide remote
+      desktop access.
+    </p>
+  </div>
+
+  <ComparisonEvidence
+    sources={[
+      {
+        label: 'Reinstate compatibility matrix',
+        href: '/compatibility',
+        note: 'Supported agents, operating systems, storage backends, tested versions, and release gates.',
+      },
+      {
+        label: 'Reinstate architecture',
+        href: '/docs/architecture',
+        note: 'The adapter, path-normalization, encryption, storage, and native-restore boundaries.',
+      },
+      {
+        label: 'Reinstate security model',
+        href: '/docs/security-model',
+        note: 'Credential exclusions, encryption, backup, conflict, and local-machine boundaries.',
+      },
+    ]}
+    limitations={[
+      'The comparisons do not benchmark speed, cost, reliability, or user satisfaction.',
+      'Remote desktop products and manually designed transfer systems vary; product-specific behavior must be checked with its vendor or operator.',
+      'Reinstate is pre-1.0 release-candidate software, and its interfaces or storage formats may change before v1.0.',
+    ]}
+  />
+
+  <section class="pc-related" aria-labelledby="related-heading">
+    <h2 id="related-heading">Verify the product boundary</h2>
+    <nav aria-label="Related pages">
+      <a href="/about/reinstate">What is Reinstate?</a>
+      <a href="/compatibility">Compatibility matrix</a>
+      <a href="/security">Security overview</a>
+      <a href="/docs/getting-started">Getting started</a>
+    </nav>
+  </section>
+</PublicContentLayout>

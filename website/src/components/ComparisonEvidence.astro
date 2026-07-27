@@ -1,0 +1,76 @@
+---
+import { product } from '../data/product';
+
+interface Source {
+  label: string;
+  href: string;
+  note: string;
+}
+
+interface Props {
+  sources: Source[];
+  limitations: string[];
+  verifiedAt?: string;
+}
+
+const { sources, limitations, verifiedAt = product.lastVerified } = Astro.props;
+const verifiedDate = new Intl.DateTimeFormat('en', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  timeZone: 'UTC',
+}).format(new Date(`${verifiedAt}T00:00:00Z`));
+---
+
+<section aria-labelledby="evidence-and-verification">
+  <h2 id="evidence-and-verification">Evidence and verification</h2>
+  <p>
+    Sources below were reviewed on <time datetime={verifiedAt}>{verifiedDate}</time>. Reinstate
+    claims describe {product.currentRelease}; external workflow claims are limited to what the
+    linked primary sources document.
+  </p>
+  <ul class="comparison-sources">
+    {
+      sources.map((source) => (
+        <li>
+          <a href={source.href}>{source.label}</a>
+          <span>{source.note}</span>
+        </li>
+      ))
+    }
+  </ul>
+
+  <h3>Limits of this comparison</h3>
+  <ul>
+    {limitations.map((limitation) => <li>{limitation}</li>)}
+  </ul>
+</section>
+
+<style>
+  .comparison-sources {
+    padding-left: 0;
+    list-style: none;
+  }
+
+  .comparison-sources li {
+    display: grid;
+    gap: 0.2rem;
+    padding: 0.9rem 0;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .comparison-sources li:first-child {
+    border-top: 1px solid var(--rule);
+  }
+
+  .comparison-sources a {
+    width: fit-content;
+    font-weight: 620;
+  }
+
+  .comparison-sources span {
+    color: var(--ink-3);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+</style>
