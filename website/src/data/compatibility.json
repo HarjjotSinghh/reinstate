@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "reinstateVersion": "v0.1.0-rc.6",
+  "lastReviewed": "2026-07-27",
+  "fixtureCommit": "4a7ccac3bf9b43feff701938d29859460aef817d",
+  "agents": [
+    {
+      "id": "claude-code",
+      "name": "Claude Code",
+      "integrationPath": "/integrations/claude-code",
+      "status": "primary-release-target",
+      "minimumTestedVersion": "2.1.219",
+      "maximumTestedVersion": "2.1.220",
+      "resumeMode": "Claude Code to Claude Code",
+      "evidenceLevel": "source checks and deterministic synthetic fixtures",
+      "lastTested": "2026-07-27",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/4a7ccac3bf9b43feff701938d29859460aef817d/internal/adapter/claude/claude_test.go",
+      "notes": "Versions outside the inclusive range, including prereleases, fail closed as untested. This is not a claim that every physical platform gate has passed."
+    },
+    {
+      "id": "codex",
+      "name": "OpenAI Codex CLI",
+      "integrationPath": "/integrations/codex",
+      "status": "primary-release-target",
+      "minimumTestedVersion": "0.133.0",
+      "maximumTestedVersion": "0.145.0",
+      "resumeMode": "Codex to Codex",
+      "evidenceLevel": "source checks and deterministic synthetic fixtures",
+      "lastTested": "2026-07-27",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/4a7ccac3bf9b43feff701938d29859460aef817d/internal/adapter/codex/codex_test.go",
+      "notes": "Versions outside the inclusive range, including prereleases, fail closed as untested. This is not a claim that every physical platform gate has passed."
+    }
+  ],
+  "environments": [
+    {
+      "id": "macos-arm64",
+      "name": "macOS native · arm64",
+      "claudeCode": "required",
+      "codex": "required",
+      "status": "local-verification-green",
+      "lastTested": "2026-07-27",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-07-27-macos-phase1-rc5.md",
+      "notes": "RC5 physical evidence exists; RC6 remains a release candidate until the complete acceptance checklist is signed off."
+    },
+    {
+      "id": "macos-amd64",
+      "name": "macOS native · amd64",
+      "claudeCode": "required-before-stable",
+      "codex": "required-before-stable",
+      "status": "release-gate-open",
+      "lastTested": null,
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/phase-1-mac-windows-acceptance.md",
+      "notes": "No completed physical-device result is claimed."
+    },
+    {
+      "id": "windows-11-amd64",
+      "name": "Windows 11 native · amd64",
+      "claudeCode": "required",
+      "codex": "required",
+      "status": "release-gate-open",
+      "lastTested": "2026-07-27",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-07-27-windows-phase1-rc5.md",
+      "notes": "RC5 physical evidence exists; RC6 native two-device acceptance remains open."
+    },
+    {
+      "id": "windows-11-wsl2-amd64",
+      "name": "Windows 11 WSL2 · amd64",
+      "claudeCode": "documented-smoke-target",
+      "codex": "documented-smoke-target",
+      "status": "release-gate-open",
+      "lastTested": null,
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/phase-1-mac-windows-acceptance.md",
+      "notes": "WSL2 is a separate device identity. No completed physical-device result is claimed; WSL1 is refused."
+    }
+  ]
+}

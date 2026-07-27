@@ -1,11 +1,18 @@
 ---
 import PublicContentLayout from '../layouts/PublicContentLayout.astro';
+import compatibility from '../data/compatibility.json';
 
 export const prerender = true;
 
 const title = 'Reinstate Compatibility: Agents, Versions, and Operating Systems';
 const description =
   'Check Reinstate compatibility for Claude Code, Codex CLI, macOS, native Windows, WSL2, tested version ranges, path mapping, and unsupported setups.';
+
+const label = (value: string) =>
+  value
+    .split('-')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
 ---
 
 <PublicContentLayout
@@ -29,41 +36,52 @@ const description =
           <th scope="col">Phase 1 session status</th>
           <th scope="col">Tested stable range</th>
           <th scope="col">Resume mode</th>
+          <th scope="col">Last tested</th>
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <td><a href="/integrations/claude-code">Claude Code</a></td>
-          <td>Primary release target</td>
-          <td><code>2.1.219</code>–<code>2.1.220</code></td>
-          <td>Claude Code → Claude Code</td>
-        </tr>
-        <tr>
-          <td><a href="/integrations/codex">OpenAI Codex CLI</a></td>
-          <td>Primary release target</td>
-          <td><code>0.133.0</code>–<code>0.145.0</code></td>
-          <td>Codex → Codex</td>
-        </tr>
+        {
+          compatibility.agents.map((agent) => (
+            <tr>
+              <td><a href={agent.integrationPath}>{agent.name}</a></td>
+              <td>{label(agent.status)}</td>
+              <td>
+                <code>{agent.minimumTestedVersion}</code>–<code>{agent.maximumTestedVersion}</code>
+              </td>
+              <td>{agent.resumeMode}</td>
+              <td>
+                <time datetime={agent.lastTested}>{agent.lastTested}</time>
+                <br />
+                <a href={agent.source}>Test source</a>
+              </td>
+            </tr>
+          ))
+        }
         <tr>
           <td>Gemini CLI</td>
           <td>Not in Phase 1</td>
           <td>None</td>
           <td>Not supported</td>
+          <td>Not tested</td>
         </tr>
         <tr>
           <td>OpenCode, Cursor, Grok Build</td>
           <td>Not in Phase 1</td>
           <td>None</td>
           <td>Not supported</td>
+          <td>Not tested</td>
         </tr>
       </tbody>
     </table>
   </div>
   <p>
     These ranges represent current source compatibility evidence on macOS arm64 and deterministic
-    synthetic fixtures. They are not a claim that every platform row has passed physical-device
-    certification. Prereleases and versions outside each inclusive range are
-    <code>UNTESTED</code>.
+    synthetic fixtures at commit <a
+      href={`https://github.com/HarjjotSinghh/reinstate/commit/${compatibility.fixtureCommit}`}
+      ><code>{compatibility.fixtureCommit.slice(0, 12)}</code></a
+    >. They are not a claim that every platform row has passed physical-device certification.
+    Prereleases and versions outside each inclusive range are <code>UNTESTED</code>. The same
+    reviewed records are available as <a href="/compatibility.json">machine-readable JSON</a>.
   </p>
 
   <h2 id="environment-matrix">Operating-system matrix</h2>
@@ -75,36 +93,39 @@ const description =
           <th scope="col">Claude Code</th>
           <th scope="col">Codex CLI</th>
           <th scope="col">RC6 status</th>
+          <th scope="col">Evidence</th>
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <td>macOS native · arm64</td>
-          <td>Required</td>
-          <td>Required</td>
-          <td>Local verification green</td>
-        </tr>
-        <tr>
-          <td>macOS native · amd64</td>
-          <td>Required before stable</td>
-          <td>Required before stable</td>
-          <td>Release gate remains</td>
-        </tr>
-        <tr>
-          <td>Windows 11 native · amd64</td>
-          <td>Required</td>
-          <td>Required</td>
-          <td>Native acceptance gate remains</td>
-        </tr>
-        <tr>
-          <td>Windows 11 WSL2 · amd64</td>
-          <td>Documented and smoke-tested target</td>
-          <td>Documented and smoke-tested target</td>
-          <td>Release gate remains</td>
-        </tr>
+        {
+          compatibility.environments.map((environment) => (
+            <tr>
+              <td>{environment.name}</td>
+              <td>{label(environment.claudeCode)}</td>
+              <td>{label(environment.codex)}</td>
+              <td>{label(environment.status)}</td>
+              <td>
+                {
+                  environment.lastTested ? (
+                    <time datetime={environment.lastTested}>{environment.lastTested}</time>
+                  ) : (
+                    'No completed result'
+                  )
+                }
+                <br />
+                <a href={environment.source}>Evidence and gate</a>
+              </td>
+            </tr>
+          ))
+        }
       </tbody>
     </table>
   </div>
+  <p>
+    Machine-readable status was last reviewed on
+    {' '}<time datetime={compatibility.lastReviewed}>{compatibility.lastReviewed}</time>. Open gates
+    use an explicit <code>null</code> last-tested value rather than a guessed freshness date.
+  </p>
 
   <h2 id="states">What the compatibility states mean</h2>
   <dl class="pc-facts">

@@ -91,6 +91,10 @@ jobs:
         working-directory: website
         run: npm run check:indexnow
 
+      - name: Check content and compatibility freshness
+        working-directory: website
+        run: npm run check:freshness
+
       - name: Verify public installer assets
         working-directory: website
         run: |
