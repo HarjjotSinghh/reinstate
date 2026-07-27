@@ -5,6 +5,7 @@ import Footer from '../components/Footer.astro';
 import SeoHead from '../components/SeoHead.astro';
 import JsonLd from '../components/JsonLd.astro';
 import Analytics from '../components/Analytics.astro';
+import CommandCopy from '../components/CommandCopy.astro';
 import { product } from '../data/product';
 import questrialLatin from '@fontsource/questrial/files/questrial-latin-400-normal.woff2?url';
 import geistLatin from '@fontsource-variable/geist/files/geist-latin-wght-normal.woff2?url';
@@ -146,6 +147,7 @@ const bingSiteVerification = import.meta.env.PUBLIC_BING_SITE_VERIFICATION;
       <slot />
     </main>
     {!bare && <Footer />}
+    <CommandCopy />
     <Analytics />
   </body>
 </html>

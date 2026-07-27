@@ -1,0 +1,98 @@
+---
+import { commandCopyLanguages } from '../lib/analytics';
+---
+
+<script is:inline data-languages={JSON.stringify(commandCopyLanguages)}>
+  (function () {
+    var commandLanguages = new Set(
+      JSON.parse(document.currentScript.dataset.languages)
+    );
+
+    function fallbackCopy(value) {
+      var input = document.createElement('textarea');
+      input.value = value;
+      input.setAttribute('readonly', '');
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      input.select();
+      var copied = document.execCommand('copy');
+      input.remove();
+      return copied;
+    }
+
+    async function copy(value) {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(value);
+        return true;
+      }
+      return fallbackCopy(value);
+    }
+
+    document.querySelectorAll('main pre[data-language]').forEach(function (block) {
+      var language = (block.getAttribute('data-language') || '').toLowerCase();
+      if (!commandLanguages.has(language) || block.dataset.commandCopyEnhanced) return;
+      var code = block.querySelector('code');
+      if (!code) return;
+
+      block.dataset.commandCopyEnhanced = 'true';
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'command-copy-button';
+      button.textContent = 'Copy';
+      button.setAttribute('aria-label', 'Copy command to clipboard');
+      button.setAttribute('aria-live', 'polite');
+      button.addEventListener('click', async function () {
+        try {
+          var copied = await copy(code.innerText);
+          if (!copied) throw new Error('copy unavailable');
+          button.textContent = 'Copied';
+          if (typeof window.reinstateTrack === 'function') {
+            window.reinstateTrack('command_copy', language);
+          }
+        } catch (_) {
+          button.textContent = 'Copy failed';
+        }
+        window.setTimeout(function () {
+          button.textContent = 'Copy';
+        }, 1800);
+      });
+      block.appendChild(button);
+    });
+  })();
+</script>
+
+<style is:global>
+  main pre[data-command-copy-enhanced='true'] {
+    position: relative;
+    padding-top: 3.2rem !important;
+  }
+
+  .command-copy-button {
+    position: absolute;
+    z-index: 1;
+    top: 0.65rem;
+    right: 0.65rem;
+    min-width: 4.4rem;
+    padding: 0.42rem 0.72rem;
+    border: 1px solid color-mix(in oklch, white 28%, transparent);
+    border-radius: 6px;
+    background: color-mix(in oklch, #0d1117 84%, white);
+    color: #f4f6ef;
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.2;
+    cursor: pointer;
+  }
+
+  .command-copy-button:hover {
+    border-color: color-mix(in oklch, white 50%, transparent);
+    background: color-mix(in oklch, #0d1117 72%, white);
+  }
+
+  .command-copy-button:focus-visible {
+    outline: 2px solid #b8ff3c;
+    outline-offset: 2px;
+  }
+</style>

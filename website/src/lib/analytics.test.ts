@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  aiReferralRules,
+  analyticsAiReferralChannel,
+  analyticsEventTargets,
   analyticsEvents,
   analyticsLinkEvent,
   analyticsPageEvent,
+  isAllowedAnalyticsEvent,
 } from './analytics';
 
 describe('analytics event taxonomy', () => {
@@ -21,6 +25,14 @@ describe('analytics event taxonomy', () => {
       'security_doc_view',
       'command_copy',
     ]);
+    expect(Object.keys(analyticsEventTargets)).toEqual(analyticsEvents);
+  });
+
+  it('rejects undeclared event names and targets', () => {
+    expect(isAllowedAnalyticsEvent('github_click', 'header')).toBe(true);
+    expect(isAllowedAnalyticsEvent('command_copy', 'powershell')).toBe(true);
+    expect(isAllowedAnalyticsEvent('github_click', 'raw-url')).toBe(false);
+    expect(isAllowedAnalyticsEvent('invented_event', 'header')).toBe(false);
   });
 
   it.each([
@@ -75,5 +87,54 @@ describe('analytics event taxonomy', () => {
     expect(
       analyticsLinkEvent('https://github.com/HarjjotSinghh/reinstate/issues'),
     ).toBeNull();
+  });
+
+  it.each([
+    ['https://chatgpt.com/c/abc', 'https://reinstate.dev/docs', 'chatgpt'],
+    ['https://www.perplexity.ai/search/example', 'https://reinstate.dev/', 'perplexity'],
+    ['https://copilot.microsoft.com/', 'https://reinstate.dev/', 'microsoft-copilot'],
+    ['https://gemini.google.com/app', 'https://reinstate.dev/', 'google-gemini'],
+    [
+      '',
+      'https://reinstate.dev/docs?utm_source=ai-overview&utm_campaign=launch',
+      'google-ai-features',
+    ],
+    [
+      'https://example.com/',
+      'https://reinstate.dev/?utm_source=perplexity',
+      'perplexity',
+    ],
+  ])('classifies controlled AI referrals from %s', (referrer, currentUrl, channel) => {
+    expect(analyticsAiReferralChannel({ referrer, currentUrl })).toBe(channel);
+  });
+
+  it('does not guess an AI channel from generic search or arbitrary substring matches', () => {
+    expect(
+      analyticsAiReferralChannel({
+        referrer: 'https://www.google.com/search?q=reinstate',
+        currentUrl: 'https://reinstate.dev/',
+      }),
+    ).toBeNull();
+    expect(
+      analyticsAiReferralChannel({
+        referrer: 'https://example.com/openai-news',
+        currentUrl: 'https://reinstate.dev/?utm_source=my-copilot-review',
+      }),
+    ).toBeNull();
+  });
+
+  it('keeps every classifier output in a reviewed, non-identifying vocabulary', () => {
+    expect(aiReferralRules.map(({ channel }) => channel)).toEqual([
+      'chatgpt',
+      'perplexity',
+      'microsoft-copilot',
+      'google-gemini',
+      'google-ai-features',
+    ]);
+    expect(
+      aiReferralRules.every(
+        ({ hostnames, utmTokens }) => hostnames.length + utmTokens.length > 0,
+      ),
+    ).toBe(true);
   });
 });

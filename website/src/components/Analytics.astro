@@ -1,5 +1,8 @@
 ---
 import {
+  aiReferralRules,
+  analyticsEvents,
+  analyticsEventTargets,
   analyticsLinkRules,
   analyticsPageEvent,
 } from '../lib/analytics';
@@ -10,7 +13,10 @@ const enabled = Boolean(domain && scriptUrl);
 const pageEvent = analyticsPageEvent(Astro.url.pathname);
 const analyticsConfig = JSON.stringify({
   pageEvent,
+  events: analyticsEvents,
+  eventTargets: analyticsEventTargets,
   linkRules: analyticsLinkRules,
+  referralRules: aiReferralRules,
 })
   .replace(/</g, '\\u003c')
   .replace(/\u2028/g, '\\u2028')
@@ -37,14 +43,66 @@ const analyticsConfig = JSON.stringify({
           (window.plausible.q = window.plausible.q || []).push(arguments);
         };
 
-        function sendReinstateEvent(name, target) {
-          window.plausible(name, {
-            props: {
-              location: window.location.pathname,
-              target: target || ''
-            }
-          });
+        function normalizedReferralHostname(value) {
+          try {
+            return new URL(value).hostname.toLowerCase().replace(/\\.$/, '');
+          } catch (_) {
+            return '';
+          }
         }
+
+        function aiReferralChannel() {
+          var trackingTokens = ['utm_source', 'utm_medium', 'utm_campaign']
+            .map(function (key) {
+              return new URL(window.location.href).searchParams.get(key);
+            })
+            .filter(Boolean)
+            .map(function (value) {
+              return value.trim().toLowerCase();
+            });
+
+          var utmRule = reinstateAnalytics.referralRules.find(function (rule) {
+            return rule.utmTokens.some(function (expected) {
+              return trackingTokens.some(function (value) {
+                return value === expected;
+              });
+            });
+          });
+          if (utmRule) return utmRule.channel;
+
+          var hostname = normalizedReferralHostname(document.referrer);
+          if (!hostname) return '';
+          var hostRule = reinstateAnalytics.referralRules.find(function (rule) {
+            return rule.hostnames.some(function (expected) {
+              return hostname === expected || hostname.endsWith('.' + expected);
+            });
+          });
+          return hostRule ? hostRule.channel : '';
+        }
+
+        var reinstateReferralChannel = aiReferralChannel();
+
+        function sendReinstateEvent(name, target) {
+          if (
+            reinstateAnalytics.events.indexOf(name) === -1 ||
+            !reinstateAnalytics.eventTargets[name] ||
+            reinstateAnalytics.eventTargets[name].indexOf(target || '') === -1
+          ) {
+            return false;
+          }
+          var props = {
+            location: window.location.pathname,
+            target: target || ''
+          };
+          if (reinstateReferralChannel) {
+            props.ai_referral_channel = reinstateReferralChannel;
+          }
+          window.plausible(name, {
+            props: props
+          });
+          return true;
+        }
+        window.reinstateTrack = sendReinstateEvent;
 
         if (reinstateAnalytics.pageEvent) {
           sendReinstateEvent(

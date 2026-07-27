@@ -42,14 +42,26 @@ const steps = [
     </ol>
 
     <figure class="mt-12 overflow-hidden rounded-xl border border-border bg-surface">
-      <img
-        src="/brand/05_architecture.png"
-        alt="Reinstate architecture: adapters, pathmap, encryption, and sync against your bucket"
-        class="h-auto w-full"
-        loading="lazy"
-        width="1200"
-        height="675"
-      />
+      <picture>
+        <source
+          type="image/webp"
+          srcset="/brand/05_architecture-768.webp 768w, /brand/05_architecture-1536.webp 1536w"
+          sizes="(max-width: 768px) calc(100vw - 2rem), 1200px"
+        />
+        <img
+          src="/brand/05_architecture.png"
+          alt="Reinstate architecture: adapters, pathmap, encryption, and sync against your bucket"
+          class="h-auto w-full"
+          loading="lazy"
+          decoding="async"
+          width="2560"
+          height="1360"
+        />
+      </picture>
+      <figcaption class="border-t border-border px-5 py-4 text-sm leading-relaxed text-muted">
+        Supported agent sessions pass through vendor-specific adapters, structural path remapping,
+        local encryption, and immutable snapshots before reaching user-owned S3-compatible storage.
+      </figcaption>
     </figure>
   </div>
 </section>
