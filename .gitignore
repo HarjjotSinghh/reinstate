@@ -57,6 +57,9 @@ npm-debug.log*
 # references/ is intentional project research — keep tracked if desired
 dist/
 .playwright-mcp/
+website/artifacts/indexnow/
+website/artifacts/production-discovery/*-immutable.json
+website/artifacts/production-discovery/*-production.json
 
 # Local website database artifacts
 /auth

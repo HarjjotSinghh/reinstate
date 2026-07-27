@@ -202,6 +202,25 @@ export async function loadSitemap(
   return visit(source, 0);
 }
 
+export async function loadPreviousSitemap(
+  source,
+  { allowMissing = false, ...options } = {},
+) {
+  try {
+    return await loadSitemap(source, options);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (
+      allowMissing &&
+      isHttpSource(source) &&
+      /Sitemap request returned HTTP (?:404|410):/.test(message)
+    ) {
+      return new Map();
+    }
+    throw error;
+  }
+}
+
 export function normalizeCanonicalUrl(input, siteOrigin = SITE_ORIGIN) {
   if (typeof input !== 'string' || input.trim() === '') {
     throw new Error('Canonical URL must be a non-empty string.');
@@ -727,6 +746,10 @@ export function parseArguments(argv) {
       options.submit = true;
       continue;
     }
+    if (argument === '--allow-missing-previous') {
+      options.allowMissingPrevious = true;
+      continue;
+    }
     if (!valueOptions.has(argument)) {
       throw new Error(`Unknown IndexNow option: ${argument}`);
     }
@@ -756,6 +779,7 @@ Submit a previously reviewed plan:
 Options:
   --current <path-or-url>       Current generated sitemap index
   --previous <path-or-url>      Previous production or saved sitemap index
+  --allow-missing-previous     Treat an explicit remote 404/410 as first-deploy empty state
   --changes <json>              Explicit updated/deleted/recanonicalized URLs
   --output <plan.json>          Save the secret-free reviewed plan
   --plan <plan.json>            Reviewed plan to submit
@@ -793,6 +817,7 @@ async function main() {
       options.previous ||
       options.changes ||
       options.output ||
+      options.allowMissingPrevious ||
       options.current !== DEFAULT_CURRENT_SITEMAP
     ) {
       throw new Error(
@@ -847,7 +872,9 @@ async function main() {
 
   const [current, previous, changes] = await Promise.all([
     loadSitemap(options.current),
-    loadSitemap(options.previous),
+    loadPreviousSitemap(options.previous, {
+      allowMissing: options.allowMissingPrevious,
+    }),
     loadChangesFile(options.changes),
   ]);
   const plan = buildIndexNowPlan({ current, previous, changes });

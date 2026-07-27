@@ -52,6 +52,14 @@ grep -F "$version" website/public/install.ps1 >/dev/null
   npm run check:seo
   npm run check:links
   npm run check:performance
+  npm run check:freshness
+  npm run check:indexnow
+  npm run check:lighthouse
+  node scripts/indexnow.mjs \
+    --current dist/client/sitemap-index.xml \
+    --previous https://reinstate.dev/sitemap-index.xml \
+    --allow-missing-previous \
+    --output "artifacts/indexnow/$version-plan.json"
 )
 
 deployment_output=$(
@@ -71,6 +79,21 @@ fi
 "$repo_directory/scripts/verify-live-installers.sh" "$version" "$deployment_url"
 (
   cd website
+  npm run check:production-discovery -- \
+    --base-url "$deployment_url" \
+    --allow-non-production \
+    --output "artifacts/production-discovery/$version-immutable.json"
+)
+(
+  cd website
   npx --yes vercel promote "$deployment_url" --scope harjjot --yes
 )
 "$repo_directory/scripts/verify-live-installers.sh" "$version" "https://reinstate.dev"
+(
+  cd website
+  npm run check:production-discovery -- \
+    --base-url "https://reinstate.dev" \
+    --output "artifacts/production-discovery/$version-production.json"
+)
+echo "IndexNow plan saved at website/artifacts/indexnow/$version-plan.json"
+echo "Review it, publish the key proof, then submit it explicitly with INDEXNOW_KEY."

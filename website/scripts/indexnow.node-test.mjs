@@ -7,6 +7,7 @@ import test from 'node:test';
 import {
   buildIndexNowPlan,
   loadChangesFile,
+  loadPreviousSitemap,
   loadSitemap,
   parseArguments,
   submitIndexNowPlan,
@@ -173,6 +174,27 @@ test('rejects insecure remote sitemaps and marks newly declared lastmod values c
   });
   assert.deepEqual(plan.changes.modified, [url]);
   assert.deepEqual(plan.urlList, [url]);
+});
+
+test('allows only an explicit missing remote previous sitemap for first deploy', async () => {
+  const missing = await loadPreviousSitemap(`${SITE}/sitemap-index.xml`, {
+    allowMissing: true,
+    fetchImpl: async () => new Response('missing', { status: 404 }),
+  });
+  assert.deepEqual(missing, new Map());
+  await assert.rejects(
+    loadPreviousSitemap(`${SITE}/sitemap-index.xml`, {
+      fetchImpl: async () => new Response('missing', { status: 404 }),
+    }),
+    /HTTP 404/,
+  );
+  await assert.rejects(
+    loadPreviousSitemap(`${SITE}/sitemap-index.xml`, {
+      allowMissing: true,
+      fetchImpl: async () => new Response('error', { status: 500 }),
+    }),
+    /HTTP 500/,
+  );
 });
 
 test('never accepts a key as a command-line option', () => {
