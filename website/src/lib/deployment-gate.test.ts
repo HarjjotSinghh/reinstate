@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
+import { parseVercelDeploymentURL } from "../../scripts/parse-vercel-deployment-url.mjs";
 
 const gate = new URL("../../scripts/vercel-ignore-production-branch.mjs", import.meta.url);
 
@@ -37,5 +38,32 @@ describe("Vercel production deployment gate", () => {
     const result = runGate("preview", "feat/example");
     expect(result.status).toBe(1);
     expect(result.stdout).toContain("non-production");
+  });
+});
+
+describe("Vercel deployment URL parser", () => {
+  it("accepts Vercel CLI 57 structured output", () => {
+    expect(
+      parseVercelDeploymentURL(
+        JSON.stringify({
+          status: "ok",
+          deployment: {
+            url: "https://reinstate-example-harjjot.vercel.app",
+          },
+        }),
+      ),
+    ).toBe("https://reinstate-example-harjjot.vercel.app");
+  });
+
+  it("retains compatibility with legacy bare URL output", () => {
+    expect(
+      parseVercelDeploymentURL(
+        "Inspect: deployment metadata\nhttps://reinstate-legacy-harjjot.vercel.app\n",
+      ),
+    ).toBe("https://reinstate-legacy-harjjot.vercel.app");
+  });
+
+  it("fails closed when no immutable URL is present", () => {
+    expect(parseVercelDeploymentURL('{"status":"error"}')).toBe("");
   });
 });

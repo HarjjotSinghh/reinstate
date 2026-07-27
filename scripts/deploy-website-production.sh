@@ -56,7 +56,10 @@ deployment_output=$(
   npx --yes vercel deploy --prod --skip-domain --scope harjjot --yes
 )
 echo "$deployment_output"
-deployment_url=$(printf '%s\n' "$deployment_output" | awk '/^https:\/\// { url=$0 } END { print url }')
+deployment_url=$(
+  printf '%s\n' "$deployment_output" |
+    node website/scripts/parse-vercel-deployment-url.mjs
+)
 if [ -z "$deployment_url" ]; then
   echo "Vercel did not return an immutable deployment URL" >&2
   exit 1
