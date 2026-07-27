@@ -533,6 +533,36 @@ An operator with production log and WAF access must separately review:
 Production log access, bot-IP verification, and WAF changes are not automatable
 or completed in this branch.
 
+## External structured-data validation
+
+Repository tests parse every JSON-LD block, enforce safe serialization and
+absolute URLs/dates, reject fabricated fields, and compare visible FAQ/HowTo
+content with its graph. Before launch, an operator must still validate the
+deployed templates with two different scopes:
+
+1. submit the homepage, one technical doc, one guide, the FAQ, one blog post,
+   and one comparison URL to the
+   [Schema.org Markup Validator](https://validator.schema.org/);
+2. submit only pages whose types Google currently documents as eligible search
+   features to the
+   [Google Rich Results Test](https://search.google.com/test/rich-results);
+3. inspect the deployed URL in Search Console after Google can fetch it.
+
+Schema.org validation checks vocabulary and graph extraction. The Rich Results
+Test checks Google-supported search features; an absent result for valid
+`SoftwareApplication`, `FAQPage`, or `HowTo` vocabulary is not proof that the
+Schema.org graph is invalid. Fix syntax, invalid-property, visible-content, or
+critical eligibility errors. Record non-critical warnings and intentionally
+unsupported types without inventing markup merely to silence the tool.
+
+| URL | Commit | Validator | UTC time | Extracted primary type | Errors | Warnings | Evidence | Owner/follow-up |
+| --- | --- | --- | --- | --- | ---: | ---: | --- | --- |
+|  |  |  |  |  |  |  |  |  |
+
+Do not paste private preview URLs, credentials, unpublished copy, or response
+bodies containing secrets into a third-party validator. These checks remain
+external until a dated record is attached.
+
 ## Rendered-browser quality gate
 
 After a production build, run:
@@ -622,6 +652,8 @@ improvements without comparable evidence.
 
 - [Google Search Essentials](https://developers.google.com/search/docs/essentials)
 - [Google guidance for generative-AI search](https://developers.google.com/search/docs/fundamentals/ai-optimization-guide)
+- [Google breadcrumb structured-data validation workflow](https://developers.google.com/search/docs/appearance/structured-data/breadcrumb)
+- [Schema.org Markup Validator](https://validator.schema.org/docs/validator.html)
 - [Astro sitemap integration](https://docs.astro.build/en/guides/integrations-guide/sitemap/)
 - [Vercel domain redirects](https://vercel.com/docs/domains/working-with-domains/deploying-and-redirecting)
 - [OpenAI publishers and developers FAQ](https://help.openai.com/en/articles/12627856-publishers-and-developers-faq)
