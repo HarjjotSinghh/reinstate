@@ -111,10 +111,10 @@ phase. It deliberately does not call those external actions complete.
 | 58 | Bing and IndexNow | Implemented / external | Bing hook/runbook; reviewed delta plans, dynamic proof, retries, soft-fail submitter; production key/submission external |
 | 59 | Event taxonomy | Implemented | all 12 controlled events, exact-route/link rules, privacy notice, tests |
 | 60 | KPI framework | Operationalized | monthly audit has SEO/AEO/ASEO/product guardrails and numerator/denominator rules |
-| 61 | Reporting cadence | Operationalized | weekly launch, monthly audit, quarterly review subjects |
+| 61 | Reporting cadence | Operationalized | complete weekly, monthly, quarterly, and immutable release-evidence templates with evidence-state and numerator/denominator rules |
 | 62 | Pre-public Phase 2 work | Implemented / external | repository P0 technical/content complete; consoles, field data, WAF/logs await deployed access |
 | 63 | Public trial launch | Release-gated / external | guides/tooling ready; release, videos, posts, directories, daily monitoring wait for usable public trial and owner action |
-| 64 | Authority building | Release-gated | no fabricated research, benchmarks, testimonials, or compatibility reports |
+| 64 | Authority building | Release-gated | `/research` publishes current primary sources and methodology; benchmarks, testimonials, completed compatibility reports, and independent authority still require evidence |
 | 65 | Ninety-day calendar | Operationalized | content roadmap preserves priorities but evidence outranks calendar timing |
 
 ## Sections 66–72: skills and coding-agent workflows

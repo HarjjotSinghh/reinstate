@@ -17,7 +17,10 @@ Operational follow-up uses:
 - [the evidence-aware content roadmap](content-roadmap.md);
 - [the section-by-section implementation evidence matrix](implementation-status.md);
 - [the fixed AI-search query baseline](ai-search-query-baseline.md); and
-- [the monthly audit template](monthly-audit-template.md).
+- [the weekly report template](weekly-report-template.md);
+- [the monthly audit template](monthly-audit-template.md);
+- [the quarterly review template](quarterly-review-template.md); and
+- [the immutable release evidence template](release-evidence-template.md).
 
 Production observations:
 
