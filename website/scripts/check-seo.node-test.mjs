@@ -169,6 +169,23 @@ test('rejects duplicate descriptions across indexable pages', async (t) => {
   assert.ok(result.errors.some(({ code }) => code === 'DESCRIPTION_DUPLICATE'));
 });
 
+test('rejects obsolete meta keywords tags', async (t) => {
+  const root = await validFixture();
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await writeFixture(
+    root,
+    'index.html',
+    indexableHtml().replace(
+      '<meta name="description"',
+      '<meta name="keywords" content="coding agent, session sync">\n    <meta name="description"',
+    ),
+  );
+
+  const result = await auditSeo(root);
+
+  assert.ok(result.errors.some(({ code }) => code === 'META_KEYWORDS_PRESENT'));
+});
+
 test('rejects an indexable page without an answer-first paragraph', async (t) => {
   const root = await validFixture();
   t.after(() => rm(root, { recursive: true, force: true }));

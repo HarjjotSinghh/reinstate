@@ -213,8 +213,6 @@ const floorGrid = [
             id="copy-install"
             type="button"
             data-command="curl -fsSL https://reinstate.dev/install.sh | sh"
-            data-analytics-event="install_command_copy"
-            data-analytics-target="homepage-hero"
             data-state="idle"
             aria-label="Copy install command"
           >
@@ -824,6 +822,8 @@ const floorGrid = [
 </div>
 
 <script>
+  import { copyInstallCommand } from '../../lib/install-copy';
+
   const copyButton = document.getElementById('copy-install');
   const commandText = document.getElementById('install-command-text');
   const copyStatus = document.getElementById('copy-status');
@@ -836,7 +836,17 @@ const floorGrid = [
     window.clearTimeout(resetCopyState);
 
     try {
-      await navigator.clipboard.writeText(command);
+      const analyticsWindow = window as Window & {
+        reinstateTrack?: (
+          eventName: 'install_command_copy',
+          target: 'homepage-hero',
+        ) => boolean;
+      };
+      await copyInstallCommand(
+        command,
+        navigator.clipboard.writeText.bind(navigator.clipboard),
+        analyticsWindow.reinstateTrack,
+      );
       copyButton.dataset.state = 'copied';
       copyButton.setAttribute('aria-label', 'Install command copied');
       copyStatus.textContent = 'Install command copied';

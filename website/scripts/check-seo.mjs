@@ -911,6 +911,17 @@ function inspectContentImages(markup, context, errors) {
 }
 
 function inspectPageMetadata(headMarkup, context, errors) {
+  const keywordTags = metaTagsBy(headMarkup, 'name', 'keywords');
+  if (keywordTags.length > 0) {
+    addError(
+      errors,
+      'META_KEYWORDS_PRESENT',
+      context,
+      `Found ${keywordTags.length} obsolete meta keywords tag${keywordTags.length === 1 ? '' : 's'}.`,
+      'Remove meta keywords; use descriptive visible content, titles, headings, and internal links instead.',
+    );
+  }
+
   const titleTags = findTags(headMarkup, 'title');
   let title = '';
   if (titleTags.length !== 1) {
