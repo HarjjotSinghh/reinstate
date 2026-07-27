@@ -483,48 +483,7 @@ function inspectContentImages(markup, context, errors) {
   }
 }
 
-function inspectHtml(html, context, route, errors) {
-  const markup = withoutEmbeddedContent(html);
-  const headMarkup =
-    markup.match(/<head\b[^>]*>([\s\S]*?)<\/head\s*>/i)?.[1] ?? markup;
-  const robotTags = metaTagsBy(headMarkup, 'name', 'robots');
-  const robotTokens = robotTags.flatMap((tag) =>
-    (tag.attributes.content ?? '')
-      .toLowerCase()
-      .split(',')
-      .map((token) => token.trim().split(/\s+/)[0])
-      .filter(Boolean),
-  );
-  const noindex = robotTokens.includes('noindex');
-
-  if (robotTags.length !== 1) {
-    addError(
-      errors,
-      'ROBOTS_META_COUNT',
-      context,
-      `Expected exactly one robots meta tag; found ${robotTags.length}.`,
-      'Add one explicit robots meta tag so indexing intent is unambiguous.',
-    );
-  }
-
-  if (isPreviewRoute(route) && !noindex) {
-    addError(
-      errors,
-      'PREVIEW_INDEXABLE',
-      context,
-      `Preview route ${route} is not protected by a noindex directive.`,
-      'Render <meta name="robots" content="noindex, nofollow"> on every /preview page.',
-    );
-  }
-
-  inspectJsonLd(html, context, errors);
-
-  if (noindex) {
-    return { route, context, indexable: false };
-  }
-
-  inspectContentImages(markup, context, errors);
-
+function inspectPageMetadata(headMarkup, context, errors) {
   const titleTags = findTags(headMarkup, 'title');
   let title = '';
   if (titleTags.length !== 1) {
@@ -598,6 +557,65 @@ function inspectHtml(html, context, route, errors) {
     }
   }
 
+  const socialValues = validateSocialMetadata(
+    headMarkup,
+    context,
+    { title, description, canonical },
+    errors,
+  );
+
+  return {
+    title,
+    description,
+    canonical,
+    ogImage: socialValues['og:image'],
+    twitterImage: socialValues['twitter:image'],
+  };
+}
+
+function inspectHtml(html, context, route, errors) {
+  const markup = withoutEmbeddedContent(html);
+  const headMarkup =
+    markup.match(/<head\b[^>]*>([\s\S]*?)<\/head\s*>/i)?.[1] ?? markup;
+  const robotTags = metaTagsBy(headMarkup, 'name', 'robots');
+  const robotTokens = robotTags.flatMap((tag) =>
+    (tag.attributes.content ?? '')
+      .toLowerCase()
+      .split(',')
+      .map((token) => token.trim().split(/\s+/)[0])
+      .filter(Boolean),
+  );
+  const noindex = robotTokens.includes('noindex');
+
+  if (robotTags.length !== 1) {
+    addError(
+      errors,
+      'ROBOTS_META_COUNT',
+      context,
+      `Expected exactly one robots meta tag; found ${robotTags.length}.`,
+      'Add one explicit robots meta tag so indexing intent is unambiguous.',
+    );
+  }
+
+  if (isPreviewRoute(route) && !noindex) {
+    addError(
+      errors,
+      'PREVIEW_INDEXABLE',
+      context,
+      `Preview route ${route} is not protected by a noindex directive.`,
+      'Render <meta name="robots" content="noindex, nofollow"> on every /preview page.',
+    );
+  }
+
+  inspectJsonLd(html, context, errors);
+  const metadata = inspectPageMetadata(headMarkup, context, errors);
+
+  if (noindex) {
+    return { route, context, indexable: false, ...metadata };
+  }
+
+  inspectContentImages(markup, context, errors);
+
   const headings = findTags(markup, 'h1');
   if (headings.length !== 1) {
     addError(
@@ -609,22 +627,11 @@ function inspectHtml(html, context, route, errors) {
     );
   }
 
-  const socialValues = validateSocialMetadata(
-    headMarkup,
-    context,
-    { title, description, canonical },
-    errors,
-  );
-
   return {
     route,
     context,
     indexable: true,
-    title,
-    description,
-    canonical,
-    ogImage: socialValues['og:image'],
-    twitterImage: socialValues['twitter:image'],
+    ...metadata,
   };
 }
 
@@ -895,7 +902,7 @@ async function inspectSocialImages(buildDir, allFiles, pages, errors) {
   const imagesByPage = new Map();
   const inspectedFiles = new Map();
 
-  for (const page of pages.filter((candidate) => candidate.indexable)) {
+  for (const page of pages) {
     for (const [field, imageUrl] of [
       ['og:image', page.ogImage],
       ['twitter:image', page.twitterImage],
@@ -1107,11 +1114,14 @@ export async function auditSeo(buildDirectory = DEFAULT_BUILD_DIR) {
 export function formatReport(result) {
   if (!result.errors.length) {
     const indexableCount = result.pages.filter((page) => page.indexable).length;
+    const socialCardCount = result.pages.filter((page) => page.ogImage).length;
     return [
       `SEO validation passed: ${indexableCount} indexable page${
         indexableCount === 1 ? '' : 's'
       }, ${result.pages.length} generated HTML page${
         result.pages.length === 1 ? '' : 's'
+      }, ${socialCardCount} route-specific social card${
+        socialCardCount === 1 ? '' : 's'
       }, and ${result.sitemapUrls.length} sitemap URL${
         result.sitemapUrls.length === 1 ? '' : 's'
       } checked.`,

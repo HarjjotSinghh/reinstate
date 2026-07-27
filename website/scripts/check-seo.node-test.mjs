@@ -61,9 +61,17 @@ async function validFixture() {
   await writeFixture(
     root,
     'preview/index.html',
-    '<!doctype html><html><head><title>Preview</title><meta name="robots" content="noindex, nofollow"></head><body><h1>Preview</h1></body></html>',
+    indexableHtml({
+      canonical: `${SITE}/preview`,
+      image: `${SITE}/social/preview.png`,
+      title: 'Preview direction',
+    }).replace(
+      '<meta name="robots" content="index, follow">',
+      '<meta name="robots" content="noindex, nofollow">',
+    ),
   );
   await writeFixture(root, 'social/home.png', pngHeader());
+  await writeFixture(root, 'social/preview.png', pngHeader());
   await writeFixture(root, 'diagram.png', pngHeader());
   await writeFixture(
     root,
@@ -98,7 +106,7 @@ test('accepts a complete build and reports what it checked', async (t) => {
   assert.deepEqual(result.errors, []);
   assert.match(
     formatReport(result),
-    /SEO validation passed: 1 indexable page, 2 generated HTML pages, and 1 sitemap URL checked\./,
+    /SEO validation passed: 1 indexable page, 2 generated HTML pages, 2 route-specific social cards, and 1 sitemap URL checked\./,
   );
 });
 

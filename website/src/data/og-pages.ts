@@ -7,6 +7,31 @@ export interface OgPage {
   description: string;
 }
 
+const previewTitles = [
+  ['/preview', 'Hero directions'],
+  ['/preview/carrier', 'Carrier landing-page direction'],
+  ['/preview/console', 'Console landing-page direction'],
+  ['/preview/datasheet', 'Datasheet landing-page direction'],
+  ['/preview/diptych', 'Diptych landing-page direction'],
+  ['/preview/drench', 'Drench landing-page direction'],
+  ['/preview/exploded', 'Exploded landing-page direction'],
+  ['/preview/fonts', 'Heading font options'],
+  ['/preview/manifest', 'Manifest landing-page direction'],
+  ['/preview/nightshift', 'Night shift landing-page direction'],
+  ['/preview/relay', 'Relay landing-page direction'],
+  ['/preview/route', 'Route landing-page direction'],
+  ['/preview/spread', 'Spread landing-page direction'],
+  ['/preview/vault', 'Vault landing-page direction'],
+] as const;
+
+const previewOgPages: OgPage[] = previewTitles.map(([route, title]) => ({
+  route,
+  kind: 'Design preview',
+  title,
+  description:
+    'A noindex design preview for the Reinstate cross-device coding-agent continuity website.',
+}));
+
 export const staticOgPages: OgPage[] = [
   {
     route: '/',
@@ -126,4 +151,5 @@ export const staticOgPages: OgPage[] = [
     description:
       'Use canonical project mappings to restore Claude Code or Codex sessions when local paths differ.',
   },
+  ...previewOgPages,
 ];

@@ -1,13 +1,19 @@
 ---
 import '@fontsource-variable/geist';
 import '@fontsource-variable/geist-mono';
+import SeoHead from '../components/SeoHead.astro';
 
 interface Props {
   title: string;
+  description?: string;
   themeColor?: string;
 }
 
-const { title, themeColor = '#0b0b0b' } = Astro.props;
+const {
+  title,
+  description = 'A noindex design preview for the Reinstate cross-device coding-agent continuity website.',
+  themeColor = '#0b0b0b',
+} = Astro.props;
 ---
 
 <!doctype html>
@@ -15,9 +21,14 @@ const { title, themeColor = '#0b0b0b' } = Astro.props;
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="robots" content="noindex" />
+    <SeoHead
+      {title}
+      {description}
+      canonical={Astro.url.pathname}
+      noindex
+      nofollow
+    />
     <meta name="theme-color" content={themeColor} />
-    <title>{title}</title>
     <link id="favicon" rel="icon" type="image/svg+xml" href="/favicon-light.svg" />
     <script is:inline>
       (function () {
