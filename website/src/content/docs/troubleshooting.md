@@ -95,6 +95,6 @@ retry. New-session restores, `--keep-both`, and `--dry-run` remain available.
 
 ## Still stuck?
 
-- [FAQ](faq.md)
+- [FAQ](/docs/faq)
 - [SUPPORT.md](https://github.com/HarjjotSinghh/reinstate/blob/main/SUPPORT.md)
 - [GitHub Issues](https://github.com/HarjjotSinghh/reinstate/issues)

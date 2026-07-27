@@ -70,7 +70,7 @@ preview the native changes, and apply it across selected Claude Code, Codex,
 Grok, OpenCode, Gemini CLI, and future adapters. The model also covers
 skills/instructions, hooks/loops, plugins, marketplaces, and safe settings.
 
-See [Universal agent configuration](universal-configuration.md).
+See [Universal agent configuration](/docs/universal-configuration).
 
 ## Will MCP authentication also carry across tools and devices?
 

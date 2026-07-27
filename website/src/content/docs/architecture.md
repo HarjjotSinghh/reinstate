@@ -97,7 +97,7 @@ native config ↔ configuration adapter ↔ Reinstate desired state
 They must preserve unrelated settings, report unsupported/lossy mappings,
 preview and back up changes, write atomically, and fail closed on unverified
 schemas. See
-[Universal agent configuration](universal-configuration.md).
+[Universal agent configuration](/docs/universal-configuration).
 
 ### 2. Path normalizer (`internal/pathmap`)
 
@@ -137,7 +137,7 @@ The make-or-break feature for Windows ↔ macOS dual setups:
 
 ## What is explicitly not synced
 
-See [security-model.md](security-model.md). Defaults exclude:
+See the [security model](/docs/security-model). Defaults exclude:
 
 - `auth.json`, OAuth/credential stores
 - Plugin caches / `node_modules` / venvs

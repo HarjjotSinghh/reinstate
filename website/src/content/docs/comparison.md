@@ -80,7 +80,7 @@ context and does not replace commits, branches, remotes, or repository sync.
 
 ## Related
 
-- [Architecture](architecture.md)
-- [Adapters](adapters.md)
-- [Universal agent configuration](universal-configuration.md)
+- [Architecture](/docs/architecture)
+- [Adapters](/docs/adapters)
+- [Universal agent configuration](/docs/universal-configuration)
 - [Roadmap](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md)

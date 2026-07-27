@@ -38,7 +38,7 @@ before treating a platform and agent-version combination as certified.
 Configuration support is capability-specific and planned separately. Session
 support never implies support for MCP servers, skills, hooks, plugins,
 marketplaces, or settings. See
-[Universal agent configuration](universal-configuration.md).
+[Universal agent configuration](/docs/universal-configuration).
 
 ## How does the Claude Code adapter remap a project?
 
