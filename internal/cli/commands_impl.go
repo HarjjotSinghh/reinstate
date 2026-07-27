@@ -254,10 +254,19 @@ func existingInitFiles(home string) ([]string, error) {
 }
 
 func requireRemoteProfileManifest(ctx context.Context, store backend.Backend, key string) error {
-	if _, err := store.Head(ctx, key); errors.Is(err, backend.ErrNotFound) {
+	body, _, err := store.Get(ctx, key)
+	if errors.Is(err, backend.ErrNotFound) {
 		return fmt.Errorf("remote profile manifest not found at configured storage coordinates")
-	} else if err != nil {
+	}
+	if err != nil {
 		return fmt.Errorf("remote profile manifest probe failed: %w", err)
+	}
+	if _, err := io.Copy(io.Discard, body); err != nil {
+		_ = body.Close()
+		return fmt.Errorf("remote profile manifest probe failed while reading: %w", err)
+	}
+	if err := body.Close(); err != nil {
+		return fmt.Errorf("remote profile manifest probe failed while closing: %w", err)
 	}
 	return nil
 }

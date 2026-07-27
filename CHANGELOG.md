@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Validate an additional device's encrypted remote manifest with a readable
+  object request instead of a metadata-only `HeadObject` probe, avoiding
+  Cloudflare R2's generic `400 Bad Request` failure while still leaving no
+  local configuration behind when the probe fails.
+
 ## [0.1.0-rc.5] - 2026-07-27
 
 ### Changed
