@@ -1,0 +1,20 @@
+---
+interface Props {
+  data?: Record<string, unknown> | Record<string, unknown>[];
+}
+
+const { data = [] } = Astro.props;
+const graph = (Array.isArray(data) ? data : [data]).filter(
+  (entry) => Object.keys(entry).length > 0,
+);
+const payload = {
+  '@context': 'https://schema.org',
+  '@graph': graph,
+};
+const safeJson = JSON.stringify(payload)
+  .replace(/</g, '\\u003c')
+  .replace(/\u2028/g, '\\u2028')
+  .replace(/\u2029/g, '\\u2029');
+---
+
+{graph.length > 0 && <script type="application/ld+json" set:html={safeJson} />}

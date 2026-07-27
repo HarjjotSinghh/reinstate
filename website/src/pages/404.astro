@@ -1,0 +1,81 @@
+---
+export const prerender = true;
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Page not found | Reinstate"
+  description="The requested Reinstate page could not be found. Continue to the documentation, compatibility guide, or project repository."
+  noindex
+  nofollow
+>
+  <section class="not-found shell" aria-labelledby="not-found-title">
+    <p class="eyebrow mono">404 · Page not found</p>
+    <h1 id="not-found-title">That session path does not exist.</h1>
+    <p>
+      The page may have moved, or the address may be incomplete. Use a verified route below
+      to continue.
+    </p>
+    <nav aria-label="Page not found options">
+      <a href="/docs/getting-started">Install and get started</a>
+      <a href="/docs/troubleshooting">Troubleshoot Reinstate</a>
+      <a href="/compatibility">Review compatibility</a>
+      <a href="https://github.com/HarjjotSinghh/reinstate">Open the GitHub repository</a>
+    </nav>
+  </section>
+</BaseLayout>
+
+<style>
+  .not-found {
+    display: grid;
+    align-content: center;
+    min-height: 62svh;
+    padding-block: clamp(4rem, 12vw, 9rem);
+  }
+
+  .eyebrow {
+    margin: 0 0 1rem;
+    color: var(--prim-deep);
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    max-width: 18ch;
+    margin: 0;
+    font-size: clamp(2.5rem, 7vw, 5.5rem);
+    line-height: 0.98;
+  }
+
+  p:not(.eyebrow) {
+    max-width: 58ch;
+    margin: 1.5rem 0 0;
+    color: var(--ink-2);
+    font-size: 1.05rem;
+    line-height: 1.65;
+  }
+
+  nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem;
+    margin-top: 2rem;
+  }
+
+  nav a {
+    padding: 0.7rem 0.9rem;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    background: var(--paper-2);
+    color: var(--ink);
+    font-size: 0.9rem;
+    font-weight: 550;
+    text-decoration: none;
+  }
+
+  nav a:hover {
+    border-color: var(--ink-3);
+  }
+</style>

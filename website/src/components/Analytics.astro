@@ -1,0 +1,42 @@
+---
+const domain = import.meta.env.PUBLIC_PLAUSIBLE_DOMAIN;
+const scriptUrl = import.meta.env.PUBLIC_PLAUSIBLE_SCRIPT_URL;
+const enabled = Boolean(domain && scriptUrl);
+---
+
+{
+  enabled && (
+    <script
+      is:inline
+      defer
+      data-domain={domain}
+      src={scriptUrl}
+    />
+  )
+}
+{
+  enabled && (
+    <script is:inline>
+      {`
+        window.plausible = window.plausible || function () {
+          (window.plausible.q = window.plausible.q || []).push(arguments);
+        };
+
+        document.addEventListener('click', function (event) {
+          var target = event.target instanceof Element
+            ? event.target.closest('[data-analytics-event]')
+            : null;
+          if (!target) return;
+          var name = target.getAttribute('data-analytics-event');
+          if (!name) return;
+          window.plausible(name, {
+            props: {
+              location: window.location.pathname,
+              target: target.getAttribute('data-analytics-target') || ''
+            }
+          });
+        });
+      `}
+    </script>
+  )
+}

@@ -2,23 +2,46 @@
 import '../styles/global.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import SeoHead from '../components/SeoHead.astro';
+import JsonLd from '../components/JsonLd.astro';
+import Analytics from '../components/Analytics.astro';
+import { product } from '../data/product';
 
 interface Props {
   title?: string;
   description?: string;
+  canonical?: URL | string;
   ogImage?: string;
+  ogImageAlt?: string;
+  type?: 'website' | 'article';
+  noindex?: boolean;
+  nofollow?: boolean;
+  publishedTime?: Date | string;
+  modifiedTime?: Date | string;
+  section?: string;
+  tags?: string[];
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
   bare?: boolean;
 }
 
 const {
-  title = 'Reinstate — restore your AI coding workspace on any device',
-  description =
-    'Sessions, MCP servers, skills, and settings across every coding agent and every machine you own. Encrypted so only you can read it.',
-  ogImage = '/brand/og.png',
+  title = product.defaultTitle,
+  description = product.defaultDescription,
+  canonical,
+  ogImage = product.defaultOgImage,
+  ogImageAlt = product.defaultOgImageAlt,
+  type = 'website',
+  noindex = false,
+  nofollow = false,
+  publishedTime,
+  modifiedTime,
+  section,
+  tags = [],
+  jsonLd = [],
   bare = false,
 } = Astro.props;
-
-const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://reinstate.dev');
+const googleSiteVerification = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION;
+const bingSiteVerification = import.meta.env.PUBLIC_BING_SITE_VERIFICATION;
 ---
 
 <!doctype html>
@@ -27,24 +50,35 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://reinstate.d
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
-    <meta name="description" content={description} />
     <meta name="theme-color" content="#e4e7dd" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#1d2723" media="(prefers-color-scheme: dark)" />
-    <link rel="canonical" href={canonical} />
+    <meta name="color-scheme" content="light dark" />
+
+    <SeoHead
+      title={title}
+      description={description}
+      canonical={canonical}
+      image={ogImage}
+      imageAlt={ogImageAlt}
+      type={type}
+      noindex={noindex}
+      nofollow={nofollow}
+      publishedTime={publishedTime}
+      modifiedTime={modifiedTime}
+      section={section}
+      tags={tags}
+    />
+    <JsonLd data={jsonLd} />
+    {googleSiteVerification && (
+      <meta name="google-site-verification" content={googleSiteVerification} />
+    )}
+    {bingSiteVerification && (
+      <meta name="msvalidate.01" content={bingSiteVerification} />
+    )}
+
     {/* Single SVG icon only — a parallel favicon.ico wins in some browsers and never swaps with theme. */}
     <link id="favicon" rel="icon" type="image/svg+xml" href="/favicon-light.svg" />
     <link rel="apple-touch-icon" href="/favicon-dark.svg" />
-
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content={title} />
-    <meta property="og:description" content={description} />
-    <meta property="og:url" content={canonical} />
-    <meta property="og:image" content={new URL(ogImage, Astro.site ?? 'https://reinstate.dev')} />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={title} />
-    <meta name="twitter:description" content={description} />
-
-    <title>{title}</title>
 
     {/* Light is default. Only apply dark when explicitly stored. Favicon follows theme. */}
     <script is:inline>
@@ -90,10 +124,12 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://reinstate.d
     </script>
   </head>
   <body class="min-h-dvh flex flex-col">
+    {!bare && <a class="skip-link" href="#main-content">Skip to content</a>}
     {!bare && <Header />}
-    <main class="flex-1">
+    <main id="main-content" class="flex-1">
       <slot />
     </main>
     {!bare && <Footer />}
+    <Analytics />
   </body>
 </html>

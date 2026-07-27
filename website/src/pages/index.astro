@@ -6,11 +6,14 @@ import HeroExploded from '../components/landing/HeroExploded.astro';
 import ProblemExploded from '../components/landing/ProblemExploded.astro';
 import TerminalProof from '../components/landing/TerminalProof.astro';
 import SecurityExploded from '../components/landing/SecurityExploded.astro';
+import { product } from '../data/product';
+import { homepageSchema } from '../lib/schema';
 ---
 
 <BaseLayout
-  title="Reinstate — restore your AI coding workspace on any device"
-  description="Move encrypted Claude Code or Codex sessions between macOS and Windows. Encrypted locally, stored in your own S3 or R2 bucket."
+  title={product.defaultTitle}
+  description={product.defaultDescription}
+  jsonLd={homepageSchema()}
 >
   <HeroExploded />
   <ProblemExploded>

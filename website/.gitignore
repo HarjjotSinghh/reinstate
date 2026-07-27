@@ -19,7 +19,7 @@ pnpm-debug.log*
 .env.production
 
 # local waitlist db
-data/
+/data/
 
 # macOS-specific files
 .DS_Store

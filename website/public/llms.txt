@@ -1,0 +1,34 @@
+# Reinstate
+
+> Reinstate is an open-source tool that syncs encrypted coding-agent sessions across devices. The current pre-1.0 release candidate supports same-vendor Claude Code and Codex session transfer across macOS and Windows with user-owned S3-compatible storage.
+
+## Product
+
+- [Homepage](https://reinstate.dev/): Product overview and current workflow
+- [Reinstate facts](https://reinstate.dev/about/reinstate): Verified product facts, scope, ownership, and non-goals
+- [Compatibility](https://reinstate.dev/compatibility): Current agents, operating systems, versions, and limitations
+- [Security](https://reinstate.dev/security): Encryption, credentials, trust boundaries, and exclusions
+- [Open source](https://reinstate.dev/open-source): Source, license, governance, and contribution links
+- [Changelog](https://reinstate.dev/changelog): Current release status and release history
+
+## Documentation
+
+- [Documentation](https://reinstate.dev/docs): Documentation hub
+- [Getting started](https://reinstate.dev/docs/getting-started): Install and configure Reinstate
+- [Architecture](https://reinstate.dev/docs/architecture): Adapter, path mapping, encryption, and restore design
+- [Adapters](https://reinstate.dev/docs/adapters): Agent compatibility and adapter behavior
+- [Security model](https://reinstate.dev/docs/security-model): Detailed threat model and security boundaries
+- [Troubleshooting](https://reinstate.dev/docs/troubleshooting): Error diagnosis and safe fixes
+- [FAQ](https://reinstate.dev/docs/faq): Direct answers to common questions
+
+## Integrations
+
+- [Claude Code](https://reinstate.dev/integrations/claude-code): Same-vendor Claude Code session sync
+- [Codex](https://reinstate.dev/integrations/codex): Same-vendor Codex session sync
+
+## Source
+
+- [GitHub repository](https://github.com/HarjjotSinghh/reinstate)
+- [Releases](https://github.com/HarjjotSinghh/reinstate/releases)
+- [Security policy](https://github.com/HarjjotSinghh/reinstate/security/policy)
+- License: Apache-2.0

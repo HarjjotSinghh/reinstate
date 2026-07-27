@@ -4,6 +4,13 @@
     "deploymentEnabled": false
   },
   "ignoreCommand": "node scripts/vercel-ignore-production-branch.mjs",
+  "redirects": [
+    {
+      "source": "/docs/overview",
+      "destination": "/docs",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/install.sh",

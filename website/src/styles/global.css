@@ -212,6 +212,25 @@ html.dark {
 }
 
 /* Shell utilities */
+.skip-link {
+  position: fixed;
+  z-index: 100;
+  top: 0.75rem;
+  left: 0.75rem;
+  transform: translateY(-200%);
+  padding: 0.65rem 0.9rem;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: var(--prim);
+  color: var(--on-prim);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
 .shell {
   max-width: 88rem;
   margin-inline: auto;
