@@ -1,5 +1,9 @@
 import { defineCollection, z } from 'astro:content';
 import { glob } from 'astro/loaders';
+import {
+  hasCompleteSocialOverride,
+  isSafeContentCanonical,
+} from './lib/content-seo';
 
 const searchIntent = z.enum([
   'navigational',
@@ -11,21 +15,60 @@ const searchIntent = z.enum([
   'evaluation',
 ]);
 
+const canonical = z
+  .string()
+  .url()
+  .refine(
+    isSafeContentCanonical,
+    'Canonical URLs must be clean HTTPS URLs on reinstate.dev.',
+  );
+
+const seoOverrides = {
+  canonical: canonical.optional(),
+  ogImage: z
+    .string()
+    .regex(
+      /^\/[a-z0-9]+(?:[/-][a-z0-9]+)*\.png$/,
+      'Custom social images must be root-relative PNG paths.',
+    )
+    .optional(),
+  ogImageAlt: z.string().min(40).max(200).optional(),
+};
+
+function validateSeoOverrides(
+  data: {
+    ogImage?: string;
+    ogImageAlt?: string;
+  },
+  context: z.RefinementCtx,
+) {
+  if (!hasCompleteSocialOverride(data)) {
+    context.addIssue({
+      code: 'custom',
+      path: [data.ogImage ? 'ogImageAlt' : 'ogImage'],
+      message: 'ogImage and ogImageAlt must be supplied together.',
+    });
+  }
+}
+
 const docs = defineCollection({
   loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/docs' }),
-  schema: z.object({
-    title: z.string().min(2).max(70),
-    description: z.string().min(70).max(180),
-    order: z.number().int().positive(),
-    author: z.string().min(2).max(80),
-    status: z.enum(['current', 'planned', 'deprecated']),
-    updatedAt: z.coerce.date(),
-    tags: z.array(z.string().min(1)).min(1),
-    targetQuery: z.string().min(3),
-    searchIntent,
-    draft: z.boolean(),
-    noindex: z.boolean(),
-  }),
+  schema: z
+    .object({
+      title: z.string().min(2).max(70),
+      description: z.string().min(70).max(180),
+      order: z.number().int().positive(),
+      author: z.string().min(2).max(80),
+      status: z.enum(['current', 'planned', 'deprecated']),
+      updatedAt: z.coerce.date(),
+      tags: z.array(z.string().min(1)).min(1),
+      targetQuery: z.string().min(3),
+      searchIntent,
+      draft: z.boolean(),
+      noindex: z.boolean(),
+      ...seoOverrides,
+    })
+    .superRefine(validateSeoOverrides),
 });
 
 const relatedLink = z.object({
@@ -55,6 +98,7 @@ const editorialMetadata = z.object({
   related: z.array(relatedLink).min(2).max(6),
   draft: z.boolean(),
   noindex: z.boolean(),
+  ...seoOverrides,
 });
 
 function validateEditorialDates(
@@ -93,7 +137,8 @@ const guides = defineCollection({
       prerequisites: z.array(z.string().min(2).max(140)).min(1).max(10),
       howToSteps: z.array(howToStep).min(3).max(12),
     })
-    .superRefine(validateEditorialDates),
+    .superRefine(validateEditorialDates)
+    .superRefine(validateSeoOverrides),
 });
 
 const blog = defineCollection({
@@ -103,7 +148,8 @@ const blog = defineCollection({
       category: z.enum(['engineering', 'product', 'security', 'open-source']),
       featured: z.boolean(),
     })
-    .superRefine(validateEditorialDates),
+    .superRefine(validateEditorialDates)
+    .superRefine(validateSeoOverrides),
 });
 
 export const collections = { docs, guides, blog };

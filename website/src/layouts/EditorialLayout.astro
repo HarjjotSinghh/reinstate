@@ -30,6 +30,9 @@ interface Props {
   reviewedAt: Date;
   tags: string[];
   noindex: boolean;
+  canonical?: string;
+  ogImage?: string;
+  ogImageAlt?: string;
   breadcrumbs: Breadcrumb[];
   related: RelatedLink[];
   estimatedMinutes?: number;
@@ -48,11 +51,15 @@ const {
   reviewedAt,
   tags,
   noindex,
+  canonical,
+  ogImage,
+  ogImageAlt,
   breadcrumbs,
   related,
   estimatedMinutes,
   category,
 } = Astro.props;
+const schemaPath = canonical ? new URL(canonical).pathname.replace(/\/$/, '') || '/' : path;
 
 const formatDate = (date: Date) =>
   new Intl.DateTimeFormat('en', {
@@ -65,7 +72,7 @@ const formatDate = (date: Date) =>
 const articleSchema =
   kind === 'guide'
     ? techArticleSchema({
-        path,
+        path: schemaPath,
         title,
         description,
         publishedAt,
@@ -73,7 +80,7 @@ const articleSchema =
         tags,
       })
     : blogPostingSchema({
-        path,
+        path: schemaPath,
         title,
         description,
         publishedAt,
@@ -97,7 +104,7 @@ const guideHowToSteps = guideEntry?.data.howToSteps ?? [];
 const estimatedTaskMinutes = guideEntry?.data.estimatedTaskMinutes;
 
 const schema: SchemaNode[] = [
-  webPageSchema({ path, title, description, updatedAt }),
+  webPageSchema({ path: schemaPath, title, description, updatedAt }),
   articleSchema,
   breadcrumbSchema(breadcrumbs),
 ];
@@ -105,7 +112,7 @@ const schema: SchemaNode[] = [
 if (kind === 'guide' && estimatedTaskMinutes && guideHowToSteps.length > 0) {
   schema.push(
     howToSchema({
-      path,
+      path: schemaPath,
       title,
       description,
       estimatedTaskMinutes,
@@ -118,7 +125,9 @@ if (kind === 'guide' && estimatedTaskMinutes && guideHowToSteps.length > 0) {
 <BaseLayout
   title={`${title} | Reinstate`}
   {description}
-  canonical={siteUrl(path)}
+  canonical={canonical ?? siteUrl(path)}
+  ogImage={ogImage}
+  ogImageAlt={ogImageAlt}
   type="article"
   {noindex}
   publishedTime={publishedAt}

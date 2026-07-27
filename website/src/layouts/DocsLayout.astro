@@ -20,6 +20,9 @@ interface Props {
   updatedAt: Date | string;
   tags?: string[];
   noindex?: boolean;
+  canonical?: string;
+  ogImage?: string;
+  ogImageAlt?: string;
   article?: boolean;
   extraJsonLd?: SchemaNode | SchemaNode[];
 }
@@ -33,11 +36,15 @@ const {
   updatedAt,
   tags = [],
   noindex = false,
+  canonical,
+  ogImage,
+  ogImageAlt,
   article = true,
   extraJsonLd = [],
 } = Astro.props;
 const docs = await getOrderedDocs();
 const path = Astro.url.pathname.replace(/\/$/, '') || '/docs';
+const schemaPath = canonical ? new URL(canonical).pathname.replace(/\/$/, '') || '/' : canonicalPath;
 const updatedDate = updatedAt instanceof Date ? updatedAt : new Date(updatedAt);
 const statusLabel = {
   current: 'Current release',
@@ -53,14 +60,14 @@ const breadcrumbs = [
 const jsonLd = [
   article
     ? techArticleSchema({
-        path: canonicalPath,
+        path: schemaPath,
         title,
         description,
         updatedAt: updatedDate,
         tags,
       })
     : webPageSchema({
-        path: canonicalPath,
+        path: schemaPath,
         title,
         description,
         updatedAt: updatedDate,
@@ -73,7 +80,9 @@ const jsonLd = [
 <BaseLayout
   title={`${title} · Reinstate Docs`}
   description={description}
-  canonical={canonicalPath}
+  canonical={canonical ?? canonicalPath}
+  ogImage={ogImage}
+  ogImageAlt={ogImageAlt}
   type={article ? 'article' : 'website'}
   noindex={noindex}
   modifiedTime={article ? updatedDate : undefined}
