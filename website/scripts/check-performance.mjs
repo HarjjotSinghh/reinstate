@@ -179,7 +179,10 @@ export const DEFAULT_ROUTE_DEFINITIONS = [
     label,
     required: true,
     budget:
-      path === '/compare/reinstate-vs-manual-session-copying'
+      [
+        '/compare/reinstate-vs-manual-session-copying',
+        '/tools/path-mapping-visualizer',
+      ].includes(path)
         ? {
             ...PUBLIC_CONTENT_LIMITS,
             blockingStyleCount: 5,

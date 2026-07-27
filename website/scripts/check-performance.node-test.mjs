@@ -43,6 +43,12 @@ test('covers every materially distinct production page template', () => {
     ],
   );
   assert.ok(DEFAULT_ROUTE_DEFINITIONS.every(({ required }) => required));
+  assert.equal(
+    DEFAULT_ROUTE_DEFINITIONS.find(
+      ({ path }) => path === '/tools/path-mapping-visualizer',
+    )?.budget.blockingStyleCount,
+    5,
+  );
 });
 
 async function writeFixture(root, path, value) {
