@@ -32,7 +32,7 @@ project ID in snapshots and recomputes Claude's directory key from the
 destination device's `local_root`. Snapshot archive paths remain source
 metadata; they are never reused as cross-device restore destinations.
 
-RC4 verifies the exact planned destination after restore. A matching session
+RC5 verifies the exact planned destination after restore. A matching session
 ID elsewhere in `~/.claude/projects` is not accepted as success.
 
 ## Exclusions

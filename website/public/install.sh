@@ -3,8 +3,8 @@
 # Usage: curl -fsSL https://reinstate.dev/install.sh | sh
 set -eu
 
-VERSION="v0.1.0-rc.4"
-PINNED_INSTALLER_SHA256="3bab3e8e397fbf5b7d39ccb3e040f4fbde798902dd87b7ebfd852c3997a7b46a"
+VERSION="v0.1.0-rc.5"
+PINNED_INSTALLER_SHA256="7776adb4ace8aa333745cd3f3e42b3a10d1400b9394c612d065c20a739db2e66"
 INSTALLER_URL="https://raw.githubusercontent.com/HarjjotSinghh/reinstate/${VERSION}/scripts/install.sh"
 INSTALL_DIR="${INSTALL_DIR:-${HOME}/.local/bin}"
 

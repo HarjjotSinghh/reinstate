@@ -3,7 +3,7 @@
 Reinstate synchronizes Claude Code and Codex CLI sessions through
 client-side-encrypted object storage that you control.
 
-> The public installers currently pin release candidate `v0.1.0-rc.4`.
+> The public installers currently pin release candidate `v0.1.0-rc.5`.
 
 ## Prerequisites
 
@@ -28,7 +28,7 @@ Native Windows PowerShell:
 irm https://reinstate.dev/install.ps1 | iex
 ```
 
-Both bootstraps pin `v0.1.0-rc.4`, verify the exact tagged canonical installer,
+Both bootstraps pin `v0.1.0-rc.5`, verify the exact tagged canonical installer,
 verify the downloaded release binary, install without elevation, configure a
 user-local PATH, and print the next command. They do not launch interactive
 setup from piped input.

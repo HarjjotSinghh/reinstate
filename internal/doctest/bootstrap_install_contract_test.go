@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	publicBootstrapVersion       = "v0.1.0-rc.4"
-	publicPOSIXInstallerSHA256   = "3bab3e8e397fbf5b7d39ccb3e040f4fbde798902dd87b7ebfd852c3997a7b46a"
+	publicBootstrapVersion       = "v0.1.0-rc.5"
+	publicPOSIXInstallerSHA256   = "7776adb4ace8aa333745cd3f3e42b3a10d1400b9394c612d065c20a739db2e66"
 	publicWindowsInstallerSHA256 = "ce46d3a22d4d9349c7e6847ed65b5e8ff93b51e7f035ad3ff93b7dc19d2f1232"
 )
 
@@ -144,7 +144,7 @@ func TestPOSIXPublicBootstrapContract(t *testing.T) {
 
 	canonical := []byte(`#!/bin/sh
 set -eu
-if [ "${REINSTATE_VERSION:-}" != "v0.1.0-rc.4" ]; then
+if [ "${REINSTATE_VERSION:-}" != "v0.1.0-rc.5" ]; then
   echo "wrong bootstrap version: ${REINSTATE_VERSION:-missing}" >&2
   exit 91
 fi
@@ -282,7 +282,7 @@ func TestWindowsPublicBootstrapContract(t *testing.T) {
 	}
 
 	canonical := []byte(`
-if ($env:REINSTATE_VERSION -ne "v0.1.0-rc.4") {
+if ($env:REINSTATE_VERSION -ne "v0.1.0-rc.5") {
     throw "wrong bootstrap version: $env:REINSTATE_VERSION"
 }
 New-Item -ItemType Directory -Force -Path $env:INSTALL_DIR | Out-Null
