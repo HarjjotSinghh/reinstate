@@ -22,11 +22,11 @@ async function fixture(reviewDate = '2026-07-27') {
   );
   await writeFile(
     join(root, 'src/content/guides/example.md'),
-    `---\ntitle: Example\nreviewedAt: ${reviewDate}\n---\n`,
+    `---\ntitle: Example\npublishedAt: ${reviewDate}\nreviewedAt: ${reviewDate}\n---\n`,
   );
   await writeFile(
     join(root, 'src/content/blog/example.md'),
-    `---\ntitle: Example\nreviewedAt: ${reviewDate}\n---\n`,
+    `---\ntitle: Example\npublishedAt: ${reviewDate}\nreviewedAt: ${reviewDate}\n---\n`,
   );
   await writeFile(
     join(root, 'src/data/compatibility.json'),

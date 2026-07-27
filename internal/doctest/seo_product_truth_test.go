@@ -44,6 +44,8 @@ func TestPublicSEOCommandsStayScopedAndClaimsStayQualified(t *testing.T) {
 			"every machine you own",
 			"will always own *one* ecosystem",
 			"DIY file sync breaks",
+			"Secrets are not part of the sync surface",
+			"S3, GCS, S3-compatible, or WebDAV",
 		} {
 			if strings.Contains(body, forbidden) {
 				t.Errorf("%s contains unsupported public claim %q", path, forbidden)

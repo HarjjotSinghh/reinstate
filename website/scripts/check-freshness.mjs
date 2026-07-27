@@ -80,6 +80,7 @@ async function sitemapRoutes(root) {
 
 export async function collectFreshnessRecords(root = DEFAULT_ROOT) {
   const records = [];
+  const publications = [];
   const errors = [];
   const contentRoot = resolve(root, 'src/content');
 
@@ -101,7 +102,18 @@ export async function collectFreshnessRecords(root = DEFAULT_ROOT) {
       if (!value) {
         errors.push(`${id}: missing ${key} frontmatter`);
       } else {
-        records.push(reviewedRecord(id, value, contentRoute(root, collection, path)));
+        const route = contentRoute(root, collection, path);
+        records.push(reviewedRecord(id, value, route));
+        if (collection !== 'docs') {
+          const publishedAt = frontmatterValue(source, 'publishedAt');
+          if (!publishedAt) {
+            errors.push(`${id}: missing publishedAt frontmatter`);
+          } else {
+            publications.push(
+              reviewedRecord(`${id}#publishedAt`, publishedAt, route),
+            );
+          }
+        }
       }
     }
   }
@@ -214,7 +226,18 @@ export async function collectFreshnessRecords(root = DEFAULT_ROOT) {
     }
   }
 
-  return { records, errors };
+  const routeOwners = new Map();
+  for (const record of records.filter(({ route }) => route)) {
+    if (routeOwners.has(record.route)) {
+      errors.push(
+        `${record.id}: duplicate freshness route ${record.route} also owned by ${routeOwners.get(record.route)}`,
+      );
+    } else {
+      routeOwners.set(record.route, record.id);
+    }
+  }
+
+  return { records, publications, errors };
 }
 
 export async function auditFreshness({
@@ -252,6 +275,19 @@ export async function auditFreshness({
     } else if (ageDays > warnAfterDays) {
       warnings.push(
         `${record.id}: ${ageDays} days since review (warning threshold ${warnAfterDays})`,
+      );
+    }
+  }
+
+  for (const publication of collected.publications) {
+    const published = parseDate(publication.value);
+    if (!published) {
+      errors.push(
+        `${publication.id}: invalid publication date ${JSON.stringify(publication.value)}`,
+      );
+    } else if (published.getTime() > current.getTime()) {
+      errors.push(
+        `${publication.id}: publication date ${publication.value} is in the future`,
       );
     }
   }

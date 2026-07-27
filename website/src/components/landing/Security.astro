@@ -6,7 +6,7 @@ const points = [
   },
   {
     title: 'Credential denylist',
-    body: 'auth.json and tokens stay local by default. Secrets are not part of the sync surface.',
+    body: 'Known auth and credential artifacts are hard-excluded. Session text can still contain secrets, so review it before sync.',
   },
   {
     title: 'No vendor API keys required',
@@ -22,7 +22,7 @@ const points = [
 <section class="section security" id="security" aria-labelledby="security-title">
   <div class="shell layout">
     <div>
-      <h2 id="security-title" class="display">Zero-knowledge, open source</h2>
+      <h2 id="security-title" class="display">Client-side encrypted, open source</h2>
       <p class="lede">
         Apache-2.0. Auditable. Patent grant. No vendor lock-in. A future optional hosted convenience
         layer would still only store ciphertext, and is not required.

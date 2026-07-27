@@ -39,6 +39,17 @@ const UNSUPPORTED_OPERATING_SYSTEMS = [
   ['Ubuntu', /\bubuntu\b/i],
 ];
 
+const ALLOWED_ROBOTS_META_DIRECTIVES = new Set([
+  'index',
+  'noindex',
+  'follow',
+  'nofollow',
+  'noarchive',
+  'nosnippet',
+  'notranslate',
+  'noimageindex',
+]);
+
 const SOCIAL_FIELDS = {
   'og:site_name': { attribute: 'property', expected: 'Reinstate' },
   'og:locale': { attribute: 'property', expected: 'en_US' },
@@ -525,6 +536,41 @@ function inspectProductClaims(value, context, errors) {
   }
 }
 
+function inspectMetadataClaims(values, context, errors) {
+  const text = Object.values(values).filter(Boolean).join(' ');
+  for (const [name, pattern] of UNSUPPORTED_AGENTS) {
+    if (pattern.test(text)) {
+      addError(
+        errors,
+        'META_UNSUPPORTED_AGENT',
+        context,
+        `Page metadata names unsupported coding agent "${name}".`,
+        'Keep titles, descriptions, and social metadata limited to current Claude Code and Codex support.',
+      );
+    }
+  }
+  for (const [name, pattern] of UNSUPPORTED_OPERATING_SYSTEMS) {
+    if (pattern.test(text)) {
+      addError(
+        errors,
+        'META_UNSUPPORTED_OS',
+        context,
+        `Page metadata names unsupported operating system "${name}".`,
+        'Keep platform metadata limited to currently documented macOS and Windows targets.',
+      );
+    }
+  }
+  if (/\b(?:todo|tbd|lorem ipsum)\b|\{\{[^}]+\}\}/i.test(text)) {
+    addError(
+      errors,
+      'META_PLACEHOLDER',
+      context,
+      'Page metadata contains a placeholder value.',
+      'Replace placeholders with reviewed, page-specific metadata before building.',
+    );
+  }
+}
+
 function inspectSchemaVisibility(value, visibleText, context, errors, location = '$') {
   if (Array.isArray(value)) {
     value.forEach((item, index) =>
@@ -865,6 +911,11 @@ function inspectPageMetadata(headMarkup, context, errors) {
     { title, description, canonical },
     errors,
   );
+  inspectMetadataClaims(
+    { title, description, ...socialValues },
+    context,
+    errors,
+  );
 
   return {
     title,
@@ -897,6 +948,35 @@ function inspectHtml(html, context, route, errors) {
       `Expected exactly one robots meta tag; found ${robotTags.length}.`,
       'Add one explicit robots meta tag so indexing intent is unambiguous.',
     );
+  }
+  for (const tag of robotTags) {
+    for (const rawDirective of (tag.attributes.content ?? '').toLowerCase().split(',')) {
+      const directive = rawDirective.trim();
+      if (!directive) {
+        addError(
+          errors,
+          'ROBOTS_META_DIRECTIVE',
+          context,
+          'Robots meta contains an empty directive.',
+          'Use a comma-separated set such as "index, follow" or "noindex, nofollow".',
+        );
+        continue;
+      }
+      const [name, value] = directive.split(':', 2);
+      const supportsValue = ['max-snippet', 'max-image-preview', 'max-video-preview', 'unavailable_after'].includes(name);
+      if (
+        (!supportsValue && !ALLOWED_ROBOTS_META_DIRECTIVES.has(name)) ||
+        (supportsValue && !value?.trim())
+      ) {
+        addError(
+          errors,
+          'ROBOTS_META_DIRECTIVE',
+          context,
+          `Robots meta contains unsupported directive "${directive}".`,
+          'Use documented robots directives with required values.',
+        );
+      }
+    }
   }
 
   if (isPreviewRoute(route) && !noindex) {
@@ -995,6 +1075,35 @@ async function inspectRobots(buildDir, allFiles, errors) {
 
   const source = await readFile(robotsPath, 'utf8');
   const groups = parseRobotsGroups(source);
+  for (const [lineNumber, rawLine] of source.split(/\r?\n/).entries()) {
+    const line = rawLine.replace(/#.*$/, '').trim();
+    if (!line) continue;
+    const match = line.match(/^([^:]+):\s*(.*)$/);
+    const name = match?.[1]?.trim().toLowerCase();
+    const value = match?.[2]?.trim() ?? '';
+    if (!match || !['user-agent', 'allow', 'disallow', 'sitemap'].includes(name)) {
+      addError(
+        errors,
+        'ROBOTS_DIRECTIVE_INVALID',
+        'robots.txt',
+        `Line ${lineNumber + 1} contains an unsupported robots directive.`,
+        'Use only User-agent, Allow, Disallow, and Sitemap in this policy.',
+      );
+      continue;
+    }
+    if (
+      (name === 'user-agent' && !value) ||
+      (['allow', 'disallow'].includes(name) && value && !value.startsWith('/'))
+    ) {
+      addError(
+        errors,
+        'ROBOTS_DIRECTIVE_INVALID',
+        'robots.txt',
+        `Line ${lineNumber + 1} has an invalid ${name} value.`,
+        'Give User-agent a name and start non-empty Allow/Disallow paths with "/".',
+      );
+    }
+  }
 
   for (const bot of ['OAI-SearchBot', 'PerplexityBot']) {
     const group = groups.find((candidate) =>
@@ -1306,6 +1415,7 @@ async function inspectSocialImages(buildDir, allFiles, pages, errors) {
 
 function inspectUniqueness(pages, errors) {
   const titles = new Map();
+  const descriptions = new Map();
   const canonicals = new Map();
 
   for (const page of pages.filter((candidate) => candidate.indexable)) {
@@ -1321,6 +1431,21 @@ function inspectUniqueness(pages, errors) {
         );
       } else {
         titles.set(titleKey, page.context);
+      }
+    }
+
+    if (page.description) {
+      const descriptionKey = page.description.toLocaleLowerCase('en-US');
+      if (descriptions.has(descriptionKey)) {
+        addError(
+          errors,
+          'DESCRIPTION_DUPLICATE',
+          page.context,
+          `Description "${page.description}" duplicates the description on ${descriptions.get(descriptionKey)}.`,
+          'Give every indexable page a distinct description that answers its specific intent.',
+        );
+      } else {
+        descriptions.set(descriptionKey, page.context);
       }
     }
 

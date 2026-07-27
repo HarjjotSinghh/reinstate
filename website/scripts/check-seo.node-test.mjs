@@ -117,6 +117,7 @@ test('accepts a complete build and reports what it checked', async (t) => {
         `<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","@id":"${SITE}/faq#faq","url":"${SITE}/faq","mainEntity":[{"@type":"Question","name":"What is rein vs reinstate?","acceptedAnswer":{"@type":"Answer","text":"They are aliases for the same binary."}}]}</script>`,
       image: `${SITE}/social/faq.png`,
       title: 'Frequently asked questions',
+      description: 'Direct answers about Reinstate session continuity.',
     }),
   );
   await writeFixture(root, 'social/faq.png', pngHeader());
@@ -143,6 +144,29 @@ test('returns an actionable missing-build failure', async () => {
   assert.equal(result.errors.length, 1);
   assert.equal(result.errors[0].code, 'BUILD_MISSING');
   assert.match(formatReport(result), /Run "npm run build"/);
+});
+
+test('rejects duplicate descriptions across indexable pages', async (t) => {
+  const root = await validFixture();
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await writeFixture(
+    root,
+    'copy/index.html',
+    indexableHtml({
+      canonical: `${SITE}/copy`,
+      image: `${SITE}/social/copy.png`,
+      title: 'A distinct copy page',
+    }),
+  );
+  await writeFixture(root, 'social/copy.png', pngHeader());
+  await writeFixture(
+    root,
+    'sitemap.xml',
+    `<?xml version="1.0"?><urlset><url><loc>${SITE}/</loc></url><url><loc>${SITE}/copy</loc></url></urlset>`,
+  );
+
+  const result = await auditSeo(root);
+  assert.ok(result.errors.some(({ code }) => code === 'DESCRIPTION_DUPLICATE'));
 });
 
 test('detects metadata, structured-data, crawler, sitemap, and image regressions', async (t) => {
@@ -179,7 +203,11 @@ test('detects metadata, structured-data, crawler, sitemap, and image regressions
     indexableHtml({
       canonical: `${SITE}/`,
       image: `${SITE}/social/home.png`,
-    }),
+      description: 'Sync coding-agent sessions across devices.',
+    }).replace(
+      '<meta property="og:description" content="Sync coding-agent sessions across devices.">',
+      '<meta property="og:description" content="Supports Gemini CLI on Linux.">',
+    ),
   );
   await writeFixture(
     root,
@@ -192,6 +220,7 @@ test('detects metadata, structured-data, crawler, sitemap, and image regressions
     'robots.txt',
     `User-agent: *
 Allow: /
+Crawl-delay: 10
 Sitemap: ${SITE}/sitemap.xml
 `,
   );
@@ -226,11 +255,14 @@ Sitemap: ${SITE}/sitemap.xml
     'JSONLD_VISIBLE_MISMATCH',
     'PREVIEW_INDEXABLE',
     'ROBOTS_AI_CRAWLER_MISSING',
+    'ROBOTS_DIRECTIVE_INVALID',
     'SITEMAP_EXCLUDED_ROUTE',
     'SITEMAP_URL_DUPLICATE',
     'SOCIAL_IMAGE_DIMENSIONS',
     'SOCIAL_IMAGE_DUPLICATE',
     'TITLE_DUPLICATE',
+    'META_UNSUPPORTED_AGENT',
+    'META_UNSUPPORTED_OS',
   ]) {
     assert.ok(codes.has(expected), `expected ${expected} in ${[...codes]}`);
   }
