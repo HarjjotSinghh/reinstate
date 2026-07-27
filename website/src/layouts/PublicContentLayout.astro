@@ -1,0 +1,523 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import { product, siteUrl } from '../data/product';
+import {
+  breadcrumbSchema,
+  techArticleSchema,
+  webPageSchema,
+  type Breadcrumb,
+  type SchemaNode,
+} from '../lib/schema';
+
+interface Props {
+  title: string;
+  description: string;
+  path: string;
+  eyebrow: string;
+  answer: string;
+  breadcrumbs: Breadcrumb[];
+  article?: boolean;
+  tags?: string[];
+  lastVerified?: string;
+}
+
+const {
+  title,
+  description,
+  path,
+  eyebrow,
+  answer,
+  breadcrumbs,
+  article = true,
+  tags = [],
+  lastVerified = product.lastVerified,
+} = Astro.props;
+
+const verifiedDate = new Intl.DateTimeFormat('en', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  timeZone: 'UTC',
+}).format(new Date(`${lastVerified}T00:00:00Z`));
+
+const schema: SchemaNode[] = [
+  webPageSchema({ path, title, description, updatedAt: lastVerified }),
+  ...(article
+    ? [techArticleSchema({ path, title, description, updatedAt: lastVerified, tags })]
+    : []),
+  breadcrumbSchema(breadcrumbs),
+];
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  canonical={siteUrl(path)}
+  type={article ? 'article' : 'website'}
+  modifiedTime={article ? lastVerified : undefined}
+  section={article ? eyebrow : undefined}
+  tags={tags}
+  jsonLd={schema}
+>
+  <div class="public-page">
+    <header class="public-hero">
+      <div class="public-shell">
+        <Breadcrumbs items={breadcrumbs} />
+        <p class="eyebrow">{eyebrow}</p>
+        <h1>{Astro.slots.has('heading') ? <slot name="heading" /> : title}</h1>
+        <p class="direct-answer">{answer}</p>
+        <dl class="verification">
+          <div>
+            <dt>Last verified</dt>
+            <dd><time datetime={lastVerified}>{verifiedDate}</time></dd>
+          </div>
+          <div>
+            <dt>Current release</dt>
+            <dd><a href={product.releasesUrl}>{product.currentRelease}</a></dd>
+          </div>
+          <div>
+            <dt>Release status</dt>
+            <dd>{product.releaseStatus}</dd>
+          </div>
+        </dl>
+      </div>
+    </header>
+
+    <div class="public-shell content-grid">
+      <aside class="release-note" aria-label="Release status">
+        <p class="mono">PRE-1.0 NOTICE</p>
+        <p>
+          Reinstate {product.currentRelease} is release-candidate software. Native platform
+          acceptance and stable-release certification are still in progress, and interfaces or
+          storage formats may change before v1.0. Review the
+          <a href="/changelog">changelog</a> and keep independent backups.
+        </p>
+      </aside>
+
+      <div class="public-prose">
+        <slot />
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .public-page {
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .public-shell {
+    width: min(100% - clamp(2.5rem, 8vw, 6rem), 72rem);
+    margin-inline: auto;
+  }
+
+  .public-hero {
+    padding-block: clamp(3.5rem, 8vw, 7rem) clamp(2.5rem, 5vw, 4.5rem);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .eyebrow {
+    margin: clamp(2.25rem, 5vw, 4rem) 0 1rem;
+    font-family: var(--font-mono);
+    color: var(--prim-deep);
+    font-size: 0.77rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    max-width: 18ch;
+    margin: 0;
+    font-size: clamp(2.7rem, 7vw, 5.8rem);
+    line-height: 0.98;
+  }
+
+  .direct-answer {
+    max-width: 64ch;
+    margin: clamp(1.5rem, 3vw, 2.2rem) 0 0;
+    color: var(--ink-2);
+    font-size: clamp(1.15rem, 2.2vw, 1.5rem);
+    line-height: 1.48;
+    text-wrap: pretty;
+  }
+
+  .verification {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    max-width: 54rem;
+    margin: clamp(2rem, 5vw, 3.5rem) 0 0;
+    border-block: 1px solid var(--rule);
+  }
+
+  .verification div {
+    min-width: 0;
+    padding: 1rem 1.1rem 1rem 0;
+  }
+
+  .verification div + div {
+    padding-left: 1.1rem;
+    border-left: 1px solid var(--rule);
+  }
+
+  .verification dt {
+    color: var(--ink-3);
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .verification dd {
+    margin: 0.35rem 0 0;
+    color: var(--ink);
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
+  .verification a {
+    text-underline-offset: 3px;
+  }
+
+  .content-grid {
+    display: grid;
+    grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr);
+    gap: clamp(2rem, 6vw, 5rem);
+    align-items: start;
+    padding-block: clamp(3rem, 7vw, 6.5rem);
+  }
+
+  .release-note {
+    position: sticky;
+    top: 6.5rem;
+    padding: 1.15rem;
+    border: 1px solid var(--rule);
+    border-top: 4px solid var(--prim-deep);
+    border-radius: 10px;
+    background: var(--paper-2);
+    color: var(--ink-2);
+    font-size: 0.82rem;
+    line-height: 1.55;
+  }
+
+  .release-note p {
+    margin: 0;
+  }
+
+  .release-note p + p {
+    margin-top: 0.65rem;
+  }
+
+  .release-note .mono {
+    color: var(--ink);
+    font-size: 0.69rem;
+    font-weight: 650;
+    letter-spacing: 0.08em;
+  }
+
+  .release-note a {
+    color: var(--ink);
+    text-underline-offset: 3px;
+  }
+
+  .public-prose {
+    min-width: 0;
+    max-width: 48rem;
+  }
+
+  .public-prose :global(h2) {
+    margin: 3.75rem 0 1rem;
+    color: var(--ink);
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    line-height: 1.08;
+    scroll-margin-top: 7rem;
+  }
+
+  .public-prose :global(h2:first-child) {
+    margin-top: 0;
+  }
+
+  .public-prose :global(h3) {
+    margin: 2rem 0 0.7rem;
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 1.05rem;
+    font-weight: 620;
+    letter-spacing: -0.015em;
+    line-height: 1.3;
+  }
+
+  .public-prose :global(p),
+  .public-prose :global(li) {
+    color: var(--ink-2);
+    font-size: 1rem;
+    line-height: 1.72;
+  }
+
+  .public-prose :global(p) {
+    margin: 0.8rem 0;
+  }
+
+  .public-prose :global(ul),
+  .public-prose :global(ol) {
+    margin: 1rem 0;
+    padding-left: 1.35rem;
+  }
+
+  .public-prose :global(li + li) {
+    margin-top: 0.5rem;
+  }
+
+  .public-prose :global(a) {
+    color: var(--ink);
+    text-decoration-color: var(--prim-deep);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+  }
+
+  .public-prose :global(strong) {
+    color: var(--ink);
+    font-weight: 620;
+  }
+
+  .public-prose :global(code) {
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    background: var(--paper-2);
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 0.88em;
+    padding: 0.12em 0.34em;
+  }
+
+  .public-prose :global(.pc-grid) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .public-prose :global(.pc-card) {
+    display: block;
+    padding: 1.35rem;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    background: var(--paper-2);
+    text-decoration: none;
+  }
+
+  .public-prose :global(a.pc-card:hover) {
+    border-color: var(--prim-deep);
+  }
+
+  .public-prose :global(.pc-card h2),
+  .public-prose :global(.pc-card h3) {
+    margin: 0;
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 400;
+  }
+
+  .public-prose :global(.pc-card p) {
+    margin: 0.65rem 0 0;
+    font-size: 0.93rem;
+    line-height: 1.55;
+  }
+
+  .public-prose :global(.pc-card .pc-link) {
+    display: inline-block;
+    margin-top: 1rem;
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+  }
+
+  .public-prose :global(.pc-facts) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 1.5rem 0;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .public-prose :global(.pc-facts div) {
+    padding: 1rem 1.2rem;
+    background: var(--paper-2);
+  }
+
+  .public-prose :global(.pc-facts div:nth-child(even)) {
+    border-left: 1px solid var(--rule);
+  }
+
+  .public-prose :global(.pc-facts div:nth-child(n + 3)) {
+    border-top: 1px solid var(--rule);
+  }
+
+  .public-prose :global(.pc-facts dt) {
+    color: var(--ink-3);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .public-prose :global(.pc-facts dd) {
+    margin: 0.35rem 0 0;
+    color: var(--ink);
+    font-size: 0.94rem;
+    line-height: 1.45;
+  }
+
+  .public-prose :global(.pc-callout) {
+    margin: 1.5rem 0;
+    padding: 1.25rem 1.4rem;
+    border: 1px solid var(--rule);
+    border-left: 5px solid var(--prim-deep);
+    border-radius: 10px;
+    background: var(--paper-2);
+  }
+
+  .public-prose :global(.pc-callout p:first-child) {
+    margin-top: 0;
+    color: var(--ink);
+    font-weight: 620;
+  }
+
+  .public-prose :global(.pc-callout p:last-child) {
+    margin-bottom: 0;
+  }
+
+  .public-prose :global(.pc-table-wrap) {
+    max-width: 100%;
+    margin: 1.5rem 0;
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+  }
+
+  .public-prose :global(.pc-table) {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--paper-2);
+    font-size: 0.9rem;
+  }
+
+  .public-prose :global(.pc-table th),
+  .public-prose :global(.pc-table td) {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--rule);
+    color: var(--ink-2);
+    line-height: 1.5;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .public-prose :global(.pc-table th) {
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 650;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .public-prose :global(.pc-table tr:last-child td) {
+    border-bottom: 0;
+  }
+
+  .public-prose :global(.pc-steps) {
+    padding-left: 0;
+    list-style: none;
+    counter-reset: steps;
+  }
+
+  .public-prose :global(.pc-steps li) {
+    position: relative;
+    min-height: 2.3rem;
+    padding: 0.15rem 0 1.2rem 3.3rem;
+    counter-increment: steps;
+  }
+
+  .public-prose :global(.pc-steps li::before) {
+    content: counter(steps, decimal-leading-zero);
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: grid;
+    width: 2.3rem;
+    height: 2.3rem;
+    place-items: center;
+    border: 1px solid var(--ink);
+    border-radius: 7px;
+    background: var(--prim);
+    color: var(--on-prim);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 650;
+  }
+
+  .public-prose :global(.pc-related) {
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--rule);
+  }
+
+  .public-prose :global(.pc-related h2) {
+    margin-top: 0;
+  }
+
+  .public-prose :global(.pc-related nav) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+  }
+
+  .public-prose :global(.pc-related a) {
+    padding: 0.65rem 0.8rem;
+    border: 1px solid var(--rule);
+    border-radius: 7px;
+    background: var(--paper-2);
+    font-size: 0.88rem;
+    text-decoration: none;
+  }
+
+  .public-prose :global(.pc-related a:hover) {
+    border-color: var(--prim-deep);
+  }
+
+  @media (max-width: 760px) {
+    .verification {
+      grid-template-columns: 1fr;
+    }
+
+    .verification div + div {
+      padding-left: 0;
+      border-top: 1px solid var(--rule);
+      border-left: 0;
+    }
+
+    .content-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .release-note {
+      position: static;
+    }
+
+    .public-prose :global(.pc-grid),
+    .public-prose :global(.pc-facts) {
+      grid-template-columns: 1fr;
+    }
+
+    .public-prose :global(.pc-facts div:nth-child(even)) {
+      border-left: 0;
+    }
+
+    .public-prose :global(.pc-facts div:nth-child(n + 2)) {
+      border-top: 1px solid var(--rule);
+    }
+  }
+</style>
