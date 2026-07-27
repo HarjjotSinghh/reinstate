@@ -205,6 +205,8 @@ const floorGrid = [
             id="copy-install"
             type="button"
             data-command="curl -fsSL https://reinstate.dev/install.sh | sh"
+            data-analytics-event="install_command_copy"
+            data-analytics-target="homepage-hero"
             data-state="idle"
             aria-label="Copy install command"
           >
@@ -221,7 +223,11 @@ const floorGrid = [
 
         <div class="conversion-meta">
           <nav class="hero-links" aria-label="Installation resources">
-            <a href="/docs/getting-started">
+            <a
+              href="/docs/getting-started"
+              data-analytics-event="docs_getting_started"
+              data-analytics-target="homepage-hero"
+            >
               Read setup guide
               <svg viewBox="0 0 16 16" aria-hidden="true">
                 <path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5"></path>
@@ -229,6 +235,8 @@ const floorGrid = [
             </a>
             <a
               href="https://github.com/HarjjotSinghh/reinstate"
+              data-analytics-event="github_click"
+              data-analytics-target="homepage-hero"
               rel="noopener noreferrer"
               target="_blank"
             >
