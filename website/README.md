@@ -5,7 +5,7 @@ Marketing site, docs, and waitlist for [Reinstate](https://github.com/HarjjotSin
 ## Stack
 
 - Astro 7 + Tailwind CSS v4 + MDX
-- Docs from `src/content/docs` (synced from repo `docs/`)
+- Validated docs, guides, and blog collections under `src/content`
 - Waitlist API → Turso / libSQL (`@libsql/client`)
 - Deploy: Vercel (`@astrojs/vercel`)
 
@@ -45,6 +45,23 @@ The dependency-free audit checks every generated indexable page, JSON-LD,
 canonical and title uniqueness, route-specific 1200×630 PNG social cards,
 robots crawler rules, and sitemap coverage. Failures include the generated file
 and a suggested fix. Its focused fixture tests are also included in `npm test`.
+
+## Link validation
+
+Run the generated-site link and fragment crawler after changing routes,
+navigation, Markdown links, redirects, or public assets:
+
+```bash
+npm run build
+npm run check:links
+```
+
+The dependency-free crawler resolves root-relative, document-relative, and
+same-origin absolute links; verifies generated pages and public assets; checks
+fragment targets; understands configured redirects and Vercel runtime routes;
+and reports the source file, route, reference, and suggested fix. External URLs
+are left for the production audit because availability and redirects can change
+independently of this repository.
 
 ## Performance budgets
 
@@ -141,7 +158,8 @@ cd ..
 ./scripts/deploy-website-production.sh vX.Y.Z
 ```
 
-Live project: **https://reinstate-web.vercel.app** (Vercel project `harjjot/reinstate-web`).
+Canonical live site: **https://reinstate.dev** (Vercel project
+`harjjot/reinstate-web`).
 
 Root directory for the Vercel project must be `website/`.
 

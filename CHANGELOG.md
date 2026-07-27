@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Reinstate's logo, typography, palette, and axonometric illustration language.
 - Add answer-first integration, compatibility, security, use-case, project,
   open-source, and changelog pages with explicit release-candidate boundaries.
+- Add reviewed Claude Code and Codex session-sync guides, an engineering blog,
+  a privacy notice, RSS distribution, and a machine-readable security contact.
+- Add generated-site SEO, internal-link, anchor, social-image, and static
+  performance regression gates to tests, CI, and production deployment checks.
 
 ### Changed
 

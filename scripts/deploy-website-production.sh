@@ -49,6 +49,9 @@ grep -F "$version" website/public/install.ps1 >/dev/null
   npm ci
   npm test
   npm run build
+  npm run check:seo
+  npm run check:links
+  npm run check:performance
 )
 
 deployment_output=$(
