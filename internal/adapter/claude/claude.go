@@ -11,9 +11,12 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
+	"unicode/utf16"
 
 	"github.com/HarjjotSinghh/reinstate/internal/adapter"
 	"github.com/HarjjotSinghh/reinstate/internal/fsx"
@@ -118,6 +121,10 @@ func (a *Adapter) Discover(ctx context.Context, opts adapter.DiscoverOptions) ([
 		return nil, nil
 	}
 	var sessions []adapter.Session
+	projectIDsByDirectory, err := a.projectIDsByDirectory()
+	if err != nil {
+		return nil, err
+	}
 	// layout: root/projects/<project>/session-*.jsonl or recursive *.jsonl under projects
 	projects := filepath.Join(inst.Root, "projects")
 	err = filepath.Walk(projects, func(path string, info os.FileInfo, err error) error {
@@ -152,6 +159,13 @@ func (a *Adapter) Discover(ctx context.Context, opts adapter.DiscoverOptions) ([
 		if proj == "." {
 			proj = "unknown"
 		}
+		canonicalID, mapped := projectIDsByDirectory[filepath.ToSlash(proj)]
+		if len(projectIDsByDirectory) > 0 && !mapped {
+			return nil
+		}
+		if mapped {
+			proj = canonicalID
+		}
 		if opts.ProjectID != "" && proj != opts.ProjectID {
 			return nil
 		}
@@ -173,8 +187,77 @@ func (a *Adapter) Discover(ctx context.Context, opts adapter.DiscoverOptions) ([
 	return sessions, nil
 }
 
+func (a *Adapter) projectIDsByDirectory() (map[string]string, error) {
+	mapped := make(map[string]string, len(a.Projects))
+	for canonicalID, localRoot := range a.Projects {
+		directory := claudeProjectDirectory(localRoot)
+		if previous, exists := mapped[directory]; exists && previous != canonicalID {
+			return nil, fmt.Errorf(
+				"claude project mappings %q and %q resolve to the same vendor directory %q",
+				previous,
+				canonicalID,
+				directory,
+			)
+		}
+		mapped[directory] = canonicalID
+	}
+	return mapped, nil
+}
+
+// claudeProjectDirectory reproduces Claude Code's project-directory key:
+// realpath when available, non-ASCII-alphanumeric UTF-16 units replaced with
+// dashes, and a JavaScript-style signed 32-bit hash when the key exceeds 200
+// characters.
+func claudeProjectDirectory(projectPath string) string {
+	canonicalPath := filepath.Clean(projectPath)
+	if resolved, err := filepath.EvalSymlinks(canonicalPath); err == nil {
+		canonicalPath = resolved
+	}
+	units := utf16.Encode([]rune(canonicalPath))
+	var encoded strings.Builder
+	encoded.Grow(len(units))
+	for _, unit := range units {
+		if unit >= 'a' && unit <= 'z' ||
+			unit >= 'A' && unit <= 'Z' ||
+			unit >= '0' && unit <= '9' {
+			encoded.WriteByte(byte(unit))
+		} else {
+			encoded.WriteByte('-')
+		}
+	}
+	key := encoded.String()
+	if len(key) <= 200 {
+		return key
+	}
+	return key[:200] + "-" + strconv.FormatInt(absJavaScriptStringHash(units), 36)
+}
+
+func absJavaScriptStringHash(units []uint16) int64 {
+	var hash int32
+	for _, unit := range units {
+		hash = int32(int64(hash)*31 + int64(unit))
+	}
+	value := int64(hash)
+	if value < 0 {
+		return -value
+	}
+	return value
+}
+
 func (a *Adapter) mapper() pathmap.Mapper {
-	return pathmap.Mapper{Home: a.Home, Projects: a.Projects}
+	normalizationProjects := make(map[string]string, len(a.Projects))
+	for canonicalID, localRoot := range a.Projects {
+		resolvedRoot := filepath.Clean(localRoot)
+		if resolved, err := filepath.EvalSymlinks(resolvedRoot); err == nil {
+			resolvedRoot = resolved
+		}
+		normalizationProjects[canonicalID] = resolvedRoot
+	}
+	return pathmap.Mapper{
+		Home:              a.Home,
+		Projects:          a.Projects,
+		NormalizeProjects: normalizationProjects,
+	}
 }
 
 func (a *Adapter) PlanExport(ctx context.Context, s adapter.Session, opts adapter.ExportOptions) (adapter.ExportPlan, error) {
@@ -279,13 +362,45 @@ func (a *Adapter) PlanRestore(ctx context.Context, snap adapter.Snapshot, opts a
 	if archiveRelative == "" {
 		archiveRelative = filepath.ToSlash(filepath.Join("projects", snap.ProjectID, snap.SessionID+".jsonl"))
 	}
-	destinationRelative := archiveRelative
-	if opts.DestinationRelativePath != "" {
-		destinationRelative = opts.DestinationRelativePath
+	if _, err := safeRestorePath(inst.Root, archiveRelative, "projects"); err != nil {
+		return adapter.RestorePlan{}, err
 	}
+	archiveParts := strings.Split(path.Clean(filepath.ToSlash(archiveRelative)), "/")
+	if len(archiveParts) < 3 {
+		return adapter.RestorePlan{}, fmt.Errorf("unexpected Claude snapshot path %q", archiveRelative)
+	}
+	archiveProjectDirectory := archiveParts[1]
 	destinationID := snap.SessionID
 	if opts.ForkSessionID != "" {
 		destinationID = opts.ForkSessionID
+	}
+	destinationRelative := archiveRelative
+	if localRoot, ok := a.Projects[snap.ProjectID]; ok {
+		destinationName := destinationID + ".jsonl"
+		if opts.DestinationRelativePath != "" {
+			if _, err := safeRestorePath(inst.Root, opts.DestinationRelativePath, "projects"); err != nil {
+				return adapter.RestorePlan{}, err
+			}
+			if providedName := path.Base(filepath.ToSlash(opts.DestinationRelativePath)); providedName != destinationName {
+				return adapter.RestorePlan{}, fmt.Errorf(
+					"claude restore destination filename %q does not match session %q",
+					providedName,
+					destinationID,
+				)
+			}
+		}
+		destinationRelative = path.Join("projects", claudeProjectDirectory(localRoot), destinationName)
+	} else {
+		if len(a.Projects) > 0 || snap.ProjectID != archiveProjectDirectory {
+			return adapter.RestorePlan{}, fmt.Errorf(
+				"claude snapshot project %q has no local mapping on this device; configure it with rein init --project %s=/absolute/path (or the equivalent config mapping) before pull; legacy snapshots may need to be pushed again from the source device with this Reinstate release",
+				snap.ProjectID,
+				snap.ProjectID,
+			)
+		}
+		if opts.DestinationRelativePath != "" {
+			destinationRelative = opts.DestinationRelativePath
+		}
 	}
 	dest, err := safeRestorePath(inst.Root, destinationRelative, "projects")
 	if err != nil {

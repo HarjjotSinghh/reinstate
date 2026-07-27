@@ -9,7 +9,7 @@ interface Props {
   class?: string;
   /** Logo mark size in px. */
   size?: number;
-  /** Show the "reinstate" wordmark text. */
+  /** Show the "Reinstate" wordmark text. */
   wordmark?: boolean;
   /**
    * When false, render the bare mark (frames + >_ only, no outer tile).
@@ -31,7 +31,7 @@ const Tag = href ? 'a' : 'span';
 
 <Tag href={href || undefined} class:list={['brand-lockup', !tiled && 'brand-lockup--bare', className]}>
   <LogoMark size={size} tiled={tiled} />
-  {wordmark && <span class="word">reinstate</span>}
+  {wordmark && <span class="word">Reinstate</span>}
 </Tag>
 
 <style>
@@ -40,7 +40,7 @@ const Tag = href ? 'a' : 'span';
     align-items: center;
     gap: 0.55rem;
     font-family: var(--font-display);
-    font-size: 1.16rem;
+    font-size: 1.32rem;
     font-weight: 400;
     letter-spacing: -0.035em;
     text-decoration: none;

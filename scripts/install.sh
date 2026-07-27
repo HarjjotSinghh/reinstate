@@ -22,10 +22,44 @@ confirm_replace() {
   if [ "${REINSTATE_CONFIRM_REPLACE:-0}" = "1" ]; then
     return 0
   fi
-  if [ -r /dev/tty ] &&
-    { printf 'Replace Reinstate %s with %s? [y/N] ' "${existing_version}" "${ASSET_VERSION}" >/dev/tty; } 2>/dev/null; then
+
+  confirm_timeout=${REINSTATE_CONFIRM_TIMEOUT_SECONDS:-30}
+  case "$confirm_timeout" in
+    ''|*[!0-9]*|????*)
+      echo "REINSTATE_CONFIRM_TIMEOUT_SECONDS must be an integer from 1 to 300" >&2
+      return 1
+      ;;
+  esac
+  if [ "$confirm_timeout" -lt 1 ] || [ "$confirm_timeout" -gt 300 ]; then
+    echo "REINSTATE_CONFIRM_TIMEOUT_SECONDS must be an integer from 1 to 300" >&2
+    return 1
+  fi
+
+  if [ -r /dev/tty ]; then
+    read_timeout_status=0
+    if (IFS= read -r -t 0 _reinstate_timeout_probe </dev/null) 2>/dev/null; then
+      read_timeout_status=0
+    else
+      read_timeout_status=$?
+    fi
+    # Bash 3 returns 1 for EOF here while Bash 5 may return 0 because the
+    # descriptor is immediately ready. Statuses greater than 1 indicate that
+    # the shell rejected the -t option (for example, Dash).
+    if [ "$read_timeout_status" -gt 1 ]; then
+      echo "interactive replacement confirmation is unavailable because this shell lacks bounded reads; refusing to replace existing Reinstate ${existing_version}; set REINSTATE_CONFIRM_REPLACE=1 after reviewing the version change" >&2
+      return 1
+    fi
+
+    if ! { printf 'Replace Reinstate %s with %s? [y/N] ' "${existing_version}" "${ASSET_VERSION}" >/dev/tty; } 2>/dev/null; then
+      echo "refusing to replace existing Reinstate ${existing_version}; set REINSTATE_CONFIRM_REPLACE=1 after reviewing the version change" >&2
+      return 1
+    fi
     answer=""
-    IFS= read -r answer </dev/tty 2>/dev/null || true
+    if ! IFS= read -r -t "$confirm_timeout" answer </dev/tty 2>/dev/null; then
+      { printf '\n' >/dev/tty; } 2>/dev/null || true
+      echo "replacement confirmation timed out after ${confirm_timeout}s; refusing to replace existing Reinstate ${existing_version}; set REINSTATE_CONFIRM_REPLACE=1 after reviewing the version change" >&2
+      return 1
+    fi
     case "$answer" in
       y|Y|yes|YES) return 0 ;;
     esac

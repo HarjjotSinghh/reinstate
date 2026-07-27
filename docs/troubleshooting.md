@@ -13,10 +13,19 @@ make build && ./bin/rein version
 
 Usually a **path remap** issue:
 
-1. Confirm project root mapping in config (`path_map`)
-2. Check that munged Claude project dirs were rewritten for this OS
-3. Run `rein status` and `rein diff`
-4. Verify session files landed under the expected `~/.claude/projects/...`
+1. Run `rein version --json` and require `0.1.0-rc.5` or newer.
+2. Confirm the same canonical project ID maps to this device's absolute
+   `local_root` in `config.toml`.
+3. Run a scoped `rein pull --agent claude --session SESSION_ID --dry-run` and
+   verify the planned destination is under this device's Claude project
+   directory, not the source device's directory key.
+4. Close Claude Code, run the scoped pull, then require both
+   `rein list --agent claude --json` and
+   `claude --resume SESSION_ID` to find the exact restored session.
+
+Do not manually move the session file. RC5 rejects legacy snapshots whose
+Claude project identity cannot be mapped safely; reinstall RC5 on the source
+device and push that selected session again to a fresh RC5 profile.
 
 Open an issue with OS pair (e.g. Windows 11 → macOS 15), agent version, and
 **redacted** paths.
@@ -25,6 +34,26 @@ Open an issue with OS pair (e.g. Windows 11 → macOS 15), agent version, and
 
 You must use the **exact same passphrase** as device 1. There is no recovery
 from a wrong phrase against existing ciphertext.
+
+Wait until Reinstate is visibly showing its hidden prompt before typing the
+passphrase. If the process has already exited, rerun the command; otherwise the
+secret can become a shell-history entry instead of input to Reinstate.
+
+## Remote profile manifest not found
+
+Reinstate could reach the configured storage location but did not find the
+profile's encrypted `manifest.age`. Check all three non-secret coordinates:
+
+1. `profile_id` and `storage.prefix` match the first device.
+2. `storage.bucket` is the same bucket used by the first device.
+3. `storage.endpoint` is the service endpoint only and does not end in the
+   bucket name.
+
+Do not work around this by creating an empty manifest or using a new profile
+ID. Correct the setup inputs and rerun `init --profile-id` in a disposable or
+intentionally reinitialized home. If reusing an initialized home, review it
+first. RC5 provides `init --force`, which backs up config and state together
+before replacing them.
 
 ## Conflicts after using both machines the same day
 

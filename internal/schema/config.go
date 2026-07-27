@@ -8,13 +8,14 @@ const ConfigSchemaVersion = 1
 
 // Config is the v1 configuration document (TOML).
 type Config struct {
-	SchemaVersion int                    `toml:"schema_version"`
-	ProfileID     string                 `toml:"profile_id"`
-	DeviceID      string                 `toml:"device_id"`
-	Storage       StorageConfig          `toml:"storage"`
-	Encryption    EncryptionConfig       `toml:"encryption"`
-	Agents        map[string]AgentConfig `toml:"agents"`
-	Projects      []ProjectConfig        `toml:"projects"`
+	SchemaVersion         int                    `toml:"schema_version"`
+	ProfileID             string                 `toml:"profile_id"`
+	DeviceID              string                 `toml:"device_id"`
+	RemoteProfileRequired bool                   `toml:"remote_profile_required"`
+	Storage               StorageConfig          `toml:"storage"`
+	Encryption            EncryptionConfig       `toml:"encryption"`
+	Agents                map[string]AgentConfig `toml:"agents"`
+	Projects              []ProjectConfig        `toml:"projects"`
 }
 
 // StorageConfig describes remote storage (no secrets).

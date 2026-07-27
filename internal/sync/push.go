@@ -30,20 +30,28 @@ const (
 	maxManifestRetries = 4
 )
 
-// ErrConflict means the remote head moved beyond the caller's known parent.
-var ErrConflict = errors.New("sync: conflict")
+var (
+	// ErrConflict means the remote head moved beyond the caller's known parent.
+	ErrConflict = errors.New("sync: conflict")
+	// ErrRemoteProfileNotFound means configured storage has no manifest.
+	ErrRemoteProfileNotFound = errors.New("sync: remote profile manifest not found")
+)
 
 // Engine orchestrates immutable snapshots and the encrypted remote manifest.
 type Engine struct {
-	Backend        backend.Backend
-	Passphrase     string
-	Prefix         string
-	Platform       string
-	MaxPayloadSize int64
-	codec          envelopeCodec
+	Backend               backend.Backend
+	Passphrase            string
+	Prefix                string
+	Platform              string
+	MaxPayloadSize        int64
+	RequireRemoteManifest bool
+	// Codec overrides the age envelope implementation for deterministic tests.
+	// Production callers leave it nil.
+	Codec EnvelopeCodec
 }
 
-type envelopeCodec interface {
+// EnvelopeCodec encrypts and authenticates sync envelopes.
+type EnvelopeCodec interface {
 	Encrypt(io.Reader, io.Writer, string) error
 	DecryptReader(io.Reader, string) (io.Reader, error)
 }
@@ -58,9 +66,9 @@ func (ageEnvelopeCodec) DecryptReader(source io.Reader, passphrase string) (io.R
 	return crypto.DecryptReader(source, passphrase)
 }
 
-func (e *Engine) envelopeCodec() envelopeCodec {
-	if e.codec != nil {
-		return e.codec
+func (e *Engine) envelopeCodec() EnvelopeCodec {
+	if e.Codec != nil {
+		return e.Codec
 	}
 	return ageEnvelopeCodec{}
 }
@@ -98,7 +106,7 @@ func (e *Engine) PushSession(ctx context.Context, item PushItem, dryRun bool) (s
 		return "", err
 	}
 
-	current, _, err := e.loadManifest(ctx)
+	current, _, err := e.loadManifest(ctx, !e.RequireRemoteManifest)
 	if err != nil {
 		return "", err
 	}
@@ -214,9 +222,12 @@ func (e *Engine) key(relative string) string {
 	return prefix + "/" + relative
 }
 
-func (e *Engine) loadManifest(ctx context.Context) (*schema.Manifest, string, error) {
+func (e *Engine) loadManifest(ctx context.Context, allowMissing bool) (*schema.Manifest, string, error) {
 	rc, meta, err := e.Backend.Get(ctx, e.key("manifest.age"))
 	if errors.Is(err, backend.ErrNotFound) {
+		if !allowMissing {
+			return nil, "", fmt.Errorf("%w at configured storage coordinates", ErrRemoteProfileNotFound)
+		}
 		return schema.NewManifest(""), "", nil
 	}
 	if err != nil {
@@ -269,7 +280,7 @@ func (e *Engine) saveManifest(ctx context.Context, manifest *schema.Manifest, if
 
 func (e *Engine) updateManifest(ctx context.Context, sessionKey string, entry schema.ManifestSession, expectedParent string) error {
 	for attempt := 0; attempt < maxManifestRetries; attempt++ {
-		manifest, etag, err := e.loadManifest(ctx)
+		manifest, etag, err := e.loadManifest(ctx, !e.RequireRemoteManifest)
 		if err != nil {
 			return err
 		}
@@ -451,7 +462,7 @@ func writePayloadAtomic(dest string, source io.Reader, file schema.EnvelopeFile)
 
 // FetchManifest returns the authenticated remote manifest.
 func (e *Engine) FetchManifest(ctx context.Context) (*schema.Manifest, error) {
-	manifest, _, err := e.loadManifest(ctx)
+	manifest, _, err := e.loadManifest(ctx, !e.RequireRemoteManifest)
 	return manifest, err
 }
 

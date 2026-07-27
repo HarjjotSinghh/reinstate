@@ -8,13 +8,13 @@ will normalize portable intent and render each harness's native configuration.
 
 ## Support matrix
 
-| Agent | Sessions | Universal config | Path remap | Resume command | Status |
-| ----- | :------: | :--------------: | :--------: | -------------- | ------ |
-| **Claude Code** | ✅ Phase 1 | 📋 post-v0.1 | ✅ critical | `claude --resume` | 🚧 Priority |
-| **OpenAI Codex CLI** | ✅ Phase 1 | 📋 post-v0.1 | ✅ | `codex resume` | 🚧 Priority |
-| **Gemini CLI** | 📋 Later | 📋 | 📋 | `gemini --resume` | 📋 Planned |
-| **OpenCode** | 📋 Later | 📋 | 📋 | in-app session list | 📋 Planned |
-| **Grok Build** | 📋 Later | 📋 | 📋 | vendor-specific | 📋 Planned |
+| Agent | Sessions | Config / MCP / skills | Path remap | Resume command | Status |
+| ----- | :------: | :-------------------: | :--------: | -------------- | ------ |
+| **Claude Code** | ✅ RC5 candidate | 📋 Post–Phase 1 | ✅ critical | `claude --resume SESSION_ID` | 🧪 Acceptance |
+| **OpenAI Codex CLI** | ✅ RC5 candidate | 📋 Post–Phase 1 | ✅ | `codex resume SESSION_ID` | 🧪 Acceptance |
+| **Gemini CLI** | 📋 Phase 1 | 📋 | ✅ | `gemini --resume` | 📋 Planned |
+| **OpenCode** | 📋 Phase 1 | 📋 | ✅ | in-app session list | 📋 Planned |
+| **Grok Build** | 📋 Phase 2 | 📋 | ✅ | `grok -r` / `/resume` | 📋 Planned |
 | **Cursor** | 💭 best-effort | 💭 | 💭 | N/A (IDE) | 💭 Exploring |
 
 Legend: ✅ implemented · 🚧 acceptance in progress · 📋 planned · 💭 exploring
@@ -36,6 +36,9 @@ support. See [Universal agent configuration](universal-configuration.md).
 | **Exclude** | Credentials, plugin caches, machine-local logs |
 
 Windows ↔ macOS path rewrite inside JSONL content is the MVP differentiator.
+RC5 also maps the snapshot's canonical project ID to the destination device's
+`local_root`, recomputes Claude's vendor directory key, and verifies the exact
+planned restore path before reporting success.
 
 ### Codex CLI
 

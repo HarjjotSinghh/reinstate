@@ -9,12 +9,76 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Expanded the post-Phase-1 roadmap from a generic MCP/skills sync bullet into
+- Expand the post-Phase-1 roadmap from a generic MCP/skills sync bullet into
   universal agent configuration: one non-secret desired-state profile rendered
   across supported harnesses and encrypted across devices.
-- Documented planned MCP, skills/instructions, hooks/loops, plugins,
+- Document planned MCP, skills/instructions, hooks/loops, plugins,
   marketplaces, safe settings, drift reconciliation, supply-chain controls,
   and authentication coordination while keeping credentials excluded.
+
+### Fixed
+
+- Validate an additional device's encrypted remote manifest with a readable
+  object request instead of a metadata-only `HeadObject` probe, avoiding
+  Cloudflare R2's generic `400 Bad Request` failure while still leaving no
+  local configuration behind when the probe fails.
+
+## [0.1.0-rc.5] - 2026-07-27
+
+### Changed
+
+- Pin the public installers, end-user setup prompts, compatibility evidence, and
+  physical-device acceptance runbook to `v0.1.0-rc.5`.
+- Keep local and CI verification release-equivalent while avoiding redundant
+  documentation-contract, fixture-scan, and production-KDF work.
+  High-level deterministic tests use real age envelopes at a reduced test-only
+  scrypt cost; the ordinary full suite still covers the production default.
+- Add `make quick` as an explicitly non-release fast development gate.
+
+### Fixed
+
+- Refuse to overwrite an initialized Reinstate home unless `rein init --force`
+  is explicitly selected, and back up the previous `config.toml` and
+  `state.json` together before replacement.
+- Require `rein init --profile-id` to find the existing encrypted remote
+  manifest before writing local configuration, catching endpoint, bucket, and
+  prefix mistakes during setup.
+- Return an error when a joined or established profile's `status`, `diff`,
+  `pull`, or `push` cannot find `manifest.age`, instead of reporting a healthy
+  empty profile. A new first-device profile may still report an empty remote
+  and create its manifest on the first push.
+- Bound POSIX installer replacement prompts to 30 seconds by default, reject
+  invalid timeout overrides, and fail closed immediately when the active shell
+  cannot perform a timed TTY read, preventing unattended `/dev/tty` hangs and
+  detecting timed-read support correctly across macOS Bash 3 and Linux Bash 5.
+
+## [0.1.0-rc.4] - 2026-07-26
+
+### Fixed
+
+- Map Claude Code sessions to the configured canonical project ID and derive
+  restore destinations from each device's `local_root`, including Claude's
+  exact Windows/macOS directory-key rules for spaces, Unicode, and long paths.
+- Verify restored sessions at the exact planned vendor path instead of
+  accepting a matching session ID elsewhere in the agent tree.
+- Fail closed with a repush instruction when a legacy Claude snapshot lacks a
+  canonical project mapping, avoiding false-success cross-device restores.
+- Exclude unmapped Claude projects when canonical mappings are configured and
+  require a destination mapping for canonical snapshots, including empty-map
+  configurations.
+- Normalize Claude transcript paths through resolved project roots while
+  denormalizing them through the destination device's configured root.
+- Report `would push` during `push --dry-run` instead of claiming that a
+  snapshot was uploaded.
+
+### Changed
+
+- Pin the public installers and end-user setup prompts to `v0.1.0-rc.4`.
+- Harden the two-device acceptance runbook with a fresh-profile requirement,
+  exact-ID Codex resume, Claude sibling-session disambiguation, hidden-prompt
+  passphrase guards, and byte-level ciphertext checks.
+- Add coordinated Mac Claude Code and native-Windows Codex verification prompts
+  that produce separate sanitized acceptance reports.
 
 ## [0.1.0-rc.3] - 2026-07-26
 
@@ -100,7 +164,9 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.3...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.5...HEAD
+[0.1.0-rc.5]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.4...v0.1.0-rc.5
+[0.1.0-rc.4]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.3...v0.1.0-rc.4
 [0.1.0-rc.3]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.2...v0.1.0-rc.3
 [0.1.0-rc.2]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.1...v0.1.0-rc.2
 [0.1.0-rc.1]: https://github.com/HarjjotSinghh/reinstate/releases/tag/v0.1.0-rc.1

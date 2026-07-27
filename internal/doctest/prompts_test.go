@@ -12,7 +12,8 @@ func TestEndUserPromptContracts(t *testing.T) {
 	} {
 		body := read(t, path)
 		required := []string{
-			"v0.1.0-rc.3",
+			"Prompt version:** 5",
+			"v0.1.0-rc.5",
 			"https://reinstate.dev/install.sh",
 			"https://reinstate.dev/install.ps1",
 			"github.com/HarjjotSinghh/reinstate/releases/download/",
@@ -26,6 +27,8 @@ func TestEndUserPromptContracts(t *testing.T) {
 			"credential",
 			"passphrase",
 			"approval",
+			"visibly",
+			"SESSION_ID",
 		}
 		for _, value := range required {
 			if !strings.Contains(strings.ToLower(body), strings.ToLower(value)) {
@@ -42,6 +45,74 @@ func TestEndUserPromptContracts(t *testing.T) {
 			if strings.Contains(body, forbidden) {
 				t.Errorf("%s contains forbidden end-user instruction %q", path, forbidden)
 			}
+		}
+	}
+}
+
+func TestRC4AcceptancePromptContracts(t *testing.T) {
+	body := read(t, "docs/testing/phase-1-rc4-agent-verification-prompts.md")
+	for _, value := range []string{
+		"v0.1.0-rc.4",
+		"MAC-RC4-M1",
+		"WINDOWS-RC4-W1-PASS",
+		"local/reinstate-phase1-acceptance-rc4",
+		"REINSTATE-PHASE1-RC4-MAC-CLAUDE-A1",
+		"REINSTATE-PHASE1-RC4-MAC-CODEX-A1",
+		"claude --resume CLAUDE_SESSION_ID",
+		"codex resume CODEX_SESSION_ID",
+		"ciphertext",
+		"fresh RC4",
+		"all 21",
+		"test/phase1-rc4-macos-report",
+		"test/phase1-rc4-windows-report",
+	} {
+		if !strings.Contains(body, value) {
+			t.Errorf("RC4 acceptance prompts missing %q", value)
+		}
+	}
+	for _, forbidden := range []string{
+		"REINSTATE_PASSPHRASE=",
+		"--dangerously-skip-permissions",
+		"git clone ",
+	} {
+		if strings.Contains(body, forbidden) {
+			t.Errorf("RC4 acceptance prompts contain forbidden instruction %q", forbidden)
+		}
+	}
+}
+
+func TestRC5AcceptancePromptContracts(t *testing.T) {
+	body := read(t, "docs/testing/phase-1-rc5-agent-verification-prompts.md")
+	for _, value := range []string{
+		"v0.1.0-rc.5",
+		"MAC-RC5-M1",
+		"WINDOWS-RC5-W1-PASS",
+		"local/reinstate-phase1-acceptance-rc5",
+		"REINSTATE-PHASE1-RC5-MAC-CLAUDE-A1",
+		"REINSTATE-PHASE1-RC5-MAC-CODEX-A1",
+		"claude --resume CLAUDE_SESSION_ID",
+		"codex resume CODEX_SESSION_ID",
+		"f1_default_refusal",
+		"f2_missing_manifest_refused",
+		"f3_bad_coordinates_refused",
+		"remote profile manifest not found",
+		"ciphertext",
+		"fresh RC5",
+		"all 21",
+		"test/phase1-rc5-macos-report",
+		"test/phase1-rc5-windows-report",
+	} {
+		if !strings.Contains(body, value) {
+			t.Errorf("RC5 acceptance prompts missing %q", value)
+		}
+	}
+	for _, forbidden := range []string{
+		"REINSTATE_PASSPHRASE=",
+		"--dangerously-skip-permissions",
+		"git clone ",
+	} {
+		if strings.Contains(body, forbidden) {
+			t.Errorf("RC5 acceptance prompts contain forbidden instruction %q", forbidden)
 		}
 	}
 }

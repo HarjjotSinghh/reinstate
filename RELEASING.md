@@ -25,9 +25,7 @@ How maintainers cut a **Reinstate** release.
 
 ```bash
 # Update CHANGELOG and compatibility evidence.
-go test ./... -count=1
-go test ./... -race -count=1 -timeout=20m
-go vet ./...
+make verify
 goreleaser release --snapshot --clean
 sh scripts/test-install.sh dist
 

@@ -4,12 +4,15 @@ export const prerender = true;
 import BaseLayout from '../layouts/BaseLayout.astro';
 import HeroExploded from '../components/landing/HeroExploded.astro';
 import ProblemExploded from '../components/landing/ProblemExploded.astro';
+import TerminalProof from '../components/landing/TerminalProof.astro';
 ---
 
 <BaseLayout
   title="Reinstate — restore your AI coding workspace on any device"
-  description="Sessions, MCP servers, skills, and settings across every coding agent and every machine you own. Encrypted so only you can read it."
+  description="Move encrypted Claude Code or Codex sessions between macOS and Windows. Encrypted locally, stored in your own S3 or R2 bucket."
 >
   <HeroExploded />
-  <ProblemExploded />
+  <ProblemExploded>
+    <TerminalProof />
+  </ProblemExploded>
 </BaseLayout>

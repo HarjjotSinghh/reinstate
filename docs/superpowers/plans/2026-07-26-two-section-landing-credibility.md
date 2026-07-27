@@ -19,7 +19,7 @@
 - Read: `ROADMAP.md`
 - Read: `website/src/content/docs/getting-started.md`
 
-- [ ] **Step 1: Write a focused source contract test**
+- [x] **Step 1: Write a focused source contract test**
 
 Read the landing components as text and assert that:
 
@@ -30,7 +30,7 @@ Read the landing components as text and assert that:
 - unsupported live-product claims such as `rein resume`, Gemini availability,
   and MCP/skills synchronization are absent from the two sections.
 
-- [ ] **Step 2: Run the focused test and verify it fails**
+- [x] **Step 2: Run the focused test and verify it fails**
 
 Run:
 
@@ -46,17 +46,17 @@ Expected: failures for the old headline, waitlist CTA, and future-scope claims.
 - Modify: `website/src/components/Header.astro`
 - Read: `website/src/components/BrandLockup.astro`
 
-- [ ] **Step 1: Increase the lockup without changing its geometry**
+- [x] **Step 1: Increase the lockup without changing its geometry**
 
 Change the header lockup from `size={32}` to `size={36}` and adjust the local
 font-size hook proportionally.
 
-- [ ] **Step 2: Replace the waitlist CTA**
+- [x] **Step 2: Replace the waitlist CTA**
 
 Change `Join the waitlist` and `/#join` to `Install Reinstate` and
 `/docs/getting-started`.
 
-- [ ] **Step 3: Raise navigation readability**
+- [x] **Step 3: Raise navigation readability**
 
 Increase desktop navigation and CTA type modestly while preserving the current
 header height and mobile collapse behavior.
@@ -67,7 +67,7 @@ header height and mobile collapse behavior.
 - Modify: `website/src/components/landing/HeroExploded.astro`
 - Remove import usage: `website/src/components/WaitlistForm.astro`
 
-- [ ] **Step 1: Replace the hero message**
+- [x] **Step 1: Replace the hero message**
 
 Use:
 
@@ -75,7 +75,7 @@ Use:
 - Headline: `Pick up your coding session on another device.`
 - Body: `Reinstate moves Claude Code and Codex sessions between your machines. Everything is encrypted locally before it reaches your S3 or R2 bucket.`
 
-- [ ] **Step 2: Add the install command**
+- [x] **Step 2: Add the install command**
 
 Render:
 
@@ -88,12 +88,12 @@ text selection and update the label to `Copied` after a successful clipboard
 write. Restore the original label after a short delay and leave the command
 selectable if clipboard access fails.
 
-- [ ] **Step 3: Add primary and secondary links**
+- [x] **Step 3: Add primary and secondary links**
 
 - `Install Reinstate` → `/docs/getting-started`
 - `View on GitHub` → `https://github.com/HarjjotSinghh/reinstate`
 
-- [ ] **Step 4: Add current support and technical proof**
+- [x] **Step 4: Add current support and technical proof**
 
 Show:
 
@@ -102,7 +102,7 @@ Show:
 - ``rein` is the CLI for Reinstate`
 - `Apache-2.0 · one Go binary · your bucket, your keys`
 
-- [ ] **Step 5: Add the compact three-step mechanism**
+- [x] **Step 5: Add the compact three-step mechanism**
 
 Inside the existing hero lede, render:
 
@@ -113,7 +113,7 @@ Inside the existing hero lede, render:
 Use one compact row on desktop and a clean stacked/grid layout on mobile. Do not
 create a new `<section>`.
 
-- [ ] **Step 6: Adjust hero spacing**
+- [x] **Step 6: Adjust hero spacing**
 
 Accommodate the added proof without shrinking the illustration or allowing the
 lede to collide with wall art. Keep the existing illustration geometry and
@@ -126,7 +126,7 @@ command chips unchanged.
 **Files:**
 - Modify: `website/src/components/landing/ProblemExploded.astro`
 
-- [ ] **Step 1: Preserve the approved headline**
+- [x] **Step 1: Preserve the approved headline**
 
 Keep:
 
@@ -135,7 +135,7 @@ Git has the code and its history.
 It does not have the conversation.
 ```
 
-- [ ] **Step 2: Replace the supporting paragraph**
+- [x] **Step 2: Replace the supporting paragraph**
 
 Use:
 
@@ -145,7 +145,7 @@ Codex session state Git leaves behind, remapping project paths for the machine
 you are on.
 ```
 
-- [ ] **Step 3: Replace the comparison claims**
+- [x] **Step 3: Replace the comparison claims**
 
 Without Reinstate:
 
@@ -159,7 +159,7 @@ With Reinstate:
 - Remap paths across macOS and Windows
 - Store encrypted state in your own bucket
 
-- [ ] **Step 4: Increase comparison readability**
+- [x] **Step 4: Increase comparison readability**
 
 Increase kicker, heading, list, and section-body sizes by roughly 15 percent.
 Increase text contrast without changing the approved 50 percent translucent
@@ -173,7 +173,7 @@ card fill.
 - Modify: `website/src/components/landing/HeroExploded.astro`
 - Modify: `website/src/components/Header.astro`
 
-- [ ] **Step 1: Add narrow-screen layout rules**
+- [x] **Step 1: Add narrow-screen layout rules**
 
 At 560 px and below:
 
@@ -183,11 +183,11 @@ At 560 px and below:
 - arrange mechanism items without tiny type; and
 - prevent horizontal overflow at 375 px.
 
-- [ ] **Step 2: Preserve keyboard and reduced-motion behavior**
+- [x] **Step 2: Preserve keyboard and reduced-motion behavior**
 
 Add visible focus states for the new buttons and links. Do not add new motion.
 
-- [ ] **Step 3: Run the focused contract test**
+- [x] **Step 3: Run the focused contract test**
 
 Run:
 
@@ -197,7 +197,7 @@ npm test -- src/lib/landing-copy.test.ts
 
 Expected: pass.
 
-- [ ] **Step 4: Run the complete website tests**
+- [x] **Step 4: Run the complete website tests**
 
 Run:
 
@@ -207,7 +207,7 @@ npm test
 
 Expected: all tests pass.
 
-- [ ] **Step 5: Run the production build**
+- [x] **Step 5: Run the production build**
 
 Run:
 
@@ -217,11 +217,11 @@ npm run build
 
 Expected: Astro/Vercel build completes successfully.
 
-- [ ] **Step 6: Inspect desktop light and dark modes**
+- [x] **Step 6: Inspect desktop light and dark modes**
 
 Verify the hero, problem lede, and comparison cards at the desktop viewport.
 
-- [ ] **Step 7: Inspect a 375 px mobile viewport**
+- [x] **Step 7: Inspect a 375 px mobile viewport**
 
 Verify:
 
@@ -231,7 +231,7 @@ Verify:
 - mechanism labels do not become decorative dust; and
 - the existing illustrations retain their intended crop.
 
-- [ ] **Step 8: Confirm the scope boundary**
+- [x] **Step 8: Confirm the scope boundary**
 
 Run:
 

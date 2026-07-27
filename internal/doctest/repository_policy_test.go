@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -113,6 +114,81 @@ func TestReleaseWorkflowRestoresAnnotatedTagBeforeVerification(t *testing.T) {
 	}
 	if restoreAt > verifyAt {
 		t.Fatal("release workflow must restore the annotated tag before verifying its signature")
+	}
+}
+
+func TestVerifyAvoidsRedundantDoctestRuns(t *testing.T) {
+	command := exec.Command("make", "-n", "verify")
+	command.Dir = repoRoot(t)
+	output, err := command.CombinedOutput()
+	if err != nil {
+		t.Fatalf("make -n verify failed: %v\n%s", err, output)
+	}
+	text := string(output)
+	if strings.Contains(text, "./scripts/check-docs.sh") {
+		t.Fatal("verify repeats internal/doctest through docs-check after go test ./...")
+	}
+	if strings.Contains(text, "go test ./internal/fixture") {
+		t.Fatal("verify repeats fixture scanning after go test ./... already covered it")
+	}
+	var raceCommand string
+	for _, line := range strings.Split(text, "\n") {
+		if strings.Contains(line, "go test") && strings.Contains(line, "-race") {
+			raceCommand = line
+			break
+		}
+	}
+	if raceCommand == "" {
+		t.Fatal("verify dry-run does not contain a race test command")
+	}
+	if strings.Contains(raceCommand, "./...") {
+		t.Fatalf("race gate uses the unfiltered all-package pattern: %s", raceCommand)
+	}
+	if strings.Contains(raceCommand, "/internal/doctest") {
+		t.Fatalf("race gate repeats subprocess/document contracts: %s", raceCommand)
+	}
+	if strings.Contains(raceCommand, "/internal/crypto") {
+		t.Fatalf("race gate repeats production-strength scrypt: %s", raceCommand)
+	}
+}
+
+func TestCIVerificationUsesOptimizedRaceGate(t *testing.T) {
+	workflow := read(t, ".github/workflows/ci.yml")
+	if !strings.Contains(workflow, "run: make test-race") {
+		t.Fatal("Linux CI must reuse the filtered make test-race gate")
+	}
+	if strings.Contains(workflow, "go test ./... -race") {
+		t.Fatal("CI still runs the redundant all-package race command")
+	}
+	if strings.Contains(workflow, "scripts/check-docs") {
+		t.Fatal("CI repeats internal/doctest after go test ./... already covered it")
+	}
+	if strings.Contains(workflow, "go test ./internal/fixture") {
+		t.Fatal("CI repeats fixture scanning after go test ./... already covered it")
+	}
+}
+
+func TestQuickGateStaysFocusedAndNonRelease(t *testing.T) {
+	command := exec.Command("make", "-n", "quick")
+	command.Dir = repoRoot(t)
+	output, err := command.CombinedOutput()
+	if err != nil {
+		t.Fatalf("make -n quick failed: %v\n%s", err, output)
+	}
+	text := string(output)
+	if !strings.Contains(text, "go vet ./...") {
+		t.Fatal("quick gate must retain go vet")
+	}
+	if strings.Contains(text, "/internal/doctest") || strings.Contains(text, "/internal/crypto") {
+		t.Fatalf("quick gate includes a deliberately slow package:\n%s", text)
+	}
+	if strings.Contains(text, "-count=1") {
+		t.Fatal("quick gate disables Go's test cache")
+	}
+	for _, releaseOnly := range []string{"-race", "golangci-lint", "govulncheck"} {
+		if strings.Contains(text, releaseOnly) {
+			t.Fatalf("quick gate unexpectedly includes release-only work %q", releaseOnly)
+		}
 	}
 }
 
