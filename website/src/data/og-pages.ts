@@ -96,6 +96,13 @@ export const staticOgPages: OgPage[] = [
       'Current coding agents, operating systems, versions, storage backends, and release limitations.',
   },
   {
+    route: '/compatibility/agent-version-history',
+    kind: 'Compatibility history',
+    title: 'Claude Code and Codex version support history',
+    description:
+      'Track evidence-backed agent-version ranges and fail-closed compatibility changes across Reinstate release candidates.',
+  },
+  {
     route: '/security',
     kind: 'Security',
     title: 'How Reinstate protects session data',
@@ -129,6 +136,27 @@ export const staticOgPages: OgPage[] = [
     title: 'Reinstate research and compatibility evidence',
     description:
       'Inspect adapter tests, compatibility data, acceptance methodology, synthetic fixtures, and benchmark evidence rules.',
+  },
+  {
+    route: '/research/encrypted-snapshot-format-v1',
+    kind: 'Implementation specification',
+    title: 'Reinstate encrypted session snapshot format v1',
+    description:
+      'Inspect the current encrypted manifest, metadata envelope, TAR payload, validation, limits, and pre-1.0 evolution boundary.',
+  },
+  {
+    route: '/glossary',
+    kind: 'Terminology',
+    title: 'Reinstate session sync and continuity glossary',
+    description:
+      'Define profiles, snapshots, encrypted manifests, canonical project IDs, native resume, handoffs, and compatibility states.',
+  },
+  {
+    route: '/tools/path-mapping-visualizer',
+    kind: 'Synthetic technical explainer',
+    title: 'macOS ↔ Windows path-mapping visualizer',
+    description:
+      'Trace fixed synthetic Claude Code and Codex structural paths through one portable canonical project mapping.',
   },
   {
     route: '/changelog',

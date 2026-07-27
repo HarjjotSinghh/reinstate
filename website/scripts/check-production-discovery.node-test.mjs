@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  DEFAULT_LAUNCH_PATHS,
   formatProductionDiscoverySummary,
   normalizeBaseUrl,
   parsePageMetadata,
@@ -107,7 +108,11 @@ Sitemap: ${PRODUCTION}/sitemap-index.xml
     if (url.pathname === '/sitemap-0.xml') {
       return response(sitemap, 'application/xml');
     }
-    if (url.pathname === '/rss.xml') {
+    if (
+      ['/rss.xml', '/blog/rss.xml', '/changelog/rss.xml'].includes(
+        url.pathname,
+      )
+    ) {
       return response('<rss><channel><title>Reinstate</title></channel></rss>', 'application/rss+xml');
     }
     if (url.pathname === '/llms.txt') {
@@ -139,6 +144,17 @@ test('parses page, sitemap, and PNG discovery primitives', () => {
   assert.equal(parseSitemapDocument('<urlset><url><loc>/</loc></url></urlset>').kind, 'urls');
   assert.deepEqual(pngDimensions(PNG), { width: 1200, height: 630 });
   assert.equal(pngDimensions(Buffer.from('not-png')), null);
+});
+
+test('covers canonical reference assets in the default launch contract', () => {
+  for (const path of [
+    '/glossary',
+    '/tools/path-mapping-visualizer',
+    '/research/encrypted-snapshot-format-v1',
+    '/compatibility/agent-version-history',
+  ]) {
+    assert.ok(DEFAULT_LAUNCH_PATHS.includes(path), `${path} must be covered`);
+  }
 });
 
 test('requires explicit acknowledgement for safe non-production HTTPS origins', () => {
@@ -214,6 +230,14 @@ test('passes a healthy deployment, retries transient reads, and records redacted
     assert.equal(
       fixture.calls.filter(({ userAgent }) => userAgent === crawler).length,
       4,
+    );
+  }
+  for (const feed of ['/rss.xml', '/blog/rss.xml', '/changelog/rss.xml']) {
+    assert.ok(
+      fixture.calls.some(
+        ({ method, path }) => method === 'GET' && path === feed,
+      ),
+      `${feed} must have a dedicated discovery check`,
     );
   }
   assert.ok(!JSON.stringify(report).includes('retry-after'));
@@ -296,7 +320,11 @@ test('reports unsafe sitemap, canonical, robots, image, missing-route, and crawl
         'application/xml',
       );
     }
-    if (url.pathname === '/rss.xml' || url.pathname === '/llms.txt') {
+    if (
+      ['/rss.xml', '/blog/rss.xml', '/changelog/rss.xml', '/llms.txt'].includes(
+        url.pathname,
+      )
+    ) {
       return response(secretBody, 'text/plain', 404);
     }
     if (url.pathname === '/.well-known/reinstate-discovery-smoke-missing') {

@@ -34,17 +34,17 @@ dedicated editorial pass.
 | 17 | Reinstate versus remote desktop | Implemented: `/compare/reinstate-vs-remote-desktop` |
 | 18 | Use Cloudflare R2 for encrypted storage | Implemented: `/guides/use-cloudflare-r2-for-coding-agent-session-storage` |
 | 19 | Use Amazon S3 for encrypted storage | Implemented: `/guides/use-s3-for-coding-agent-session-storage` |
-| 20 | How path remapping works between macOS and Windows | Covered by `/use-cases/macos-and-windows` and `/docs/architecture`; dedicated deep dive planned |
+| 20 | How path remapping works between macOS and Windows | Implemented with a fixed synthetic explainer at `/tools/path-mapping-visualizer`, supported by `/use-cases/macos-and-windows` and `/docs/architecture` |
 | 21 | What Reinstate does not sync | Implemented: `/docs/limitations` |
 | 22 | Verify a restored coding-agent session | Implemented inside both agent-specific guides |
-| 23 | Handle agent format changes | Covered by `/compatibility`, `/docs/adapters`, and troubleshooting |
+| 23 | Handle agent format and supported-version changes | Implemented through `/compatibility/agent-version-history`, `/compatibility`, `/docs/adapters`, and troubleshooting |
 | 24 | Build a Reinstate adapter | Partly covered by `/docs/adapters`; publish a full tutorial only with a supported extension contract |
 
 ## P2 authority and shareability
 
 | # | Opportunity | Status and evidence gate |
 | ---: | --- | --- |
-| 25 | Anatomy of a coding-agent session | Planned: sanitized format research and stable terminology |
+| 25 | Anatomy of a coding-agent session | Partly implemented: `/research/encrypted-snapshot-format-v1` documents Reinstate's current encrypted wrapper; vendor-format research remains gated |
 | 26 | Cross-device portability test methodology | Implemented at `/research` with the source acceptance runbook; completed RC6 results remain release-gated |
 | 27 | Agent-session compatibility report | Implemented: `/compatibility`, `/compatibility.json`, and `/research`; periodic field reports require a completed evidence window |
 | 28 | Threat-modeling encrypted session sync | Planned: formal security review and explicit scope |

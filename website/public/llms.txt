@@ -37,10 +37,19 @@
 - [Blog](https://reinstate.dev/blog): Evidence-backed articles about coding-agent continuity
 - [Why Git alone does not sync coding-agent sessions](https://reinstate.dev/blog/why-git-does-not-sync-coding-agent-sessions): The boundary between source history and native agent-session continuity
 
+## Technical references and tools
+
+- [Reinstate glossary](https://reinstate.dev/glossary): Definitions for session-continuity terms, compatibility states, and current-versus-planned behavior
+- [Path-mapping visualizer](https://reinstate.dev/tools/path-mapping-visualizer): Fixed synthetic macOS-to-Windows and Windows-to-macOS path-mapping examples for Claude Code and Codex
+- [Encrypted snapshot format v1](https://reinstate.dev/research/encrypted-snapshot-format-v1): Current internal manifest, metadata, TAR payload, encryption, and validation contract; not an interoperability standard
+- [Agent-version history](https://reinstate.dev/compatibility/agent-version-history): Current tested ranges and tagged release evidence for Claude Code and Codex compatibility
+
 ## Source
 
 - [GitHub repository](https://github.com/HarjjotSinghh/reinstate)
 - [Releases](https://github.com/HarjjotSinghh/reinstate/releases)
 - [Security policy](https://github.com/HarjjotSinghh/reinstate/security/policy)
-- [RSS feed](https://reinstate.dev/rss.xml)
+- [All-updates RSS feed](https://reinstate.dev/rss.xml)
+- [Blog RSS feed](https://reinstate.dev/blog/rss.xml)
+- [Changelog RSS feed](https://reinstate.dev/changelog/rss.xml)
 - License: Apache-2.0

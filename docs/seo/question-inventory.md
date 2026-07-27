@@ -27,6 +27,7 @@ Status meanings:
 | P06 | Does Reinstate run its own storage service? | `/docs/faq` | Implemented |
 | P07 | Which coding agents does Reinstate support? | `/compatibility` | Implemented |
 | P08 | Which operating systems does Reinstate support? | `/compatibility` | Evidence-gated |
+| P09 | What do Reinstate's session-continuity terms mean? | `/glossary` | Implemented |
 
 ## Workflow
 
@@ -40,6 +41,7 @@ Status meanings:
 | W06 | Can I restore without copying the whole repository? | `/docs/faq` | Implemented |
 | W07 | Does Reinstate sync Git changes? | `/compare/reinstate-vs-git` | Implemented |
 | W08 | Does Reinstate sync MCP servers or credentials? | `/docs/faq` | Implemented |
+| W09 | How does a project path move between macOS and Windows? | `/tools/path-mapping-visualizer` | Implemented |
 
 ## Security
 
@@ -65,6 +67,8 @@ Status meanings:
 | T05 | What happens after an agent changes its session format? | `/docs/faq` | Implemented |
 | T06 | How is compatibility tested? | `/compatibility` | Evidence-gated |
 | T07 | What files are included or excluded? | `/docs/adapters` | Implemented |
+| T08 | What is inside an encrypted Reinstate snapshot? | `/research/encrypted-snapshot-format-v1` | Implemented |
+| T09 | When did supported Claude Code and Codex ranges change? | `/compatibility/agent-version-history` | Implemented |
 
 ## Evaluation
 

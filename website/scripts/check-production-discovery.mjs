@@ -23,11 +23,15 @@ export const DEFAULT_LAUNCH_PATHS = [
   '/integrations/claude-code',
   '/integrations/codex',
   '/compatibility',
+  '/compatibility/agent-version-history',
   '/security',
   '/about/reinstate',
+  '/glossary',
   '/open-source',
   '/roadmap',
   '/research',
+  '/research/encrypted-snapshot-format-v1',
+  '/tools/path-mapping-visualizer',
   '/changelog',
   '/privacy',
   '/use-cases',
@@ -43,6 +47,16 @@ const CRAWLER_PATHS = ['/', '/docs', '/robots.txt', '/sitemap-index.xml'];
 const DISCOVERY_ASSETS = [
   {
     path: '/rss.xml',
+    contentTypes: ['application/rss+xml', 'application/xml', 'text/xml'],
+    marker: /<rss\b/i,
+  },
+  {
+    path: '/blog/rss.xml',
+    contentTypes: ['application/rss+xml', 'application/xml', 'text/xml'],
+    marker: /<rss\b/i,
+  },
+  {
+    path: '/changelog/rss.xml',
     contentTypes: ['application/rss+xml', 'application/xml', 'text/xml'],
     marker: /<rss\b/i,
   },
