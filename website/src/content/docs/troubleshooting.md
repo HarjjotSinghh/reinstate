@@ -1,6 +1,19 @@
-# Troubleshooting
+---
+title: "Troubleshoot Reinstate session sync"
+description: "Fix installation, path remapping, passphrase, remote manifest, conflict, large Codex history, credential, and active-agent errors without exposing secrets."
+order: 8
+updatedAt: 2026-07-27
+tags: ["troubleshooting", "session-sync", "path-remapping", "passphrase", "codex"]
+targetQuery: "fix Reinstate session sync"
+searchIntent: "troubleshooting"
+draft: false
+noindex: false
+---
 
-## Install / binary not found
+## Why is the `rein` binary not found after installation?
+
+The shell cannot find `rein` when the installation directory is missing from
+the current process's `PATH` or the binary has not been built or installed.
 
 ```bash
 which rein reinstate
@@ -9,58 +22,76 @@ echo "$PATH"
 make build && ./bin/rein version
 ```
 
-## `pull` does not make `claude --resume` see sessions
+## Why does `claude --resume` not see a pulled session?
 
-Usually a **path remap** issue:
+Claude Code usually misses a pulled session when the destination project path
+was not remapped to the exact Claude directory key expected on this device.
 
 1. Run `rein version --json` and require `0.1.0-rc.6` or newer.
 2. Confirm the same canonical project ID maps to this device's absolute
    `local_root` in `config.toml`.
 3. Run a scoped `rein pull --agent claude --session SESSION_ID --dry-run` and
-   verify the destination is under this device's Claude project directory.
-4. Close Claude Code, pull, then require `rein list --agent claude --json` and
-   `claude --resume SESSION_ID` to find the exact session.
+   verify the planned destination is under this device's Claude project
+   directory, not the source device's directory key.
+4. Close Claude Code, run the scoped pull, then require both
+   `rein list --agent claude --json` and `claude --resume SESSION_ID` to find
+   the exact restored session.
 
-Do not manually move the file. If RC6 reports an unmapped legacy snapshot,
-reinstall RC6 on the source device and push that selected session again to a
-fresh RC6 profile.
+Do not manually move the session file. RC6 rejects legacy snapshots whose
+Claude project identity cannot be mapped safely; reinstall RC6 on the source
+device and push that selected session again to a fresh RC6 profile.
 
 Open an issue with OS pair (e.g. Windows 11 → macOS 15), agent version, and
 **redacted** paths.
 
-## Passphrase verification failed on second device
+## Why does passphrase verification fail on a second device?
 
-You must use the **exact same passphrase** as device 1. There is no recovery
-from a wrong phrase against existing ciphertext.
+Passphrase verification fails when the destination does not receive the exact
+passphrase that encrypted the existing remote manifest. There is no recovery
+from a different passphrase against that ciphertext.
 
-Enter it only after Reinstate visibly shows its hidden prompt. If the process
-has exited, rerun the command rather than typing a secret into the shell.
+Wait until Reinstate visibly shows its hidden prompt before typing. If the
+process has exited, rerun the command; otherwise the secret can become a shell
+history entry instead of input to Reinstate.
 
-## Conflicts after using both machines the same day
+## Why does Reinstate report a remote profile manifest is missing?
 
-Expected if both sides modified the same session. Reinstate should create a
-`.conflict` fork rather than overwrite. Pick the winner manually; delete or
-archive the other.
+Reinstate reports a missing remote manifest when it can reach storage but
+cannot find `manifest.age` at the configured profile coordinates.
 
-## Huge Codex history / slow sync
+1. Confirm `profile_id` and `storage.prefix` match the first device.
+2. Confirm `storage.bucket` is the same bucket.
+3. Keep the bucket name out of the service endpoint URL.
 
-Large `~/.codex/sessions` trees need delta/CAS sync (roadmap). Until then:
+Do not create an empty manifest to bypass this check. Correct the inputs and
+rerun `init --profile-id`; RC6 verifies the existing encrypted manifest before
+saving the additional device's configuration.
 
-- Use `--scope` filters / retention policies when available
-- Exclude very old rollouts via config globs
+## Why does Reinstate create a session conflict?
 
-## Accidentally almost synced credentials
+Reinstate creates a conflict when local and remote versions of the same session
+diverge. It records the conflict instead of silently overwriting one side; use
+the conflict commands to inspect the candidates and choose a resolution.
 
-Defaults block common credential paths. If you overrode excludes:
+## Why is a large Codex session slow to sync?
 
-1. Rotate any exposed keys immediately
-2. Remove objects from the remote bucket if uploaded
-3. Restore excludes to secure defaults
+Phase 1 transfers full immutable snapshots, so a large Codex rollout takes
+longer than a future append-aware delta transfer. Select an explicit session
+instead of `--all`; retention and delta controls remain roadmap work.
 
-## Agent was running during pull
+## Can Reinstate upload credentials from a transcript?
 
-Close the agent (or wait for idle), then re-pull. Mid-write interleaving can
-corrupt append-only JSONL.
+Adapters hard-exclude known credential artifacts, but a secret printed inside a
+session transcript is part of the session payload and will be encrypted and
+uploaded. Rotate an exposed credential immediately, remove affected remote
+snapshots according to your storage policy, and avoid pasting secrets into
+agent chats.
+
+## Why does a pull fail while the coding agent is running?
+
+A mutating pull refuses to replace an existing session while Claude Code or
+Codex may still be writing it. Close every process for the selected agent and
+retry. New-session restores, `--keep-both`, and `--dry-run` remain available.
 
 ## Still stuck?
 

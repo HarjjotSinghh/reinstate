@@ -1,11 +1,27 @@
-# FAQ
+---
+title: "Reinstate frequently asked questions"
+description: "Get direct answers about Reinstate's current session-sync scope, supported agents, encryption, storage, offline behavior, cross-agent handoffs, and roadmap."
+order: 7
+updatedAt: 2026-07-27
+tags: ["faq", "session-sync", "claude-code", "codex", "security"]
+targetQuery: "what is Reinstate"
+searchIntent: "navigational"
+draft: false
+noindex: false
+---
 
 ## What is Reinstate?
 
-The **continuity layer for coding-agent work**. Phase 1 implements encrypted,
-bring-your-own-storage sync for same-vendor Claude Code and Codex sessions.
-Universal search, verified resume, portable handoffs, and cross-harness
-configuration are later phases.
+Reinstate is an open-source continuity layer for coding-agent work. Phase 1
+implements encrypted, bring-your-own-storage sync for same-vendor Claude Code
+and Codex sessions; universal search, verified resume, portable handoffs, and
+cross-harness configuration are later phases.
+
+## Is Reinstate free and open source?
+
+Yes. Reinstate is available under the Apache-2.0 license and the CLI does not
+require a Reinstate account. You provide your own S3-compatible storage and are
+responsible for any storage-provider charges.
 
 ## What is `rein` vs `reinstate`?
 
@@ -26,14 +42,26 @@ Config and data live under `~/.reinstate/` either way.
 
 ## Why not just use git?
 
-Git is **source** truth. Sessions are **context** truth — the reasoning trail,
-tool outputs, and decisions that are not in `git log`. Pulling commits and
-asking a new agent to re-derive context is slow and incomplete.
+Git stores source history; it does not store the complete vendor-native
+coding-agent session. Reinstate handles session context while Git remains the
+source of truth for commits, branches, and repository collaboration.
 
 ## Will this resume a Claude session inside Codex?
 
 **Native resume:** no — same-vendor only. A later explicit portable handoff can
 carry a lossy task checkpoint without pretending to translate native history.
+
+## Do I need two computers?
+
+No. Multi-device sync is the first release wedge, while later local
+index/search/resume features are intended to help developers manage fragmented
+sessions and agents on one computer without a remote-storage dependency.
+
+## Is Reinstate a cloud IDE or coding-agent harness?
+
+No. Claude Code, Codex, and other coding agents execute the work. Reinstate
+finds, verifies, restores, hands off, and syncs continuity state around those
+tools; it does not provide an editor, terminal emulator, or agent scheduler.
 
 ## Will Reinstate configure the same MCP server in every harness?
 
@@ -54,9 +82,9 @@ own login.
 
 ## Is my data sent to Reinstate servers?
 
-**No** for the open-source CLI. You point at **your** R2/S3/WebDAV/etc. A future
-optional hosted convenience layer would still be zero-knowledge (ciphertext
-only); it is not required.
+No. The open-source CLI sends ciphertext to the S3-compatible bucket you
+configure, such as Cloudflare R2 or Amazon S3. Reinstate does not operate a
+required storage service.
 
 ## What if I lose my passphrase?
 
@@ -65,13 +93,16 @@ passphrase in a password manager.
 
 ## Does this work offline?
 
-Local status/diff from the manifest works offline. Push/pull need network to
-your storage backend.
+Session files remain local, but the current `status`, `diff`, `push`, and
+`pull` commands read the remote manifest and need access to your storage
+backend. Offline indexing and search are Phase 2 roadmap work.
 
-## Windows + Mac?
+## Does Reinstate support Windows and macOS?
 
-Yes — that dual setup is a primary design target. Path remapping is the hard
-problem we optimize for.
+Windows ↔ macOS is the primary design target, and the structural path-remapping
+implementation is in the release candidate. Exact native Windows, macOS amd64,
+WSL2, and two-device certification remain open release gates; check the
+[roadmap](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md).
 
 ## Is this affiliated with Anthropic / OpenAI / Google / xAI?
 
@@ -79,8 +110,10 @@ problem we optimize for.
 
 ## Production ready?
 
-Pre-1.0. See [ROADMAP.md](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md) and [CHANGELOG.md](https://github.com/HarjjotSinghh/reinstate/blob/main/CHANGELOG.md).
-Use with backups; report bugs via GitHub Issues.
+No. Reinstate is a pre-1.0 release candidate while native acceptance gates are
+open. See the [roadmap](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md)
+and [changelog](https://github.com/HarjjotSinghh/reinstate/blob/main/CHANGELOG.md),
+use it with backups, and report bugs through GitHub Issues.
 
 ## How do I contribute?
 

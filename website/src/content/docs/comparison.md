@@ -1,66 +1,82 @@
-# Comparison
+---
+title: "Reinstate compared with vendor and file sync"
+description: "Compare Reinstate with native agent sync, session browsers, full agent development environments, single-agent utilities, and do-it-yourself file syncing."
+order: 6
+updatedAt: 2026-07-27
+tags: ["comparison", "session-sync", "developer-tools", "coding-agents"]
+targetQuery: "Reinstate alternatives"
+searchIntent: "comparison"
+draft: false
+noindex: false
+---
 
-How **Reinstate** sits next to native vendor sync, single-tool sync utilities,
-and DIY file sync.
+Reinstate is a continuity layer for coding-agent work: the current release
+candidate syncs same-vendor Claude Code and Codex sessions through encrypted,
+user-owned storage. It complements native agent features, full coding
+environments, session browsers, and Git instead of replacing them.
 
 ![Landscape: agent scope vs state portability](/brand/01_landscape.png)
 
 ## Feature matrix
 
-| Capability | Native vendor sync | claude-sync | coding-agent-sync / MCP tools | DIY (Syncthing / Drive) | **Reinstate** |
-| ---------- | ------------------ | ----------- | ----------------------------- | ----------------------- | ------------- |
-| Sessions across devices | Per-vendor only | Claude only | Partial | Files only | **Multi-agent** |
-| Works when other machine is off | Cloud yes / Remote Control no | Yes | Yes | Yes | **Yes** |
-| MCP / skills / loops / plugins / settings | Vendor-local | Partial (Claude tree) | Often one artifact class | Manual | **Universal desired-state config (planned)** |
-| E2E encryption | Vendor-held plaintext | age | Often yes | Usually no | **age, BYO keys** |
-| Bring-your-own storage | No | R2/S3/GCS/WebDAV | Gists / various | Your sync tool | **Object storage + WebDAV** |
-| Cross-OS path remapping | N/A | Partial | Weak | None | **First-class** |
-| Delta / large history | N/A | Full-file gzip | Full-file | File-level | **CAS + tail-append (target)** |
-| Team session sharing | Rare | No | Rare | Manual | Roadmap |
+| Capability | Reinstate RC6 | Native agent features | General-purpose file sync |
+| ---------- | ------------- | --------------------- | ------------------------- |
+| Agent scope | Claude Code and Codex, same-vendor resume | One vendor ecosystem at a time | Any selected files, without agent semantics |
+| Storage ownership | Your S3-compatible bucket | Vendor-defined | User-selected |
+| Remote payload encryption | age-encrypted locally before upload | Vendor-defined | Depends on the chosen tool and setup |
+| Cross-OS project paths | Canonical project IDs and structural path remapping | Usually internal to the vendor workflow | Manual path and layout handling |
+| Credential handling | Known credential artifacts are hard-excluded | Vendor-defined | User-maintained exclusions |
+| Transfer model | Full immutable snapshots in Phase 1 | Vendor-defined | File-level |
+| Cross-agent handoff | Explicit portable checkpoints are roadmap work | Outside Reinstate's native-resume model | No transcript semantics |
+| MCP, skills, plugins, settings | Universal desired-state configuration is roadmap work | Vendor-local capabilities | Manual file selection |
 
-## vs native vendor sync
+This table describes Reinstate's verified product scope, not a ranking
+guarantee. Vendor and file-sync behavior changes, so evaluate those products
+against their current documentation.
 
-**Claude Code** Remote Control / teleport and **Codex** account-linked surfaces
-are excellent *inside one ecosystem*. They will not:
+## How does Reinstate differ from native agent features?
 
-- Resume your Claude sessions from a Codex machine state
-- Define an MCP/skill/plugin once and reconcile it across competing tools
-- Keep ciphertext on storage *you* control
+Native session features stay inside their vendor's ecosystem. Reinstate's
+Phase 1 differentiator is neutral storage plus structural path remapping for
+same-vendor Claude Code and Codex sessions. A later local index, environment
+verification, configuration reconciliation, and portable handoffs will address
+cross-agent continuity explicitly.
 
-Reinstate's moat is **universality + neutrality + BYO encrypted storage**.
+Reinstate does not claim to natively resume a Claude transcript inside Codex.
 
-## vs claude-sync
+## How does Reinstate differ from single-agent sync tools?
 
-claude-sync is a strong Claude-only reference (encryption, R2, path mapping).
-Reinstate aims to be a **superset**: multiple agents, config scope as a product
-feature, and path remapping generalized for Windows ↔ macOS as the default
-crossing — not an edge case.
+Single-agent utilities can solve a focused vendor-specific transfer problem.
+Reinstate implements separate Claude Code and Codex adapters behind one
+continuity model, keeps native resume same-vendor, and treats Windows ↔ macOS
+project-path remapping as a first-class concern.
 
-## vs config-only tools (mcp-sync, etc.)
+## How does Reinstate differ from config-only tools?
 
-Config sync alone has a low ceiling (nice utility, weak product). Reinstate
-treats **sessions as the acquisition feature** and **universal configuration as
-continuity and retention**.
+Config-only tools address settings rather than session continuity. Reinstate's
+current release scope is encrypted session sync; universal agent configuration
+is planned after Phase 1.
 
 The planned layer covers MCP servers, skills/instructions, hooks/loops, plugins,
 marketplaces, and safe settings. It translates desired state through verified
 per-harness adapters, reports unsupported fields, and keeps credentials local.
 
-## vs Syncthing / iCloud / OneDrive
+## How does Reinstate differ from generic file sync?
 
-DIY works until:
+Generic file sync moves bytes. Reinstate understands vendor session locations,
+canonical project identity, structural paths, active-agent safety, and known
+credential exclusions. A manual setup must recreate those safeguards itself.
 
-- Absolute paths break resume
-- Conflict files corrupt JSONL mid-write
-- Credentials and plugin trees sync by accident
-- You spend an afternoon on junctions and excludes
+## How does Reinstate differ from Git?
 
-Reinstate is resume-aware, agent-aware, and secure-by-default.
+Git remains the source-code history. Reinstate moves coding-agent session
+context and does not replace commits, branches, remotes, or repository sync.
 
 ## Positioning one-liner
 
 > Vendor sync owns *one* agent. File sync owns *bytes*. Reinstate owns
-> **portable AI dev state** — sessions + environment — across agents and machines.
+> **coding-agent continuity** — sessions first, verified environments and
+> explicit handoffs later — across agents and machines.
 
 ## Related
 

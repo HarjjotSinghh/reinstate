@@ -3,18 +3,70 @@ export const prerender = true;
 
 import BaseLayout from './BaseLayout.astro';
 import { getOrderedDocs, docSlug, docTitle } from '../lib/docs';
+import {
+  breadcrumbSchema,
+  techArticleSchema,
+  webPageSchema,
+} from '../lib/schema';
 
 interface Props {
   title: string;
-  description?: string;
+  description: string;
+  path: string;
+  updatedAt: Date | string;
+  tags?: string[];
+  noindex?: boolean;
+  article?: boolean;
 }
 
-const { title, description } = Astro.props;
+const {
+  title,
+  description,
+  path: canonicalPath,
+  updatedAt,
+  tags = [],
+  noindex = false,
+  article = true,
+} = Astro.props;
 const docs = await getOrderedDocs();
 const path = Astro.url.pathname.replace(/\/$/, '') || '/docs';
+const updatedDate = updatedAt instanceof Date ? updatedAt : new Date(updatedAt);
+const isDocsIndex = canonicalPath === '/docs';
+const breadcrumbs = [
+  { name: 'Home', path: '/' },
+  { name: 'Docs', path: '/docs' },
+  ...(!isDocsIndex ? [{ name: title, path: canonicalPath }] : []),
+];
+const jsonLd = [
+  article
+    ? techArticleSchema({
+        path: canonicalPath,
+        title,
+        description,
+        updatedAt: updatedDate,
+        tags,
+      })
+    : webPageSchema({
+        path: canonicalPath,
+        title,
+        description,
+        updatedAt: updatedDate,
+      }),
+  breadcrumbSchema(breadcrumbs),
+];
 ---
 
-<BaseLayout title={`${title} · Reinstate Docs`} description={description}>
+<BaseLayout
+  title={`${title} · Reinstate Docs`}
+  description={description}
+  canonical={canonicalPath}
+  type={article ? 'article' : 'website'}
+  noindex={noindex}
+  modifiedTime={article ? updatedDate : undefined}
+  section={article ? 'Documentation' : undefined}
+  tags={tags}
+  jsonLd={jsonLd}
+>
   <div class="shell docs">
     <aside class="side">
       <nav aria-label="Documentation">
@@ -39,6 +91,24 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/docs';
     </aside>
 
     <div class="body">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <ol>
+          {
+            breadcrumbs.map((item, index) => {
+              const current = index === breadcrumbs.length - 1;
+              return (
+                <li>
+                  {current ? (
+                    <span aria-current="page">{item.name}</span>
+                  ) : (
+                    <a href={item.path}>{item.name}</a>
+                  )}
+                </li>
+              );
+            })
+          }
+        </ol>
+      </nav>
       <div class="mobile-nav">
         {
           docs.map((entry) => (
@@ -47,6 +117,19 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/docs';
         }
       </div>
       <article class="prose prose-rein max-w-3xl">
+        <header class="doc-heading">
+          <h1>{title}</h1>
+          <p class="updated">
+            Updated <time datetime={updatedDate.toISOString()}>
+              {updatedDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                timeZone: 'UTC',
+              })}
+            </time>
+          </p>
+        </header>
         <slot />
       </article>
     </div>
@@ -113,6 +196,48 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/docs';
   .body {
     min-width: 0;
     flex: 1;
+  }
+  .breadcrumbs {
+    margin-bottom: 1rem;
+    font-size: 0.8rem;
+    color: var(--ink-3);
+  }
+  .breadcrumbs ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .breadcrumbs li {
+    display: flex;
+    align-items: center;
+  }
+  .breadcrumbs li + li::before {
+    content: '/';
+    margin-inline: 0.55rem;
+    color: var(--rule);
+  }
+  .breadcrumbs a {
+    color: var(--ink-2);
+    text-decoration: none;
+  }
+  .breadcrumbs a:hover {
+    color: var(--prim-deep);
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
+  }
+  .doc-heading {
+    margin-bottom: 1.35rem;
+  }
+  .doc-heading h1 {
+    margin-bottom: 0.45rem;
+  }
+  .updated {
+    margin: 0;
+    color: var(--ink-3);
+    font-size: 0.8rem;
   }
   .mobile-nav {
     display: flex;

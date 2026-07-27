@@ -31,8 +31,16 @@ if (!entry) {
 const { Content } = await render(entry);
 const title = docTitle(entry);
 const description = docDescription(entry);
+const path = `/docs/${docSlug(entry)}`;
 ---
 
-<DocsLayout title={title} description={description}>
+<DocsLayout
+  title={title}
+  description={description}
+  path={path}
+  updatedAt={entry.data.updatedAt}
+  tags={entry.data.tags}
+  noindex={entry.data.noindex}
+>
   <Content />
 </DocsLayout>
