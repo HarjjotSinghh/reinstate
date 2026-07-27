@@ -1,0 +1,1123 @@
+---
+import { box, fmt, P } from '../../lib/iso';
+
+const foot = (x: number, y: number, z: number, w: number, d: number) =>
+  fmt([P(x, y, z), P(x + w, y, z), P(x + w, y + d, z), P(x, y + d, z)]);
+
+const sourcePlatform = box(-280, -90, -12, 560, 180, 26);
+const sourceTower = box(-240, -60, 14, 76, 76, 148);
+/* monitor: small foot → single stem → panel (no intermediate mounts)
+   Stem + panel sit forward over the base (not behind its rear edge). */
+const sourceMonitorFoot = box(-68, -48, 14, 120, 34, 8); /* 50% of prior 240×68 base */
+const sourceMonitorStem = box(-18, -48, 22, 20, 14, 38); /* foot top z=22 → panel bottom z=60 */
+const sourceMonitorPanel = box(-128, -48, 60, 240, 14, 126);
+const sourceDock = box(117, -48, 14, 152, 92, 10);
+const sourceKeyboard = box(-130, 24, 14, 116, 38, 7);
+const sourceKeyRows = [
+  foot(-120, 29, 21.2, 96, 5),
+  foot(-120, 36, 21.2, 96, 5),
+  foot(-120, 43, 21.2, 76, 5),
+];
+/* to the right of the keyboard on the desk surface */
+const sourceMouse = box(4, 30, 14, 26, 32, 9);
+const sourceStack = [
+  box(130, -38, 24, 128, 72, 16),
+  box(130, -38, 40, 128, 72, 16),
+  box(130, -38, 56, 128, 72, 16),
+  box(130, -38, 72, 128, 72, 16),
+];
+const sourceShadow = foot(-280, -90, -12, 560, 180);
+
+const checkpointPlinth = box(-86, -86, -24, 172, 172, 24);
+const checkpoint = box(-58, -58, 0, 116, 116, 112);
+const checkpointShadow = foot(-86, -86, -24, 172, 172);
+const checkpointInset = foot(-42, -42, 112.2, 84, 84);
+
+const destinationPlatform = box(-210, -80, -12, 420, 160, 26);
+const destinationDeck = box(-102, -48, 14, 204, 108, 16);
+const destinationHinge = box(-102, -58, 30, 204, 10, 10);
+const destinationLid = box(-98, -60, 40, 196, 10, 112);
+const destinationKeyboardWell = foot(-82, 28, 30.2, 164, 28);
+const destinationKeyRows = [
+  foot(-72, 32, 30.4, 144, 4.5),
+  foot(-72, 38.5, 30.4, 144, 4.5),
+  foot(-72, 45, 30.4, 112, 4.5),
+];
+const destinationTrackpad = foot(46, 45, 30.5, 26, 8);
+const destinationStack = [
+  box(-62, -34, 30, 124, 58, 14),
+  box(-62, -34, 44, 124, 58, 14),
+  box(-62, -34, 58, 124, 58, 14),
+  box(-62, -34, 72, 124, 58, 14),
+];
+const destinationShadow = foot(-210, -80, -12, 420, 160);
+
+const tones = ['d', 'c', 'b', 'a'];
+const layerNames = ['PATHS', 'METADATA', 'MESSAGES', 'SESSION'];
+
+const CX = Math.cos(Math.PI / 6);
+const m2 = (m: number[]) => `matrix(${m.map((n) => +n.toFixed(2)).join(' ')})`;
+const frontText = (x: number, y: number, z: number, d: number, h: number) => {
+  const [e, f] = P(x, y + d, z + h);
+  return m2([CX, 0.5, 0, 1, e, f]);
+};
+---
+
+<section class="terminal-proof" id="proof" aria-labelledby="proof-title">
+  <div class="proof-shell">
+    <header class="proof-lede">
+      <h2 id="proof-title">
+        One session. Two machines.<br />Four commands. Zero lost context.
+      </h2>
+      <p>
+        List and push on the first machine. Pull on the second. Reinstate remaps
+        the project path, then resumes the session with the agent that created
+        it in its native format.
+      </p>
+    </header>
+
+    <div class="handoff-stage">
+      <figure class="handoff-illustration">
+        <svg
+          class="handoff-art"
+          viewBox="0 36 1240 350"
+          role="img"
+          aria-labelledby="handoff-art-title handoff-art-desc"
+          preserveAspectRatio="xMidYMid meet"
+        >
+        <title id="handoff-art-title">A session moves between two machines</title>
+        <desc id="handoff-art-desc">
+          The office floor continues beneath a Windows workstation and a MacBook.
+          Four session layers leave the source, seal inside an encrypted checkpoint,
+          and arrive restacked on the destination machine.
+        </desc>
+
+        <defs>
+          <marker
+            id="proof-arrow"
+            viewBox="0 0 12 12"
+            refX="9"
+            refY="6"
+            markerWidth="5"
+            markerHeight="5"
+            orient="auto"
+          >
+            <path d="M0 0 L12 6 L0 12 z" fill="var(--sv-prim-deep)"></path>
+          </marker>
+        </defs>
+
+        <g transform="translate(245 246) scale(.7)">
+          <polygon class="cast" points={sourceShadow}></polygon>
+          <g class="unit platform">
+            <polygon class="f-side" points={sourcePlatform.side}></polygon>
+            <polygon class="f-front" points={sourcePlatform.front}></polygon>
+            <polygon class="f-top" points={sourcePlatform.top}></polygon>
+          </g>
+          <g class="unit device">
+            <polygon class="f-side" points={sourceTower.side}></polygon>
+            <polygon class="f-front" points={sourceTower.front}></polygon>
+            <polygon class="f-top" points={sourceTower.top}></polygon>
+          </g>
+          <g class="tower-detail" transform={frontText(-240, -60, 14, 76, 148)}>
+            <rect x="11" y="14" width="54" height="7" rx="3.5"></rect>
+            <rect x="11" y="31" width="54" height="4" rx="2"></rect>
+            <rect x="11" y="40" width="54" height="4" rx="2"></rect>
+            <rect x="11" y="49" width="54" height="4" rx="2"></rect>
+            <circle cx="19" cy="70" r="5"></circle>
+            <rect class="tower-bay" x="11" y="92" width="54" height="38" rx="5"></rect>
+            <circle class="tower-led" cx="56" cy="116" r="3"></circle>
+          </g>
+          <g class="unit device board">
+            <polygon class="f-side" points={sourceMonitorFoot.side}></polygon>
+            <polygon class="f-front" points={sourceMonitorFoot.front}></polygon>
+            <polygon class="f-top" points={sourceMonitorFoot.top}></polygon>
+          </g>
+          <g class="unit device">
+            <polygon class="f-side" points={sourceMonitorStem.side}></polygon>
+            <polygon class="f-front" points={sourceMonitorStem.front}></polygon>
+            <polygon class="f-top" points={sourceMonitorStem.top}></polygon>
+          </g>
+          <g class="unit device">
+            <polygon class="f-side" points={sourceMonitorPanel.side}></polygon>
+            <polygon class="f-front" points={sourceMonitorPanel.front}></polygon>
+            <polygon class="f-top" points={sourceMonitorPanel.top}></polygon>
+          </g>
+          <g
+            class="source-screen-detail"
+            transform={frontText(-128, -48, 60, 14, 126)}
+          >
+            <polygon points="8,8 232,8 232,116 8,116"></polygon>
+            <rect x="15" y="16" width="44" height="15" rx="7.5"></rect>
+            <text x="37" y="27" text-anchor="middle">ses_7f3a</text>
+            <rect class="screen-line" x="15" y="54" width="188" height="6" rx="3"></rect>
+            <rect class="screen-line" x="15" y="71" width="144" height="6" rx="3"></rect>
+            <rect class="screen-cursor" x="170" y="70" width="7" height="9"></rect>
+          </g>
+          <g class="unit device board">
+            <polygon class="f-side" points={sourceDock.side}></polygon>
+            <polygon class="f-front" points={sourceDock.front}></polygon>
+            <polygon class="f-top" points={sourceDock.top}></polygon>
+          </g>
+          <g class="dock-detail" transform={frontText(117, -48, 14, 92, 10)}>
+            <rect x="18" y="2" width="24" height="6" rx="2"></rect>
+            <rect x="50" y="2" width="24" height="6" rx="2"></rect>
+            <rect x="82" y="2" width="24" height="6" rx="2"></rect>
+            <circle cx="136" cy="5" r="3"></circle>
+          </g>
+          {sourceStack.map((layer, index) => (
+            <g class={`unit session-layer tone-${tones[index]}`}>
+              <polygon class="f-side" points={layer.side}></polygon>
+              <polygon class="f-front" points={layer.front}></polygon>
+              <polygon class="f-top" points={layer.top}></polygon>
+              <text
+                class="layer-label"
+                transform={frontText(130, -38, 24 + index * 16, 72, 16)}
+                x="64"
+                y="11.5"
+                text-anchor="middle"
+              >
+                {layerNames[index]}
+              </text>
+            </g>
+          ))}
+          <g class="unit device board">
+            <polygon class="f-side" points={sourceKeyboard.side}></polygon>
+            <polygon class="f-front" points={sourceKeyboard.front}></polygon>
+            <polygon class="f-top" points={sourceKeyboard.top}></polygon>
+          </g>
+          <g class="key-lines">
+            {sourceKeyRows.map((row) => <polygon points={row}></polygon>)}
+          </g>
+          <g class="unit device board">
+            <polygon class="f-side" points={sourceMouse.side}></polygon>
+            <polygon class="f-front" points={sourceMouse.front}></polygon>
+            <polygon class="f-top" points={sourceMouse.top}></polygon>
+          </g>
+        </g>
+
+        <g transform="translate(620 238) scale(.72)">
+          <polygon class="cast" points={checkpointShadow}></polygon>
+          <g class="unit platform">
+            <polygon class="f-side" points={checkpointPlinth.side}></polygon>
+            <polygon class="f-front" points={checkpointPlinth.front}></polygon>
+            <polygon class="f-top" points={checkpointPlinth.top}></polygon>
+          </g>
+          <g class="unit checkpoint">
+            <polygon class="f-side" points={checkpoint.side}></polygon>
+            <polygon class="f-front" points={checkpoint.front}></polygon>
+            <polygon class="f-top" points={checkpoint.top}></polygon>
+          </g>
+          <polygon
+            class="checkpoint-inset"
+            points={checkpointInset}
+          ></polygon>
+          <g class="seal-detail" transform={frontText(-58, -58, 0, 116, 112)}>
+            <rect x="15" y="22" width="86" height="44" rx="7"></rect>
+            <path d="M46 39 v-6 a12 12 0 0 1 24 0 v6"></path>
+            <rect class="seal-lock" x="41" y="39" width="34" height="23" rx="5"></rect>
+            <circle cx="58" cy="49" r="3"></circle>
+            <path d="M58 52 v5"></path>
+            <rect class="seal-line" x="15" y="79" width="58" height="5" rx="2.5"></rect>
+            <rect class="seal-line" x="15" y="90" width="38" height="5" rx="2.5"></rect>
+          </g>
+          <g class="age-stamp" transform="translate(-26 -68)">
+            <rect width="52" height="24" rx="6"></rect>
+            <text x="26" y="16" text-anchor="middle">age</text>
+          </g>
+        </g>
+
+        <g transform="translate(995 246) scale(.7)">
+          <polygon class="cast" points={destinationShadow}></polygon>
+          <g class="unit platform">
+            <polygon class="f-side" points={destinationPlatform.side}></polygon>
+            <polygon class="f-front" points={destinationPlatform.front}></polygon>
+            <polygon class="f-top" points={destinationPlatform.top}></polygon>
+          </g>
+          <g class="unit device">
+            <polygon class="f-side" points={destinationLid.side}></polygon>
+            <polygon class="f-front" points={destinationLid.front}></polygon>
+            <polygon class="f-top" points={destinationLid.top}></polygon>
+          </g>
+          <g class="screen-detail" transform={frontText(-98, -60, 40, 10, 112)}>
+            <polygon points="14,13 182,13 182,94 14,94"></polygon>
+            <rect x="24" y="24" width="58" height="17" rx="8.5"></rect>
+            <text x="53" y="36" text-anchor="middle">ses_7f3a</text>
+            <text class="screen-time" x="172" y="36" text-anchor="end">▶ 23:47</text>
+            <rect class="screen-line" x="24" y="54" width="116" height="6" rx="3"></rect>
+            <rect class="screen-line" x="24" y="68" width="78" height="6" rx="3"></rect>
+            <rect class="screen-cursor" x="108" y="67" width="7" height="9"></rect>
+          </g>
+          <g class="unit device">
+            <polygon class="f-side" points={destinationHinge.side}></polygon>
+            <polygon class="f-front" points={destinationHinge.front}></polygon>
+            <polygon class="f-top" points={destinationHinge.top}></polygon>
+          </g>
+          <g class="unit device">
+            <polygon class="f-side" points={destinationDeck.side}></polygon>
+            <polygon class="f-front" points={destinationDeck.front}></polygon>
+            <polygon class="f-top" points={destinationDeck.top}></polygon>
+          </g>
+          <polygon class="keyboard-well" points={destinationKeyboardWell}></polygon>
+          <g class="key-lines destination-keys">
+            {destinationKeyRows.map((row) => <polygon points={row}></polygon>)}
+          </g>
+          <polygon class="trackpad" points={destinationTrackpad}></polygon>
+          {destinationStack.map((layer, index) => (
+            <g class={`unit session-layer tone-${tones[index]}`}>
+              <polygon class="f-side" points={layer.side}></polygon>
+              <polygon class="f-front" points={layer.front}></polygon>
+              <polygon class="f-top" points={layer.top}></polygon>
+              <text
+                class="layer-label"
+                transform={frontText(-62, -34, 30 + index * 14, 58, 14)}
+                x="62"
+                y="10.4"
+                text-anchor="middle"
+              >
+                {layerNames[index]}
+              </text>
+            </g>
+          ))}
+        </g>
+
+        <path
+          class="flow-line flow-one"
+          d="M348 168 C 415 112, 498 134, 548 190"
+          marker-end="url(#proof-arrow)"
+        ></path>
+        {/* same arch as flow-one: high first control, softer second; span fits age → laptop */}
+        <path
+          class="flow-line flow-two"
+          d="M692 190 C 766 134, 858 156, 914 212"
+          marker-end="url(#proof-arrow)"
+        ></path>
+        </svg>
+      </figure>
+
+      <div class="workflow-grid">
+        <article class="terminal source-terminal" aria-labelledby="source-terminal-title">
+          <header>
+            <div class="terminal-device">
+              <svg
+                class="terminal-device-icon"
+                width="26"
+                height="26"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="3.5" y="4" width="17" height="12" rx="1.5"></rect>
+                <path d="M9 20h6M12 16v4"></path>
+              </svg>
+              <div>
+                <span class="device">Device A</span>
+                <h3 id="source-terminal-title">Windows desktop</h3>
+              </div>
+            </div>
+            <span class="terminal-kind">PowerShell</span>
+          </header>
+          <pre aria-label="Commands run on the Windows source device"><code><span class="line command"><span class="prompt">PS C:\reinstate&gt;</span> rein list --agent claude</span><span class="line output">claude  ses_7f3a  local/reinstate</span><span class="line command"><span class="prompt">PS C:\reinstate&gt;</span> rein push --agent claude --session ses_7f3a</span><span class="line output">Encryption passphrase: <span class="secret">••••••••</span></span><span class="line success">pushed 1 snapshot(s), skipped 0 unchanged, dry_run=false</span></code></pre>
+        </article>
+
+        <div class="sealed-checkpoint" aria-label="Encrypted storage bridge">
+          <span class="bridge-mark">
+            <svg
+              width="19"
+              height="19"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.9"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 3.5 19 6v5.2c0 4.1-2.8 7.5-7 9.3-4.2-1.8-7-5.2-7-9.3V6l7-2.5Z"></path>
+              <rect x="8.7" y="10.4" width="6.6" height="5.2" rx="1"></rect>
+              <path d="M10.2 10.4V9a1.8 1.8 0 0 1 3.6 0v1.4"></path>
+            </svg>
+            E2E
+          </span>
+          <div class="bridge-details">
+            <strong class="bridge-row">
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="8" cy="12" r="3.5"></circle>
+                <path d="M11.5 12H21M17 12v3M14 12v2"></path>
+              </svg>
+              <span>age encrypted</span>
+            </strong>
+            <span class="bridge-row">
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M5 8.5h14v10H5z"></path>
+                <path d="M8 8.5V6h8v2.5M9 13h6"></path>
+              </svg>
+              <span>your S3 or R2 bucket</span>
+            </span>
+            <span class="bridge-row">
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M4 7h13M14 4l3 3-3 3M20 17H7M10 14l-3 3 3 3"></path>
+              </svg>
+              <span>project map applied</span>
+            </span>
+          </div>
+        </div>
+
+        <article class="terminal destination-terminal" aria-labelledby="destination-terminal-title">
+          <header>
+            <div class="terminal-device">
+              <svg
+                class="terminal-device-icon"
+                width="26"
+                height="26"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="5" y="3.5" width="14" height="11" rx="1.5"></rect>
+                <path d="M3 18h18l-1.3 2H4.3L3 18Z"></path>
+              </svg>
+              <div>
+                <span class="device">Device B</span>
+                <h3 id="destination-terminal-title">MacBook</h3>
+              </div>
+            </div>
+            <span class="terminal-kind">zsh</span>
+          </header>
+          <pre aria-label="Commands run on the macOS destination device"><code><span class="line command"><span class="prompt">$</span> rein pull --agent claude --session ses_7f3a</span><span class="line output">Encryption passphrase: <span class="secret">••••••••</span></span><span class="line success">pulled 1 snapshot(s) dry_run=false</span><span class="line remap">project map: C:\reinstate → /Users/harjot/Code/reinstate</span><span class="line command"><span class="prompt">$</span> claude --resume ses_7f3a</span></code></pre>
+        </article>
+      </div>
+    </div>
+
+    <footer class="proof-notes">
+      <p>
+        <strong>Representative synthetic output.</strong>{' '}
+        Commands and summaries match the current CLI. The passphrase stays hidden;
+        transcript contents stay private.
+      </p>
+      <p>
+        Using Codex? The flow is identical. Finish with{' '}
+        <code>codex resume ses_7f3a</code>.
+      </p>
+    </footer>
+  </div>
+</section>
+
+<style>
+  .terminal-proof {
+    /* Scene tokens aligned with HeroExploded / ProblemExploded.
+       Outlines stay near-black in both themes; solids lift in dark mode. */
+    --sv-stroke: #131f1a;
+    --sv-shadow: #131f1a;
+    --sv-prim: #b8ff3c;
+    --sv-prim-deep: #4f8a1e;
+    --sv-night: #16231f;
+
+    --sv-furn-1: #c1c9ae;
+    --sv-furn-2: #a6b090;
+    --sv-furn-3: #8a9673;
+
+    --sv-dev-0: #55685d;
+    --sv-dev-1: #3b4c43;
+    --sv-dev-2: #2a3831;
+    --sv-dev-3: #1e2925;
+
+    --sv-seal-1: #41544a;
+    --sv-seal-2: #1f2c26;
+    --sv-seal-3: #121b17;
+
+    --proof-outline: var(--sv-stroke);
+    --terminal-bg: #0c1512;
+    --terminal-ink: #e9efe3;
+    --terminal-muted: #aebcaf;
+    --terminal-rule: #35453c;
+
+    position: relative;
+    z-index: 1;
+    overflow-x: clip;
+    color: var(--ink);
+    scroll-margin-top: 5rem;
+  }
+
+  :global(html.dark) .terminal-proof {
+    /* dark is not "invert the outlines"; keep strokes near-black */
+    --sv-stroke: #0d1613;
+    --sv-shadow: #050b09;
+    --sv-prim: #c4ff56;
+    --sv-prim-deep: #a8e83c;
+    --sv-night: #0a1310;
+
+    --sv-furn-1: #6d8073;
+    --sv-furn-2: #56685c;
+    --sv-furn-3: #435248;
+
+    --sv-dev-0: #6b7e72;
+    --sv-dev-1: #52655a;
+    --sv-dev-2: #3d4e45;
+    --sv-dev-3: #2e3c34;
+
+    --sv-seal-1: #486054;
+    --sv-seal-2: #33453c;
+    --sv-seal-3: #23312b;
+
+    --proof-outline: var(--sv-stroke);
+    --terminal-bg: #0a110f;
+    --terminal-ink: #edf3e9;
+    --terminal-muted: #b9c6ba;
+    --terminal-rule: #2a3831;
+  }
+
+  .proof-shell {
+    max-width: 88rem;
+    margin-inline: auto;
+    padding: clamp(3.5rem, 5vw, 4.5rem) clamp(1.25rem, 4vw, 3rem)
+      clamp(4.5rem, 8vw, 7rem);
+  }
+
+  .proof-lede {
+    display: grid;
+    justify-items: center;
+    max-width: 80rem;
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  .proof-lede h2 {
+    margin: 0 auto;
+    max-width: min(34ch, 100%);
+    font-family: var(--font-display);
+    font-size: clamp(1.9rem, 3.4vw, 3rem);
+    font-weight: 400;
+    letter-spacing: -0.038em;
+    line-height: 0.98;
+    text-align: center;
+    text-wrap: balance;
+  }
+
+  .proof-lede p {
+    margin: 1rem auto 0;
+    max-width: 82ch;
+    color: color-mix(in oklab, var(--ink) 24%, var(--ink-2));
+    font-size: clamp(1.05rem, 0.6vw + 0.94rem, 1.28rem);
+    line-height: 1.6;
+    text-align: center;
+    text-wrap: pretty;
+  }
+
+  .handoff-stage {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    margin-top: 28px;
+  }
+
+  .handoff-illustration {
+    margin: 0;
+    padding: 0;
+  }
+
+  .handoff-art {
+    display: block;
+    width: min(100%, 77.5rem);
+    height: auto;
+    margin-inline: auto;
+    overflow: visible;
+    pointer-events: none;
+    font-family: var(--font-mono);
+  }
+
+  .handoff-art .unit polygon {
+    stroke: var(--sv-stroke);
+    stroke-width: 3.2;
+    stroke-linejoin: round;
+  }
+
+  .platform .f-top {
+    fill: var(--sv-furn-1);
+  }
+  .platform .f-front {
+    fill: var(--sv-furn-2);
+  }
+  .platform .f-side {
+    fill: var(--sv-furn-3);
+  }
+  .device .f-top {
+    fill: var(--sv-dev-1);
+  }
+  .device .f-front {
+    fill: var(--sv-dev-2);
+  }
+  .device .f-side {
+    fill: var(--sv-dev-3);
+  }
+  .board .f-top {
+    fill: var(--sv-dev-0);
+  }
+  .board .f-front {
+    fill: var(--sv-dev-1);
+  }
+  .board .f-side {
+    fill: var(--sv-dev-2);
+  }
+  .checkpoint .f-top {
+    fill: var(--sv-seal-1);
+  }
+  .checkpoint .f-front {
+    fill: var(--sv-seal-2);
+  }
+  .checkpoint .f-side {
+    fill: var(--sv-seal-3);
+  }
+
+  .tower-detail rect,
+  .tower-detail circle {
+    fill: var(--sv-dev-1);
+  }
+  .tower-detail .tower-bay {
+    opacity: 0.62;
+  }
+  .tower-detail .tower-led,
+  .dock-detail circle {
+    fill: var(--sv-prim);
+  }
+  .dock-detail rect {
+    fill: var(--sv-dev-3);
+  }
+  .key-lines {
+    fill: var(--sv-dev-3);
+    opacity: 0.85;
+  }
+  .keyboard-well {
+    fill: var(--sv-dev-3);
+    stroke: var(--sv-stroke);
+    stroke-width: 2.2;
+    stroke-linejoin: round;
+  }
+  .destination-keys {
+    fill: var(--sv-dev-0);
+  }
+  .trackpad {
+    fill: var(--sv-dev-2);
+    stroke: var(--sv-stroke);
+    stroke-width: 1.8;
+    stroke-linejoin: round;
+  }
+  .layer-label {
+    fill: #131f1a;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 750;
+    letter-spacing: 0.015em;
+    pointer-events: none;
+  }
+  .checkpoint-inset {
+    fill: none;
+    stroke: var(--sv-stroke);
+    stroke-width: 2.2;
+    stroke-linejoin: round;
+    opacity: 0.46;
+  }
+  .seal-detail > rect:first-child {
+    fill: var(--sv-seal-3);
+    stroke: var(--sv-stroke);
+    stroke-width: 2;
+  }
+  .seal-detail path {
+    fill: none;
+    stroke: var(--sv-prim);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .seal-detail .seal-lock {
+    fill: var(--sv-prim);
+    stroke: var(--sv-stroke);
+    stroke-width: 2;
+  }
+  .seal-detail circle {
+    fill: var(--sv-stroke);
+  }
+  .seal-detail .seal-line {
+    fill: var(--sv-seal-1);
+  }
+  .screen-detail > polygon {
+    fill: var(--sv-night);
+    stroke: var(--sv-stroke);
+    stroke-width: 2;
+  }
+  .screen-detail rect:first-of-type {
+    fill: var(--sv-prim);
+  }
+  .screen-detail text {
+    fill: #131f1a;
+    font-size: 9.5px;
+    font-weight: 650;
+  }
+  .screen-detail .screen-time {
+    fill: #e9efe3;
+    font-weight: 450;
+  }
+  .screen-detail .screen-line {
+    fill: #e9efe3;
+    opacity: 0.4;
+  }
+  .screen-detail .screen-cursor {
+    fill: #e9efe3;
+  }
+  .source-screen-detail > polygon {
+    fill: var(--sv-night);
+    stroke: var(--sv-stroke);
+    stroke-width: 2;
+  }
+  .source-screen-detail rect:first-of-type {
+    fill: var(--sv-prim);
+  }
+  .source-screen-detail text {
+    fill: #131f1a;
+    font-size: 8.5px;
+    font-weight: 650;
+  }
+  .source-screen-detail .screen-line {
+    fill: #e9efe3;
+    opacity: 0.42;
+  }
+  .source-screen-detail .screen-cursor {
+    fill: #e9efe3;
+  }
+
+  .tone-a .f-top {
+    fill: #b8ff3c;
+  }
+  .tone-a .f-front {
+    fill: #96d92a;
+  }
+  .tone-a .f-side {
+    fill: #78b31d;
+  }
+  .tone-b .f-top {
+    fill: #f2cd6d;
+  }
+  .tone-b .f-front {
+    fill: #d9b054;
+  }
+  .tone-b .f-side {
+    fill: #b8923d;
+  }
+  .tone-c .f-top {
+    fill: #8fc8ea;
+  }
+  .tone-c .f-front {
+    fill: #6fa8cc;
+  }
+  .tone-c .f-side {
+    fill: #5488ab;
+  }
+  .tone-d .f-top {
+    fill: #f2f4ea;
+  }
+  .tone-d .f-front {
+    fill: #dde2d2;
+  }
+  .tone-d .f-side {
+    fill: #bcc4b0;
+  }
+
+  .cast {
+    fill: var(--sv-shadow);
+    opacity: 0.13;
+  }
+  :global(html.dark) .terminal-proof .cast {
+    opacity: 0.5;
+  }
+
+  .flow-line {
+    fill: none;
+    stroke: var(--sv-prim-deep);
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-dasharray: 13 11;
+    animation: proof-flow 1.8s linear infinite;
+  }
+
+  .flow-two {
+    animation-delay: -0.9s;
+  }
+
+  .age-stamp rect {
+    fill: var(--sv-prim);
+    stroke: var(--sv-stroke);
+    stroke-width: 2.5;
+  }
+  .age-stamp text {
+    fill: #131f1a;
+    font-size: 13px;
+    font-weight: 650;
+  }
+
+  .workflow-grid {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 14rem minmax(0, 1fr);
+    align-items: center;
+    gap: clamp(0.85rem, 2vw, 1.5rem);
+    margin-top: 0; /* spacing from art comes from .handoff-stage gap */
+  }
+
+  .terminal {
+    min-width: 0;
+    border: 3px solid var(--sv-stroke);
+    border-radius: 10px;
+    background: var(--terminal-bg);
+    overflow: hidden;
+  }
+
+  .terminal > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 4.7rem;
+    padding: 0.82rem 1rem;
+    border-bottom: 1px solid var(--terminal-rule);
+    background: var(--sv-dev-2);
+    color: #f4f6ef;
+  }
+
+  .terminal-device {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    min-width: 0;
+  }
+
+  .terminal-device-icon {
+    display: block;
+    flex: none;
+    width: 1.625rem;
+    height: 1.625rem;
+    max-width: none;
+    color: #c9d3c9;
+  }
+
+  .terminal .device {
+    display: block;
+    color: #c9d3c9;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    line-height: 1.2;
+  }
+
+  .terminal h3 {
+    margin: 0.18rem 0 0;
+    color: #f4f6ef;
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 400;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+  }
+
+  .terminal-kind {
+    flex: none;
+    color: #c9d3c9;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+  }
+
+  pre {
+    margin: 0;
+    min-height: 15.25rem;
+    padding: clamp(1rem, 2.2vw, 1.45rem);
+    overflow-x: auto;
+    background: var(--terminal-bg);
+    color: var(--terminal-ink);
+    font-family: var(--font-mono);
+    font-size: clamp(0.72rem, 0.38vw + 0.61rem, 0.82rem);
+    line-height: 1.62;
+    tab-size: 2;
+  }
+
+  pre code {
+    display: block;
+    width: max-content;
+    min-width: 100%;
+    font: inherit;
+  }
+
+  .line {
+    display: block;
+    white-space: pre;
+  }
+  .command {
+    color: var(--terminal-ink);
+    font-weight: 540;
+  }
+  .prompt {
+    color: var(--sv-prim);
+    font-weight: 650;
+  }
+  .output {
+    color: var(--terminal-muted);
+  }
+  .success {
+    color: #d8e8cf;
+  }
+  .secret {
+    letter-spacing: 0.08em;
+    color: var(--terminal-muted);
+  }
+  .remap {
+    color: #b9d89a;
+  }
+
+  .sealed-checkpoint {
+    position: relative;
+    align-self: center;
+    display: grid;
+    justify-items: center;
+    gap: 0.48rem;
+    min-height: 11.25rem;
+    padding: 1.35rem 0.75rem;
+    border: 3px solid var(--sv-stroke);
+    border-radius: 10px;
+    background: color-mix(in oklab, var(--paper-2) 88%, var(--sv-prim) 12%);
+    color: var(--ink-2);
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    line-height: 1.35;
+  }
+
+  .sealed-checkpoint::before,
+  .sealed-checkpoint::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: clamp(0.85rem, 2vw, 1.5rem);
+    border-top: 3px dashed var(--sv-prim-deep);
+    transform: translateY(-50%);
+  }
+  .sealed-checkpoint::before {
+    right: 100%;
+  }
+  .sealed-checkpoint::after {
+    left: 100%;
+  }
+
+  .sealed-checkpoint strong {
+    color: var(--ink);
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+
+  .bridge-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    width: 5.15rem;
+    height: 2.8rem;
+    margin-bottom: 0.35rem;
+    border: 3px solid var(--sv-stroke);
+    border-radius: 8px;
+    background: var(--prim);
+    color: #131f1a;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .bridge-mark svg,
+  .bridge-row svg {
+    display: block;
+    flex: none;
+    width: 1.05rem;
+    height: 1.05rem;
+    max-width: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .bridge-mark svg {
+    width: 1.2rem;
+    height: 1.2rem;
+    stroke-width: 1.9;
+  }
+
+  .bridge-row {
+    display: grid;
+    grid-template-columns: 1.1rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.55rem;
+    width: 100%;
+    text-align: left;
+  }
+
+  .bridge-details {
+    display: grid;
+    gap: 0.65rem;
+    width: 100%;
+    margin-top: 0.15rem;
+  }
+
+  .bridge-row span {
+    min-width: 0;
+  }
+
+  .proof-notes {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-top: 0.75rem;
+    padding-top: 1rem;
+  }
+
+  .proof-notes p {
+    margin: 0;
+    max-width: 56ch;
+    color: color-mix(in oklab, var(--ink) 35%, var(--ink-2));
+    font-size: 0.96rem;
+    line-height: 1.55;
+  }
+  .proof-notes strong {
+    color: var(--ink);
+    font-weight: 560;
+  }
+  .proof-notes code {
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 0.88em;
+  }
+
+  @media (max-width: 980px) {
+    .workflow-grid {
+      grid-template-columns: minmax(0, 1fr) 12.5rem minmax(0, 1fr);
+      gap: 0.75rem;
+    }
+    .terminal > header {
+      min-height: 4.35rem;
+      padding-inline: 0.82rem;
+    }
+    .terminal-kind {
+      display: none;
+    }
+  }
+
+  @media (max-width: 780px) {
+    .workflow-grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 1.2rem;
+    }
+    .source-terminal {
+      order: 1;
+    }
+    .sealed-checkpoint {
+      order: 2;
+      width: min(100%, 14rem);
+      min-height: 10.5rem;
+      margin-inline: auto;
+      padding-block: 1.5rem;
+      font-size: 0.78rem;
+    }
+    .sealed-checkpoint::before,
+    .sealed-checkpoint::after {
+      left: 50%;
+      width: 0;
+      height: 1.2rem;
+      border-top: 0;
+      border-left: 3px dashed var(--sv-prim-deep);
+      transform: translateX(-50%);
+    }
+    .sealed-checkpoint::before {
+      right: auto;
+      top: auto;
+      bottom: 100%;
+    }
+    .sealed-checkpoint::after {
+      top: 100%;
+    }
+    .sealed-checkpoint strong {
+      font-size: 0.82rem;
+    }
+    .destination-terminal {
+      order: 3;
+    }
+    pre {
+      min-height: auto;
+    }
+    .proof-notes {
+      grid-template-columns: 1fr;
+      gap: 0.85rem;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .proof-shell {
+      padding-inline: 1rem;
+    }
+    .terminal {
+      border-width: 2px;
+    }
+    .terminal > header {
+      min-height: 4rem;
+    }
+    pre {
+      padding: 0.95rem;
+      font-size: 0.72rem;
+    }
+  }
+
+  @keyframes proof-flow {
+    to {
+      stroke-dashoffset: -48;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .flow-line {
+      animation: none;
+    }
+  }
+</style>

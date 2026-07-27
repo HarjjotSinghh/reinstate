@@ -171,9 +171,9 @@ const panels = [
     title: 'Context dies at the desk',
     good: false,
     items: [
-      'Sessions stuck on one machine',
-      'Paths break naive file sync',
-      'Desktop must stay awake',
+      'Sessions trapped on one machine',
+      'Paths and agent state drift apart',
+      'Context must be rebuilt manually',
     ],
   },
   {
@@ -181,9 +181,9 @@ const panels = [
     title: 'Portable state you control',
     good: true,
     items: [
-      'Encrypted push to your storage',
-      'Pull anywhere, desktop off',
-      'Windows ↔ macOS path remap',
+      'Pull sessions onto another device',
+      'Remap paths across macOS and Windows',
+      'Store encrypted state in your own bucket',
     ],
   },
 ];
@@ -258,9 +258,8 @@ const caStoreLed = P(154, 4, 11);
       <span class="badge"><i aria-hidden="true"></i> 02:13 · the plan isn't working</span>
       <h2 id="problem-title">Git has the code and its history.<br />It does not have the conversation.</h2>
       <p class="sub">
-        You grind for hours on the desktop across Claude Code, Codex, Gemini CLI. Open the
-        MacBook: empty history, different MCP setup, start from zero. Vendor tools save
-        sessions locally — switching machines is context death.
+        Git still handles your code. Reinstate carries the encrypted Claude Code and Codex
+        session state Git leaves behind, remapping project paths for the machine you are on.
       </p>
     </div>
 
@@ -649,8 +648,8 @@ const caStoreLed = P(154, 4, 11);
 
         {/* the verdict chip, same style as the hero's command chips */}
         <g class="cmdchip">
-          <rect x="520" y="410" width="300" height="34" rx="17" fill="var(--paper-2)" stroke="var(--rule)" stroke-width="1.5" />
-          <text x="670" y="433" text-anchor="middle"><tspan class="ta">✕</tspan> no route off this machine</text>
+          <rect x="580" y="402" width="300" height="34" rx="17" fill="var(--paper-2)" stroke="var(--rule)" stroke-width="1.5" />
+          <text x="730" y="425" text-anchor="middle"><tspan class="ta">✕</tspan> no route off this machine</text>
         </g>
       </svg>
     </figure>
@@ -803,6 +802,7 @@ const caStoreLed = P(154, 4, 11);
       </div>
     </div>
   </section>
+  <slot />
 </div>
 
 <style>
@@ -986,16 +986,17 @@ const caStoreLed = P(154, 4, 11);
   .sub {
     margin: 1rem auto 0;
     max-width: 72ch;
-    font-size: clamp(1rem, 0.5vw + 0.92rem, 1.15rem);
+    font-size: clamp(1.05rem, 0.6vw + 0.94rem, 1.28rem);
     line-height: 1.6;
-    color: var(--ink-2);
+    color: color-mix(in oklab, var(--ink) 26%, var(--ink-2));
     text-wrap: pretty;
   }
 
   /* ---------- scene (transparent: the floor behind it is the page) ---------- */
   .scene {
-    /* pulls the extended viewBox back up: 80/1640 of the width */
-    margin: -4.88% 0 0;
+    /* pulls the extended viewBox back up (80/1640 of width), then leaves
+       ~18px under the lede so padding isn't eaten by the pull */
+    margin: calc(-4.88% + 18px) 0 0;
     width: 100%;
   }
   .scene svg {
@@ -1218,12 +1219,12 @@ const caStoreLed = P(154, 4, 11);
     flex: none;
     display: grid;
     place-items: center;
-    width: 26px;
-    height: 26px;
+    width: 30px;
+    height: 30px;
     border: 2px solid var(--sv-stroke);
     border-radius: 6px;
     font-family: 'Geist Mono Variable', ui-monospace, monospace;
-    font-size: 0.85rem;
+    font-size: 0.95rem;
     font-weight: 700;
     color: var(--ink-3);
   }
@@ -1234,7 +1235,7 @@ const caStoreLed = P(154, 4, 11);
   .panel .kicker {
     margin: 0;
     font-family: 'Geist Mono Variable', ui-monospace, monospace;
-    font-size: 0.76rem;
+    font-size: 0.88rem;
     letter-spacing: 0.04em;
     color: var(--ink-3);
   }
@@ -1255,7 +1256,7 @@ const caStoreLed = P(154, 4, 11);
   .panel h3 {
     margin: 1.25rem 0 0;
     font-family: var(--font-display);
-    font-size: 1.65rem;
+    font-size: 1.9rem;
     font-weight: 400;
     letter-spacing: -0.025em;
     line-height: 1.05;
@@ -1265,20 +1266,20 @@ const caStoreLed = P(154, 4, 11);
     margin: 1.1rem 0 0;
     padding: 0;
     display: grid;
-    gap: 0.6rem;
+    gap: 0.75rem;
   }
   .panel li {
     display: flex;
     align-items: baseline;
-    gap: 0.6rem;
-    font-size: 0.92rem;
-    line-height: 1.45;
-    color: var(--ink-2);
+    gap: 0.68rem;
+    font-size: 1.05rem;
+    line-height: 1.5;
+    color: color-mix(in oklab, var(--ink) 26%, var(--ink-2));
   }
   .mark {
     flex: none;
     font-family: 'Geist Mono Variable', ui-monospace, monospace;
-    font-size: 0.8rem;
+    font-size: 0.92rem;
     font-weight: 700;
     color: var(--ink-3);
   }
@@ -1297,7 +1298,7 @@ const caStoreLed = P(154, 4, 11);
       font-size: 22px;
     }
     .panel h3 {
-      font-size: 1.45rem;
+      font-size: 1.7rem;
     }
   }
 
