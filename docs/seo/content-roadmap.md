@@ -63,3 +63,25 @@ dedicated editorial pass.
   questions to [`question-inventory.md`](question-inventory.md).
 - A published research asset needs methodology, exact environment, failures,
   limitations, raw synthetic data where appropriate, date, and commit SHA.
+
+## Route publication gates
+
+Three planned URL families remain deliberately absent rather than shipping thin
+or unsupported pages:
+
+- **Blog tag archives:** create `/blog/tags/[tag]` only after a tag has at least
+  three substantive, indexable articles and the archive can provide a unique
+  answer-first introduction. Until then, the blog hub is the canonical
+  discovery page; do not generate empty or one-post tag pages.
+- **Named competitor comparisons:** create
+  `/compare/reinstate-vs-[real-competitor]` only after a dated editorial brief
+  identifies real query/user demand and every comparison fact has a current
+  first-party source. A comparison must distinguish product category and
+  limitations, not turn a competitor name into a doorway page.
+- **Binding terms:** publish `/terms` only after the maintainer or legal owner
+  approves the offering, jurisdiction, effective date, and complete policy
+  text under the existing legal-publication gate. Do not fabricate legal copy
+  to fill the information architecture.
+
+Record the approving brief, owner, review date, sources, and canonical decision
+before introducing any of these routes.
