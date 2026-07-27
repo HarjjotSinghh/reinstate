@@ -12,7 +12,13 @@ description: Audit and improve Reinstate for ChatGPT Search, Google generative s
 - `llms.txt` is optional navigation, not a ranking guarantee.
 - `OAI-SearchBot` controls ChatGPT Search discovery separately from GPTBot training policy.
 - `PerplexityBot` is the documented Perplexity search crawler.
+- `Perplexity-User` is a separate user-triggered fetcher, not the search
+  crawler; it can ignore robots policy and needs an explicit CDN/WAF decision.
+- User-agent strings are spoofable. Where crawler identity matters at the WAF,
+  verify requests against the provider's current published IP ranges.
 - Crawler access must also work through CDN and WAF layers.
+- Accessible semantic HTML and accurate ARIA improve both human access and
+  user-triggered agent/browser navigation.
 - Citation likelihood comes from relevance, evidence, clarity, and authority, not keyword stuffing.
 
 ## Workflow

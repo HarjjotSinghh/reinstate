@@ -3147,6 +3147,13 @@ Check the current Codex and Claude Code documentation for the preferred discover
 
 Third-party skills change. Review the repository, `SKILL.md`, scripts, permissions, and security reports before installation.
 
+**Repository status as of 2026-07-27:** none of the skills below is installed
+or approved. The immutable revisions, renamed skills, risks, and decisions are
+recorded in
+[the third-party skill review](./third-party-skill-review.md). Commands below
+show current upstream names for a future disposable-worktree evaluation; do
+not run them against an unpinned moving branch or expose production secrets.
+
 ### Recommended minimum set
 
 #### 1. SEO audit
@@ -3163,6 +3170,9 @@ Use for:
 - SaaS-specific review
 
 #### 2. Technical SEO
+
+Status: **rejected unmodified** because the inspected revision presents
+unsupported fixed ranking-factor weights.
 
 ```bash
 npx skills add https://github.com/addyosmani/web-quality-skills --skill seo
@@ -3190,10 +3200,10 @@ Use for:
 - CLS
 - performance regression diagnosis
 
-#### 4. Schema markup
+#### 4. Schema
 
 ```bash
-npx skills add https://github.com/coreyhaines31/marketingskills --skill schema-markup
+npx skills add https://github.com/coreyhaines31/marketingskills --skill schema
 ```
 
 Use for:
@@ -3216,11 +3226,14 @@ Use for:
 - editorial roadmap
 - search versus share content
 
-#### 6. Product marketing context
+#### 6. Product marketing
 
 ```bash
-npx skills add https://github.com/coreyhaines31/marketingskills --skill product-marketing-context
+npx skills add https://github.com/coreyhaines31/marketingskills --skill product-marketing
 ```
+
+Status: **not recommended for this repository today** because it creates a
+parallel product-context artifact that can drift from `product.ts`.
 
 Use for:
 
@@ -3231,6 +3244,9 @@ Use for:
 - brand language
 
 #### 7. SEO and AEO baseline
+
+Status: **rejected as an authority** because the inspected revision conflates
+model-training controls with search and citation discovery.
 
 ```bash
 npx skills add https://github.com/sanity-io/agent-toolkit --skill seo-aeo-best-practices
@@ -3251,7 +3267,9 @@ Use for:
 npx skills add https://github.com/alirezarezvani/claude-skills --skill aeo
 ```
 
-Use for citation-oriented content reviews. Treat any rigid claims about AI ranking factors as hypotheses, not gospel.
+Status: **rejected**. The inspected revision bundles network/file-writing
+scripts, placeholder schema/citation insertion, and unsupported claims about
+training cycles, citation density, and bot effects.
 
 #### 9. Programmatic SEO
 
@@ -3269,10 +3287,10 @@ npx skills add https://github.com/addyosmani/web-quality-skills --skill performa
 
 Use for deeper performance budgets and loading strategy.
 
-#### 11. Free tool strategy
+#### 11. Free tools
 
 ```bash
-npx skills add https://github.com/coreyhaines31/marketingskills --skill free-tool-strategy
+npx skills add https://github.com/coreyhaines31/marketingskills --skill free-tools
 ```
 
 Use for engineering-as-marketing assets such as a session path checker or compatibility inspector.
@@ -3757,24 +3775,25 @@ The playbook relies primarily on official and first-party documentation.
 - [Google SoftwareApplication structured data](https://developers.google.com/search/docs/appearance/structured-data/software-app)
 - [Google breadcrumb structured data](https://developers.google.com/search/docs/appearance/structured-data/breadcrumb)
 - [Google Article structured data](https://developers.google.com/search/docs/appearance/structured-data/article)
-- [Google FAQ structured data](https://developers.google.com/search/docs/appearance/structured-data/faqpage)
+- [Schema.org FAQPage](https://schema.org/FAQPage)
+- [Google Search update removing FAQ rich results](https://developers.google.com/search/updates#removing-faq-rich-result)
 
 ## Skills
 
 - [Agent Skills specification](https://agentskills.io/specification)
-- [OpenAI: Using skills](https://openai.com/academy/skills/)
-- [OpenAI: Skills in ChatGPT](https://help.openai.com/en/articles/20001066)
+- [OpenAI: Build skills for Codex](https://learn.chatgpt.com/docs/build-skills)
+- [Claude Code: Extend Claude with skills](https://code.claude.com/docs/en/skills)
 - [SEO skill](https://www.skills.sh/addyosmani/web-quality-skills/seo)
 - [Core Web Vitals skill](https://www.skills.sh/addyosmani/web-quality-skills/core-web-vitals)
 - [SEO audit skill](https://www.skills.sh/coreyhaines31/marketingskills/seo-audit)
-- [Schema markup skill](https://www.skills.sh/coreyhaines31/marketingskills/schema-markup)
+- [Schema skill](https://www.skills.sh/coreyhaines31/marketingskills/schema)
 - [Content strategy skill](https://www.skills.sh/coreyhaines31/marketingskills/content-strategy)
-- [Product marketing context skill](https://www.skills.sh/coreyhaines31/marketingskills/product-marketing-context)
+- [Product marketing skill](https://www.skills.sh/coreyhaines31/marketingskills/product-marketing)
 - [SEO and AEO best practices skill](https://www.skills.sh/sanity-io/agent-toolkit/seo-aeo-best-practices)
 - [AEO skill](https://www.skills.sh/alirezarezvani/claude-skills/aeo)
 - [Programmatic SEO skill](https://www.skills.sh/coreyhaines31/marketingskills/programmatic-seo)
 - [Performance skill](https://www.skills.sh/addyosmani/web-quality-skills/performance)
-- [Free tool strategy skill](https://www.skills.sh/coreyhaines31/marketingskills/free-tool-strategy)
+- [Free tools skill](https://www.skills.sh/coreyhaines31/marketingskills/free-tools)
 
 ---
 

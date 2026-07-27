@@ -13,7 +13,9 @@ description: Select, implement, validate, and test truthful JSON-LD for Reinstat
 - Use absolute canonical URLs.
 - Escape serialized JSON safely.
 - Prefer an `@graph` when several related entities appear.
-- Validate with Schema.org Validator and Google's Rich Results Test.
+- Validate Schema.org vocabulary and values with Schema.org Validator.
+- Use Google's Rich Results Test only for types Google currently documents as
+  supported search features.
 - Rich-result eligibility is not guaranteed.
 
 ## Page mapping
@@ -35,6 +37,10 @@ Consider:
 - `HowTo` only for a genuine visible sequence
 - `BreadcrumbList`
 
+`HowTo` can remain valid Schema.org semantics even when Google exposes no
+corresponding rich-result feature. Never describe vocabulary validity as
+Google rich-result eligibility.
+
 ### Blog
 
 Consider:
@@ -45,6 +51,10 @@ Consider:
 ### FAQ
 
 Use `FAQPage` only when all questions and answers are visible.
+
+Google removed its FAQ rich-result feature in 2026. `FAQPage` may still express
+the visible page entity for other consumers, but do not promise a Google FAQ
+enhancement or treat Rich Results Test absence as a schema.org failure.
 
 ### Comparison
 
