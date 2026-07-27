@@ -9,7 +9,15 @@ passphrase, keyring value, agent auth material, transcript text, object name,
 username, or absolute local path. Only non-secret IDs, counts, booleans,
 versions, exit codes, redacted paths, and sanitized output appear here.
 
-**Status: IN PROGRESS — M0 complete, M1 in progress.**
+**Status: CLOSED. Overall `v0.1.0-rc.5` verdict: FAIL.**
+
+Device A (macOS) completed M0 and M1 with real-device evidence. Device B
+returned a release-blocking `WINDOWS-RC5-W1-FAIL`, so milestones M2, M3, and M4
+were **not executed** and every gate depending on them is recorded as
+`NOT TESTED`, never as `PASS`.
+
+**Tally: 6 PASS / 2 PARTIAL / 2 FAIL / 11 NOT TESTED (21 mandatory rows).**
+All 21 mandatory rows passed: **no**.
 
 ## 1. Test record
 
@@ -335,17 +343,82 @@ mac_report_path=docs/testing/results/2026-07-27-macos-phase1-rc5.md
 END-MAC-RC5-M1
 ```
 
-## 4. M2 — Mac update and push
+## 4. Device B outcome and stop decision
 
-_Pending `WINDOWS-RC5-W1-PASS`._
+Device B never reached a usable additional-device initialization on stock RC5.
+Its sanitized handoff, reproduced verbatim and unaltered:
 
-## 5. M3 — Windows-to-Mac updates
+```text
+WINDOWS-RC5-W1-FAIL
+release=v0.1.0-rc.5
+tag_commit=b4ebd8dcf8b47e7dcbbc0fc40c4ef9adf9ea5065
+device=windows-amd64
+canonical_project_id=local/reinstate-phase1-acceptance-rc5
+correct_coordinate_additional_device_init=FAIL
+failed_operation=HeadObject
+failed_http_status=400
+failed_error=BadRequest
+actual_exit_code=NOT_CAPTURED
+config_initialized=false
+w1_remainder=NOT_TESTED
+w2=NOT_TESTED
+w3=NOT_TESTED
+post_rc5_pr_26_validation=EXCLUDED
+overall_verdict=FAIL
+pass_count=1
+partial_count=1
+fail_count=1
+not_tested_count=18
+all_21_passed=false
+report_path=docs/testing/results/2026-07-27-windows-phase1-rc5.md
+END-WINDOWS-RC5-W1-FAIL
+```
 
-_Pending `WINDOWS-RC5-W2-READY`._
+Windows draft PR: <https://github.com/HarjjotSinghh/reinstate/pull/28>
+(open, draft, unmerged; single file — the Windows report).
 
-## 6. M4 — divergence and final verdict
+Notes on how this is scored here:
 
-_Pending._
+- `actual_exit_code=NOT_CAPTURED` is reproduced as reported. It is **not**
+  inferred, reconstructed, or replaced with a plausible value.
+- The Device B counts (`pass_count=1`, `not_tested_count=18`, …) describe Device
+  B's own view. They are **not** adopted wholesale. Section 7 reconciles every
+  mandatory row individually across both devices, which is why the totals here
+  differ.
+- Device B reports that a later successful restore used post-RC5 development
+  code from PR #26. That work is **excluded** from this acceptance verdict; it
+  is not RC5 behaviour and no RC5 gate is credited from it.
+
+Because a same-vendor restore never happened on stock RC5, milestones M2, M3,
+and M4 were not executed on Device A either.
+
+## 5. M2, M3, M4 — not executed
+
+| Milestone | Device A work | Status |
+| --------- | ------------- | ------ |
+| M2 | resume Claude, append `…-MAC-CLAUDE-A2`, dry-run, push that ID | NOT EXECUTED |
+| M3 | pull both IDs, prove backups, resume `B1` markers, no-op push | NOT EXECUTED |
+| M4 | conflict divergence per runbook section 17, keep-both reconciliation | NOT EXECUTED |
+
+No Mac session was modified after M1, no further push or pull was issued, and
+the remote revision remains `4770adee-1adc-426e-bc18-405c2a112d1b` with two
+sessions. The `A2`, `B1`, and conflict markers were never created on any device.
+
+## 6. Why a successful `pull` line would not have been enough
+
+Recorded for the RC6 rerun. Phase 1 cannot be called complete on the strength of
+a `rein pull` success line. The gates that remain unproven for RC5 are exactly
+the ones that distinguish a real continuity layer from a file copier:
+
+- exact-ID vendor discovery at the destination device;
+- same-vendor resume through the normal `claude --resume` / `codex resume` UI;
+- destination path mapping onto the *other* operating system's project path;
+- timestamped backup of an existing target before replacement;
+- active-agent overwrite refusal;
+- unchanged-push no-op that creates no new remote revision; and
+- conflict detection with non-destructive keep-both recovery.
+
+None of these were exercised on RC5.
 
 ## 7. Section 19 mandatory sign-off
 
@@ -354,27 +427,47 @@ reconciled from the Windows report in M4.
 
 | # | Gate | Owner | Result | Evidence |
 | - | ---- | ----- | ------ | -------- |
-| 1 | `install.sh` returns 200 and installs RC5 on Mac | A | PASS | §2.2 |
-| 2 | `install.ps1` returns 200 and installs RC5 on Windows | B | _pending_ | |
-| 3 | Both installers are idempotent and PATH-safe | A+B | _partial: Mac PASS (§2.2)_ | |
-| 4 | Pre-init missing-config failure is accurate | A+B | _partial: Mac PASS (§2.3)_ | |
-| 5 | Post-init setup check and self-test pass on both devices | A+B | _partial: Mac PASS (§3.2)_ | |
-| 6 | Claude setup prompt completes on the Mac | A | PASS, with caveat **F-A2** | §3.2, §3.5 |
-| 7 | Codex setup prompt completes on Windows | B | _pending_ | |
-| 8 | Only two selected test sessions reach the remote manifest | A | PASS | §3.5 |
-| 9 | Remote manifest/snapshots are ciphertext-only | A | PASS | §3.6 |
-| 10 | Wrong passphrase fails without mutation | B | _pending_ | |
-| 11 | Claude Mac-to-Windows resume succeeds | B | _pending_ | |
-| 12 | Codex Mac-to-Windows resume succeeds | B | _pending_ | |
-| 13 | Active-agent overwrite is refused | B | _pending_ | |
-| 14 | Existing Windows target is backed up before restore | B | _pending_ | |
-| 15 | Claude Windows-to-Mac resume succeeds | A | _pending_ | |
-| 16 | Codex Windows-to-Mac resume succeeds | A | _pending_ | |
-| 17 | Existing Mac targets are backed up before restore | A | _pending_ | |
-| 18 | Unchanged pushes skip without new snapshots | A | _pending_ | |
-| 19 | Divergence records a conflict without overwrite | A+B | _pending_ | |
-| 20 | `--keep-both` preserves both branches | B | _pending_ | |
-| 21 | All required GitHub checks are green | A | _pending_ | |
+| 1 | `install.sh` returns 200 and installs RC5 on Mac | A | **PASS** | §2.2 |
+| 2 | `install.ps1` returns 200 and installs RC5 on Windows | B | **FAIL** | **F-B1** — returns 200, installs 0.1.0-rc.4 |
+| 3 | Both installers are idempotent and PATH-safe | A+B | **PARTIAL** | Mac PASS §2.2; Windows public route never installed rc.5, PATH-duplication check NOT TESTED |
+| 4 | Pre-init missing-config failure is accurate | A+B | **PASS** | Mac §2.3; Windows exit 3, `config missing`, `windows-amd64`, both adapters `SUPPORTED` |
+| 5 | Post-init setup check and self-test pass on both devices | A+B | **PARTIAL** | Mac PASS §3.2; Windows NOT TESTED — `config_initialized=false` |
+| 6 | Claude setup prompt completes on the Mac | A | **PASS**, caveat **F-A2** | §3.2, §3.5 |
+| 7 | Codex setup prompt completes on Windows | B | **FAIL** | additional-device init failed, HeadObject 400 |
+| 8 | Only two selected test sessions reach the remote manifest | A | **PASS** | §3.5 |
+| 9 | Remote manifest/snapshots are ciphertext-only | A | **PASS** | §3.6 |
+| 10 | Wrong passphrase fails without mutation | B | **NOT TESTED** | blocked by row 7 |
+| 11 | Claude Mac-to-Windows resume succeeds | B | **NOT TESTED** | blocked by row 7 |
+| 12 | Codex Mac-to-Windows resume succeeds | B | **NOT TESTED** | blocked by row 7 |
+| 13 | Active-agent overwrite is refused | B | **NOT TESTED** | blocked by row 7 |
+| 14 | Existing Windows target is backed up before restore | B | **NOT TESTED** | blocked by row 7 |
+| 15 | Claude Windows-to-Mac resume succeeds | A | **NOT TESTED** | M3 not executed |
+| 16 | Codex Windows-to-Mac resume succeeds | A | **NOT TESTED** | M3 not executed |
+| 17 | Existing Mac targets are backed up before restore | A | **NOT TESTED** | M3 not executed |
+| 18 | Unchanged pushes skip without new snapshots | A | **NOT TESTED** | M3 not executed |
+| 19 | Divergence records a conflict without overwrite | A+B | **NOT TESTED** | M4 not executed |
+| 20 | `--keep-both` preserves both branches | B | **NOT TESTED** | M4 not executed |
+| 21 | All required GitHub checks are green | A | **PASS**, caveat **F-B4** | §7.1 |
+
+**Totals: 6 PASS / 2 PARTIAL / 2 FAIL / 11 NOT TESTED.**
+Every mandatory row passed: **no**. Phase 1 therefore remains **open** for
+`v0.1.0-rc.5`.
+
+Beyond the 21 mandatory rows, the F1 default-refusal regression was executed
+physically on a real RC5 home and **passed** (§3.3).
+
+### 7.1 Required GitHub checks
+
+All check runs on the peeled tag commit
+`b4ebd8dcf8b47e7dcbbc0fc40c4ef9adf9ea5065`:
+
+| Conclusion | Checks |
+| ---------- | ------ |
+| success | Build & release, CodeQL, Lint, Secret scan, Security, Test (ubuntu-latest), Test (macos-latest), Test (windows-latest), Website, Workflow permission and pin review |
+| skipped | Dependency review |
+
+10 successful, 1 skipped, 0 failing, so the row passes as written. See **F-B4**
+for why green checks did not prevent **F-B1**.
 
 ## 8. Findings
 
@@ -383,6 +476,102 @@ reconciled from the Windows report in M4.
 | F-A1 | Non-blocking | Release tag's tagger e-mail is not the allow-listed signing principal; SSH verification binds by key, not identity (§2.1) |
 | F-A2 | Non-blocking, docs/prompt | Setup prompt v5 silently redirected a configured `REINSTATE_HOME` |
 | F-A3 | Open, severity pending M3 | Codex sessions are not resolved to the canonical project ID, and adapter listing scope is asymmetric (§3.4) |
+| **F-B1** | **RELEASE BLOCKING** | `https://reinstate.dev/install.ps1` still serves the rc.4 bootstrap, so Windows silently installs 0.1.0-rc.4 while reporting success |
+| F-B2 | Non-blocking, Windows-only | The PowerShell replacement prompt omits the target version, so the user approves a replacement without being told what they are getting |
+| F-B3 | Minor | `rein status` reports a missing config as a raw OS error containing the absolute config path, instead of the redacted `config missing` that `setup check` produces |
+| F-B4 | Process gap | CI verifies the installer assets in the **build output** but nothing verifies the **deployed route**, which is how F-B1 shipped with 11 green checks |
+| F-B5 | **RELEASE BLOCKING** (Device B) | Stock RC5 additional-device init fails at the `HeadObject` manifest probe with HTTP 400 against R2 |
+
+### F-B1 — the rc.5 Windows bootstrap was never published
+
+Discovered from Device A by fetching and diffing the live routes; reproduced on
+Device B, where the documented public one-liner installed 0.1.0-rc.4.
+
+| Artifact | `$Version` |
+| -------- | ---------- |
+| `website/public/install.ps1` **at tag `v0.1.0-rc.5`** | `v0.1.0-rc.5` |
+| `https://reinstate.dev/install.ps1` **as served** | `v0.1.0-rc.4` |
+| `website/public/install.sh` at tag vs served | byte-identical, correct |
+
+Established facts:
+
+- The repository is **correct** at the tag; this is a publication failure, not a
+  source defect. Exactly one line differs between served and tagged content.
+- It is **not** a CDN caching artifact. A cache-busting query string and an
+  explicit `Cache-Control: no-cache` request both return the rc.4 body.
+- The rc.5 bootstrap's pinned installer digest is **correct**:
+  `scripts/install.ps1` is byte-identical between rc.4 and rc.5, so the same
+  `ce46d3a2…` digest is right for both.
+- Only the POSIX route was republished for rc.5; the PowerShell route was not.
+
+Why this is release blocking rather than cosmetic: the rc.4 bootstrap is
+*internally consistent*, so both checksum layers legitimately print
+`installer checksum ok` and `checksum ok` while installing the wrong release.
+A Windows user following the documented public instructions receives rc.4 and is
+told the install succeeded. There is no signal that anything is wrong. This is
+precisely the failure mode runbook section 18 warns about when it says not to
+substitute "the PowerShell looks right" for a real native Windows check.
+
+Fix: republish the website so the `install.ps1` route serves the tagged rc.5
+asset, then re-run mandatory row 2 and the Windows half of row 3. No new RC is
+required, because no binary behaviour changed — only the published bootstrap.
+
+Device B was unblocked for the remaining gates using the installer's own
+documented exact-tag audit path with the layer-1 digest verified by hand. That
+workaround does **not** convert row 2 to PASS: the gate tests the public route,
+and the public route installs the wrong release.
+
+### F-B2 — PowerShell replacement prompt hides the target version
+
+Exercised on Device B, where an existing rc.4 binary made the confirmation
+branch reachable. Observed prompt:
+
+```
+Replace Reinstate 0.1.0-rc.4 with  [y/N]:
+```
+
+The target version is missing, and so is the literal `?`. Source line 49 of
+`scripts/install.ps1` reads:
+
+```powershell
+$answer = Read-Host "Replace Reinstate $ExistingVersion with $AssetVersion? [y/N]"
+```
+
+Because `?` is a legal character in an unbraced PowerShell variable name, the
+token parses as the undefined variable `$AssetVersion?` and expands to the empty
+string, consuming the question mark. Line 27 of the same file uses the braced
+form `${AssetVersion}` and is correct; line 49 is the only unbraced use followed
+by `?`. The POSIX installer builds the same message with `printf '%s'` and is
+unaffected, so this is Windows-only.
+
+Fix: brace the expansion, `${AssetVersion}?`.
+
+The safeguard itself is intact — an empty answer was correctly refused with
+`refusing to replace existing Reinstate 0.1.0-rc.4`, confirming default-deny.
+Rated non-blocking for that reason, but it interacts badly with **F-B1**: a
+Windows user already on rc.5 who runs the documented public one-liner is asked
+`Replace Reinstate 0.1.0-rc.5 with  [y/N]`, and answering `y` silently
+**downgrades** them to rc.4 with no version shown at any point. Both should be
+fixed together.
+
+### Replacement-prompt coverage
+
+| Installer | Replacement prompt | Result |
+| --------- | ------------------ | ------ |
+| POSIX `scripts/install.sh` (Device A) | NOT TESTED | no older binary existed; not manufactured |
+| PowerShell `scripts/install.ps1` (Device B) | TESTED, both branches | see below; message defective, see F-B2 |
+
+Device B exercised the confirmation branch twice against a genuine pre-existing
+rc.4 binary:
+
+| Answer | Outcome |
+| ------ | ------- |
+| empty (Enter) | refused: `refusing to replace existing Reinstate 0.1.0-rc.4`, nothing replaced |
+| `y` | replaced; `rein version --json` then reported `0.1.0-rc.5` / commit `b4ebd8d` |
+
+Default-deny and explicit-approve both behave correctly. Device B therefore runs
+the release under test for all remaining gates, via the exact-tag audit path,
+not via the public route that F-B1 broke.
 
 ### F-A2 — setup prompt v5 does not preserve a configured home
 
@@ -408,4 +597,75 @@ only becomes release-blocking if the unmapped raw path travels to the remote and
 breaks Windows destination mapping. That is decided by M3, not by inspection, so
 it is not scored here.
 
-No release-blocking finding confirmed so far.
+### F-B4 — CI validates the build, not the deployment
+
+The `Website` job in `.github/workflows/ci.yml` at the tag does verify installer
+parity, and does it correctly:
+
+```yaml
+test -s dist/client/install.sh
+test -s dist/client/install.ps1
+cmp public/install.sh dist/client/install.sh
+cmp public/install.ps1 dist/client/install.ps1
+grep -F 'v0.1.0-rc.5' dist/client/install.sh
+grep -F 'v0.1.0-rc.5' dist/client/install.ps1
+```
+
+That is the runbook section 18 gate for byte-for-byte inclusion of both scripts
+in the Astro output, and it passed. Yet the live route still serves the rc.4
+PowerShell bootstrap. The check asserts things about `dist/client/` in the CI
+workspace; **nothing asserts anything about what `https://reinstate.dev`
+actually serves**. So the release could be simultaneously green and broken, and
+was.
+
+This is the root process defect behind F-B1: the source was right, CI was right,
+and the deployment was wrong, with no gate positioned to notice.
+
+Suggested fix: add a post-deploy smoke check that fetches both public routes and
+asserts the pinned version, for example
+`curl -fsSL https://reinstate.dev/install.ps1 | grep -F 'v0.1.0-rc.5'`, and
+require it before a release is considered published. Without it, F-B1 can recur
+on RC6.
+
+### F-B5 — stock RC5 additional-device init fails against R2
+
+Reported by Device B; not independently reproducible from Device A, which is a
+first device and never performs the additional-device manifest probe.
+
+| Field | Value |
+| ----- | ----- |
+| Operation | `HeadObject` |
+| HTTP status | 400 |
+| Error | `BadRequest` |
+| Exit code | `NOT_CAPTURED` — reported as such, not inferred |
+| Result | `config_initialized=false` |
+
+This is the blocker that ended the run: without a second initialized device,
+every cross-device gate is unreachable. Device A's own push path against the
+same bucket and profile worked, so the failure is specific to the
+additional-device manifest probe rather than to storage reachability or
+credentials in general.
+
+### Release-blocking summary
+
+| ID | Blocker |
+| -- | ------- |
+| F-B5 | Stock RC5 cannot initialize an additional device against R2 |
+| F-B1 | The rc.5 Windows bootstrap was never published; the public route installs rc.4 |
+
+Non-blocking: F-A1, F-A2, F-A3 (unresolved, could not be decided), F-B2, F-B3.
+Process: F-B4.
+
+## 9. Recommendation
+
+`v0.1.0-rc.5` does not pass Phase 1 acceptance. The next candidate should be
+RC6 containing the F-B5 fix, and it must ship with:
+
+1. the Windows bootstrap actually published, verified through the live route;
+2. a post-deploy route check so F-B4 cannot hide a repeat of F-B1;
+3. `${AssetVersion}` braced in the PowerShell replacement prompt (F-B2); and
+4. `REINSTATE_HOME` preserved and echoed by both setup prompts (F-A2).
+
+The full runbook must then be rerun from section 5, because no cross-device gate
+has ever been satisfied on any RC5 build. F-A3 in particular is still undecided
+and needs the Windows Codex restore to settle it.
