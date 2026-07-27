@@ -27,8 +27,30 @@ describe('Open Graph brand contract', () => {
     expect(card).toContain("'Reinstate'");
     expect(card).toContain("width: '1200px'");
     expect(card).toContain("height: '630px'");
-    for (const color of ['#131f1a', '#e4e7dd', '#b8ff3c', '#7ecdf5', '#ffce4a']) {
+    for (const color of ['#131f1a', '#e4e7dd', '#b8ff3c']) {
       expect(card).toContain(color);
+    }
+  });
+
+  it('uses five artwork captures sourced from the live landing page', () => {
+    const card = source('./og-card.ts');
+    const provenance = source('../assets/og-art/README.md');
+    for (const variant of [
+      'session-stack',
+      'stranded-workstation',
+      'device-handoff',
+      'local-encryption',
+      'owned-storage',
+    ]) {
+      expect(card).toContain(`${variant}.png`);
+      expect(provenance).toContain(`${variant}.png`);
+    }
+    for (const component of [
+      'ProblemExploded.astro',
+      'TerminalProof.astro',
+      'SecurityVaultArt.astro',
+    ]) {
+      expect(provenance).toContain(component);
     }
   });
 

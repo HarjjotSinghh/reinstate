@@ -1,9 +1,14 @@
 import { createRequire } from 'node:module';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import satori from 'satori';
 import sharp from 'sharp';
 import { product } from '../data/product.ts';
 import type { OgPage } from '../data/og-pages.ts';
+import {
+  ogArtVariantForRoute,
+  type OgArtVariant,
+} from './og-art.ts';
 
 const require = createRequire(import.meta.url);
 let fonts:
@@ -62,6 +67,19 @@ function svgDataUri(svg: string): string {
   return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
 }
 
+function ogArtDataUri(filename: string): string {
+  const candidates = [
+    resolve(process.cwd(), 'src/assets/og-art', filename),
+    resolve(process.cwd(), 'website/src/assets/og-art', filename),
+    resolve(import.meta.dirname, '../assets/og-art', filename),
+  ];
+  const source = candidates.find((candidate) => existsSync(candidate));
+  if (!source) {
+    throw new Error(`Open Graph artwork source not found: ${filename}`);
+  }
+  return `data:image/png;base64,${readFileSync(source).toString('base64')}`;
+}
+
 const logo = svgDataUri(`
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
     <rect x="10" y="10" width="32" height="32" rx="6" fill="none" stroke="#131f1a" stroke-width="4"/>
@@ -71,38 +89,24 @@ const logo = svgDataUri(`
   </svg>
 `);
 
-const continuityArt = svgDataUri(`
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 470">
-    <g fill="none" stroke="#131f1a" stroke-width="4" stroke-linejoin="round">
-      <path d="M40 392 196 302 380 408 224 498Z" fill="#d3d8c9"/>
-      <path d="M70 337 194 266 348 354 224 426Z" fill="#26382f"/>
-      <path d="M70 337 224 426 224 450 70 361Z" fill="#1d2b25"/>
-      <path d="M224 426 348 354 348 378 224 450Z" fill="#131f1a"/>
+const ogArtByVariant: Record<OgArtVariant, string> = {
+  'session-stack': ogArtDataUri('session-stack.png'),
+  'stranded-workstation': ogArtDataUri('stranded-workstation.png'),
+  'device-handoff': ogArtDataUri('device-handoff.png'),
+  'local-encryption': ogArtDataUri('local-encryption.png'),
+  'owned-storage': ogArtDataUri('owned-storage.png'),
+};
 
-      <path d="M118 276 203 227 310 289 225 338Z" fill="#f4f6ef"/>
-      <path d="M118 276 225 338 225 354 118 292Z" fill="#d8ddd0"/>
-      <path d="M225 338 310 289 310 305 225 354Z" fill="#bdc5b6"/>
-
-      <path d="M101 225 203 166 330 239 228 298Z" fill="#7ecdf5"/>
-      <path d="M101 225 228 298 228 314 101 241Z" fill="#5fa9d0"/>
-      <path d="M228 298 330 239 330 255 228 314Z" fill="#4388ad"/>
-
-      <path d="M85 170 201 103 346 187 230 254Z" fill="#ffce4a"/>
-      <path d="M85 170 230 254 230 271 85 187Z" fill="#dba631"/>
-      <path d="M230 254 346 187 346 204 230 271Z" fill="#b57e1f"/>
-
-      <path d="M68 110 200 34 365 129 233 206Z" fill="#b8ff3c"/>
-      <path d="M68 110 233 206 233 224 68 128Z" fill="#86c92d"/>
-      <path d="M233 206 365 129 365 147 233 224Z" fill="#57901f"/>
-
-      <path d="M128 98 200 57 291 109 219 151Z" fill="#1d2723"/>
-      <path d="M154 99 178 113 164 121 140 107Z" stroke="#b8ff3c" stroke-width="5" stroke-linecap="round"/>
-      <path d="M184 129 226 153" stroke="#b8ff3c" stroke-width="5" stroke-linecap="round"/>
-    </g>
-    <path d="M28 310 C0 210 34 91 125 44" fill="none" stroke="#4f8a1e" stroke-width="5" stroke-linecap="round" stroke-dasharray="8 12"/>
-    <path d="m113 41 20-4-8 19" fill="#4f8a1e"/>
-  </svg>
-`);
+const ogArtPlacement: Record<
+  OgArtVariant,
+  { width: number; height: number; right: number; bottom: number }
+> = {
+  'session-stack': { width: 380, height: 230, right: 0, bottom: 118 },
+  'stranded-workstation': { width: 400, height: 276, right: -4, bottom: 82 },
+  'device-handoff': { width: 480, height: 148, right: -8, bottom: 114 },
+  'local-encryption': { width: 330, height: 355, right: 6, bottom: 84 },
+  'owned-storage': { width: 330, height: 355, right: 6, bottom: 84 },
+};
 
 export const repositorySocialPreview = {
   width: 1280,
@@ -159,7 +163,16 @@ function titleSize(title: string): number {
   return 70;
 }
 
-export async function renderOgCard(page: OgPage): Promise<Buffer> {
+export interface RenderOgCardOptions {
+  artVariant?: OgArtVariant;
+}
+
+export async function renderOgCard(
+  page: OgPage,
+  options: RenderOgCardOptions = {},
+): Promise<Buffer> {
+  const artVariant = options.artVariant ?? ogArtVariantForRoute(page.route);
+  const artPlacement = ogArtPlacement[artVariant];
   const element = node(
     'div',
     {
@@ -319,13 +332,13 @@ export async function renderOgCard(page: OgPage): Promise<Buffer> {
       ),
     ),
     node('img', {
-      src: continuityArt,
-      width: 350,
-      height: 392,
+      src: ogArtByVariant[artVariant],
+      width: artPlacement.width,
+      height: artPlacement.height,
       style: {
         position: 'absolute',
-        right: '24px',
-        bottom: '94px',
+        right: `${artPlacement.right}px`,
+        bottom: `${artPlacement.bottom}px`,
       },
     }),
   );
@@ -494,13 +507,13 @@ export async function renderRepositorySocialPreview(): Promise<Buffer> {
       ),
     ),
     node('img', {
-      src: continuityArt,
-      width: 376,
-      height: 421,
+      src: ogArtByVariant['device-handoff'],
+      width: 520,
+      height: 160,
       style: {
         position: 'absolute',
-        right: '30px',
-        bottom: '86px',
+        right: '-4px',
+        bottom: '102px',
       },
     }),
   );

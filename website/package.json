@@ -15,6 +15,7 @@
     "astro": "astro",
     "indexnow": "node scripts/indexnow.mjs",
     "generate:media": "node scripts/generate-responsive-media.mjs",
+    "generate:og-art": "node scripts/generate-og-art-variants.mjs",
     "generate:github-social": "node scripts/generate-github-social.ts",
     "check:media": "node scripts/generate-responsive-media.mjs --check",
     "check:github-social": "node scripts/generate-github-social.ts --check",
