@@ -13,12 +13,12 @@ dedicated editorial pass.
 | 1 | What is Reinstate? | Implemented: `/about/reinstate` |
 | 2 | Sync Claude Code sessions across devices | Implemented: `/guides/sync-claude-code-sessions-across-devices` |
 | 3 | Sync Codex sessions across devices | Implemented: `/guides/sync-codex-sessions-across-devices` |
-| 4 | Move a coding-agent session from macOS to Windows | Implementation in progress: `/guides/move-a-coding-agent-session-from-mac-to-windows` |
+| 4 | Move a coding-agent session from macOS to Windows | Implemented: `/guides/move-a-coding-agent-session-from-mac-to-windows` |
 | 5 | Continue work between a work and personal computer | Implemented: `/use-cases/work-and-personal-computers` |
 | 6 | Reinstate security model | Implemented: `/security` and `/docs/security-model` |
 | 7 | Supported agents, OSs, and storage | Implemented: `/compatibility` and `/compatibility.json` |
-| 8 | Reinstate installation guide | Covered by `/docs/getting-started`; dedicated `/docs/installation` in progress |
-| 9 | Upload and restore a session | Implemented in agent guides; dedicated operational docs in progress |
+| 8 | Reinstate installation guide | Implemented: `/docs/installation` |
+| 9 | Upload and restore a session | Implemented: `/docs/sync-a-session` and `/docs/restore-a-session` |
 | 10 | Troubleshooting guide | Implemented: `/docs/troubleshooting` |
 | 11 | Reinstate FAQ | Implemented: `/docs/faq` |
 | 12 | Reinstate architecture | Implemented: `/docs/architecture` |
@@ -35,7 +35,7 @@ dedicated editorial pass.
 | 18 | Use Cloudflare R2 for encrypted storage | Implemented: `/guides/use-cloudflare-r2-for-coding-agent-session-storage` |
 | 19 | Use Amazon S3 for encrypted storage | Implemented: `/guides/use-s3-for-coding-agent-session-storage` |
 | 20 | How path remapping works between macOS and Windows | Covered by `/use-cases/macos-and-windows` and `/docs/architecture`; dedicated deep dive planned |
-| 21 | What Reinstate does not sync | Dedicated `/docs/limitations` in progress; also covered by FAQ/security |
+| 21 | What Reinstate does not sync | Implemented: `/docs/limitations` |
 | 22 | Verify a restored coding-agent session | Implemented inside both agent-specific guides |
 | 23 | Handle agent format changes | Covered by `/compatibility`, `/docs/adapters`, and troubleshooting |
 | 24 | Build a Reinstate adapter | Partly covered by `/docs/adapters`; publish a full tutorial only with a supported extension contract |
@@ -45,8 +45,8 @@ dedicated editorial pass.
 | # | Opportunity | Status and evidence gate |
 | ---: | --- | --- |
 | 25 | Anatomy of a coding-agent session | Planned: sanitized format research and stable terminology |
-| 26 | Cross-device portability test methodology | Source acceptance checklist exists; public research treatment planned |
-| 27 | Agent-session compatibility report | Machine-readable current matrix implemented; periodic report needs a completed evidence window |
+| 26 | Cross-device portability test methodology | Implemented at `/research` with the source acceptance runbook; completed RC6 results remain release-gated |
+| 27 | Agent-session compatibility report | Implemented: `/compatibility`, `/compatibility.json`, and `/research`; periodic field reports require a completed evidence window |
 | 28 | Threat-modeling encrypted session sync | Planned: formal security review and explicit scope |
 | 29 | Lessons from implementing local-first encryption | Planned: maintainer-authored engineering evidence |
 | 30 | Open session portability as infrastructure | Planned: roadmap/standards essay clearly separated from current native resume |
@@ -63,4 +63,3 @@ dedicated editorial pass.
   questions to [`question-inventory.md`](question-inventory.md).
 - A published research asset needs methodology, exact environment, failures,
   limitations, raw synthetic data where appropriate, date, and commit SHA.
-

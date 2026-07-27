@@ -32,7 +32,7 @@ phase. It deliberately does not call those external actions complete.
 | 4 | Search-intent model | Implemented | content schemas require `targetQuery` and `searchIntent`; question inventory and content roadmap |
 | 5 | Initial strengths audit | Implemented | preserved shared layout/SSR strengths and documented baselines |
 | 6 | Initial gaps and risks | Implemented | technical foundation plus later audit commits; unresolved external items listed below |
-| 7 | URL and information architecture | Implemented / staged | shallow hubs, docs, guides, integrations, use cases, comparisons; future evidence pages remain gated rather than thin |
+| 7 | URL and information architecture | Implemented / staged | shallow hubs, docs, guides, integrations, use cases, comparisons, `/roadmap`, and `/research`; unsupported thin evidence pages remain gated |
 | 8 | Page-to-query map | Implemented | `question-inventory.md`, `content-roadmap.md`, explicit frontmatter query targets |
 
 ## Sections 9–29: technical SEO for Astro
@@ -81,7 +81,7 @@ phase. It deliberately does not call those external actions complete.
 | 38 | ASEO model | Reference / implemented | core-index-first policy across AI-search skill and runbook |
 | 39 | Entity consistency | Implemented | centralized product data, protected claim scans, fact page, README/schema sync |
 | 40 | Authoritative fact page | Implemented | `/about/reinstate` includes release, scope, dates, license, owner, limitations, links |
-| 41 | Primary-source evidence | Implemented / release-gated | architecture, security, compatibility JSON, tests/results links; benchmarks/research require reproducible new evidence |
+| 41 | Primary-source evidence | Implemented / release-gated | `/research`, architecture, security, compatibility JSON, immutable fixture commit, and acceptance-source links; benchmark results require reproducible new evidence |
 | 42 | Citation-ready claims | Implemented | direct factual answers, source-linked comparison/compatibility pages, claim guards |
 | 43 | Freshness system | Implemented | changelog/RSS/dates, sourced compatibility data, automatic 60/120-day audit |
 | 44 | Crawler accessibility | Implemented / external | crawler policy and production smoke tool; verified CDN/WAF logs require production access |
@@ -93,14 +93,14 @@ phase. It deliberately does not call those external actions complete.
 
 | § | Topic | Status | Evidence |
 | ---: | --- | --- | --- |
-| 48 | Content pillars | Implemented | hubs and `content-roadmap.md` organize continuity, agents, security, architecture, open source |
+| 48 | Content pillars | Implemented | hubs, `/roadmap`, `/research`, and `content-roadmap.md` organize continuity, agents, security, architecture, open source, and evidence |
 | 49 | First 30 opportunities | Implemented / staged | item-by-item canonical and evidence-gate register in `content-roadmap.md` |
 | 50 | Content brief template | Implemented | executable template plus Claude Code and Codex briefs |
 | 51 | Editorial quality | Implemented | schemas, contract tests, freshness/source/product-truth gates |
 | 52 | Programmatic SEO policy | Reference | no mass/thin generation; every route must pass uniqueness, value, link, and truth gates |
 | 53 | Launch distribution | Operationalized / external | `launch-distribution.md`; actual posts/submissions wait for deployment/release authorization |
 | 54 | Digital PR angles | Operationalized | evidence-backed angles and prohibited generic/unsupported positioning |
-| 55 | Linkable assets | Implemented / staged | compatibility JSON is live-ready; research/tools have explicit publication gates |
+| 55 | Linkable assets | Implemented / staged | compatibility JSON, roadmap, and primary-evidence hub are live-ready; benchmark results and new research assets retain publication gates |
 
 ## Sections 56–65: measurement and phases
 
@@ -164,4 +164,3 @@ worktree:
 | Benchmarks/research/testimonials | reproducible data or permission | methodology/raw data or consent record |
 
 No repository change can substitute for those records.
-
