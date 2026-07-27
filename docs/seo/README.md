@@ -17,6 +17,7 @@ Operational follow-up uses:
 - [the release and launch distribution runbook](launch-distribution.md);
 - [the evidence-aware content roadmap](content-roadmap.md);
 - [the section-by-section implementation evidence matrix](implementation-status.md);
+- [the verified product-truth and conflict register](product-truth-register.md);
 - [the fixed AI-search query baseline](ai-search-query-baseline.md); and
 - [the weekly report template](weekly-report-template.md);
 - [the monthly audit template](monthly-audit-template.md);
