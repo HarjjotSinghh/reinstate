@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -104,6 +105,10 @@ func (a *Adapter) Discover(ctx context.Context, opts adapter.DiscoverOptions) ([
 		return nil, nil
 	}
 	var sessions []adapter.Session
+	projectIDsByRoot, err := a.projectIDsByRoot()
+	if err != nil {
+		return nil, err
+	}
 	sessionsDir := filepath.Join(inst.Root, "sessions")
 	err = filepath.Walk(sessionsDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -140,6 +145,13 @@ func (a *Adapter) Discover(ctx context.Context, opts adapter.DiscoverOptions) ([
 				}
 			}
 		}
+		if len(projectIDsByRoot) > 0 {
+			canonicalID, mapped := projectIDsByRoot[canonicalProjectRoot(projectID)]
+			if !mapped {
+				return nil
+			}
+			projectID = canonicalID
+		}
 		if opts.ProjectID != "" && projectID != opts.ProjectID {
 			return nil
 		}
@@ -165,8 +177,49 @@ func (a *Adapter) Discover(ctx context.Context, opts adapter.DiscoverOptions) ([
 	return sessions, nil
 }
 
+func (a *Adapter) projectIDsByRoot() (map[string]string, error) {
+	mapped := make(map[string]string, len(a.Projects))
+	for canonicalID, localRoot := range a.Projects {
+		root := canonicalProjectRoot(localRoot)
+		if previous, exists := mapped[root]; exists && previous != canonicalID {
+			return nil, fmt.Errorf(
+				"codex project mappings %q and %q resolve to the same local root %q",
+				previous,
+				canonicalID,
+				root,
+			)
+		}
+		mapped[root] = canonicalID
+	}
+	return mapped, nil
+}
+
+func canonicalProjectRoot(projectPath string) string {
+	canonicalPath := filepath.Clean(projectPath)
+	if resolved, err := filepath.EvalSymlinks(canonicalPath); err == nil {
+		canonicalPath = resolved
+	}
+	canonicalPath = filepath.ToSlash(canonicalPath)
+	if runtime.GOOS == "windows" {
+		canonicalPath = strings.ToLower(canonicalPath)
+	}
+	return canonicalPath
+}
+
 func (a *Adapter) mapper() pathmap.Mapper {
-	return pathmap.Mapper{Home: a.Home, Projects: a.Projects}
+	normalizationProjects := make(map[string]string, len(a.Projects))
+	for canonicalID, localRoot := range a.Projects {
+		resolvedRoot := filepath.Clean(localRoot)
+		if resolved, err := filepath.EvalSymlinks(resolvedRoot); err == nil {
+			resolvedRoot = resolved
+		}
+		normalizationProjects[canonicalID] = resolvedRoot
+	}
+	return pathmap.Mapper{
+		Home:              a.Home,
+		Projects:          a.Projects,
+		NormalizeProjects: normalizationProjects,
+	}
 }
 
 func (a *Adapter) PlanExport(ctx context.Context, s adapter.Session, opts adapter.ExportOptions) (adapter.ExportPlan, error) {

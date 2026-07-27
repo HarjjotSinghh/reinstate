@@ -21,5 +21,7 @@ untested build stable.
 - Run `make verify`.
 - Build a clean GoReleaser snapshot.
 - Verify archives, checksums, SBOMs, source archive, and installers.
+- Publish installer routes only through the signed-tag production deployment
+  script and verify both immutable and live URLs byte for byte.
 - Leave stable tagging and publication to the authorized maintainer after all
   native Windows, WSL2, and macOS acceptance rows pass.

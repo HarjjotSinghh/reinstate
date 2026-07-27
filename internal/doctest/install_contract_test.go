@@ -481,3 +481,13 @@ func TestInstallerScriptsDoNotRequestElevation(t *testing.T) {
 		}
 	}
 }
+
+func TestPowerShellReplacementPromptIncludesTargetVersion(t *testing.T) {
+	body := read(t, "scripts/install.ps1")
+	if !strings.Contains(body, `"Replace Reinstate $ExistingVersion with ${AssetVersion}? [y/N]"`) {
+		t.Fatal("PowerShell replacement prompt must delimit AssetVersion before punctuation")
+	}
+	if strings.Contains(body, "$AssetVersion?") {
+		t.Fatal("PowerShell replacement prompt contains an ambiguous variable name")
+	}
+}

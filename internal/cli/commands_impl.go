@@ -343,7 +343,7 @@ func engineFromConfig(cmd *cobra.Command, passphrase string) (*sync.Engine, *sch
 	}
 	cfg, err := config.LoadConfig(home)
 	if err != nil {
-		return nil, nil, "", NewExitError(ExitConfig, err.Error())
+		return nil, nil, "", configLoadExitError(err)
 	}
 	requireRemoteManifest := cfg.RemoteProfileRequired
 	if state, stateErr := config.LoadState(home); stateErr == nil {
@@ -831,7 +831,11 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 					"pulled": pulled, "dry_run": dryRun, "plans": plans,
 				})
 			}
-			PrintHuman(cmd.OutOrStdout(), "pulled %d snapshot(s) dry_run=%v", pulled, dryRun)
+			if dryRun {
+				PrintHuman(cmd.OutOrStdout(), "would pull %d snapshot(s), dry_run=true", pulled)
+			} else {
+				PrintHuman(cmd.OutOrStdout(), "pulled %d snapshot(s), dry_run=false", pulled)
+			}
 			for _, plan := range plans {
 				PrintHuman(cmd.OutOrStdout(), "  %s:%s -> %s (backups: %s)",
 					plan.Agent, plan.SessionID, strings.Join(plan.Destinations, ", "), plan.BackupRoot)
@@ -976,9 +980,16 @@ func configuredHome() (string, error) {
 		return "", NewExitError(ExitConfig, err.Error())
 	}
 	if _, err := config.LoadConfig(home); err != nil {
-		return "", NewExitError(ExitConfig, err.Error())
+		return "", configLoadExitError(err)
 	}
 	return home, nil
+}
+
+func configLoadExitError(err error) error {
+	if errors.Is(err, os.ErrNotExist) {
+		return NewExitError(ExitConfig, "config missing")
+	}
+	return NewExitError(ExitConfig, err.Error())
 }
 
 func resolveKeepLocal(

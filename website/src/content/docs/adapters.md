@@ -10,8 +10,8 @@ will normalize portable intent and render each harness's native configuration.
 
 | Agent | Sessions | Config / MCP / skills | Path remap | Resume command | Status |
 | ----- | :------: | :-------------------: | :--------: | -------------- | ------ |
-| **Claude Code** | ✅ RC5 candidate | 📋 Post–Phase 1 | ✅ critical | `claude --resume SESSION_ID` | 🧪 Acceptance |
-| **OpenAI Codex CLI** | ✅ RC5 candidate | 📋 Post–Phase 1 | ✅ | `codex resume SESSION_ID` | 🧪 Acceptance |
+| **Claude Code** | ✅ RC6 candidate | 📋 Post–Phase 1 | ✅ critical | `claude --resume SESSION_ID` | 🧪 Acceptance |
+| **OpenAI Codex CLI** | ✅ RC6 candidate | 📋 Post–Phase 1 | ✅ | `codex resume SESSION_ID` | 🧪 Acceptance |
 | **Gemini CLI** | 📋 Phase 1 | 📋 | ✅ | `gemini --resume` | 📋 Planned |
 | **OpenCode** | 📋 Phase 1 | 📋 | ✅ | in-app session list | 📋 Planned |
 | **Grok Build** | 📋 Phase 2 | 📋 | ✅ | `grok -r` / `/resume` | 📋 Planned |
@@ -36,7 +36,7 @@ support. See [Universal agent configuration](universal-configuration.md).
 | **Exclude** | Credentials, plugin caches, machine-local logs |
 
 Windows ↔ macOS path rewrite inside JSONL content is the MVP differentiator.
-RC5 also maps the snapshot's canonical project ID to the destination device's
+RC6 also maps the snapshot's canonical project ID to the destination device's
 `local_root`, recomputes Claude's vendor directory key, and verifies the exact
 planned restore path before reporting success.
 
@@ -48,6 +48,12 @@ planned restore path before reporting success.
 | **Format** | JSONL rollout + `session_meta` |
 | **Hard part** | Large histories (multi-GB); index schema versions (`state_N.sqlite`) |
 | **Exclude** | Auth / API credential material |
+
+When project mappings are configured, RC6 maps structural `session_meta.cwd`
+values to the canonical project ID and excludes rollouts outside those mapped
+roots. Export replaces the resolved source root with `${REPO:<id>}` and restore
+expands it through the destination device's `local_root`, while retaining
+Codex's native date-partitioned rollout layout.
 
 Prefer delta/CAS sync; never full-file reupload of 300MB rollouts.
 

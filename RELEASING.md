@@ -13,7 +13,11 @@ How maintainers cut a **Reinstate** release.
 - [ ] `main` is green on CI
 - [ ] CHANGELOG `[Unreleased]` section is accurate
 - [ ] No open P0 security issues
-- [ ] macOS arm64, macOS amd64, native Windows amd64, and WSL2 acceptance rows pass
+- [ ] For a stable release, macOS arm64, macOS amd64, native Windows amd64, and
+      WSL2 acceptance rows pass
+- [ ] For a release candidate, prior candidate failures are recorded and every
+      known release blocker has a regression test or an explicit unresolved
+      disposition
 - [ ] Claude Code and Codex exact versions/layouts are recorded in compatibility docs
 - [ ] Wrong-passphrase, tamper, backup, rollback, conflict, and installer tests pass
 - [ ] Snapshot archives, source archive, checksums, and SBOMs were inspected
@@ -29,15 +33,16 @@ make verify
 goreleaser release --snapshot --clean
 sh scripts/test-install.sh dist
 
-git add CHANGELOG.md docs/compatibility.md
+git add --all
 git commit -m "chore(release): vX.Y.Z"
-git push origin main
+git push -u origin release/vX.Y.Z
+# Open a draft PR, pass protected-main CI, review, and merge.
 ```
 
 ### 2. Tag and push
 
 ```bash
-export REINSTATE_SIGNING_KEY="$HOME/.ssh/id_ed25519"
+export REINSTATE_SIGNING_KEY="$HOME/.ssh/reinstate_release_signing"
 git -c gpg.format=ssh \
   -c user.signingkey="$REINSTATE_SIGNING_KEY" \
   tag -s vX.Y.Z -m "Reinstate vX.Y.Z"
@@ -63,7 +68,25 @@ Before publishing the draft:
 4. Confirm archive contents include binary, license, notice, README, and changelog.
 5. Mark prerelease tags as pre-release; publish stable only after every release gate.
 
-### 4. Announce (optional)
+### 4. Publish the public installer routes
+
+Automatic Vercel Git deployments are disabled. After the GitHub release is
+published, update a clean local `main` to the exact signed tag commit, link the
+existing Vercel project if necessary, then run:
+
+```bash
+./scripts/deploy-website-production.sh vX.Y.Z
+```
+
+The script deploys without moving the production alias, verifies `install.sh`
+and `install.ps1` against the exact tag at the immutable deployment URL,
+promotes only that verified deployment, and verifies both live routes again.
+Never run `vercel --prod` directly for a release.
+
+For a release candidate, start the committed Mac/Windows acceptance prompts
+only after both live routes install the new exact version.
+
+### 5. Announce (optional)
 
 - GitHub Discussions "Show and tell" / announcements
 - X/Twitter [@HarjjotSinghh](https://x.com/HarjjotSinghh)

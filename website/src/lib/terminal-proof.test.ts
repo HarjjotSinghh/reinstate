@@ -55,7 +55,8 @@ describe('landing-page terminal proof', () => {
     expect(commands).toContain(
       'pushed %d snapshot(s), skipped %d unchanged, dry_run=%v',
     );
-    expect(commands).toContain('pulled %d snapshot(s) dry_run=%v');
+    expect(commands).toContain('would pull %d snapshot(s), dry_run=true');
+    expect(commands).toContain('pulled %d snapshot(s), dry_run=false');
   });
 
   it('keeps secret entry hidden and storage user-owned', () => {

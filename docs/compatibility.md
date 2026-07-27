@@ -53,7 +53,7 @@ ranges on macOS arm64 plus deterministic synthetic fixtures:
 | Claude Code | `2.1.219`–`2.1.220` |
 | OpenAI Codex CLI | `0.133.0`–`0.145.0` |
 
-Release candidate `v0.1.0-rc.5` contains these compatibility ranges plus
+Release candidate `v0.1.0-rc.6` contains these compatibility ranges plus
 destination-device Claude project-directory remapping and exact restore-path
 verification.
 Versions outside them, including prereleases, are `UNTESTED` and must not be

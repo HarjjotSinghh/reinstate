@@ -46,7 +46,7 @@ function Confirm-Replacement([string]$ExistingVersion) {
         return
     }
     if ($Host.UI -and $Host.UI.RawUI) {
-        $answer = Read-Host "Replace Reinstate $ExistingVersion with $AssetVersion? [y/N]"
+        $answer = Read-Host "Replace Reinstate $ExistingVersion with ${AssetVersion}? [y/N]"
         if ($answer -match '^(y|yes)$') {
             return
         }

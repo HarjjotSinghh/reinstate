@@ -16,14 +16,18 @@ import (
 )
 
 const (
-	publicBootstrapVersion       = "v0.1.0-rc.5"
+	publicBootstrapVersion       = "v0.1.0-rc.6"
 	publicPOSIXInstallerSHA256   = "7776adb4ace8aa333745cd3f3e42b3a10d1400b9394c612d065c20a739db2e66"
-	publicWindowsInstallerSHA256 = "ce46d3a22d4d9349c7e6847ed65b5e8ff93b51e7f035ad3ff93b7dc19d2f1232"
+	publicWindowsInstallerSHA256 = "02c68984964556e7c685a275bde72dc812162e0b898be0f26718a0813efc0dfe"
 )
 
 func TestPublicBootstrapVercelHeaders(t *testing.T) {
 	var config struct {
-		Headers []struct {
+		Git struct {
+			DeploymentEnabled *bool `json:"deploymentEnabled"`
+		} `json:"git"`
+		IgnoreCommand string `json:"ignoreCommand"`
+		Headers       []struct {
 			Source  string `json:"source"`
 			Headers []struct {
 				Key   string `json:"key"`
@@ -33,6 +37,12 @@ func TestPublicBootstrapVercelHeaders(t *testing.T) {
 	}
 	if err := json.Unmarshal([]byte(read(t, "website/vercel.json")), &config); err != nil {
 		t.Fatal(err)
+	}
+	if config.Git.DeploymentEnabled == nil || *config.Git.DeploymentEnabled {
+		t.Error("automatic Vercel Git deployments must remain disabled")
+	}
+	if config.IgnoreCommand != "node scripts/vercel-ignore-production-branch.mjs" {
+		t.Errorf("unexpected Vercel deployment gate: %q", config.IgnoreCommand)
 	}
 
 	for _, route := range []string{"/install.sh", "/install.ps1"} {
@@ -59,6 +69,28 @@ func TestPublicBootstrapVercelHeaders(t *testing.T) {
 		if !found {
 			t.Errorf("missing Vercel headers for %s", route)
 		}
+	}
+}
+
+func TestProductionDeploymentVerifiesBeforePromotion(t *testing.T) {
+	body := read(t, "scripts/deploy-website-production.sh")
+	for _, required := range []string{
+		`git branch --show-current`,
+		`git status --porcelain`,
+		`verify-tag "$version"`,
+		`--prod --skip-domain`,
+		`verify-live-installers.sh`,
+		`vercel promote`,
+		`https://reinstate.dev`,
+	} {
+		if !strings.Contains(body, required) {
+			t.Errorf("production deployment script is missing %q", required)
+		}
+	}
+	verifyIndex := strings.Index(body, `"$repo_directory/scripts/verify-live-installers.sh"`)
+	promoteIndex := strings.Index(body, `vercel promote`)
+	if verifyIndex == -1 || promoteIndex == -1 || verifyIndex > promoteIndex {
+		t.Error("immutable installer verification must run before production promotion")
 	}
 }
 
@@ -144,7 +176,7 @@ func TestPOSIXPublicBootstrapContract(t *testing.T) {
 
 	canonical := []byte(`#!/bin/sh
 set -eu
-if [ "${REINSTATE_VERSION:-}" != "v0.1.0-rc.5" ]; then
+if [ "${REINSTATE_VERSION:-}" != "v0.1.0-rc.6" ]; then
   echo "wrong bootstrap version: ${REINSTATE_VERSION:-missing}" >&2
   exit 91
 fi
@@ -282,7 +314,7 @@ func TestWindowsPublicBootstrapContract(t *testing.T) {
 	}
 
 	canonical := []byte(`
-if ($env:REINSTATE_VERSION -ne "v0.1.0-rc.5") {
+if ($env:REINSTATE_VERSION -ne "v0.1.0-rc.6") {
     throw "wrong bootstrap version: $env:REINSTATE_VERSION"
 }
 New-Item -ItemType Directory -Force -Path $env:INSTALL_DIR | Out-Null
