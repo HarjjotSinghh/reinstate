@@ -476,33 +476,51 @@ for why green checks did not prevent **F-B1**.
 | F-A1 | Non-blocking | Release tag's tagger e-mail is not the allow-listed signing principal; SSH verification binds by key, not identity (§2.1) |
 | F-A2 | Non-blocking, docs/prompt | Setup prompt v5 silently redirected a configured `REINSTATE_HOME` |
 | F-A3 | Open, severity pending M3 | Codex sessions are not resolved to the canonical project ID, and adapter listing scope is asymmetric (§3.4) |
-| **F-B1** | **RELEASE BLOCKING** | `https://reinstate.dev/install.ps1` still serves the rc.4 bootstrap, so Windows silently installs 0.1.0-rc.4 while reporting success |
+| **F-B1** | **RELEASE BLOCKING** | Live public-route mismatch: during acceptance `https://reinstate.dev/install.ps1` served an rc.4 bootstrap, so Windows silently installed 0.1.0-rc.4 while reporting success |
 | F-B2 | Non-blocking, Windows-only | The PowerShell replacement prompt omits the target version, so the user approves a replacement without being told what they are getting |
 | F-B3 | Minor | `rein status` reports a missing config as a raw OS error containing the absolute config path, instead of the redacted `config missing` that `setup check` produces |
 | F-B4 | Process gap | CI verifies the installer assets in the **build output** but nothing verifies the **deployed route**, which is how F-B1 shipped with 11 green checks |
 | F-B5 | **RELEASE BLOCKING** (Device B) | Stock RC5 additional-device init fails at the `HeadObject` manifest probe with HTTP 400 against R2 |
 
-### F-B1 — the rc.5 Windows bootstrap was never published
+### F-B1 — public Windows route did not serve the RC5 asset during acceptance
 
-Discovered from Device A by fetching and diffing the live routes; reproduced on
-Device B, where the documented public one-liner installed 0.1.0-rc.4.
+A live deployment regression / public-route mismatch **observed during
+acceptance**. Discovered from Device A by fetching and diffing the live routes,
+and reproduced on Device B, where the documented public one-liner installed
+0.1.0-rc.4.
+
+This finding records **what was observed**, not why or when it happened.
 
 | Artifact | `$Version` |
 | -------- | ---------- |
 | `website/public/install.ps1` **at tag `v0.1.0-rc.5`** | `v0.1.0-rc.5` |
-| `https://reinstate.dev/install.ps1` **as served** | `v0.1.0-rc.4` |
+| `https://reinstate.dev/install.ps1` **as served during acceptance** | `v0.1.0-rc.4` |
 | `website/public/install.sh` at tag vs served | byte-identical, correct |
 
-Established facts:
+Byte-level observations, all taken at acceptance time:
 
-- The repository is **correct** at the tag; this is a publication failure, not a
-  source defect. Exactly one line differs between served and tagged content.
-- It is **not** a CDN caching artifact. A cache-busting query string and an
-  explicit `Cache-Control: no-cache` request both return the rc.4 body.
-- The rc.5 bootstrap's pinned installer digest is **correct**:
-  `scripts/install.ps1` is byte-identical between rc.4 and rc.5, so the same
-  `ce46d3a2…` digest is right for both.
-- Only the POSIX route was republished for rc.5; the PowerShell route was not.
+- The repository is **correct** at the tag. The POSIX route matched its tagged
+  asset exactly, so this is a published-artifact mismatch on the PowerShell
+  route, not a source defect.
+- The served PowerShell body differed from the RC5-tag asset by **exactly one
+  line**, line 5, the `$Version` assignment.
+- The served body was **byte-identical to the complete RC4-tag asset**
+  (`cmp` clean; SHA-256 `13d9271c…`).
+- The RC4-tag and RC5-tag bootstraps themselves differ **only** on that same
+  line 5.
+- The pinned installer digest `ce46d3a2…` was identical in the served body, the
+  RC4-tag asset, and the RC5-tag asset, because `scripts/install.ps1` is
+  byte-identical between the two tags.
+- It was **not** a CDN caching artifact. A cache-busting query string and an
+  explicit `Cache-Control: no-cache` request both returned the same body.
+
+**Cause and timing are deliberately not asserted.** Because the two tags'
+bootstraps differ only in line 5, a stale RC4 asset and an RC5 asset whose
+version line had been reverted are *the same bytes*. Content alone therefore
+cannot distinguish them, and the pinned digest cannot discriminate either, since
+it is common to both tags. Establishing whether the route ever served the RC5
+asset, and what changed it, requires **deployment-history evidence** that was
+not available to this run. Any claim in either direction would be speculation.
 
 Why this is release blocking rather than cosmetic: the rc.4 bootstrap is
 *internally consistent*, so both checksum layers legitimately print
@@ -571,7 +589,7 @@ rc.4 binary:
 
 Default-deny and explicit-approve both behave correctly. Device B therefore runs
 the release under test for all remaining gates, via the exact-tag audit path,
-not via the public route that F-B1 broke.
+not via the public route affected by F-B1.
 
 ### F-A2 — setup prompt v5 does not preserve a configured home
 
@@ -612,14 +630,15 @@ grep -F 'v0.1.0-rc.5' dist/client/install.ps1
 ```
 
 That is the runbook section 18 gate for byte-for-byte inclusion of both scripts
-in the Astro output, and it passed. Yet the live route still serves the rc.4
+in the Astro output, and it passed. Yet during acceptance the live route served the rc.4
 PowerShell bootstrap. The check asserts things about `dist/client/` in the CI
 workspace; **nothing asserts anything about what `https://reinstate.dev`
 actually serves**. So the release could be simultaneously green and broken, and
 was.
 
-This is the root process defect behind F-B1: the source was right, CI was right,
-and the deployment was wrong, with no gate positioned to notice.
+This is the process gap behind F-B1: the source was right and CI was right, yet
+the artifact actually served by the public route was not, and no gate is
+positioned to notice that class of divergence — whenever or however it arises.
 
 Suggested fix: add a post-deploy smoke check that fetches both public routes and
 asserts the pinned version, for example
@@ -651,7 +670,7 @@ credentials in general.
 | ID | Blocker |
 | -- | ------- |
 | F-B5 | Stock RC5 cannot initialize an additional device against R2 |
-| F-B1 | The rc.5 Windows bootstrap was never published; the public route installs rc.4 |
+| F-B1 | The public Windows route did not serve the RC5 asset during acceptance; it installs rc.4 |
 
 Non-blocking: F-A1, F-A2, F-A3 (unresolved, could not be decided), F-B2, F-B3.
 Process: F-B4.
@@ -661,7 +680,8 @@ Process: F-B4.
 `v0.1.0-rc.5` does not pass Phase 1 acceptance. The next candidate should be
 RC6 containing the F-B5 fix, and it must ship with:
 
-1. the Windows bootstrap actually published, verified through the live route;
+1. the public Windows route confirmed to serve the tagged RC6 bootstrap,
+   verified against the live route rather than the repository;
 2. a post-deploy route check so F-B4 cannot hide a repeat of F-B1;
 3. `${AssetVersion}` braced in the PowerShell replacement prompt (F-B2); and
 4. `REINSTATE_HOME` preserved and echoed by both setup prompts (F-A2).
