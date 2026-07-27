@@ -118,6 +118,22 @@ describe('evidence-safe linkable assets', () => {
     expect(tracker).toContain('compatibility.agents.map');
     expect(tracker).toContain('No change documented');
     expect(tracker).toContain('source-level gate');
+    expect(
+      agentVersionHistory.find(({ version }) => version === 'v0.1.0-rc.5')
+        ?.compatibilityChange,
+    ).toContain('metadata-only');
+    expect(
+      agentVersionHistory.find(({ version }) => version === 'v0.1.0-rc.6')
+        ?.compatibilityChange,
+    ).toContain('does not decrypt');
+    for (const version of ['v0.1.0-rc.5', 'v0.1.0-rc.6']) {
+      expect(
+        agentVersionHistory.find((entry) => entry.version === version)
+          ?.implementationSource,
+      ).toBe(
+        `https://github.com/HarjjotSinghh/reinstate/blob/${version}/internal/cli/commands_impl.go`,
+      );
+    }
   });
 
   it('registers freshness ownership and one unique social card for every route', () => {

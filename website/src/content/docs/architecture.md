@@ -128,8 +128,9 @@ schemas. See
 
 The make-or-break feature for Windows ↔ macOS dual setups:
 
-- Store portable tokens: `${HOME}`, `${REPO:<id>}`, and user-defined
-  `${WORK:<alias>}`.
+- Store the released portable tokens `${HOME}` and `${REPO:<id>}`.
+- Keep the lower-level `${WORK:<alias>}` primitive explicitly unwired until
+  configuration, adapter integration, and compatibility tests ship.
 - On **push**: rewrite recognized structural path fields → tokens
 - On **pull**: rewrite tokens → this machine's absolute paths
 - Maintain a **canonical project ID** (git remote + name, or user alias) mapped

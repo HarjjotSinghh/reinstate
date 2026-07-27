@@ -19,6 +19,7 @@ interface Props {
   breadcrumbs: Breadcrumb[];
   article?: boolean;
   tags?: string[];
+  publishedAt?: string;
   lastVerified?: string;
   analytics?: boolean;
 }
@@ -32,6 +33,7 @@ const {
   breadcrumbs,
   article = false,
   tags = [],
+  publishedAt,
   lastVerified = product.lastVerified,
   analytics = true,
 } = Astro.props;
@@ -42,11 +44,28 @@ const verifiedDate = new Intl.DateTimeFormat('en', {
   day: 'numeric',
   timeZone: 'UTC',
 }).format(new Date(`${lastVerified}T00:00:00Z`));
+const publishedDate = publishedAt
+  ? new Intl.DateTimeFormat('en', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      timeZone: 'UTC',
+    }).format(new Date(`${publishedAt}T00:00:00Z`))
+  : undefined;
 
 const schema: SchemaNode[] = [
   webPageSchema({ path, title, description, updatedAt: lastVerified }),
   ...(article
-    ? [techArticleSchema({ path, title, description, updatedAt: lastVerified, tags })]
+    ? [
+        techArticleSchema({
+          path,
+          title,
+          description,
+          publishedAt,
+          updatedAt: lastVerified,
+          tags,
+        }),
+      ]
     : []),
   breadcrumbSchema(breadcrumbs),
 ];
@@ -57,6 +76,7 @@ const schema: SchemaNode[] = [
   description={description}
   canonical={siteUrl(path)}
   type={article ? 'article' : 'website'}
+  publishedTime={article ? publishedAt : undefined}
   modifiedTime={article ? lastVerified : undefined}
   section={article ? eyebrow : undefined}
   tags={tags}
@@ -71,6 +91,14 @@ const schema: SchemaNode[] = [
         <h1>{Astro.slots.has('heading') ? <slot name="heading" /> : title}</h1>
         <p class="direct-answer">{answer}</p>
         <dl class="verification">
+          {
+            publishedAt && publishedDate && (
+              <div>
+                <dt>Published</dt>
+                <dd><time datetime={publishedAt}>{publishedDate}</time></dd>
+              </div>
+            )
+          }
           <div>
             <dt>Last verified</dt>
             <dd><time datetime={lastVerified}>{verifiedDate}</time></dd>

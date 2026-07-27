@@ -78,9 +78,9 @@ const description =
     <div id="portable-token">
       <dt>Portable path token</dt>
       <dd>
-        A normalized placeholder—<code>${'${HOME}'}</code>,
-        <code>${'${REPO:<id>}'}</code>, or <code>${'${WORK:<alias>}'}</code>—that a configured
-        destination expands through its own local paths.
+        A normalized placeholder—currently <code>${'${HOME}'}</code> or
+        <code>${'${REPO:<id>}'}</code>—that a configured destination expands through its own
+        local paths.
       </dd>
     </div>
     <div id="native-resume">
@@ -91,6 +91,11 @@ const description =
       </dd>
     </div>
   </dl>
+  <p>
+    The lower-level path-mapping package also contains a <code>${'${WORK:<alias>}'}</code>
+    primitive. RC6 configuration and released adapters do not populate work aliases, so it is not
+    a current CLI feature.
+  </p>
 
   <h2 id="planned-continuity">Planned continuity term</h2>
   <div class="pc-callout" id="portable-handoff">

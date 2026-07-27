@@ -6,21 +6,29 @@ export interface AgentVersionChange {
   rangeChange: string;
   compatibilityChange: string;
   source: string;
+  implementationSource?: string;
 }
 
 const evidenceByVersion: Record<
   AgentVersionChange['version'],
-  Pick<AgentVersionChange, 'rangeChange' | 'compatibilityChange'>
+  Pick<
+    AgentVersionChange,
+    'rangeChange' | 'compatibilityChange' | 'implementationSource'
+  >
 > = {
   'v0.1.0-rc.6': {
     rangeChange: 'No agent-version range change documented.',
     compatibilityChange:
-      'Codex working directories resolve to canonical project IDs; unmapped projects and duplicate mappings fail closed.',
+      'Codex working directories resolve to canonical project IDs. Additional-device init changed from RC5’s metadata-only manifest probe to reading the complete remote ciphertext; init still does not decrypt it or validate the passphrase.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.1.0-rc.6/internal/cli/commands_impl.go',
   },
   'v0.1.0-rc.5': {
     rangeChange: 'No agent-version range change documented.',
     compatibilityChange:
-      'Additional devices must find and decrypt the existing remote profile manifest before local setup is saved.',
+      'Additional-device init required a metadata-only existence probe for the remote manifest before saving local setup; it did not read or decrypt the ciphertext.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.1.0-rc.5/internal/cli/commands_impl.go',
   },
   'v0.1.0-rc.4': {
     rangeChange: 'No agent-version range change documented.',

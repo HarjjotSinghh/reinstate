@@ -8,6 +8,7 @@ export const prerender = true;
 const title = 'Claude Code and Codex Version Support History';
 const description =
   'Track the evidence-backed Claude Code and Codex CLI version ranges supported by each Reinstate release candidate, including fail-closed compatibility changes.';
+const publishedAt = '2026-07-27';
 
 const displayDate = (date: string) =>
   new Intl.DateTimeFormat('en', {
@@ -33,6 +34,7 @@ const displayDate = (date: string) =>
     },
   ]}
   article={true}
+  {publishedAt}
   tags={['Claude Code versions', 'Codex CLI versions', 'compatibility history']}
 >
   <h2 id="current-ranges">Current tested stable ranges</h2>
@@ -104,7 +106,17 @@ const displayDate = (date: string) =>
               <td><a href={entry.source}>{entry.version}</a></td>
               <td><time datetime={entry.date}>{entry.date}</time></td>
               <td>{entry.rangeChange}</td>
-              <td>{entry.compatibilityChange}</td>
+              <td>
+                {entry.compatibilityChange}
+                {
+                  entry.implementationSource && (
+                    <>
+                      {' '}
+                      <a href={entry.implementationSource}>Tagged implementation</a>.
+                    </>
+                  )
+                }
+              </td>
             </tr>
           ))
         }

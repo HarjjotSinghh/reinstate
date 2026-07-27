@@ -515,7 +515,9 @@ Before publication it needs:
   reporting, URL/query serialization, clipboard read, or autofill;
 - an explicit “synthetic example” default and a clear warning before private
   input;
-- only released `${HOME}`, `${REPO:<id>}`, and `${WORK:<alias>}` behavior;
+- only released `${HOME}` and `${REPO:<id>}` behavior; do not expose the
+  lower-level `${WORK:<alias>}` primitive until configuration and adapters
+  wire it in;
 - no filesystem existence claim from string transformation alone;
 - paste/type/Unicode/Windows drive/UNC/WSL/adversarial tests and a threat
   review; and
