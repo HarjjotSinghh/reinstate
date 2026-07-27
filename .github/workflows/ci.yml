@@ -87,6 +87,10 @@ jobs:
         working-directory: website
         run: npm run check:performance
 
+      - name: Check synthetic path visualizer interactions
+        working-directory: website
+        run: npm run check:path-visualizer
+
       - name: Check IndexNow dry-run planning
         working-directory: website
         run: npm run check:indexnow
