@@ -10,6 +10,10 @@ tags: ["Git", "coding agents", "session continuity", "developer workflow", "Rein
 targetQuery: "does Git sync coding agent sessions"
 searchIntent: "problem"
 related:
+  - title: "Claude Code integration"
+    path: "/integrations/claude-code"
+  - title: "Codex CLI integration"
+    path: "/integrations/codex"
   - title: "How Reinstate works"
     path: "/about/reinstate"
   - title: "Claude Code session sync guide"

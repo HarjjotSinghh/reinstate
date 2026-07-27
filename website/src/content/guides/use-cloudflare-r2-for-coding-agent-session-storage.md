@@ -10,6 +10,10 @@ tags: ["Cloudflare R2", "encrypted storage", "session sync", "S3 API", "coding a
 targetQuery: "use Cloudflare R2 for coding agent session storage"
 searchIntent: "how-to"
 related:
+  - title: "Claude Code integration"
+    path: "/integrations/claude-code"
+  - title: "Codex CLI integration"
+    path: "/integrations/codex"
   - title: "Amazon S3 storage guide"
     path: "/guides/use-s3-for-coding-agent-session-storage"
   - title: "Getting started documentation"
@@ -18,10 +22,6 @@ related:
     path: "/docs/security-model"
   - title: "Compatibility and tested versions"
     path: "/compatibility"
-  - title: "Claude Code session sync guide"
-    path: "/guides/sync-claude-code-sessions-across-devices"
-  - title: "Codex session sync guide"
-    path: "/guides/sync-codex-sessions-across-devices"
 draft: false
 noindex: false
 agent: "general"
@@ -331,16 +331,67 @@ This personal check does not claim physical RC6 acceptance.
 
 ## Failure modes and common errors
 
-| Symptom | Likely cause | Safe next action |
-| --- | --- | --- |
-| `storage probe put failed` (exit `4`) | Wrong endpoint, bucket, credential, jurisdiction, or a read-only token. | Compare the token confirmation endpoint and selected bucket; require Object Read & Write on that bucket only. |
-| `storage probe cleanup failed` (exit `4`) | Delete is denied or a bucket lock covers the generated probe prefix. | Preserve the error, remove the stray probe through approved R2 tooling, and fix the token or lock before retrying. |
-| `SignatureDoesNotMatch` or authorization failure | The account ID, jurisdiction endpoint, access-key pair, or Region is wrong. | Use the exact R2 S3 endpoint, `--region auto`, and the credential generated for the selected bucket. |
-| `config missing` (exit `3`) after failed init | RC6 intentionally did not save local config because the remote probe failed. | Fix R2 first and rerun the same reviewed `rein init`. |
-| Compatibility exit `5` or `UNTESTED` | The installed coding-agent version or layout lacks release evidence. | Stop transfer and check the [compatibility matrix](/compatibility). |
-| `no matching local sessions found` (exit `2`) | `AGENT` or `SESSION_ID` does not identify a discoverable local session. | Run `rein list --agent claude` or `rein list --agent codex` and select one exact ID. |
-| `remote profile manifest not found` on another device | Profile UUID, bucket, prefix, endpoint, or jurisdiction differs from the first device. | Reuse every non-secret storage coordinate and the exact first-device `profile_id`; do not create an empty manifest. |
-| Conflict exit `6` | The local and remote copies diverged after sync. | Preserve the conflict record and both histories; resolve explicitly instead of deleting R2 objects. |
+### Why does initialization report `storage probe put failed` (exit `4`)?
+
+**Likely cause:** Wrong endpoint, bucket, credential, jurisdiction, or a
+read-only token.
+
+**Safe next action:** Compare the token confirmation endpoint and selected
+bucket; require Object Read & Write on that bucket only.
+
+### Why does initialization report `storage probe cleanup failed` (exit `4`)?
+
+**Likely cause:** Delete is denied or a bucket lock covers the generated probe
+prefix.
+
+**Safe next action:** Preserve the error, remove the stray probe through
+approved R2 tooling, and fix the token or lock before retrying.
+
+### What causes `SignatureDoesNotMatch` or an authorization failure?
+
+**Likely cause:** The account ID, jurisdiction endpoint, access-key pair, or
+Region is wrong.
+
+**Safe next action:** Use the exact R2 S3 endpoint, `--region auto`, and the
+credential generated for the selected bucket.
+
+### Why is `config missing` (exit `3`) after failed init?
+
+**Likely cause:** RC6 intentionally did not save local config because the
+remote probe failed.
+
+**Safe next action:** Fix R2 first and rerun the same reviewed `rein init`.
+
+### What should I do after compatibility exit `5` or `UNTESTED`?
+
+**Likely cause:** The installed coding-agent version or layout lacks release
+evidence.
+
+**Safe next action:** Stop transfer and check the
+[compatibility matrix](/compatibility).
+
+### Why does Reinstate report `no matching local sessions found` (exit `2`)?
+
+**Likely cause:** `AGENT` or `SESSION_ID` does not identify a discoverable
+local session.
+
+**Safe next action:** Run `rein list --agent claude` or
+`rein list --agent codex` and select one exact ID.
+
+### Why is `remote profile manifest not found` on another device?
+
+**Likely cause:** Profile UUID, bucket, prefix, endpoint, or jurisdiction
+differs from the first device.
+
+**Safe next action:** Reuse every non-secret storage coordinate and the exact
+first-device `profile_id`; do not create an empty manifest.
+
+### What should I do after conflict exit `6`?
+
+**Likely cause:** The local and remote copies diverged after sync.
+
+**Safe next action:** Preserve the conflict record and both histories; resolve
+explicitly instead of deleting R2 objects.
 
 ## Safe rollback and undo
 

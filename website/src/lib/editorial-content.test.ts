@@ -4,6 +4,7 @@ import { blogPostingSchema, howToSchema, techArticleSchema } from './schema';
 
 const guidesDir = new URL('../content/guides/', import.meta.url);
 const blogDir = new URL('../content/blog/', import.meta.url);
+const editorialLayout = new URL('../layouts/EditorialLayout.astro', import.meta.url);
 
 function field(frontmatter: string, name: string): string | undefined {
   return frontmatter.match(new RegExp(`^${name}:\\s*(.+)$`, 'm'))?.[1]?.trim();
@@ -108,6 +109,22 @@ describe('editorial content foundation', () => {
       ).toBe(5);
       expect(guide, `${file} FAQ heading`).toMatch(/^## .+ FAQ$/m);
 
+      const failureSection =
+        guide.match(
+          /^## Failure modes and common errors\n([\s\S]+?)^## Safe rollback and undo$/m,
+        )?.[1] ?? '';
+      const failureQuestions = [
+        ...failureSection.matchAll(/^### (.+)$/gm),
+      ].map((match) => match[1]);
+      expect(failureQuestions.length, `${file} question-shaped failures`).toBeGreaterThanOrEqual(8);
+      expect(
+        failureQuestions.every((heading) => heading.endsWith('?')),
+        `${file} failure headings must be questions`,
+      ).toBe(true);
+      expect(failureSection, `${file} must not hide failures in a table`).not.toMatch(
+        /^\| (Symptom|Error)/m,
+      );
+
       const anchors = [...guide.matchAll(/^\s+anchor: "([^"]+)"$/gm)].map(
         (match) => match[1],
       );
@@ -140,6 +157,29 @@ describe('editorial content foundation', () => {
     ]) {
       expect(article).toContain(evidence);
     }
+  });
+
+  it('links broad workflows to the relevant agent integration pages', async () => {
+    const files = [
+      new URL('move-a-coding-agent-session-from-mac-to-windows.md', guidesDir),
+      new URL('use-s3-for-coding-agent-session-storage.md', guidesDir),
+      new URL('use-cloudflare-r2-for-coding-agent-session-storage.md', guidesDir),
+      new URL('why-git-does-not-sync-coding-agent-sessions.md', blogDir),
+    ];
+
+    for (const file of files) {
+      const content = await readFile(file, 'utf8');
+      expect(content).toContain('path: "/integrations/claude-code"');
+      expect(content).toContain('path: "/integrations/codex"');
+    }
+  });
+
+  it('uses the same category for visible blog metadata, JSON-LD, and Open Graph', async () => {
+    const layout = await readFile(editorialLayout, 'utf8');
+
+    expect(layout).toContain('articleSection: category');
+    expect(layout).toContain("{kind === 'guide' ? 'Practical guide' : category}");
+    expect(layout).toContain("section={kind === 'guide' ? 'Guides' : category}");
   });
 
   it('emits published and modified dates for guides and blog posts', () => {

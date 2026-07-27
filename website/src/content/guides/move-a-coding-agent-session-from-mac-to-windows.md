@@ -10,16 +10,16 @@ tags: ["macOS", "Windows", "path remapping", "session sync", "Claude Code", "Cod
 targetQuery: "move coding agent session from Mac to Windows"
 searchIntent: "platform-specific"
 related:
+  - title: "Claude Code integration"
+    path: "/integrations/claude-code"
+  - title: "Codex CLI integration"
+    path: "/integrations/codex"
   - title: "Desktop and laptop continuity"
     path: "/use-cases/desktop-and-laptop"
-  - title: "Encrypted session backup"
-    path: "/use-cases/encrypted-session-backup"
   - title: "macOS and Windows use case"
     path: "/use-cases/macos-and-windows"
   - title: "Compatibility and tested versions"
     path: "/compatibility"
-  - title: "Getting started documentation"
-    path: "/docs/getting-started"
   - title: "Security model"
     path: "/docs/security-model"
 draft: false
@@ -372,16 +372,65 @@ snapshot, or unredacted sensitive paths as evidence.
 
 ## Failure modes and common errors
 
-| Symptom | Meaning | Safe recovery |
-| --- | --- | --- |
-| Pre-init `config missing` (exit `3`) | The Reinstate home is intentionally unconfigured. | Run the reviewed init command; do not treat this expected pre-init failure as a pass. |
-| Compatibility exit `5` or `UNTESTED` | The agent version or layout lacks release evidence. | Stop mutation and use the [compatibility page](/compatibility) to choose a recognized version. |
-| `remote profile manifest not found` | Windows used the wrong profile or storage coordinates, or the Mac has not pushed yet. | Confirm the Mac push, then copy the exact profile UUID, endpoint, Region, bucket, and prefix. Never create a substitute empty profile. |
-| Decryption or authentication failure | The passphrase is wrong or ciphertext is damaged. | Stop, verify the passphrase privately, preserve remote and local copies, and retry without changing session files. |
-| `remote session not found` (exit `2`) | `AGENT` or `SESSION_ID` does not match the selected remote entry. | Recheck Mac metadata and `rein status`; do not broaden the pull to `--all`. |
-| Safety exit `7` | The destination agent appears active and an existing target could be overwritten. | Close the same-vendor agent completely and rerun the dry-run; do not bypass the refusal. |
-| Conflict exit `6` | The Windows-local and remote copies diverged. | Preserve both, then inspect `rein conflicts list` and `rein conflicts show CONFLICT_ID`; use `--keep-both` when neither branch may be lost. |
-| Resume opens from the wrong project | The canonical ID or Windows mapping is wrong. | Stop the agent, preserve the restored file and backup, correct configuration through a reviewed re-init, and pull again only after previewing the destination. |
+### What does pre-init `config missing` (exit `3`) mean?
+
+**Meaning:** The Reinstate home is intentionally unconfigured.
+
+**Safe recovery:** Run the reviewed init command; do not treat this expected
+pre-init failure as a pass.
+
+### What should I do after compatibility exit `5` or `UNTESTED`?
+
+**Meaning:** The agent version or layout lacks release evidence.
+
+**Safe recovery:** Stop mutation and use the
+[compatibility page](/compatibility) to choose a recognized version.
+
+### Why does Windows report `remote profile manifest not found`?
+
+**Meaning:** Windows used the wrong profile or storage coordinates, or the Mac
+has not pushed yet.
+
+**Safe recovery:** Confirm the Mac push, then copy the exact profile UUID,
+endpoint, Region, bucket, and prefix. Never create a substitute empty profile.
+
+### What should I do after a decryption or authentication failure?
+
+**Meaning:** The passphrase is wrong or ciphertext is damaged.
+
+**Safe recovery:** Stop, verify the passphrase privately, preserve remote and
+local copies, and retry without changing session files.
+
+### Why does pull report `remote session not found` (exit `2`)?
+
+**Meaning:** `AGENT` or `SESSION_ID` does not match the selected remote entry.
+
+**Safe recovery:** Recheck Mac metadata and `rein status`; do not broaden the
+pull to `--all`.
+
+### What should I do after safety exit `7`?
+
+**Meaning:** The destination agent appears active and an existing target could
+be overwritten.
+
+**Safe recovery:** Close the same-vendor agent completely and rerun the
+dry-run; do not bypass the refusal.
+
+### What should I do after conflict exit `6`?
+
+**Meaning:** The Windows-local and remote copies diverged.
+
+**Safe recovery:** Preserve both, then inspect `rein conflicts list` and
+`rein conflicts show CONFLICT_ID`; use `--keep-both` when neither branch may
+be lost.
+
+### Why does resume open from the wrong project?
+
+**Meaning:** The canonical ID or Windows mapping is wrong.
+
+**Safe recovery:** Stop the agent, preserve the restored file and backup,
+correct configuration through a reviewed re-init, and pull again only after
+previewing the destination.
 
 ## Safe rollback and undo
 

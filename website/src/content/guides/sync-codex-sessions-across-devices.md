@@ -321,17 +321,72 @@ work.
 
 ## Failure modes and common errors
 
-| Symptom | Meaning | Safe next action |
-| --- | --- | --- |
-| `config missing` (exit `3`) | Local Reinstate configuration does not exist. This is expected only before first-device initialization. | Run `rein init` with the intended project mapping; do not create config files by hand. |
-| Compatibility exit `5` or `UNTESTED` | The installed Codex layout or version lacks release evidence. | Stop writes, check the [compatibility matrix](/compatibility), and use a documented supported version. |
-| `no matching local sessions found` (exit `2`) | The selected ID or adapter is not discoverable on the source. | Run `rein list --agent codex` from the mapped project and copy the exact ID. |
-| `remote profile manifest not found` (exit `4`) | The destination profile, bucket, prefix, or endpoint does not identify the first device's manifest. | Recheck the copied `profile_id`, bucket, prefix, and service endpoint. Do not create an empty manifest. |
-| Wrong-passphrase or authentication failure (exit `4`) | Reinstate cannot decrypt or authenticate the remote state. | Wait for the hidden prompt and retry with the original passphrase; never put it in a flag, environment value, or chat. |
-| `remote session not found` (exit `2`) | The selected session was not pushed to this remote profile. | Confirm `rein status`, the profile identity, and the exact source push result. |
-| Conflict exit `6` | Local and remote histories diverged. | Preserve both histories and the conflict record; inspect them with `rein conflicts` before choosing a resolution. |
-| Safety exit `7` while pulling | Codex may still be writing the target rollout. | Close every Codex process and rerun the exact scoped dry run before the pull. |
-| Pull succeeds but native resume misses the session | The path mapping, date partition, or destination working directory is wrong. | Confirm the destination mapping, rerun the scoped dry run, and follow the [troubleshooting guide](/docs/troubleshooting). |
+### What does `config missing` (exit `3`) mean?
+
+**Meaning:** Local Reinstate configuration does not exist. This is expected
+only before first-device initialization.
+
+**Safe next action:** Run `rein init` with the intended project mapping; do not
+create config files by hand.
+
+### What should I do after compatibility exit `5` or `UNTESTED`?
+
+**Meaning:** The installed Codex layout or version lacks release evidence.
+
+**Safe next action:** Stop writes, check the
+[compatibility matrix](/compatibility), and use a documented supported
+version.
+
+### Why does Reinstate report `no matching local sessions found` (exit `2`)?
+
+**Meaning:** The selected ID or adapter is not discoverable on the source.
+
+**Safe next action:** Run `rein list --agent codex` from the mapped project and
+copy the exact ID.
+
+### Why does the destination report `remote profile manifest not found` (exit `4`)?
+
+**Meaning:** The destination profile, bucket, prefix, or endpoint does not
+identify the first device's manifest.
+
+**Safe next action:** Recheck the copied `profile_id`, bucket, prefix, and
+service endpoint. Do not create an empty manifest.
+
+### What should I do after a wrong-passphrase or authentication failure (exit `4`)?
+
+**Meaning:** Reinstate cannot decrypt or authenticate the remote state.
+
+**Safe next action:** Wait for the hidden prompt and retry with the original
+passphrase; never put it in a flag, environment value, or chat.
+
+### Why does pull report `remote session not found` (exit `2`)?
+
+**Meaning:** The selected session was not pushed to this remote profile.
+
+**Safe next action:** Confirm `rein status`, the profile identity, and the
+exact source push result.
+
+### What should I do after conflict exit `6`?
+
+**Meaning:** Local and remote histories diverged.
+
+**Safe next action:** Preserve both histories and the conflict record; inspect
+them with `rein conflicts` before choosing a resolution.
+
+### What should I do after safety exit `7` while pulling?
+
+**Meaning:** Codex may still be writing the target rollout.
+
+**Safe next action:** Close every Codex process and rerun the exact scoped dry
+run before the pull.
+
+### Why can pull succeed while native resume misses the session?
+
+**Meaning:** The path mapping, date partition, or destination working
+directory is wrong.
+
+**Safe next action:** Confirm the destination mapping, rerun the scoped dry
+run, and follow the [troubleshooting guide](/docs/troubleshooting).
 
 ## Safe rollback and undo
 
