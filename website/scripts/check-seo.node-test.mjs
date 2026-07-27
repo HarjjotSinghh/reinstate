@@ -132,7 +132,7 @@ test('accepts a complete build and reports what it checked', async (t) => {
   assert.deepEqual(result.errors, []);
   assert.match(
     formatReport(result),
-    /SEO validation passed: 2 indexable pages, 3 generated HTML pages, 3 route-specific social cards, and 2 sitemap URLs checked\./,
+    /SEO validation passed: 2 indexable pages, 3 generated HTML pages, 3 route-specific social cards, 0 redirects, and 2 sitemap URLs checked\./,
   );
 });
 
@@ -167,6 +167,100 @@ test('rejects duplicate descriptions across indexable pages', async (t) => {
 
   const result = await auditSeo(root);
   assert.ok(result.errors.some(({ code }) => code === 'DESCRIPTION_DUPLICATE'));
+});
+
+test('accepts direct permanent redirects to built canonical destinations', async (t) => {
+  const root = await validFixture();
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await writeFixture(
+    root,
+    'docs/index.html',
+    indexableHtml({
+      canonical: `${SITE}/docs`,
+      description: 'Read the Reinstate documentation and begin a safe session transfer.',
+      image: `${SITE}/social/docs.png`,
+      title: 'Reinstate documentation',
+    }),
+  );
+  await writeFixture(root, 'social/docs.png', pngHeader());
+  await writeFixture(
+    root,
+    'sitemap.xml',
+    `<?xml version="1.0"?><urlset><url><loc>${SITE}/</loc></url><url><loc>${SITE}/docs</loc></url></urlset>`,
+  );
+  const configPath = join(root, 'vercel.json');
+  await writeFixture(
+    root,
+    'vercel.json',
+    JSON.stringify({
+      redirects: [
+        {
+          source: '/docs/overview',
+          destination: '/docs',
+          permanent: true,
+        },
+      ],
+    }),
+  );
+
+  const result = await auditSeo(root, { redirectConfigPath: configPath });
+
+  assert.deepEqual(result.errors, []);
+  assert.deepEqual(result.redirects, [
+    { source: '/docs/overview', destination: '/docs' },
+  ]);
+});
+
+test('rejects unsafe redirect routes, missing destinations, chains, loops, and sitemap sources', async (t) => {
+  const root = await validFixture();
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await writeFixture(
+    root,
+    'docs/index.html',
+    indexableHtml({
+      canonical: `${SITE}/docs`,
+      description: 'Read the Reinstate documentation and begin a safe session transfer.',
+      image: `${SITE}/social/docs.png`,
+      title: 'Reinstate documentation',
+    }),
+  );
+  await writeFixture(root, 'social/docs.png', pngHeader());
+  await writeFixture(
+    root,
+    'sitemap.xml',
+    `<?xml version="1.0"?><urlset><url><loc>${SITE}/</loc></url><url><loc>${SITE}/docs</loc></url><url><loc>${SITE}/old</loc></url></urlset>`,
+  );
+  const configPath = join(root, 'vercel.json');
+  await writeFixture(
+    root,
+    'vercel.json',
+    JSON.stringify({
+      redirects: [
+        { source: '/old', destination: '/middle', permanent: false },
+        { source: '/middle', destination: '/docs', permanent: true },
+        { source: '/loop-a', destination: '/loop-b', permanent: true },
+        { source: '/loop-b', destination: '/loop-a', permanent: true },
+        { source: '/self', destination: '/self', permanent: true },
+        { source: '/docs//legacy', destination: '/docs?from=old', permanent: true },
+      ],
+    }),
+  );
+
+  const result = await auditSeo(root, { redirectConfigPath: configPath });
+  const codes = new Set(result.errors.map(({ code }) => code));
+
+  for (const expected of [
+    'REDIRECT_CHAIN',
+    'REDIRECT_DESTINATION_INVALID',
+    'REDIRECT_DESTINATION_MISSING',
+    'REDIRECT_LOOP',
+    'REDIRECT_NOT_PERMANENT',
+    'REDIRECT_SELF_LOOP',
+    'REDIRECT_SOURCE_INVALID',
+    'REDIRECT_SOURCE_IN_SITEMAP',
+  ]) {
+    assert.ok(codes.has(expected), `expected ${expected} in ${[...codes]}`);
+  }
 });
 
 test('detects metadata, structured-data, crawler, sitemap, and image regressions', async (t) => {

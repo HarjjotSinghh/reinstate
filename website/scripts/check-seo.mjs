@@ -6,6 +6,9 @@ import { fileURLToPath } from 'node:url';
 
 const SITE_ORIGIN = 'https://reinstate.dev';
 const DEFAULT_BUILD_DIR = resolve(process.cwd(), 'dist/client');
+const DEFAULT_REDIRECT_CONFIG = resolve(process.cwd(), 'vercel.json');
+const CLEAN_REDIRECT_PATH =
+  /^\/(?:[a-z0-9]+(?:[/-][a-z0-9]+)*)?$/;
 
 const UNSUPPORTED_AGENTS = [
   ['Aider', /\baider\b/i],
@@ -1304,6 +1307,193 @@ async function inspectSitemaps(buildDir, allFiles, pages, errors) {
   return sitemapUrls;
 }
 
+async function inspectRedirects(
+  configPath,
+  pages,
+  sitemapUrls,
+  errors,
+) {
+  let config;
+  try {
+    config = JSON.parse(await readFile(configPath, 'utf8'));
+  } catch (error) {
+    addError(
+      errors,
+      error instanceof SyntaxError
+        ? 'REDIRECT_CONFIG_INVALID'
+        : 'REDIRECT_CONFIG_MISSING',
+      relative(process.cwd(), configPath) || 'vercel.json',
+      error instanceof SyntaxError
+        ? `The redirect configuration is not valid JSON: ${error.message}`
+        : `The redirect configuration could not be read: ${error.message}`,
+      'Keep website/vercel.json present and valid so redirects are checked with every production build.',
+    );
+    return [];
+  }
+
+  const context = relative(process.cwd(), configPath) || 'vercel.json';
+  if (!Array.isArray(config.redirects)) {
+    addError(
+      errors,
+      'REDIRECTS_INVALID',
+      context,
+      'The redirects property must be an array.',
+      'Declare redirects as an array of explicit source, destination, and permanent entries.',
+    );
+    return [];
+  }
+
+  const builtRoutes = new Set(pages.map(({ route }) => route));
+  const sitemapRoutes = new Set(
+    sitemapUrls
+      .map(({ value }) => validateSiteUrl(value))
+      .filter(Boolean)
+      .map(({ pathname }) =>
+        pathname === '/' ? pathname : pathname.replace(/\/+$/, ''),
+      ),
+  );
+  const redirectsBySource = new Map();
+  const inspected = [];
+
+  for (const [index, redirect] of config.redirects.entries()) {
+    const entryContext = `${context}#redirects[${index}]`;
+    if (!redirect || typeof redirect !== 'object' || Array.isArray(redirect)) {
+      addError(
+        errors,
+        'REDIRECT_ENTRY_INVALID',
+        entryContext,
+        'Redirect entries must be objects.',
+        'Use an object with clean source and destination paths plus permanent: true.',
+      );
+      continue;
+    }
+
+    const { source, destination, permanent } = redirect;
+    const sourceIsClean =
+      typeof source === 'string' && CLEAN_REDIRECT_PATH.test(source);
+    const destinationIsClean =
+      typeof destination === 'string' && CLEAN_REDIRECT_PATH.test(destination);
+
+    if (!sourceIsClean) {
+      addError(
+        errors,
+        'REDIRECT_SOURCE_INVALID',
+        entryContext,
+        `Redirect source ${JSON.stringify(source)} is not a clean static route.`,
+        'Use one lowercase root-relative path without a host, query, fragment, trailing slash, wildcard, or duplicate slash.',
+      );
+    }
+    if (!destinationIsClean) {
+      addError(
+        errors,
+        'REDIRECT_DESTINATION_INVALID',
+        entryContext,
+        `Redirect destination ${JSON.stringify(destination)} is not a clean static route.`,
+        'Use one lowercase root-relative path without a host, query, fragment, trailing slash, wildcard, or duplicate slash.',
+      );
+    }
+    if (permanent !== true) {
+      addError(
+        errors,
+        'REDIRECT_NOT_PERMANENT',
+        entryContext,
+        'The redirect is not explicitly permanent.',
+        'Set permanent to true so Vercel returns a permanent redirect.',
+      );
+    }
+
+    if (!sourceIsClean || !destinationIsClean) {
+      continue;
+    }
+
+    inspected.push({ source, destination });
+
+    if (source === destination) {
+      addError(
+        errors,
+        'REDIRECT_SELF_LOOP',
+        entryContext,
+        `Redirect source and destination are both "${source}".`,
+        'Point the source directly to a different canonical destination.',
+      );
+    }
+
+    if (redirectsBySource.has(source)) {
+      addError(
+        errors,
+        'REDIRECT_SOURCE_DUPLICATE',
+        entryContext,
+        `Redirect source "${source}" is already declared.`,
+        'Keep exactly one destination for each redirect source.',
+      );
+    } else {
+      redirectsBySource.set(source, destination);
+    }
+
+    if (!builtRoutes.has(destination)) {
+      addError(
+        errors,
+        'REDIRECT_DESTINATION_MISSING',
+        entryContext,
+        `Redirect destination "${destination}" has no generated HTML page.`,
+        'Point the redirect directly to an existing built route.',
+      );
+    }
+
+    if (sitemapRoutes.has(source)) {
+      addError(
+        errors,
+        'REDIRECT_SOURCE_IN_SITEMAP',
+        entryContext,
+        `Redirect source "${source}" is present in the sitemap.`,
+        'Remove redirected sources from the sitemap and publish only their canonical destinations.',
+      );
+    }
+  }
+
+  for (const { source, destination } of inspected) {
+    if (redirectsBySource.has(destination)) {
+      addError(
+        errors,
+        'REDIRECT_CHAIN',
+        context,
+        `Redirect "${source}" points to redirect source "${destination}".`,
+        `Point "${source}" directly to the final built destination.`,
+      );
+    }
+  }
+
+  const reportedLoops = new Set();
+  for (const source of redirectsBySource.keys()) {
+    const visitedAt = new Map();
+    const path = [];
+    let current = source;
+
+    while (redirectsBySource.has(current)) {
+      if (visitedAt.has(current)) {
+        const cycle = path.slice(visitedAt.get(current));
+        const key = [...cycle].sort().join('|');
+        if (!reportedLoops.has(key)) {
+          reportedLoops.add(key);
+          addError(
+            errors,
+            'REDIRECT_LOOP',
+            context,
+            `Redirect loop detected: ${[...cycle, current].join(' -> ')}.`,
+            'Point every redirect source directly to a final built destination outside the redirect source set.',
+          );
+        }
+        break;
+      }
+      visitedAt.set(current, path.length);
+      path.push(current);
+      current = redirectsBySource.get(current);
+    }
+  }
+
+  return inspected;
+}
+
 async function inspectSocialImages(buildDir, allFiles, pages, errors) {
   const filesByPath = new Map(
     allFiles.map((file) => [
@@ -1467,7 +1657,10 @@ function inspectUniqueness(pages, errors) {
   }
 }
 
-export async function auditSeo(buildDirectory = DEFAULT_BUILD_DIR) {
+export async function auditSeo(
+  buildDirectory = DEFAULT_BUILD_DIR,
+  { redirectConfigPath = null } = {},
+) {
   const buildDir = resolve(buildDirectory);
   const errors = [];
   let buildStats;
@@ -1482,7 +1675,7 @@ export async function auditSeo(buildDirectory = DEFAULT_BUILD_DIR) {
       'The built client directory does not exist.',
       'Run "npm run build" before "npm run check:seo".',
     );
-    return { buildDir, errors, pages: [], sitemapUrls: [] };
+    return { buildDir, errors, pages: [], redirects: [], sitemapUrls: [] };
   }
 
   if (!buildStats.isDirectory()) {
@@ -1493,7 +1686,7 @@ export async function auditSeo(buildDirectory = DEFAULT_BUILD_DIR) {
       'The SEO check target is not a directory.',
       'Pass the Astro client build directory, normally dist/client.',
     );
-    return { buildDir, errors, pages: [], sitemapUrls: [] };
+    return { buildDir, errors, pages: [], redirects: [], sitemapUrls: [] };
   }
 
   const allFiles = await walkFiles(buildDir);
@@ -1527,6 +1720,14 @@ export async function auditSeo(buildDirectory = DEFAULT_BUILD_DIR) {
     pages,
     errors,
   );
+  const redirects = redirectConfigPath
+    ? await inspectRedirects(
+        resolve(redirectConfigPath),
+        pages,
+        sitemapUrls,
+        errors,
+      )
+    : [];
   await inspectSocialImages(buildDir, allFiles, pages, errors);
 
   errors.sort(
@@ -1536,7 +1737,7 @@ export async function auditSeo(buildDirectory = DEFAULT_BUILD_DIR) {
       left.message.localeCompare(right.message),
   );
 
-  return { buildDir, errors, pages, sitemapUrls };
+  return { buildDir, errors, pages, redirects, sitemapUrls };
 }
 
 export function formatReport(result) {
@@ -1550,6 +1751,8 @@ export function formatReport(result) {
         result.pages.length === 1 ? '' : 's'
       }, ${socialCardCount} route-specific social card${
         socialCardCount === 1 ? '' : 's'
+      }, ${result.redirects.length} redirect${
+        result.redirects.length === 1 ? '' : 's'
       }, and ${result.sitemapUrls.length} sitemap URL${
         result.sitemapUrls.length === 1 ? '' : 's'
       } checked.`,
@@ -1577,7 +1780,9 @@ export function formatReport(result) {
 
 async function main() {
   const buildDirectory = process.argv[2] ?? DEFAULT_BUILD_DIR;
-  const result = await auditSeo(buildDirectory);
+  const result = await auditSeo(buildDirectory, {
+    redirectConfigPath: DEFAULT_REDIRECT_CONFIG,
+  });
   const report = formatReport(result);
 
   if (result.errors.length) {
