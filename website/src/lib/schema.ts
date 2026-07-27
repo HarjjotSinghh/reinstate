@@ -115,12 +115,14 @@ export function techArticleSchema({
   path,
   title,
   description,
+  publishedAt,
   updatedAt,
   tags = [],
 }: {
   path: string;
   title: string;
   description: string;
+  publishedAt?: Date | string;
   updatedAt: Date | string;
   tags?: string[];
 }): SchemaNode {
@@ -131,6 +133,14 @@ export function techArticleSchema({
     headline: title,
     description,
     url,
+    ...(publishedAt
+      ? {
+          datePublished:
+            publishedAt instanceof Date
+              ? publishedAt.toISOString()
+              : new Date(publishedAt).toISOString(),
+        }
+      : {}),
     dateModified:
       updatedAt instanceof Date ? updatedAt.toISOString() : new Date(updatedAt).toISOString(),
     image: {
@@ -140,6 +150,50 @@ export function techArticleSchema({
       height: 630,
     },
     author: personRef,
+    isPartOf: websiteRef,
+    about: softwareRef,
+    mainEntityOfPage: url,
+    inLanguage: 'en',
+    ...(tags.length > 0 ? { keywords: tags } : {}),
+  };
+}
+
+export function blogPostingSchema({
+  path,
+  title,
+  description,
+  publishedAt,
+  updatedAt,
+  tags = [],
+}: {
+  path: string;
+  title: string;
+  description: string;
+  publishedAt: Date | string;
+  updatedAt: Date | string;
+  tags?: string[];
+}): SchemaNode {
+  const url = siteUrl(path);
+  return {
+    '@type': 'BlogPosting',
+    '@id': `${url}#article`,
+    headline: title,
+    description,
+    url,
+    datePublished:
+      publishedAt instanceof Date
+        ? publishedAt.toISOString()
+        : new Date(publishedAt).toISOString(),
+    dateModified:
+      updatedAt instanceof Date ? updatedAt.toISOString() : new Date(updatedAt).toISOString(),
+    image: {
+      '@type': 'ImageObject',
+      url: siteUrl(ogImagePath(path)),
+      width: 1200,
+      height: 630,
+    },
+    author: personRef,
+    publisher: personRef,
     isPartOf: websiteRef,
     about: softwareRef,
     mainEntityOfPage: url,
