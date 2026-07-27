@@ -14,21 +14,18 @@ This pack contains repository-local Agent Skills for implementing and maintainin
 - `reinstate-release-discoverability`
 - `reinstate-site-audit`
 
-## Install in a repository
+## Repository discovery
 
-```bash
-mkdir -p .agents/skills
-cp -R reinstate-seo-agent-skills/* .agents/skills/
-```
+The reviewed canonical copies live in `.agents/skills`, the portable Agent
+Skills discovery path used by Codex and other compatible agents.
 
-For a Claude Code setup that reads `.claude/skills`:
+Claude Code discovers the same nine reviewed skills under `.claude/skills`.
+Those files are deliberate mirrors rather than symlinks so Windows checkouts
+remain reliable. `TestSEOAgentSkillsStayPortableAndInSync` fails if names,
+frontmatter, or contents drift between the two locations.
 
-```bash
-mkdir -p .claude/skills
-cp -R reinstate-seo-agent-skills/* .claude/skills/
-```
-
-Use one directory as the canonical source. Copy or symlink intentionally so the versions do not drift.
+When updating a skill, change the canonical `.agents/skills` copy, mirror the
+same file under `.claude/skills`, and run `go test ./internal/doctest`.
 
 ## Suggested first task
 
