@@ -69,17 +69,18 @@ const schema = [
       <h2 id="analytics">Optional site analytics</h2>
       <p>
         No analytics script is emitted unless both Plausible configuration values are present at
-        build time. When enabled, the site can record page views and four coarse interaction
-        events: copying the install command, opening the getting-started documentation, following
-        a GitHub link, and successfully submitting the waitlist form. Event properties are limited
-        to the current path and the interface location, such as <code>header</code> or
-        <code>homepage-hero</code>.
+        build time. When enabled, the site can record page views and events from a fixed, reviewed
+        taxonomy: command copies, getting-started entry, integration and storage-guide views,
+        security-document views, repository and release-download clicks, RSS subscriptions,
+        issue-report and contribution links, and successful waitlist submissions.
       </p>
       <p>
-        Reinstate's event code does not send form values, email addresses, coding-agent content,
-        source code, repository names, bucket names, credentials, or passphrases. The deployed
-        Plausible service can still process ordinary request information according to its
-        configuration and privacy policy.
+        Event properties contain only a controlled event name, the current path without its query
+        string, and a controlled placement label. Reinstate's event code does not send form values,
+        email addresses, coding-agent content, source code, repository names, bucket names,
+        credentials, passphrases, or link query parameters. The deployed Plausible service can
+        still process ordinary request information according to its configuration and privacy
+        policy.
       </p>
 
       <h2 id="logs">Infrastructure logs</h2>

@@ -1,7 +1,20 @@
 ---
+import {
+  analyticsLinkRules,
+  analyticsPageEvent,
+} from '../lib/analytics';
+
 const domain = import.meta.env.PUBLIC_PLAUSIBLE_DOMAIN;
 const scriptUrl = import.meta.env.PUBLIC_PLAUSIBLE_SCRIPT_URL;
 const enabled = Boolean(domain && scriptUrl);
+const pageEvent = analyticsPageEvent(Astro.url.pathname);
+const analyticsConfig = JSON.stringify({
+  pageEvent,
+  linkRules: analyticsLinkRules,
+})
+  .replace(/</g, '\\u003c')
+  .replace(/\u2028/g, '\\u2028')
+  .replace(/\u2029/g, '\\u2029');
 ---
 
 {
@@ -16,27 +29,62 @@ const enabled = Boolean(domain && scriptUrl);
 }
 {
   enabled && (
-    <script is:inline>
-      {`
+    <script
+      is:inline
+      set:html={`
+        var reinstateAnalytics = ${analyticsConfig};
         window.plausible = window.plausible || function () {
           (window.plausible.q = window.plausible.q || []).push(arguments);
         };
+
+        function sendReinstateEvent(name, target) {
+          window.plausible(name, {
+            props: {
+              location: window.location.pathname,
+              target: target || ''
+            }
+          });
+        }
+
+        if (reinstateAnalytics.pageEvent) {
+          sendReinstateEvent(
+            reinstateAnalytics.pageEvent.event,
+            reinstateAnalytics.pageEvent.target
+          );
+        }
 
         document.addEventListener('click', function (event) {
           var target = event.target instanceof Element
             ? event.target.closest('[data-analytics-event]')
             : null;
-          if (!target) return;
-          var name = target.getAttribute('data-analytics-event');
-          if (!name) return;
-          window.plausible(name, {
-            props: {
-              location: window.location.pathname,
-              target: target.getAttribute('data-analytics-target') || ''
+
+          if (target) {
+            var declaredName = target.getAttribute('data-analytics-event');
+            if (declaredName) {
+              sendReinstateEvent(
+                declaredName,
+                target.getAttribute('data-analytics-target') || ''
+              );
+              return;
             }
+          }
+
+          var link = event.target instanceof Element
+            ? event.target.closest('a[href]')
+            : null;
+          if (!link) return;
+          var href = link.getAttribute('href') || '';
+          if (href === '/rss.xml' || href === 'https://reinstate.dev/rss.xml') {
+            sendReinstateEvent('changelog_subscribe', 'rss-feed');
+            return;
+          }
+
+          var rule = reinstateAnalytics.linkRules.find(function (candidate) {
+            return href.indexOf(candidate.includes) !== -1;
           });
+          if (rule) sendReinstateEvent(rule.event, rule.target);
         });
       `}
-    </script>
+    />
   )
 }

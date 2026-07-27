@@ -335,8 +335,35 @@ Do not send:
 
 The existing click helper sends only a controlled event name plus page
 `location` and an optional declared `target`. No click event is emitted unless
-an element has `data-analytics-event`. Review every proposed event attribute so
-its name and target cannot contain user data.
+an element has a reviewed `data-analytics-event` or its URL matches one of the
+fixed RSS, release-asset, issue-form, or contribution-link rules. Integration,
+storage-guide, and security-document events are emitted from exact route
+matches. Review every proposed event or rule so its name and target cannot
+contain user data.
+
+### Implemented event taxonomy
+
+| Event | Exact implementation |
+|---|---|
+| `install_command_copy` | Successful attempt to copy the homepage install command |
+| `github_click` | A declaratively marked primary repository link |
+| `docs_getting_started` | A declaratively marked getting-started entry link |
+| `integration_view` | Exact Claude Code or Codex integration route load |
+| `storage_guide_view` | Exact S3 or Cloudflare R2 storage-guide route load |
+| `waitlist_submit` | Server-confirmed successful waitlist submission |
+| `download_click` | Link whose path contains `/releases/download/` |
+| `changelog_subscribe` | Link to the canonical `/rss.xml` feed |
+| `issue_report_click` | Link whose path contains `/issues/new` |
+| `contribute_click` | Link to the repository `CONTRIBUTING.md` |
+| `security_doc_view` | Exact security overview or security-model route load |
+| `command_copy` | A future command control explicitly marked with this event |
+
+The generic `command_copy` event exists for non-install command controls. Do
+not add it to the install control as well, because that would double count one
+action. Page-view events intentionally use exact routes; hub pages and unrelated
+URLs do not silently enter the funnel. Tests in
+`website/src/lib/analytics.test.ts` pin the event inventory and all automatic
+route/link classifications.
 
 ## Production crawler and WAF checks
 
