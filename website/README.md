@@ -46,6 +46,55 @@ canonical and title uniqueness, route-specific 1200×630 PNG social cards,
 robots crawler rules, and sitemap coverage. Failures include the generated file
 and a suggested fix. Its focused fixture tests are also included in `npm test`.
 
+## Performance budgets
+
+Run the dependency-free static-build budget check after changing layouts,
+fonts, scripts, styles, or media:
+
+```bash
+npm run build
+npm run check:performance
+```
+
+The check covers the homepage, getting-started docs, Claude Code integration,
+privacy page, and the guide and blog hubs when present. It reports raw and
+deterministic gzip sizes for HTML, CSS, executable JavaScript, route media, and
+the initial static transfer. It also limits render-blocking style/script counts,
+font candidates declared by route CSS, font preloads, external references, and
+local asset requests. External render-blocking stylesheets or scripts fail
+because their size cannot be verified from the build.
+
+Budgets intentionally leave reviewable headroom above the current output while
+keeping each page type bounded:
+
+| Route | HTML raw / gzip | CSS raw / gzip | Static transfer raw / gzip |
+| --- | ---: | ---: | ---: |
+| `/` | 200 / 35 KiB | 140 / 28 KiB | 460 / 180 KiB |
+| `/docs/getting-started` | 64 / 14 KiB | 80 / 18 KiB | 220 / 90 KiB |
+| `/integrations/claude-code` | 48 / 12 KiB | 90 / 20 KiB | 230 / 95 KiB |
+| `/privacy` | 48 / 12 KiB | 80 / 18 KiB | 210 / 85 KiB |
+| `/guides`, `/blog` | 72 / 16 KiB | 100 / 22 KiB | 250 / 100 KiB |
+
+Every route also has a 16 KiB raw / 6 KiB gzip executable-JavaScript
+budget, at most one render-blocking script, at most 16 declared font files
+totalling 240 KiB raw / 245 KiB gzip, and no more than two font preloads. The
+homepage has a larger transfer allowance for its code-native illustrations;
+editorial routes have tighter HTML and CSS limits. Route media is capped
+separately and included in static transfer. Declared fonts are reported
+separately because the browser selects files by family and Unicode range
+instead of downloading every `@font-face` candidate.
+
+This is a deterministic regression gate over `dist/client`, not a browser
+measurement. It does not produce Lighthouse scores or claim to measure field
+Core Web Vitals, runtime rendering, cache behavior, CDN behavior, device CPU,
+or network latency. For release QA, run several Lighthouse mobile navigations
+against `npm run preview` and the production URL, compare the median lab LCP,
+CLS, and TBT, then review PageSpeed Insights/CrUX and Search Console field data
+when traffic is sufficient. Any future Lighthouse CI job should use a pinned
+Chrome/Lighthouse version, a real preview server, multiple runs, and separately
+calibrated thresholds; it should complement rather than replace this static
+gate.
+
 ## Waitlist storage
 
 **Local / verification:** libSQL file

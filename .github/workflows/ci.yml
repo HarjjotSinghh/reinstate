@@ -79,6 +79,10 @@ jobs:
         working-directory: website
         run: npm run check:seo
 
+      - name: Check website performance budgets
+        working-directory: website
+        run: npm run check:performance
+
       - name: Verify public installer assets
         working-directory: website
         run: |
