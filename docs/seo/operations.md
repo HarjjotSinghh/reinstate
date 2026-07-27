@@ -87,8 +87,11 @@ https://reinstate.dev/
 https://reinstate.dev/docs
 https://reinstate.dev/docs/getting-started
 https://reinstate.dev/guides
+https://reinstate.dev/guides/move-a-coding-agent-session-from-mac-to-windows
 https://reinstate.dev/guides/sync-claude-code-sessions-across-devices
 https://reinstate.dev/guides/sync-codex-sessions-across-devices
+https://reinstate.dev/guides/use-cloudflare-r2-for-coding-agent-session-storage
+https://reinstate.dev/guides/use-s3-for-coding-agent-session-storage
 https://reinstate.dev/blog
 https://reinstate.dev/blog/why-git-does-not-sync-coding-agent-sessions
 https://reinstate.dev/integrations
@@ -98,11 +101,16 @@ https://reinstate.dev/compatibility
 https://reinstate.dev/security
 https://reinstate.dev/about/reinstate
 https://reinstate.dev/open-source
+https://reinstate.dev/roadmap
+https://reinstate.dev/research
 https://reinstate.dev/changelog
 https://reinstate.dev/privacy
 https://reinstate.dev/use-cases
+https://reinstate.dev/use-cases/desktop-and-laptop
+https://reinstate.dev/use-cases/encrypted-session-backup
 https://reinstate.dev/use-cases/work-and-personal-computers
 https://reinstate.dev/use-cases/macos-and-windows
+https://reinstate.dev/compare
 ```
 
 For each URL, record:
@@ -371,27 +379,89 @@ route/link classifications.
 `OAI-SearchBot` and `PerplexityBot` are allowed, while GPTBot has a separate
 policy. A robots rule does not prove that the CDN or WAF permits a crawler.
 
-Run public smoke tests from at least one external network:
+### Read-only post-deployment smoke test
+
+Run the automated smoke test from at least one external network after deploying
+an immutable candidate and again after promoting production:
 
 ```sh
-for agent in OAI-SearchBot PerplexityBot; do
-  curl -sS -A "$agent" -D - -o /dev/null https://reinstate.dev/
-  curl -sS -A "$agent" -D - -o /dev/null https://reinstate.dev/docs
-  curl -sS -A "$agent" -D - -o /dev/null https://reinstate.dev/robots.txt
-  curl -sS -A "$agent" -D - -o /dev/null https://reinstate.dev/sitemap-index.xml
-done
+npm --prefix website run check:production-discovery
 ```
 
-Expected:
+The default target is exactly `https://reinstate.dev`. To check an immutable
+public HTTPS deployment before promotion, acknowledge the different origin
+explicitly:
 
-- canonical pages return `200` with HTML;
-- robots and sitemap return `200` with the correct content type;
-- no challenge page, login wall, geo-block, `403`, `429`, or `5xx`;
-- no crawler-specific redirect loop; and
-- response time is recorded for comparison, not treated as field performance
-  data.
+```sh
+npm --prefix website run check:production-discovery -- \
+  --base-url https://DEPLOYMENT.example \
+  --allow-non-production
+```
 
-User-agent strings are spoofable. These curls test the public response policy
+The request origin may differ for an immutable deployment, but canonical,
+Open Graph, robots-sitemap, and sitemap URLs must still point to
+`https://reinstate.dev`. Non-production targets require the explicit flag and
+must be public HTTPS origins. Credentials, URL paths, queries, fragments,
+localhost, and private-network targets are refused. The checker sends no
+cookies, authorization, form data, or request bodies.
+
+The checker:
+
+- uses only idempotent `GET` and `HEAD` requests;
+- verifies every sitemap canonical with `GET` and every launch-critical
+  canonical with `HEAD`;
+- requires one matching production canonical and an indexable robots policy;
+- follows the sitemap index with a maximum of 10 documents and 100 URLs;
+- rejects duplicate, non-production, preview, API, and error sitemap entries;
+- verifies `robots.txt`, its production sitemap directive, wildcard exclusions,
+  and explicit `OAI-SearchBot` and `PerplexityBot` groups;
+- verifies both crawler user agents receive canonical HTML for `/` and `/docs`
+  plus valid robots and sitemap responses rather than a challenge page;
+- verifies every unique Open Graph asset with `HEAD` and a bounded range `GET`,
+  including `image/png` and the PNG's actual 1200×630 dimensions;
+- requires a fixed nonexistent route to return `404` for both `GET` and `HEAD`;
+- limits concurrency to four, each attempt to 10 seconds, response bodies to
+  fixed sizes, and transient network/`429`/`5xx` retries to two attempts by
+  default; and
+- exits nonzero on a finding without changing the deployment, submitting a URL,
+  requesting indexing, or updating an external account.
+
+CLI tuning cannot exceed eight concurrent requests, three attempts, or a
+30-second per-attempt timeout. Keep the defaults unless a recorded incident
+justifies a temporary change. Retries honor `Retry-After` up to a bounded delay.
+
+Unit tests use injected mock responses and make no external requests. Do not add
+the production command to ordinary CI: it is an explicit post-deployment
+observation whose target, release, operator, and time must be recorded.
+
+### Evidence artifact handling
+
+Every run writes timestamped JSON under the ignored
+`website/artifacts/discovery/` directory and prints the exact path. Use
+`--output` to select another local destination:
+
+```sh
+npm --prefix website run check:production-discovery -- \
+  --output artifacts/discovery/release-candidate.json
+```
+
+The artifact contains the target origin, bounded configuration, timestamps,
+durations, request methods, paths, simulated user-agent names, attempt statuses,
+content types, fixed finding codes, and coverage totals. It deliberately omits
+response bodies, cookies, authorization, arbitrary response headers, IP
+addresses, and provider error text. Review the JSON before sharing it, compute
+and record its SHA-256 digest, and attach it to the approved release evidence
+store or ticket. Do not commit generated evidence to Git. Apply the project's
+evidence-retention and access policy rather than inventing a new retention
+period in this runbook.
+
+Record the release tag and commit, immutable or production target, operator,
+UTC run time, result, artifact location, and digest. A passing result proves
+only what that public endpoint returned during the run. A failed result blocks
+discoverability sign-off until it is explained and rerun; it does not roll back
+or otherwise mutate the release.
+
+User-agent strings are spoofable. These requests test the public response policy
 only; they do not prove that a request came from OpenAI or Perplexity.
 
 An operator with production log and WAF access must separately review:
@@ -441,6 +511,7 @@ spoofable user-agent string.
 | Check | Evidence | Owner | Time (UTC) | Result | Follow-up |
 | ----- | -------- | ----- | ---------- | ------ | --------- |
 | Production build/version |  |  |  | Not run |  |
+| Post-deploy discoverability smoke |  |  |  | Not run |  |
 | Robots and sitemap fetch |  |  |  | Not run |  |
 | Google property/sitemap/generative-AI setting |  |  |  | Not run |  |
 | Bing property/sitemap |  |  |  | Not run |  |

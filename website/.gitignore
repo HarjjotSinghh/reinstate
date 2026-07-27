@@ -30,4 +30,5 @@ pnpm-debug.log*
 
 # local/CI rendered-browser reports
 artifacts/lighthouse/
+artifacts/discovery/
 .browser-cache/
