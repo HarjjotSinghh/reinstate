@@ -1,5 +1,5 @@
 ---
-import { product, siteUrl } from '../data/product';
+import { ogImagePath, product, siteUrl } from '../data/product';
 
 interface Props {
   title: string;
@@ -20,8 +20,8 @@ const {
   title,
   description,
   canonical = siteUrl(Astro.url.pathname),
-  image = product.defaultOgImage,
-  imageAlt = product.defaultOgImageAlt,
+  image = ogImagePath(Astro.url.pathname),
+  imageAlt = `${title} — Reinstate social preview`,
   type = 'website',
   noindex = false,
   nofollow = false,

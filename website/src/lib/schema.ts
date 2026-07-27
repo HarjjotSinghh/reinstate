@@ -1,4 +1,4 @@
-import { product, siteUrl } from '../data/product';
+import { ogImagePath, product, siteUrl } from '../data/product';
 
 export type SchemaNode = Record<string, unknown>;
 
@@ -40,6 +40,7 @@ export function homepageSchema(): SchemaNode[] {
       operatingSystem: [...product.supportedOperatingSystems],
       softwareVersion: product.currentRelease,
       isAccessibleForFree: true,
+      image: siteUrl(product.defaultOgImage),
       downloadUrl: product.releasesUrl,
       softwareHelp: siteUrl('/docs'),
       author: personRef,
@@ -90,6 +91,12 @@ export function webPageSchema({
     url,
     name: title,
     description,
+    primaryImageOfPage: {
+      '@type': 'ImageObject',
+      url: siteUrl(ogImagePath(path)),
+      width: 1200,
+      height: 630,
+    },
     ...(updatedAt
       ? {
           dateModified:
@@ -126,6 +133,12 @@ export function techArticleSchema({
     url,
     dateModified:
       updatedAt instanceof Date ? updatedAt.toISOString() : new Date(updatedAt).toISOString(),
+    image: {
+      '@type': 'ImageObject',
+      url: siteUrl(ogImagePath(path)),
+      width: 1200,
+      height: 630,
+    },
     author: personRef,
     isPartOf: websiteRef,
     about: softwareRef,

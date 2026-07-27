@@ -14,7 +14,7 @@ export const product = {
   defaultTitle: 'Reinstate: Sync Coding-Agent Sessions Across Devices',
   defaultDescription:
     'Sync encrypted Claude Code and Codex sessions across macOS and Windows with Reinstate, using your own S3-compatible storage.',
-  defaultOgImage: '/brand/og.png',
+  defaultOgImage: '/og/home.png',
   defaultOgImageAlt:
     'Reinstate syncs encrypted Claude Code and Codex sessions across devices.',
   supportedAgents: ['Claude Code', 'Codex'],
@@ -35,4 +35,9 @@ export const product = {
 
 export function siteUrl(path = '/'): string {
   return new URL(path, product.siteUrl).toString();
+}
+
+export function ogImagePath(pathname: string): string {
+  const normalized = pathname.replace(/^\/+|\/+$/g, '');
+  return normalized ? `/og/${normalized}.png` : '/og/home.png';
 }
