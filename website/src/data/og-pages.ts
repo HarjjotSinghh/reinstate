@@ -154,7 +154,7 @@ export const staticOgPages: OgPage[] = [
   {
     route: '/tools/path-mapping-visualizer',
     kind: 'Synthetic technical explainer',
-    title: 'macOS ↔ Windows path-mapping visualizer',
+    title: 'macOS and Windows path-mapping visualizer',
     description:
       'Trace fixed synthetic Claude Code and Codex structural paths through one portable canonical project mapping.',
   },

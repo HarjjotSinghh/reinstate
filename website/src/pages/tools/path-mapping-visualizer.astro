@@ -84,7 +84,7 @@ const description =
           </div>
           <div>
             <dt>Transcript prose</dt>
-            <dd><code>Open /Users/alex/notes.txt</code> <span>unchanged</span></dd>
+            <dd><code id="unchanged-prose">Open /Users/alex/notes.txt</code> <span>unchanged</span></dd>
           </div>
         </dl>
       </article>
@@ -260,7 +260,8 @@ const description =
 
   function renderExample() {
     if (!direction || !agent) return;
-    const selectedDirection = examples[direction.value as keyof typeof examples];
+    const selectedDirection =
+      examples[direction.value as keyof typeof examples] ?? examples['mac-to-windows'];
     const selectedAgent = agent.value === 'codex' ? 'codex' : 'claude';
     const key = selectedAgent === 'codex' ? 'session_meta.payload.cwd' : 'cwd';
     const record = (value: string) =>
@@ -285,8 +286,7 @@ const description =
         : `Codex keeps the rollout under its native sessions/YYYY/MM/DD path and expands session_meta.payload.cwd to ${selectedDirection.destinationRoot}.`;
     text('#native-locator', locator);
 
-    const prose = document.querySelector<HTMLElement>('.portable dd:last-child code');
-    if (prose) prose.textContent = selectedDirection.unchangedProse;
+    text('#unchanged-prose', selectedDirection.unchangedProse);
   }
 
   direction?.addEventListener('change', renderExample);

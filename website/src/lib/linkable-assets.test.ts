@@ -52,6 +52,13 @@ describe('evidence-safe linkable assets', () => {
     expect(visualizer).toContain('${REPO:github.com/acme/acme-app}');
     expect(visualizer).toContain('session_meta.payload.cwd');
     expect(visualizer).toContain('Unknown keys remain untouched');
+    expect(visualizer).toContain(
+      "text('#unchanged-prose', selectedDirection.unchangedProse)",
+    );
+    expect(visualizer).toContain("?? examples['mac-to-windows']");
+    expect(visualizer).not.toContain(
+      "document.querySelector<HTMLElement>('.portable dd:last-child code')",
+    );
     expect(visualizer).not.toMatch(/<input\b/i);
     expect(visualizer).not.toMatch(
       /\b(?:fetch|XMLHttpRequest|WebSocket|sendBeacon|localStorage|sessionStorage)\s*(?:\(|\.|=)/,
