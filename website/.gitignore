@@ -19,7 +19,7 @@ pnpm-debug.log*
 .env.production
 
 # local waitlist db
-data/
+/data/
 
 # macOS-specific files
 .DS_Store
@@ -27,3 +27,9 @@ data/
 # jetbrains setting folder
 .idea/
 .vercel
+
+# local/CI rendered-browser reports
+artifacts/lighthouse/
+artifacts/discovery/
+.browser-cache/
+.cache/

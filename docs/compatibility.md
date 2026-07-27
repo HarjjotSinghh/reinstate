@@ -68,8 +68,10 @@ installed remains an informational `NOT_INSTALLED` result.
 ## Path mapping
 
 Sessions may contain absolute paths. Reinstate rewrites known structural path
-fields to portable tokens (`${HOME}`, `${REPO:<id>}`, `${WORK:<alias>}`) so
-Windows ↔ macOS resume works. Prose and unknown fields are left unchanged.
+fields to the currently configured portable tokens (`${HOME}` and
+`${REPO:<id>}`) so Windows ↔ macOS resume works. The lower-level mapper's
+`${WORK:<alias>}` primitive is not populated by RC6 configuration or adapters.
+Prose and unknown fields are left unchanged.
 
 ## Security exclusions
 

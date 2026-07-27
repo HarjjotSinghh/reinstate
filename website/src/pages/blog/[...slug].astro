@@ -1,0 +1,55 @@
+---
+export const prerender = true;
+
+import { render } from 'astro:content';
+import EditorialLayout from '../../layouts/EditorialLayout.astro';
+import {
+  editorialSlug,
+  getPublishedBlogPosts,
+  type BlogEntry,
+} from '../../lib/editorial';
+
+export async function getStaticPaths() {
+  const posts = await getPublishedBlogPosts();
+  return posts.map((entry) => ({
+    params: { slug: editorialSlug(entry) },
+    props: { entry },
+  }));
+}
+
+interface Props {
+  entry: BlogEntry;
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const slug = editorialSlug(entry);
+const path = `/blog/${slug}`;
+const category = entry.data.category.replaceAll('-', ' ');
+---
+
+<EditorialLayout
+  kind="blog"
+  title={entry.data.title}
+  description={entry.data.description}
+  answer={entry.data.answer}
+  {path}
+  author={entry.data.author}
+  publishedAt={entry.data.publishedAt}
+  updatedAt={entry.data.updatedAt}
+  reviewedAt={entry.data.reviewedAt}
+  tags={entry.data.tags}
+  noindex={entry.data.noindex}
+  canonical={entry.data.canonical}
+  ogImage={entry.data.ogImage}
+  ogImageAlt={entry.data.ogImageAlt}
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Blog', path: '/blog' },
+    { name: entry.data.title, path },
+  ]}
+  related={entry.data.related}
+  category={category}
+>
+  <Content />
+</EditorialLayout>

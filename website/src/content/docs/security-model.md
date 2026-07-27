@@ -1,8 +1,27 @@
-# Security Model
+---
+title: "Reinstate security and encryption model"
+description: "See how Reinstate encrypts session data before upload, excludes credential files, stores storage keys, handles conflicts, and defines its threat boundaries."
+order: 4
+author: "Harjot Singh Rana"
+status: current
+schemaType: tech-article
+version: "v0.1.0-rc.6"
+updatedAt: 2026-07-27
+tags: ["security", "encryption", "credentials", "threat-model", "age"]
+targetQuery: "is Reinstate secure"
+searchIntent: "security"
+draft: false
+noindex: false
+---
 
-Reinstate handles **high-sensitivity material**: coding-agent transcripts can
-contain source code, architecture decisions, and occasionally secrets that tools
-printed to the terminal. This document is the contract we design against.
+Reinstate encrypts every remote manifest and session snapshot locally before
+upload, hard-excludes known credential files, stores S3 credentials in the
+native OS keyring, and never stores the encryption passphrase.
+
+Coding-agent transcripts remain **high-sensitivity material** because they can
+contain source code, architecture decisions, and secrets that a tool printed
+to the terminal. Encryption reduces remote-storage risk; it does not make an
+unsafe transcript harmless.
 
 ## Threat model (summary)
 
@@ -12,7 +31,7 @@ printed to the terminal. This document is the contract we design against.
 | Network eavesdropper | TLS to backend + encrypted payloads |
 | Accidental sync of API keys / OAuth | Hard denylist of credential paths (default on) |
 | Overwriting good local history | Timestamped backups + conflict forks |
-| Weak passphrase | Documented guidance; Argon2 KDF; user responsibility |
+| Weak passphrase | age scrypt recipient + long-passphrase guidance; user responsibility |
 | Compromised local machine | **Out of scope** (OS-level compromise) |
 | Malicious release artifact | Checksums / supply-chain process (see SECURITY.md) |
 
@@ -34,16 +53,19 @@ printed to the terminal. This document is the contract we design against.
 
 | Property | Default |
 | -------- | ------- |
-| Algorithm | age (X25519 / scrypt or Argon2-derived as configured) |
-| Key UX | Passphrase — same phrase on every device derives the same key |
+| Algorithm | age passphrase encryption (`scrypt` recipient) |
+| Key UX | Enter the same passphrase privately on each device; it is not stored |
 | At rest (remote) | Ciphertext only |
-| At rest (local keys) | Restricted file permissions (`0600`) |
+| At rest (local secrets) | Passphrase is not stored; storage keys use the OS keyring |
 | In transit | HTTPS/TLS to object storage |
 
 ### Passphrase guidance
 
 - Prefer a long passphrase (diceware / password manager)
 - Never commit passphrases to git or shell history
+- Interactive commands read it from a hidden terminal prompt
+- Automation must use `REINSTATE_PASSPHRASE_FD` pointing at a pre-opened
+  descriptor; ordinary environment variables and CLI flags are rejected
 - Losing the passphrase = losing ability to decrypt remote data (by design)
 
 ## What is never synced (defaults)
@@ -76,8 +98,8 @@ it; copying private credential stores is never the fallback.
 Agents sometimes echo `.env` values or tokens into session logs. Reinstate:
 
 1. Encrypts everything it does sync (reduces blast radius of cloud leaks)
-2. Offers opt-in redaction patterns (Phase 2+) for high-entropy strings
-3. Encourages `--scope sessions` awareness — you choose what leaves the machine
+2. Syncs explicitly discovered Claude Code or Codex session artifacts in Phase 1
+3. Plans optional transcript-redaction tooling for a later phase
 
 **You remain responsible** for not pasting production secrets into agent chats.
 
@@ -87,6 +109,7 @@ Agents sometimes echo `.env` values or tokens into session logs. Reinstate:
 2. Existing files backed up under `~/.reinstate/backups/<timestamp>/`
 3. Writes via temp file + atomic rename
 4. Conflicts create `.conflict` forks — never silent last-writer-wins without notice
+5. A mutating pull refuses to replace a session while the matching agent is active
 
 ## Reporting issues
 

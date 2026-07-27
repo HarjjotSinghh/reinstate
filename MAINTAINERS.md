@@ -36,6 +36,6 @@ Stable releases are cut by a core maintainer following [RELEASING.md](RELEASING.
 
 ## Contact
 
-- General: open a [GitHub Discussion](https://github.com/HarjjotSinghh/reinstate/discussions)
+- General: open a redacted [question issue](https://github.com/HarjjotSinghh/reinstate/issues/new?template=question.yml)
 - Security: see [SECURITY.md](SECURITY.md)
 - Conduct: see [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)

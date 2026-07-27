@@ -1,8 +1,29 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
-@import "@fontsource/questrial/latin-400.css";
-@import "@fontsource-variable/geist";
-@import "@fontsource-variable/geist-mono";
+
+@font-face {
+  font-family: "Questrial";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url("@fontsource/questrial/files/questrial-latin-400-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Geist Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("@fontsource-variable/geist/files/geist-latin-wght-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Geist Mono Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2") format("woff2");
+}
 
 /* Website design tokens — light default, dark twin on html.dark */
 
@@ -11,10 +32,10 @@
   --paper-2: #f4f6ef;
   --ink: oklch(0.19 0.022 158);
   --ink-2: oklch(0.41 0.018 158);
-  --ink-3: oklch(0.54 0.014 158);
+  --ink-3: #59625d;
   --rule: oklch(0.8 0.012 145);
   --prim: oklch(0.87 0.21 128);
-  --prim-deep: oklch(0.58 0.155 134);
+  --prim-deep: #386c12;
   --on-prim: oklch(0.19 0.022 158);
 
   --sv-stroke: #131f1a;
@@ -76,7 +97,7 @@ html.dark {
   --paper-2: #26332e;
   --ink: oklch(0.965 0.008 145);
   --ink-2: oklch(0.76 0.014 150);
-  --ink-3: oklch(0.62 0.016 150);
+  --ink-3: oklch(0.72 0.016 150);
   --rule: oklch(0.31 0.02 158);
   --prim: oklch(0.88 0.21 128);
   --prim-deep: oklch(0.84 0.19 128);
@@ -212,6 +233,25 @@ html.dark {
 }
 
 /* Shell utilities */
+.skip-link {
+  position: fixed;
+  z-index: 100;
+  top: 0.75rem;
+  left: 0.75rem;
+  transform: translateY(-200%);
+  padding: 0.65rem 0.9rem;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: var(--prim);
+  color: var(--on-prim);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
 .shell {
   max-width: 88rem;
   margin-inline: auto;
@@ -293,13 +333,14 @@ html.dark {
 }
 
 .prose-rein :where(a) {
-  text-decoration: none;
+  text-decoration-line: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
   font-weight: 500;
 }
 
 .prose-rein :where(a:hover) {
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  text-decoration-thickness: 2px;
 }
 
 .prose-rein :where(pre) {

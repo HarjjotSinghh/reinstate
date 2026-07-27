@@ -1,0 +1,66 @@
+---
+import type { Breadcrumb } from '../lib/schema';
+
+interface Props {
+  items: Breadcrumb[];
+}
+
+const { items } = Astro.props;
+---
+
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <ol>
+    {
+      items.map((item, index) => {
+        const isCurrent = index === items.length - 1;
+        return (
+          <li>
+            {isCurrent ? (
+              <span aria-current="page">{item.name}</span>
+            ) : (
+              <a href={item.path}>{item.name}</a>
+            )}
+          </li>
+        );
+      })
+    }
+  </ol>
+</nav>
+
+<style>
+  .breadcrumbs {
+    font-size: 0.82rem;
+    color: var(--ink-3);
+  }
+
+  ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.42rem;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.42rem;
+  }
+
+  li:not(:last-child)::after {
+    content: '/';
+    color: var(--rule);
+  }
+
+  a {
+    color: var(--ink-2);
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+  }
+
+  a:hover {
+    color: var(--ink);
+  }
+</style>

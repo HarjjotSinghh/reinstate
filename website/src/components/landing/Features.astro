@@ -10,19 +10,19 @@ const features = [
   },
   {
     title: 'End-to-end encryption',
-    body: 'age with passphrase-derived keys. Ciphertext only on remote storage. Zero-knowledge by design.',
+    body: 'age with passphrase-derived keys. Reinstate uploads encrypted payloads and does not store the passphrase.',
   },
   {
     title: 'Bring-your-own storage',
-    body: 'Cloudflare R2, S3, GCS, S3-compatible, or WebDAV. You own the bucket and the credentials.',
+    body: 'Cloudflare R2, AWS S3, or another compatible S3 service. You own the bucket and credentials.',
   },
   {
     title: 'OS-aware path remapping',
     body: 'Windows ↔ macOS project roots rewritten so resume actually finds sessions. The hard problem is the product.',
   },
   {
-    title: 'Config + sessions',
-    body: 'MCP servers, skills, agents, and settings travel with history. One environment everywhere you code.',
+    title: 'Sessions first',
+    body: 'Phase 1 syncs supported same-vendor sessions. Portable non-secret agent configuration is later roadmap work.',
   },
 ];
 ---
@@ -31,8 +31,8 @@ const features = [
   <div class="shell">
     <h2 id="features-title" class="display">Built for the empty quadrant</h2>
     <p class="lede">
-      Universal × cross-device × works when the other machine is off × encrypted × path-aware.
-      Native vendor sync owns one ecosystem. DIY file sync breaks on paths and secrets.
+      Claude Code and Codex continuity × cross-device × stored sync × encrypted × path-aware.
+      Naive file copies can preserve wrong paths or include sensitive artifacts.
     </p>
 
     <div class="grid">

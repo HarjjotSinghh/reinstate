@@ -3,9 +3,6 @@ contact_links:
   - name: Security vulnerability
     url: https://github.com/HarjjotSinghh/reinstate/security/advisories/new
     about: Report security issues privately — do not open a public issue.
-  - name: Discussions & questions
-    url: https://github.com/HarjjotSinghh/reinstate/discussions
-    about: Ask questions, share ideas, and show your setup.
   - name: Documentation
     url: https://github.com/HarjjotSinghh/reinstate/tree/main/docs
     about: Getting started, architecture, adapters, and FAQ.

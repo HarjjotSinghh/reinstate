@@ -1,0 +1,170 @@
+---
+import ComparisonEvidence from '../../components/ComparisonEvidence.astro';
+import { product } from '../../data/product';
+import PublicContentLayout from '../../layouts/PublicContentLayout.astro';
+
+export const prerender = true;
+
+const title = 'Reinstate vs. Remote Desktop for Coding-Agent Work';
+const description =
+  'Compare Reinstate session transfer with remote desktop access: execution location, host availability, native local resume, storage, and security scope.';
+---
+
+<PublicContentLayout
+  {title}
+  {description}
+  path="/compare/reinstate-vs-remote-desktop"
+  eyebrow="Workflow comparison"
+  answer="Remote desktop lets you control the machine where your environment and session already live. Reinstate instead transfers a supported, encrypted session artifact so the same agent vendor can resume it on another configured computer. Choose based on whether you need the original environment or local continuation on the destination."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Compare', path: '/compare' },
+    { name: 'Remote desktop', path: '/compare/reinstate-vs-remote-desktop' },
+  ]}
+  article={false}
+>
+  <h2 id="short-answer">Remote control and session transfer solve different problems</h2>
+  <p>
+    With remote desktop, the agent, repository, tools, and session can remain on the host machine;
+    another device displays and controls that environment. With Reinstate, the agent runs locally
+    on the destination after Reinstate restores a supported native session there. Reinstate is not
+    a screen-sharing, shell-hosting, or remote-execution service.
+  </p>
+  <p>
+    Remote desktop behavior varies by product. Where this comparison mentions host power or
+    connectivity requirements, it refers specifically to Microsoft's documented Remote Desktop PC
+    workflow, not every remote-access product.
+  </p>
+
+  <h2 id="comparison-matrix">Workflow comparison</h2>
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">Dimension</th>
+          <th scope="col">Reinstate {product.currentRelease}</th>
+          <th scope="col">Remote desktop</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Primary job</td>
+          <td>Transfer supported coding-agent session state between devices</td>
+          <td>Interact with a remote computer and its existing environment</td>
+        </tr>
+        <tr>
+          <td>Where the agent runs</td>
+          <td>Locally on the destination after restore</td>
+          <td>On the remote host in the conventional remote-desktop model</td>
+        </tr>
+        <tr>
+          <td>What moves</td>
+          <td>Selected, encrypted vendor-native session artifacts</td>
+          <td>The interaction is transmitted; project and session state stay on the host</td>
+        </tr>
+        <tr>
+          <td>Source host after transfer</td>
+          <td>Does not need to remain online after a completed push</td>
+          <td>
+            Microsoft's PC workflow requires the host to be powered on, connected, and reachable
+          </td>
+        </tr>
+        <tr>
+          <td>Destination environment</td>
+          <td>Needs the project, compatible agent, and mapped local project root</td>
+          <td>Needs a compatible remote-access client; tooling stays on the host</td>
+        </tr>
+        <tr>
+          <td>macOS ↔ Windows paths</td>
+          <td>Known structural paths are remapped through canonical project IDs</td>
+          <td>Usually unnecessary because the session remains in the host environment</td>
+        </tr>
+        <tr>
+          <td>Remote storage</td>
+          <td>User supplies S3, R2, or compatible object storage for encrypted artifacts</td>
+          <td>Product-specific; not evaluated by this page</td>
+        </tr>
+        <tr>
+          <td>Credentials</td>
+          <td>Agent credentials are excluded and must exist independently on the destination</td>
+          <td>Host access and credential behavior are product-specific</td>
+        </tr>
+        <tr>
+          <td>Network use</td>
+          <td>Required for push/pull; not for later local agent execution</td>
+          <td>Required while controlling the remote host</td>
+        </tr>
+        <tr>
+          <td>Repository and dependencies</td>
+          <td>Not synced; prepare them separately on the destination</td>
+          <td>Remain available in the host environment</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="when-remote-desktop-fits">When remote desktop can fit</h2>
+  <ul>
+    <li>You need the exact host operating system, files, credentials, services, or hardware.</li>
+    <li>You do not want to recreate the development environment on the device in front of you.</li>
+    <li>The host and network can remain available for the duration of your work.</li>
+    <li>Your chosen product meets your access-control, security, display, and latency needs.</li>
+  </ul>
+
+  <h2 id="when-reinstate-fits">When Reinstate can fit</h2>
+  <ul>
+    <li>You want the supported agent and repository to run locally on the destination.</li>
+    <li>You may turn off or disconnect the source device after uploading the session.</li>
+    <li>You work across different local project roots, including macOS and Windows paths.</li>
+    <li>You want the transferable payload encrypted before it reaches your storage backend.</li>
+  </ul>
+
+  <div class="pc-callout">
+    <p>You can use both.</p>
+    <p>
+      Remote access can cover work tied to a host environment, while Reinstate can move selected
+      supported sessions that you want to continue locally. Reinstate does not copy your repository,
+      dependencies, shell state, credentials, or running processes.
+    </p>
+  </div>
+
+  <ComparisonEvidence
+    sources={[
+      {
+        label: 'Microsoft: Enable Remote Desktop on your PC',
+        href: 'https://learn.microsoft.com/en-us/windows-server/remote/remote-desktop-services/remotepc/remote-desktop-allow-access',
+        note: 'Defines Microsoft Remote Desktop as connection to and control of a remote PC and documents host availability requirements.',
+      },
+      {
+        label: 'Microsoft: Remote Desktop clients FAQ',
+        href: 'https://learn.microsoft.com/en-us/windows-server/remote/remote-desktop-services/remotepc/remote-pc-connections-faq',
+        note: 'Documents that a Windows remote PC cannot be off, asleep, or hibernating for connection.',
+      },
+      {
+        label: 'Reinstate architecture',
+        href: '/docs/architecture',
+        note: 'Documents local agent execution, adapter boundaries, portable paths, encrypted storage, and native restore.',
+      },
+      {
+        label: 'Reinstate compatibility matrix',
+        href: '/compatibility',
+        note: 'Current agents, operating systems, storage backends, and tested-version gates.',
+      },
+    ]}
+    limitations={[
+      'Remote desktop is a product category, not one implementation; this page does not compare pricing, protocols, encryption, account requirements, or administrative controls.',
+      'Host availability statements are scoped to the linked Microsoft Remote Desktop documentation and must not be generalized to every remote-access system.',
+      'Reinstate transfers supported session artifacts only; it does not reproduce the complete source environment or provide remote access.',
+    ]}
+  />
+
+  <section class="pc-related" aria-labelledby="related-heading">
+    <h2 id="related-heading">Choose the continuity boundary</h2>
+    <nav aria-label="Related pages">
+      <a href="/compare">All comparisons</a>
+      <a href="/use-cases/work-and-personal-computers">Work and personal computers</a>
+      <a href="/security">Security overview</a>
+      <a href="/docs/architecture">Architecture</a>
+    </nav>
+  </section>
+</PublicContentLayout>

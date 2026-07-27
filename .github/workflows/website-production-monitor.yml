@@ -1,0 +1,77 @@
+name: Website production uptime and discovery monitor
+
+on:
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: website-production-uptime-discovery
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    name: Canonical uptime and discoverability
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Probe canonical production origin
+        shell: bash
+        run: |
+          set -euo pipefail
+          probe="$(
+            curl \
+              --fail \
+              --silent \
+              --show-error \
+              --location \
+              --max-redirs 3 \
+              --proto '=https' \
+              --tlsv1.2 \
+              --connect-timeout 10 \
+              --max-time 30 \
+              --retry 2 \
+              --retry-all-errors \
+              --retry-delay 1 \
+              --output /dev/null \
+              --write-out $'%{http_code}\\t%{content_type}\\t%{url_effective}\\t%{time_total}' \
+              https://reinstate.dev/
+          )"
+          IFS=$'\t' read -r status content_type effective_url total_time <<< "$probe"
+          printf 'Canonical origin: status=%s content_type=%s effective_url=%s total_time=%ss\n' \
+            "$status" "$content_type" "$effective_url" "$total_time"
+          test "$status" = "200"
+          test "$effective_url" = "https://reinstate.dev/"
+          case "$content_type" in
+            text/html*) ;;
+            *) echo "Expected an HTML homepage, received $content_type" >&2; exit 1 ;;
+          esac
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22.12.0"
+
+      - name: Check canonical pages, crawler policy, and discovery assets
+        working-directory: website
+        run: >-
+          node scripts/check-production-discovery.mjs
+          --base-url https://reinstate.dev
+          --max-attempts 3
+          --timeout-ms 15000
+          --output artifacts/production-discovery/scheduled.json
+
+      - name: Upload bounded redacted evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: production-discovery-${{ github.run_id }}
+          path: website/artifacts/production-discovery/scheduled.json
+          if-no-files-found: warn
+          retention-days: 30

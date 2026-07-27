@@ -1,5 +1,13 @@
 ---
+import { product } from '../../data/product';
 import { box, fmt, P } from '../../lib/iso';
+
+const verifiedDate = new Intl.DateTimeFormat('en', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  timeZone: 'UTC',
+}).format(new Date(`${product.lastVerified}T00:00:00Z`));
 
 /* floor plane of the desk group; every act sits its feet on its own z-floor */
 const FLOOR = -132;
@@ -221,7 +229,11 @@ const floorGrid = [
 
         <div class="conversion-meta">
           <nav class="hero-links" aria-label="Installation resources">
-            <a href="/docs/getting-started">
+            <a
+              href="/docs/getting-started"
+              data-analytics-event="docs_getting_started"
+              data-analytics-target="homepage-hero"
+            >
               Read setup guide
               <svg viewBox="0 0 16 16" aria-hidden="true">
                 <path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5"></path>
@@ -229,6 +241,8 @@ const floorGrid = [
             </a>
             <a
               href="https://github.com/HarjjotSinghh/reinstate"
+              data-analytics-event="github_click"
+              data-analytics-target="homepage-hero"
               rel="noopener noreferrer"
               target="_blank"
             >
@@ -296,6 +310,8 @@ const floorGrid = [
         <code>rein</code> is the CLI for Reinstate
         <span aria-hidden="true">·</span>
         Apache&#8209;2.0 · one Go binary · your bucket, your keys
+        <span aria-hidden="true">·</span>
+        Verified <time datetime={product.lastVerified}>{verifiedDate}</time>
       </p>
     </div>
 
@@ -806,6 +822,8 @@ const floorGrid = [
 </div>
 
 <script>
+  import { copyInstallCommand } from '../../lib/install-copy';
+
   const copyButton = document.getElementById('copy-install');
   const commandText = document.getElementById('install-command-text');
   const copyStatus = document.getElementById('copy-status');
@@ -818,7 +836,17 @@ const floorGrid = [
     window.clearTimeout(resetCopyState);
 
     try {
-      await navigator.clipboard.writeText(command);
+      const analyticsWindow = window as Window & {
+        reinstateTrack?: (
+          eventName: 'install_command_copy',
+          target: 'homepage-hero',
+        ) => boolean;
+      };
+      await copyInstallCommand(
+        command,
+        navigator.clipboard.writeText.bind(navigator.clipboard),
+        analyticsWindow.reinstateTrack,
+      );
       copyButton.dataset.state = 'copied';
       copyButton.setAttribute('aria-label', 'Install command copied');
       copyStatus.textContent = 'Install command copied';
@@ -841,60 +869,8 @@ const floorGrid = [
 
 <style>
   .hero-block {
-    /* ---- light (default) ---- */
-    --paper: #e4e7dd;
-    --paper-2: #f4f6ef;
-    --ink: oklch(0.19 0.022 158);
-    --ink-2: oklch(0.41 0.018 158);
-    --ink-3: oklch(0.54 0.014 158);
-    --rule: oklch(0.8 0.012 145);
-    --prim: oklch(0.87 0.21 128);
-    --prim-deep: oklch(0.58 0.155 134);
-    --on-prim: oklch(0.19 0.022 158);
-
-    /* ---- scene ---- */
-    --sv-stroke: #131f1a;
-    --sv-ink: oklch(0.19 0.022 158);
-    --sv-dim: oklch(0.56 0.014 158);
-    --sv-prim: #b8ff3c;
-    --sv-prim-deep: #4f8a1e;
     --sv-lock: #131f1a;
-    --sv-shadow: #131f1a;
-
-    --sv-wall: #e4e7dd;
-    --sv-floor: #dde1d6;
-    --sv-floorline: #cbd1c2;
-    --sv-skirt: #c8cebd;
-    --sv-frame: #f4f6ef;
-    --sv-night: #16231f;
-    --sv-star: #cfe9a8;
-    --sv-city: #24352e;
-    --sv-rug: #c2cbb2;
-
-    --sv-furn-1: #c1c9ae;
-    --sv-furn-2: #a6b090;
-    --sv-furn-3: #8a9673;
     --sv-glass: #3f6b1f;
-
-    --sv-dev-0: #55685d;
-    --sv-dev-1: #3b4c43;
-    --sv-dev-2: #2a3831;
-    --sv-dev-3: #1e2925;
-    --sv-seal-1: #41544a;
-    --sv-seal-2: #1f2c26;
-    --sv-seal-3: #121b17;
-
-    --sv-leaf-1: #7fae3f;
-    --sv-leaf-2: #5f8f2c;
-    --sv-pot-1: #aab38f;
-    --sv-pot-2: #93a176;
-    --sv-pot-3: #7a8a5e;
-
-    --sv-t-a: #b8ff3c;
-    --sv-t-b: #f2cd6d;
-    --sv-t-c: #8fc8ea;
-    --sv-t-d: #f2f4ea;
-    --font-display: 'Questrial', ui-sans-serif, system-ui, sans-serif;
 
     position: relative;
     background: var(--paper);
@@ -905,53 +881,7 @@ const floorGrid = [
   }
 
   :global(html.dark) .hero-block {
-    --paper: #1d2723;
-    --paper-2: #26332e;
-    --ink: oklch(0.965 0.008 145);
-    --ink-2: oklch(0.76 0.014 150);
-    --ink-3: oklch(0.62 0.016 150);
-    --rule: oklch(0.31 0.02 158);
-    --prim: oklch(0.88 0.21 128);
-    --prim-deep: oklch(0.84 0.19 128);
-    --on-prim: oklch(0.17 0.04 132);
-
-    /* dark is not "invert the outlines". Outlines stay near-black in both
-       themes; the solids lift above the room instead. */
-    --sv-stroke: #0d1613;
-    --sv-ink: oklch(0.965 0.008 145);
-    --sv-dim: oklch(0.66 0.016 150);
-    --sv-prim: #c4ff56;
-    --sv-prim-deep: #a8e83c;
     --sv-lock: #16211b;
-    --sv-shadow: #050b09;
-
-    --sv-wall: #1d2723;
-    --sv-floor: #19231f;
-    --sv-floorline: #27322d;
-    --sv-skirt: #253029;
-    --sv-frame: #4a5a51;
-    --sv-night: #0a1310;
-    --sv-star: #c4ff56;
-    --sv-city: #16211c;
-    --sv-rug: #223029;
-
-    --sv-furn-1: #6d8073;
-    --sv-furn-2: #56685c;
-    --sv-furn-3: #435248;
-
-    --sv-dev-0: #6b7e72;
-    --sv-dev-1: #52655a;
-    --sv-dev-2: #3d4e45;
-    --sv-dev-3: #2e3c34;
-    --sv-seal-1: #486054;
-    --sv-seal-2: #33453c;
-    --sv-seal-3: #23312b;
-
-    --sv-leaf-1: #7fae3f;
-    --sv-leaf-2: #5f8f2c;
-    --sv-pot-1: #8d9670;
-    --sv-pot-2: #757e5b;
-    --sv-pot-3: #5f6849;
   }
 
   .lede {
@@ -1002,7 +932,6 @@ const floorGrid = [
     letter-spacing: -0.038em;
     font-weight: 400;
     text-wrap: balance;
-    animation: rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   .sub {
@@ -1012,7 +941,6 @@ const floorGrid = [
     line-height: 1.6;
     color: var(--ink-2);
     text-wrap: pretty;
-    animation: rise 0.8s 0.09s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   .hero-conversion {
@@ -1021,7 +949,6 @@ const floorGrid = [
     gap: 0.25rem;
     margin: clamp(1.1rem, 2vw, 1.45rem) auto 0;
     max-width: 43rem;
-    animation: rise 0.8s 0.17s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   .install-command {
@@ -1188,7 +1115,6 @@ const floorGrid = [
     background: var(--paper-2);
     list-style: none;
     text-align: left;
-    animation: rise 0.8s 0.29s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
   .mechanism li {
     display: flex;
@@ -1254,12 +1180,14 @@ const floorGrid = [
     margin: 0.8rem 0 0;
     font-size: 0.82rem;
     color: var(--ink-3);
-    animation: rise 0.8s 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
   .micro code {
     color: var(--ink-2);
     font-family: 'Geist Mono Variable', ui-monospace, monospace;
     font-weight: 650;
+  }
+  .micro time {
+    color: var(--ink-2);
   }
 
   .sr {

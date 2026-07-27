@@ -1,0 +1,154 @@
+---
+import PublicContentLayout from '../layouts/PublicContentLayout.astro';
+
+export const prerender = true;
+
+const title = 'Reinstate Roadmap: From Encrypted Sync to Work Continuity';
+const description =
+  'Review what Reinstate RC6 implements today, which acceptance gates remain, and which session search, verified resume, handoff, and configuration features are planned.';
+---
+
+<PublicContentLayout
+  {title}
+  {description}
+  path="/roadmap"
+  eyebrow="Product roadmap"
+  answer="Reinstate currently implements the Phase 0 foundation and Phase 1 encrypted same-vendor session-sync engine for Claude Code and Codex. Physical RC6 acceptance is still open. Local session search, verified resume, portable cross-agent handoffs, universal non-secret configuration, a thin console, and team continuity are later phases—not current capabilities."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Roadmap', path: '/roadmap' },
+  ]}
+  tags={['Reinstate roadmap', 'coding-agent continuity', 'planned features', 'product scope']}
+>
+  <h2 id="how-to-read">How to read this roadmap</h2>
+  <p>
+    A checked implementation item is not automatically a stable product claim. Each phase has an
+    evidence gate, and the public compatibility page remains the source for what a released binary
+    may mutate safely. Priorities can change with real activation data and coding-agent format
+    changes.
+  </p>
+  <div class="pc-callout">
+    <p>Current release boundary</p>
+    <p>
+      <code>v0.1.0-rc.6</code> supports encrypted same-vendor Claude Code and Codex session
+      synchronization through user-owned S3-compatible storage. Native Windows, macOS amd64,
+      WSL2, and full physical two-device acceptance still contain open release gates.
+    </p>
+  </div>
+
+  <h2 id="phase-map">Phase map</h2>
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">Phase</th>
+          <th scope="col">Outcome</th>
+          <th scope="col">Current state</th>
+          <th scope="col">Gate</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>0</td>
+          <td>Trustworthy contracts, diagnostics, installers, fixtures, CI, and documentation</td>
+          <td>In progress</td>
+          <td>Clean native-device and WSL2 acceptance</td>
+        </tr>
+        <tr>
+          <td>1</td>
+          <td>Encrypted same-vendor Claude Code and Codex session sync</td>
+          <td>Release candidate</td>
+          <td>Install, push, pull, restore, and native resume across the required matrix</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>Local universal session index, search, inspect, and native resume</td>
+          <td>Planned</td>
+          <td>Useful local-only continuation without remote configuration</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>Verified resume against repository, runtime, agent, MCP, and skill state</td>
+          <td>Planned</td>
+          <td>Report environment truth before launch and refuse silent bad continuation</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>Explicit portable checkpoints for cross-agent handoff</td>
+          <td>Planned</td>
+          <td>Lossy behavior and destination capability differences remain visible</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td>Universal non-secret configuration and automatic cross-device reconciliation</td>
+          <td>Planned</td>
+          <td>Render native harness configuration without raw credential or config-tree mirroring</td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td>Optional thin console for selecting and preparing work</td>
+          <td>Exploring</td>
+          <td>Agents continue to own execution; Reinstate remains the continuity client</td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td>Team checkpoints, onboarding, provenance, and policy</td>
+          <td>Exploring</td>
+          <td>Individual continuity must first be proven safe and useful</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="native-vs-handoff">Native resume and portable handoff stay distinct</h2>
+  <p>
+    Native resume preserves a vendor's own session format: Claude Code resumes Claude Code, and
+    Codex resumes Codex. A later portable handoff will carry an explicit checkpoint—goal,
+    decisions, rejected approaches, files, tests, and next action—to a different agent. Reinstate
+    will not market that lossy checkpoint as invisible transcript translation.
+  </p>
+
+  <h2 id="configuration-direction">Universal configuration without unsafe mirroring</h2>
+  <p>
+    The planned configuration layer will describe portable intent for MCP servers, skills,
+    instructions, hooks, plugins, marketplaces, and safe settings. Adapters will preview and
+    render each supported harness's native format. Raw API keys, OAuth tokens, cookies, vendor
+    credential stores, and unrelated native settings remain excluded.
+  </p>
+
+  <h2 id="non-goals">Near-term non-goals</h2>
+  <ul>
+    <li>A custom editor, terminal emulator, or full agentic development environment.</li>
+    <li>A multi-agent scheduler, model router, or worktree orchestration platform.</li>
+    <li>A proprietary agent plugin runtime or marketplace.</li>
+    <li>Replacing Git as source truth.</li>
+    <li>Perfect silent Claude Code ↔ Codex transcript translation.</li>
+    <li>Shipping vendor credentials or mirroring complete configuration trees.</li>
+  </ul>
+
+  <h2 id="how-priorities-move">How priorities move</h2>
+  <p>
+    The north-star measure is previously started coding tasks successfully resumed per active
+    user. Device count and storage volume are not substitutes. The maintainer will weigh real
+    continuation failures, compatibility churn, security risk, and repeated user requests before
+    promoting a planned phase.
+  </p>
+  <p>
+    The repository's
+    <a href="https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md"
+      >version-controlled roadmap</a
+    > is authoritative for item-level status. Open a sourced issue or discussion to propose a
+    change.
+  </p>
+
+  <section class="pc-related" aria-labelledby="related-heading">
+    <h2 id="related-heading">Roadmap context</h2>
+    <nav aria-label="Related pages">
+      <a href="/about/reinstate">Current product facts</a>
+      <a href="/compatibility">Current compatibility</a>
+      <a href="/docs/limitations">Current limitations</a>
+      <a href="/open-source">Source and contribution paths</a>
+    </nav>
+  </section>
+</PublicContentLayout>
+

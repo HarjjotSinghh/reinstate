@@ -1,11 +1,51 @@
-# FAQ
+---
+title: "Reinstate frequently asked questions"
+description: "Get direct answers about Reinstate's current session-sync scope, supported agents, encryption, storage, offline behavior, cross-agent handoffs, and roadmap."
+order: 7
+author: "Harjot Singh Rana"
+status: current
+schemaType: web-page
+version: "v0.1.0-rc.6"
+updatedAt: 2026-07-27
+tags: ["faq", "session-sync", "claude-code", "codex", "security"]
+targetQuery: "what is Reinstate"
+searchIntent: "answer"
+draft: false
+noindex: false
+---
+
+Reinstate answers common continuity questions with one present-scope rule:
+supported Claude Code and Codex sessions resume in the same vendor, while
+cross-agent translation and broader continuity features remain later roadmap
+work.
 
 ## What is Reinstate?
 
-The **continuity layer for coding-agent work**. Phase 1 implements encrypted,
-bring-your-own-storage sync for same-vendor Claude Code and Codex sessions.
-Universal search, verified resume, portable handoffs, and cross-harness
-configuration are later phases.
+Reinstate is an open-source continuity layer for coding-agent work. Phase 1
+implements encrypted, bring-your-own-storage sync for same-vendor Claude Code
+and Codex sessions; universal search, verified resume, portable handoffs, and
+cross-harness configuration are later phases.
+
+See [What is Reinstate?](/about/reinstate) for current product facts, non-goals,
+roadmap boundaries, and maintainer information.
+
+## What is a coding-agent session?
+
+A coding-agent session is the vendor-native record of an ongoing agent task,
+including its session identifier, conversation events, tool activity, working
+directory, and enough tool-specific state for that same agent to resume it.
+Reinstate preserves supported native session artifacts; it does not convert a
+Claude Code transcript into a Codex rollout or vice versa. See
+[adapter internals](/docs/adapters).
+
+## Is Reinstate free and open source?
+
+Yes. Reinstate is available under the Apache-2.0 license and the CLI does not
+require a Reinstate account. You provide your own S3-compatible storage and are
+responsible for any storage-provider charges.
+
+See the [open-source project page](/open-source) for the repository, license,
+governance, security policy, and contribution paths.
 
 ## What is `rein` vs `reinstate`?
 
@@ -26,23 +66,71 @@ Config and data live under `~/.reinstate/` either way.
 
 ## Why not just use git?
 
-Git is **source** truth. Sessions are **context** truth — the reasoning trail,
-tool outputs, and decisions that are not in `git log`. Pulling commits and
-asking a new agent to re-derive context is slow and incomplete.
+Git stores source history; it does not store the complete vendor-native
+coding-agent session. Reinstate handles session context while Git remains the
+source of truth for commits, branches, and repository collaboration.
+
+See [Reinstate compared with Git](/docs/comparison) for the distinct roles of
+source history and coding-agent session continuity.
+
+## Why not copy the session files manually?
+
+Manual copying can work for a narrow same-machine experiment, but it does not
+provide Reinstate's canonical project identity, structural macOS ↔ Windows
+path remapping, client-side encryption, credential exclusions, immutable
+snapshots, conflict checks, or atomic restore backup. Reinstate remains
+same-vendor: those safeguards do not translate one agent's transcript into
+another format. See [the architecture](/docs/architecture).
+
+## Can I restore a session without copying the whole repository?
+
+Yes. Reinstate transfers supported session artifacts, not the repository
+itself. The destination still needs an appropriate checkout of the source
+repository, branch, and dependencies through Git or the developer's normal
+workflow. Map that local checkout to the same canonical project ID before
+restoring the session. See [installation and sync](/docs/getting-started).
 
 ## Will this resume a Claude session inside Codex?
 
 **Native resume:** no — same-vendor only. A later explicit portable handoff can
 carry a lossy task checkpoint without pretending to translate native history.
 
+## Do I need two computers?
+
+No. Multi-device sync is the first release wedge, while later local
+index/search/resume features are intended to help developers manage fragmented
+sessions and agents on one computer without a remote-storage dependency.
+
+## Is Reinstate a cloud IDE or coding-agent harness?
+
+No. Claude Code, Codex, and other coding agents execute the work. Reinstate
+finds, verifies, restores, hands off, and syncs continuity state around those
+tools; it does not provide an editor, terminal emulator, or agent scheduler.
+
+## Is Reinstate a remote desktop or live terminal mirror?
+
+No. Remote desktop streams or controls another machine's live environment.
+Reinstate transfers supported encrypted session state into the destination
+agent's native local layout so work can continue on that device. It does not
+stream a screen, terminal, process, or active agent. Review the
+[work-and-personal-computer use case](/use-cases/work-and-personal-computers).
+
+## Is Reinstate a general backup tool?
+
+No. Reinstate creates encrypted, immutable snapshots of supported coding-agent
+session artifacts, but it is not a whole-computer, repository, credential, or
+general file backup system. Keep independent backups and use Git for source
+history. The [security model](/security) explains what is deliberately
+excluded.
+
 ## Will Reinstate configure the same MCP server in every harness?
 
 **That is planned after Phase 1.** The target is to define an MCP server once,
-preview the native changes, and apply it across selected Claude Code, Codex,
-Grok, OpenCode, Gemini CLI, and future adapters. The model also covers
+preview the native changes, and apply it across Claude Code, Codex, and future
+verified adapters. The model also covers
 skills/instructions, hooks/loops, plugins, marketplaces, and safe settings.
 
-See [Universal agent configuration](universal-configuration.md).
+See [Universal agent configuration](/docs/universal-configuration).
 
 ## Will MCP authentication also carry across tools and devices?
 
@@ -54,9 +142,9 @@ own login.
 
 ## Is my data sent to Reinstate servers?
 
-**No** for the open-source CLI. You point at **your** R2/S3/WebDAV/etc. A future
-optional hosted convenience layer would still be zero-knowledge (ciphertext
-only); it is not required.
+No. The open-source CLI sends ciphertext to the S3-compatible bucket you
+configure, such as Cloudflare R2 or Amazon S3. Reinstate does not operate a
+required storage service.
 
 ## What if I lose my passphrase?
 
@@ -65,13 +153,25 @@ passphrase in a password manager.
 
 ## Does this work offline?
 
-Local status/diff from the manifest works offline. Push/pull need network to
-your storage backend.
+Session files remain local, but the current `status`, `diff`, `push`, and
+`pull` commands read the remote manifest and need access to your storage
+backend. Offline indexing and search are Phase 2 roadmap work.
 
-## Windows + Mac?
+## Does Reinstate support Windows and macOS?
 
-Yes — that dual setup is a primary design target. Path remapping is the hard
-problem we optimize for.
+Windows ↔ macOS is the primary design target, and the structural path-remapping
+implementation is in the release candidate. Exact native Windows, macOS amd64,
+WSL2, and two-device certification remain open release gates; check the
+[roadmap](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md).
+
+## What happens when Claude Code or Codex changes its session format?
+
+Reinstate adapters validate known formats and tested agent-version ranges. An
+unknown or untested layout fails closed for writes instead of guessing.
+Maintainers update fixtures, adapter logic, compatibility evidence, and
+release notes before expanding the supported range. Check the
+[compatibility matrix](/compatibility) and [changelog](/changelog) before
+syncing after an agent upgrade.
 
 ## Is this affiliated with Anthropic / OpenAI / Google / xAI?
 
@@ -79,8 +179,10 @@ problem we optimize for.
 
 ## Production ready?
 
-Pre-1.0. See [ROADMAP.md](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md) and [CHANGELOG.md](https://github.com/HarjjotSinghh/reinstate/blob/main/CHANGELOG.md).
-Use with backups; report bugs via GitHub Issues.
+No. Reinstate is a pre-1.0 release candidate while native acceptance gates are
+open. See the [roadmap](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md)
+and [changelog](https://github.com/HarjjotSinghh/reinstate/blob/main/CHANGELOG.md),
+use it with backups, and report bugs through GitHub Issues.
 
 ## How do I contribute?
 

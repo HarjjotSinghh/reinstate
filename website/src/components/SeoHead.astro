@@ -1,0 +1,85 @@
+---
+import { ogImagePath, product, siteUrl } from '../data/product';
+
+interface Props {
+  title: string;
+  description: string;
+  canonical?: URL | string;
+  image?: URL | string;
+  imageAlt?: string;
+  type?: 'website' | 'article';
+  noindex?: boolean;
+  nofollow?: boolean;
+  publishedTime?: Date | string;
+  modifiedTime?: Date | string;
+  section?: string;
+  tags?: string[];
+}
+
+const {
+  title,
+  description,
+  canonical = siteUrl(Astro.url.pathname),
+  image = ogImagePath(Astro.url.pathname),
+  imageAlt = `Branded Reinstate card for “${title}” with a cross-device coding-agent continuity illustration.`,
+  type = 'website',
+  noindex = false,
+  nofollow = false,
+  publishedTime,
+  modifiedTime,
+  section,
+  tags = [],
+} = Astro.props;
+
+const canonicalUrl = new URL(canonical, product.siteUrl).toString();
+const imageUrl = new URL(image, product.siteUrl).toString();
+const toIso = (value: Date | string) =>
+  value instanceof Date ? value.toISOString() : new Date(value).toISOString();
+const robots = [
+  noindex ? 'noindex' : 'index',
+  nofollow ? 'nofollow' : 'follow',
+  'max-image-preview:large',
+  'max-snippet:-1',
+  'max-video-preview:-1',
+].join(', ');
+---
+
+<title>{title}</title>
+<meta name="description" content={description} />
+<meta name="robots" content={robots} />
+<link rel="canonical" href={canonicalUrl} />
+
+<meta property="og:site_name" content={product.name} />
+<meta property="og:locale" content="en_US" />
+<meta property="og:type" content={type} />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonicalUrl} />
+<meta property="og:image" content={imageUrl} />
+<meta property="og:image:secure_url" content={imageUrl} />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content={imageAlt} />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={imageUrl} />
+<meta name="twitter:image:alt" content={imageAlt} />
+
+{
+  type === 'article' && publishedTime && (
+    <meta property="article:published_time" content={toIso(publishedTime)} />
+  )
+}
+{
+  type === 'article' && modifiedTime && (
+    <meta property="article:modified_time" content={toIso(modifiedTime)} />
+  )
+}
+{type === 'article' && section && <meta property="article:section" content={section} />}
+{
+  type === 'article' &&
+    tags.map((tag) => <meta property="article:tag" content={tag} />)
+}

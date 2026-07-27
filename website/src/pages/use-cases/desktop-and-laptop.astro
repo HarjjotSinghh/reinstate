@@ -1,0 +1,280 @@
+---
+import PublicContentLayout from '../../layouts/PublicContentLayout.astro';
+
+export const prerender = true;
+
+const title = 'Continue Coding-Agent Sessions from Desktop to Laptop';
+const description =
+  'Move one encrypted Claude Code or Codex session between a configured desktop and laptop with RC6, user-owned storage, path mapping, and safe restore.';
+---
+
+<PublicContentLayout
+  {title}
+  {description}
+  path="/use-cases/desktop-and-laptop"
+  eyebrow="Use case · Desktop and laptop"
+  answer="Reinstate RC6 can move one selected Claude Code or Codex session from a desktop to a laptop through an age-encrypted snapshot in your own S3-compatible bucket. Each computer keeps its own checkout path, agent login, and local tools; both map the project to one canonical ID and resume through the same vendor."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Use cases', path: '/use-cases' },
+    { name: 'Desktop and laptop', path: '/use-cases/desktop-and-laptop' },
+  ]}
+  tags={['desktop laptop workflow', 'coding-agent continuity', 'session sync', 'BYO storage']}
+>
+  <h2 id="outcome">The outcome: continue the same task on the other computer</h2>
+  <p>
+    This workflow is for a developer whose coding-agent task exists on a desktop but who needs to
+    continue it on a laptop—or the reverse. Reinstate transfers supported vendor-native session
+    state after an explicit push. It is stored between devices, so the source computer does not
+    need to remain online while the destination pulls.
+  </p>
+  <p>
+    RC6 supports same-vendor Claude Code and Codex CLI session transfer. It does not move the Git
+    repository, log the agent into its vendor account, reproduce the entire development
+    environment, or convert a Claude Code session into a Codex rollout.
+  </p>
+
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">Continuity layer</th>
+          <th scope="col">What it carries</th>
+          <th scope="col">What remains independent</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Git</td>
+          <td>Source and committed history</td>
+          <td>Uncommitted state unless you move it separately</td>
+        </tr>
+        <tr>
+          <td>Reinstate</td>
+          <td>Selected supported session plus portable structural paths</td>
+          <td>Vendor credentials, settings, MCP servers, skills, and plugins</td>
+        </tr>
+        <tr>
+          <td>Your S3-compatible bucket</td>
+          <td>Encrypted profile manifest and immutable session snapshots</td>
+          <td>The passphrase, which Reinstate does not store</td>
+        </tr>
+        <tr>
+          <td>Claude Code or Codex CLI</td>
+          <td>Native session resume on the destination</td>
+          <td>Cross-vendor conversion</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="fit">When this use case fits RC6</h2>
+  <ul>
+    <li>Both computers are trusted and authorized to hold the project and session.</li>
+    <li>Both use the exact RC6 binary and a recognized version of the same agent vendor.</li>
+    <li>The project is checked out normally on each device, even if its absolute paths differ.</li>
+    <li>Both can access one private S3-compatible profile and their own OS keyrings.</li>
+    <li>You can retain the long encryption passphrase independently of both computers.</li>
+    <li>You are evaluating release-candidate behavior and will keep independent backups.</li>
+  </ul>
+  <p>
+    Current source evidence covers the documented Claude Code and Codex version ranges on macOS
+    arm64 plus deterministic fixtures. Native Windows, macOS amd64, WSL2, and physical
+    two-computer resume remain open release gates. A successful personal transfer is useful
+    evidence, not stable Phase 1 certification.
+  </p>
+
+  <div class="pc-callout">
+    <p>Device policy still applies.</p>
+    <p>
+      User-owned storage does not override employment, client, residency, repository, or endpoint
+      policy. A work session should reach a personal laptop only when that device and bucket are
+      explicitly approved.
+    </p>
+  </div>
+
+  <h2 id="workflow">The explicit desktop-to-laptop workflow</h2>
+  <ol class="pc-steps">
+    <li>
+      Install RC6 and the recognized same-vendor agent on both computers. Run
+      <code>rein setup check</code> and stop if the selected adapter is
+      <code>UNTESTED</code> or <code>UNSUPPORTED</code>.
+    </li>
+    <li>
+      Give the project a stable ID such as <code>github.com/acme/app</code>. Map it to the desktop
+      checkout during first-device <code>rein init</code>.
+    </li>
+    <li>
+      Close the source agent, select one ID, and run
+      <code>rein push --agent AGENT --session SESSION_ID --dry-run</code> before the matching
+      mutating push.
+    </li>
+    <li>
+      Join the laptop with <code>rein init --profile-id PROFILE_ID</code>, the same storage
+      coordinates, and the same project ID mapped to the laptop's own checkout.
+    </li>
+    <li>
+      Run <code>rein status</code>, close the destination agent, and preview
+      <code>rein pull --agent AGENT --session SESSION_ID --dry-run</code>.
+    </li>
+    <li>
+      Pull only after the destination and backup root are correct. Resume the exact ID through
+      <code>claude --resume SESSION_ID</code> or <code>codex resume SESSION_ID</code>.
+    </li>
+  </ol>
+  <p>
+    The reverse trip uses the same process: exit the laptop agent, push its changed session,
+    preview the pull on the desktop, restore, and resume through the same vendor.
+  </p>
+
+  <h2 id="path-mapping">Different checkout paths are expected</h2>
+  <p>
+    Each device maps its physical checkout to the same portable project identity. A desktop path
+    such as <code>D:\src\app</code> and laptop path such as
+    <code>/Users/me/Code/app</code> can both represent
+    <code>github.com/acme/app</code>. Reinstate normalizes only known structural fields and expands
+    them through the destination mapping during restore.
+  </p>
+  <p>
+    Path mapping does not rewrite prose, reproduce a shell, switch Git branches, install a runtime,
+    or copy environment variables. Check repository and environment state before native resume.
+  </p>
+
+  <h2 id="evidence">What verifiable success looks like</h2>
+  <ul>
+    <li>
+      Both computers report <code>0.1.0-rc.6</code> and a
+      <code>SUPPORTED</code> same-vendor adapter.
+    </li>
+    <li>The source dry-run selects exactly one intended session and uploads nothing.</li>
+    <li>
+      The mutating push creates an encrypted manifest and opaque <code>.age</code> snapshot.
+    </li>
+    <li>The destination joins the exact first-device profile UUID and verifies its manifest.</li>
+    <li>The pull dry-run reports one destination and backup root without creating either.</li>
+    <li>An existing destination is backed up before atomic replacement.</li>
+    <li>The vendor-native resume UI opens the intended ID at the mapped checkout.</li>
+  </ul>
+  <p>
+    Retain redacted versions, exit codes, IDs, counts, object names, and path-equivalence booleans.
+    Do not retain transcript contents, passphrases, storage secrets, or downloaded snapshots in
+    public evidence. The repository's
+    <a href="https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/phase-1-mac-windows-acceptance.md">
+      physical acceptance checklist
+    </a>
+    remains the release authority.
+  </p>
+
+  <h2 id="failure-recovery">Failure recovery</h2>
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">Failure</th>
+          <th scope="col">Safe response</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Compatibility exit <code>5</code></td>
+          <td>Stop mutation and use a recognized agent version; do not force an unknown layout.</td>
+        </tr>
+        <tr>
+          <td>Manifest missing on the laptop</td>
+          <td>Confirm the source pushed first and reuse its exact profile, endpoint, Region, bucket, and prefix.</td>
+        </tr>
+        <tr>
+          <td>Wrong-passphrase failure</td>
+          <td>Preserve ciphertext and local files, verify the phrase privately, and retry; no restore should occur.</td>
+        </tr>
+        <tr>
+          <td>Safety exit <code>7</code></td>
+          <td>Close the destination vendor process and rerun the dry-run; never bypass an active-file refusal.</td>
+        </tr>
+        <tr>
+          <td>Conflict exit <code>6</code></td>
+          <td>
+            Inspect conflict metadata and preserve both branches with <code>--keep-both</code> when
+            neither may be discarded.
+          </td>
+        </tr>
+        <tr>
+          <td>Wrong destination path</td>
+          <td>Stop before pull, correct the project mapping through reviewed re-initialization, and preview again.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    RC6 has no general undo command. A dry-run is the safest rollback because it creates nothing.
+    After a real replacement, preserve the timestamped local backup before taking another action.
+    Do not delete the remote manifest merely to make a broken profile look empty.
+  </p>
+
+  <h2 id="independent-backups">Why independent backups still matter</h2>
+  <p>
+    Reinstate's remote profile is optimized for continuity, not comprehensive disaster recovery.
+    RC6 does not manage provider versioning, retention, archival restore, or remote garbage
+    collection. A mistaken provider deletion, compromised write credential, lost passphrase, or
+    damaged endpoint can make the continuity copy unavailable.
+  </p>
+  <ul>
+    <li>Keep the repository in Git and back up uncommitted work through an approved process.</li>
+    <li>Keep provider versioning or retention only when it is tested with Reinstate's mutable manifest.</li>
+    <li>Retain the passphrase in a password manager with an approved recovery process.</li>
+    <li>Periodically test a harmless restore instead of assuming encrypted objects are recoverable.</li>
+    <li>Preserve local timestamped session backups until the restored session is verified.</li>
+  </ul>
+
+  <h2 id="faq">Desktop and laptop continuity FAQ</h2>
+
+  <h3>Must both computers be online together?</h3>
+  <p>
+    No. After a successful push, the encrypted artifact lives in your bucket. The source can be
+    offline when the destination pulls, although each transfer needs provider access.
+  </p>
+
+  <h3>Can the desktop use Windows while the laptop uses macOS?</h3>
+  <p>
+    That is the flagship path-remapping case, but native device and physical two-device acceptance
+    remain open RC6 gates. Use the
+    <a href="/guides/move-a-coding-agent-session-from-mac-to-windows">
+      Mac-to-Windows guide
+    </a>
+    and report success as evaluation evidence, not certification.
+  </p>
+
+  <h3>Can one side run WSL2?</h3>
+  <p>
+    WSL2 must be configured as a separate Linux Reinstate device with its own home, agent state,
+    and paths. Do not share one agent-state directory between native Windows and WSL. WSL1 is
+    unsupported.
+  </p>
+
+  <h3>Does Reinstate copy my agent login or API key?</h3>
+  <p>
+    No. Vendor authentication, API keys, OAuth material, credential stores,
+    <code>.env</code> files, and OS keyring contents are excluded. Authenticate the vendor
+    independently on each computer.
+  </p>
+
+  <h3>What if both devices changed the same session?</h3>
+  <p>
+    Pull must not silently overwrite a divergent local copy. RC6 records conflict metadata; review
+    it and choose an explicit resolution. <code>--keep-both</code> preserves the local branch and
+    restores a distinct vendor-safe fork of the remote branch.
+  </p>
+
+  <section class="pc-related" aria-labelledby="related-heading">
+    <h2 id="related-heading">Plan the two-device setup</h2>
+    <nav aria-label="Related pages">
+      <a href="/guides/move-a-coding-agent-session-from-mac-to-windows">
+        Mac-to-Windows command guide
+      </a>
+      <a href="/use-cases/encrypted-session-backup">Encrypted recovery copy</a>
+      <a href="/use-cases/work-and-personal-computers">Work and personal computers</a>
+      <a href="/compatibility">Current compatibility evidence</a>
+      <a href="/docs/security-model">Security and restore boundaries</a>
+    </nav>
+  </section>
+</PublicContentLayout>

@@ -417,12 +417,6 @@ ASSETS = {
     "poster-1080x1350": poster,
     "discord-512": lambda: pfp(512, True),
     "slack-512": lambda: pfp(512, True),
-    "github-social-1280x640": lambda: banner_wide(
-        1280,
-        640,
-        title="Continuity layer for coding-agent work",
-        subtitle="open source  ·  reinstate.dev",
-    ),
 }
 
 
@@ -469,7 +463,6 @@ def main() -> int:
         (PNG_DIR / "linkedin-banner-1584x396.png", WEB_BRAND / "linkedin-banner.png"),
         (PNG_DIR / "youtube-banner-2560x1440.png", WEB_BRAND / "youtube-banner.png"),
         (PNG_DIR / "pfp-800.png", WEB_BRAND / "avatar.png"),
-        (PNG_DIR / "github-social-1280x640.png", WEB_BRAND / "github-social.png"),
         (PNG_DIR / "poster-1080x1350.png", WEB_BRAND / "poster.png"),
         (PNG_DIR / "x-post-1200x675.png", WEB_BRAND / "x-post-template.png"),
         (PNG_DIR / "linkedin-post-1200x627.png", WEB_BRAND / "linkedin-post-template.png"),
@@ -486,6 +479,7 @@ def main() -> int:
         if f.is_file():
             (logo_dst / f.name).write_bytes(f.read_bytes())
 
+    print("  → GitHub social preview: run `cd website && npm run generate:github-social`")
     print("Done.")
     return 0
 

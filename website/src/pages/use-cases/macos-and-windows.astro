@@ -1,0 +1,138 @@
+---
+import PublicContentLayout from '../../layouts/PublicContentLayout.astro';
+
+export const prerender = true;
+
+const title = 'Move Claude Code and Codex Sessions Between macOS and Windows';
+const description =
+  'Learn how Reinstate remaps configured project paths to move encrypted Claude Code and Codex sessions between macOS and native Windows.';
+---
+
+<PublicContentLayout
+  {title}
+  {description}
+  path="/use-cases/macos-and-windows"
+  eyebrow="Use case · macOS ↔ Windows"
+  answer="Reinstate is designed to move supported same-vendor Claude Code and Codex sessions between macOS and Windows even when the same project has different absolute paths. A canonical project ID links the two checkouts; agent-specific adapters reconstruct the destination’s native structural paths."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Use cases', path: '/use-cases' },
+    { name: 'macOS and Windows', path: '/use-cases/macos-and-windows' },
+  ]}
+  tags={['macOS Windows development', 'path remapping', 'Claude Code', 'Codex CLI']}
+>
+  <h2 id="why-copying-fails">Why copying the agent folder is not enough</h2>
+  <p>
+    Agent session formats contain absolute paths. A checkout at <code>C:\src\app</code> on Windows
+    may be <code>/Users/you/Code/app</code> on macOS. Claude Code also derives a project-directory
+    key from that path, while Codex records its structural working directory inside each rollout.
+    A blind folder copy cannot safely reconcile those identities.
+  </p>
+
+  <h2 id="mapping-model">The canonical project mapping</h2>
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">Identity</th>
+          <th scope="col">Windows device</th>
+          <th scope="col">macOS device</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Canonical project ID</td>
+          <td><code>github.com/acme/app</code></td>
+          <td><code>github.com/acme/app</code></td>
+        </tr>
+        <tr>
+          <td>Local root</td>
+          <td><code>C:\src\app</code></td>
+          <td><code>/Users/you/Code/app</code></td>
+        </tr>
+        <tr>
+          <td>Portable identity</td>
+          <td><code>${'${REPO:github.com/acme/app}'}</code></td>
+          <td><code>${'${REPO:github.com/acme/app}'}</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    Reinstate normalizes known structural paths during export and expands them through the
+    destination mapping during restore. It does not search-and-replace every path-shaped string
+    inside prompts or responses.
+  </p>
+
+  <h2 id="agent-differences">How the two current adapters differ</h2>
+  <div class="pc-grid">
+    <div class="pc-card">
+      <h3>Claude Code</h3>
+      <p>
+        The destination root is used to recompute Claude's exact project-directory key. RC6 verifies
+        the restored session at that planned location rather than accepting the same ID elsewhere.
+      </p>
+      <span class="pc-link"><a href="/integrations/claude-code">Claude Code details →</a></span>
+    </div>
+    <div class="pc-card">
+      <h3>Codex CLI</h3>
+      <p>
+        The source <code>session_meta.cwd</code> resolves to a project ID. Restore expands it to the
+        destination root while retaining Codex's native date-partitioned rollout layout.
+      </p>
+      <span class="pc-link"><a href="/integrations/codex">Codex details →</a></span>
+    </div>
+  </div>
+
+  <h2 id="platform-status">Platform status</h2>
+  <p>
+    macOS native and Windows 11 native are primary Phase 1 targets. Current source compatibility
+    evidence covers macOS arm64 plus deterministic synthetic fixtures. Native Windows acceptance,
+    macOS amd64, WSL2 smoke coverage, and physical two-device resume remain release gates before
+    stable v0.1 certification.
+  </p>
+  <div class="pc-callout">
+    <p>Do not merge native Windows and WSL into one device.</p>
+    <p>
+      WSL2 is a separately configured Reinstate environment with Linux path semantics. WSL1 is
+      unsupported, and one shared agent-state folder between Windows and WSL is explicitly outside
+      the supported model.
+    </p>
+  </div>
+
+  <h2 id="checklist">Cross-platform setup checklist</h2>
+  <ul>
+    <li>Use the same pinned Reinstate version on both systems.</li>
+    <li>Install a tested version of the same agent vendor on both systems.</li>
+    <li>Clone the repository normally with Git on each system.</li>
+    <li>Map the same canonical project ID to each native checkout path.</li>
+    <li>Use one approved S3-compatible profile and the same encryption passphrase.</li>
+    <li>Run setup checks and a pull dry-run before the first real restore.</li>
+    <li>Close active agent processes before mutating their local session files.</li>
+  </ul>
+
+  <h2 id="limitations">What path remapping does not solve</h2>
+  <ul>
+    <li>Different Git branches, commits, or uncommitted working-tree changes.</li>
+    <li>Missing runtimes, tools, MCP servers, skills, hooks, or plugins.</li>
+    <li>Shell-command differences between PowerShell and POSIX environments.</li>
+    <li>Paths embedded in free-form transcript text.</li>
+    <li>Native cross-agent transcript conversion.</li>
+  </ul>
+  <p>
+    Environment fingerprinting and verified resume are later roadmap phases. RC6 restores supported
+    native session state and structural paths; it does not yet prove that every part of the coding
+    environment matches.
+  </p>
+
+  <section class="pc-related" aria-labelledby="related-heading">
+    <h2 id="related-heading">Cross-platform resources</h2>
+    <nav aria-label="Related pages">
+      <a href="/compatibility">Full platform matrix</a>
+      <a href="/tools/path-mapping-visualizer">Synthetic path-mapping visualizer</a>
+      <a href="/docs/getting-started">Project mapping commands</a>
+      <a href="/use-cases/work-and-personal-computers">Two-computer workflow</a>
+      <a href="/security">Encrypted storage model</a>
+    </nav>
+  </section>
+</PublicContentLayout>

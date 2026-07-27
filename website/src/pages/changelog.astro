@@ -1,0 +1,153 @@
+---
+import PublicContentLayout from '../layouts/PublicContentLayout.astro';
+import { product } from '../data/product';
+import { releaseAnchor, releaseHistory } from '../data/releases';
+
+export const prerender = true;
+
+const title = 'Reinstate Changelog and Release Notes';
+const description =
+  `Read Reinstate release notes, including ${product.currentRelease} compatibility, path mapping, restore verification, security, and installer changes.`;
+const currentReleaseDate = new Intl.DateTimeFormat('en', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  timeZone: 'UTC',
+}).format(new Date(`${product.currentReleaseDate}T00:00:00Z`));
+const answer =
+  `The latest published Reinstate tag is ${product.currentRelease}, dated ${currentReleaseDate}. ` +
+  'RC6 tightens cross-device project mapping and restore verification, improves additional-device storage validation, and keeps the public installers and acceptance evidence pinned to one release candidate.';
+---
+
+<PublicContentLayout
+  {title}
+  {description}
+  path="/changelog"
+  eyebrow="Changelog"
+  {answer}
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Changelog', path: '/changelog' },
+  ]}
+  tags={['release notes', product.currentRelease, 'changelog', 'Reinstate releases']}
+>
+  <h2 id="unreleased">Unreleased</h2>
+  <p>
+    The current unreleased change improves production deployment safety by parsing both structured
+    and legacy Vercel CLI deployment results before installer verification and production
+    promotion. It is not part of RC6 until a later release is tagged.
+  </p>
+  <p>
+    The repository's
+    <a href="https://github.com/HarjjotSinghh/reinstate/blob/main/CHANGELOG.md"
+      >canonical CHANGELOG.md</a
+    > is authoritative if this summary and the current branch differ.
+  </p>
+
+  <h2 id={releaseAnchor(product.currentRelease)}>
+    {product.currentRelease} · {currentReleaseDate}
+  </h2>
+  <h3>Cross-device path and restore correctness</h3>
+  <ul>
+    <li>
+      Codex rollout working directories now resolve to configured canonical project IDs, exclude
+      unmapped projects, normalize source roots on export, and reject duplicate mappings.
+    </li>
+    <li>
+      The Claude Code adapter uses canonical project mapping to compute destination-specific
+      project directories and verifies the restored session at the exact planned vendor path.
+    </li>
+    <li>
+      Pull dry-runs report <code>would pull</code> instead of implying that sessions were already
+      restored.
+    </li>
+  </ul>
+  <h3>Setup and storage validation</h3>
+  <ul>
+    <li>
+      An additional device validates the encrypted remote manifest with a readable object request,
+      avoiding Cloudflare R2's generic failure for a metadata-only probe.
+    </li>
+    <li>
+      Setup preserves and confirms an existing absolute <code>REINSTATE_HOME</code> instead of
+      silently falling back to the default home.
+    </li>
+    <li>
+      The missing-config error remains redacted rather than exposing an absolute local config path.
+    </li>
+  </ul>
+  <h3>Release and roadmap clarity</h3>
+  <ul>
+    <li>Public installers, setup prompts, and compatibility evidence are pinned to RC6.</li>
+    <li>
+      Production deployment requires the signed-tag release workflow and verifies immutable and
+      promoted installer routes byte for byte.
+    </li>
+    <li>
+      Post-Phase-1 direction now documents universal non-secret agent configuration without
+      expanding current CLI claims.
+    </li>
+  </ul>
+  <p>
+    <a href={product.currentReleaseUrl}>View the {product.currentRelease} tag on GitHub</a>.
+  </p>
+
+  <h2 id="release-history">Release-candidate history</h2>
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">Release</th>
+          <th scope="col">Date</th>
+          <th scope="col">Primary focus</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          releaseHistory.map((release) => {
+            const anchor = releaseAnchor(release.version);
+            return (
+              <tr id={release.version === product.currentRelease ? undefined : anchor}>
+                <td><a href={`#${anchor}`}>{release.version}</a></td>
+                <td><time datetime={release.date}>{release.date}</time></td>
+                <td>{release.summary}</td>
+              </tr>
+            );
+          })
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="rc1-foundation">What the first release candidate established</h2>
+  <p>
+    RC1 introduced the Cobra CLI, versioned local state, device detection, diagnostics, verified
+    installers, S3-compatible storage, age encryption, path mapping, manifests, push and pull,
+    conflicts, Claude Code and Codex adapters, native keyring credentials, restore backups, and the
+    synthetic compatibility-test foundation. It also established <code>rein</code> as the short
+    alias for the <code>reinstate</code> binary.
+  </p>
+
+  <h2 id="versioning">How to read pre-1.0 release notes</h2>
+  <p>
+    A release candidate is published for testing before stable v0.1 certification. Read every
+    intermediate release note before replacing a binary because compatibility behavior, session
+    artifact formats, setup validation, and release gates may still change.
+  </p>
+  <ul>
+    <li>Pin an explicit release in automated setup.</li>
+    <li>Verify checksums before installing.</li>
+    <li>Run <code>rein setup check</code> after agent or Reinstate upgrades.</li>
+    <li>Use pull dry-runs and maintain independent backups of important work.</li>
+  </ul>
+
+  <section class="pc-related" aria-labelledby="related-heading">
+    <h2 id="related-heading">Release resources</h2>
+    <nav aria-label="Related pages">
+      <a href={product.tagsUrl}>All source tags</a>
+      <a href="/compatibility">Compatibility matrix</a>
+      <a href="/docs/getting-started">Install RC6</a>
+      <a href="/open-source">Source and contributions</a>
+    </nav>
+  </section>
+</PublicContentLayout>

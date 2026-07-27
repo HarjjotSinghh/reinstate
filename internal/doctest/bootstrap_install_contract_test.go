@@ -81,6 +81,11 @@ func TestProductionDeploymentVerifiesBeforePromotion(t *testing.T) {
 		`--prod --skip-domain`,
 		`parse-vercel-deployment-url.mjs`,
 		`verify-live-installers.sh`,
+		`npm run check:freshness`,
+		`npm run check:lighthouse`,
+		`--allow-missing-previous`,
+		`artifacts/indexnow/$version-plan.json`,
+		`npm run check:production-discovery`,
 		`vercel promote`,
 		`https://reinstate.dev`,
 	} {
@@ -92,6 +97,14 @@ func TestProductionDeploymentVerifiesBeforePromotion(t *testing.T) {
 	promoteIndex := strings.Index(body, `vercel promote`)
 	if verifyIndex == -1 || promoteIndex == -1 || verifyIndex > promoteIndex {
 		t.Error("immutable installer verification must run before production promotion")
+	}
+	smokeIndex := strings.Index(body, `--base-url "$deployment_url"`)
+	if smokeIndex == -1 || smokeIndex > promoteIndex {
+		t.Error("immutable production-discovery smoke must pass before production promotion")
+	}
+	productionSmokeIndex := strings.LastIndex(body, `npm run check:production-discovery`)
+	if productionSmokeIndex == -1 || productionSmokeIndex < promoteIndex {
+		t.Error("promoted production origin must receive a discovery smoke test")
 	}
 }
 
