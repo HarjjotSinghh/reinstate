@@ -31,7 +31,7 @@ Be kind, be constructive, and assume good intent.
 | **New agents** | [Adapter request](https://github.com/HarjjotSinghh/reinstate/issues/new?template=adapter_request.yml) |
 | **Docs** | PRs to `docs/` and README are always welcome |
 | **Code** | Fork → branch → PR (see below) |
-| **Discussions** | Ideas and Q&A in [GitHub Discussions](https://github.com/HarjjotSinghh/reinstate/discussions) |
+| **Questions** | Public Q&A through the [question issue form](https://github.com/HarjjotSinghh/reinstate/issues/new?template=question.yml) |
 
 Good first issues are labeled [`good first issue`](https://github.com/HarjjotSinghh/reinstate/labels/good%20first%20issue)
 and [`help wanted`](https://github.com/HarjjotSinghh/reinstate/labels/help%20wanted).
@@ -170,4 +170,4 @@ explicitly adopts DCO in a future governance change.
 
 ---
 
-Questions? Open a Discussion or ping [@HarjjotSinghh](https://github.com/HarjjotSinghh).
+Questions? Open a redacted [question issue](https://github.com/HarjjotSinghh/reinstate/issues/new?template=question.yml) or ping [@HarjjotSinghh](https://github.com/HarjjotSinghh).

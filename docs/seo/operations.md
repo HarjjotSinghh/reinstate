@@ -373,6 +373,39 @@ URLs do not silently enter the funnel. Tests in
 `website/src/lib/analytics.test.ts` pin the event inventory and all automatic
 route/link classifications.
 
+### AI-referral classification and reporting
+
+The browser classifier emits only the controlled `ai_referral_channel`
+vocabulary below. It never sends a raw referrer, query, URL, or UTM value as a
+custom property.
+
+| Channel | Exact referrer hosts | Exact accepted UTM tokens |
+| ------- | -------------------- | ------------------------- |
+| `chatgpt` | `chatgpt.com`, `chat.openai.com`, `openai.com`, including subdomains | `chatgpt`, `openai`, `oai-search` |
+| `perplexity` | `perplexity.ai`, including subdomains | `perplexity` |
+| `microsoft-copilot` | `copilot.microsoft.com`, including subdomains | `microsoft-copilot`, `ms-copilot`, `copilot` |
+| `google-gemini` | `gemini.google.com`, `bard.google.com`, including subdomains | `google-gemini`, `gemini` |
+| `google-ai-features` | none inferred from a generic Google referrer | `google-ai`, `ai-overview`, `ai-overviews`, `ai-mode` |
+
+Matching is case-normalized but exact. Arbitrary substrings and generic Google
+search referrals are deliberately not guessed.
+
+`ai_referral_channel` is attached to approved custom actions only. Therefore:
+
+- use Plausible's native referrer and UTM filters for total AI-referred
+  sessions, including visits with no custom action;
+- use the controlled property for action-assisted AI referral analysis;
+- define an engaged session using the analytics provider's documented
+  engagement measure and record that definition with the report;
+- report repeat visitors only when the configured privacy model and provider
+  support a defensible repeat measure; otherwise mark it `Unavailable`; and
+- define assisted conversion as an approved action occurring in an
+  AI-referred visit, never as causal credit for the conversion.
+
+Every report must include the numerator, denominator, filter, date window, and
+analytics configuration version. Production Plausible configuration remains an
+external launch gate.
+
 ## Production crawler and WAF checks
 
 `robots.txt` currently distinguishes search discovery from model training:
@@ -466,11 +499,13 @@ only; they do not prove that a request came from OpenAI or Perplexity.
 
 An operator with production log and WAF access must separately review:
 
-- timestamp, path, verified bot family, status, bytes, latency, and cache result;
+- timestamp, path, raw user-agent, verified bot family, status, bytes, latency,
+  cache result, and referrer when available;
 - challenge, block, or rate-limit actions;
 - repeated `403`, `429`, and `5xx` responses;
 - crawler loops or excessive requests;
-- sitemap fetches and canonical-page fetches; and
+- sitemap fetches and canonical-page fetches, including an explicit finding
+  when no sitemap request appears in the review window; and
 - attempts to crawl `/api/` or `/preview/`.
 
 Production log access, bot-IP verification, and WAF changes are not automatable

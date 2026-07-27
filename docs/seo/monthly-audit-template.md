@@ -159,6 +159,35 @@ AI-query run: [attach or link a completed baseline](ai-search-query-baseline.md)
 
 ## 5. Search and analytics measurements
 
+### Query-cluster review
+
+| Cluster | Representative queries | Best canonical | Impressions/citations | Cannibalization or gap | Decision |
+| ------- | ---------------------- | -------------- | --------------------- | ---------------------- | -------- |
+|  |  |  |  |  |  |
+
+### Conversion-path review
+
+| Entry page/source | Intended next step | Observed qualified actions | Drop-off or ambiguity | Change and owner |
+| ----------------- | ------------------ | -------------------------- | --------------------- | ---------------- |
+|  |  |  |  |  |
+
+### Competitor-result changes
+
+Record only observable search-result or public product changes. Do not infer
+private roadmaps, usage, or market share.
+
+| Query/market | Result or competitor | What changed | Evidence/date | Reinstate response |
+| ------------ | -------------------- | ------------ | ------------- | ------------------ |
+|  |  |  |  |  |
+
+### Content-roadmap adjustment
+
+| Decision | Keep / add / update / consolidate / retire | Evidence | Owner | Due date |
+| -------- | ------------------------------------------ | -------- | ----- | -------- |
+|  |  |  |  |  |
+
+State explicitly when the evidence does not justify a roadmap change.
+
 ### SEO
 
 | Metric | Prior | Current | Change | Denominator/source | Interpretation |

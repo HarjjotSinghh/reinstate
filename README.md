@@ -394,7 +394,7 @@ Good first issues: [`good first issue`](https://github.com/HarjjotSinghh/reinsta
 
 ## Community & support
 
-- **Discussions** — [GitHub Discussions](https://github.com/HarjjotSinghh/reinstate/discussions)
+- **Questions** — [open a redacted question issue](https://github.com/HarjjotSinghh/reinstate/issues/new?template=question.yml)
 - **Bugs / features** — [Issues](https://github.com/HarjjotSinghh/reinstate/issues)
 - **Security** — [SECURITY.md](SECURITY.md) (private)
 - **Support guide** — [SUPPORT.md](SUPPORT.md)

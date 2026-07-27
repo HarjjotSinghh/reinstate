@@ -6,7 +6,7 @@
 - URL: `/guides/sync-claude-code-sessions-across-devices`
 - Page type: practical guide
 - Owner: Harjot Singh Rana
-- Status: review
+- Status: agent review accepted; maintainer sign-off pending
 - Target release: `v0.1.0-rc.6`
 - Last reviewed: 2026-07-27
 
@@ -79,11 +79,12 @@
 
 ## Acceptance criteria
 
-- [ ] Every command has purpose, parameters, expected output, platform note,
+- [x] Every command has purpose, parameters, expected output, platform note,
   failure mode, and safe undo
-- [ ] Linux/WSL2 wording does not imply stable Phase 1 certification
-- [ ] No secret, bucket name, project path, or real transcript enters examples
-- [ ] Native resume remains Claude Code → Claude Code
-- [ ] Visible steps exactly match `HowTo` schema
-- [ ] Route-specific social card and all website gates pass
+- [x] Linux/WSL2 wording does not imply stable Phase 1 certification
+- [x] No secret, bucket name, project path, or real transcript enters examples
+- [x] Native resume remains Claude Code → Claude Code
+- [x] Visible steps exactly match `HowTo` schema
+- [x] Route-specific social card and all website gates pass
 
+Review evidence: [published content acceptance register](../content-acceptance-register.md).

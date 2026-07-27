@@ -78,7 +78,7 @@ body:
     attributes:
       label: Checklist
       options:
-        - label: I searched existing issues and discussions
+        - label: I searched existing issues
           required: true
         - label: This is not a security vulnerability (those go to SECURITY.md)
           required: true
