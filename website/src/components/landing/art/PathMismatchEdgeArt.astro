@@ -1,0 +1,527 @@
+---
+/**
+ * PathMismatchEdgeArt
+ *
+ * A deliberately peripheral scene for the “why not file sync?” section.
+ * The same API project sits on a Windows workstation and a macOS laptop, but
+ * the two native path labels disagree. Both desks enter from outside the
+ * viewport so the central comparison—not the art—remains the section focus.
+ */
+import { box, fmt, P } from '../../../lib/iso';
+
+const CX = Math.cos(Math.PI / 6);
+const m2 = (m: number[]) => `matrix(${m.map((n) => +n.toFixed(2)).join(' ')})`;
+const foot = (x: number, y: number, z: number, w: number, d: number) =>
+  fmt([P(x, y, z), P(x + w, y, z), P(x + w, y + d, z), P(x, y + d, z)]);
+const frontText = (x: number, y: number, z: number, d: number, h: number) => {
+  const [e, f] = P(x, y + d, z + h);
+  return m2([CX, 0.5, 0, 1, e, f]);
+};
+
+type Solid = ReturnType<typeof box>;
+const faces = (
+  solid: Solid,
+  fills: [string, string, string],
+) => [
+  { points: solid.side, fill: fills[2] },
+  { points: solid.front, fill: fills[1] },
+  { points: solid.top, fill: fills[0] },
+];
+
+const FURN: [string, string, string] = [
+  'var(--sv-furn-1)',
+  'var(--sv-furn-2)',
+  'var(--sv-furn-3)',
+];
+const DEV: [string, string, string] = [
+  'var(--sv-dev-1)',
+  'var(--sv-dev-2)',
+  'var(--sv-dev-3)',
+];
+const DEV_DARK: [string, string, string] = [
+  'var(--sv-dev-2)',
+  'var(--sv-dev-3)',
+  'var(--sv-night)',
+];
+
+/* Left / Windows workstation. */
+const winPlat = box(-230, -90, -12, 390, 160, 20);
+const winInset = foot(-216, -76, 8.4, 360, 130);
+const winTower = box(-210, -67, 8, 58, 62, 116);
+const winMonitor = box(-137, -74, 49, 142, 12, 92);
+/* The post overlaps the monitor's footprint and rises into its rear housing,
+   so the display reads as mechanically attached rather than floating. */
+const winStand = box(-76, -66, 8, 22, 23, 53);
+const winStandBase = box(-107, -54, 8, 88, 40, 8);
+const winKeyboard = box(-104, 7, 8, 112, 42, 7);
+const winMouse = box(20, 14, 8, 22, 28, 8);
+const winStackBase = box(68, -35, 8, 74, 58, 8);
+const winStateA = box(74, -30, 16, 62, 48, 14);
+const winStateB = box(76, -28, 30, 58, 44, 14);
+const winStateC = box(78, -26, 44, 54, 40, 14);
+
+const winKeys = [
+  ...Array.from({ length: 8 }, (_, i) => foot(-98 + i * 12.5, 10, 15.2, 9, 5)),
+  ...Array.from({ length: 7 }, (_, i) => foot(-93 + i * 13.5, 19, 15.2, 9.5, 5)),
+  ...Array.from({ length: 6 }, (_, i) => foot(-87 + i * 14.8, 28, 15.2, 10.5, 5)),
+  foot(-78, 37, 15.2, 50, 5),
+];
+
+/* Right / macOS workstation. */
+const macPlat = box(-150, -90, -12, 390, 160, 20);
+const macInset = foot(-136, -76, 8.4, 360, 130);
+const macDeck = box(-26, -51, 8, 144, 92, 15);
+const macLid = box(-22, -57, 33, 136, 12, 86);
+const macHinge = box(-22, -56, 24, 136, 10, 9);
+const macWell = foot(-18, -30, 23.2, 128, 50);
+const macTrack = foot(8, 21, 23.5, 66, 15);
+/* Keep the state stack in its own rear-left bay, close enough to the laptop to
+   read as one workstation without sitting on top of its deck. */
+const macStackBase = box(-124, -7, 8, 70, 58, 8);
+const macStateA = box(-118, -2, 16, 60, 48, 14);
+const macStateB = box(-116, 0, 30, 56, 44, 14);
+const macStateC = box(-114, 2, 44, 52, 40, 14);
+const macKeys = [
+  ...Array.from({ length: 10 }, (_, i) => foot(-14 + i * 11.2, -26, 23.5, 8.2, 4.8)),
+  ...Array.from({ length: 9 }, (_, i) => foot(-9 + i * 12, -18, 23.5, 8.7, 4.8)),
+  ...Array.from({ length: 8 }, (_, i) => foot(-4 + i * 12.8, -10, 23.5, 9.2, 4.8)),
+  foot(10, -2, 23.5, 56, 4.8),
+];
+
+---
+
+<figure class="path-edge-scene">
+  <svg
+    viewBox="0 0 1600 500"
+    role="img"
+    aria-labelledby="path-edge-title path-edge-desc"
+    preserveAspectRatio="xMidYMid meet"
+  >
+    <title id="path-edge-title">The same API repository on Windows and macOS</title>
+    <desc id="path-edge-desc">
+      A detailed Windows workstation enters from the left and a macOS laptop enters
+      from the right. Each holds the same API session stack, but their absolute-path
+      labels differ and their file-sync routes stop before meeting.
+    </desc>
+
+    {/* Physical sync cables make the DIY metaphor literal. Each one is
+        connected at the workstation and ends in an unplugged connector. */}
+    <path
+      d="M 323 239 C 348 231, 365 250, 378 265 C 393 281, 410 278, 426 270"
+      fill="none"
+      stroke="var(--sv-stroke)"
+      stroke-width="10"
+      stroke-linecap="round"
+    ></path>
+    <path
+      d="M 323 239 C 348 231, 365 250, 378 265 C 393 281, 410 278, 426 270"
+      fill="none"
+      stroke="var(--sv-dev-0)"
+      stroke-width="5"
+      stroke-linecap="round"
+    ></path>
+    <path
+      d="M 1398 230 C 1367 260, 1341 235, 1316 248 C 1285 266, 1261 232, 1228 251"
+      fill="none"
+      stroke="var(--sv-stroke)"
+      stroke-width="10"
+      stroke-linecap="round"
+    ></path>
+    <path
+      d="M 1398 230 C 1367 260, 1341 235, 1316 248 C 1285 266, 1261 232, 1228 251"
+      fill="none"
+      stroke="var(--sv-dev-0)"
+      stroke-width="5"
+      stroke-linecap="round"
+    ></path>
+    <g class="cable-plug" transform="translate(426 270) rotate(-18)">
+      <rect x="-20" y="-9" width="25" height="18" rx="4"></rect>
+      <path class="plug-prong-rail" d="M5 -4 H18 M5 4 H18"></path>
+      <path class="plug-prong-core" d="M5 -4 H18 M5 4 H18"></path>
+      <circle cx="-12" cy="0" r="3"></circle>
+    </g>
+    <g class="cable-plug" transform="translate(1228 251) rotate(158)">
+      <rect x="-20" y="-9" width="25" height="18" rx="4"></rect>
+      <path class="plug-prong-rail" d="M5 -4 H18 M5 4 H18"></path>
+      <path class="plug-prong-core" d="M5 -4 H18 M5 4 H18"></path>
+      <circle cx="-12" cy="0" r="3"></circle>
+    </g>
+    <g class="sync-break" aria-hidden="true">
+      <path d="M452 260 L466 274 M466 260 L452 274"></path>
+      <path d="M1187 243 L1201 257 M1201 243 L1187 257"></path>
+    </g>
+
+    {/* Windows desk, intentionally cropped by the viewport. */}
+    <g transform="translate(152 216) scale(0.92)">
+      <polygon
+        points={foot(-242, -102, -12.5, 414, 180)}
+        fill="var(--sv-shadow)"
+        opacity="0.13"
+      ></polygon>
+      {
+        faces(winPlat, FURN).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3.2"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      <polygon
+        points={winInset}
+        fill="none"
+        stroke="var(--sv-dev-0)"
+        stroke-width="1.8"
+        stroke-dasharray="5 7"
+        vector-effect="non-scaling-stroke"
+      ></polygon>
+
+      {
+        faces(winTower, DEV_DARK).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3.2"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      <g transform={frontText(-210, -67, 8, 62, 116)}>
+        <rect x="12" y="17" width="28" height="4" rx="2" fill="var(--sv-dev-0)"></rect>
+        <rect x="12" y="27" width="35" height="4" rx="2" fill="var(--sv-dev-0)"></rect>
+        <rect x="12" y="37" width="23" height="4" rx="2" fill="var(--sv-dev-0)"></rect>
+        <circle cx="43" cy="91" r="4" fill="var(--sv-prim)"></circle>
+      </g>
+
+      {
+        faces(winStand, DEV).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      {
+        faces(winStandBase, DEV).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      {
+        faces(winMonitor, DEV).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3.2"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      <g transform={frontText(-137, -74, 49, 12, 92)}>
+        <rect x="10" y="10" width="112" height="67" fill="var(--sv-night)"></rect>
+        <rect x="10" y="10" width="112" height="13" fill="var(--sv-dev-1)"></rect>
+        <circle cx="18" cy="16.5" r="2.2" fill="var(--sv-prim)"></circle>
+        <circle cx="26" cy="16.5" r="2.2" fill="var(--sv-dev-0)"></circle>
+        <circle cx="34" cy="16.5" r="2.2" fill="var(--sv-dev-0)"></circle>
+        <rect x="19" y="33" width="9" height="7" rx="1" fill="var(--sv-prim)"></rect>
+        <rect x="34" y="34" width="70" height="5" rx="2.5" fill="var(--sv-dev-0)"></rect>
+        <rect x="19" y="47" width="83" height="5" rx="2.5" fill="var(--sv-dev-0)"></rect>
+        <rect x="19" y="60" width="55" height="5" rx="2.5" fill="var(--sv-dev-0)"></rect>
+      </g>
+
+      {
+        faces(winKeyboard, DEV).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="2.5"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      <g fill="var(--sv-dev-0)" stroke="var(--sv-stroke)" stroke-width="0.8">
+        {winKeys.map((points) => <polygon points={points}></polygon>)}
+      </g>
+      {
+        faces(winMouse, DEV).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="2.5"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+
+      {
+        [winStackBase, winStateA, winStateB].map((solid, index) =>
+          faces(solid, index === 2 ? ['var(--sv-t-c)', 'var(--sv-t-c)', '#5f9bc1'] : DEV).map(
+            (face) => (
+              <polygon
+                points={face.points}
+                fill={face.fill}
+                stroke="var(--sv-stroke)"
+                stroke-width="2.8"
+                stroke-linejoin="round"
+                vector-effect="non-scaling-stroke"
+              ></polygon>
+            ),
+          ),
+        )
+      }
+      {
+        faces(winStateC, ['var(--sv-prim)', 'var(--sv-prim)', 'var(--sv-prim-deep)']).map(
+          (face) => (
+            <polygon
+              points={face.points}
+              fill={face.fill}
+              stroke="var(--sv-stroke)"
+              stroke-width="2.8"
+              stroke-linejoin="round"
+              vector-effect="non-scaling-stroke"
+            ></polygon>
+          ),
+        )
+      }
+      <g transform={frontText(78, -26, 44, 40, 14)}>
+        <text class="crate-label" x="27" y="10" text-anchor="middle">API</text>
+      </g>
+    </g>
+
+    {/* macOS desk, also cropped by the viewport. */}
+    <g transform="translate(1448 216) scale(0.92)">
+      <polygon
+        points={foot(-162, -102, -12.5, 414, 180)}
+        fill="var(--sv-shadow)"
+        opacity="0.13"
+      ></polygon>
+      {
+        faces(macPlat, FURN).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3.2"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      <polygon
+        points={macInset}
+        fill="none"
+        stroke="var(--sv-dev-0)"
+        stroke-width="1.8"
+        stroke-dasharray="5 7"
+        vector-effect="non-scaling-stroke"
+      ></polygon>
+      {
+        faces(macHinge, DEV).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      {
+        faces(macLid, DEV).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3.2"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      <g transform={frontText(-22, -57, 33, 12, 86)}>
+        <rect x="9" y="9" width="111" height="62" fill="var(--sv-night)"></rect>
+        <rect x="9" y="9" width="111" height="12" fill="var(--sv-dev-1)"></rect>
+        <circle cx="17" cy="15" r="2" fill="var(--sv-prim)"></circle>
+        <circle cx="25" cy="15" r="2" fill="var(--sv-dev-0)"></circle>
+        <circle cx="33" cy="15" r="2" fill="var(--sv-dev-0)"></circle>
+        <rect x="18" y="31" width="9" height="7" rx="1" fill="var(--sv-prim)"></rect>
+        <rect x="33" y="32" width="70" height="5" rx="2.5" fill="var(--sv-dev-0)"></rect>
+        <rect x="18" y="45" width="83" height="5" rx="2.5" fill="var(--sv-dev-0)"></rect>
+        <rect x="18" y="58" width="55" height="5" rx="2.5" fill="var(--sv-dev-0)"></rect>
+      </g>
+      {
+        faces(macDeck, DEV).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3.2"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      <polygon
+        points={macWell}
+        fill="var(--sv-dev-3)"
+        stroke="var(--sv-stroke)"
+        stroke-width="1.6"
+      ></polygon>
+      <g fill="var(--sv-dev-0)" stroke="var(--sv-stroke)" stroke-width="0.75">
+        {macKeys.map((points) => <polygon points={points}></polygon>)}
+      </g>
+      <polygon
+        points={macTrack}
+        fill="var(--sv-dev-1)"
+        stroke="var(--sv-dev-0)"
+        stroke-width="1.2"
+      ></polygon>
+
+      {
+        [macStackBase, macStateA, macStateB].map((solid, index) =>
+          faces(solid, index === 2 ? ['var(--sv-t-c)', 'var(--sv-t-c)', '#5f9bc1'] : DEV).map(
+            (face) => (
+              <polygon
+                points={face.points}
+                fill={face.fill}
+                stroke="var(--sv-stroke)"
+                stroke-width="2.8"
+                stroke-linejoin="round"
+                vector-effect="non-scaling-stroke"
+              ></polygon>
+            ),
+          ),
+        )
+      }
+      {
+        faces(macStateC, ['var(--sv-prim)', 'var(--sv-prim)', 'var(--sv-prim-deep)']).map(
+          (face) => (
+            <polygon
+              points={face.points}
+              fill={face.fill}
+              stroke="var(--sv-stroke)"
+              stroke-width="2.8"
+              stroke-linejoin="round"
+              vector-effect="non-scaling-stroke"
+            ></polygon>
+          ),
+        )
+      }
+      <g transform={frontText(-114, 2, 44, 40, 14)}>
+        <text class="crate-label" x="26" y="10" text-anchor="middle">API</text>
+      </g>
+    </g>
+
+    {/* Recessed tabletop sockets keep the raw-sync cable metaphor separate from
+        the machines themselves. The cables remain tucked behind the furniture,
+        while these small plates sit above the tabletop geometry. */}
+    <g class="cable-port" aria-hidden="true">
+      <g transform="translate(323 239) rotate(28)">
+        <rect x="-8" y="-6" width="16" height="12" rx="3"></rect>
+        <circle cx="0" cy="0" r="2"></circle>
+      </g>
+      <g transform="translate(1398 230) rotate(-28)">
+        <rect x="-8" y="-6" width="16" height="12" rx="3"></rect>
+        <circle cx="0" cy="0" r="2"></circle>
+      </g>
+    </g>
+
+  </svg>
+</figure>
+
+<style>
+  .path-edge-scene {
+    position: absolute;
+    z-index: 0;
+    top: clamp(8.5rem, 13vw, 11.5rem);
+    left: 50%;
+    width: max(100%, 90rem);
+    margin: 0;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+  .path-edge-scene svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+  .crate-label {
+    fill: var(--on-prim);
+    font-family: var(--font-mono);
+    font-size: 8px;
+    font-weight: 750;
+    letter-spacing: 0.08em;
+  }
+  .cable-plug rect {
+    fill: var(--sv-dev-1);
+    stroke: var(--sv-stroke);
+    stroke-width: 3;
+  }
+  .cable-plug circle {
+    fill: var(--sv-prim);
+    stroke: var(--sv-stroke);
+    stroke-width: 2;
+  }
+  .cable-port rect {
+    fill: var(--sv-dev-1);
+    stroke: var(--sv-stroke);
+    stroke-width: 2.2;
+  }
+  .cable-port circle {
+    fill: var(--sv-prim);
+    stroke: none;
+  }
+  .plug-prong-rail {
+    fill: none;
+    stroke: var(--sv-stroke);
+    stroke-width: 6;
+    stroke-linecap: round;
+  }
+  .plug-prong-core {
+    fill: none;
+    stroke: var(--sv-dev-0);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+  }
+  .sync-break path {
+    fill: none;
+    stroke: var(--sv-prim-deep);
+    stroke-width: 3.2;
+    stroke-linecap: round;
+  }
+
+  @media (max-width: 1080px) {
+    .path-edge-scene {
+      width: 76rem;
+      opacity: 0.82;
+    }
+  }
+  @media (max-width: 760px) {
+    .path-edge-scene {
+      display: none;
+    }
+  }
+</style>
