@@ -154,6 +154,7 @@ worktree:
 | Bing property and sitemap | Bing owner | verification and inspection records |
 | IndexNow production key/submission | secret manager + deployed proof | reviewed plan digest and redacted response log |
 | Enable Plausible | analytics owner and privacy/retention decision | production config and event verification |
+| Publish binding website terms | maintainer/legal approval of offering, jurisdiction, and policy text | approved canonical `/terms` page and review date |
 | Inspect CDN/WAF and verified bot logs | hosting/log access | dated log/WAF review with status counts |
 | Field CWV and INP | deployed traffic and sufficient sample | Search Console/CrUX export with denominator |
 | Manual AI-query baseline | provider access and allowed interfaces | completed query evidence sheet |
