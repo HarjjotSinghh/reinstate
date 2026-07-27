@@ -443,13 +443,11 @@ const sideText = (x: number, y: number, z: number, w: number, d: number, h: numb
     </div>
 
     <footer class="proof-notes">
-      <p class="synthetic-note">
-        Representative synthetic output. Commands and summaries match the current
-        CLI. The passphrase stays hidden; transcript contents stay private.
-      </p>
-      <p class="codex-note">
+      <p class="proof-note">
+        <span>Representative CLI output</span>
+        <span class="note-separator" aria-hidden="true">·</span>
         <span class="codex-badge">Codex</span>
-        The flow is identical. Finish with <code>codex resume ses_7f3a</code>.
+        <span>Same encrypted flow: <code>codex resume ses_7f3a</code></span>
       </p>
     </footer>
   </div>
@@ -1045,36 +1043,30 @@ const sideText = (x: number, y: number, z: number, w: number, d: number, h: numb
   .proof-notes {
     position: relative;
     z-index: 2;
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 1.25rem 1.5rem;
-    align-items: center;
+    display: flex;
+    justify-content: center;
     margin-top: 2.5rem;
     padding-top: 0;
   }
 
   .proof-notes p {
     margin: 0;
-    max-width: 56ch;
     color: color-mix(in oklab, var(--ink) 35%, var(--ink-2));
-    font-size: 0.96rem;
-    line-height: 1.55;
-  }
-  .synthetic-note {
-    max-width: 48ch;
-    font-size: 0.82rem;
+    font-size: 0.84rem;
     line-height: 1.5;
-    color: var(--ink-3);
-    font-weight: 400;
   }
-  .codex-note {
+  .proof-note {
     display: inline-flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.45rem 0.55rem;
-    justify-self: end;
-    max-width: 36ch;
-    font-size: 0.9rem;
+    justify-content: center;
+    gap: 0.4rem 0.5rem;
+    max-width: 100%;
+    color: var(--ink-3);
+    font-weight: 400;
+  }
+  .note-separator {
+    color: var(--ink-3);
   }
   .codex-badge {
     display: inline-flex;
@@ -1110,12 +1102,6 @@ const sideText = (x: number, y: number, z: number, w: number, d: number, h: numb
   }
 
   @media (max-width: 780px) {
-    .proof-notes {
-      grid-template-columns: 1fr;
-    }
-    .codex-note {
-      justify-self: start;
-    }
     .handoff-illustration {
       max-width: none;
     }
@@ -1161,8 +1147,10 @@ const sideText = (x: number, y: number, z: number, w: number, d: number, h: numb
       min-height: auto;
     }
     .proof-notes {
-      grid-template-columns: 1fr;
-      gap: 0.85rem;
+      justify-content: flex-start;
+    }
+    .proof-note {
+      justify-content: flex-start;
     }
   }
 

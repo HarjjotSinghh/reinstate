@@ -25,19 +25,26 @@ describe('landing-page security section', () => {
 
   it('leads with local encryption and ownership claims', () => {
     expect(security).toContain('id="security"');
-    expect(security).toContain('Sessions leave encrypted.');
+    expect(security).toContain('Sessions leave your device encrypted.');
     expect(security).toContain('Your bucket never sees plaintext.');
     expect(security).toContain('class="h2-line"');
-    expect(security).toContain('Local encryption');
-    expect(security).toContain('Your storage');
-    expect(security).toContain('Your keys');
-    expect(security).toContain('No Reinstate servers');
-    expect(security).toContain('No auth tokens');
-    expect(security).toContain('Open-source client');
-    expect(security).toContain('Fail-safe restore');
+    expect(security).toContain('Local encryption before anything leaves your device');
+    expect(security).toContain('Your encryption secret is never uploaded');
+    expect(security).toContain('Your bucket, your controls');
+    expect(security).toContain('No Reinstate account required');
+    expect(security).toContain('Backed up before restore');
+    expect(security).toContain('Lose it and remote snapshots cannot be recovered.');
     expect(security).toContain('class="proof-matrix"');
     expect(security).toContain('class="proof-icon"');
     expect(security).toContain('class="slink-icon"');
+  });
+
+  it('keeps the trust proofs compressed and chronologically numbered', () => {
+    const numbers = [...security.matchAll(/k: '(\d{2})'/g)].map((match) => match[1]);
+    expect(numbers).toEqual(['01', '02', '03', '04', '05']);
+    expect(security).not.toContain('No auth tokens');
+    expect(security).not.toContain('No Reinstate servers');
+    expect(security).not.toContain('Open-source client');
   });
 
   it('links to model, encryption source, and private reporting', () => {
@@ -56,7 +63,7 @@ describe('landing-page security section', () => {
     expect(vaultArt).toContain('Store in your bucket');
     expect(vaultArt).toContain('Restore anywhere');
     expect(vaultArt).toContain('HTTPS');
-    expect(vaultArt).toContain('Keys remain on this device');
+    expect(vaultArt).toContain('Passphrase stays local');
     expect(vaultArt).toContain('Snapshot sealed with age');
     expect(vaultArt).toContain('S3-compatible object storage');
     expect(vaultArt).toContain('RESTORED');
