@@ -2,6 +2,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { extname } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { product } from '../data/product';
+import { homepageSchema } from './schema';
 
 const sourceRoot = new URL('../', import.meta.url);
 const currentRc = `RC${product.currentRelease.match(/-rc\.(\d+)$/)?.[1] ?? ''}`;
@@ -26,6 +27,16 @@ async function sourceFiles(directory: URL): Promise<URL[]> {
 }
 
 describe('central product-truth drift guard', () => {
+  it('links the exact current tag and the real installer download', () => {
+    expect(product.currentReleaseUrl).toBe(
+      `${product.repositoryUrl}/tree/${product.currentRelease}`,
+    );
+    const software = homepageSchema().find(
+      (entry) => entry['@type'] === 'SoftwareApplication',
+    );
+    expect(software?.downloadUrl).toBe(`${product.siteUrl}/install.sh`);
+  });
+
   it('keeps every document frontmatter version on the canonical release', async () => {
     const contentRoot = new URL('../content/', import.meta.url);
     const files = (await sourceFiles(contentRoot)).filter((path) =>

@@ -47,7 +47,7 @@
 ## Source
 
 - [GitHub repository](https://github.com/HarjjotSinghh/reinstate)
-- [Releases](https://github.com/HarjjotSinghh/reinstate/releases)
+- [Source tags](https://github.com/HarjjotSinghh/reinstate/tags): Published release-candidate source tags
 - [Security policy](https://github.com/HarjjotSinghh/reinstate/security/policy)
 - [All-updates RSS feed](https://reinstate.dev/rss.xml)
 - [Blog RSS feed](https://reinstate.dev/blog/rss.xml)

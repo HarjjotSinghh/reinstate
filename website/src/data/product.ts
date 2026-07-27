@@ -3,7 +3,7 @@ export const product = {
   cliName: 'rein',
   siteUrl: 'https://reinstate.dev',
   repositoryUrl: 'https://github.com/HarjjotSinghh/reinstate',
-  releasesUrl: 'https://github.com/HarjjotSinghh/reinstate/releases',
+  tagsUrl: 'https://github.com/HarjjotSinghh/reinstate/tags',
   licenseName: 'Apache-2.0',
   licenseUrl: 'https://www.apache.org/licenses/LICENSE-2.0',
   category: 'coding-agent session sync',
@@ -21,6 +21,8 @@ export const product = {
   supportedOperatingSystems: ['macOS', 'Windows'],
   supportedStorage: ['Amazon S3', 'Cloudflare R2', 'S3-compatible storage'],
   currentRelease: 'v0.1.0-rc.6',
+  currentReleaseUrl:
+    'https://github.com/HarjjotSinghh/reinstate/tree/v0.1.0-rc.6',
   currentReleaseDate: '2026-07-27',
   initialPublicReleaseDate: '2026-07-25',
   stableRelease: null,

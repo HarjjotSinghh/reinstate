@@ -62,7 +62,7 @@ export function homepageSchema(): SchemaNode[] {
         price: '0',
         priceCurrency: 'USD',
       },
-      downloadUrl: product.releasesUrl,
+      downloadUrl: siteUrl('/install.sh'),
       softwareHelp: siteUrl('/docs'),
       author: personRef,
       license: product.licenseUrl,

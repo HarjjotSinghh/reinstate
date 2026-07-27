@@ -89,9 +89,7 @@ const answer =
     </li>
   </ul>
   <p>
-    <a href={`${product.repositoryUrl}/tree/${product.currentRelease}`}
-      >View the {product.currentRelease} tag on GitHub</a
-    >.
+    <a href={product.currentReleaseUrl}>View the {product.currentRelease} tag on GitHub</a>.
   </p>
 
   <h2 id="release-history">Release-candidate history</h2>
@@ -146,7 +144,7 @@ const answer =
   <section class="pc-related" aria-labelledby="related-heading">
     <h2 id="related-heading">Release resources</h2>
     <nav aria-label="Related pages">
-      <a href="https://github.com/HarjjotSinghh/reinstate/releases">All GitHub releases</a>
+      <a href={product.tagsUrl}>All source tags</a>
       <a href="/compatibility">Compatibility matrix</a>
       <a href="/docs/getting-started">Install RC6</a>
       <a href="/open-source">Source and contributions</a>
