@@ -10,6 +10,12 @@ The [playbook](seo-aeo-aseo-playbook.md) is the strategic and technical
 reference. Repository-local agent workflows live in
 [`/.agents/skills`](../../.agents/skills/README.md).
 
+Operational follow-up uses:
+
+- [the production operations runbook](operations.md);
+- [the fixed AI-search query baseline](ai-search-query-baseline.md); and
+- [the monthly audit template](monthly-audit-template.md).
+
 ## Source-of-truth order
 
 Discoverability work must not turn roadmap direction into a current product
