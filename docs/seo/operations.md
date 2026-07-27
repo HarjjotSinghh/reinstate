@@ -381,7 +381,7 @@ custom property.
 
 | Channel | Exact referrer hosts | Exact accepted UTM tokens |
 | ------- | -------------------- | ------------------------- |
-| `chatgpt` | `chatgpt.com`, `chat.openai.com`, `openai.com`, including subdomains | `chatgpt`, `openai`, `oai-search` |
+| `chatgpt` | `chatgpt.com`, `chat.openai.com`, `openai.com`, including subdomains | `chatgpt.com`, `chatgpt`, `openai`, `oai-search` |
 | `perplexity` | `perplexity.ai`, including subdomains | `perplexity` |
 | `microsoft-copilot` | `copilot.microsoft.com`, including subdomains | `microsoft-copilot`, `ms-copilot`, `copilot` |
 | `google-gemini` | `gemini.google.com`, `bard.google.com`, including subdomains | `google-gemini`, `gemini` |

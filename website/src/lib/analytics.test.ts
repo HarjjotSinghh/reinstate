@@ -91,6 +91,11 @@ describe('analytics event taxonomy', () => {
 
   it.each([
     ['https://chatgpt.com/c/abc', 'https://reinstate.dev/docs', 'chatgpt'],
+    [
+      '',
+      'https://reinstate.dev/docs?utm_source=chatgpt.com',
+      'chatgpt',
+    ],
     ['https://www.perplexity.ai/search/example', 'https://reinstate.dev/', 'perplexity'],
     ['https://copilot.microsoft.com/', 'https://reinstate.dev/', 'microsoft-copilot'],
     ['https://gemini.google.com/app', 'https://reinstate.dev/', 'google-gemini'],

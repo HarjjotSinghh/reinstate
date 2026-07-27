@@ -68,7 +68,7 @@ export const aiReferralRules: readonly AiReferralRule[] = [
   {
     channel: 'chatgpt',
     hostnames: ['chatgpt.com', 'chat.openai.com', 'openai.com'],
-    utmTokens: ['chatgpt', 'openai', 'oai-search'],
+    utmTokens: ['chatgpt.com', 'chatgpt', 'openai', 'oai-search'],
   },
   {
     channel: 'perplexity',
