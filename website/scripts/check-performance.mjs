@@ -22,6 +22,34 @@ const SHARED_LIMITS = {
   externalAssetCount: 1,
 };
 
+const DOC_LIMITS = {
+  ...SHARED_LIMITS,
+  htmlRaw: 64 * KIB,
+  htmlGzip: 14 * KIB,
+  cssCodeRaw: 80 * KIB,
+  cssCodeGzip: 18 * KIB,
+  mediaRaw: 64 * KIB,
+  mediaGzip: 60 * KIB,
+  staticTransferRaw: 220 * KIB,
+  staticTransferGzip: 90 * KIB,
+  blockingStyleCount: 3,
+  localAssetRequestCount: 6,
+};
+
+const PUBLIC_CONTENT_LIMITS = {
+  ...SHARED_LIMITS,
+  htmlRaw: 72 * KIB,
+  htmlGzip: 16 * KIB,
+  cssCodeRaw: 100 * KIB,
+  cssCodeGzip: 22 * KIB,
+  mediaRaw: 64 * KIB,
+  mediaGzip: 60 * KIB,
+  staticTransferRaw: 250 * KIB,
+  staticTransferGzip: 100 * KIB,
+  blockingStyleCount: 4,
+  localAssetRequestCount: 7,
+};
+
 export const DEFAULT_ROUTE_DEFINITIONS = [
   {
     path: '/',
@@ -42,21 +70,27 @@ export const DEFAULT_ROUTE_DEFINITIONS = [
     },
   },
   {
+    path: '/docs',
+    label: 'Documentation index',
+    required: true,
+    budget: PUBLIC_CONTENT_LIMITS,
+  },
+  {
     path: '/docs/getting-started',
     label: 'Getting started',
     required: true,
+    budget: DOC_LIMITS,
+  },
+  {
+    path: '/docs/troubleshooting',
+    label: 'Troubleshooting and FAQ',
+    required: true,
     budget: {
-      ...SHARED_LIMITS,
-      htmlRaw: 64 * KIB,
-      htmlGzip: 14 * KIB,
-      cssCodeRaw: 80 * KIB,
-      cssCodeGzip: 18 * KIB,
-      mediaRaw: 64 * KIB,
-      mediaGzip: 60 * KIB,
-      staticTransferRaw: 220 * KIB,
-      staticTransferGzip: 90 * KIB,
-      blockingStyleCount: 3,
-      localAssetRequestCount: 6,
+      ...DOC_LIMITS,
+      htmlRaw: 96 * KIB,
+      htmlGzip: 22 * KIB,
+      staticTransferRaw: 260 * KIB,
+      staticTransferGzip: 105 * KIB,
     },
   },
   {
@@ -95,24 +129,57 @@ export const DEFAULT_ROUTE_DEFINITIONS = [
       localAssetRequestCount: 6,
     },
   },
-  ...['/guides', '/blog'].map((path) => ({
-    path,
-    label: path === '/guides' ? 'Guides hub' : 'Blog hub',
-    required: false,
-    budget: {
-      ...SHARED_LIMITS,
-      htmlRaw: 72 * KIB,
-      htmlGzip: 16 * KIB,
-      cssCodeRaw: 100 * KIB,
-      cssCodeGzip: 22 * KIB,
-      mediaRaw: 64 * KIB,
-      mediaGzip: 60 * KIB,
-      staticTransferRaw: 250 * KIB,
-      staticTransferGzip: 100 * KIB,
-      blockingStyleCount: 4,
-      localAssetRequestCount: 7,
+  ...[
+    {
+      path: '/guides',
+      label: 'Guides index',
     },
+    {
+      path: '/guides/sync-claude-code-sessions-across-devices',
+      label: 'Guide article',
+    },
+    {
+      path: '/blog',
+      label: 'Blog index',
+    },
+    {
+      path: '/blog/why-git-does-not-sync-coding-agent-sessions',
+      label: 'Blog article',
+    },
+    {
+      path: '/compare/reinstate-vs-manual-session-copying',
+      label: 'Comparison',
+    },
+    {
+      path: '/use-cases/work-and-personal-computers',
+      label: 'Use case',
+    },
+    {
+      path: '/compatibility',
+      label: 'Compatibility matrix',
+    },
+  ].map(({ path, label }) => ({
+    path,
+    label,
+    required: true,
+    budget:
+      path === '/compare/reinstate-vs-manual-session-copying'
+        ? {
+            ...PUBLIC_CONTENT_LIMITS,
+            blockingStyleCount: 5,
+          }
+        : PUBLIC_CONTENT_LIMITS,
   })),
+  {
+    path: '/404',
+    label: 'Not-found page',
+    required: true,
+    budget: {
+      ...DOC_LIMITS,
+      htmlRaw: 48 * KIB,
+      htmlGzip: 12 * KIB,
+    },
+  },
 ];
 
 const METRIC_LABELS = {
@@ -188,6 +255,9 @@ function isBlockingStyle(attributes) {
 }
 
 function routeHtmlPath(buildDir, route) {
+  if (route === '/404') {
+    return resolve(buildDir, '404.html');
+  }
   if (route === '/') {
     return resolve(buildDir, 'index.html');
   }

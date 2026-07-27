@@ -577,12 +577,17 @@ After a production build, run:
 npm --prefix website run check:lighthouse
 ```
 
-The command starts the repository's static preview server, opens five
+The command starts the repository's static preview server, opens 12
 representative routes in headless Chrome, and writes full JSON evidence under
-`website/artifacts/lighthouse/`. CI uploads those reports even when the gate
-fails. The gate covers rendered SEO, accessibility, best practices,
-performance, LCP, CLS, named controls, labels, headings, language, image text
-alternatives, canonicals, and descriptions.
+`website/artifacts/lighthouse/`. The matrix covers the homepage,
+documentation index, technical docs, troubleshooting/FAQ, integration, guide,
+blog index and article, compatibility, comparison, use-case, and privacy
+templates. The intentionally noindex `404` template is covered by the static
+performance gate instead of an indexability-focused Lighthouse score. CI
+uploads rendered reports even when the gate fails. The gate covers rendered
+SEO, accessibility, best practices, performance, LCP, CLS, named controls,
+labels, headings, language, image text alternatives, canonicals, and
+descriptions.
 
 Chrome must be installed or `CHROME_PATH` must point to a compatible executable.
 CI's Ubuntu runner supplies Chrome. A local machine without Chrome can install

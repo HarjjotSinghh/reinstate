@@ -11,11 +11,35 @@ import { dirname, join } from 'node:path';
 import test from 'node:test';
 
 import {
+  DEFAULT_ROUTE_DEFINITIONS,
   auditPerformance,
   formatReport,
 } from './check-performance.mjs';
 
 const KIB = 1024;
+
+test('covers every materially distinct production page template', () => {
+  assert.deepEqual(
+    DEFAULT_ROUTE_DEFINITIONS.map(({ path }) => path),
+    [
+      '/',
+      '/docs',
+      '/docs/getting-started',
+      '/docs/troubleshooting',
+      '/integrations/claude-code',
+      '/privacy',
+      '/guides',
+      '/guides/sync-claude-code-sessions-across-devices',
+      '/blog',
+      '/blog/why-git-does-not-sync-coding-agent-sessions',
+      '/compare/reinstate-vs-manual-session-copying',
+      '/use-cases/work-and-personal-computers',
+      '/compatibility',
+      '/404',
+    ],
+  );
+  assert.ok(DEFAULT_ROUTE_DEFINITIONS.every(({ required }) => required));
+});
 
 async function writeFixture(root, path, value) {
   const destination = join(root, path);

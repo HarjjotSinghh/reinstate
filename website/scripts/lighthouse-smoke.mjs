@@ -15,10 +15,17 @@ const DEFAULT_OUTPUT_ROOT = resolve(process.cwd(), 'artifacts/lighthouse');
 
 export const DEFAULT_LIGHTHOUSE_ROUTES = [
   '/',
+  '/docs',
   '/docs/getting-started',
+  '/docs/troubleshooting',
   '/integrations/claude-code',
   '/guides/sync-claude-code-sessions-across-devices',
+  '/blog',
+  '/blog/why-git-does-not-sync-coding-agent-sessions',
   '/compatibility',
+  '/compare/reinstate-vs-manual-session-copying',
+  '/use-cases/work-and-personal-computers',
+  '/privacy',
 ];
 
 const REQUIRED_AUDITS = [

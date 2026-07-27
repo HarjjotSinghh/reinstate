@@ -46,10 +46,17 @@ function report({
 test('covers representative discovery and conversion templates', () => {
   assert.deepEqual(DEFAULT_LIGHTHOUSE_ROUTES, [
     '/',
+    '/docs',
     '/docs/getting-started',
+    '/docs/troubleshooting',
     '/integrations/claude-code',
     '/guides/sync-claude-code-sessions-across-devices',
+    '/blog',
+    '/blog/why-git-does-not-sync-coding-agent-sessions',
     '/compatibility',
+    '/compare/reinstate-vs-manual-session-copying',
+    '/use-cases/work-and-personal-computers',
+    '/privacy',
   ]);
 });
 

@@ -96,13 +96,15 @@ npm run build
 npm run check:performance
 ```
 
-The check covers the homepage, getting-started docs, Claude Code integration,
-privacy page, and the guide and blog hubs when present. It reports raw and
-deterministic gzip sizes for HTML, CSS, executable JavaScript, route media, and
-the initial static transfer. It also limits render-blocking style/script counts,
-font candidates declared by route CSS, font preloads, external references, and
-local asset requests. External render-blocking stylesheets or scripts fail
-because their size cannot be verified from the build.
+The check covers 14 required representatives across the homepage,
+documentation index and articles, troubleshooting/FAQ, integration, privacy,
+guide and blog indexes and articles, comparison, use case, compatibility, and
+not-found templates. It reports raw and deterministic gzip sizes for HTML, CSS,
+executable JavaScript, route media, and the initial static transfer. It also
+limits render-blocking style/script counts, font candidates declared by route
+CSS, font preloads, external references, and local asset requests. External
+render-blocking stylesheets or scripts fail because their size cannot be
+verified from the build.
 
 Budgets intentionally leave reviewable headroom above the current output while
 keeping each page type bounded:
@@ -111,18 +113,21 @@ keeping each page type bounded:
 | --- | ---: | ---: | ---: |
 | `/` | 200 / 35 KiB | 140 / 28 KiB | 460 / 180 KiB |
 | `/docs/getting-started` | 64 / 14 KiB | 80 / 18 KiB | 220 / 90 KiB |
+| `/docs/troubleshooting` | 96 / 22 KiB | 80 / 18 KiB | 260 / 105 KiB |
 | `/integrations/claude-code` | 48 / 12 KiB | 90 / 20 KiB | 230 / 95 KiB |
 | `/privacy` | 48 / 12 KiB | 80 / 18 KiB | 210 / 85 KiB |
-| `/guides`, `/blog` | 72 / 16 KiB | 100 / 22 KiB | 250 / 100 KiB |
+| indexes, editorial, comparison, use-case, compatibility | 72 / 16 KiB | 100 / 22 KiB | 250 / 100 KiB |
+| `/404` | 48 / 12 KiB | 80 / 18 KiB | 220 / 90 KiB |
 
 Every route also has a 16 KiB raw / 6 KiB gzip executable-JavaScript
 budget, at most one render-blocking script, at most 16 declared font files
 totalling 240 KiB raw / 245 KiB gzip, and no more than two font preloads. The
 homepage has a larger transfer allowance for its code-native illustrations;
-editorial routes have tighter HTML and CSS limits. Route media is capped
-separately and included in static transfer. Declared fonts are reported
-separately because the browser selects files by family and Unicode range
-instead of downloading every `@font-face` candidate.
+editorial routes have tighter HTML and CSS limits. The evidence-bearing
+comparison may use five blocking style bundles; all other templates allow at
+most four. Route media is capped separately and included in static transfer.
+Declared fonts are reported separately because the browser selects files by
+family and Unicode range instead of downloading every `@font-face` candidate.
 
 This is a deterministic regression gate over `dist/client`, not a browser
 measurement. It does not produce Lighthouse scores or claim to measure field
