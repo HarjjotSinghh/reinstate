@@ -16,6 +16,8 @@ describe('SEO product truth', () => {
     expect(product.licenseName).toBe('Apache-2.0');
     expect(product.requiresAccount).toBe(false);
     expect(product.releaseStatus).toBe('pre-1.0 release candidate');
+    expect(product.initialPublicReleaseDate).toBe('2026-07-25');
+    expect(product.stableRelease).toBeNull();
   });
 
   it('keeps the advertised release synchronized with the changelog', () => {

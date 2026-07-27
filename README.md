@@ -6,10 +6,15 @@
 
 ### Pick up any coding task exactly where you left it
 
-**The continuity layer for coding-agent work** — search, resume, and hand off sessions across agents, projects, environments, and devices.
-Phase 1 starts with encrypted same-vendor Claude Code and Codex session sync
-across devices; search, verified resume, portable handoffs, and universal agent
-configuration follow.
+**Reinstate is an open-source tool that syncs encrypted Claude Code and Codex
+sessions between configured devices using your own S3-compatible storage.**
+The current release candidate preserves same-vendor native resume across macOS
+and Windows project paths.
+
+The broader direction is a continuity layer for coding-agent work: local
+search, verified resume, explicit portable handoffs, and universal non-secret
+agent configuration are planned after Phase 1. They are not current CLI
+capabilities.
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/HarjjotSinghh/reinstate)](https://goreportcard.com/report/github.com/HarjjotSinghh/reinstate)

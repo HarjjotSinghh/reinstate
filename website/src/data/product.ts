@@ -22,6 +22,8 @@ export const product = {
   supportedStorage: ['Amazon S3', 'Cloudflare R2', 'S3-compatible storage'],
   currentRelease: 'v0.1.0-rc.6',
   currentReleaseDate: '2026-07-27',
+  initialPublicReleaseDate: '2026-07-25',
+  stableRelease: null,
   releaseStatus: 'pre-1.0 release candidate',
   lastVerified: '2026-07-27',
   programmingLanguage: 'Go',
