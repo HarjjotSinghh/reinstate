@@ -56,8 +56,11 @@ const description =
 
   <dl class="pc-facts">
     <div>
-      <dt>Latest public release</dt>
-      <dd><a href={product.releasesUrl}>{product.currentRelease}</a> (prerelease)</dd>
+      <dt>Latest public source tag</dt>
+      <dd>
+        <a href={`${product.repositoryUrl}/tree/${product.currentRelease}`}>{product.currentRelease}</a>
+        (release candidate)
+      </dd>
     </div>
     <div>
       <dt>Latest stable release</dt>

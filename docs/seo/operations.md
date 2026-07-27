@@ -604,6 +604,11 @@ published in Perplexity's crawler documentation. Do not hard-code a copied IP
 list in this repository or allow traffic solely because it presents a
 spoofable user-agent string.
 
+For `OAI-SearchBot`, use OpenAI's current machine-readable range list at
+`https://openai.com/searchbot.json` and the documented user agent together.
+Do not copy those ranges into this repository or treat the user-agent string
+alone as proof that a request came from OpenAI.
+
 ## Launch-day record
 
 | Check | Evidence | Owner | Time (UTC) | Result | Follow-up |
@@ -669,4 +674,5 @@ improvements without comparable evidence.
 - [Vercel domain redirects](https://vercel.com/docs/domains/working-with-domains/deploying-and-redirecting)
 - [OpenAI publishers and developers FAQ](https://help.openai.com/en/articles/12627856-publishers-and-developers-faq)
 - [OpenAI ChatGPT Search](https://help.openai.com/en/articles/9237897)
+- [OpenAI guidance for crawler allowlisting](https://help.openai.com/en/articles/20001243-advertiser-guidance-for-allowing-openai-web-crawlers)
 - [Perplexity crawler documentation](https://docs.perplexity.ai/docs/resources/perplexity-crawlers)
