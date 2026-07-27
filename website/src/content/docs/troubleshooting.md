@@ -1,13 +1,14 @@
 ---
 title: "Troubleshoot Reinstate session sync"
-description: "Fix installation, path remapping, passphrase, remote manifest, conflict, large Codex history, credential, and active-agent errors without exposing secrets."
+description: "Fix Reinstate installation, compatibility, session selection, mapping, manifest, passphrase, conflict, credential, performance, and active-agent errors safely."
 order: 8
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
 version: "v0.1.0-rc.6"
 updatedAt: 2026-07-27
-tags: ["troubleshooting", "session-sync", "path-remapping", "passphrase", "codex"]
+tags:
+  ["troubleshooting", "session-sync", "path-remapping", "passphrase", "codex"]
 targetQuery: "fix Reinstate session sync"
 searchIntent: "troubleshooting"
 draft: false
@@ -569,6 +570,261 @@ process inspection shows no matching process, or when a mutating pull proceeds
 while the selected agent is demonstrably active. Include OS, agent and
 Reinstate versions, redacted process names, exit code, dry-run plan, and steps.
 Do not attach process command lines if they contain private paths or arguments.
+
+## Why does push report `no matching local sessions found`?
+
+### Symptom
+
+A scoped `rein push --agent AGENT --session SESSION_ID` command exits with
+usage code `2` and reports the exact message
+`no matching local sessions found`. No session snapshot is encrypted or
+uploaded.
+
+### Likely cause
+
+The selected agent and session ID did not match any session that the local
+adapter discovered. Common causes are a mistyped or case-mismatched ID,
+selecting `claude` for a Codex session or `codex` for a Claude Code session,
+running on the wrong source device, or choosing a session that the installed
+agent has not created in its recognized native layout. An agent that is not
+installed also has no local sessions to select.
+
+### Affected agent(s)
+
+Claude Code and Codex. Session IDs are vendor-native identifiers, so an ID
+listed by one adapter cannot be pushed through the other adapter.
+
+### Affected OS
+
+macOS, native Windows, and WSL2. Discovery reads the selected agent's native
+session root on the current device; it does not search another device or
+translate native Windows and WSL2 paths.
+
+### Diagnostic commands
+
+Replace `AGENT` with exactly `claude` or `codex`. First confirm compatibility,
+then copy the exact session ID from the matching list result. The final command
+is a dry-run and performs no upload.
+
+```bash
+rein version --json
+rein setup check --json
+rein list --agent AGENT --json
+rein push --agent AGENT --session SESSION_ID --dry-run --json
+```
+
+Do not switch to `--all` to make the error disappear. That broadens the
+selection and can include unrelated sessions. Do not publish the list output
+without redacting titles and absolute paths.
+
+### Corrective action
+
+Run the list command on the device that contains the native session. Select
+the correct vendor and copy one exact discovered ID without editing its case or
+punctuation. If the intended session is absent, confirm that the same vendor
+can open it locally and that `rein setup check --json` reports that adapter as
+`SUPPORTED`. Resolve a compatibility refusal before trying to push.
+
+Repeat the scoped dry-run with the corrected values. Only after it identifies
+the intended session should you run the same push without `--dry-run`:
+
+```bash
+rein push --agent AGENT --session SESSION_ID
+```
+
+Do not rename, relocate, or manufacture a vendor session file to force
+discovery.
+
+### Expected recovery evidence
+
+`rein list --agent AGENT --json` contains the selected native session ID. The
+scoped dry-run exits successfully with `dry_run` set to `true` and either plans
+one snapshot or reports that the one selected session is unchanged. A mutating
+push then reports one pushed snapshot, or one unchanged skip, without selecting
+any other session.
+
+### When to file an issue
+
+File an issue when the exact ID appears in `rein list --agent AGENT --json`,
+the same Reinstate binary and home are used, the adapter is `SUPPORTED`, and
+the immediately following scoped push still reports
+`no matching local sessions found`. Include Reinstate, agent, OS, and
+architecture versions; the selected agent; redacted list metadata; the exact
+exit code; and reproducible commands. Do not attach the session file or its
+transcript.
+
+## Why does pull report `remote session not found`?
+
+### Symptom
+
+A scoped `rein pull --agent AGENT --session SESSION_ID` command can read and
+decrypt the remote manifest but exits with usage code `2` and reports the exact
+message `remote session not found`. No session is restored.
+
+### Likely cause
+
+The agent and session ID do not match an entry in the fetched remote profile
+manifest. The ID may be mistyped, paired with the wrong vendor, or never
+successfully pushed. The destination may instead be configured for a different
+existing profile, bucket, or prefix. A completely missing remote manifest is a
+different storage/profile error and uses exit code `4`.
+
+### Affected agent(s)
+
+Claude Code and Codex. The remote key combines the native agent name and
+session ID, so matching only the ID while selecting the wrong vendor is not
+sufficient.
+
+### Affected OS
+
+macOS, native Windows, and WSL2. This selection error can occur for any source
+and destination pair; path remapping happens only after Reinstate finds the
+selected remote entry.
+
+### Diagnostic commands
+
+Run the first block on the destination. `status` reads metadata from the
+configured encrypted manifest; it does not print transcript content.
+
+```bash
+rein version --json
+rein setup check --json
+rein status --json
+rein diff --agent AGENT --session SESSION_ID --json
+```
+
+If the expected `AGENT:SESSION_ID` key is absent, run this scoped block on the
+source device:
+
+```bash
+rein list --agent AGENT --json
+rein push --agent AGENT --session SESSION_ID --dry-run --json
+rein push --agent AGENT --session SESSION_ID --json
+rein status --json
+```
+
+Do not use `pull --all` as a discovery command. Compare the non-secret profile
+ID, bucket, prefix, and endpoint locally, and redact remote keys, project IDs,
+snapshot IDs, and paths before sharing output.
+
+### Corrective action
+
+If `status` contains the intended session under the other vendor, use that
+vendor only if it is also the vendor that created the session; Reinstate does
+not translate transcripts. If the key is absent, verify that both devices use
+the intended existing remote profile. Then push that one exact, locally listed
+session from the source and confirm that the source's `status` output contains
+the `AGENT:SESSION_ID` key.
+
+On the destination, refresh `status` and repeat the exact scoped pull as a
+dry-run:
+
+```bash
+rein pull --agent AGENT --session SESSION_ID --dry-run --json
+```
+
+Proceed without `--dry-run` only when the plan names one expected destination.
+Do not create an empty manifest, change to a new profile, or broaden the pull
+unless that is an explicit separate decision.
+
+### Expected recovery evidence
+
+Both devices report the same remote manifest revision, and
+`rein status --json` includes the exact `AGENT:SESSION_ID` key and its snapshot
+metadata. The destination dry-run exits successfully with `pulled` equal to
+`1`, `dry_run` set to `true`, and one plan for the selected agent and session.
+The later mutating pull reports one pulled snapshot and the same vendor's
+native resume command can open it.
+
+### When to file an issue
+
+File an issue when `rein status --json` on the same device and profile contains
+the exact `AGENT:SESSION_ID` key, but an immediately following pull for that
+same agent and ID returns `remote session not found`. Include redacted status
+and dry-run output, the manifest revision shape, profile ID shape, transfer
+direction, versions, OS, and exit code. Never include the passphrase, storage
+credentials, signed URLs, snapshot contents, or a raw configuration file.
+
+## Why does `rein setup check` exit with compatibility code `5`?
+
+### Symptom
+
+`rein setup check` exits with code `5`. Human output marks a device or
+installed-agent check as failed. JSON output can report
+`layout/version untested; writes blocked`, `unsupported layout/version`, or a
+device refusal, and its summary does not claim that all checks passed.
+
+### Likely cause
+
+An installed Claude Code or Codex version or native layout is outside the
+release candidate's verified compatibility evidence, or the detected device
+is explicitly unsupported. `UNTESTED` means Reinstate recognizes enough of the
+layout to report it but lacks release evidence for safe writes;
+`UNSUPPORTED` means the known layout or environment must fail closed. WSL1,
+for example, is refused in favor of native Windows or WSL2.
+
+### Affected agent(s)
+
+Claude Code and Codex. The report identifies each adapter separately as
+`SUPPORTED`, `UNTESTED`, `UNSUPPORTED`, or `NOT_INSTALLED`. `NOT_INSTALLED` is
+informational by itself and does not cause compatibility exit `5`.
+
+### Affected OS
+
+macOS, native Windows, WSL2, and explicitly refused environments such as WSL1.
+Current source compatibility evidence is narrower than the full release-gate
+matrix, so a successful synthetic check must not be presented as completed
+physical certification for every OS and architecture.
+
+### Diagnostic commands
+
+These commands are read-only. Keep the full JSON report locally so you can
+identify whether code `5` belongs to `device`, `agent.claude`, or
+`agent.codex`.
+
+```bash
+rein version --json
+rein setup check --json
+rein doctor --json
+claude --version
+codex --version
+```
+
+Run only the vendor version command that is installed. Do not post the
+unredacted `home` value from diagnostic output or any vendor authentication
+state.
+
+### Corrective action
+
+Stop before push or pull; Phase 1 has no public unsafe compatibility override.
+Check the [current compatibility matrix](/compatibility) for the exact
+Reinstate release, agent version range, OS, and architecture. If the installed
+agent version is outside the documented range, use a documented supported
+stable version when your environment and organizational policy permit, or wait
+for a Reinstate release that adds evidence for the newer layout.
+
+Use native Windows or WSL2 instead of WSL1. Do not edit version files, copy
+session trees into a recognized-looking directory, patch the adapter state, or
+claim an untested release is supported merely to clear the preflight.
+
+### Expected recovery evidence
+
+`rein setup check --json` reports the intended installed adapter as
+`SUPPORTED`, with its corresponding `agent.AGENT` check marked `ok`. The
+device check is also `ok`, and compatibility code `5` is no longer returned.
+If another independent check such as missing configuration still fails, its
+own status and exit code remain visible rather than being mistaken for a
+compatibility success.
+
+### When to file an issue
+
+File a compatibility issue when a version and platform explicitly listed as
+supported still produce code `5`, or when a previously passing supported
+layout becomes `UNTESTED` or `UNSUPPORTED`. Include Reinstate and exact agent
+versions, OS and architecture, the failing check name and message, redacted
+`setup check --json` output, installation method, and minimal reproduction.
+Use synthetic data if session discovery is required. Do not attach real
+sessions, credentials, passphrases, full home paths, or authentication files.
 
 ## Still stuck?
 

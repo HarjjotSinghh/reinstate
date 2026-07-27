@@ -26,7 +26,7 @@ describe('troubleshooting entry contract', () => {
       .slice(1)
       .filter((section) => !section.startsWith('Still stuck?'));
 
-    expect(sections).toHaveLength(8);
+    expect(sections).toHaveLength(11);
 
     for (const section of sections) {
       const [question = 'unknown entry'] = section.split('\n');
@@ -52,6 +52,15 @@ describe('troubleshooting entry contract', () => {
 
     expect(source).toContain('same vendor');
     expect(source).toContain('0.1.0-rc.6');
+    expect(source).toContain(
+      'Why does push report `no matching local sessions found`?',
+    );
+    expect(source).toContain(
+      'Why does pull report `remote session not found`?',
+    );
+    expect(source).toContain(
+      'Why does `rein setup check` exit with compatibility code `5`?',
+    );
     expect(source).toContain(
       'rein pull --agent AGENT --session SESSION_ID --dry-run --json',
     );
