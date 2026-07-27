@@ -710,7 +710,7 @@ export async function auditLinks(buildDirectory = DEFAULT_BUILD_DIR) {
             'FRAGMENT_TARGET_MISSING',
             page.file,
             reference.line,
-            `${location} targets "#${fragment}", but "${target.page.file}" has no matching id or named anchor.`,
+            `${location} targets "#${fragment}", but "${target.page.file}" (route "${target.page.route}") has no matching id or named anchor.`,
             `Add id="${fragment}" to the destination or update the fragment to an existing anchor.`,
           );
         }

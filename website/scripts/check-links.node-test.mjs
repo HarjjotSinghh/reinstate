@@ -93,6 +93,29 @@ test('returns an actionable missing-build failure', async () => {
   assert.match(formatLinkReport(result), /Run the Astro production build/);
 });
 
+test('resolves a root-absolute fragment from a nested page against the homepage', async (t) => {
+  const project = await mkdtemp(join(tmpdir(), 'reinstate-link-check-root-'));
+  const build = join(project, 'dist', 'client');
+  t.after(() => rm(project, { force: true, recursive: true }));
+
+  await writeFixture(
+    build,
+    'index.html',
+    '<!doctype html><html><body><section id="root-anchor">Root target</section></body></html>',
+  );
+  await writeFixture(
+    build,
+    'docs/nested/index.html',
+    '<!doctype html><html><body><a href="/#root-anchor">Root target</a></body></html>',
+  );
+
+  const result = await auditLinks(build);
+
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.counts.fragments, 1);
+  assert.equal(result.counts.internalLinks, 1);
+});
+
 test('detects broken links, assets, encoding, fragments, redirects, and HTTP', async (t) => {
   const project = await mkdtemp(join(tmpdir(), 'reinstate-link-check-bad-'));
   const build = join(project, 'dist', 'client');
@@ -156,6 +179,7 @@ test('detects broken links, assets, encoding, fragments, redirects, and HTTP', a
   );
   assert.match(formatLinkReport(result), /Fix:/);
   assert.match(formatLinkReport(result), /index\.html:\d+/);
+  assert.match(formatLinkReport(result), /docs\/index\.html" \(route "\/docs"\)/);
 });
 
 test('ignores external and runtime endpoint references without hiding local files', async (t) => {
