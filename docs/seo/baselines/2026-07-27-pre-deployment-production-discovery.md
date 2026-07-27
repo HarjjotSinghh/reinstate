@@ -104,3 +104,20 @@ After the SEO branch is deployed:
 Account verification, sitemap submission, URL Inspection, analytics review,
 verified bot-log analysis, and WAF administration remain external operational
 actions. None was performed or inferred for this baseline.
+
+## Final pre-deployment automated smoke
+
+The branch's bounded, read-only production checker was run at
+`2026-07-27T15:50:39Z` from commit `20939c015ef4865dce40047fafe5d9419131f849`.
+It made 42 unauthenticated `GET`/`HEAD` checks: 9 passed and 33 failed, producing
+63 findings. Production still exposed zero sitemap URLs and zero route-specific
+Open Graph images because this branch remained undeployed. The failures were
+therefore consistent with the earlier observation rather than evidence about
+the generated branch build.
+
+The redacted local evidence artifact was written with mode `0600` under the
+ignored `website/artifacts/discovery/` directory. Its SHA-256 digest is
+`e6af89d19c3dc0b8f5c66104bbaad96b5891862f9766ca2a3b156f9e914a59da`.
+The artifact itself is intentionally not committed; a deployment operator
+should create a new immutable post-deployment record instead of treating this
+pre-deployment failure as launch evidence.
