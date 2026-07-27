@@ -236,6 +236,24 @@ function collectAnchors(html) {
   return anchors;
 }
 
+function isIndexableHtml(html) {
+  const markup = markupForTagScan(html);
+  for (const tag of markup.matchAll(/<meta\b[^>]*>/gi)) {
+    const attributes = parseAttributes(tag[0]);
+    if (attributes.name?.toLowerCase() !== 'robots') {
+      continue;
+    }
+    const directives = (attributes.content ?? '')
+      .toLowerCase()
+      .split(',')
+      .map((value) => value.trim().split(/\s+/, 1)[0]);
+    if (directives.includes('noindex')) {
+      return false;
+    }
+  }
+  return true;
+}
+
 function routeFromHtml(buildDir, filePath) {
   const path = relative(buildDir, filePath).split(sep).join('/');
   if (path === 'index.html') {
@@ -485,7 +503,9 @@ export async function auditLinks(buildDirectory = DEFAULT_BUILD_DIR) {
     externalSkipped: 0,
     fragments: 0,
     htmlPages: 0,
+    indexablePages: 0,
     internalLinks: 0,
+    maxCrawlDepth: 0,
     runtimeSkipped: 0,
   };
 
@@ -545,6 +565,7 @@ export async function auditLinks(buildDirectory = DEFAULT_BUILD_DIR) {
       anchors: collectAnchors(html),
       file: fileName,
       html,
+      indexable: isIndexableHtml(html),
       references: collectReferences(html),
       route,
     };
@@ -561,8 +582,17 @@ export async function auditLinks(buildDirectory = DEFAULT_BUILD_DIR) {
     const redirect = detectGeneratedRedirect(page);
     if (redirect) {
       redirects.push(redirect);
+      page.redirect = true;
     }
   }
+
+  const indexablePages = pages.filter(
+    (page) => page.indexable && !page.redirect,
+  );
+  counts.indexablePages = indexablePages.length;
+  const crawlGraph = new Map(
+    indexablePages.map((page) => [page.route, new Set()]),
+  );
 
   for (const page of pages) {
     const pageUrl = new URL(page.route, `${SITE_ORIGIN}/`);
@@ -702,6 +732,15 @@ export async function auditLinks(buildDirectory = DEFAULT_BUILD_DIR) {
         continue;
       }
 
+      if (
+        reference.kind === 'link' &&
+        target.page?.indexable &&
+        !target.page.redirect &&
+        crawlGraph.has(page.route)
+      ) {
+        crawlGraph.get(page.route).add(target.page.route);
+      }
+
       if (fragment) {
         counts.fragments += 1;
         if (target.page && !target.page.anchors.has(fragment)) {
@@ -718,6 +757,48 @@ export async function auditLinks(buildDirectory = DEFAULT_BUILD_DIR) {
     }
   }
 
+  const depths = new Map();
+  if (crawlGraph.has('/')) {
+    const queue = ['/'];
+    depths.set('/', 0);
+    for (let index = 0; index < queue.length; index += 1) {
+      const route = queue[index];
+      const depth = depths.get(route);
+      for (const target of crawlGraph.get(route) ?? []) {
+        if (depths.has(target)) {
+          continue;
+        }
+        depths.set(target, depth + 1);
+        queue.push(target);
+      }
+    }
+  }
+
+  for (const page of indexablePages) {
+    const depth = depths.get(page.route);
+    if (depth === undefined) {
+      addError(
+        errors,
+        'INDEXABLE_PAGE_ORPHANED',
+        page.file,
+        null,
+        `Indexable route "${page.route}" is not reachable through crawlable HTML links from the homepage.`,
+        'Link the page from the homepage, a navigation element, or a reachable topical hub.',
+      );
+    } else if (depth > 3) {
+      addError(
+        errors,
+        'INDEXABLE_PAGE_TOO_DEEP',
+        page.file,
+        null,
+        `Indexable route "${page.route}" is ${depth} logical link steps from the homepage.`,
+        'Add a contextual link from a reachable hub so the route is no more than three steps from the homepage.',
+      );
+    } else {
+      counts.maxCrawlDepth = Math.max(counts.maxCrawlDepth, depth);
+    }
+  }
+
   errors.sort(
     (left, right) =>
       left.file.localeCompare(right.file) ||
@@ -730,10 +811,19 @@ export async function auditLinks(buildDirectory = DEFAULT_BUILD_DIR) {
 
 export function formatLinkReport(result) {
   if (!result.errors.length) {
-    const { assets, fragments, htmlPages, internalLinks, runtimeSkipped } =
-      result.counts;
+    const {
+      assets,
+      fragments,
+      htmlPages,
+      indexablePages,
+      internalLinks,
+      maxCrawlDepth,
+      runtimeSkipped,
+    } = result.counts;
     return `Link validation passed: ${htmlPages} HTML page${
       htmlPages === 1 ? '' : 's'
+    }, ${indexablePages} indexable and reachable within ${maxCrawlDepth} logical step${
+      maxCrawlDepth === 1 ? '' : 's'
     }, ${internalLinks} internal link${
       internalLinks === 1 ? '' : 's'
     }, ${assets} asset reference${

@@ -76,10 +76,12 @@ test('accepts resolvable pages, assets, encoded paths, and anchors', async (t) =
 
   assert.deepEqual(result.errors, []);
   assert.equal(result.counts.htmlPages, 2);
+  assert.equal(result.counts.indexablePages, 2);
+  assert.equal(result.counts.maxCrawlDepth, 1);
   assert.equal(result.counts.runtimeSkipped, 2);
   assert.match(
     formatLinkReport(result),
-    /Link validation passed: 2 HTML pages, 4 internal links, 6 asset references, and 3 fragment references checked; 2 runtime endpoints skipped\./,
+    /Link validation passed: 2 HTML pages, 2 indexable and reachable within 1 logical step, 4 internal links, 6 asset references, and 3 fragment references checked; 2 runtime endpoints skipped\./,
   );
 });
 
@@ -101,7 +103,7 @@ test('resolves a root-absolute fragment from a nested page against the homepage'
   await writeFixture(
     build,
     'index.html',
-    '<!doctype html><html><body><section id="root-anchor">Root target</section></body></html>',
+    '<!doctype html><html><body><section id="root-anchor">Root target</section><a href="/docs/nested">Nested page</a></body></html>',
   );
   await writeFixture(
     build,
@@ -113,7 +115,7 @@ test('resolves a root-absolute fragment from a nested page against the homepage'
 
   assert.deepEqual(result.errors, []);
   assert.equal(result.counts.fragments, 1);
-  assert.equal(result.counts.internalLinks, 1);
+  assert.equal(result.counts.internalLinks, 2);
 });
 
 test('detects broken links, assets, encoding, fragments, redirects, and HTTP', async (t) => {
@@ -206,4 +208,61 @@ test('ignores external and runtime endpoint references without hiding local file
   assert.equal(result.counts.internalLinks, 1);
   assert.equal(result.counts.runtimeSkipped, 1);
   assert.equal(result.counts.externalSkipped, 3);
+});
+
+test('detects orphaned and excessively deep indexable routes', async (t) => {
+  const project = await mkdtemp(join(tmpdir(), 'reinstate-link-depth-'));
+  const build = join(project, 'dist', 'client');
+  t.after(() => rm(project, { force: true, recursive: true }));
+
+  await writeFixture(
+    build,
+    'index.html',
+    '<!doctype html><html><body><a href="/level-one">One</a></body></html>',
+  );
+  await writeFixture(
+    build,
+    'level-one/index.html',
+    '<!doctype html><html><body><a href="/level-two">Two</a></body></html>',
+  );
+  await writeFixture(
+    build,
+    'level-two/index.html',
+    '<!doctype html><html><body><a href="/level-three">Three</a></body></html>',
+  );
+  await writeFixture(
+    build,
+    'level-three/index.html',
+    '<!doctype html><html><body><a href="/level-four">Four</a></body></html>',
+  );
+  await writeFixture(
+    build,
+    'level-four/index.html',
+    '<!doctype html><html><body>Too deep</body></html>',
+  );
+  await writeFixture(
+    build,
+    'orphan/index.html',
+    '<!doctype html><html><body>Orphan</body></html>',
+  );
+  await writeFixture(
+    build,
+    'private/index.html',
+    '<!doctype html><html><head><meta name="robots" content="noindex, nofollow"></head><body>Private</body></html>',
+  );
+
+  const result = await auditLinks(build);
+  const codes = new Set(result.errors.map((error) => error.code));
+
+  assert.ok(codes.has('INDEXABLE_PAGE_ORPHANED'));
+  assert.ok(codes.has('INDEXABLE_PAGE_TOO_DEEP'));
+  assert.equal(
+    result.errors.filter(
+      (error) => error.code === 'INDEXABLE_PAGE_ORPHANED',
+    ).length,
+    1,
+  );
+  assert.equal(result.counts.indexablePages, 6);
+  assert.equal(result.counts.maxCrawlDepth, 3);
+  assert.match(formatLinkReport(result), /logical link steps/);
 });
