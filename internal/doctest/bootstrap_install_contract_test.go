@@ -79,6 +79,7 @@ func TestProductionDeploymentVerifiesBeforePromotion(t *testing.T) {
 		`git status --porcelain`,
 		`verify-tag "$version"`,
 		`--prod --skip-domain`,
+		`parse-vercel-deployment-url.mjs`,
 		`verify-live-installers.sh`,
 		`vercel promote`,
 		`https://reinstate.dev`,

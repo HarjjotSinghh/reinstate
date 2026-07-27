@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Parse both structured Vercel CLI 57 deployment results and legacy bare-URL
+  output before immutable installer verification and production promotion.
+
 ## [0.1.0-rc.6] - 2026-07-27
 
 ### Changed
