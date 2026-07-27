@@ -71,7 +71,7 @@ phase. It deliberately does not call those external actions complete.
 | 33 | Definition blocks | Implemented | about, FAQ, integrations, architecture, security, use cases |
 | 34 | How-to content | Implemented | visible prerequisites/steps/outputs/errors/rollback/verification and matching HowTo graph |
 | 35 | Comparison content | Implemented | sourced, dated workflow comparisons with explicit dimensions and limitations |
-| 36 | Troubleshooting content | Implemented | eight entries, each with the required eight-part diagnostic contract |
+| 36 | Troubleshooting content | Implemented | eleven entries, each with the required eight-part diagnostic contract, including both exact selection errors and compatibility exit 5 |
 | 37 | FAQ strategy | Implemented | visible FAQ inventory and exact schema extraction; no FAQ rich-result claim |
 
 ## Sections 38–47: AI search optimization
