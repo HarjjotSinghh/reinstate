@@ -1,0 +1,201 @@
+---
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import { product, siteUrl } from '../data/product';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { breadcrumbSchema, webPageSchema } from '../lib/schema';
+
+export const prerender = true;
+
+const path = '/privacy';
+const title = 'Privacy Notice | Reinstate';
+const description =
+  'How the Reinstate website handles waitlist email addresses, optional analytics, server logs, and privacy requests.';
+const updatedAt = '2026-07-27';
+const breadcrumbs = [
+  { name: 'Home', path: '/' },
+  { name: 'Privacy', path },
+];
+const schema = [
+  webPageSchema({ path, title, description, updatedAt }),
+  breadcrumbSchema(breadcrumbs),
+];
+---
+
+<BaseLayout
+  {title}
+  {description}
+  canonical={siteUrl(path)}
+  modifiedTime={updatedAt}
+  jsonLd={schema}
+>
+  <article class="privacy-page">
+    <header>
+      <Breadcrumbs items={breadcrumbs} />
+      <p class="eyebrow">Privacy</p>
+      <h1>Reinstate website privacy notice</h1>
+      <p class="answer">
+        Reinstate does not receive coding-agent sessions, source code, storage credentials, or
+        encryption passphrases through this website. The site collects an email address only when
+        someone submits the waitlist form, and analytics loads only when the operator explicitly
+        configures it.
+      </p>
+      <p class="updated">
+        Last updated: <time datetime={updatedAt}>July 27, 2026</time>
+      </p>
+    </header>
+
+    <div class="prose">
+      <h2 id="scope">What this notice covers</h2>
+      <p>
+        This notice covers visits to <a href="https://reinstate.dev">reinstate.dev</a> and
+        information submitted through its waitlist. It does not change the local-first data flow
+        of the Reinstate CLI. The CLI encrypts supported session data on the developer's device
+        and sends ciphertext to storage that the developer configures and controls.
+      </p>
+
+      <h2 id="waitlist">Waitlist information</h2>
+      <p>
+        If you join the waitlist, the site processes the email address you provide, a submission
+        timestamp, and the source label <code>web</code>. The information is used to manage early
+        access and send relevant project or release updates. It is not sold.
+      </p>
+      <p>
+        Depending on the production configuration, waitlist records are stored in a managed
+        libSQL/Turso database or a private GitHub Gist. The site may use Resend to notify the
+        maintainer of a new signup. These services process information under their own terms and
+        privacy practices.
+      </p>
+
+      <h2 id="analytics">Optional site analytics</h2>
+      <p>
+        No analytics script is emitted unless both Plausible configuration values are present at
+        build time. When enabled, the site can record page views and three coarse interaction
+        events: copying the install command, opening the getting-started documentation, and
+        following a GitHub link. Event properties are limited to the current path and the
+        interface location, such as <code>header</code> or <code>homepage-hero</code>.
+      </p>
+      <p>
+        Reinstate's event code does not send form values, email addresses, coding-agent content,
+        source code, repository names, bucket names, credentials, or passphrases. The deployed
+        Plausible service can still process ordinary request information according to its
+        configuration and privacy policy.
+      </p>
+
+      <h2 id="logs">Infrastructure logs</h2>
+      <p>
+        Hosting, content-delivery, security, and email providers may create routine operational
+        logs when they serve a request or prevent abuse. Those records can include request time,
+        requested URL, user agent, IP-derived network information, response status, and diagnostic
+        data. They are used for availability, security, and troubleshooting—not to inspect
+        coding-agent work.
+      </p>
+
+      <h2 id="retention">Retention and deletion</h2>
+      <p>
+        Waitlist records are kept while they are needed for early-access and project
+        communications, legal obligations, or abuse prevention. Operational-log retention is
+        controlled by the configured providers. You may ask to access, correct, or delete a
+        waitlist record by emailing <a href="mailto:privacy@harjot.co">privacy@harjot.co</a> from
+        the address concerned.
+      </p>
+
+      <h2 id="open-source">Verify the implementation</h2>
+      <p>
+        The website and CLI are open source. You can inspect the
+        <a href={`${product.repositoryUrl}/tree/main/website`}>website implementation</a>, review
+        the <a href="/security">security overview</a>, and report a vulnerability through the
+        project's <a href={`${product.repositoryUrl}/security/policy`}>security policy</a>.
+      </p>
+
+      <h2 id="changes">Changes to this notice</h2>
+      <p>
+        Material changes will update the date above and the public repository history. Analytics
+        or data-processing configuration should not be enabled in production without reviewing
+        this notice for accuracy.
+      </p>
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .privacy-page {
+    width: min(100% - clamp(2.5rem, 8vw, 6rem), 72rem);
+    margin-inline: auto;
+    padding-block: clamp(3.5rem, 8vw, 7rem);
+  }
+
+  header {
+    padding-bottom: clamp(2.5rem, 6vw, 5rem);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .eyebrow {
+    margin: clamp(2.25rem, 5vw, 4rem) 0 1rem;
+    color: var(--prim-deep);
+    font-family: var(--font-mono);
+    font-size: 0.77rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    max-width: 17ch;
+    margin: 0;
+    font-size: clamp(2.7rem, 7vw, 5.8rem);
+    line-height: 0.98;
+  }
+
+  .answer {
+    max-width: 66ch;
+    margin: 1.6rem 0 0;
+    color: var(--ink-2);
+    font-size: clamp(1.12rem, 2vw, 1.42rem);
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
+
+  .updated {
+    margin: 1.5rem 0 0;
+    color: var(--ink-3);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+  }
+
+  .prose {
+    max-width: 48rem;
+    padding-block: clamp(3rem, 7vw, 6rem);
+  }
+
+  .prose h2 {
+    margin: 3rem 0 0.8rem;
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    line-height: 1.1;
+  }
+
+  .prose h2:first-child {
+    margin-top: 0;
+  }
+
+  .prose p {
+    margin: 0.8rem 0 0;
+    color: var(--ink-2);
+    font-size: 1rem;
+    line-height: 1.75;
+  }
+
+  .prose a {
+    color: var(--ink);
+    text-underline-offset: 3px;
+  }
+
+  .prose code {
+    padding: 0.08rem 0.28rem;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    background: var(--paper-2);
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 0.88em;
+  }
+</style>

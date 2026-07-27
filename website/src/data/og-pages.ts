@@ -85,6 +85,13 @@ export const staticOgPages: OgPage[] = [
       'Current pre-1.0 release status, verified changes, compatibility evidence, and full release history.',
   },
   {
+    route: '/privacy',
+    kind: 'Privacy',
+    title: 'Website privacy notice',
+    description:
+      'How the Reinstate website handles waitlist email addresses, optional analytics, and operational logs.',
+  },
+  {
     route: '/use-cases',
     kind: 'Use cases',
     title: 'Cross-device coding-agent continuity',
