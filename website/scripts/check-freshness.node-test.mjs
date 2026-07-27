@@ -15,6 +15,7 @@ async function fixture(reviewDate = '2026-07-27') {
   await mkdir(join(root, 'src/content/guides'), { recursive: true });
   await mkdir(join(root, 'src/content/blog'), { recursive: true });
   await mkdir(join(root, 'src/data'), { recursive: true });
+  await mkdir(join(root, 'dist/client'), { recursive: true });
   await writeFile(
     join(root, 'src/content/docs/example.md'),
     `---\ntitle: Example\nupdatedAt: ${reviewDate}\n---\n`,
@@ -55,6 +56,23 @@ async function fixture(reviewDate = '2026-07-27') {
     join(root, 'src/data/product.ts'),
     `export const product = { lastVerified: '${reviewDate}' };\n`,
   );
+  await writeFile(
+    join(root, 'src/data/static-page-reviews.json'),
+    JSON.stringify([
+      {
+        route: '/',
+        reviewedAt: reviewDate,
+        owner: 'Maintainer',
+        sources: ['src/pages/index.astro'],
+      },
+    ]),
+  );
+  await writeFile(
+    join(root, 'dist/client/sitemap-0.xml'),
+    `<urlset>${['/', '/docs/example', '/guides/example', '/blog/example']
+      .map((path) => `<url><loc>https://reinstate.dev${path}</loc></url>`)
+      .join('')}</urlset>`,
+  );
   return root;
 }
 
@@ -69,7 +87,7 @@ test('passes current records and preserves explicit open-gate nulls', async (t) 
 
   assert.deepEqual(result.warnings, []);
   assert.deepEqual(result.errors, []);
-  assert.match(formatFreshnessReport(result), /6 reviewed records, 0 warnings, 0 errors/);
+  assert.match(formatFreshnessReport(result), /7 reviewed records, 0 warnings, 0 errors/);
 });
 
 test('warns before the hard stale threshold and fails after it', async (t) => {
@@ -81,14 +99,14 @@ test('warns before the hard stale threshold and fails after it', async (t) => {
     asOf: new Date('2026-03-15T00:00:00Z'),
   });
   assert.equal(warning.errors.length, 0);
-  assert.equal(warning.warnings.length, 6);
+  assert.equal(warning.warnings.length, 7);
 
   const failure = await auditFreshness({
     root,
     asOf: new Date('2026-06-01T00:00:00Z'),
   });
   assert.equal(failure.warnings.length, 0);
-  assert.equal(failure.errors.length, 6);
+  assert.equal(failure.errors.length, 7);
 });
 
 test('rejects missing evidence, missing review fields, and future dates', async (t) => {
@@ -124,4 +142,35 @@ test('rejects missing evidence, missing review fields, and future dates', async 
   assert.ok(result.errors.some((error) => error.includes('canonical evidence')));
   assert.ok(result.errors.some((error) => error.includes('invalid review date')));
   assert.ok(result.errors.some((error) => error.includes('is in the future')));
+});
+
+test('rejects missing sitemap ownership, duplicate static routes, and missing sources', async (t) => {
+  const root = await fixture();
+  t.after(() => rm(root, { recursive: true, force: true }));
+
+  await writeFile(
+    join(root, 'src/data/static-page-reviews.json'),
+    JSON.stringify([
+      { route: '/', reviewedAt: '2026-07-27', owner: 'Maintainer', sources: [] },
+      {
+        route: '/',
+        reviewedAt: '2026-07-27',
+        owner: 'Maintainer',
+        sources: ['src/pages/index.astro'],
+      },
+    ]),
+  );
+  await writeFile(
+    join(root, 'dist/client/sitemap-0.xml'),
+    '<urlset><url><loc>https://reinstate.dev/</loc></url><url><loc>https://reinstate.dev/unowned</loc></url></urlset>',
+  );
+
+  const result = await auditFreshness({
+    root,
+    asOf: new Date('2026-07-27T00:00:00Z'),
+  });
+  assert.ok(result.errors.some((error) => error.includes('duplicate route')));
+  assert.ok(result.errors.some((error) => error.includes('sources must contain')));
+  assert.ok(result.errors.some((error) => error.includes('/unowned')));
+  assert.ok(result.errors.some((error) => error.includes('/docs/example')));
 });
