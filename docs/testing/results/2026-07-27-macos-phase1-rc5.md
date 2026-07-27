@@ -117,7 +117,7 @@ with the allow-listed principal, or allow-listing both addresses.
 | Check | Result | Evidence |
 | ----- | ------ | -------- |
 | `https://reinstate.dev/install.sh` returns 200 | PASS | `curl -fsSI` → `HTTP/2 200`, `content-length: 2398` |
-| Served bytes match the tagged website asset | PASS | served file is byte-identical to `website/public/install.sh` at the tag |
+| Served bytes match the tagged website asset | PASS **at 02:54:11Z only** | byte-identical to `website/public/install.sh` at the tag; the route later regressed to RC4, see **F-B1** |
 | Pins exactly one release, no `latest` | PASS | bootstrap sets `VERSION="v0.1.0-rc.5"`; layer 2 requires exact v-SemVer and prints `Refusing an unpinned latest release.` when unset |
 | Layer 1 checksum verified | PASS | `installer checksum ok` |
 | Layer 1 pin actually matches the tagged installer | PASS | `PINNED_INSTALLER_SHA256` equals SHA-256 of `scripts/install.sh` at the tag (`7776adb4…db2e66`) |
@@ -131,6 +131,14 @@ with the allow-listed principal, or allow-listing both addresses.
 
 Binaries resolve under the user-local install directory; `rein` is a relative
 symlink to `reinstate`.
+
+**Time-bound caveat.** Every result in this subsection was obtained at
+**02:54:11Z**, inside the 51-minute window between the RC5 production deployment
+and the first overwrite described in **F-B1**. The binary installed here was
+genuinely 0.1.0-rc.5, commit `b4ebd8d`, and every downstream Device A result
+rests on that correct binary. However, the same command run against the public
+route today installs 0.1.0-rc.4. Row 1 is therefore recorded as *passing as
+executed*, not as a currently reproducible pass.
 
 Third integrity layer observed beyond the two required: the installer refuses
 to publish a binary whose own `version --json` does not equal the pinned asset
@@ -427,7 +435,7 @@ reconciled from the Windows report in M4.
 
 | # | Gate | Owner | Result | Evidence |
 | - | ---- | ----- | ------ | -------- |
-| 1 | `install.sh` returns 200 and installs RC5 on Mac | A | **PASS** | §2.2 |
+| 1 | `install.sh` returns 200 and installs RC5 on Mac | A | **PASS as executed at 02:54Z** | §2.2; route has **since regressed to RC4** — see **F-B1** |
 | 2 | `install.ps1` returns 200 and installs RC5 on Windows | B | **FAIL** | **F-B1** — returns 200, installs 0.1.0-rc.4 |
 | 3 | Both installers are idempotent and PATH-safe | A+B | **PARTIAL** | Mac PASS §2.2; Windows public route never installed rc.5, PATH-duplication check NOT TESTED |
 | 4 | Pre-init missing-config failure is accurate | A+B | **PASS** | Mac §2.3; Windows exit 3, `config missing`, `windows-amd64`, both adapters `SUPPORTED` |
@@ -476,51 +484,71 @@ for why green checks did not prevent **F-B1**.
 | F-A1 | Non-blocking | Release tag's tagger e-mail is not the allow-listed signing principal; SSH verification binds by key, not identity (§2.1) |
 | F-A2 | Non-blocking, docs/prompt | Setup prompt v5 silently redirected a configured `REINSTATE_HOME` |
 | F-A3 | Open, severity pending M3 | Codex sessions are not resolved to the canonical project ID, and adapter listing scope is asymmetric (§3.4) |
-| **F-B1** | **RELEASE BLOCKING** | Live public-route mismatch: during acceptance `https://reinstate.dev/install.ps1` served an rc.4 bootstrap, so Windows silently installed 0.1.0-rc.4 while reporting success |
+| **F-B1** | **RELEASE BLOCKING** | Production alias overwritten by stale feature-branch deployments, silently reverting **both** public installer routes from RC5 to RC4 after a correct release |
 | F-B2 | Non-blocking, Windows-only | The PowerShell replacement prompt omits the target version, so the user approves a replacement without being told what they are getting |
 | F-B3 | Minor | `rein status` reports a missing config as a raw OS error containing the absolute config path, instead of the redacted `config missing` that `setup check` produces |
 | F-B4 | Process gap | CI verifies the installer assets in the **build output** but nothing verifies the **deployed route**, which is how F-B1 shipped with 11 green checks |
 | F-B5 | **RELEASE BLOCKING** (Device B) | Stock RC5 additional-device init fails at the `HeadObject` manifest probe with HTTP 400 against R2 |
 
-### F-B1 — public Windows route did not serve the RC5 asset during acceptance
+### F-B1 — production alias overwritten by stale feature-branch deployments
 
-A live deployment regression / public-route mismatch **observed during
-acceptance**. Discovered from Device A by fetching and diffing the live routes,
-and reproduced on Device B, where the documented public one-liner installed
-0.1.0-rc.4.
+RC5 was published correctly and was **later silently reverted**. Deployment
+history establishes the cause: post-release production deployments from a stale
+feature branch overwrote the production alias, replacing the correct RC5
+installer assets with RC4 ones.
 
-This finding records **what was observed**, not why or when it happened.
+#### Verified timeline, 2026-07-27 UTC
 
-| Artifact | `$Version` |
-| -------- | ---------- |
-| `website/public/install.ps1` **at tag `v0.1.0-rc.5`** | `v0.1.0-rc.5` |
-| `https://reinstate.dev/install.ps1` **as served during acceptance** | `v0.1.0-rc.4` |
-| `website/public/install.sh` at tag vs served | byte-identical, correct |
+| Time | Event | Installer assets served |
+| ---- | ----- | ----------------------- |
+| 02:37:30Z | production deployment of the RC5 release | **RC5** |
+| 02:54:11Z | Device A fetches and runs `install.sh` (§2.2) | **RC5** — observed |
+| 03:27:52Z | commit `fe06709` on `feat/landing-credibility` | pins RC4 |
+| 03:28:07Z | production deployment from that commit — **first overwrite** | **RC4** |
+| 03:50:46Z | Device A fetches `install.ps1` | **RC4** — observed |
+| — | three further production deployments, same feature branch | RC4 |
+| 04:31:54Z | commit `592098a` on `feat/landing-credibility` | pins RC4 |
+| 04:32:38Z | production deployment; becomes current `reinstate.dev` target | **RC4** |
+| 07:57:38Z | Device A re-fetches **both** routes | **RC4** — observed |
 
-Byte-level observations, all taken at acceptance time:
+The immutable RC5 deployment still serves RC5; only the production alias moved.
 
-- The repository is **correct** at the tag. The POSIX route matched its tagged
-  asset exactly, so this is a published-artifact mismatch on the PowerShell
-  route, not a source defect.
-- The served PowerShell body differed from the RC5-tag asset by **exactly one
-  line**, line 5, the `$Version` assignment.
-- The served body was **byte-identical to the complete RC4-tag asset**
-  (`cmp` clean; SHA-256 `13d9271c…`).
-- The RC4-tag and RC5-tag bootstraps themselves differ **only** on that same
-  line 5.
-- The pinned installer digest `ce46d3a2…` was identical in the served body, the
-  RC4-tag asset, and the RC5-tag asset, because `scripts/install.ps1` is
-  byte-identical between the two tags.
+#### Independently corroborated from Device A
+
+- Both named feature-branch commits exist, and **both pin RC4 in `install.ps1`
+  and `install.sh`**, confirmed by reading the blobs at those exact commits.
+- Each commit timestamp precedes its production deployment by seconds
+  (`fe06709` by 15 s, `592098a` by 44 s), consistent with deploy-on-push.
+- Every route observation this run made fits the timeline with no exceptions.
+
+#### Both public routes are affected, not only PowerShell
+
+This is broader than first recorded. The overwrite reverted **both** installer
+assets simultaneously:
+
+| Route | Device A observation at 02:54Z | Device A observation at 07:57Z |
+| ----- | ------------------------------ | ------------------------------ |
+| `install.sh` | `v0.1.0-rc.5`, SHA-256 `da517b20…`, byte-identical to the RC5-tag asset | `v0.1.0-rc.4`, SHA-256 `a146c2e7…`, byte-identical to the RC4-tag asset |
+| `install.ps1` | not sampled before the overwrite | `v0.1.0-rc.4`, byte-identical to the RC4-tag asset |
+
+The POSIX route appeared correct in §2.2 **only because Device A tested it
+inside the 51-minute window between the RC5 deployment and the first overwrite.**
+The PowerShell route was first sampled after the overwrite, which is why the
+defect surfaced as Windows-only. It never was.
+
+#### Supporting byte-level facts
+
+- The repository is **correct** at the tag. This is a published-artifact
+  problem, not a source defect.
+- Each served body was byte-identical to the corresponding complete RC4-tag
+  asset (`cmp` clean).
+- The RC4-tag and RC5-tag PowerShell bootstraps differ **only** on line 5, the
+  `$Version` assignment.
+- The pinned installer digest `ce46d3a2…` is common to both tags, because
+  `scripts/install.ps1` is byte-identical between them, so the digest alone
+  cannot discriminate between RC4 and RC5 content.
 - It was **not** a CDN caching artifact. A cache-busting query string and an
   explicit `Cache-Control: no-cache` request both returned the same body.
-
-**Cause and timing are deliberately not asserted.** Because the two tags'
-bootstraps differ only in line 5, a stale RC4 asset and an RC5 asset whose
-version line had been reverted are *the same bytes*. Content alone therefore
-cannot distinguish them, and the pinned digest cannot discriminate either, since
-it is common to both tags. Establishing whether the route ever served the RC5
-asset, and what changed it, requires **deployment-history evidence** that was
-not available to this run. Any claim in either direction would be speculation.
 
 Why this is release blocking rather than cosmetic: the rc.4 bootstrap is
 *internally consistent*, so both checksum layers legitimately print
@@ -636,15 +664,16 @@ workspace; **nothing asserts anything about what `https://reinstate.dev`
 actually serves**. So the release could be simultaneously green and broken, and
 was.
 
-This is the process gap behind F-B1: the source was right and CI was right, yet
-the artifact actually served by the public route was not, and no gate is
-positioned to notice that class of divergence — whenever or however it arises.
+This is the process gap that let F-B1 persist undetected. The deployment history
+now shows the release *was* published correctly at 02:37:30Z, so CI and the
+release itself were both right. What no gate covers is the period **after**
+publication, when any subsequent production deployment can silently replace the
+served assets. Every check in the pipeline asserts properties of a commit or a
+build; none asserts a property of the live route, and none prevents a feature
+branch from becoming the production alias.
 
-Suggested fix: add a post-deploy smoke check that fetches both public routes and
-asserts the pinned version, for example
-`curl -fsSL https://reinstate.dev/install.ps1 | grep -F 'v0.1.0-rc.5'`, and
-require it before a release is considered published. Without it, F-B1 can recur
-on RC6.
+That combination is why a correct release reverted itself within an hour with no
+alarm anywhere.
 
 ### F-B5 — stock RC5 additional-device init fails against R2
 
@@ -670,7 +699,7 @@ credentials in general.
 | ID | Blocker |
 | -- | ------- |
 | F-B5 | Stock RC5 cannot initialize an additional device against R2 |
-| F-B1 | The public Windows route did not serve the RC5 asset during acceptance; it installs rc.4 |
+| F-B1 | Stale feature-branch production deployments overwrote the alias, reverting both public installer routes from RC5 to RC4 |
 
 Non-blocking: F-A1, F-A2, F-A3 (unresolved, could not be decided), F-B2, F-B3.
 Process: F-B4.
@@ -680,11 +709,34 @@ Process: F-B4.
 `v0.1.0-rc.5` does not pass Phase 1 acceptance. The next candidate should be
 RC6 containing the F-B5 fix, and it must ship with:
 
-1. the public Windows route confirmed to serve the tagged RC6 bootstrap,
-   verified against the live route rather than the repository;
-2. a post-deploy route check so F-B4 cannot hide a repeat of F-B1;
+1. deployment guardrails that prevent a repeat of F-B1 (below);
+2. both public routes confirmed to serve the tagged RC6 assets, verified against
+   the live routes rather than the repository;
 3. `${AssetVersion}` braced in the PowerShell replacement prompt (F-B2); and
 4. `REINSTATE_HOME` preserved and echoed by both setup prompts (F-A2).
+
+### Deployment guardrails
+
+F-B1 was not a build or packaging defect, so no amount of pre-merge CI would
+have caught it. The controls need to sit around deployment:
+
+1. **Feature branches may create previews but must never target production.**
+   This alone would have prevented F-B1 entirely.
+2. **Production deployment must come from current `main` or an explicitly
+   selected signed release source.**
+3. **Refuse production deployment from a dirty worktree.**
+4. **After every production deployment, fetch both live installer routes and
+   compare their bytes and version pins against the intended source.** Content
+   comparison, not a status code — every route in this incident returned 200
+   while serving the wrong release.
+5. **Make that live-route verification a required release gate**, so a release
+   is not considered published until the public routes have been proven to serve
+   the intended assets.
+
+Guardrail 4 is the one that converts this class of failure from silent to loud.
+Both checksum layers printed `ok` throughout the incident, because the RC4 chain
+is internally consistent; only a comparison against the *intended* release can
+tell the difference.
 
 The full runbook must then be rerun from section 5, because no cross-device gate
 has ever been satisfied on any RC5 build. F-A3 in particular is still undecided
