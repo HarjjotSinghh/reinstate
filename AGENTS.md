@@ -71,6 +71,13 @@ Read `references/` and `docs/product-strategy.md`. Positioning:
 
 Phase 1 remains deliberately narrow: same-vendor Claude Code and Codex session
 sync. Portable handoffs, MCP, skills, config, and broader indexing come later.
+The later configuration direction is **universal agent configuration**:
+declare MCP servers, skills, hooks/loops, plugins, marketplaces, instructions,
+and safe settings once; adapters render them into supported harnesses and
+encrypted sync distributes only non-secret desired state across devices. Never
+turn that into raw config-tree mirroring, credential sync, a Reinstate-owned
+plugin runtime, or a Reinstate-owned marketplace. See
+`docs/universal-configuration.md`.
 
 ## Style
 

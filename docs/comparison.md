@@ -14,7 +14,7 @@ not another place to code.
 | ---------- | ------------------ | ----------- | ----------------------------- | ----------------------- | ------------- |
 | Sessions across devices | Per-vendor only | Claude only | Partial | Files only | **Multi-agent** |
 | Works when other machine is off | Cloud yes / Remote Control no | Yes | Yes | Yes | **Yes** |
-| MCP / skills / settings | Vendor-local | Partial (Claude tree) | Often config-only | Manual | Roadmap after v0.1 |
+| MCP / skills / loops / plugins / settings | Vendor-local | Partial (Claude tree) | Often one artifact class | Manual | **Universal desired-state config (planned)** |
 | E2E encryption | Vendor-held plaintext | age | Often yes | Usually no | **age, BYO keys** |
 | Bring-your-own storage | No | R2/S3/GCS/WebDAV | Gists / various | Your sync tool | **R2/S3-compatible (v0.1)** |
 | Cross-OS path remapping | N/A | Partial | Weak | None | **First-class** |
@@ -28,6 +28,7 @@ excellent *inside one ecosystem*. They will not:
 
 - Index sessions across competing agents in one switcher
 - Verify workspace + MCP/skills before resume in a vendor-neutral way
+- Define an MCP/skill/plugin once and reconcile native config across competing harnesses
 - Move work across devices with ciphertext on storage *you* control
 - Produce explicit portable handoffs between agents
 
@@ -57,7 +58,15 @@ in progress, and config scope is post-v0.1 roadmap work.
 ## vs config-only tools (mcp-sync, etc.)
 
 Config sync alone has a low ceiling (nice utility, weak product). Reinstate
-treats **sessions as the acquisition feature** and **config as retention**.
+treats **sessions as the acquisition feature** and **universal configuration as
+continuity and retention**.
+
+The planned configuration layer is broader than copying MCP JSON. It
+normalizes desired state for MCP servers, skills/instructions, hooks/loops,
+plugins, marketplaces, and safe settings; previews adapter-specific changes;
+and reconciles them across harnesses and devices. It will report unsupported
+fields rather than pretending all tools share one schema. Credentials remain
+local.
 
 ## vs Syncthing / iCloud / OneDrive
 
@@ -79,4 +88,5 @@ Reinstate is resume-aware, agent-aware, and secure-by-default.
 
 - [Architecture](architecture.md)
 - [Adapters](adapters.md)
+- [Universal agent configuration](universal-configuration.md)
 - [Roadmap](../ROADMAP.md)

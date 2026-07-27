@@ -8,7 +8,8 @@
 
 **The continuity layer for coding-agent work** — search, resume, and hand off sessions across agents, projects, environments, and devices.
 Phase 1 starts with encrypted same-vendor Claude Code and Codex session sync
-across devices; search, verified resume, and portable handoffs follow.
+across devices; search, verified resume, portable handoffs, and universal agent
+configuration follow.
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/HarjjotSinghh/reinstate)](https://goreportcard.com/report/github.com/HarjjotSinghh/reinstate)
@@ -98,7 +99,7 @@ flowchart LR
 | **Offline-capable origin** | Works when the other machine is **off** (stored sync, not a live relay) |
 | **Path remapping** | Windows ↔ macOS project paths rewritten so `--resume` actually finds sessions |
 | **Zero-knowledge** | Client-side encryption; bring-your-own storage |
-| **Sessions first** | Phase 1 deliberately excludes credentials, MCP, skills, and settings |
+| **Sessions first** | Phase 1 deliberately excludes credentials, MCP, skills, and settings; universal configuration is later roadmap work |
 | **Open source** | Apache-2.0 · auditable · patent grant · no vendor lock-in |
 
 Native vendor sync will always own *one* ecosystem. DIY Syncthing/Drive hacks break on absolute paths and credential sprawl. Reinstate targets the empty quadrant: **universal × cross-device × encrypted × resume-aware**.
@@ -119,6 +120,13 @@ Native vendor sync will always own *one* ecosystem. DIY Syncthing/Drive hacks br
 - **Safe by default** — credential denylist, atomic restore, conflict forks, local backups
 - **Simple CLI** — `rein init` · `push` · `pull` · `status` · `diff` · `conflicts`
   (`rein` is the short alias; `reinstate` is the full command — same binary)
+
+Later, Reinstate will extend continuity beyond sessions: declare MCP servers,
+skills, hooks/loops, plugins, marketplaces, instruction files, and safe settings
+once, then preview and apply the correct native configuration across Claude
+Code, Codex, Grok, OpenCode, Gemini CLI, and multiple devices. This is planned,
+not part of the current CLI. See
+[Universal agent configuration](docs/universal-configuration.md).
 
 ---
 
@@ -175,13 +183,13 @@ Full walkthrough: **[docs/getting-started.md](docs/getting-started.md)**
 
 ## Supported agents
 
-| Agent | Sessions | Config / MCP | Status |
-| ----- | :------: | :----------: | ------ |
-| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | ✅ | 📋 | Phase 1 |
-| [OpenAI Codex CLI](https://github.com/openai/codex) | ✅ | 📋 | Phase 1 |
+| Agent | Sessions | Universal config target | Status |
+| ----- | :------: | :---------------------: | ------ |
+| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | ✅ | 📋 | Sessions: Phase 1 |
+| [OpenAI Codex CLI](https://github.com/openai/codex) | ✅ | 📋 | Sessions: Phase 1 |
 | [Gemini CLI](https://github.com/google-gemini/gemini-cli) | 📋 | 📋 | Later phase |
 | [OpenCode](https://opencode.ai) | 📋 | 📋 | Later phase |
-| [Grok Build](https://x.ai) | 📋 | 📋 | Phase 2 |
+| [Grok Build](https://x.ai) | 📋 | 📋 | Later phase |
 
 Details: **[docs/adapters.md](docs/adapters.md)**
 
@@ -243,6 +251,7 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 | [Getting started](docs/getting-started.md) | Install, init, dual-device setup |
 | [Architecture](docs/architecture.md) | Pipeline, packages, design principles |
 | [Adapters](docs/adapters.md) | Per-agent layouts & support matrix |
+| [Universal configuration](docs/universal-configuration.md) | Planned MCP/skills/loops/plugins/settings portability |
 | [Security model](docs/security-model.md) | Threat model & defaults |
 | [Comparison](docs/comparison.md) | vs native sync, claude-sync, DIY |
 | [FAQ](docs/faq.md) | Common questions |
@@ -310,7 +319,7 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 | **0** | Contracts, diagnostics, installers, fixtures, release trust | 🚧 |
 | **1** | Claude + Codex encrypted same-vendor session sync | 🚧 |
 | **2–4** | Local index, verified resume, portable handoffs | 📋 |
-| **5–7** | Automatic sync, thin Console/ACP client, teams | 📋 / 💭 |
+| **5–7** | Universal config + automatic sync, thin Console/ACP client, teams | 📋 / 💭 |
 
 Full detail: **[ROADMAP.md](ROADMAP.md)**
 

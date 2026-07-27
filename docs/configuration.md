@@ -34,3 +34,21 @@ rein init --project github.com/acme/app=/absolute/local/path
 ## Encryption
 
 Default: `age-scrypt` passphrase. Passphrase is not stored in config.
+
+## Universal agent configuration (roadmap)
+
+`config.toml` above configures Reinstate itself. A later, separate desired-state
+profile will describe portable agent capabilities: MCP servers,
+skills/instructions, hooks/loops, plugins, marketplaces, and safe settings.
+Configuration adapters will render that profile into each selected harness's
+native format and encrypted sync will distribute the non-secret profile across
+devices.
+
+The intended workflow includes `rein mcp add` and
+`rein config import|diff|apply|status|sync`; these commands are not in the
+current `v0.1` CLI.
+
+Raw secret values are not valid desired-state fields. MCP/API credentials and
+OAuth tokens remain in the OS keychain or an explicit local secret provider;
+the profile stores only references. See
+[universal-configuration.md](universal-configuration.md).

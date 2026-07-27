@@ -69,6 +69,11 @@ strokes; use `--prim` only as a fill behind `--on-prim`.
 Fixed. These four colours mean sessions, MCP, skills, and settings everywhere they appear,
 including README diagrams and social cards.
 
+The four streams are visual categories, not a limit on roadmap capability
+types. `skills` includes portable skills and instruction assets; `settings` is
+the umbrella for hooks/loops, plugins, marketplace declarations, and other safe
+harness configuration. Credentials are never represented as a portable stream.
+
 | Stream | Top face | Front face | Side face |
 |---|---|---|---|
 | `sessions` | `#b8ff3c` | `#96d92a` | `#78b31d` |
@@ -187,7 +192,9 @@ night window with a skyline, shelf with coloured books, framed poster, rug, card
 
 Sessions, MCP, skills, settings are **always** four stacked slabs in the fixed colours,
 always in that order bottom to top. Pulled apart on the source machine, flush and closed on
-the destination machine. This motif is the brand mark of the product.
+the destination machine. This motif is the brand mark of the product. New
+configuration capabilities stay within the established `skills` or `settings`
+umbrella rather than adding more slabs.
 
 ---
 

@@ -11,6 +11,12 @@ Reinstate Phase 1 (`v0.1.0`) implements **same-vendor session sync** for:
 | Cursor | Not in Phase 1 |
 | Grok Build | Not in Phase 1 |
 
+This table covers session compatibility only. Planned universal configuration
+support will be reported separately per harness and per capability (MCP,
+skills/instructions, hooks/loops, plugins, marketplaces, safe settings). A
+supported session adapter will not imply configuration support. See
+[universal-configuration.md](universal-configuration.md).
+
 ## Environments
 
 | Environment | Claude Code | Codex CLI |

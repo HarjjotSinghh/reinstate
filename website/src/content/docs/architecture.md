@@ -49,6 +49,10 @@ protocols.
    `codex resume` already know how to read them.
 4. **Fail-safe conflicts** — never overwrite; fork and surface.
 5. **Adapter isolation** — format churn in one agent cannot break others.
+6. **Normalize configuration intent** — later configuration adapters render a
+   canonical desired-state profile into verified native harness formats.
+7. **Secrets stay local** — profiles contain references, never raw API keys,
+   OAuth tokens, cookies, or vendor credential stores.
 
 ## Pipeline stages
 
@@ -65,6 +69,23 @@ Each adapter knows:
 | Exclude globs | plugins, caches, credentials |
 
 Adapters implement a small Go interface under `internal/adapter/`.
+
+### Configuration adapters (roadmap)
+
+Session and configuration support are separate. Later configuration adapters
+will import, diff, and render supported MCP servers, skills/instructions,
+hooks/loops, plugins, marketplaces, and safe settings:
+
+```text
+native config ↔ configuration adapter ↔ Reinstate desired state
+                                             ↕ encrypted sync
+                                      another device
+```
+
+They must preserve unrelated settings, report unsupported/lossy mappings,
+preview and back up changes, write atomically, and fail closed on unverified
+schemas. See
+[Universal agent configuration](universal-configuration.md).
 
 ### 2. Path normalizer (`internal/pathmap`)
 
@@ -105,6 +126,9 @@ See [security-model.md](security-model.md). Defaults exclude:
 - Plugin caches / `node_modules` / venvs
 - Machine-local logs
 - User-defined globs
+
+Future configuration sync carries non-secret declarations and secret
+references, never vendor auth stores or whole tool directories.
 
 ## Why not CRDTs / real-time collab?
 

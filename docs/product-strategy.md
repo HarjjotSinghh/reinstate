@@ -15,7 +15,7 @@ Not only:
 Deeper:
 
 > **Coding work is fragmented across agents, sessions, projects, branches,
-> terminals, containers, machines, and configurations.**
+> terminals, containers, machines, and harness-specific configurations.**
 
 A developer with **one laptop** may still use multiple agents, many sessions,
 worktrees, WSL/containers/SSH, and agent-specific MCP/skills layouts — and still
@@ -23,6 +23,12 @@ lose the thread.
 
 Cross-device encrypted sync is a **sharp entry wedge**. It is not the whole
 product identity.
+
+The long-term environment problem is also larger than verification. Developers
+currently repeat MCP, skill, plugin, hook/loop, marketplace, and setting changes
+for every harness and device. Reinstate should provide a canonical non-secret
+desired-state profile and translate it through per-harness configuration
+adapters. Configure once; preview, reconcile, and verify everywhere.
 
 ---
 
@@ -43,7 +49,7 @@ Hierarchy of value:
 
 1. Task continuity
 2. Agent interoperability
-3. Environment restoration
+3. Environment restoration and configuration portability
 4. Device synchronization
 5. (Later) Team continuity
 
@@ -62,8 +68,8 @@ Coding agents own the **execution loop**.
 
 | Audience | How they get value |
 | -------- | ------------------ |
-| One machine, multi-agent / multi-session | Local index, search, `last`, resume, verified environment, handoffs |
-| Multi-machine | Everything above + encrypted push/pull / cloud continuity |
+| One machine, multi-agent / multi-session | Local index, search, `last`, resume, verified environment, handoffs, cross-harness configuration |
+| Multi-machine | Everything above + encrypted session and non-secret config sync / cloud continuity |
 | Teams (later) | Shared checkpoints, onboarding, audit |
 
 Do **not** contort Reinstate into a generic developer dashboard to “include
@@ -90,6 +96,8 @@ Reinstate must not win by recreating “another picker.”
 3. **Crash / reboot / context limit recovery** — `rein last`
 4. **Parallel tasks** — task-level control plane across terminals
 5. **Environment drift** — pre-resume mismatch report
+6. **Configure once** — reconcile MCP servers, skills, loops, plugins, and safe
+   settings across supported harnesses
 
 ---
 
@@ -110,7 +118,8 @@ Never claim perfect Claude ↔ Codex native transcript translation.
 ### 1. Continuity core (library / engine)
 
 Adapters, indexing, canonical schema, workspace fingerprints, checkpoints,
-encryption, sync protocol, config normalization.
+encryption, sync protocol, session transforms, and universal configuration
+normalization/rendering.
 
 ### 2. Reinstate CLI / TUI (primary)
 
@@ -122,9 +131,14 @@ rein resume …
 rein fork …
 rein handoff …
 rein sync | push | pull
+rein mcp add …
+rein config diff | apply | sync
 ```
 
 Launches sessions in **native agents by default**.
+
+The configuration commands are later-phase direction, not part of the current
+`v0.1` CLI. See [universal-configuration.md](universal-configuration.md).
 
 ### 3. Reinstate Console (optional, thin client)
 
@@ -149,9 +163,12 @@ Do not build unless usage forces a revisit:
 - Multi-agent scheduler / PR suite
 - Proprietary model router
 - Agent marketplace
+- Reinstate-owned plugin runtime
 - Full IDE / ADE replacement
 
 Integrate with Orca, Conductor, T3 Code, editors, and agents instead.
+Reinstate may synchronize declarations for third-party marketplaces; it does
+not operate a marketplace or execute the agent loop.
 
 Long-term strategic option:
 
@@ -188,7 +205,8 @@ Landing survey options:
 - Find and resume old sessions
 - Move sessions between coding agents
 - Back up sessions automatically
-- Sync MCP / skills / configuration
+- Configure MCP servers once across harnesses and devices
+- Install the same skills, loops, plugins, and marketplaces across harnesses
 - Recover after crashes or reinstalls
 - Hand work to another developer
 
@@ -207,7 +225,7 @@ substrate for:
 - Phase 2 local index / switcher
 - Phase 3 verified resume
 - Phase 4 handoffs
-- Phase 5 automated multi-device habit
+- Phase 5 universal configuration + automated multi-device habit
 - Phase 6 thin console / ACP
 
 Do not rewrite the core for marketing pivots. **Reuse primitives.**

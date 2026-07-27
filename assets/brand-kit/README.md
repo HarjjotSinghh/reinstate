@@ -76,4 +76,8 @@ Key files are mirrored to `website/public/brand/` for the marketing site
 4. Streams only as sessions / MCP / skills / settings colours.
 5. Logo geometry: Pure Tight (dual frames + `>_`).
 
+The `settings` stream also represents hooks/loops, plugins, marketplace
+declarations, and future safe harness configuration; do not add extra stream
+colours for each capability.
+
 Full system: repo root `DESIGN.md`, `PRODUCT.md`.

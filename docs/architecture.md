@@ -48,29 +48,30 @@ Product layers and non-goals: [product-strategy.md](product-strategy.md),
 ```text
 ┌─────────────────────────────────────────────────────────────┐
 │  CLI / TUI / (later) Console                                │
-│  search · inspect · resume · fork · handoff · sync          │
+│  search · inspect · resume · handoff · configure · sync     │
 └───────────────────────────┬─────────────────────────────────┘
                             │
 ┌───────────────────────────▼─────────────────────────────────┐
 │  Session index + workspace fingerprints + checkpoints       │
 └───────────────────────────┬─────────────────────────────────┘
                             │
-          ┌─────────────────┼─────────────────┐
-          ▼                 ▼                 ▼
-   ┌────────────┐   ┌──────────────┐   ┌────────────┐
-   │  Adapters  │   │  Executors   │   │ Sync / E2E │
-   │ discover   │   │ launch native│   │ encrypt    │
-   │ transform  │   │ agent / ACP  │   │ push/pull  │
-   └────────────┘   └──────────────┘   └────────────┘
+          ┌─────────────────┼─────────────────┬─────────────────┐
+          ▼                 ▼                 ▼                 ▼
+   ┌────────────┐   ┌──────────────┐   ┌────────────┐   ┌────────────┐
+   │  Session   │   │ Configuration│   │ Executors  │   │ Sync / E2E │
+   │  adapters  │   │ adapters     │   │ native/ACP │   │ push/pull  │
+   └────────────┘   └──────────────┘   └────────────┘   └────────────┘
 ```
 
 The continuity stack is the target architecture for later phases. Phase 1
 implements the adapter and encrypted-sync path. Local indexing, workspace
-fingerprints, checkpoints, executors, and ACP integration are roadmap work.
+fingerprints, checkpoints, configuration adapters, executors, and ACP
+integration are roadmap work.
 
 **Target flow before execution:** find session, load history, fingerprint
-workspace, check skills/MCP, build a portable checkpoint if needed, and choose
-the destination agent.
+workspace, check skills/MCP, optionally reconcile supported non-secret
+configuration, build a portable checkpoint if needed, and choose the
+destination agent.
 **During execution:** Claude Code / Codex / Gemini / OpenCode (or another ADE)
 own the agent loop.
 **Target flow after execution:** capture updates, update the index, and
@@ -100,6 +101,10 @@ agents. Reinstate Console may become a thin ACP **client**, not a full harness.
 6. **Adapter isolation** — format churn in one agent cannot break others.
 7. **Not an ADE** — no custom editor, terminal emulator, multi-agent scheduler,
    or model router as product spine.
+8. **Normalize configuration intent** — render desired state through verified
+   per-harness adapters; never mirror one harness's raw config into another.
+9. **Secrets stay local** — configuration profiles contain references, never
+   raw API keys, OAuth tokens, cookies, or vendor credential stores.
 
 ## Pipeline stages
 
@@ -116,6 +121,30 @@ Each adapter knows:
 | Exclude globs | plugins, caches, credentials |
 
 Adapters implement a small Go interface under `internal/adapter/`.
+
+Session adapters and configuration adapters have separate support states. A
+harness may support session discovery before it supports any configuration
+capability.
+
+### 1A. Configuration adapters (target)
+
+Later phases add a canonical desired-state profile for MCP servers,
+skills/instructions, hooks/loops, plugins, marketplaces, and safe settings.
+Configuration adapters import and render only supported fields while preserving
+unrelated native settings.
+
+```text
+native config ↔ configuration adapter ↔ Reinstate desired state
+                                             ↕ encrypted sync
+                                      another device
+```
+
+Every adapter must expose a capability matrix, preview native diffs, report
+lossy or unsupported mappings, back up changed files, write atomically, and
+fail closed on an unverified harness schema. Executable extensions also require
+source/version pinning and explicit install consent.
+
+See [universal-configuration.md](universal-configuration.md).
 
 ### 2. Path normalizer (`internal/pathmap`)
 
@@ -163,6 +192,10 @@ See [security-model.md](security-model.md). Defaults exclude:
 - Plugin caches / `node_modules` / venvs
 - Machine-local logs
 - User-defined globs
+
+Future universal configuration syncs non-secret **declarations**, not vendor
+auth stores or entire tool directories. Local OS-keychain entries may satisfy
+portable secret references, but their values do not enter the sync payload.
 
 ## Why not CRDTs / real-time collab?
 

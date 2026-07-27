@@ -10,6 +10,7 @@ Welcome — here's how to get help with **Reinstate**.
 | [Architecture](docs/architecture.md) | Understanding how sync works |
 | [Security model](docs/security-model.md) | Encryption, keys, what is never synced |
 | [Adapters](docs/adapters.md) | Agent-specific paths and resume commands |
+| [Universal configuration](docs/universal-configuration.md) | Planned MCP/skills/loops/plugins/settings portability |
 | [Comparison](docs/comparison.md) | vs native vendor sync / claude-sync / DIY |
 | [FAQ](docs/faq.md) | Common questions |
 | [Troubleshooting](docs/troubleshooting.md) | Path remap, conflicts, restore failures |
@@ -35,7 +36,8 @@ Please search existing issues and discussions before opening a new one.
 **Out of scope**
 
 - Support for Claude Code / Codex / other agents themselves (use vendor channels)
-- Features beyond Phase 1 scope (MCP/skills multi-agent sync — see ROADMAP.md)
+- Implementing features beyond Phase 1 scope (including universal agent
+  configuration); roadmap discussion is welcome
 - Debugging your application code or agent prompts
 - Hosting / cloud account billing (R2, AWS, GCS) beyond config examples
 - Real-time pair-programming or multi-writer collaboration
