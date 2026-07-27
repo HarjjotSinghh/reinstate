@@ -54,11 +54,11 @@ phase. It deliberately does not call those external actions complete.
 | 21 | Page titles | Implemented | unique/count/length generated-site checks |
 | 22 | Meta descriptions | Implemented | required content fields and generated-site uniqueness/count checks |
 | 23 | Heading structure | Implemented | single-H1 and ordered heading validation plus rendered-browser audits |
-| 24 | Images and media | Implemented | responsive WebP docs media, intrinsic sizes, lazy loading, alt/caption checks, 1200×630 route cards |
-| 25 | Core Web Vitals/performance | Implemented / external | static budgets and real Lighthouse lab gate; field CWV/INP require production data |
-| 26 | Accessibility | Implemented / manual follow-up | skip link, semantics, reduced motion, corrected contrast/underlines, Lighthouse accessibility 100 on 12 indexable templates; `manual-browser-acceptance.md` preserves keyboard, theme, mobile, screen-reader, zoom, and no-JS release evidence gates |
+| 24 | Images and media | Implemented | responsive WebP docs media, intrinsic sizes, lazy loading, alt/caption checks, and 64 unique 1200×630 route cards for all 64 generated HTML pages |
+| 25 | Core Web Vitals/performance | Implemented / external | 18-template static budgets and 16-template Lighthouse lab gate; homepage lab LCP remains a documented 2,852 ms warning; field CWV/INP require production data |
+| 26 | Accessibility | Implemented / manual follow-up | skip link, semantics, reduced motion, corrected contrast/underlines, Lighthouse accessibility 100 on 16 indexable templates, and a 390 px visualizer interaction check; `manual-browser-acceptance.md` preserves keyboard, theme, real-device, screen-reader, zoom, and no-JS release evidence gates |
 | 27 | JavaScript/rendering | Implemented | core content prerendered in HTML; static preview and Lighthouse inspect rendered output |
-| 28 | RSS | Implemented | indexable guides/blog feed with canonical URLs and metadata |
+| 28 | RSS | Implemented | combined, blog-only, and changelog feeds with canonical URLs, unique release anchors, one advertisement each in the shared head, and production-discovery checks |
 | 29 | `llms.txt` | Implemented | optional factual resource; documentation explicitly states it is not a ranking control |
 
 ## Sections 30–37: answer engine optimization
@@ -67,7 +67,7 @@ phase. It deliberately does not call those external actions complete.
 | ---: | --- | --- | --- |
 | 30 | Answer-first model | Implemented | direct-answer hero blocks across public/editorial layouts |
 | 31 | AEO page template | Implemented | guide schema/layout contracts and complete outcome guides |
-| 32 | Question inventory | Implemented | 37-question owner/status map in `question-inventory.md` |
+| 32 | Question inventory | Implemented | 41-question owner/status map in `question-inventory.md` |
 | 33 | Definition blocks | Implemented | about, FAQ, integrations, architecture, security, use cases |
 | 34 | How-to content | Implemented | visible prerequisites/steps/outputs/errors/rollback/verification and matching HowTo graph |
 | 35 | Comparison content | Implemented | sourced, dated workflow comparisons with explicit dimensions and limitations |
@@ -81,7 +81,7 @@ phase. It deliberately does not call those external actions complete.
 | 38 | ASEO model | Reference / implemented | core-index-first policy across AI-search skill and runbook |
 | 39 | Entity consistency | Implemented | centralized product data, protected claim scans, fact page, README/schema sync |
 | 40 | Authoritative fact page | Implemented | `/about/reinstate` includes release, scope, dates, license, owner, limitations, links |
-| 41 | Primary-source evidence | Implemented / release-gated | `/research`, architecture, security, compatibility JSON, immutable fixture commit, and acceptance-source links; benchmark results require reproducible new evidence |
+| 41 | Primary-source evidence | Implemented / release-gated | `/research`, encrypted snapshot v1 specification, agent-version history, architecture, security, compatibility JSON, immutable fixture commit, tagged implementation links, and acceptance-source links; benchmark results require reproducible new evidence |
 | 42 | Citation-ready claims | Implemented | direct factual answers, source-linked comparison/compatibility pages, claim guards |
 | 43 | Freshness system | Implemented | changelog/RSS/dates, sourced compatibility data, automatic 60/120-day audit |
 | 44 | Crawler accessibility | Implemented / external | crawler policy and production smoke tool; verified CDN/WAF logs require production access |
@@ -94,13 +94,13 @@ phase. It deliberately does not call those external actions complete.
 | § | Topic | Status | Evidence |
 | ---: | --- | --- | --- |
 | 48 | Content pillars | Implemented | hubs, `/roadmap`, `/research`, and `content-roadmap.md` organize continuity, agents, security, architecture, open source, and evidence |
-| 49 | First 30 opportunities | Implemented / staged | item-by-item canonical and evidence-gate register in `content-roadmap.md` |
-| 50 | Content brief template | Implemented | executable template plus Claude Code and Codex briefs |
+| 49 | First 30 opportunities | Implemented / staged | item-by-item canonical and evidence-gate register in `content-roadmap.md`, including implemented glossary, path visualizer, snapshot specification, and version tracker |
+| 50 | Content brief template | Implemented | executable template plus complete briefs for all five guides, the engineering article, CLI reference, and four linkable evidence assets |
 | 51 | Editorial quality | Implemented | schemas, contract tests, freshness/source/product-truth gates |
 | 52 | Programmatic SEO policy | Reference | no mass/thin generation; every route must pass uniqueness, value, link, and truth gates |
 | 53 | Launch distribution | Operationalized / external | `launch-distribution.md` includes owner steps plus evidence-gated RC6 GitHub release and launch-post drafts; actual publication waits for acceptance and authorization |
 | 54 | Digital PR angles | Operationalized | evidence-backed angles and prohibited generic/unsupported positioning |
-| 55 | Linkable assets | Implemented / staged | compatibility JSON, roadmap, and primary-evidence hub are live-ready; benchmark results and new research assets retain publication gates |
+| 55 | Linkable assets | Implemented / staged | compatibility JSON, glossary, fixed synthetic path visualizer, encrypted snapshot v1 specification, agent-version history, roadmap, and evidence hub are live-ready; private-path tools, benchmarks, formal standards, and unsupported research retain explicit gates |
 
 ## Sections 56–65: measurement and phases
 
@@ -133,7 +133,7 @@ phase. It deliberately does not call those external actions complete.
 
 | § | Topic | Status | Evidence |
 | ---: | --- | --- | --- |
-| 73 | Automated quality gates | Implemented | build, SEO/schema, links/fragments/orphans, sitemap, media, content, product claims, performance, Lighthouse, freshness, IndexNow |
+| 73 | Automated quality gates | Implemented | build, SEO/schema, links/fragments/orphans, sitemap, 64-card social-image parity, media, content, product claims, 18-route performance, 16-route Lighthouse, four-state visualizer browser execution, freshness, IndexNow, and production discovery |
 | 74 | Protected product claims | Implemented | centralized product tests and generated schema/metadata scans for unsupported agents/OSs/reviews |
 | 75 | Per-page checklist | Implemented | generated-site validator enforces the automatable contract; monthly template covers editorial/manual review |
 | 76 | Pre-launch checklist | Operationalized / external | operations launch record, production smoke, console/analytics/log evidence fields |

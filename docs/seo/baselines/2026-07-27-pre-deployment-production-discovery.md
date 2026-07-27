@@ -127,3 +127,23 @@ ignored `website/artifacts/discovery/` directory. Its SHA-256 digest is
 The artifact itself is intentionally not committed; a deployment operator
 should create a new immutable post-deployment record instead of treating this
 pre-deployment failure as launch evidence.
+
+## Final expanded pre-deployment smoke
+
+After the launch contract grew to include the four evidence assets and three
+dedicated feeds, the checker was rerun from commit
+`62ed0f192b9c212032f6dd36b22a9599a247b8ea` at
+`2026-07-27T17:27:06Z`. It completed 51 bounded, unauthenticated `GET`/`HEAD`
+checks in 7.59 seconds: 10 passed and 41 failed, producing 75 findings. The
+finding classes were 41 non-`200` responses, 32 launch URLs absent from the
+undeployed production sitemap, and two wrong discovery-file content types.
+Production still exposed zero sitemap URLs and zero route-specific Open Graph
+images from this branch.
+
+The mode-`0600` evidence was written to the ignored
+`website/artifacts/production-discovery/2026-07-27-production.json` file. Its
+SHA-256 digest is
+`7bdebaddfe385c5b72dde9f9d5c9db07a593d6a2cc4c9f62932f7b5ea5c97fab`.
+These results confirm only that the expanded branch is not deployed; they do
+not override the successful local build or predict post-deployment crawl,
+indexing, ranking, or citation behavior.

@@ -117,3 +117,20 @@ focus, unusable 200% reflow, missing labels, failed 404 status, or critical
 contrast failures. Record lesser defects with an owner and deadline; do not
 erase failed observations after a fix.
 
+## Local automated preflight — 2026-07-27
+
+Commit `59cecde121ce06a9ccbd7f5b93329a37082cdec1` passed the 16-route
+Lighthouse matrix in Chromium `152.0.7977.0`: SEO, accessibility, and best
+practices were 100 on every route; performance was 92–99; CLS was zero. The
+homepage retained a documented 2,852 ms lab-LCP warning.
+
+The synthetic path visualizer also passed a 390×844 Chromium interaction check
+for all four direction/adapter combinations. Output matched the fixed fixtures,
+and control changes produced zero network requests and zero cookie or browser
+storage changes.
+
+These automated results do not mark any table row above as manually passed. No
+connected interactive browser was available for the final local review, and
+the branch has not been deployed. Light/dark, keyboard-only, 200% zoom, no-JS,
+assistive-technology, and real macOS/Windows browser evidence therefore remain
+explicit launch gates.
