@@ -23,19 +23,26 @@ function indexableHtml({
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="${canonical}">
     <meta property="og:site_name" content="Reinstate">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="website">
     <meta property="og:title" content="${title}">
     <meta property="og:description" content="${description}">
     <meta property="og:url" content="${canonical}">
     <meta property="og:image" content="${image}">
+    <meta property="og:image:secure_url" content="${image}">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="Reinstate session continuity">
+    <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="${title}">
     <meta name="twitter:description" content="${description}">
     <meta name="twitter:image" content="${image}">
     <meta name="twitter:image:alt" content="Reinstate session continuity">
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","operatingSystem":["macOS","Windows"]}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","@id":"${SITE}/#software","name":"Reinstate","url":"${SITE}/","description":"Encrypted coding-agent session sync.","applicationCategory":"DeveloperApplication","operatingSystem":["macOS","Windows"],"softwareVersion":"v0.1.0-rc.6","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@id":"${SITE}/#maintainer"},"license":"https://www.apache.org/licenses/LICENSE-2.0"}</script>
     ${extraJsonLd}
   </head>
-  <body><h1>Continue coding-agent work anywhere</h1><svg><title>Decorative continuity diagram</title></svg><img src="/diagram.png" alt="Session continuity diagram" width="1200" height="630" loading="lazy"></body>
+  <body><h1>Continue coding-agent work anywhere</h1><h2>What is <code>rein</code> vs <code>reinstate</code>?</h2><svg><title>Decorative continuity diagram</title></svg><img src="/diagram.png" alt="Session continuity diagram" width="1200" height="630" loading="lazy"></body>
 </html>`;
 }
 
@@ -101,12 +108,30 @@ test('accepts a complete build and reports what it checked', async (t) => {
   const root = await validFixture();
   t.after(() => rm(root, { recursive: true, force: true }));
 
+  await writeFixture(
+    root,
+    'faq/index.html',
+    indexableHtml({
+      canonical: `${SITE}/faq`,
+      extraJsonLd:
+        `<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","@id":"${SITE}/faq#faq","url":"${SITE}/faq","mainEntity":[{"@type":"Question","name":"What is rein vs reinstate?","acceptedAnswer":{"@type":"Answer","text":"They are aliases for the same binary."}}]}</script>`,
+      image: `${SITE}/social/faq.png`,
+      title: 'Frequently asked questions',
+    }),
+  );
+  await writeFixture(root, 'social/faq.png', pngHeader());
+  await writeFixture(
+    root,
+    'sitemap.xml',
+    `<?xml version="1.0"?><urlset><url><loc>${SITE}/</loc></url><url><loc>${SITE}/faq</loc></url></urlset>`,
+  );
+
   const result = await auditSeo(root);
 
   assert.deepEqual(result.errors, []);
   assert.match(
     formatReport(result),
-    /SEO validation passed: 1 indexable page, 2 generated HTML pages, 2 route-specific social cards, and 1 sitemap URL checked\./,
+    /SEO validation passed: 2 indexable pages, 3 generated HTML pages, 3 route-specific social cards, and 2 sitemap URLs checked\./,
   );
 });
 
@@ -128,12 +153,16 @@ test('detects metadata, structured-data, crawler, sitemap, and image regressions
     '<script type="application/ld+json">{"@type":"Thing",}</script>';
   const unsupportedJsonLd =
     '<script type="application/ld+json">{"@type":"SoftwareApplication","operatingSystem":"Linux","description":"Supports Gemini CLI","review":[]}</script>';
+  const semanticJsonLd =
+    `<script type="application/ld+json">{"@context":"https://schema.org","@graph":[` +
+    `{"@type":"TechArticle","@id":"relative-id","headline":"Invisible schema headline","description":"Broken fixture","url":"/relative","dateModified":"not-a-date","image":{"@type":"ImageObject","url":"/image.png"},"author":{"@id":"${SITE}/#maintainer"},"mainEntityOfPage":"/relative"},` +
+    `{"@type":"Thing","@id":"relative-id"}]}</script>`;
 
   await writeFixture(
     root,
     'index.html',
     indexableHtml({
-      extraJsonLd: `${invalidJsonLd}${unsupportedJsonLd}`,
+      extraJsonLd: `${invalidJsonLd}${unsupportedJsonLd}${semanticJsonLd}`,
     })
       .replace(
         '<meta name="description" content="Sync coding-agent sessions across devices.">',
@@ -187,9 +216,14 @@ Sitemap: ${SITE}/sitemap.xml
     'IMAGE_DIMENSION_MISSING',
     'IMAGE_LOADING_MISSING',
     'JSONLD_INVALID',
+    'JSONLD_DATE_INVALID',
+    'JSONLD_ID_DUPLICATE',
+    'JSONLD_REQUIRED_FIELD',
     'JSONLD_UNSUPPORTED_AGENT',
     'JSONLD_UNSUPPORTED_OS',
+    'JSONLD_URL_INVALID',
     'JSONLD_UNVERIFIED_REVIEW',
+    'JSONLD_VISIBLE_MISMATCH',
     'PREVIEW_INDEXABLE',
     'ROBOTS_AI_CRAWLER_MISSING',
     'SITEMAP_EXCLUDED_ROUTE',

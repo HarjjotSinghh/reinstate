@@ -41,16 +41,107 @@ const UNSUPPORTED_OPERATING_SYSTEMS = [
 
 const SOCIAL_FIELDS = {
   'og:site_name': { attribute: 'property', expected: 'Reinstate' },
+  'og:locale': { attribute: 'property', expected: 'en_US' },
+  'og:type': { attribute: 'property' },
   'og:title': { attribute: 'property', match: 'title' },
   'og:description': { attribute: 'property', match: 'description' },
   'og:url': { attribute: 'property', match: 'canonical' },
   'og:image': { attribute: 'property', absoluteUrl: true },
+  'og:image:secure_url': { attribute: 'property', absoluteUrl: true },
+  'og:image:type': { attribute: 'property', expected: 'image/png' },
+  'og:image:width': { attribute: 'property', expected: '1200' },
+  'og:image:height': { attribute: 'property', expected: '630' },
   'og:image:alt': { attribute: 'property' },
+  'twitter:card': { attribute: 'name', expected: 'summary_large_image' },
   'twitter:title': { attribute: 'name', match: 'title' },
   'twitter:description': { attribute: 'name', match: 'description' },
   'twitter:image': { attribute: 'name', absoluteUrl: true },
   'twitter:image:alt': { attribute: 'name' },
 };
+
+const REQUIRED_SCHEMA_FIELDS = {
+  Answer: ['text'],
+  BlogPosting: [
+    '@id',
+    'headline',
+    'description',
+    'url',
+    'datePublished',
+    'dateModified',
+    'image',
+    'author',
+    'publisher',
+    'mainEntityOfPage',
+  ],
+  BreadcrumbList: ['itemListElement'],
+  FAQPage: ['@id', 'url', 'mainEntity'],
+  HowTo: ['@id', 'name', 'description', 'step'],
+  HowToStep: ['name', 'text'],
+  ImageObject: ['url', 'width', 'height'],
+  ListItem: ['position', 'name', 'item'],
+  Offer: ['price', 'priceCurrency'],
+  Person: ['@id', 'name', 'url'],
+  Question: ['name', 'acceptedAnswer'],
+  SoftwareApplication: [
+    '@id',
+    'name',
+    'url',
+    'description',
+    'applicationCategory',
+    'operatingSystem',
+    'softwareVersion',
+    'isAccessibleForFree',
+    'offers',
+    'author',
+    'license',
+  ],
+  SoftwareSourceCode: [
+    '@id',
+    'name',
+    'description',
+    'codeRepository',
+    'programmingLanguage',
+    'license',
+    'author',
+  ],
+  TechArticle: [
+    '@id',
+    'headline',
+    'description',
+    'url',
+    'dateModified',
+    'image',
+    'author',
+    'mainEntityOfPage',
+  ],
+  WebPage: [
+    '@id',
+    'url',
+    'name',
+    'description',
+    'primaryImageOfPage',
+    'isPartOf',
+    'inLanguage',
+  ],
+  WebSite: ['@id', 'url', 'name', 'description', 'publisher', 'inLanguage'],
+};
+
+const SCHEMA_URL_FIELDS = new Set([
+  '@id',
+  'codeRepository',
+  'downloadUrl',
+  'item',
+  'license',
+  'mainEntityOfPage',
+  'softwareHelp',
+  'url',
+]);
+
+const SCHEMA_DATE_FIELDS = new Set([
+  'dateCreated',
+  'dateModified',
+  'datePublished',
+]);
 
 function decodeHtml(value) {
   const named = {
@@ -78,6 +169,10 @@ function decodeHtml(value) {
 
 function cleanText(value) {
   return decodeHtml(value).replace(/\s+/g, ' ').trim();
+}
+
+function cleanVisibleText(value) {
+  return cleanText(value).replace(/\s+([,.;:!?])/g, '$1');
 }
 
 function parseAttributes(tag) {
@@ -206,10 +301,77 @@ function addError(errors, code, file, message, fix) {
   errors.push({ code, file, message, fix });
 }
 
-function inspectStructuredData(value, context, errors, location = '$') {
+function schemaTypes(value) {
+  const type = value?.['@type'];
+  return Array.isArray(type) ? type : typeof type === 'string' ? [type] : [];
+}
+
+function schemaValuePresent(value) {
+  if (value === null || value === undefined) {
+    return false;
+  }
+  if (typeof value === 'string') {
+    return value.trim().length > 0;
+  }
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
+  return true;
+}
+
+function inspectSchemaContracts(
+  value,
+  context,
+  errors,
+  declaredIds,
+  location,
+) {
+  for (const type of schemaTypes(value)) {
+    for (const field of REQUIRED_SCHEMA_FIELDS[type] ?? []) {
+      if (!schemaValuePresent(value[field])) {
+        addError(
+          errors,
+          'JSONLD_REQUIRED_FIELD',
+          context,
+          `JSON-LD ${location} declares ${type} without a non-empty ${field} property.`,
+          `Add truthful ${field} data that matches visible content, or remove the ${type} node.`,
+        );
+      }
+    }
+  }
+
+  if (schemaTypes(value).length && typeof value['@id'] === 'string') {
+    const id = value['@id'];
+    if (declaredIds.has(id)) {
+      addError(
+        errors,
+        'JSONLD_ID_DUPLICATE',
+        context,
+        `JSON-LD ${location} redeclares @id "${id}" already used at ${declaredIds.get(id)}.`,
+        'Declare each entity @id once and reference it elsewhere with an @id-only object.',
+      );
+    } else {
+      declaredIds.set(id, location);
+    }
+  }
+}
+
+function inspectStructuredData(
+  value,
+  context,
+  errors,
+  declaredIds,
+  location = '$',
+) {
   if (Array.isArray(value)) {
     value.forEach((item, index) =>
-      inspectStructuredData(item, context, errors, `${location}[${index}]`),
+      inspectStructuredData(
+        item,
+        context,
+        errors,
+        declaredIds,
+        `${location}[${index}]`,
+      ),
     );
     return;
   }
@@ -218,9 +380,47 @@ function inspectStructuredData(value, context, errors, location = '$') {
     return;
   }
 
+  inspectSchemaContracts(value, context, errors, declaredIds, location);
+
   for (const [key, child] of Object.entries(value)) {
     const childLocation = `${location}.${key}`;
     const normalizedKey = key.toLowerCase();
+
+    if (
+      SCHEMA_URL_FIELDS.has(key) &&
+      typeof child === 'string' &&
+      child.trim()
+    ) {
+      try {
+        const url = new URL(child);
+        if (url.protocol !== 'https:') {
+          throw new Error('not HTTPS');
+        }
+      } catch {
+        addError(
+          errors,
+          'JSONLD_URL_INVALID',
+          context,
+          `JSON-LD ${childLocation} must be an absolute HTTPS URL; found ${JSON.stringify(child)}.`,
+          'Use a canonical absolute HTTPS URL for schema entity and relationship fields.',
+        );
+      }
+    }
+
+    if (
+      SCHEMA_DATE_FIELDS.has(key) &&
+      (typeof child !== 'string' ||
+        !Number.isFinite(Date.parse(child)) ||
+        !/^\d{4}-\d{2}-\d{2}T/.test(child))
+    ) {
+      addError(
+        errors,
+        'JSONLD_DATE_INVALID',
+        context,
+        `JSON-LD ${childLocation} is not a valid ISO date-time: ${JSON.stringify(child)}.`,
+        'Serialize dates as valid ISO 8601 date-time strings.',
+      );
+    }
 
     if (normalizedKey === 'aggregaterating' || normalizedKey === 'review') {
       addError(
@@ -263,7 +463,13 @@ function inspectStructuredData(value, context, errors, location = '$') {
       }
     }
 
-    inspectStructuredData(child, context, errors, childLocation);
+    inspectStructuredData(
+      child,
+      context,
+      errors,
+      declaredIds,
+      childLocation,
+    );
   }
 }
 
@@ -319,9 +525,62 @@ function inspectProductClaims(value, context, errors) {
   }
 }
 
+function inspectSchemaVisibility(value, visibleText, context, errors, location = '$') {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) =>
+      inspectSchemaVisibility(
+        item,
+        visibleText,
+        context,
+        errors,
+        `${location}[${index}]`,
+      ),
+    );
+    return;
+  }
+  if (!value || typeof value !== 'object') {
+    return;
+  }
+
+  for (const type of schemaTypes(value)) {
+    const visibleField =
+      type === 'Question'
+        ? 'name'
+        : ['BlogPosting', 'TechArticle'].includes(type)
+          ? 'headline'
+          : null;
+    const visibleValue = visibleField
+      ? cleanVisibleText(String(value[visibleField] ?? ''))
+      : '';
+    if (visibleValue && !visibleText.includes(visibleValue)) {
+      addError(
+        errors,
+        'JSONLD_VISIBLE_MISMATCH',
+        context,
+        `JSON-LD ${location}.${visibleField} for ${type} is not present in visible page text: ${JSON.stringify(visibleValue)}.`,
+        'Render the same question/headline visibly or remove the mismatched schema node.',
+      );
+    }
+  }
+
+  for (const [key, child] of Object.entries(value)) {
+    inspectSchemaVisibility(
+      child,
+      visibleText,
+      context,
+      errors,
+      `${location}.${key}`,
+    );
+  }
+}
+
 function inspectJsonLd(html, context, errors) {
   const scriptPattern = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi;
   let scriptNumber = 0;
+  const declaredIds = new Map();
+  const visibleText = cleanVisibleText(
+    withoutEmbeddedContent(html).replace(/<[^>]+>/g, ' '),
+  );
 
   for (const match of html.matchAll(scriptPattern)) {
     const attributes = parseAttributes(`<script ${match[1]}>`);
@@ -344,8 +603,18 @@ function inspectJsonLd(html, context, errors) {
 
     try {
       const data = JSON.parse(source);
-      inspectStructuredData(data, context, errors);
+      if (data['@context'] !== 'https://schema.org') {
+        addError(
+          errors,
+          'JSONLD_CONTEXT_INVALID',
+          context,
+          `JSON-LD script ${scriptNumber} has @context ${JSON.stringify(data['@context'])}; expected "https://schema.org".`,
+          'Use the canonical Schema.org HTTPS context on each generated graph.',
+        );
+      }
+      inspectStructuredData(data, context, errors, declaredIds);
       inspectProductClaims(data, context, errors);
+      inspectSchemaVisibility(data, visibleText, context, errors);
     } catch (error) {
       addError(
         errors,
@@ -422,6 +691,39 @@ function validateSocialMetadata(markup, context, values, errors) {
           `Use an absolute image URL such as ${SITE_ORIGIN}/brand/og.png.`,
         );
       }
+    }
+  }
+
+  if (
+    socialValues['og:type'] &&
+    !['article', 'website'].includes(socialValues['og:type'])
+  ) {
+    addError(
+      errors,
+      'SOCIAL_META_VALUE',
+      context,
+      `og:type is "${socialValues['og:type']}"; expected "website" or "article".`,
+      'Use website for product/hub pages and article only for genuine visible articles.',
+    );
+  }
+
+  for (const [left, right] of [
+    ['og:image', 'og:image:secure_url'],
+    ['og:image', 'twitter:image'],
+    ['og:image:alt', 'twitter:image:alt'],
+  ]) {
+    if (
+      socialValues[left] &&
+      socialValues[right] &&
+      socialValues[left] !== socialValues[right]
+    ) {
+      addError(
+        errors,
+        'SOCIAL_META_MISMATCH',
+        context,
+        `${right} does not match ${left}.`,
+        `Render ${right} from the same route-specific social-card value as ${left}.`,
+      );
     }
   }
 
