@@ -95,6 +95,18 @@ jobs:
         working-directory: website
         run: npm run check:freshness
 
+      - name: Run rendered-browser accessibility and SEO smoke tests
+        working-directory: website
+        run: npm run check:lighthouse
+
+      - name: Upload rendered-browser reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: lighthouse-reports
+          path: website/artifacts/lighthouse
+          if-no-files-found: warn
+
       - name: Verify public installer assets
         working-directory: website
         run: |

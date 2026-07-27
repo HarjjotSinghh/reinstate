@@ -6,6 +6,8 @@ import SeoHead from '../components/SeoHead.astro';
 import JsonLd from '../components/JsonLd.astro';
 import Analytics from '../components/Analytics.astro';
 import { product } from '../data/product';
+import questrialLatin from '@fontsource/questrial/files/questrial-latin-400-normal.woff2?url';
+import geistLatin from '@fontsource-variable/geist/files/geist-latin-wght-normal.woff2?url';
 
 interface Props {
   title?: string;
@@ -79,6 +81,20 @@ const bingSiteVerification = import.meta.env.PUBLIC_BING_SITE_VERIFICATION;
     {/* Single SVG icon only — a parallel favicon.ico wins in some browsers and never swaps with theme. */}
     <link id="favicon" rel="icon" type="image/svg+xml" href="/favicon-light.svg" />
     <link rel="apple-touch-icon" href="/favicon-dark.svg" />
+    <link
+      rel="preload"
+      href={questrialLatin}
+      as="font"
+      type="font/woff2"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="preload"
+      href={geistLatin}
+      as="font"
+      type="font/woff2"
+      crossorigin="anonymous"
+    />
 
     {/* Light is default. Only apply dark when explicitly stored. Favicon follows theme. */}
     <script is:inline>
