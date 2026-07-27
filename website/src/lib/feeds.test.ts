@@ -5,15 +5,16 @@ import { releaseAnchor, releaseHistory } from '../data/releases';
 
 describe('RSS discovery', () => {
   it('advertises combined, blog, and changelog feeds in the shared head', async () => {
-    const layout = await readFile(
-      new URL('../layouts/BaseLayout.astro', import.meta.url),
-      'utf8',
-    );
+    const [layout, seoHead] = await Promise.all([
+      readFile(new URL('../layouts/BaseLayout.astro', import.meta.url), 'utf8'),
+      readFile(new URL('../components/SeoHead.astro', import.meta.url), 'utf8'),
+    ]);
 
     for (const feed of ['/rss.xml', '/blog/rss.xml', '/changelog/rss.xml']) {
       expect(layout, feed).toContain(`href="${feed}"`);
     }
     expect(layout.match(/type="application\/rss\+xml"/g)).toHaveLength(3);
+    expect(seoHead).not.toContain('application/rss+xml');
   });
 
   it('keeps the changelog feed grounded in canonical release history', async () => {
