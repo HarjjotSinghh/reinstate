@@ -158,6 +158,22 @@ export const DEFAULT_ROUTE_DEFINITIONS = [
       path: '/compatibility',
       label: 'Compatibility matrix',
     },
+    {
+      path: '/compatibility/agent-version-history',
+      label: 'Compatibility version history',
+    },
+    {
+      path: '/glossary',
+      label: 'Terminology glossary',
+    },
+    {
+      path: '/research/encrypted-snapshot-format-v1',
+      label: 'Snapshot format reference',
+    },
+    {
+      path: '/tools/path-mapping-visualizer',
+      label: 'Path-mapping visualizer',
+    },
   ].map(({ path, label }) => ({
     path,
     label,

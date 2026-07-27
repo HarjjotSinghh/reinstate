@@ -35,6 +35,10 @@ test('covers every materially distinct production page template', () => {
       '/compare/reinstate-vs-manual-session-copying',
       '/use-cases/work-and-personal-computers',
       '/compatibility',
+      '/compatibility/agent-version-history',
+      '/glossary',
+      '/research/encrypted-snapshot-format-v1',
+      '/tools/path-mapping-visualizer',
       '/404',
     ],
   );
