@@ -1,0 +1,153 @@
+---
+import PublicContentLayout from '../../layouts/PublicContentLayout.astro';
+import compatibility from '../../data/compatibility.json';
+import { agentVersionHistory } from '../../data/agent-version-history';
+
+export const prerender = true;
+
+const title = 'Claude Code and Codex Version Support History';
+const description =
+  'Track the evidence-backed Claude Code and Codex CLI version ranges supported by each Reinstate release candidate, including fail-closed compatibility changes.';
+
+const displayDate = (date: string) =>
+  new Intl.DateTimeFormat('en', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(`${date}T00:00:00Z`));
+---
+
+<PublicContentLayout
+  {title}
+  {description}
+  path="/compatibility/agent-version-history"
+  eyebrow="Compatibility history"
+  answer="Reinstate RC6 currently accepts stable Claude Code versions 2.1.219–2.1.220 and Codex CLI versions 0.133.0–0.145.0. Those inclusive ranges were documented in RC3 and did not change in RC4, RC5, or RC6; later candidates changed path portability and setup validation instead."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Compatibility', path: '/compatibility' },
+    {
+      name: 'Agent-version history',
+      path: '/compatibility/agent-version-history',
+    },
+  ]}
+  article={true}
+  tags={['Claude Code versions', 'Codex CLI versions', 'compatibility history']}
+>
+  <h2 id="current-ranges">Current tested stable ranges</h2>
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">Agent</th>
+          <th scope="col">Inclusive range</th>
+          <th scope="col">Resume mode</th>
+          <th scope="col">Evidence reviewed</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          compatibility.agents.map((agent) => (
+            <tr>
+              <td><a href={agent.integrationPath}>{agent.name}</a></td>
+              <td>
+                <code>{agent.minimumTestedVersion}</code>–<code>{agent.maximumTestedVersion}</code>
+              </td>
+              <td>{agent.resumeMode}</td>
+              <td>
+                <time datetime={agent.lastTested}>{displayDate(agent.lastTested)}</time>
+                <br />
+                <a href={agent.source}>Immutable test source</a>
+              </td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+  <p>
+    The matrix is rendered from the same committed compatibility data as
+    <a href="/compatibility">the public compatibility page</a>. Ranges cover stable
+    three-component versions only. A prerelease, malformed version, or version below or above the
+    inclusive endpoints is not silently accepted.
+  </p>
+
+  <h2 id="outside-range">What happens outside a tested range</h2>
+  <p>
+    A recognizable installed agent outside the tested range is <code>UNTESTED</code>.
+    <code>rein setup check</code> exits with compatibility code <code>5</code>, and the Phase 1
+    CLI blocks session export and restore. There is no public unsafe override in the current CLI.
+    <code>UNSUPPORTED</code> and <code>NOT_INSTALLED</code> also prevent mutation.
+  </p>
+  <p>
+    This source-level gate is necessary but does not certify every operating system. Native
+    Windows, macOS amd64, WSL2, and the complete RC6 two-device matrix retain separate physical
+    acceptance evidence on the <a href="/compatibility">current matrix</a>.
+  </p>
+
+  <h2 id="release-tracker">Release-by-release compatibility tracker</h2>
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">Reinstate release</th>
+          <th scope="col">Date</th>
+          <th scope="col">Agent-version range</th>
+          <th scope="col">Related compatibility change</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          agentVersionHistory.map((entry) => (
+            <tr>
+              <td><a href={entry.source}>{entry.version}</a></td>
+              <td><time datetime={entry.date}>{entry.date}</time></td>
+              <td>{entry.rangeChange}</td>
+              <td>{entry.compatibilityChange}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+  <p>
+    “No change documented” is intentional. It means the tagged changelog does not claim a range
+    change; it does not reconstruct private test history or guess what an earlier binary accepted.
+    RC1 and RC2 do not publish exact historical endpoints in the current release evidence, so this
+    tracker leaves them unstated.
+  </p>
+
+  <h2 id="evidence-rules">How a range changes</h2>
+  <ol class="pc-steps">
+    <li>A vendor version is exercised against deterministic synthetic adapter fixtures.</li>
+    <li>Discovery, structural path handling, export, restore, exclusions, and failure behavior are reviewed.</li>
+    <li>The adapter constants and tests change together.</li>
+    <li><code>compatibility.json</code>, documentation, and release notes cite the exact evidence.</li>
+    <li>Physical platform results remain separately qualified until their acceptance rows pass.</li>
+  </ol>
+  <p>
+    A new vendor release is not supported merely because its version number is close to the
+    current range. The range expands only after evidence is committed and released.
+  </p>
+
+  <h2 id="upgrade-checklist">Before upgrading an agent</h2>
+  <ul>
+    <li>Check this tracker and the current compatibility matrix.</li>
+    <li>Keep the existing agent and Reinstate installers or another recovery path.</li>
+    <li>Run <code>rein setup check</code> before any push or pull.</li>
+    <li>Use a synthetic, non-sensitive session for a newly accepted version.</li>
+    <li>Report the exact agent version, Reinstate version, operating system, and redacted failure.</li>
+  </ul>
+
+  <section class="pc-related" aria-labelledby="related-heading">
+    <h2 id="related-heading">Compatibility sources</h2>
+    <nav aria-label="Related pages">
+      <a href="/compatibility">Current compatibility matrix</a>
+      <a href="/changelog">Reinstate release notes</a>
+      <a href="/integrations/claude-code">Claude Code integration</a>
+      <a href="/integrations/codex">Codex integration</a>
+      <a href="/docs/troubleshooting">Troubleshooting</a>
+    </nav>
+  </section>
+</PublicContentLayout>

@@ -1,0 +1,161 @@
+---
+import PublicContentLayout from '../layouts/PublicContentLayout.astro';
+
+export const prerender = true;
+
+const title = 'Reinstate Terminology: Session Sync and Continuity Glossary';
+const description =
+  'Define Reinstate profiles, snapshots, encrypted manifests, canonical project IDs, structural paths, native resume, portable handoffs, and compatibility states.';
+---
+
+<PublicContentLayout
+  {title}
+  {description}
+  path="/glossary"
+  eyebrow="Terminology"
+  answer="Reinstate uses precise terms for the identity, encryption, path-mapping, and compatibility boundaries of coding-agent session continuity. This glossary defines the current v0.1.0-rc.6 implementation and labels later roadmap concepts so a profile is not mistaken for an account, or native resume for cross-agent translation."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Glossary', path: '/glossary' },
+  ]}
+  tags={['Reinstate terminology', 'session sync glossary', 'coding-agent continuity']}
+>
+  <h2 id="sync-objects">Current sync objects</h2>
+  <dl class="pc-facts">
+    <div id="profile">
+      <dt>Profile</dt>
+      <dd>
+        A sync identity shared by deliberately configured devices. Its non-secret
+        <code>profile_id</code> selects one isolated remote storage prefix; it is not a hosted
+        Reinstate account and does not contain storage credentials.
+      </dd>
+    </div>
+    <div id="snapshot">
+      <dt>Snapshot</dt>
+      <dd>
+        One immutable, encrypted capture of a selected agent session. A snapshot has a UUID,
+        authenticated metadata, one adapter archive, a parent revision when one exists, and a
+        content hash checked before restore.
+      </dd>
+    </div>
+    <div id="encrypted-manifest">
+      <dt>Encrypted manifest</dt>
+      <dd>
+        The age-encrypted remote index named <code>manifest.age</code>. Its decrypted v1 JSON maps
+        each <code>agent:session</code> key to the current immutable snapshot and advances through
+        conditional writes to detect conflicts.
+      </dd>
+    </div>
+    <div id="device">
+      <dt>Device</dt>
+      <dd>
+        One independently configured Reinstate environment with its own device ID and local path
+        mappings. Native Windows and WSL2 are separate devices even when they run on one physical
+        computer.
+      </dd>
+    </div>
+  </dl>
+
+  <h2 id="path-and-resume">Path and resume terms</h2>
+  <dl class="pc-facts">
+    <div id="canonical-project-id">
+      <dt>Canonical project ID</dt>
+      <dd>
+        A stable, non-secret project identity such as <code>github.com/acme/app</code>. Every
+        device maps that same ID to its own absolute checkout path; the ID is not itself a
+        filesystem path.
+      </dd>
+    </div>
+    <div id="structural-path">
+      <dt>Structural path</dt>
+      <dd>
+        A path stored in an adapter-recognized field that participates in session or project
+        structure, such as <code>cwd</code>, <code>filePath</code>, or
+        <code>workingDirectory</code>. Reinstate does not rewrite path-shaped prose in prompts or
+        responses.
+      </dd>
+    </div>
+    <div id="portable-token">
+      <dt>Portable path token</dt>
+      <dd>
+        A normalized placeholder—<code>${'${HOME}'}</code>,
+        <code>${'${REPO:<id>}'}</code>, or <code>${'${WORK:<alias>}'}</code>—that a configured
+        destination expands through its own local paths.
+      </dd>
+    </div>
+    <div id="native-resume">
+      <dt>Native resume</dt>
+      <dd>
+        Continuing a restored session with the agent vendor that created it. In Phase 1, Claude
+        Code resumes Claude Code sessions and Codex resumes Codex sessions.
+      </dd>
+    </div>
+  </dl>
+
+  <h2 id="planned-continuity">Planned continuity term</h2>
+  <div class="pc-callout" id="portable-handoff">
+    <p>Portable handoff is not native resume.</p>
+    <p>
+      A portable handoff is a planned, explicit, lossy checkpoint for continuing work in a
+      different agent. It may carry goals, decisions, constraints, changed files, and validation
+      state, but it will not silently translate one vendor's native transcript into another
+      vendor's session format. Portable handoffs are not available in RC6.
+    </p>
+  </div>
+
+  <h2 id="compatibility-states">Compatibility states</h2>
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">State</th>
+          <th scope="col">Meaning</th>
+          <th scope="col">Mutation behavior</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr id="supported">
+          <td><code>SUPPORTED</code></td>
+          <td>The installed stable version and recognized layout are inside the tested range.</td>
+          <td>Export and restore may proceed after the other safety checks pass.</td>
+        </tr>
+        <tr id="untested">
+          <td><code>UNTESTED</code></td>
+          <td>The installation or layout is recognizable but outside current evidence.</td>
+          <td>Discovery may remain read-only; Phase 1 CLI mutations fail closed.</td>
+        </tr>
+        <tr id="unsupported">
+          <td><code>UNSUPPORTED</code></td>
+          <td>The environment, version, layout, or agent is known to be incompatible.</td>
+          <td>Export and restore stop.</td>
+        </tr>
+        <tr id="not-installed">
+          <td><code>NOT_INSTALLED</code></td>
+          <td>No local installation or expected session root was found.</td>
+          <td>No session mutation is attempted.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="current-boundary">Current versus planned</h2>
+  <p>
+    RC6 implements encrypted same-vendor session sync for the current
+    <a href="/compatibility/agent-version-history">tested Claude Code and Codex ranges</a>.
+    Universal session search, verified environment repair, portable handoffs, and universal
+    non-secret agent configuration remain later roadmap phases. See the
+    <a href="/roadmap">status-separated roadmap</a> before treating a future term as a current
+    command.
+  </p>
+
+  <section class="pc-related" aria-labelledby="related-heading">
+    <h2 id="related-heading">Use the definitions</h2>
+    <nav aria-label="Related pages">
+      <a href="/tools/path-mapping-visualizer">Path-mapping visualizer</a>
+      <a href="/research/encrypted-snapshot-format-v1">Encrypted snapshot format v1</a>
+      <a href="/compatibility">Compatibility matrix</a>
+      <a href="/about/reinstate">What is Reinstate?</a>
+      <a href="/docs/architecture">Architecture</a>
+    </nav>
+  </section>
+</PublicContentLayout>
