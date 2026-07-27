@@ -87,6 +87,10 @@ jobs:
         working-directory: website
         run: npm run check:performance
 
+      - name: Check IndexNow dry-run planning
+        working-directory: website
+        run: npm run check:indexnow
+
       - name: Verify public installer assets
         working-directory: website
         run: |

@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a privacy notice, RSS distribution, and a machine-readable security contact.
 - Add generated-site SEO, internal-link, anchor, social-image, and static
   performance regression gates to tests, CI, and production deployment checks.
+- Add reviewed IndexNow sitemap-diff planning, server-only key proof, bounded
+  batching and retries, soft-fail response logging, and non-submitting CI tests.
 
 ### Changed
 

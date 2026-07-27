@@ -45,9 +45,12 @@ The first implementation pass covers:
 - route-specific branded Open Graph images;
 - an explicit website privacy notice and security contact file;
 - RSS and `llms.txt` discovery files; and
-- generated-site SEO, internal-link, and static-performance validation in CI.
+- generated-site SEO, internal-link, and static-performance validation in CI;
+  and
+- reviewed IndexNow sitemap-diff planning, key-proof handling, rate-safe
+  soft-fail submission, and non-submitting CI validation.
 
-Search Console, Bing Webmaster Tools, production bot logs, external profile
-updates, and referral analytics require production access or account-level
-configuration and are tracked as operational follow-up work rather than
-fabricated as code-complete.
+Search Console, Bing Webmaster Tools, IndexNow key provisioning and production
+submission, production bot logs, external profile updates, and referral
+analytics require production access or account-level configuration and are
+tracked as operational follow-up work rather than fabricated as code-complete.

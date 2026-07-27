@@ -31,6 +31,12 @@ npm run build
 npm run preview
 ```
 
+`npm run preview` serves the prerendered files in `dist/client` at
+`http://127.0.0.1:4321`. It is intended for Lighthouse and release QA and does
+not execute server routes such as the waitlist API, RSS feed, or IndexNow
+key-proof endpoint. Use `npm run dev` for ordinary development and the Vercel
+local runtime when server-route parity is required.
+
 ## SEO validation
 
 Run the production-build audit locally after changing routes, metadata,
@@ -45,6 +51,23 @@ The dependency-free audit checks every generated indexable page, JSON-LD,
 canonical and title uniqueness, route-specific 1200×630 PNG social cards,
 robots crawler rules, and sitemap coverage. Failures include the generated file
 and a suggested fix. Its focused fixture tests are also included in `npm test`.
+
+## IndexNow readiness
+
+IndexNow planning is dry-run-only unless an operator supplies both a previously
+reviewed plan and `--submit`. The CI gate compares the generated sitemap with
+itself, exercises the no-change path, and never reads a key or makes a network
+request:
+
+```bash
+npm run build
+npm run check:indexnow
+```
+
+For release diffing, deletion and recanonicalization inputs, key provisioning,
+and post-deployment soft-fail submission, follow
+[`docs/seo/operations.md`](../docs/seo/operations.md#indexnow-release-procedure).
+Never pass a key on the command line or place it in a `PUBLIC_*` variable.
 
 ## Link validation
 
@@ -152,6 +175,7 @@ cd website
 npx vercel link --project reinstate-web --scope harjjot
 npx vercel env add WAITLIST_GIST_ID production   # or Turso vars
 npx vercel env add GITHUB_TOKEN production
+npx vercel env add INDEXNOW_KEY production       # optional; prompts securely
 cd ..
 
 # After the signed tag and GitHub prerelease exist:

@@ -13,6 +13,7 @@ configured or verified.
 | Public HTTP smoke tests with crawler user-agent strings | Yes | No |
 | Google Search Console domain verification and URL Inspection | No | Yes |
 | Bing Webmaster Tools verification and URL Inspection | No | Yes |
+| IndexNow diff planning, validation, proof route, and mocked submission tests | Yes | No |
 | IndexNow key provisioning and production submission | No | Yes |
 | Plausible account/site configuration and production environment values | No | Yes |
 | CDN/WAF policy inspection and verified crawler log analysis | No | Yes |
@@ -157,24 +158,143 @@ verification hook and cannot verify account ownership or submission results.
 
 ### IndexNow readiness
 
-IndexNow is not implemented or provisioned by this branch. Introduce it only
-after the content and canonical system is stable.
+The repository is ready to plan and submit IndexNow changes, but no production
+key has been provisioned and no submission has been made. Readiness does not
+mean that a search engine has accepted or indexed any URL.
 
-Readiness criteria:
+Before provisioning or changing production behavior, recheck the
+[official IndexNow protocol documentation](https://www.indexnow.org/documentation)
+and [current operational FAQ](https://www.indexnow.org/faq) for provider limits
+or response-policy changes.
 
-- [ ] An owner is assigned for the IndexNow account/key.
-- [ ] The key is stored as a deployment secret, never in Git or `PUBLIC_*`.
-- [ ] The key-location file or endpoint follows the provider's current
-      requirements.
-- [ ] Submissions use canonical production URLs only.
-- [ ] Added, meaningfully updated, deleted, or recanonicalized URLs are
-      submitted; unchanged URLs are not pinged on every deployment.
-- [ ] Submission responses are logged without exposing the key.
-- [ ] Failures are observable but do not block the production deployment.
-- [ ] A rate limit and retry policy is documented before automation.
+The implementation has these safety boundaries:
 
-Treat the playbook's [Bing and IndexNow guidance](seo-aeo-aseo-playbook.md#58-bing-and-indexnow)
-as the implementation policy.
+- plan generation is the default and never reads `INDEXNOW_KEY` or submits;
+- submissions require a separate, reviewed plan file plus the explicit
+  `--submit` flag;
+- only canonical HTTPS URLs on `reinstate.dev` are accepted;
+- the key is accepted only from the server/operator environment, never from a
+  command-line option, plan file, `PUBLIC_*` variable, or structured log;
+- a dynamic `/{key}.txt` server route returns the proof only for the exact
+  configured key and otherwise returns `404`;
+- the submitter verifies that public proof before posting any URL;
+- batches contain 100 URLs by default and never more than 1,000;
+- network errors, `429`, and `5xx` responses retry at most three times by
+  default with bounded exponential delay; `Retry-After` is honored;
+- `400`, `403`, and `422` responses are treated as permanent for that run;
+- `200` and `202` are logged as accepted by the API, not as indexed; and
+- provider or network failures are logged as soft failures and do not make the
+  submit command fail the deployment. Operators must still review the final
+  JSON result and open a follow-up when `ok` is `false`.
+
+CI runs fixture tests with mocked HTTP responses and a no-change dry run against
+the local sitemap. It has no key and cannot submit to IndexNow.
+
+### IndexNow release procedure
+
+Assign an operator before enabling submissions. That operator owns key rotation,
+plan review, response evidence, and follow-up. Store the key in the approved
+secret manager and in Vercel's server-only production environment:
+
+```sh
+cd website
+npx vercel env add INDEXNOW_KEY production
+```
+
+Generate a key of 8–128 letters, numbers, or dashes inside the approved secret
+manager. Do not paste it into Git, `.env.example`, an issue, a shell history
+entry, or a `PUBLIC_*` variable. IndexNow ownership proof is public by protocol,
+but the application deliberately does not expose a predictable key listing or
+log the proof URL.
+
+Before deployment, build the proposed release and compare its generated sitemap
+with the currently deployed sitemap:
+
+```sh
+cd website
+npm run build
+INDEXNOW_RUN_DIR="$(mktemp -d)"
+cp indexnow.changes.example.json "$INDEXNOW_RUN_DIR/changes.json"
+npm run indexnow -- \
+  --current dist/client/sitemap-index.xml \
+  --previous https://reinstate.dev/sitemap-index.xml \
+  --changes "$INDEXNOW_RUN_DIR/changes.json" \
+  --output "$INDEXNOW_RUN_DIR/plan.json"
+```
+
+Edit the temporary changes file before generating the plan. Its fields mean:
+
+```json
+{
+  "updated": ["/changelog"],
+  "deleted": ["/removed-page"],
+  "recanonicalized": [
+    {
+      "from": "/old-canonical",
+      "to": "/new-canonical"
+    }
+  ]
+}
+```
+
+`updated` URLs must exist in the new sitemap. `deleted` and
+`recanonicalized.from` URLs must not exist there.
+`recanonicalized.to` must exist there. Added URLs, removed URLs, and changed
+`lastmod` values are collected automatically. Because not every generated
+sitemap entry has a meaningful `lastmod`, declare materially revised existing
+pages under `updated`.
+
+For the first rollout only, if production has never exposed a sitemap, replace
+the `--previous` value with `indexnow.previous-empty.xml` after verifying that
+there is no previous canonical inventory to preserve. Never use the empty
+baseline for an ordinary release: it would make every current URL appear new
+and would miss removals.
+
+Review the entire secret-free plan before deployment:
+
+- `site` is exactly `https://reinstate.dev`;
+- every `urlList` item should be notified and its `reasons` are accurate;
+- removed or recanonicalized sources really return the intended `404`, `410`,
+  or redirect after deployment;
+- destinations are canonical, indexable, and present in the new sitemap;
+- `planDigest`, commit, release, reviewer, and plan path are recorded; and
+- the planned set does not contain unchanged URLs.
+
+Deploy the reviewed commit. Confirm the new sitemap, deletions, redirects, and
+destinations are live before submission. Load `INDEXNOW_KEY` into the operator
+process from the approved secret manager without echoing it, then run:
+
+```sh
+cd website
+npm run indexnow -- \
+  --plan "$INDEXNOW_RUN_DIR/plan.json" \
+  --submit
+```
+
+Plans expire after 48 hours by default. Regenerate and review an expired plan
+instead of bypassing the age check. The submitter preflights the production key
+proof and then posts to the global IndexNow endpoint. It logs timestamps, plan
+digest, batch number, URL count, attempt, response status, and final summary,
+but not the key, proof URL, request body, or provider response body.
+
+The submit process exits successfully for a provider/network soft failure so it
+can run after deployment without rolling the release back. Completion therefore
+requires inspecting the final record:
+
+- `ok: true` means all batches received HTTP `200` or `202`;
+- `ok: false, softFailed: true` requires an operator-owned follow-up;
+- a configuration, plan-integrity, stale-plan, or unsafe-URL error exits
+  nonzero and must be corrected; and
+- acceptance is not a guarantee of crawling, indexing, ranking, or AI citation.
+
+Keep the response log with the launch evidence. Retry only after diagnosing the
+status; never regenerate a broad plan merely to resend unchanged URLs. Rotate a
+compromised key in the secret manager and Vercel, redeploy the proof route, and
+verify the replacement before the next submission.
+
+Treat the playbook's
+[Bing and IndexNow guidance](seo-aeo-aseo-playbook.md#58-bing-and-indexnow) as
+the implementation policy.
 
 ## Optional Plausible analytics
 
@@ -272,6 +392,7 @@ spoofable user-agent string.
 | Robots and sitemap fetch |  |  |  | Not run |  |
 | Google property/sitemap/generative-AI setting |  |  |  | Not run |  |
 | Bing property/sitemap |  |  |  | Not run |  |
+| IndexNow plan/submission |  |  |  | Not run |  |
 | Launch URL Inspection |  |  |  | Not run |  |
 | OAI-SearchBot smoke test |  |  |  | Not run |  |
 | PerplexityBot smoke test |  |  |  | Not run |  |
