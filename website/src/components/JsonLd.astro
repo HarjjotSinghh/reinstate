@@ -1,0 +1,12 @@
+---
+import { serializeJsonLd } from '../lib/json-ld';
+
+interface Props {
+  data?: Record<string, unknown> | Record<string, unknown>[];
+}
+
+const { data = [] } = Astro.props;
+const safeJson = serializeJsonLd(data);
+---
+
+{safeJson && <script type="application/ld+json" set:html={safeJson} />}

@@ -3,18 +3,93 @@ export const prerender = true;
 
 import BaseLayout from './BaseLayout.astro';
 import { getOrderedDocs, docSlug, docTitle } from '../lib/docs';
+import { product } from '../data/product';
+import {
+  breadcrumbSchema,
+  techArticleSchema,
+  webPageSchema,
+  type SchemaNode,
+} from '../lib/schema';
 
 interface Props {
   title: string;
-  description?: string;
+  description: string;
+  path: string;
+  author?: string;
+  status?: 'current' | 'planned' | 'deprecated';
+  updatedAt: Date | string;
+  tags?: string[];
+  noindex?: boolean;
+  canonical?: string;
+  ogImage?: string;
+  ogImageAlt?: string;
+  article?: boolean;
+  extraJsonLd?: SchemaNode | SchemaNode[];
 }
 
-const { title, description } = Astro.props;
+const {
+  title,
+  description,
+  path: canonicalPath,
+  author = product.maintainer.name,
+  status = 'current',
+  updatedAt,
+  tags = [],
+  noindex = false,
+  canonical,
+  ogImage,
+  ogImageAlt,
+  article = true,
+  extraJsonLd = [],
+} = Astro.props;
 const docs = await getOrderedDocs();
 const path = Astro.url.pathname.replace(/\/$/, '') || '/docs';
+const schemaPath = canonical ? new URL(canonical).pathname.replace(/\/$/, '') || '/' : canonicalPath;
+const updatedDate = updatedAt instanceof Date ? updatedAt : new Date(updatedAt);
+const statusLabel = {
+  current: 'Current release',
+  planned: 'Planned',
+  deprecated: 'Deprecated',
+}[status];
+const isDocsIndex = canonicalPath === '/docs';
+const breadcrumbs = [
+  { name: 'Home', path: '/' },
+  { name: 'Docs', path: '/docs' },
+  ...(!isDocsIndex ? [{ name: title, path: canonicalPath }] : []),
+];
+const jsonLd = [
+  article
+    ? techArticleSchema({
+        path: schemaPath,
+        title,
+        description,
+        updatedAt: updatedDate,
+        tags,
+      })
+    : webPageSchema({
+        path: schemaPath,
+        title,
+        description,
+        updatedAt: updatedDate,
+      }),
+  breadcrumbSchema(breadcrumbs),
+  ...(Array.isArray(extraJsonLd) ? extraJsonLd : [extraJsonLd]),
+];
 ---
 
-<BaseLayout title={`${title} · Reinstate Docs`} description={description}>
+<BaseLayout
+  title={`${title} · Reinstate Docs`}
+  description={description}
+  canonical={canonical ?? canonicalPath}
+  ogImage={ogImage}
+  ogImageAlt={ogImageAlt}
+  type={article ? 'article' : 'website'}
+  noindex={noindex}
+  modifiedTime={article ? updatedDate : undefined}
+  section={article ? 'Documentation' : undefined}
+  tags={tags}
+  jsonLd={jsonLd}
+>
   <div class="shell docs">
     <aside class="side">
       <nav aria-label="Documentation">
@@ -34,11 +109,29 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/docs';
             })
           }
         </ul>
-        <a class="wait" href="/#join">Join waitlist</a>
+        <a class="wait" href="/docs/getting-started">Install Reinstate</a>
       </nav>
     </aside>
 
     <div class="body">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <ol>
+          {
+            breadcrumbs.map((item, index) => {
+              const current = index === breadcrumbs.length - 1;
+              return (
+                <li>
+                  {current ? (
+                    <span aria-current="page">{item.name}</span>
+                  ) : (
+                    <a href={item.path}>{item.name}</a>
+                  )}
+                </li>
+              );
+            })
+          }
+        </ol>
+      </nav>
       <div class="mobile-nav">
         {
           docs.map((entry) => (
@@ -47,6 +140,32 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/docs';
         }
       </div>
       <article class="prose prose-rein max-w-3xl">
+        <header class="doc-heading">
+          <h1>{title}</h1>
+          <dl class="doc-meta">
+            <div>
+              <dt>Status</dt>
+              <dd><span class:list={['status', `status-${status}`]}>{statusLabel}</span></dd>
+            </div>
+            <div>
+              <dt>Maintained by</dt>
+              <dd><a href={product.maintainer.url} rel="author">{author}</a></dd>
+            </div>
+            <div>
+              <dt>Updated</dt>
+              <dd>
+                <time datetime={updatedDate.toISOString()}>
+                  {updatedDate.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    timeZone: 'UTC',
+                  })}
+                </time>
+              </dd>
+            </div>
+          </dl>
+        </header>
         <slot />
       </article>
     </div>
@@ -113,6 +232,79 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/docs';
   .body {
     min-width: 0;
     flex: 1;
+  }
+  .breadcrumbs {
+    margin-bottom: 1rem;
+    font-size: 0.8rem;
+    color: var(--ink-3);
+  }
+  .breadcrumbs ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .breadcrumbs li {
+    display: flex;
+    align-items: center;
+  }
+  .breadcrumbs li + li::before {
+    content: '/';
+    margin-inline: 0.55rem;
+    color: var(--rule);
+  }
+  .breadcrumbs a {
+    color: var(--ink-2);
+    text-decoration: none;
+  }
+  .breadcrumbs a:hover {
+    color: var(--prim-deep);
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
+  }
+  .doc-heading {
+    margin-bottom: 1.35rem;
+  }
+  .doc-heading h1 {
+    margin-bottom: 0.45rem;
+  }
+  .doc-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem 1.25rem;
+    margin: 0;
+    color: var(--ink-3);
+    font-size: 0.8rem;
+  }
+  .doc-meta div {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .doc-meta dt {
+    font-weight: 650;
+  }
+  .doc-meta dd {
+    margin: 0;
+  }
+  .doc-meta a {
+    color: inherit;
+  }
+  .status {
+    display: inline-flex;
+    padding: 0.12rem 0.4rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    color: var(--ink-2);
+  }
+  .status-current {
+    border-color: color-mix(in srgb, var(--prim-deep) 45%, var(--rule));
+    color: var(--prim-deep);
+  }
+  .status-planned {
+    border-style: dashed;
   }
   .mobile-nav {
     display: flex;

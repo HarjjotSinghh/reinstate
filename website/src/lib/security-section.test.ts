@@ -9,8 +9,10 @@ const readSource = (path: string) =>
 const index = readSource('../pages/index.astro');
 const security = readSource('../components/landing/SecurityExploded.astro');
 const vaultArt = readSource('../components/landing/art/SecurityVaultArt.astro');
+const pipelineArt = readSource('../components/landing/art/SecurityPipelineArt.astro');
 const header = readSource('../components/Header.astro');
 const footer = readSource('../components/Footer.astro');
+const securityPage = readSource('../pages/security.astro');
 
 describe('landing-page security section', () => {
   it('is wired after the terminal proof on the continuous floor', () => {
@@ -74,11 +76,17 @@ describe('landing-page security section', () => {
     expect(vaultArt).toContain('vault-arrow');
     expect(vaultArt).toContain('--sv-stroke');
     expect(vaultArt).toContain('html.dark');
+    expect(vaultArt).toContain('<figcaption>');
+    expect(vaultArt).toContain('stored as ciphertext in your bucket');
+    expect(pipelineArt).toContain('<figcaption>');
+    expect(pipelineArt).toContain('stores only ciphertext');
   });
 
-  it('keeps nav and footer pointing at the section', () => {
-    expect(header).toContain('href="/#security"');
-    expect(footer).toContain('href="/#security"');
+  it('keeps nav and footer pointing at the authoritative security page', () => {
+    expect(header).toContain('href="/security"');
+    expect(footer).toContain('href="/security"');
+    expect(securityPage).toContain('path="/security"');
+    expect(securityPage).toContain('Reinstate Security: Local Encryption');
   });
 
   it('contains no em dash characters', () => {

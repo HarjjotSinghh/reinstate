@@ -1,4 +1,4 @@
-# Phase 1 RC6 two-agent full acceptance prompts
+# Phase 1 RC6 autonomous two-agent acceptance prompts
 
 Use these prompts only after `v0.1.0-rc.6` is published and both public
 installers install that exact release. Do not use RC5 or older homes, profiles,
@@ -6,19 +6,61 @@ passphrases, marker sessions, or reports as RC6 evidence.
 
 The
 [Phase 1 MacBook + Windows acceptance runbook](phase-1-mac-windows-acceptance.md)
-from the signed RC6 tag is the authority. These prompts split evidence
-ownership between:
+from the signed RC6 tag remains authoritative for product behavior, mandatory
+gates, and expected results. This document is an intentional automation overlay:
+where the tagged runbook assigns a command, hidden input, marker check, storage
+inspection, or evidence capture to a human, the device-owning agent performs it
+instead under the controls below. A conflict about product behavior still stops
+the run; the change of operator from human to agent does not.
 
-- Device A: Claude Code on macOS
-- Device B: Codex on native 64-bit Windows PowerShell
+The only human actions in the complete run are:
 
-Both agents must preserve `PASS`, `PARTIAL`, `FAIL`, and `NOT TESTED` honestly.
-A zero exit code is never sufficient evidence by itself. Neither agent may
-receive storage credentials, passphrases, transcript content, or ciphertext
-bytes through chat.
+1. place the same dedicated-test `R2.txt` in the home directory of each device;
+2. launch Claude Code on macOS with Prompt 1;
+3. give Claude's sanitized M1 report to Codex with Prompt 2; and
+4. pass later sanitized report revisions between the two existing agent
+   sessions in the handoff order at the end of this document.
 
-Before starting, replace `REPORT_DATE` in each prompt with the same UTC
-`YYYY-MM-DD` date. Do not replace any secret placeholder in chat.
+The human does not run commands, enter hidden values, inspect storage, choose
+sessions, approve individual test steps, or interpret evidence. Full
+bidirectional acceptance still requires report handoffs because neither agent
+may remotely operate the other physical device.
+
+Both agents preserve `PASS`, `PARTIAL`, `FAIL`, and `NOT TESTED` honestly. A
+zero exit code is never sufficient by itself.
+
+## Private `R2.txt` contract
+
+Create `R2.txt` as UTF-8 text with exactly one non-empty entry for each key:
+
+```text
+REINSTATE_S3_ENDPOINT=<HTTPS service endpoint without the bucket suffix>
+REINSTATE_S3_BUCKET=<dedicated acceptance bucket>
+REINSTATE_S3_ACCESS_KEY_ID=<dedicated acceptance access-key ID>
+REINSTATE_S3_SECRET_ACCESS_KEY=<dedicated acceptance secret key>
+REINSTATE_ENCRYPTION_PASSPHRASE=<dedicated RC6 test passphrase>
+```
+
+Values are the literal text after the first `=`; do not add shell or PowerShell
+quotes. An `=` inside a value is valid. Newlines inside values are not supported.
+The bucket credentials must be limited to the dedicated acceptance bucket and
+permit the runbook's put, get, list, and delete operations.
+
+The exact locations are:
+
+- macOS: `$HOME/R2.txt`
+- Windows: `$HOME\R2.txt`
+
+`REINSTATE_ENCRYPTION_PASSPHRASE` is a file-field name only. It must never be
+exported as an environment variable. Reinstate accepts automated passphrase
+input only through `REINSTATE_PASSPHRASE_FD`.
+
+Each agent must validate the file without printing its values: exact regular
+file, not a symlink/reparse point, no duplicate or unknown keys, endpoint and
+bucket separate, and owner-only access. It may tighten the file permissions
+without changing its contents. It must never `cat`, `Get-Content`, paste, echo,
+log, screenshot, hash for disclosure, commit, upload, or include any part of
+the file in a tool result or report.
 
 ## Prompt 1 — Claude Code on the MacBook
 
@@ -28,91 +70,122 @@ the fresh RC6 disposable project:
 ```text
 Run the complete Device A side of Reinstate Phase 1 acceptance against the
 published v0.1.0-rc.6. You are the macOS evidence owner and cross-device
-coordinator. Do not delegate this work or modify Reinstate product code.
+coordinator. Work autonomously: do not ask me to run a command, type a secret,
+inspect storage, choose a session, confirm a marker, or approve a routine test
+step. Do not delegate this work or modify Reinstate product code.
 
-Authority and repository scope:
+Authority and automation overlay:
 - Fetch origin and the signed tag v0.1.0-rc.6.
 - Read docs/testing/phase-1-mac-windows-acceptance.md from that exact tag.
-- Follow it literally. If this prompt and the tagged runbook conflict, stop and
-  report the conflict.
+- Its product gates and expected results are authoritative.
+- This prompt intentionally supersedes only its human-operation instructions:
+  you perform those operations through the private R2.txt workflow.
+- Stop and report any other conflict.
+
+Repository scope:
 - The only allowed repository change is the sanitized report:
   docs/testing/results/REPORT_DATE-macos-phase1-rc6.md
-- Use a dedicated report branch: test/phase1-rc6-macos-report.
-- Create that branch from the peeled v0.1.0-rc.6 tag commit before editing the
-  report.
-- Do not merge, tag, release, deploy, or modify a product branch.
+- Resolve REPORT_DATE yourself from the current UTC date in YYYY-MM-DD form;
+  the human does not edit the prompt or filename.
+- Use branch test/phase1-rc6-macos-report from the peeled RC6 tag commit.
+- At each handoff, commit only that report, push the existing branch, and create
+  or update one draft PR. Never merge, tag, release, deploy, or modify a product
+  branch.
+- Add R2.txt to .git/info/exclude before any report-repository mutation. Prove
+  it is untracked and absent from the staged diff without displaying its
+  contents.
+
+Secret launcher:
+- Use only the exact regular file $HOME/R2.txt described in the prompt preamble.
+- Validate its schema and owner-only mode without returning values to the
+  conversation or tool transcript.
+- Build an ephemeral local launcher outside the repository and outside both
+  agent session trees. It must parse R2.txt locally at runtime without printing
+  values.
+- For each Reinstate child process that needs storage, provide endpoint, bucket,
+  access-key ID, and secret key only in that child's environment. Do not export
+  them into the parent shell and do not place values in command arguments.
+- For each Reinstate child process that needs encryption, open an anonymous
+  pipe, write only the passphrase bytes, inherit only the read descriptor, and
+  set REINSTATE_PASSPHRASE_FD to its descriptor number in that child. Never set
+  an ordinary passphrase environment value.
+- Do not use shell tracing, command echo, verbose HTTP/auth logging, crash
+  dumps, process argument interpolation, clipboard transfer, or a temporary
+  plaintext secret file. Capture stdout/stderr only after redacting any
+  accidental occurrence of an R2.txt value in memory.
+- The launcher must support a deliberately wrong generated passphrase without
+  modifying R2.txt.
+- Remove the launcher and zero/delete any transient secret buffers when the
+  final report is complete. Do not delete or alter R2.txt.
 
 Hard safety rules:
-- Never ask for, read, paste, echo, log, screenshot, hash for disclosure, or
-  commit an endpoint, bucket, access key, secret key, encryption passphrase,
-  keyring value, agent auth file, transcript, downloaded .age object, or
-  ciphertext bytes.
-- I will enter credentials and passphrases only into Reinstate's visible hidden
-  prompts in my private terminal.
-- Before telling me to type a passphrase, confirm the Reinstate process is
-  visibly waiting for hidden input. If it has returned to the shell, tell me to
-  type nothing and rerun the command.
+- Never disclose or commit an endpoint, bucket, access key, secret key,
+  passphrase, keyring value, agent auth file, transcript, downloaded .age
+  object, ciphertext bytes, username, absolute local path, or remote object
+  name.
+- You may inspect only exact acceptance-marker occurrence counts and exact
+  challenge-response output needed to prove same-vendor resume. Never print or
+  summarize surrounding transcript prose.
 - Never use --all. Operate only on the two fresh RC6 marker session IDs.
-- Never delete or mutate an RC5-or-older home, profile prefix, report, real agent
-  session, unrelated project, or unrelated remote object.
+- Never delete or mutate an older home/profile, real agent session, unrelated
+  project, or unrelated remote object.
 - Never manually move a restored vendor file to manufacture discovery.
-- Keep normal approvals and sandboxing enabled.
-- Record only non-secret IDs, counts, booleans, versions, exit codes, redacted
+- Keep normal sandboxing and safety controls enabled. Never use a
+  permission-bypass flag. If the harness cannot perform an authorized,
+  narrowly scoped step without a human approval, record it as BLOCKED/NOT
+  TESTED; do not ask the human to perform it and do not bypass the control.
+- Report only non-secret IDs, counts, booleans, versions, exit codes, redacted
   paths, and sanitized error text.
 
 Isolation:
 - REINSTATE_HOME=$HOME/.reinstate-phase1-acceptance-rc6
 - project=$HOME/Projects/reinstate-phase1-acceptance-rc6
 - canonical project ID=local/reinstate-phase1-acceptance-rc6
-- Create a brand-new RC6 profile and passphrase.
-- Stop if either isolated path already exists or if any RC5-or-older state would be
-  reused.
-- Export the exact isolated `REINSTATE_HOME` before invoking the setup prompt.
-  Require Prompt version 6 to detect, report, preserve, and use that value for
-  every bootstrap, setup, init, push, pull, status, and doctor command. Stop if
-  any agent unsets, redirects, or silently falls back from it.
+- Stop if either isolated path already exists or any older acceptance state
+  would be reused.
+- Export the exact isolated REINSTATE_HOME before invoking Prompt version 6.
+  Preserve it for every command; stop if any nested workflow unsets, redirects,
+  or silently falls back from it.
 
 Milestone M0 — release and environment:
 1. Verify v0.1.0-rc.6 is an annotated signed tag reachable from origin/main.
    Record its commit without changing trust configuration to force a pass.
-2. Verify https://reinstate.dev/install.sh returns HTTP 200, pins only rc.6,
-   verifies both checksum layers, installs 0.1.0-rc.6, and uses no elevation.
-   Exercise the replacement prompt interactively if an older version exists.
-   Run the installer again and prove idempotency and one PATH entry.
-3. Record macOS version/architecture, native shell, Claude Code version, Codex
-   CLI version, Git version, and `rein version --json`.
-4. Create the isolated project and home exactly as the tagged runbook says.
-   Prove pre-init `rein setup check` exits 3 with `config missing`; device and
-   both adapters must not falsely pass an unsupported state.
+2. Verify the live install.sh returns 200, pins only rc.6, verifies both
+   checksum layers, installs 0.1.0-rc.6 without elevation, and is idempotent
+   with one PATH entry. Handle the documented replacement prompt yourself.
+3. Record macOS/architecture, native shell, Claude Code, Codex CLI, Git, and
+   rein version --json.
+4. Create the isolated project/home and prove pre-init rein setup check exits 3
+   with config missing; device and adapters must not falsely pass.
 
 Milestone M1 — source sessions, init safety, push, and ciphertext:
-5. Create one harmless fresh session per agent with these exact markers:
+5. Use the installed vendors' documented non-interactive invocation/resume
+   modes to create and cleanly close one harmless fresh session per agent:
    - REINSTATE-PHASE1-RC6-MAC-CLAUDE-A1
    - REINSTATE-PHASE1-RC6-MAC-CODEX-A1
-6. Identify both fresh IDs through before/after metadata. If Claude writes
-   sibling candidates, use marker occurrence counts only to select the
-   completed reply; do not read or print prose. If Codex does not persist a new
-   rollout, stop instead of reusing an older session.
-7. Execute the exact tagged docs/prompts/claude-code-setup.md (Prompt version
-   6) as an end user. Have me run the private `rein init` with the canonical
-   mapping. I will enter storage coordinates, credentials, and passphrase
-   privately.
-8. Require post-init `rein setup check` and `rein doctor --self-test` to exit 0.
-9. Re-run the same `rein init --project ...` without `--force`. Before and
-   after, have my private terminal calculate config.toml and state.json hashes
-   and count backup sets. Record only equality/count booleans. Require safety
-   exit 7, unchanged config/state, and no new backup. This is the physical F1
-   default-refusal regression; do not run `--force` against the real RC6 home.
-10. Dry-run and push only the selected Claude and Codex IDs. Each dry-run must
-    say `would push`, not `pushed`. `rein status` with the correct passphrase
-    must show exactly two sessions and both selected IDs.
-11. Through the normal R2/S3 UI, have me inspect only the fresh RC6 prefix.
-    Confirm no auth, token, credential, .env, or plaintext-shaped object exists.
-    Have me download one .age snapshot privately, test both exact A1 marker
-    strings for absence, and run `file`. Record only two marker-absence
-    booleans and a ciphertext/non-text boolean. Delete the local download
-    privately after the check.
-12. Emit this sanitized handoff, update the report, and pause:
+   Identify both IDs from before/after metadata and exact marker counts only.
+   If Codex does not persist a new rollout, fail instead of reusing an old one.
+6. Execute the outcomes of the exact tagged Claude Code setup prompt, Prompt
+   version 6, as an autonomous end user. The R2.txt overlay replaces its
+   questions and human-run/private-input steps; all other safety and validation
+   requirements remain.
+7. Run first-device init non-interactively with the canonical mapping. Use
+   endpoint/bucket/credentials through the child-only provider and --yes.
+   Record the generated non-secret fresh RC6 profile_id.
+8. Require rein setup check and rein doctor --self-test to exit 0.
+9. Prove physical F1 default refusal: rerun the same init without --force.
+   Calculate config.toml/state.json equality and backup counts yourself,
+   recording booleans only. Require exit 7, unchanged files, and no new backup.
+10. Dry-run and push only the selected Claude and Codex IDs through the
+    launcher. Each dry-run must say would push, not pushed. Correct-passphrase
+    status must show exactly those two sessions.
+11. Inspect only the fresh profile prefix through a scoped S3-compatible API
+    client using R2.txt at runtime. Do not use a human UI. Confirm no auth,
+    token, credential, .env, or plaintext-shaped object exists. Download one
+    .age snapshot to an owner-only temporary file, test both exact A1 marker
+    byte strings for absence without printing bytes, verify it is ciphertext/
+    non-text, and delete only the local download.
+12. Write the complete sanitized report with row-level evidence and this block:
 
 MAC-RC6-M1
 release=v0.1.0-rc.6
@@ -127,193 +200,176 @@ ciphertext_marker_absence=PASS|FAIL
 mac_report_path=docs/testing/results/REPORT_DATE-macos-phase1-rc6.md
 END-MAC-RC6-M1
 
-Do not include endpoint, bucket, credentials, passphrase, transcript text,
-username, absolute local paths, or object names in the handoff.
+Commit/push only the report, open or update the draft PR, return the report
+content/path/commit/PR, and pause. The human will transfer only this sanitized
+report to Windows.
 
-Milestone M2 — after WINDOWS-RC6-W1-PASS:
-13. Resume the exact Claude session on Mac and add:
-    REINSTATE-PHASE1-RC6-MAC-CLAUDE-A2
-    Exit Claude, dry-run, and push only that ID.
-14. Send MAC-RC6-M2-READY with the Claude session ID plus the new non-secret
-    snapshot and revision IDs. Pause until Windows completes W2.
+Milestone M2 — after a WINDOWS-RC6-W1-PASS report:
+13. Validate the entire supplied Windows report and handoff without accepting
+    secrets or transcript prose.
+14. Autonomously resume the exact Claude session on Mac, add only
+    REINSTATE-PHASE1-RC6-MAC-CLAUDE-A2, exit it, then dry-run and push only that
+    ID. Update/commit/push the Mac report with MAC-RC6-M2-READY containing the
+    session ID and new non-secret snapshot/revision IDs. Pause for the report
+    transfer to Windows.
 
-Milestone M3 — Windows-to-Mac updates:
-15. After WINDOWS-RC6-W2-READY, close both Mac agents. Dry-run and pull each
-    exact ID. Each dry-run must say `would pull`, never `pulled`.
-16. Prove each existing target received a timestamped backup. Resume the exact
-    Claude and Codex IDs and have me visually confirm:
+Milestone M3 — after a WINDOWS-RC6-W2-READY report:
+15. Close both Mac agents. Dry-run and pull each exact ID; dry-runs must say
+    would pull, never pulled.
+16. Prove each existing target received a timestamped backup. Resume each exact
+    session non-interactively and verify only these exact markers:
     - REINSTATE-PHASE1-RC6-WINDOWS-CLAUDE-B1
     - REINSTATE-PHASE1-RC6-WINDOWS-CODEX-B1
-    Do not copy transcript content.
-17. Without modifying either restored session, push each exact ID and require
-    `pushed 0 snapshot(s), skipped 1 unchanged`; prove the remote revision did
-    not change.
-18. Send MAC-RC6-M3-PASS with sanitized backup, resume, no-op, and revision
-    evidence. Pause for conflict coordination.
+17. Without modifying either restored session, push each ID and require
+    pushed 0 snapshot(s), skipped 1 unchanged; prove revisions did not change.
+18. Update/commit/push the report with MAC-RC6-M3-PASS containing sanitized
+    backup, resume, no-op, and revision evidence. Pause for transfer to Windows.
 
 Milestone M4 — divergence and final verdict:
-19. Follow tagged runbook section 17 exactly. Add only the Mac conflict marker
-    when Windows confirms its unpushed local divergence is ready. Push only the
-    selected Claude ID. Do not resolve the Windows conflict yourself.
-20. Receive the Windows keep-both result. Reconcile every mandatory section 19
-    row across both reports. An unexecuted row is NOT TESTED, never PASS.
-21. Commit only the report:
-    test(acceptance): record macOS phase 1 rc6 results
-    Push the report branch and open a draft PR. Do not merge it.
+19. After Windows reports its unpushed local divergence ready, resume the exact
+    Mac Claude ID, add only REINSTATE-PHASE1-RC6-CONFLICT-MAC, exit, and push
+    only that ID. Update/commit/push the report with the remote revision and
+    pause for Windows keep-both.
+20. Consume the final Windows report. Reconcile every mandatory section 19 row
+    across both reports. Independently query the RC6 publication PR/check run
+    and verify every automated-integrity gate in tagged runbook section 18 is
+    green. Unexecuted evidence is NOT TESTED, never PASS.
+21. Finalize, commit, and push only the Mac report. Keep the PR draft/unmerged.
 
-Final response contract:
-- verdict and `x PASS / y PARTIAL / z FAIL / n NOT TESTED`;
+Every milestone response must include:
+- current verdict and x PASS / y PARTIAL / z FAIL / n NOT TESTED;
 - whether all 21 mandatory rows passed;
 - report path, report commit, branch, and draft PR;
-- release-blocking and non-blocking findings;
+- release-blocking/non-blocking findings;
 - exact failed command, exit code, and sanitized output for every failure;
-- confirmation that no product code or secrets were committed.
+- confirmation that no product code, R2.txt data, or other secret was committed.
 
-Phase 1 is PASS only if all mandatory rows have real-device evidence. A
-successful `rein pull` line alone proves nothing without exact-ID vendor
-discovery, same-vendor resume, destination mapping, backups, no-op behavior,
-conflict safety, and ciphertext-only evidence.
+Phase 1 is PASS only if all 21 mandatory rows have real-device evidence.
 ```
 
 ## Prompt 2 — Codex on the Windows PC
 
-Start this prompt only after providing Codex the sanitized `MAC-RC6-M1`
-handoff:
+Start this prompt only after giving Codex the complete sanitized Mac M1 report:
 
 ```text
 Run the complete Device B side of Reinstate Phase 1 acceptance against the
-published v0.1.0-rc.6. You are the native-Windows evidence owner. Do not
+published v0.1.0-rc.6. You are the native-Windows evidence owner. Work
+autonomously: do not ask me to run a command, type a secret, inspect storage,
+choose a session, confirm a marker, or approve a routine test step. Do not
 delegate this work or modify Reinstate product code.
 
-Authority and repository scope:
+Authority and automation overlay:
 - Fetch origin and the signed tag v0.1.0-rc.6.
 - Read docs/testing/phase-1-mac-windows-acceptance.md from that exact tag.
-- Follow it literally. Stop and report any conflict with this prompt.
+- Its product gates and expected results are authoritative.
+- This prompt intentionally supersedes only its human-operation instructions:
+  you perform those operations through the private R2.txt workflow.
+- Stop and report any other conflict.
+
+Repository scope:
 - The only allowed repository change is the sanitized report:
   docs/testing/results/REPORT_DATE-windows-phase1-rc6.md
-- Use a dedicated report branch: test/phase1-rc6-windows-report.
-- Create that branch from the peeled v0.1.0-rc.6 tag commit before editing the
-  report.
-- Do not merge, tag, release, deploy, or modify a product branch.
+- Resolve REPORT_DATE yourself from the current UTC date in YYYY-MM-DD form;
+  the human does not edit the prompt or filename.
+- Use branch test/phase1-rc6-windows-report from the peeled RC6 tag commit.
+- At each handoff, commit only that report, push the existing branch, and create
+  or update one draft PR. Never merge, tag, release, deploy, or modify a product
+  branch.
+- Add R2.txt to .git/info/exclude before any report-repository mutation. Prove
+  it is untracked and absent from the staged diff without displaying its
+  contents.
 
-Required sanitized Mac handoff:
-- release=v0.1.0-rc.6
-- profile_id=<fresh RC6 UUID>
-- canonical_project_id=local/reinstate-phase1-acceptance-rc6
-- claude_session_id=<fresh RC6 UUID>
-- codex_session_id=<fresh RC6 UUID>
-- remote_session_count=2
-- f1_default_refusal=PASS
-- ciphertext_marker_absence=PASS
+Required Mac report:
+- It contains MAC-RC6-M1 for v0.1.0-rc.6, the fresh profile/session IDs,
+  canonical project ID local/reinstate-phase1-acceptance-rc6, exactly two
+  remote sessions, f1_default_refusal=PASS, and
+  ciphertext_marker_absence=PASS.
+- Stop if it references older state, lacks physical ciphertext evidence, or
+  contains a secret. Do not repeat any suspected secret.
 
-Stop if the handoff is incomplete, references RC5 or older, reuses an old profile,
-reports anything except exactly two sessions, or lacks a real ciphertext-byte
-check.
+Secret launcher:
+- Use only the exact regular file $HOME\R2.txt described in the prompt preamble.
+- Validate its schema, reparse-point status, and owner-only ACL without
+  returning values to the conversation or tool transcript.
+- Build an ephemeral local launcher outside the repository and both agent
+  session trees. Parse R2.txt locally at runtime without printing values.
+- Supply endpoint, bucket, access-key ID, and secret key only in each Reinstate
+  child's environment. Do not persist them in the parent PowerShell or place
+  them in command arguments.
+- For encryption input, create an inheritable anonymous pipe/handle, write only
+  the passphrase bytes, pass only its read handle to the Reinstate child, and
+  set REINSTATE_PASSPHRASE_FD to that numeric inherited handle. Never set an
+  ordinary passphrase environment value.
+- Do not use command echo, transcription, verbose auth logging, process
+  argument interpolation, clipboard transfer, or a temporary plaintext secret
+  file. Redact captured output in memory before reporting.
+- Support a deliberately wrong generated passphrase without changing R2.txt.
+- Remove the launcher and transient secret buffers after the final report. Do
+  not delete or alter R2.txt.
 
 Hard safety rules:
-- Use native 64-bit Windows PowerShell 5.1 or newer, not WSL.
-- Never ask for, read, paste, echo, log, screenshot, hash for disclosure, or
-  commit an endpoint, bucket, access key, secret key, passphrase, keyring value,
-  agent auth file, transcript, .age object, or ciphertext bytes.
-- I will enter credentials and passphrases only into Reinstate's visible hidden
-  prompts in my private PowerShell.
-- Before telling me to type a passphrase, confirm Reinstate is visibly waiting
-  for hidden input. If it returned to PowerShell, tell me to type nothing and
-  rerun the command.
-- Never use --all. Never reuse or delete RC5-or-older state or unrelated sessions.
-- Never manually move a restored Claude file to manufacture discovery.
-- Keep normal approvals and sandboxing enabled.
-- Record only non-secret IDs, counts, booleans, versions, exits, redacted paths,
-  and sanitized error text.
+- Use native 64-bit Windows PowerShell 5.1 or newer, never WSL.
+- Never disclose or commit an endpoint, bucket, access key, secret key,
+  passphrase, keyring value, auth file, transcript, .age object, ciphertext
+  bytes, username, absolute local path, or remote object name.
+- Inspect only exact acceptance-marker counts and exact challenge-response
+  output. Never print or summarize surrounding transcript prose.
+- Never use --all, reuse/delete older state, mutate unrelated sessions, or move
+  a restored Claude file to manufacture discovery.
+- Keep normal sandboxing and safety controls enabled. Never use a
+  permission-bypass flag. If a step requires human approval, record it
+  BLOCKED/NOT TESTED instead of asking the human or bypassing the control.
+- Report only non-secret IDs, counts, booleans, versions, exits, redacted paths,
+  and sanitized errors.
 
 Isolation:
 - REINSTATE_HOME=$HOME\.reinstate-phase1-acceptance-rc6
 - project=$HOME\Projects\reinstate-phase1-acceptance-rc6
 - canonical project ID=local/reinstate-phase1-acceptance-rc6
-- Stop if either path exists before the run.
-- Set the exact isolated `REINSTATE_HOME` before invoking the setup prompt.
-  Require Prompt version 6 to detect, report, preserve, and use it for every
-  command. Stop if the agent unsets, redirects, or silently falls back from it.
+- Stop if either isolated path already exists or older state would be reused.
+- Set and preserve the exact isolated REINSTATE_HOME before invoking Prompt
+  version 6 or any Reinstate command.
 
 Milestone W0 — release and environment:
 1. Verify v0.1.0-rc.6 is an annotated signed tag reachable from origin/main.
-2. Verify https://reinstate.dev/install.ps1 returns HTTP 200, pins only rc.6,
-   passes both checksum layers, installs 0.1.0-rc.6 without elevation, and is
-   idempotent. Prove the normalized user PATH contains the install directory
-   exactly once.
-3. Record Windows edition/build/architecture, native PowerShell identity,
-   Claude Code version, Codex CLI version, Git version, and
-   `rein version --json`.
-4. Create the fresh isolated project/home. Require pre-init
-   `rein setup check` exit 3 with `config missing`; device and both adapters
-   must not falsely pass unsupported states.
+2. Verify live install.ps1 returns 200, pins only rc.6, verifies both checksum
+   layers, installs 0.1.0-rc.6 without elevation, is idempotent, and produces
+   exactly one normalized user PATH entry.
+3. Record Windows/build/architecture, native PowerShell, Claude Code, Codex CLI,
+   Git, and rein version --json.
+4. Create the fresh isolated project/home and prove pre-init setup check exits 3
+   with config missing without false adapter passes.
 
-Milestone W1 — F3/F1/F2 regressions and Mac-to-Windows restore:
-5. Physical F3 negative test: execute the exact tagged
-   docs/prompts/codex-setup.md (Prompt version 6), but first have me privately
-   attempt `rein init --profile-id PROFILE_ID --project ...` with the endpoint
-   mistakenly containing the bucket suffix while also entering the bucket in
-   its own prompt. The agent must not see either value. Require auth/storage
-   exit 4, an actionable remote-profile-not-found error, and no config.toml.
-   Record booleans only.
-6. Repeat init with the correct endpoint-only value, same profile ID, canonical
-   mapping, and Windows absolute project path. Require success. Then require
-   `rein setup check` and `rein doctor --self-test` to pass.
-7. Physical F1 default-refusal test: re-run the same correct init without
-   `--force`. Have my private PowerShell compare config.toml/state.json hashes
-   and backup counts before/after. Require safety exit 7, unchanged files, and
-   no new backup. Never run `--force` against the real RC6 home.
-8. Wrong-passphrase test: run `rein status`, wait for the visible hidden prompt,
-   and have me enter one deliberately wrong passphrase. Require exit 4,
-   decryption refusal, zero restore targets, zero backups, and no mutation.
-9. Correct-passphrase status must show exactly the two selected sessions.
-10. Physical F2 strict-status test in a disposable copied home:
-    Have me run the following in private PowerShell after replacing only the
-    non-secret UUID placeholder. Do not request or print the copied config:
-
-    $ProfileId = "<PROFILE_ID_FROM_MAC_HANDOFF>"
-    $RealHome = $env:REINSTATE_HOME
-    $ProbeHome = "$RealHome-missing-manifest-probe"
-    if (Test-Path -LiteralPath $ProbeHome) {
-      throw "probe home already exists; stop to preserve evidence isolation"
-    }
-    Copy-Item -Recurse -LiteralPath $RealHome -Destination $ProbeHome
-    $ProbeConfig = Join-Path $ProbeHome "config.toml"
-    $OldPrefix = "profiles/$ProfileId"
-    $NewPrefix = "profiles/$ProfileId-missing-manifest-probe"
-    $ConfigText = [IO.File]::ReadAllText($ProbeConfig)
-    if ([regex]::Matches($ConfigText, [regex]::Escape($OldPrefix)).Count -ne 1) {
-      throw "expected exactly one profile prefix; stop"
-    }
-    $Utf8NoBom = [Text.UTF8Encoding]::new($false)
-    [IO.File]::WriteAllText(
-      $ProbeConfig,
-      $ConfigText.Replace($OldPrefix, $NewPrefix),
-      $Utf8NoBom
-    )
-    try {
-      $env:REINSTATE_HOME = $ProbeHome
-      rein status
-      $ProbeExit = $LASTEXITCODE
-    } finally {
-      $env:REINSTATE_HOME = $RealHome
-    }
-    "probe_exit=$ProbeExit"
-
-    Enter the correct passphrase only at the visible hidden prompt. Require
-    exit 4 and `remote profile manifest not found`, not exit 0 with zero
-    sessions. Prove the real RC6 home and remote objects are unchanged. Keep
-    the probe home until both reports are reviewed; do not delete it mid-run.
-11. With Claude Code and Codex closed, dry-run then pull only the exact Codex
-    and Claude IDs. Dry-runs must say `would pull`, never `pulled`, and create
-    no target or backup.
-12. Prove Codex with `codex resume CODEX_SESSION_ID`; do not use picker search.
-13. From the mapped Windows project, prove Claude normal discovery contains the
-    exact selected ID, then run `claude --resume CLAUDE_SESSION_ID`. The
-    restored target must be under the Windows project directory key, never the
-    Mac source slug. Do not relocate it.
-14. Have me visually confirm both A1 markers without copying transcript text.
-15. Emit this sanitized handoff and pause:
+Milestone W1 — F3/F1/F2 and Mac-to-Windows restore:
+5. Execute the outcomes of the exact tagged Codex setup prompt, Prompt version
+   6, as an autonomous end user. The R2.txt overlay replaces its questions and
+   human-run/private-input steps; all other requirements remain.
+6. Physical F3: derive a bad endpoint in memory by appending the bucket suffix
+   while also retaining the separate bucket. Run additional-device init
+   non-interactively with --yes, the Mac profile ID, and canonical mapping.
+   Require exit 4, actionable remote-profile-not-found/storage failure, and no
+   config.toml. Never print either coordinate.
+7. Repeat with the correct endpoint-only value and same profile/mapping.
+   Require success, setup check exit 0, and doctor --self-test exit 0.
+8. Physical F1: rerun correct init without --force; record config/state
+   equality and backup-count booleans. Require exit 7, no mutation, no backup.
+9. Wrong-passphrase test: run status through the launcher with a generated
+   wrong phrase. Require exit 4, decryption refusal, zero restore targets, zero
+   backups, and no mutation. Correct-passphrase status must show exactly two
+   selected sessions.
+10. Physical F2 in a disposable copied home: replace exactly the profile prefix
+    with a missing-manifest probe suffix, run status with the correct phrase,
+    and require exit 4 plus remote profile manifest not found, never exit 0
+    with zero sessions. Prove the real home and remote objects unchanged.
+11. With both agents closed, dry-run then pull only the exact Codex and Claude
+    IDs. Dry-runs must say would pull, never pulled, and create no target/backup.
+12. Prove exact-ID Codex discovery/resume with codex resume CODEX_SESSION_ID.
+13. From the mapped Windows project, prove normal Claude discovery contains the
+    exact ID, then use claude --resume CLAUDE_SESSION_ID. The restored target
+    must use the Windows project key, never the Mac source slug.
+14. Verify only the two exact A1 markers/challenge responses, without printing
+    transcript prose.
+15. Write the complete sanitized report with row-level evidence and:
 
 WINDOWS-RC6-W1-PASS
 release=v0.1.0-rc.6
@@ -330,62 +386,68 @@ codex_resume=PASS
 windows_report_path=docs/testing/results/REPORT_DATE-windows-phase1-rc6.md
 END-WINDOWS-RC6-W1
 
-On any failure, emit WINDOWS-RC6-W1-FAIL with the exact command, exit code, and
-sanitized output, then stop before W2.
+On failure, use WINDOWS-RC6-W1-FAIL with exact command, exit, and sanitized
+output, and do not execute dependent gates. Commit/push only the report, open or
+update the draft PR, return the report content/path/commit/PR, and pause for the
+human to transfer that report to Mac.
 
-Milestone W2 — active-agent safety, backup, and Windows updates:
-16. After MAC-RC6-M2-READY, leave Claude open on the selected session and run
-    the A2 pull from separate PowerShell. Require safety exit 7, no mutation,
-    and no backup.
-17. Close every Claude process, dry-run/pull again, prove one timestamped backup
-    of the previous target exists, and have me visually confirm A2.
-18. Resume exact selected sessions and add:
+Milestone W2 — after a MAC-RC6-M2-READY report:
+16. Validate the supplied Mac report, then leave Claude open on the exact
+    restored session and run pull for that ID separately. Require active-agent
+    safety exit 7 and no mutation.
+17. Close Claude autonomously, dry-run and pull the same ID, prove a timestamped
+    backup, then resume and verify only
+    REINSTATE-PHASE1-RC6-MAC-CLAUDE-A2.
+18. Resume the exact Windows Claude and Codex sessions, add only:
     - REINSTATE-PHASE1-RC6-WINDOWS-CLAUDE-B1
     - REINSTATE-PHASE1-RC6-WINDOWS-CODEX-B1
-    Exit both agents, dry-run, and push only the exact two IDs.
-19. Send WINDOWS-RC6-W2-READY with only non-secret session, snapshot, revision,
-    backup, and count evidence. Pause for MAC-RC6-M3-PASS.
+    Exit both, dry-run, and push only those IDs.
+19. Update/commit/push the report with WINDOWS-RC6-W2-READY containing
+    sanitized active-refusal, backup, A2-resume, and remote revision evidence.
+    Pause for transfer to Mac.
 
-Milestone W3 — conflict and final report:
-20. Create Windows-local Claude divergence with:
-    REINSTATE-PHASE1-RC6-CONFLICT-WINDOWS
-    Do not push it. Tell the Mac executor to add/push its conflict marker.
-21. Pull the exact Claude ID. Require conflict exit 6, one conflict record, no
-    overwrite, and no premature backup.
-22. Inspect conflict metadata only. Resolve with --keep-both and prove:
-    - the original Windows-local session remains intact;
-    - a distinct vendor-safe remote fork exists under the mapped Windows
-      project;
-    - both exact IDs are discoverable and resumable; and
-    - the conflict disappears only after successful resolution.
-23. Reconcile every mandatory section 19 row with the Mac report. Unexecuted
+Milestone W3 — conflict and final verdict:
+20. After MAC-RC6-M3-PASS, resume the exact Windows Claude session, add only
+    REINSTATE-PHASE1-RC6-CONFLICT-WINDOWS, exit, and do not push. Update the
+    report with WINDOWS-RC6-CONFLICT-LOCAL-READY and pause for transfer to Mac.
+21. After the Mac report confirms its conflict-marker push, close Claude and
+    pull the exact ID. Require exit 6, one recorded conflict, and no overwrite.
+22. Inspect sanitized conflict metadata, resolve it with --keep-both, prove the
+    local branch and distinct vendor-safe remote fork both resume with their
+    expected exact marker, and prove the active conflict list is empty.
+23. Reconcile all mandatory section 19 rows with the latest Mac report.
+    Independently query the RC6 publication PR/check run and verify every
+    automated-integrity gate in tagged runbook section 18 is green. Unexecuted
     evidence is NOT TESTED, never PASS.
-24. Commit only the report:
-    test(acceptance): record Windows phase 1 rc6 results
-    Push the report branch and open a draft PR. Do not merge it.
+24. Finalize, commit, and push only the Windows report. Keep the PR
+    draft/unmerged and return it for Mac's final reconciliation.
 
-Final response contract:
-- verdict and `x PASS / y PARTIAL / z FAIL / n NOT TESTED`;
+Every milestone response must include:
+- current verdict and x PASS / y PARTIAL / z FAIL / n NOT TESTED;
 - whether all 21 mandatory rows passed;
 - report path, commit, branch, and draft PR;
-- release-blocking and non-blocking findings;
-- exact failed command, exit, and sanitized output for every failure;
-- confirmation that no product code or secrets were committed.
+- release-blocking/non-blocking findings;
+- exact failed command, exit code, and sanitized output for every failure;
+- confirmation that no product code, R2.txt data, or other secret was committed.
 
 Phase 1 is PASS only when all 21 rows have real evidence across both devices.
-Correct exit codes are necessary, not sufficient. Claude and Codex must
-discover and resume the exact restored sessions from the mapped Windows project.
 ```
 
 ## Handoff order
 
-1. Mac completes `MAC-RC6-M1`.
-2. Windows completes `WINDOWS-RC6-W1-PASS`.
-3. Mac completes `MAC-RC6-M2-READY`.
-4. Windows completes `WINDOWS-RC6-W2-READY`.
-5. Mac completes `MAC-RC6-M3-PASS` and prepares the remote conflict branch.
-6. Windows completes keep-both; both agents reconcile all 21 rows and finalize
-   their reports.
+Every handoff is the complete latest sanitized report, not an ad-hoc chat note.
+The receiving agent validates the embedded milestone block before continuing.
 
-Do not clean up the fresh profile, remote prefix, or disposable paths until both
-reports have been reviewed and Phase 1 has been signed off.
+1. Mac produces `MAC-RC6-M1`; human passes the Mac report to Windows.
+2. Windows produces `WINDOWS-RC6-W1-PASS`; human passes the Windows report to Mac.
+3. Mac produces `MAC-RC6-M2-READY`; human passes the Mac report to Windows.
+4. Windows produces `WINDOWS-RC6-W2-READY`; human passes the Windows report to Mac.
+5. Mac produces `MAC-RC6-M3-PASS`; human passes the Mac report to Windows.
+6. Windows produces `WINDOWS-RC6-CONFLICT-LOCAL-READY`; human passes the Windows
+   report to Mac.
+7. Mac records the conflict-marker push; human passes the Mac report to Windows.
+8. Windows completes keep-both and its final report; human passes that report
+   to Mac for final reconciliation.
+
+Do not clean up the fresh profile, remote prefix, R2.txt, or disposable paths
+until both reports have been reviewed and Phase 1 has been signed off.

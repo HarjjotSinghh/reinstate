@@ -1,0 +1,138 @@
+---
+import PublicContentLayout from '../../layouts/PublicContentLayout.astro';
+
+export const prerender = true;
+
+const title = 'Sync Coding-Agent Sessions Between Work and Personal Computers';
+const description =
+  'Use Reinstate to move encrypted Claude Code or Codex sessions between configured work and personal computers through your own S3-compatible storage.';
+---
+
+<PublicContentLayout
+  {title}
+  {description}
+  path="/use-cases/work-and-personal-computers"
+  eyebrow="Use case · Two computers"
+  answer="Reinstate can move a supported Claude Code or Codex session from a work computer to a personal computer through an encrypted artifact in your own S3-compatible bucket. The source computer can be offline when you pull, but both devices need the same profile, passphrase, project identity, and compatible agent version."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Use cases', path: '/use-cases' },
+    { name: 'Work and personal computers', path: '/use-cases/work-and-personal-computers' },
+  ]}
+  tags={['work computer', 'personal computer', 'multi-device session sync', 'coding agents']}
+>
+  <h2 id="what-moves">What moves between the computers</h2>
+  <p>
+    Reinstate moves selected, supported vendor-native session artifacts plus the structural
+    metadata needed to restore them. It maps the same repository to a canonical project ID so each
+    device can keep a different local checkout path.
+  </p>
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">Moves</th>
+          <th scope="col">Does not move</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Supported Claude Code or Codex session artifacts</td>
+          <td>Your Git repository or working tree</td>
+        </tr>
+        <tr>
+          <td>Portable structural project-path identity</td>
+          <td>Vendor login credentials, API keys, or OAuth tokens</td>
+        </tr>
+        <tr>
+          <td>Encrypted manifest and artifact metadata</td>
+          <td>MCP servers, skills, plugins, hooks, or settings</td>
+        </tr>
+        <tr>
+          <td>Conflict-safe version of remote session state</td>
+          <td>A translated transcript for a different agent vendor</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="prerequisites">Prerequisites on both devices</h2>
+  <ul>
+    <li>The same pinned Reinstate release candidate.</li>
+    <li>A supported version of the same agent vendor.</li>
+    <li>A local checkout of the project at a configured path.</li>
+    <li>Access to the same S3-compatible bucket and profile prefix.</li>
+    <li>The same long encryption passphrase, entered locally.</li>
+    <li>Separate vendor login on each device; Reinstate does not transfer it.</li>
+  </ul>
+
+  <div class="pc-callout">
+    <p>Confirm your employer's policy first.</p>
+    <p>
+      “Bring your own storage” does not override employment, source-code, data-residency, or device
+      policy. Do not move work transcripts to a personal account or computer unless you are
+      explicitly authorized to do so. Use an approved bucket and device boundary.
+    </p>
+  </div>
+
+  <h2 id="workflow">A safe two-computer workflow</h2>
+  <ol class="pc-steps">
+    <li>
+      Install RC6 on both machines and confirm the checksum-verified version with
+      <code>rein version --json</code>.
+    </li>
+    <li>
+      On the first device, initialize a profile and map the repository to a stable project ID such
+      as <code>github.com/acme/app</code>.
+    </li>
+    <li>
+      Join the same profile on the second device, mapping that project ID to its own absolute local
+      checkout.
+    </li>
+    <li>
+      Push the selected same-vendor sessions on the source. Encryption happens before the bucket
+      receives the artifact.
+    </li>
+    <li>
+      On the destination, run status and
+      <code>rein pull --agent AGENT --session SESSION_ID --dry-run</code>; inspect the exact
+      planned restore.
+    </li>
+    <li>
+      Pull, confirm the native destination path, then resume using Claude Code or Codex itself.
+    </li>
+  </ol>
+
+  <h2 id="offline-source">Does the source computer need to stay on?</h2>
+  <p>
+    No. Reinstate uses stored synchronization rather than a live remote-control relay. After a push
+    succeeds, the encrypted artifact is in your bucket and the source computer can be offline when
+    the destination pulls it. The destination still needs network access to the bucket.
+  </p>
+
+  <h2 id="conflicts">What if both computers changed the session?</h2>
+  <p>
+    Do not expect silent last-writer-wins behavior. Reinstate records divergent state as a conflict
+    and can create conflict forks instead of overwriting one side without notice. Pull dry-runs and
+    the conflict commands are part of the normal workflow, not only recovery tools.
+  </p>
+
+  <h2 id="limitations">Current limitations</h2>
+  <ul>
+    <li>RC6 is not background automatic sync; pushes and pulls are explicit.</li>
+    <li>Source code still moves through Git or your existing repository workflow.</li>
+    <li>Vendor authentication must be configured independently on each device.</li>
+    <li>Phase 1 supports only tested Claude Code and Codex same-vendor sessions.</li>
+    <li>Stable native-device and two-device release certification is still in progress.</li>
+  </ul>
+
+  <section class="pc-related" aria-labelledby="related-heading">
+    <h2 id="related-heading">Set up two computers</h2>
+    <nav aria-label="Related pages">
+      <a href="/docs/getting-started">Exact setup commands</a>
+      <a href="/use-cases/macos-and-windows">macOS and Windows paths</a>
+      <a href="/security">Passphrase and storage security</a>
+      <a href="/compatibility">Check agent versions</a>
+    </nav>
+  </section>
+</PublicContentLayout>

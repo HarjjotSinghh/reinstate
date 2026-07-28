@@ -521,6 +521,10 @@ const platformBolts = [
         </g>
       </g>
     </svg>
+    <figcaption>
+      One session package is captured on-device, sealed locally with age,
+      stored as ciphertext in your bucket, and restored on the second device.
+    </figcaption>
   </figure>
 </div>
 
@@ -587,6 +591,15 @@ const platformBolts = [
     overflow: visible;
     pointer-events: none;
     font-family: var(--font-mono);
+  }
+  .sec-vault-scene figcaption {
+    max-width: 70rem;
+    margin: 0.45rem auto 0;
+    color: var(--sv-caption);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    line-height: 1.55;
+    text-align: center;
   }
 
   .sec-vault-art .unit polygon {

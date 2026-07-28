@@ -1,0 +1,6 @@
+Contact: https://github.com/HarjjotSinghh/reinstate/security/advisories/new
+Contact: mailto:security@harjot.co
+Expires: 2027-07-26T23:59:59Z
+Preferred-Languages: en
+Canonical: https://reinstate.dev/.well-known/security.txt
+Policy: https://github.com/HarjjotSinghh/reinstate/security/policy

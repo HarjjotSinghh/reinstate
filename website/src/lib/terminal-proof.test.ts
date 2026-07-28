@@ -76,6 +76,10 @@ describe('landing-page terminal proof', () => {
     expect(terminal).toContain('role="img"');
     expect(terminal).toContain('<title');
     expect(terminal).toContain('<desc');
+    expect(terminal).toContain('<figure class="handoff-illustration">');
+    expect(terminal).not.toContain(
+      '<figure class="handoff-illustration" aria-hidden="true">',
+    );
     expect(terminal).toContain('@media (prefers-reduced-motion: reduce)');
   });
 

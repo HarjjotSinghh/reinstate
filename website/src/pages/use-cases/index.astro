@@ -1,0 +1,103 @@
+---
+import PublicContentLayout from '../../layouts/PublicContentLayout.astro';
+
+export const prerender = true;
+
+const title = 'Reinstate Use Cases for Cross-Device Coding-Agent Work';
+const description =
+  'Explore how Reinstate continues Claude Code and Codex sessions across work, personal, desktop, laptop, macOS, and Windows devices with encrypted storage.';
+---
+
+<PublicContentLayout
+  {title}
+  {description}
+  path="/use-cases"
+  eyebrow="Use cases"
+  answer="Reinstate’s current release candidate is built for developers who need the same Claude Code or Codex session on another configured computer—especially a work and personal machine, or a Windows desktop and Mac laptop—with local encryption and user-owned storage between them."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Use cases', path: '/use-cases' },
+  ]}
+  tags={['coding-agent use cases', 'multi-device development', 'session continuity']}
+>
+  <h2 id="current-use-cases">Current Phase 1 use cases</h2>
+  <div class="pc-grid">
+    <a class="pc-card" href="/use-cases/work-and-personal-computers">
+      <h3>Work and personal computers</h3>
+      <p>
+        Push an encrypted supported session from one configured device and pull it on another
+        without requiring the source device to remain online.
+      </p>
+      <span class="pc-link">Plan the two-device workflow →</span>
+    </a>
+    <a class="pc-card" href="/use-cases/macos-and-windows">
+      <h3>macOS and Windows</h3>
+      <p>
+        Give one project a canonical ID, then map that identity to different native paths on a Mac
+        and Windows PC.
+      </p>
+      <span class="pc-link">Understand path remapping →</span>
+    </a>
+    <a class="pc-card" href="/use-cases/desktop-and-laptop">
+      <h3>Desktop and laptop</h3>
+      <p>
+        Continue one selected same-vendor session on a portable or fixed computer without keeping
+        the source machine online.
+      </p>
+      <span class="pc-link">Plan desktop-to-laptop continuity →</span>
+    </a>
+    <a class="pc-card" href="/use-cases/encrypted-session-backup">
+      <h3>Encrypted session backup</h3>
+      <p>
+        Create client-encrypted snapshots in storage you control while preserving the difference
+        between Reinstate recovery and an independent backup strategy.
+      </p>
+      <span class="pc-link">Review the backup boundary →</span>
+    </a>
+  </div>
+
+  <h2 id="fit">When Reinstate is a fit today</h2>
+  <ul>
+    <li>You use a tested Claude Code or Codex CLI version.</li>
+    <li>You want same-vendor continuity on another configured device.</li>
+    <li>Your repository lives at different absolute paths on the two machines.</li>
+    <li>You can use an S3-compatible bucket and retain the encryption passphrase safely.</li>
+    <li>You are comfortable evaluating a pre-1.0 release candidate and keeping backups.</li>
+  </ul>
+
+  <h2 id="not-fit">When it is not yet a fit</h2>
+  <ul>
+    <li>You need Claude Code sessions converted into native Codex rollouts, or the reverse.</li>
+    <li>You use another agent such as Gemini CLI, OpenCode, Cursor, or Grok Build.</li>
+    <li>You need MCP servers, skills, plugins, agent credentials, or settings synchronized.</li>
+    <li>You need stable-v1 compatibility guarantees or a formally audited security product.</li>
+    <li>Your employer prohibits storing work artifacts in a personally controlled bucket.</li>
+  </ul>
+  <p>
+    Later roadmap phases broaden task continuity to one-machine search, verified resume, portable
+    cross-agent checkpoints, and non-secret configuration. Those capabilities are not included in
+    RC6.
+  </p>
+
+  <h2 id="workflow">The common continuity workflow</h2>
+  <ol class="pc-steps">
+    <li>Install the same pinned Reinstate version on each trusted device.</li>
+    <li>Configure one profile, one bucket, and canonical IDs for the projects you will move.</li>
+    <li>Push supported sessions from the device where the work currently exists.</li>
+    <li>On the destination, inspect status and run a pull dry-run before restoring.</li>
+    <li>Resume using the same native agent vendor after the project path is mapped locally.</li>
+  </ol>
+
+  <section class="pc-related" aria-labelledby="related-heading">
+    <h2 id="related-heading">Plan your setup</h2>
+    <nav aria-label="Related pages">
+      <a href="/docs/getting-started">Getting started</a>
+      <a href="/integrations">Supported integrations</a>
+      <a href="/compatibility">Compatibility matrix</a>
+      <a href="/security">Security boundaries</a>
+      <a href="/guides/move-a-coding-agent-session-from-mac-to-windows"
+        >Mac-to-Windows guide</a
+      >
+    </nav>
+  </section>
+</PublicContentLayout>

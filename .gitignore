@@ -34,6 +34,7 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+[Rr]2.txt
 *.pem
 *.key
 auth.json
@@ -57,6 +58,10 @@ npm-debug.log*
 # references/ is intentional project research — keep tracked if desired
 dist/
 .playwright-mcp/
+website/artifacts/indexnow/
+website/artifacts/lighthouse-*/
+website/artifacts/production-discovery/*-immutable.json
+website/artifacts/production-discovery/*-production.json
 
 # Local website database artifacts
 /auth

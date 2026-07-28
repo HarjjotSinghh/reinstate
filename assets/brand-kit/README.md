@@ -7,9 +7,12 @@ language (isometric flats, paper/ink, chartreuse accent, four stream layers).
 
 ```bash
 python3 scripts/generate_brand_kit.py
+cd website && npm run generate:github-social
 ```
 
-Requires `rsvg-convert` (librsvg).
+The general kit requires `rsvg-convert` (librsvg). The GitHub repository
+preview is generated separately by the website's Satori renderer so it stays
+pixel-aligned with every page-level Open Graph image.
 
 ## Logo (final)
 
@@ -43,7 +46,7 @@ The site swaps `favicon-light` / `favicon-dark` when the user toggles theme
 | LinkedIn personal | 1584×396 | `png/linkedin-banner-1584x396.png` |
 | LinkedIn company | 1128×191 | `png/linkedin-company-1128x191.png` |
 | YouTube banner | 2560×1440 | `png/youtube-banner-2560x1440.png` |
-| GitHub social | 1280×640 | `png/github-social-1280x640.png` |
+| GitHub social | 1280×640 | `png/github-social-1280x640.png` (Satori-rendered; no SVG twin) |
 
 ### Open Graph
 
@@ -61,7 +64,8 @@ The site swaps `favicon-light` / `favicon-dark` when the user toggles theme
 | Instagram square | 1080² | `png/ig-square-1080.png` |
 | Poster / story-ish | 1080×1350 | `png/poster-1080x1350.png` |
 
-Matching SVGs live in `svg/` for further edit.
+Matching SVGs live in `svg/` for further edit, except for the GitHub repository
+preview generated from `website/src/lib/og-card.ts`.
 
 ## Website copies
 

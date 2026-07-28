@@ -1,0 +1,41 @@
+name: Question or setup help
+description: Ask a public, redacted question about Reinstate
+title: "question: "
+labels: ["question", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ask with metadata and synthetic examples only. Never include credentials,
+        passphrases, private paths, or real transcript content.
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What are you trying to do, and where are you blocked?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Reinstate version
+      placeholder: "output of: rein version --json"
+  - type: input
+    id: environment
+    attributes:
+      label: Agent and device environment
+      placeholder: "Codex 0.145.0, macOS 15 arm64 → Windows 11 amd64"
+  - type: textarea
+    id: attempts
+    attributes:
+      label: What have you tried?
+      description: Include only redacted commands and errors.
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Privacy and duplicate check
+      options:
+        - label: I searched existing issues
+          required: true
+        - label: I removed credentials, passphrases, private paths, and transcript content
+          required: true

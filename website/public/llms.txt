@@ -1,0 +1,55 @@
+# Reinstate
+
+> Reinstate is an open-source tool that syncs encrypted coding-agent sessions across devices. The current pre-1.0 release candidate supports same-vendor Claude Code and Codex session transfer across macOS and Windows with user-owned S3-compatible storage.
+
+## Product
+
+- [Homepage](https://reinstate.dev/): Product overview and current workflow
+- [Reinstate facts](https://reinstate.dev/about/reinstate): Verified product facts, scope, ownership, and non-goals
+- [Compatibility](https://reinstate.dev/compatibility): Current agents, operating systems, versions, and limitations
+- [Security](https://reinstate.dev/security): Encryption, credentials, trust boundaries, and exclusions
+- [Open source](https://reinstate.dev/open-source): Source, license, governance, and contribution links
+- [Changelog](https://reinstate.dev/changelog): Current release status and release history
+
+## Documentation
+
+- [Documentation](https://reinstate.dev/docs): Documentation hub
+- [Getting started](https://reinstate.dev/docs/getting-started): Install and configure Reinstate
+- [Architecture](https://reinstate.dev/docs/architecture): Adapter, path mapping, encryption, and restore design
+- [Adapters](https://reinstate.dev/docs/adapters): Agent compatibility and adapter behavior
+- [Security model](https://reinstate.dev/docs/security-model): Detailed threat model and security boundaries
+- [Troubleshooting](https://reinstate.dev/docs/troubleshooting): Error diagnosis and safe fixes
+- [FAQ](https://reinstate.dev/docs/faq): Direct answers to common questions
+
+## Integrations
+
+- [Claude Code](https://reinstate.dev/integrations/claude-code): Same-vendor Claude Code session sync
+- [Codex](https://reinstate.dev/integrations/codex): Same-vendor Codex session sync
+
+## Guides
+
+- [Guide index](https://reinstate.dev/guides): Current, reviewed session-sync workflows
+- [Sync Claude Code sessions across devices](https://reinstate.dev/guides/sync-claude-code-sessions-across-devices): Install, map, push, pull, verify, and resume with Claude Code
+- [Sync Codex sessions across devices](https://reinstate.dev/guides/sync-codex-sessions-across-devices): Install, map, push, pull, verify, and resume with Codex CLI
+
+## Engineering notes
+
+- [Blog](https://reinstate.dev/blog): Evidence-backed articles about coding-agent continuity
+- [Why Git alone does not sync coding-agent sessions](https://reinstate.dev/blog/why-git-does-not-sync-coding-agent-sessions): The boundary between source history and native agent-session continuity
+
+## Technical references and tools
+
+- [Reinstate glossary](https://reinstate.dev/glossary): Definitions for session-continuity terms, compatibility states, and current-versus-planned behavior
+- [Path-mapping visualizer](https://reinstate.dev/tools/path-mapping-visualizer): Fixed synthetic macOS-to-Windows and Windows-to-macOS path-mapping examples for Claude Code and Codex
+- [Encrypted snapshot format v1](https://reinstate.dev/research/encrypted-snapshot-format-v1): Current internal manifest, metadata, TAR payload, encryption, and validation contract; not an interoperability standard
+- [Agent-version history](https://reinstate.dev/compatibility/agent-version-history): Current tested ranges and tagged release evidence for Claude Code and Codex compatibility
+
+## Source
+
+- [GitHub repository](https://github.com/HarjjotSinghh/reinstate)
+- [Source tags](https://github.com/HarjjotSinghh/reinstate/tags): Published release-candidate source tags
+- [Security policy](https://github.com/HarjjotSinghh/reinstate/security/policy)
+- [All-updates RSS feed](https://reinstate.dev/rss.xml)
+- [Blog RSS feed](https://reinstate.dev/blog/rss.xml)
+- [Changelog RSS feed](https://reinstate.dev/changelog/rss.xml)
+- License: Apache-2.0

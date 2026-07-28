@@ -58,6 +58,10 @@ const { id = 'waitlist-form', compact = false } = Astro.props;
         status.textContent = data.message ?? 'You are on the list.';
         status.classList.add('is-ok');
         emailInput.value = '';
+        const analyticsWindow = window as Window & {
+          reinstateTrack?: (eventName: string, target: string) => boolean;
+        };
+        analyticsWindow.reinstateTrack?.('waitlist_submit', 'waitlist');
       } catch {
         status.textContent = 'Network error. Check your connection and try again.';
         status.classList.add('is-error');

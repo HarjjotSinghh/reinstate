@@ -13,7 +13,9 @@ abstract: >-
   Reinstate is a local-first CLI that syncs AI coding agent sessions across
   devices with end-to-end encryption and bring-your-own R2/S3-compatible
   storage. Phase 1 targets Claude Code and OpenAI Codex same-vendor resume
-  with cross-OS path remapping. Credentials are never synced.
+  with cross-OS path remapping. Known credential artifacts are excluded by
+  default; session content still requires review because it can contain
+  sensitive text.
 keywords:
   - ai-coding-agents
   - session-sync

@@ -12,7 +12,7 @@ GOENV   := GOTOOLCHAIN=$(GOTOOLCHAIN)
 FAST_PACKAGES := $(shell $(GOENV) $(GO) list -f '{{if and (ne .ImportPath "$(MODULE)/internal/doctest") (ne .ImportPath "$(MODULE)/internal/crypto")}}{{.ImportPath}}{{end}}' ./...)
 GOLANGCI_LINT_VERSION := v2.11.4
 GOVULNCHECK_VERSION   := v1.6.0
-VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo 0.0.0-dev)
+VERSION ?= $(shell git describe --tags --match 'v[0-9]*' --always --dirty 2>/dev/null || echo 0.0.0-dev)
 COMMIT  ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 DATE    ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 LDFLAGS := -s -w \

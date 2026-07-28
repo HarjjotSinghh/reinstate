@@ -124,6 +124,12 @@ func TestRC6AcceptancePromptContracts(t *testing.T) {
 	body := read(t, "docs/testing/phase-1-rc6-agent-verification-prompts.md")
 	for _, value := range []string{
 		"v0.1.0-rc.6",
+		"autonomous",
+		"R2.txt",
+		"REINSTATE_ENCRYPTION_PASSPHRASE",
+		"REINSTATE_PASSPHRASE_FD",
+		"anonymous pipe",
+		"child's environment",
 		"MAC-RC6-M1",
 		"WINDOWS-RC6-W1-PASS",
 		"local/reinstate-phase1-acceptance-rc6",
@@ -153,10 +159,21 @@ func TestRC6AcceptancePromptContracts(t *testing.T) {
 		"--dangerously-skip-permissions",
 		"git clone ",
 		"Prompt version 5",
+		"I will enter credentials",
+		"have me privately",
+		"visually confirm",
+		"normal R2/S3 UI",
 	} {
 		if strings.Contains(body, forbidden) {
 			t.Errorf("RC6 acceptance prompts contain forbidden instruction %q", forbidden)
 		}
+	}
+}
+
+func TestPrivateAcceptanceInputIsIgnored(t *testing.T) {
+	body := read(t, ".gitignore")
+	if !strings.Contains(body, "[Rr]2.txt") {
+		t.Fatal(".gitignore must exclude the private acceptance input file")
 	}
 }
 

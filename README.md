@@ -4,12 +4,17 @@
 
 # Reinstate
 
-### Pick up any coding task exactly where you left it
+### Continue supported coding-agent sessions on another configured device
 
-**The continuity layer for coding-agent work** — search, resume, and hand off sessions across agents, projects, environments, and devices.
-Phase 1 starts with encrypted same-vendor Claude Code and Codex session sync
-across devices; search, verified resume, portable handoffs, and universal agent
-configuration follow.
+**Reinstate is an open-source tool that syncs encrypted Claude Code and Codex
+sessions between configured devices using your own S3-compatible storage.**
+The current release candidate preserves same-vendor native resume across macOS
+and Windows project paths.
+
+The broader direction is a continuity layer for coding-agent work: local
+search, verified resume, explicit portable handoffs, and universal non-secret
+agent configuration are planned after Phase 1. They are not current CLI
+capabilities.
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/HarjjotSinghh/reinstate)](https://goreportcard.com/report/github.com/HarjjotSinghh/reinstate)
@@ -95,14 +100,17 @@ flowchart LR
 
 | | What you get |
 | --- | --- |
-| **Universal** | Multi-agent — not Claude-only, not Codex-only |
+| **Multi-agent** | Claude Code and Codex same-vendor session continuity in Phase 1 |
 | **Offline-capable origin** | Works when the other machine is **off** (stored sync, not a live relay) |
 | **Path remapping** | Windows ↔ macOS project paths rewritten so `--resume` actually finds sessions |
 | **Zero-knowledge** | Client-side encryption; bring-your-own storage |
 | **Sessions first** | Phase 1 deliberately excludes credentials, MCP, skills, and settings; universal configuration is later roadmap work |
 | **Open source** | Apache-2.0 · auditable · patent grant · no vendor lock-in |
 
-Native vendor sync will always own *one* ecosystem. DIY Syncthing/Drive hacks break on absolute paths and credential sprawl. Reinstate targets the empty quadrant: **universal × cross-device × encrypted × resume-aware**.
+Native vendor sync typically serves its own ecosystem. Unreviewed
+Syncthing/Drive copies can preserve source-device absolute paths or include
+sensitive artifacts. Reinstate's current release candidate instead provides
+**Claude/Codex same-vendor × cross-device × encrypted × path-aware** continuity.
 
 <p align="center">
   <img src="assets/01_landscape.png" alt="Landscape: agent scope vs state portability" width="720" />
@@ -170,7 +178,9 @@ binary. For deliberate automation, review the version change first and set
 
 ```bash
 rein init --project github.com/acme/app=/absolute/path/to/app
-rein push --all    # hidden passphrase prompt, encrypt, upload
+rein list --agent AGENT
+rein push --agent AGENT --session SESSION_ID --dry-run
+rein push --agent AGENT --session SESSION_ID
 ```
 
 Use the S3/R2 service endpoint as the endpoint and enter the bucket separately.
@@ -182,9 +192,10 @@ RC6 refuses to overwrite an initialized home by default. The explicit
 ```bash
 rein init --profile-id <DEVICE_A_PROFILE_ID> \
   --project github.com/acme/app=/different/local/path
-rein pull --all --dry-run
-rein pull --all
-claude --resume    # or: codex resume
+rein status
+rein pull --agent AGENT --session SESSION_ID --dry-run
+rein pull --agent AGENT --session SESSION_ID
+# Then use the same vendor's native resume UI or command.
 ```
 
 RC6 verifies the encrypted remote manifest during additional-device `init`
@@ -261,7 +272,7 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 
 | Doc | Description |
 | --- | ----------- |
-| **Website** | [reinstate-web.vercel.app](https://reinstate-web.vercel.app) — landing + waitlist |
+| **Website** | [reinstate.dev](https://reinstate.dev) — product, documentation, compatibility, and security |
 | [Getting started](docs/getting-started.md) | Install, init, dual-device setup |
 | [Architecture](docs/architecture.md) | Pipeline, packages, design principles |
 | [Adapters](docs/adapters.md) | Per-agent layouts & support matrix |
@@ -383,7 +394,7 @@ Good first issues: [`good first issue`](https://github.com/HarjjotSinghh/reinsta
 
 ## Community & support
 
-- **Discussions** — [GitHub Discussions](https://github.com/HarjjotSinghh/reinstate/discussions)
+- **Questions** — [open a redacted question issue](https://github.com/HarjjotSinghh/reinstate/issues/new?template=question.yml)
 - **Bugs / features** — [Issues](https://github.com/HarjjotSinghh/reinstate/issues)
 - **Security** — [SECURITY.md](SECURITY.md) (private)
 - **Support guide** — [SUPPORT.md](SUPPORT.md)

@@ -1,0 +1,446 @@
+---
+import PublicContentLayout from '../../layouts/PublicContentLayout.astro';
+
+export const prerender = true;
+
+const title = 'macOS ↔ Windows Coding-Agent Path-Mapping Visualizer';
+const description =
+  'Visualize how Reinstate maps fixed synthetic Claude Code and Codex structural paths between macOS and Windows through one canonical project ID.';
+---
+
+<PublicContentLayout
+  {title}
+  {description}
+  path="/tools/path-mapping-visualizer"
+  eyebrow="Synthetic path-mapping lab"
+  answer="Reinstate maps a recognized structural path by replacing the source device’s configured project root with a portable canonical project token, then expanding that token through the destination device’s mapping. This explainer uses fixed synthetic data only; it does not accept, persist, or transmit a real local path."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Path-mapping visualizer', path: '/tools/path-mapping-visualizer' },
+  ]}
+  tags={['path mapping', 'macOS Windows', 'Claude Code', 'Codex CLI']}
+  analytics={false}
+>
+  <h2 id="visualizer">Explore a synthetic mapping</h2>
+  <p>
+    Choose a direction and current Phase 1 adapter. Every value below is a public fixture invented
+    for this page. There is no free-text field, file access, or clipboard read. No analytics script
+    is rendered, and changing a visualizer selection makes no network request. Selections are never
+    written to cookies, local storage, or session storage; the site's unrelated theme preference
+    may use local storage.
+  </p>
+
+  <div class="path-lab" data-path-lab>
+    <div class="path-controls" aria-label="Synthetic path example controls">
+      <label>
+        Direction
+        <select id="path-direction">
+          <option value="mac-to-windows">macOS → Windows</option>
+          <option value="windows-to-mac">Windows → macOS</option>
+        </select>
+      </label>
+      <label>
+        Agent
+        <select id="path-agent">
+          <option value="claude">Claude Code</option>
+          <option value="codex">Codex CLI</option>
+        </select>
+      </label>
+    </div>
+
+    <p class="privacy-note" role="note">
+      Synthetic-only control: selections update this document in memory and are discarded on
+      navigation.
+    </p>
+
+    <div class="path-flow" aria-live="polite">
+      <article class="path-stage source">
+        <p class="stage-label">1 · Source mapping</p>
+        <h3 id="source-platform">macOS device</h3>
+        <dl>
+          <div>
+            <dt>Canonical project ID</dt>
+            <dd><code>github.com/acme/acme-app</code></dd>
+          </div>
+          <div>
+            <dt>Configured local root</dt>
+            <dd><code id="source-root">/Users/alex/Code/acme-app</code></dd>
+          </div>
+          <div>
+            <dt>Recognized field</dt>
+            <dd><code id="recognized-field">cwd</code></dd>
+          </div>
+        </dl>
+      </article>
+
+      <div class="path-arrow" aria-hidden="true">→</div>
+
+      <article class="path-stage portable">
+        <p class="stage-label">2 · Portable value</p>
+        <h3>Encrypted snapshot</h3>
+        <dl>
+          <div>
+            <dt>Structural token</dt>
+            <dd><code id="portable-value">${'${REPO:github.com/acme/acme-app}'}/src/main.go</code></dd>
+          </div>
+          <div>
+            <dt>Transcript prose</dt>
+            <dd><code id="unchanged-prose">Open /Users/alex/notes.txt</code> <span>unchanged</span></dd>
+          </div>
+        </dl>
+      </article>
+
+      <div class="path-arrow" aria-hidden="true">→</div>
+
+      <article class="path-stage destination">
+        <p class="stage-label">3 · Destination mapping</p>
+        <h3 id="destination-platform">Windows device</h3>
+        <dl>
+          <div>
+            <dt>Configured local root</dt>
+            <dd><code id="destination-root">C:\src\acme-app</code></dd>
+          </div>
+          <div>
+            <dt>Expanded value</dt>
+            <dd><code id="destination-value">C:\src\acme-app\src\main.go</code></dd>
+          </div>
+        </dl>
+      </article>
+    </div>
+
+    <h3>Recognized record trace</h3>
+    <div class="record-trace">
+      <div>
+        <p>Before export</p>
+        <code id="record-before">{'{"cwd":"/Users/alex/Code/acme-app/src/main.go"}'}</code>
+      </div>
+      <div>
+        <p>Inside adapter archive</p>
+        <code id="record-portable"
+          >{'{"cwd":"${REPO:github.com/acme/acme-app}/src/main.go"}'}</code
+        >
+      </div>
+      <div>
+        <p>After restore</p>
+        <code id="record-after">{'{"cwd":"C:\\src\\acme-app\\src\\main.go"}'}</code>
+      </div>
+    </div>
+
+    <h3>Native session locator</h3>
+    <p id="native-locator">
+      Claude Code restore recomputes its destination project-directory key from
+      <code>C:\src\acme-app</code>; it does not reuse the macOS directory key.
+    </p>
+  </div>
+
+  <h2 id="recognized-fields">Recognized structural fields</h2>
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">Adapter</th>
+          <th scope="col">Allow-listed keys in RC6</th>
+          <th scope="col">Additional native-layout rule</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Claude Code</td>
+          <td>
+            <code>cwd</code>, <code>path</code>, <code>file</code>,
+            <code>filename</code>, <code>filePath</code>, <code>file_path</code>,
+            <code>projectPath</code>, <code>project_path</code>,
+            <code>workingDirectory</code>, <code>workdir</code>
+          </td>
+          <td>Recompute the destination project-directory key from the mapped checkout root.</td>
+        </tr>
+        <tr>
+          <td>Codex CLI</td>
+          <td>
+            <code>cwd</code>, <code>path</code>, <code>workdir</code>,
+            <code>workingDirectory</code>, <code>filePath</code>, <code>file_path</code>
+          </td>
+          <td>Keep the native date-partitioned rollout path and remap structural values.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    A value is considered path-like only when it is absolute, already portable, or uses a
+    recognized Windows drive-path shape. Unknown keys remain untouched even when their text looks
+    like a path.
+  </p>
+
+  <h2 id="what-does-not-change">What the mapper does not change</h2>
+  <ul>
+    <li>Free-form prompt, response, reasoning, or terminal-output prose.</li>
+    <li>Unknown JSON keys or relative strings that do not meet the structural rule.</li>
+    <li>Git branch, commit, uncommitted changes, runtime, shell, MCP, skill, or plugin state.</li>
+    <li>Claude Code sessions into Codex sessions, or Codex sessions into Claude Code sessions.</li>
+    <li>A project with no configured canonical mapping when mappings are required.</li>
+  </ul>
+
+  <h2 id="operational-boundary">Operational boundary</h2>
+  <p>
+    This visualizer explains deterministic source behavior; it does not execute Reinstate or
+    validate a private checkout. Use <code>rein setup check</code> and a pull dry-run on each real
+    device. RC6 source checks and synthetic fixtures do not replace the remaining physical Windows,
+    macOS amd64, WSL2, and two-device acceptance gates.
+  </p>
+  <div class="pc-callout">
+    <p>Do not paste a real private path into a website.</p>
+    <p>
+      The current visualizer intentionally offers no such input. A future local diagnostic would
+      need a separate threat model, reviewed client-only implementation, redaction rules, and tests
+      proving that input never leaves the device.
+    </p>
+  </div>
+
+  <h2 id="source-evidence">Source evidence</h2>
+  <ul>
+    <li>
+      <a href="https://github.com/HarjjotSinghh/reinstate/blob/v0.1.0-rc.6/internal/pathmap/token.go"
+        >Portable token mapper</a
+      >
+    </li>
+    <li>
+      <a href="https://github.com/HarjjotSinghh/reinstate/blob/v0.1.0-rc.6/internal/adapter/claude/claude.go"
+        >Claude structural-field and destination-key logic</a
+      >
+    </li>
+    <li>
+      <a href="https://github.com/HarjjotSinghh/reinstate/blob/v0.1.0-rc.6/internal/adapter/codex/codex.go"
+        >Codex structural-field and rollout logic</a
+      >
+    </li>
+  </ul>
+
+  <section class="pc-related" aria-labelledby="related-heading">
+    <h2 id="related-heading">Apply the model safely</h2>
+    <nav aria-label="Related pages">
+      <a href="/use-cases/macos-and-windows">macOS and Windows use case</a>
+      <a href="/guides/move-a-coding-agent-session-from-mac-to-windows">Cross-platform guide</a>
+      <a href="/glossary">Terminology glossary</a>
+      <a href="/compatibility">Compatibility matrix</a>
+      <a href="/docs/architecture">Architecture</a>
+    </nav>
+  </section>
+</PublicContentLayout>
+
+<script>
+  const direction = document.querySelector<HTMLSelectElement>('#path-direction');
+  const agent = document.querySelector<HTMLSelectElement>('#path-agent');
+
+  const examples = {
+    'mac-to-windows': {
+      sourcePlatform: 'macOS device',
+      destinationPlatform: 'Windows device',
+      sourceRoot: '/Users/alex/Code/acme-app',
+      destinationRoot: 'C:\\src\\acme-app',
+      sourceValue: '/Users/alex/Code/acme-app/src/main.go',
+      destinationValue: 'C:\\src\\acme-app\\src\\main.go',
+      unchangedProse: 'Open /Users/alex/notes.txt',
+    },
+    'windows-to-mac': {
+      sourcePlatform: 'Windows device',
+      destinationPlatform: 'macOS device',
+      sourceRoot: 'C:\\src\\acme-app',
+      destinationRoot: '/Users/alex/Code/acme-app',
+      sourceValue: 'C:\\src\\acme-app\\src\\main.go',
+      destinationValue: '/Users/alex/Code/acme-app/src/main.go',
+      unchangedProse: 'Open C:\\Users\\alex\\notes.txt',
+    },
+  } as const;
+
+  const portableValue = '${REPO:github.com/acme/acme-app}/src/main.go';
+
+  function text(id: string, value: string) {
+    const element = document.querySelector<HTMLElement>(id);
+    if (element) element.textContent = value;
+  }
+
+  function renderExample() {
+    if (!direction || !agent) return;
+    const selectedDirection =
+      examples[direction.value as keyof typeof examples] ?? examples['mac-to-windows'];
+    const selectedAgent = agent.value === 'codex' ? 'codex' : 'claude';
+    const key = selectedAgent === 'codex' ? 'session_meta.payload.cwd' : 'cwd';
+    const record = (value: string) =>
+      selectedAgent === 'codex'
+        ? { type: 'session_meta', payload: { cwd: value } }
+        : { cwd: value };
+
+    text('#source-platform', selectedDirection.sourcePlatform);
+    text('#destination-platform', selectedDirection.destinationPlatform);
+    text('#source-root', selectedDirection.sourceRoot);
+    text('#destination-root', selectedDirection.destinationRoot);
+    text('#destination-value', selectedDirection.destinationValue);
+    text('#recognized-field', key);
+    text('#portable-value', portableValue);
+    text('#record-before', JSON.stringify(record(selectedDirection.sourceValue)));
+    text('#record-portable', JSON.stringify(record(portableValue)));
+    text('#record-after', JSON.stringify(record(selectedDirection.destinationValue)));
+
+    const locator =
+      selectedAgent === 'claude'
+        ? `Claude Code restore recomputes its destination project-directory key from ${selectedDirection.destinationRoot}; it does not reuse the ${selectedDirection.sourcePlatform.replace(' device', '')} directory key.`
+        : `Codex keeps the rollout under its native sessions/YYYY/MM/DD path and expands session_meta.payload.cwd to ${selectedDirection.destinationRoot}.`;
+    text('#native-locator', locator);
+
+    text('#unchanged-prose', selectedDirection.unchangedProse);
+  }
+
+  direction?.addEventListener('change', renderExample);
+  agent?.addEventListener('change', renderExample);
+</script>
+
+<style>
+  .path-lab {
+    margin: 1.5rem 0 3rem;
+    padding: clamp(1rem, 3vw, 1.6rem);
+    border: 1px solid var(--rule);
+    border-radius: 16px;
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--prim) 12%, transparent), transparent 32%),
+      var(--paper-2);
+  }
+
+  .path-controls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .path-controls label {
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+    font-weight: 650;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .path-controls select {
+    display: block;
+    width: 100%;
+    margin-top: 0.45rem;
+    padding: 0.72rem 0.8rem;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    background: var(--paper);
+    color: var(--ink);
+    font: 500 0.95rem/1.2 var(--font-sans);
+  }
+
+  .privacy-note {
+    margin: 1rem 0 0;
+    padding: 0.65rem 0.8rem;
+    border-left: 4px solid var(--prim-deep);
+    background: var(--paper);
+    font-size: 0.83rem !important;
+  }
+
+  .path-flow {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 0.7rem;
+    align-items: stretch;
+    margin-top: 1.4rem;
+  }
+
+  .path-stage {
+    min-width: 0;
+    padding: 1rem;
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    background: var(--paper);
+  }
+
+  .path-stage.portable {
+    border-color: var(--prim-deep);
+    box-shadow: inset 0 4px 0 var(--prim);
+  }
+
+  .stage-label,
+  .record-trace p {
+    margin: 0 0 0.6rem !important;
+    color: var(--ink-3) !important;
+    font-family: var(--font-mono);
+    font-size: 0.67rem !important;
+    font-weight: 650;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .path-stage h3 {
+    margin: 0 0 0.9rem !important;
+  }
+
+  .path-stage dl,
+  .path-stage dd {
+    margin: 0;
+  }
+
+  .path-stage dl {
+    display: grid;
+    gap: 0.8rem;
+  }
+
+  .path-stage dt {
+    margin-bottom: 0.25rem;
+    color: var(--ink-3);
+    font-size: 0.72rem;
+  }
+
+  .path-stage code,
+  .record-trace code {
+    display: block;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  .path-stage span {
+    display: inline-block;
+    margin-top: 0.35rem;
+    color: var(--prim-deep);
+    font: 650 0.7rem/1 var(--font-mono);
+    text-transform: uppercase;
+  }
+
+  .path-arrow {
+    align-self: center;
+    color: var(--prim-deep);
+    font-size: 1.5rem;
+  }
+
+  .record-trace {
+    display: grid;
+    gap: 0.6rem;
+    margin: 1rem 0 2rem;
+  }
+
+  .record-trace > div {
+    min-width: 0;
+    padding: 0.85rem;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    background: var(--paper);
+  }
+
+  @media (max-width: 820px) {
+    .path-flow {
+      grid-template-columns: 1fr;
+    }
+
+    .path-arrow {
+      justify-self: center;
+      transform: rotate(90deg);
+    }
+  }
+
+  @media (max-width: 560px) {
+    .path-controls {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

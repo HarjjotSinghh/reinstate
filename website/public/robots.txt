@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /preview/
+Disallow: /drafts/
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+# Search discovery and model training are separate controls.
+User-agent: GPTBot
+Disallow: /
+
+Sitemap: https://reinstate.dev/sitemap-index.xml

@@ -4,6 +4,8 @@ import BrandLockup from './BrandLockup.astro';
 const path = Astro.url.pathname;
 const onHome = path === '/';
 const onDocs = path.startsWith('/docs');
+const onIntegrations = path.startsWith('/integrations');
+const onSecurity = path === '/security';
 ---
 
 <header class:list={['nav', onHome && 'is-home']}>
@@ -13,10 +15,13 @@ const onDocs = path.startsWith('/docs');
 
       <nav class="links" aria-label="Primary">
         <a href="/#how">How it works</a>
+        <a href="/integrations" class:list={[onIntegrations && 'is-active']}>Integrations</a>
         <a href="/docs/getting-started" class:list={[onDocs && 'is-active']}>Docs</a>
-        <a href="/#security">Security</a>
+        <a href="/security" class:list={[onSecurity && 'is-active']}>Security</a>
         <a
           href="https://github.com/HarjjotSinghh/reinstate"
+          data-analytics-event="github_click"
+          data-analytics-target="header"
           rel="noopener noreferrer"
           target="_blank">GitHub</a
         >
@@ -35,7 +40,12 @@ const onDocs = path.startsWith('/docs');
           </svg>
         </button>
 
-        <a class="navcta" href="/docs/getting-started">
+        <a
+          class="navcta"
+          href="/docs/getting-started"
+          data-analytics-event="docs_getting_started"
+          data-analytics-target="header"
+        >
           <span class="navcta-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24">
               <path class="navcta-arrow" d="M12 4v10m0 0-3.5-3.5M12 14l3.5-3.5"></path>
@@ -63,9 +73,15 @@ const onDocs = path.startsWith('/docs');
     <div id="mobile-nav" class="mobile-nav" hidden>
       <nav class="shell mobile-links" aria-label="Mobile">
         <a href="/#how">How it works</a>
+        <a href="/integrations">Integrations</a>
         <a href="/docs/getting-started">Docs</a>
-        <a href="/#security">Security</a>
-        <a href="https://github.com/HarjjotSinghh/reinstate" rel="noopener noreferrer" target="_blank"
+        <a href="/security">Security</a>
+        <a
+          href="https://github.com/HarjjotSinghh/reinstate"
+          data-analytics-event="github_click"
+          data-analytics-target="mobile-header"
+          rel="noopener noreferrer"
+          target="_blank"
           >GitHub</a
         >
       </nav>

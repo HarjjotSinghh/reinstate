@@ -8,7 +8,7 @@ import WaitlistForm from '../WaitlistForm.astro';
       <h2 id="wait-title" class="display">Get early access</h2>
       <p>
         v0.1 CLI is under active development. Join the waitlist for release notes and early access.
-        We will not sell your email.
+        We will not sell your email. See the <a href="/privacy">privacy notice</a>.
       </p>
     </div>
     <div class="form">
@@ -43,6 +43,10 @@ import WaitlistForm from '../WaitlistForm.astro';
     color: var(--ink-2);
     font-size: 0.98rem;
     line-height: 1.55;
+  }
+  p a {
+    color: var(--ink);
+    text-underline-offset: 3px;
   }
   .form {
     width: 100%;

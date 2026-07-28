@@ -572,6 +572,10 @@ const SK = 'var(--sv-stroke)';
 
     </g>
   </svg>
+  <figcaption>
+    Reinstate encrypts the session on the source device, stores only ciphertext
+    in your bucket, and restores the native session on the destination device.
+  </figcaption>
 </figure>
 </div>
 
@@ -647,6 +651,15 @@ const SK = 'var(--sv-stroke)';
     overflow: hidden;
     pointer-events: none;
     font-family: var(--font-mono);
+  }
+  .sec-pipeline-scene figcaption {
+    max-width: 70rem;
+    margin: 0.45rem auto 0;
+    color: color-mix(in oklab, var(--sv-ink) 72%, transparent);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    line-height: 1.55;
+    text-align: center;
   }
 
   /* layout-only spacer between art and matrix */

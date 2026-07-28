@@ -1,123 +1,83 @@
-# Adapters
+---
+title: "Claude Code and Codex session adapters"
+description: "Learn how Reinstate adapters discover, normalize, and restore Claude Code and Codex sessions without translating native transcripts across vendors."
+order: 3
+author: "Harjot Singh Rana"
+status: current
+schemaType: tech-article
+version: "v0.1.0-rc.6"
+updatedAt: 2026-07-27
+tags: ["adapters", "claude-code", "codex", "same-vendor-resume"]
+targetQuery: "Reinstate supported coding agents"
+searchIntent: "agent-specific"
+draft: false
+noindex: false
+---
 
-Session adapters translate between each coding agent's **on-disk session
-layout** and Reinstate's normalized sync model. Later configuration adapters
-will normalize portable intent and render each harness's native configuration.
+Reinstate's implemented adapters discover, export, and restore vendor-native
+Claude Code and Codex sessions without translating sessions across agents.
+Same-vendor resume remains the only native resume path.
 
-> Status: interfaces and docs first; implementations land per [ROADMAP.md](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md).
+## Current release-candidate scope
 
-## Support matrix
+| Adapter | Sessions | Path remapping | Universal configuration | Release state |
+| ------- | -------- | -------------- | ----------------------- | ------------- |
+| Claude Code | Implemented | Implemented | Post–Phase 1 | Native acceptance in progress |
+| OpenAI Codex CLI | Implemented | Implemented | Post–Phase 1 | Native acceptance in progress |
 
-| Agent | Sessions | Config / MCP / skills | Path remap | Resume command | Status |
-| ----- | :------: | :-------------------: | :--------: | -------------- | ------ |
-| **Claude Code** | ✅ RC6 candidate | 📋 Post–Phase 1 | ✅ critical | `claude --resume SESSION_ID` | 🧪 Acceptance |
-| **OpenAI Codex CLI** | ✅ RC6 candidate | 📋 Post–Phase 1 | ✅ | `codex resume SESSION_ID` | 🧪 Acceptance |
-| **Gemini CLI** | 📋 Phase 1 | 📋 | ✅ | `gemini --resume` | 📋 Planned |
-| **OpenCode** | 📋 Phase 1 | 📋 | ✅ | in-app session list | 📋 Planned |
-| **Grok Build** | 📋 Phase 2 | 📋 | ✅ | `grok -r` / `/resume` | 📋 Planned |
-| **Cursor** | 💭 best-effort | 💭 | 💭 | N/A (IDE) | 💭 Exploring |
+The current release candidate has not completed every native operating-system
+and physical two-device gate. Check the
+[roadmap](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md)
+before treating a platform and agent-version combination as certified.
 
-Legend: ✅ implemented · 🚧 acceptance in progress · 📋 planned · 💭 exploring
+## Later adapters
 
-Configuration support is capability-specific. Each adapter will advertise
-support for MCP servers, skills/instructions, hooks/loops, plugins,
-marketplaces, and safe settings. Session support never implies configuration
-support. See [Universal agent configuration](universal-configuration.md).
+| Adapter | Status |
+| ------- | ------ |
+| Gemini CLI | Planned after Phase 1 |
+| OpenCode | Planned after Phase 1 |
+| Cursor | Exploring |
+| Grok Build | Exploring |
 
-## Per-agent notes
+Configuration support is capability-specific and planned separately. Session
+support never implies support for MCP servers, skills, hooks, plugins,
+marketplaces, or settings. See
+[Universal agent configuration](/docs/universal-configuration).
 
-### Claude Code
+## How does the Claude Code adapter remap a project?
 
-| | |
-| --- | --- |
-| **Store** | `~/.claude/projects/<munged-path>/<session-uuid>.jsonl` |
-| **Format** | Append-only JSONL (`type`, `uuid`, `cwd`, `gitBranch`, …) |
-| **Hard part** | Project dir is a **lossy munge** of absolute path; every line embeds `cwd` |
-| **Exclude** | Credentials, plugin caches, machine-local logs |
+Claude Code stores a project beneath a directory key derived from that
+device's absolute project path. Reinstate records the configured canonical
+project ID in a snapshot and recomputes Claude's directory key from the
+destination device's `local_root`.
 
-Windows ↔ macOS path rewrite inside JSONL content is the MVP differentiator.
-RC6 also maps the snapshot's canonical project ID to the destination device's
-`local_root`, recomputes Claude's vendor directory key, and verifies the exact
-planned restore path before reporting success.
+RC6 validates the exact planned destination after restore. Finding the same
+session ID elsewhere in `~/.claude/projects` does not count as success.
 
-### Codex CLI
+## How does the Codex adapter remap a project?
 
-| | |
-| --- | --- |
-| **Store** | `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl` + state SQLite index |
-| **Format** | JSONL rollout + `session_meta` |
-| **Hard part** | Large histories (multi-GB); index schema versions (`state_N.sqlite`) |
-| **Exclude** | Auth / API credential material |
+Codex stores the source working directory in each rollout's structural
+`session_meta.cwd`. When project mappings are configured, RC6 resolves that
+directory to the canonical project ID during discovery and excludes rollouts
+outside mapped roots.
 
-When project mappings are configured, RC6 maps structural `session_meta.cwd`
-values to the canonical project ID and excludes rollouts outside those mapped
-roots. Export replaces the resolved source root with `${REPO:<id>}` and restore
-expands it through the destination device's `local_root`, while retaining
-Codex's native date-partitioned rollout layout.
+Export normalizes the resolved source root to `${REPO:<id>}`. Restore expands
+that token through the destination device's `local_root` while preserving
+Codex's native date-partitioned rollout layout. Phase 1 transfers full
+snapshots; append-aware delta transfer remains roadmap work.
 
-Prefer delta/CAS sync; never full-file reupload of 300MB rollouts.
+## What do adapters exclude?
 
-### Gemini CLI
-
-| | |
-| --- | --- |
-| **Store** | `~/.gemini/tmp/<project_hash>/chats/session-*.json` |
-| **Format** | Single JSON per session |
-| **Hard part** | `project_hash` from absolute root path |
-| **Exclude** | Treat carefully — `tmp/` naming vs durable intent |
-
-### OpenCode
-
-| | |
-| --- | --- |
-| **Store** | `~/.local/share/opencode/project/<slug>/storage/` |
-| **Format** | JSON session/message/part records |
-| **Hard part** | Project slug mapping |
-| **Exclude** | **`auth.json` must never sync** |
-
-### Grok Build
-
-| | |
-| --- | --- |
-| **Store** | under `~/.grok/` (format evolving) |
-| **Resume** | named sessions / TUI `/resume` |
-| **Hard part** | Fast-moving open-source CLI — expect churn |
-| **Exclude** | `auth.json`, machine-local config secrets |
-
-## Adapter interface (target)
-
-```go
-// Package adapter — simplified sketch
-type Adapter interface {
-    Name() string
-    Roots() []string
-    Discover(ctx context.Context) ([]SessionMeta, error)
-    Export(ctx context.Context, id string, w io.Writer) error
-    Import(ctx context.Context, id string, r io.Reader, opts ImportOpts) error
-    ProjectKey(path string) string
-    Exclude() []string
-}
-```
-
-## Golden fixtures
-
-Every adapter ships fixtures under `testdata/adapters/<name>/`:
-
-```
-testdata/adapters/claude/
-  session_sample.jsonl
-  paths_windows.jsonl
-  paths_macos.jsonl
-  expected_normalized.json
-```
-
-CI runs round-trip: discover → normalize → denormalize → compare.
+Adapters hard-exclude authentication material, credentials, tokens, caches,
+logs, and regenerable dependencies. Future configuration profiles may carry
+secret references, but never raw secret values. Tests use deterministic
+synthetic fixtures that are scanned for secrets.
 
 ## Contributing an adapter
 
 See [CONTRIBUTING.md](https://github.com/HarjjotSinghh/reinstate/blob/main/CONTRIBUTING.md#adapter-contributions).
 
-Minimum PR requirements:
+Minimum pull-request requirements:
 
 1. Implementation + fixtures
 2. Defensive parsing (skip unknown fields/types)

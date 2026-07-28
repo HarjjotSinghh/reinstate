@@ -1,0 +1,129 @@
+---
+import PublicContentLayout from '../../layouts/PublicContentLayout.astro';
+
+export const prerender = true;
+
+const title = 'Sync Codex CLI Sessions Across Devices | Reinstate';
+const description =
+  'Reinstate encrypts and syncs supported OpenAI Codex CLI sessions across configured macOS and Windows project paths for native Codex resume.';
+---
+
+<PublicContentLayout
+  {title}
+  {description}
+  path="/integrations/codex"
+  eyebrow="Integration · OpenAI Codex CLI"
+  answer="Reinstate syncs supported Codex CLI rollouts between configured devices, rewrites the structural working directory for the destination project, and preserves Codex’s native date-partitioned rollout layout. It supports Codex-to-Codex continuity only."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Integrations', path: '/integrations' },
+    { name: 'Codex CLI', path: '/integrations/codex' },
+  ]}
+  tags={['Codex CLI session sync', 'Codex resume', 'macOS', 'Windows']}
+>
+  <h2 id="support-at-a-glance">Codex CLI support at a glance</h2>
+  <dl class="pc-facts">
+    <div>
+      <dt>Session direction</dt>
+      <dd>Codex CLI → Codex CLI</dd>
+    </div>
+    <div>
+      <dt>Tested stable range</dt>
+      <dd><code>0.133.0</code>–<code>0.145.0</code></dd>
+    </div>
+    <div>
+      <dt>Primary platforms</dt>
+      <dd>macOS and native Windows</dd>
+    </div>
+    <div>
+      <dt>Remote storage</dt>
+      <dd>Your S3-compatible or Cloudflare R2 bucket</dd>
+    </div>
+  </dl>
+  <p>
+    The stated range is the current source compatibility evidence for macOS arm64 plus
+    deterministic synthetic fixtures. Native Windows, macOS amd64, WSL2, and physical two-device
+    acceptance remain release gates for stable v0.1. A version outside the range is
+    <code>UNTESTED</code>; Reinstate permits read-only discovery but refuses export and restore.
+  </p>
+
+  <h2 id="how-it-works">How Codex session sync works</h2>
+  <p>
+    Codex stores the source working directory in each rollout's structural
+    <code>session_meta.cwd</code>. That path identifies the local checkout, so it cannot be copied
+    literally when the destination machine uses a different root.
+  </p>
+  <ol class="pc-steps">
+    <li>
+      Configure a canonical project ID and the actual local project root on each device.
+    </li>
+    <li>
+      During discovery, RC6 resolves <code>session_meta.cwd</code> to that project ID and excludes
+      rollouts outside mapped roots.
+    </li>
+    <li>
+      Export replaces the resolved source root with a portable
+      <code>${'${REPO:<id>}'}</code> token, then encrypts the artifact locally.
+    </li>
+    <li>
+      Restore expands the token through the destination device's project mapping while preserving
+      Codex's native date-partitioned rollout structure.
+    </li>
+  </ol>
+
+  <div class="pc-callout">
+    <p>Structural paths are portable; transcript prose is not rewritten.</p>
+    <p>
+      Reinstate changes known path fields needed for native resume. It deliberately leaves
+      free-form prompts, responses, and unknown fields alone rather than modifying the meaning of
+      the conversation.
+    </p>
+  </div>
+
+  <h2 id="security-boundary">Security boundary</h2>
+  <p>
+    Reinstate reads local Codex session files and does not call OpenAI APIs or require OpenAI
+    account credentials. Authentication files, API keys, OAuth tokens, credential stores, caches,
+    and regenerable dependencies are excluded from sync. Storage credentials stay in the operating
+    system keyring.
+  </p>
+  <p>
+    Session content is encrypted locally with age passphrase encryption before upload. Because a
+    transcript may contain sensitive text produced during a coding task, read the
+    <a href="/security">security model and threat boundaries</a> before using real sessions.
+  </p>
+
+  <h2 id="limitations">Current limitations</h2>
+  <ul>
+    <li>Codex rollouts can be resumed only by Codex in Phase 1.</li>
+    <li>Rollouts outside configured canonical project roots are not exported.</li>
+    <li>Untested or unsupported Codex versions cannot be pushed or pulled.</li>
+    <li>Credentials, MCP servers, skills, plugins, hooks, and agent settings are not synced.</li>
+    <li>WSL1 is unsupported; native Windows and WSL2 are separate Reinstate devices.</li>
+    <li>Reinstate is independent of OpenAI and is not an official Codex product.</li>
+  </ul>
+
+  <h2 id="start">Start with Codex</h2>
+  <p>
+    Install the release candidate and configure the same canonical project ID on each machine.
+    Push the selected session on the source, inspect
+    <code>rein pull --agent codex --session SESSION_ID --dry-run</code> on the destination, then
+    restore that scoped session and use Codex's native resume command.
+  </p>
+
+  <section class="pc-related" aria-labelledby="related-heading">
+    <h2 id="related-heading">Codex resources</h2>
+    <nav aria-label="Related pages">
+      <a href="/docs/installation">Install Reinstate</a>
+      <a href="/guides/sync-codex-sessions-across-devices">Complete Codex guide</a>
+      <a href="/docs/troubleshooting#why-is-a-large-codex-session-slow-to-sync"
+        >Codex troubleshooting</a
+      >
+      <a href="/use-cases/macos-and-windows">macOS and Windows workflow</a>
+      <a href="/compatibility">Exact compatibility states</a>
+      <a href="/docs/adapters">Adapter internals</a>
+      <a href="/compare/reinstate-vs-manual-session-copying">Compare with manual copying</a>
+      <a href="/changelog">Release changelog</a>
+    </nav>
+  </section>
+</PublicContentLayout>

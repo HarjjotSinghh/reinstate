@@ -1,16 +1,34 @@
-# Getting Started
+---
+title: "Install and sync Reinstate across devices"
+description: "Install Reinstate, configure encrypted S3-compatible storage, and restore a Claude Code or Codex session safely on another development machine."
+order: 1
+author: "Harjot Singh Rana"
+status: current
+schemaType: web-page
+version: "v0.1.0-rc.6"
+updatedAt: 2026-07-27
+tags: ["installation", "session-sync", "claude-code", "codex", "s3"]
+targetQuery: "how to sync coding-agent sessions across devices"
+searchIntent: "how-to"
+draft: false
+noindex: false
+---
 
-Reinstate synchronizes Claude Code and Codex CLI sessions through
-client-side-encrypted object storage that you control.
+Reinstate synchronizes same-vendor Claude Code and Codex CLI sessions across
+your machines through client-side-encrypted, user-owned S3-compatible storage.
 
-> The public installers currently pin release candidate `v0.1.0-rc.6`.
+> **Release status:** the public installers currently pin `v0.1.0-rc.6`.
+> It remains a release candidate while native Windows, macOS amd64, WSL2, and
+> two-device acceptance gates are open.
 
 ## Prerequisites
 
-- two development machines
+- macOS or native 64-bit Windows for the primary Phase 1 target
+- WSL2 only for the documented smoke-test path; WSL1 is refused
 - Claude Code and/or Codex CLI
-- an S3-compatible bucket, such as Cloudflare R2
-- one encryption passphrase you can enter privately on every device
+- an S3-compatible bucket you control, such as Cloudflare R2
+- its endpoint, bucket name, access-key ID, and secret access key
+- one long encryption passphrase you can enter privately on every device
 
 Reinstate never needs your Anthropic or OpenAI account credentials.
 
@@ -28,10 +46,13 @@ Native Windows PowerShell:
 irm https://reinstate.dev/install.ps1 | iex
 ```
 
-Both bootstraps pin `v0.1.0-rc.6`, verify the exact tagged canonical installer,
-verify the downloaded release binary, install without elevation, configure a
-user-local PATH, and print the next command. They do not launch interactive
-setup from piped input.
+Both bootstraps pin `v0.1.0-rc.6`, verify the exact tagged canonical installer
+and release binary, install without elevation, configure a user-local PATH, and
+print the next command. They install the CLI only; interactive configuration
+begins when you run `rein init`.
+
+The POSIX bootstrap can install the binary on Linux, but plain Linux is not a
+certified Phase 1 agent-resume target. WSL2 remains an open release gate.
 
 Default locations:
 
@@ -74,8 +95,12 @@ rein init \
   --project local/my-project=/absolute/path/to/my-project
 ```
 
-Enter the S3/R2 endpoint, bucket, and credentials privately. Save the printed
-non-secret `profile_id`, then run:
+Enter the S3/R2 service endpoint, bucket, and credentials privately. Do not add
+the bucket name to the endpoint URL. Credential input is hidden and stored in
+the native OS keyring. Reinstate probes storage before writing local
+configuration.
+
+Save the printed non-secret `profile_id`, then run:
 
 ```sh
 rein setup check
@@ -95,13 +120,22 @@ Use `--all` only after you explicitly decide to sync every discovered session.
 
 ## Additional device
 
-Use the same profile ID and canonical project ID, mapped to the local path:
+Use the same profile ID and canonical project ID, mapped to this device's local
+path:
 
 ```sh
 rein init \
   --profile-id DEVICE_A_PROFILE_UUID \
   --project local/my-project=/different/absolute/path
+```
 
+Enter the same endpoint, bucket, credentials, and encryption passphrase. RC6
+requires the existing encrypted remote manifest to be readable before it saves
+the additional device's configuration.
+
+Validate without mutation:
+
+```sh
 rein setup check
 rein doctor --self-test
 rein status
@@ -141,13 +175,17 @@ credentials and the encryption passphrase privately, never in chat.
 
 Run the complete
 [MacBook + Windows acceptance checklist](https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/phase-1-mac-windows-acceptance.md)
-before calling the release stable. It covers both agents, both directions,
-backups, conflicts, wrong-passphrase refusal, and ciphertext-only storage.
+to evaluate both agents, both directions, backups, conflicts, wrong-passphrase
+refusal, and ciphertext-only storage. Passing the committed checklist is a
+release gate; this page does not claim that the gate has passed.
 
 ## Safety
 
 - remote manifests and snapshots are encrypted;
 - auth and credential files are hard-excluded;
 - pulls validate before mutation and back up existing targets;
-- divergence produces conflict records instead of silent overwrite; and
-- passphrases are accepted only through hidden input.
+- divergence produces conflict records instead of silent overwrite;
+- mutating pulls refuse to replace a session while the matching agent is
+  active; and
+- passphrases are accepted through hidden input or an explicit pre-opened file
+  descriptor, never a normal CLI argument or environment value.

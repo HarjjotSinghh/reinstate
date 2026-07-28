@@ -3,6 +3,7 @@ import { defineConfig } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 import mdx from '@astrojs/mdx';
 import vercel from '@astrojs/vercel';
+import sitemap from '@astrojs/sitemap';
 
 const ignoreGeneratedDevPath = (filePath) =>
   /\/(?:\.vercel|dist)(?:\/|$)/.test(filePath.replaceAll('\\', '/'));
@@ -12,7 +13,16 @@ export default defineConfig({
   site: 'https://reinstate.dev',
   output: 'server',
   adapter: vercel(),
-  integrations: [mdx()],
+  trailingSlash: 'never',
+  integrations: [
+    mdx(),
+    sitemap({
+      filter: (page) =>
+        !page.includes('/api/') &&
+        !page.includes('/preview') &&
+        !page.endsWith('/404'),
+    }),
+  ],
   vite: {
     plugins: [tailwindcss()],
     server: {

@@ -1,0 +1,232 @@
+---
+const links = [
+  {
+    label: 'Start here',
+    title: 'Install and sync safely',
+    description:
+      'Set up encrypted, user-owned storage and test a dry-run before restoring a supported session.',
+    href: '/docs/getting-started',
+  },
+  {
+    label: 'Integration',
+    title: 'Claude Code',
+    description:
+      'See exact same-vendor resume behavior, tested versions, path mapping, exclusions, and limitations.',
+    href: '/integrations/claude-code',
+  },
+  {
+    label: 'Integration',
+    title: 'Codex CLI',
+    description:
+      'Review rollout discovery, structural cwd remapping, native resume, compatibility, and failure boundaries.',
+    href: '/integrations/codex',
+  },
+  {
+    label: 'Architecture',
+    title: 'How continuity moves',
+    description:
+      'Follow a session through adapters, canonical project identity, encryption, snapshots, and restore.',
+    href: '/docs/architecture',
+  },
+  {
+    label: 'Trust',
+    title: 'Security model',
+    description:
+      'Understand local age encryption, credential exclusions, key handling, metadata, and threat boundaries.',
+    href: '/security',
+  },
+  {
+    label: 'Product facts',
+    title: 'Compatibility',
+    description:
+      'Check current agents, operating systems, storage backends, tested ranges, and open release gates.',
+    href: '/compatibility',
+  },
+  {
+    label: 'Releases',
+    title: 'Changelog',
+    description:
+      'Track verified changes, compatibility updates, breaking behavior, and the current prerelease status.',
+    href: '/changelog',
+  },
+  {
+    label: 'Apache-2.0',
+    title: 'Inspect the source',
+    description:
+      'Review the implementation, tests, roadmap, security policy, issues, and contribution workflow on GitHub.',
+    href: 'https://github.com/HarjjotSinghh/reinstate',
+    external: true,
+  },
+];
+---
+
+<section class="explore" aria-labelledby="explore-title">
+  <div class="shell">
+    <div class="heading">
+      <p class="eyebrow mono">EXPLORE REINSTATE</p>
+      <h2 id="explore-title">Continuity around the agents you already use.</h2>
+      <p>
+        Reinstate is an open-source tool for syncing encrypted Claude Code and
+        Codex sessions across configured macOS and Windows devices using your
+        own S3-compatible storage. Native resume stays same-vendor; cross-agent
+        work requires an explicit portable handoff in a later phase.
+      </p>
+    </div>
+
+    <nav class="grid" aria-label="Explore Reinstate resources">
+      {
+        links.map((link, index) => (
+          <a
+            class="card"
+            href={link.href}
+            rel={link.external ? 'noopener noreferrer' : undefined}
+            target={link.external ? '_blank' : undefined}
+            data-analytics-event={link.external ? 'github_click' : undefined}
+            data-analytics-target={link.external ? 'homepage-explore' : undefined}
+          >
+            <span class="number mono">{String(index + 1).padStart(2, '0')}</span>
+            <span class="copy">
+              <span class="label mono">{link.label}</span>
+              <strong>{link.title}</strong>
+              <span class="description">{link.description}</span>
+            </span>
+            <span class="arrow" aria-hidden="true">{link.external ? '↗' : '→'}</span>
+          </a>
+        ))
+      }
+    </nav>
+  </div>
+</section>
+
+<style>
+  .explore {
+    position: relative;
+    overflow: hidden;
+    padding-block: clamp(4.5rem, 9vw, 8rem);
+    border-top: 1px solid var(--rule);
+    background:
+      linear-gradient(150deg, transparent 0 68%, color-mix(in oklab, var(--prim) 20%, transparent) 68% 100%),
+      var(--paper);
+  }
+
+  .explore::before {
+    content: '';
+    position: absolute;
+    top: -8rem;
+    right: -7rem;
+    width: 24rem;
+    aspect-ratio: 1;
+    border: 1px solid var(--rule);
+    transform: rotate(30deg);
+    pointer-events: none;
+  }
+
+  .heading {
+    position: relative;
+    max-width: 69rem;
+  }
+
+  .eyebrow {
+    margin: 0 0 1rem;
+    color: var(--prim-deep);
+    font-size: 0.73rem;
+    font-weight: 650;
+    letter-spacing: 0.11em;
+  }
+
+  h2 {
+    max-width: 19ch;
+    margin: 0;
+    font-size: clamp(2.6rem, 6vw, 5.3rem);
+    line-height: 0.98;
+  }
+
+  .heading > p:last-child {
+    max-width: 70ch;
+    margin: 1.5rem 0 0;
+    color: var(--ink-2);
+    font-size: clamp(1.05rem, 1.8vw, 1.3rem);
+    line-height: 1.6;
+    text-wrap: pretty;
+  }
+
+  .grid {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: clamp(2.5rem, 6vw, 4.5rem);
+    border-top: 1px solid var(--rule);
+    border-left: 1px solid var(--rule);
+  }
+
+  .card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 1rem;
+    min-height: 13rem;
+    padding: clamp(1.25rem, 3vw, 2rem);
+    border-right: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    background: color-mix(in oklab, var(--paper-2) 46%, transparent);
+    color: var(--ink);
+    text-decoration: none;
+    transition: background 160ms ease, transform 160ms ease;
+  }
+
+  .card:hover {
+    background: color-mix(in oklab, var(--prim) 12%, var(--paper-2));
+  }
+
+  .number,
+  .label {
+    color: var(--ink-3);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+  }
+
+  .copy strong {
+    margin-top: 0.7rem;
+    font-family: var(--font-display);
+    font-size: clamp(1.45rem, 2.4vw, 2rem);
+    font-weight: 400;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+  }
+
+  .description {
+    max-width: 48ch;
+    margin-top: 0.85rem;
+    color: var(--ink-2);
+    font-size: 0.93rem;
+    line-height: 1.55;
+  }
+
+  .arrow {
+    color: var(--prim-deep);
+    font-size: 1.25rem;
+    line-height: 1;
+  }
+
+  @media (max-width: 720px) {
+    .grid {
+      grid-template-columns: 1fr;
+    }
+
+    .card {
+      min-height: auto;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card {
+      transition: none;
+    }
+  }
+</style>

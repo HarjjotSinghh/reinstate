@@ -1,0 +1,333 @@
+---
+import PublicContentLayout from '../../layouts/PublicContentLayout.astro';
+
+export const prerender = true;
+
+const title = 'Create an Encrypted Backup of Coding-Agent Sessions';
+const description =
+  'Store selected Claude Code or Codex session snapshots as client-encrypted objects in your own S3-compatible bucket, then verify and test restore.';
+---
+
+<PublicContentLayout
+  {title}
+  {description}
+  path="/use-cases/encrypted-session-backup"
+  eyebrow="Use case · Encrypted recovery copy"
+  answer="Reinstate RC6 can create a client-encrypted recovery copy of selected Claude Code or Codex sessions in your own S3-compatible bucket. It encrypts before upload, excludes known credential material, and can restore through the same vendor—but it is not a complete backup system, so keep independent, restore-tested backups too."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Use cases', path: '/use-cases' },
+    { name: 'Encrypted session backup', path: '/use-cases/encrypted-session-backup' },
+  ]}
+  tags={['encrypted session backup', 'age encryption', 'BYO storage', 'session recovery']}
+>
+  <h2 id="scope">A narrow encrypted recovery copy, not a general backup product</h2>
+  <p>
+    RC6 snapshots explicitly selected, supported Claude Code or Codex CLI session artifacts and
+    uploads them only after local age passphrase encryption. The provider receives ciphertext,
+    opaque snapshot keys, sizes, timing, account identity, and bucket metadata. It does not receive
+    the encryption passphrase.
+  </p>
+  <p>
+    “Backup” here means a recoverable encrypted copy of supported agent-session state. Reinstate
+    does not back up repositories, uncommitted work, home directories, vendor accounts, credentials,
+    every agent, or the complete execution environment. It does not promise provider retention,
+    point-in-time recovery, or automatic background scheduling in RC6.
+  </p>
+
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">Included</th>
+          <th scope="col">Excluded or separate</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Selected supported Claude Code or Codex session artifact</td>
+          <td>Other agents and unsupported or untested layouts</td>
+        </tr>
+        <tr>
+          <td>Encrypted manifest and immutable snapshot metadata</td>
+          <td>Git repository, branch, worktree, and uncommitted changes</td>
+        </tr>
+        <tr>
+          <td>Portable known structural project paths</td>
+          <td>Free-form paths inside transcript prose or tool output</td>
+        </tr>
+        <tr>
+          <td>Conflict and local replacement safety</td>
+          <td>
+            Vendor login, API keys, OAuth, <code>.env</code>, keyrings, or credential stores
+          </td>
+        </tr>
+        <tr>
+          <td>Same-vendor restore</td>
+          <td>Native Claude Code-to-Codex or Codex-to-Claude conversion</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="encryption-flow">Where encryption and trust boundaries sit</h2>
+  <ol class="pc-steps">
+    <li>
+      A supported adapter discovers the selected local vendor artifact and known structural path
+      fields.
+    </li>
+    <li>
+      Reinstate normalizes configured project paths, packages the immutable snapshot, and encrypts
+      it locally with an age scrypt recipient derived from the passphrase.
+    </li>
+    <li>
+      HTTPS carries ciphertext to the private bucket under
+      <code>profiles/PROFILE_ID/snapshots/&lt;opaque-id&gt;.age</code>.
+    </li>
+    <li>
+      The encrypted <code>manifest.age</code> records the current remote session revisions.
+    </li>
+    <li>
+      A restore downloads and fully authenticates/decrypts the artifact before any vendor file is
+      mutated.
+    </li>
+  </ol>
+  <p>
+    Storage credentials entered interactively are stored in macOS Keychain, Windows Credential
+    Manager, or the supported OS keyring. The passphrase is not stored by Reinstate. Losing it
+    means losing the ability to decrypt the remote profile by design.
+  </p>
+
+  <h2 id="create-copy">Create the encrypted copy deliberately</h2>
+  <p>
+    First configure a private bucket with the narrow read, list, write, and delete access required
+    by RC6. The
+    <a href="/guides/use-s3-for-coding-agent-session-storage">Amazon S3 guide</a>
+    and
+    <a href="/guides/use-cloudflare-r2-for-coding-agent-session-storage">
+      Cloudflare R2 guide
+    </a>
+    separate provider setup from Reinstate setup.
+  </p>
+  <p>
+    After <code>rein init</code>, setup checks, and a synthetic self-test pass:
+  </p>
+  <pre><code>rein list --agent AGENT
+rein push --agent AGENT --session SESSION_ID --dry-run
+rein push --agent AGENT --session SESSION_ID
+rein status</code></pre>
+  <p>
+    Choose exactly one harmless session for the first run. The dry-run must say
+    <code>would push</code> and must not create a snapshot. The mutating push should report the
+    selected count and a remote revision. Avoid <code>--all</code> until the full discovered scope
+    has been reviewed.
+  </p>
+
+  <div class="pc-callout">
+    <p>Encryption cannot un-publish a secret already in a transcript.</p>
+    <p>
+      Known credential files are excluded, but a token pasted into agent conversation is session
+      content and will be protected as part of the encrypted snapshot. If such a token was exposed,
+      rotate it; do not treat encryption as remediation.
+    </p>
+  </div>
+
+  <h2 id="verification">Verify ciphertext and recoverability separately</h2>
+  <p>
+    A <code>.age</code> suffix alone is not proof. Perform two controlled checks without
+    publishing transcript data.
+  </p>
+
+  <h3>1. Inspect the provider boundary</h3>
+  <ul>
+    <li>
+      The profile prefix contains <code>manifest.age</code> and opaque
+      <code>snapshots/*.age</code> objects.
+    </li>
+    <li>
+      No plaintext JSON/JSONL transcript, <code>.env</code>, <code>auth.json</code>, token, or
+      credential object exists.
+    </li>
+    <li>A privately downloaded snapshot does not contain a known harmless marker in plaintext.</li>
+    <li>The temporary initialization probe has been deleted.</li>
+    <li>The bucket remains private and uses no public website or development URL.</li>
+  </ul>
+
+  <h3>2. Test a destination restore</h3>
+  <p>
+    On a separately configured compatible device—or an isolated Reinstate home with an approved
+    test target—join the exact profile UUID, map the same project ID, and run:
+  </p>
+  <pre><code>rein setup check
+rein doctor --self-test
+rein status
+rein pull --agent AGENT --session SESSION_ID --dry-run</code></pre>
+  <p>
+    Confirm the planned native destination and backup root. Close the same-vendor agent, perform
+    the pull, then use <code>claude --resume SESSION_ID</code> or
+    <code>codex resume SESSION_ID</code>. A backup is credible only after a controlled recovery
+    drill reaches the intended session.
+  </p>
+  <p>
+    Current physical Mac/Windows and other native-device acceptance rows remain open for RC6.
+    Personal restore evidence must not be represented as project-wide stable certification.
+  </p>
+
+  <h2 id="restore-safety">What protects an existing destination</h2>
+  <ul>
+    <li>
+      Pull offers a non-mutating <code>--dry-run</code> that reports destinations and the backup
+      root.
+    </li>
+    <li>A wrong passphrase fails authentication before agent-file mutation.</li>
+    <li>An active same-vendor process causes safety exit <code>7</code> before replacement.</li>
+    <li>An existing destination is copied into a timestamped local backup before atomic replacement.</li>
+    <li>
+      Diverged local and remote revisions produce conflict exit <code>6</code>, not silent
+      last-writer-wins.
+    </li>
+    <li>
+      <code>rein conflicts resolve CONFLICT_ID --keep-both</code> can preserve both branches.
+    </li>
+  </ul>
+  <p>
+    These controls protect restore operations; they do not prevent a bucket administrator or
+    compromised write credential from deleting, replacing, or rolling back ciphertext.
+  </p>
+
+  <h2 id="failure-recovery">Failure and recovery decisions</h2>
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">Failure</th>
+          <th scope="col">What remains safe</th>
+          <th scope="col">Next action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Storage probe fails</td>
+          <td>RC6 does not save a usable-looking config</td>
+          <td>Correct endpoint, Region, bucket, credential, or delete access; retry init.</td>
+        </tr>
+        <tr>
+          <td>Push dry-run fails</td>
+          <td>No remote session snapshot was written</td>
+          <td>Resolve compatibility, selection, path, keyring, or provider access first.</td>
+        </tr>
+        <tr>
+          <td>Passphrase is lost</td>
+          <td>Local vendor files and independent backups may remain</td>
+          <td>Do not overwrite local history; the remote ciphertext cannot be decrypted.</td>
+        </tr>
+        <tr>
+          <td>Remote manifest disappears</td>
+          <td>Additional devices fail closed instead of treating the profile as empty</td>
+          <td>Preserve snapshots and restore the manifest through an approved provider recovery process.</td>
+        </tr>
+        <tr>
+          <td>Local and remote copies diverge</td>
+          <td>Pull records a conflict without overwriting local state</td>
+          <td>Inspect metadata and choose keep-local, keep-remote, or keep-both explicitly.</td>
+        </tr>
+        <tr>
+          <td>Provider credential is exposed</td>
+          <td>Session plaintext still requires the separate passphrase</td>
+          <td>Revoke or rotate the credential, audit objects, preserve local copies, and investigate tampering.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    RC6 has no general undo or remote-session deletion command. Provider cleanup must target only a
+    reviewed <code>profiles/PROFILE_ID/</code> tree after participating devices stop and required
+    evidence or backups are preserved. Never delete only <code>manifest.age</code>.
+  </p>
+
+  <h2 id="independent-backup">Build an independent backup plan around it</h2>
+  <p>
+    The encrypted Reinstate profile and the independent backup should fail differently. Keeping
+    both in the same bucket, account, credential boundary, and retention policy can turn one
+    provider mistake into total loss.
+  </p>
+  <ul>
+    <li>Keep source code and repository history in the approved Git workflow.</li>
+    <li>Protect uncommitted work with a separately reviewed endpoint or workstation backup.</li>
+    <li>Retain the encryption passphrase in a password manager with an authorized recovery path.</li>
+    <li>Decide provider versioning, lifecycle, Object Lock, or bucket-lock policy deliberately.</li>
+    <li>
+      Test retention controls before applying them: the manifest changes, init probes need delete
+      access, and archival tiers can make ordinary pull unavailable.
+    </li>
+    <li>Schedule harmless restore drills and record only redacted metadata and pass/fail evidence.</li>
+  </ul>
+
+  <h2 id="limitations">Current limitations</h2>
+  <ul>
+    <li>RC6 uses explicit pushes and pulls; it is not an automatic backup daemon.</li>
+    <li>It has no built-in schedule, retention policy, remote pruning, or provider version restore.</li>
+    <li>Snapshots are complete immutable session artifacts rather than block- or delta-level backups.</li>
+    <li>Only recognized Claude Code and Codex CLI same-vendor workflows can mutate state.</li>
+    <li>Project path mapping does not reproduce Git, runtimes, shells, environment, or agent configuration.</li>
+    <li>Remote confidentiality does not protect a compromised local device or guarantee availability.</li>
+    <li>A formal pre-1.0 security audit is not claimed.</li>
+  </ul>
+
+  <h2 id="faq">Encrypted session backup FAQ</h2>
+
+  <h3>Can the storage provider read my session?</h3>
+  <p>
+    The provider should receive age-encrypted manifests and snapshots, not plaintext session
+    contents or the passphrase. It can still observe account, bucket, object keys, sizes, request
+    timing, and access patterns.
+  </p>
+
+  <h3>Does provider-side encryption replace Reinstate encryption?</h3>
+  <p>
+    No. S3 or R2 encryption at rest is useful defense in depth. Reinstate's client-side encryption
+    creates the boundary in which the provider receives ciphertext.
+  </p>
+
+  <h3>Are agent credentials backed up?</h3>
+  <p>
+    No. Known auth files, OAuth material, API keys, <code>.env</code> files, credential stores,
+    and keyring contents are excluded. Configure vendor authentication independently on a restored
+    device.
+  </p>
+
+  <h3>Can I restore the session into another agent vendor?</h3>
+  <p>
+    No. RC6 restores Claude Code state to Claude Code and Codex state to Codex CLI. Explicit
+    portable handoffs are later product direction, not a hidden conversion performed by backup
+    restore.
+  </p>
+
+  <h3>Should I enable immutable retention on the profile?</h3>
+  <p>
+    Not without testing. The encrypted manifest changes as sessions are pushed, and the
+    initialization probe requires deletion. Object Lock or bucket-lock rules can block those
+    operations. Provider versioning can be valuable, but cleanup and restore procedures must
+    account for old versions and delete markers.
+  </p>
+
+  <h3>How often should I test recovery?</h3>
+  <p>
+    Use a cadence appropriate to the value and change rate of the sessions. Every test should use
+    harmless data, preview restore, verify the mapped destination, preserve existing state, and
+    prove native resume without exposing transcript contents.
+  </p>
+
+  <section class="pc-related" aria-labelledby="related-heading">
+    <h2 id="related-heading">Configure and test encrypted recovery</h2>
+    <nav aria-label="Related pages">
+      <a href="/guides/use-s3-for-coding-agent-session-storage">Amazon S3 setup</a>
+      <a href="/guides/use-cloudflare-r2-for-coding-agent-session-storage">
+        Cloudflare R2 setup
+      </a>
+      <a href="/use-cases/desktop-and-laptop">Desktop and laptop continuity</a>
+      <a href="/docs/security-model">Encryption and restore safety</a>
+      <a href="/compatibility">Current compatibility evidence</a>
+    </nav>
+  </section>
+</PublicContentLayout>
