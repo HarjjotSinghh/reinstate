@@ -31,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   while exposing visible review dates and breadcrumbs.
 - Point the repository's website reference at the canonical `reinstate.dev`
   domain.
+- Separate signed website-only deployment identity
+  (`website-vYYYY.MM.DD.N`) from semantic CLI release tags while retaining
+  explicit, byte-verified installer parity with the release derived from both
+  public bootstraps.
 
 ### Fixed
 

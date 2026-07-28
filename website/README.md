@@ -171,20 +171,30 @@ Optional Resend notify (never required for signup success):
 
 ## Deploy
 
-Automatic Vercel Git deployments are disabled. Production must come from the
-signed release tag at the exact `origin/main` commit.
+Automatic Vercel Git deployments are disabled. Production must come from an
+approved signed website deployment tag at the exact `origin/main` commit:
+
+- `website-vYYYY.MM.DD.N` identifies the exact website source to deploy. It is
+  not a Reinstate version or GitHub Release.
+- `vX.Y.Z[-prerelease]` separately identifies the CLI release pinned by both
+  public bootstraps. The guarded script derives this tag from those files and
+  refuses to deploy if they disagree.
 
 ```bash
 # One-time project/environment setup:
 cd website
-npx vercel link --project reinstate-web --scope harjjot
-npx vercel env add WAITLIST_GIST_ID production   # or Turso vars
-npx vercel env add GITHUB_TOKEN production
-npx vercel env add INDEXNOW_KEY production       # optional; prompts securely
+vercel_cli() { npm exec --yes --package=vercel@57.0.0 -- vercel "$@"; }
+vercel_cli link --project reinstate-web --scope harjjot
+vercel_cli env add WAITLIST_GIST_ID production   # or Turso vars
+vercel_cli env add GITHUB_TOKEN production
+vercel_cli env add INDEXNOW_KEY production       # optional; prompts securely
 cd ..
 
-# After the signed tag and GitHub prerelease exist:
-./scripts/deploy-website-production.sh vX.Y.Z
+# After the signed tag-validation workflow passes for the exact origin/main commit:
+./scripts/deploy-website-production.sh website-vYYYY.MM.DD.N
+
+# Current example: ship reviewed website changes without changing RC6:
+./scripts/deploy-website-production.sh website-v2026.07.28.1
 ```
 
 Canonical live site: **https://reinstate.dev** (Vercel project
@@ -193,10 +203,15 @@ Canonical live site: **https://reinstate.dev** (Vercel project
 Root directory for the Vercel project must be `website/`.
 
 The deployment script refuses dirty, non-`main`, unpushed, unsigned, or
-tag-mismatched source. It builds and tests locally, deploys without moving the
-production alias, byte-verifies both installers at the immutable deployment
-URL, promotes that deployment, and verifies the live routes again. Do not run
-`vercel --prod` directly.
+tag-mismatched source. It verifies the signed website deployment tag, derives
+the CLI installer tag independently from both public bootstraps, refuses a
+version mismatch, verifies the corresponding signed published CLI release, and
+requires the committed installers to match that release byte for byte. It
+builds and tests locally, deploys without moving the production alias, verifies
+the immutable deployment and its installers, promotes only after those checks
+pass, and verifies the live origin again. Do not run `vercel --prod` directly.
+Push the website tag and wait for the **Validate signed website deployment
+tag** workflow to pass before running the command.
 
 ## Design
 

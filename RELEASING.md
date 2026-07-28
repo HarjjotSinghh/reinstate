@@ -71,22 +71,59 @@ Before publishing the draft:
 ### 4. Publish the public installer routes
 
 Automatic Vercel Git deployments are disabled. After the GitHub release is
-published, update a clean local `main` to the exact signed tag commit, link the
-existing Vercel project if necessary, then run:
+published, confirm both public bootstrap files pin that same release, update a
+clean local `main`, and create a signed, annotated
+`website-vYYYY.MM.DD.N` tag at the exact `origin/main` commit. Link the existing
+Vercel project if necessary. Push the tag and wait for the
+**Validate signed website deployment tag** workflow to pass, then run:
 
 ```bash
-./scripts/deploy-website-production.sh vX.Y.Z
+./scripts/deploy-website-production.sh website-vYYYY.MM.DD.N
 ```
 
-The script deploys without moving the production alias, verifies `install.sh`
-and `install.ps1` against the exact tag at the immutable deployment URL,
-promotes only that verified deployment, and verifies both live routes again.
-Never run `vercel --prod` directly for a release.
+The script derives the CLI release tag independently from `install.sh` and
+`install.ps1`, refuses a mismatch, and verifies that release before it deploys.
+It deploys without moving the production alias, verifies both installers
+against the derived CLI release at the immutable deployment URL, promotes only
+that verified deployment, and verifies both live routes again. Never run
+`vercel --prod` directly for a release.
 
 For a release candidate, start the committed Mac/Windows acceptance prompts
 only after both live routes install the new exact version.
 
-### 5. Announce (optional)
+### 5. Publish website-only changes
+
+A website deployment is not a CLI release. Use a signed, annotated
+`website-vYYYY.MM.DD.N` deployment tag when reviewed website changes need to
+ship without advancing the current Reinstate version. The website tag must
+point at the exact current `origin/main` commit; it must not be published as a
+GitHub Release or described as a new CLI version.
+
+The public installer identity remains explicit inside both committed bootstrap
+files. The script derives their CLI release tag, requires them to agree, and
+verifies the corresponding published release. Push the website tag and wait
+for the **Validate signed website deployment tag** workflow to pass before
+running:
+
+```bash
+./scripts/deploy-website-production.sh website-vYYYY.MM.DD.N
+```
+
+For example, while RC6 remains current:
+
+```bash
+./scripts/deploy-website-production.sh website-v2026.07.28.1
+```
+
+The guarded script verifies the website tag signature, requires it to match
+clean local `main` and `origin/main`, verifies the derived signed CLI release,
+and requires both committed public installers to match that release before
+deploying. It then applies the same immutable-deployment checks, installer byte
+comparisons, production discovery smoke tests, promotion, and live-origin
+verification. A `website-v...` tag does not satisfy or replace any CLI release,
+compatibility, or acceptance gate.
+
+### 6. Announce (optional)
 
 - GitHub Discussions "Show and tell" / announcements
 - X/Twitter [@HarjjotSinghh](https://x.com/HarjjotSinghh)
