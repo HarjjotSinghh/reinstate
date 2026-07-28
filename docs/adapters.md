@@ -42,13 +42,13 @@ project ID in snapshots and recomputes Claude's directory key from the
 destination device's `local_root`. Snapshot archive paths remain source
 metadata; they are never reused as cross-device restore destinations.
 
-RC6 verifies the exact planned destination after restore. A matching session
+RC7 verifies the exact planned destination after restore. A matching session
 ID elsewhere in `~/.claude/projects` is not accepted as success.
 
 ## Codex project identity
 
 Codex stores the source working directory in each rollout's structural
-`session_meta.cwd`. When project mappings are configured, RC6 resolves that
+`session_meta.cwd`. When project mappings are configured, RC7 resolves that
 directory to the configured canonical project ID during discovery and excludes
 rollouts outside those mapped roots. Export normalizes the resolved source root
 to a `${REPO:<id>}` token, and restore expands it through the destination

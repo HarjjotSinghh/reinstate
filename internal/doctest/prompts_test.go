@@ -13,7 +13,7 @@ func TestEndUserPromptContracts(t *testing.T) {
 		body := read(t, path)
 		required := []string{
 			"Prompt version:** 6",
-			"v0.1.0-rc.6",
+			"v0.1.0-rc.7",
 			"https://reinstate.dev/install.sh",
 			"https://reinstate.dev/install.ps1",
 			"github.com/HarjjotSinghh/reinstate/releases/download/",
@@ -120,21 +120,21 @@ func TestRC5AcceptancePromptContracts(t *testing.T) {
 	}
 }
 
-func TestRC6AcceptancePromptContracts(t *testing.T) {
-	body := read(t, "docs/testing/phase-1-rc6-agent-verification-prompts.md")
+func TestRC7AcceptancePromptContracts(t *testing.T) {
+	body := read(t, "docs/testing/phase-1-rc7-agent-verification-prompts.md")
 	for _, value := range []string{
-		"v0.1.0-rc.6",
+		"v0.1.0-rc.7",
 		"autonomous",
 		"R2.txt",
 		"REINSTATE_ENCRYPTION_PASSPHRASE",
 		"REINSTATE_PASSPHRASE_FD",
 		"anonymous pipe",
 		"child's environment",
-		"MAC-RC6-M1",
-		"WINDOWS-RC6-W1-PASS",
-		"local/reinstate-phase1-acceptance-rc6",
-		"REINSTATE-PHASE1-RC6-MAC-CLAUDE-A1",
-		"REINSTATE-PHASE1-RC6-MAC-CODEX-A1",
+		"MAC-RC7-M1",
+		"WINDOWS-RC7-W1-PASS",
+		"local/reinstate-phase1-acceptance-rc7",
+		"REINSTATE-PHASE1-RC7-MAC-CLAUDE-A1",
+		"REINSTATE-PHASE1-RC7-MAC-CODEX-A1",
 		"claude --resume CLAUDE_SESSION_ID",
 		"codex resume CODEX_SESSION_ID",
 		"Prompt version 6",
@@ -145,13 +145,13 @@ func TestRC6AcceptancePromptContracts(t *testing.T) {
 		"f3_bad_coordinates_refused",
 		"remote profile manifest not found",
 		"ciphertext",
-		"fresh RC6",
-		"all 21",
-		"test/phase1-rc6-macos-report",
-		"test/phase1-rc6-windows-report",
+		"fresh RC7",
+		"all 23",
+		"test/phase1-rc7-macos-report",
+		"test/phase1-rc7-windows-report",
 	} {
 		if !strings.Contains(body, value) {
-			t.Errorf("RC6 acceptance prompts missing %q", value)
+			t.Errorf("RC7 acceptance prompts missing %q", value)
 		}
 	}
 	for _, forbidden := range []string{
@@ -165,7 +165,7 @@ func TestRC6AcceptancePromptContracts(t *testing.T) {
 		"normal R2/S3 UI",
 	} {
 		if strings.Contains(body, forbidden) {
-			t.Errorf("RC6 acceptance prompts contain forbidden instruction %q", forbidden)
+			t.Errorf("RC7 acceptance prompts contain forbidden instruction %q", forbidden)
 		}
 	}
 }

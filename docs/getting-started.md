@@ -4,7 +4,7 @@ Reinstate synchronizes Claude Code and Codex CLI sessions across your machines
 through client-side encrypted, user-owned object storage.
 
 > **Release status:** the public installers currently pin
-> `v0.1.0-rc.6`. It is a release candidate until the native Mac/Windows
+> `v0.1.0-rc.7`. It is a release candidate until the native Mac/Windows
 > [Phase 1 acceptance runbook](testing/phase-1-mac-windows-acceptance.md) passes.
 
 ## Prerequisites
@@ -42,14 +42,14 @@ and the current PowerShell process.
 
 Both public bootstraps:
 
-1. pin `v0.1.0-rc.6`;
+1. pin `v0.1.0-rc.7`;
 2. download the canonical installer from that exact signed Git tag;
 3. verify the canonical installer SHA-256;
 4. download only the matching GitHub Release asset and `checksums.txt`;
 5. verify the binary checksum and reported version; and
 6. preserve an existing different version until you approve replacement.
 
-The RC6 POSIX installer bounds replacement prompts to 30 seconds.
+The RC7 POSIX installer bounds replacement prompts to 30 seconds.
 `REINSTATE_CONFIRM_TIMEOUT_SECONDS` may be set to an
 integer from 1 through 300. It refuses immediately when the active shell cannot
 perform a timed TTY read. Timeout, unsupported-shell, and invalid-value paths
@@ -104,7 +104,7 @@ service endpoint only; do not append the bucket name to the endpoint URL. The
 bucket has its own prompt. Credential input is hidden and stored in the native
 OS keyring. Reinstate probes storage before writing local configuration.
 
-RC6 refuses to overwrite an existing `config.toml` or `state.json` with safety
+RC7 refuses to overwrite an existing `config.toml` or `state.json` with safety
 exit code `7`. Its explicit `rein init --force` path writes the previous config
 and state into one
 timestamped directory under `backups/` before replacing them.
@@ -155,7 +155,7 @@ rein init \
 ```
 
 Enter the same endpoint, bucket, credentials, and encryption passphrase. Keep
-the bucket name out of the endpoint URL. RC6 verifies that
+the bucket name out of the endpoint URL. RC7 verifies that
 `init --profile-id` can find the existing encrypted `manifest.age` before
 saving local configuration; a missing profile fails without initializing the
 device.
@@ -174,8 +174,9 @@ rein pull --agent claude --session SESSION_ID --dry-run
 rein pull --agent codex --session SESSION_ID --dry-run
 ```
 
-Close the selected coding agent before a pull that will replace an existing
-local session, then restore:
+You do not need to close unrelated agents. A pull only cares about the exact
+session it is replacing, and if that one session is open it is restored beside
+the live copy instead of being blocked. Restore with:
 
 ```sh
 # Claude Code
@@ -214,7 +215,10 @@ conflicts, wrong-passphrase refusal, and ciphertext-only remote storage.
 - auth and credential files are hard-excluded;
 - pull validates before mutation and backs up existing targets;
 - divergent sessions create conflict records instead of silent overwrite;
-- a mutating pull refuses to replace an active agent's session; and
+- a mutating pull never replaces a session an agent is actively using: the check
+  is scoped to that exact session file, so unrelated agents in other projects
+  are ignored, and a session that really is in use is restored alongside the
+  live one rather than blocking (`restore.active_agent_policy`); and
 - no plaintext passphrase is accepted through a normal argument or environment
   variable.
 

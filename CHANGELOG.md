@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-rc.7] - 2026-07-28
+
 ### Added
 
 - Add a production SEO, answer-engine optimization, and AI-search foundation
@@ -38,6 +40,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Scope the restore active-agent check to the exact session file being
+  replaced instead of asking whether any Claude Code or Codex process is alive
+  on the host. Running unrelated agents in other projects is the normal state
+  of a working machine and no longer blocks `pull` or `conflicts resolve`, so
+  nobody has to close background agents to restore a session. Detection uses
+  open file handles (`lsof` on Unix, Restart Manager on Windows) and falls back
+  to the previous host-wide answer only where handles cannot be enumerated,
+  reporting that imprecision in the refusal message.
+- Restore a session that genuinely is in use alongside the live one as a
+  distinct vendor-safe session instead of refusing, so a restore never waits on
+  a human closing an agent. The fork identity is derived from the snapshot, so
+  repeating the pull is idempotent rather than accumulating copies.
+- Detect a concurrent agent write to a restore target and abandon the restore
+  instead of discarding those changes at the final rename.
 - Allow the guarded immutable Vercel discoverability smoke to record and
   narrowly exempt the provider-injected preview `noindex` header while keeping
   the promoted production-origin check strict.
@@ -223,7 +239,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.6...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.7...HEAD
+[0.1.0-rc.7]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.6...v0.1.0-rc.7
 [0.1.0-rc.6]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.5...v0.1.0-rc.6
 [0.1.0-rc.5]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.4...v0.1.0-rc.5
 [0.1.0-rc.4]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.3...v0.1.0-rc.4

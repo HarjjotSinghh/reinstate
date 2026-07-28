@@ -16,6 +16,13 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.1.0-rc.7': {
+    rangeChange: 'No agent-version range change documented.',
+    compatibilityChange:
+      'Restore liveness detection became session-scoped. A restore now checks whether the exact target session file is held open, using operating-system file handles, instead of asking whether any Claude Code or Codex process is running. A session that is genuinely in use is restored alongside the live one rather than refused.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.1.0-rc.7/internal/processcheck/process.go',
+  },
   'v0.1.0-rc.6': {
     rangeChange: 'No agent-version range change documented.',
     compatibilityChange:

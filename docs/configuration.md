@@ -26,12 +26,12 @@ Copy the non-secret profile UUID printed by the first device and pass it as
 `rein init --profile-id UUID` on later devices.
 
 The endpoint is the S3/R2 service endpoint only. Do not append the bucket name;
-the bucket is configured separately. RC6 additional-device init verifies the
+the bucket is configured separately. RC7 additional-device init verifies the
 existing encrypted manifest before saving config and records
 `remote_profile_required = true`. `status`, `diff`, `pull`, and later pushes
 then fail if that manifest disappears instead of treating the profile as empty.
 
-RC6 refuses to run `init` against a home that already contains `config.toml` or
+RC7 refuses to run `init` against a home that already contains `config.toml` or
 `state.json`. Its explicit `--force` path first preserves both files in one
 timestamped directory under `backups/`.
 
@@ -40,6 +40,55 @@ Project paths are portable only when each device defines the same canonical ID:
 ```bash
 rein init --project github.com/acme/app=/absolute/local/path
 ```
+
+## Restore safety
+
+A restore replaces a vendor session file, so Reinstate first checks whether an
+agent is using that file. The check is scoped to the exact session being
+replaced — having Claude Code or Codex open in other projects is normal and does
+not block anything.
+
+```toml
+[restore]
+active_agent_policy = "fork"
+```
+
+| Policy | Behavior |
+| ------ | -------- |
+| `fork` (default) | Never blocks. If the target session is in use, the live file is left untouched and the remote copy is restored beside it as a distinct session. |
+| `scoped` | Refuse when the target session file is held open by that agent. |
+| `strict` | Refuse whenever the agent runs anywhere on the host. |
+| `off` | Skip the liveness check entirely. |
+
+Under `fork`, a `pull` reports the new session it created:
+
+```text
+pulled 1 snapshot(s), dry_run=false
+  claude:SESSION -> ... (backups: ...)
+    SESSION is in use, so it was left unchanged; restored alongside it as SESSION-active-a1b2c3d4
+```
+
+The fork identity is derived from the snapshot, so re-pulling the same remote
+state lands on the same file instead of accumulating copies. Because the live
+session is never replaced, a forked restore does not record a conflict and does
+not mark the original session as synchronized.
+
+`--allow-active-agents` applies `off` to a single `rein pull` or
+`rein conflicts resolve` run.
+
+`rein conflicts resolve --keep-remote` keeps the refusal even under the `fork`
+policy, because `--keep-both` is already the explicit way to preserve both
+branches there.
+
+Relaxing this policy does not remove the other protections. Restores always
+write to a temporary file and rename it into place, existing targets are always
+backed up first, and a restore is abandoned if the target changes on disk while
+the replacement is being prepared.
+
+Liveness is determined from open file handles: `lsof` on macOS and Linux, and
+the Restart Manager API on Windows. Where handles cannot be enumerated,
+Reinstate falls back to the host-wide answer and says so in the refusal, rather
+than implying a precision it does not have.
 
 ## Encryption
 

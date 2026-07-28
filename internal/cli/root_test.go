@@ -472,21 +472,152 @@ func TestSetupCheckJSONPreservesFailureExit(t *testing.T) {
 	}
 }
 
-func TestRequireAgentInactive(t *testing.T) {
-	if err := requireAgentInactive(context.Background(), func(context.Context, string) (bool, error) {
-		return false, nil
-	}, "claude"); err != nil {
-		t.Fatalf("inactive agent rejected: %v", err)
-	}
-	if err := requireAgentInactive(context.Background(), func(context.Context, string) (bool, error) {
-		return true, nil
-	}, "codex"); err == nil || !strings.Contains(err.Error(), "appears to be running") {
-		t.Fatalf("active agent accepted: %v", err)
-	}
+func TestPlanSessionRestore(t *testing.T) {
 	probeErr := errors.New("probe failed")
-	if err := requireAgentInactive(context.Background(), func(context.Context, string) (bool, error) {
-		return false, probeErr
-	}, "claude"); !errors.Is(err, probeErr) {
-		t.Fatalf("probe failure was not preserved: %v", err)
+	const sessionPath = "/home/dev/.claude/projects/demo/abc.jsonl"
+
+	forkTests := []struct {
+		name string
+		busy bool
+		want restoreDisposition
+	}{
+		{name: "fork policy restores in place when idle", busy: false, want: restoreInPlace},
+		{name: "fork policy forks rather than refusing when busy", busy: true, want: restoreAsFork},
+	}
+	for _, tc := range forkTests {
+		t.Run(tc.name, func(t *testing.T) {
+			checker := func(_ context.Context, _, _ string) (bool, bool, error) {
+				return tc.busy, true, nil
+			}
+			got, err := planSessionRestore(
+				context.Background(), checker, "claude", sessionPath, schema.ActiveAgentFork)
+			if err != nil {
+				t.Fatalf("fork policy must never refuse: %v", err)
+			}
+			if got != tc.want {
+				t.Fatalf("disposition=%v want %v", got, tc.want)
+			}
+		})
+	}
+
+	// The default (empty) policy must behave as fork, never as a refusal.
+	t.Run("empty policy defaults to forking", func(t *testing.T) {
+		checker := func(_ context.Context, _, _ string) (bool, bool, error) { return true, true, nil }
+		got, err := planSessionRestore(context.Background(), checker, "claude", sessionPath, "")
+		if err != nil || got != restoreAsFork {
+			t.Fatalf("disposition=%v err=%v, want fork and no error", got, err)
+		}
+	})
+
+	// Conflict resolution keeps the refusal, because --keep-both is the
+	// explicit way to fork there.
+	t.Run("requireSessionRestorable refuses under the fork policy", func(t *testing.T) {
+		checker := func(_ context.Context, _, _ string) (bool, bool, error) { return true, true, nil }
+		err := requireSessionRestorable(
+			context.Background(), checker, "claude", sessionPath, schema.ActiveAgentFork)
+		if err == nil || !strings.Contains(err.Error(), "is currently using this session") {
+			t.Fatalf("expected a refusal, got %v", err)
+		}
+	})
+
+	tests := []struct {
+		name        string
+		policy      string
+		busy        bool
+		scoped      bool
+		probeErr    error
+		wantErr     bool
+		wantMessage string
+		wantPath    string
+	}{
+		{
+			name:     "scoped policy allows an idle target",
+			policy:   schema.ActiveAgentScoped,
+			busy:     false,
+			scoped:   true,
+			wantPath: sessionPath,
+		},
+		{
+			name:        "scoped policy refuses a session the agent is holding",
+			policy:      schema.ActiveAgentScoped,
+			busy:        true,
+			scoped:      true,
+			wantErr:     true,
+			wantMessage: "is currently using this session",
+			wantPath:    sessionPath,
+		},
+		{
+			name:        "unscoped fallback explains the imprecision",
+			policy:      schema.ActiveAgentScoped,
+			busy:        true,
+			scoped:      false,
+			wantErr:     true,
+			wantMessage: "cannot tell which session it is using",
+			wantPath:    sessionPath,
+		},
+		{
+			name:     "off policy skips the check entirely",
+			policy:   schema.ActiveAgentOff,
+			busy:     true,
+			scoped:   true,
+			wantPath: "",
+		},
+		{
+			name:        "strict policy asks the host-wide question",
+			policy:      schema.ActiveAgentStrict,
+			busy:        true,
+			scoped:      false,
+			wantErr:     true,
+			wantMessage: "cannot tell which session it is using",
+			// Strict must discard the target so detection stays host-wide.
+			wantPath: "",
+		},
+		{
+			name:        "unknown policy is rejected",
+			policy:      "sometimes",
+			wantErr:     true,
+			wantMessage: "unsupported restore.active_agent_policy",
+		},
+		{
+			name:        "probe failure is surfaced, not swallowed",
+			policy:      schema.ActiveAgentScoped,
+			probeErr:    probeErr,
+			wantErr:     true,
+			wantMessage: "cannot verify",
+			wantPath:    sessionPath,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var gotPath string
+			checked := false
+			checker := func(_ context.Context, _, path string) (bool, bool, error) {
+				checked = true
+				gotPath = path
+				return tc.busy, tc.scoped, tc.probeErr
+			}
+			_, err := planSessionRestore(
+				context.Background(), checker, "claude", sessionPath, tc.policy)
+
+			if tc.wantErr && err == nil {
+				t.Fatalf("expected an error, got none")
+			}
+			if !tc.wantErr && err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if tc.wantMessage != "" && !strings.Contains(err.Error(), tc.wantMessage) {
+				t.Fatalf("error %q does not contain %q", err, tc.wantMessage)
+			}
+			if tc.probeErr != nil && !errors.Is(err, tc.probeErr) {
+				t.Fatalf("probe failure was not preserved: %v", err)
+			}
+			if tc.policy == schema.ActiveAgentOff && checked {
+				t.Fatalf("off policy must not consult the checker")
+			}
+			if checked && gotPath != tc.wantPath {
+				t.Fatalf("checker received path %q, want %q", gotPath, tc.wantPath)
+			}
+		})
 	}
 }
