@@ -1,13 +1,15 @@
 # Phase 1 RC7 acceptance — Device B (Windows) report
 
-Milestone verdict: **`WINDOWS-RC7-W1-FAIL`**. W0 and the storage/init/restore
-portion of W1 passed. The exact Codex vendor-resume command opened and held the
-restored rollout but did not submit or complete its challenge response, and the
-available harness had no safe desktop-control surface. Codex resume and the
-downstream Claude resume are therefore `BLOCKED` / `NOT TESTED`, never `PASS`.
+Milestone verdict: **`WINDOWS-RC7-W1-FAIL`**. W0, storage/init/restore, and
+exact Codex vendor resume passed. The Codex rollout contains one assistant-role
+response exactly equal to the challenge marker followed by `task_complete`.
+The exact Claude resume then failed because the local Claude CLI OAuth session
+was expired and could not be refreshed. Claude appended the challenge to the
+restored session but produced no assistant response, so Claude resume is
+`FAIL`, never `PASS`.
 
-This is an acceptance-automation blocker, not evidence of a Reinstate product
-failure. W2/W3 and tagged runbook §14 were not started.
+This is a local vendor-authentication blocker, not evidence of a Reinstate
+product failure. W2/W3 and tagged runbook §14 were not started.
 
 ## 1. Test record
 
@@ -72,9 +74,10 @@ The ephemeral launcher:
   object shapes before returning child output; and
 - left all storage/passphrase variables absent from the parent environment.
 
-The launcher remains temporarily present because the blocked acceptance-owned
-Codex TUI process is still running; removing its parent runner now would make
-the eventual exit record less reliable.
+The launcher remains temporarily present because the acceptance-owned Codex
+TUI process is still running after recording its exact response and
+`task_complete`; removing its parent runner now would make the eventual exit
+record less reliable.
 
 ## 3. Release provenance and installer (W0)
 
@@ -208,9 +211,11 @@ canonical project ID; Codex reports a date-partitioned rollout path; Claude's
 vendor directory equals the adapter's exact Windows key and is not the Mac
 source key.
 
-## 7. Blocking same-vendor resume gate
+## 7. Same-vendor resume gates
 
-### Exact command
+### Codex: PASS
+
+Exact command:
 
 ```text
 codex resume --no-alt-screen 019fa82a-2b87-71d2-947d-a8146d3049fd "Reply with exactly: REINSTATE-PHASE1-RC7-WINDOWS-CODEX-RESUME-OK"
@@ -225,23 +230,55 @@ terminal_window_opened=true
 exact_resume_process_count=1
 exact_rollout_size_changed=true
 exact_rollout_exclusively_held=true
-challenge_count_after_80_seconds=0
-process_cpu_delta_over_5_seconds=0
-desktop_control_available=false
-safe_targeted_window_activation=false
+matching_challenge_record_count=5
+assistant_role_record_count=1
+assistant_response_exact_match=true
+task_complete_record_present=true
 exit=NOT_CAPTURED
 process_still_running=true
 ```
 
-The target file becoming exclusively held is consistent with the exact session
-opening, but it does not prove challenge-response resume. The harness could not
-safely inspect or operate the unknown TUI state. It did not blind-press keys,
-take a transcript screenshot, use `codex exec resume --ephemeral`, invoke a
-permission bypass, or force-kill any process.
+The five exact-marker records are one user message, one user-message event, one
+agent-message event, one assistant-role response, and one task-complete event.
+The assistant response contains one text item exactly equal to the 44-byte
+challenge marker and no additional text. No surrounding transcript prose was
+read or returned.
 
-Because exact response evidence is absent, Codex resume is `NOT TESTED`.
-Per the stop-on-vendor-resume rule, Claude resume was not attempted and is also
-`NOT TESTED`.
+The response appeared after the terminal/runtime restart. Computer Use still
+had no native control pipe, but no UI action was needed to establish the
+result. The harness did not blind-press keys, take a transcript screenshot, use
+`codex exec resume --ephemeral`, invoke a permission bypass, or force-kill any
+process.
+
+### Claude: FAIL
+
+Exact command:
+
+```text
+claude --resume 1cf4ab6d-3e36-424d-8f30-4f41858b7f20 --print "Reply with exactly: REINSTATE-PHASE1-RC7-WINDOWS-CLAUDE-RESUME-OK"
+```
+
+Sanitized result:
+
+```text
+exit=1
+error_class=authentication_failed
+error=Failed to authenticate: OAuth session expired and could not be refreshed
+exact_target_count=1
+A1_marker_count_before=4
+A1_marker_count_after=4
+challenge_marker_record_count=3
+assistant_challenge_response_count=0
+```
+
+The exact restored session was discovered and updated with the requested
+challenge, but the vendor could not produce an assistant response because its
+local authentication had expired. The three challenge occurrences are
+queue-operation, user-message, and last-prompt records; none is an assistant
+response. This is not successful same-vendor resume evidence.
+
+Per the stop-on-vendor-resume rule, no dependent W2/W3 or §14 gate was
+attempted.
 
 ## 8. Discarded evidence attempts
 
@@ -269,12 +306,12 @@ None of these discarded assertions is used as PASS evidence.
 | 4 | Pre-init missing-config failure is accurate | PASS | Mac report §4 and §4 above |
 | 5 | Post-init setup check and self-test pass on both devices | PASS | Mac report §5.2 and §4 above |
 | 6 | Claude setup prompt completes on the Mac | PASS | Mac report §5.2 |
-| 7 | Codex setup prompt completes on Windows | PARTIAL | install/init/status/pull/discovery passed; vendor resume blocked |
+| 7 | Codex setup prompt completes on Windows | PARTIAL | install/init/status/pull/discovery and Codex resume passed; Claude vendor auth failed |
 | 8 | Only two selected test sessions reach the remote manifest | PASS | Mac report §5.4 and Windows status |
 | 9 | Remote manifest/snapshots are ciphertext-only | PASS | Mac report §5.5 |
 | 10 | Wrong passphrase fails without mutation | PASS | Mac report and §5 above |
-| 11 | Claude Mac-to-Windows resume succeeds | NOT TESTED | stopped after Codex resume block |
-| 12 | Codex Mac-to-Windows resume succeeds | NOT TESTED | §7 — exact response absent |
+| 11 | Claude Mac-to-Windows resume succeeds | FAIL | §7 — exact session opened, but OAuth refresh failed before an assistant response |
+| 12 | Codex Mac-to-Windows resume succeeds | PASS | §7 — exact assistant response plus task-complete evidence |
 | 13 | Unrelated running agents do not block a restore | PASS | Mac report §6.1 plus Windows Codex pull with two unrelated processes |
 | 14 | A live session is forked, never overwritten | NOT TESTED | Device B §14b not reached |
 | 15 | `scoped` policy still refuses, naming that session | PARTIAL | Mac strict-policy evidence only; Windows scoped test outstanding |
@@ -287,7 +324,7 @@ None of these discarded assertions is used as PASS evidence.
 | 22 | `--keep-both` preserves both branches | NOT TESTED | W3 |
 | 23 | All required GitHub checks are green | PASS | Mac report §7 |
 
-**Counts: 13 PASS / 2 PARTIAL / 0 FAIL / 8 NOT TESTED.**
+**Counts: 14 PASS / 2 PARTIAL / 1 FAIL / 6 NOT TESTED.**
 
 All 23 mandatory rows passed: **No.** Phase 1 remains open.
 
@@ -297,8 +334,9 @@ Release-blocking Reinstate product findings: **none established on Device B**.
 
 Acceptance blockers:
 
-1. Exact Codex vendor challenge-response could not be completed safely with the
-   available harness, leaving both same-vendor resume rows unverified.
+1. The exact Claude vendor resume failed because the local OAuth session was
+   expired and could not be refreshed. The challenge was appended, but no
+   assistant response was produced.
 2. The first installer output capture exposed one absolute user-local install
    path to private tool output before all-stream redaction was enabled. No
    storage secret, passphrase, private-file value, transcript, or ciphertext
@@ -331,11 +369,11 @@ f1_default_refusal=PASS
 f2_missing_manifest_refused=PASS
 wrong_passphrase_refused=PASS
 remote_session_count=2
-claude_discovery_and_resume=NOT_TESTED
-codex_resume=NOT_TESTED
-failure_gate=codex_vendor_resume_challenge
-failure_exit=NOT_CAPTURED
-failure_class=BLOCKED
+claude_discovery_and_resume=FAIL
+codex_resume=PASS
+failure_gate=claude_vendor_resume_authentication
+failure_exit=1
+failure_class=ENVIRONMENT_AUTHENTICATION
 windows_report_path=docs/testing/results/2026-07-28-windows-phase1-rc7.md
 END-WINDOWS-RC7-W1
 ```
