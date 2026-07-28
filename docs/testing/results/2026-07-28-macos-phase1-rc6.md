@@ -1,6 +1,6 @@
 # Phase 1 RC6 acceptance — Device A (macOS) report
 
-Milestone reached: **M2 complete** (sections 10–11). M3 awaits a Windows `WINDOWS-RC6-W2-READY` report.
+Milestone reached: **M2 complete; M3 blocked** (sections 10–12). M3 restore could not run on this device — see section 12.
 
 The row results in section 7 are **Device A evidence only**, captured at M1.
 Device B has since reported its W1 leg; that report is validated in sections 10
@@ -453,7 +453,111 @@ downloaded bytes, and `file` reports `data`. The local download was deleted.
 
 Device A is paused for the report transfer to Windows.
 
-## 12. Milestone block
+## 12. M3 — blocked by active-agent safety on this device
+
+Device B issued a valid `WINDOWS-RC6-W2-READY` at commit
+`79d9a7e6afac1bf47bcd00a35c26c5e12e467f66`. The handoff validated (branch tip
+matches, PR #33 still draft and unmerged, 0 product files touched, no credential
+value, no Windows absolute path or username, no transcript JSON).
+
+Remote parity is exact against the Windows block:
+
+| Field | Windows reported | Device A observed |
+| ----- | ---------------- | ----------------- |
+| Remote revision | `e981e77f-6bea-4794-be0f-af012c61eedc` | same |
+| Claude snapshot | `c26a17b1-f295-4e53-910b-78aa00f85adb` | same |
+| Codex snapshot | `e981e77f-6bea-4794-be0f-af012c61eedc` | same |
+| Session count | 2 | 2 |
+
+**M3 steps 15–17 could not be completed.** The restore steps require every Mac
+agent to be closed, and both agents are running for reasons this agent may not
+resolve:
+
+| Agent | Blocking process | May it be terminated? |
+| ----- | ---------------- | --------------------- |
+| `claude` | The Claude Code harness executing this acceptance run | No — the agent cannot close the process it is running inside |
+| `codex` | Six `codex` processes belonging to the operator's unrelated work | No — the rules forbid mutating unrelated sessions |
+
+No permission-bypass flag was used and no safety control was disabled or worked
+around. Per the prompt's hard safety rules this is recorded as `BLOCKED`, and
+the dependent gates stay `NOT TESTED`.
+
+### 12.1 Evidence that was obtained
+
+The attempt itself produced genuine macOS safety evidence — the macOS
+counterpart of the gate Device B proved for Windows.
+
+Dry-runs correctly do **not** trip the guard and mutate nothing:
+
+```text
+rein pull --agent claude --session <claude> --dry-run
+  would pull 1 snapshot(s), dry_run=true
+  claude:<id> -> ~/.claude/.../<id>.jsonl (backups: ~/.reinstate-…/backups)
+  exit=0
+```
+
+The dry-run said `would pull`, never `pulled`, and reported both destination and
+backup root without touching either.
+
+Real pulls were refused:
+
+```text
+rein pull --agent claude --session <claude>
+  claude appears to be running; close it before restoring sessions
+  exit=7
+
+rein pull --agent codex --session <codex>
+  codex appears to be running; close it before restoring sessions
+  exit=7
+```
+
+| Assertion after both refusals | Before | After | Result |
+| ----------------------------- | ------ | ----- | ------ |
+| Claude session SHA-256 (16-char prefix) | `5a6ad73453922eb6` | `5a6ad73453922eb6` | unchanged |
+| Claude session bytes | 13501 | 13501 | unchanged |
+| Codex session SHA-256 (16-char prefix) | `0e5ed4c8ed388c64` | `0e5ed4c8ed388c64` | unchanged |
+| Codex session bytes | 58866 | 58866 | unchanged |
+| Backup files created | 0 | 0 | none |
+| Remote revision | `e981e77f-…` | `e981e77f-…` | unchanged |
+
+The macOS active-agent guard refuses correctly, with an actionable message, exit
+`7`, no mutation, no backup, and no remote change.
+
+### 12.2 Finding — the automation overlay cannot close its own harness
+
+**This is an overlay design gap, not a Reinstate product defect.** The product
+behaved exactly as specified.
+
+Prompt 1 milestone M3 step 15 instructs the Mac agent to "Close both Mac agents"
+and then pull. On Device A that agent *is* Claude Code, and
+`processcheck.AgentActive` matches any running `claude` process on the host, not
+just the session under test. A Claude Code agent therefore cannot satisfy its own
+M3 precondition: closing Claude Code ends the run, and not closing it guarantees
+exit `7`.
+
+The same class of issue affects `codex`: detection is host-wide, so any unrelated
+Codex process on the machine blocks an acceptance restore.
+
+Neither behavior is wrong for a safety guard — refusing to overwrite a session
+file while an agent might hold it is the correct default. The gap is that the
+RC6 automation overlay assigns Device A's restore steps to an agent that is
+itself a detected process. Resolving it needs an overlay change, for example
+running M3's restore from a non-agent context, or a documented operator step, and
+not a product change.
+
+### 12.3 Gate impact
+
+| Gate | Status after M3 attempt |
+| ---- | ----------------------- |
+| 13 Active-agent overwrite refused | Device B `PASS`; independently corroborated on macOS here |
+| 15 Claude Windows-to-Mac resume | `NOT TESTED` — blocked |
+| 16 Codex Windows-to-Mac resume | `NOT TESTED` — blocked |
+| 17 Existing Mac targets backed up | `NOT TESTED` — blocked |
+| 18 Unchanged pushes skip | remains `PARTIAL`; the post-restore variant depends on the blocked restore |
+
+Device A holds. No `MAC-RC6-M3-PASS` is emitted, because M3 did not pass.
+
+## 13. Milestone block
 
 ```text
 MAC-RC6-M1
@@ -491,4 +595,29 @@ windows_w1_validated=PASS
 windows_commit=deca8217c3af680ed8fdc176e76c3c9dd5cec4e8
 mac_report_path=docs/testing/results/2026-07-28-macos-phase1-rc6.md
 END-MAC-RC6-M2-READY
+```
+
+M3 did not pass, so no `MAC-RC6-M3-PASS` block is emitted:
+
+```text
+MAC-RC6-M3-BLOCKED
+reason=active_agent_guard_cannot_be_satisfied_by_the_agent_itself
+windows_w2_validated=PASS
+windows_commit=79d9a7e6afac1bf47bcd00a35c26c5e12e467f66
+remote_parity=EXACT
+remote_revision=e981e77f-6bea-4794-be0f-af012c61eedc
+claude_snapshot_id=c26a17b1-f295-4e53-910b-78aa00f85adb
+codex_snapshot_id=e981e77f-6bea-4794-be0f-af012c61eedc
+remote_session_count=2
+claude_dry_run=PASS
+codex_dry_run=PASS
+claude_real_pull_exit=7
+codex_real_pull_exit=7
+macos_active_agent_refusal=PASS
+refusal_caused_no_mutation=PASS
+refusal_created_no_backup=PASS
+blocked_gates=15,16,17
+product_blocker_found=NONE
+overlay_design_gap=true
+END-MAC-RC6-M3-BLOCKED
 ```
