@@ -193,7 +193,7 @@ cd ..
 # After the signed tag-validation workflow passes for the exact origin/main commit:
 ./scripts/deploy-website-production.sh website-vYYYY.MM.DD.N
 
-# Current example: ship reviewed website changes without changing RC6:
+# First planned website-only tag; create and sign it before running:
 ./scripts/deploy-website-production.sh website-v2026.07.28.1
 ```
 

@@ -17,7 +17,7 @@ Signed `website-vYYYY.MM.DD.N` tags are a separate maintainer-operated
 deployment identity for reviewed website-only changes. They do not version the
 CLI, create a GitHub Release, advance the changelog's current release, or close
 compatibility and acceptance gates. The deployment script derives the existing
-signed `vMAJOR.MINOR.PATCH[-prerelease]` identity from both public bootstrap
+signed `vMAJOR.MINOR.PATCH[-PRE-RELEASE]` identity from both public bootstrap
 files and refuses to proceed if their pins differ.
 
 ## Release-impact checklist
