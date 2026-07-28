@@ -1,6 +1,6 @@
 ---
 title: "Use Amazon S3 for Encrypted Coding-Agent Session Storage"
-description: "Configure a private Amazon S3 bucket and least-privilege credentials for Reinstate RC6, then verify encrypted Claude Code or Codex session storage."
+description: "Configure a private Amazon S3 bucket and least-privilege credentials for Reinstate RC7, then verify encrypted Claude Code or Codex session storage."
 answer: "To use Amazon S3 with Reinstate, create a private general purpose bucket, grant a dedicated non-root credential access only to the Reinstate object prefix, initialize Reinstate with the matching regional S3 endpoint and Region, then dry-run and push one selected session."
 author: "Harjot Singh Rana"
 publishedAt: 2026-07-27
@@ -30,7 +30,7 @@ estimatedMinutes: 15
 estimatedTaskMinutes: 35
 prerequisites:
   - "An AWS account and authority to create a private S3 bucket, IAM policy, and access key"
-  - "Reinstate v0.1.0-rc.6 on a compatible device with Claude Code or Codex CLI"
+  - "Reinstate v0.1.0-rc.7 on a compatible device with Claude Code or Codex CLI"
   - "A harmless session in a repository whose absolute local path you know"
   - "A long encryption passphrase that will be entered privately and is not stored"
 howToSteps:
@@ -38,7 +38,7 @@ howToSteps:
     text: "Create a general purpose bucket in one AWS Region, keep all Block Public Access settings enabled, and record the bucket name and Region separately."
     anchor: "create-private-bucket"
   - name: "Grant only the required S3 permissions"
-    text: "Attach a prefix-limited policy to a dedicated non-root IAM principal and create the access-key pair that RC6 can store in the operating-system keyring."
+    text: "Attach a prefix-limited policy to a dedicated non-root IAM principal and create the access-key pair that RC7 can store in the operating-system keyring."
     anchor: "create-scoped-credentials"
   - name: "Install and check Reinstate"
     text: "Install the pinned Reinstate release candidate, verify its version, and run the read-only setup check before writing local configuration."
@@ -53,7 +53,7 @@ howToSteps:
 
 ## What this guide configures
 
-This guide connects Reinstate `v0.1.0-rc.6` to an existing Amazon S3 bucket.
+This guide connects Reinstate `v0.1.0-rc.7` to an existing Amazon S3 bucket.
 Amazon Web Services owns the bucket, Region, IAM identity, access key, public
 access settings, retention, and billing. Reinstate owns the local project
 mapping, encrypted profile manifest, encrypted session snapshots, and
@@ -82,17 +82,17 @@ not by first-device initialization.
 - The S3 service endpoint and bucket are separate inputs. For a normal Region,
   use `https://s3.AWS_REGION.amazonaws.com`, then pass the same Region through
   `--region`.
-- RC6 requires `ListBucket`, `GetObject`, `PutObject`, and `DeleteObject`
+- RC7 requires `ListBucket`, `GetObject`, `PutObject`, and `DeleteObject`
   capability for its generated `profiles/<profile_id>/` object tree.
 - Reinstate encrypts the manifest and snapshots before S3 receives them. S3's
   default server-side encryption is an additional provider control, not a
   replacement for Reinstate's passphrase.
-- RC6 accepts an access-key ID and secret-access-key pair but no AWS session
+- RC7 accepts an access-key ID and secret-access-key pair but no AWS session
   token. This is a current limitation because AWS recommends temporary
   credentials where possible.
 - Session resume remains **same-vendor**: Claude Code to Claude Code and Codex
   CLI to Codex CLI.
-- RC6 is a release candidate. This guide is not evidence that the outstanding
+- RC7 is a release candidate. This guide is not evidence that the outstanding
   physical two-device acceptance matrix has passed.
 
 ## Before you begin
@@ -167,7 +167,7 @@ Region, and regional REST endpoint.
 
 <h2 id="create-scoped-credentials">2. Grant only the required S3 permissions</h2>
 
-RC6 uses these S3 operations:
+RC7 uses these S3 operations:
 
 | Reinstate behavior | S3 API behavior | Required IAM action |
 | --- | --- | --- |
@@ -210,7 +210,7 @@ both ARNs; it contains no credential:
 }
 ```
 
-Attach the reviewed policy to a dedicated non-root IAM principal. RC6 does not
+Attach the reviewed policy to a dedicated non-root IAM principal. RC7 does not
 accept the session token that accompanies AWS STS temporary credentials, so it
 cannot yet follow AWS's preferred temporary-credential path. If your
 organization permits this evaluation, create a long-term access-key pair for
@@ -248,7 +248,7 @@ rein version --json
 rein setup check
 ```
 
-**Expected result:** the pinned installer reports `v0.1.0-rc.6`. Before
+**Expected result:** the pinned installer reports `v0.1.0-rc.7`. Before
 initialization, `rein setup check` exits with code `3` and reports
 `config missing`. Resolve a platform, keyring, or installed-agent
 compatibility failure separately; a working S3 bucket cannot make an
@@ -272,7 +272,7 @@ prompt accepts the dedicated access-key ID; the second accepts its secret
 access key. Do not put either value in this command, an environment variable,
 shell history, or a coding-agent conversation.
 
-During initialization, RC6:
+During initialization, RC7:
 
 1. generates a non-secret `profile_id`;
 2. derives the default `profiles/<profile_id>` prefix;
@@ -325,7 +325,7 @@ There should be no plaintext transcript, auth file, `.env` file, access key,
 or passphrase object. A `.age` filename alone is not cryptographic proof; the
 committed [Phase 1 acceptance runbook](https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/phase-1-mac-windows-acceptance.md)
 defines the controlled ciphertext inspection used for release qualification.
-This personal check does not claim physical RC6 acceptance.
+This personal check does not claim physical RC7 acceptance.
 
 ## Security boundaries
 
@@ -336,7 +336,7 @@ This personal check does not claim physical RC6 acceptance.
   provider-side layer is useful defense in depth but does not replace
   Reinstate's client-side age encryption. See AWS's
   [default encryption documentation](https://docs.aws.amazon.com/AmazonS3/latest/userguide/default-bucket-encryption.html).
-- RC6 does not request provider-side encryption headers. A bucket default such
+- RC7 does not request provider-side encryption headers. A bucket default such
   as SSE-S3 applies normally; a policy that requires request-specific SSE-KMS
   headers can reject the probe or upload. A KMS-default bucket also needs the
   organization's KMS permissions in addition to the example S3 policy.
@@ -376,7 +376,7 @@ Region, endpoint, credential, and prefix policy.
 
 ### Why is `config missing` (exit `3`) after failed init?
 
-**Likely cause:** RC6 intentionally did not save local config because the
+**Likely cause:** RC7 intentionally did not save local config because the
 remote probe failed.
 
 **Safe next action:** Fix S3 first and rerun the same reviewed `rein init`.
@@ -414,7 +414,7 @@ explicitly instead of deleting S3 objects.
 
 ## Safe rollback and undo
 
-Reinstate RC6 does not provide a general `rein undo` or remote-session delete
+Reinstate RC7 does not provide a general `rein undo` or remote-session delete
 command.
 
 1. A push `--dry-run` creates no session object, so it needs no rollback.
@@ -458,7 +458,7 @@ Permanent deletion is irreversible.
 
 ## Current limitations
 
-- RC6 accepts an access-key ID and secret access key, but not the session token
+- RC7 accepts an access-key ID and secret access key, but not the session token
   required for AWS STS temporary credentials.
 - Reinstate does not create or delete S3 buckets, IAM identities, policies,
   KMS keys, lifecycle rules, versioning configuration, or Object Lock rules.
@@ -482,7 +482,7 @@ static website endpoint, CORS rule, or custom domain.
 
 ### Can Reinstate use AWS IAM Identity Center or an assumed role?
 
-Not directly in RC6. Temporary AWS credentials include a session token, while
+Not directly in RC7. Temporary AWS credentials include a session token, while
 the current S3 backend accepts only an access-key ID and secret access key.
 This limitation is why the guide narrowly scopes and calls for rotation of any
 long-term evaluation key.
@@ -490,7 +490,7 @@ long-term evaluation key.
 ### Can I require SSE-KMS on the bucket?
 
 A bucket default can apply SSE-KMS, but the IAM principal also needs the
-relevant KMS permissions. RC6 does not send request-specific SSE headers, so a
+relevant KMS permissions. RC7 does not send request-specific SSE headers, so a
 bucket policy that requires such a header can reject initialization. Test with
 a harmless profile and follow your organization's KMS policy.
 

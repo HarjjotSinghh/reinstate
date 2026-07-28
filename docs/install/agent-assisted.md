@@ -5,7 +5,7 @@ Use the versioned prompt matching the coding agent already installed:
 - [Claude Code prompt](../prompts/claude-code-setup.md)
 - [Codex prompt](../prompts/codex-setup.md)
 
-The prompts pin `v0.1.0-rc.6` and use the public one-line bootstrap for the
+The prompts pin `v0.1.0-rc.7` and use the public one-line bootstrap for the
 detected platform. No placeholder replacement is required. The agent may
 detect, download, inspect, verify, install, and run redacted checks. The human
 must enter storage credentials and the encryption passphrase privately in

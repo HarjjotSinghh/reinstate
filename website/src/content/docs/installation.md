@@ -5,7 +5,7 @@ order: 9
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.1.0-rc.6"
+version: "v0.1.0-rc.7"
 updatedAt: 2026-07-27
 tags: ["installation", "cli", "macos", "windows", "wsl2"]
 targetQuery: "install Reinstate CLI"
@@ -15,11 +15,11 @@ noindex: false
 ---
 
 Install Reinstate with the official bootstrap for your operating system, then
-require `rein version --json` to report `v0.1.0-rc.6`. The bootstrap verifies
+require `rein version --json` to report `v0.1.0-rc.7`. The bootstrap verifies
 the canonical tagged installer, release checksum, downloaded binary, and
 reported version before replacing an existing installation.
 
-> **Release status:** `v0.1.0-rc.6` is pre-1.0 release-candidate software.
+> **Release status:** `v0.1.0-rc.7` is pre-1.0 release-candidate software.
 > macOS and native Windows are the primary Phase 1 platforms; native Windows,
 > macOS amd64, WSL2, and physical two-device acceptance gates remain open.
 > A Linux binary is available, but plain Linux is not a certified Phase 1
@@ -87,7 +87,7 @@ Get-Content $Installer
 & ([ScriptBlock]::Create([IO.File]::ReadAllText($Installer)))
 ```
 
-Both bootstraps pin the exact RC6 tag, retrieve the canonical installer from
+Both bootstraps pin the exact RC7 tag, retrieve the canonical installer from
 that tag, verify its SHA-256, download the matching release asset and
 `checksums.txt`, verify the asset, and execute the candidate binary's version
 check before installation.
@@ -123,7 +123,7 @@ failures before synchronization.
 ## Expected evidence
 
 - Both binary names resolve without an absolute path and report the same
-  `0.1.0-rc.6` version.
+  `0.1.0-rc.7` version.
 - The binary architecture matches the current environment.
 - The installer reports successful checksum and candidate-version checks.
 - `rein setup check` runs as a read-only preflight and does not claim the

@@ -5,7 +5,7 @@ order: 11
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.1.0-rc.6"
+version: "v0.1.0-rc.7"
 updatedAt: 2026-07-27
 tags: ["storage", "s3", "cloudflare-r2", "encryption", "least-privilege"]
 targetQuery: "Reinstate session storage configuration"
@@ -14,7 +14,7 @@ draft: false
 noindex: false
 ---
 
-Reinstate `v0.1.0-rc.6` stores encrypted manifests and immutable session
+Reinstate `v0.1.0-rc.7` stores encrypted manifests and immutable session
 snapshots in a private S3-compatible bucket you control. Configure the service
 endpoint, region, bucket, and profile prefix separately; interactive
 `rein init` stores the access-key pair in the operating-system keyring, not in
@@ -111,7 +111,7 @@ rein init \
   --project github.com/acme/app=/this/device/path
 ```
 
-RC6 requires that additional-device initialization can find the existing
+RC7 requires that additional-device initialization can find the existing
 encrypted `manifest.age`; it does not silently create a new empty remote
 profile.
 

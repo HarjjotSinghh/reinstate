@@ -13,7 +13,7 @@ const description =
   {description}
   path="/use-cases/encrypted-session-backup"
   eyebrow="Use case · Encrypted recovery copy"
-  answer="Reinstate RC6 can create a client-encrypted recovery copy of selected Claude Code or Codex sessions in your own S3-compatible bucket. It encrypts before upload, excludes known credential material, and can restore through the same vendor—but it is not a complete backup system, so keep independent, restore-tested backups too."
+  answer="Reinstate RC7 can create a client-encrypted recovery copy of selected Claude Code or Codex sessions in your own S3-compatible bucket. It encrypts before upload, excludes known credential material, and can restore through the same vendor—but it is not a complete backup system, so keep independent, restore-tested backups too."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'Use cases', path: '/use-cases' },
@@ -23,7 +23,7 @@ const description =
 >
   <h2 id="scope">A narrow encrypted recovery copy, not a general backup product</h2>
   <p>
-    RC6 snapshots explicitly selected, supported Claude Code or Codex CLI session artifacts and
+    RC7 snapshots explicitly selected, supported Claude Code or Codex CLI session artifacts and
     uploads them only after local age passphrase encryption. The provider receives ciphertext,
     opaque snapshot keys, sizes, timing, account identity, and bucket metadata. It does not receive
     the encryption passphrase.
@@ -32,7 +32,7 @@ const description =
     “Backup” here means a recoverable encrypted copy of supported agent-session state. Reinstate
     does not back up repositories, uncommitted work, home directories, vendor accounts, credentials,
     every agent, or the complete execution environment. It does not promise provider retention,
-    point-in-time recovery, or automatic background scheduling in RC6.
+    point-in-time recovery, or automatic background scheduling in RC7.
   </p>
 
   <div class="pc-table-wrap">
@@ -101,7 +101,7 @@ const description =
   <h2 id="create-copy">Create the encrypted copy deliberately</h2>
   <p>
     First configure a private bucket with the narrow read, list, write, and delete access required
-    by RC6. The
+    by RC7. The
     <a href="/guides/use-s3-for-coding-agent-session-storage">Amazon S3 guide</a>
     and
     <a href="/guides/use-cloudflare-r2-for-coding-agent-session-storage">
@@ -169,7 +169,7 @@ rein pull --agent AGENT --session SESSION_ID --dry-run</code></pre>
     drill reaches the intended session.
   </p>
   <p>
-    Current physical Mac/Windows and other native-device acceptance rows remain open for RC6.
+    Current physical Mac/Windows and other native-device acceptance rows remain open for RC7.
     Personal restore evidence must not be represented as project-wide stable certification.
   </p>
 
@@ -208,7 +208,7 @@ rein pull --agent AGENT --session SESSION_ID --dry-run</code></pre>
       <tbody>
         <tr>
           <td>Storage probe fails</td>
-          <td>RC6 does not save a usable-looking config</td>
+          <td>RC7 does not save a usable-looking config</td>
           <td>Correct endpoint, Region, bucket, credential, or delete access; retry init.</td>
         </tr>
         <tr>
@@ -240,7 +240,7 @@ rein pull --agent AGENT --session SESSION_ID --dry-run</code></pre>
     </table>
   </div>
   <p>
-    RC6 has no general undo or remote-session deletion command. Provider cleanup must target only a
+    RC7 has no general undo or remote-session deletion command. Provider cleanup must target only a
     reviewed <code>profiles/PROFILE_ID/</code> tree after participating devices stop and required
     evidence or backups are preserved. Never delete only <code>manifest.age</code>.
   </p>
@@ -265,7 +265,7 @@ rein pull --agent AGENT --session SESSION_ID --dry-run</code></pre>
 
   <h2 id="limitations">Current limitations</h2>
   <ul>
-    <li>RC6 uses explicit pushes and pulls; it is not an automatic backup daemon.</li>
+    <li>RC7 uses explicit pushes and pulls; it is not an automatic backup daemon.</li>
     <li>It has no built-in schedule, retention policy, remote pruning, or provider version restore.</li>
     <li>Snapshots are complete immutable session artifacts rather than block- or delta-level backups.</li>
     <li>Only recognized Claude Code and Codex CLI same-vendor workflows can mutate state.</li>
@@ -298,7 +298,7 @@ rein pull --agent AGENT --session SESSION_ID --dry-run</code></pre>
 
   <h3>Can I restore the session into another agent vendor?</h3>
   <p>
-    No. RC6 restores Claude Code state to Claude Code and Codex state to Codex CLI. Explicit
+    No. RC7 restores Claude Code state to Claude Code and Codex state to Codex CLI. Explicit
     portable handoffs are later product direction, not a hidden conversion performed by backup
     restore.
   </p>

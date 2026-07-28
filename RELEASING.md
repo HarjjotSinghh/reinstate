@@ -109,7 +109,7 @@ running:
 ./scripts/deploy-website-production.sh website-vYYYY.MM.DD.N
 ```
 
-For example, while RC6 remains current:
+For example, while RC7 remains current:
 
 ```bash
 ./scripts/deploy-website-production.sh website-v2026.07.28.1

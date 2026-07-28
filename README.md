@@ -142,7 +142,7 @@ not part of the current CLI. See
 
 > **Note:** the v0.1 CLI surface below is implemented, but native acceptance and
 > stable release certification are still in progress. The commands below pin
-> the published release candidate `v0.1.0-rc.6`.
+> the published release candidate `v0.1.0-rc.7`.
 >
 > **CLI:** prefer short alias **`rein`**. Full name **`reinstate`** works the same.
 
@@ -160,7 +160,7 @@ Native Windows PowerShell:
 irm https://reinstate.dev/install.ps1 | iex
 ```
 
-Both bootstraps pin and verify `v0.1.0-rc.6`, install without elevation, and
+Both bootstraps pin and verify `v0.1.0-rc.7`, install without elevation, and
 print the next command:
 
 ```bash
@@ -168,7 +168,7 @@ rein version --json
 rein init
 ```
 
-RC6 waits at most 30 seconds for replacement approval; set
+RC7 waits at most 30 seconds for replacement approval; set
 `REINSTATE_CONFIRM_TIMEOUT_SECONDS=1..300` to choose a shorter or longer bound.
 Shells without timed-read support refuse immediately and preserve the installed
 binary. For deliberate automation, review the version change first and set
@@ -184,7 +184,7 @@ rein push --agent AGENT --session SESSION_ID
 ```
 
 Use the S3/R2 service endpoint as the endpoint and enter the bucket separately.
-RC6 refuses to overwrite an initialized home by default. The explicit
+RC7 refuses to overwrite an initialized home by default. The explicit
 `--force` path backs up prior config and state together before replacement.
 
 ### Device B
@@ -198,7 +198,7 @@ rein pull --agent AGENT --session SESSION_ID
 # Then use the same vendor's native resume UI or command.
 ```
 
-RC6 verifies the encrypted remote manifest during additional-device `init`
+RC7 verifies the encrypted remote manifest during additional-device `init`
 before saving local configuration. Require `status` to show the expected
 sessions after setup.
 

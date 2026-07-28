@@ -1,5 +1,11 @@
 export const releaseHistory = [
   {
+    version: 'v0.1.0-rc.7',
+    date: '2026-07-28',
+    summary:
+      'Session-scoped restore safety that no longer blocks on unrelated running agents.',
+  },
+  {
     version: 'v0.1.0-rc.6',
     date: '2026-07-27',
     summary:
