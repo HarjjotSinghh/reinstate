@@ -2,7 +2,7 @@
 /**
  * Final objection section before the install CTA.
  *
- * File sync moves bytes; Reinstate restores the native identity those bytes
+ * File sync moves bytes; Reinstate restores the project identity those bytes
  * need on the destination machine. The Claude key examples are synthetic and
  * intentionally mirror the adapter's documented absolute-path behavior.
  */
@@ -12,23 +12,23 @@ import LogoMark from '../LogoMark.astro';
 const reasons = [
   {
     k: '01',
-    title: 'File sync owns bytes',
+    title: 'Files only copy bytes',
     body:
-      'Dropbox, iCloud, and rsync can copy the files perfectly while leaving destination-specific session identity untouched.',
+      'Cloud drives preserve session files, not the agent’s machine-specific project identity.',
     icon: 'files',
   },
   {
     k: '02',
-    title: 'Reinstate owns identity',
+    title: 'Reinstate rebuilds identity',
     body:
-      'A canonical project ID survives the trip. Restore rebuilds Claude’s project key or rewrites Codex’s structural working directory.',
+      'It remaps the destination path, then reconstructs the project reference the agent expects.',
     icon: 'route',
   },
   {
     k: '03',
-    title: 'Native resume stays native',
+    title: 'Resume stays in your agent',
     body:
-      'Claude resumes Claude sessions; Codex resumes Codex rollouts. Reinstate never hides lossy cross-agent translation behind sync.',
+      'Claude Code sessions resume in Claude Code; Codex rollouts resume in Codex—never in a generic transcript viewer.',
     icon: 'resume',
   },
 ] as const;
@@ -48,11 +48,12 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
       <span class="badge"><i aria-hidden="true"></i> Why not Dropbox, iCloud, or rsync?</span>
       <h2 id="file-sync-title">
         Files can sync.<br />
-        Native resume can still fail.
+        Resume can still fail.
       </h2>
       <p>
-        Agent histories are indexed by more than their bytes. Absolute paths become native
-        identity, so Windows and macOS can treat the same repository as two different projects.
+        Same repo, different path, different project key. The files copy successfully, but{' '}
+        <code>--resume</code> may find nothing. Reinstate maps the destination path and rebuilds
+        the project reference the agent expects.
       </p>
     </header>
 
@@ -60,13 +61,13 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
       <header class="identity-proof__head">
         <div>
           <span class="proof-eyebrow">CLAUDE CODE EXAMPLE</span>
-          <h3 id="identity-proof-title">Same repository. Two native project keys.</h3>
+          <h3 id="identity-proof-title">Same repository. Two project keys.</h3>
         </div>
         <span class="raw-sync-status"><i aria-hidden="true"></i> RAW FILE SYNC</span>
       </header>
 
       <div class="path-pair">
-        <section class="path-side" aria-label="Windows native project identity">
+        <section class="path-side" aria-label="Windows project identity">
           <div class="path-side__head">
             <span class="os-mark os-mark--windows" aria-hidden="true">
               {/* Windows 11 mark geometry from Microsoft's published vector. */}
@@ -88,7 +89,7 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
             <code>C:\Users\harjot\projects\api</code>
           </div>
           <div class="path-row path-row--key">
-            <span>native project key</span>
+            <span>agent project key</span>
             <code>C--Users-harjot-projects-api</code>
           </div>
           <div class="index-location">
@@ -104,16 +105,19 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
 
         <div class="copy-crossing" aria-hidden="true">
           <span class="copy-line"></span>
-          <span class="copy-label">same files</span>
+          <span class="copy-label copy-label--same">same files</span>
           <span class="copy-icon">
             <svg viewBox="0 0 24 24">
               <path d="M5 12h12m0 0-4-4m4 4-4 4"></path>
             </svg>
           </span>
-          <span class="copy-label copy-label--mismatch">≠ different keys</span>
+          <span class="copy-label copy-label--mismatch">
+            <span class="mismatch-symbol" aria-hidden="true">≠</span>
+            <span>keys differ</span>
+          </span>
         </div>
 
-        <section class="path-side" aria-label="macOS native project identity">
+        <section class="path-side" aria-label="macOS project identity">
           <div class="path-side__head">
             <span class="os-mark os-mark--mac" aria-hidden="true">
               {/* Apple mark geometry from the published Apple Logo vector. */}
@@ -134,7 +138,7 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
             <code>/Users/harjot/dev/api</code>
           </div>
           <div class="path-row path-row--key">
-            <span>native project key</span>
+            <span>agent project key</span>
             <code>-Users-harjot-dev-api</code>
           </div>
           <div class="index-location">
@@ -188,7 +192,7 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
           </svg>
         </span>
         <div class="map-step map-step--result">
-          <span>native identity</span>
+          <span>project identity</span>
           <strong>rebuilt</strong>
         </div>
       </div>
@@ -382,6 +386,12 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
     color: color-mix(in oklab, var(--ink) 28%, var(--ink-2));
     text-wrap: pretty;
   }
+  .file-sync-lede p code {
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+    font-weight: 600;
+    color: var(--ink);
+  }
 
   .identity-proof {
     position: relative;
@@ -468,7 +478,7 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
   }
   .path-side__head div > span {
     font-family: var(--font-mono);
-    font-size: 0.67rem;
+    font-size: 0.71rem;
     color: var(--ink-3);
   }
   .repo-chip {
@@ -481,7 +491,7 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
     border-radius: 999px;
     background: color-mix(in oklab, var(--paper-2) 62%, transparent);
     font-family: var(--font-mono);
-    font-size: 0.6rem;
+    font-size: 0.65rem;
     white-space: nowrap;
     color: var(--ink-2);
   }
@@ -518,7 +528,7 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
   }
   .path-row > span {
     font-family: var(--font-mono);
-    font-size: 0.66rem;
+    font-size: 0.71rem;
     font-weight: 650;
     letter-spacing: 0.07em;
     text-transform: uppercase;
@@ -531,12 +541,15 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
     border-radius: 7px;
     background: color-mix(in oklab, var(--paper) 80%, transparent);
     font-family: var(--font-mono);
-    font-size: clamp(0.7rem, 0.75vw, 0.83rem);
+    font-size: clamp(0.76rem, 0.78vw, 0.88rem);
     line-height: 1.35;
     overflow-wrap: anywhere;
     color: var(--ink);
   }
   .path-row--key code {
+    border-color: color-mix(in oklab, var(--sv-prim-deep) 52%, var(--rule));
+    background: color-mix(in oklab, var(--paper) 76%, var(--sv-prim) 7%);
+    font-weight: 600;
     color: var(--sv-prim-deep);
   }
   .index-location {
@@ -566,7 +579,7 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
     gap: 0.18rem;
     min-width: 0;
     font-family: var(--font-mono);
-    font-size: 0.58rem;
+    font-size: 0.63rem;
     font-weight: 650;
     letter-spacing: 0.065em;
     text-transform: uppercase;
@@ -574,7 +587,7 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
   .index-location code {
     min-width: 0;
     font-family: var(--font-mono);
-    font-size: 0.63rem;
+    font-size: 0.69rem;
     font-weight: 450;
     letter-spacing: 0;
     line-height: 1.4;
@@ -587,7 +600,7 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
     display: grid;
     place-items: center;
     align-content: center;
-    gap: 0.55rem;
+    gap: 1rem;
   }
   .copy-line {
     position: absolute;
@@ -622,14 +635,45 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
     padding: 0.2rem 0.35rem;
     border-radius: 4px;
     font-family: var(--font-mono);
-    font-size: 0.64rem;
+    font-size: 0.69rem;
     color: var(--ink-3);
   }
+  .copy-label--same {
+    min-width: 5.5rem;
+    min-height: 1.8rem;
+    padding: 0.38rem 0.68rem;
+    border: 1px solid color-mix(in oklab, var(--ink) 34%, var(--rule));
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--paper-2) 70%, var(--ink) 7%);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.025em;
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--ink);
+  }
   .copy-label--mismatch {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.38rem;
+    padding: 0.34rem 0.58rem;
     border: 1px solid color-mix(in oklab, var(--sv-prim-deep) 38%, var(--rule));
-    background: color-mix(in oklab, var(--paper-2) 70%, var(--sv-prim) 7%);
-    font-weight: 650;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--paper-2) 70%, var(--sv-prim) 8%);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.025em;
+    line-height: 1;
+    text-align: center;
+    text-transform: uppercase;
+    white-space: nowrap;
     color: var(--sv-prim-deep);
+  }
+  .copy-label--mismatch .mismatch-symbol {
+    font-size: 0.9rem;
+    line-height: 0.75;
   }
 
   .failed-result {
@@ -646,7 +690,7 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
     display: inline-flex;
     align-items: center;
     gap: 0.38rem;
-    font-size: 0.78rem;
+    font-size: 0.83rem;
     font-weight: 600;
   }
   .result-chip svg {
@@ -664,6 +708,10 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
     color: var(--sv-prim-deep);
   }
   .result-chip--bad {
+    padding: 0.32rem 0.55rem;
+    border: 1px solid color-mix(in oklab, var(--ink) 20%, var(--rule));
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--paper-2) 78%, transparent);
     color: var(--ink-2);
   }
 
@@ -718,13 +766,13 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
     min-width: 0;
   }
   .map-step span {
-    font-size: 0.62rem;
+    font-size: 0.67rem;
     color: #aebbb4;
   }
   .map-step code,
   .map-step strong {
     font-family: var(--font-mono);
-    font-size: 0.73rem;
+    font-size: 0.79rem;
     font-weight: 600;
     color: #f4f6ef;
     overflow-wrap: anywhere;
@@ -787,7 +835,7 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
   }
   .reason-card p {
     margin: 0.55rem 0 0;
-    font-size: 0.92rem;
+    font-size: 0.98rem;
     line-height: 1.55;
     color: color-mix(in oklab, var(--ink) 30%, var(--ink-2));
   }
@@ -820,7 +868,7 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
     border-radius: 6px;
     background: color-mix(in oklab, var(--paper) 75%, transparent);
     font-family: var(--font-mono);
-    font-size: 0.69rem;
+    font-size: 0.75rem;
     color: var(--ink-2);
   }
   .brand-mark {
@@ -840,21 +888,21 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
   .brand-pair {
     display: inline-flex;
     align-items: center;
+    gap: 0.18rem;
   }
   .brand-pair .brand-mark + .brand-mark {
-    margin-left: -0.14rem;
-    padding-left: 0.14rem;
-    border-left: 1px solid var(--rule);
+    margin-left: 0;
   }
   .brand-mark--apple {
-    width: 0.88rem;
+    width: 1.04rem;
+    height: 1.04rem;
   }
   .support-label {
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
     margin-right: 0.2rem;
-    font-size: 0.73rem;
+    font-size: 0.78rem;
     font-weight: 650;
     color: var(--ink);
   }
@@ -867,7 +915,7 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
     gap: 0.35rem;
     min-height: 2rem;
     color: var(--ink);
-    font-size: 0.78rem;
+    font-size: 0.82rem;
     font-weight: 600;
     text-decoration: none;
   }
@@ -901,6 +949,11 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
   }
   :global(html.dark) .copy-label--mismatch {
     background: color-mix(in oklab, var(--paper-2) 70%, var(--sv-prim) 8%);
+  }
+  :global(html.dark) .copy-label--same {
+    border-color: color-mix(in oklab, var(--ink) 38%, var(--rule));
+    background: color-mix(in oklab, var(--paper-2) 64%, var(--ink) 9%);
+    color: var(--ink);
   }
   :global(html.dark) .reason-card,
   :global(html.dark) .support-rail {

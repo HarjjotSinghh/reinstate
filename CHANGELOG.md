@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Clarify the landing-page file-sync comparison around machine-specific project
+  keys, make the failed-resume mismatch readable at normal scroll speed, and
+  replace ambiguous identity ownership language with precise remapping and
+  reconstruction behavior.
+
 ## [0.1.0-rc.7] - 2026-07-28
 
 ### Added
