@@ -1,21 +1,22 @@
 # Phase 1 RC7 acceptance — Device B (Windows) report
 
-Milestone verdict: **`WINDOWS-RC7-W1-FAIL`**. W0, storage/init/restore, and
-exact Codex vendor resume passed. The Codex rollout contains one assistant-role
-response exactly equal to the challenge marker followed by `task_complete`.
-The exact Claude resume then failed because the local Claude CLI OAuth session
-was expired and could not be refreshed. Claude appended the challenge to the
-restored session but produced no assistant response, so Claude resume is
-`FAIL`, never `PASS`.
+Milestone verdict: **`WINDOWS-RC7-W1-PASS`**. W0 and every required W1 gate
+passed. Exact Codex resume produced one assistant-role response equal to its
+challenge followed by `task_complete`. After the operator refreshed the local
+Claude CLI login, a clean retry restored the pristine Mac snapshot and exact
+Claude resume produced one assistant-role response equal to its distinct retry
+challenge.
 
-This is a local vendor-authentication blocker, not evidence of a Reinstate
-product failure. W2/W3 and tagged runbook §14 were not started.
+The initial Claude authentication failure remains documented below, together
+with the non-destructive retry conflict and `--keep-remote` recovery. W2/W3 and
+tagged runbook §14 were not started.
 
 ## 1. Test record
 
 | Field | Value |
 | ----- | ----- |
 | Date/time (UTC) | `2026-07-28T12:28:44Z` |
+| W1 retry completed (UTC) | `2026-07-28T13:03:57Z` |
 | Release under test | `v0.1.0-rc.7` |
 | Tag commit | `66211599dd7cfb74f1436d2221b983050e8b1bc2` |
 | Windows edition/build | Windows Pro, display version `25H2`, build `26200.8328` |
@@ -250,9 +251,9 @@ result. The harness did not blind-press keys, take a transcript screenshot, use
 `codex exec resume --ephemeral`, invoke a permission bypass, or force-kill any
 process.
 
-### Claude: FAIL
+### Claude: PASS after clean retry
 
-Exact command:
+The first exact command failed before an assistant response:
 
 ```text
 claude --resume 1cf4ab6d-3e36-424d-8f30-4f41858b7f20 --print "Reply with exactly: REINSTATE-PHASE1-RC7-WINDOWS-CLAUDE-RESUME-OK"
@@ -275,9 +276,67 @@ The exact restored session was discovered and updated with the requested
 challenge, but the vendor could not produce an assistant response because its
 local authentication had expired. The three challenge occurrences are
 queue-operation, user-message, and last-prompt records; none is an assistant
-response. This is not successful same-vendor resume evidence.
+response. This attempt is not used as successful same-vendor resume evidence.
 
-Per the stop-on-vendor-resume rule, no dependent W2/W3 or §14 gate was
+After the operator completed `/login`, `claude auth status` exited `0`, reported
+an authenticated session, and contained no expired-token error. The failed
+challenge had locally diverged the restored target, so the retry did not append
+another prompt to that contaminated file.
+
+Clean-retry recovery:
+
+```text
+dry_run_pull_exit=6
+dry_run_target_unchanged=true
+dry_run_backup_count=0
+mutating_pull_exit=6
+conflict_record_count=1
+conflict_agent_session_project_exact=true
+conflict_local_revision_matches_target=true
+conflict_remote_snapshot_matches_Mac=true
+pre_resolution_target_unchanged=true
+pre_resolution_state_unchanged=true
+pre_resolution_backup_count=0
+keep_remote_exit=0
+restored_target_A1_count=4
+restored_target_failed_challenge_count=0
+backup_count=1
+backup_A1_count=4
+backup_failed_challenge_count=3
+active_conflict_count=0
+resolved_audit_count=1
+```
+
+The signed RC7 implementation deliberately detects divergence during dry-run
+without recording a conflict. The mutating pull then recorded one exact
+retry-only conflict without touching target, state, or backups.
+`conflicts resolve --keep-remote` backed up the failed-auth target and restored
+the pristine remote snapshot. This recovery is retry hygiene only; it is not
+claimed as the later W3 marker/`--keep-both` gate or tagged runbook §14d.
+
+Successful exact command:
+
+```text
+claude --resume 1cf4ab6d-3e36-424d-8f30-4f41858b7f20 --print "Reply with exactly: REINSTATE-PHASE1-RC7-WINDOWS-CLAUDE-RESUME-RETRY-OK"
+```
+
+Sanitized result:
+
+```text
+exit=0
+stdout_line_count=1
+stdout_exact_response_count=1
+target_A1_marker_count=4
+old_failed_challenge_count=0
+retry_marker_record_count=5
+retry_user_role_record_count=1
+retry_assistant_role_record_count=1
+exact_assistant_response_count=1
+assistant_api_error_count=0
+```
+
+No surrounding transcript prose was read or returned. With both exact vendor
+resume challenges proven, W1 passes. No dependent W2/W3 or §14 gate was
 attempted.
 
 ## 8. Discarded evidence attempts
@@ -293,6 +352,10 @@ The following bad assertions were excluded and replaced with valid checks:
    It was replaced with the adapter's exact non-alphanumeric-to-dash transform.
 4. The first `rein list --json` assertions used snake_case property names.
    Discovery was rerun against the actual PascalCase fields.
+5. The first retry-conflict predicate compared the launcher-redacted canonical
+   project ID and therefore found zero matches. The owner-local conflict JSON
+   was then checked directly and matched the exact agent, session, canonical
+   project, local hash, and remote snapshot. No secret value was returned.
 
 None of these discarded assertions is used as PASS evidence.
 
@@ -306,16 +369,16 @@ None of these discarded assertions is used as PASS evidence.
 | 4 | Pre-init missing-config failure is accurate | PASS | Mac report §4 and §4 above |
 | 5 | Post-init setup check and self-test pass on both devices | PASS | Mac report §5.2 and §4 above |
 | 6 | Claude setup prompt completes on the Mac | PASS | Mac report §5.2 |
-| 7 | Codex setup prompt completes on Windows | PARTIAL | install/init/status/pull/discovery and Codex resume passed; Claude vendor auth failed |
+| 7 | Codex setup prompt completes on Windows | PASS | install/init/status/pull/discovery and exact Codex resume passed |
 | 8 | Only two selected test sessions reach the remote manifest | PASS | Mac report §5.4 and Windows status |
 | 9 | Remote manifest/snapshots are ciphertext-only | PASS | Mac report §5.5 |
 | 10 | Wrong passphrase fails without mutation | PASS | Mac report and §5 above |
-| 11 | Claude Mac-to-Windows resume succeeds | FAIL | §7 — exact session opened, but OAuth refresh failed before an assistant response |
+| 11 | Claude Mac-to-Windows resume succeeds | PASS | §7 — clean retry produced one exact assistant response with A1 preserved |
 | 12 | Codex Mac-to-Windows resume succeeds | PASS | §7 — exact assistant response plus task-complete evidence |
 | 13 | Unrelated running agents do not block a restore | PASS | Mac report §6.1 plus Windows Codex pull with two unrelated processes |
 | 14 | A live session is forked, never overwritten | NOT TESTED | Device B §14b not reached |
 | 15 | `scoped` policy still refuses, naming that session | PARTIAL | Mac strict-policy evidence only; Windows scoped test outstanding |
-| 16 | Existing Windows target is backed up before restore | NOT TESTED | W2 / §14d |
+| 16 | Existing Windows target is backed up before restore | NOT TESTED | W2 / §14d; retry-hygiene backup is explicitly excluded |
 | 17 | Claude Windows-to-Mac resume succeeds | NOT TESTED | later handoff |
 | 18 | Codex Windows-to-Mac resume succeeds | NOT TESTED | later handoff |
 | 19 | Existing Mac targets are backed up before restore | PASS | Mac report §6.1 |
@@ -324,7 +387,7 @@ None of these discarded assertions is used as PASS evidence.
 | 22 | `--keep-both` preserves both branches | NOT TESTED | W3 |
 | 23 | All required GitHub checks are green | PASS | Mac report §7 |
 
-**Counts: 14 PASS / 2 PARTIAL / 1 FAIL / 6 NOT TESTED.**
+**Counts: 16 PASS / 1 PARTIAL / 0 FAIL / 6 NOT TESTED.**
 
 All 23 mandatory rows passed: **No.** Phase 1 remains open.
 
@@ -332,11 +395,9 @@ All 23 mandatory rows passed: **No.** Phase 1 remains open.
 
 Release-blocking Reinstate product findings: **none established on Device B**.
 
-Acceptance blockers:
+Remaining acceptance work:
 
-1. The exact Claude vendor resume failed because the local OAuth session was
-   expired and could not be refreshed. The challenge was appended, but no
-   assistant response was produced.
+1. W1 is complete; later Mac/Windows handoffs, §14, and W3 remain outstanding.
 2. The first installer output capture exposed one absolute user-local install
    path to private tool output before all-stream redaction was enabled. No
    storage secret, passphrase, private-file value, transcript, or ciphertext
@@ -358,7 +419,7 @@ file held open and asserted to produce one stable fork.
 ## 12. Milestone block
 
 ```text
-WINDOWS-RC7-W1-FAIL
+WINDOWS-RC7-W1-PASS
 release=v0.1.0-rc.7
 tag_commit=66211599dd7cfb74f1436d2221b983050e8b1bc2
 profile_id=2949d464-03f4-4de1-b326-2b3072bcb2a5
@@ -369,11 +430,8 @@ f1_default_refusal=PASS
 f2_missing_manifest_refused=PASS
 wrong_passphrase_refused=PASS
 remote_session_count=2
-claude_discovery_and_resume=FAIL
+claude_discovery_and_resume=PASS
 codex_resume=PASS
-failure_gate=claude_vendor_resume_authentication
-failure_exit=1
-failure_class=ENVIRONMENT_AUTHENTICATION
 windows_report_path=docs/testing/results/2026-07-28-windows-phase1-rc7.md
 END-WINDOWS-RC7-W1
 ```
