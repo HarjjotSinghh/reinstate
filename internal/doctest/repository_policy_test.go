@@ -117,6 +117,40 @@ func TestReleaseWorkflowRestoresAnnotatedTagBeforeVerification(t *testing.T) {
 	}
 }
 
+func TestWebsiteDeploymentWorkflowValidatesSignedTagWithoutDeploying(t *testing.T) {
+	workflow := read(t, ".github/workflows/website-deployment-tag.yml")
+	for _, required := range []string{
+		`tags:`,
+		`- "website-*"`,
+		`contents: read`,
+		`^website-v([0-9]{4})\.([0-9]{2})\.([0-9]{2})\.([1-9][0-9]*)$`,
+		`git verify-tag "$WEBSITE_TAG"`,
+		`git verify-tag "$CLI_TAG"`,
+		`git rev-parse origin/main`,
+		`git merge-base --is-ancestor "$CLI_COMMIT" "$WEBSITE_COMMIT"`,
+		`website/public/install.sh website/public/install.ps1`,
+		`website/src/data/product.ts`,
+	} {
+		if !strings.Contains(workflow, required) {
+			t.Errorf("website deployment tag workflow is missing %q", required)
+		}
+	}
+	for _, forbidden := range []string{
+		`vercel deploy`,
+		`vercel promote`,
+		`contents: write`,
+	} {
+		if strings.Contains(workflow, forbidden) {
+			t.Errorf("website deployment tag workflow contains forbidden mutation %q", forbidden)
+		}
+	}
+
+	releaseWorkflow := read(t, ".github/workflows/release.yml")
+	if strings.Contains(releaseWorkflow, `"website-*"`) {
+		t.Error("website deployment tags must not trigger the CLI release workflow")
+	}
+}
+
 func TestVerifyAvoidsRedundantDoctestRuns(t *testing.T) {
 	command := exec.Command("make", "-n", "verify")
 	command.Dir = repoRoot(t)
