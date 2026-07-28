@@ -75,26 +75,37 @@ func TestPublicBootstrapVercelHeaders(t *testing.T) {
 func TestProductionDeploymentVerifiesBeforePromotion(t *testing.T) {
 	body := read(t, "scripts/deploy-website-production.sh")
 	for _, required := range []string{
+		`^website-v[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.[1-9][0-9]*$`,
 		`git branch --show-current`,
 		`git status --porcelain`,
-		`verify-tag "$version"`,
+		`verify-tag "$deployment_tag"`,
+		`verify-tag "$cli_version"`,
+		`git merge-base --is-ancestor "$cli_version^{}" "$deployment_commit"`,
+		`git diff --exit-code "$cli_version^{}"`,
+		`check-cli-release.mjs --tag "$cli_version"`,
+		`check-vercel-project-link.mjs`,
+		`npm exec --yes --package=vercel@57.0.0 -- vercel`,
+		`vercel_cli deploy`,
 		`--prod --skip-domain`,
 		`parse-vercel-deployment-url.mjs`,
-		`verify-live-installers.sh`,
+		`verify-live-installers.sh" "$cli_version"`,
 		`npm run check:freshness`,
 		`npm run check:lighthouse`,
 		`--allow-missing-previous`,
-		`artifacts/indexnow/$version-plan.json`,
+		`artifacts/indexnow/$deployment_tag-plan.json`,
 		`npm run check:production-discovery`,
-		`vercel promote`,
+		`vercel_cli promote`,
 		`https://reinstate.dev`,
 	} {
 		if !strings.Contains(body, required) {
 			t.Errorf("production deployment script is missing %q", required)
 		}
 	}
+	if strings.Contains(body, `npx --yes vercel`) {
+		t.Error("production deployment must use the lockfile-pinned local Vercel CLI")
+	}
 	verifyIndex := strings.Index(body, `"$repo_directory/scripts/verify-live-installers.sh"`)
-	promoteIndex := strings.Index(body, `vercel promote`)
+	promoteIndex := strings.Index(body, `vercel_cli promote`)
 	if verifyIndex == -1 || promoteIndex == -1 || verifyIndex > promoteIndex {
 		t.Error("immutable installer verification must run before production promotion")
 	}
@@ -105,6 +116,22 @@ func TestProductionDeploymentVerifiesBeforePromotion(t *testing.T) {
 	productionSmokeIndex := strings.LastIndex(body, `npm run check:production-discovery`)
 	if productionSmokeIndex == -1 || productionSmokeIndex < promoteIndex {
 		t.Error("promoted production origin must receive a discovery smoke test")
+	}
+}
+
+func TestProductionDeploymentRejectsInvalidWebsiteTagDate(t *testing.T) {
+	command := exec.Command(
+		"sh",
+		filepath.Join(repoRoot(t), "scripts", "deploy-website-production.sh"),
+		"website-v2026.02.30.1",
+	)
+	command.Dir = repoRoot(t)
+	output, err := command.CombinedOutput()
+	if err == nil {
+		t.Fatal("production deployment accepted an invalid calendar date")
+	}
+	if !strings.Contains(string(output), "invalid website deployment date") {
+		t.Fatalf("unexpected invalid-date failure:\n%s", output)
 	}
 }
 
