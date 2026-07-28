@@ -540,6 +540,30 @@ function robotsAllows(groups, userAgent, pathname) {
   return rules[0]?.directive !== 'disallow';
 }
 
+function validateXRobotsTag({
+  allowVercelPreviewNoindex,
+  check,
+  findings,
+  headerValue,
+  onVercelPreviewNoindex,
+  pathname,
+}) {
+  const normalized = headerValue.trim().toLowerCase();
+  if (!/\bnoindex\b/.test(normalized)) return;
+
+  if (allowVercelPreviewNoindex && normalized === 'noindex') {
+    onVercelPreviewNoindex();
+    return;
+  }
+
+  addFinding(
+    findings,
+    check,
+    'X_ROBOTS_TAG',
+    `Unexpected noindex X-Robots-Tag for ${pathname}.`,
+  );
+}
+
 function pageValidation({
   allowVercelPreviewNoindex,
   check,
@@ -572,18 +596,14 @@ function pageValidation({
       `Expected one indexable robots meta tag for ${check.path}.`,
     );
   }
-  if (/\bnoindex\b/i.test(response.headers.get('x-robots-tag') ?? '')) {
-    if (allowVercelPreviewNoindex) {
-      onVercelPreviewNoindex();
-    } else {
-      addFinding(
-        findings,
-        check,
-        'X_ROBOTS_TAG',
-        `Unexpected noindex X-Robots-Tag for ${check.path}.`,
-      );
-    }
-  }
+  validateXRobotsTag({
+    allowVercelPreviewNoindex,
+    check,
+    findings,
+    headerValue: response.headers.get('x-robots-tag') ?? '',
+    onVercelPreviewNoindex,
+    pathname: check.path,
+  });
   if (
     metadata.ogImage.length !== 1 ||
     metadata.ogImageType.length !== 1 ||
@@ -1022,18 +1042,14 @@ export async function runProductionDiscoverySmoke({
     });
     requireStatus(findings, check, response, [200]);
     requireType(findings, check, response, ['text/html']);
-    if (/\bnoindex\b/i.test(response?.headers.get('x-robots-tag') ?? '')) {
-      if (allowVercelPreviewNoindex) {
-        onVercelPreviewNoindex();
-      } else {
-        addFinding(
-          findings,
-          check,
-          'X_ROBOTS_TAG',
-          `Unexpected noindex X-Robots-Tag for ${path}.`,
-        );
-      }
-    }
+    validateXRobotsTag({
+      allowVercelPreviewNoindex,
+      check,
+      findings,
+      headerValue: response?.headers.get('x-robots-tag') ?? '',
+      onVercelPreviewNoindex,
+      pathname: path,
+    });
   });
 
   const imageReferences = new Map();
