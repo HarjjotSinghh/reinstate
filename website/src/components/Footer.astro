@@ -27,7 +27,6 @@ const year = new Date().getFullYear();
         <li><a href="/compare">Compare</a></li>
         <li><a href="/compatibility">Compatibility</a></li>
         <li><a href="/security">Security</a></li>
-        <li><a href="/changelog">Changelog</a></li>
         <li>
           <a
             href="/docs/getting-started"
@@ -58,6 +57,13 @@ const year = new Date().getFullYear();
         <li><a href="/glossary">Glossary</a></li>
         <li><a href="/docs/troubleshooting">Troubleshooting</a></li>
         <li><a href="/guides">Guides</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <p class="col-title">Resources</p>
+      <ul>
+        <li><a href="/changelog">Changelog</a></li>
         <li><a href="/blog">Engineering blog</a></li>
         <li><a href="/research">Research and evidence</a></li>
         <li><a href="/tools/path-mapping-visualizer">Path-mapping visualizer</a></li>
@@ -97,7 +103,18 @@ const year = new Date().getFullYear();
   }
   @media (min-width: 800px) {
     .footer-grid {
-      grid-template-columns: 1.6fr 1fr 1fr;
+      grid-template-columns: 1.5fr repeat(2, 1fr);
+    }
+    .footer-grid > :last-child {
+      grid-column: 2;
+    }
+  }
+  @media (min-width: 1100px) {
+    .footer-grid {
+      grid-template-columns: 1.55fr 0.85fr 0.9fr 1.1fr;
+    }
+    .footer-grid > :last-child {
+      grid-column: auto;
     }
   }
   .mark {

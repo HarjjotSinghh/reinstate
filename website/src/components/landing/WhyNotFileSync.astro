@@ -1,0 +1,1007 @@
+---
+/**
+ * Final objection section before the install CTA.
+ *
+ * File sync moves bytes; Reinstate restores the native identity those bytes
+ * need on the destination machine. The Claude key examples are synthetic and
+ * intentionally mirror the adapter's documented absolute-path behavior.
+ */
+import PathMismatchEdgeArt from './art/PathMismatchEdgeArt.astro';
+import LogoMark from '../LogoMark.astro';
+
+const reasons = [
+  {
+    k: '01',
+    title: 'File sync owns bytes',
+    body:
+      'Dropbox, iCloud, and rsync can copy the files perfectly while leaving destination-specific session identity untouched.',
+    icon: 'files',
+  },
+  {
+    k: '02',
+    title: 'Reinstate owns identity',
+    body:
+      'A canonical project ID survives the trip. Restore rebuilds Claude’s project key or rewrites Codex’s structural working directory.',
+    icon: 'route',
+  },
+  {
+    k: '03',
+    title: 'Native resume stays native',
+    body:
+      'Claude resumes Claude sessions; Codex resumes Codex rollouts. Reinstate never hides lossy cross-agent translation behind sync.',
+    icon: 'resume',
+  },
+] as const;
+
+const icons: Record<(typeof reasons)[number]['icon'], string> = {
+  files: 'M7 3.5h7l4 4V20H7zM14 3.5V8h4M4 7v13h10',
+  route: 'M5 6h5M14 6h5M7.5 3.5v5M16.5 3.5v5M7.5 8.5v3.5c0 2.2 1.8 4 4 4h5M14 13.5l3 2.5-3 2.5',
+  resume: 'M5 8v5h5M6.5 12.5A7 7 0 1 0 8 6.2M13 8v4l3 2',
+};
+---
+
+<section class="file-sync-section" id="why-not-file-sync" aria-labelledby="file-sync-title">
+  <PathMismatchEdgeArt />
+
+  <div class="file-sync-shell">
+    <header class="file-sync-lede">
+      <span class="badge"><i aria-hidden="true"></i> Why not Dropbox, iCloud, or rsync?</span>
+      <h2 id="file-sync-title">
+        Files can sync.<br />
+        Native resume can still fail.
+      </h2>
+      <p>
+        Agent histories are indexed by more than their bytes. Absolute paths become native
+        identity, so Windows and macOS can treat the same repository as two different projects.
+      </p>
+    </header>
+
+    <article class="identity-proof" aria-labelledby="identity-proof-title">
+      <header class="identity-proof__head">
+        <div>
+          <span class="proof-eyebrow">CLAUDE CODE EXAMPLE</span>
+          <h3 id="identity-proof-title">Same repository. Two native project keys.</h3>
+        </div>
+        <span class="raw-sync-status"><i aria-hidden="true"></i> RAW FILE SYNC</span>
+      </header>
+
+      <div class="path-pair">
+        <section class="path-side" aria-label="Windows native project identity">
+          <div class="path-side__head">
+            <span class="os-mark os-mark--windows" aria-hidden="true">
+              {/* Windows 11 mark geometry from Microsoft's published vector. */}
+              <svg viewBox="0 0 48.746 48.746">
+                <rect x="0" y="0" width="23.105" height="23.105"></rect>
+                <rect x="25.642" y="0" width="23.105" height="23.105"></rect>
+                <rect x="0" y="25.642" width="23.105" height="23.105"></rect>
+                <rect x="25.642" y="25.642" width="23.105" height="23.105"></rect>
+              </svg>
+            </span>
+            <div>
+              <strong>Windows</strong>
+              <span>source machine</span>
+            </div>
+            <span class="repo-chip"><i aria-hidden="true"></i> same repo · api</span>
+          </div>
+          <div class="path-row">
+            <span>project root</span>
+            <code>C:\Users\harjot\projects\api</code>
+          </div>
+          <div class="path-row path-row--key">
+            <span>native project key</span>
+            <code>C--Users-harjot-projects-api</code>
+          </div>
+          <div class="index-location">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3.5 6.5h6l2 2H20.5v9.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"></path>
+            </svg>
+            <span>
+              Claude index
+              <code>~/.claude/projects/C--Users-harjot-projects-api/</code>
+            </span>
+          </div>
+        </section>
+
+        <div class="copy-crossing" aria-hidden="true">
+          <span class="copy-line"></span>
+          <span class="copy-label">same files</span>
+          <span class="copy-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M5 12h12m0 0-4-4m4 4-4 4"></path>
+            </svg>
+          </span>
+          <span class="copy-label copy-label--mismatch">≠ different keys</span>
+        </div>
+
+        <section class="path-side" aria-label="macOS native project identity">
+          <div class="path-side__head">
+            <span class="os-mark os-mark--mac" aria-hidden="true">
+              {/* Apple mark geometry from the published Apple Logo vector. */}
+              <svg viewBox="0 0 814 1000">
+                <path
+                  d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76.5 0-103.7 40.8-165.9 40.8s-105.6-57-155.5-127C46.7 790.7 0 663 0 541.8c0-194.4 126.4-297.5 250.8-297.5 66.1 0 121.2 43.4 162.7 43.4 39.5 0 101.1-46 176.3-46 28.5 0 130.9 2.6 198.3 99.2zm-234-181.5c31.1-36.9 53.1-88.1 53.1-139.3 0-7.1-.6-14.3-1.9-20.1-50.6 1.9-110.8 33.7-147.1 75.8-28.5 32.4-55.1 83.6-55.1 135.5 0 7.8 1.3 15.6 1.9 18.1 3.2.6 8.4 1.3 13.6 1.3 45.4 0 102.5-30.4 135.5-71.3z"
+                ></path>
+              </svg>
+            </span>
+            <div>
+              <strong>macOS</strong>
+              <span>destination machine</span>
+            </div>
+            <span class="repo-chip"><i aria-hidden="true"></i> same repo · api</span>
+          </div>
+          <div class="path-row">
+            <span>project root</span>
+            <code>/Users/harjot/dev/api</code>
+          </div>
+          <div class="path-row path-row--key">
+            <span>native project key</span>
+            <code>-Users-harjot-dev-api</code>
+          </div>
+          <div class="index-location">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3.5 6.5h6l2 2H20.5v9.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"></path>
+            </svg>
+            <span>
+              Claude index
+              <code>~/.claude/projects/-Users-harjot-dev-api/</code>
+            </span>
+          </div>
+        </section>
+      </div>
+
+      <div class="failed-result">
+        <span class="result-chip result-chip--ok">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 10 3 3 7-7"></path></svg>
+          Files copied
+        </span>
+        <span class="result-chip result-chip--bad">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m6 6 8 8m0-8-8 8"></path></svg>
+          <code>--resume</code>: no matching project
+        </span>
+      </div>
+
+      <div class="reinstate-map">
+        <span class="reinstate-map__brand">
+          <LogoMark size={27} tiled={false} />
+          REINSTATE
+        </span>
+        <div class="map-step">
+          <span>canonical project</span>
+          <code>api</code>
+        </div>
+        <span class="map-transition map-transition--route" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <circle cx="6" cy="6" r="2.25"></circle>
+            <circle cx="18" cy="18" r="2.25"></circle>
+            <path d="M6 8.25v3.25A3.5 3.5 0 0 0 9.5 15h5.25"></path>
+          </svg>
+        </span>
+        <div class="map-step">
+          <span>destination root</span>
+          <code>/Users/harjot/dev/api</code>
+        </div>
+        <span class="map-transition map-transition--identity" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M8.2 18.5a9.3 9.3 0 0 1-1.3-4.8 5.1 5.1 0 0 1 10.2 0c0 1.7-.3 3.3-.9 4.8"></path>
+            <path d="M10.2 19.5a12 12 0 0 1-.9-5.3 2.7 2.7 0 0 1 5.4 0c0 2-.3 4-.9 5.8"></path>
+            <path d="M12 4.2a9 9 0 0 0-8 5M20 9.2a9 9 0 0 0-4.4-4.1M12 12.5v7.3"></path>
+          </svg>
+        </span>
+        <div class="map-step map-step--result">
+          <span>native identity</span>
+          <strong>rebuilt</strong>
+        </div>
+      </div>
+    </article>
+
+    <div class="reason-grid" role="list">
+      {
+        reasons.map((reason) => (
+          <article class="reason-card" role="listitem">
+            <div class="reason-card__head">
+              <span class="reason-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d={icons[reason.icon]}></path></svg>
+              </span>
+              <span class="reason-k" aria-hidden="true">{reason.k}</span>
+            </div>
+            <h3>{reason.title}</h3>
+            <p>{reason.body}</p>
+          </article>
+        ))
+      }
+    </div>
+
+    <footer class="support-rail">
+      <div class="support-list" aria-label="Available now">
+        <span class="support-label"><i aria-hidden="true"></i> Available now</span>
+        <span class="support-chip">
+          <span class="brand-mark" aria-hidden="true">
+            <!-- Claude mark: https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/claude.svg -->
+            <svg viewBox="0 0 24 24"><path d="m4.7144 15.9555 4.7174-2.6471.079-.2307-.079-.1275h-.2307l-.7893-.0486-2.6956-.0729-2.3375-.0971-2.2646-.1214-.5707-.1215-.5343-.7042.0546-.3522.4797-.3218.686.0608 1.5179.1032 2.2767.1578 1.6514.0972 2.4468.255h.3886l.0546-.1579-.1336-.0971-.1032-.0972L6.973 9.8356l-2.55-1.6879-1.3356-.9714-.7225-.4918-.3643-.4614-.1578-1.0078.6557-.7225.8803.0607.2246.0607.8925.686 1.9064 1.4754 2.4893 1.8336.3643.3035.1457-.1032.0182-.0728-.164-.2733-1.3539-2.4467-1.445-2.4893-.6435-1.032-.17-.6194c-.0607-.255-.1032-.4674-.1032-.7285L6.287.1335 6.6997 0l.9957.1336.419.3642.6192 1.4147 1.0018 2.2282 1.5543 3.0296.4553.8985.2429.8318.091.255h.1579v-.1457l.1275-1.706.2368-2.0947.2307-2.6957.0789-.7589.3764-.9107.7468-.4918.5828.2793.4797.686-.0668.4433-.2853 1.8517-.5586 2.9021-.3643 1.9429h.2125l.2429-.2429.9835-1.3053 1.6514-2.0643.7286-.8196.85-.9046.5464-.4311h1.0321l.759 1.1293-.34 1.1657-1.0625 1.3478-.8804 1.1414-1.2628 1.7-.7893 1.36.0729.1093.1882-.0183 2.8535-.607 1.5421-.2794 1.8396-.3157.8318.3886.091.3946-.3278.8075-1.967.4857-2.3072.4614-3.4364.8136-.0425.0304.0486.0607 1.5482.1457.6618.0364h1.621l3.0175.2247.7892.522.4736.6376-.079.4857-1.2142.6193-1.6393-.3886-3.825-.9107-1.3113-.3279h-.1822v.1093l1.0929 1.0686 2.0035 1.8092 2.5075 2.3314.1275.5768-.3218.4554-.34-.0486-2.2039-1.6575-.85-.7468-1.9246-1.621h-.1275v.17l.4432.6496 2.3436 3.5214.1214 1.0807-.17.3521-.6071.2125-.6679-.1214-1.3721-1.9246L14.38 17.959l-1.1414-1.9428-.1397.079-.674 7.2552-.3156.3703-.7286.2793-.6071-.4614-.3218-.7468.3218-1.4753.3886-1.9246.3157-1.53.2853-1.9004.17-.6314-.0121-.0425-.1397.0182-1.4328 1.9672-2.1796 2.9446-1.7243 1.8456-.4128.164-.7164-.3704.0667-.6618.4008-.5889 2.386-3.0357 1.4389-1.882.929-1.0868-.0062-.1579h-.0546l-6.3385 4.1164-1.1293.1457-.4857-.4554.0608-.7467.2307-.2429 1.9064-1.3114Z"></path></svg>
+          </span>
+          Claude Code
+        </span>
+        <span class="support-chip">
+          <span class="brand-mark" aria-hidden="true">
+            <!-- OpenAI mark: https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/openai.svg -->
+            <svg viewBox="0 0 24 24"><path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z"></path></svg>
+          </span>
+          Codex
+        </span>
+        <span class="support-chip support-chip--platforms">
+          <span class="brand-pair" aria-hidden="true">
+            <span class="brand-mark brand-mark--apple">
+              <!-- Apple mark: https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/apple.svg -->
+              <svg viewBox="0 0 24 24"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"></path></svg>
+            </span>
+            <span class="brand-mark">
+              <!-- Windows 11 mark: https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/windows11.svg -->
+              <svg viewBox="0 0 24 24"><path d="M0 0h11.377v11.372H0Zm12.623 0H24v11.372H12.623ZM0 12.623h11.377V24H0Zm12.623 0H24V24H12.623"></path></svg>
+            </span>
+          </span>
+          macOS ↔ Windows
+        </span>
+        <span class="support-chip">
+          <span class="brand-mark" aria-hidden="true">
+            <!-- Amazon S3 mark: https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/amazons3.svg -->
+            <svg viewBox="0 0 24 24"><path d="M20.913 13.147l.12-.895c.947.576 1.258.922 1.354 1.071-.16.031-.562.046-1.474-.176zm-2.174 7.988a.547.547 0 0 0-.005.073c0 .084-.207.405-1.124.768a10.28 10.28 0 0 1-1.438.432c-1.405.325-3.128.504-4.853.504-4.612 0-7.412-1.184-7.412-1.704a.547.547 0 0 0-.005-.073L1.81 5.602c.135.078.28.154.432.227.042.02.086.038.128.057.134.062.272.122.417.18l.179.069c.154.058.314.114.478.168.043.013.084.029.13.043.207.065.423.127.646.187l.176.044c.175.044.353.087.534.127a23.414 23.414 0 0 0 .843.17l.121.023c.252.045.508.085.768.122.071.011.144.02.216.03.2.027.4.053.604.077l.24.027c.245.026.49.05.74.07l.081.009c.275.022.552.04.83.056l.233.012c.21.01.422.018.633.025a33.088 33.088 0 0 0 2.795-.026l.232-.011c.278-.016.555-.034.83-.056l.08-.008c.25-.02.497-.045.742-.072l.238-.026c.205-.024.408-.05.609-.077.07-.01.141-.019.211-.03.261-.037.519-.078.772-.122l.111-.02c.215-.04.427-.082.634-.125l.212-.047c.186-.041.368-.085.546-.13l.166-.042c.225-.06.444-.122.654-.189.04-.012.077-.026.115-.038a10.6 10.6 0 0 0 .493-.173c.058-.021.114-.044.17-.066.15-.06.293-.12.43-.185.038-.017.079-.034.116-.052.153-.073.3-.15.436-.228l-.976 7.245c-2.488-.78-5.805-2.292-7.311-3a1.09 1.09 0 0 0-1.088-1.085c-.6 0-1.088.489-1.088 1.088 0 .6.488 1.089 1.088 1.089.196 0 .378-.056.537-.148 1.72.812 5.144 2.367 7.715 3.15zm-7.42-20.047c5.677 0 9.676 1.759 9.75 2.736l-.014.113c-.01.033-.031.067-.048.101-.015.028-.026.057-.047.087-.024.033-.058.068-.09.102-.028.03-.051.06-.084.09-.038.035-.087.07-.133.105-.04.03-.074.06-.119.091-.053.036-.116.071-.177.107-.05.03-.095.06-.15.09-.068.036-.147.073-.222.11-.059.028-.114.057-.177.085-.084.038-.177.074-.268.111-.068.027-.13.054-.203.082-.097.036-.205.072-.31.107-.075.026-.148.053-.228.079-.111.035-.233.069-.35.103-.085.024-.165.05-.253.073-.124.034-.258.065-.389.098-.093.022-.181.046-.278.068-.139.032-.287.061-.433.091-.098.02-.191.041-.293.06-.155.03-.32.057-.482.084-.1.018-.198.036-.302.052-.166.026-.342.048-.515.072-.11.014-.213.03-.325.044-.181.023-.372.041-.56.06-.11.012-.218.025-.332.036-.188.016-.386.029-.58.043-.122.009-.24.02-.364.028-.207.012-.422.02-.635.028-.12.005-.234.012-.354.016a35.605 35.605 0 0 1-2.069 0c-.12-.004-.234-.011-.352-.016-.214-.008-.43-.016-.637-.028-.122-.008-.238-.02-.36-.027-.195-.015-.394-.028-.584-.044-.11-.01-.215-.024-.324-.035-.19-.02-.384-.038-.568-.06l-.315-.044c-.176-.024-.355-.046-.525-.073-.1-.015-.192-.033-.29-.05-.167-.028-.335-.055-.494-.086-.096-.018-.183-.038-.276-.056-.151-.032-.305-.062-.45-.095-.09-.02-.173-.043-.26-.064-.138-.034-.277-.067-.407-.102-.082-.022-.157-.046-.235-.069a11.75 11.75 0 0 1-.368-.108c-.075-.024-.141-.049-.213-.073-.11-.037-.223-.075-.325-.113-.067-.025-.125-.051-.188-.077-.096-.038-.195-.076-.282-.115-.06-.027-.11-.054-.166-.08-.08-.039-.162-.077-.233-.116-.052-.028-.094-.055-.142-.084-.063-.038-.13-.075-.185-.113-.043-.029-.075-.058-.113-.086-.048-.037-.098-.073-.139-.11-.032-.029-.054-.057-.08-.087-.033-.035-.069-.07-.093-.104-.02-.03-.031-.058-.046-.086-.018-.035-.039-.068-.049-.102l-.015-.113c.076-.977 4.074-2.736 9.748-2.736zm12.182 12.124c-.118-.628-.84-1.291-2.31-2.128l.963-7.16a.531.531 0 0 0 .005-.073C22.16 1.581 16.447 0 11.32 0 6.194 0 .482 1.581.482 3.851a.58.58 0 0 0 .005.072L2.819 21.25c.071 2.002 5.236 2.75 8.5 2.75 1.805 0 3.615-.188 5.098-.531.598-.138 1.133-.3 1.592-.48 1.18-.467 1.789-1.053 1.813-1.739l.945-7.018c.557.131 1.016.197 1.389.197.54 0 .902-.137 1.134-.413a.956.956 0 0 0 .21-.804Z"></path></svg>
+          </span>
+          S3
+        </span>
+        <span class="support-chip">
+          <span class="brand-mark" aria-hidden="true">
+            <!-- Cloudflare mark: https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/cloudflare.svg -->
+            <svg viewBox="0 0 24 24"><path d="M16.5088 16.8447c.1475-.5068.0908-.9707-.1553-1.3154-.2246-.3164-.6045-.499-1.0615-.5205l-8.6592-.1123a.1559.1559 0 0 1-.1333-.0713c-.0283-.042-.0351-.0986-.021-.1553.0278-.084.1123-.1484.2036-.1562l8.7359-.1123c1.0351-.0489 2.1601-.8868 2.5537-1.9136l.499-1.3013c.0215-.0561.0293-.1128.0147-.168-.5625-2.5463-2.835-4.4453-5.5499-4.4453-2.5039 0-4.6284 1.6177-5.3876 3.8614-.4927-.3658-1.1187-.5625-1.794-.499-1.2026.119-2.1665 1.083-2.2861 2.2856-.0283.31-.0069.6128.0635.894C1.5683 13.171 0 14.7754 0 16.752c0 .1748.0142.3515.0352.5273.0141.083.0844.1475.1689.1475h15.9814c.0909 0 .1758-.0645.2032-.1553l.12-.4268zm2.7568-5.5634c-.0771 0-.1611 0-.2383.0112-.0566 0-.1054.0415-.127.0976l-.3378 1.1744c-.1475.5068-.0918.9707.1543 1.3164.2256.3164.6055.498 1.0625.5195l1.8437.1133c.0557 0 .1055.0263.1329.0703.0283.043.0351.1074.0214.1562-.0283.084-.1132.1485-.204.1553l-1.921.1123c-1.041.0488-2.1582.8867-2.5527 1.914l-.1406.3585c-.0283.0713.0215.1416.0986.1416h6.5977c.0771 0 .1474-.0489.169-.126.1122-.4082.1757-.837.1757-1.2803 0-2.6025-2.125-4.727-4.7344-4.727"></path></svg>
+          </span>
+          Cloudflare R2
+        </span>
+      </div>
+      <nav aria-label="Compatibility resources">
+        <a href="/docs/adapters">
+          View compatibility
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7 12h10m0 0-4-4m4 4-4 4"></path>
+          </svg>
+        </a>
+        <a href="/docs/comparison">
+          Compare approaches
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7 12h10m0 0-4-4m4 4-4 4"></path>
+          </svg>
+        </a>
+      </nav>
+    </footer>
+  </div>
+</section>
+
+<style>
+  .file-sync-section {
+    --paper: #e4e7dd;
+    --paper-2: #f4f6ef;
+    --ink: oklch(0.19 0.022 158);
+    --ink-2: oklch(0.41 0.018 158);
+    --ink-3: oklch(0.54 0.014 158);
+    --rule: oklch(0.8 0.012 145);
+    --prim: oklch(0.87 0.21 128);
+    --prim-deep: oklch(0.58 0.155 134);
+    --on-prim: oklch(0.19 0.022 158);
+    --sv-stroke: #131f1a;
+    --sv-prim: #b8ff3c;
+    --sv-prim-deep: #4f8a1e;
+    --sv-shadow: #131f1a;
+    --sv-furn-1: #c1c9ae;
+    --sv-furn-2: #a6b090;
+    --sv-furn-3: #8a9673;
+    --sv-dev-0: #55685d;
+    --sv-dev-1: #3b4c43;
+    --sv-dev-2: #2a3831;
+    --sv-dev-3: #1e2925;
+    --sv-night: #16231f;
+    --sv-t-c: #8fc8ea;
+
+    position: relative;
+    z-index: 1;
+    isolation: isolate;
+    overflow: clip;
+    scroll-margin-top: 5rem;
+    color: var(--ink);
+  }
+  :global(html.dark) .file-sync-section {
+    --paper: #1d2723;
+    --paper-2: #26332e;
+    --ink: oklch(0.965 0.008 145);
+    --ink-2: oklch(0.76 0.014 150);
+    --ink-3: oklch(0.62 0.016 150);
+    --rule: oklch(0.44 0.018 158 / 0.6);
+    --prim: oklch(0.88 0.21 128);
+    --prim-deep: oklch(0.84 0.19 128);
+    --on-prim: oklch(0.17 0.04 132);
+    --sv-stroke: #0d1613;
+    --sv-prim: #c4ff56;
+    --sv-prim-deep: #a8e83c;
+    --sv-shadow: #050b09;
+    --sv-furn-1: #6d8073;
+    --sv-furn-2: #56685c;
+    --sv-furn-3: #435248;
+    --sv-dev-0: #6b7e72;
+    --sv-dev-1: #52655a;
+    --sv-dev-2: #3d4e45;
+    --sv-dev-3: #2e3c34;
+    --sv-night: #0a1310;
+    --sv-t-c: #78b3da;
+  }
+
+  .file-sync-shell {
+    position: relative;
+    z-index: 2;
+    max-width: 82rem;
+    margin-inline: auto;
+    padding: clamp(2.5rem, 4vw, 4rem) clamp(1.25rem, 4vw, 3rem)
+      clamp(4.5rem, 8vw, 7rem);
+  }
+  .file-sync-lede {
+    display: grid;
+    justify-items: center;
+    max-width: 58rem;
+    margin-inline: auto;
+    text-align: center;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.36rem 0.85rem 0.36rem 0.7rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--paper-2) 94%, transparent);
+    font-size: 0.78rem;
+    font-weight: 550;
+    color: var(--ink-2);
+  }
+  .badge i,
+  .support-label i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--sv-prim-deep);
+  }
+  .file-sync-lede h2 {
+    margin: clamp(0.9rem, 1.8vw, 1.25rem) 0 0;
+    font-family: var(--font-display);
+    font-size: clamp(1.9rem, 3.4vw, 3rem);
+    font-weight: 400;
+    letter-spacing: -0.047em;
+    line-height: 0.98;
+    text-wrap: balance;
+  }
+  .file-sync-lede p {
+    max-width: 60rem;
+    margin: 1.2rem auto 0;
+    font-size: clamp(1rem, 0.55vw + 0.91rem, 1.17rem);
+    line-height: 1.58;
+    color: color-mix(in oklab, var(--ink) 28%, var(--ink-2));
+    text-wrap: pretty;
+  }
+
+  .identity-proof {
+    position: relative;
+    z-index: 2;
+    margin: clamp(5.25rem, 8vw, 6.75rem) auto 0;
+    border: 2px solid var(--sv-stroke);
+    border-radius: 15px;
+    overflow: hidden;
+    background: color-mix(in oklab, var(--paper-2) 70%, transparent);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+  }
+  .identity-proof__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 2rem;
+    padding: 1.45rem 1.6rem 1.35rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .proof-eyebrow {
+    display: block;
+    margin-bottom: 0.45rem;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.11em;
+    color: var(--sv-prim-deep);
+  }
+  .identity-proof h3 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 2.2vw, 2rem);
+    font-weight: 400;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+  }
+  .raw-sync-status {
+    display: inline-flex;
+    align-items: center;
+    flex: none;
+    gap: 0.45rem;
+    min-height: 1.9rem;
+    padding: 0 0.7rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--ink-2);
+  }
+  .raw-sync-status i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ink-3);
+  }
+
+  .path-pair {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 7rem minmax(0, 1fr);
+    align-items: stretch;
+  }
+  .path-side {
+    display: grid;
+    align-content: start;
+    gap: 0.85rem;
+    padding: 1.55rem 1.6rem 1.6rem;
+  }
+  .path-side__head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.15rem;
+  }
+  .path-side__head div {
+    display: grid;
+    gap: 0.08rem;
+  }
+  .path-side__head strong {
+    font-size: 0.9rem;
+    font-weight: 650;
+  }
+  .path-side__head div > span {
+    font-family: var(--font-mono);
+    font-size: 0.67rem;
+    color: var(--ink-3);
+  }
+  .repo-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.38rem;
+    margin-left: auto;
+    padding: 0.28rem 0.5rem;
+    border: 1px solid color-mix(in oklab, var(--sv-prim-deep) 34%, var(--rule));
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--paper-2) 62%, transparent);
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    white-space: nowrap;
+    color: var(--ink-2);
+  }
+  .repo-chip i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--sv-prim-deep);
+  }
+  .os-mark {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 2.2rem;
+    height: 2.2rem;
+    border: 1px solid color-mix(in oklab, var(--sv-prim-deep) 52%, var(--rule));
+    border-radius: 8px;
+    background: color-mix(in oklab, var(--paper-2) 80%, var(--sv-prim) 12%);
+    color: var(--sv-prim-deep);
+  }
+  .os-mark svg {
+    display: block;
+    width: 1.18rem;
+    height: 1.18rem;
+    fill: currentColor;
+  }
+  .os-mark--mac svg {
+    width: 0.92rem;
+    height: 1.15rem;
+  }
+  .path-row {
+    display: grid;
+    gap: 0.28rem;
+  }
+  .path-row > span {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    font-weight: 650;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .path-row code {
+    min-width: 0;
+    padding: 0.65rem 0.7rem;
+    border: 1px solid var(--rule);
+    border-radius: 7px;
+    background: color-mix(in oklab, var(--paper) 80%, transparent);
+    font-family: var(--font-mono);
+    font-size: clamp(0.7rem, 0.75vw, 0.83rem);
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+    color: var(--ink);
+  }
+  .path-row--key code {
+    color: var(--sv-prim-deep);
+  }
+  .index-location {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 0.55rem;
+    margin-top: 0.05rem;
+    padding: 0.65rem 0.72rem;
+    border: 1px dashed color-mix(in oklab, var(--sv-prim-deep) 30%, var(--rule));
+    border-radius: 7px;
+    background: color-mix(in oklab, var(--paper-2) 48%, transparent);
+    color: var(--ink-3);
+  }
+  .index-location > svg {
+    width: 1rem;
+    height: 1rem;
+    margin-top: 0.08rem;
+    fill: none;
+    stroke: var(--sv-prim-deep);
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .index-location > span {
+    display: grid;
+    gap: 0.18rem;
+    min-width: 0;
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    font-weight: 650;
+    letter-spacing: 0.065em;
+    text-transform: uppercase;
+  }
+  .index-location code {
+    min-width: 0;
+    font-family: var(--font-mono);
+    font-size: 0.63rem;
+    font-weight: 450;
+    letter-spacing: 0;
+    line-height: 1.4;
+    text-transform: none;
+    overflow-wrap: anywhere;
+    color: var(--ink-2);
+  }
+  .copy-crossing {
+    position: relative;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 0.55rem;
+  }
+  .copy-line {
+    position: absolute;
+    inset: 0 50%;
+    width: 1px;
+    background: var(--rule);
+  }
+  .copy-icon,
+  .copy-label {
+    position: relative;
+    z-index: 1;
+    background: color-mix(in oklab, var(--paper-2) 86%, transparent);
+  }
+  .copy-icon {
+    display: grid;
+    place-items: center;
+    width: 2.3rem;
+    height: 2.3rem;
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+  }
+  .copy-icon svg {
+    width: 1.2rem;
+    height: 1.2rem;
+    fill: none;
+    stroke: var(--ink-2);
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .copy-label {
+    padding: 0.2rem 0.35rem;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.64rem;
+    color: var(--ink-3);
+  }
+  .copy-label--mismatch {
+    border: 1px solid color-mix(in oklab, var(--sv-prim-deep) 38%, var(--rule));
+    background: color-mix(in oklab, var(--paper-2) 70%, var(--sv-prim) 7%);
+    font-weight: 650;
+    color: var(--sv-prim-deep);
+  }
+
+  .failed-result {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem 1.25rem;
+    padding: 0.9rem 1.5rem;
+    border-top: 1px solid var(--rule);
+    background: color-mix(in oklab, var(--paper) 68%, transparent);
+  }
+  .result-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.38rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+  .result-chip svg {
+    width: 1rem;
+    height: 1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+  }
+  .result-chip code {
+    font-family: var(--font-mono);
+  }
+  .result-chip--ok {
+    color: var(--sv-prim-deep);
+  }
+  .result-chip--bad {
+    color: var(--ink-2);
+  }
+
+  .reinstate-map {
+    display: grid;
+    grid-template-columns: auto 1fr auto 1.4fr auto 0.75fr;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.2rem;
+    border-top: 2px solid var(--sv-stroke);
+    background: var(--sv-night);
+    color: #f4f6ef;
+  }
+  .reinstate-map__brand {
+    --paper: var(--sv-night);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding-right: 0.45rem;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 750;
+    letter-spacing: 0.08em;
+    color: var(--sv-prim);
+  }
+  :global(.reinstate-map__brand .logo-mark) {
+    width: 1.7rem;
+    height: 1.7rem;
+  }
+  .map-transition {
+    display: grid;
+    place-items: center;
+    width: 1.85rem;
+    height: 1.85rem;
+    border: 1px solid #34443d;
+    border-radius: 7px;
+    background: #101b17;
+    color: var(--sv-prim);
+  }
+  .map-transition svg {
+    width: 1.05rem;
+    height: 1.05rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .map-step {
+    display: grid;
+    gap: 0.12rem;
+    min-width: 0;
+  }
+  .map-step span {
+    font-size: 0.62rem;
+    color: #aebbb4;
+  }
+  .map-step code,
+  .map-step strong {
+    font-family: var(--font-mono);
+    font-size: 0.73rem;
+    font-weight: 600;
+    color: #f4f6ef;
+    overflow-wrap: anywhere;
+  }
+  .map-step--result strong {
+    color: var(--sv-prim);
+  }
+  .reason-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+  }
+  .reason-card {
+    min-width: 0;
+    padding: 1.3rem 1.25rem 1.4rem;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    background: color-mix(in oklab, var(--paper-2) 72%, transparent);
+    text-wrap: pretty;
+  }
+  .reason-card__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .reason-icon {
+    display: grid;
+    place-items: center;
+    width: 2.55rem;
+    height: 2.55rem;
+    border: 1.5px solid color-mix(in oklab, var(--sv-prim-deep) 48%, var(--rule));
+    border-radius: 9px;
+    color: var(--sv-prim-deep);
+    background: color-mix(in oklab, var(--paper-2) 78%, var(--sv-prim) 14%);
+  }
+  .reason-icon svg {
+    width: 1.35rem;
+    height: 1.35rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .reason-k {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--sv-prim-deep);
+  }
+  .reason-card h3 {
+    margin: 0.95rem 0 0;
+    font-family: var(--font-display);
+    font-size: clamp(1.35rem, 1.5vw, 1.6rem);
+    font-weight: 400;
+    letter-spacing: -0.025em;
+  }
+  .reason-card p {
+    margin: 0.55rem 0 0;
+    font-size: 0.92rem;
+    line-height: 1.55;
+    color: color-mix(in oklab, var(--ink) 30%, var(--ink-2));
+  }
+
+  .support-rail {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem 2rem;
+    margin-top: 1rem;
+    padding: 1rem 1.15rem;
+    border: 1px solid var(--rule);
+    border-radius: 11px;
+    background: color-mix(in oklab, var(--paper-2) 76%, transparent);
+  }
+  .support-list,
+  .support-rail nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.55rem;
+  }
+  .support-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 1.9rem;
+    padding: 0.3rem 0.55rem 0.3rem 0.42rem;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    background: color-mix(in oklab, var(--paper) 75%, transparent);
+    font-family: var(--font-mono);
+    font-size: 0.69rem;
+    color: var(--ink-2);
+  }
+  .brand-mark {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 1rem;
+    height: 1rem;
+    color: var(--sv-prim-deep);
+  }
+  .brand-mark svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    fill: currentColor;
+  }
+  .brand-pair {
+    display: inline-flex;
+    align-items: center;
+  }
+  .brand-pair .brand-mark + .brand-mark {
+    margin-left: -0.14rem;
+    padding-left: 0.14rem;
+    border-left: 1px solid var(--rule);
+  }
+  .brand-mark--apple {
+    width: 0.88rem;
+  }
+  .support-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-right: 0.2rem;
+    font-size: 0.73rem;
+    font-weight: 650;
+    color: var(--ink);
+  }
+  .support-rail nav {
+    flex: none;
+  }
+  .support-rail a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 2rem;
+    color: var(--ink);
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .support-rail a:hover {
+    color: var(--sv-prim-deep);
+  }
+  .support-rail a svg {
+    width: 0.9rem;
+    height: 0.9rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .support-rail a:hover svg {
+    transform: translateX(2px);
+  }
+
+  :global(html.dark) .identity-proof {
+    border-color: var(--rule);
+    background: color-mix(in oklab, var(--paper-2) 70%, transparent);
+  }
+  :global(html.dark) .reinstate-map {
+    border-top-color: var(--rule);
+  }
+  :global(html.dark) .copy-icon,
+  :global(html.dark) .copy-label {
+    background: color-mix(in oklab, var(--paper-2) 82%, transparent);
+  }
+  :global(html.dark) .copy-label--mismatch {
+    background: color-mix(in oklab, var(--paper-2) 70%, var(--sv-prim) 8%);
+  }
+  :global(html.dark) .reason-card,
+  :global(html.dark) .support-rail {
+    background: color-mix(in oklab, var(--paper-2) 78%, transparent);
+  }
+  :global(html.dark) .os-mark,
+  :global(html.dark) .reason-icon {
+    border-color: color-mix(in oklab, var(--sv-prim) 52%, var(--rule));
+    background: color-mix(in oklab, var(--sv-night) 80%, var(--sv-prim) 12%);
+    color: var(--sv-prim);
+  }
+
+  @media (max-width: 980px) {
+    .identity-proof {
+      margin-top: 5.5rem;
+    }
+    .path-pair {
+      grid-template-columns: 1fr;
+    }
+    .copy-crossing {
+      min-height: 4.2rem;
+    }
+    .copy-line {
+      inset: 0 50%;
+    }
+    .copy-icon svg {
+      transform: rotate(90deg);
+    }
+    .repo-chip {
+      margin-left: auto;
+    }
+    .reinstate-map {
+      grid-template-columns: 1fr auto 1fr;
+    }
+    .reinstate-map__brand {
+      grid-column: 1 / -1;
+      padding-bottom: 0.55rem;
+      border-bottom: 1px solid #34443d;
+    }
+    .map-step--result {
+      grid-column: 3;
+    }
+    .reason-grid {
+      grid-template-columns: 1fr;
+    }
+    .support-rail {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+    .support-rail nav {
+      flex: initial;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .file-sync-shell {
+      padding-top: 3.5rem;
+    }
+    .identity-proof {
+      margin-top: 2.75rem;
+    }
+    .identity-proof__head {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+    .path-side {
+      padding-inline: 1.1rem;
+    }
+    .path-side__head {
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+    .repo-chip {
+      margin-left: 2.95rem;
+    }
+    .reinstate-map {
+      grid-template-columns: 1fr;
+      align-items: start;
+    }
+    .map-transition {
+      margin-block: 0.15rem;
+    }
+    .map-step--result {
+      grid-column: auto;
+    }
+    .failed-result {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+    .support-list {
+      align-items: flex-start;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .support-rail a svg {
+      transition: none;
+    }
+    .support-rail a:hover svg {
+      transform: none;
+    }
+  }
+</style>
