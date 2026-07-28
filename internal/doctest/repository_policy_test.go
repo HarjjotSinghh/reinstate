@@ -151,6 +151,16 @@ func TestWebsiteDeploymentWorkflowValidatesSignedTagWithoutDeploying(t *testing.
 	}
 }
 
+func TestDevelopmentVersionIgnoresWebsiteDeploymentTags(t *testing.T) {
+	makefile := read(t, "Makefile")
+	if !strings.Contains(
+		makefile,
+		`git describe --tags --match 'v[0-9]*' --always --dirty`,
+	) {
+		t.Fatal("development version must describe only v-prefixed CLI release tags")
+	}
+}
+
 func TestVerifyAvoidsRedundantDoctestRuns(t *testing.T) {
 	command := exec.Command("make", "-n", "verify")
 	command.Dir = repoRoot(t)
