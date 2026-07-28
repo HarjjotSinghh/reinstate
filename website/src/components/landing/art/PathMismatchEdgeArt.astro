@@ -48,7 +48,7 @@ const DEV_DARK: [string, string, string] = [
 const winPlat = box(-230, -90, -12, 390, 160, 20);
 const winInset = foot(-216, -76, 8.4, 360, 130);
 const winTower = box(-210, -67, 8, 58, 62, 116);
-const winMonitor = box(-137, -74, 49, 142, 12, 92);
+const winMonitor = box(-137, -66, 49, 142, 12, 92);
 /* The post overlaps the monitor's footprint and rises into its rear housing,
    so the display reads as mechanically attached rather than floating. */
 const winStand = box(-76, -66, 8, 22, 23, 53);
@@ -199,7 +199,7 @@ const macKeys = [
       </g>
 
       {
-        faces(winStand, DEV).map((face) => (
+        faces(winStandBase, DEV).map((face) => (
           <polygon
             points={face.points}
             fill={face.fill}
@@ -211,7 +211,7 @@ const macKeys = [
         ))
       }
       {
-        faces(winStandBase, DEV).map((face) => (
+        faces(winStand, DEV).map((face) => (
           <polygon
             points={face.points}
             fill={face.fill}
@@ -234,7 +234,7 @@ const macKeys = [
           ></polygon>
         ))
       }
-      <g transform={frontText(-137, -74, 49, 12, 92)}>
+      <g transform={frontText(-137, -66, 49, 12, 92)}>
         <rect x="10" y="10" width="112" height="67" fill="var(--sv-night)"></rect>
         <rect x="10" y="10" width="112" height="13" fill="var(--sv-dev-1)"></rect>
         <circle cx="18" cy="16.5" r="2.2" fill="var(--sv-prim)"></circle>
@@ -455,7 +455,7 @@ const macKeys = [
   .path-edge-scene {
     position: absolute;
     z-index: 0;
-    top: clamp(6rem, 9vw, 8.25rem);
+    top: clamp(2rem, calc(6vw - 1rem), 3.5rem);
     left: 50%;
     width: max(100%, 90rem);
     margin: 0;

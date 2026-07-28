@@ -312,7 +312,7 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
     --ink: oklch(0.965 0.008 145);
     --ink-2: oklch(0.76 0.014 150);
     --ink-3: oklch(0.62 0.016 150);
-    --rule: oklch(0.31 0.02 158);
+    --rule: oklch(0.44 0.018 158 / 0.6);
     --prim: oklch(0.88 0.21 128);
     --prim-deep: oklch(0.84 0.19 128);
     --on-prim: oklch(0.17 0.04 132);
@@ -336,7 +336,7 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
     z-index: 2;
     max-width: 82rem;
     margin-inline: auto;
-    padding: clamp(4rem, 7vw, 6rem) clamp(1.25rem, 4vw, 3rem)
+    padding: clamp(2.5rem, 4vw, 4rem) clamp(1.25rem, 4vw, 3rem)
       clamp(4.5rem, 8vw, 7rem);
   }
   .file-sync-lede {
@@ -889,7 +889,11 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
   }
 
   :global(html.dark) .identity-proof {
+    border-color: var(--rule);
     background: color-mix(in oklab, var(--paper-2) 70%, transparent);
+  }
+  :global(html.dark) .reinstate-map {
+    border-top-color: var(--rule);
   }
   :global(html.dark) .copy-icon,
   :global(html.dark) .copy-label {
