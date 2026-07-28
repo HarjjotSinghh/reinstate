@@ -46,6 +46,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   open file handles (`lsof` on Unix, Restart Manager on Windows) and falls back
   to the previous host-wide answer only where handles cannot be enumerated,
   reporting that imprecision in the refusal message.
+- Restore a session that genuinely is in use alongside the live one as a
+  distinct vendor-safe session instead of refusing, so a restore never waits on
+  a human closing an agent. The fork identity is derived from the snapshot, so
+  repeating the pull is idempotent rather than accumulating copies.
 - Detect a concurrent agent write to a restore target and abandon the restore
   instead of discarding those changes at the final rename.
 - Allow the guarded immutable Vercel discoverability smoke to record and

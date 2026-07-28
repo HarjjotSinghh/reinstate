@@ -50,17 +50,35 @@ not block anything.
 
 ```toml
 [restore]
-active_agent_policy = "scoped"
+active_agent_policy = "fork"
 ```
 
 | Policy | Behavior |
 | ------ | -------- |
-| `scoped` (default) | Refuse only when the target session file is held open by that agent. |
+| `fork` (default) | Never blocks. If the target session is in use, the live file is left untouched and the remote copy is restored beside it as a distinct session. |
+| `scoped` | Refuse when the target session file is held open by that agent. |
 | `strict` | Refuse whenever the agent runs anywhere on the host. |
 | `off` | Skip the liveness check entirely. |
 
+Under `fork`, a `pull` reports the new session it created:
+
+```text
+pulled 1 snapshot(s), dry_run=false
+  claude:SESSION -> ... (backups: ...)
+    SESSION is in use, so it was left unchanged; restored alongside it as SESSION-active-a1b2c3d4
+```
+
+The fork identity is derived from the snapshot, so re-pulling the same remote
+state lands on the same file instead of accumulating copies. Because the live
+session is never replaced, a forked restore does not record a conflict and does
+not mark the original session as synchronized.
+
 `--allow-active-agents` applies `off` to a single `rein pull` or
 `rein conflicts resolve` run.
+
+`rein conflicts resolve --keep-remote` keeps the refusal even under the `fork`
+policy, because `--keep-both` is already the explicit way to preserve both
+branches there.
 
 Relaxing this policy does not remove the other protections. Restores always
 write to a temporary file and rename it into place, existing targets are always

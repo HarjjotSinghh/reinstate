@@ -30,10 +30,15 @@ const (
 	// ActiveAgentOff performs no liveness check. Restores stay atomic and still
 	// back up the previous file first.
 	ActiveAgentOff = "off"
+	// ActiveAgentFork never blocks. When the target session is in use the
+	// remote copy is restored alongside it as a distinct vendor-safe session,
+	// leaving the live file untouched.
+	ActiveAgentFork = "fork"
 )
 
-// DefaultActiveAgentPolicy scopes the check to the session being replaced.
-const DefaultActiveAgentPolicy = ActiveAgentScoped
+// DefaultActiveAgentPolicy restores a busy session alongside the live one
+// instead of refusing, so a restore never waits on a human closing an agent.
+const DefaultActiveAgentPolicy = ActiveAgentFork
 
 // RestoreConfig tunes restore safety behavior.
 type RestoreConfig struct {
@@ -93,11 +98,12 @@ func ValidateConfig(c *Config) error {
 		c.Restore.ActiveAgentPolicy = DefaultActiveAgentPolicy
 	}
 	switch c.Restore.ActiveAgentPolicy {
-	case ActiveAgentStrict, ActiveAgentScoped, ActiveAgentOff:
+	case ActiveAgentStrict, ActiveAgentScoped, ActiveAgentOff, ActiveAgentFork:
 	default:
 		return fmt.Errorf(
-			"unsupported restore.active_agent_policy %q (want %q, %q, or %q)",
-			c.Restore.ActiveAgentPolicy, ActiveAgentStrict, ActiveAgentScoped, ActiveAgentOff)
+			"unsupported restore.active_agent_policy %q (want %q, %q, %q, or %q)",
+			c.Restore.ActiveAgentPolicy,
+			ActiveAgentFork, ActiveAgentScoped, ActiveAgentStrict, ActiveAgentOff)
 	}
 	return nil
 }

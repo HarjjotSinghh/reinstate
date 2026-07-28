@@ -14,6 +14,7 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/adapter"
 	"github.com/HarjjotSinghh/reinstate/internal/adapter/claude"
 	"github.com/HarjjotSinghh/reinstate/internal/config"
+	"github.com/HarjjotSinghh/reinstate/internal/schema"
 )
 
 // TestCLISyntheticSyncPath drives the real CLI entrypoint (Execute) for
@@ -90,6 +91,21 @@ func TestCLISyntheticSyncPath(t *testing.T) {
 	inactiveChecker := func(_ context.Context, _, _ string) (bool, bool, error) { return false, true, nil }
 	run := func(args ...string) (stdout, stderr string, code int) {
 		return runWithChecker(inactiveChecker, args...)
+	}
+	// runWithCheckerAndPolicy pins restore.active_agent_policy for one run so
+	// each policy can be exercised against the same synthetic profile.
+	runWithCheckerAndPolicy := func(
+		processChecker AgentProcessChecker, policy string, args ...string,
+	) (stdout, stderr string, code int) {
+		cfg, err := config.LoadConfig(home)
+		if err != nil {
+			t.Fatal(err)
+		}
+		cfg.Restore.ActiveAgentPolicy = policy
+		if err := config.SaveConfig(home, cfg); err != nil {
+			t.Fatal(err)
+		}
+		return runWithChecker(processChecker, args...)
 	}
 
 	// init
@@ -215,10 +231,58 @@ func TestCLISyntheticSyncPath(t *testing.T) {
 	}
 	// The scoped checker reports the agent is holding this exact session file.
 	busyChecker := func(_ context.Context, _, _ string) (bool, bool, error) { return true, true, nil }
-	out, errb, code = runWithChecker(busyChecker,
+	out, errb, code = runWithCheckerAndPolicy(busyChecker, schema.ActiveAgentScoped,
 		"pull", "--agent", "claude", "--session", "session-e2e", "--json")
 	if code != ExitSafety || !strings.Contains(errb, "is currently using this session") {
 		t.Fatalf("active-agent pull exit=%d err=%q out=%q", code, errb, out)
+	}
+
+	// Under the default fork policy a busy session is never blocked and never
+	// overwritten: the live file is left byte-for-byte intact and the remote
+	// copy lands beside it as a distinct session.
+	liveBefore, err := os.ReadFile(targetSessionPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, errb, code = runWithCheckerAndPolicy(busyChecker, schema.ActiveAgentFork,
+		"pull", "--agent", "claude", "--session", "session-e2e")
+	if code != ExitOK {
+		t.Fatalf("fork policy pull exit=%d err=%q out=%q", code, errb, out)
+	}
+	if !strings.Contains(out, "is in use, so it was left unchanged") {
+		t.Fatalf("fork was not reported to the operator: %q", out)
+	}
+	liveAfter, err := os.ReadFile(targetSessionPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(liveAfter) != string(liveBefore) {
+		t.Fatal("fork policy modified the live session file")
+	}
+	forks, err := filepath.Glob(filepath.Join(filepath.Dir(targetSessionPath), "session-e2e-active-*.jsonl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(forks) != 1 {
+		t.Fatalf("expected exactly one forked session, got %v", forks)
+	}
+	// Re-pulling the same remote state must be idempotent, not pile up forks.
+	out, errb, code = runWithCheckerAndPolicy(busyChecker, schema.ActiveAgentFork,
+		"pull", "--agent", "claude", "--session", "session-e2e")
+	if code != ExitOK {
+		t.Fatalf("repeat fork pull exit=%d err=%q out=%q", code, errb, out)
+	}
+	forksAgain, err := filepath.Glob(filepath.Join(filepath.Dir(targetSessionPath), "session-e2e-active-*.jsonl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(forksAgain) != 1 {
+		t.Fatalf("repeated pull created duplicate forks: %v", forksAgain)
+	}
+	for _, fork := range forksAgain {
+		if err := os.Remove(fork); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	// --allow-active-agents clears the liveness refusal. Every other safety

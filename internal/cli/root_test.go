@@ -472,9 +472,53 @@ func TestSetupCheckJSONPreservesFailureExit(t *testing.T) {
 	}
 }
 
-func TestRequireSessionRestorable(t *testing.T) {
+func TestPlanSessionRestore(t *testing.T) {
 	probeErr := errors.New("probe failed")
 	const sessionPath = "/home/dev/.claude/projects/demo/abc.jsonl"
+
+	forkTests := []struct {
+		name string
+		busy bool
+		want restoreDisposition
+	}{
+		{name: "fork policy restores in place when idle", busy: false, want: restoreInPlace},
+		{name: "fork policy forks rather than refusing when busy", busy: true, want: restoreAsFork},
+	}
+	for _, tc := range forkTests {
+		t.Run(tc.name, func(t *testing.T) {
+			checker := func(_ context.Context, _, _ string) (bool, bool, error) {
+				return tc.busy, true, nil
+			}
+			got, err := planSessionRestore(
+				context.Background(), checker, "claude", sessionPath, schema.ActiveAgentFork)
+			if err != nil {
+				t.Fatalf("fork policy must never refuse: %v", err)
+			}
+			if got != tc.want {
+				t.Fatalf("disposition=%v want %v", got, tc.want)
+			}
+		})
+	}
+
+	// The default (empty) policy must behave as fork, never as a refusal.
+	t.Run("empty policy defaults to forking", func(t *testing.T) {
+		checker := func(_ context.Context, _, _ string) (bool, bool, error) { return true, true, nil }
+		got, err := planSessionRestore(context.Background(), checker, "claude", sessionPath, "")
+		if err != nil || got != restoreAsFork {
+			t.Fatalf("disposition=%v err=%v, want fork and no error", got, err)
+		}
+	})
+
+	// Conflict resolution keeps the refusal, because --keep-both is the
+	// explicit way to fork there.
+	t.Run("requireSessionRestorable refuses under the fork policy", func(t *testing.T) {
+		checker := func(_ context.Context, _, _ string) (bool, bool, error) { return true, true, nil }
+		err := requireSessionRestorable(
+			context.Background(), checker, "claude", sessionPath, schema.ActiveAgentFork)
+		if err == nil || !strings.Contains(err.Error(), "is currently using this session") {
+			t.Fatalf("expected a refusal, got %v", err)
+		}
+	})
 
 	tests := []struct {
 		name        string
@@ -529,13 +573,6 @@ func TestRequireSessionRestorable(t *testing.T) {
 			wantPath: "",
 		},
 		{
-			name:     "empty policy defaults to scoped",
-			policy:   "",
-			busy:     false,
-			scoped:   true,
-			wantPath: sessionPath,
-		},
-		{
 			name:        "unknown policy is rejected",
 			policy:      "sometimes",
 			wantErr:     true,
@@ -560,7 +597,7 @@ func TestRequireSessionRestorable(t *testing.T) {
 				gotPath = path
 				return tc.busy, tc.scoped, tc.probeErr
 			}
-			err := requireSessionRestorable(
+			_, err := planSessionRestore(
 				context.Background(), checker, "claude", sessionPath, tc.policy)
 
 			if tc.wantErr && err == nil {
