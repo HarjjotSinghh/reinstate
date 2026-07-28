@@ -26,13 +26,20 @@ describe('landing-page product claims', () => {
     expect(hero).toContain('Available now:');
     expect(hero).toContain('Claude Code');
     expect(hero).toContain('Codex');
-    expect(header).toContain('Install Reinstate');
+    expect(header).toContain('<span class="navcta-label">Install</span>');
   });
 
   it('uses one command-first install hierarchy', () => {
     expect(hero).toContain('aria-label="Copy install command"');
     expect(hero).toContain('Read setup guide');
     expect(hero).toContain('View on GitHub');
+    expect(hero).toContain('class="github-mark"');
+    expect(hero).toContain('official mark-github Octicon');
+    expect(hero).toContain('class="micro-separator"');
+    expect(hero.match(/class="micro-separator"/g)).toHaveLength(3);
+    expect(hero).toContain(
+      'Apache&#8209;2.0<span class="micro-separator" aria-hidden="true">·</span>one Go binary',
+    );
     expect(hero).toContain('class="conversion-meta"');
     expect(hero).toContain('max-width: 50rem');
     expect(hero).not.toContain('class="cta primary"');

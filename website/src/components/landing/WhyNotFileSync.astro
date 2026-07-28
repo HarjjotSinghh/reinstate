@@ -7,6 +7,7 @@
  * intentionally mirror the adapter's documented absolute-path behavior.
  */
 import PathMismatchEdgeArt from './art/PathMismatchEdgeArt.astro';
+import LogoMark from '../LogoMark.astro';
 
 const reasons = [
   {
@@ -46,8 +47,8 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
     <header class="file-sync-lede">
       <span class="badge"><i aria-hidden="true"></i> Why not Dropbox, iCloud, or rsync?</span>
       <h2 id="file-sync-title">
-        Files can sync perfectly.<br />
-        Resume can still fail.
+        Files can sync.<br />
+        Native resume can still fail.
       </h2>
       <p>
         Agent histories are indexed by more than their bytes. Absolute paths become native
@@ -80,6 +81,7 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
               <strong>Windows</strong>
               <span>source machine</span>
             </div>
+            <span class="repo-chip"><i aria-hidden="true"></i> same repo · api</span>
           </div>
           <div class="path-row">
             <span>project root</span>
@@ -89,16 +91,26 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
             <span>native project key</span>
             <code>C--Users-harjot-projects-api</code>
           </div>
+          <div class="index-location">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3.5 6.5h6l2 2H20.5v9.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"></path>
+            </svg>
+            <span>
+              Claude index
+              <code>~/.claude/projects/C--Users-harjot-projects-api/</code>
+            </span>
+          </div>
         </section>
 
         <div class="copy-crossing" aria-hidden="true">
           <span class="copy-line"></span>
+          <span class="copy-label">same files</span>
           <span class="copy-icon">
             <svg viewBox="0 0 24 24">
               <path d="M5 12h12m0 0-4-4m4 4-4 4"></path>
             </svg>
           </span>
-          <span class="copy-label">files copied</span>
+          <span class="copy-label copy-label--mismatch">≠ different keys</span>
         </div>
 
         <section class="path-side" aria-label="macOS native project identity">
@@ -115,6 +127,7 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
               <strong>macOS</strong>
               <span>destination machine</span>
             </div>
+            <span class="repo-chip"><i aria-hidden="true"></i> same repo · api</span>
           </div>
           <div class="path-row">
             <span>project root</span>
@@ -123,6 +136,15 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
           <div class="path-row path-row--key">
             <span>native project key</span>
             <code>-Users-harjot-dev-api</code>
+          </div>
+          <div class="index-location">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3.5 6.5h6l2 2H20.5v9.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"></path>
+            </svg>
+            <span>
+              Claude index
+              <code>~/.claude/projects/-Users-harjot-dev-api/</code>
+            </span>
           </div>
         </section>
       </div>
@@ -140,22 +162,31 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
 
       <div class="reinstate-map">
         <span class="reinstate-map__brand">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <rect x="3.5" y="4" width="12" height="11" rx="2"></rect>
-            <path d="M8 9h11m0 0-3-3m3 3-3 3M8.5 15v4.5H20"></path>
-          </svg>
+          <LogoMark size={27} tiled={false} />
           REINSTATE
         </span>
         <div class="map-step">
           <span>canonical project</span>
           <code>api</code>
         </div>
-        <span class="map-arrow" aria-hidden="true">→</span>
+        <span class="map-transition map-transition--route" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <circle cx="6" cy="6" r="2.25"></circle>
+            <circle cx="18" cy="18" r="2.25"></circle>
+            <path d="M6 8.25v3.25A3.5 3.5 0 0 0 9.5 15h5.25"></path>
+          </svg>
+        </span>
         <div class="map-step">
           <span>destination root</span>
           <code>/Users/harjot/dev/api</code>
         </div>
-        <span class="map-arrow" aria-hidden="true">→</span>
+        <span class="map-transition map-transition--identity" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M8.2 18.5a9.3 9.3 0 0 1-1.3-4.8 5.1 5.1 0 0 1 10.2 0c0 1.7-.3 3.3-.9 4.8"></path>
+            <path d="M10.2 19.5a12 12 0 0 1-.9-5.3 2.7 2.7 0 0 1 5.4 0c0 2-.3 4-.9 5.8"></path>
+            <path d="M12 4.2a9 9 0 0 0-8 5M20 9.2a9 9 0 0 0-4.4-4.1M12 12.5v7.3"></path>
+          </svg>
+        </span>
         <div class="map-step map-step--result">
           <span>native identity</span>
           <strong>rebuilt</strong>
@@ -337,7 +368,7 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
   .file-sync-lede h2 {
     margin: clamp(0.9rem, 1.8vw, 1.25rem) 0 0;
     font-family: var(--font-display);
-    font-size: clamp(2.25rem, 4.6vw, 4.35rem);
+    font-size: clamp(1.9rem, 3.4vw, 3rem);
     font-weight: 400;
     letter-spacing: -0.047em;
     line-height: 0.98;
@@ -359,7 +390,9 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
     border: 2px solid var(--sv-stroke);
     border-radius: 15px;
     overflow: hidden;
-    background: color-mix(in oklab, var(--paper-2) 96%, var(--paper));
+    background: color-mix(in oklab, var(--paper-2) 70%, transparent);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
   }
   .identity-proof__head {
     display: flex;
@@ -438,6 +471,26 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
     font-size: 0.67rem;
     color: var(--ink-3);
   }
+  .repo-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.38rem;
+    margin-left: auto;
+    padding: 0.28rem 0.5rem;
+    border: 1px solid color-mix(in oklab, var(--sv-prim-deep) 34%, var(--rule));
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--paper-2) 62%, transparent);
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    white-space: nowrap;
+    color: var(--ink-2);
+  }
+  .repo-chip i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--sv-prim-deep);
+  }
   .os-mark {
     display: grid;
     place-items: center;
@@ -486,6 +539,49 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
   .path-row--key code {
     color: var(--sv-prim-deep);
   }
+  .index-location {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 0.55rem;
+    margin-top: 0.05rem;
+    padding: 0.65rem 0.72rem;
+    border: 1px dashed color-mix(in oklab, var(--sv-prim-deep) 30%, var(--rule));
+    border-radius: 7px;
+    background: color-mix(in oklab, var(--paper-2) 48%, transparent);
+    color: var(--ink-3);
+  }
+  .index-location > svg {
+    width: 1rem;
+    height: 1rem;
+    margin-top: 0.08rem;
+    fill: none;
+    stroke: var(--sv-prim-deep);
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .index-location > span {
+    display: grid;
+    gap: 0.18rem;
+    min-width: 0;
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    font-weight: 650;
+    letter-spacing: 0.065em;
+    text-transform: uppercase;
+  }
+  .index-location code {
+    min-width: 0;
+    font-family: var(--font-mono);
+    font-size: 0.63rem;
+    font-weight: 450;
+    letter-spacing: 0;
+    line-height: 1.4;
+    text-transform: none;
+    overflow-wrap: anywhere;
+    color: var(--ink-2);
+  }
   .copy-crossing {
     position: relative;
     display: grid;
@@ -503,7 +599,7 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
   .copy-label {
     position: relative;
     z-index: 1;
-    background: var(--paper-2);
+    background: color-mix(in oklab, var(--paper-2) 86%, transparent);
   }
   .copy-icon {
     display: grid;
@@ -523,10 +619,17 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
     stroke-linejoin: round;
   }
   .copy-label {
-    padding: 0.2rem 0;
+    padding: 0.2rem 0.35rem;
+    border-radius: 4px;
     font-family: var(--font-mono);
     font-size: 0.64rem;
     color: var(--ink-3);
+  }
+  .copy-label--mismatch {
+    border: 1px solid color-mix(in oklab, var(--sv-prim-deep) 38%, var(--rule));
+    background: color-mix(in oklab, var(--paper-2) 70%, var(--sv-prim) 7%);
+    font-weight: 650;
+    color: var(--sv-prim-deep);
   }
 
   .failed-result {
@@ -575,6 +678,7 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
     color: #f4f6ef;
   }
   .reinstate-map__brand {
+    --paper: var(--sv-night);
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
@@ -585,12 +689,26 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
     letter-spacing: 0.08em;
     color: var(--sv-prim);
   }
-  .reinstate-map__brand svg {
-    width: 1.35rem;
-    height: 1.35rem;
+  :global(.reinstate-map__brand .logo-mark) {
+    width: 1.7rem;
+    height: 1.7rem;
+  }
+  .map-transition {
+    display: grid;
+    place-items: center;
+    width: 1.85rem;
+    height: 1.85rem;
+    border: 1px solid #34443d;
+    border-radius: 7px;
+    background: #101b17;
+    color: var(--sv-prim);
+  }
+  .map-transition svg {
+    width: 1.05rem;
+    height: 1.05rem;
     fill: none;
     stroke: currentColor;
-    stroke-width: 1.75;
+    stroke-width: 1.8;
     stroke-linecap: round;
     stroke-linejoin: round;
   }
@@ -614,10 +732,6 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
   .map-step--result strong {
     color: var(--sv-prim);
   }
-  .map-arrow {
-    color: var(--sv-prim);
-  }
-
   .reason-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -774,10 +888,15 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
     transform: translateX(2px);
   }
 
-  :global(html.dark) .identity-proof,
+  :global(html.dark) .identity-proof {
+    background: color-mix(in oklab, var(--paper-2) 70%, transparent);
+  }
   :global(html.dark) .copy-icon,
   :global(html.dark) .copy-label {
-    background: color-mix(in oklab, var(--paper-2) 95%, var(--paper));
+    background: color-mix(in oklab, var(--paper-2) 82%, transparent);
+  }
+  :global(html.dark) .copy-label--mismatch {
+    background: color-mix(in oklab, var(--paper-2) 70%, var(--sv-prim) 8%);
   }
   :global(html.dark) .reason-card,
   :global(html.dark) .support-rail {
@@ -805,6 +924,9 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
     }
     .copy-icon svg {
       transform: rotate(90deg);
+    }
+    .repo-chip {
+      margin-left: auto;
     }
     .reinstate-map {
       grid-template-columns: 1fr auto 1fr;
@@ -844,13 +966,19 @@ const icons: Record<(typeof reasons)[number]['icon'], string> = {
     .path-side {
       padding-inline: 1.1rem;
     }
+    .path-side__head {
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+    .repo-chip {
+      margin-left: 2.95rem;
+    }
     .reinstate-map {
       grid-template-columns: 1fr;
       align-items: start;
     }
-    .map-arrow {
-      transform: rotate(90deg);
-      transform-origin: left center;
+    .map-transition {
+      margin-block: 0.15rem;
     }
     .map-step--result {
       grid-column: auto;

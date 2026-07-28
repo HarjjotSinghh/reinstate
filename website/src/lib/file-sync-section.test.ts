@@ -23,13 +23,24 @@ describe('landing-page file-sync objection section', () => {
   });
 
   it('shows the concrete cross-OS native identity failure', () => {
-    expect(section).toContain('Files can sync perfectly.');
-    expect(section).toContain('Resume can still fail.');
+    expect(section).toContain('Files can sync.');
+    expect(section).toContain('Native resume can still fail.');
     expect(section).toContain(String.raw`C:\Users\harjot\projects\api`);
     expect(section).toContain('/Users/harjot/dev/api');
     expect(section).toContain('C--Users-harjot-projects-api');
     expect(section).toContain('-Users-harjot-dev-api');
+    expect(section).toContain('same repo · api');
+    expect(section).toContain('Claude index');
+    expect(section).toContain('≠ different keys');
     expect(section).toContain('<code>--resume</code>: no matching project');
+  });
+
+  it('uses a translucent comparison surface without making its content translucent', () => {
+    expect(section).toContain(
+      'background: color-mix(in oklab, var(--paper-2) 70%, transparent)',
+    );
+    expect(section).toContain('backdrop-filter: blur(16px)');
+    expect(section).not.toContain('opacity: 0.7');
   });
 
   it('states the adapter and continuity boundaries precisely', () => {
@@ -37,6 +48,14 @@ describe('landing-page file-sync objection section', () => {
     expect(section).toContain('rewrites Codex’s structural working directory');
     expect(section).toContain('Native resume stays native');
     expect(section).toContain('never hides lossy cross-agent translation');
+  });
+
+  it('uses the product mark and semantic transformation icons in the mapping strip', () => {
+    expect(section).toContain("import LogoMark from '../LogoMark.astro'");
+    expect(section).toContain('<LogoMark size={27} tiled={false} />');
+    expect(section).toContain('map-transition--route');
+    expect(section).toContain('map-transition--identity');
+    expect(section).not.toContain('class="map-arrow"');
   });
 
   it('ends with honest current compatibility and documentation links', () => {
