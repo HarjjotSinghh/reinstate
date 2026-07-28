@@ -1,10 +1,10 @@
 # Phase 1 RC6 acceptance — Device A (macOS) report
 
-Milestone reached: **M1 complete; M2 blocked at its precondition** (section 10).
+Milestone reached: **M2 complete** (sections 10–11). M3 awaits a Windows `WINDOWS-RC6-W2-READY` report.
 
 The row results in section 7 are **Device A evidence only**, captured at M1.
-Device B has since reported its own W1 leg; that report is validated in section
-10 but is deliberately not merged into section 7, because cross-device
+Device B has since reported its W1 leg; that report is validated in sections 10
+and 11 but is deliberately not merged into section 7, because cross-device
 reconciliation of all 21 rows happens at M4. Every row in section 7 that depends
 on Windows therefore remains `NOT TESTED` here, never `PASS`.
 
@@ -385,7 +385,75 @@ holds rather than pushing `A2` onto an unverified baseline.
 Device A remains paused. Nothing in this section changes the Device A row
 results in §7; the counts there are unchanged.
 
-## 11. Milestone block
+## 11. M2 — corrected Windows W1-PASS and Mac A2 push
+
+Device B re-validated its own gates 7, 11, and 12 under the automation overlay
+and re-issued `WINDOWS-RC6-W1-PASS` at commit
+`deca8217c3af680ed8fdc176e76c3c9dd5cec4e8`. The M2 precondition is now met and
+M2 was executed.
+
+### 11.1 Re-validated Windows handoff
+
+| Check | Result |
+| ----- | ------ |
+| Commit `deca8217…` resolves; branch tip matches | PASS |
+| Draft PR #33 open, not merged | PASS |
+| Branch changes only `docs/testing/results/` (0 product files) | PASS |
+| No credential value, Windows username path, ciphertext, or transcript JSON | PASS |
+| Block complete with `END-WINDOWS-RC6-W1` terminator | PASS |
+| `release`, `claude_discovery_and_resume`, `codex_resume`, `windows_report_path` present | PASS |
+| Windows counts | 13 PASS / 0 PARTIAL / 0 FAIL / 8 NOT TESTED |
+
+**Round-trip content integrity is now independently corroborated.** The restored
+Windows marker counts (Claude `4/4`, Codex `5/5`) match the Device A source
+counts recorded in §5.1 exactly. The encrypted push → remote → pull path
+preserved session content across operating systems with no drift. Windows also
+reported zero `A2` and zero `B1` occurrences, confirming it verified an
+uncontaminated A1 baseline.
+
+### 11.2 Mac A2 append and push
+
+The exact Claude session was resumed non-interactively and only the `A2` marker
+was added. Nothing else was modified, and no restored file was hand-moved.
+
+| Assertion | Before | After | Result |
+| --------- | ------ | ----- | ------ |
+| Same session file mutated in place | — | same path | PASS |
+| `A1` occurrences preserved | 4 | 4 | PASS |
+| `A2` occurrences | 0 | 4 | PASS |
+| Session file size (bytes) | 10992 | 13501 | grew, not replaced |
+| Stray new Claude session files created | — | 0 | PASS |
+| Codex session untouched (`A1`=5, `A2`=0) | — | unchanged | PASS |
+
+Push of that single ID:
+
+```text
+push --agent claude --session <claude> --dry-run
+  would push 1 snapshot(s), would skip 0 unchanged, dry_run=true
+push --agent claude --session <claude>
+  pushed 1 snapshot(s), skipped 0 unchanged, dry_run=false
+```
+
+The dry-run said `would push`, never `pushed`, and uploaded nothing.
+
+### 11.3 Remote state after M2
+
+| Field | Before M2 | After M2 |
+| ----- | --------- | -------- |
+| Remote revision | `f415705a-fe83-4664-a685-03370c07dddd` | `192a98c8-61da-4c14-9d15-525c141815b3` |
+| Claude snapshot | `b21abf18-8262-41cc-a979-5c0868d38e27` | `192a98c8-61da-4c14-9d15-525c141815b3` |
+| Codex snapshot | `f415705a-fe83-4664-a685-03370c07dddd` | unchanged |
+| Session count | 2 | 2 |
+| Object count | 3 | 4 (`snapshot_age_count=3`) |
+
+Only the Claude session advanced. Ciphertext discipline still holds on the new
+snapshot: `all_objects_end_with_.age=true`, `forbidden_shaped_objects=0`, the
+`A2` marker and the `REINSTATE-PHASE1-RC6` prefix are both **absent** from the
+downloaded bytes, and `file` reports `data`. The local download was deleted.
+
+Device A is paused for the report transfer to Windows.
+
+## 12. Milestone block
 
 ```text
 MAC-RC6-M1
@@ -402,22 +470,25 @@ mac_report_path=docs/testing/results/2026-07-28-macos-phase1-rc6.md
 END-MAC-RC6-M1
 ```
 
-M2 was not executed, so no `MAC-RC6-M2-READY` block is emitted. The honest
-status is:
+The earlier `MAC-RC6-M2-BLOCKED` status (section 10) is superseded: Device B
+re-issued a valid `WINDOWS-RC6-W1-PASS`, so M2 ran.
 
 ```text
-MAC-RC6-M2-BLOCKED
-reason=windows_w1_partial_not_pass
-windows_report=docs/testing/results/2026-07-28-windows-phase1-rc6.md
-windows_commit=7cfd1ba218adfd41d9c91616e020e6dad2ecc1f8
-windows_block_received=WINDOWS-RC6-W1-PARTIAL
-handoff_integrity=VALIDATED
-remote_parity_reverified=PASS
-remote_revision=f415705a-fe83-4664-a685-03370c07dddd
+MAC-RC6-M2-READY
+release=v0.1.0-rc.6
+profile_id=fd182697-957a-421f-8ee0-b45c18bf61a7
+claude_session_id=0eb4f696-c513-4bd8-8b80-8d9a8b964718
+mac_claude_a2_marker=REINSTATE-PHASE1-RC6-MAC-CLAUDE-A2
+a2_occurrences=4
+a1_occurrences_preserved=4
+new_remote_revision=192a98c8-61da-4c14-9d15-525c141815b3
+new_claude_snapshot_id=192a98c8-61da-4c14-9d15-525c141815b3
+codex_snapshot_id=f415705a-fe83-4664-a685-03370c07dddd
 remote_session_count=2
-blocking_gates=7,11,12
-blocking_cause=agent_method_recorded_as_human_method_gap
-product_blocker_found=NONE
-mac_a2_pushed=false
-END-MAC-RC6-M2-BLOCKED
+remote_object_count=4
+ciphertext_marker_absence=PASS
+windows_w1_validated=PASS
+windows_commit=deca8217c3af680ed8fdc176e76c3c9dd5cec4e8
+mac_report_path=docs/testing/results/2026-07-28-macos-phase1-rc6.md
+END-MAC-RC6-M2-READY
 ```
