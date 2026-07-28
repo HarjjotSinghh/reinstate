@@ -1,7 +1,12 @@
 # Phase 1 RC6 acceptance — Device A (macOS) report
 
-Milestone reached: **M1 complete**. Device B (native Windows) work has not
-started, so every Windows-dependent gate below is `NOT TESTED`, never `PASS`.
+Milestone reached: **M1 complete; M2 blocked at its precondition** (section 10).
+
+The row results in section 7 are **Device A evidence only**, captured at M1.
+Device B has since reported its own W1 leg; that report is validated in section
+10 but is deliberately not merged into section 7, because cross-device
+reconciliation of all 21 rows happens at M4. Every row in section 7 that depends
+on Windows therefore remains `NOT TESTED` here, never `PASS`.
 
 This report supersedes `2026-07-27-macos-phase1-rc6.md` on this branch, which
 recorded an earlier attempt at the same release that did not complete. That
@@ -319,7 +324,68 @@ Non-blocking, recorded for sign-off:
   script, or documentation file was modified.
 - Nothing was merged, tagged, released, or deployed.
 
-## 10. Milestone block
+## 10. M2 gate — Windows W1 handoff validation
+
+A Windows report was received and validated. **Milestone M2 was not executed**,
+because the Mac M2 trigger is a `WINDOWS-RC6-W1-PASS` report and the supplied
+block is `WINDOWS-RC6-W1-PARTIAL`. Nothing was relabelled to force the gate.
+
+### 10.1 Handoff integrity — validated
+
+| Check | Result |
+| ----- | ------ |
+| Branch `test/phase1-rc6-windows-report` exists on origin | PASS |
+| Commit `7cfd1ba218adfd41d9c91616e020e6dad2ecc1f8` resolves | PASS |
+| Draft PR #33 open against `main`, not merged | PASS |
+| Branch changes only `docs/testing/results/` (0 product files) | PASS |
+| Report discloses no credential value from the private file | PASS |
+| No Windows username path, ciphertext, or transcript JSON in report | PASS |
+| `profile_id` matches Device A | PASS (`fd182697-…`) |
+| `claude_session_id` / `codex_session_id` match Device A | PASS |
+| Independently re-verified remote parity | PASS |
+
+Device A independently confirmed the remote after the Windows leg: revision
+`f415705a-…` unchanged, the same two sessions and snapshot IDs, `object_count=3`,
+`forbidden_shaped_objects=0`. Windows completed W1 without mutating remote state.
+
+### 10.2 Why the gate did not open
+
+Three gates are `PARTIAL` (7, 11, 12). Each was downgraded for using the
+**agent** method instead of the **human** method — but the automation overlay
+requires the agent method. The committed prompts document states:
+
+> where the tagged runbook assigns a command, hidden input, marker check,
+> storage inspection, or evidence capture to a human, the device-owning agent
+> performs it instead … the change of operator from human to agent does not
+> [stop the run].
+
+| Gate | Stated reason for PARTIAL | Overlay position |
+| ---- | ------------------------- | ---------------- |
+| 7 | Hidden-prompt method replaced by the automated provider | The overlay **mandates** that replacement: passphrase input is accepted "only through `REINSTATE_PASSPHRASE_FD`". Downgraded for complying. |
+| 11 | No visual A1 confirmation for Claude | Prompt 2 step 14 assigns the agent: "Verify only the two exact A1 markers"; safety rules authorize "exact acceptance-marker counts". |
+| 12 | No visual A1 confirmation for Codex | Same as gate 11. |
+
+The Windows report's blocker states "a human was explicitly unavailable, so
+hidden-prompt execution and visual transcript-marker confirmation could not
+occur." Under the overlay neither is required: an exact-occurrence count on the
+**restored file on disk** is an authorized, human-free operation. Device A used
+exactly that method for its own marker evidence (§5.1).
+
+This is a documented **method** deviation, not a product defect. No Reinstate
+product blocker appeared on either device through W1.
+
+### 10.3 Sequencing
+
+M2 mutates the Mac Claude session (appends `A2`) and advances the remote Claude
+snapshot. Gates 11 and 12 are the only evidence that the encrypted round trip
+preserved **content**, and they are the baseline W2's `A2` verification builds
+on. Closing them before the remote advances is the correct order, so Device A
+holds rather than pushing `A2` onto an unverified baseline.
+
+Device A remains paused. Nothing in this section changes the Device A row
+results in §7; the counts there are unchanged.
+
+## 11. Milestone block
 
 ```text
 MAC-RC6-M1
@@ -334,4 +400,24 @@ f1_default_refusal=PASS
 ciphertext_marker_absence=PASS
 mac_report_path=docs/testing/results/2026-07-28-macos-phase1-rc6.md
 END-MAC-RC6-M1
+```
+
+M2 was not executed, so no `MAC-RC6-M2-READY` block is emitted. The honest
+status is:
+
+```text
+MAC-RC6-M2-BLOCKED
+reason=windows_w1_partial_not_pass
+windows_report=docs/testing/results/2026-07-28-windows-phase1-rc6.md
+windows_commit=7cfd1ba218adfd41d9c91616e020e6dad2ecc1f8
+windows_block_received=WINDOWS-RC6-W1-PARTIAL
+handoff_integrity=VALIDATED
+remote_parity_reverified=PASS
+remote_revision=f415705a-fe83-4664-a685-03370c07dddd
+remote_session_count=2
+blocking_gates=7,11,12
+blocking_cause=agent_method_recorded_as_human_method_gap
+product_blocker_found=NONE
+mac_a2_pushed=false
+END-MAC-RC6-M2-BLOCKED
 ```
