@@ -24,14 +24,16 @@ describe('landing-page file-sync objection section', () => {
 
   it('shows the concrete cross-OS native identity failure', () => {
     expect(section).toContain('Files can sync.');
-    expect(section).toContain('Native resume can still fail.');
+    expect(section).toContain('Resume can still fail.');
+    expect(section).toContain('Same repo, different path, different project key.');
+    expect(section).toContain('<code>--resume</code> may find nothing.');
     expect(section).toContain(String.raw`C:\Users\harjot\projects\api`);
     expect(section).toContain('/Users/harjot/dev/api');
     expect(section).toContain('C--Users-harjot-projects-api');
     expect(section).toContain('-Users-harjot-dev-api');
     expect(section).toContain('same repo · api');
     expect(section).toContain('Claude index');
-    expect(section).toContain('≠ different keys');
+    expect(section).toContain('keys differ');
     expect(section).toContain('<code>--resume</code>: no matching project');
   });
 
@@ -44,10 +46,14 @@ describe('landing-page file-sync objection section', () => {
   });
 
   it('states the adapter and continuity boundaries precisely', () => {
-    expect(section).toContain('Reinstate owns identity');
-    expect(section).toContain('rewrites Codex’s structural working directory');
-    expect(section).toContain('Native resume stays native');
-    expect(section).toContain('never hides lossy cross-agent translation');
+    expect(section).toContain('Reinstate rebuilds identity');
+    expect(section).toContain(
+      'reconstructs the project reference the agent expects',
+    );
+    expect(section).toContain('Resume stays in your agent');
+    expect(section).toContain('Codex rollouts resume in Codex');
+    expect(section).not.toContain('Reinstate owns identity');
+    expect(section).not.toContain('Native resume stays native');
   });
 
   it('uses the product mark and semantic transformation icons in the mapping strip', () => {

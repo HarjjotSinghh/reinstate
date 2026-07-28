@@ -26,6 +26,9 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
     server: {
+      hmr: {
+        host: 'localhost',
+      },
       watch: {
         ignored: ignoreGeneratedDevPath,
         usePolling: true,

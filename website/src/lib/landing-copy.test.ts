@@ -36,6 +36,7 @@ describe('landing-page product claims', () => {
     expect(hero).toContain('class="github-mark"');
     expect(hero).toContain('official mark-github Octicon');
     expect(hero).toContain('class="micro-separator"');
+    expect(hero).toContain('Last reviewed <time');
     expect(hero.match(/class="micro-separator"/g)).toHaveLength(4);
     expect(hero).toContain(
       'Apache&#8209;2.0<span class="micro-separator" aria-hidden="true">·</span>one Go binary',
