@@ -94,6 +94,7 @@ func TestProductionDeploymentVerifiesBeforePromotion(t *testing.T) {
 		`--allow-missing-previous`,
 		`artifacts/indexnow/$deployment_tag-plan.json`,
 		`npm run check:production-discovery`,
+		`--allow-vercel-preview-noindex`,
 		`vercel_cli promote`,
 		`https://reinstate.dev`,
 	} {

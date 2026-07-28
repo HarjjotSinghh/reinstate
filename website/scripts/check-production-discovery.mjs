@@ -541,10 +541,12 @@ function robotsAllows(groups, userAgent, pathname) {
 }
 
 function pageValidation({
+  allowVercelPreviewNoindex,
   check,
   expectedCanonical,
   findings,
   html,
+  onVercelPreviewNoindex,
   response,
 }) {
   const metadata = parsePageMetadata(html);
@@ -571,12 +573,16 @@ function pageValidation({
     );
   }
   if (/\bnoindex\b/i.test(response.headers.get('x-robots-tag') ?? '')) {
-    addFinding(
-      findings,
-      check,
-      'X_ROBOTS_TAG',
-      `Unexpected noindex X-Robots-Tag for ${check.path}.`,
-    );
+    if (allowVercelPreviewNoindex) {
+      onVercelPreviewNoindex();
+    } else {
+      addFinding(
+        findings,
+        check,
+        'X_ROBOTS_TAG',
+        `Unexpected noindex X-Robots-Tag for ${check.path}.`,
+      );
+    }
   }
   if (
     metadata.ogImage.length !== 1 ||
@@ -741,6 +747,7 @@ async function fetchSitemapInventory({
 
 export async function runProductionDiscoverySmoke({
   allowNonProduction = false,
+  allowVercelPreviewNoindex = false,
   baseUrl = PRODUCTION_ORIGIN,
   concurrency = DEFAULT_CONCURRENCY,
   fetchImpl = globalThis.fetch,
@@ -751,6 +758,17 @@ export async function runProductionDiscoverySmoke({
   timeoutMs = DEFAULT_TIMEOUT_MS,
 } = {}) {
   const safeBaseUrl = normalizeBaseUrl(baseUrl, { allowNonProduction });
+  const targetHostname = new URL(safeBaseUrl).hostname.toLowerCase();
+  if (
+    allowVercelPreviewNoindex &&
+    (!allowNonProduction ||
+      safeBaseUrl === PRODUCTION_ORIGIN ||
+      !targetHostname.endsWith('.vercel.app'))
+  ) {
+    throw new Error(
+      '--allow-vercel-preview-noindex requires an acknowledged non-production *.vercel.app origin.',
+    );
+  }
   if (
     !Number.isInteger(concurrency) ||
     concurrency < 1 ||
@@ -781,6 +799,10 @@ export async function runProductionDiscoverySmoke({
   const startedAt = new Date();
   const checks = [];
   const findings = [];
+  let vercelPreviewNoindexResponses = 0;
+  const onVercelPreviewNoindex = () => {
+    vercelPreviewNoindexResponses += 1;
+  };
   const request = createRequestClient({
     baseUrl: safeBaseUrl,
     checks,
@@ -1001,12 +1023,16 @@ export async function runProductionDiscoverySmoke({
     requireStatus(findings, check, response, [200]);
     requireType(findings, check, response, ['text/html']);
     if (/\bnoindex\b/i.test(response?.headers.get('x-robots-tag') ?? '')) {
-      addFinding(
-        findings,
-        check,
-        'X_ROBOTS_TAG',
-        `Unexpected noindex X-Robots-Tag for ${path}.`,
-      );
+      if (allowVercelPreviewNoindex) {
+        onVercelPreviewNoindex();
+      } else {
+        addFinding(
+          findings,
+          check,
+          'X_ROBOTS_TAG',
+          `Unexpected noindex X-Robots-Tag for ${path}.`,
+        );
+      }
     }
   });
 
@@ -1041,10 +1067,12 @@ export async function runProductionDiscoverySmoke({
       return;
     }
     const image = pageValidation({
+      allowVercelPreviewNoindex,
       check,
       expectedCanonical: canonical,
       findings,
       html,
+      onVercelPreviewNoindex,
       response,
     });
     if (image) {
@@ -1176,6 +1204,7 @@ export async function runProductionDiscoverySmoke({
     baseUrl: safeBaseUrl,
     expectedCanonicalOrigin: PRODUCTION_ORIGIN,
     configuration: {
+      allowVercelPreviewNoindex,
       concurrency,
       maxAttempts,
       timeoutMs,
@@ -1190,6 +1219,7 @@ export async function runProductionDiscoverySmoke({
       findings: findings.length,
       sitemapUrls: sitemapSet.size,
       openGraphImages: imageReferences.size,
+      vercelPreviewNoindexResponses,
     },
     findings,
     checks,
@@ -1230,6 +1260,10 @@ function parseArguments(argv) {
     const argument = argv[index];
     if (argument === '--allow-non-production') {
       options.allowNonProduction = true;
+      continue;
+    }
+    if (argument === '--allow-vercel-preview-noindex') {
+      options.allowVercelPreviewNoindex = true;
       continue;
     }
     if (argument === '--help' || argument === '-h') {
@@ -1273,11 +1307,15 @@ async function main() {
 Usage:
   node scripts/check-production-discovery.mjs
   node scripts/check-production-discovery.mjs --base-url <https-origin> \\
-    --allow-non-production [--output <evidence.json>]
+    --allow-non-production [--allow-vercel-preview-noindex] \\
+    [--output <evidence.json>]
 
 Options:
   --base-url <origin>           Request target; defaults to https://reinstate.dev
   --allow-non-production       Required acknowledgement for another HTTPS origin
+  --allow-vercel-preview-noindex
+                                Allow Vercel's preview-only X-Robots-Tag on a
+                                non-production *.vercel.app origin
   --concurrency <1-${MAX_CONCURRENCY}>       Default ${DEFAULT_CONCURRENCY}
   --max-attempts <1-${MAX_ATTEMPTS}>        Default ${DEFAULT_MAX_ATTEMPTS}
   --timeout-ms <100-${MAX_TIMEOUT_MS}>  Default ${DEFAULT_TIMEOUT_MS}
@@ -1294,6 +1332,7 @@ mutates the target.`);
   const report = await runProductionDiscoverySmoke({
     baseUrl,
     allowNonProduction: options.allowNonProduction,
+    allowVercelPreviewNoindex: options.allowVercelPreviewNoindex,
     concurrency: integerOption(
       options.concurrency ?? DEFAULT_CONCURRENCY,
       '--concurrency',

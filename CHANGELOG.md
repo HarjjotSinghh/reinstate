@@ -38,6 +38,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Allow the guarded immutable Vercel discoverability smoke to record and
+  narrowly exempt the provider-injected preview `noindex` header while keeping
+  the promoted production-origin check strict.
+- Keep local CLI build metadata anchored to `v*` release tags so website-only
+  deployment tags cannot become the reported Reinstate version.
 - Parse both structured Vercel CLI 57 deployment results and legacy bare-URL
   output before immutable installer verification and production promotion.
 

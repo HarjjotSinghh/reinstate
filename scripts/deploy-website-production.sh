@@ -168,6 +168,7 @@ fi
   npm run check:production-discovery -- \
     --base-url "$deployment_url" \
     --allow-non-production \
+    --allow-vercel-preview-noindex \
     --output "artifacts/production-discovery/$deployment_tag-immutable.json"
 )
 (

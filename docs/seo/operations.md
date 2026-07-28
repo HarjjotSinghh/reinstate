@@ -474,12 +474,30 @@ npm --prefix website run check:production-discovery -- \
   --allow-non-production
 ```
 
+Vercel adds `X-Robots-Tag: noindex` to public `.vercel.app` deployment URLs.
+For that immutable candidate only, acknowledge the provider header separately:
+
+```sh
+npm --prefix website run check:production-discovery -- \
+  --base-url https://DEPLOYMENT.vercel.app \
+  --allow-non-production \
+  --allow-vercel-preview-noindex
+```
+
 The request origin may differ for an immutable deployment, but canonical,
 Open Graph, robots-sitemap, and sitemap URLs must still point to
 `https://reinstate.dev`. Non-production targets require the explicit flag and
 must be public HTTPS origins. Credentials, URL paths, queries, fragments,
 localhost, and private-network targets are refused. The checker sends no
 cookies, authorization, form data, or request bodies.
+
+The Vercel preview exemption is intentionally narrower: it is rejected unless
+the target is an acknowledged non-production `*.vercel.app` origin, it permits
+only the provider-injected `X-Robots-Tag: noindex` header, and the evidence
+records how many responses used the exemption. Robots metadata, canonicals,
+sitemaps, crawler responses, status codes, content types, and Open Graph assets
+remain fully enforced. Never pass the exemption to the post-promotion
+`https://reinstate.dev` run; production must remain indexable without it.
 
 The checker:
 
