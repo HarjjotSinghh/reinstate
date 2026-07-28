@@ -41,6 +41,37 @@ Project paths are portable only when each device defines the same canonical ID:
 rein init --project github.com/acme/app=/absolute/local/path
 ```
 
+## Restore safety
+
+A restore replaces a vendor session file, so Reinstate first checks whether an
+agent is using that file. The check is scoped to the exact session being
+replaced — having Claude Code or Codex open in other projects is normal and does
+not block anything.
+
+```toml
+[restore]
+active_agent_policy = "scoped"
+```
+
+| Policy | Behavior |
+| ------ | -------- |
+| `scoped` (default) | Refuse only when the target session file is held open by that agent. |
+| `strict` | Refuse whenever the agent runs anywhere on the host. |
+| `off` | Skip the liveness check entirely. |
+
+`--allow-active-agents` applies `off` to a single `rein pull` or
+`rein conflicts resolve` run.
+
+Relaxing this policy does not remove the other protections. Restores always
+write to a temporary file and rename it into place, existing targets are always
+backed up first, and a restore is abandoned if the target changes on disk while
+the replacement is being prepared.
+
+Liveness is determined from open file handles: `lsof` on macOS and Linux, and
+the Restart Manager API on Windows. Where handles cannot be enumerated,
+Reinstate falls back to the host-wide answer and says so in the refusal, rather
+than implying a precision it does not have.
+
 ## Encryption
 
 Default: `age-scrypt` passphrase. Passphrase is not stored in config.

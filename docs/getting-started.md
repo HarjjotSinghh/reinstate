@@ -214,7 +214,9 @@ conflicts, wrong-passphrase refusal, and ciphertext-only remote storage.
 - auth and credential files are hard-excluded;
 - pull validates before mutation and backs up existing targets;
 - divergent sessions create conflict records instead of silent overwrite;
-- a mutating pull refuses to replace an active agent's session; and
+- a mutating pull refuses to replace a session an agent is actively using,
+  scoped to that exact session file so unrelated agents running in other
+  projects never block a restore (`restore.active_agent_policy`); and
 - no plaintext passphrase is accepted through a normal argument or environment
   variable.
 

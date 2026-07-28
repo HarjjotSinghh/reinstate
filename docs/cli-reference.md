@@ -50,9 +50,14 @@ that agent is blocked from push/pull. `rein conflicts list` and
 like an empty conflict set.
 
 Before overwriting an existing target, mutating `pull` and
-`conflicts resolve --keep-remote` operations refuse to restore while the
-selected Claude Code or Codex process is active. Close the agent and retry.
+`conflicts resolve --keep-remote` operations refuse to restore while that exact
+session is in use by Claude Code or Codex. The check is scoped to the session
+file being replaced, so unrelated agents running in other projects do not block
+a restore. Close that one session and retry, or pass `--allow-active-agents`.
 New-session restores, `--keep-both`, and `pull --dry-run` remain available.
+
+See [Configuration](configuration.md) for `restore.active_agent_policy`
+(`scoped` by default, `strict`, or `off`).
 
 ## Planned universal configuration commands
 

@@ -38,6 +38,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Scope the restore active-agent check to the exact session file being
+  replaced instead of asking whether any Claude Code or Codex process is alive
+  on the host. Running unrelated agents in other projects is the normal state
+  of a working machine and no longer blocks `pull` or `conflicts resolve`, so
+  nobody has to close background agents to restore a session. Detection uses
+  open file handles (`lsof` on Unix, Restart Manager on Windows) and falls back
+  to the previous host-wide answer only where handles cannot be enumerated,
+  reporting that imprecision in the refusal message.
+- Detect a concurrent agent write to a restore target and abandon the restore
+  instead of discarding those changes at the final rename.
 - Allow the guarded immutable Vercel discoverability smoke to record and
   narrowly exempt the provider-injected preview `noindex` header while keeping
   the promoted production-origin check strict.

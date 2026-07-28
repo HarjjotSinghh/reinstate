@@ -87,7 +87,7 @@ func TestCLISyntheticSyncPath(t *testing.T) {
 		})
 		return out.String(), errb.String(), code
 	}
-	inactiveChecker := func(_ context.Context, _ string) (bool, error) { return false, nil }
+	inactiveChecker := func(_ context.Context, _, _ string) (bool, bool, error) { return false, true, nil }
 	run := func(args ...string) (stdout, stderr string, code int) {
 		return runWithChecker(inactiveChecker, args...)
 	}
@@ -213,11 +213,28 @@ func TestCLISyntheticSyncPath(t *testing.T) {
 	if err := os.WriteFile(targetSessionPath, []byte(`{"type":"user","message":{"content":"existing destination"}}`+"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	out, errb, code = runWithChecker(func(_ context.Context, _ string) (bool, error) {
-		return true, nil
-	}, "pull", "--agent", "claude", "--session", "session-e2e", "--json")
-	if code != ExitSafety || !strings.Contains(errb, "appears to be running") {
+	// The scoped checker reports the agent is holding this exact session file.
+	busyChecker := func(_ context.Context, _, _ string) (bool, bool, error) { return true, true, nil }
+	out, errb, code = runWithChecker(busyChecker,
+		"pull", "--agent", "claude", "--session", "session-e2e", "--json")
+	if code != ExitSafety || !strings.Contains(errb, "is currently using this session") {
 		t.Fatalf("active-agent pull exit=%d err=%q out=%q", code, errb, out)
+	}
+
+	// --allow-active-agents clears the liveness refusal. Every other safety
+	// check still applies, so this local file (deliberately diverged above)
+	// is reported as a conflict rather than silently overwritten.
+	out, errb, code = runWithChecker(busyChecker,
+		"pull", "--agent", "claude", "--session", "session-e2e", "--json", "--allow-active-agents")
+	if code == ExitSafety || strings.Contains(errb, "is currently using this session") {
+		t.Fatalf("--allow-active-agents did not clear the refusal: exit=%d err=%q out=%q", code, errb, out)
+	}
+	if code != ExitConflict {
+		t.Fatalf("diverged target should record a conflict: exit=%d err=%q out=%q", code, errb, out)
+	}
+	// Clear the conflict recorded above so later steps start from clean state.
+	if err := os.RemoveAll(filepath.Join(home, "conflicts")); err != nil {
+		t.Fatal(err)
 	}
 
 	// Simulate the second device: remove the source session before pull. A

@@ -661,13 +661,13 @@ func newPushCmd() *cobra.Command {
 }
 
 func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
-	var asJSON, dryRun, all bool
+	var asJSON, dryRun, all, allowActiveAgents bool
 	var agent, session string
 	cmd := &cobra.Command{
 		Use:   "pull",
 		Short: "Download, decrypt, and restore sessions",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			eng, _, home, err := engineFromConfig(cmd, "")
+			eng, cfg, home, err := engineFromConfig(cmd, "")
 			if err != nil {
 				return err
 			}
@@ -696,7 +696,10 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 				}
 			}
 			if !dryRun && (all || session != "") {
-				checkedAgents := map[string]bool{}
+				policy := cfg.Restore.ActiveAgentPolicy
+				if allowActiveAgents {
+					policy = schema.ActiveAgentOff
+				}
 				for _, remoteSession := range man.Sessions {
 					if agent != "" && remoteSession.Agent != agent {
 						continue
@@ -705,13 +708,16 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 						continue
 					}
 					key := sync.SessionKey(remoteSession.Agent, remoteSession.SessionID)
-					if _, exists := localSessions[key]; !exists || checkedAgents[remoteSession.Agent] {
+					localSession, exists := localSessions[key]
+					if !exists {
+						// Nothing to overwrite, so no agent can be disturbed.
 						continue
 					}
-					if err := requireAgentInactive(cmd.Context(), processChecker, remoteSession.Agent); err != nil {
+					if err := requireSessionRestorable(
+						cmd.Context(), processChecker, remoteSession.Agent, localSession.Path, policy,
+					); err != nil {
 						return NewExitError(ExitSafety, err.Error())
 					}
-					checkedAgents[remoteSession.Agent] = true
 				}
 			}
 			type pullPlan struct {
@@ -848,6 +854,8 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 	cmd.Flags().StringVar(&agent, "agent", "", "agent filter")
 	cmd.Flags().StringVar(&session, "session", "", "session id")
 	cmd.Flags().BoolVar(&all, "all", false, "all sessions")
+	cmd.Flags().BoolVar(&allowActiveAgents, "allow-active-agents", false,
+		"restore even if an agent is using the target session (still atomic and still backed up)")
 	return cmd
 }
 
@@ -907,12 +915,12 @@ func newConflictsCmd(processChecker AgentProcessChecker) *cobra.Command {
 			return NewExitError(ExitUsage, "conflict not found")
 		},
 	}
-	var keepLocal, keepRemote, keepBoth bool
+	var keepLocal, keepRemote, keepBoth, allowActiveAgents bool
 	resolve := &cobra.Command{
 		Use:  "resolve <id>",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			eng, _, home, err := engineFromConfig(cmd, "")
+			eng, cfg, home, err := engineFromConfig(cmd, "")
 			if err != nil {
 				return err
 			}
@@ -939,7 +947,14 @@ func newConflictsCmd(processChecker AgentProcessChecker) *cobra.Command {
 				if err != nil {
 					return NewExitError(ExitUsage, err.Error())
 				}
-				if err := requireAgentInactive(cmd.Context(), processChecker, conflict.Agent); err != nil {
+				policy := cfg.Restore.ActiveAgentPolicy
+				if allowActiveAgents {
+					policy = schema.ActiveAgentOff
+				}
+				if err := requireSessionRestorable(
+					cmd.Context(), processChecker, conflict.Agent,
+					localSessionPath(conflict.Agent, conflict.SessionID), policy,
+				); err != nil {
 					return NewExitError(ExitSafety, err.Error())
 				}
 			}
@@ -970,6 +985,8 @@ func newConflictsCmd(processChecker AgentProcessChecker) *cobra.Command {
 	resolve.Flags().BoolVar(&keepLocal, "keep-local", false, "keep local")
 	resolve.Flags().BoolVar(&keepRemote, "keep-remote", false, "keep remote")
 	resolve.Flags().BoolVar(&keepBoth, "keep-both", false, "keep both")
+	resolve.Flags().BoolVar(&allowActiveAgents, "allow-active-agents", false,
+		"resolve even if an agent is using the target session (still atomic and still backed up)")
 	root.AddCommand(list, show, resolve)
 	return root
 }
@@ -1158,17 +1175,61 @@ func discoverSession(ctx context.Context, registry *adapter.Registry, agentName,
 	return adapter.Session{}, fmt.Errorf("%s session %s not found", agentName, sessionID)
 }
 
-func requireAgentInactive(ctx context.Context, checker AgentProcessChecker, agent string) error {
+// localSessionPath resolves the on-disk path of an existing local session.
+// An empty result means the session is not present locally, so a restore has
+// nothing to overwrite.
+func localSessionPath(agent, sessionID string) string {
+	for _, selectedAdapter := range defaultRegistry().All() {
+		sessions, err := selectedAdapter.Discover(context.Background(), adapter.DiscoverOptions{})
+		if err != nil {
+			continue
+		}
+		for _, session := range sessions {
+			if session.Agent == agent && session.ID == sessionID {
+				return session.Path
+			}
+		}
+	}
+	return ""
+}
+
+// requireSessionRestorable enforces the configured active-agent policy for a
+// single restore target.
+//
+// The check is scoped to sessionPath so that unrelated agents working in other
+// projects never block a restore. Only an agent actually holding this session
+// file is a reason to refuse.
+func requireSessionRestorable(
+	ctx context.Context, checker AgentProcessChecker, agent, sessionPath, policy string,
+) error {
+	switch policy {
+	case schema.ActiveAgentOff:
+		return nil
+	case schema.ActiveAgentStrict:
+		// Strict deliberately discards the target so the check stays host-wide.
+		sessionPath = ""
+	case schema.ActiveAgentScoped, "":
+	default:
+		return fmt.Errorf("unsupported restore.active_agent_policy %q", policy)
+	}
+
 	checkContext, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	active, err := checker(checkContext, agent)
+	busy, scoped, err := checker(checkContext, agent, sessionPath)
 	if err != nil {
-		return fmt.Errorf("cannot verify that %s is inactive: %w", agent, err)
+		return fmt.Errorf("cannot verify whether %s is using this session: %w", agent, err)
 	}
-	if active {
-		return fmt.Errorf("%s appears to be running; close it before restoring sessions", agent)
+	if !busy {
+		return nil
 	}
-	return nil
+	if scoped {
+		return fmt.Errorf(
+			"%s is currently using this session; close that session or rerun with --allow-active-agents",
+			agent)
+	}
+	return fmt.Errorf(
+		"%s appears to be running and this host cannot tell which session it is using; "+
+			"close it or rerun with --allow-active-agents", agent)
 }
 
 func forkRelativePath(source, sessionID string) string {
