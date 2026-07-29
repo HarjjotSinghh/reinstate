@@ -1,7 +1,8 @@
 # Phase 1 RC8 acceptance — Device A (macOS) report
 
-Milestone reached: **M1 complete**. Device B (native Windows) has not started
-against RC8, so every Windows-dependent gate is `NOT TESTED`, never `PASS`.
+Milestone reached: **M2 complete** (section 11). Device B has passed W1 against
+RC8; W2 and W3 are outstanding, so those gates remain `NOT TESTED`, never
+`PASS`.
 
 Clean RC8 run. No RC7-or-older home, project, profile, passphrase, marker
 session, remote prefix, or report was reused. RC7 acceptance state was left in
@@ -166,7 +167,14 @@ rein pull --agent claude --session <claude>
 | Live session file byte-for-byte unchanged | PASS (SHA-256 compared) |
 | Exactly one fork created and named in the output | PASS |
 | Repeating the pull does not create a second fork | PASS — fork count 1 → 1 |
-| Backups created | 0 — correct, nothing was replaced |
+| Original session backed up | 0 — correct, the original was never replaced |
+| Backups created by the repeat pull | 1, of the **fork** — see finding 4 |
+
+The first pull created no backup at all, which is correct: nothing was replaced.
+The repeat pull replaced the existing fork with byte-identical content and
+backed that fork up first. Device B observed the same behavior independently on
+Windows. An earlier revision of this report recorded only the first pull's
+`0` and was incomplete; finding 4 records the corrected picture.
 
 ### 6.1 The refusal still works when requested
 
@@ -252,10 +260,24 @@ Non-blocking, recorded for sign-off:
    That is vendor behavior, not a Reinstate defect, but it means a session used
    for a liveness test is no longer byte-identical to what was pushed. The fork
    path is unaffected because it does not consult divergence.
-3. **Windows Restart Manager is still unexercised on real hardware.** It passes
-   `Test (windows-latest)` and is compile-verified, but the RC7 Windows run
-   proved only that it correctly reports *no* holder. Device B section 14b
-   remains the highest-value outstanding gate.
+3. **Windows Restart Manager has now been exercised on real hardware.** Device B
+   completed section 14b against RC8 under the same no-handle, exclusive-open
+   condition and reported exit `0`, an unchanged original, one fork, and an
+   idempotent repeat. This was the highest-value outstanding gate through two
+   release candidates and it is now closed on both platforms.
+4. **Repeat pulls of an in-use session accumulate backups of the fork.** The
+   fork identity is derived from the snapshot, so a repeated pull rewrites the
+   same fork with byte-identical content and backs up the previous copy first.
+   The original session is never touched and its backup count stays zero, so no
+   data is at risk and the fork count stays at one, but the backup directory
+   grows by one identical file per repeat. Device B found this independently on
+   Windows and it reproduces on macOS.
+
+   The intended behavior is to skip the restore when the fork already exists and
+   its content matches, which was considered during implementation and not
+   carried through. It is a wasted write, not a correctness problem, so it is
+   recorded here rather than used to justify another release candidate mid
+   acceptance. It should be fixed in the next RC cut for any other reason.
 
 ## 10. Repository hygiene
 
@@ -265,7 +287,64 @@ Non-blocking, recorded for sign-off:
   repository, and its SHA-256 was unchanged across the wrong-passphrase test.
 - The only change on this branch is this report.
 
-## 11. Milestone block
+## 11. M2 — Windows W1 validation and Mac A2 push
+
+Device B issued `WINDOWS-RC8-W1-PASS` at commit
+`e489ce8ab4a917cf036ee714d76d245c501388a1`, with 17 PASS / 0 PARTIAL / 0 FAIL /
+6 NOT TESTED.
+
+### 11.1 Re-validated handoff
+
+| Check | Result |
+| ----- | ------ |
+| Commit resolves; branch tip matches | PASS |
+| Draft PR #57 open, not merged | PASS |
+| Branch changes only `docs/testing/results/` (0 product files) | PASS |
+| No credential value, Windows username path, or transcript JSON | PASS |
+| Block complete with `END-WINDOWS-RC8-W1` terminator | PASS |
+| `profile_id` and both session IDs match Device A | PASS |
+| Remote parity re-verified independently | PASS — revision `b5f38a3d-…`, 2 sessions |
+
+**Section 14b is now proven on both platforms.** Device B reproduced the
+no-handle, exclusive-open condition on real Windows hardware and reported exit
+`0`, an unchanged original, one fork, and an idempotent repeat, with no RC8
+conflict. It also closed its exclusive test handle before invoking Reinstate, so
+the result reflects Reinstate's own detection rather than a handle the test
+itself was holding. That gate blocked two release candidates and is now closed.
+
+Device B's backup observation is recorded as finding 4 and reproduces on macOS.
+
+### 11.2 Mac A2 append and push
+
+| Assertion | Before | After | Result |
+| --------- | ------ | ----- | ------ |
+| Same session file mutated in place | — | same path | PASS |
+| `A1` occurrences preserved | 4 | 4 | PASS |
+| `A2` occurrences | 0 | 4 | PASS |
+| Session file size (bytes) | 25126 | 27556 | grew, not replaced |
+| Stray new Claude session files | — | 0 (count 1 → 1) | PASS |
+| Codex session untouched (`A1`=5, `A2`=0) | — | unchanged | PASS |
+
+Dry-run reported `would push 1 snapshot(s)` and uploaded nothing; the push
+reported `pushed 1 snapshot(s), skipped 0 unchanged`.
+
+### 11.3 Remote state after M2
+
+| Field | Before M2 | After M2 |
+| ----- | --------- | -------- |
+| Remote revision | `b5f38a3d-e841-4787-8105-f080f3524fab` | `f552c4c8-bc17-4823-a447-bc18a4bb62e5` |
+| Claude snapshot | `b5f38a3d-…` | `f552c4c8-…` |
+| Codex snapshot | `17773f7e-…` | unchanged |
+| Session count | 2 | 2 |
+
+Only the Claude session advanced. Ciphertext discipline holds on the new
+snapshot: `forbidden_shaped_objects=0`, the `A2` marker and the
+`REINSTATE-PHASE1-RC8` prefix both absent from the downloaded bytes, `file`
+reports `data`. The local download was deleted.
+
+Section 8 row results are unchanged by M2; reconciliation happens at M4.
+
+## 12. Milestone block
 
 ```text
 MAC-RC8-M1
@@ -289,4 +368,24 @@ scoped_policy_session_named_refusal=PASS
 unrelated_agents_do_not_block_restore=PASS
 mac_report_path=docs/testing/results/2026-07-29-macos-phase1-rc8.md
 END-MAC-RC8-M1
+```
+
+```text
+MAC-RC8-M2-READY
+release=v0.1.0-rc.8
+profile_id=019165e7-cf0f-420d-b261-6c291b3e4f20
+claude_session_id=0cdbd871-f924-4848-b62e-5edbeab66ae3
+mac_claude_a2_marker=REINSTATE-PHASE1-RC8-MAC-CLAUDE-A2
+a2_occurrences=4
+a1_occurrences_preserved=4
+new_remote_revision=f552c4c8-bc17-4823-a447-bc18a4bb62e5
+new_claude_snapshot_id=f552c4c8-bc17-4823-a447-bc18a4bb62e5
+codex_snapshot_id=17773f7e-17ca-4d41-8848-af285c5fe1a3
+remote_session_count=2
+ciphertext_marker_absence=PASS
+windows_w1_validated=PASS
+windows_commit=e489ce8ab4a917cf036ee714d76d245c501388a1
+section_14b_proven_on_both_platforms=true
+mac_report_path=docs/testing/results/2026-07-29-macos-phase1-rc8.md
+END-MAC-RC8-M2-READY
 ```
