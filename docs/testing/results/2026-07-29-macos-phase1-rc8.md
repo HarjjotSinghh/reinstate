@@ -1,7 +1,7 @@
 # Phase 1 RC8 acceptance — Device A (macOS) report
 
-Milestone reached: **M2 complete** (section 11). Device B has passed W1 against
-RC8; W2 and W3 are outstanding, so those gates remain `NOT TESTED`, never
+Milestone reached: **M3 complete** (section 12). Device B has passed W1 and W2
+against RC8; W3 is outstanding, so those gates remain `NOT TESTED`, never
 `PASS`.
 
 Clean RC8 run. No RC7-or-older home, project, profile, passphrase, marker
@@ -232,15 +232,15 @@ skipped  Dependency review
 | 14 | A live session is forked, never overwritten | **PASS** | §6 — proven under the exact RC7 failure condition |
 | 15 | `scoped` policy still refuses, naming that session | **PASS** | §6.1 — session-scoped refusal, exit 7, no mutation |
 | 16 | Existing Windows target is backed up before restore | NOT TESTED | Device B |
-| 17 | Claude Windows-to-Mac resume succeeds | NOT TESTED | Mac M3 |
-| 18 | Codex Windows-to-Mac resume succeeds | NOT TESTED | Mac M3 |
-| 19 | Existing Mac targets are backed up before restore | NOT TESTED | no in-place Mac restore occurred in this run; §6 forked, so nothing was replaced |
+| 17 | Claude Windows-to-Mac resume succeeds | PASS | §12.5 — discovered, resumed, returned the Windows `B1` marker |
+| 18 | Codex Windows-to-Mac resume succeeds | PASS | §12.5 — restored rollout loaded as a live process, `B1`=5 |
+| 19 | Existing Mac targets are backed up before restore | PASS | §12.4 — two timestamped backups, both SHA-256 matching the pre-pull originals |
 | 20 | Unchanged pushes skip without new snapshots | PASS | both agents reported `pushed 0 snapshot(s), skipped 1 unchanged`, remote revision unchanged |
 | 21 | Divergence records a conflict without overwrite | NOT TESTED | M4 / W3 |
 | 22 | `--keep-both` preserves both branches | NOT TESTED | Device B |
 | 23 | All required GitHub checks are green | PASS | §7 |
 
-**Counts: 9 PASS / 4 PARTIAL / 0 FAIL / 10 NOT TESTED.**
+**Counts: 12 PASS / 4 PARTIAL / 0 FAIL / 7 NOT TESTED.**
 
 All 23 mandatory rows passed: **No.** Phase 1 remains open pending Device B.
 
@@ -344,7 +344,102 @@ reports `data`. The local download was deleted.
 
 Section 8 row results are unchanged by M2; reconciliation happens at M4.
 
-## 12. Milestone block
+## 12. M3 — Windows-to-Mac restore, backups, resume, and no-op
+
+Device B issued `WINDOWS-RC8-W2-READY` at commit
+`d608293d5828df6e4eaa1d371dafdcebf8f8bb46`, 18 PASS / 0 PARTIAL / 0 FAIL /
+5 NOT TESTED, with gate 16 satisfied through the authorised conflict route.
+
+### 12.1 Re-validated handoff
+
+Commit and branch resolve, draft PR #57 open and unmerged, 0 product files, no
+credential value, Windows username path, or transcript JSON, block complete with
+the correct terminator. Device A independently re-verified the remote before
+acting: revision `8e3dba9c-…`, Claude snapshot `cf89ccc6-…`, 2 sessions.
+
+### 12.2 Agent liveness pre-check
+
+Twelve agent processes were alive on this device throughout M3. Each was checked
+against the acceptance project before pulling:
+
+| Signal | Result |
+| ------ | ------ |
+| Any agent holding either session file | none |
+| Any agent naming either session ID on its command line | none |
+| Any agent whose working directory is inside the acceptance project | none |
+
+So the restore was expected to proceed in place rather than fork, which is what
+gate 19 needs. This pre-check is the practical counterpart of the RC8 detection
+change: it is now possible to state *why* a restore will replace rather than
+fork, instead of inferring it from the absence of a refusal.
+
+### 12.3 Dry-runs
+
+Both dry-runs reported `would pull 1 snapshot(s)`, named the **original** session
+paths rather than any fork, reported the backup root, and created nothing.
+Backup count stayed at 1.
+
+### 12.4 Real pulls and backups (gate 19)
+
+| Assertion | Result |
+| --------- | ------ |
+| Claude pull | PASS — exit 0, restored to the Mac project key |
+| Codex pull | PASS — exit 0 |
+| Backup count | 1 → 3 |
+| Claude backup is timestamped and matches the pre-pull original | PASS — SHA-256 equal to `4d89901b…` |
+| Codex backup is timestamped and matches the pre-pull original | PASS — SHA-256 equal to `80435840…` |
+
+The pre-existing third backup is the section 14b fork backup described in
+finding 4 and is excluded from this gate.
+
+### 12.5 Restored markers and vendor resume
+
+Restored counts, matching Device B exactly:
+
+| Agent | `A1` | `A2` | `B1` |
+| ----- | ---- | ---- | ---- |
+| Claude | 4 | 4 | 5 |
+| Codex | 5 | — | 5 |
+
+`rein list --agent claude` discovered the exact session, and `claude --resume`
+loaded it and returned the Windows-authored `B1` marker. `codex resume` loaded
+the restored rollout as a live process.
+
+**Method note, and a correction.** The Claude resume was performed with a prompt,
+which caused Claude Code to append a reply and take the local `B1` count from 5
+to 6. The Codex resume was performed without input and appended nothing. That
+inconsistency was Device A's, not a product defect: as recorded in finding 2,
+resuming a Claude session mutates it. The Claude session was restored to the
+remote state through the same conflict route Device B used for gate 16 — pull
+returned exit 6 with one conflict, `conflicts resolve --keep-remote` returned
+exit 0 and produced a fourth timestamped backup, and the session returned to
+`A1`=4, `A2`=4, `B1`=5 with zero active conflicts. Nothing was fabricated and no
+marker count was edited by hand.
+
+### 12.6 Unchanged no-op (gate 20)
+
+With both restored sessions untouched:
+
+```text
+push --agent claude --session <claude>   pushed 0 snapshot(s), skipped 1 unchanged
+push --agent codex  --session <codex>    pushed 0 snapshot(s), skipped 1 unchanged
+```
+
+Remote revision stayed `8e3dba9c-d0c0-4549-b6da-4d6c59b64f38` and both snapshot
+IDs were unchanged, so no new remote snapshot or revision was created.
+
+### 12.7 Gate movement
+
+| Gate | Before M3 | After M3 |
+| ---- | --------- | -------- |
+| 17 Claude Windows-to-Mac resume | NOT TESTED | **PASS** |
+| 18 Codex Windows-to-Mac resume | NOT TESTED | **PASS** |
+| 19 Existing Mac targets backed up before restore | NOT TESTED | **PASS** |
+| 20 Unchanged pushes skip without new snapshots | PASS | PASS (re-confirmed post-restore) |
+
+Updated counts: **12 PASS / 4 PARTIAL / 0 FAIL / 7 NOT TESTED.**
+
+## 13. Milestone block
 
 ```text
 MAC-RC8-M1
@@ -388,4 +483,31 @@ windows_commit=e489ce8ab4a917cf036ee714d76d245c501388a1
 section_14b_proven_on_both_platforms=true
 mac_report_path=docs/testing/results/2026-07-29-macos-phase1-rc8.md
 END-MAC-RC8-M2-READY
+```
+
+```text
+MAC-RC8-M3-PASS
+release=v0.1.0-rc.8
+profile_id=019165e7-cf0f-420d-b261-6c291b3e4f20
+claude_session_id=0cdbd871-f924-4848-b62e-5edbeab66ae3
+codex_session_id=019facf4-d00f-7400-9a0f-8a2073e1af6e
+windows_w2_validated=PASS
+windows_commit=d608293d5828df6e4eaa1d371dafdcebf8f8bb46
+dry_runs_said_would_pull=PASS
+claude_windows_to_mac_resume=PASS
+codex_windows_to_mac_resume=PASS
+mac_targets_backed_up_before_restore=PASS
+backup_sha256_matches_pre_pull_originals=PASS
+windows_claude_b1_occurrences=5
+windows_codex_b1_occurrences=5
+a1_occurrences_preserved=4
+a2_occurrences_preserved=4
+unchanged_no_op_both_agents=PASS
+remote_revision=8e3dba9c-d0c0-4549-b6da-4d6c59b64f38
+claude_snapshot_id=cf89ccc6-f248-48b9-a1a4-cd5c9572d719
+codex_snapshot_id=8e3dba9c-d0c0-4549-b6da-4d6c59b64f38
+remote_session_count=2
+remote_unchanged_by_no_op=PASS
+mac_report_path=docs/testing/results/2026-07-29-macos-phase1-rc8.md
+END-MAC-RC8-M3-PASS
 ```
