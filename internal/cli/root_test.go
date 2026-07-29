@@ -14,6 +14,7 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/backend"
 	"github.com/HarjjotSinghh/reinstate/internal/backend/memory"
 	"github.com/HarjjotSinghh/reinstate/internal/config"
+	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/schema"
 )
 
@@ -486,11 +487,12 @@ func TestPlanSessionRestore(t *testing.T) {
 	}
 	for _, tc := range forkTests {
 		t.Run(tc.name, func(t *testing.T) {
-			checker := func(_ context.Context, _, _ string) (bool, bool, error) {
+			checker := func(_ context.Context, _ string, _ processcheck.Target) (bool, bool, error) {
 				return tc.busy, true, nil
 			}
 			got, err := planSessionRestore(
-				context.Background(), checker, "claude", sessionPath, schema.ActiveAgentFork)
+				context.Background(), checker, "claude",
+				processcheck.Target{Path: sessionPath}, schema.ActiveAgentFork)
 			if err != nil {
 				t.Fatalf("fork policy must never refuse: %v", err)
 			}
@@ -502,8 +504,9 @@ func TestPlanSessionRestore(t *testing.T) {
 
 	// The default (empty) policy must behave as fork, never as a refusal.
 	t.Run("empty policy defaults to forking", func(t *testing.T) {
-		checker := func(_ context.Context, _, _ string) (bool, bool, error) { return true, true, nil }
-		got, err := planSessionRestore(context.Background(), checker, "claude", sessionPath, "")
+		checker := func(_ context.Context, _ string, _ processcheck.Target) (bool, bool, error) { return true, true, nil }
+		got, err := planSessionRestore(
+			context.Background(), checker, "claude", processcheck.Target{Path: sessionPath}, "")
 		if err != nil || got != restoreAsFork {
 			t.Fatalf("disposition=%v err=%v, want fork and no error", got, err)
 		}
@@ -512,9 +515,10 @@ func TestPlanSessionRestore(t *testing.T) {
 	// Conflict resolution keeps the refusal, because --keep-both is the
 	// explicit way to fork there.
 	t.Run("requireSessionRestorable refuses under the fork policy", func(t *testing.T) {
-		checker := func(_ context.Context, _, _ string) (bool, bool, error) { return true, true, nil }
+		checker := func(_ context.Context, _ string, _ processcheck.Target) (bool, bool, error) { return true, true, nil }
 		err := requireSessionRestorable(
-			context.Background(), checker, "claude", sessionPath, schema.ActiveAgentFork)
+			context.Background(), checker, "claude",
+			processcheck.Target{Path: sessionPath}, schema.ActiveAgentFork)
 		if err == nil || !strings.Contains(err.Error(), "is currently using this session") {
 			t.Fatalf("expected a refusal, got %v", err)
 		}
@@ -592,13 +596,14 @@ func TestPlanSessionRestore(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var gotPath string
 			checked := false
-			checker := func(_ context.Context, _, path string) (bool, bool, error) {
+			checker := func(_ context.Context, _ string, tgt processcheck.Target) (bool, bool, error) {
 				checked = true
-				gotPath = path
+				gotPath = tgt.Path
 				return tc.busy, tc.scoped, tc.probeErr
 			}
 			_, err := planSessionRestore(
-				context.Background(), checker, "claude", sessionPath, tc.policy)
+				context.Background(), checker, "claude",
+				processcheck.Target{Path: sessionPath}, tc.policy)
 
 			if tc.wantErr && err == nil {
 				t.Fatalf("expected an error, got none")

@@ -25,6 +25,7 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/crypto"
 	"github.com/HarjjotSinghh/reinstate/internal/fsx"
 	"github.com/HarjjotSinghh/reinstate/internal/lock"
+	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/schema"
 	"github.com/HarjjotSinghh/reinstate/internal/sync"
 )
@@ -698,6 +699,7 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 			// Sessions an agent is actively using, which must be restored
 			// alongside the live file instead of replacing it.
 			forkSessions := map[string]bool{}
+			projectRoots := configuredProjectRoots(cfg)
 			if !dryRun && (all || session != "") {
 				policy := cfg.Restore.ActiveAgentPolicy
 				if allowActiveAgents {
@@ -717,7 +719,12 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 						continue
 					}
 					disposition, err := planSessionRestore(
-						cmd.Context(), processChecker, remoteSession.Agent, localSession.Path, policy)
+						cmd.Context(), processChecker, remoteSession.Agent,
+						processcheck.Target{
+							SessionID:   remoteSession.SessionID,
+							Path:        localSession.Path,
+							ProjectRoot: projectRoots[localSession.ProjectID],
+						}, policy)
 					if err != nil {
 						return NewExitError(ExitSafety, err.Error())
 					}
@@ -984,7 +991,11 @@ func newConflictsCmd(processChecker AgentProcessChecker) *cobra.Command {
 				}
 				if err := requireSessionRestorable(
 					cmd.Context(), processChecker, conflict.Agent,
-					localSessionPath(conflict.Agent, conflict.SessionID), policy,
+					processcheck.Target{
+						SessionID:   conflict.SessionID,
+						Path:        localSessionPath(conflict.Agent, conflict.SessionID),
+						ProjectRoot: configuredProjectRoots(cfg)[conflict.ProjectID],
+					}, policy,
 				); err != nil {
 					return NewExitError(ExitSafety, err.Error())
 				}
@@ -1224,6 +1235,19 @@ func localSessionPath(agent, sessionID string) string {
 	return ""
 }
 
+// configuredProjectRoots maps canonical project IDs to their local roots so a
+// liveness check can tell whether an agent is working in the same project.
+func configuredProjectRoots(cfg *schema.Config) map[string]string {
+	roots := map[string]string{}
+	if cfg == nil {
+		return roots
+	}
+	for _, project := range cfg.Projects {
+		roots[project.ID] = project.LocalRoot
+	}
+	return roots
+}
+
 // restoreDisposition says how one restore target must be handled.
 type restoreDisposition int
 
@@ -1236,19 +1260,20 @@ const (
 
 // planSessionRestore applies the active-agent policy to a single target.
 //
-// The liveness question is scoped to sessionPath, so unrelated agents working
-// in other projects never affect a restore. Only an agent actually holding this
-// session file matters, and under the default policy even that does not block:
-// the remote copy is restored alongside the live session instead.
+// The liveness question is scoped to this session, so unrelated agents working
+// in other projects never affect a restore. Under the default policy even a
+// session that is genuinely in use does not block: the remote copy is restored
+// alongside the live session instead.
 func planSessionRestore(
-	ctx context.Context, checker AgentProcessChecker, agent, sessionPath, policy string,
+	ctx context.Context, checker AgentProcessChecker, agent string,
+	target processcheck.Target, policy string,
 ) (restoreDisposition, error) {
 	switch policy {
 	case schema.ActiveAgentOff:
 		return restoreInPlace, nil
 	case schema.ActiveAgentStrict:
 		// Strict deliberately discards the target so the check stays host-wide.
-		sessionPath = ""
+		target = processcheck.Target{}
 	case schema.ActiveAgentScoped, schema.ActiveAgentFork, "":
 	default:
 		return restoreInPlace, fmt.Errorf("unsupported restore.active_agent_policy %q", policy)
@@ -1256,7 +1281,7 @@ func planSessionRestore(
 
 	checkContext, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	busy, scoped, err := checker(checkContext, agent, sessionPath)
+	busy, scoped, err := checker(checkContext, agent, target)
 	if err != nil {
 		return restoreInPlace, fmt.Errorf(
 			"cannot verify whether %s is using this session: %w", agent, err)
@@ -1283,12 +1308,13 @@ func planSessionRestore(
 // so the fork policy is treated as scoped here rather than silently changing
 // what --keep-remote means.
 func requireSessionRestorable(
-	ctx context.Context, checker AgentProcessChecker, agent, sessionPath, policy string,
+	ctx context.Context, checker AgentProcessChecker, agent string,
+	target processcheck.Target, policy string,
 ) error {
 	if policy == schema.ActiveAgentFork || policy == "" {
 		policy = schema.ActiveAgentScoped
 	}
-	_, err := planSessionRestore(ctx, checker, agent, sessionPath, policy)
+	_, err := planSessionRestore(ctx, checker, agent, target, policy)
 	return err
 }
 

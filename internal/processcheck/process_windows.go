@@ -86,6 +86,17 @@ func parseTasklistCSV(output []byte) ([]Process, error) {
 	}
 }
 
+// agentWorkingDirectories has no cheap Windows implementation.
+//
+// A process working directory lives in the target process's PEB and reading it
+// requires cross-process memory access, which is a disproportionate amount of
+// privilege for a restore safety check. Project affinity therefore contributes
+// no signal on Windows; the file-handle and command-line signals still apply,
+// and the command-line signal is what covers `claude --resume <id>`.
+func agentWorkingDirectories(_ context.Context, _ string, _ []Process) map[int]string {
+	return nil
+}
+
 const (
 	cchRMMaxAppName = 255
 	cchRMMaxSvcName = 63

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Stop treating "no open file handle" as proof that a session is not in use.
+  Claude Code appends to its session file and closes it again, so a live Claude
+  Code session holds no handle and the handle-only check introduced in
+  `v0.1.0-rc.7` reported it as free, letting a restore target a session someone
+  was working in. Liveness now also matches an agent that names the exact
+  session on its command line, or that is working inside the session's mapped
+  project, and biases toward "in use" because the fork policy makes a false
+  positive cheap and a false negative expensive. Unrelated agents in other
+  projects still never block a restore.
+
 ### Changed
 
 - Clarify the landing-page file-sync comparison around machine-specific project
