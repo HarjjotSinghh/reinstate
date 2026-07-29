@@ -7,7 +7,7 @@
 - Page type: technical explainer
 - Owner: Harjot Singh Rana
 - Status: agent review accepted; maintainer sign-off pending
-- Target release: `v0.1.0-rc.7`
+- Target release: `v0.1.0-rc.8`
 - Last reviewed: 2026-07-27
 
 ## Audience and intent
@@ -31,7 +31,7 @@
   encryption, immutable sync snapshots, and same-vendor restore.
 - Current limitations: Reinstate does not transfer the repository, commits,
   branches, dependencies, credentials, or cross-vendor transcripts.
-- Version tested: implementation contract for Reinstate `v0.1.0-rc.7`.
+- Version tested: implementation contract for Reinstate `v0.1.0-rc.8`.
 - Evidence: `internal/adapter`, `internal/pathmap`, `internal/crypto`,
   `internal/sync`, deterministic fixtures, and documented Git boundary.
 - Claims that require verification: third-party vendor internals beyond

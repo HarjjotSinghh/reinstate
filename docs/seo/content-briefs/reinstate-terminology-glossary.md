@@ -22,7 +22,7 @@
 - Capabilities: Phase 1 profile-scoped encrypted same-vendor session sync, immutable snapshots, encrypted manifests, canonical project mapping, and fail-closed compatibility.
 - Limitations: portable cross-agent handoffs are planned; a profile is not a hosted account; current format terminology is project-specific and pre-1.0.
 - Evidence: `internal/schema`, `internal/sync`, `internal/pathmap`, `internal/adapter`, `docs/product-strategy.md`, and `ROADMAP.md`.
-- Version: `v0.1.0-rc.7`.
+- Version: `v0.1.0-rc.8`.
 
 ## Outline
 

@@ -7,7 +7,7 @@
 - Page type: practical guide
 - Owner: Harjot Singh Rana
 - Status: agent review accepted; maintainer sign-off pending
-- Target release: `v0.1.0-rc.7`
+- Target release: `v0.1.0-rc.8`
 - Last reviewed: 2026-07-27
 
 ## Audience and intent
@@ -31,7 +31,7 @@
   conflict checks, and Claude's native resume command.
 - Current limitations: release candidate; stable native Windows, macOS amd64,
   WSL2, remote CI, and physical two-device acceptance remain open gates.
-- Version tested: source contract for Reinstate `v0.1.0-rc.7`; Claude stable
+- Version tested: source contract for Reinstate `v0.1.0-rc.8`; Claude stable
   range is maintained on the compatibility page.
 - Evidence: CLI help/contracts, adapter/pathmap/crypto/sync tests, synthetic
   fixtures, compatibility data, and release notes.

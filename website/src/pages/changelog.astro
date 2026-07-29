@@ -16,7 +16,7 @@ const currentReleaseDate = new Intl.DateTimeFormat('en', {
 }).format(new Date(`${product.currentReleaseDate}T00:00:00Z`));
 const answer =
   `The latest published Reinstate tag is ${product.currentRelease}, dated ${currentReleaseDate}. ` +
-  'RC7 tightens cross-device project mapping and restore verification, improves additional-device storage validation, and keeps the public installers and acceptance evidence pinned to one release candidate.';
+  'RC8 tightens cross-device project mapping and restore verification, improves additional-device storage validation, and keeps the public installers and acceptance evidence pinned to one release candidate.';
 ---
 
 <PublicContentLayout
@@ -36,8 +36,8 @@ const answer =
     Current unreleased website work adds the SEO, answer-engine, AI-search, and social-preview
     foundation and introduces signed <code>website-vYYYY.MM.DD.N</code> deployment tags. A website
     tag can publish reviewed site changes from current <code>main</code> while the public CLI and
-    installer routes remain pinned to the separately signed <code>v0.1.0-rc.7</code> release. It is
-    not a new Reinstate version or evidence that the remaining RC7 acceptance gates have closed.
+    installer routes remain pinned to the separately signed <code>v0.1.0-rc.8</code> release. It is
+    not a new Reinstate version or evidence that the remaining RC8 acceptance gates have closed.
   </p>
   <p>
     The repository's
@@ -80,7 +80,7 @@ const answer =
   </ul>
   <h3>Release and roadmap clarity</h3>
   <ul>
-    <li>Public installers, setup prompts, and compatibility evidence are pinned to RC7.</li>
+    <li>Public installers, setup prompts, and compatibility evidence are pinned to RC8.</li>
     <li>
       Production deployment requires the signed-tag release workflow and verifies immutable and
       promoted installer routes byte for byte.
@@ -148,7 +148,7 @@ const answer =
     <nav aria-label="Related pages">
       <a href={product.tagsUrl}>All source tags</a>
       <a href="/compatibility">Compatibility matrix</a>
-      <a href="/docs/getting-started">Install RC7</a>
+      <a href="/docs/getting-started">Install RC8</a>
       <a href="/open-source">Source and contributions</a>
     </nav>
   </section>

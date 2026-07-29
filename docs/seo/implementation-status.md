@@ -98,7 +98,7 @@ phase. It deliberately does not call those external actions complete.
 | 50 | Content brief template | Implemented | executable template plus complete briefs for all five guides, the engineering article, CLI reference, and four linkable evidence assets |
 | 51 | Editorial quality | Implemented | schemas, contract tests, freshness/source/product-truth gates |
 | 52 | Programmatic SEO policy | Reference | no mass/thin generation; every route must pass uniqueness, value, link, and truth gates |
-| 53 | Launch distribution | Operationalized / external | `launch-distribution.md` includes owner steps plus evidence-gated RC7 GitHub release and launch-post drafts; actual publication waits for acceptance and authorization |
+| 53 | Launch distribution | Operationalized / external | `launch-distribution.md` includes owner steps plus evidence-gated RC8 GitHub release and launch-post drafts; actual publication waits for acceptance and authorization |
 | 54 | Digital PR angles | Operationalized | evidence-backed angles and prohibited generic/unsupported positioning |
 | 55 | Linkable assets | Implemented / staged | compatibility JSON, glossary, fixed synthetic path visualizer, encrypted snapshot v1 specification, agent-version history, roadmap, and evidence hub are live-ready; private-path tools, benchmarks, formal standards, and unsupported research retain explicit gates |
 
@@ -126,7 +126,7 @@ phase. It deliberately does not call those external actions complete.
 | 68 | Custom Reinstate skill pack | Implemented | all nine portable skills installed and synchronized |
 | 69 | Technical implementation prompt | Reference | retained in vendored playbook; implemented by this branch |
 | 70 | New guide prompt | Reference / implemented | used for complete session and storage guides |
-| 71 | Release discoverability prompt | Operationalized | release skill, synchronized RC7 draft packet, GitHub preview generator, launch runbook, IndexNow, and production smoke process |
+| 71 | Release discoverability prompt | Operationalized | release skill, synchronized RC8 draft packet, GitHub preview generator, launch runbook, IndexNow, and production smoke process |
 | 72 | Monthly audit prompt | Operationalized | monthly audit template and site-audit workflow |
 
 ## Sections 73–79: CI, launch checklists, and anti-patterns
@@ -161,7 +161,7 @@ worktree:
 | External profile/topic updates | repository/social owner | live profile URLs and review date |
 | Community/newsletter/directory launch | usable public trial + owner judgment | submitted/live URLs and rule compliance |
 | Third-party mentions/backlinks | independent editorial action | live corroborating source |
-| Stable compatibility claims | outstanding physical RC7 acceptance | signed acceptance evidence for every required row |
+| Stable compatibility claims | outstanding physical RC8 acceptance | signed acceptance evidence for every required row |
 | Benchmarks/research/testimonials | reproducible data or permission | methodology/raw data or consent record |
 
 No repository change can substitute for those records.

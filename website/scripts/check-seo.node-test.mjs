@@ -39,7 +39,7 @@ function indexableHtml({
     <meta name="twitter:description" content="${description}">
     <meta name="twitter:image" content="${image}">
     <meta name="twitter:image:alt" content="Reinstate session continuity">
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","@id":"${SITE}/#software","name":"Reinstate","url":"${SITE}/","description":"Encrypted coding-agent session sync.","applicationCategory":"DeveloperApplication","operatingSystem":["macOS","Windows"],"softwareVersion":"v0.1.0-rc.7","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@id":"${SITE}/#maintainer"},"license":"https://www.apache.org/licenses/LICENSE-2.0"}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","@id":"${SITE}/#software","name":"Reinstate","url":"${SITE}/","description":"Encrypted coding-agent session sync.","applicationCategory":"DeveloperApplication","operatingSystem":["macOS","Windows"],"softwareVersion":"v0.1.0-rc.8","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@id":"${SITE}/#maintainer"},"license":"https://www.apache.org/licenses/LICENSE-2.0"}</script>
     ${extraJsonLd}
   </head>
   <body><h1>Continue coding-agent work anywhere</h1><p class="direct-answer">Reinstate securely moves supported coding-agent sessions between configured devices so the same vendor can resume the original work.</p><h2>What is <code>rein</code> vs <code>reinstate</code>?</h2><svg><title>Decorative continuity diagram</title></svg><img src="/diagram.png" alt="Session continuity diagram" width="1200" height="630" loading="lazy"></body>

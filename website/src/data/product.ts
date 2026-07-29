@@ -20,10 +20,10 @@ export const product = {
   supportedAgents: ['Claude Code', 'Codex'],
   supportedOperatingSystems: ['macOS', 'Windows'],
   supportedStorage: ['Amazon S3', 'Cloudflare R2', 'S3-compatible storage'],
-  currentRelease: 'v0.1.0-rc.7',
+  currentRelease: 'v0.1.0-rc.8',
   currentReleaseUrl:
-    'https://github.com/HarjjotSinghh/reinstate/tree/v0.1.0-rc.7',
-  currentReleaseDate: '2026-07-28',
+    'https://github.com/HarjjotSinghh/reinstate/tree/v0.1.0-rc.8',
+  currentReleaseDate: '2026-07-29',
   initialPublicReleaseDate: '2026-07-25',
   stableRelease: null,
   releaseStatus: 'pre-1.0 release candidate',
