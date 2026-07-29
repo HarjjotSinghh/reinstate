@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Replace the legacy dark-gradient README banner with the landing page's
+  paper-and-ink isometric cross-device session flow.
 - Expand the post-Phase-1 roadmap from a generic MCP/skills sync bullet into
   universal agent configuration: one non-secret desired-state profile rendered
   across supported harnesses and encrypted across devices.
