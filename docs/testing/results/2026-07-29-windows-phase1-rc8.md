@@ -1,9 +1,9 @@
 # Phase 1 RC8 acceptance — Device B (native Windows) report
 
-Milestone reached: **W3 LOCAL CONFLICT READY**. W2 remains complete, Mac M3 is
-validated, and the Windows-only conflict marker has been appended to the exact
-Claude session without a push. Gate 21/22 execution is paused until Device A
-appends and pushes its distinct Mac marker.
+Milestone reached: **W3 PASS**. Gates 21 and 22 now have exact cross-device
+evidence: the divergent original was not overwritten, and `--keep-both`
+preserved independently resumable Windows-local and Mac-remote branches.
+Phase 1 sign-off remains pending M4 reconciliation across both reports.
 
 This is clean RC8 evidence. No RC7-or-older home, project, profile, passphrase,
 marker session, remote prefix, conflict, or report was reused. The historical
@@ -223,14 +223,14 @@ behavior and corrected its earlier first-pull-only backup observation.
 | 18 | Codex Windows-to-Mac resume succeeds | PASS | Mac report §12.5 |
 | 19 | Existing Mac targets are backed up before restore | PASS | Mac report §12.4 |
 | 20 | Unchanged pushes skip without new snapshots | PASS | Mac report §8 row 20 |
-| 21 | Divergence records a conflict without overwrite | NOT TESTED | later W3 |
-| 22 | `--keep-both` preserves both branches | NOT TESTED | later W3 |
-| 23 | All required GitHub checks are green | PASS | Mac report §7 |
+| 21 | Divergence records a conflict without overwrite | PASS | §15.2 |
+| 22 | `--keep-both` preserves both branches | PASS | §15.3–§15.4 |
+| 23 | All required GitHub checks are green | PASS | Mac report §7; draft PR #57 |
 
-**Counts: 21 PASS / 0 PARTIAL / 0 FAIL / 2 NOT TESTED.**
+**Counts: 23 PASS / 0 PARTIAL / 0 FAIL / 0 NOT TESTED.**
 
-All 23 mandatory rows passed: **No.** Phase 1 remains open for W3 gates 21/22
-and final cross-device reconciliation.
+All 23 mandatory rows passed on the cumulative Device B checklist: **Yes.**
+Final Phase 1 status is still pending M4 cross-device reconciliation.
 
 ## 8. Findings and retry trace
 
@@ -272,6 +272,11 @@ Non-blocking operator-harness notes:
    unchanged no-op push. Device A recovered through the conflict route and then
    proved the no-op, but the runbook should perform the unchanged-push gate
    before any mutating resume.
+7. The keep-both Claude fork's generated ID is accepted by normal interactive
+   `claude --resume`, but Claude's `--print --resume` mode rejects it because it
+   is not a UUID or session title. Gate 22 passes through a sustained normal
+   vendor resume; the automation-mode limitation is recorded rather than
+   hidden.
 
 No W0/W1 harness attempt reused RC7 state, executed an RC8 pull before a
 genuine exact live process existed, created a conflict, or left an active fork.
@@ -557,4 +562,133 @@ gate21=NOT_TESTED
 gate22=NOT_TESTED
 windows_report_path=docs/testing/results/2026-07-29-windows-phase1-rc8.md
 END-WINDOWS-RC8-CONFLICT-LOCAL-READY
+```
+
+## 15. W3 — conflict and keep-both
+
+### 15.1 Mac conflict-pushed handoff
+
+Device B fetched `test/phase1-rc8-macos-report` and validated commit
+`0d2cd6f39b14c2e2dca6a26e54cd8e33f8d45115`. The branch tip matched, the
+commit changes only the Mac RC8 report, and the complete
+`MAC-RC8-CONFLICT-PUSHED` block matches the Windows local-ready commit, Mac
+marker count 4, Windows marker count zero on Device A, preserved A1/A2/B1
+counts 4/4/5, exact two-session revision/snapshot IDs, ciphertext-marker
+absence, zero Mac active conflicts, and divergence-ready assertion.
+
+No storage endpoint, access key, secret key, passphrase, Windows username, or
+absolute Windows path was present in the Mac report.
+
+### 15.2 Gate 21 — conflict without overwrite
+
+Immediately before the pull, Claude and Codex were closed, the exact Windows
+target SHA-256 still matched the local-ready baseline, Windows/Mac conflict
+marker counts were 4/0, and the RC8 active-conflict list was empty.
+
+The exact-session pull returned exit `6`:
+
+```text
+local session diverged; conflict recorded
+```
+
+The active list changed 0 → 1 and contained only
+`c-1785351636648198700`, for the exact Claude session and Mac revision
+`633f5f3d-6fd2-49ef-865f-0e29eed55850`. The original target remained
+byte-identical at
+`90456A6D5BD81166E958EC4825D74AE2AAB3EFF172C19E555B9C75F727BB05C3`;
+its Windows/Mac marker counts remained 4/0. Config, state, and backup count
+remained unchanged. Gate 21 passes.
+
+### 15.3 Sanitized metadata and keep-both
+
+`rein conflicts show c-1785351636648198700` exited `0` and exposed only the
+documented metadata fields: conflict/agent/session/project identifiers, local
+and remote revisions, remote snapshot, and creation time. It contained no
+transcript content or credentials.
+
+Resolution:
+
+```text
+rein conflicts resolve c-1785351636648198700 --keep-both
+resolved c-1785351636648198700 via keep-both
+```
+
+The resolve exited `0`. The original remained byte-identical. A distinct
+Claude fork was created with session ID
+`0cdbd871-f924-4848-b62e-5edbeab66ae3-remote-633f5f3d`. Before resume
+proofs, the original contained Windows/Mac markers 4/0 while the fork contained
+0/4, plus preserved A1/A2/B1 counts 4/4/5. Backup count remained 3 because
+keep-both created a new destination rather than replacing one.
+
+The active list returned to zero. Archived resolved records increased 1 → 2,
+including the expected `.keep-both.resolved` audit record. Assertions use the
+active list; archived records were not miscounted as active conflicts.
+
+### 15.4 Independent vendor resume
+
+Both exact IDs appeared once in Claude discovery.
+
+The Windows-local original resumed with exit `0` and returned exactly
+`REINSTATE-PHASE1-RC8-CONFLICT-WINDOWS`. Its final serialized Windows/Mac
+marker counts are 5/0.
+
+Claude's `--print --resume` mode rejected the generated fork ID because it is
+not a UUID or session title; the fork file was not mutated by that refused
+attempt. A normal interactive
+`claude --resume 0cdbd871-f924-4848-b62e-5edbeab66ae3-remote-633f5f3d`
+then stayed live for six consecutive one-second samples. After the test closed
+that exact process, the fork remained byte-identical with Windows/Mac marker
+counts 0/4.
+
+Both exact processes were closed, the active conflict list remained empty, and
+the remote stayed at revision
+`633f5f3d-6fd2-49ef-865f-0e29eed55850` with exactly two sessions. Gate 22
+passes through the normal vendor resume path.
+
+The historical RC7 conflict remained untouched and outside every active-list
+assertion.
+
+## 16. W3 milestone
+
+```text
+WINDOWS-RC8-W3-PASS
+release=v0.1.0-rc.8
+profile_id=019165e7-cf0f-420d-b261-6c291b3e4f20
+claude_session_id=0cdbd871-f924-4848-b62e-5edbeab66ae3
+codex_session_id=019facf4-d00f-7400-9a0f-8a2073e1af6e
+mac_conflict_pushed_validated=PASS
+mac_report_commit=0d2cd6f39b14c2e2dca6a26e54cd8e33f8d45115
+windows_local_ready_commit=b89162f2dadd7ee15fe496f793da5d437b1fc823
+gate21_pull_exit_code=6
+gate21_active_conflicts_before=0
+gate21_active_conflicts_after=1
+gate21_conflict_id=c-1785351636648198700
+gate21_original_sha256_unchanged=true
+gate21_windows_marker_after_pull=4
+gate21_mac_marker_after_pull=0
+gate21_no_overwrite=PASS
+conflict_show_sanitized_metadata=PASS
+keep_both_exit_code=0
+keep_both_fork_session_id=0cdbd871-f924-4848-b62e-5edbeab66ae3-remote-633f5f3d
+original_branch_resume=PASS
+original_windows_marker_occurrences=5
+original_mac_marker_occurrences=0
+fork_branch_interactive_resume=PASS
+fork_resume_sustained_seconds=6
+fork_windows_marker_occurrences=0
+fork_mac_marker_occurrences=4
+fork_print_resume_non_uuid_refusal=OBSERVED
+active_rc8_conflicts_after_resolve=0
+archived_resolved_records=2
+remote_revision=633f5f3d-6fd2-49ef-865f-0e29eed55850
+claude_snapshot_id=633f5f3d-6fd2-49ef-865f-0e29eed55850
+codex_snapshot_id=8e3dba9c-d0c0-4549-b6da-4d6c59b64f38
+remote_session_count=2
+historical_rc7_conflict_untouched=true
+gate21=PASS
+gate22=PASS
+mandatory_counts=23_PASS_0_PARTIAL_0_FAIL_0_NOT_TESTED
+phase1_final_status=PENDING_M4_RECONCILIATION
+windows_report_path=docs/testing/results/2026-07-29-windows-phase1-rc8.md
+END-WINDOWS-RC8-W3-PASS
 ```
