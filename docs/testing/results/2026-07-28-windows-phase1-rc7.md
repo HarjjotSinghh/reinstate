@@ -1,15 +1,15 @@
 # Phase 1 RC7 acceptance — Device B (Windows) report
 
-Milestone verdict: **`WINDOWS-RC7-W1-PASS`**. W0 and every required W1 gate
-passed. Exact Codex resume produced one assistant-role response equal to its
-challenge followed by `task_complete`. After the operator refreshed the local
-Claude CLI login, a clean retry restored the pristine Mac snapshot and exact
-Claude resume produced one assistant-role response equal to its distinct retry
-challenge.
+Milestone verdict: **`WINDOWS-RC7-W2-FAIL`**. W0 and W1 remain passed. Device A
+M2 commit `22207c43…` and its `MAC-RC7-M2-READY` block validated completely,
+but the first mandatory W2 gate (§14b) did not create the required live-session
+fork. With Claude open on the exact session under the default `fork` policy,
+the pull exited `6`, recorded a divergence conflict, and created no
+`-active-<short>` session.
 
-The initial Claude authentication failure remains documented below, together
-with the non-destructive retry conflict and `--keep-remote` recovery. W2/W3 and
-tagged runbook §14 were not started.
+The canonical target, config, state, and existing backup count were unchanged,
+so no unsafe overwrite occurred. Per the operator's explicit stop rule, §14c,
+§14d, both B1 appends/pushes, and W3 were not attempted.
 
 ## 1. Test record
 
@@ -17,6 +17,7 @@ tagged runbook §14 were not started.
 | ----- | ----- |
 | Date/time (UTC) | `2026-07-28T12:28:44Z` |
 | W1 retry completed (UTC) | `2026-07-28T13:03:57Z` |
+| W2 §14b attempt (UTC) | `2026-07-29T05:39:27Z` |
 | Release under test | `v0.1.0-rc.7` |
 | Tag commit | `66211599dd7cfb74f1436d2221b983050e8b1bc2` |
 | Windows edition/build | Windows Pro, display version `25H2`, build `26200.8328` |
@@ -376,7 +377,7 @@ None of these discarded assertions is used as PASS evidence.
 | 11 | Claude Mac-to-Windows resume succeeds | PASS | §7 — clean retry produced one exact assistant response with A1 preserved |
 | 12 | Codex Mac-to-Windows resume succeeds | PASS | §7 — exact assistant response plus task-complete evidence |
 | 13 | Unrelated running agents do not block a restore | PASS | Mac report §6.1 plus Windows Codex pull with two unrelated processes |
-| 14 | A live session is forked, never overwritten | NOT TESTED | Device B §14b not reached |
+| 14 | A live session is forked, never overwritten | FAIL | §13 — exact Claude process open; pull exited 6 with no fork and no overwrite |
 | 15 | `scoped` policy still refuses, naming that session | PARTIAL | Mac strict-policy evidence only; Windows scoped test outstanding |
 | 16 | Existing Windows target is backed up before restore | NOT TESTED | W2 / §14d; retry-hygiene backup is explicitly excluded |
 | 17 | Claude Windows-to-Mac resume succeeds | NOT TESTED | later handoff |
@@ -387,25 +388,29 @@ None of these discarded assertions is used as PASS evidence.
 | 22 | `--keep-both` preserves both branches | NOT TESTED | W3 |
 | 23 | All required GitHub checks are green | PASS | Mac report §7 |
 
-**Counts: 16 PASS / 1 PARTIAL / 0 FAIL / 6 NOT TESTED.**
+**Counts: 16 PASS / 1 PARTIAL / 1 FAIL / 5 NOT TESTED.**
 
 All 23 mandatory rows passed: **No.** Phase 1 remains open.
 
 ## 10. Findings
 
-Release-blocking Reinstate product findings: **none established on Device B**.
+Release-blocking acceptance finding: **§14b did not create the required
+live-session fork on real Windows hardware.**
 
 Remaining acceptance work:
 
-1. W1 is complete; later Mac/Windows handoffs, §14, and W3 remain outstanding.
+1. W1 is complete, but W2 stopped at §14b. §14c, §14d, B1 pushes, later
+   Mac/Windows handoffs, and W3 remain unexecuted.
 2. The first installer output capture exposed one absolute user-local install
    path to private tool output before all-stream redaction was enabled. No
    storage secret, passphrase, private-file value, transcript, or ciphertext
    was exposed.
 
-Highest untested product risk remains tagged runbook §14b: the real-hardware
-Windows Restart Manager path has not yet been exercised with the exact target
-file held open and asserted to produce one stable fork.
+The data-safety guard behaved correctly: local divergence produced exit `6`
+and one conflict record without modifying the canonical target, config, state,
+or backups. A product data-loss defect is not established. The required
+Restart Manager fork behavior remains unproven because the live Claude process
+did not retain an open handle to the target in this launch surface.
 
 ## 11. Repository hygiene
 
@@ -434,4 +439,127 @@ claude_discovery_and_resume=PASS
 codex_resume=PASS
 windows_report_path=docs/testing/results/2026-07-28-windows-phase1-rc7.md
 END-WINDOWS-RC7-W1
+```
+
+## 13. W2 attempt — §14b live-session fork failure
+
+### 13.1 Mac M2 handoff validation
+
+Origin was fetched and commit
+`22207c43c53f421dbc8c9c4b4d9ea1518fb81bfc` was both the requested commit and
+the exact tip of `origin/test/phase1-rc7-macos-report`. Section 11 and the
+complete `MAC-RC7-M2-READY` block validated:
+
+| Check | Result |
+| ----- | ------ |
+| Release/profile/exact Claude ID | PASS |
+| Windows W1 commit `82c324ce…` validated by Device A | PASS |
+| Mac A1/A2 occurrence counts | `4 / 4` |
+| New Claude snapshot and remote revision | `3e789e6e-b00b-492e-97a5-f0836d115dab` |
+| Codex snapshot unchanged | `4ffdb7ea-685f-4cd1-8984-0c9d7c1e6574` |
+| Remote sessions / objects | `2 / 4` |
+| Ciphertext marker absence | PASS |
+| Forbidden private-field assignments in Mac report | `0` |
+
+Windows status independently returned the same M2 remote revision and exactly
+two sessions before §14b.
+
+### 13.2 Exact live-session setup
+
+An acceptance-owned hidden native PowerShell console launched:
+
+```text
+claude --resume 1cf4ab6d-3e36-424d-8f30-4f41858b7f20
+```
+
+Before pull:
+
+```text
+exact_claude_process_count=1
+active_agent_policy=fork
+canonical_A1_count=4
+canonical_A2_count=0
+existing_backup_count=1
+active_conflict_count=0
+active_fork_count=0
+```
+
+The process stayed alive and its command line named only the exact session.
+No transcript text or screenshot was inspected. A direct exclusive-open probe
+against the canonical JSONL succeeded, showing that this launch surface did
+not retain a continuous target-file handle before the product test.
+
+### 13.3 Exact §14b command and failure
+
+```text
+rein pull --agent claude --session 1cf4ab6d-3e36-424d-8f30-4f41858b7f20
+```
+
+Sanitized result:
+
+```text
+local session diverged; conflict recorded
+exit=6
+```
+
+Required fork result:
+
+```text
+pulled_1=false
+reported_in_use=false
+reported_fork_id=NONE
+fork_count_before=0
+fork_count_after=0
+```
+
+No-mutation proof:
+
+```text
+canonical_hash_unchanged=true
+canonical_A1_count=4
+canonical_A2_count=0
+config_hash_unchanged=true
+state_hash_unchanged=true
+backup_count=1 -> 1
+exact_claude_process_count_after=1
+```
+
+The pull created exactly one conflict,
+`c-1785303426934481400`. Its owner-local metadata matches the exact Claude
+agent, session ID, canonical project ID, current local target hash, and M2
+remote snapshot. The conflict remains active and the live acceptance-owned
+Claude process remains open to preserve failure evidence.
+
+The signed RC7 implementation treats an available Restart Manager result with
+zero holding PIDs as scoped and inactive; it then reaches divergence
+protection. The observed exit `6`, zero fork, successful pre-pull exclusive
+open, and exact live process are consistent with that boundary. This does not
+establish a Restart Manager API failure, but it does fail the required §14b
+outcome.
+
+No fork existed to delete. Per the operator's instruction, no attempt was made
+to manufacture a handle, resolve the conflict, switch to scoped policy,
+perform §14d, append either B1 marker, or push either session.
+
+```text
+WINDOWS-RC7-W2-FAIL
+release=v0.1.0-rc.7
+profile_id=2949d464-03f4-4de1-b326-2b3072bcb2a5
+claude_session_id=1cf4ab6d-3e36-424d-8f30-4f41858b7f20
+mac_m2_commit=22207c43c53f421dbc8c9c4b4d9ea1518fb81bfc
+mac_m2_remote_revision=3e789e6e-b00b-492e-97a5-f0836d115dab
+failure_gate=section_14b_live_session_fork
+failure_exit=6
+failure_output=local session diverged; conflict recorded
+active_agent_policy=fork
+exact_claude_process_count=1
+pre_pull_exclusive_open_succeeded=true
+restart_manager_fork_created=false
+canonical_target_unchanged=true
+backup_count_before=1
+backup_count_after=1
+active_conflict_count=1
+failure_class=LIVE_TARGET_HANDLE_NOT_ENUMERATED
+windows_report_path=docs/testing/results/2026-07-28-windows-phase1-rc7.md
+END-WINDOWS-RC7-W2-FAIL
 ```
