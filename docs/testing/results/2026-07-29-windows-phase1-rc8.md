@@ -1,9 +1,9 @@
 # Phase 1 RC8 acceptance — Device B (native Windows) report
 
-Milestone reached: **W2 READY**. This run executes tagged runbook section 14b
-on real Windows hardware under the exact no-handle/exclusive-open condition
-that RC7 failed, and closes gate 16 through the authorized conflict-resolution
-route after the prescribed plain-pull route proved structurally unreachable.
+Milestone reached: **W3 LOCAL CONFLICT READY**. W2 remains complete, Mac M3 is
+validated, and the Windows-only conflict marker has been appended to the exact
+Claude session without a push. Gate 21/22 execution is paused until Device A
+appends and pushes its distinct Mac marker.
 
 This is clean RC8 evidence. No RC7-or-older home, project, profile, passphrase,
 marker session, remote prefix, conflict, or report was reused. The historical
@@ -219,17 +219,18 @@ behavior and corrected its earlier first-pull-only backup observation.
 | 14 | A live session is forked, never overwritten | PASS | Mac report §6; Windows §6 |
 | 15 | `scoped` policy still refuses, naming that session | PASS | Mac report §6.1; Windows §11.2 |
 | 16 | Existing Windows target is backed up before restore | **PASS** | §11.4 — conflict resolution backed up the original target before `--keep-remote` replacement |
-| 17 | Claude Windows-to-Mac resume succeeds | NOT TESTED | later M3 |
-| 18 | Codex Windows-to-Mac resume succeeds | NOT TESTED | later M3 |
-| 19 | Existing Mac targets are backed up before restore | NOT TESTED | later M3 |
+| 17 | Claude Windows-to-Mac resume succeeds | PASS | Mac report §12.5 |
+| 18 | Codex Windows-to-Mac resume succeeds | PASS | Mac report §12.5 |
+| 19 | Existing Mac targets are backed up before restore | PASS | Mac report §12.4 |
 | 20 | Unchanged pushes skip without new snapshots | PASS | Mac report §8 row 20 |
 | 21 | Divergence records a conflict without overwrite | NOT TESTED | later W3 |
 | 22 | `--keep-both` preserves both branches | NOT TESTED | later W3 |
 | 23 | All required GitHub checks are green | PASS | Mac report §7 |
 
-**Counts: 18 PASS / 0 PARTIAL / 0 FAIL / 5 NOT TESTED.**
+**Counts: 21 PASS / 0 PARTIAL / 0 FAIL / 2 NOT TESTED.**
 
-All 23 mandatory rows passed: **No.** Phase 1 remains open for M3 and W3.
+All 23 mandatory rows passed: **No.** Phase 1 remains open for W3 gates 21/22
+and final cross-device reconciliation.
 
 ## 8. Findings and retry trace
 
@@ -266,6 +267,11 @@ Non-blocking operator-harness notes:
    gates, because Claude legitimately appends to the session. The divergence
    guard correctly refuses an in-place overwrite. Gate 16 was therefore
    completed through the authorized conflict-resolution route in §11.4.
+6. Tagged steps 15 → 16 have the same ordering problem on Device A: proving a
+   prompted Claude resume mutates the restored session before the prescribed
+   unchanged no-op push. Device A recovered through the conflict route and then
+   proved the no-op, but the runbook should perform the unchanged-push gate
+   before any mutating resume.
 
 No W0/W1 harness attempt reused RC7 state, executed an RC8 pull before a
 genuine exact live process existed, created a conflict, or left an active fork.
@@ -477,4 +483,78 @@ remote_session_count=2
 gate16_existing_windows_target_backup=PASS_VIA_CONFLICT_ROUTE
 windows_report_path=docs/testing/results/2026-07-29-windows-phase1-rc8.md
 END-WINDOWS-RC8-W2-READY
+```
+
+## 13. Mac M3 validation and W3 local divergence
+
+### 13.1 Mac M3 handoff
+
+Device B fetched `test/phase1-rc8-macos-report` and validated commit
+`a12afdefa27953214b8900f4ff2ae833619a4a03`. The branch tip matched, the
+commit changes only
+`docs/testing/results/2026-07-29-macos-phase1-rc8.md`, and its complete
+`MAC-RC8-M3-PASS` block matches the supplied profile/session IDs, Windows W2
+commit, B1 counts 5/5, A1/A2 counts 4/4, timestamped backup/hash proof, exact
+two-session revision, and unchanged no-op evidence. Draft PR #57 remained open,
+unmerged, and green.
+
+No storage endpoint, access key, secret key, passphrase, Windows username, or
+absolute Windows path was present in the Mac report.
+
+### 13.2 Windows-local conflict marker
+
+Before mutation, both conflict-marker counts and the RC8 active-conflict count
+were zero. With the remote still at Mac M3 revision
+`8e3dba9c-d0c0-4549-b6da-4d6c59b64f38`, Windows resumed only the exact Claude
+session and requested exactly:
+
+```text
+REINSTATE-PHASE1-RC8-CONFLICT-WINDOWS
+```
+
+Claude exited `0`, its response exactly matched that marker, and the local
+session changed. The serialized Windows marker count is 4; the Mac conflict
+marker count remains zero; Windows Claude B1 remains 5. The exact Claude
+process was closed.
+
+No Reinstate push or pull was executed. A fresh status confirmed the remote
+revision and both snapshot IDs were unchanged, session count remained two, and
+the RC8 active-conflict list remained empty. The local Claude SHA-256 after the
+append is
+`90456A6D5BD81166E958EC4825D74AE2AAB3EFF172C19E555B9C75F727BB05C3`;
+this is the no-overwrite baseline for gate 21.
+
+The historical RC7 conflict remains outside RC8 state and untouched. Gates 21
+and 22 remain NOT TESTED until Device A appends and pushes its distinct Mac
+conflict marker.
+
+## 14. W3 local-ready milestone
+
+```text
+WINDOWS-RC8-CONFLICT-LOCAL-READY
+release=v0.1.0-rc.8
+profile_id=019165e7-cf0f-420d-b261-6c291b3e4f20
+claude_session_id=0cdbd871-f924-4848-b62e-5edbeab66ae3
+codex_session_id=019facf4-d00f-7400-9a0f-8a2073e1af6e
+mac_m3_validated=PASS
+mac_report_commit=a12afdefa27953214b8900f4ff2ae833619a4a03
+windows_w2_commit=d608293d5828df6e4eaa1d371dafdcebf8f8bb46
+windows_conflict_marker=REINSTATE-PHASE1-RC8-CONFLICT-WINDOWS
+windows_conflict_marker_occurrences=4
+windows_conflict_append_exit_code=0
+windows_conflict_assistant_response_exact=true
+mac_conflict_marker_occurrences=0
+windows_claude_b1_occurrences_preserved=5
+windows_local_conflict_sha256=90456A6D5BD81166E958EC4825D74AE2AAB3EFF172C19E555B9C75F727BB05C3
+remote_revision=8e3dba9c-d0c0-4549-b6da-4d6c59b64f38
+claude_snapshot_id=cf89ccc6-f248-48b9-a1a4-cd5c9572d719
+codex_snapshot_id=8e3dba9c-d0c0-4549-b6da-4d6c59b64f38
+remote_session_count=2
+remote_unchanged=true
+active_rc8_conflict_count=0
+historical_rc7_conflict_untouched=true
+gate21=NOT_TESTED
+gate22=NOT_TESTED
+windows_report_path=docs/testing/results/2026-07-29-windows-phase1-rc8.md
+END-WINDOWS-RC8-CONFLICT-LOCAL-READY
 ```
