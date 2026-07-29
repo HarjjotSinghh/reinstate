@@ -1,6 +1,6 @@
 # Phase 1 RC7 acceptance — Device A (macOS) report
 
-Milestone reached: **M1 complete**. Device B (native Windows) has not started, so
+Milestone reached: **M2 complete** (section 11). Device B has passed W1; W2 and W3 are outstanding, so
 every Windows-dependent gate is `NOT TESTED`, never `PASS`.
 
 This is a clean RC7 run. No RC6 home, project, profile, passphrase, marker
@@ -317,7 +317,87 @@ Non-blocking, recorded for sign-off:
 - The only change on this branch is this report.
 - Nothing was merged, tagged, released, or deployed by this run.
 
-## 11. Milestone block
+## 11. M2 — Windows W1 validation and Mac A2 push
+
+Device B issued `WINDOWS-RC7-W1-PASS` at commit
+`82c324ce706ef9dc1a736e3c4bfa78851b75ba19`, after an earlier
+`WINDOWS-RC7-W1-FAIL` that stopped before W0 on a private-file schema
+precondition. That first attempt established no product defect, mutated nothing,
+and is not evidence here.
+
+### 11.1 Re-validated handoff
+
+| Check | Result |
+| ----- | ------ |
+| Commit `82c324ce…` resolves; branch tip matches | PASS |
+| Draft PR #53 open, not merged | PASS |
+| Branch changes only `docs/testing/results/` (0 product files) | PASS |
+| No credential value from the private file | PASS |
+| No Windows username or absolute path, no transcript JSON, no ciphertext | PASS |
+| Block complete with `END-WINDOWS-RC7-W1` terminator | PASS |
+| `profile_id`, `claude_session_id`, `codex_session_id` match Device A | PASS |
+| Windows counts | 16 PASS / 1 PARTIAL / 0 FAIL / 6 NOT TESTED |
+
+Device A independently re-verified the remote before touching anything: revision
+`4ffdb7ea-…` unchanged, the same two sessions and snapshot IDs. Windows completed
+W1 without mutating remote state.
+
+**Round-trip content integrity is corroborated from both ends.** The restored
+Windows target reported `A1_marker_count_before=4` and
+`A1_marker_count_after=4`, matching the Device A source count in section 5.1
+exactly. The encrypted push → remote → pull path preserved session content
+across operating systems with no drift.
+
+Device B recorded a non-destructive conflict during its own retry, resolved with
+`--keep-remote` and one preserved backup, and explicitly excluded it from the
+later `--keep-both` and section 14 gates. That scoping is correct: a retry
+artifact is not divergence evidence, and it is not counted here.
+
+### 11.2 Mac A2 append and push
+
+The exact Claude session was resumed non-interactively and only the `A2` marker
+was added. No restored file was hand-moved.
+
+| Assertion | Before | After | Result |
+| --------- | ------ | ----- | ------ |
+| Same session file mutated in place | — | same path | PASS |
+| `A1` occurrences preserved | 4 | 4 | PASS |
+| `A2` occurrences | 0 | 4 | PASS |
+| Session file size (bytes) | 10992 | 28029 | grew, not replaced |
+| Stray new Claude session files | — | 0 (count 1 → 1) | PASS |
+| Codex session untouched (`A1`=5, `A2`=0) | — | unchanged | PASS |
+
+```text
+push --agent claude --session <claude> --dry-run
+  would push 1 snapshot(s), would skip 0 unchanged, dry_run=true
+push --agent claude --session <claude>
+  pushed 1 snapshot(s), skipped 0 unchanged, dry_run=false
+```
+
+The dry-run said `would push`, never `pushed`, and uploaded nothing.
+
+### 11.3 Remote state after M2
+
+| Field | Before M2 | After M2 |
+| ----- | --------- | -------- |
+| Remote revision | `4ffdb7ea-685f-4cd1-8984-0c9d7c1e6574` | `3e789e6e-b00b-492e-97a5-f0836d115dab` |
+| Claude snapshot | `75c7ae2c-643b-421f-bbc4-aedb068d7f96` | `3e789e6e-b00b-492e-97a5-f0836d115dab` |
+| Codex snapshot | `4ffdb7ea-685f-4cd1-8984-0c9d7c1e6574` | unchanged |
+| Session count | 2 | 2 |
+| Object count | 3 | 4 (`snapshot_age_count=3`) |
+
+Only the Claude session advanced. Ciphertext discipline holds on the new
+snapshot: `.age`-only, `forbidden_shaped_objects=0`, the `A2` marker and the
+`REINSTATE-PHASE1-RC7` prefix both **absent** from the downloaded bytes, and
+`file` reports `data`. The local download was deleted.
+
+Section 8 row results are unchanged by M2; the Device A counts still stand at
+8 PASS / 5 PARTIAL / 0 FAIL / 10 NOT TESTED pending cross-device reconciliation
+at M4.
+
+Device A is paused for the report transfer to Windows.
+
+## 12. Milestone block
 
 ```text
 MAC-RC7-M1
@@ -338,4 +418,24 @@ unrelated_agents_do_not_block_restore=PASS
 strict_policy_still_refuses=PASS
 mac_report_path=docs/testing/results/2026-07-28-macos-phase1-rc7.md
 END-MAC-RC7-M1
+```
+
+```text
+MAC-RC7-M2-READY
+release=v0.1.0-rc.7
+profile_id=2949d464-03f4-4de1-b326-2b3072bcb2a5
+claude_session_id=1cf4ab6d-3e36-424d-8f30-4f41858b7f20
+mac_claude_a2_marker=REINSTATE-PHASE1-RC7-MAC-CLAUDE-A2
+a2_occurrences=4
+a1_occurrences_preserved=4
+new_remote_revision=3e789e6e-b00b-492e-97a5-f0836d115dab
+new_claude_snapshot_id=3e789e6e-b00b-492e-97a5-f0836d115dab
+codex_snapshot_id=4ffdb7ea-685f-4cd1-8984-0c9d7c1e6574
+remote_session_count=2
+remote_object_count=4
+ciphertext_marker_absence=PASS
+windows_w1_validated=PASS
+windows_commit=82c324ce706ef9dc1a736e3c4bfa78851b75ba19
+mac_report_path=docs/testing/results/2026-07-28-macos-phase1-rc7.md
+END-MAC-RC7-M2-READY
 ```
