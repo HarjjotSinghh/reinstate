@@ -1,8 +1,9 @@
 # Phase 1 RC8 acceptance — Device B (native Windows) report
 
-Milestone reached: **W1 PASS**. This run also executes tagged runbook section
-14b on real Windows hardware under the exact no-handle/exclusive-open condition
-that RC7 failed.
+Milestone reached: **W2 READY**. This run executes tagged runbook section 14b
+on real Windows hardware under the exact no-handle/exclusive-open condition
+that RC7 failed, and closes gate 16 through the authorized conflict-resolution
+route after the prescribed plain-pull route proved structurally unreachable.
 
 This is clean RC8 evidence. No RC7-or-older home, project, profile, passphrase,
 marker session, remote prefix, conflict, or report was reused. The historical
@@ -30,7 +31,7 @@ remote object name, username, or absolute local path.
 | Canonical project ID | `local/reinstate-phase1-acceptance-rc8` |
 | Claude test session ID | `0cdbd871-f924-4848-b62e-5edbeab66ae3` |
 | Codex test session ID | `019facf4-d00f-7400-9a0f-8a2073e1af6e` |
-| Remote revision | `b5f38a3d-e841-4787-8105-f080f3524fab` |
+| Remote revision | `8e3dba9c-d0c0-4549-b6da-4d6c59b64f38` |
 
 ## 2. Required Mac handoff validation
 
@@ -195,7 +196,8 @@ Two retained backup files exist from the two diagnostic repeat runs used to
 validate the harness. Both filenames match the exact RC8 generated active fork;
 none matches the original session ID. This does not violate section 14b's
 mandatory one-fork/original-unchanged/no-conflict result, but it is a real
-cross-device discrepancy from the Mac report's observed backup count of zero.
+repeat-write side effect. Mac report finding 4 later reproduced the same
+behavior and corrected its earlier first-pull-only backup observation.
 
 ## 7. Mandatory sign-off checklist (all 23 rows)
 
@@ -216,7 +218,7 @@ cross-device discrepancy from the Mac report's observed backup count of zero.
 | 13 | Unrelated running agents do not block a restore | PASS | Mac report §6.2; Windows exact pulls succeeded |
 | 14 | A live session is forked, never overwritten | PASS | Mac report §6; Windows §6 |
 | 15 | `scoped` policy still refuses, naming that session | PASS | Mac report §6.1; Windows §11.2 |
-| 16 | Existing Windows target is backed up before restore | **FAIL** | §11.3 — prerequisite dry-run exited 6 on local divergence, so no in-place restore or backup occurred |
+| 16 | Existing Windows target is backed up before restore | **PASS** | §11.4 — conflict resolution backed up the original target before `--keep-remote` replacement |
 | 17 | Claude Windows-to-Mac resume succeeds | NOT TESTED | later M3 |
 | 18 | Codex Windows-to-Mac resume succeeds | NOT TESTED | later M3 |
 | 19 | Existing Mac targets are backed up before restore | NOT TESTED | later M3 |
@@ -225,9 +227,9 @@ cross-device discrepancy from the Mac report's observed backup count of zero.
 | 22 | `--keep-both` preserves both branches | NOT TESTED | later W3 |
 | 23 | All required GitHub checks are green | PASS | Mac report §7 |
 
-**Counts: 17 PASS / 0 PARTIAL / 1 FAIL / 5 NOT TESTED.**
+**Counts: 18 PASS / 0 PARTIAL / 0 FAIL / 5 NOT TESTED.**
 
-All 23 mandatory rows passed: **No.** Phase 1 is blocked at W2 gate 16.
+All 23 mandatory rows passed: **No.** Phase 1 remains open for M3 and W3.
 
 ## 8. Findings and retry trace
 
@@ -237,7 +239,7 @@ Sign-off-relevant, currently classified non-blocking: a repeat live-session
 pull reused the same fork name but backed up that existing fork before writing
 it again. The final fork cardinality remained one and the original live file
 was never touched, so the tagged mandatory gate passes. The side effect is not
-fully idempotent and differs from the Mac report's `backups=0` observation.
+fully idempotent and is independently reproduced in Mac report finding 4.
 
 Non-blocking operator-harness notes:
 
@@ -254,9 +256,21 @@ Non-blocking operator-harness notes:
 3. Resuming either vendor session appends vendor metadata/challenge records.
    Section 14b hashes were therefore taken only after the genuine live resume
    settled and immediately around both Reinstate pulls.
+4. A divergent `pull --dry-run` returns `local session diverged; conflict
+   recorded` even though the dry-run correctly creates no conflict. Windows
+   measured an empty active-conflict list after both dry-runs; Device A
+   independently reproduced the same mismatch in an isolated probe. This is a
+   real dry-run honesty defect in the message, not a destructive write.
+5. The prescribed section 14d plain-pull route is unreachable after the same
+   Claude session has been resumed for the earlier vendor-resume and live-agent
+   gates, because Claude legitimately appends to the session. The divergence
+   guard correctly refuses an in-place overwrite. Gate 16 was therefore
+   completed through the authorized conflict-resolution route in §11.4.
 
-No failed harness attempt reused RC7 state, executed an RC8 pull before a
+No W0/W1 harness attempt reused RC7 state, executed an RC8 pull before a
 genuine exact live process existed, created a conflict, or left an active fork.
+The W2 conflict in §11.4 was deliberate, exact-session scoped, and fully
+resolved; the historical RC7 conflict remained untouched.
 
 ## 9. Repository hygiene
 
@@ -325,7 +339,7 @@ were byte-identical; backup count remained 2 → 2, original-session backup coun
 remained 0 → 0, and fork count remained zero. The policy was restored to
 `fork` byte-for-byte and the exact Claude process was closed.
 
-### 11.3 Section 14d in-place restore — blocking failure
+### 11.3 Prescribed section 14d plain-pull route
 
 Before the attempt, the section 14b fork count was zero, the original-session
 backup count was zero, `A1` occurred 4 times, and `A2` occurred zero times.
@@ -346,17 +360,86 @@ A repeat evidence capture produced the same exit and output. The target,
 2 → 2; the active conflict list remained empty because this was a dry-run;
 `A1` remained 4 and `A2` remained zero.
 
-This is a real gate failure, not the expected in-place restore. No non-dry-run
-pull was attempted, no original-session backup was fabricated, and dependent
-A2 resume, B1 appends, and exact-ID pushes were not executed. The remote remains
-at the Mac M2 handoff revision.
+At commit `c563b6f671bc98d2970560aa763f8059922d4af8`, this was correctly
+reported as a W2 gate failure and dependent work stopped. Device A then
+identified the structural ordering flaw: earlier required Claude resumes
+legitimately append to the local session, so the divergence guard must refuse
+the later plain in-place restore. Device A authorized and validated the
+conflict-resolution route before Windows continued.
 
-## 12. W2 failure milestone
+The guard behavior is correct and prevented silent overwrite. The misleading
+dry-run message is a separate product finding: the `recorded` wording is
+emitted even though a dry-run correctly leaves the conflict list empty.
+
+### 11.4 Gate 16 through the authorized conflict route
+
+With Claude closed, policy `fork`, fork count zero, original-session backup
+count zero, and active-conflict count zero, Windows ran the real exact-session
+pull. It returned exit `6`, left the target/config/state unchanged, kept
+backups at 2, and recorded exactly one conflict:
 
 ```text
-WINDOWS-RC8-W2-FAIL
+local session diverged; conflict recorded
+```
+
+Windows selected that exact Claude conflict and ran:
+
+```text
+rein conflicts resolve <conflict_id> --keep-remote
+```
+
+The resolve exited `0`. Backups changed 2 → 3, with exactly one new
+timestamped backup whose leaf was the original Claude session path, not a
+fork. Its SHA-256 matched the pre-resolve local target. The target was then
+replaced, the active-conflict list returned to zero, fork count remained zero,
+and `A1`/`A2` counts were 4/4. This is direct evidence that the existing
+Windows target was backed up before replacement, so gate 16 passes.
+
+This route is not used to pre-credit W3 gate 21; the later marker-specific
+cross-device conflict remains NOT TESTED.
+
+### 11.5 A2 resume and Windows B1 appends
+
+The restored Claude session resumed normally under its exact ID. While live,
+`A2` remained exactly 4; `A1` remained 4. The exact process was then closed.
+
+Only the authorized Windows B1 markers were appended:
+
+| Agent | Marker occurrences | Vendor response |
+| ----- | ------------------ | --------------- |
+| Claude | 5 | latest structured assistant text exactly matched the Claude B1 marker |
+| Codex | 5 | exit `0`; captured final response exactly matched the Codex B1 marker |
+
+The Claude wrapper's numeric vendor exit was not retained because PowerShell
+treated diagnostic stderr as a terminating harness error after the marker and
+exact assistant response had already been written. The command was not
+replayed, avoiding a duplicate B1 append. Both exact vendor processes were
+closed before synchronization.
+
+### 11.6 Exact-ID dry-runs and pushes
+
+Claude and Codex dry-runs each exited `0` and reported
+`would push 1 snapshot(s)`. Remote revision and both snapshot IDs were
+unchanged across the dry-runs.
+
+The two real pushes were run separately with the exact session IDs. Each
+exited `0` and reported `pushed 1 snapshot(s), skipped 0 unchanged`.
+
+| Remote assertion | Result |
+| ---------------- | ------ |
+| Final revision | `8e3dba9c-d0c0-4549-b6da-4d6c59b64f38` |
+| Claude snapshot | `cf89ccc6-f248-48b9-a1a4-cd5c9572d719` |
+| Codex snapshot | `8e3dba9c-d0c0-4549-b6da-4d6c59b64f38` |
+| Session count | 2 |
+
+## 12. W2 milestone
+
+```text
+WINDOWS-RC8-W2-READY
 release=v0.1.0-rc.8
+tag_commit=5e4f2605c53c6ad46c11569235bc78476ed94487
 profile_id=019165e7-cf0f-420d-b261-6c291b3e4f20
+canonical_project_id=local/reinstate-phase1-acceptance-rc8
 claude_session_id=0cdbd871-f924-4848-b62e-5edbeab66ae3
 codex_session_id=019facf4-d00f-7400-9a0f-8a2073e1af6e
 mac_report_validated=PASS
@@ -364,22 +447,34 @@ mac_report_commit=e796fe26718df457850f35ced83af44eaf478ec4
 section14c_scoped_session_named_refusal=PASS
 section14c_exit_code=7
 section14c_no_mutation_no_backup=PASS
-section14d_command=rein pull --agent claude --session <claude_session_id> --dry-run
-section14d_exit_code=6
-section14d_sanitized_output=local session diverged; conflict recorded
-section14d_target_unchanged=true
-section14d_config_unchanged=true
-section14d_state_unchanged=true
-section14d_backup_count_before=2
-section14d_backup_count_after=2
-section14d_original_backup_count=0
-section14d_active_conflict_count=0
+section14d_plain_pull_route=UNREACHABLE_AFTER_REQUIRED_RESUME
+dry_run_recorded_message_with_zero_conflicts=OBSERVED
+option_a_real_pull_exit_code=6
+option_a_conflict_id=c-1785349356038359300
+option_a_conflict_count_before_resolve=1
+option_a_keep_remote_exit_code=0
+option_a_backup_count_before=2
+option_a_backup_count_after=3
+option_a_original_backup_count_before=0
+option_a_original_backup_count_after=1
+option_a_backup_timestamped=PASS
+option_a_backup_sha256_matches_original=PASS
+option_a_active_conflict_count_after=0
 a1_occurrences_preserved=4
-a2_occurrences=0
-dependent_b1_steps_executed=false
-remote_revision=f552c4c8-bc17-4823-a447-bc18a4bb62e5
+a2_occurrences=4
+windows_claude_b1_marker=REINSTATE-PHASE1-RC8-WINDOWS-CLAUDE-B1
+windows_claude_b1_occurrences=5
+windows_claude_assistant_response_exact=true
+windows_codex_b1_marker=REINSTATE-PHASE1-RC8-WINDOWS-CODEX-B1
+windows_codex_b1_occurrences=5
+windows_codex_exit_code=0
+windows_codex_response_exact=true
+exact_id_push_dry_runs_no_mutation=PASS
+remote_revision=8e3dba9c-d0c0-4549-b6da-4d6c59b64f38
+claude_snapshot_id=cf89ccc6-f248-48b9-a1a4-cd5c9572d719
+codex_snapshot_id=8e3dba9c-d0c0-4549-b6da-4d6c59b64f38
 remote_session_count=2
-gate16_existing_windows_target_backup=FAIL
+gate16_existing_windows_target_backup=PASS_VIA_CONFLICT_ROUTE
 windows_report_path=docs/testing/results/2026-07-29-windows-phase1-rc8.md
-END-WINDOWS-RC8-W2-FAIL
+END-WINDOWS-RC8-W2-READY
 ```
