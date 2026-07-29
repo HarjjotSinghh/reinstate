@@ -14,6 +14,7 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/adapter"
 	"github.com/HarjjotSinghh/reinstate/internal/adapter/claude"
 	"github.com/HarjjotSinghh/reinstate/internal/config"
+	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/schema"
 )
 
@@ -88,7 +89,7 @@ func TestCLISyntheticSyncPath(t *testing.T) {
 		})
 		return out.String(), errb.String(), code
 	}
-	inactiveChecker := func(_ context.Context, _, _ string) (bool, bool, error) { return false, true, nil }
+	inactiveChecker := func(_ context.Context, _ string, _ processcheck.Target) (bool, bool, error) { return false, true, nil }
 	run := func(args ...string) (stdout, stderr string, code int) {
 		return runWithChecker(inactiveChecker, args...)
 	}
@@ -230,7 +231,7 @@ func TestCLISyntheticSyncPath(t *testing.T) {
 		t.Fatal(err)
 	}
 	// The scoped checker reports the agent is holding this exact session file.
-	busyChecker := func(_ context.Context, _, _ string) (bool, bool, error) { return true, true, nil }
+	busyChecker := func(_ context.Context, _ string, _ processcheck.Target) (bool, bool, error) { return true, true, nil }
 	out, errb, code = runWithCheckerAndPolicy(busyChecker, schema.ActiveAgentScoped,
 		"pull", "--agent", "claude", "--session", "session-e2e", "--json")
 	if code != ExitSafety || !strings.Contains(errb, "is currently using this session") {

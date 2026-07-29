@@ -51,7 +51,7 @@ describe('troubleshooting entry contract', () => {
     const source = await readFile(troubleshootingPath, 'utf8');
 
     expect(source).toContain('same vendor');
-    expect(source).toContain('0.1.0-rc.7');
+    expect(source).toContain('0.1.0-rc.8');
     expect(source).toContain(
       'Why does push report `no matching local sessions found`?',
     );

@@ -1,7 +1,7 @@
 # Release discoverability and launch distribution
 
 This is an execution runbook, not evidence that a launch or external submission
-has happened. Reinstate is currently `v0.1.0-rc.7`; native-device,
+has happened. Reinstate is currently `v0.1.0-rc.8`; native-device,
 macOS-amd64, WSL2, and complete two-device acceptance gates are still open.
 Do not publish a stable-launch narrative until the release evidence closes
 those gates.
@@ -52,7 +52,7 @@ For one reviewed release commit:
 
 ## Canonical external description
 
-Use this while RC7 remains the current release:
+Use this while RC8 remains the current release:
 
 > Reinstate is an open-source continuity layer that synchronizes encrypted
 > Claude Code and Codex sessions across configured devices using storage the
@@ -91,7 +91,7 @@ publish a post.
 
 Before changing any public repository surface, create one record containing:
 
-- [ ] the exact reviewed commit and `v0.1.0-rc.7` tag;
+- [ ] the exact reviewed commit and `v0.1.0-rc.8` tag;
 - [ ] a passing website build and quality-gate log from that commit;
 - [ ] a production deployment URL and discovery smoke-test output;
 - [ ] the native macOS, macOS-amd64, native Windows, WSL2, and two-device
@@ -180,22 +180,22 @@ the same About editor to restore the last verified metadata and use
 remove the image. Record the reason, UTC time, operator, and before/after
 screenshots.
 
-## RC7 GitHub release summary — draft, evidence-gated
+## RC8 GitHub release summary — draft, evidence-gated
 
 > **DRAFT — DO NOT PUBLISH OR REPLACE THE EXISTING RELEASE TEXT BEFORE THE
 > GO/NO-GO RECORD ABOVE IS COMPLETE AND REVIEWED.**
 
 Suggested title:
 
-> Reinstate v0.1.0-rc.7 — encrypted same-vendor session continuity
+> Reinstate v0.1.0-rc.8 — encrypted same-vendor session continuity
 
 Suggested body:
 
-> Reinstate `v0.1.0-rc.7` is a pre-1.0 release candidate for testing encrypted
+> Reinstate `v0.1.0-rc.8` is a pre-1.0 release candidate for testing encrypted
 > Claude Code and Codex session continuity across configured devices through
 > S3-compatible storage you control.
 >
-> RC7 improves Codex project-path handling by resolving rollout working
+> RC8 improves Codex project-path handling by resolving rollout working
 > directories to configured canonical project IDs, excluding unmapped
 > projects, normalizing exported roots, and rejecting duplicate mappings. It
 > also validates an additional device's encrypted remote manifest with a
@@ -205,7 +205,7 @@ Suggested body:
 > Native resume is same-vendor: Claude Code sessions resume in Claude Code and
 > Codex sessions resume in Codex. Reinstate does not silently translate
 > transcripts between agents. Cross-agent work remains an explicit portable
-> handoff direction, not an RC7 claim.
+> handoff direction, not an RC8 claim.
 >
 > Install on macOS:
 >
@@ -219,7 +219,7 @@ Suggested body:
 > irm https://reinstate.dev/install.ps1 | iex
 > ```
 >
-> Both bootstraps pin and verify `v0.1.0-rc.7`. Review the installer before
+> Both bootstraps pin and verify `v0.1.0-rc.8`. Review the installer before
 > running it if your environment requires that workflow.
 >
 > Start with a synthetic, non-sensitive session and follow the getting-started,
@@ -228,7 +228,7 @@ Suggested body:
 >
 > **Acceptance status:** native macOS, macOS-amd64, native Windows, WSL2, and
 > complete two-device acceptance evidence must be linked here before this
-> draft is published. Until then, do not describe RC7 as stable, generally
+> draft is published. Until then, do not describe RC8 as stable, generally
 > available, production-ready, seamless, universal, or Phase 1 complete.
 >
 > Reinstate is open source under Apache-2.0:
@@ -238,7 +238,7 @@ Before publication, replace the acceptance-status paragraph with links to the
 actual evidence while retaining any failed, skipped, or untested targets.
 Never turn a missing result into a compatibility claim.
 
-## RC7 launch post — draft, evidence-gated
+## RC8 launch post — draft, evidence-gated
 
 > **DRAFT — DO NOT PUBLISH BEFORE THE GO/NO-GO RECORD IS `GO`, THE EXACT
 > REVIEWED COMMIT IS LIVE, AND EVERY CLAIM BELOW HAS LINKED EVIDENCE.**
@@ -248,7 +248,7 @@ Never turn a missing result into a compatibility claim.
 > not restore that working state.
 >
 > Reinstate is an open-source continuity layer for that problem. Its current
-> `v0.1.0-rc.7` release candidate can sync encrypted Claude Code and Codex
+> `v0.1.0-rc.8` release candidate can sync encrypted Claude Code and Codex
 > sessions across configured macOS and Windows devices through S3-compatible
 > storage you control. Path remapping handles the project-root differences
 > that show up when the same work moves between machines.
@@ -495,7 +495,7 @@ Required inputs and behavior:
 - fixtures spanning supported, unknown, corrupt, wrong-profile, and downgrade
   cases.
 
-There is no public migration checker in RC7. Until a compatibility contract and
+There is no public migration checker in RC8. Until a compatibility contract and
 tests ship, release notes and independent backups are the only supported
 pre-upgrade guidance.
 
@@ -538,7 +538,7 @@ Potential future angle:
 > An open, implementation-neutral continuity checkpoint for handing coding work
 > between agents without pretending native transcripts are interchangeable.
 
-Current status: **not a standard and not an RC7 feature**. The published
+Current status: **not a standard and not an RC8 feature**. The published
 Reinstate snapshot v1 page documents one project's internal encrypted storage
 format. It is not a proposal for cross-agent interchange.
 

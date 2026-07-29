@@ -1,5 +1,11 @@
 export const releaseHistory = [
   {
+    version: 'v0.1.0-rc.8',
+    date: '2026-07-29',
+    summary:
+      'Session liveness detection that no longer depends on an open file handle.',
+  },
+  {
     version: 'v0.1.0-rc.7',
     date: '2026-07-28',
     summary:

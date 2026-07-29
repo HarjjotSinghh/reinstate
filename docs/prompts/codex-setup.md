@@ -1,14 +1,14 @@
 # Codex — Reinstate end-user setup prompt
 
 **Prompt version:** 6
-**Pinned Reinstate release:** `v0.1.0-rc.7`
+**Pinned Reinstate release:** `v0.1.0-rc.8`
 
 Copy everything below the line into Codex.
 
 ---
 
 Install and configure Reinstate end to end on this device through the official
-public bootstrap pinned to `v0.1.0-rc.7`. Never substitute `latest`, `main`, or
+public bootstrap pinned to `v0.1.0-rc.8`. Never substitute `latest`, `main`, or
 another version.
 
 Hard safety rules:
@@ -42,19 +42,19 @@ Execution contract:
      `https://reinstate.dev/install.ps1`
 3. Download the bootstrap to a temporary file and inspect it before execution.
    Require all of the following:
-   - exact release `v0.1.0-rc.7`;
+   - exact release `v0.1.0-rc.8`;
    - canonical installer fetched from that exact Git tag;
    - canonical installer checksum verification before execution;
    - no `latest` resolver; and
    - binary downloads restricted to
-     `https://github.com/HarjjotSinghh/reinstate/releases/download/v0.1.0-rc.7/`.
+     `https://github.com/HarjjotSinghh/reinstate/releases/download/v0.1.0-rc.8/`.
    Stop if any requirement fails.
 4. With normal approval, execute the inspected bootstrap. Keep its checksum,
    version, and replacement checks enabled. Install without elevation to
    `~/.local/bin` or `%LOCALAPPDATA%\Programs\Reinstate\bin`, and explain any
    PATH update.
 5. Reconfirm the exact effective Reinstate home, then run
-   `rein version --json` and require `0.1.0-rc.7`. Run
+   `rein version --json` and require `0.1.0-rc.8`. Run
    `rein setup check`. Before initialization, a missing-config result is
    expected; platform, keyring, or Codex compatibility failures are blockers.
    If the home is already initialized, stop and report it; never re-run `init`

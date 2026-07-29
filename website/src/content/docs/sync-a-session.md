@@ -5,7 +5,7 @@ order: 12
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.1.0-rc.7"
+version: "v0.1.0-rc.8"
 updatedAt: 2026-07-27
 tags: ["push", "session-sync", "claude-code", "codex", "dry-run"]
 targetQuery: "push a coding agent session with Reinstate"
@@ -20,14 +20,14 @@ inspect `push --dry-run`, and then repeat the same scoped command without
 snapshot locally, uploads ciphertext, and conditionally advances the encrypted
 remote manifest.
 
-> **Current scope:** RC7 pushes full immutable snapshots for supported
+> **Current scope:** RC8 pushes full immutable snapshots for supported
 > same-vendor sessions. It does not continuously watch agent directories,
 > synchronize Git state, or translate Claude Code sessions into Codex
 > sessions.
 
 ## Prerequisites
 
-- Reinstate `v0.1.0-rc.7` initialized on the source device.
+- Reinstate `v0.1.0-rc.8` initialized on the source device.
 - A successful `rein setup check` with the selected adapter marked
   `SUPPORTED`.
 - An existing encrypted profile and reachable S3-compatible storage.

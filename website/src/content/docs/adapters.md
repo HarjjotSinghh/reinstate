@@ -5,7 +5,7 @@ order: 3
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.1.0-rc.7"
+version: "v0.1.0-rc.8"
 updatedAt: 2026-07-27
 tags: ["adapters", "claude-code", "codex", "same-vendor-resume"]
 targetQuery: "Reinstate supported coding agents"
@@ -51,13 +51,13 @@ device's absolute project path. Reinstate records the configured canonical
 project ID in a snapshot and recomputes Claude's directory key from the
 destination device's `local_root`.
 
-RC7 validates the exact planned destination after restore. Finding the same
+RC8 validates the exact planned destination after restore. Finding the same
 session ID elsewhere in `~/.claude/projects` does not count as success.
 
 ## How does the Codex adapter remap a project?
 
 Codex stores the source working directory in each rollout's structural
-`session_meta.cwd`. When project mappings are configured, RC7 resolves that
+`session_meta.cwd`. When project mappings are configured, RC8 resolves that
 directory to the canonical project ID during discovery and excludes rollouts
 outside mapped roots.
 

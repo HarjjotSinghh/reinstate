@@ -7,12 +7,12 @@
 - Page type: command reference
 - Owner: Harjot Singh Rana
 - Status: agent review accepted; maintainer sign-off pending
-- Target release: `v0.1.0-rc.7`
+- Target release: `v0.1.0-rc.8`
 - Last reviewed: 2026-07-27
 
 ## Audience and intent
 
-- Primary audience: developers and coding agents that need current RC7 syntax
+- Primary audience: developers and coding agents that need current RC8 syntax
   plus the safety contract around each command.
 - Primary problem: terse `--help` output does not contain expected evidence,
   platform behavior, failure categories, or safe recovery.
@@ -28,11 +28,11 @@
 
 ## Product truth
 
-- Current capabilities used: only commands registered by the RC7 Cobra command
+- Current capabilities used: only commands registered by the RC8 Cobra command
   tree and verified against local `rein ... --help` output.
 - Current limitations: no general undo, search, generic resume, handoff,
   universal configuration, MCP, skill, plugin, or marketplace command exists.
-- Version tested: `v0.1.0-rc.7`.
+- Version tested: `v0.1.0-rc.8`.
 - Evidence: live local command help, `internal/cli`, CLI tests, e2e tests,
   configuration/storage contracts, and exit-code definitions.
 - Claims that require verification: public installer/deployment state and

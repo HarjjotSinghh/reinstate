@@ -26,12 +26,12 @@ Copy the non-secret profile UUID printed by the first device and pass it as
 `rein init --profile-id UUID` on later devices.
 
 The endpoint is the S3/R2 service endpoint only. Do not append the bucket name;
-the bucket is configured separately. RC7 additional-device init verifies the
+the bucket is configured separately. RC8 additional-device init verifies the
 existing encrypted manifest before saving config and records
 `remote_profile_required = true`. `status`, `diff`, `pull`, and later pushes
 then fail if that manifest disappears instead of treating the profile as empty.
 
-RC7 refuses to run `init` against a home that already contains `config.toml` or
+RC8 refuses to run `init` against a home that already contains `config.toml` or
 `state.json`. Its explicit `--force` path first preserves both files in one
 timestamped directory under `backups/`.
 
@@ -85,10 +85,30 @@ write to a temporary file and rename it into place, existing targets are always
 backed up first, and a restore is abandoned if the target changes on disk while
 the replacement is being prepared.
 
-Liveness is determined from open file handles: `lsof` on macOS and Linux, and
-the Restart Manager API on Windows. Where handles cannot be enumerated,
-Reinstate falls back to the host-wide answer and says so in the refusal, rather
-than implying a precision it does not have.
+Liveness is decided from three independent signals, and any one of them marks a
+session in use:
+
+1. a matching agent process holds the session file open (`lsof` on macOS and
+   Linux, the Restart Manager API on Windows);
+2. a matching agent process names the exact session on its command line, which
+   covers `claude --resume <id>` and `codex resume <id>`; and
+3. a matching agent process is working inside that session's mapped project.
+
+An open handle alone is not enough. Claude Code appends to its session file and
+closes it again, so a live Claude Code session holds no handle at all; a
+handle-only check reports it as free. Detection therefore biases toward "in
+use": under the default `fork` policy a false positive costs one extra session
+file, while a false negative would land a restore on live work.
+
+Signal 3 needs a process working directory. That is read with `lsof` on macOS
+and Linux. Windows keeps it in the target process's PEB, which would require
+cross-process memory access, so project affinity contributes nothing there and
+signals 1 and 2 carry the check.
+
+One consequence worth knowing: having an agent open anywhere inside a mapped
+project makes restores of that project's sessions fork rather than replace in
+place. That is the deliberate trade for never overwriting a session someone is
+working in.
 
 ## Encryption
 
