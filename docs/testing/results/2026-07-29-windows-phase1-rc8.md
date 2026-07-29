@@ -215,8 +215,8 @@ cross-device discrepancy from the Mac report's observed backup count of zero.
 | 12 | Codex Mac-to-Windows resume succeeds | PASS | §5 |
 | 13 | Unrelated running agents do not block a restore | PASS | Mac report §6.2; Windows exact pulls succeeded |
 | 14 | A live session is forked, never overwritten | PASS | Mac report §6; Windows §6 |
-| 15 | `scoped` policy still refuses, naming that session | PASS | Mac report §6.1 |
-| 16 | Existing Windows target is backed up before restore | NOT TESTED | W2 / section 14d |
+| 15 | `scoped` policy still refuses, naming that session | PASS | Mac report §6.1; Windows §11.2 |
+| 16 | Existing Windows target is backed up before restore | **FAIL** | §11.3 — prerequisite dry-run exited 6 on local divergence, so no in-place restore or backup occurred |
 | 17 | Claude Windows-to-Mac resume succeeds | NOT TESTED | later M3 |
 | 18 | Codex Windows-to-Mac resume succeeds | NOT TESTED | later M3 |
 | 19 | Existing Mac targets are backed up before restore | NOT TESTED | later M3 |
@@ -225,9 +225,9 @@ cross-device discrepancy from the Mac report's observed backup count of zero.
 | 22 | `--keep-both` preserves both branches | NOT TESTED | later W3 |
 | 23 | All required GitHub checks are green | PASS | Mac report §7 |
 
-**Counts: 17 PASS / 0 PARTIAL / 0 FAIL / 6 NOT TESTED.**
+**Counts: 17 PASS / 0 PARTIAL / 1 FAIL / 5 NOT TESTED.**
 
-All 23 mandatory rows passed: **No.** Phase 1 remains open for W2, M3, and W3.
+All 23 mandatory rows passed: **No.** Phase 1 is blocked at W2 gate 16.
 
 ## 8. Findings and retry trace
 
@@ -293,4 +293,93 @@ section14b_repeat_backup_side_effect=OBSERVED
 rc8_conflict_recorded=false
 windows_report_path=docs/testing/results/2026-07-29-windows-phase1-rc8.md
 END-WINDOWS-RC8-W1
+```
+
+## 11. W2 — Mac M2 validation and Windows restore attempt
+
+### 11.1 Mac M2 handoff validation
+
+Device B fetched `test/phase1-rc8-macos-report` and validated commit
+`e796fe26718df457850f35ced83af44eaf478ec4`. The commit changes only
+`docs/testing/results/2026-07-29-macos-phase1-rc8.md`. Its
+`MAC-RC8-M2-READY` block matches the supplied profile, session IDs, two-session
+remote manifest, revision
+`f552c4c8-bc17-4823-a447-bc18a4bb62e5`, Claude snapshot
+`f552c4c8-bc17-4823-a447-bc18a4bb62e5`, Codex snapshot
+`17773f7e-17ca-4d41-8848-af285c5fe1a3`, and Windows W1 commit
+`e489ce8ab4a917cf036ee714d76d245c501388a1`. The report contains no R2
+coordinate or credential value and no Windows absolute path or username.
+
+### 11.2 Section 14c scoped refusal
+
+The exact Claude session was live under the mapped Windows project while
+`[restore] active_agent_policy = "scoped"`. The exact-session pull returned:
+
+```text
+claude is currently using this session; close that session or rerun with --allow-active-agents
+```
+
+The exit code was `7`. The refusal named the session's vendor and did not use
+host-wide wording. Across the pull, the target, `config.toml`, and `state.json`
+were byte-identical; backup count remained 2 → 2, original-session backup count
+remained 0 → 0, and fork count remained zero. The policy was restored to
+`fork` byte-for-byte and the exact Claude process was closed.
+
+### 11.3 Section 14d in-place restore — blocking failure
+
+Before the attempt, the section 14b fork count was zero, the original-session
+backup count was zero, `A1` occurred 4 times, and `A2` occurred zero times.
+With Claude closed and policy restored to `fork`, the required dry-run was:
+
+```text
+rein pull --agent claude --session <claude_session_id> --dry-run
+```
+
+It returned exit `6` with sanitized output:
+
+```text
+local session diverged; conflict recorded
+```
+
+A repeat evidence capture produced the same exit and output. The target,
+`config.toml`, and `state.json` remained byte-identical; backup count remained
+2 → 2; the active conflict list remained empty because this was a dry-run;
+`A1` remained 4 and `A2` remained zero.
+
+This is a real gate failure, not the expected in-place restore. No non-dry-run
+pull was attempted, no original-session backup was fabricated, and dependent
+A2 resume, B1 appends, and exact-ID pushes were not executed. The remote remains
+at the Mac M2 handoff revision.
+
+## 12. W2 failure milestone
+
+```text
+WINDOWS-RC8-W2-FAIL
+release=v0.1.0-rc.8
+profile_id=019165e7-cf0f-420d-b261-6c291b3e4f20
+claude_session_id=0cdbd871-f924-4848-b62e-5edbeab66ae3
+codex_session_id=019facf4-d00f-7400-9a0f-8a2073e1af6e
+mac_report_validated=PASS
+mac_report_commit=e796fe26718df457850f35ced83af44eaf478ec4
+section14c_scoped_session_named_refusal=PASS
+section14c_exit_code=7
+section14c_no_mutation_no_backup=PASS
+section14d_command=rein pull --agent claude --session <claude_session_id> --dry-run
+section14d_exit_code=6
+section14d_sanitized_output=local session diverged; conflict recorded
+section14d_target_unchanged=true
+section14d_config_unchanged=true
+section14d_state_unchanged=true
+section14d_backup_count_before=2
+section14d_backup_count_after=2
+section14d_original_backup_count=0
+section14d_active_conflict_count=0
+a1_occurrences_preserved=4
+a2_occurrences=0
+dependent_b1_steps_executed=false
+remote_revision=f552c4c8-bc17-4823-a447-bc18a4bb62e5
+remote_session_count=2
+gate16_existing_windows_target_backup=FAIL
+windows_report_path=docs/testing/results/2026-07-29-windows-phase1-rc8.md
+END-WINDOWS-RC8-W2-FAIL
 ```
