@@ -1,0 +1,292 @@
+# Phase 1 RC8 acceptance — Device A (macOS) report
+
+Milestone reached: **M1 complete**. Device B (native Windows) has not started
+against RC8, so every Windows-dependent gate is `NOT TESTED`, never `PASS`.
+
+Clean RC8 run. No RC7-or-older home, project, profile, passphrase, marker
+session, remote prefix, or report was reused. RC7 acceptance state was left in
+place untouched and is not evidence here.
+
+RC8 exists because RC7 failed runbook section 14b. **That gate is proven on real
+hardware in section 6 of this report**, under the exact condition RC7 could not
+satisfy.
+
+This report contains no storage endpoint, bucket, access key, secret key,
+passphrase, keyring value, transcript prose, ciphertext bytes, remote object
+name, username, or absolute local path.
+
+## 1. Test record
+
+| Field | Value |
+| ----- | ----- |
+| Date/time (UTC) | 2026-07-29 |
+| Release under test | `v0.1.0-rc.8` |
+| Tag commit | `5e4f2605c53c6ad46c11569235bc78476ed94487` |
+| Mac model / macOS version | macOS 26.5.2 (build 25F84) |
+| Mac architecture | `arm64` |
+| Native shell | `zsh` |
+| Claude Code version | `2.1.220` (recognized range 2.1.219–2.1.220) |
+| Codex CLI version | `0.145.0` (recognized range 0.133.0–0.145.0) |
+| Git version | `2.55.0` |
+| Reinstate version | `0.1.0-rc.8` (commit `5e4f260`) |
+| GitHub check run | all required checks green (section 7) |
+| Device A profile ID | `019165e7-cf0f-420d-b261-6c291b3e4f20` |
+| Canonical project ID | `local/reinstate-phase1-acceptance-rc8` |
+| Claude test session ID | `0cdbd871-f924-4848-b62e-5edbeab66ae3` |
+| Codex test session ID | `019facf4-d00f-7400-9a0f-8a2073e1af6e` |
+| Windows edition/build | NOT TESTED (Device B) |
+
+## 2. Release provenance (M0.1)
+
+| Check | Result | Evidence |
+| ----- | ------ | -------- |
+| `v0.1.0-rc.8` is an annotated tag object | PASS | `git cat-file -t` → `tag` |
+| Signature verifies | PASS | `Good "git" signature`, checked against the repository's committed `.github/allowed_signers` |
+| Signing key matches the RC6/RC7 release identity | PASS | same ED25519 key fingerprint |
+| Tag commit reachable from `origin/main` | PASS | `git merge-base --is-ancestor` → true |
+| Installed binary matches tag commit | PASS | `rein version --json` commit `5e4f260` |
+
+## 3. Installer verification (M0.2)
+
+| Check | Result | Evidence |
+| ----- | ------ | -------- |
+| Live install through `https://reinstate.dev/install.sh` | PASS | installed `0.1.0-rc.8`, commit `5e4f260` |
+| Checksum layer 1 (bootstrap pins stage-2 installer) | PASS | pinned SHA-256 equals the tagged `scripts/install.sh` |
+| Checksum layer 2 (release asset) | PASS | run printed `checksum ok` |
+| Pins exactly one release, `rc.8` | PASS | verified in the deployed bootstrap |
+| No elevation required | PASS | `sudo` count 0 in both layers |
+| Existing-version replacement is guarded | PASS | refused to replace `0.1.0-rc.7` until `REINSTATE_CONFIRM_REPLACE=1` |
+| Live route parity | PASS | `install.sh` and `install.ps1` both byte-match the tag on the promoted origin |
+
+## 4. Environment and honest pre-init failure (M0.3, M0.4)
+
+Isolated home and project created fresh; `REINSTATE_HOME` exported explicitly
+for every Reinstate invocation and never unset or redirected.
+
+```text
+summary: 1 check(s) failed
+- [fail] config: config missing
+- [ok] device: darwin-arm64
+- [ok] agent.claude: SUPPORTED (2.1.220)
+- [ok] agent.codex: SUPPORTED (0.145.0)
+- [ok] keyring: OS keyring provider reachable
+```
+
+Exit code `3`, `config missing`, no false device or adapter pass.
+
+## 5. M1 — sessions, init safety, push, ciphertext
+
+### 5.1 Source sessions
+
+Identified by strict before/after diff of the vendor session stores, confirmed
+by counting only the exact marker string. No transcript prose was read or
+printed.
+
+| Agent | New files | Exact marker occurrences | Session ID |
+| ----- | --------- | ------------------------ | ---------- |
+| Claude Code | 1 | 4 | `0cdbd871-f924-4848-b62e-5edbeab66ae3` |
+| Codex CLI | 1 | 5 | `019facf4-d00f-7400-9a0f-8a2073e1af6e` |
+
+### 5.2 Init and health
+
+| Step | Result |
+| ---- | ------ |
+| `rein init --yes --project local/reinstate-phase1-acceptance-rc8=<redacted>` | PASS — fresh `profile_id=019165e7-cf0f-420d-b261-6c291b3e4f20` |
+| `rein setup check` | PASS — exit 0, all checks passed |
+| `rein doctor --self-test` | PASS — exit 0, synthetic self-test passed |
+
+`init` persisted `[restore] active_agent_policy = "fork"`.
+
+### 5.3 Physical F1
+
+Re-running init without `--force` returned exit `7`; `config.toml` and
+`state.json` unchanged by SHA-256, backup count 0 → 0.
+
+### 5.4 Dry-run and push
+
+Both agents: dry-run reported `would push 1 snapshot(s)` and uploaded nothing;
+the real push reported `pushed 1 snapshot(s), skipped 0 unchanged`. `rein status`
+showed exactly the two selected sessions.
+
+### 5.5 Ciphertext-only remote storage
+
+| Assertion | Result |
+| --------- | ------ |
+| Object inventory | PASS — `object_count=3`, one `manifest.age` + 2 snapshots |
+| Every object is `.age` | PASS |
+| No auth/token/credential/`.env`/plaintext-shaped object | PASS — `forbidden_shaped_objects=0` |
+
+Downloaded snapshot (65800 bytes, `0600`), tested without printing bytes:
+
+| Probe | Result |
+| ----- | ------ |
+| `REINSTATE-PHASE1-RC8-MAC-CLAUDE-A1` | exit `1` — absent |
+| `REINSTATE-PHASE1-RC8-MAC-CODEX-A1` | exit `1` — absent |
+| `REINSTATE-PHASE1-RC8` (prefix) | exit `1` — absent |
+| `"role"` (JSONL shape) | exit `1` — absent |
+| `file` | `data`, printable ratio `0.387`, not valid UTF-8 |
+
+Local download deleted; no remote object mutated.
+
+## 6. Section 14b — the gate RC7 failed
+
+RC7 decided liveness purely from open file handles. Claude Code appends to its
+session file and closes it again, so a live Claude Code session holds no handle
+at all and RC7 read it as free.
+
+This run reproduced that exact condition on real hardware using a **genuine**
+`claude --resume <session>` process. Nothing was simulated and no handle was
+manufactured.
+
+Preconditions captured while Claude was running on the session under test:
+
+```text
+claude_alive_pid=<non-secret pid>
+handles_held_on_session_file=0
+exclusive_open_succeeds=True     <-- the RC7 condition
+```
+
+A second process could open the session file exclusively while Claude Code was
+live on it. That is precisely the state in which RC7 attempted an ordinary
+in-place restore and was stopped only by the divergence guard with exit `6`.
+
+RC8 result:
+
+```text
+rein pull --agent claude --session <claude>
+  pulled 1 snapshot(s), dry_run=false
+    <session> is in use, so it was left unchanged; restored alongside it as
+    <session>-active-5f7cfc9c
+  exit=0
+```
+
+| Assertion | Result |
+| --------- | ------ |
+| Exit code | PASS — `0`, not the RC7 `6` |
+| Live session file byte-for-byte unchanged | PASS (SHA-256 compared) |
+| Exactly one fork created and named in the output | PASS |
+| Repeating the pull does not create a second fork | PASS — fork count 1 → 1 |
+| Backups created | 0 — correct, nothing was replaced |
+
+### 6.1 The refusal still works when requested
+
+With `active_agent_policy = "scoped"` and the same live Claude session:
+
+```text
+claude is currently using this session; close that session or rerun with --allow-active-agents
+exit=7
+```
+
+Session file unchanged. Note the message is the **session-scoped** wording, not
+the host-wide fallback: detection identified this specific session rather than
+merely observing that some Claude Code was running. Under RC7 the equivalent
+Mac check could only produce the unscoped message.
+
+### 6.2 Unrelated agents still do not block
+
+Six unrelated Codex processes were alive throughout this run, and the Codex
+restore path was unaffected. The regression that motivated the original scoping
+work has not returned.
+
+## 7. Automated integrity gates
+
+All check runs on tag commit `5e4f260` are green:
+
+```text
+success  Build & release      success  Test (macos-latest)
+success  CodeQL               success  Test (ubuntu-latest)
+success  Lint                 success  Test (windows-latest)
+success  Secret scan          success  Validate website and CLI tags
+success  Security             success  Website
+success  Workflow permission and pin review
+skipped  Dependency review
+```
+
+`Dependency review` is skipped on push events, as expected.
+
+## 8. Mandatory sign-off checklist (all 23 rows)
+
+| # | Gate | Result | Evidence |
+| - | ---- | ------ | -------- |
+| 1 | `install.sh` returns 200 and installs RC8 on Mac | PASS | §3 |
+| 2 | `install.ps1` returns 200 and installs RC8 on Windows | NOT TESTED | Device B |
+| 3 | Both installers are idempotent and PATH-safe | PARTIAL | §3 — Mac side verified |
+| 4 | Pre-init missing-config failure is accurate | PARTIAL | §4 — Mac exit 3 |
+| 5 | Post-init setup check and self-test pass on both devices | PARTIAL | §5.2 — Mac both exit 0 |
+| 6 | Claude setup prompt completes on the Mac | PASS | §5.2 |
+| 7 | Codex setup prompt completes on Windows | NOT TESTED | Device B |
+| 8 | Only two selected test sessions reach the remote manifest | PASS | §5.4 |
+| 9 | Remote manifest/snapshots are ciphertext-only | PASS | §5.5 |
+| 10 | Wrong passphrase fails without mutation | PARTIAL | Mac exit 4, no config/backup change; Windows execution outstanding |
+| 11 | Claude Mac-to-Windows resume succeeds | NOT TESTED | Device B |
+| 12 | Codex Mac-to-Windows resume succeeds | NOT TESTED | Device B |
+| 13 | Unrelated running agents do not block a restore | PASS | §6.2 |
+| 14 | A live session is forked, never overwritten | **PASS** | §6 — proven under the exact RC7 failure condition |
+| 15 | `scoped` policy still refuses, naming that session | **PASS** | §6.1 — session-scoped refusal, exit 7, no mutation |
+| 16 | Existing Windows target is backed up before restore | NOT TESTED | Device B |
+| 17 | Claude Windows-to-Mac resume succeeds | NOT TESTED | Mac M3 |
+| 18 | Codex Windows-to-Mac resume succeeds | NOT TESTED | Mac M3 |
+| 19 | Existing Mac targets are backed up before restore | NOT TESTED | no in-place Mac restore occurred in this run; §6 forked, so nothing was replaced |
+| 20 | Unchanged pushes skip without new snapshots | PASS | both agents reported `pushed 0 snapshot(s), skipped 1 unchanged`, remote revision unchanged |
+| 21 | Divergence records a conflict without overwrite | NOT TESTED | M4 / W3 |
+| 22 | `--keep-both` preserves both branches | NOT TESTED | Device B |
+| 23 | All required GitHub checks are green | PASS | §7 |
+
+**Counts: 9 PASS / 4 PARTIAL / 0 FAIL / 10 NOT TESTED.**
+
+All 23 mandatory rows passed: **No.** Phase 1 remains open pending Device B.
+
+## 9. Findings
+
+No release-blocking findings on Device A.
+
+Non-blocking, recorded for sign-off:
+
+1. **Gate 19 is not carried over from the RC7 run.** In RC7 a Mac backup was
+   produced as a side effect of an in-place restore. In RC8 the equivalent
+   restore forked instead, which is the correct new behavior, so no Mac target
+   was replaced and no backup was created. The gate needs an in-place Mac
+   restore with no agent live on the session, which happens naturally at M3.
+2. **Resuming a Claude session appends to it.** Starting `claude --resume` for
+   the section 6 test changed the session file before any Reinstate command ran.
+   That is vendor behavior, not a Reinstate defect, but it means a session used
+   for a liveness test is no longer byte-identical to what was pushed. The fork
+   path is unaffected because it does not consult divergence.
+3. **Windows Restart Manager is still unexercised on real hardware.** It passes
+   `Test (windows-latest)` and is compile-verified, but the RC7 Windows run
+   proved only that it correctly reports *no* holder. Device B section 14b
+   remains the highest-value outstanding gate.
+
+## 10. Repository hygiene
+
+- Branch `test/phase1-rc8-macos-report` from the peeled RC8 tag commit
+  `5e4f260`, in a dedicated worktree; no product branch touched.
+- The private credentials file is in `.git/info/exclude`, untracked, outside the
+  repository, and its SHA-256 was unchanged across the wrong-passphrase test.
+- The only change on this branch is this report.
+
+## 11. Milestone block
+
+```text
+MAC-RC8-M1
+release=v0.1.0-rc.8
+tag_commit=5e4f2605c53c6ad46c11569235bc78476ed94487
+profile_id=019165e7-cf0f-420d-b261-6c291b3e4f20
+canonical_project_id=local/reinstate-phase1-acceptance-rc8
+claude_session_id=0cdbd871-f924-4848-b62e-5edbeab66ae3
+codex_session_id=019facf4-d00f-7400-9a0f-8a2073e1af6e
+remote_session_count=2
+remote_revision=b5f38a3d-e841-4787-8105-f080f3524fab
+claude_snapshot_id=b5f38a3d-e841-4787-8105-f080f3524fab
+codex_snapshot_id=17773f7e-17ca-4d41-8848-af285c5fe1a3
+f1_default_refusal=PASS
+ciphertext_marker_absence=PASS
+tag_signature_verified=PASS
+live_session_forked_not_overwritten=PASS
+live_session_held_no_file_handle=true
+exclusive_open_succeeded_while_live=true
+scoped_policy_session_named_refusal=PASS
+unrelated_agents_do_not_block_restore=PASS
+mac_report_path=docs/testing/results/2026-07-29-macos-phase1-rc8.md
+END-MAC-RC8-M1
+```
