@@ -1,8 +1,9 @@
 # Phase 1 RC8 acceptance — Device A (macOS) report
 
-Milestone reached: **M3 complete** (section 12). Device B has passed W1 and W2
-against RC8; W3 is outstanding, so those gates remain `NOT TESTED`, never
-`PASS`.
+Milestone reached: **M4 conflict marker pushed** (section 13). Device B has
+passed W1 and W2 against RC8 and is holding an unpushed local divergence; its
+keep-both resolution is outstanding, so gates 21 and 22 remain `NOT TESTED`,
+never `PASS`.
 
 Clean RC8 run. No RC7-or-older home, project, profile, passphrase, marker
 session, remote prefix, or report was reused. RC7 acceptance state was left in
@@ -439,7 +440,61 @@ IDs were unchanged, so no new remote snapshot or revision was created.
 
 Updated counts: **12 PASS / 4 PARTIAL / 0 FAIL / 7 NOT TESTED.**
 
-## 13. Milestone block
+## 13. M4 step 1 — Mac conflict marker pushed
+
+Device B issued `WINDOWS-RC8-CONFLICT-LOCAL-READY` at commit
+`b89162f2dadd7ee15fe496f793da5d437b1fc823`, holding
+`REINSTATE-PHASE1-RC8-CONFLICT-WINDOWS` locally at 4 occurrences, unpushed, with
+the remote unchanged and gates 21 and 22 correctly still `NOT TESTED`.
+
+### 13.1 Re-validated handoff
+
+Commit and branch resolve, draft PR #57 open and unmerged, 0 product files, no
+credential value, Windows username path, or transcript JSON. Device A confirmed
+the remote was still at revision `8e3dba9c-…` before acting, and that the
+Windows conflict marker was absent from the Mac copy.
+
+### 13.2 Divergence created
+
+| Step | Result |
+| ---- | ------ |
+| Resumed the exact Mac Claude session | exit 0 |
+| Appended only `REINSTATE-PHASE1-RC8-CONFLICT-MAC` | 4 occurrences |
+| Windows conflict marker on the Mac copy | 0 — the two branches are genuinely distinct |
+| Prior markers preserved | `A1`=4, `A2`=4, `B1`=5 |
+| Stray sessions created | 0 (count 1 → 1) |
+| Dry-run | `would push 1 snapshot(s)`, uploaded nothing |
+| Push | `pushed 1 snapshot(s), skipped 0 unchanged` |
+
+Remote after the push:
+
+| Field | Before | After |
+| ----- | ------ | ----- |
+| Revision | `8e3dba9c-d0c0-4549-b6da-4d6c59b64f38` | `633f5f3d-6fd2-49ef-865f-0e29eed55850` |
+| Claude snapshot | `cf89ccc6-…` | `633f5f3d-…` |
+| Codex snapshot | `8e3dba9c-…` | unchanged |
+| Session count | 2 | 2 |
+
+Only the Claude session advanced. Ciphertext discipline holds on the new
+snapshot: `all_objects_end_with_.age=true`, `forbidden_shaped_objects=0`, the
+`CONFLICT-MAC` marker and the `REINSTATE-PHASE1-RC8` prefix both absent from the
+downloaded bytes, `file` reports `data`.
+
+The divergence required by gates 21 and 22 now exists: Device B holds
+`CONFLICT-WINDOWS` locally and unpushed, while the remote holds `CONFLICT-MAC`.
+
+### 13.3 Conflict bookkeeping note
+
+Device A's acceptance home contains one conflict record on disk,
+`<id>.keep-remote.resolved`, archived from the M3 recovery described in §12.5.
+`rein conflicts list` reports **0 active conflicts**. Resolution archives a
+record rather than deleting it, which preserves an audit trail. Gate 21's "one
+recorded conflict" should therefore be counted from the active list, not from
+files on disk.
+
+Device A is paused for Device B's keep-both resolution.
+
+## 14. Milestone block
 
 ```text
 MAC-RC8-M1
@@ -510,4 +565,29 @@ remote_session_count=2
 remote_unchanged_by_no_op=PASS
 mac_report_path=docs/testing/results/2026-07-29-macos-phase1-rc8.md
 END-MAC-RC8-M3-PASS
+```
+
+```text
+MAC-RC8-CONFLICT-PUSHED
+release=v0.1.0-rc.8
+profile_id=019165e7-cf0f-420d-b261-6c291b3e4f20
+claude_session_id=0cdbd871-f924-4848-b62e-5edbeab66ae3
+windows_conflict_local_validated=PASS
+windows_commit=b89162f2dadd7ee15fe496f793da5d437b1fc823
+mac_conflict_marker=REINSTATE-PHASE1-RC8-CONFLICT-MAC
+mac_conflict_marker_occurrences=4
+windows_conflict_marker_on_mac_copy=0
+a1_occurrences_preserved=4
+a2_occurrences_preserved=4
+b1_occurrences_preserved=5
+new_remote_revision=633f5f3d-6fd2-49ef-865f-0e29eed55850
+new_claude_snapshot_id=633f5f3d-6fd2-49ef-865f-0e29eed55850
+codex_snapshot_id=8e3dba9c-d0c0-4549-b6da-4d6c59b64f38
+remote_session_count=2
+ciphertext_marker_absence=PASS
+mac_active_conflicts=0
+mac_archived_resolved_records=1
+divergence_ready_for_gate21=true
+mac_report_path=docs/testing/results/2026-07-29-macos-phase1-rc8.md
+END-MAC-RC8-CONFLICT-PUSHED
 ```
