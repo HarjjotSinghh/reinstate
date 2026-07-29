@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/banner.svg" alt="Reinstate" width="100%" />
+<img src="assets/banner.svg" alt="Reinstate session continuity across devices" width="100%" />
 
 # Reinstate
 
