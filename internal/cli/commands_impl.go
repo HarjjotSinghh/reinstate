@@ -1370,13 +1370,6 @@ func forkSessionID(kind, sessionID, snapshotID string) string {
 	return uuid.NewSHA1(forkNamespace, []byte(kind+"\x00"+sessionID+"\x00"+snapshotID)).String()
 }
 
-func shortID(value string) string {
-	if len(value) > 8 {
-		return value[:8]
-	}
-	return value
-}
-
 func updateSessionState(home, agentName, sessionID, localRevision, remoteRevision string) error {
 	state, err := config.LoadState(home)
 	if err != nil {
