@@ -1,6 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Reinstate Pure Sharp mark">
-  <rect x="9" y="9" width="32" height="32" rx="2.5" stroke="#131f1a" stroke-width="3.8"/>
-  <rect x="23" y="23" width="32" height="32" rx="2.5" fill="#e4e7dd" stroke="#131f1a" stroke-width="3.8"/>
-  <path d="M32 33.5 L37 38.5 L32 43.5" stroke="#131f1a" stroke-width="2.9" stroke-linecap="square" stroke-linejoin="miter"/>
-  <path d="M40 43.5 H46.5" stroke="#131f1a" stroke-width="2.9" stroke-linecap="square"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" aria-label="Reinstate Pure Sharp mark" role="img" viewBox="0 0 64 64"><rect width="32" height="32" x="9" y="9" stroke="#131f1a" stroke-width="3.8" rx="2.5"/><rect width="32" height="32" x="23" y="23" fill="#e4e7dd" stroke="#131f1a" stroke-width="3.8" rx="2.5"/><path stroke="#131f1a" stroke-linecap="square" stroke-linejoin="miter" stroke-width="2.9" d="M32 33.5 L37 38.5 L32 43.5"/><path stroke="#131f1a" stroke-linecap="square" stroke-width="2.9" d="M40 43.5 H46.5"/></svg>

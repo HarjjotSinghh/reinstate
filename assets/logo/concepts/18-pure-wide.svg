@@ -1,9 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
-  <title id="title">Reinstate — Pure Wide</title>
-  <desc id="desc">Diptych Pure with wider separation — two frames more distinct, terminal prompt on destination.</desc>
-  <rect width="64" height="64" rx="14" fill="#131f1a"/>
-  <rect x="8" y="8" width="28" height="28" rx="5.5" fill="none" stroke="#f4f6ef" stroke-width="3.5"/>
-  <rect x="28" y="28" width="28" height="28" rx="5.5" fill="#131f1a" stroke="#f4f6ef" stroke-width="3.5"/>
-  <path d="M36 38 L40.5 42.5 L36 47" fill="none" stroke="#f4f6ef" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M43 47 H49" fill="none" stroke="#f4f6ef" stroke-width="2.7" stroke-linecap="round"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" aria-labelledby="title desc" role="img" viewBox="0 0 64 64"><title id="title">Reinstate — Pure Wide</title><desc id="desc">Diptych Pure with wider separation — two frames more distinct, terminal prompt on destination.</desc><rect width="64" height="64" fill="#131f1a" rx="14"/><rect width="28" height="28" x="8" y="8" fill="none" stroke="#f4f6ef" stroke-width="3.5" rx="5.5"/><rect width="28" height="28" x="28" y="28" fill="#131f1a" stroke="#f4f6ef" stroke-width="3.5" rx="5.5"/><path fill="none" stroke="#f4f6ef" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.7" d="M36 38 L40.5 42.5 L36 47"/><path fill="none" stroke="#f4f6ef" stroke-linecap="round" stroke-width="2.7" d="M43 47 H49"/></svg>

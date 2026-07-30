@@ -1,9 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Reinstate Folded Packet mark">
-  <path
-    d="M14 22 L32 10 L50 22 L50 42 L32 54 L14 42 Z"
-    stroke="#131f1a"
-    stroke-width="3.6"
-    stroke-linejoin="round"/>
-  <path d="M32 10 V54" stroke="#131f1a" stroke-width="3.6" stroke-linecap="round"/>
-  <path d="M18 32 H46" stroke="#131f1a" stroke-width="3.6" stroke-linecap="round"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" aria-label="Reinstate Folded Packet mark" role="img" viewBox="0 0 64 64"><path stroke="#131f1a" stroke-linejoin="round" stroke-width="3.6" d="M14 22 L32 10 L50 22 L50 42 L32 54 L14 42 Z"/><path stroke="#131f1a" stroke-linecap="round" stroke-width="3.6" d="M32 10 V54"/><path stroke="#131f1a" stroke-linecap="round" stroke-width="3.6" d="M18 32 H46"/></svg>

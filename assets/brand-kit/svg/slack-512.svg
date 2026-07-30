@@ -1,12 +1,1 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img">
-  <title>Reinstate</title>
-  <rect width="512" height="512" fill="#1d2723"/>
-  <g aria-label="Reinstate logo">
-<rect x="71.68" y="71.68" width="368.64" height="368.64" rx="80.64" fill="#131f1a"/>
-<rect x="152.32" y="152.32" width="161.28" height="161.28" rx="31.68" fill="none" stroke="#f4f6ef" stroke-width="20.74"/>
-<rect x="198.40" y="198.40" width="161.28" height="161.28" rx="31.68" fill="#131f1a" stroke="#f4f6ef" stroke-width="20.74"/>
-<path d="M247.36,261.76 L270.40,284.80 L247.36,307.84" fill="none" stroke="#f4f6ef" stroke-width="15.55" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M284.80,307.84 H316.48" fill="none" stroke="#f4f6ef" stroke-width="15.55" stroke-linecap="round" stroke-linejoin="round"/>
-</g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" role="img" viewBox="0 0 512 512"><title>Reinstate</title><rect width="512" height="512" fill="#1d2723"/><g aria-label="Reinstate logo"><rect width="368.64" height="368.64" x="71.68" y="71.68" fill="#131f1a" rx="80.64"/><rect width="161.28" height="161.28" x="152.32" y="152.32" fill="none" stroke="#f4f6ef" stroke-width="20.74" rx="31.68"/><rect width="161.28" height="161.28" x="198.4" y="198.4" fill="#131f1a" stroke="#f4f6ef" stroke-width="20.74" rx="31.68"/><path fill="none" stroke="#f4f6ef" stroke-linecap="round" stroke-linejoin="round" stroke-width="15.55" d="M247.36,261.76 L270.40,284.80 L247.36,307.84"/><path fill="none" stroke="#f4f6ef" stroke-linecap="round" stroke-linejoin="round" stroke-width="15.55" d="M284.80,307.84 H316.48"/></g></svg>

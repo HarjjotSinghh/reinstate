@@ -1,14 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Reinstate Inset Return mark">
-  <rect x="12" y="12" width="40" height="40" rx="8" fill="#131f1a"/>
-  <path
-    d="M44 46c0-10-6-16-16-16"
-    stroke="#e4e7dd"
-    stroke-width="4.2"
-    stroke-linecap="round"/>
-  <path
-    d="M24 26l4.5 4.5L24 35"
-    stroke="#e4e7dd"
-    stroke-width="4"
-    stroke-linecap="round"
-    stroke-linejoin="round"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" aria-label="Reinstate Inset Return mark" role="img" viewBox="0 0 64 64"><rect width="40" height="40" x="12" y="12" fill="#131f1a" rx="8"/><path stroke="#e4e7dd" stroke-linecap="round" stroke-width="4.2" d="M44 46c0-10-6-16-16-16"/><path stroke="#e4e7dd" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M24 26l4.5 4.5L24 35"/></svg>

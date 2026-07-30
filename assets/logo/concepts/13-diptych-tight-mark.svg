@@ -1,6 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Reinstate Diptych Tight mark">
-  <rect x="12" y="12" width="30" height="30" rx="5.5" stroke="#131f1a" stroke-width="3.8"/>
-  <rect x="22" y="22" width="30" height="30" rx="5.5" fill="#e4e7dd" stroke="#131f1a" stroke-width="3.8"/>
-  <path d="M28.5 30.5 L34.5 37 L28.5 43.5" stroke="#131f1a" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M38 43.5 H46.5" stroke="#131f1a" stroke-width="3.4" stroke-linecap="round"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" aria-label="Reinstate Diptych Tight mark" role="img" viewBox="0 0 64 64"><rect width="30" height="30" x="12" y="12" stroke="#131f1a" stroke-width="3.8" rx="5.5"/><rect width="30" height="30" x="22" y="22" fill="#e4e7dd" stroke="#131f1a" stroke-width="3.8" rx="5.5"/><path stroke="#131f1a" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.4" d="M28.5 30.5 L34.5 37 L28.5 43.5"/><path stroke="#131f1a" stroke-linecap="round" stroke-width="3.4" d="M38 43.5 H46.5"/></svg>
