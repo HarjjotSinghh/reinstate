@@ -1,9 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
-  <title id="title">Reinstate — Pure Bold</title>
-  <desc id="desc">Diptych Pure with heavier stroke and slightly smaller prompt for balance.</desc>
-  <rect width="64" height="64" rx="14" fill="#131f1a"/>
-  <rect x="10" y="10" width="30" height="30" rx="6" fill="none" stroke="#f4f6ef" stroke-width="4.2"/>
-  <rect x="24" y="24" width="30" height="30" rx="6" fill="#131f1a" stroke="#f4f6ef" stroke-width="4.2"/>
-  <path d="M33 35 L38 39.5 L33 44" fill="none" stroke="#f4f6ef" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M40.5 44 H47" fill="none" stroke="#f4f6ef" stroke-width="3.2" stroke-linecap="round"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" aria-labelledby="title desc" role="img" viewBox="0 0 64 64"><title id="title">Reinstate — Pure Bold</title><desc id="desc">Diptych Pure with heavier stroke and slightly smaller prompt for balance.</desc><rect width="64" height="64" fill="#131f1a" rx="14"/><rect width="30" height="30" x="10" y="10" fill="none" stroke="#f4f6ef" stroke-width="4.2" rx="6"/><rect width="30" height="30" x="24" y="24" fill="#131f1a" stroke="#f4f6ef" stroke-width="4.2" rx="6"/><path fill="none" stroke="#f4f6ef" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.2" d="M33 35 L38 39.5 L33 44"/><path fill="none" stroke="#f4f6ef" stroke-linecap="round" stroke-width="3.2" d="M40.5 44 H47"/></svg>

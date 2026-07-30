@@ -1,9 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Reinstate Stack Seal mark mono">
-  <rect x="12" y="10" width="40" height="8" rx="2" fill="#131f1a"/>
-  <rect x="12" y="21" width="40" height="8" rx="2" fill="#131f1a"/>
-  <rect x="12" y="32" width="40" height="8" rx="2" fill="#131f1a"/>
-  <rect x="12" y="43" width="40" height="8" rx="2" fill="#131f1a"/>
-  <rect x="39" y="37" width="14" height="12" rx="2.5" fill="#e4e7dd" stroke="#131f1a" stroke-width="2.2"/>
-  <path d="M42.5 37v-3.4a3.5 3.5 0 0 1 7 0V37" stroke="#131f1a" stroke-width="2.2" stroke-linecap="round"/>
-  <circle cx="46" cy="43" r="1.6" fill="#131f1a"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" aria-label="Reinstate Stack Seal mark mono" role="img" viewBox="0 0 64 64"><rect width="40" height="8" x="12" y="10" fill="#131f1a" rx="2"/><rect width="40" height="8" x="12" y="21" fill="#131f1a" rx="2"/><rect width="40" height="8" x="12" y="32" fill="#131f1a" rx="2"/><rect width="40" height="8" x="12" y="43" fill="#131f1a" rx="2"/><rect width="14" height="12" x="39" y="37" fill="#e4e7dd" stroke="#131f1a" stroke-width="2.2" rx="2.5"/><path stroke="#131f1a" stroke-linecap="round" stroke-width="2.2" d="M42.5 37v-3.4a3.5 3.5 0 0 1 7 0V37"/><circle cx="46" cy="43" r="1.6" fill="#131f1a"/></svg>

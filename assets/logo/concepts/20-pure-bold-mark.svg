@@ -1,6 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Reinstate Pure Bold mark">
-  <rect x="8" y="8" width="32" height="32" rx="6.5" stroke="#131f1a" stroke-width="4.4"/>
-  <rect x="24" y="24" width="32" height="32" rx="6.5" fill="#e4e7dd" stroke="#131f1a" stroke-width="4.4"/>
-  <path d="M33 34.5 L38.5 39.5 L33 44.5" stroke="#131f1a" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M41 44.5 H48" stroke="#131f1a" stroke-width="3.3" stroke-linecap="round"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" aria-label="Reinstate Pure Bold mark" role="img" viewBox="0 0 64 64"><rect width="32" height="32" x="8" y="8" stroke="#131f1a" stroke-width="4.4" rx="6.5"/><rect width="32" height="32" x="24" y="24" fill="#e4e7dd" stroke="#131f1a" stroke-width="4.4" rx="6.5"/><path stroke="#131f1a" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.3" d="M33 34.5 L38.5 39.5 L33 44.5"/><path stroke="#131f1a" stroke-linecap="round" stroke-width="3.3" d="M41 44.5 H48"/></svg>

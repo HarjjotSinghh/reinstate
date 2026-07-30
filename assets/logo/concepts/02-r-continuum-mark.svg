@@ -1,12 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Reinstate R Continuum mark mono">
-  <path fill="#131f1a" d="
-    M16 50 V14 h18
-    c8 0 14 5.1 14 12.4
-    c0 6-3.6 10.4-9.4 12
-    L50 50 h-9.2
-    L32.6 39.2 H24 V50 H16 Z
-    M24 14 v17 h9
-    c4 0 6.5-2.2 6.5-5.5 S37 20 33 20 H24 Z"/>
-  <path d="M36 39 c7.2 0 12.2 4.2 13.8 10.5" stroke="#131f1a" stroke-width="3.2" stroke-linecap="round"/>
-  <circle cx="50.5" cy="50" r="2.4" fill="#131f1a"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" aria-label="Reinstate R Continuum mark mono" role="img" viewBox="0 0 64 64"><path fill="#131f1a" d="M16 50 V14 h18 c8 0 14 5.1 14 12.4 c0 6-3.6 10.4-9.4 12 L50 50 h-9.2 L32.6 39.2 H24 V50 H16 Z M24 14 v17 h9 c4 0 6.5-2.2 6.5-5.5 S37 20 33 20 H24 Z"/><path stroke="#131f1a" stroke-linecap="round" stroke-width="3.2" d="M36 39 c7.2 0 12.2 4.2 13.8 10.5"/><circle cx="50.5" cy="50" r="2.4" fill="#131f1a"/></svg>
