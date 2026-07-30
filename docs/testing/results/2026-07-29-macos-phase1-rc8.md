@@ -1,9 +1,8 @@
 # Phase 1 RC8 acceptance — Device A (macOS) report
 
-Milestone reached: **M4 conflict marker pushed** (section 13). Device B has
-passed W1 and W2 against RC8 and is holding an unpushed local divergence; its
-keep-both resolution is outstanding, so gates 21 and 22 remain `NOT TESTED`,
-never `PASS`.
+Milestone reached: **M4 complete — Phase 1 acceptance PASSES for
+`v0.1.0-rc.8`** (section 14). All 23 mandatory rows have real-device evidence
+across both devices.
 
 Clean RC8 run. No RC7-or-older home, project, profile, passphrase, marker
 session, remote prefix, or report was reused. RC7 acceptance state was left in
@@ -36,7 +35,7 @@ name, username, or absolute local path.
 | Canonical project ID | `local/reinstate-phase1-acceptance-rc8` |
 | Claude test session ID | `0cdbd871-f924-4848-b62e-5edbeab66ae3` |
 | Codex test session ID | `019facf4-d00f-7400-9a0f-8a2073e1af6e` |
-| Windows edition/build | NOT TESTED (Device B) |
+| Windows edition/build | recorded in the Device B report |
 
 ## 2. Release provenance (M0.1)
 
@@ -215,35 +214,35 @@ skipped  Dependency review
 
 ## 8. Mandatory sign-off checklist (all 23 rows)
 
-| # | Gate | Result | Evidence |
+| # | Gate | Result | Evidence (A = Device A, B = Device B) |
 | - | ---- | ------ | -------- |
-| 1 | `install.sh` returns 200 and installs RC8 on Mac | PASS | §3 |
-| 2 | `install.ps1` returns 200 and installs RC8 on Windows | NOT TESTED | Device B |
-| 3 | Both installers are idempotent and PATH-safe | PARTIAL | §3 — Mac side verified |
-| 4 | Pre-init missing-config failure is accurate | PARTIAL | §4 — Mac exit 3 |
-| 5 | Post-init setup check and self-test pass on both devices | PARTIAL | §5.2 — Mac both exit 0 |
-| 6 | Claude setup prompt completes on the Mac | PASS | §5.2 |
-| 7 | Codex setup prompt completes on Windows | NOT TESTED | Device B |
-| 8 | Only two selected test sessions reach the remote manifest | PASS | §5.4 |
-| 9 | Remote manifest/snapshots are ciphertext-only | PASS | §5.5 |
-| 10 | Wrong passphrase fails without mutation | PARTIAL | Mac exit 4, no config/backup change; Windows execution outstanding |
-| 11 | Claude Mac-to-Windows resume succeeds | NOT TESTED | Device B |
-| 12 | Codex Mac-to-Windows resume succeeds | NOT TESTED | Device B |
-| 13 | Unrelated running agents do not block a restore | PASS | §6.2 |
-| 14 | A live session is forked, never overwritten | **PASS** | §6 — proven under the exact RC7 failure condition |
-| 15 | `scoped` policy still refuses, naming that session | **PASS** | §6.1 — session-scoped refusal, exit 7, no mutation |
-| 16 | Existing Windows target is backed up before restore | NOT TESTED | Device B |
-| 17 | Claude Windows-to-Mac resume succeeds | PASS | §12.5 — discovered, resumed, returned the Windows `B1` marker |
-| 18 | Codex Windows-to-Mac resume succeeds | PASS | §12.5 — restored rollout loaded as a live process, `B1`=5 |
-| 19 | Existing Mac targets are backed up before restore | PASS | §12.4 — two timestamped backups, both SHA-256 matching the pre-pull originals |
-| 20 | Unchanged pushes skip without new snapshots | PASS | both agents reported `pushed 0 snapshot(s), skipped 1 unchanged`, remote revision unchanged |
-| 21 | Divergence records a conflict without overwrite | NOT TESTED | M4 / W3 |
-| 22 | `--keep-both` preserves both branches | NOT TESTED | Device B |
-| 23 | All required GitHub checks are green | PASS | §7 |
+| 1 | `install.sh` returns 200 and installs RC8 on Mac | PASS | A §3 |
+| 2 | `install.ps1` returns 200 and installs RC8 on Windows | PASS | B §3.2 |
+| 3 | Both installers are idempotent and PATH-safe | PASS | A §3 + B §3.2 |
+| 4 | Pre-init missing-config failure is accurate | PASS | A §4 + B §3.3 |
+| 5 | Post-init setup check and self-test pass on both devices | PASS | A §5.2 + B §4 |
+| 6 | Claude setup prompt completes on the Mac | PASS | A §5.2 |
+| 7 | Codex setup prompt completes on Windows | PASS | B §§3–5 |
+| 8 | Only two selected test sessions reach the remote manifest | PASS | A §5.4 |
+| 9 | Remote manifest/snapshots are ciphertext-only | PASS | A §5.5 |
+| 10 | Wrong passphrase fails without mutation | PASS | A §9 + B §4 |
+| 11 | Claude Mac-to-Windows resume succeeds | PASS | B §5 |
+| 12 | Codex Mac-to-Windows resume succeeds | PASS | B §5 |
+| 13 | Unrelated running agents do not block a restore | PASS | A §6.2 + §12.2 |
+| 14 | A live session is forked, never overwritten | PASS | A §6 + B §14b |
+| 15 | `scoped` policy still refuses, naming that session | PASS | A §6.1 + B §14c |
+| 16 | Existing Windows target is backed up before restore | PASS | B §11.4, conflict route |
+| 17 | Claude Windows-to-Mac resume succeeds | PASS | A §12.5 |
+| 18 | Codex Windows-to-Mac resume succeeds | PASS | A §12.5 |
+| 19 | Existing Mac targets are backed up before restore | PASS | A §12.4 |
+| 20 | Unchanged pushes skip without new snapshots | PASS | A §12.6 |
+| 21 | Divergence records a conflict without overwrite | PASS | B §15.2 |
+| 22 | `--keep-both` preserves both branches | PASS | B §15.3–§15.4 + A §14.4 |
+| 23 | All required GitHub checks are green | PASS | A §14.3, queried independently |
 
-**Counts: 12 PASS / 4 PARTIAL / 0 FAIL / 7 NOT TESTED.**
+**Counts: 23 PASS / 0 PARTIAL / 0 FAIL / 0 NOT TESTED.**
 
-All 23 mandatory rows passed: **No.** Phase 1 remains open pending Device B.
+All 23 mandatory rows passed: **Yes.** Phase 1 acceptance passes for `v0.1.0-rc.8`.
 
 ## 9. Findings
 
@@ -279,6 +278,24 @@ Non-blocking, recorded for sign-off:
    carried through. It is a wasted write, not a correctness problem, so it is
    recorded here rather than used to justify another release candidate mid
    acceptance. It should be fixed in the next RC cut for any other reason.
+5. **`--keep-both` forks are not resumable by Claude Code's non-interactive
+   path.** The fork identity is `<uuid>-remote-<short>`
+   (`internal/cli/commands_impl.go:1143`), which is not a UUID. Device B found
+   that `claude --resume` accepts it interactively and sustained a live session,
+   while `claude --print --resume` rejects the non-UUID identifier. Gate 22 is
+   satisfied through the normal vendor resume path the runbook specifies, so
+   this is not a gate failure, but a human can resume a keep-both fork and an
+   automated caller cannot. Emitting a valid UUID for forks would remove the
+   asymmetry.
+6. **Runbook sections 15 and 16 repeat the section 14d ordering problem.** The
+   sequence resumes a session to confirm its markers and then expects an
+   unchanged no-op push, but resuming a Claude session mutates it (finding 2).
+   Device A hit this at M3 and recovered through the conflict route rather than
+   editing anything. Both orderings should be corrected together.
+
+Finding 1 is now **resolved**: gate 19 was closed at M3 by a genuine in-place
+Mac restore that produced two timestamped backups matching the pre-pull
+originals by SHA-256. It is retained here for traceability.
 
 ## 10. Repository hygiene
 
@@ -494,7 +511,82 @@ files on disk.
 
 Device A is paused for Device B's keep-both resolution.
 
-## 14. Milestone block
+## 14. M4 — cross-device reconciliation
+
+Device B issued `WINDOWS-RC8-W3-PASS` at commit
+`da79eff548e8bbe995f830f6ebeeff6860bb5b71`, closing gates 21 and 22.
+
+### 14.1 Final handoff validation
+
+Commit and branch resolve, draft PR #57 open and unmerged, 0 product files, no
+credential value, Windows username path, transcript JSON, or ciphertext bytes.
+
+### 14.2 Row-by-row reconciliation
+
+Every mandatory row was checked for **which device actually produced the
+evidence**, not merely whether both reports agree. The four dual-device rows
+(3, 4, 5, 10) each cite a Device A section *and* a Device B section, so neither
+device inherited the other's result. Device B's own report carries no Device A
+row as its own work, and vice versa.
+
+The reconciled table in section 8 replaces the Device-A-only view that earlier
+revisions of this report carried. Rows previously `PARTIAL` here were awaiting
+their Device B half; that half now exists.
+
+### 14.3 Automated integrity gates (tagged runbook section 18), verified independently
+
+All check runs on tag commit `5e4f260` are green, queried directly rather than
+taken from either report:
+
+```text
+success  Build & release      success  Test (macos-latest)
+success  CodeQL               success  Test (ubuntu-latest)
+success  Lint                 success  Test (windows-latest)
+success  Secret scan          success  Validate website and CLI tags
+success  Security             success  Website
+success  Workflow permission and pin review
+skipped  Dependency review   (push event, expected)
+```
+
+| Section 18 requirement | Covered by | Result |
+| ---------------------- | ---------- | ------ |
+| Go tests on Ubuntu, macOS, Windows | the three `Test` jobs | PASS |
+| Native Windows bootstrap execution and PATH behavior | `TestWindowsPublicBootstrapContract` on windows-latest | PASS |
+| POSIX bootstrap behavior and hash-mismatch refusal | `TestPOSIXPublicBootstrapContract` and its hash-mismatch companion | PASS |
+| Exact-tag and no-`latest` static contracts | `TestPublicBootstrapStaticContract` | PASS |
+| Website `npm ci`, tests, production build | `Website` | PASS |
+| Byte-for-byte inclusion of both scripts | `cmp public/install.*` in `Verify public installer assets` | PASS |
+| Lint, race, docs, fixture secret scan, vulnerability | `Lint`, race step, `internal/doctest`, `Secret scan`, `govulncheck` | PASS |
+
+All five bootstrap contract test functions are present at the tag. Live routes
+were re-verified at reconciliation time: `https://reinstate.dev/install.sh` and
+`install.ps1` both report `v0.1.0-rc.8`.
+
+### 14.4 Final state
+
+| Field | Value |
+| ----- | ----- |
+| Remote revision | `633f5f3d-6fd2-49ef-865f-0e29eed55850` |
+| Claude snapshot | `633f5f3d-…` |
+| Codex snapshot | `8e3dba9c-…` |
+| Remote session count | 2 |
+| Mac Claude markers | `A1`=4, `A2`=4, `B1`=5, `CONFLICT-MAC`=4, `CONFLICT-WINDOWS`=0 |
+| Windows original branch | `CONFLICT-WINDOWS`=5, `CONFLICT-MAC`=0 |
+| Windows keep-both fork | `CONFLICT-MAC`=4, `CONFLICT-WINDOWS`=0 |
+| Active conflicts, both devices | 0 |
+
+The two conflict branches are cleanly separated: each carries its own marker and
+zero occurrences of the other's. That is the substance of gate 22.
+
+### 14.5 Verdict
+
+**All 23 mandatory rows have real-device evidence. Phase 1 acceptance passes for
+`v0.1.0-rc.8`.**
+
+No release-blocking findings on either device. Five non-blocking findings are
+recorded in section 9 for the next release candidate.
+
+## 15. Milestone block
 
 ```text
 MAC-RC8-M1
@@ -590,4 +682,32 @@ mac_archived_resolved_records=1
 divergence_ready_for_gate21=true
 mac_report_path=docs/testing/results/2026-07-29-macos-phase1-rc8.md
 END-MAC-RC8-CONFLICT-PUSHED
+```
+
+```text
+MAC-RC8-M4-PASS
+release=v0.1.0-rc.8
+tag_commit=5e4f2605c53c6ad46c11569235bc78476ed94487
+profile_id=019165e7-cf0f-420d-b261-6c291b3e4f20
+canonical_project_id=local/reinstate-phase1-acceptance-rc8
+claude_session_id=0cdbd871-f924-4848-b62e-5edbeab66ae3
+codex_session_id=019facf4-d00f-7400-9a0f-8a2073e1af6e
+windows_w3_validated=PASS
+windows_final_commit=da79eff548e8bbe995f830f6ebeeff6860bb5b71
+mandatory_rows_total=23
+mandatory_rows_passed=23
+counts=23_PASS_0_PARTIAL_0_FAIL_0_NOT_TESTED
+dual_device_rows_evidenced_on_both=3,4,5,10
+section18_gates_verified_independently=PASS
+live_route_parity_reverified=PASS
+remote_revision=633f5f3d-6fd2-49ef-865f-0e29eed55850
+claude_snapshot_id=633f5f3d-6fd2-49ef-865f-0e29eed55850
+codex_snapshot_id=8e3dba9c-d0c0-4549-b6da-4d6c59b64f38
+remote_session_count=2
+active_conflicts_both_devices=0
+release_blocking_findings=0
+non_blocking_findings=6
+phase1_status=PASS
+mac_report_path=docs/testing/results/2026-07-29-macos-phase1-rc8.md
+END-MAC-RC8-M4-PASS
 ```
