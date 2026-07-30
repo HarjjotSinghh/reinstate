@@ -65,11 +65,15 @@ Under `fork`, a `pull` reports the new session it created:
 ```text
 pulled 1 snapshot(s), dry_run=false
   claude:SESSION -> ... (backups: ...)
-    SESSION is in use, so it was left unchanged; restored alongside it as SESSION-active-a1b2c3d4
+    SESSION is in use, so it was left unchanged; restored alongside it as 7c9e6679-7425-40de-944b-e07fc1f90ae7
 ```
 
-The fork identity is derived from the snapshot, so re-pulling the same remote
-state lands on the same file instead of accumulating copies. Because the live
+The fork identity is a UUID derived from the snapshot. Deriving it keeps
+re-pulling the same remote state idempotent: the second pull recognizes that the
+fork already holds those bytes and leaves it untouched rather than rewriting and
+backing it up again. Using a UUID rather than a decorated name matters because
+vendors treat session identifiers as UUIDs, and a decorated form is accepted by
+Claude Code's interactive resume but rejected by `claude --print --resume`. Because the live
 session is never replaced, a forked restore does not record a conflict and does
 not mark the original session as synchronized.
 

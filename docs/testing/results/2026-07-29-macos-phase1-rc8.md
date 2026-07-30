@@ -293,6 +293,16 @@ Non-blocking, recorded for sign-off:
    Device A hit this at M3 and recovered through the conflict route rather than
    editing anything. Both orderings should be corrected together.
 
+Findings 4, 5, and 6 were fixed for the stable `v0.1.0` release. Fork
+identities became derived UUIDs, a repeat pull of an in-use session no longer
+rewrites and backs up an identical fork, and the runbook records its ordering
+requirement. Those restore changes were re-verified on macOS against the patched
+build: the fork identity parses as a UUID and `claude --print --resume` accepts
+it, a repeat pull leaves the backup count unchanged, an in-place restore still
+produces a timestamped backup matching the pre-pull original, and the unchanged
+no-op still skips. The Windows-side backup gate should be re-confirmed on
+Device B against the stable build.
+
 Finding 1 is now **resolved**: gate 19 was closed at M3 by a genuine in-place
 Mac restore that produced two timestamped backups matching the pre-pull
 originals by SHA-256. It is retained here for traceability.

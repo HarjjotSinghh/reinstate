@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
+
 	"github.com/HarjjotSinghh/reinstate/internal/backend"
 	"github.com/HarjjotSinghh/reinstate/internal/backend/memory"
 	"github.com/HarjjotSinghh/reinstate/internal/config"
@@ -624,5 +626,62 @@ func TestPlanSessionRestore(t *testing.T) {
 				t.Fatalf("checker received path %q, want %q", gotPath, tc.wantPath)
 			}
 		})
+	}
+}
+
+// TestForkSessionIDIsADeterministicUUID covers the two properties a fork
+// identity needs at once.
+//
+// It must be a real UUID, because vendors treat session identifiers as UUIDs
+// and a decorated form such as "<uuid>-remote-<short>" is accepted by Claude
+// Code's interactive resume but rejected by `claude --print --resume`, leaving
+// a fork a human can open and automation cannot. It must also be derived
+// rather than random, so repeating a restore of the same snapshot lands on the
+// same file instead of accumulating copies.
+func TestForkSessionIDIsADeterministicUUID(t *testing.T) {
+	const session = "0cdbd871-f924-4848-b62e-5edbeab66ae3"
+	const snapshot = "633f5f3d-6fd2-49ef-865f-0e29eed55850"
+
+	got := forkSessionID("remote", session, snapshot)
+	if _, err := uuid.Parse(got); err != nil {
+		t.Fatalf("fork id %q is not a valid UUID: %v", got, err)
+	}
+	if strings.Contains(got, session) || strings.Contains(got, "remote") {
+		t.Fatalf("fork id %q leaks decorated structure", got)
+	}
+	if again := forkSessionID("remote", session, snapshot); again != got {
+		t.Fatalf("fork id is not deterministic: %q then %q", got, again)
+	}
+
+	// Distinct inputs must not collide, or a repeat pull could overwrite an
+	// unrelated fork.
+	other := []string{
+		forkSessionID("active", session, snapshot),
+		forkSessionID("remote", session, "0000000e-0000-4000-8000-000000000000"),
+		forkSessionID("remote", "0000000a-0000-4000-8000-000000000000", snapshot),
+	}
+	for _, o := range other {
+		if o == got {
+			t.Fatalf("distinct fork inputs collided on %q", got)
+		}
+	}
+}
+
+func TestAllPathsExist(t *testing.T) {
+	dir := t.TempDir()
+	present := filepath.Join(dir, "a.jsonl")
+	if err := os.WriteFile(present, []byte("{}\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	missing := filepath.Join(dir, "b.jsonl")
+
+	if allPathsExist(nil) {
+		t.Fatal("an empty plan must not count as already restored")
+	}
+	if !allPathsExist([]string{present}) {
+		t.Fatal("existing path reported as missing")
+	}
+	if allPathsExist([]string{present, missing}) {
+		t.Fatal("a partially present plan must not count as already restored")
 	}
 }

@@ -532,7 +532,7 @@ Mandatory result:
 
 - exit code `0`;
 - the output reports that the session was in use and names a new
-  `CLAUDE_SESSION_ID-active-<short>` session;
+  distinct session, named in the output and identified by a UUID;
 - the original session file is byte-for-byte unchanged; and
 - repeating the same pull does not create a second fork.
 
@@ -550,6 +550,17 @@ exclusively, then confirm the pull is nevertheless treated as in use. That
 combination is what RC7 could not satisfy.
 
 Delete the fork before continuing so later gates start from a clean state.
+
+**Ordering requirement.** Run section 14d *before* any step that resumes this
+session. Resuming a Claude session appends to it, so a session used for a resume
+or liveness check no longer matches its last pulled revision and an in-place
+restore will correctly report divergence with exit `6` instead of replacing the
+target. If that has already happened, reach the same evidence through the
+conflict route: a real pull records one conflict, and
+`rein conflicts resolve <id> --keep-remote` restores the remote copy after
+backing up the existing target. The same ordering applies to sections 15 and 16,
+where confirming a marker by resuming the session invalidates the unchanged
+no-op that section 16 then expects.
 
 ### 14c. The refusal still works when it is requested
 
