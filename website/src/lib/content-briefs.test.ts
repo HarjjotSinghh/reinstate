@@ -49,7 +49,7 @@ describe('content-brief workflow', () => {
     expect(source, `${slug}: reviewed date`).toMatch(
       /Last reviewed: 2026-07-27/,
     );
-    expect(source, `${slug}: release`).toContain('v0.1.0-rc.7');
+    expect(source, `${slug}: release`).toContain('v0.1.0');
     expect(source, `${slug}: route`).toMatch(/- URL: `\/[^`]+`/);
   });
 });

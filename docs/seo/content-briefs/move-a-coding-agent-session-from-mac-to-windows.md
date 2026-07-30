@@ -7,7 +7,7 @@
 - Page type: platform-specific practical guide
 - Owner: Harjot Singh Rana
 - Status: agent review accepted; maintainer sign-off pending
-- Target release: `v0.1.0-rc.7`
+- Target release: `v0.1.0`
 - Last reviewed: 2026-07-27
 
 ## Audience and intent
@@ -32,7 +32,7 @@
   write, and native vendor resume.
 - Current limitations: native Windows and physical two-device acceptance remain
   open release gates; WSL2 is separate and WSL1 is unsupported.
-- Version tested: source contract for Reinstate `v0.1.0-rc.7`.
+- Version tested: source contract for Reinstate `v0.1.0`.
 - Evidence: CLI/pathmap/adapter/sync tests, synthetic fixtures, compatibility
   data, and release notes.
 - Claims that require verification: physical-device success, performance,

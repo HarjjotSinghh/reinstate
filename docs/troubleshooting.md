@@ -13,7 +13,7 @@ make build && ./bin/rein version
 
 Usually a **path remap** issue:
 
-1. Run `rein version --json` and require `0.1.0-rc.7` or newer.
+1. Run `rein version --json` and require `0.1.0` or newer.
 2. Confirm the same canonical project ID maps to this device's absolute
    `local_root` in `config.toml`.
 3. Run a scoped `rein pull --agent claude --session SESSION_ID --dry-run` and
@@ -23,9 +23,9 @@ Usually a **path remap** issue:
    `rein list --agent claude --json` and
    `claude --resume SESSION_ID` to find the exact restored session.
 
-Do not manually move the session file. RC7 rejects legacy snapshots whose
-Claude project identity cannot be mapped safely; reinstall RC7 on the source
-device and push that selected session again to a fresh RC7 profile.
+Do not manually move the session file. Reinstate rejects legacy snapshots whose
+Claude project identity cannot be mapped safely; reinstall Reinstate on the source
+device and push that selected session again to a fresh Reinstate profile.
 
 Open an issue with OS pair (e.g. Windows 11 → macOS 15), agent version, and
 **redacted** paths.
@@ -52,7 +52,7 @@ profile's encrypted `manifest.age`. Check all three non-secret coordinates:
 Do not work around this by creating an empty manifest or using a new profile
 ID. Correct the setup inputs and rerun `init --profile-id` in a disposable or
 intentionally reinitialized home. If reusing an initialized home, review it
-first. RC7 provides `init --force`, which backs up config and state together
+first. Reinstate provides `init --force`, which backs up config and state together
 before replacing them.
 
 ## Conflicts after using both machines the same day

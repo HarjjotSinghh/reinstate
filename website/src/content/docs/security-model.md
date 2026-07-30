@@ -5,7 +5,7 @@ order: 4
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.1.0-rc.7"
+version: "v0.1.0"
 updatedAt: 2026-07-27
 tags: ["security", "encryption", "credentials", "threat-model", "age"]
 targetQuery: "is Reinstate secure"

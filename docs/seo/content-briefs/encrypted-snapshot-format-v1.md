@@ -22,7 +22,7 @@
 - Capabilities: encrypted manifest JSON v1; immutable encrypted session snapshot v1; newline-delimited metadata followed by one TAR adapter artifact; size, identity, safe-path, hash, compatibility, and restore checks.
 - Limitations: the v1 contract is an internal pre-1.0 Reinstate format, not a standards-body specification or cross-agent interchange standard.
 - Evidence: `internal/schema/envelope.go`, `internal/schema/manifest.go`, `internal/sync/push.go`, `internal/crypto/envelope.go`, and adapter export/restore implementations.
-- Version: envelope schema 1 and manifest schema 1 in `v0.1.0-rc.7`.
+- Version: envelope schema 1 and manifest schema 1 in `v0.1.0`.
 
 ## Outline
 

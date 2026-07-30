@@ -25,6 +25,7 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/crypto"
 	"github.com/HarjjotSinghh/reinstate/internal/fsx"
 	"github.com/HarjjotSinghh/reinstate/internal/lock"
+	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/schema"
 	"github.com/HarjjotSinghh/reinstate/internal/sync"
 )
@@ -698,6 +699,7 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 			// Sessions an agent is actively using, which must be restored
 			// alongside the live file instead of replacing it.
 			forkSessions := map[string]bool{}
+			projectRoots := configuredProjectRoots(cfg)
 			if !dryRun && (all || session != "") {
 				policy := cfg.Restore.ActiveAgentPolicy
 				if allowActiveAgents {
@@ -717,7 +719,12 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 						continue
 					}
 					disposition, err := planSessionRestore(
-						cmd.Context(), processChecker, remoteSession.Agent, localSession.Path, policy)
+						cmd.Context(), processChecker, remoteSession.Agent,
+						processcheck.Target{
+							SessionID:   remoteSession.SessionID,
+							Path:        localSession.Path,
+							ProjectRoot: projectRoots[localSession.ProjectID],
+						}, policy)
 					if err != nil {
 						return NewExitError(ExitSafety, err.Error())
 					}
@@ -790,7 +797,7 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 					// Derive the fork from the snapshot so re-pulling the same
 					// remote state lands on the same file instead of piling up
 					// a new copy on every attempt.
-					forkedID = s.SessionID + "-active-" + shortID(s.SnapshotID)
+					forkedID = forkSessionID("active", s.SessionID, s.SnapshotID)
 					restoreOptions.ForkSessionID = forkedID
 					restoreOptions.DestinationRelativePath = forkRelativePath(env.Files[0].Path, forkedID)
 				}
@@ -812,6 +819,20 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 					Destinations: restorePlan.Files, BackupRoot: restorePlan.BackupRoot,
 					ForkedSessionID: forkedID,
 				})
+				// A fork's identity is derived from the snapshot, so an existing
+				// fork already holds exactly the bytes this restore would write.
+				// Rewriting it would back up an identical copy on every repeat
+				// and grow the backup directory for no benefit.
+				if !dryRun && forkedID != "" && allPathsExist(restorePlan.Files) {
+					if err := os.Remove(artifactPath); err != nil && !os.IsNotExist(err) {
+						return err
+					}
+					PrintHuman(cmd.OutOrStdout(),
+						"    %s is in use and %s already holds this snapshot; left unchanged",
+						s.SessionID, forkedID)
+					pulled++
+					continue
+				}
 				if !dryRun {
 					artifact, err := os.Open(artifactPath)
 					if err != nil {
@@ -984,7 +1005,11 @@ func newConflictsCmd(processChecker AgentProcessChecker) *cobra.Command {
 				}
 				if err := requireSessionRestorable(
 					cmd.Context(), processChecker, conflict.Agent,
-					localSessionPath(conflict.Agent, conflict.SessionID), policy,
+					processcheck.Target{
+						SessionID:   conflict.SessionID,
+						Path:        localSessionPath(conflict.Agent, conflict.SessionID),
+						ProjectRoot: configuredProjectRoots(cfg)[conflict.ProjectID],
+					}, policy,
 				); err != nil {
 					return NewExitError(ExitSafety, err.Error())
 				}
@@ -1129,7 +1154,7 @@ func resolveKeepRemote(
 	}
 	options := adapter.RestoreOptions{BackupRoot: filepath.Join(home, "backups")}
 	if keepBoth {
-		targetID := remote.SessionID + "-remote-" + shortID(remote.SnapshotID)
+		targetID := forkSessionID("remote", remote.SessionID, remote.SnapshotID)
 		options.ForkSessionID = targetID
 		options.DestinationRelativePath = forkRelativePath(env.Files[0].Path, targetID)
 	}
@@ -1224,6 +1249,19 @@ func localSessionPath(agent, sessionID string) string {
 	return ""
 }
 
+// configuredProjectRoots maps canonical project IDs to their local roots so a
+// liveness check can tell whether an agent is working in the same project.
+func configuredProjectRoots(cfg *schema.Config) map[string]string {
+	roots := map[string]string{}
+	if cfg == nil {
+		return roots
+	}
+	for _, project := range cfg.Projects {
+		roots[project.ID] = project.LocalRoot
+	}
+	return roots
+}
+
 // restoreDisposition says how one restore target must be handled.
 type restoreDisposition int
 
@@ -1236,19 +1274,20 @@ const (
 
 // planSessionRestore applies the active-agent policy to a single target.
 //
-// The liveness question is scoped to sessionPath, so unrelated agents working
-// in other projects never affect a restore. Only an agent actually holding this
-// session file matters, and under the default policy even that does not block:
-// the remote copy is restored alongside the live session instead.
+// The liveness question is scoped to this session, so unrelated agents working
+// in other projects never affect a restore. Under the default policy even a
+// session that is genuinely in use does not block: the remote copy is restored
+// alongside the live session instead.
 func planSessionRestore(
-	ctx context.Context, checker AgentProcessChecker, agent, sessionPath, policy string,
+	ctx context.Context, checker AgentProcessChecker, agent string,
+	target processcheck.Target, policy string,
 ) (restoreDisposition, error) {
 	switch policy {
 	case schema.ActiveAgentOff:
 		return restoreInPlace, nil
 	case schema.ActiveAgentStrict:
 		// Strict deliberately discards the target so the check stays host-wide.
-		sessionPath = ""
+		target = processcheck.Target{}
 	case schema.ActiveAgentScoped, schema.ActiveAgentFork, "":
 	default:
 		return restoreInPlace, fmt.Errorf("unsupported restore.active_agent_policy %q", policy)
@@ -1256,7 +1295,7 @@ func planSessionRestore(
 
 	checkContext, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	busy, scoped, err := checker(checkContext, agent, sessionPath)
+	busy, scoped, err := checker(checkContext, agent, target)
 	if err != nil {
 		return restoreInPlace, fmt.Errorf(
 			"cannot verify whether %s is using this session: %w", agent, err)
@@ -1283,12 +1322,13 @@ func planSessionRestore(
 // so the fork policy is treated as scoped here rather than silently changing
 // what --keep-remote means.
 func requireSessionRestorable(
-	ctx context.Context, checker AgentProcessChecker, agent, sessionPath, policy string,
+	ctx context.Context, checker AgentProcessChecker, agent string,
+	target processcheck.Target, policy string,
 ) error {
 	if policy == schema.ActiveAgentFork || policy == "" {
 		policy = schema.ActiveAgentScoped
 	}
-	_, err := planSessionRestore(ctx, checker, agent, sessionPath, policy)
+	_, err := planSessionRestore(ctx, checker, agent, target, policy)
 	return err
 }
 
@@ -1300,11 +1340,34 @@ func forkRelativePath(source, sessionID string) string {
 	return dir + "/" + sessionID + ".jsonl"
 }
 
-func shortID(value string) string {
-	if len(value) > 8 {
-		return value[:8]
+// allPathsExist reports whether every path is already present on disk.
+func allPathsExist(paths []string) bool {
+	if len(paths) == 0 {
+		return false
 	}
-	return value
+	for _, path := range paths {
+		if _, err := os.Stat(path); err != nil {
+			return false
+		}
+	}
+	return true
+}
+
+// forkNamespace scopes the deterministic fork identifiers below. It is a fixed
+// random UUID and carries no meaning beyond keeping fork names in their own
+// space.
+var forkNamespace = uuid.MustParse("6f9619ff-8b86-d011-b42d-00c04fc964ff")
+
+// forkSessionID derives a fork identity from the session and snapshot it came
+// from.
+//
+// The result is a real UUID. Vendors treat session identifiers as UUIDs, and a
+// decorated form such as "<uuid>-remote-<short>" is accepted by Claude Code's
+// interactive resume but rejected by `claude --print --resume`, which leaves a
+// fork a human can open and automation cannot. Deriving the value keeps repeated
+// restores of the same snapshot idempotent, which a random UUID would not.
+func forkSessionID(kind, sessionID, snapshotID string) string {
+	return uuid.NewSHA1(forkNamespace, []byte(kind+"\x00"+sessionID+"\x00"+snapshotID)).String()
 }
 
 func updateSessionState(home, agentName, sessionID, localRevision, remoteRevision string) error {

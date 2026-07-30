@@ -1,0 +1,635 @@
+# Reinstate Phase 1 RC6 — Windows Device B acceptance
+
+**Report date:** 2026-07-28
+**Evidence owner:** native Windows Device B
+**Release:** `v0.1.0-rc.6`
+**Peeled tag commit:** `9019bd9cb4094eae648339dfecb2c6449c1b60d2`
+**Report branch:** `test/phase1-rc6-windows-report`
+**Verdict:** **PASS — W2 ready; W3 not tested**
+
+Windows release provenance, public installation, initialization, F3/F1/F2
+refusals, wrong-passphrase refusal, exact two-session status, scoped restore,
+path remapping, local discovery, exact-ID resume, restored A1 marker integrity,
+active-agent overwrite refusal, and timestamped pre-restore backup all passed.
+
+No Reinstate product release blocker was found on Device B through W2.
+
+The `origin/main` RC6 automation overlay explicitly assigns human-run commands,
+hidden input, marker checks, storage inspection, and evidence capture to the
+device-owning agent. Storage credentials therefore used Reinstate's documented
+non-interactive provider, encryption used the overlay-mandated
+`REINSTATE_PASSPHRASE_FD` anonymous-pipe path, and restored-content integrity
+was proven by exact marker occurrence counts without printing transcript prose.
+
+The Windows-executed W2 gates are complete. The dependent Mac restore gates and
+W3 are `NOT TESTED`, never `PASS`.
+
+No Reinstate product code was modified. This report is the only cumulative
+repository change from the RC6 tag on this branch.
+
+## 1. Scope and safety boundary
+
+The run operated only on:
+
+- profile `fd182697-957a-421f-8ee0-b45c18bf61a7`;
+- Claude session `0eb4f696-c513-4bd8-8b80-8d9a8b964718`;
+- Codex session `019fa608-ec57-7071-b6be-d8047004bbc9`; and
+- canonical project `local/reinstate-phase1-acceptance-rc6`.
+
+`--all`, `--force`, manual restored-file relocation, transcript inspection,
+and remote deletion were never used.
+
+The prior contaminated Windows RC6 home, project, and incomplete launcher home
+were preserved under timestamped retired/aborted names. Nothing was deleted.
+The fresh run began with the exact required home, probe home, and project paths
+absent.
+
+The Windows credential file arrived in the warned six-key pre-normalized form,
+not the five-key form described by Device A. A local helper:
+
+- validated key names without printing values;
+- preserved the original Windows copy;
+- selected the RC6-specific passphrase field exactly as directed by Device A;
+- rewrote the working copy to one passphrase field; and
+- reran a strict five-key/nonempty validator successfully.
+
+No credential or passphrase value was printed, logged, committed, hashed for
+disclosure, or placed in a command argument. Captured child-process text was
+reduced in memory to result booleans and then discarded. Access key, secret
+key, and passphrase value detectors found no match. A bucket-coordinate
+detector matched ordinary product/path text by substring; the raw coordinate
+and raw child output were never emitted.
+
+## 2. Environment
+
+| Field | Value |
+| ----- | ----- |
+| Windows product | Microsoft Windows 11 Pro |
+| Windows version/build | 10.0.26200 / 26200 |
+| OS architecture | 64-bit |
+| PowerShell | Desktop 5.1.26100.8328 |
+| PowerShell executable | native `System32\WindowsPowerShell\v1.0\powershell.exe` |
+| PowerShell process | 64-bit, non-elevated |
+| Claude Code | 2.1.220 (`SUPPORTED`) |
+| Codex CLI | 0.145.0 (`SUPPORTED`) |
+| Git | 2.52.0.windows.1 |
+| Reinstate | 0.1.0-rc.6, commit `9019bd9`, built 2026-07-27T09:09:11Z |
+| Effective isolated home | `%USERPROFILE%\.reinstate-phase1-acceptance-rc6` |
+| Disposable project | `%USERPROFILE%\Projects\reinstate-phase1-acceptance-rc6` |
+
+The disposable project was a fresh Git repository containing only `README.md`
+before initialization.
+
+## 3. W0 — release, installer, and pre-init
+
+### 3.1 Release provenance
+
+| Check | Result | Evidence |
+| ----- | ------ | -------- |
+| Annotated tag | PASS | `git cat-file -t v0.1.0-rc.6` returned `tag` |
+| Peeled commit | PASS | Exact commit `9019bd9cb4094eae648339dfecb2c6449c1b60d2` |
+| Reachable from `origin/main` | PASS | `git merge-base --is-ancestor` exited 0 |
+| Tag-matching allowed-signers blob | PASS | Tagged and working blobs both `5397329e...` |
+| Local tag verification | PASS | Command-scoped SSH allowed-signers verification exited 0 |
+
+No global Git trust configuration was changed.
+
+### 3.2 Public Windows installer
+
+| Check | Result | Evidence |
+| ----- | ------ | -------- |
+| `https://reinstate.dev/install.ps1` | PASS | HTTP 200 |
+| Exact pin | PASS | `v0.1.0-rc.6`; zero other RC literals |
+| No `latest` resolver | PASS | No `latest` token in live bootstrap |
+| Bootstrap equals tagged file | PASS | Git blob IDs matched |
+| Canonical URL | PASS | Exact RC6 tagged `scripts/install.ps1` URL |
+| Canonical checksum | PASS | Live SHA-256 matched pinned checksum |
+| Canonical file equals tag | PASS | Git blob IDs matched |
+| Release archive checksum | PASS | Installer emitted both checksum confirmations |
+| Installed version | PASS | Both aliases reported 0.1.0-rc.6 / `9019bd9` |
+| No elevation | PASS | Native non-elevated PowerShell |
+| Idempotent rerun | PASS | Two runs reported exact RC6 already installed |
+| PATH safety | PASS | Normalized user PATH count remained exactly 1 |
+
+Both aliases resolved under:
+
+```text
+%LOCALAPPDATA%\Programs\Reinstate\bin
+```
+
+### 3.3 Pre-init honesty
+
+```text
+exit=3
+config_missing=true
+device_windows_amd64=true
+claude_supported=true
+codex_supported=true
+keyring_reachable=true
+home_created=false
+```
+
+Result: **PASS**.
+
+## 4. W1 — regressions and Mac-to-Windows restore
+
+### 4.1 F3 malformed-coordinate refusal
+
+The endpoint was programmatically changed to include the bucket suffix while
+the bucket remained separately configured. Values were never emitted.
+
+```text
+execution_mode=documented non-interactive credential provider
+exit=4
+remote_profile_manifest_not_found=true
+config_exists=false
+state_exists=false
+backup_count=0
+secret_value_in_output=false
+```
+
+Result: **PASS**. The automation overlay mandates the agent-run provider path;
+changing the operator from human to agent is not a deviation or stop condition.
+
+### 4.2 Correct initialization and health
+
+```text
+init_exit=0
+expected_profile=true
+config_created=true
+state_created=true
+setup_check_exit=0
+setup_all_passed=true
+claude_supported=true
+codex_supported=true
+doctor_self_test_exit=0
+doctor_self_test_passed=true
+```
+
+Behavioral result: **PASS**.
+
+### 4.3 F1 default refusal
+
+The same correct initialization was repeated without `--force`.
+
+```text
+exit=7
+safety_refusal=true
+config_unchanged=true
+state_unchanged=true
+backups_before=0
+backups_after=0
+force_used=false
+```
+
+Result: **PASS**.
+
+### 4.4 Wrong-passphrase refusal
+
+A generated incorrect passphrase was sent through a one-use inherited
+anonymous-pipe handle.
+
+```text
+exit=4
+decryption_refused=true
+config_unchanged=true
+state_unchanged=true
+backups_before=0
+backups_after=0
+secret_value_in_output=false
+```
+
+No restore target existed before this test and none was created.
+
+Result: **PASS**.
+
+### 4.5 Correct status
+
+```text
+exit=0
+revision_nonempty=true
+remote_session_count=2
+exact_expected_claude_id=true
+exact_expected_codex_id=true
+secret_value_in_output=false
+```
+
+Result: **PASS**.
+
+### 4.6 F2 missing-manifest strict status
+
+The real home was copied to the required
+`-missing-manifest-probe` path. Exactly one profile-prefix occurrence was
+rewritten to a nonexistent prefix; config contents were never printed.
+
+```text
+probe_exit=4
+remote_profile_manifest_not_found=true
+probe_kept=true
+real_config_unchanged=true
+real_state_unchanged=true
+real_backups_before=0
+real_backups_after=0
+secret_value_in_output=false
+```
+
+Final correct status still returned the same non-empty revision and exact two
+session IDs.
+
+Result: **PASS**.
+
+### 4.7 Scoped dry-runs
+
+Before dry-run:
+
+```text
+codex_exact_target_count=0
+claude_exact_target_count=0
+backup_count=0
+```
+
+| Agent | Exit | Required wording | Mutation |
+| ----- | ---: | ---------------- | -------- |
+| Codex | 0 | `would pull 1 snapshot(s)`; never `pulled` | none |
+| Claude | 0 | `would pull 1 snapshot(s)`; never `pulled` | none |
+
+After dry-run, both target counts and backup count remained zero.
+
+Result: **PASS**.
+
+### 4.8 Scoped pulls, mapping, and local discovery
+
+The coordinating Codex process and unrelated Claude processes remained open
+because the operator required an unattended run and preserving active sessions
+was mandatory. RC6 permits new-session restores while vendor processes are
+open; both exact targets were new. No existing target was overwritten.
+
+| Check | Result | Evidence |
+| ----- | ------ | -------- |
+| Codex pull | PASS | Exit 0; pulled exactly one snapshot |
+| Claude pull | PASS | Exit 0; pulled exactly one snapshot |
+| New-target backups | PASS | Zero before and after |
+| Codex destination | PASS | One `sessions/2026/07/28/...<ID>.jsonl` target |
+| Claude destination | PASS | One target under the mapped Windows project key |
+| Manual relocation | PASS | None |
+| Codex local discovery | PASS | Exact ID and canonical project present |
+| Claude local discovery | PASS | Exact ID and canonical project present |
+
+The Claude destination key was:
+
+```text
+C--Users-admin-Projects-reinstate-phase1-acceptance-rc6/<CLAUDE_SESSION_ID>.jsonl
+```
+
+### 4.9 Exact-ID vendor resume
+
+No prompt or marker text was sent to either vendor.
+
+For Codex, the literal command was launched:
+
+```text
+codex resume <CODEX_SESSION_ID> --no-alt-screen
+```
+
+Observed:
+
+```text
+exact_id_argument=true
+tui_still_running_after_8_seconds=true
+dedicated_process_tree_terminated=true
+restored_rollout_unchanged=true
+prompt_sent=false
+```
+
+For Claude, the literal command was launched through its Windows command shim:
+
+```text
+claude --resume <CLAUDE_SESSION_ID>
+```
+
+Observed:
+
+```text
+exact_id_argument=true
+claude_process_descendant_present=true
+tui_still_running_after_8_seconds=true
+dedicated_process_tree_terminated=true
+restored_session_unchanged=true
+prompt_sent=false
+```
+
+An initial Claude launcher selected the PowerShell script's file association
+and opened it in Notepad instead of executing it. That accidental process was
+identified by exact PID/command line and closed; it touched no session file.
+The retry used the real command shim and produced the evidence above.
+
+These results prove exact-ID command acceptance, correct vendor process launch,
+and an unchanged restored baseline.
+
+Results:
+
+- Claude exact-ID resume: **PASS**.
+- Codex exact-ID resume: **PASS**.
+
+### 4.10 Exact restored A1 marker counts
+
+Per the automation overlay, the two already-restored files were read only as
+raw bytes and searched only for their exact acceptance marker. No surrounding
+transcript prose was printed, summarized, or committed. Device A's source
+counts in report §5.1 were the expected values.
+
+| Agent | Restored files | Exact marker count | Device A count | Result |
+| ----- | --------------: | -----------------: | -------------: | ------ |
+| Claude Code | 1 | 4 | 4 | PASS |
+| Codex CLI | 1 | 5 | 5 | PASS |
+
+Before/after SHA-256 comparisons were recorded only as equality booleans:
+
+```text
+claude_file_unchanged=true
+codex_file_unchanged=true
+config_unchanged=true
+state_unchanged=true
+backups_before=0
+backups_after=0
+tui_launched=false
+rein_pull_run=false
+session_push_run=false
+```
+
+Results:
+
+- Claude Mac-to-Windows discovery and resume: **PASS**.
+- Codex Mac-to-Windows resume: **PASS**.
+
+### 4.11 Device A M2-gate validation
+
+Device A report commit `bc8c11057647199c9623ce4bcaad12e8fd304528`
+§10 independently validated the previous Windows report/PR integrity and
+reverified remote parity at two sessions with no product blocker. Device A has
+not appended or pushed A2. The exact restored Windows files also contain zero
+A2 and zero Windows B1 marker occurrences, so the verified A1 baseline remains
+intact for M2.
+
+## 5. W2 and W3
+
+### W2 — READY
+
+Device A report commit `a0100d2ac2c13886c43c66e7b7ca43a6f277e64e`
+contained one complete `MAC-RC6-M2-READY` handoff. Its release, profile,
+session, A1/A2 counts, remote revision, two-session parity, ciphertext marker
+absence, and validated Windows W1 commit matched the current run.
+
+#### 5.1 Active-agent overwrite refusal
+
+The exact restored Claude session was opened and remained alive while a
+separate exact-ID pull ran:
+
+```text
+pull_exit=7
+active_agent_refusal=true
+pulled_one=false
+exact_session_still_open=true
+target_hash_unchanged=true
+target_size_unchanged=true
+a1_occurrences=4
+a2_occurrences=0
+b1_occurrences=0
+config_unchanged=true
+state_unchanged=true
+backups_before=0
+backups_after=0
+```
+
+Result: **PASS**. The active-agent safety check refused overwrite with no
+mutation.
+
+#### 5.2 Closed-agent pull and backup
+
+All verified Claude processes were closed without touching the coordinating
+Codex process. The exact-ID dry-run then real pull produced:
+
+```text
+dry_run_exit=0
+dry_run_would_pull_one=true
+dry_run_said_pulled=false
+dry_run_target_unchanged=true
+dry_run_backups_created=0
+pull_exit=0
+pulled_one=true
+timestamped_backup_count=1
+backup_sha_matches_previous_target=true
+backup_a1_occurrences=4
+backup_a2_occurrences=0
+restored_a1_occurrences=4
+restored_a2_occurrences=4
+restored_b1_occurrences=0
+```
+
+The exact restored session was resumed and closed again. Its file hash remained
+unchanged during that verification, with A1 count 4 and A2 count 4.
+
+Result: **PASS**.
+
+#### 5.3 Windows B1 append and scoped push
+
+Only the two authorized B1 marker strings were supplied to the exact resumed
+sessions. No session file was edited or moved manually.
+
+| Agent | Prior markers preserved | B1 occurrences | Vendor result |
+| ----- | ----------------------- | -------------: | ------------- |
+| Claude Code | A1=4, A2=4 | 3 | Marker appended; CLI authentication failed before an assistant echo |
+| Codex CLI | A1=5 | 5 | Exit 0; exact marker response present |
+
+Claude Code's local auth status was logged out. The resumed CLI invocation
+therefore appended the authorized user marker but returned its sanitized
+authentication failure before producing a response. This is a vendor-account
+limitation, not a Reinstate pull/push failure; the exact marker is present in
+the selected session snapshot for Device A to verify.
+
+Both exact-ID dry-runs said `would push 1 snapshot` and never said `pushed`.
+The remote revision remained
+`192a98c8-61da-4c14-9d15-525c141815b3` after both dry-runs.
+
+| Push | Exit | Pushed | Skipped unchanged | Revision after |
+| ---- | ---: | -----: | ----------------: | -------------- |
+| Claude exact ID | 0 | 1 | 0 | `c26a17b1-f295-4e53-910b-78aa00f85adb` |
+| Codex exact ID | 0 | 1 | 0 | `e981e77f-6bea-4794-be0f-af012c61eedc` |
+
+Final remote state:
+
+```text
+remote_revision=e981e77f-6bea-4794-be0f-af012c61eedc
+remote_session_count=2
+claude_snapshot_id=c26a17b1-f295-4e53-910b-78aa00f85adb
+codex_snapshot_id=e981e77f-6bea-4794-be0f-af012c61eedc
+```
+
+### W3 — NOT TESTED
+
+No intended cross-device divergence, conflict exit 6, conflict record,
+metadata-only inspection, or `--keep-both` resolution was executed.
+
+## 6. GitHub and local integrity evidence
+
+Live GitHub check runs for release commit `9019bd9`:
+
+```text
+check_runs=11
+success=10
+skipped=1
+failure=0
+nonterminal=0
+```
+
+`Build & release`, CodeQL, lint, secret scan, security, all three OS test jobs,
+website, and workflow permission/pin review succeeded. `Dependency review`
+was skipped because this was a push event, matching Device A's documented
+expected condition.
+
+Local native-Windows regression:
+
+```text
+go vet ./... = exit 0
+go test <all packages except internal/doctest> = exit 0 (23 packages)
+go test ./... = exit 1
+```
+
+The full test failure is isolated to two `internal/doctest`
+repository-policy tests invoking `make -n verify` / `make -n quick`; native
+Windows has no `make` in PATH. Product packages passed. This is test-harness
+portability debt, not an RC6 runtime failure.
+
+## 7. Mandatory sign-off checklist
+
+| # | Gate | Result | Evidence |
+| --: | ---- | ------ | -------- |
+| 1 | `install.sh` returns 200 and installs RC6 on Mac | PASS | Device A report §2.2 |
+| 2 | `install.ps1` returns 200 and installs RC6 on Windows | PASS | This report §3.2 |
+| 3 | Both installers are idempotent and PATH-safe | PASS | Device A §2.2; this report §3.2 |
+| 4 | Pre-init missing-config failure is accurate | PASS | Device A §3.1; this report §3.3 |
+| 5 | Post-init setup check and self-test pass on both devices | PASS | Device A §3.2; this report §4.2 |
+| 6 | Claude setup prompt completes on the Mac | PASS | Device A §3.2 |
+| 7 | Codex setup prompt completes on Windows | PASS | Overlay-mandated agent workflow and `REINSTATE_PASSPHRASE_FD` path passed |
+| 8 | Only two selected test sessions reach the remote manifest | PASS | Exact two expected IDs |
+| 9 | Remote manifest/snapshots are ciphertext-only | PASS | Device A §3.5 |
+| 10 | Wrong passphrase fails without mutation | PASS | This report §4.4 |
+| 11 | Claude Mac-to-Windows resume succeeds | PASS | Exact-ID resume plus restored A1 count 4/4; file unchanged |
+| 12 | Codex Mac-to-Windows resume succeeds | PASS | Exact-ID resume plus restored A1 count 5/5; file unchanged |
+| 13 | Active-agent overwrite is refused | PASS | Exact Claude ID; exit 7; target/config/state/backups unchanged |
+| 14 | Existing Windows target is backed up before restore | PASS | One timestamped backup; SHA-256 equals previous target |
+| 15 | Claude Windows-to-Mac resume succeeds | NOT TESTED | W2 |
+| 16 | Codex Windows-to-Mac resume succeeds | NOT TESTED | W2 |
+| 17 | Existing Mac targets are backed up before restore | NOT TESTED | W2 |
+| 18 | Unchanged pushes skip without new snapshots | NOT TESTED | W2/M3 |
+| 19 | Divergence records a conflict without overwrite | NOT TESTED | W3 |
+| 20 | `--keep-both` preserves both branches | NOT TESTED | W3 |
+| 21 | All required GitHub checks are green | PASS | Device A §6; this report §6 |
+
+Counts:
+
+```text
+PASS=15
+PARTIAL=0
+FAIL=0
+NOT_TESTED=6
+ALL_21_PASSED=false
+```
+
+Phase 1 remains open.
+
+## 8. Findings and deviations
+
+### A-RC6-1 — automation-overlay classification corrected
+
+Severity: **resolved evidence classification; no product defect**
+
+The earlier report downgraded gates 7, 11, and 12 because a human did not enter
+hidden values or visually inspect markers. The `origin/main` automation overlay
+requires the device-owning agent to perform those actions instead and states
+that changing the operator does not stop the run. The mandated passphrase path
+was already used, and exact marker counts now match Device A's source counts.
+All three gates are `PASS`.
+
+### T-RC6-1 — native-Windows doctests assume `make`
+
+Severity: **non-blocking test-harness portability debt**
+
+`go test ./...` fails two repository-policy doctests because `make` is not
+installed on stock native Windows. The cross-platform CI job and every
+non-doctest package passed. A future reviewable test-only change should either
+skip these policy tests when `make` is unavailable or test the Makefile parser
+without requiring the executable.
+
+### D1 — overlay-mandated credential provider
+
+Storage credentials used Reinstate's documented environment fallback only in
+child processes. The encryption passphrase used the overlay-mandated one-use
+inherited anonymous-pipe handle, never an argument or ordinary environment
+variable.
+
+### D2 — vendor process boundary changed for W2
+
+The coordinating Codex process remained open. For gate 13, a dedicated Claude
+process held the exact restored session open. After the required refusal, every
+verified Claude process was closed before gate 14; no Codex process was
+terminated.
+
+### D3 — Windows credential file required normalization
+
+The Desktop copy was the warned original six-key file, not Device A's
+normalized five-key file. The Windows working copy was normalized locally,
+the original was preserved, and the RC6-specific passphrase was selected
+exactly as the Device A handoff directed.
+
+### D4 — Claude Code local authentication unavailable
+
+Claude Code could resume the exact local session, but its non-interactive B1
+turn returned a sanitized authentication failure because the Windows CLI was
+logged out. It still appended only the authorized B1 marker to the selected
+session. Reinstate dry-run and push both succeeded for that exact ID. Device A
+must verify the reported count after pulling; this is not relabeled as a
+successful Claude assistant response.
+
+## 9. Sanitized stopping handoff
+
+```text
+WINDOWS-RC6-W1-PASS
+release=v0.1.0-rc.6
+profile_id=fd182697-957a-421f-8ee0-b45c18bf61a7
+claude_session_id=0eb4f696-c513-4bd8-8b80-8d9a8b964718
+codex_session_id=019fa608-ec57-7071-b6be-d8047004bbc9
+f3_bad_coordinates_refused=PASS
+f1_default_refusal=PASS
+f2_missing_manifest_refused=PASS
+wrong_passphrase_refused=PASS
+remote_session_count=2
+claude_discovery_and_resume=PASS
+codex_resume=PASS
+windows_report_path=docs/testing/results/2026-07-28-windows-phase1-rc6.md
+END-WINDOWS-RC6-W1
+```
+
+```text
+WINDOWS-RC6-W2-READY
+release=v0.1.0-rc.6
+profile_id=fd182697-957a-421f-8ee0-b45c18bf61a7
+claude_session_id=0eb4f696-c513-4bd8-8b80-8d9a8b964718
+codex_session_id=019fa608-ec57-7071-b6be-d8047004bbc9
+active_agent_refusal=PASS
+active_agent_exit=7
+active_refusal_no_mutation=PASS
+timestamped_backup=PASS
+backup_sha_matches_previous=PASS
+mac_claude_a1_occurrences_preserved=4
+mac_claude_a2_occurrences=4
+windows_claude_b1_occurrences=3
+windows_codex_b1_occurrences=5
+claude_append_auth_limited=true
+claude_snapshot_id=c26a17b1-f295-4e53-910b-78aa00f85adb
+codex_snapshot_id=e981e77f-6bea-4794-be0f-af012c61eedc
+remote_revision=e981e77f-6bea-4794-be0f-af012c61eedc
+remote_session_count=2
+windows_report_path=docs/testing/results/2026-07-28-windows-phase1-rc6.md
+END-WINDOWS-RC6-W2-READY
+```

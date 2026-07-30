@@ -5,7 +5,7 @@ export const prerender = true;
 
 const title = 'Continue Coding-Agent Sessions from Desktop to Laptop';
 const description =
-  'Move one encrypted Claude Code or Codex session between a configured desktop and laptop with RC7, user-owned storage, path mapping, and safe restore.';
+  'Move one encrypted Claude Code or Codex session between a configured desktop and laptop with Reinstate, user-owned storage, path mapping, and safe restore.';
 ---
 
 <PublicContentLayout
@@ -13,7 +13,7 @@ const description =
   {description}
   path="/use-cases/desktop-and-laptop"
   eyebrow="Use case · Desktop and laptop"
-  answer="Reinstate RC7 can move one selected Claude Code or Codex session from a desktop to a laptop through an age-encrypted snapshot in your own S3-compatible bucket. Each computer keeps its own checkout path, agent login, and local tools; both map the project to one canonical ID and resume through the same vendor."
+  answer="Reinstate can move one selected Claude Code or Codex session from a desktop to a laptop through an age-encrypted snapshot in your own S3-compatible bucket. Each computer keeps its own checkout path, agent login, and local tools; both map the project to one canonical ID and resume through the same vendor."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'Use cases', path: '/use-cases' },
@@ -29,7 +29,7 @@ const description =
     need to remain online while the destination pulls.
   </p>
   <p>
-    RC7 supports same-vendor Claude Code and Codex CLI session transfer. It does not move the Git
+    Reinstate supports same-vendor Claude Code and Codex CLI session transfer. It does not move the Git
     repository, log the agent into its vendor account, reproduce the entire development
     environment, or convert a Claude Code session into a Codex rollout.
   </p>
@@ -68,10 +68,10 @@ const description =
     </table>
   </div>
 
-  <h2 id="fit">When this use case fits RC7</h2>
+  <h2 id="fit">When this use case fits Reinstate</h2>
   <ul>
     <li>Both computers are trusted and authorized to hold the project and session.</li>
-    <li>Both use the exact RC7 binary and a recognized version of the same agent vendor.</li>
+    <li>Both use the exact Reinstate binary and a recognized version of the same agent vendor.</li>
     <li>The project is checked out normally on each device, even if its absolute paths differ.</li>
     <li>Both can access one private S3-compatible profile and their own OS keyrings.</li>
     <li>You can retain the long encryption passphrase independently of both computers.</li>
@@ -96,7 +96,7 @@ const description =
   <h2 id="workflow">The explicit desktop-to-laptop workflow</h2>
   <ol class="pc-steps">
     <li>
-      Install RC7 and the recognized same-vendor agent on both computers. Run
+      Install Reinstate and the recognized same-vendor agent on both computers. Run
       <code>rein setup check</code> and stop if the selected adapter is
       <code>UNTESTED</code> or <code>UNSUPPORTED</code>.
     </li>
@@ -143,7 +143,7 @@ const description =
   <h2 id="evidence">What verifiable success looks like</h2>
   <ul>
     <li>
-      Both computers report <code>0.1.0-rc.7</code> and a
+      Both computers report <code>0.1.0</code> and a
       <code>SUPPORTED</code> same-vendor adapter.
     </li>
     <li>The source dry-run selects exactly one intended session and uploads nothing.</li>
@@ -206,7 +206,7 @@ const description =
     </table>
   </div>
   <p>
-    RC7 has no general undo command. A dry-run is the safest rollback because it creates nothing.
+    Reinstate has no general undo command. A dry-run is the safest rollback because it creates nothing.
     After a real replacement, preserve the timestamped local backup before taking another action.
     Do not delete the remote manifest merely to make a broken profile look empty.
   </p>
@@ -214,7 +214,7 @@ const description =
   <h2 id="independent-backups">Why independent backups still matter</h2>
   <p>
     Reinstate's remote profile is optimized for continuity, not comprehensive disaster recovery.
-    RC7 does not manage provider versioning, retention, archival restore, or remote garbage
+    Reinstate does not manage provider versioning, retention, archival restore, or remote garbage
     collection. A mistaken provider deletion, compromised write credential, lost passphrase, or
     damaged endpoint can make the continuity copy unavailable.
   </p>
@@ -237,7 +237,7 @@ const description =
   <h3>Can the desktop use Windows while the laptop uses macOS?</h3>
   <p>
     That is the flagship path-remapping case, but native device and physical two-device acceptance
-    remain open RC7 gates. Use the
+    remain open Reinstate gates. Use the
     <a href="/guides/move-a-coding-agent-session-from-mac-to-windows">
       Mac-to-Windows guide
     </a>
@@ -260,7 +260,7 @@ const description =
 
   <h3>What if both devices changed the same session?</h3>
   <p>
-    Pull must not silently overwrite a divergent local copy. RC7 records conflict metadata; review
+    Pull must not silently overwrite a divergent local copy. Reinstate records conflict metadata; review
     it and choose an explicit resolution. <code>--keep-both</code> preserves the local branch and
     restores a distinct vendor-safe fork of the remote branch.
   </p>

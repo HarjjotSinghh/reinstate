@@ -5,7 +5,7 @@ order: 7
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.1.0-rc.7"
+version: "v0.1.0"
 updatedAt: 2026-07-27
 tags: ["faq", "session-sync", "claude-code", "codex", "security"]
 targetQuery: "what is Reinstate"
@@ -160,8 +160,9 @@ backend. Offline indexing and search are Phase 2 roadmap work.
 ## Does Reinstate support Windows and macOS?
 
 Windows ↔ macOS is the primary design target, and the structural path-remapping
-implementation is in the release candidate. Exact native Windows, macOS amd64,
-WSL2, and two-device certification remain open release gates; check the
+implementation shipped in v0.1.0, and two-device Windows ↔ macOS acceptance
+passed on macOS arm64 and native Windows amd64. macOS amd64 and WSL2
+certification remain open release gates; check the
 [roadmap](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md).
 
 ## What happens when Claude Code or Codex changes its session format?
@@ -179,7 +180,7 @@ syncing after an agent upgrade.
 
 ## Production ready?
 
-No. Reinstate is a pre-1.0 release candidate while native acceptance gates are
+No. Reinstate is a stable pre-1.0 release while further native acceptance gates are
 open. See the [roadmap](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md)
 and [changelog](https://github.com/HarjjotSinghh/reinstate/blob/main/CHANGELOG.md),
 use it with backups, and report bugs through GitHub Issues.

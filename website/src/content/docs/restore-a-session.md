@@ -5,7 +5,7 @@ order: 13
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.1.0-rc.7"
+version: "v0.1.0"
 updatedAt: 2026-07-27
 tags: ["pull", "restore", "native-resume", "backup", "conflicts"]
 targetQuery: "restore a coding agent session with Reinstate"
@@ -20,13 +20,13 @@ verify the restored ID with `rein list`, and resume through the same vendor's
 native command.
 
 > **Current scope:** Claude Code sessions restore to Claude Code, and Codex
-> sessions restore to Codex. RC7 does not translate native transcripts,
+> sessions restore to Codex. Reinstate does not translate native transcripts,
 > prepare the Git repository, install dependencies, copy agent credentials, or
 > recreate the complete source-machine environment.
 
 ## Prerequisites
 
-- Reinstate `v0.1.0-rc.7` installed and initialized on the destination.
+- Reinstate `v0.1.0` installed and initialized on the destination.
 - The source profile's exact `profile_id`, storage bucket, prefix, and
   encryption passphrase.
 - The same canonical project ID mapped to this device's real absolute path.
@@ -126,7 +126,7 @@ codex resume SESSION_ID
 
 For Claude Code, success requires discovery beneath the exact recomputed
 destination project directory key. Finding the same ID elsewhere under the
-Claude session tree is not equivalent. For Codex, RC7 preserves the native
+Claude session tree is not equivalent. For Codex, Reinstate preserves the native
 date-partitioned rollout layout and expands the structural
 `session_meta.cwd` through the configured local project root.
 

@@ -7,7 +7,7 @@
 | Audited implementation commit | `59cecde121ce06a9ccbd7f5b93329a37082cdec1` |
 | Branch | `feat/seo-aeo-aseo-foundation` |
 | Worktree | `/Users/harjjotsinghh/Documents/Projects/reinstate-seo` |
-| Product version | `v0.1.0-rc.7` |
+| Product version | `v0.1.0` |
 | Local audit date | 2026-07-27 |
 | Production deployment | Not deployed |
 | Previous comparable audit | Initial landing-page baseline in the supplied playbook |
@@ -87,7 +87,7 @@ None in the audited branch.
 The following are High launch blockers but not local implementation defects:
 
 1. The audited commit is not deployed.
-2. Native macOS, macOS amd64, Windows, WSL2, and complete two-device RC7
+2. Native macOS, macOS amd64, Windows, WSL2, and complete two-device Reinstate
    acceptance evidence is still open.
 3. Real-browser keyboard, 200% zoom, dark-theme, no-JavaScript, Windows, and
    assistive-technology acceptance is not recorded.
@@ -120,7 +120,7 @@ None left without a documented owner or evidence gate.
   same-vendor; cross-agent continuity is an explicit later handoff.
 - Product-truth review corrected two subtle overclaims: RC5 performed a
   metadata-only remote-manifest probe, not decryption; and the lower-level
-  `${WORK:<alias>}` primitive is not wired into RC7 config or adapters.
+  `${WORK:<alias>}` primitive is not wired into Reinstate config or adapters.
 
 ## Technical SEO and structured-data findings
 
@@ -194,7 +194,7 @@ the branch is not deployed. Evidence:
 2. Run `npm --prefix website run check:production-discovery` immediately after
    deployment and again after production promotion. Require all canonical,
    sitemap, card, feed, and crawler-string checks to pass.
-3. Complete the manual browser matrix and RC7 physical platform/two-device
+3. Complete the manual browser matrix and Reinstate physical platform/two-device
    acceptance before a stable or complete Phase 1 claim.
 4. Configure and verify Search Console and Bing, then submit the canonical
    sitemap. Record URL Inspection evidence for launch-critical pages.

@@ -128,7 +128,7 @@ export const staticOgPages: OgPage[] = [
     kind: 'Product roadmap',
     title: 'From encrypted sync to work continuity',
     description:
-      'Separate Reinstate RC7 capabilities and acceptance gates from planned search, handoff, and configuration phases.',
+      'Separate Reinstate capabilities and acceptance gates from planned search, handoff, and configuration phases.',
   },
   {
     route: '/research',

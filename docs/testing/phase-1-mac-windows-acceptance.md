@@ -4,7 +4,7 @@ Use this runbook to decide whether Reinstate Phase 1 is actually functional.
 It tests the public installers, Claude Code and Codex setup prompts, encrypted
 two-device synchronization, restore safety, and failure behavior.
 
-**Release under test:** `v0.1.0-rc.7`
+**Release under test:** `v0.1.0-rc.8`
 **Device A:** macOS  
 **Device B:** native 64-bit Windows  
 **Scope:** Claude Code and Codex CLI sessions only
@@ -16,7 +16,7 @@ row in the final checklist must pass before Phase 1 is complete.
 
 - Use a disposable project created for this run.
 - Use an isolated Reinstate home on both devices.
-- Create a new RC7 profile and remote prefix. Do not reuse an RC5-or-older
+- Create a new RC8 profile and remote prefix. Do not reuse an RC5-or-older
   profile, passphrase, snapshot, state file, or acceptance session.
 - Never paste the R2/S3 secret key or encryption passphrase into an AI prompt,
   command argument, ordinary environment variable, screenshot, or test report.
@@ -106,7 +106,7 @@ reports `UNTESTED`.
 Use the same canonical ID on both devices:
 
 ```text
-local/reinstate-phase1-acceptance-rc7
+local/reinstate-phase1-acceptance-rc8
 ```
 
 ### Device A — macOS
@@ -114,8 +114,8 @@ local/reinstate-phase1-acceptance-rc7
 Run in a new terminal:
 
 ```sh
-export REINSTATE_HOME="$HOME/.reinstate-phase1-acceptance-rc7"
-export PHASE1_PROJECT="$HOME/Projects/reinstate-phase1-acceptance-rc7"
+export REINSTATE_HOME="$HOME/.reinstate-phase1-acceptance-rc8"
+export PHASE1_PROJECT="$HOME/Projects/reinstate-phase1-acceptance-rc8"
 mkdir -p "$PHASE1_PROJECT"
 cd "$PHASE1_PROJECT"
 git init
@@ -130,8 +130,8 @@ inherits the isolated `REINSTATE_HOME`.
 Run in a new PowerShell:
 
 ```powershell
-$env:REINSTATE_HOME = Join-Path $HOME ".reinstate-phase1-acceptance-rc7"
-$Phase1Project = Join-Path $HOME "Projects\reinstate-phase1-acceptance-rc7"
+$env:REINSTATE_HOME = Join-Path $HOME ".reinstate-phase1-acceptance-rc8"
+$Phase1Project = Join-Path $HOME "Projects\reinstate-phase1-acceptance-rc8"
 New-Item -ItemType Directory -Force -Path $Phase1Project | Out-Null
 Set-Location $Phase1Project
 git init
@@ -158,8 +158,8 @@ If the script tells you that `~/.local/bin` was added to a shell file, open a
 new terminal and re-export the acceptance environment:
 
 ```sh
-export REINSTATE_HOME="$HOME/.reinstate-phase1-acceptance-rc7"
-export PHASE1_PROJECT="$HOME/Projects/reinstate-phase1-acceptance-rc7"
+export REINSTATE_HOME="$HOME/.reinstate-phase1-acceptance-rc8"
+export PHASE1_PROJECT="$HOME/Projects/reinstate-phase1-acceptance-rc8"
 cd "$PHASE1_PROJECT"
 ```
 
@@ -176,7 +176,7 @@ Expected:
 - HTTP status `200`;
 - `rein` and `reinstate` resolve under `~/.local/bin`;
 - the installer reports both checksum checks as successful; and
-- JSON contains `"version": "0.1.0-rc.7"`.
+- JSON contains `"version": "0.1.0-rc.8"`.
 
 Run the same one-liner again. It must report the same version already installed
 and must not duplicate its PATH entry.
@@ -202,7 +202,7 @@ Expected:
 - both commands resolve under
   `%LOCALAPPDATA%\Programs\Reinstate\bin`;
 - checksum verification succeeds;
-- JSON contains `"version": "0.1.0-rc.7"`; and
+- JSON contains `"version": "0.1.0-rc.8"`; and
 - no elevated PowerShell prompt appears.
 
 Run the one-liner again. It must not duplicate the user PATH entry:
@@ -252,13 +252,13 @@ Do not include credentials, proprietary code, or personal data.
 Claude Code test prompt:
 
 ```text
-Reply with exactly: REINSTATE-PHASE1-RC7-MAC-CLAUDE-A1
+Reply with exactly: REINSTATE-PHASE1-RC8-MAC-CLAUDE-A1
 ```
 
 Codex test prompt:
 
 ```text
-Reply with exactly: REINSTATE-PHASE1-RC7-MAC-CODEX-A1
+Reply with exactly: REINSTATE-PHASE1-RC8-MAC-CODEX-A1
 ```
 
 Exit both agents cleanly. Then list metadata:
@@ -291,12 +291,12 @@ the complete
 Before any Reinstate command, Prompt version 6 must detect and report the exact
 already-exported `REINSTATE_HOME`. Confirm it explicitly. If the agent unsets,
 changes, or falls back from that value, stop the run; evidence from the default
-home is not RC7 acceptance evidence.
+home is not RC8 acceptance evidence.
 
 When it asks:
 
 - this is the first device;
-- use canonical ID `local/reinstate-phase1-acceptance-rc7`;
+- use canonical ID `local/reinstate-phase1-acceptance-rc8`;
 - use the Mac absolute project path;
 - select only `CLAUDE_SESSION_ID`;
 - provide the non-secret endpoint and bucket; and
@@ -308,7 +308,7 @@ bootstrap contract, and prepare this human-run command:
 
 ```sh
 rein init \
-  --project "local/reinstate-phase1-acceptance-rc7=$PHASE1_PROJECT"
+  --project "local/reinstate-phase1-acceptance-rc8=$PHASE1_PROJECT"
 ```
 
 Run it privately. Record the printed non-secret `profile_id` as
@@ -366,13 +366,13 @@ snapshots/<opaque-uuid>.age
 ```
 
 Download one `.age` snapshot through the storage provider's normal UI. Do not
-share it. Search the downloaded bytes locally for both exact RC7 marker
+share it. Search the downloaded bytes locally for both exact RC8 marker
 strings without printing any matching bytes:
 
 ```sh
 SNAPSHOT_FILE="/absolute/path/to/downloaded-snapshot.age"
-LC_ALL=C grep -aFq 'REINSTATE-PHASE1-RC7-MAC-CLAUDE-A1' "$SNAPSHOT_FILE"; echo "claude_marker_exit=$?"
-LC_ALL=C grep -aFq 'REINSTATE-PHASE1-RC7-MAC-CODEX-A1' "$SNAPSHOT_FILE"; echo "codex_marker_exit=$?"
+LC_ALL=C grep -aFq 'REINSTATE-PHASE1-RC8-MAC-CLAUDE-A1' "$SNAPSHOT_FILE"; echo "claude_marker_exit=$?"
+LC_ALL=C grep -aFq 'REINSTATE-PHASE1-RC8-MAC-CODEX-A1' "$SNAPSHOT_FILE"; echo "codex_marker_exit=$?"
 file "$SNAPSHOT_FILE"
 ```
 
@@ -402,7 +402,7 @@ Tell it:
 
 - this is an additional device;
 - use `PHASE1_PROFILE_ID`;
-- use canonical ID `local/reinstate-phase1-acceptance-rc7`;
+- use canonical ID `local/reinstate-phase1-acceptance-rc8`;
 - use the Windows absolute project path;
 - select only `CODEX_SESSION_ID`; and
 - never receive secrets through chat.
@@ -412,7 +412,7 @@ It should prepare this private command:
 ```powershell
 rein init `
   --profile-id PHASE1_PROFILE_ID `
-  --project "local/reinstate-phase1-acceptance-rc7=$Phase1Project"
+  --project "local/reinstate-phase1-acceptance-rc8=$Phase1Project"
 ```
 
 Run it and enter the same storage coordinates and credentials.
@@ -484,7 +484,7 @@ project without path errors.
 
 ## 14. Test live-session restore safety and backup
 
-RC7 changed this behavior deliberately. Restore liveness is now scoped to the
+RC8 changed this behavior deliberately. Restore liveness is now scoped to the
 exact session file being replaced, and the default `restore.active_agent_policy`
 is `fork`. Unrelated agents running in other projects must never block a
 restore, and the session under test must never be overwritten while it is open.
@@ -492,7 +492,7 @@ restore, and the session under test must never be overwritten while it is open.
 On Device A, resume the Claude test session, append:
 
 ```text
-REINSTATE-PHASE1-RC7-MAC-CLAUDE-A2
+REINSTATE-PHASE1-RC8-MAC-CLAUDE-A2
 ```
 
 Exit Claude and push only that session:
@@ -517,6 +517,9 @@ refused, so a refusal here is a regression.
 
 ### 14b. The live session is preserved, not overwritten
 
+This gate failed in RC7 and is the reason RC8 exists. Read the note below before
+running it.
+
 Now open Claude Code **on the session under test** and leave it running:
 
 ```powershell
@@ -529,11 +532,35 @@ Mandatory result:
 
 - exit code `0`;
 - the output reports that the session was in use and names a new
-  `CLAUDE_SESSION_ID-active-<short>` session;
+  distinct session, named in the output and identified by a UUID;
 - the original session file is byte-for-byte unchanged; and
 - repeating the same pull does not create a second fork.
 
+**Do not accept an open file handle as the mechanism under test.** Claude Code
+appends to its session file and closes it again, so a live Claude Code session
+normally holds no handle at all, and the file can be opened exclusively by
+another process while Claude is running. RC7 detected liveness from handles
+alone, found none, attempted an ordinary in-place restore, and was stopped only
+by the divergence guard with exit `6` and a recorded conflict. Exit `6` here is a
+failure of this gate, not a pass.
+
+Confirm the harder condition explicitly before drawing a conclusion: while
+Claude is open on the session, verify that the session file can still be opened
+exclusively, then confirm the pull is nevertheless treated as in use. That
+combination is what RC7 could not satisfy.
+
 Delete the fork before continuing so later gates start from a clean state.
+
+**Ordering requirement.** Run section 14d *before* any step that resumes this
+session. Resuming a Claude session appends to it, so a session used for a resume
+or liveness check no longer matches its last pulled revision and an in-place
+restore will correctly report divergence with exit `6` instead of replacing the
+target. If that has already happened, reach the same evidence through the
+conflict route: a real pull records one conflict, and
+`rein conflicts resolve <id> --keep-remote` restores the remote copy after
+backing up the existing target. The same ordering applies to sections 15 and 16,
+where confirming a marker by resuming the session invalidates the unchanged
+no-op that section 16 then expects.
 
 ### 14c. The refusal still works when it is requested
 
@@ -573,11 +600,11 @@ Mandatory result:
 On Device B, resume the selected sessions and append:
 
 ```text
-REINSTATE-PHASE1-RC7-WINDOWS-CLAUDE-B1
+REINSTATE-PHASE1-RC8-WINDOWS-CLAUDE-B1
 ```
 
 ```text
-REINSTATE-PHASE1-RC7-WINDOWS-CODEX-B1
+REINSTATE-PHASE1-RC8-WINDOWS-CODEX-B1
 ```
 
 Exit both agents. Push only those IDs:
@@ -629,7 +656,7 @@ Start from the successfully synchronized Claude session.
 1. On Windows, resume it and append:
 
    ```text
-   REINSTATE-PHASE1-RC7-CONFLICT-WINDOWS
+   REINSTATE-PHASE1-RC8-CONFLICT-WINDOWS
    ```
 
    Exit Claude, but do not push.
@@ -637,7 +664,7 @@ Start from the successfully synchronized Claude session.
 2. On the Mac, resume the same session and append:
 
    ```text
-   REINSTATE-PHASE1-RC7-CONFLICT-MAC
+   REINSTATE-PHASE1-RC8-CONFLICT-MAC
    ```
 
    Exit and push:
@@ -695,8 +722,8 @@ Mark every mandatory row.
 
 | Gate | Result | Evidence |
 | ---- | ------ | -------- |
-| `install.sh` returns 200 and installs RC7 on Mac | | |
-| `install.ps1` returns 200 and installs RC7 on Windows | | |
+| `install.sh` returns 200 and installs RC8 on Mac | | |
+| `install.ps1` returns 200 and installs RC8 on Windows | | |
 | Both installers are idempotent and PATH-safe | | |
 | Pre-init missing-config failure is accurate | | |
 | Post-init setup check and self-test pass on both devices | | |
@@ -737,11 +764,11 @@ Cleanup is optional and must be reviewed before deletion.
 - Keep the profile prefix until failures are diagnosed.
 - Do not delete real Claude Code or Codex session directories.
 - The isolated Reinstate homes are:
-  - macOS: `~/.reinstate-phase1-acceptance-rc7`
-  - Windows: `%USERPROFILE%\.reinstate-phase1-acceptance-rc7`
+  - macOS: `~/.reinstate-phase1-acceptance-rc8`
+  - Windows: `%USERPROFILE%\.reinstate-phase1-acceptance-rc8`
 - The disposable projects are:
-  - macOS: `~/Projects/reinstate-phase1-acceptance-rc7`
-  - Windows: `%USERPROFILE%\Projects\reinstate-phase1-acceptance-rc7`
+  - macOS: `~/Projects/reinstate-phase1-acceptance-rc8`
+  - Windows: `%USERPROFILE%\Projects\reinstate-phase1-acceptance-rc8`
 - The exact remote cleanup target is only:
   `profiles/PHASE1_PROFILE_ID/`
 

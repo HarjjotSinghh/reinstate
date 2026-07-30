@@ -58,7 +58,7 @@ const description =
 
   <h2 id="prerequisites">Prerequisites on both devices</h2>
   <ul>
-    <li>The same pinned Reinstate release candidate.</li>
+    <li>The same pinned stable Reinstate release.</li>
     <li>A supported version of the same agent vendor.</li>
     <li>A local checkout of the project at a configured path.</li>
     <li>Access to the same S3-compatible bucket and profile prefix.</li>
@@ -78,7 +78,7 @@ const description =
   <h2 id="workflow">A safe two-computer workflow</h2>
   <ol class="pc-steps">
     <li>
-      Install RC7 on both machines and confirm the checksum-verified version with
+      Install Reinstate on both machines and confirm the checksum-verified version with
       <code>rein version --json</code>.
     </li>
     <li>
@@ -119,7 +119,7 @@ const description =
 
   <h2 id="limitations">Current limitations</h2>
   <ul>
-    <li>RC7 is not background automatic sync; pushes and pulls are explicit.</li>
+    <li>Reinstate is not background automatic sync; pushes and pulls are explicit.</li>
     <li>Source code still moves through Git or your existing repository workflow.</li>
     <li>Vendor authentication must be configured independently on each device.</li>
     <li>Phase 1 supports only tested Claude Code and Codex same-vendor sessions.</li>

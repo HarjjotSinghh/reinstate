@@ -64,7 +64,7 @@ describe('operational documentation contract', () => {
     expect(frontmatterField(frontmatter, 'status')).toBe('current');
     expect(frontmatterField(frontmatter, 'draft')).toBe('false');
     expect(frontmatterField(frontmatter, 'noindex')).toBe('false');
-    expect(body).toContain('v0.1.0-rc.7');
+    expect(body).toContain('v0.1.0');
 
     const opening = body.split(/^##\s+/m)[0]?.replace(/^>\s?/gm, '').trim() ?? '';
     expect(opening.length, `${file}: answer-first opening`).toBeGreaterThan(120);

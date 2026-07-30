@@ -46,7 +46,7 @@ func TestConcreteConflictResolutionStrategies(t *testing.T) {
 		if !bytes.Contains(original, []byte("local")) {
 			t.Fatalf("keep-both replaced local revision: %s", original)
 		}
-		forkID := "s-remote-" + shortID(fixture.snapshotID)
+		forkID := forkSessionID("remote", "s", fixture.snapshotID)
 		if _, err := discoverSession(context.Background(), fixture.registry, "claude", forkID); err != nil {
 			t.Fatal(err)
 		}

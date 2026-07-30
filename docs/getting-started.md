@@ -3,9 +3,11 @@
 Reinstate synchronizes Claude Code and Codex CLI sessions across your machines
 through client-side encrypted, user-owned object storage.
 
-> **Release status:** the public installers currently pin
-> `v0.1.0-rc.7`. It is a release candidate until the native Mac/Windows
-> [Phase 1 acceptance runbook](testing/phase-1-mac-windows-acceptance.md) passes.
+> **Release status:** stable. The public installers pin `v0.1.0`. The native
+> Mac/Windows
+> [Phase 1 acceptance runbook](testing/phase-1-mac-windows-acceptance.md) passed
+> on real hardware for the candidate whose code this release ships unchanged;
+> the evidence is in [docs/testing/results](testing/results/).
 
 ## Prerequisites
 
@@ -42,14 +44,14 @@ and the current PowerShell process.
 
 Both public bootstraps:
 
-1. pin `v0.1.0-rc.7`;
+1. pin `v0.1.0`;
 2. download the canonical installer from that exact signed Git tag;
 3. verify the canonical installer SHA-256;
 4. download only the matching GitHub Release asset and `checksums.txt`;
 5. verify the binary checksum and reported version; and
 6. preserve an existing different version until you approve replacement.
 
-The RC7 POSIX installer bounds replacement prompts to 30 seconds.
+The Reinstate POSIX installer bounds replacement prompts to 30 seconds.
 `REINSTATE_CONFIRM_TIMEOUT_SECONDS` may be set to an
 integer from 1 through 300. It refuses immediately when the active shell cannot
 perform a timed TTY read. Timeout, unsupported-shell, and invalid-value paths
@@ -104,7 +106,7 @@ service endpoint only; do not append the bucket name to the endpoint URL. The
 bucket has its own prompt. Credential input is hidden and stored in the native
 OS keyring. Reinstate probes storage before writing local configuration.
 
-RC7 refuses to overwrite an existing `config.toml` or `state.json` with safety
+Reinstate refuses to overwrite an existing `config.toml` or `state.json` with safety
 exit code `7`. Its explicit `rein init --force` path writes the previous config
 and state into one
 timestamped directory under `backups/` before replacing them.
@@ -155,7 +157,7 @@ rein init \
 ```
 
 Enter the same endpoint, bucket, credentials, and encryption passphrase. Keep
-the bucket name out of the endpoint URL. RC7 verifies that
+the bucket name out of the endpoint URL. Reinstate verifies that
 `init --profile-id` can find the existing encrypted `manifest.age` before
 saving local configuration; a missing profile fails without initializing the
 device.

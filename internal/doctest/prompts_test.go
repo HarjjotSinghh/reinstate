@@ -13,7 +13,7 @@ func TestEndUserPromptContracts(t *testing.T) {
 		body := read(t, path)
 		required := []string{
 			"Prompt version:** 6",
-			"v0.1.0-rc.7",
+			"v0.1.0",
 			"https://reinstate.dev/install.sh",
 			"https://reinstate.dev/install.ps1",
 			"github.com/HarjjotSinghh/reinstate/releases/download/",
@@ -120,21 +120,21 @@ func TestRC5AcceptancePromptContracts(t *testing.T) {
 	}
 }
 
-func TestRC7AcceptancePromptContracts(t *testing.T) {
-	body := read(t, "docs/testing/phase-1-rc7-agent-verification-prompts.md")
+func TestRC8AcceptancePromptContracts(t *testing.T) {
+	body := read(t, "docs/testing/phase-1-rc8-agent-verification-prompts.md")
 	for _, value := range []string{
-		"v0.1.0-rc.7",
+		"v0.1.0-rc.8",
 		"autonomous",
 		"R2.txt",
 		"REINSTATE_ENCRYPTION_PASSPHRASE",
 		"REINSTATE_PASSPHRASE_FD",
 		"anonymous pipe",
 		"child's environment",
-		"MAC-RC7-M1",
-		"WINDOWS-RC7-W1-PASS",
-		"local/reinstate-phase1-acceptance-rc7",
-		"REINSTATE-PHASE1-RC7-MAC-CLAUDE-A1",
-		"REINSTATE-PHASE1-RC7-MAC-CODEX-A1",
+		"MAC-RC8-M1",
+		"WINDOWS-RC8-W1-PASS",
+		"local/reinstate-phase1-acceptance-rc8",
+		"REINSTATE-PHASE1-RC8-MAC-CLAUDE-A1",
+		"REINSTATE-PHASE1-RC8-MAC-CODEX-A1",
 		"claude --resume CLAUDE_SESSION_ID",
 		"codex resume CODEX_SESSION_ID",
 		"Prompt version 6",
@@ -145,13 +145,13 @@ func TestRC7AcceptancePromptContracts(t *testing.T) {
 		"f3_bad_coordinates_refused",
 		"remote profile manifest not found",
 		"ciphertext",
-		"fresh RC7",
+		"fresh RC8",
 		"all 23",
-		"test/phase1-rc7-macos-report",
-		"test/phase1-rc7-windows-report",
+		"test/phase1-rc8-macos-report",
+		"test/phase1-rc8-windows-report",
 	} {
 		if !strings.Contains(body, value) {
-			t.Errorf("RC7 acceptance prompts missing %q", value)
+			t.Errorf("RC8 acceptance prompts missing %q", value)
 		}
 	}
 	for _, forbidden := range []string{
@@ -165,7 +165,7 @@ func TestRC7AcceptancePromptContracts(t *testing.T) {
 		"normal R2/S3 UI",
 	} {
 		if strings.Contains(body, forbidden) {
-			t.Errorf("RC7 acceptance prompts contain forbidden instruction %q", forbidden)
+			t.Errorf("RC8 acceptance prompts contain forbidden instruction %q", forbidden)
 		}
 	}
 }

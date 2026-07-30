@@ -2,7 +2,7 @@
 
 Last reviewed: 2026-07-27  
 Canonical website source: `website/src/data/product.ts`  
-Reviewed release: `v0.1.0-rc.7`
+Reviewed release: `v0.1.0`
 
 This is the required output of the repository-local
 `reinstate-product-truth` workflow. It separates released facts from roadmap
@@ -27,7 +27,7 @@ marketing claim.
 | Paths | Recognized structural project roots are tokenized and expanded through a canonical project ID; arbitrary prose is not rewritten | `internal/pathmap`, adapter tests, configuration docs |
 | License | Apache-2.0 | `LICENSE`, `product.ts` |
 | Account requirement | The CLI does not require a Reinstate account | released architecture and `product.ts` |
-| Current release | `v0.1.0-rc.7`, pre-1.0 release candidate; no stable release yet | changelog, release history, compatibility data |
+| Current release | `v0.1.0`, stable pre-1.0 release | changelog, release history, compatibility data |
 | Maintainer | Harjot Singh Rana | repository metadata and `product.ts` |
 
 ## Conflicting claims and resolution
@@ -50,7 +50,7 @@ marketing claim.
 - Claude Code ↔ Codex native transcript translation;
 - credential, auth-token, or raw vendor-config-tree synchronization;
 - generic `rein resume`, `rein search`, handoff, MCP, skill, plugin, or
-  marketplace commands in RC7;
+  marketplace commands in Reinstate;
 - customer counts, ratings, reviews, awards, market share, benchmarks,
   performance rates, restore-success rates, and productivity savings;
 - formal security-audit or absolute-security guarantees;
@@ -93,9 +93,9 @@ separately allowed to preserve historical releases.
 
 ## Unresolved questions and evidence gates
 
-1. Native Windows RC7, macOS amd64, WSL2, and physical two-device acceptance
+1. Native Windows Reinstate, macOS amd64, WSL2, and physical two-device acceptance
    need completed evidence before stable-support language.
-2. No stable release exists; `v0.1.0-rc.7` remains the truthful public status.
+2. No stable release exists; `v0.1.0` remains the truthful public status.
 3. Search Console, Bing, IndexNow production ownership, Plausible, WAF/log,
    field Core Web Vitals, and manual AI-query evidence require owner/account or
    deployed-production access.

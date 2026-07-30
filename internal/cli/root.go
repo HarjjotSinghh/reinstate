@@ -19,7 +19,7 @@ import (
 // cannot enumerate open file handles the implementation falls back to a
 // host-wide check and reports scoped=false, so callers can explain the refusal
 // accurately instead of claiming precision they do not have.
-type AgentProcessChecker func(ctx context.Context, agent, sessionPath string) (busy bool, scoped bool, err error)
+type AgentProcessChecker func(ctx context.Context, agent string, target processcheck.Target) (busy bool, scoped bool, err error)
 
 // Options configure root command construction.
 type Options struct {

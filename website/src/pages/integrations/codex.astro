@@ -58,7 +58,7 @@ const description =
       Configure a canonical project ID and the actual local project root on each device.
     </li>
     <li>
-      During discovery, RC7 resolves <code>session_meta.cwd</code> to that project ID and excludes
+      During discovery, Reinstate resolves <code>session_meta.cwd</code> to that project ID and excludes
       rollouts outside mapped roots.
     </li>
     <li>
@@ -105,7 +105,7 @@ const description =
 
   <h2 id="start">Start with Codex</h2>
   <p>
-    Install the release candidate and configure the same canonical project ID on each machine.
+    Install the stable release and configure the same canonical project ID on each machine.
     Push the selected session on the source, inspect
     <code>rein pull --agent codex --session SESSION_ID --dry-run</code> on the destination, then
     restore that scoped session and use Codex's native resume command.

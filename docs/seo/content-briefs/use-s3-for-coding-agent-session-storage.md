@@ -7,7 +7,7 @@
 - Page type: provider-specific storage guide
 - Owner: Harjot Singh Rana
 - Status: agent review accepted; maintainer sign-off pending
-- Target release: `v0.1.0-rc.7`
+- Target release: `v0.1.0`
 - Last reviewed: 2026-07-27
 
 ## Audience and intent
@@ -31,9 +31,9 @@
 - Current capabilities used: S3-compatible backend, local age encryption,
   immutable snapshots, encrypted manifest, storage probe, scoped credentials.
 - Current limitations: BYO storage charges and policy remain the user's
-  responsibility; session tokens are not an RC7 credential field; stable
+  responsibility; session tokens are not a Reinstate credential field; stable
   platform acceptance remains open.
-- Version tested: Reinstate `v0.1.0-rc.7` source contract.
+- Version tested: Reinstate `v0.1.0` source contract.
 - Evidence: S3 backend tests, config schema, CLI help, threat model, and current
   storage documentation.
 - Claims that require verification: AWS console UI, prices, service limits, and

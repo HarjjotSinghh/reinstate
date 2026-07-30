@@ -35,8 +35,8 @@ Website publication and CLI versioning use separate signed tags:
   tag from the two files, refuses disagreement, and verifies the corresponding
   signed published release rather than accepting an operator-supplied version.
 
-While the public bootstraps remain pinned to `v0.1.0-rc.7`, deploying a
-`website-v...` tag does not advance Reinstate beyond RC7 or close any remaining
+While the public bootstraps remain pinned to `v0.1.0`, deploying a
+`website-v...` tag does not advance Reinstate beyond Reinstate or close any remaining
 platform or two-device acceptance gate.
 
 Automatic Vercel Git deployments remain disabled. From a clean, current
