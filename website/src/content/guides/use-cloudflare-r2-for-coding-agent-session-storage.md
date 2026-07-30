@@ -1,6 +1,6 @@
 ---
 title: "Use Cloudflare R2 for Encrypted Coding-Agent Session Storage"
-description: "Configure a private Cloudflare R2 bucket and bucket-scoped S3 credentials for Reinstate RC8, then verify encrypted Claude Code or Codex storage."
+description: "Configure a private Cloudflare R2 bucket and bucket-scoped S3 credentials for Reinstate, then verify encrypted Claude Code or Codex storage."
 answer: "To use Cloudflare R2 with Reinstate, create a private R2 bucket, issue an Object Read & Write S3 API token scoped to that bucket, initialize Reinstate with the account or jurisdiction endpoint and region auto, then dry-run and push one selected session."
 author: "Harjot Singh Rana"
 publishedAt: 2026-07-27
@@ -30,7 +30,7 @@ estimatedMinutes: 14
 estimatedTaskMinutes: 30
 prerequisites:
   - "A Cloudflare account with R2 enabled and authority to create a bucket and R2 API token"
-  - "Reinstate v0.1.0-rc.8 on a compatible device with Claude Code or Codex CLI"
+  - "Reinstate v0.1.0 on a compatible device with Claude Code or Codex CLI"
   - "A harmless session in a repository whose absolute local path you know"
   - "A long encryption passphrase that will be entered privately and is not stored"
 howToSteps:
@@ -41,7 +41,7 @@ howToSteps:
     text: "Generate an R2 S3 API token with Object Read & Write permission for only the selected bucket, then store its access-key pair outside chat and source control."
     anchor: "create-scoped-credentials"
   - name: "Install and check Reinstate"
-    text: "Install the pinned Reinstate release candidate, verify its version, and run the read-only setup check before writing local configuration."
+    text: "Install the pinned Reinstate release, verify its version, and run the read-only setup check before writing local configuration."
     anchor: "install-and-check"
   - name: "Initialize Reinstate with the R2 endpoint"
     text: "Pass the account or jurisdiction-specific R2 S3 endpoint, region auto, bucket name, and project mapping to init, then enter credentials through hidden prompts."
@@ -53,7 +53,7 @@ howToSteps:
 
 ## What this guide configures
 
-This guide connects Reinstate `v0.1.0-rc.8` to an existing Cloudflare R2
+This guide connects Reinstate `v0.1.0` to an existing Cloudflare R2
 bucket through R2's S3-compatible API. Cloudflare owns the account, bucket,
 location, API token, public-access switches, retention, and billing. Reinstate
 owns the local project mapping, encrypted profile manifest, encrypted session
@@ -92,8 +92,9 @@ initialization.
   Cloudflare's encryption at rest is an additional provider control.
 - Session resume remains **same-vendor**: Claude Code to Claude Code and Codex
   CLI to Codex CLI.
-- RC8 is a release candidate. This guide is not evidence that the outstanding
-  physical two-device acceptance matrix has passed.
+- Reinstate v0.1.0 is a stable pre-1.0 release. Two-device Phase 1 acceptance
+  passed on macOS arm64 and native Windows amd64. This guide is not itself
+  acceptance evidence.
 
 ## Before you begin
 
@@ -113,10 +114,10 @@ passphrase, transcript, or downloaded snapshot into a coding-agent prompt.
 | Environment | Installer path | Current qualification |
 | --- | --- | --- |
 | macOS native arm64 | POSIX installer | Current source compatibility evidence covers the documented Claude Code and Codex ranges. |
-| macOS native amd64 | POSIX installer | A Phase 1 release gate remains open; installer success is not certification. |
-| Windows 11 native amd64 | PowerShell installer | A primary Phase 1 target whose native acceptance gate remains open. |
-| Linux native | POSIX installer | Installer-compatible, but not a certified Phase 1 agent-resume target. |
-| WSL2 amd64 | POSIX installer | Installer-compatible and documented for smoke testing, but its Phase 1 gate remains open. WSL1 is unsupported. |
+| macOS native amd64 | POSIX installer | Installer-compatible; not covered by the two-device acceptance run. |
+| Windows 11 native amd64 | PowerShell installer | Covered by the two-device Phase 1 acceptance run, which passed. |
+| Linux native | POSIX installer | Installer-compatible; not covered by the two-device acceptance run. |
+| WSL2 amd64 | POSIX installer | Installer-compatible and documented for smoke testing; not covered by the two-device acceptance run. WSL1 is unsupported. |
 
 Storage access does not override agent compatibility. `rein setup check` must
 report `SUPPORTED` for the installed agent before a push or pull.
@@ -188,7 +189,7 @@ in the [R2 authentication reference](https://developers.cloudflare.com/r2/api/to
 Object Read & Write is the least built-in permission that covers the read,
 list, write, and delete behavior needed by the current Reinstate backend.
 
-RC8 accepts the generated access-key ID and secret access key. It does not
+Reinstate accepts the generated access-key ID and secret access key. It does not
 accept an additional session-token field, so do not substitute R2 temporary
 credentials that require one. Do not use a general Cloudflare API bearer token;
 Reinstate talks to the S3-compatible API.
@@ -221,7 +222,7 @@ rein version --json
 rein setup check
 ```
 
-**Expected result:** the pinned installer reports `v0.1.0-rc.8`. Before
+**Expected result:** the pinned installer reports `v0.1.0`. Before
 initialization, `rein setup check` exits with code `3` and reports
 `config missing`. Resolve a platform, keyring, or installed-agent
 compatibility failure separately; working R2 credentials cannot make an
@@ -252,7 +253,7 @@ Key ID; the second accepts its Secret Access Key. Do not put either value in
 this command, an environment variable, shell history, or a coding-agent
 conversation.
 
-During initialization, RC8:
+During initialization, Reinstate:
 
 1. generates a non-secret `profile_id`;
 2. derives the default `profiles/<profile_id>` prefix;
@@ -309,7 +310,7 @@ There should be no plaintext transcript, auth file, `.env` file, access key,
 or passphrase object. A `.age` filename alone is not cryptographic proof; the
 committed [Phase 1 acceptance runbook](https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/phase-1-mac-windows-acceptance.md)
 defines the controlled ciphertext inspection used for release qualification.
-This personal check does not claim physical RC8 acceptance.
+This personal check does not claim physical Reinstate acceptance.
 
 ## Security boundaries
 
@@ -357,7 +358,7 @@ credential generated for the selected bucket.
 
 ### Why is `config missing` (exit `3`) after failed init?
 
-**Likely cause:** RC8 intentionally did not save local config because the
+**Likely cause:** Reinstate intentionally did not save local config because the
 remote probe failed.
 
 **Safe next action:** Fix R2 first and rerun the same reviewed `rein init`.
@@ -395,7 +396,7 @@ explicitly instead of deleting R2 objects.
 
 ## Safe rollback and undo
 
-Reinstate RC8 does not provide a general `rein undo` or remote-session delete
+Reinstate does not provide a general `rein undo` or remote-session delete
 command.
 
 1. A push `--dry-run` creates no session object, so it needs no rollback.
@@ -442,16 +443,16 @@ new objects uploaded while the rule is active are also subject to expiration.
 
 - Reinstate does not create or delete R2 buckets, API tokens, public-access
   settings, custom domains, lifecycle rules, storage classes, or bucket locks.
-- RC8 accepts the access-key pair generated for an R2 API token but no
+- Reinstate accepts the access-key pair generated for an R2 API token but no
   additional session-token field.
-- Dashboard token scope is bucket-level. RC8 generates the first profile UUID
+- Dashboard token scope is bucket-level. Reinstate generates the first profile UUID
   during initialization, so the token cannot be pre-scoped to that exact
   profile through this provider flow.
 - Lifecycle expiration or an Infrequent Access policy can affect availability
   and cost. Reinstate does not coordinate R2 lifecycle or storage-class
   transitions.
 - R2's S3 compatibility evolves. This guide depends only on the current
-  Put/Get/Head/Delete/List and conditional-write behavior used by RC8.
+  Put/Get/Head/Delete/List and conditional-write behavior used by Reinstate.
 - Phase 1 transfers full immutable session snapshots; delta transfer,
   retention controls, and remote garbage collection remain later work.
 - Current native resume is same-vendor only and the stable physical platform

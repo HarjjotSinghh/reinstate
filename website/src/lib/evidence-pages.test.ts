@@ -10,7 +10,7 @@ describe('roadmap and primary-evidence pages', () => {
   it('separates the current release candidate from every later product phase', async () => {
     const roadmap = await readFile(roadmapUrl, 'utf8');
 
-    expect(roadmap).toContain('v0.1.0-rc.8');
+    expect(roadmap).toContain('v0.1.0');
     expect(roadmap).toContain('Release candidate');
     expect(roadmap.match(/<td>Planned<\/td>/g)?.length).toBeGreaterThanOrEqual(4);
     expect(roadmap.match(/<td>Exploring<\/td>/g)?.length).toBeGreaterThanOrEqual(2);

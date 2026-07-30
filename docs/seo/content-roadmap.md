@@ -45,7 +45,7 @@ dedicated editorial pass.
 | # | Opportunity | Status and evidence gate |
 | ---: | --- | --- |
 | 25 | Anatomy of a coding-agent session | Partly implemented: `/research/encrypted-snapshot-format-v1` documents Reinstate's current encrypted wrapper; vendor-format research remains gated |
-| 26 | Cross-device portability test methodology | Implemented at `/research` with the source acceptance runbook; completed RC8 results remain release-gated |
+| 26 | Cross-device portability test methodology | Implemented at `/research` with the source acceptance runbook; completed Reinstate results remain release-gated |
 | 27 | Agent-session compatibility report | Implemented: `/compatibility`, `/compatibility.json`, and `/research`; periodic field reports require a completed evidence window |
 | 28 | Threat-modeling encrypted session sync | Planned: formal security review and explicit scope |
 | 29 | Lessons from implementing local-first encryption | Planned: maintainer-authored engineering evidence |

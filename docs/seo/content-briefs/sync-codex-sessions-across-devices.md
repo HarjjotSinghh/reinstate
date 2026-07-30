@@ -7,7 +7,7 @@
 - Page type: practical guide
 - Owner: Harjot Singh Rana
 - Status: agent review accepted; maintainer sign-off pending
-- Target release: `v0.1.0-rc.8`
+- Target release: `v0.1.0`
 - Last reviewed: 2026-07-27
 
 ## Audience and intent
@@ -29,9 +29,9 @@
 - Current capabilities used: same-vendor rollout discovery, structural
   `session_meta.cwd` tokenization, local encryption, immutable snapshots,
   destination path expansion, backup/atomic restore, and native Codex resume.
-- Current limitations: release candidate; stable native Windows, macOS amd64,
+- Current limitations: pre-1.0 stable release; native Windows, macOS amd64,
   WSL2, remote CI, and physical two-device acceptance remain open gates.
-- Version tested: Reinstate `v0.1.0-rc.8`; Codex ranges live on compatibility.
+- Version tested: Reinstate `v0.1.0`; Codex ranges live on compatibility.
 - Evidence: adapter/pathmap/crypto/sync implementation and tests, deterministic
   synthetic rollout fixtures, CLI contracts, and release notes.
 - Claims that require verification: physical restore success, performance,

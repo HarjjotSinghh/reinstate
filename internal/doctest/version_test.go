@@ -41,12 +41,17 @@ func TestReleaseAndSupportClaims(t *testing.T) {
 	}
 
 	citation := read(t, "CITATION.cff")
-	// Pre-release work uses 0.0.0-dev or unreleased language, not a fake stable 0.1.0.
-	if matched, _ := regexp.MatchString(`(?m)^version:\s*0\.1\.0\s*$`, citation); matched {
-		// Allow only after we ship; until then require -dev or alpha/beta/rc suffix.
-		if !strings.Contains(citation, "0.1.0-") && !strings.Contains(citation, "0.0.0") {
-			t.Error("CITATION.cff must not claim stable version 0.1.0 before release")
-		}
+	// Citation metadata must name the version the public bootstrap actually
+	// pins, so it can never advertise a release that has not shipped. This
+	// replaces a hard-coded refusal of 0.1.0, which could only ever be correct
+	// until 0.1.0 itself shipped.
+	shipped := strings.TrimPrefix(publicBootstrapVersion, "v")
+	citationVersion := regexp.MustCompile(`(?m)^version:\s*(\S+)\s*$`).FindStringSubmatch(citation)
+	if citationVersion == nil {
+		t.Error("CITATION.cff must declare a version")
+	} else if citationVersion[1] != shipped {
+		t.Errorf("CITATION.cff claims version %q but the public bootstrap pins %q",
+			citationVersion[1], shipped)
 	}
 
 	roadmap := read(t, "ROADMAP.md")

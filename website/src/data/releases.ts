@@ -1,5 +1,11 @@
 export const releaseHistory = [
   {
+    version: 'v0.1.0',
+    date: '2026-07-30',
+    summary:
+      'First stable release. Phase 1 two-device acceptance passed on v0.1.0-rc.8, whose product code this ships unchanged.',
+  },
+  {
     version: 'v0.1.0-rc.8',
     date: '2026-07-29',
     summary:

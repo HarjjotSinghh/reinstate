@@ -20,9 +20,9 @@
 ## Product truth
 
 - Capabilities: configured canonical project IDs, `${REPO:<id>}` normalization, destination expansion, Claude project-directory recomputation, and Codex `session_meta.cwd` rewriting.
-- Limitations: only recognized structural paths change; unknown fields and free-form prose are not rewritten; physical RC8 acceptance gates remain open.
+- Limitations: only recognized structural paths change; unknown fields and free-form prose are not rewritten; physical Reinstate acceptance gates remain open.
 - Evidence: `internal/pathmap/token.go`, Claude and Codex adapter implementations and tests, and synthetic fixtures.
-- Version: `v0.1.0-rc.8`.
+- Version: `v0.1.0`.
 
 ## Outline
 

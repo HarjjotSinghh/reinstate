@@ -797,7 +797,7 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 					// Derive the fork from the snapshot so re-pulling the same
 					// remote state lands on the same file instead of piling up
 					// a new copy on every attempt.
-					forkedID = s.SessionID + "-active-" + shortID(s.SnapshotID)
+					forkedID = forkSessionID("active", s.SessionID, s.SnapshotID)
 					restoreOptions.ForkSessionID = forkedID
 					restoreOptions.DestinationRelativePath = forkRelativePath(env.Files[0].Path, forkedID)
 				}
@@ -819,6 +819,20 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 					Destinations: restorePlan.Files, BackupRoot: restorePlan.BackupRoot,
 					ForkedSessionID: forkedID,
 				})
+				// A fork's identity is derived from the snapshot, so an existing
+				// fork already holds exactly the bytes this restore would write.
+				// Rewriting it would back up an identical copy on every repeat
+				// and grow the backup directory for no benefit.
+				if !dryRun && forkedID != "" && allPathsExist(restorePlan.Files) {
+					if err := os.Remove(artifactPath); err != nil && !os.IsNotExist(err) {
+						return err
+					}
+					PrintHuman(cmd.OutOrStdout(),
+						"    %s is in use and %s already holds this snapshot; left unchanged",
+						s.SessionID, forkedID)
+					pulled++
+					continue
+				}
 				if !dryRun {
 					artifact, err := os.Open(artifactPath)
 					if err != nil {
@@ -1140,7 +1154,7 @@ func resolveKeepRemote(
 	}
 	options := adapter.RestoreOptions{BackupRoot: filepath.Join(home, "backups")}
 	if keepBoth {
-		targetID := remote.SessionID + "-remote-" + shortID(remote.SnapshotID)
+		targetID := forkSessionID("remote", remote.SessionID, remote.SnapshotID)
 		options.ForkSessionID = targetID
 		options.DestinationRelativePath = forkRelativePath(env.Files[0].Path, targetID)
 	}
@@ -1326,11 +1340,34 @@ func forkRelativePath(source, sessionID string) string {
 	return dir + "/" + sessionID + ".jsonl"
 }
 
-func shortID(value string) string {
-	if len(value) > 8 {
-		return value[:8]
+// allPathsExist reports whether every path is already present on disk.
+func allPathsExist(paths []string) bool {
+	if len(paths) == 0 {
+		return false
 	}
-	return value
+	for _, path := range paths {
+		if _, err := os.Stat(path); err != nil {
+			return false
+		}
+	}
+	return true
+}
+
+// forkNamespace scopes the deterministic fork identifiers below. It is a fixed
+// random UUID and carries no meaning beyond keeping fork names in their own
+// space.
+var forkNamespace = uuid.MustParse("6f9619ff-8b86-d011-b42d-00c04fc964ff")
+
+// forkSessionID derives a fork identity from the session and snapshot it came
+// from.
+//
+// The result is a real UUID. Vendors treat session identifiers as UUIDs, and a
+// decorated form such as "<uuid>-remote-<short>" is accepted by Claude Code's
+// interactive resume but rejected by `claude --print --resume`, which leaves a
+// fork a human can open and automation cannot. Deriving the value keeps repeated
+// restores of the same snapshot idempotent, which a random UUID would not.
+func forkSessionID(kind, sessionID, snapshotID string) string {
+	return uuid.NewSHA1(forkNamespace, []byte(kind+"\x00"+sessionID+"\x00"+snapshotID)).String()
 }
 
 func updateSessionState(home, agentName, sessionID, localRevision, remoteRevision string) error {

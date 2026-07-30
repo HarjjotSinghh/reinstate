@@ -39,7 +39,7 @@ describe('evidence-safe linkable assets', () => {
       expect(glossary, term).toContain(term);
     }
 
-    expect(glossary).toContain('Portable handoffs are not available in RC8');
+    expect(glossary).toContain('Portable handoffs are not available in Reinstate');
     expect(glossary).toContain('same-vendor');
     expect(glossary).not.toContain('cross-agent resume');
   });
@@ -106,8 +106,8 @@ describe('evidence-safe linkable assets', () => {
     expect(agentVersionHistory.map(({ version }) => version)).toEqual(
       releaseHistory.map(({ version }) => version),
     );
-    expect(agentVersionHistory).toHaveLength(8);
-    expect(new Set(agentVersionHistory.map(({ source }) => source)).size).toBe(8);
+    expect(agentVersionHistory).toHaveLength(9);
+    expect(new Set(agentVersionHistory.map(({ source }) => source)).size).toBe(9);
     expect(
       agentVersionHistory.find(({ version }) => version === 'v0.1.0-rc.3')
         ?.rangeChange,
@@ -176,7 +176,7 @@ describe('evidence-safe linkable assets', () => {
       ]) {
         expect(brief, `${briefNames[index]} ${heading}`).toContain(heading);
       }
-      expect(brief).toContain('v0.1.0-rc.8');
+      expect(brief).toContain('v0.1.0');
     }
   });
 
@@ -210,7 +210,7 @@ describe('evidence-safe linkable assets', () => {
     ]) {
       expect(launch, section).toContain(section);
     }
-    expect(launch).toContain('not a standard and not an RC8 feature');
+    expect(launch).toContain('not a standard and not a Reinstate feature');
     expect(launch).toMatch(
       /never real user, employer,\s+customer, or contributor transcripts/,
     );

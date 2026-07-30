@@ -5,7 +5,7 @@ order: 8
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.1.0-rc.8"
+version: "v0.1.0"
 updatedAt: 2026-07-27
 tags:
   ["troubleshooting", "session-sync", "path-remapping", "passphrase", "codex"]
@@ -18,7 +18,7 @@ noindex: false
 Use the smallest possible command while diagnosing a sync problem: one agent
 and one explicit session ID. Do not paste passphrases, storage credentials,
 session text, raw configuration, or unredacted absolute paths into an issue.
-Reinstate `v0.1.0-rc.8` is a pre-1.0 release candidate; Claude Code and Codex
+Reinstate `v0.1.0` is a stable pre-1.0 release; Claude Code and Codex
 resume only their own native sessions.
 
 ## Why is the `rein` binary not found after installation?
@@ -103,7 +103,7 @@ does not appear for the destination project.
 ### Likely cause
 
 The destination project path was not mapped to the exact Claude project
-directory key expected on this device. A snapshot made before RC8 may also lack
+directory key expected on this device. A snapshot made before Reinstate may also lack
 the safely mappable Claude project identity required by the current adapter.
 
 ### Affected agent(s)
@@ -135,11 +135,11 @@ the raw roots into a public issue.
 
 ### Corrective action
 
-Require Reinstate `0.1.0-rc.8` or newer on both devices. Correct the destination
+Require Reinstate `0.1.0` or newer on both devices. Correct the destination
 mapping for the existing canonical project ID, close Claude Code, and repeat
-the scoped dry-run. If RC8 rejects a legacy snapshot whose Claude project
-identity cannot be mapped, install RC8 on the source device and push that one
-session again to an intentionally fresh RC8 profile. Do not manually move the
+the scoped dry-run. If Reinstate rejects a legacy snapshot whose Claude project
+identity cannot be mapped, install Reinstate on the source device and push that one
+session again to an intentionally fresh Reinstate profile. Do not manually move the
 session file into a guessed Claude directory.
 
 After the dry-run shows the correct destination, run the same pull without
@@ -161,7 +161,7 @@ Code session.
 
 ### When to file an issue
 
-File an issue when RC8 or newer plans and writes the correct destination,
+File an issue when Reinstate or newer plans and writes the correct destination,
 `rein list` discovers the exact restored ID, and Claude Code in the tested
 compatibility range still cannot resume it. Include both OS versions, Reinstate
 and Claude Code versions, the transfer direction, the redacted dry-run plan,
@@ -295,7 +295,7 @@ first device. No empty replacement manifest is created.
 
 File an issue when an object listing confirms `manifest.age` exists at the
 exact configured prefix, the profile coordinates match, storage credentials
-can read that object, and RC8 still reports it missing. Include redacted
+can read that object, and Reinstate still reports it missing. Include redacted
 diagnostics, provider type, endpoint host, region, and object-key shape—not
 credentials, signed requests, bucket policies, or session payloads.
 
@@ -757,7 +757,7 @@ device refusal, and its summary does not claim that all checks passed.
 ### Likely cause
 
 An installed Claude Code or Codex version or native layout is outside the
-release candidate's verified compatibility evidence, or the detected device
+release's verified compatibility evidence, or the detected device
 is explicitly unsupported. `UNTESTED` means Reinstate recognizes enough of the
 layout to report it but lacks release evidence for safe writes;
 `UNSUPPORTED` means the known layout or environment must fail closed. WSL1,

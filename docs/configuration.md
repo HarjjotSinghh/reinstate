@@ -26,12 +26,12 @@ Copy the non-secret profile UUID printed by the first device and pass it as
 `rein init --profile-id UUID` on later devices.
 
 The endpoint is the S3/R2 service endpoint only. Do not append the bucket name;
-the bucket is configured separately. RC8 additional-device init verifies the
+the bucket is configured separately. Reinstate additional-device init verifies the
 existing encrypted manifest before saving config and records
 `remote_profile_required = true`. `status`, `diff`, `pull`, and later pushes
 then fail if that manifest disappears instead of treating the profile as empty.
 
-RC8 refuses to run `init` against a home that already contains `config.toml` or
+Reinstate refuses to run `init` against a home that already contains `config.toml` or
 `state.json`. Its explicit `--force` path first preserves both files in one
 timestamped directory under `backups/`.
 
@@ -65,11 +65,15 @@ Under `fork`, a `pull` reports the new session it created:
 ```text
 pulled 1 snapshot(s), dry_run=false
   claude:SESSION -> ... (backups: ...)
-    SESSION is in use, so it was left unchanged; restored alongside it as SESSION-active-a1b2c3d4
+    SESSION is in use, so it was left unchanged; restored alongside it as 7c9e6679-7425-40de-944b-e07fc1f90ae7
 ```
 
-The fork identity is derived from the snapshot, so re-pulling the same remote
-state lands on the same file instead of accumulating copies. Because the live
+The fork identity is a UUID derived from the snapshot. Deriving it keeps
+re-pulling the same remote state idempotent: the second pull recognizes that the
+fork already holds those bytes and leaves it untouched rather than rewriting and
+backing it up again. Using a UUID rather than a decorated name matters because
+vendors treat session identifiers as UUIDs, and a decorated form is accepted by
+Claude Code's interactive resume but rejected by `claude --print --resume`. Because the live
 session is never replaced, a forked restore does not record a conflict and does
 not mark the original session as synchronized.
 

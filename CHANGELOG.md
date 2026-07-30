@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-07-30
+
+First stable release.
+
+### Fixed
+
+- Give `--keep-both` and in-use restore forks a real UUID identity instead of a
+  decorated `<uuid>-remote-<short>` name. Vendors treat session identifiers as
+  UUIDs: Claude Code accepted the decorated form on interactive resume but
+  rejected it on `claude --print --resume`, leaving a fork a human could open
+  and automation could not. The identity is still derived from the session and
+  snapshot, so repeated restores stay idempotent.
+- Skip the restore entirely when an in-use session's fork already holds the
+  snapshot being pulled. A repeat pull previously rewrote that fork with
+  byte-identical content and backed up the previous copy first, growing the
+  backup directory by one identical file each time.
+
+### Changed
+
+- Correct the acceptance runbook's ordering. Sections 14d, 15, and 16 assumed a
+  session could be resumed and then restored or no-op pushed unchanged, but
+  resuming a Claude session appends to it, so those steps could only report
+  divergence. The runbook now states the ordering requirement and documents the
+  conflict route as the way to reach the same evidence after a resume.
+- Promote `v0.1.0-rc.8` to the stable `v0.1.0` release. The product code is
+  the candidate's code apart from the two restore fixes above, which were
+  reported by that acceptance run. The two-device Phase 1 acceptance evidence
+  recorded under `docs/testing/results/` covers the candidate: all 23 mandatory
+  gates passed on real macOS and native Windows hardware with no
+  release-blocking findings. The restore gates were re-verified on macOS against
+  the patched build; the Windows-side backup gate should be re-confirmed on
+  Device B.
+- Replace release-candidate status language across the README, website, and
+  documentation with stable-release wording, and describe behavior in
+  version-agnostic terms rather than naming a candidate.
+
 ## [0.1.0-rc.8] - 2026-07-29
 
 ### Fixed
@@ -262,7 +298,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.8...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.8...v0.1.0
 [0.1.0-rc.8]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.7...v0.1.0-rc.8
 [0.1.0-rc.7]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.6...v0.1.0-rc.7
 [0.1.0-rc.6]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.5...v0.1.0-rc.6
