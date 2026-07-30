@@ -92,7 +92,7 @@ describe('editorial content foundation', () => {
       for (const requiredFact of [
         'Expected result:',
         'Installer-compatible',
-        'not a certified Phase 1 agent-resume target',
+        'not covered by the two-device acceptance run',
         'physical two-device acceptance',
         'does not provide a general `rein undo`',
         '`--dry-run`',

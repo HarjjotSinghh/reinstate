@@ -7,6 +7,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-07-30
+
+First stable release.
+
+### Fixed
+
+- Give `--keep-both` and in-use restore forks a real UUID identity instead of a
+  decorated `<uuid>-remote-<short>` name. Vendors treat session identifiers as
+  UUIDs: Claude Code accepted the decorated form on interactive resume but
+  rejected it on `claude --print --resume`, leaving a fork a human could open
+  and automation could not. The identity is still derived from the session and
+  snapshot, so repeated restores stay idempotent.
+- Skip the restore entirely when an in-use session's fork already holds the
+  snapshot being pulled. A repeat pull previously rewrote that fork with
+  byte-identical content and backed up the previous copy first, growing the
+  backup directory by one identical file each time.
+
+### Changed
+
+- Correct the acceptance runbook's ordering. Sections 14d, 15, and 16 assumed a
+  session could be resumed and then restored or no-op pushed unchanged, but
+  resuming a Claude session appends to it, so those steps could only report
+  divergence. The runbook now states the ordering requirement and documents the
+  conflict route as the way to reach the same evidence after a resume.
+- Promote `v0.1.0-rc.8` to the stable `v0.1.0` release. The product code is
+  the candidate's code apart from the two restore fixes above, which were
+  reported by that acceptance run. The two-device Phase 1 acceptance evidence
+  recorded under `docs/testing/results/` covers the candidate: all 23 mandatory
+  gates passed on real macOS and native Windows hardware with no
+  release-blocking findings. The restore gates were re-verified on macOS against
+  the patched build; the Windows-side backup gate should be re-confirmed on
+  Device B.
+- Replace release-candidate status language across the README, website, and
+  documentation with stable-release wording, and describe behavior in
+  version-agnostic terms rather than naming a candidate.
+
+## [0.1.0-rc.8] - 2026-07-29
+
+### Fixed
+
+- Stop treating "no open file handle" as proof that a session is not in use.
+  Claude Code appends to its session file and closes it again, so a live Claude
+  Code session holds no handle and the handle-only check introduced in
+  `v0.1.0-rc.7` reported it as free, letting a restore target a session someone
+  was working in. Liveness now also matches an agent that names the exact
+  session on its command line, or that is working inside the session's mapped
+  project, and biases toward "in use" because the fork policy makes a false
+  positive cheap and a false negative expensive. Unrelated agents in other
+  projects still never block a restore.
+
+### Changed
+
+- Clarify the landing-page file-sync comparison around machine-specific project
+  keys, make the failed-resume mismatch readable at normal scroll speed, and
+  replace ambiguous identity ownership language with precise remapping and
+  reconstruction behavior.
+
+## [0.1.0-rc.7] - 2026-07-28
+
 ### Added
 
 - Add a production SEO, answer-engine optimization, and AI-search foundation
@@ -31,9 +90,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   while exposing visible review dates and breadcrumbs.
 - Point the repository's website reference at the canonical `reinstate.dev`
   domain.
+- Separate signed website-only deployment identity
+  (`website-vYYYY.MM.DD.N`) from semantic CLI release tags while retaining
+  explicit, byte-verified installer parity with the release derived from both
+  public bootstraps.
 
 ### Fixed
 
+- Scope the restore active-agent check to the exact session file being
+  replaced instead of asking whether any Claude Code or Codex process is alive
+  on the host. Running unrelated agents in other projects is the normal state
+  of a working machine and no longer blocks `pull` or `conflicts resolve`, so
+  nobody has to close background agents to restore a session. Detection uses
+  open file handles (`lsof` on Unix, Restart Manager on Windows) and falls back
+  to the previous host-wide answer only where handles cannot be enumerated,
+  reporting that imprecision in the refusal message.
+- Restore a session that genuinely is in use alongside the live one as a
+  distinct vendor-safe session instead of refusing, so a restore never waits on
+  a human closing an agent. The fork identity is derived from the snapshot, so
+  repeating the pull is idempotent rather than accumulating copies.
+- Detect a concurrent agent write to a restore target and abandon the restore
+  instead of discarding those changes at the final rename.
+- Allow the guarded immutable Vercel discoverability smoke to record and
+  narrowly exempt the provider-injected preview `noindex` header while keeping
+  the promoted production-origin check strict.
+- Keep local CLI build metadata anchored to `v*` release tags so website-only
+  deployment tags cannot become the reported Reinstate version.
 - Parse both structured Vercel CLI 57 deployment results and legacy bare-URL
   output before immutable installer verification and production promotion.
 
@@ -41,6 +123,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Replace the legacy dark-gradient README banner with the landing page's
+  paper-and-ink isometric cross-device session flow.
 - Expand the post-Phase-1 roadmap from a generic MCP/skills sync bullet into
   universal agent configuration: one non-secret desired-state profile rendered
   across supported harnesses and encrypted across devices.
@@ -214,7 +298,10 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.6...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.8...v0.1.0
+[0.1.0-rc.8]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.7...v0.1.0-rc.8
+[0.1.0-rc.7]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.6...v0.1.0-rc.7
 [0.1.0-rc.6]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.5...v0.1.0-rc.6
 [0.1.0-rc.5]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.4...v0.1.0-rc.5
 [0.1.0-rc.4]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.3...v0.1.0-rc.4

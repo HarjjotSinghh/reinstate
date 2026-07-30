@@ -13,6 +13,13 @@ A feature is versioned when its reviewed completion commit lands in the release
 history. Do not create speculative tags, move published tags, or call an
 untested build stable.
 
+Signed `website-vYYYY.MM.DD.N` tags are a separate maintainer-operated
+deployment identity for reviewed website-only changes. They do not version the
+CLI, create a GitHub Release, advance the changelog's current release, or close
+compatibility and acceptance gates. The deployment script derives the existing
+signed `vMAJOR.MINOR.PATCH[-PRE-RELEASE]` identity from both public bootstrap
+files and refuses to proceed if their pins differ.
+
 ## Release-impact checklist
 
 - Add a CHANGELOG entry.
@@ -23,5 +30,8 @@ untested build stable.
 - Verify archives, checksums, SBOMs, source archive, and installers.
 - Publish installer routes only through the signed-tag production deployment
   script and verify both immutable and live URLs byte for byte.
+- For a website-only change, use
+  `./scripts/deploy-website-production.sh website-vYYYY.MM.DD.N`; preserve exact
+  installer parity with the CLI release derived from both public bootstraps.
 - Leave stable tagging and publication to the authorized maintainer after all
   native Windows, WSL2, and macOS acceptance rows pass.

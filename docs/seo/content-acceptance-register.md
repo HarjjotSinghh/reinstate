@@ -11,7 +11,7 @@ Those remain separate evidence gates.
 | ----- | ----- |
 | Reviewer | Codex coding agent |
 | Review date | 2026-07-27 |
-| Product baseline | `v0.1.0-rc.6` |
+| Product baseline | `v0.1.0` |
 | Sources of truth | `PRODUCT.md`, `docs/product-strategy.md`, implementation, deterministic tests |
 | Automated evidence | `make verify`; website tests/build; SEO, link, freshness, media, performance, Lighthouse, and schema-parity gates |
 | Boundary | Source and generated-artifact review; no physical two-device or external-provider test claimed |

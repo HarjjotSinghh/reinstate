@@ -53,7 +53,7 @@ ranges on macOS arm64 plus deterministic synthetic fixtures:
 | Claude Code | `2.1.219`–`2.1.220` |
 | OpenAI Codex CLI | `0.133.0`–`0.145.0` |
 
-Release candidate `v0.1.0-rc.6` contains these compatibility ranges plus
+Release candidate `v0.1.0` contains these compatibility ranges plus
 destination-device Claude project-directory remapping and exact restore-path
 verification.
 Versions outside them, including prereleases, are `UNTESTED` and must not be
@@ -70,7 +70,7 @@ installed remains an informational `NOT_INSTALLED` result.
 Sessions may contain absolute paths. Reinstate rewrites known structural path
 fields to the currently configured portable tokens (`${HOME}` and
 `${REPO:<id>}`) so Windows ↔ macOS resume works. The lower-level mapper's
-`${WORK:<alias>}` primitive is not populated by RC6 configuration or adapters.
+`${WORK:<alias>}` primitive is not populated by Reinstate configuration or adapters.
 Prose and unknown fields are left unchanged.
 
 ## Security exclusions

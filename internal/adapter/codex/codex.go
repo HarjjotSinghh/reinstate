@@ -382,6 +382,12 @@ func (a *Adapter) Restore(ctx context.Context, plan adapter.RestorePlan, r io.Re
 	if err := os.MkdirAll(filepath.Dir(dest), 0o700); err != nil {
 		return err
 	}
+	// Record the target before doing any slow work so a concurrent agent write
+	// is caught before the rename discards it.
+	before, err := fsx.FingerprintFile(dest)
+	if err != nil {
+		return err
+	}
 	tmp, err := os.CreateTemp(filepath.Dir(dest), ".reinstate-restore-*")
 	if err != nil {
 		return err
@@ -415,6 +421,9 @@ func (a *Adapter) Restore(ctx context.Context, plan adapter.RestorePlan, r io.Re
 	if err := tmp.Close(); err != nil {
 		return err
 	}
+	if err := fsx.VerifyUnchanged(dest, before); err != nil {
+		return err
+	}
 	if _, err := os.Stat(dest); err == nil {
 		relative := plan.Session.RelativePath
 		if relative == "" {
@@ -427,6 +436,9 @@ func (a *Adapter) Restore(ctx context.Context, plan adapter.RestorePlan, r io.Re
 		return err
 	}
 	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if err := fsx.VerifyUnchanged(dest, before); err != nil {
 		return err
 	}
 	if err := os.Rename(tmpPath, dest); err != nil {

@@ -49,8 +49,13 @@ function page(path, imagePath = path === '/' ? '/og/home.png' : `/og${path}.png`
 </html>`;
 }
 
-function healthyFetch({ transientRobotsFailure = false } = {}) {
+function healthyFetch({
+  previewNoindex = false,
+  transientRobotsFailure = false,
+} = {}) {
   const calls = [];
+  const previewRobotsTag =
+    previewNoindex === true ? 'noindex' : previewNoindex;
   let robotsAttempts = 0;
   const robots = `User-agent: *
 Allow: /
@@ -130,6 +135,8 @@ Sitemap: ${PRODUCTION}/sitemap-index.xml
       return response(
         method === 'HEAD' ? null : page(url.pathname),
         'text/html',
+        200,
+        previewRobotsTag ? { 'x-robots-tag': previewRobotsTag } : {},
       );
     }
     return response(null, 'text/plain', 404);
@@ -188,6 +195,88 @@ test('requires explicit acknowledgement for safe non-production HTTPS origins', 
       }),
     /without credentials/,
   );
+});
+
+test('allows Vercel preview noindex only with a narrow explicit acknowledgement', async () => {
+  const blockedFixture = healthyFetch({ previewNoindex: true });
+  const blocked = await runProductionDiscoverySmoke({
+    allowNonProduction: true,
+    baseUrl: DEPLOYMENT,
+    concurrency: 2,
+    fetchImpl: blockedFixture.fetchImpl,
+    launchPaths: ['/', '/docs'],
+    maxAttempts: 1,
+    timeoutMs: 1_000,
+  });
+  assert.equal(blocked.summary.ok, false);
+  assert.ok(
+    blocked.findings.some(({ code }) => code === 'X_ROBOTS_TAG'),
+  );
+
+  const allowedFixture = healthyFetch({ previewNoindex: true });
+  const allowed = await runProductionDiscoverySmoke({
+    allowNonProduction: true,
+    allowVercelPreviewNoindex: true,
+    baseUrl: DEPLOYMENT,
+    concurrency: 2,
+    fetchImpl: allowedFixture.fetchImpl,
+    launchPaths: ['/', '/docs'],
+    maxAttempts: 1,
+    timeoutMs: 1_000,
+  });
+  assert.equal(allowed.summary.ok, true);
+  assert.equal(allowed.configuration.allowVercelPreviewNoindex, true);
+  assert.equal(allowed.summary.vercelPreviewNoindexResponses, 4);
+
+  for (const baseUrl of [PRODUCTION, 'https://example.com']) {
+    await assert.rejects(
+      runProductionDiscoverySmoke({
+        allowNonProduction: true,
+        allowVercelPreviewNoindex: true,
+        baseUrl,
+        fetchImpl: async () =>
+          assert.fail('invalid preview exemption must not fetch'),
+      }),
+      /\*.vercel\.app origin/,
+    );
+  }
+});
+
+test('rejects broader preview X-Robots-Tag directives before promotion', async () => {
+  for (const previewNoindex of [
+    'noindex, nofollow',
+    'googlebot: noindex',
+    'noindex, noindex',
+  ]) {
+    const fixture = healthyFetch({ previewNoindex });
+    const report = await runProductionDiscoverySmoke({
+      allowNonProduction: true,
+      allowVercelPreviewNoindex: true,
+      baseUrl: DEPLOYMENT,
+      concurrency: 2,
+      fetchImpl: fixture.fetchImpl,
+      launchPaths: ['/', '/docs'],
+      maxAttempts: 1,
+      timeoutMs: 1_000,
+    });
+
+    assert.equal(report.summary.ok, false, previewNoindex);
+    assert.equal(report.summary.vercelPreviewNoindexResponses, 0);
+    assert.ok(
+      report.findings.some(
+        ({ checkId, code }) =>
+          code === 'X_ROBOTS_TAG' && checkId === 'launch:head:/',
+      ),
+      `launch HEAD must reject ${previewNoindex}`,
+    );
+    assert.ok(
+      report.findings.some(
+        ({ checkId, code }) =>
+          code === 'X_ROBOTS_TAG' && checkId === 'page:get:/',
+      ),
+      `canonical GET must reject ${previewNoindex}`,
+    );
+  }
 });
 
 test('passes a healthy deployment, retries transient reads, and records redacted evidence', async () => {

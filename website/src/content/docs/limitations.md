@@ -1,11 +1,11 @@
 ---
 title: "Reinstate limitations and release-candidate boundaries"
-description: "Review Reinstate RC6 limitations for agents, operating systems, native resume, storage, snapshots, path remapping, security, and release certification."
+description: "Review Reinstate limitations for agents, operating systems, native resume, storage, snapshots, path remapping, security, and release certification."
 order: 15
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.1.0-rc.6"
+version: "v0.1.0"
 updatedAt: 2026-07-27
 tags: ["limitations", "release-candidate", "compatibility", "same-vendor-resume", "roadmap"]
 targetQuery: "Reinstate limitations"
@@ -14,7 +14,7 @@ draft: false
 noindex: false
 ---
 
-Reinstate `v0.1.0-rc.6` is a pre-1.0 continuity layer for encrypted,
+Reinstate `v0.1.0` is a pre-1.0 continuity layer for encrypted,
 same-vendor Claude Code and Codex session sync. It is not yet a certified
 stable release, local universal session index, cross-agent translator,
 repository synchronizer, remote desktop, coding harness, or universal agent
@@ -33,13 +33,13 @@ operating system, architecture, storage provider, and transfer direction.
 Check the live [compatibility matrix](/compatibility) and keep independent
 backups.
 
-Treat every limitation below as applying to RC6 unless a later changelog and
+Treat every limitation below as applying to Reinstate unless a later changelog and
 compatibility update explicitly replaces it. Repository roadmap items are
 direction, not current CLI syntax or support.
 
 ## Current support boundary
 
-| Area | RC6 boundary |
+| Area | Reinstate boundary |
 | --- | --- |
 | Agents | Tested Claude Code and Codex CLI layouts only |
 | Resume | Claude Code → Claude Code; Codex → Codex |
@@ -48,7 +48,7 @@ direction, not current CLI syntax or support.
 | Storage | User-owned S3-compatible object storage; R2 recommended |
 | Transfer model | Manual push/pull of full immutable snapshots |
 | Configuration | Reinstate session-sync config only |
-| Release status | Pre-1.0 release candidate; formats and interfaces may change |
+| Release status | Stable v0.1.0; pre-1.0, so formats and interfaces may still change |
 
 Versions outside the tested stable ranges, including prereleases, are
 `UNTESTED`. Recognizable untested sessions may be discovered read-only, but
@@ -95,7 +95,7 @@ even when bytes transfer successfully.
 
 ## Full snapshots, manual commands, and conflicts
 
-RC6 transfers complete immutable session snapshots. Append-aware deltas,
+Reinstate transfers complete immutable session snapshots. Append-aware deltas,
 chunking, retention controls, garbage collection, and continuous background
 sync are not current features. Large Codex rollouts can therefore take longer,
 and `--all` can select more data than intended.
@@ -139,7 +139,7 @@ secrets in agent conversations.
 
 ## Expected evidence
 
-A supported RC6 workflow should provide all of the following:
+A supported Reinstate workflow should provide all of the following:
 
 - `rein setup check` reports the selected adapter as `SUPPORTED`;
 - a scoped push dry-run and pull dry-run each plan one explicit session;

@@ -5,7 +5,7 @@ order: 1
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.1.0-rc.6"
+version: "v0.1.0"
 updatedAt: 2026-07-27
 tags: ["installation", "session-sync", "claude-code", "codex", "s3"]
 targetQuery: "how to sync coding-agent sessions across devices"
@@ -17,9 +17,10 @@ noindex: false
 Reinstate synchronizes same-vendor Claude Code and Codex CLI sessions across
 your machines through client-side-encrypted, user-owned S3-compatible storage.
 
-> **Release status:** the public installers currently pin `v0.1.0-rc.6`.
-> It remains a release candidate while native Windows, macOS amd64, WSL2, and
-> two-device acceptance gates are open.
+> **Release status:** stable. The public installers pin `v0.1.0`. Two-device
+> Phase 1 acceptance passed on macOS arm64 and native Windows amd64. macOS
+> amd64, Linux, and WSL2 are installer-compatible but were not part of that
+> acceptance run.
 
 ## Prerequisites
 
@@ -46,7 +47,7 @@ Native Windows PowerShell:
 irm https://reinstate.dev/install.ps1 | iex
 ```
 
-Both bootstraps pin `v0.1.0-rc.6`, verify the exact tagged canonical installer
+Both bootstraps pin `v0.1.0`, verify the exact tagged canonical installer
 and release binary, install without elevation, configure a user-local PATH, and
 print the next command. They install the CLI only; interactive configuration
 begins when you run `rein init`.
@@ -129,7 +130,7 @@ rein init \
   --project local/my-project=/different/absolute/path
 ```
 
-Enter the same endpoint, bucket, credentials, and encryption passphrase. RC6
+Enter the same endpoint, bucket, credentials, and encryption passphrase. Reinstate
 requires the existing encrypted remote manifest to be readable before it saves
 the additional device's configuration.
 

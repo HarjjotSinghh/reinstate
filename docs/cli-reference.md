@@ -49,10 +49,19 @@ that agent is blocked from push/pull. `rein conflicts list` and
 `rein conflicts show` require a valid config, so a missing config cannot look
 like an empty conflict set.
 
-Before overwriting an existing target, mutating `pull` and
-`conflicts resolve --keep-remote` operations refuse to restore while the
-selected Claude Code or Codex process is active. Close the agent and retry.
+A mutating `pull` never waits on a human closing an agent. Liveness is scoped to
+the exact session file being replaced, so unrelated agents running in other
+projects are ignored, and if that one session really is in use the live file is
+left untouched and the remote copy is restored beside it as a distinct session.
+
+`conflicts resolve --keep-remote` still refuses while the target session is in
+use, because `--keep-both` is the explicit way to preserve both branches there.
+
 New-session restores, `--keep-both`, and `pull --dry-run` remain available.
+`--allow-active-agents` skips the liveness check for one run.
+
+See [Configuration](configuration.md) for `restore.active_agent_policy`
+(`fork` by default, or `scoped`, `strict`, `off`).
 
 ## Planned universal configuration commands
 

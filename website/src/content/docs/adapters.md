@@ -5,7 +5,7 @@ order: 3
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.1.0-rc.6"
+version: "v0.1.0"
 updatedAt: 2026-07-27
 tags: ["adapters", "claude-code", "codex", "same-vendor-resume"]
 targetQuery: "Reinstate supported coding agents"
@@ -25,7 +25,7 @@ Same-vendor resume remains the only native resume path.
 | Claude Code | Implemented | Implemented | Post–Phase 1 | Native acceptance in progress |
 | OpenAI Codex CLI | Implemented | Implemented | Post–Phase 1 | Native acceptance in progress |
 
-The current release candidate has not completed every native operating-system
+The stable v0.1.0 release has not completed every native operating-system
 and physical two-device gate. Check the
 [roadmap](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md)
 before treating a platform and agent-version combination as certified.
@@ -51,13 +51,13 @@ device's absolute project path. Reinstate records the configured canonical
 project ID in a snapshot and recomputes Claude's directory key from the
 destination device's `local_root`.
 
-RC6 validates the exact planned destination after restore. Finding the same
+Reinstate validates the exact planned destination after restore. Finding the same
 session ID elsewhere in `~/.claude/projects` does not count as success.
 
 ## How does the Codex adapter remap a project?
 
 Codex stores the source working directory in each rollout's structural
-`session_meta.cwd`. When project mappings are configured, RC6 resolves that
+`session_meta.cwd`. When project mappings are configured, Reinstate resolves that
 directory to the canonical project ID during discovery and excludes rollouts
 outside mapped roots.
 

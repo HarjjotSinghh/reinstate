@@ -13,7 +13,7 @@ const description =
   {description}
   path="/glossary"
   eyebrow="Terminology"
-  answer="Reinstate uses precise terms for the identity, encryption, path-mapping, and compatibility boundaries of coding-agent session continuity. This glossary defines the current v0.1.0-rc.6 implementation and labels later roadmap concepts so a profile is not mistaken for an account, or native resume for cross-agent translation."
+  answer="Reinstate uses precise terms for the identity, encryption, path-mapping, and compatibility boundaries of coding-agent session continuity. This glossary defines the current v0.1.0 implementation and labels later roadmap concepts so a profile is not mistaken for an account, or native resume for cross-agent translation."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'Glossary', path: '/glossary' },
@@ -93,7 +93,7 @@ const description =
   </dl>
   <p>
     The lower-level path-mapping package also contains a <code>${'${WORK:<alias>}'}</code>
-    primitive. RC6 configuration and released adapters do not populate work aliases, so it is not
+    primitive. Reinstate configuration and released adapters do not populate work aliases, so it is not
     a current CLI feature.
   </p>
 
@@ -104,7 +104,7 @@ const description =
       A portable handoff is a planned, explicit, lossy checkpoint for continuing work in a
       different agent. It may carry goals, decisions, constraints, changed files, and validation
       state, but it will not silently translate one vendor's native transcript into another
-      vendor's session format. Portable handoffs are not available in RC6.
+      vendor's session format. Portable handoffs are not available in Reinstate.
     </p>
   </div>
 
@@ -145,7 +145,7 @@ const description =
 
   <h2 id="current-boundary">Current versus planned</h2>
   <p>
-    RC6 implements encrypted same-vendor session sync for the current
+    Reinstate implements encrypted same-vendor session sync for the current
     <a href="/compatibility/agent-version-history">tested Claude Code and Codex ranges</a>.
     Universal session search, verified environment repair, portable handoffs, and universal
     non-secret agent configuration remain later roadmap phases. See the

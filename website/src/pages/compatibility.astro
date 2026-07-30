@@ -20,7 +20,7 @@ const label = (value: string) =>
   {description}
   path="/compatibility"
   eyebrow="Compatibility"
-  answer="Reinstate RC6 supports same-vendor session sync for tested Claude Code and Codex CLI versions, with macOS and native Windows as the primary Phase 1 platforms. Stable v0.1 certification still depends on the remaining native-device and two-device release gates."
+  answer="Reinstate supports same-vendor session sync for tested Claude Code and Codex CLI versions, with macOS and native Windows as the primary Phase 1 platforms. Stable v0.1 certification still depends on the remaining native-device and two-device release gates."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'Compatibility', path: '/compatibility' },
@@ -94,7 +94,7 @@ const label = (value: string) =>
           <th scope="col">Environment</th>
           <th scope="col">Claude Code</th>
           <th scope="col">Codex CLI</th>
-          <th scope="col">RC6 status</th>
+          <th scope="col">Reinstate status</th>
           <th scope="col">Evidence</th>
         </tr>
       </thead>
@@ -159,7 +159,7 @@ const label = (value: string) =>
     Reinstate rewrites known structural paths to portable tokens such as
     <code>${'${HOME}'}</code> and <code>${'${REPO:<id>}'}</code>. The destination device expands
     those tokens using its own configured paths. The internal mapper's work-alias primitive is not
-    wired into RC6 configuration or adapters. Free-form transcript prose and unknown fields are
+    wired into Reinstate configuration or adapters. Free-form transcript prose and unknown fields are
     left unchanged.
   </p>
   <div class="pc-callout">

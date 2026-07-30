@@ -11,9 +11,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
+
 	"github.com/HarjjotSinghh/reinstate/internal/backend"
 	"github.com/HarjjotSinghh/reinstate/internal/backend/memory"
 	"github.com/HarjjotSinghh/reinstate/internal/config"
+	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/schema"
 )
 
@@ -472,21 +475,213 @@ func TestSetupCheckJSONPreservesFailureExit(t *testing.T) {
 	}
 }
 
-func TestRequireAgentInactive(t *testing.T) {
-	if err := requireAgentInactive(context.Background(), func(context.Context, string) (bool, error) {
-		return false, nil
-	}, "claude"); err != nil {
-		t.Fatalf("inactive agent rejected: %v", err)
-	}
-	if err := requireAgentInactive(context.Background(), func(context.Context, string) (bool, error) {
-		return true, nil
-	}, "codex"); err == nil || !strings.Contains(err.Error(), "appears to be running") {
-		t.Fatalf("active agent accepted: %v", err)
-	}
+func TestPlanSessionRestore(t *testing.T) {
 	probeErr := errors.New("probe failed")
-	if err := requireAgentInactive(context.Background(), func(context.Context, string) (bool, error) {
-		return false, probeErr
-	}, "claude"); !errors.Is(err, probeErr) {
-		t.Fatalf("probe failure was not preserved: %v", err)
+	const sessionPath = "/home/dev/.claude/projects/demo/abc.jsonl"
+
+	forkTests := []struct {
+		name string
+		busy bool
+		want restoreDisposition
+	}{
+		{name: "fork policy restores in place when idle", busy: false, want: restoreInPlace},
+		{name: "fork policy forks rather than refusing when busy", busy: true, want: restoreAsFork},
+	}
+	for _, tc := range forkTests {
+		t.Run(tc.name, func(t *testing.T) {
+			checker := func(_ context.Context, _ string, _ processcheck.Target) (bool, bool, error) {
+				return tc.busy, true, nil
+			}
+			got, err := planSessionRestore(
+				context.Background(), checker, "claude",
+				processcheck.Target{Path: sessionPath}, schema.ActiveAgentFork)
+			if err != nil {
+				t.Fatalf("fork policy must never refuse: %v", err)
+			}
+			if got != tc.want {
+				t.Fatalf("disposition=%v want %v", got, tc.want)
+			}
+		})
+	}
+
+	// The default (empty) policy must behave as fork, never as a refusal.
+	t.Run("empty policy defaults to forking", func(t *testing.T) {
+		checker := func(_ context.Context, _ string, _ processcheck.Target) (bool, bool, error) { return true, true, nil }
+		got, err := planSessionRestore(
+			context.Background(), checker, "claude", processcheck.Target{Path: sessionPath}, "")
+		if err != nil || got != restoreAsFork {
+			t.Fatalf("disposition=%v err=%v, want fork and no error", got, err)
+		}
+	})
+
+	// Conflict resolution keeps the refusal, because --keep-both is the
+	// explicit way to fork there.
+	t.Run("requireSessionRestorable refuses under the fork policy", func(t *testing.T) {
+		checker := func(_ context.Context, _ string, _ processcheck.Target) (bool, bool, error) { return true, true, nil }
+		err := requireSessionRestorable(
+			context.Background(), checker, "claude",
+			processcheck.Target{Path: sessionPath}, schema.ActiveAgentFork)
+		if err == nil || !strings.Contains(err.Error(), "is currently using this session") {
+			t.Fatalf("expected a refusal, got %v", err)
+		}
+	})
+
+	tests := []struct {
+		name        string
+		policy      string
+		busy        bool
+		scoped      bool
+		probeErr    error
+		wantErr     bool
+		wantMessage string
+		wantPath    string
+	}{
+		{
+			name:     "scoped policy allows an idle target",
+			policy:   schema.ActiveAgentScoped,
+			busy:     false,
+			scoped:   true,
+			wantPath: sessionPath,
+		},
+		{
+			name:        "scoped policy refuses a session the agent is holding",
+			policy:      schema.ActiveAgentScoped,
+			busy:        true,
+			scoped:      true,
+			wantErr:     true,
+			wantMessage: "is currently using this session",
+			wantPath:    sessionPath,
+		},
+		{
+			name:        "unscoped fallback explains the imprecision",
+			policy:      schema.ActiveAgentScoped,
+			busy:        true,
+			scoped:      false,
+			wantErr:     true,
+			wantMessage: "cannot tell which session it is using",
+			wantPath:    sessionPath,
+		},
+		{
+			name:     "off policy skips the check entirely",
+			policy:   schema.ActiveAgentOff,
+			busy:     true,
+			scoped:   true,
+			wantPath: "",
+		},
+		{
+			name:        "strict policy asks the host-wide question",
+			policy:      schema.ActiveAgentStrict,
+			busy:        true,
+			scoped:      false,
+			wantErr:     true,
+			wantMessage: "cannot tell which session it is using",
+			// Strict must discard the target so detection stays host-wide.
+			wantPath: "",
+		},
+		{
+			name:        "unknown policy is rejected",
+			policy:      "sometimes",
+			wantErr:     true,
+			wantMessage: "unsupported restore.active_agent_policy",
+		},
+		{
+			name:        "probe failure is surfaced, not swallowed",
+			policy:      schema.ActiveAgentScoped,
+			probeErr:    probeErr,
+			wantErr:     true,
+			wantMessage: "cannot verify",
+			wantPath:    sessionPath,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var gotPath string
+			checked := false
+			checker := func(_ context.Context, _ string, tgt processcheck.Target) (bool, bool, error) {
+				checked = true
+				gotPath = tgt.Path
+				return tc.busy, tc.scoped, tc.probeErr
+			}
+			_, err := planSessionRestore(
+				context.Background(), checker, "claude",
+				processcheck.Target{Path: sessionPath}, tc.policy)
+
+			if tc.wantErr && err == nil {
+				t.Fatalf("expected an error, got none")
+			}
+			if !tc.wantErr && err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if tc.wantMessage != "" && !strings.Contains(err.Error(), tc.wantMessage) {
+				t.Fatalf("error %q does not contain %q", err, tc.wantMessage)
+			}
+			if tc.probeErr != nil && !errors.Is(err, tc.probeErr) {
+				t.Fatalf("probe failure was not preserved: %v", err)
+			}
+			if tc.policy == schema.ActiveAgentOff && checked {
+				t.Fatalf("off policy must not consult the checker")
+			}
+			if checked && gotPath != tc.wantPath {
+				t.Fatalf("checker received path %q, want %q", gotPath, tc.wantPath)
+			}
+		})
+	}
+}
+
+// TestForkSessionIDIsADeterministicUUID covers the two properties a fork
+// identity needs at once.
+//
+// It must be a real UUID, because vendors treat session identifiers as UUIDs
+// and a decorated form such as "<uuid>-remote-<short>" is accepted by Claude
+// Code's interactive resume but rejected by `claude --print --resume`, leaving
+// a fork a human can open and automation cannot. It must also be derived
+// rather than random, so repeating a restore of the same snapshot lands on the
+// same file instead of accumulating copies.
+func TestForkSessionIDIsADeterministicUUID(t *testing.T) {
+	const session = "0cdbd871-f924-4848-b62e-5edbeab66ae3"
+	const snapshot = "633f5f3d-6fd2-49ef-865f-0e29eed55850"
+
+	got := forkSessionID("remote", session, snapshot)
+	if _, err := uuid.Parse(got); err != nil {
+		t.Fatalf("fork id %q is not a valid UUID: %v", got, err)
+	}
+	if strings.Contains(got, session) || strings.Contains(got, "remote") {
+		t.Fatalf("fork id %q leaks decorated structure", got)
+	}
+	if again := forkSessionID("remote", session, snapshot); again != got {
+		t.Fatalf("fork id is not deterministic: %q then %q", got, again)
+	}
+
+	// Distinct inputs must not collide, or a repeat pull could overwrite an
+	// unrelated fork.
+	other := []string{
+		forkSessionID("active", session, snapshot),
+		forkSessionID("remote", session, "0000000e-0000-4000-8000-000000000000"),
+		forkSessionID("remote", "0000000a-0000-4000-8000-000000000000", snapshot),
+	}
+	for _, o := range other {
+		if o == got {
+			t.Fatalf("distinct fork inputs collided on %q", got)
+		}
+	}
+}
+
+func TestAllPathsExist(t *testing.T) {
+	dir := t.TempDir()
+	present := filepath.Join(dir, "a.jsonl")
+	if err := os.WriteFile(present, []byte("{}\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	missing := filepath.Join(dir, "b.jsonl")
+
+	if allPathsExist(nil) {
+		t.Fatal("an empty plan must not count as already restored")
+	}
+	if !allPathsExist([]string{present}) {
+		t.Fatal("existing path reported as missing")
+	}
+	if allPathsExist([]string{present, missing}) {
+		t.Fatal("a partially present plan must not count as already restored")
 	}
 }

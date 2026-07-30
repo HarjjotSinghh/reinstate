@@ -30,7 +30,7 @@ prerequisites:
   - "The same long encryption passphrase available privately on both devices"
 howToSteps:
   - name: "Install and check the source device"
-    text: "Install the pinned Reinstate release candidate, confirm its version, and run the read-only setup check before creating local configuration."
+    text: "Install the pinned Reinstate release, confirm its version, and run the read-only setup check before creating local configuration."
     anchor: "install-source"
   - name: "Map the source repository"
     text: "Initialize Reinstate with one stable project ID mapped to the source repository's absolute path, then save the non-secret profile UUID."
@@ -59,7 +59,7 @@ This is **Codex to Codex** same-vendor continuity. Phase 1 does not turn a Codex
 rollout into a Claude Code transcript, and it does not silently reconstruct a
 session for another coding agent.
 
-The current public installer pins `v0.1.0-rc.6`. It remains release-candidate
+The current public installer pins `v0.1.0`. It remains release-candidate
 software while the remaining native platform and physical two-device
 acceptance rows are completed. Confirm the supported Codex CLI range on the
 [compatibility page](/compatibility) before transferring real work.
@@ -74,7 +74,7 @@ acceptance rows are completed. Confirm the supported Codex CLI range on the
   either mutating command.
 - Snapshots and manifests are encrypted locally; storage credentials stay in
   the OS keyring, and the passphrase is not stored.
-- `v0.1.0-rc.6` is not a stable release and this guide is not evidence that the
+- `v0.1.0` is not a stable release and this guide is not evidence that the
   outstanding physical two-device acceptance matrix has passed.
 
 ## Before you begin
@@ -100,14 +100,14 @@ own stable identifier and reuse it exactly on each device.
 | --- | --- | --- |
 | macOS native arm64 | POSIX installer | Current source compatibility evidence covers the documented Codex CLI range. |
 | macOS native amd64 | POSIX installer | A Phase 1 release gate remains open; do not infer certification from installer success. |
-| Windows 11 native amd64 | PowerShell installer | A primary Phase 1 target whose native acceptance gate remains open. |
-| Linux native | POSIX installer | Installer-compatible, but not a certified Phase 1 agent-resume target. |
-| WSL2 amd64 | POSIX installer | Installer-compatible and documented for smoke testing, but its Phase 1 gate remains open. WSL1 is unsupported. |
+| Windows 11 native amd64 | PowerShell installer | Covered by the two-device Phase 1 acceptance run, which passed. |
+| Linux native | POSIX installer | Installer-compatible; not covered by the two-device acceptance run. |
+| WSL2 amd64 | POSIX installer | Installer-compatible and documented for smoke testing; not covered by the two-device acceptance run. WSL1 is unsupported. |
 
 The repository currently records Codex CLI `0.133.0`–`0.145.0` as the tested
 stable range. `rein setup check` is authoritative for the installed version:
 `UNTESTED` and `UNSUPPORTED` block transfer. These facts describe committed
-evidence, not completed physical RC6 acceptance on every platform.
+evidence, not completed physical Reinstate acceptance on every platform.
 
 ## Command placeholders and parameters
 
@@ -150,7 +150,7 @@ rein setup check
 ```
 
 **Expected result:** `rein version --json` returns a JSON object whose version
-is `v0.1.0-rc.6` for the currently pinned installer. Before initialization,
+is `v0.1.0` for the currently pinned installer. Before initialization,
 `rein setup check` exits with code `3` and reports `config missing`. That one
 pre-init failure is expected; a platform, keyring, or Codex compatibility
 failure is a separate blocker that must be resolved.
@@ -236,7 +236,7 @@ rein init \
 ```
 
 Enter the same endpoint, bucket, storage credentials, and encryption
-passphrase. RC6 requires the encrypted remote manifest for an additional
+passphrase. Reinstate requires the encrypted remote manifest for an additional
 device; it fails without creating a new local profile if that manifest is
 missing.
 
@@ -390,7 +390,7 @@ run, and follow the [troubleshooting guide](/docs/troubleshooting).
 
 ## Safe rollback and undo
 
-Reinstate RC6 does not provide a general `rein undo` or per-session remote
+Reinstate does not provide a general `rein undo` or per-session remote
 delete command. Use these recovery boundaries instead:
 
 1. Prefer `--dry-run`: it does not upload or restore the selected session, so
@@ -469,7 +469,7 @@ No. The POSIX installer works on Linux and WSL2, and WSL2 has a documented
 smoke-test path, but neither is a certified Phase 1 agent-resume target in the
 current committed evidence. WSL1 is unsupported.
 
-### Does a successful personal transfer mean RC6 passed release acceptance?
+### Does a successful personal transfer mea Reinstate passed release acceptance?
 
 No. It proves only the devices, versions, storage, and session you tested.
 Release qualification requires the committed acceptance runbook and recorded,

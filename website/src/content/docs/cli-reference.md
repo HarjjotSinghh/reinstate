@@ -1,11 +1,11 @@
 ---
 title: "Reinstate CLI command reference"
-description: "Use every current Reinstate RC6 command with its purpose, parameters, expected evidence, platform notes, failure modes, and safe recovery path."
+description: "Use every current Reinstate command with its purpose, parameters, expected evidence, platform notes, failure modes, and safe recovery path."
 order: 14
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.1.0-rc.6"
+version: "v0.1.0"
 updatedAt: 2026-07-27
 tags: ["cli", "command-reference", "session-sync", "troubleshooting", "rc6"]
 targetQuery: "Reinstate CLI commands"
@@ -15,18 +15,18 @@ noindex: false
 ---
 
 The `rein` and `reinstate` names run the same binary. This reference covers
-every command shipped by Reinstate `v0.1.0-rc.6`, including what it does, what
+every command shipped by Reinstate `v0.1.0`, including what it does, what
 success looks like, the flags it accepts, platform-specific behavior, common
 failures, and the available recovery path.
 
-> **Current scope:** RC6 supports same-vendor Claude Code and Codex session
+> **Current scope:** Reinstate supports same-vendor Claude Code and Codex session
 > transfer. Commands for search, generic resume, cross-agent handoff, MCP
 > servers, skills, plugins, marketplaces, or universal configuration are
 > roadmap work and do not exist in this release.
 
 ## Prerequisites
 
-- Install and verify `v0.1.0-rc.6` before relying on this syntax.
+- Install and verify `v0.1.0` before relying on this syntax.
 - Run `rein init` before commands that need configuration or remote storage.
 - Close the selected Claude Code or Codex process before a mutating pull or
   `conflicts resolve --keep-remote`.
@@ -47,7 +47,7 @@ rein COMMAND --json
 `--help` prints local syntax without changing state. The global `--json` flag
 requests machine-readable output where the selected command supports it;
 command-local `--json` flags are equivalent. JSON field names are an
-integration surface, but RC6 remains pre-1.0 and may change before v1.0.
+integration surface, but Reinstate remains pre-1.0 and may change before v1.0.
 
 Set `REINSTATE_HOME` to an absolute path only when you deliberately need an
 isolated Reinstate home. macOS and WSL2 otherwise use `~/.reinstate`; native
@@ -92,8 +92,8 @@ rein version --json
 ```
 
 **Expected result:** human output contains the version string. JSON output
-contains `version`, `commit`, and `date`; the public RC6 installer must report
-`0.1.0-rc.6`.
+contains `version`, `commit`, and `date`; the public Reinstate installer must report
+`0.1.0`.
 
 **Parameters:** `--json` selects machine-readable output. The command accepts
 no session, agent, storage, or path arguments.
@@ -259,7 +259,7 @@ rein status --json
 **Expected result:** output reports the remote manifest revision and
 session-level local/remote relationship without exposing transcript content.
 
-**Parameters:** `--json` selects structured output. RC6 status has no agent or
+**Parameters:** `--json` selects structured output. Reinstate status has no agent or
 session filter.
 
 **Platform differences:** syntax is identical, but the hidden passphrase input
@@ -328,7 +328,7 @@ Plain Linux is not a certified Phase 1 resume target.
 wrong passphrase, credential/storage failure, manifest race, or failed
 encryption stops the operation. Credentials and auth files are hard-excluded.
 
-**Undo or recovery:** dry-run needs no undo. Snapshots are immutable and RC6
+**Undo or recovery:** dry-run needs no undo. Snapshots are immutable and Reinstate
 has no general delete or undo command. If a push was unintended, stop further
 sync, preserve the evidence, and apply the documented bucket-retention process
 only after identifying the exact profile objects.
@@ -481,7 +481,7 @@ new shell.
 
 A complete same-vendor transfer record contains:
 
-- `rein version --json` showing `0.1.0-rc.6`;
+- `rein version --json` showing `0.1.0`;
 - a passing or truthfully blocked `rein setup check --json` on each device;
 - the exact agent and `SESSION_ID` selected by `rein list`;
 - successful push and pull dry-runs before each mutation;

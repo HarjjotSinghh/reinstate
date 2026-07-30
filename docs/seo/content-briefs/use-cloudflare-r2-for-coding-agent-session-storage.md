@@ -7,7 +7,7 @@
 - Page type: provider-specific storage guide
 - Owner: Harjot Singh Rana
 - Status: agent review accepted; maintainer sign-off pending
-- Target release: `v0.1.0-rc.6`
+- Target release: `v0.1.0`
 - Last reviewed: 2026-07-27
 
 ## Audience and intent
@@ -29,10 +29,10 @@
 
 - Current capabilities used: S3-compatible R2 access, local age encryption,
   immutable snapshots, encrypted manifests, probes, and scoped session sync.
-- Current limitations: R2 account policy and charges are external; RC6 accepts
+- Current limitations: R2 account policy and charges are external; Reinstate accepts
   access-key ID and secret access key but not a session token; public release
   acceptance remains open.
-- Version tested: Reinstate `v0.1.0-rc.6` source contract.
+- Version tested: Reinstate `v0.1.0` source contract.
 - Evidence: backend/config implementation, storage tests, CLI help, threat
   model, and provider-neutral docs.
 - Claims that require verification: current Cloudflare UI, prices, limits, or

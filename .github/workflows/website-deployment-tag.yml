@@ -1,0 +1,126 @@
+name: Validate signed website deployment tag
+
+on:
+  push:
+    tags:
+      - "website-*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: website-deployment-tag-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate website and CLI tags
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Validate signed website and CLI release provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          WEBSITE_TAG="${GITHUB_REF_NAME}"
+          if [[ ! "$WEBSITE_TAG" =~ ^website-v([0-9]{4})\.([0-9]{2})\.([0-9]{2})\.([1-9][0-9]*)$ ]]; then
+            echo "website tag must match website-vYYYY.MM.DD.N exactly" >&2
+            exit 1
+          fi
+          TAG_DATE="${BASH_REMATCH[1]}-${BASH_REMATCH[2]}-${BASH_REMATCH[3]}"
+          if ! NORMALIZED_DATE="$(date -u -d "$TAG_DATE" +%F 2>/dev/null)" ||
+            [ "$NORMALIZED_DATE" != "$TAG_DATE" ]; then
+            echo "website tag contains an invalid calendar date: $TAG_DATE" >&2
+            exit 1
+          fi
+
+          git fetch --force origin "refs/tags/$WEBSITE_TAG:refs/tags/$WEBSITE_TAG"
+          if [ "$(git cat-file -t "$WEBSITE_TAG")" != "tag" ]; then
+            echo "$WEBSITE_TAG must be an annotated tag" >&2
+            exit 1
+          fi
+          git config gpg.format ssh
+          git config gpg.ssh.allowedSignersFile "$GITHUB_WORKSPACE/.github/allowed_signers"
+          git verify-tag "$WEBSITE_TAG"
+
+          git fetch --no-tags origin \
+            "refs/heads/main:refs/remotes/origin/main"
+          WEBSITE_COMMIT="$(git rev-parse "$WEBSITE_TAG^{commit}")"
+          CHECKOUT_COMMIT="$(git rev-parse HEAD)"
+          MAIN_COMMIT="$(git rev-parse origin/main)"
+          if [ "$WEBSITE_COMMIT" != "$CHECKOUT_COMMIT" ] ||
+            [ "$WEBSITE_COMMIT" != "$MAIN_COMMIT" ]; then
+            echo "website tag, checkout, and origin/main must resolve to one commit" >&2
+            exit 1
+          fi
+
+          mapfile -t POSIX_VERSIONS < <(
+            sed -nE 's/^VERSION="([^"]+)"$/\1/p' website/public/install.sh
+          )
+          mapfile -t POWERSHELL_VERSIONS < <(
+            sed -nE "s/^\\\$Version = \"([^\"]+)\"$/\\1/p" website/public/install.ps1
+          )
+          mapfile -t POSIX_ASSIGNMENTS < <(
+            grep -E '^[[:space:]]*VERSION[[:space:]]*=' website/public/install.sh || true
+          )
+          mapfile -t POWERSHELL_ASSIGNMENTS < <(
+            grep -Ei "^[[:space:]]*\\\$Version[[:space:]]*=" website/public/install.ps1 || true
+          )
+          if [ "${#POSIX_ASSIGNMENTS[@]}" -ne 1 ] ||
+            [ "${#POWERSHELL_ASSIGNMENTS[@]}" -ne 1 ] ||
+            [ "${#POSIX_VERSIONS[@]}" -ne 1 ] ||
+            [ "${#POWERSHELL_VERSIONS[@]}" -ne 1 ]; then
+            echo "each public installer must contain exactly one canonical VERSION assignment" >&2
+            exit 1
+          fi
+          CLI_TAG="${POSIX_VERSIONS[0]}"
+          if [ "$CLI_TAG" != "${POWERSHELL_VERSIONS[0]}" ]; then
+            echo "public installers reference different CLI versions" >&2
+            exit 1
+          fi
+          if [[ ! "$CLI_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$ ]]; then
+            echo "public installers reference an invalid CLI tag: $CLI_TAG" >&2
+            exit 1
+          fi
+
+          git fetch --force origin "refs/tags/$CLI_TAG:refs/tags/$CLI_TAG"
+          if [ "$(git cat-file -t "$CLI_TAG")" != "tag" ]; then
+            echo "$CLI_TAG must be an annotated tag" >&2
+            exit 1
+          fi
+          git verify-tag "$CLI_TAG"
+          CLI_COMMIT="$(git rev-parse "$CLI_TAG^{commit}")"
+          if ! git merge-base --is-ancestor "$CLI_COMMIT" "$WEBSITE_COMMIT"; then
+            echo "$CLI_TAG must be an ancestor of $WEBSITE_TAG" >&2
+            exit 1
+          fi
+
+          if ! git diff --quiet "$CLI_COMMIT" "$WEBSITE_COMMIT" -- \
+            website/public/install.sh website/public/install.ps1; then
+            echo "public installers must be byte-identical to the signed CLI tag" >&2
+            exit 1
+          fi
+
+          mapfile -t PRODUCT_RELEASES < <(
+            sed -nE "s/^[[:space:]]*currentRelease: '([^']+)',$/\\1/p" \
+              website/src/data/product.ts
+          )
+          mapfile -t PRODUCT_RELEASE_ASSIGNMENTS < <(
+            grep -E '^[[:space:]]*currentRelease[[:space:]]*:' \
+              website/src/data/product.ts || true
+          )
+          if [ "${#PRODUCT_RELEASE_ASSIGNMENTS[@]}" -ne 1 ] ||
+            [ "${#PRODUCT_RELEASES[@]}" -ne 1 ] ||
+            [ "${PRODUCT_RELEASES[0]}" != "$CLI_TAG" ]; then
+            echo "website product currentRelease must equal $CLI_TAG" >&2
+            exit 1
+          fi
+
+          printf 'Validated website tag %s at %s against signed CLI tag %s at %s.\n' \
+            "$WEBSITE_TAG" "$WEBSITE_COMMIT" "$CLI_TAG" "$CLI_COMMIT"

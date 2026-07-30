@@ -16,6 +16,33 @@ type Config struct {
 	Encryption            EncryptionConfig       `toml:"encryption"`
 	Agents                map[string]AgentConfig `toml:"agents"`
 	Projects              []ProjectConfig        `toml:"projects"`
+	Restore               RestoreConfig          `toml:"restore"`
+}
+
+// Active-agent policies for restore.
+const (
+	// ActiveAgentStrict refuses a restore whenever the agent runs anywhere on
+	// the host. This was the only behavior before scoped detection existed.
+	ActiveAgentStrict = "strict"
+	// ActiveAgentScoped refuses only when the exact target session file is held
+	// open by that agent. Unrelated agents in other projects are ignored.
+	ActiveAgentScoped = "scoped"
+	// ActiveAgentOff performs no liveness check. Restores stay atomic and still
+	// back up the previous file first.
+	ActiveAgentOff = "off"
+	// ActiveAgentFork never blocks. When the target session is in use the
+	// remote copy is restored alongside it as a distinct vendor-safe session,
+	// leaving the live file untouched.
+	ActiveAgentFork = "fork"
+)
+
+// DefaultActiveAgentPolicy restores a busy session alongside the live one
+// instead of refusing, so a restore never waits on a human closing an agent.
+const DefaultActiveAgentPolicy = ActiveAgentFork
+
+// RestoreConfig tunes restore safety behavior.
+type RestoreConfig struct {
+	ActiveAgentPolicy string `toml:"active_agent_policy"`
 }
 
 // StorageConfig describes remote storage (no secrets).
@@ -67,6 +94,17 @@ func ValidateConfig(c *Config) error {
 	if c.Encryption.Type == "" {
 		c.Encryption.Type = "age-scrypt"
 	}
+	if c.Restore.ActiveAgentPolicy == "" {
+		c.Restore.ActiveAgentPolicy = DefaultActiveAgentPolicy
+	}
+	switch c.Restore.ActiveAgentPolicy {
+	case ActiveAgentStrict, ActiveAgentScoped, ActiveAgentOff, ActiveAgentFork:
+	default:
+		return fmt.Errorf(
+			"unsupported restore.active_agent_policy %q (want %q, %q, %q, or %q)",
+			c.Restore.ActiveAgentPolicy,
+			ActiveAgentFork, ActiveAgentScoped, ActiveAgentStrict, ActiveAgentOff)
+	}
 	return nil
 }
 
@@ -82,6 +120,7 @@ func DefaultConfig(profileID, deviceID string) *Config {
 			Bucket: "reinstate",
 		},
 		Encryption: EncryptionConfig{Type: "age-scrypt"},
+		Restore:    RestoreConfig{ActiveAgentPolicy: DefaultActiveAgentPolicy},
 		Agents: map[string]AgentConfig{
 			"claude": {Enabled: true},
 			"codex":  {Enabled: true},

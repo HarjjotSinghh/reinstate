@@ -16,7 +16,7 @@ const currentReleaseDate = new Intl.DateTimeFormat('en', {
 }).format(new Date(`${product.currentReleaseDate}T00:00:00Z`));
 const answer =
   `The latest published Reinstate tag is ${product.currentRelease}, dated ${currentReleaseDate}. ` +
-  'RC6 tightens cross-device project mapping and restore verification, improves additional-device storage validation, and keeps the public installers and acceptance evidence pinned to one release candidate.';
+  'Reinstate tightens cross-device project mapping and restore verification, improves additional-device storage validation, and keeps the public installers and acceptance evidence pinned to one release candidate.';
 ---
 
 <PublicContentLayout
@@ -33,9 +33,11 @@ const answer =
 >
   <h2 id="unreleased">Unreleased</h2>
   <p>
-    The current unreleased change improves production deployment safety by parsing both structured
-    and legacy Vercel CLI deployment results before installer verification and production
-    promotion. It is not part of RC6 until a later release is tagged.
+    Current unreleased website work adds the SEO, answer-engine, AI-search, and social-preview
+    foundation and introduces signed <code>website-vYYYY.MM.DD.N</code> deployment tags. A website
+    tag can publish reviewed site changes from current <code>main</code> while the public CLI and
+    installer routes remain pinned to the separately signed <code>v0.1.0</code> release. It is
+    not a new Reinstate version or evidence that the remaining Reinstate acceptance gates have closed.
   </p>
   <p>
     The repository's
@@ -78,7 +80,7 @@ const answer =
   </ul>
   <h3>Release and roadmap clarity</h3>
   <ul>
-    <li>Public installers, setup prompts, and compatibility evidence are pinned to RC6.</li>
+    <li>Public installers, setup prompts, and compatibility evidence are pinned to Reinstate.</li>
     <li>
       Production deployment requires the signed-tag release workflow and verifies immutable and
       promoted installer routes byte for byte.
@@ -130,7 +132,7 @@ const answer =
 
   <h2 id="versioning">How to read pre-1.0 release notes</h2>
   <p>
-    A release candidate is published for testing before stable v0.1 certification. Read every
+    Release candidates were published for testing before stable v0.1 certification, which v0.1.0 completed. Read every
     intermediate release note before replacing a binary because compatibility behavior, session
     artifact formats, setup validation, and release gates may still change.
   </p>
@@ -146,7 +148,7 @@ const answer =
     <nav aria-label="Related pages">
       <a href={product.tagsUrl}>All source tags</a>
       <a href="/compatibility">Compatibility matrix</a>
-      <a href="/docs/getting-started">Install RC6</a>
+      <a href="/docs/getting-started">Install Reinstate</a>
       <a href="/open-source">Source and contributions</a>
     </nav>
   </section>

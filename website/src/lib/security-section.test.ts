@@ -27,7 +27,7 @@ describe('landing-page security section', () => {
 
   it('leads with local encryption and ownership claims', () => {
     expect(security).toContain('id="security"');
-    expect(security).toContain('Sessions leave your device encrypted.');
+    expect(security).toContain('Sessions leave encrypted.');
     expect(security).toContain('Your bucket never sees plaintext.');
     expect(security).toContain('class="h2-line"');
     expect(security).toContain('Local encryption before anything leaves your device');

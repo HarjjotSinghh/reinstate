@@ -9,7 +9,7 @@ const description =
 const publishedAt = '2026-07-27';
 
 const sourceRoot =
-  'https://github.com/HarjjotSinghh/reinstate/blob/v0.1.0-rc.6';
+  'https://github.com/HarjjotSinghh/reinstate/blob/v0.1.0';
 ---
 
 <PublicContentLayout
@@ -17,7 +17,7 @@ const sourceRoot =
   {description}
   path="/research/encrypted-snapshot-format-v1"
   eyebrow="Implementation specification · v1"
-  answer="Reinstate v0.1.0-rc.6 stores an age-encrypted JSON manifest and immutable age-encrypted session snapshots. Snapshot plaintext is one compact JSON metadata line, a newline, and one adapter-generated TAR stream whose byte length and SHA-256 digest are authenticated before restore. This is Reinstate’s current internal pre-1.0 format, not an open portability standard."
+  answer="Reinstate v0.1.0 stores an age-encrypted JSON manifest and immutable age-encrypted session snapshots. Snapshot plaintext is one compact JSON metadata line, a newline, and one adapter-generated TAR stream whose byte length and SHA-256 digest are authenticated before restore. This is Reinstate’s current internal pre-1.0 format, not an open portability standard."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'Research and evidence', path: '/research' },
@@ -46,7 +46,7 @@ const sourceRoot =
     </div>
     <div>
       <dt>Release described</dt>
-      <dd><code>v0.1.0-rc.6</code></dd>
+      <dd><code>v0.1.0</code></dd>
     </div>
   </dl>
   <p>
@@ -125,8 +125,8 @@ const sourceRoot =
         <tr><td><code>snapshot_id</code></td><td>UUID selected at push and required to match the requested object.</td></tr>
         <tr><td><code>parent_revision</code></td><td>Previous remote snapshot UUID for the same session, or empty on its first head.</td></tr>
         <tr><td><code>agent</code></td><td>Current adapter identifier, <code>claude</code> or <code>codex</code>.</td></tr>
-        <tr><td><code>adapter_schema</code></td><td>Adapter artifact contract version; RC6 writes <code>1</code>.</td></tr>
-        <tr><td><code>source_agent_version</code></td><td>Reserved metadata field; RC6 does not populate it in the current push path.</td></tr>
+        <tr><td><code>adapter_schema</code></td><td>Adapter artifact contract version; Reinstate writes <code>1</code>.</td></tr>
+        <tr><td><code>source_agent_version</code></td><td>Reserved metadata field; Reinstate does not populate it in the current push path.</td></tr>
         <tr><td><code>source_platform</code></td><td>Detected source platform identifier.</td></tr>
         <tr><td><code>project_id</code></td><td>Configured canonical project identity, checked against the pull request.</td></tr>
         <tr><td><code>session_id</code></td><td>Vendor session identity, checked against the pull request.</td></tr>
@@ -144,7 +144,7 @@ const sourceRoot =
 
   <h2 id="adapter-tar">Adapter TAR payload</h2>
   <p>
-    Both RC6 adapters produce a streamed POSIX TAR containing exactly one transformed JSONL session
+    Both Reinstate adapters produce a streamed POSIX TAR containing exactly one transformed JSONL session
     entry. Claude entries must remain below <code>projects/</code>; Codex entries must remain below
     <code>sessions/</code>. The TAR entry name must match the planned archive path, remain relative,
     end in <code>.jsonl</code>, and pass the adapter's safe-path checks.
@@ -199,7 +199,7 @@ const sourceRoot =
       Publishing the current bytes makes Reinstate inspectable. Calling the format an open
       portability standard would require a separate public proposal, governance, independent
       implementations, compatibility fixtures, and version-negotiation rules that do not exist in
-      RC6.
+      Reinstate.
     </p>
   </div>
 

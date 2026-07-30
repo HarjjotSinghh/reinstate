@@ -13,7 +13,7 @@
 - Audience: developers deciding whether to upgrade an agent or Reinstate release.
 - Problem: the current compatibility matrix does not by itself show when tested ranges or fail-closed behavior changed.
 - Primary query: `Reinstate supported Claude Code Codex versions`
-- Secondary questions: when were inclusive ranges introduced; did RC4–RC6 change the range; what happens outside it; does source compatibility equal physical certification?
+- Secondary questions: when were inclusive ranges introduced; did RC4–Reinstate change the range; what happens outside it; does source compatibility equal physical certification?
 - Intent: freshness and evaluation.
 - Next action: run `rein setup check` and inspect the linked current compatibility evidence.
 
@@ -22,7 +22,7 @@
 - Capabilities: Claude Code `2.1.219`–`2.1.220` and Codex CLI `0.133.0`–`0.145.0` are the current inclusive source-tested stable ranges; out-of-range or prerelease versions fail closed as untested.
 - Limitations: the changelog does not publish exact historical ranges for RC1–RC2; current source tests do not close every physical platform gate.
 - Evidence: `website/src/data/compatibility.json`, adapter constants/tests, `CHANGELOG.md`, and release history.
-- Version: current release `v0.1.0-rc.6`.
+- Version: current release `v0.1.0`.
 
 ## Outline
 

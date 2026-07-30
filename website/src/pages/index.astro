@@ -6,7 +6,7 @@ import HeroExploded from '../components/landing/HeroExploded.astro';
 import ProblemExploded from '../components/landing/ProblemExploded.astro';
 import TerminalProof from '../components/landing/TerminalProof.astro';
 import SecurityExploded from '../components/landing/SecurityExploded.astro';
-import ExploreReinstate from '../components/landing/ExploreReinstate.astro';
+import WhyNotFileSync from '../components/landing/WhyNotFileSync.astro';
 import { product } from '../data/product';
 import { homepageSchema } from '../lib/schema';
 ---
@@ -21,8 +21,8 @@ import { homepageSchema } from '../lib/schema';
     <ProblemExploded>
       <TerminalProof />
       <SecurityExploded />
+      <WhyNotFileSync />
     </ProblemExploded>
-    <ExploreReinstate />
   </div>
 </BaseLayout>
 
@@ -80,7 +80,7 @@ import { homepageSchema } from '../lib/schema';
     --ink: oklch(0.965 0.008 145);
     --ink-2: oklch(0.76 0.014 150);
     --ink-3: oklch(0.72 0.016 150);
-    --rule: oklch(0.31 0.02 158);
+    --rule: oklch(0.44 0.018 158 / 0.6);
     --prim: oklch(0.88 0.21 128);
     --prim-deep: oklch(0.84 0.19 128);
     --on-prim: oklch(0.17 0.04 132);

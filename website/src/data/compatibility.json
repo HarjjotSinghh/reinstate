@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "reinstateVersion": "v0.1.0-rc.6",
+  "reinstateVersion": "v0.1.0",
   "lastReviewed": "2026-07-27",
   "owner": {
     "name": "Harjot Singh Rana",
@@ -44,7 +44,7 @@
       "status": "local-verification-green",
       "lastTested": "2026-07-27",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-07-27-macos-phase1-rc5.md",
-      "notes": "RC5 physical evidence exists; RC6 remains a release candidate until the complete acceptance checklist is signed off."
+      "notes": "RC5 physical evidence exists; Reinstate remains a release candidate until the complete acceptance checklist is signed off."
     },
     {
       "id": "macos-amd64",
@@ -64,7 +64,7 @@
       "status": "release-gate-open",
       "lastTested": "2026-07-27",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-07-27-windows-phase1-rc5.md",
-      "notes": "RC5 physical evidence exists; RC6 native two-device acceptance remains open."
+      "notes": "RC5 physical evidence exists; Reinstate native two-device acceptance remains open."
     },
     {
       "id": "windows-11-wsl2-amd64",

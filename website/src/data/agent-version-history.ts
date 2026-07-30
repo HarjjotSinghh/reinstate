@@ -16,6 +16,27 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.1.0': {
+    rangeChange: 'No agent-version range change documented.',
+    compatibilityChange:
+      'No behavior change from v0.1.0-rc.8. The stable release ships that candidate\u2019s product code unchanged, so the two-device Phase 1 acceptance evidence applies directly to it.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.1.0/internal/processcheck/process.go',
+  },
+  'v0.1.0-rc.8': {
+    rangeChange: 'No agent-version range change documented.',
+    compatibilityChange:
+      'Restore liveness no longer depends on an open file handle. Claude Code closes its session file between appends, so a live session held no handle and RC7 treated it as free. Detection now also matches an agent naming the exact session on its command line, or working inside the session\u2019s mapped project.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.1.0-rc.8/internal/processcheck/process.go',
+  },
+  'v0.1.0-rc.7': {
+    rangeChange: 'No agent-version range change documented.',
+    compatibilityChange:
+      'Restore liveness detection became session-scoped. A restore now checks whether the exact target session file is held open, using operating-system file handles, instead of asking whether any Claude Code or Codex process is running. A session that is genuinely in use is restored alongside the live one rather than refused.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.1.0-rc.7/internal/processcheck/process.go',
+  },
   'v0.1.0-rc.6': {
     rangeChange: 'No agent-version range change documented.',
     compatibilityChange:

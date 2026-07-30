@@ -5,7 +5,7 @@ order: 10
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.1.0-rc.6"
+version: "v0.1.0"
 updatedAt: 2026-07-27
 tags: ["configuration", "project-mapping", "profile-id", "s3", "keyring"]
 targetQuery: "configure Reinstate session sync"
@@ -21,11 +21,11 @@ entry, and Reinstate home.
 
 > **Current scope:** `config.toml` configures Phase 1 session sync only.
 > Commands for portable MCP servers, skills, hooks, plugins, marketplaces, and
-> cross-harness settings are roadmap work and do not exist in RC6.
+> cross-harness settings are roadmap work and do not exist in Reinstate.
 
 ## Prerequisites
 
-- Reinstate `v0.1.0-rc.6`, verified with `rein version --json`.
+- Reinstate `v0.1.0`, verified with `rein version --json`.
 - A private S3-compatible bucket, service endpoint, region, access-key ID, and
   secret access key.
 - One stable project ID and the repository's absolute path on this device.
@@ -86,7 +86,7 @@ rein init \
 ```
 
 Use the same service endpoint, region, bucket, prefix, and storage credential
-scope. RC6 requires the existing encrypted `manifest.age` to be present and
+scope. Reinstate requires the existing encrypted `manifest.age` to be present and
 readable before saving an additional device's config. It records
 `remote_profile_required = true`, so later `status`, `diff`, `pull`, and push
 operations fail if the established manifest disappears.
@@ -112,7 +112,7 @@ tool output, or unknown fields.
 
 ## Reinitialize an existing home
 
-RC6 refuses ordinary `init` when `config.toml` or `state.json` already exists
+Reinstate refuses ordinary `init` when `config.toml` or `state.json` already exists
 and exits with safety code `7`. Review the current home before intentionally
 running:
 

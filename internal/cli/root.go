@@ -12,8 +12,14 @@ import (
 	syncengine "github.com/HarjjotSinghh/reinstate/internal/sync"
 )
 
-// AgentProcessChecker reports whether the selected coding agent is active.
-type AgentProcessChecker func(context.Context, string) (bool, error)
+// AgentProcessChecker reports whether the selected coding agent is holding the
+// session file at sessionPath.
+//
+// scoped reports whether the answer was specific to sessionPath. When the host
+// cannot enumerate open file handles the implementation falls back to a
+// host-wide check and reports scoped=false, so callers can explain the refusal
+// accurately instead of claiming precision they do not have.
+type AgentProcessChecker func(ctx context.Context, agent string, target processcheck.Target) (busy bool, scoped bool, err error)
 
 // Options configure root command construction.
 type Options struct {
@@ -77,7 +83,7 @@ func NewRoot(opts Options) *cobra.Command {
 	}
 	processChecker := opts.AgentProcessChecker
 	if processChecker == nil {
-		processChecker = processcheck.AgentActive
+		processChecker = processcheck.SessionBusy
 	}
 	var jsonGlobal bool
 	root := &cobra.Command{

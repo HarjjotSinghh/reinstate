@@ -11,9 +11,13 @@ import (
 	"testing"
 	"unicode/utf16"
 
+	"github.com/google/uuid"
+
 	"github.com/HarjjotSinghh/reinstate/internal/adapter"
 	"github.com/HarjjotSinghh/reinstate/internal/adapter/claude"
 	"github.com/HarjjotSinghh/reinstate/internal/config"
+	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
+	"github.com/HarjjotSinghh/reinstate/internal/schema"
 )
 
 // TestCLISyntheticSyncPath drives the real CLI entrypoint (Execute) for
@@ -87,9 +91,24 @@ func TestCLISyntheticSyncPath(t *testing.T) {
 		})
 		return out.String(), errb.String(), code
 	}
-	inactiveChecker := func(_ context.Context, _ string) (bool, error) { return false, nil }
+	inactiveChecker := func(_ context.Context, _ string, _ processcheck.Target) (bool, bool, error) { return false, true, nil }
 	run := func(args ...string) (stdout, stderr string, code int) {
 		return runWithChecker(inactiveChecker, args...)
+	}
+	// runWithCheckerAndPolicy pins restore.active_agent_policy for one run so
+	// each policy can be exercised against the same synthetic profile.
+	runWithCheckerAndPolicy := func(
+		processChecker AgentProcessChecker, policy string, args ...string,
+	) (stdout, stderr string, code int) {
+		cfg, err := config.LoadConfig(home)
+		if err != nil {
+			t.Fatal(err)
+		}
+		cfg.Restore.ActiveAgentPolicy = policy
+		if err := config.SaveConfig(home, cfg); err != nil {
+			t.Fatal(err)
+		}
+		return runWithChecker(processChecker, args...)
 	}
 
 	// init
@@ -213,11 +232,86 @@ func TestCLISyntheticSyncPath(t *testing.T) {
 	if err := os.WriteFile(targetSessionPath, []byte(`{"type":"user","message":{"content":"existing destination"}}`+"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	out, errb, code = runWithChecker(func(_ context.Context, _ string) (bool, error) {
-		return true, nil
-	}, "pull", "--agent", "claude", "--session", "session-e2e", "--json")
-	if code != ExitSafety || !strings.Contains(errb, "appears to be running") {
+	// The scoped checker reports the agent is holding this exact session file.
+	busyChecker := func(_ context.Context, _ string, _ processcheck.Target) (bool, bool, error) { return true, true, nil }
+	out, errb, code = runWithCheckerAndPolicy(busyChecker, schema.ActiveAgentScoped,
+		"pull", "--agent", "claude", "--session", "session-e2e", "--json")
+	if code != ExitSafety || !strings.Contains(errb, "is currently using this session") {
 		t.Fatalf("active-agent pull exit=%d err=%q out=%q", code, errb, out)
+	}
+
+	// Under the default fork policy a busy session is never blocked and never
+	// overwritten: the live file is left byte-for-byte intact and the remote
+	// copy lands beside it as a distinct session.
+	liveBefore, err := os.ReadFile(targetSessionPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, errb, code = runWithCheckerAndPolicy(busyChecker, schema.ActiveAgentFork,
+		"pull", "--agent", "claude", "--session", "session-e2e")
+	if code != ExitOK {
+		t.Fatalf("fork policy pull exit=%d err=%q out=%q", code, errb, out)
+	}
+	if !strings.Contains(out, "is in use, so it was left unchanged") {
+		t.Fatalf("fork was not reported to the operator: %q", out)
+	}
+	liveAfter, err := os.ReadFile(targetSessionPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(liveAfter) != string(liveBefore) {
+		t.Fatal("fork policy modified the live session file")
+	}
+	// The fork identity is a derived UUID, so it is identified by elimination
+	// rather than by a decorated filename pattern.
+	all, err := filepath.Glob(filepath.Join(filepath.Dir(targetSessionPath), "*.jsonl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var forkPath string
+	for _, candidate := range all {
+		if candidate != targetSessionPath {
+			forkPath = candidate
+		}
+	}
+	if len(all) != 2 || forkPath == "" {
+		t.Fatalf("expected the live session plus exactly one fork, got %v", all)
+	}
+	forkID := strings.TrimSuffix(filepath.Base(forkPath), ".jsonl")
+	if _, err := uuid.Parse(forkID); err != nil {
+		t.Fatalf("fork id %q is not a valid UUID, so vendors cannot resume it: %v", forkID, err)
+	}
+	// Re-pulling the same remote state must be idempotent, not pile up forks.
+	out, errb, code = runWithCheckerAndPolicy(busyChecker, schema.ActiveAgentFork,
+		"pull", "--agent", "claude", "--session", "session-e2e")
+	if code != ExitOK {
+		t.Fatalf("repeat fork pull exit=%d err=%q out=%q", code, errb, out)
+	}
+	forksAgain, err := filepath.Glob(filepath.Join(filepath.Dir(targetSessionPath), "*.jsonl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(forksAgain) != 2 {
+		t.Fatalf("repeated pull created duplicate forks: %v", forksAgain)
+	}
+	if err := os.Remove(forkPath); err != nil {
+		t.Fatal(err)
+	}
+
+	// --allow-active-agents clears the liveness refusal. Every other safety
+	// check still applies, so this local file (deliberately diverged above)
+	// is reported as a conflict rather than silently overwritten.
+	out, errb, code = runWithChecker(busyChecker,
+		"pull", "--agent", "claude", "--session", "session-e2e", "--json", "--allow-active-agents")
+	if code == ExitSafety || strings.Contains(errb, "is currently using this session") {
+		t.Fatalf("--allow-active-agents did not clear the refusal: exit=%d err=%q out=%q", code, errb, out)
+	}
+	if code != ExitConflict {
+		t.Fatalf("diverged target should record a conflict: exit=%d err=%q out=%q", code, errb, out)
+	}
+	// Clear the conflict recorded above so later steps start from clean state.
+	if err := os.RemoveAll(filepath.Join(home, "conflicts")); err != nil {
+		t.Fatal(err)
 	}
 
 	// Simulate the second device: remove the source session before pull. A

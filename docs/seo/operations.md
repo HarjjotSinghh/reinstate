@@ -22,6 +22,49 @@ configured or verified.
 Never mark an external action complete from repository state alone. Attach a
 dated screenshot, export, response log, or ticket when the action is performed.
 
+## Production deployment identity
+
+Website publication and CLI versioning use separate signed tags:
+
+- `website-vYYYY.MM.DD.N` identifies the exact reviewed website commit. It must
+  be an annotated, approved signature on the current `origin/main` commit. It
+  is an operational deployment identity, not a Reinstate version, GitHub
+  Release, compatibility claim, or acceptance result.
+- `vX.Y.Z[-prerelease]` identifies a published CLI release. Both public
+  bootstrap files must pin the same CLI tag. The production script derives that
+  tag from the two files, refuses disagreement, and verifies the corresponding
+  signed published release rather than accepting an operator-supplied version.
+
+While the public bootstraps remain pinned to `v0.1.0`, deploying a
+`website-v...` tag does not advance Reinstate beyond Reinstate or close any remaining
+platform or two-device acceptance gate.
+
+Automatic Vercel Git deployments remain disabled. From a clean, current
+`main` worktree that is linked to the approved `harjjot/reinstate-web` project,
+an authorized maintainer pushes the signed website tag, waits for the
+**Validate signed website deployment tag** workflow to pass, and runs only:
+
+```sh
+./scripts/deploy-website-production.sh website-vYYYY.MM.DD.N
+```
+
+The guard refuses dirty, detached, non-`main`, unpushed, unsigned,
+tag-mismatched, incorrectly linked, or installer-inconsistent source. It builds
+and validates the site, creates an immutable production candidate without
+moving the canonical alias, verifies installer bytes and production discovery
+there, and promotes only after those checks pass. It then repeats the installer
+and discovery verification against `https://reinstate.dev`.
+
+Do not run `vercel --prod` or `vercel promote` directly. Do not use a
+`website-v...` tag to trigger the CLI release workflow, publish a GitHub
+Release, or rewrite an existing tag. A failed immutable verification must leave
+the production alias unchanged.
+
+For every deployment, record both identities: the website deployment tag and
+commit, the derived CLI release tag, the immutable Vercel URL, the promoted
+production URL, the operator and UTC time, and the installer/discovery artifact
+paths and digests.
+
 ## Before touching an external console
 
 1. Confirm the current release and product claims against `README.md`,
@@ -44,8 +87,8 @@ dated screenshot, export, response log, or ticket when the action is performed.
 
 4. Confirm the sitemap contains canonical, indexable URLs only. Preview, API,
    error, redirect, draft, and `noindex` URLs must not appear.
-5. Record the Git commit, deployed version, timestamp, operator, and production
-   URL used for the checks.
+5. Record the website deployment tag and Git commit, derived CLI release tag,
+   timestamp, operator, and production URL used for the checks.
 
 ## Google Search Console
 
@@ -431,12 +474,30 @@ npm --prefix website run check:production-discovery -- \
   --allow-non-production
 ```
 
+Vercel adds `X-Robots-Tag: noindex` to public `.vercel.app` deployment URLs.
+For that immutable candidate only, acknowledge the provider header separately:
+
+```sh
+npm --prefix website run check:production-discovery -- \
+  --base-url https://DEPLOYMENT.vercel.app \
+  --allow-non-production \
+  --allow-vercel-preview-noindex
+```
+
 The request origin may differ for an immutable deployment, but canonical,
 Open Graph, robots-sitemap, and sitemap URLs must still point to
 `https://reinstate.dev`. Non-production targets require the explicit flag and
 must be public HTTPS origins. Credentials, URL paths, queries, fragments,
 localhost, and private-network targets are refused. The checker sends no
 cookies, authorization, form data, or request bodies.
+
+The Vercel preview exemption is intentionally narrower: it is rejected unless
+the target is an acknowledged non-production `*.vercel.app` origin, it permits
+only the provider-injected `X-Robots-Tag: noindex` header, and the evidence
+records how many responses used the exemption. Robots metadata, canonicals,
+sitemaps, crawler responses, status codes, content types, and Open Graph assets
+remain fully enforced. Never pass the exemption to the post-promotion
+`https://reinstate.dev` run; production must remain indexable without it.
 
 The checker:
 
@@ -496,11 +557,11 @@ store or ticket. Do not commit generated evidence to Git. Apply the project's
 evidence-retention and access policy rather than inventing a new retention
 period in this runbook.
 
-Record the release tag and commit, immutable or production target, operator,
-UTC run time, result, artifact location, and digest. A passing result proves
-only what that public endpoint returned during the run. A failed result blocks
-discoverability sign-off until it is explained and rerun; it does not roll back
-or otherwise mutate the release.
+Record the website deployment tag and commit, derived CLI release tag, immutable
+or production target, operator, UTC run time, result, artifact location, and
+digest. A passing result proves only what that public endpoint returned during
+the run. A failed result blocks discoverability sign-off until it is explained
+and rerun; it does not roll back or otherwise mutate the release.
 
 User-agent strings are spoofable. These requests test the public response policy
 only; they do not prove that a request came from OpenAI or Perplexity.

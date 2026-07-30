@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	publicBootstrapVersion       = "v0.1.0-rc.6"
+	publicBootstrapVersion       = "v0.1.0"
 	publicPOSIXInstallerSHA256   = "7776adb4ace8aa333745cd3f3e42b3a10d1400b9394c612d065c20a739db2e66"
 	publicWindowsInstallerSHA256 = "02c68984964556e7c685a275bde72dc812162e0b898be0f26718a0813efc0dfe"
 )
@@ -75,26 +75,38 @@ func TestPublicBootstrapVercelHeaders(t *testing.T) {
 func TestProductionDeploymentVerifiesBeforePromotion(t *testing.T) {
 	body := read(t, "scripts/deploy-website-production.sh")
 	for _, required := range []string{
+		`^website-v[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.[1-9][0-9]*$`,
 		`git branch --show-current`,
 		`git status --porcelain`,
-		`verify-tag "$version"`,
+		`verify-tag "$deployment_tag"`,
+		`verify-tag "$cli_version"`,
+		`git merge-base --is-ancestor "$cli_version^{}" "$deployment_commit"`,
+		`git diff --exit-code "$cli_version^{}"`,
+		`check-cli-release.mjs --tag "$cli_version"`,
+		`check-vercel-project-link.mjs`,
+		`npm exec --yes --package=vercel@57.0.0 -- vercel`,
+		`vercel_cli deploy`,
 		`--prod --skip-domain`,
 		`parse-vercel-deployment-url.mjs`,
-		`verify-live-installers.sh`,
+		`verify-live-installers.sh" "$cli_version"`,
 		`npm run check:freshness`,
 		`npm run check:lighthouse`,
 		`--allow-missing-previous`,
-		`artifacts/indexnow/$version-plan.json`,
+		`artifacts/indexnow/$deployment_tag-plan.json`,
 		`npm run check:production-discovery`,
-		`vercel promote`,
+		`--allow-vercel-preview-noindex`,
+		`vercel_cli promote`,
 		`https://reinstate.dev`,
 	} {
 		if !strings.Contains(body, required) {
 			t.Errorf("production deployment script is missing %q", required)
 		}
 	}
+	if strings.Contains(body, `npx --yes vercel`) {
+		t.Error("production deployment must use the lockfile-pinned local Vercel CLI")
+	}
 	verifyIndex := strings.Index(body, `"$repo_directory/scripts/verify-live-installers.sh"`)
-	promoteIndex := strings.Index(body, `vercel promote`)
+	promoteIndex := strings.Index(body, `vercel_cli promote`)
 	if verifyIndex == -1 || promoteIndex == -1 || verifyIndex > promoteIndex {
 		t.Error("immutable installer verification must run before production promotion")
 	}
@@ -105,6 +117,22 @@ func TestProductionDeploymentVerifiesBeforePromotion(t *testing.T) {
 	productionSmokeIndex := strings.LastIndex(body, `npm run check:production-discovery`)
 	if productionSmokeIndex == -1 || productionSmokeIndex < promoteIndex {
 		t.Error("promoted production origin must receive a discovery smoke test")
+	}
+}
+
+func TestProductionDeploymentRejectsInvalidWebsiteTagDate(t *testing.T) {
+	command := exec.Command(
+		"sh",
+		filepath.Join(repoRoot(t), "scripts", "deploy-website-production.sh"),
+		"website-v2026.02.30.1",
+	)
+	command.Dir = repoRoot(t)
+	output, err := command.CombinedOutput()
+	if err == nil {
+		t.Fatal("production deployment accepted an invalid calendar date")
+	}
+	if !strings.Contains(string(output), "invalid website deployment date") {
+		t.Fatalf("unexpected invalid-date failure:\n%s", output)
 	}
 }
 
@@ -190,7 +218,7 @@ func TestPOSIXPublicBootstrapContract(t *testing.T) {
 
 	canonical := []byte(`#!/bin/sh
 set -eu
-if [ "${REINSTATE_VERSION:-}" != "v0.1.0-rc.6" ]; then
+if [ "${REINSTATE_VERSION:-}" != "v0.1.0" ]; then
   echo "wrong bootstrap version: ${REINSTATE_VERSION:-missing}" >&2
   exit 91
 fi
@@ -328,7 +356,7 @@ func TestWindowsPublicBootstrapContract(t *testing.T) {
 	}
 
 	canonical := []byte(`
-if ($env:REINSTATE_VERSION -ne "v0.1.0-rc.6") {
+if ($env:REINSTATE_VERSION -ne "v0.1.0") {
     throw "wrong bootstrap version: $env:REINSTATE_VERSION"
 }
 New-Item -ItemType Directory -Force -Path $env:INSTALL_DIR | Out-Null
