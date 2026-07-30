@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add the Phase 2 configless local continuity surface: a private derived
+  session index plus `sessions`, literal `search`, metadata-only `inspect`,
+  `last`, same-vendor `resume`, same-vendor `fork`, and the no-argument
+  numbered switcher.
+- Add full local read/execution capability contracts for Claude Code and Codex,
+  with read-only Gemini CLI and OpenCode discovery paths. Composite
+  `agent:native-id` references prevent cross-vendor ambiguity; bare IDs are
+  accepted only when unique.
+- Add a release-neutral Phase 2 physical acceptance runbook, parallel macOS
+  Claude Code and native-Windows Codex operator prompts, a sanitized report
+  template, and prompt-contract doctests. Physical Phase 2 certification is
+  pending; the documentation does not infer it from Phase 1.
+
+### Changed
+
+- Make local discovery, search, and inspection independent of `rein init`,
+  object storage, credentials, encryption passphrases, project mappings, and
+  backend access. `rein list` remains available for Phase 1 compatibility;
+  `rein sessions` is the canonical configless local listing command.
+- Coalesce multiple local rollout files that belong to one native session ID
+  into one deterministic index record instead of treating vendor continuation
+  segments as an ambiguity or aborting the source refresh.
+- Close Phase 1 in the roadmap after stable `v0.1.0`; record Phase 2's green
+  automated implementation while keeping native macOS/Windows Phase 2
+  acceptance explicitly pending.
+
+### Security
+
+- Store the rebuildable local index under
+  `$REINSTATE_HOME/cache/session-index-v1.sqlite` with owner-only permissions.
+  Index only bounded user-authored prompt text and known metadata/file fields;
+  exclude assistant messages/reasoning, tool output, environment dumps, auth
+  stores, and credentials. Default command output never offers a full
+  transcript dump.
+- Build native launch plans as an executable plus argv and a recorded working
+  directory, never as a shell command string. Read-only adapters fail closed
+  for resume/fork instead of receiving dummy mutation behavior.
+
 ## [0.1.0] - 2026-07-30
 
 First stable release.

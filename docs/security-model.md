@@ -11,6 +11,9 @@ printed to the terminal. This document is the contract we design against.
 | Cloud storage provider reads your sessions | Client-side encryption; provider only sees ciphertext |
 | Network eavesdropper | TLS to backend + encrypted payloads |
 | Accidental sync of API keys / OAuth | Hard denylist of credential paths (default on) |
+| Local index broadens plaintext exposure | Owner-only, bounded derived fields; no assistant/tool-output corpus; safe rebuild |
+| Search/preview dumps sensitive history | Metadata-only results; bounded terminal-safe user-prompt preview |
+| Session reference becomes shell injection | Executable + argv + cwd launch plan; no shell command string |
 | Overwriting good local history | Timestamped backups + conflict forks |
 | Weak passphrase | age scrypt recipient + long-passphrase guidance; user responsibility |
 | Compromised local machine | **Out of scope** (OS-level compromise) |
@@ -25,7 +28,10 @@ printed to the terminal. This document is the contract we design against.
      +-- only process that "understands" sessions
 ```
 
-- Reinstate does **not** call vendor agent APIs
+- Reinstate does **not** require vendor cloud APIs or account credentials for
+  local indexing or encrypted sync. Phase 2 may invoke a documented local
+  vendor listing command and launches supported native CLIs only after an
+  explicit resume/fork action.
 - Reinstate does **not** require Anthropic/OpenAI/Google account credentials
 - Remote backends never receive your passphrase or age identity in plaintext
   form beyond ciphertext + opaque object keys
@@ -64,6 +70,40 @@ The same boundary applies to the planned universal configuration profile: it
 may contain secret references, but raw API keys, OAuth tokens, cookies, and
 vendor credential stores are not portable configuration.
 
+## Phase 2 local index
+
+The local index is plaintext derived state on the user's own machine. Remote
+E2E encryption does not apply to it. Its controls are:
+
+| Property | Contract |
+| -------- | -------- |
+| Location | `$REINSTATE_HOME/cache/session-index-v1.sqlite` |
+| Permissions | Owner-only directory and database under the native OS model |
+| Sync | Hard-excluded; never uploaded or treated as a session |
+| Recovery | Rebuild from vendor sources after deletion, corruption, or version mismatch |
+| Search text | Bounded user-authored prompts only |
+| Metadata | Identity, timestamps, workspace/project, branch, known file refs, counts, capabilities |
+| Excluded corpus | Assistant reasoning/messages, tool output, environment dumps, credentials, auth stores |
+
+The index is not a backup and never becomes source truth. Deleting it does not
+delete a vendor session. A successful source scan can remove stale derived
+rows; a malformed individual session cannot erase healthy sources or cause
+Reinstate to rewrite vendor files.
+
+Default `sessions` and `search` output identifies metadata without printing
+matching transcript passages. `inspect` may show one user-authored preview
+after collapsing whitespace, stripping terminal/control characters, and
+capping it at 160 Unicode code points. Phase 2 provides no full-transcript
+dump.
+
+Search is local, literal, and case-insensitive. It does not call an embedding,
+semantic-search, analytics, or network service.
+
+Native resume/fork uses a composite `agent:native-id` reference. Reinstate
+resolves the reference, verifies the recorded workspace and executable, and
+executes an argv array directly. It never interpolates the session ID into a
+shell command. Gemini/OpenCode are read-only and fail closed for launch.
+
 ## Future configuration reconciliation
 
 Applying MCP servers, skills, hooks/loops, plugins, marketplaces, and settings
@@ -86,17 +126,23 @@ sources or copied credentials safe.
 Agents sometimes echo `.env` values or tokens into session logs. Reinstate:
 
 1. Encrypts everything it does sync (reduces blast radius of cloud leaks)
-2. Offers opt-in redaction patterns (Phase 2+) for high-entropy strings
+2. Limits the Phase 2 derived index to bounded user-authored prompts and known
+   metadata, excluding assistant and tool-output fields
 3. Syncs only explicitly discovered Claude Code/Codex session artifacts in Phase 1
 
 **You remain responsible** for not pasting production secrets into agent chats.
+User-authored prompts can themselves contain secrets; the local index is not a
+redaction or DLP product.
 
 ## Restore safety
 
 1. `--dry-run` available on pull
 2. Existing files backed up under `~/.reinstate/backups/<timestamp>/`
 3. Writes via temp file + atomic rename
-4. Conflicts create `.conflict` forks — never silent last-writer-wins without notice
+4. Conflicts create distinct vendor-safe session forks — never silent
+   last-writer-wins without notice
+5. A session actively in use is left untouched and the incoming snapshot is
+   restored as a distinct idempotent fork
 
 ## Reporting issues
 

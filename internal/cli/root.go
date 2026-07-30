@@ -4,11 +4,14 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 
 	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
+	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
 	syncengine "github.com/HarjjotSinghh/reinstate/internal/sync"
 )
 
@@ -25,6 +28,8 @@ type AgentProcessChecker func(ctx context.Context, agent string, target processc
 type Options struct {
 	// Name is the binary name shown in help (rein or reinstate).
 	Name string
+	// Context carries cancellation through refresh and native child execution.
+	Context context.Context
 	// Stdout/Stderr override streams for tests.
 	Stdout io.Writer
 	Stderr io.Writer
@@ -36,6 +41,14 @@ type Options struct {
 	// EnvelopeCodec overrides envelope crypto in deterministic tests.
 	// The production command leaves it nil.
 	EnvelopeCodec syncengine.EnvelopeCodec
+	// SessionSources overrides config-independent local discovery in tests.
+	// A nil slice selects the production Claude, Codex, Gemini, and OpenCode
+	// sources.
+	SessionSources []sessionindex.Source
+	// SessionLaunchRunner overrides native vendor process execution in tests.
+	SessionLaunchRunner sessionindex.LaunchRunner
+	// TerminalChecker overrides TTY detection in switcher tests.
+	TerminalChecker func(io.Reader, io.Writer) bool
 }
 
 type envelopeCodecContextKey struct{}
@@ -57,6 +70,7 @@ func Execute(opts Options) int {
 	if strings.Contains(err.Error(), "unknown command") ||
 		strings.Contains(err.Error(), "unknown flag") ||
 		strings.Contains(err.Error(), "required flag") ||
+		strings.Contains(err.Error(), "requires at least") ||
 		strings.Contains(err.Error(), "accepts") ||
 		strings.Contains(err.Error(), "invalid argument") ||
 		strings.Contains(err.Error(), "unknown shorthand") {
@@ -85,20 +99,32 @@ func NewRoot(opts Options) *cobra.Command {
 	if processChecker == nil {
 		processChecker = processcheck.SessionBusy
 	}
+	local := localCommandOptions{
+		sources:       opts.SessionSources,
+		launchRunner:  opts.SessionLaunchRunner,
+		terminalCheck: opts.TerminalChecker,
+	}
+	if local.terminalCheck == nil {
+		local.terminalCheck = func(in io.Reader, _ io.Writer) bool {
+			file, ok := in.(*os.File)
+			return ok && term.IsTerminal(int(file.Fd()))
+		}
+	}
 	var jsonGlobal bool
 	root := &cobra.Command{
 		Use:           name,
-		Short:         "Encrypted multi-agent session sync for AI coding tools",
-		Long:          "Reinstate syncs Claude Code and Codex sessions across devices with end-to-end encryption and bring-your-own storage.",
+		Short:         "Find, resume, and sync coding-agent sessions",
+		Long:          "Reinstate is a continuity layer for coding-agent work: search and resume local sessions, or sync supported sessions with end-to-end encryption and bring-your-own storage.",
 		SilenceErrors: true,
 		SilenceUsage:  true,
-		// No args → usage exit 2
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_ = cmd.Help()
-			return NewExitError(ExitUsage, "missing command")
+			return runSessionPicker(cmd, local)
 		},
 	}
-	rootContext := context.Background()
+	rootContext := opts.Context
+	if rootContext == nil {
+		rootContext = context.Background()
+	}
 	if opts.EnvelopeCodec != nil {
 		rootContext = context.WithValue(rootContext, envelopeCodecContextKey{}, opts.EnvelopeCodec)
 	}
@@ -133,6 +159,12 @@ func NewRoot(opts Options) *cobra.Command {
 		newSetupCmd(),
 		newInitCmd(),
 		newListCmd(),
+		newSessionsCmd(local),
+		newSearchCmd(local),
+		newInspectCmd(local),
+		newLastCmd(local),
+		newResumeCmd(local),
+		newForkCmd(local),
 		newStatusCmd(),
 		newDiffCmd(),
 		newPushCmd(),
@@ -147,8 +179,7 @@ func NewRoot(opts Options) *cobra.Command {
 	return root
 }
 
-// RunContext is reserved for future cancellation wiring.
 func RunContext(ctx context.Context, opts Options) int {
-	_ = ctx
+	opts.Context = ctx
 	return Execute(opts)
 }
