@@ -26,12 +26,12 @@ Copy the non-secret profile UUID printed by the first device and pass it as
 `rein init --profile-id UUID` on later devices.
 
 The endpoint is the S3/R2 service endpoint only. Do not append the bucket name;
-the bucket is configured separately. RC8 additional-device init verifies the
+the bucket is configured separately. Reinstate additional-device init verifies the
 existing encrypted manifest before saving config and records
 `remote_profile_required = true`. `status`, `diff`, `pull`, and later pushes
 then fail if that manifest disappears instead of treating the profile as empty.
 
-RC8 refuses to run `init` against a home that already contains `config.toml` or
+Reinstate refuses to run `init` against a home that already contains `config.toml` or
 `state.json`. Its explicit `--force` path first preserves both files in one
 timestamped directory under `backups/`.
 

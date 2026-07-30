@@ -17,7 +17,7 @@ function squashWhitespace(source: string) {
 
 describe('S3-compatible storage outcome guides', () => {
   it.each(Object.keys(guideFiles) as Array<keyof typeof guideFiles>)(
-    'keeps the %s workflow aligned with the implemented RC8 contract',
+    'keeps the %s workflow aligned with the implemented Reinstate contract',
     async (provider) => {
       const guide = await readGuide(provider);
       const guideText = squashWhitespace(guide);
@@ -73,7 +73,7 @@ describe('S3-compatible storage outcome guides', () => {
       's3:DeleteObject',
       '--endpoint https://s3.AWS_REGION.amazonaws.com',
       '--region AWS_REGION',
-      'RC8 accepts an access-key ID and secret access key, but not the session token',
+      'Reinstate accepts an access-key ID and secret access key, but not the session token',
       'does not create or delete S3 buckets',
       'policy that requires request-specific SSE-KMS headers can reject',
       'https://docs.aws.amazon.com/',

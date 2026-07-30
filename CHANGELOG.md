@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-07-30
+
+First stable release.
+
+### Changed
+
+- Promote `v0.1.0-rc.8` to the stable `v0.1.0` release. The product code is
+  unchanged from that candidate, so the two-device Phase 1 acceptance evidence
+  recorded under `docs/testing/results/` applies directly to this release: all
+  23 mandatory gates passed on real macOS and native Windows hardware with no
+  release-blocking findings.
+- Replace release-candidate status language across the README, website, and
+  documentation with stable-release wording, and describe behavior in
+  version-agnostic terms rather than naming a candidate.
+
 ## [0.1.0-rc.8] - 2026-07-29
 
 ### Fixed
@@ -262,7 +277,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.8...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.8...v0.1.0
 [0.1.0-rc.8]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.7...v0.1.0-rc.8
 [0.1.0-rc.7]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.6...v0.1.0-rc.7
 [0.1.0-rc.6]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.5...v0.1.0-rc.6

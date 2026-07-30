@@ -133,7 +133,7 @@ Reinstate's current repository separates these responsibilities explicitly:
 | Transfer and conflict state | [`internal/sync`](https://github.com/HarjjotSinghh/reinstate/tree/main/internal/sync) | Push, pull, manifests, revisions, backups, and conflicts belong to a sync protocol. |
 | Product boundary | [`ROADMAP.md`](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md) | Git remains source truth; Reinstate is responsible for context continuity. |
 
-The public `v0.1.0-rc.8` scope is deliberately narrower than the full roadmap:
+The public `v0.1.0` scope is deliberately narrower than the full roadmap:
 same-vendor Claude Code and Codex session sync. Local universal search,
 cross-agent portable handoffs, and universal agent configuration are later
 phases, not hidden features of the current CLI.

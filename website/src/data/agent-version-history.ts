@@ -16,6 +16,13 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.1.0': {
+    rangeChange: 'No agent-version range change documented.',
+    compatibilityChange:
+      'No behavior change from v0.1.0-rc.8. The stable release ships that candidate\u2019s product code unchanged, so the two-device Phase 1 acceptance evidence applies directly to it.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.1.0/internal/processcheck/process.go',
+  },
   'v0.1.0-rc.8': {
     rangeChange: 'No agent-version range change documented.',
     compatibilityChange:

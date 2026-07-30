@@ -1,7 +1,7 @@
 # Reinstate answer inventory
 
 Last reviewed: **2026-07-27**  
-Product version: **v0.1.0-rc.8**
+Product version: **v0.1.0**
 
 This inventory gives every high-intent product question one canonical answer
 location. Supporting pages may repeat a shorter contextual answer, but they
