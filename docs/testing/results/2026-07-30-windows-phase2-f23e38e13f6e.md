@@ -29,7 +29,7 @@ for this run. No real transcript content or secret was used as evidence.
 | Go version | host 1.26.1; required commands used `GOTOOLCHAIN=go1.25.12` |
 | `make` / GCC | Not installed |
 | Report branch | `test/phase2-f23e38e13f6e-windows-report` |
-| Draft PR | Pending creation |
+| Draft PR | `#61`, targeting `feat/phase2-local-index` |
 
 ## 2. Provenance and repository hygiene
 
