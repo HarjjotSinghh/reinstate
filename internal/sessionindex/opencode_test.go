@@ -3,7 +3,9 @@ package sessionindex
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os/exec"
+	"path/filepath"
 	"reflect"
 	"testing"
 	"time"
@@ -59,8 +61,109 @@ func TestOpenCodeSourceUsesDocumentedJSONCommand(t *testing.T) {
 	if record.MessageCount != 7 {
 		t.Fatalf("message_count = %d", record.MessageCount)
 	}
+	wantUpdatedAt := time.Unix(1785402000, 0).UTC()
+	if !record.UpdatedAt.Equal(wantUpdatedAt) {
+		t.Fatalf("updated_at = %s, want %s", record.UpdatedAt, wantUpdatedAt)
+	}
 	if !hasWarningCode(result.Warnings, "missing_session_id") {
 		t.Fatalf("warnings = %#v", result.Warnings)
+	}
+}
+
+func TestOpenCodeRecordSupportsTopLevelTimestamps(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name    string
+		payload string
+		want    time.Time
+	}{
+		{
+			name:    "updated preferred over created",
+			payload: `[{"id":"oc-updated","created":1785402000000,"updated":1785402060000}]`,
+			want:    time.Unix(1785402060, 0).UTC(),
+		},
+		{
+			name:    "created fallback",
+			payload: `[{"id":"oc-created","created":1785402120000}]`,
+			want:    time.Unix(1785402120, 0).UTC(),
+		},
+		{
+			name:    "nested created compatibility",
+			payload: `[{"id":"oc-nested-created","time":{"created":1785402180000}}]`,
+			want:    time.Unix(1785402180, 0).UTC(),
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			sessions, err := decodeOpenCodeSessions([]byte(test.payload))
+			if err != nil {
+				t.Fatalf("decodeOpenCodeSessions() error = %v", err)
+			}
+			if len(sessions) != 1 {
+				t.Fatalf("sessions = %d, want 1", len(sessions))
+			}
+			record, ok := openCodeRecord(sessions[0])
+			if !ok {
+				t.Fatal("openCodeRecord() rejected session with an ID")
+			}
+			if !record.UpdatedAt.Equal(test.want) {
+				t.Fatalf("updated_at = %s, want %s", record.UpdatedAt, test.want)
+			}
+			if record.SourceModTime != test.want.UnixNano() {
+				t.Fatalf("source_mod_time = %d, want %d", record.SourceModTime, test.want.UnixNano())
+			}
+		})
+	}
+}
+
+func TestOpenCodeTopLevelTimestampRemainsVisibleUnderDefaultLimit(t *testing.T) {
+	t.Parallel()
+	const payload = `[{"id":"oc-current","created":1785402000000,"updated":1785405600000}]`
+	sessions, err := decodeOpenCodeSessions([]byte(payload))
+	if err != nil {
+		t.Fatalf("decodeOpenCodeSessions() error = %v", err)
+	}
+	openCode, ok := openCodeRecord(sessions[0])
+	if !ok {
+		t.Fatal("openCodeRecord() rejected session with an ID")
+	}
+
+	ctx := context.Background()
+	store, err := Open(filepath.Join(t.TempDir(), "index.sqlite"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = store.Close() })
+	if _, err := store.ReplaceSource(ctx, AgentOpenCode, []Record{openCode}); err != nil {
+		t.Fatal(err)
+	}
+
+	older := make([]Record, DefaultLimit)
+	for index := range older {
+		older[index] = testRecord(
+			AgentClaude,
+			fmt.Sprintf("older-%03d", index),
+			openCode.UpdatedAt.Add(-time.Duration(index+1)*time.Minute),
+			fmt.Sprintf("/sessions/older-%03d.jsonl", index),
+			int64(index+1),
+		)
+	}
+	if _, err := store.ReplaceSource(ctx, AgentClaude, older); err != nil {
+		t.Fatal(err)
+	}
+
+	records, err := store.Search(ctx, Filter{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(records) != DefaultLimit {
+		t.Fatalf("default results = %d, want %d", len(records), DefaultLimit)
+	}
+	if records[0].Reference() != "opencode:oc-current" {
+		t.Fatalf("first default result = %q, want OpenCode session", records[0].Reference())
 	}
 }
 

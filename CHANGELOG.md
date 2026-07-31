@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Read OpenCode's top-level `updated` and `created` epoch timestamps so current
+  sessions retain their real ordering and remain visible in default listings.
+
 ### Added
 
 - Add the Phase 2 configless local continuity surface: a private derived

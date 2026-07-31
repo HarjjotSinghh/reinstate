@@ -201,9 +201,12 @@ func openCodeRecord(values map[string]any) (Record, bool) {
 		project = "unknown"
 	}
 	updatedAt := eventTimestamp(values)
+	updatedAt = maxInt64(updatedAt, parseTimestamp(values["updated"]))
+	updatedAt = maxInt64(updatedAt, parseTimestamp(values["created"]))
 	if timing, ok := values["time"].(map[string]any); ok {
 		updatedAt = maxInt64(updatedAt, eventTimestamp(timing))
 		updatedAt = maxInt64(updatedAt, parseTimestamp(timing["updated"]))
+		updatedAt = maxInt64(updatedAt, parseTimestamp(timing["created"]))
 	}
 	messageCount := firstInt(values, "messageCount", "message_count", "messages")
 	title = SafePreview(title)
