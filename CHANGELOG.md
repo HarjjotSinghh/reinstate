@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Make all canonical Reinstate diagrams transparent and theme-aware so they
+  blend into light and dark documentation backgrounds without losing contrast.
 - Align the closing illustrations' monitor stands, laptop keyboards, and
   encrypted-handoff spacing, and use the Reinstate mark consistently.
 

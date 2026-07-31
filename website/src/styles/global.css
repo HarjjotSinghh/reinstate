@@ -163,8 +163,13 @@ html.dark {
   }
 
   html {
+    color-scheme: light;
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
+  }
+
+  html.dark {
+    color-scheme: dark;
   }
 
   body {
