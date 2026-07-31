@@ -1,0 +1,431 @@
+---
+/**
+ * Peripheral install scene. The workstations use the same projector and object
+ * vocabulary as the path-remapping and security illustrations.
+ */
+import { box, fmt, P } from '../../../lib/iso';
+
+const CX = Math.cos(Math.PI / 6);
+const m2 = (m: number[]) => `matrix(${m.map((n) => +n.toFixed(2)).join(' ')})`;
+const frontText = (x: number, y: number, z: number, d: number, h: number) => {
+  const [e, f] = P(x, y + d, z + h);
+  return m2([CX, 0.5, 0, 1, e, f]);
+};
+type Solid = ReturnType<typeof box>;
+const faces = (solid: Solid, fills: [string, string, string]) => [
+  { points: solid.side, fill: fills[2] },
+  { points: solid.front, fill: fills[1] },
+  { points: solid.top, fill: fills[0] },
+];
+const foot = (x: number, y: number, z: number, w: number, d: number) =>
+  fmt([P(x, y, z), P(x + w, y, z), P(x + w, y + d, z), P(x, y + d, z)]);
+
+const FURN: [string, string, string] = [
+  'var(--sv-furn-1)',
+  'var(--sv-furn-2)',
+  'var(--sv-furn-3)',
+];
+const DEV: [string, string, string] = [
+  'var(--sv-dev-1)',
+  'var(--sv-dev-2)',
+  'var(--sv-dev-3)',
+];
+const DARK: [string, string, string] = [
+  'var(--sv-dev-2)',
+  'var(--sv-dev-3)',
+  'var(--sv-night)',
+];
+const LIME: [string, string, string] = [
+  'var(--sv-prim)',
+  'var(--sv-prim-deep)',
+  'var(--sv-prim-deep)',
+];
+
+const leftPlatform = box(-238, -82, -12, 420, 164, 22);
+const tower = box(-210, -58, 10, 62, 64, 122);
+const monitorBase = box(-109, -75, 10, 88, 40, 8);
+const monitorStem = box(-76, -66, 18, 22, 23, 53);
+const monitorPanel = box(-137, -66, 49, 142, 12, 92);
+const keyboard = box(-98, 14, 10, 120, 42, 7);
+const commandBase = box(76, -17, 10, 76, 60, 8);
+const commandLayer = box(80, -14, 18, 68, 54, 15);
+const commandBlock = box(84, -10, 33, 60, 46, 24);
+
+const rightPlatform = box(-182, -82, -12, 420, 164, 22);
+const laptopDeck = box(-4, -43, 10, 154, 100, 16);
+const laptopHinge = box(-2, -50, 26, 150, 10, 9);
+const laptopLid = box(0, -54, 35, 146, 12, 94);
+const rightCommandBase = box(-130, -13, 10, 76, 60, 8);
+const rightCommandLayer = box(-126, -10, 18, 68, 54, 15);
+const rightCommandBlock = box(-122, -6, 33, 60, 46, 24);
+
+const leftKeys = [
+  ...Array.from({ length: 8 }, (_, i) => foot(-91 + i * 13, 19, 17.3, 9, 5)),
+  ...Array.from({ length: 7 }, (_, i) => foot(-86 + i * 14, 28, 17.3, 9.5, 5)),
+  foot(-72, 37, 17.3, 54, 5),
+];
+const laptopKeys = [
+  ...Array.from({ length: 9 }, (_, i) => foot(4 + i * 14.4, -21, 26.3, 10, 5)),
+  ...Array.from({ length: 9 }, (_, i) => foot(7 + i * 14.2, -11, 26.3, 10, 5)),
+  ...Array.from({ length: 8 }, (_, i) => foot(11 + i * 15.2, -1, 26.3, 10.5, 5)),
+  ...Array.from({ length: 8 }, (_, i) => foot(14 + i * 14.8, 9, 26.3, 10, 5)),
+  foot(18, 19, 26.3, 12, 5),
+  foot(34, 19, 26.3, 12, 5),
+  foot(50, 19, 26.3, 52, 5),
+  foot(106, 19, 26.3, 12, 5),
+  foot(122, 19, 26.3, 12, 5),
+];
+---
+
+<figure class="install-edge-art">
+  <svg
+    viewBox="0 0 1600 800"
+    role="img"
+    aria-labelledby="install-art-title install-art-desc"
+    preserveAspectRatio="xMidYMid meet"
+  >
+    <title id="install-art-title">Reinstate ready on a desktop and laptop</title>
+    <desc id="install-art-desc">
+      A detailed desktop workstation enters from the left and a laptop enters
+      from the right, leaving the installation interface clear in the center.
+    </desc>
+
+    <g transform="translate(150 480) scale(.85)">
+      {
+        faces(leftPlatform, FURN).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3.2"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      {
+        faces(tower, DARK).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3.2"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      {
+        faces(monitorBase, DEV).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      {
+        faces(monitorStem, DEV).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      {
+        faces(monitorPanel, DARK).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3.2"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      <g transform={frontText(-137, -66, 49, 12, 92)}>
+        <rect
+          x="9"
+          y="9"
+          width="124"
+          height="72"
+          rx="3"
+          fill="var(--sv-night)"
+          stroke="var(--sv-stroke)"
+          stroke-width="2.2"
+          vector-effect="non-scaling-stroke"
+        ></rect>
+        <circle cx="20" cy="20" r="3" fill="var(--sv-prim)"></circle>
+        <rect x="20" y="32" width="14" height="7" rx="2" fill="var(--sv-prim)"></rect>
+        <path
+          d="M42 36h72M20 50h94M20 63h72"
+          fill="none"
+          stroke="var(--sv-dev-0)"
+          stroke-width="4"
+          stroke-linecap="round"
+          vector-effect="non-scaling-stroke"
+        ></path>
+      </g>
+      {
+        faces(keyboard, DARK).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      {
+        leftKeys.map((points) => (
+          <polygon
+            points={points}
+            fill="var(--sv-dev-0)"
+            stroke="var(--sv-stroke)"
+            stroke-width="1.4"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      {
+        faces(commandBase, DARK).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      {
+        faces(commandLayer, DARK).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      {
+        faces(commandBlock, LIME).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      <circle
+        cx={P(-163, 6, 34)[0]}
+        cy={P(-163, 6, 34)[1]}
+        r="4"
+        fill="var(--sv-prim)"
+        stroke="var(--sv-stroke)"
+        stroke-width="2.5"
+        vector-effect="non-scaling-stroke"
+      ></circle>
+      <g transform={frontText(84, -10, 33, 46, 24)}>
+        <path
+          d="m14 7 7 5-7 5m12 1h18"
+          fill="none"
+          stroke="var(--sv-stroke)"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          vector-effect="non-scaling-stroke"
+        ></path>
+      </g>
+    </g>
+
+    <g transform="translate(1450 480) scale(.85)">
+      {
+        faces(rightPlatform, FURN).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3.2"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      {
+        faces(rightCommandBase, DARK).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      {
+        faces(rightCommandLayer, DARK).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      {
+        faces(rightCommandBlock, LIME).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      {
+        faces(laptopDeck, DARK).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3.2"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      {
+        faces(laptopHinge, DARK).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      {
+        faces(laptopLid, DARK).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3.2"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      <g transform={frontText(0, -54, 35, 12, 94)}>
+        <rect
+          x="9"
+          y="9"
+          width="128"
+          height="75"
+          rx="3"
+          fill="var(--sv-night)"
+          stroke="var(--sv-stroke)"
+          stroke-width="2.2"
+          vector-effect="non-scaling-stroke"
+        ></rect>
+        <circle cx="20" cy="20" r="3" fill="var(--sv-prim)"></circle>
+        <rect x="20" y="32" width="14" height="7" rx="2" fill="var(--sv-prim)"></rect>
+        <path
+          d="M42 36h76M20 51h98M20 65h75"
+          fill="none"
+          stroke="var(--sv-dev-0)"
+          stroke-width="4"
+          stroke-linecap="round"
+          vector-effect="non-scaling-stroke"
+        ></path>
+      </g>
+      {
+        laptopKeys.map((points) => (
+          <polygon
+            points={points}
+            fill="var(--sv-dev-0)"
+            stroke="var(--sv-stroke)"
+            stroke-width="1.4"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      <polygon
+        points={foot(42, 31, 26.5, 62, 17)}
+        fill="var(--sv-dev-0)"
+        stroke="var(--sv-stroke)"
+        stroke-width="1.4"
+        vector-effect="non-scaling-stroke"
+      ></polygon>
+      <g transform={frontText(-122, -6, 33, 46, 24)}>
+        <path
+          d="m14 7 7 5-7 5m12 1h18"
+          fill="none"
+          stroke="var(--sv-stroke)"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          vector-effect="non-scaling-stroke"
+        ></path>
+      </g>
+    </g>
+  </svg>
+</figure>
+
+<style>
+  .install-edge-art {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    margin: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  @media (max-width: 900px) {
+    .install-edge-art {
+      opacity: 0.52;
+    }
+    svg {
+      width: 150%;
+      margin-left: -25%;
+    }
+  }
+  @media (max-width: 620px) {
+    .install-edge-art {
+      opacity: 0.3;
+    }
+    svg {
+      width: 205%;
+      margin-left: -52%;
+    }
+  }
+</style>

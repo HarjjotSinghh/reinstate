@@ -1,0 +1,513 @@
+---
+/**
+ * Three focused axonometric stations. Physical solids share the landing page's
+ * 30° projector, while all screen graphics use the exact transform of the face
+ * they sit on—nothing is positioned by eye in viewport space.
+ */
+import { box, fmt, P } from '../../../lib/iso';
+
+const CX = Math.cos(Math.PI / 6);
+const m2 = (m: number[]) => `matrix(${m.map((n) => +n.toFixed(2)).join(' ')})`;
+const frontText = (x: number, y: number, z: number, d: number, h: number) => {
+  const [e, f] = P(x, y + d, z + h);
+  return m2([CX, 0.5, 0, 1, e, f]);
+};
+const foot = (x: number, y: number, z: number, w: number, d: number) =>
+  fmt([P(x, y, z), P(x + w, y, z), P(x + w, y + d, z), P(x, y + d, z)]);
+
+type Solid = ReturnType<typeof box>;
+const faces = (solid: Solid, fills: [string, string, string]) => [
+  { points: solid.side, fill: fills[2] },
+  { points: solid.front, fill: fills[1] },
+  { points: solid.top, fill: fills[0] },
+];
+const FURN: [string, string, string] = [
+  'var(--sv-furn-1)',
+  'var(--sv-furn-2)',
+  'var(--sv-furn-3)',
+];
+const DEV: [string, string, string] = [
+  'var(--sv-dev-1)',
+  'var(--sv-dev-2)',
+  'var(--sv-dev-3)',
+];
+const DARK: [string, string, string] = [
+  'var(--sv-dev-2)',
+  'var(--sv-dev-3)',
+  'var(--sv-night)',
+];
+const LIME: [string, string, string] = [
+  'var(--sv-prim)',
+  'var(--sv-prim-deep)',
+  'var(--sv-prim-deep)',
+];
+
+const platform = box(-190, -76, -12, 380, 152, 22);
+
+/* Cloud handoff: vendor cloud service beside the local terminal it hands to. */
+const cloudServer = box(-132, -50, 10, 92, 78, 112);
+const cloudTerminal = box(22, -32, 10, 112, 68, 54);
+
+/* Remote control: the base and stem share one ground-plane centerline. */
+const remoteBase = box(-109, -30, 10, 88, 40, 8);
+const remoteStem = box(-80, -21, 18, 30, 23, 64);
+const remotePanel = box(-137, -23, 49, 142, 12, 92);
+const remotePhone = box(82, -18, 10, 42, 72, 68);
+
+/* Durable handoff: two distinct native devices around encrypted storage. */
+const store = box(-30, -35, 10, 72, 72, 88);
+const storeCap = box(-28, -33, 98, 68, 68, 12);
+const LEFT_FORWARD = 32;
+const LEFT_OUT = -24;
+const RIGHT_OUT = 14;
+const leftDeck = box(-130 + LEFT_OUT, -38 + LEFT_FORWARD, 10, 96, 62, 13);
+const leftHinge = box(-125 + LEFT_OUT, -45 + LEFT_FORWARD, 23, 86, 10, 9);
+const leftLid = box(-124 + LEFT_OUT, -49 + LEFT_FORWARD, 32, 86, 12, 58);
+const rightDeck = box(56 + RIGHT_OUT, -14, 10, 96, 70, 13);
+const rightHinge = box(61 + RIGHT_OUT, -21, 23, 86, 10, 9);
+const rightLid = box(61 + RIGHT_OUT, -25, 32, 86, 12, 58);
+
+const leftKeys = [
+  ...Array.from({ length: 5 }, (_, i) =>
+    foot(-120 + LEFT_OUT + i * 14, -27 + LEFT_FORWARD, 23.4, 10, 5),
+  ),
+  ...Array.from({ length: 5 }, (_, i) =>
+    foot(-117 + LEFT_OUT + i * 14, -18 + LEFT_FORWARD, 23.4, 10, 5),
+  ),
+  ...Array.from({ length: 4 }, (_, i) =>
+    foot(-112 + LEFT_OUT + i * 16, -9 + LEFT_FORWARD, 23.4, 11, 5),
+  ),
+];
+const rightKeys = [
+  ...Array.from({ length: 5 }, (_, i) =>
+    foot(66 + RIGHT_OUT + i * 14, -4, 23.4, 10, 5),
+  ),
+  ...Array.from({ length: 5 }, (_, i) =>
+    foot(69 + RIGHT_OUT + i * 14, 5, 23.4, 10, 5),
+  ),
+  ...Array.from({ length: 4 }, (_, i) =>
+    foot(74 + RIGHT_OUT + i * 16, 14, 23.4, 11, 5),
+  ),
+];
+const leftTrackpad = foot(-102 + LEFT_OUT, 4 + LEFT_FORWARD, 23.5, 43, 11);
+const rightTrackpad = foot(84 + RIGHT_OUT, 29, 23.5, 43, 12);
+---
+
+<figure class="continuity-fit-art">
+  <svg
+    viewBox="0 0 1600 390"
+    role="img"
+    aria-labelledby="continuity-art-title continuity-art-desc"
+    preserveAspectRatio="xMidYMid meet"
+  >
+    <title id="continuity-art-title">Three ways to continue coding-agent work</title>
+    <desc id="continuity-art-desc">
+      A cloud service hands work to a local terminal, a phone remotely controls
+      an attached desktop monitor, and two laptops use encrypted storage for a
+      durable handoff.
+    </desc>
+
+    <g transform="translate(270 218) scale(.82)">
+      {
+        faces(platform, FURN).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3.2"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      {
+        faces(cloudServer, DARK).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3.2"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      <g transform={frontText(-132, -50, 10, 78, 112)}>
+        <rect
+          x="10"
+          y="12"
+          width="72"
+          height="76"
+          rx="5"
+          fill="var(--sv-night)"
+          stroke="var(--sv-stroke)"
+          stroke-width="2.4"
+          vector-effect="non-scaling-stroke"
+        ></rect>
+        <path
+          d="M24 49c2-8 11-10 17-5 5-6 16-1 15 8 9 2 10 14 1 17H27c-11-1-12-15-3-20Z"
+          fill="none"
+          stroke="var(--sv-prim)"
+          stroke-width="3.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          vector-effect="non-scaling-stroke"
+        ></path>
+        <circle cx="70" cy="96" r="4" fill="var(--sv-prim)"></circle>
+      </g>
+      {
+        faces(cloudTerminal, DEV).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3.2"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      <g transform={frontText(22, -32, 10, 68, 54)}>
+        <rect
+          x="9"
+          y="9"
+          width="94"
+          height="34"
+          rx="4"
+          fill="var(--sv-night)"
+          stroke="var(--sv-stroke)"
+          stroke-width="2.2"
+          vector-effect="non-scaling-stroke"
+        ></rect>
+        <path
+          d="m27 19 9 7-9 7m17 1h10"
+          fill="none"
+          stroke="var(--sv-prim)"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          vector-effect="non-scaling-stroke"
+        ></path>
+      </g>
+      <text
+        x="-166"
+        y="52"
+        fill="var(--sv-stroke)"
+        font-family="var(--font-mono)"
+        font-size="17"
+        font-weight="800"
+      >01</text>
+    </g>
+
+    <g transform="translate(800 218) scale(.82)">
+      {
+        faces(platform, FURN).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3.2"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      {
+        faces(remoteBase, DEV).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      {
+        faces(remoteStem, DEV).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      {
+        faces(remotePanel, DARK).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3.2"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      <g transform={frontText(-137, -23, 49, 12, 92)}>
+        <rect
+          x="10"
+          y="10"
+          width="122"
+          height="70"
+          rx="3"
+          fill="var(--sv-night)"
+          stroke="var(--sv-stroke)"
+          stroke-width="2.3"
+          vector-effect="non-scaling-stroke"
+        ></rect>
+        <circle cx="20" cy="20" r="3" fill="var(--sv-prim)"></circle>
+        <rect x="20" y="33" width="14" height="7" rx="2" fill="var(--sv-prim)"></rect>
+        <path
+          d="M41 36h70M20 50h92M20 62h70"
+          fill="none"
+          stroke="var(--sv-dev-0)"
+          stroke-width="4"
+          stroke-linecap="round"
+          vector-effect="non-scaling-stroke"
+        ></path>
+      </g>
+      {
+        faces(remotePhone, DEV).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3.2"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      <g transform={frontText(82, -18, 10, 72, 68)}>
+        <rect
+          x="8"
+          y="8"
+          width="26"
+          height="49"
+          rx="5"
+          fill="var(--sv-night)"
+          stroke="var(--sv-stroke)"
+          stroke-width="2.2"
+          vector-effect="non-scaling-stroke"
+        ></rect>
+        <path
+          d="M15 34a7 7 0 0 1 12 0M12 28a11 11 0 0 1 18 0"
+          fill="none"
+          stroke="var(--sv-prim)"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          vector-effect="non-scaling-stroke"
+        ></path>
+        <circle cx="21" cy="49" r="2.5" fill="var(--sv-prim)"></circle>
+      </g>
+      <text
+        x="-166"
+        y="52"
+        fill="var(--sv-stroke)"
+        font-family="var(--font-mono)"
+        font-size="17"
+        font-weight="800"
+      >02</text>
+    </g>
+
+    <g transform="translate(1330 218) scale(.82)">
+      {
+        faces(platform, FURN).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3.2"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      {
+        [leftHinge, leftLid, leftDeck].flatMap((solid) =>
+          faces(solid, DARK).map((face) => (
+            <polygon
+              points={face.points}
+              fill={face.fill}
+              stroke="var(--sv-stroke)"
+              stroke-width="3"
+              stroke-linejoin="round"
+              vector-effect="non-scaling-stroke"
+            ></polygon>
+          )),
+        )
+      }
+      <g transform={frontText(-124 + LEFT_OUT, -49 + LEFT_FORWARD, 32, 12, 58)}>
+        <rect
+          x="7"
+          y="7"
+          width="72"
+          height="42"
+          rx="3"
+          fill="var(--sv-night)"
+          stroke="var(--sv-stroke)"
+          stroke-width="2"
+          vector-effect="non-scaling-stroke"
+        ></rect>
+        <path
+          d="M16 20h48M16 30h36"
+          fill="none"
+          stroke="var(--sv-prim)"
+          stroke-width="3"
+          stroke-linecap="round"
+          vector-effect="non-scaling-stroke"
+        ></path>
+      </g>
+      {
+        leftKeys.map((points) => (
+          <polygon
+            points={points}
+            fill="var(--sv-dev-0)"
+            stroke="var(--sv-stroke)"
+            stroke-width="1.2"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      <polygon
+        points={leftTrackpad}
+        fill="var(--sv-dev-0)"
+        stroke="var(--sv-stroke)"
+        stroke-width="1.4"
+        vector-effect="non-scaling-stroke"
+      ></polygon>
+      {
+        faces(store, DARK).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3.2"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      {
+        faces(storeCap, LIME).map((face) => (
+          <polygon
+            points={face.points}
+            fill={face.fill}
+            stroke="var(--sv-stroke)"
+            stroke-width="3.2"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      <g transform={frontText(-30, -35, 10, 72, 88)}>
+        <rect
+          x="9"
+          y="10"
+          width="54"
+          height="64"
+          rx="5"
+          fill="var(--sv-night)"
+          stroke="var(--sv-stroke)"
+          stroke-width="2.3"
+          vector-effect="non-scaling-stroke"
+        ></rect>
+        <path
+          d="M25 37v-7a11 11 0 0 1 22 0v7m-25 0h28v25H22zM36 47v7"
+          fill="none"
+          stroke="var(--sv-prim)"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          vector-effect="non-scaling-stroke"
+        ></path>
+      </g>
+      {
+        [rightHinge, rightLid, rightDeck].flatMap((solid) =>
+          faces(solid, DARK).map((face) => (
+            <polygon
+              points={face.points}
+              fill={face.fill}
+              stroke="var(--sv-stroke)"
+              stroke-width="3"
+              stroke-linejoin="round"
+              vector-effect="non-scaling-stroke"
+            ></polygon>
+          )),
+        )
+      }
+      <g transform={frontText(61 + RIGHT_OUT, -25, 32, 12, 58)}>
+        <rect
+          x="7"
+          y="7"
+          width="72"
+          height="42"
+          rx="3"
+          fill="var(--sv-night)"
+          stroke="var(--sv-stroke)"
+          stroke-width="2"
+          vector-effect="non-scaling-stroke"
+        ></rect>
+        <path
+          d="m28 29 8 8 19-22"
+          fill="none"
+          stroke="var(--sv-prim)"
+          stroke-width="4"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          vector-effect="non-scaling-stroke"
+        ></path>
+      </g>
+      {
+        rightKeys.map((points) => (
+          <polygon
+            points={points}
+            fill="var(--sv-dev-0)"
+            stroke="var(--sv-stroke)"
+            stroke-width="1.2"
+            vector-effect="non-scaling-stroke"
+          ></polygon>
+        ))
+      }
+      <polygon
+        points={rightTrackpad}
+        fill="var(--sv-dev-0)"
+        stroke="var(--sv-stroke)"
+        stroke-width="1.4"
+        vector-effect="non-scaling-stroke"
+      ></polygon>
+      <text
+        x="-166"
+        y="52"
+        fill="var(--sv-stroke)"
+        font-family="var(--font-mono)"
+        font-size="17"
+        font-weight="800"
+      >03</text>
+    </g>
+  </svg>
+</figure>
+
+<style>
+  .continuity-fit-art {
+    width: 100%;
+    margin: 0;
+    pointer-events: none;
+  }
+  svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  @media (max-width: 720px) {
+    svg {
+      width: 148%;
+      margin-left: -24%;
+    }
+  }
+</style>

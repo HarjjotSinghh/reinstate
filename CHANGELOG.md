@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Close the landing page with a clear continuity-tool comparison and an
+  accessible macOS, Linux, and Windows installation call to action.
+
+### Fixed
+
+- Align the closing illustrations' monitor stands, laptop keyboards, and
+  encrypted-handoff spacing, and use the Reinstate mark consistently.
+
 ## [0.1.0] - 2026-07-30
 
 First stable release.

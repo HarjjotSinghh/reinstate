@@ -1,0 +1,824 @@
+---
+import { product } from '../../data/product';
+import LogoMark from '../LogoMark.astro';
+import ContinuityFitArt from './art/ContinuityFitArt.astro';
+import InstallEdgeArt from './art/InstallEdgeArt.astro';
+
+const fitItems = [
+  {
+    number: '01',
+    mode: 'CLOUD → LOCAL',
+    icon: 'cloud',
+    title: 'Cloud handoff',
+    body:
+      'Continue work that began inside a vendor cloud in that vendor’s local surface.',
+  },
+  {
+    number: '02',
+    mode: 'LIVE ACCESS',
+    icon: 'remote',
+    title: 'Remote control',
+    body:
+      'Steer a live session from another screen while the source machine keeps it running.',
+  },
+  {
+    number: '03',
+    mode: 'DURABLE HANDOFF',
+    icon: 'reinstate',
+    title: 'Reinstate',
+    body:
+      'Restore encrypted local session state on another configured computer—even after the original session ends.',
+    featured: true,
+  },
+] as const;
+
+const installOptions = [
+  {
+    id: 'posix',
+    label: 'macOS / Linux',
+    command: 'curl -fsSL https://reinstate.dev/install.sh | sh',
+  },
+  {
+    id: 'powershell',
+    label: 'Windows PowerShell',
+    command: 'irm https://reinstate.dev/install.ps1 | iex',
+  },
+] as const;
+
+const credibility = [
+  product.licenseName,
+  'One Go binary',
+  'Your bucket',
+  'Your keys',
+  'No Reinstate account',
+] as const;
+---
+
+<section class="fit-section" aria-labelledby="continuity-finale-title">
+  <div class="fit-shell">
+    <header class="section-lede">
+      <span class="badge"><i aria-hidden="true"></i> Where Reinstate fits</span>
+      <h2 id="continuity-finale-title">
+        Different tools keep work moving.<br />
+        Reinstate makes the handoff yours.
+      </h2>
+      <p>
+        Use cloud handoff for cloud sessions and remote control for a live machine.
+        Use Reinstate when encrypted local session state needs to move between
+        configured computers.
+      </p>
+    </header>
+
+    <div class="fit-scene">
+      <ContinuityFitArt />
+    </div>
+
+    <div class="fit-labels" role="list" aria-label="Continuity approaches">
+      {
+        fitItems.map((item) => (
+          <article class:list={['fit-label', { 'fit-label--featured': item.featured }]} role="listitem">
+            <div class="fit-label__top">
+              <span class="fit-number">{item.number}</span>
+              <span class="fit-mode">{item.mode}</span>
+            </div>
+            <div class="fit-label__heading">
+              <span class="fit-icon" aria-hidden="true">
+                {
+                  item.icon === 'cloud' ? (
+                    <svg viewBox="0 0 24 24">
+                      <path d="M7.5 17.5H6a4 4 0 0 1-.7-7.94A6.5 6.5 0 0 1 17.9 8a4.75 4.75 0 0 1 .35 9.49H17"></path>
+                      <path d="M10 14h7m0 0-2.5-2.5M17 14l-2.5 2.5M10 18.5h7"></path>
+                    </svg>
+                  ) : item.icon === 'remote' ? (
+                    <svg viewBox="0 0 24 24">
+                      <rect x="3" y="4" width="14" height="10" rx="2"></rect>
+                      <path d="M8 18h4m-2-4v4M19 8.5a3.5 3.5 0 0 1 0 7M19 11a1 1 0 0 1 0 2"></path>
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24">
+                      <rect x="4" y="5" width="12" height="11" rx="2"></rect>
+                      <path d="m8 9 3 2.5L8 14m5 0h2M9 16v3h11V9h-4"></path>
+                    </svg>
+                  )
+                }
+              </span>
+              <h3>{item.title}</h3>
+            </div>
+            <p>{item.body}</p>
+          </article>
+        ))
+      }
+    </div>
+
+    <p class="continuity-boundary">
+      <strong>Sessions resume in the same agent:</strong> Claude Code stays in
+      Claude Code, and Codex stays in Codex. Cross-agent work uses explicit handoffs.
+    </p>
+  </div>
+</section>
+
+<section class="install-section" id="install" aria-labelledby="install-title">
+  <InstallEdgeArt />
+
+  <div class="install-shell">
+    <header class="section-lede install-lede">
+      <span class="badge badge--accent"><i aria-hidden="true"></i> Open source · available now</span>
+      <h2 id="install-title">Reinstate your next session.</h2>
+      <p>
+        Install the CLI, connect your bucket, and continue supported Claude Code
+        and Codex sessions across configured macOS and Windows machines.
+      </p>
+    </header>
+
+    <div class="install-console" data-install-terminal>
+      <div class="console-top">
+        <span class="console-brand">
+          <LogoMark size={22} tiled={false} />
+          REINSTATE INSTALLER
+        </span>
+        <span>{product.currentRelease}</span>
+      </div>
+
+      <div class="install-tabs" role="tablist" aria-label="Installation platform">
+        {
+          installOptions.map((option, index) => (
+            <button
+              id={`install-tab-${option.id}`}
+              class:list={['install-tab', { 'install-tab--active': index === 0 }]}
+              type="button"
+              role="tab"
+              aria-selected={index === 0 ? 'true' : 'false'}
+              aria-controls={`install-panel-${option.id}`}
+              tabindex={index === 0 ? '0' : '-1'}
+              data-install-tab={option.id}
+            >
+              {
+                option.id === 'posix' ? (
+                  <svg class="platform-mark platform-mark--apple" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"></path>
+                  </svg>
+                ) : (
+                  <svg class="platform-mark platform-mark--windows" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M0 0h11.377v11.372H0Zm12.623 0H24v11.372H12.623ZM0 12.623h11.377V24H0Zm12.623 0H24V24H12.623"></path>
+                  </svg>
+                )
+              }
+              {option.label}
+            </button>
+          ))
+        }
+      </div>
+
+      {
+        installOptions.map((option, index) => (
+          <div
+            id={`install-panel-${option.id}`}
+            class="install-command"
+            role="tabpanel"
+            aria-labelledby={`install-tab-${option.id}`}
+            hidden={index !== 0}
+            data-install-panel={option.id}
+          >
+            <span class="command-prompt" aria-hidden="true">$</span>
+            <code>{option.command}</code>
+            <button
+              class="copy-command"
+              type="button"
+              aria-label={`Copy ${option.label} install command`}
+              data-copy-command={option.command}
+              data-copy-label={option.label}
+              data-state="idle"
+            >
+              <svg class="copy-icon copy-icon--idle" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="8" y="8" width="11" height="11" rx="2"></rect>
+                <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path>
+              </svg>
+              <svg class="copy-icon copy-icon--done" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m5 12 4 4L19 6"></path>
+              </svg>
+              <span>Copy</span>
+            </button>
+          </div>
+        ))
+      }
+
+      <div class="console-foot">
+        <span><i aria-hidden="true">✓</i> checksum verified</span>
+        <span>installs <code>rein</code> + <code>reinstate</code></span>
+      </div>
+      <p class="sr-only" aria-live="polite" data-copy-status></p>
+    </div>
+
+    <div class="install-actions">
+      <a
+        class="cta-link cta-link--primary"
+        href="/docs/getting-started"
+        data-analytics-event="docs_getting_started"
+        data-analytics-target="homepage-final-cta"
+      >
+        <LogoMark size={19} tiled={false} />
+        Install Reinstate
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M7 12h10m0 0-4-4m4 4-4 4"></path>
+        </svg>
+      </a>
+      <a
+        class="cta-link"
+        href={product.repositoryUrl}
+        data-analytics-event="github_click"
+        data-analytics-target="homepage-final-cta"
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        <!-- GitHub's official mark-github Octicon, shared with the hero. -->
+        <svg class="github-mark" viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M6.766 11.328c-2.063-.25-3.516-1.734-3.516-3.656 0-.781.281-1.625.75-2.188-.203-.515-.172-1.609.063-2.062.625-.078 1.468.25 1.968.703.594-.187 1.219-.281 1.985-.281.765 0 1.39.094 1.953.265.484-.437 1.344-.765 1.969-.687.218.422.25 1.515.046 2.047.5.593.766 1.39.766 2.203 0 1.922-1.453 3.375-3.547 3.64.531.344.89 1.094.89 1.954v1.625c0 .468.391.734.86.547C13.781 14.359 16 11.53 16 8.03 16 3.61 12.406 0 7.984 0 3.563 0 0 3.61 0 8.031a7.88 7.88 0 0 0 5.172 7.422c.422.156.828-.125.828-.547v-1.25c-.219.094-.5.156-.75.156-1.031 0-1.64-.562-2.078-1.609-.172-.422-.36-.672-.719-.719-.187-.015-.25-.093-.25-.187 0-.188.313-.328.625-.328.453 0 .844.281 1.25.86.313.452.64.655 1.031.655s.641-.14 1-.5c.266-.265.47-.5.657-.656"></path>
+        </svg>
+        View on GitHub
+      </a>
+    </div>
+
+    <div class="credibility-rail" aria-label="Reinstate project details">
+      {
+        credibility.map((item) => (
+          <span>{item}</span>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<script>
+  import { copyInstallCommand } from '../../lib/install-copy';
+
+  document.querySelectorAll<HTMLElement>('[data-install-terminal]').forEach((terminal) => {
+    const tabs = Array.from(terminal.querySelectorAll<HTMLButtonElement>('[data-install-tab]'));
+    const panels = Array.from(terminal.querySelectorAll<HTMLElement>('[data-install-panel]'));
+    const copyStatus = terminal.querySelector<HTMLElement>('[data-copy-status]');
+    let resetCopyState: number | undefined;
+
+    const activateTab = (tab: HTMLButtonElement) => {
+      const target = tab.dataset.installTab;
+      tabs.forEach((candidate) => {
+        const active = candidate === tab;
+        candidate.classList.toggle('install-tab--active', active);
+        candidate.setAttribute('aria-selected', String(active));
+        candidate.tabIndex = active ? 0 : -1;
+      });
+      panels.forEach((panel) => {
+        panel.hidden = panel.dataset.installPanel !== target;
+      });
+    };
+
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('click', () => activateTab(tab));
+      tab.addEventListener('keydown', (event) => {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+        event.preventDefault();
+        const direction = event.key === 'ArrowRight' ? 1 : -1;
+        const next = tabs[(index + direction + tabs.length) % tabs.length];
+        if (!next) return;
+        activateTab(next);
+        next.focus();
+      });
+    });
+
+    terminal.querySelectorAll<HTMLButtonElement>('[data-copy-command]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const command = button.dataset.copyCommand ?? '';
+        const platform = button.dataset.copyLabel ?? 'selected platform';
+        window.clearTimeout(resetCopyState);
+
+        try {
+          const analyticsWindow = window as Window & {
+            reinstateTrack?: (
+              eventName: 'install_command_copy',
+              target: 'homepage-final-cta',
+            ) => boolean;
+          };
+          await copyInstallCommand(
+            command,
+            navigator.clipboard.writeText.bind(navigator.clipboard),
+            analyticsWindow.reinstateTrack,
+            'homepage-final-cta',
+          );
+          button.dataset.state = 'copied';
+          button.setAttribute('aria-label', `${platform} install command copied`);
+          const label = button.querySelector('span');
+          if (label) label.textContent = 'Copied';
+          if (copyStatus) copyStatus.textContent = `${platform} install command copied`;
+        } catch {
+          const code = button.closest('[data-install-panel]')?.querySelector('code');
+          if (code) {
+            const selection = window.getSelection();
+            const range = document.createRange();
+            range.selectNodeContents(code);
+            selection?.removeAllRanges();
+            selection?.addRange(range);
+          }
+          if (copyStatus) {
+            copyStatus.textContent = 'Command selected. Press Control C or Command C to copy.';
+          }
+        }
+
+        resetCopyState = window.setTimeout(() => {
+          button.dataset.state = 'idle';
+          button.setAttribute('aria-label', `Copy ${platform} install command`);
+          const label = button.querySelector('span');
+          if (label) label.textContent = 'Copy';
+          if (copyStatus) copyStatus.textContent = '';
+        }, 1800);
+      });
+    });
+  });
+</script>
+
+<style>
+  .fit-section,
+  .install-section {
+    position: relative;
+    z-index: 2;
+    isolation: isolate;
+    overflow: clip;
+    color: var(--ink);
+  }
+  .fit-shell,
+  .install-shell {
+    position: relative;
+    z-index: 2;
+    max-width: 88rem;
+    margin-inline: auto;
+    padding-inline: clamp(1.25rem, 4vw, 3rem);
+  }
+  .fit-shell {
+    padding-top: clamp(3rem, 5vw, 4.5rem);
+    padding-bottom: clamp(4rem, 7vw, 6rem);
+  }
+  .section-lede {
+    display: grid;
+    justify-items: center;
+    width: 100%;
+    text-align: center;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2rem;
+    padding: 0.35rem 0.8rem 0.35rem 0.68rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--paper-2) 90%, transparent);
+    font-size: 0.78rem;
+    font-weight: 560;
+    color: var(--ink-2);
+  }
+  .badge i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--sv-prim-deep);
+  }
+  .section-lede h2 {
+    margin: clamp(0.9rem, 1.8vw, 1.25rem) 0 0;
+    font-family: var(--font-display);
+    font-size: clamp(1.9rem, 3.4vw, 3rem);
+    font-weight: 400;
+    letter-spacing: -0.047em;
+    line-height: 0.98;
+    text-wrap: balance;
+  }
+  .section-lede p {
+    max-width: 58rem;
+    margin: 1.2rem auto 0;
+    font-size: clamp(1rem, 0.55vw + 0.91rem, 1.17rem);
+    line-height: 1.58;
+    text-wrap: pretty;
+    color: color-mix(in oklab, var(--ink) 28%, var(--ink-2));
+  }
+
+  .fit-scene {
+    margin: clamp(2rem, 4vw, 3.5rem) auto 0;
+  }
+  .fit-labels {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: -1.25rem;
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--paper-2);
+  }
+  .fit-label {
+    position: relative;
+    min-width: 0;
+    padding: 1.25rem 1.35rem 1.4rem;
+  }
+  .fit-label + .fit-label {
+    border-left: 1px solid var(--rule);
+  }
+  .fit-label--featured {
+    background: color-mix(in oklab, var(--paper-2) 72%, var(--sv-prim) 9%);
+  }
+  .fit-label--featured::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+    background: var(--sv-prim);
+  }
+  .fit-label__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.7rem;
+  }
+  .fit-number,
+  .fit-mode {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    color: var(--ink-3);
+  }
+  .fit-number {
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 1.6rem;
+    border-radius: 5px;
+    background: var(--sv-stroke);
+    color: var(--sv-prim);
+  }
+  .fit-label--featured .fit-mode {
+    color: var(--sv-prim-deep);
+  }
+  .fit-label__heading {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin-top: 0.95rem;
+  }
+  .fit-icon {
+    display: grid;
+    flex: 0 0 2.25rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    place-items: center;
+    border: 1px solid color-mix(in oklab, var(--sv-prim-deep) 44%, var(--rule));
+    border-radius: 8px;
+    background: color-mix(in oklab, var(--paper-2) 82%, var(--sv-prim) 7%);
+    color: var(--sv-prim-deep);
+  }
+  .fit-icon svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .fit-label h3 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(1.35rem, 1.5vw, 1.6rem);
+    font-weight: 400;
+    letter-spacing: -0.03em;
+  }
+  .fit-label p {
+    margin: 0.5rem 0 0;
+    font-size: 0.96rem;
+    line-height: 1.52;
+    text-wrap: pretty;
+    color: color-mix(in oklab, var(--ink) 30%, var(--ink-2));
+  }
+  .continuity-boundary {
+    max-width: 72rem;
+    margin: 1rem auto 0;
+    font-size: 0.78rem;
+    line-height: 1.55;
+    text-align: center;
+    color: var(--ink-3);
+  }
+  .continuity-boundary strong {
+    color: var(--ink-2);
+  }
+
+  .install-section {
+    min-height: clamp(39rem, 58vw, 51rem);
+  }
+  .install-shell {
+    display: grid;
+    justify-items: center;
+    padding-top: clamp(4rem, 8vw, 6.5rem);
+    padding-bottom: clamp(4rem, 8vw, 6.5rem);
+  }
+  .install-lede {
+    max-width: 58rem;
+  }
+  .badge--accent {
+    border-color: color-mix(in oklab, var(--sv-prim-deep) 42%, var(--rule));
+    background: color-mix(in oklab, var(--paper-2) 78%, var(--sv-prim) 8%);
+  }
+  .install-lede h2 {
+    max-width: none;
+    white-space: nowrap;
+  }
+  .install-lede p {
+    max-width: 48rem;
+  }
+  .install-console {
+    width: min(100%, 47rem);
+    margin-top: clamp(2rem, 4vw, 3rem);
+    border: 2px solid var(--sv-stroke);
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--paper-2);
+  }
+  .console-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 3rem;
+    padding: 0.55rem 0.9rem;
+    border-bottom: 1px solid var(--rule);
+    background: var(--sv-night);
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: #91a098;
+  }
+  .console-brand {
+    --logo-mark-surface: var(--sv-night);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 750;
+    letter-spacing: 0.07em;
+    color: var(--sv-prim);
+  }
+  .install-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-bottom: 1px solid var(--rule);
+  }
+  .install-tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.48rem;
+    min-height: 2.8rem;
+    padding: 0.6rem 0.75rem;
+    border: 0;
+    background: color-mix(in oklab, var(--paper) 74%, transparent);
+    color: var(--ink-3);
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .install-tab + .install-tab {
+    border-left: 1px solid var(--rule);
+  }
+  .platform-mark {
+    display: block;
+    flex: 0 0 1rem;
+    width: 1rem;
+    height: 1rem;
+    fill: currentColor;
+  }
+  .install-tab--active {
+    background: color-mix(in oklab, var(--paper-2) 70%, var(--sv-prim) 8%);
+    color: var(--ink);
+  }
+  .install-tab--active .platform-mark {
+    color: var(--sv-prim-deep);
+  }
+  .install-tab:focus-visible,
+  .copy-command:focus-visible,
+  .cta-link:focus-visible {
+    outline: 2px solid var(--sv-prim-deep);
+    outline-offset: -3px;
+  }
+  .install-command {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 5.5rem;
+    padding: 1rem 1.1rem;
+    background: color-mix(in oklab, var(--paper-2) 78%, transparent);
+  }
+  .install-command:not([hidden]) {
+    display: grid;
+  }
+  .install-command[hidden] {
+    display: none;
+  }
+  .command-prompt {
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--sv-prim-deep);
+  }
+  .install-command code {
+    min-width: 0;
+    font-family: var(--font-mono);
+    font-size: clamp(0.77rem, 0.9vw, 0.9rem);
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+    color: var(--ink);
+  }
+  .copy-command {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-height: 2.35rem;
+    padding: 0.45rem 0.65rem;
+    border: 1px solid var(--rule);
+    border-radius: 7px;
+    background: var(--paper);
+    color: var(--ink-2);
+    font: inherit;
+    font-size: 0.72rem;
+    font-weight: 650;
+    cursor: pointer;
+  }
+  .copy-command:hover,
+  .copy-command[data-state='copied'] {
+    border-color: var(--sv-prim-deep);
+    color: var(--sv-prim-deep);
+  }
+  .copy-icon {
+    width: 1rem;
+    height: 1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .copy-icon--done,
+  .copy-command[data-state='copied'] .copy-icon--idle {
+    display: none;
+  }
+  .copy-command[data-state='copied'] .copy-icon--done {
+    display: block;
+  }
+  .console-foot {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+    padding: 0.65rem 1rem;
+    border-top: 1px solid var(--rule);
+    background: color-mix(in oklab, var(--paper) 72%, transparent);
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    color: var(--ink-3);
+  }
+  .console-foot i {
+    margin-right: 0.25rem;
+    color: var(--sv-prim-deep);
+  }
+  .console-foot code {
+    color: var(--ink-2);
+  }
+  .install-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.65rem;
+    margin-top: 1.6rem;
+  }
+  .cta-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.85rem;
+    padding: 0.65rem 1rem;
+    border: 1px solid var(--rule);
+    border-radius: 9px;
+    background: color-mix(in oklab, var(--paper-2) 82%, transparent);
+    color: var(--ink);
+    font-size: 0.9rem;
+    font-weight: 650;
+    text-decoration: none;
+  }
+  .cta-link:hover {
+    border-color: var(--sv-prim-deep);
+    color: var(--sv-prim-deep);
+  }
+  .cta-link--primary {
+    --logo-mark-surface: var(--sv-prim);
+    border-color: var(--sv-stroke);
+    border-bottom-width: 3px;
+    background: var(--sv-prim);
+    color: var(--on-prim);
+  }
+  .cta-link--primary:hover {
+    color: var(--on-prim);
+  }
+  .cta-link svg {
+    width: 1.05rem;
+    height: 1.05rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .cta-link .github-mark {
+    display: block;
+    flex: 0 0 1.05rem;
+    width: 1.05rem;
+    height: 1.05rem;
+    fill: currentColor;
+    stroke: none;
+    overflow: visible;
+  }
+  .credibility-rail {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.55rem 1.25rem;
+    margin-top: 1.2rem;
+    color: var(--ink-3);
+  }
+  .credibility-rail span {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+  }
+  .credibility-rail span + span::before {
+    content: '';
+    width: 4px;
+    height: 4px;
+    margin-right: 1.25rem;
+    border-radius: 50%;
+    background: var(--sv-prim-deep);
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  :global(html.dark) .fit-labels,
+  :global(html.dark) .install-console,
+  :global(html.dark) .cta-link {
+    border-color: var(--rule);
+  }
+
+  @media (max-width: 760px) {
+    .fit-shell,
+    .install-shell {
+      padding-inline: 1rem;
+    }
+    .fit-labels {
+      grid-template-columns: 1fr;
+      margin-top: -0.25rem;
+    }
+    .fit-label + .fit-label {
+      border-top: 1px solid var(--rule);
+      border-left: 0;
+    }
+    .install-section {
+      min-height: 43rem;
+    }
+    .install-lede h2 {
+      white-space: normal;
+    }
+    .install-command {
+      grid-template-columns: auto minmax(0, 1fr);
+    }
+    .copy-command {
+      grid-column: 1 / -1;
+      width: 100%;
+    }
+    .credibility-rail span + span::before {
+      margin-right: 0.6rem;
+    }
+  }
+
+  @media (max-width: 440px) {
+    .install-tab {
+      font-size: 0.7rem;
+    }
+    .console-top > span:last-child {
+      display: none;
+    }
+    .console-foot {
+      flex-direction: column;
+    }
+  }
+</style>
