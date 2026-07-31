@@ -32,25 +32,33 @@
       if (!code) return;
 
       block.dataset.commandCopyEnhanced = 'true';
+      block.dataset.commandCopyLayout = code.innerText.trim().includes('\n')
+        ? 'multiline'
+        : 'single';
       var button = document.createElement('button');
       button.type = 'button';
       button.className = 'command-copy-button';
-      button.textContent = 'Copy';
+      button.dataset.state = 'idle';
+      button.innerHTML =
+        '<svg class="command-copy-icon command-copy-icon--idle" viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="1.5"></rect><path d="M15.5 8.5V5.8c0-.72-.58-1.3-1.3-1.3H5.8c-.72 0-1.3.58-1.3 1.3v8.4c0 .72.58 1.3 1.3 1.3h2.7"></path></svg><svg class="command-copy-icon command-copy-icon--done" viewBox="0 0 24 24" aria-hidden="true"><path d="m5.5 12.5 4.1 4.1 8.9-9.2"></path></svg>';
       button.setAttribute('aria-label', 'Copy command to clipboard');
       button.setAttribute('aria-live', 'polite');
       button.addEventListener('click', async function () {
         try {
           var copied = await copy(code.innerText);
           if (!copied) throw new Error('copy unavailable');
-          button.textContent = 'Copied';
+          button.dataset.state = 'copied';
+          button.setAttribute('aria-label', 'Command copied to clipboard');
           if (typeof window.reinstateTrack === 'function') {
             window.reinstateTrack('command_copy', language);
           }
         } catch (_) {
-          button.textContent = 'Copy failed';
+          button.dataset.state = 'idle';
+          button.setAttribute('aria-label', 'Copy failed. Try again');
         }
         window.setTimeout(function () {
-          button.textContent = 'Copy';
+          button.dataset.state = 'idle';
+          button.setAttribute('aria-label', 'Copy command to clipboard');
         }, 1800);
       });
       block.appendChild(button);
@@ -61,30 +69,69 @@
 <style is:global>
   main pre[data-command-copy-enhanced='true'] {
     position: relative;
-    padding-top: 3.2rem !important;
+    overflow: hidden !important;
+  }
+
+  main pre[data-command-copy-enhanced='true'] > code {
+    display: block;
+    overflow-x: auto;
+    padding-right: 3.5rem;
+    scrollbar-width: thin;
   }
 
   .command-copy-button {
     position: absolute;
     z-index: 1;
-    top: 0.65rem;
-    right: 0.65rem;
-    min-width: 4.4rem;
-    padding: 0.42rem 0.72rem;
-    border: 1px solid color-mix(in oklch, white 28%, transparent);
+    top: 50%;
+    right: 0.75rem;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    min-width: 0;
+    padding: 0;
+    border: 1px solid #394246;
     border-radius: 6px;
-    background: color-mix(in oklch, #0d1117 84%, white);
-    color: #f4f6ef;
-    font-family: var(--font-sans);
-    font-size: 0.75rem;
-    font-weight: 600;
-    line-height: 1.2;
+    background: #151b1d;
+    color: #d8dfdc;
     cursor: pointer;
   }
 
+  main pre[data-command-copy-layout='multiline'] .command-copy-button {
+    top: 0.75rem;
+    transform: none;
+  }
+
+  .command-copy-icon {
+    width: 1.15rem;
+    height: 1.15rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .command-copy-icon--done,
+  .command-copy-button[data-state='copied'] .command-copy-icon--idle {
+    display: none;
+  }
+
+  .command-copy-button[data-state='copied'] .command-copy-icon--done {
+    display: block;
+  }
+
   .command-copy-button:hover {
-    border-color: color-mix(in oklch, white 50%, transparent);
-    background: color-mix(in oklch, #0d1117 72%, white);
+    border-color: #65736d;
+    background: #1d2723;
+    color: #f4f6ef;
+  }
+
+  .command-copy-button[data-state='copied'] {
+    border-color: color-mix(in oklch, #b8ff3c 52%, #394246);
+    color: #b8ff3c;
   }
 
   .command-copy-button:focus-visible {

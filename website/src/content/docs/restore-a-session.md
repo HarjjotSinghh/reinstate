@@ -1,5 +1,6 @@
 ---
 title: "Restore and resume one coding-agent session"
+navTitle: "Restore a session"
 description: "Dry-run, safely restore, verify, and natively resume one encrypted Claude Code or Codex session on another configured device."
 order: 13
 author: "Harjot Singh Rana"

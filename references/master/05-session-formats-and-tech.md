@@ -222,4 +222,4 @@ as global identity.
 | First pull | Default `--dry-run` + confirm |
 | Offline | Local cache full fidelity; sync when online |
 
-![Architecture](./assets/05_architecture.png)
+![Architecture](../../assets/05_architecture.svg)

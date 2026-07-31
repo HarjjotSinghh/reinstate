@@ -2,7 +2,7 @@
 export const prerender = true;
 
 import BaseLayout from './BaseLayout.astro';
-import { getOrderedDocs, docSlug, docTitle } from '../lib/docs';
+import { getOrderedDocs, docNavTitle, docSlug, docTitle } from '../lib/docs';
 import { product } from '../data/product';
 import {
   breadcrumbSchema,
@@ -101,8 +101,13 @@ const jsonLd = [
               const active = path === href;
               return (
                 <li>
-                  <a href={href} class:list={[active && 'is-active']}>
-                    {docTitle(entry)}
+                  <a
+                    href={href}
+                    class:list={[active && 'is-active']}
+                    aria-current={active ? 'page' : undefined}
+                    title={docTitle(entry)}
+                  >
+                    {docNavTitle(entry)}
                   </a>
                 </li>
               );
@@ -174,23 +179,33 @@ const jsonLd = [
 
 <style>
   .docs {
-    display: flex;
-    gap: 2.5rem;
+    display: grid;
+    grid-template-columns: minmax(0, 52rem);
+    justify-content: center;
     padding-block: 2.5rem 4rem;
   }
   .side {
     display: none;
-    width: 14rem;
-    flex: none;
   }
   @media (min-width: 1024px) {
+    .docs {
+      grid-template-columns: 16rem minmax(0, 52rem);
+      gap: clamp(2.5rem, 4vw, 4rem);
+    }
     .side {
       display: block;
+      min-width: 0;
     }
   }
   .side nav {
     position: sticky;
     top: 5.5rem;
+    max-height: calc(100dvh - 7rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    padding: 0.15rem 0.4rem 1rem 0;
   }
   .side-label {
     margin: 0 0 0.85rem;
@@ -211,6 +226,9 @@ const jsonLd = [
     display: block;
     padding: 0.4rem 0.55rem;
     border-radius: 6px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
     text-decoration: none;
     font-size: 0.9rem;
     color: var(--ink-2);
@@ -231,7 +249,6 @@ const jsonLd = [
   }
   .body {
     min-width: 0;
-    flex: 1;
   }
   .breadcrumbs {
     margin-bottom: 1rem;
@@ -268,29 +285,48 @@ const jsonLd = [
     margin-bottom: 1.35rem;
   }
   .doc-heading h1 {
-    margin-bottom: 0.45rem;
+    margin: 0 0 0.65rem;
   }
   .doc-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.55rem 1.25rem;
+    display: grid;
+    grid-template-columns: repeat(3, max-content);
+    align-items: center;
+    justify-content: start;
+    gap: 0.75rem clamp(1.5rem, 3vw, 2.5rem);
     margin: 0;
     color: var(--ink-3);
     font-size: 0.8rem;
   }
   .doc-meta div {
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
+    display: grid;
+    grid-template-columns: max-content max-content;
+    align-items: baseline;
+    gap: 0.25rem;
+    min-width: 0;
   }
   .doc-meta dt {
+    margin: 0;
     font-weight: 650;
   }
   .doc-meta dd {
     margin: 0;
+    min-width: 0;
+    padding: 0;
   }
   .doc-meta a {
     color: inherit;
+  }
+  @media (max-width: 699px) {
+    .doc-meta {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+    .doc-meta div {
+      grid-template-columns: max-content minmax(0, 1fr);
+      align-items: center;
+      padding-block: 0.55rem;
+      border-bottom: 1px solid var(--rule);
+    }
   }
   .status {
     display: inline-flex;

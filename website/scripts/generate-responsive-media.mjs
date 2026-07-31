@@ -6,14 +6,14 @@ import sharp from 'sharp';
 
 const media = [
   {
-    source: 'public/brand/01_landscape.png',
+    source: 'public/brand/01_landscape.svg',
     outputs: [
       { path: 'public/brand/01_landscape-768.webp', width: 768 },
       { path: 'public/brand/01_landscape-1536.webp', width: 1536 },
     ],
   },
   {
-    source: 'public/brand/05_architecture.png',
+    source: 'public/brand/05_architecture.svg',
     outputs: [
       { path: 'public/brand/05_architecture-768.webp', width: 768 },
       { path: 'public/brand/05_architecture-1536.webp', width: 1536 },

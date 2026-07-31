@@ -2,7 +2,7 @@
 
 **Product:** Reinstate aims at the empty quadrant — universal × cross-device × offline × encrypted × path-aware — not single-vendor native sync.
 
-![Traction](./assets/03_traction.png)
+![Traction](../../assets/03_traction.svg)
 
 ## Four categories (Kimi framework)
 

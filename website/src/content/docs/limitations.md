@@ -1,5 +1,6 @@
 ---
 title: "Reinstate limitations and release-candidate boundaries"
+navTitle: "Limitations"
 description: "Review Reinstate limitations for agents, operating systems, native resume, storage, snapshots, path remapping, security, and release certification."
 order: 15
 author: "Harjot Singh Rana"

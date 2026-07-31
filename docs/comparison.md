@@ -6,7 +6,7 @@ development environments (ADEs), single-tool sync utilities, and DIY file sync.
 Reinstate is a **continuity layer** (find / verify / resume / hand off / sync) —
 not another place to code.
 
-![Landscape: agent scope vs state portability](../assets/01_landscape.png)
+![Landscape: agent scope vs state portability](../assets/01_landscape.svg)
 
 ## Feature matrix
 

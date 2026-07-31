@@ -5,14 +5,14 @@ Visual assets for the Reinstate repository.
 | File | Description |
 | ---- | ----------- |
 | `banner.svg` | README hero matching the landing page's isometric workroom |
-| `01_landscape.png` | Competitive landscape (scope vs portability) |
-| `02_demand_timeline.png` | Demand signals on vendor trackers |
-| `03_traction.png` | GitHub traction: CLIs vs orchestrators vs sync |
-| `04_market.png` | Market context for agent CLIs |
-| `05_architecture.png` | MVP architecture diagram |
+| `01_landscape.svg` | Competitive landscape (scope vs portability) |
+| `02_demand_timeline.svg` | Demand signals on vendor trackers |
+| `03_traction.svg` | GitHub traction: CLIs vs orchestrators vs sync |
+| `04_market.svg` | Market context for agent CLIs |
+| `05_architecture.svg` | MVP architecture diagram |
 
-Research diagrams originated from product research in `references/kimi/assets/`
-and are included for documentation and positioning.
+The SVG files are the canonical documentation assets. The original research
+PNGs remain alongside them as archival sources for visual comparison.
 
 ## Brand notes
 

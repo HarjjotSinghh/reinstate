@@ -24,10 +24,13 @@ describe('documentation content metadata', () => {
       expect(match, `${file} must start with frontmatter`).not.toBeNull();
       const frontmatter = match?.[1] ?? '';
       const description = field(frontmatter, 'description')?.replace(/^["']|["']$/g, '');
+      const navTitle = field(frontmatter, 'navTitle')?.replace(/^["']|["']$/g, '');
       const searchIntent = field(frontmatter, 'searchIntent')?.replace(/^["']|["']$/g, '');
       const prose = source.replace(/```[\s\S]*?```/g, '');
 
       expect(field(frontmatter, 'title'), `${file} title`).toBeTruthy();
+      expect(navTitle, `${file} navTitle`).toBeTruthy();
+      expect(navTitle?.length, `${file} navTitle length`).toBeLessThanOrEqual(32);
       expect(field(frontmatter, 'author'), `${file} author`).toBeTruthy();
       expect(field(frontmatter, 'status'), `${file} status`).toMatch(
         /^(current|planned|deprecated)$/,

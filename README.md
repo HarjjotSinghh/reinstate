@@ -113,7 +113,7 @@ sensitive artifacts. Reinstate instead provides
 **Claude/Codex same-vendor × cross-device × encrypted × path-aware** continuity.
 
 <p align="center">
-  <img src="assets/01_landscape.png" alt="Landscape: agent scope vs state portability" width="720" />
+  <img src="assets/01_landscape.svg" alt="Landscape: agent scope vs state portability" width="720" />
 </p>
 
 ---
@@ -250,7 +250,7 @@ flowchart TB
 Deep dive: **[docs/architecture.md](docs/architecture.md)** · research diagram:
 
 <p align="center">
-  <img src="assets/05_architecture.png" alt="Reinstate architecture" width="720" />
+  <img src="assets/05_architecture.svg" alt="Reinstate architecture" width="720" />
 </p>
 
 ---
@@ -321,7 +321,7 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 ### Category context
 
 <p align="center">
-  <img src="assets/03_traction.png" alt="Category traction context" width="640" />
+  <img src="assets/03_traction.svg" alt="Category traction context" width="640" />
 </p>
 
 ### Insights

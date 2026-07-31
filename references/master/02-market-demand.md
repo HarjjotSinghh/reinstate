@@ -2,7 +2,7 @@
 
 **Product:** Reinstate answers demand for portable, cross-device agent continuity that vendors leave open for multi-agent / offline / path-aware cases.
 
-![Demand timeline](./assets/02_demand_timeline.png)
+![Demand timeline](../../assets/02_demand_timeline.svg)
 
 ## Why this evidence is strong
 

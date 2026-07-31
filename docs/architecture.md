@@ -41,7 +41,7 @@ Product layers and non-goals: [product-strategy.md](product-strategy.md),
 └──────────────────────────────────────────────────┘
 ```
 
-![Reinstate MVP architecture](../assets/05_architecture.png)
+![Reinstate MVP architecture](../assets/05_architecture.svg)
 
 ## Continuity stack
 
@@ -218,11 +218,11 @@ reality without tripling complexity.
 
 | Asset | Description |
 | ----- | ----------- |
-| [01_landscape.png](../assets/01_landscape.png) | Agent scope vs state portability |
-| [02_demand_timeline.png](../assets/02_demand_timeline.png) | Demand signals on vendor trackers |
-| [03_traction.png](../assets/03_traction.png) | GitHub traction landscape |
-| [04_market.png](../assets/04_market.png) | Market context |
-| [05_architecture.png](../assets/05_architecture.png) | MVP architecture |
+| [01_landscape.svg](../assets/01_landscape.svg) | Agent scope vs state portability |
+| [02_demand_timeline.svg](../assets/02_demand_timeline.svg) | Demand signals on vendor trackers |
+| [03_traction.svg](../assets/03_traction.svg) | GitHub traction landscape |
+| [04_market.svg](../assets/04_market.svg) | Market context |
+| [05_architecture.svg](../assets/05_architecture.svg) | MVP architecture |
 
 ## Package layout
 

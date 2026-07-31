@@ -49,6 +49,7 @@ const docs = defineCollection({
   schema: z
     .object({
       title: z.string().min(10).max(70),
+      navTitle: z.string().min(2).max(32),
       description: z.string().min(70).max(180),
       order: z.number().int().positive(),
       author: z.string().min(2).max(80),

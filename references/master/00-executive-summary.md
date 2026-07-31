@@ -63,7 +63,7 @@ The product question that matters (ChatGPT conversation):
 
 ## Empty competitive quadrant
 
-![Landscape](./assets/01_landscape.png)
+![Landscape](../../assets/01_landscape.svg)
 
 **Empty / under-owned:**
 
