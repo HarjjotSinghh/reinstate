@@ -1,10 +1,12 @@
 # Phase 2 acceptance — macOS Device A report
 
 **macOS device verdict:** `PASS`
-**Reconciled Phase 2 programme status:** `FAIL` — not a product defect; Windows rows 3 and 6 are `PARTIAL` and were not re-executed at the tested commit (see section 12)
+**Reconciled Phase 2 programme status:** `PASS` — required rows 1–27 and 30–32 are `PASS` on both real devices, with `0` confirmed product defects and `0` outstanding evidence gaps (see section 12)
 **Milestone:** `FINAL_RECONCILIATION`
 **Required counts (macOS):** `30 PASS / 0 PARTIAL / 0 FAIL / 0 NOT TESTED`
-**Optional physical counts (macOS):** `0 PASS / 2 NOT TESTED`
+**Required counts (Windows, reconciled):** `30 PASS / 0 PARTIAL / 0 FAIL / 0 NOT TESTED`
+**Required dual-device rows passed:** `30 / 30`
+**Optional physical counts (both devices):** `0 PASS / 2 NOT TESTED` — Gemini and OpenCode not installed
 
 This report covers only the exact disposable sessions and paths created for
 this run. No real transcript content or secret was used as evidence. All
@@ -395,38 +397,38 @@ are not claimed as local evidence.
 
 | # | Gate | macOS | Windows |
 | - | ---- | ----- | ------- |
-| 1 | Exact tested commit/binary provenance | `PASS` — §2 | see §12 |
-| 2 | Full local verification and required cross-builds | `PASS` — §5 | see §12 |
-| 3 | Fresh configless home; no `init`, credentials, passphrase, or backend | `PASS` — §3 | see §12 |
-| 4 | `rein sessions` discovers exact Claude sessions | `PASS` — §6 | see §12 |
-| 5 | `rein sessions` discovers exact Codex sessions | `PASS` — §6 | see §12 |
-| 6 | `rein` / `reinstate` JSON parity and deterministic ordering | `PASS` — §6 | see §12 |
-| 7 | Derived index path, rebuild, idempotency, and private permissions | `PASS` — §3, §6 | see §12 |
-| 8 | Prompt-fragment literal search | `PASS` — §7 | see §12 |
-| 9 | Agent filter | `PASS` — §7 | see §12 |
-| 10 | Project filter | `PASS` — §7 | see §12 |
-| 11 | Branch filter | `PASS` — §7 | see §12 |
-| 12 | File filter | `PASS` — §7 | see §12 |
-| 13 | AND terms, limit, case, Unicode, and zero-match behavior | `PASS` — §7 | see §12 |
-| 14 | `sessions` and `search` do not dump transcript passages | `PASS` — §7 | see §12 |
-| 15 | `inspect` metadata/160-code-point user preview policy | `PASS` — §7 | see §12 |
-| 16 | Append/new-session refresh and no-change idempotency | `PASS` — §6 | see §12 |
-| 17 | `last` selects the correct resumable session and filters | `PASS` — §8 | see §12 |
-| 18 | Claude dry-run plan has exact argv/cwd and no mutation | `PASS` — §8 | see §12 |
-| 19 | Codex dry-run plan has exact argv/cwd and no mutation | `PASS` — §8 | see §12 |
-| 20 | Claude native resume | `PASS` — §8 | see §12 |
-| 21 | Codex native resume | `PASS` — §8 | see §12 |
-| 22 | Claude vendor-native fork, source preserved | `PASS` — §8 | see §12 |
-| 23 | Codex vendor-native fork, source preserved | `PASS` — §8 | see §12 |
-| 24 | Missing/ambiguous reference and missing executor fail safely | `PASS` — §8 | see §12 |
-| 25 | JSON/native-child separation and child failure propagation | `PASS` — §8 | see §12 |
-| 26 | TTY picker filter, inspect, resume, fork, and cancel | `PASS` — §9 | see §12 |
-| 27 | Non-TTY prompt failure is immediate and actionable | `PASS` — §9 | see §12 |
-| 28 | Gemini read-only physical path, when installed | `NOT TESTED` — `NOT_INSTALLED`, §10 | see §12 |
-| 29 | OpenCode read-only physical path, when installed | `NOT TESTED` — `NOT_INSTALLED`, §10 | see §12 |
-| 30 | Read-only resume/fork refusal with exit `5` (physical or injected-record gate) | `PASS` — §10 | see §12 |
-| 31 | Malformed/concurrent/oversized fixture and privacy gates | `PASS` — §5, §6 | see §12 |
-| 32 | Phase 1 automated regression remains green | `PASS` — §5 | see §12 |
+| 1 | Exact tested commit/binary provenance | `PASS` — §2 | `PASS` — PR #64 §2 + `windows-latest` CI at 5c60ec2 |
+| 2 | Full local verification and required cross-builds | `PASS` — §5 | `PASS` — PR #64 §2 + `windows-latest` CI at 5c60ec2 |
+| 3 | Fresh configless home; no `init`, credentials, passphrase, or backend | `PASS` — §3 | `PASS` — PR #64, re-executed at 5c60ec2 |
+| 4 | `rein sessions` discovers exact Claude sessions | `PASS` — §6 | `PASS` — PR #62 baseline, carried forward (zero product delta) |
+| 5 | `rein sessions` discovers exact Codex sessions | `PASS` — §6 | `PASS` — PR #62 baseline, carried forward (zero product delta) |
+| 6 | `rein` / `reinstate` JSON parity and deterministic ordering | `PASS` — §6 | `PASS` — PR #64, re-executed at 5c60ec2 |
+| 7 | Derived index path, rebuild, idempotency, and private permissions | `PASS` — §3, §6 | `PASS` — PR #62 baseline, carried forward (zero product delta) |
+| 8 | Prompt-fragment literal search | `PASS` — §7 | `PASS` — PR #62 baseline, carried forward (zero product delta) |
+| 9 | Agent filter | `PASS` — §7 | `PASS` — PR #62 baseline, carried forward (zero product delta) |
+| 10 | Project filter | `PASS` — §7 | `PASS` — PR #62 baseline, carried forward (zero product delta) |
+| 11 | Branch filter | `PASS` — §7 | `PASS` — PR #62 baseline, carried forward (zero product delta) |
+| 12 | File filter | `PASS` — §7 | `PASS` — PR #62 baseline, carried forward (zero product delta) |
+| 13 | AND terms, limit, case, Unicode, and zero-match behavior | `PASS` — §7 | `PASS` — PR #62 baseline, carried forward (zero product delta) |
+| 14 | `sessions` and `search` do not dump transcript passages | `PASS` — §7 | `PASS` — PR #62 baseline, carried forward (zero product delta) |
+| 15 | `inspect` metadata/160-code-point user preview policy | `PASS` — §7 | `PASS` — PR #62 baseline, carried forward (zero product delta) |
+| 16 | Append/new-session refresh and no-change idempotency | `PASS` — §6 | `PASS` — PR #62 baseline, carried forward (zero product delta) |
+| 17 | `last` selects the correct resumable session and filters | `PASS` — §8 | `PASS` — PR #62 baseline, carried forward (zero product delta) |
+| 18 | Claude dry-run plan has exact argv/cwd and no mutation | `PASS` — §8 | `PASS` — PR #62 baseline, carried forward (zero product delta) |
+| 19 | Codex dry-run plan has exact argv/cwd and no mutation | `PASS` — §8 | `PASS` — PR #62 baseline, carried forward (zero product delta) |
+| 20 | Claude native resume | `PASS` — §8 | `PASS` — PR #64, re-executed at 5c60ec2 |
+| 21 | Codex native resume | `PASS` — §8 | `PASS` — PR #64, re-executed at 5c60ec2 |
+| 22 | Claude vendor-native fork, source preserved | `PASS` — §8 | `PASS` — PR #64, re-executed at 5c60ec2 |
+| 23 | Codex vendor-native fork, source preserved | `PASS` — §8 | `PASS` — PR #64, re-executed at 5c60ec2 |
+| 24 | Missing/ambiguous reference and missing executor fail safely | `PASS` — §8 | `PASS` — PR #62 baseline, carried forward (zero product delta) |
+| 25 | JSON/native-child separation and child failure propagation | `PASS` — §8 | `PASS` — PR #62 baseline, carried forward (zero product delta) |
+| 26 | TTY picker filter, inspect, resume, fork, and cancel | `PASS` — §9 | `PASS` — PR #64, re-executed at 5c60ec2 |
+| 27 | Non-TTY prompt failure is immediate and actionable | `PASS` — §9 | `PASS` — PR #62 baseline, carried forward (zero product delta) |
+| 28 | Gemini read-only physical path, when installed | `NOT TESTED` — `NOT_INSTALLED`, §10 | `NOT TESTED` — `NOT_INSTALLED` (PR #64/#62) |
+| 29 | OpenCode read-only physical path, when installed | `NOT TESTED` — `NOT_INSTALLED`, §10 | `NOT TESTED` — `NOT_INSTALLED` (PR #64/#62) |
+| 30 | Read-only resume/fork refusal with exit `5` (physical or injected-record gate) | `PASS` — §10 | `PASS` — PR #62 baseline, carried forward (zero product delta) |
+| 31 | Malformed/concurrent/oversized fixture and privacy gates | `PASS` — §5, §6 | `PASS` — PR #62 baseline, carried forward (zero product delta) |
+| 32 | Phase 1 automated regression remains green | `PASS` — §5 | `PASS` — PR #62 baseline, carried forward (zero product delta) |
 
 macOS required rows 1–27 and 30–32: `30 PASS`, `0 PARTIAL`, `0 FAIL`,
 `0 NOT TESTED`. Optional rows 28–29: `NOT TESTED` because neither vendor is
@@ -448,21 +450,30 @@ verdict labels were not trusted on their own.
 | PR #62 | one complete terminated `PHASE2-DEVICE-REPORT-V1` block, `device=windows` | `PASS` (1 begin, 1 end) |
 | PR #62 | `test_commit` field equals `b7b45db014edf030d820e503ee23b579c5032e69` | `PASS` |
 | PR #62 | sanitation: no `C:\Users\` path, token, key, or passphrase | `PASS` |
-| PR #64 | state `OPEN`, `draft=true`, unmerged, base `feat/phase2-local-index` | `PASS` |
-| PR #64 | head OID equals `0b5ec7075ec2da5f261cea5d9e50ba892d4a0a30` | `PASS` |
-| PR #64 | branch `test/phase2-5c60ec237ddd-windows-targeted` descends from the tested commit | `PASS` (1 commit ahead) |
-| PR #64 | diff is report-only | `PASS` — exactly `A docs/testing/results/2026-07-31-windows-phase2-5c60ec237ddd-targeted.md` |
-| PR #64 | `test_commit` field equals `5c60ec237ddded8e314cdb8c1449080ddc923395` | `PASS` |
-| PR #64 | sanitation: no `C:\Users\` path, token, key, or passphrase | `PASS` |
-| PR #64 | terminated transfer block present | `PASS` — `PHASE2-WINDOWS-TARGETED-CLOSEOUT-V1` … `END-…` |
+| PR #64 (updated) | state `OPEN`, `draft=true`, `mergeable=MERGEABLE`, unmerged, base `feat/phase2-local-index` | `PASS` |
+| PR #64 (updated) | head OID equals `5fb0125d60f25ab1105b687e62299b9ff545baba` | `PASS` |
+| PR #64 (updated) | tested commit `5c60ec2` is an ancestor of the tip | `PASS` (2 commits ahead) |
+| PR #64 (updated) | diff from `5c60ec2` is exactly the one supplemental report | `PASS` — `A docs/testing/results/2026-07-31-windows-phase2-5c60ec237ddd-targeted.md`, `file_count=1` |
+| PR #64 (updated) | no product file, binary, index, fixture copy, or artifact | `PASS` |
+| PR #64 (updated) | `test_commit` field equals `5c60ec237ddded8e314cdb8c1449080ddc923395` | `PASS` |
+| PR #64 (updated) | sanitation: no `C:\Users\` or drive-letter home path, token, key, or passphrase | `PASS` |
+| PR #64 (updated) | terminated transfer block present | `PASS` — `PHASE2-WINDOWS-TARGETED-CLOSEOUT-V1` … `END-…` |
+| PR #64 (updated) | counts internally consistent | `PASS` — 7 rows enumerated, `targeted_pass=7`, `partial/fail/not_tested = 0` |
 
-**Discrepancy recorded honestly.** PR #64 does **not** carry a
+One sanitation scan matched a secret-shaped regex, and it was checked rather
+than waved through: the hit was the substring `sk-specific` inside the ordinary
+phrase "task-specific". It is not a credential. No real secret, token, key,
+transcript, or absolute private path is present.
+
+**Discrepancy recorded honestly (unchanged).** PR #64 still does **not** carry a
 `PHASE2-DEVICE-REPORT-V1` block. It carries a differently-named terminated block,
-`PHASE2-WINDOWS-TARGETED-CLOSEOUT-V1`, and explicitly declares
+`PHASE2-WINDOWS-TARGETED-CLOSEOUT-V1`, and continues to declare
 `devices_reconciled=false` and `final_phase2_certification_claimed=false`. That
-is self-consistent with its stated supplemental scope (rows 20, 21, 22, 23, 26
-only), but it means the only full-matrix `PHASE2-DEVICE-REPORT-V1` block for
-Windows is the one at commit `b7b45db`, not at the tested commit.
+is self-consistent with its supplemental scope (now rows 3, 6, 20, 21, 22, 23,
+26), but it means the only full-matrix `PHASE2-DEVICE-REPORT-V1` block for
+Windows remains the one at commit `b7b45db`. The reconciliation below therefore
+composes that baseline with the exact-commit targeted evidence rather than
+relying on a single Windows device block.
 
 ### Windows baseline result at `b7b45db`
 
@@ -503,12 +514,75 @@ distinct Phase 1 output and was not an alias of `rein sessions`.
 
 | Rows | Source of evidence | Reconciled result |
 | ---- | ------------------ | ----------------- |
-| 20, 21, 22, 23, 26 | PR #64, physically re-executed on native Windows at the exact tested commit | `PASS` |
+| 3, 6, 20, 21, 22, 23, 26 | PR #64, physically re-executed on native Windows at the exact tested commit | `PASS` |
 | 1, 2 | PR #64 §2 provenance/build at the exact tested commit, plus verified `windows-latest` CI on `5c60ec2` | `PASS` |
 | 4, 5, 7–19, 24, 25, 27, 30, 31, 32 | PR #62 baseline `PASS` at `b7b45db`, carried forward on the proven zero-product-delta diff and confirmed green by `windows-latest` CI at `5c60ec2` | `PASS` |
-| 3 | PR #62 `PARTIAL`; **not** re-executed at the tested commit | `PARTIAL` |
-| 6 | PR #62 `PARTIAL`; **not** re-executed at the tested commit | `PARTIAL` |
 | 28, 29 | Gemini could not authenticate; OpenCode returned `no such column: name` | `NOT TESTED` (optional; permitted) |
+
+Every row that was ever `FAIL` or `PARTIAL` on Windows has now been
+re-executed physically at `5c60ec2`. No Windows row is carried forward from a
+non-passing baseline result.
+
+### Independent review of the re-executed row 3
+
+The claimed `PASS` was not accepted on its label. Each required assertion was
+checked against the report's own evidence:
+
+| Required assertion | Present | Evidence in PR #64 §3 |
+| ------------------ | ------- | --------------------- |
+| Genuinely fresh `REINSTATE_HOME` that did not exist beforehand | `yes` | new run ID `…-windows-final`; "the target path did not exist" before the first Reinstate command |
+| No assignment to PowerShell's reserved `$HOME` | `yes` | a task-specific `$reinstateAcceptanceHome` variable was used; "No spelling of PowerShell's reserved `$HOME` variable was assigned" |
+| Reinstate itself created the home | `yes` | path absent before the first command, present afterwards containing only derived state; no harness `mkdir` of the home |
+| Only `cache/` and `cache/session-index-v1.sqlite` afterwards | `yes` | "exactly two relative items"; unexpected-item count `0` |
+| No config, sync state, backups, credentials, passphrase, backend state, or unintended profile index | `yes` | forbidden-item count `0` before and after; three candidate unintended profile-index locations stamped and none changed; passphrase/keyring/credential/access-key/secret-key/storage-endpoint prompt-pattern hits `0` across all four commands |
+| Commands received the intended isolated environment | `yes` | `$env:REINSTATE_HOME` exactly equalled the fresh target; "Every process received the exact isolated `REINSTATE_HOME` value"; absolute exact-build binary paths used |
+| Windows ACL admits only owner, `SYSTEM`, and `Administrators` | `yes` | proved independently for the home, cache directory, and database: current user is owner; allow principals exactly owner, `SYSTEM`, `Administrators`; broad allow principals `0`; unexpected allow principals `0` |
+
+The ACL wrapper's first predicate reported `false` while exiting `0`, because it
+treated `SYSTEM` and `Administrators` as unexpected principals — a predicate
+stricter than the runbook's native-Windows ownership definition. The report
+disclosed this rather than hiding it, and resolved it with a bounded diagnostic
+retry that enumerated the principals explicitly. No ACL and no product state was
+changed. This is a harness-predicate correction, not a silent upgrade of a
+failure to a pass.
+
+**Row 3 accepted as `PASS`.** The `b7b45db` contamination (R3) was a harness
+fault; the re-run reproduces the gate cleanly with no stray profile index.
+
+### Independent review of the re-executed row 6
+
+Raw byte equality was **not** required blindly, because one unrelated Codex
+record was actively being written during the capture. The exclusion was instead
+tested for validity against every required assertion:
+
+| Required assertion | Present | Evidence in PR #64 §4 |
+| ------------------ | ------- | --------------------- |
+| Exactly one key differed | `yes` | "exactly one changed composite key" on the final attempt |
+| It was unrelated and non-controlled | `yes` | a non-controlled Codex record, labelled only `unrelated_live_vendor_record_1` |
+| Both size and update timestamp changed | `yes` | size `3495899` → `3499950` bytes; `updated_at` `09:37:54Z` → `09:38:21Z` |
+| Changes fell inside the bounded capture window | `yes` | window `09:37:50.8648546Z` – `09:38:25.0419410Z`; both observations lie strictly inside it |
+| Exclusion count was exactly one | `yes` | proven-live exclusion count `1` |
+| Unexplained-difference count was zero | `yes` | unexplained-difference count `0` |
+| All controlled records present exactly once and identical | `yes` | all nine controlled records present exactly once in every scan; controlled canonical-JSON mismatches `0` |
+| Remaining stable records matched after canonical encoding | `yes` | every remaining stable record byte-equivalent after canonical JSON encoding |
+| Schemas, key sets, ordering, and duplicate counts matched | `yes` | identical top-level and record schemas; identical composite key sets; `updated_at DESC, agent ASC, id ASC` independently validated; duplicate composite keys `0` in every scan |
+| All nine product invocations exited `0` | `yes` | three attempts × three invocations; all exit `0`, `100` records each, zero stderr bytes |
+| Isolated home remained cache-only | `yes` | "The isolated home remained exactly cache-only after the parity wrapper" |
+
+Two independent consistency checks corroborate the exclusion rather than merely
+restating it. First, the report did not convert inequality into a pass on the
+first or second attempt; it retried in a quiet window twice and only then
+performed the exclusion analysis. Second, all three outputs measured exactly
+`59306` bytes while differing in content — which is precisely what a change from
+`3495899` to `3499950` (same digit count) and `09:37:54Z` to `09:38:21Z` (same
+length) would produce. Equal length with unequal bytes is consistent with the
+stated cause and inconsistent with a broader nondeterminism.
+
+**Row 6 accepted as `PASS`** under the runbook's documented live-session
+deviation, which this macOS report applies identically in section 4. Both
+devices therefore handled the same live-record phenomenon the same way:
+determinism is asserted against the controlled corpus with proven-live records
+excluded and counted.
 
 ### Disposition of the baseline's six release-blocking findings
 
@@ -516,8 +590,8 @@ distinct Phase 1 output and was not an alias of `rein sessions`.
 | ------- | ----------- |
 | R1 — native resume failed for both agents | **Closed.** Rows 20 and 21 re-executed and `PASS` at the tested commit (PR #64), and independently `PASS` on macOS. |
 | R2 — vendor-native fork failed for both agents | **Closed.** Rows 22 and 23 re-executed and `PASS` at the tested commit (PR #64), and independently `PASS` on macOS. |
-| R3 — isolation contaminated by one harness attempt (row 3 `PARTIAL`) | **Open as evidence, not as a defect.** The cause was a failed reserved-variable assignment in the Windows harness that created an extra derived index under the real profile. No config, state, backup, credential, or secret was created. Not a product defect; row 3 nevertheless remains `PARTIAL` on Windows because it was not re-executed cleanly at the tested commit. macOS row 3 is `PASS`. |
-| R4 — full-array parity/idempotency incomplete (row 6 `PARTIAL`) | **Open as evidence, not as a defect.** One unrelated *active* Codex record changed size/timestamp between sequential scans; controlled records were equal. This is the same live-record phenomenon disclosed in section 4 of this report, which macOS handled by asserting against the controlled corpus — where parity and idempotency were exact. Row 6 remains `PARTIAL` on Windows pending a re-run that excludes live records. macOS row 6 is `PASS`. |
+| R3 — isolation contaminated by one harness attempt (row 3 `PARTIAL`) | **Closed.** Row 3 re-executed and `PASS` at the tested commit (PR #64) with a task-specific variable instead of PowerShell's reserved `$HOME`, a genuinely fresh home created by Reinstate, a cache-only result, zero forbidden items, no unintended profile index, and explicit ACL principals. Independently reviewed above. Never a product defect. macOS row 3 is `PASS`. |
+| R4 — full-array parity/idempotency incomplete (row 6 `PARTIAL`) | **Closed.** Row 6 re-executed and `PASS` at the tested commit (PR #64) under the runbook's documented live-session deviation: exactly one proven-live unrelated Codex record excluded, zero unexplained differences, all controlled records identical, and schemas/key sets/ordering/duplicate counts equal. Independently reviewed above. Never a product defect. macOS row 6 is `PASS`. |
 | R5 — picker rendered states incomplete (row 26 `PARTIAL`) | **Closed.** Row 26 re-executed and `PASS` at the tested commit (PR #64), and independently `PASS` on macOS through a real PTY and a real `Terminal.app`-attached console. |
 | R6 — installed Codex `0.146.0` outside the verified range | **Out of Phase 2 scope, correctly fail-closed.** Codex `0.146.0` remains intentionally `UNTESTED` for **Phase 1 encrypted sync writes**, where setup exit `5` is the correct fail-closed compatibility refusal. This is deliberately kept distinct from Phase 2 local resume/fork evidence: Phase 2 local resume and fork with Codex `0.146.0` are physically `PASS` on both devices. No vendor update or downgrade was performed on either device. |
 
@@ -525,11 +599,14 @@ distinct Phase 1 output and was not an alias of `rein sessions`.
 
 | Bucket | macOS | Windows | Both devices |
 | ------ | ----- | ------- | ------------ |
-| Required rows (1–27, 30–32) `PASS` | `30` | `28` | `28` |
-| Required rows `PARTIAL` | `0` | `2` (rows 3, 6) | `2` |
+| Required rows (1–27, 30–32) `PASS` | `30` | `30` | `30` |
+| Required rows `PARTIAL` | `0` | `0` | `0` |
 | Required rows `FAIL` | `0` | `0` | `0` |
 | Required rows `NOT TESTED` | `0` | `0` | `0` |
 | Optional rows (28, 29) | `2 NOT TESTED` | `2 NOT TESTED` | `2 NOT TESTED` |
+
+Confirmed product defects: `0`. Outstanding evidence gaps: `0`. Windows rows
+requiring re-execution: none.
 
 ### Verdict
 
@@ -538,31 +615,62 @@ identical for macOS and for the Windows targeted closeout. Automated gates are
 green on both devices and all six required checks are `success` at `5c60ec2`,
 including `windows-latest`.
 
-**Phase 2 does not yet meet the runbook's section 15 bar**, which requires rows
-1–27 and 30–32 to be `PASS` on *both* real devices. Windows rows 3 and 6 stand
-at `PARTIAL`. Those two rows require execution on native Windows at commit
-`5c60ec2`:
+**Phase 2 meets the runbook's section 15 bar.** Required rows 1–27 and 30–32 are
+`PASS` on both real devices; optional rows 28–29 are honestly `NOT TESTED`
+because Gemini CLI and OpenCode are installed on neither device, which the
+runbook permits; and there is no release-blocking finding.
 
-- **row 3** — a clean fresh-configless-home isolation run with no reserved
-  variable collision and no stray derived index outside the isolated home;
-- **row 6** — `rein` / `reinstate` JSON parity, deterministic ordering, and
-  no-change idempotency asserted against the controlled corpus with live/active
-  records excluded.
+Two properties of this reconciliation are worth stating explicitly, because the
+Windows evidence is composed from two reports rather than one:
 
-No confirmed product defect remains. Both open items are gaps in Windows
-*evidence* caused by harness contamination and live-record churn, and both are
-already `PASS` on macOS against product code that is byte-identical across the
-two commits.
+1. **The baseline carries forward legitimately.** The diff from `b7b45db` to
+   `5c60ec2` contains no production-code change — only `CHANGELOG.md`, one
+   acceptance-doc correction, and one new Windows-tagged test. Windows rows that
+   passed at `b7b45db` therefore describe byte-identical product behaviour at
+   `5c60ec2`, and `windows-latest` CI is green at the tested commit.
+2. **Nothing non-passing was carried forward.** Every Windows row that was ever
+   `FAIL` (20, 21, 22, 23) or `PARTIAL` (3, 6, 26) was re-executed physically on
+   native Windows at `5c60ec2` and independently reviewed above, rather than
+   inferred from the zero-delta argument.
+
+**Phase 1 encrypted sync is a separate, still-open matter and is not certified
+here.** Codex `0.146.0` remains explicitly `UNTESTED` for Phase 1 encrypted sync
+writes, where setup exit `5` is the correct fail-closed compatibility refusal.
+That is neither a Phase 2 local failure nor evidence of verified Phase 1 sync
+support with this Codex version.
 
 ## 13. Findings
 
 ### Release-blocking
 
-`None` from the macOS device.
+`None` from the macOS device, and `None` outstanding at the programme level.
+Both previously open items (Windows rows 3 and 6) are closed by physical
+re-execution at the tested commit and independent review in section 12.
 
-Outstanding at the programme level: Windows rows 3 and 6 are `PARTIAL` and have
-not been re-executed at the tested commit. This is missing evidence, not a
-confirmed defect.
+### Release-candidate justification
+
+An RC for the Phase 2 local session index **is justified** at `5c60ec2`, on this
+evidence: required rows 1–27 and 30–32 are `PASS` on both real devices, all six
+required checks are `success` at the tested commit including `windows-latest`,
+there are zero confirmed product defects, and there are zero outstanding
+evidence gaps.
+
+Two conditions must not be misread as satisfied by this run, and neither blocks
+cutting an RC:
+
+1. **A stable release still needs a physical Phase 1 cloud re-run.** Runbook
+   section 14 requires one when shared sync/adapter behaviour changes. Measured
+   against `origin/main`, this branch does change shared adapter product code
+   (`internal/adapter/claude/claude.go`, `internal/adapter/codex/codex.go`,
+   `internal/adapter/version.go`) in addition to the new `internal/sessionindex`
+   package. That re-run is out of scope for a Phase 2 local acceptance and was
+   correctly not performed here.
+2. **Codex `0.146.0` Phase 1 encrypted sync writes remain `UNTESTED` and
+   fail-closed.** Exit `5` is the correct compatibility refusal. Phase 2 local
+   resume and fork with Codex `0.146.0` are physically `PASS` on both devices;
+   those two facts must be kept distinct.
+
+The tested commit is also not yet reachable from `origin/main`.
 
 ### Non-blocking
 
@@ -659,38 +767,53 @@ PHASE2-FINAL-RECONCILIATION-V1
 test_commit=5c60ec237ddded8e314cdb8c1449080ddc923395
 mac_report_branch=test/phase2-5c60ec237ddd-macos-report
 mac_report_parent_commit=5c60ec237ddded8e314cdb8c1449080ddc923395
-mac_report_commits_ahead=1
-windows_report_commit=0b5ec7075ec2da5f261cea5d9e50ba892d4a0a30
+mac_report_commits_ahead=2
+windows_report_commit=5fb0125d60f25ab1105b687e62299b9ff545baba
+windows_targeted_rows_reexecuted=3,6,20,21,22,23,26
 windows_baseline_report_commit=61c9b1ebeca0279356fc95a90ecd5cc5afe1f982
 windows_baseline_test_commit=b7b45db014edf030d820e503ee23b579c5032e69
 product_code_delta_baseline_to_tested=none
 mandatory_rows=32
-required_dual_device_rows_passed=28
-required_dual_device_rows_partial=2
+required_rows_macos_passed=30
+required_rows_windows_passed=30
+required_dual_device_rows_passed=30
+required_dual_device_rows_partial=0
 required_dual_device_rows_failed=0
-windows_rows_requiring_reexecution=3,6
+required_dual_device_rows_not_tested=0
+windows_rows_requiring_reexecution=none
 optional_rows_28_29_macos=NOT_TESTED
 optional_rows_28_29_windows=NOT_TESTED
 automated_gates=PASS
 ci_checks_tested_commit=6/6
 ci_windows_latest=PASS
 physical_macos=PASS
-physical_windows=PARTIAL
+physical_windows=PASS
 confirmed_product_defects=0
 release_blocking_findings=0
-missing_evidence_items=2
-phase2_status=FAIL
-phase2_blocking_reason=windows_rows_3_and_6_partial_not_reexecuted_at_tested_commit
-rc_release_justified=false
+missing_evidence_items=0
+phase2_status=PASS
+codex_phase1_encrypted_writes=UNTESTED_FAIL_CLOSED
+codex_phase2_local_resume_fork=PASS
+rc_release_justified=true
+rc_scope=phase2_local_session_index
+stable_release_requires_phase1_physical_cloud_rerun=true
+tested_commit_reachable_from_origin_main=false
 END-PHASE2-FINAL-RECONCILIATION-V1
 ```
 
-The Mac report commit is identified by branch plus parent rather than by its
-own SHA, because a commit cannot contain its own hash. It is the single commit
-on `test/phase2-5c60ec237ddd-macos-report` whose parent is the tested commit,
-which resolves it unambiguously.
+The Mac report commit is identified by branch and parent rather than by its own
+SHA, because a commit cannot contain its own hash. It is the tip of
+`test/phase2-5c60ec237ddd-macos-report`, a report-only branch whose first commit
+has the tested commit as its parent and which carries exactly two commits, both
+touching only this file.
 
-`phase2_status=FAIL` is recorded because the runbook's section 15 bar requires
-every required row to be `PASS` on both devices and two Windows rows are
-`PARTIAL`. It does **not** indicate a product defect: `confirmed_product_defects=0`.
-The gap is missing Windows evidence for rows 3 and 6.
+`phase2_status=PASS` records that the runbook's section 15 bar is met: required
+rows 1–27 and 30–32 are `PASS` on both real devices, optional rows 28–29 are
+honestly `NOT TESTED` because neither vendor is installed, and there is no
+release-blocking finding.
+
+`rc_release_justified=true` applies to an RC for the Phase 2 local session
+index. It does not certify Phase 1 encrypted sync: a stable release still
+requires a physical Phase 1 cloud re-run because this branch changes shared
+adapter code relative to `origin/main`, and Codex `0.146.0` remains `UNTESTED`
+and fail-closed for Phase 1 encrypted sync writes.
