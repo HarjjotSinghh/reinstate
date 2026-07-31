@@ -4,12 +4,20 @@
 
 **Rows rerun:** `3 PASS / 6 PASS / 20 PASS / 21 PASS / 22 PASS / 23 PASS / 26 PASS`
 
+**Optional physical rows:** `28 PASS / 29 PARTIAL`
+
 **New native-Windows regression gate:** `PASS`
 
 This is a supplemental native-Windows report for the explicitly targeted
-closeout only. It does not reclassify rows outside 3, 6, 20, 21, 22, 23, and
-26, does not reconcile devices, and does not claim final Phase 2
+closeout only. It does not reclassify rows outside 3, 6, 20, 21, 22, 23, 26,
+28, and 29, does not reconcile devices, and does not claim final Phase 2
 certification.
+
+The targeted verdict above covers the seven originally targeted rows. Optional
+rows 28 and 29 were added in a later supplemental pass; row 29 is `PARTIAL`
+because the OpenCode read-only path is functionally correct but emits a zero
+`updated_at`, which hides the session from the default listing order. See
+sections 12 and 13.
 
 The report contains only controlled composite references, hashes, counts,
 booleans, exit codes, relative labels, and sanitized errors. It contains no
@@ -29,6 +37,8 @@ absolute private paths, or unrelated session metadata.
 | Reinstate version | `v0.1.0-38-g5c60ec2` |
 | Claude Code | `2.1.220` |
 | Codex CLI | `codex-cli 0.146.0` |
+| Gemini CLI | `0.53.0` (auth type `gemini-api-key`; key never read, printed, or persisted) |
+| OpenCode | `1.18.2` |
 | Report branch | `test/phase2-5c60ec237ddd-windows-targeted` |
 | Product files changed | `0` |
 
@@ -442,7 +452,155 @@ go test -count=1 -v ./internal/cli -run '^TestInteractivePickerFiltersAndLaunche
 
 Exit: `0`.
 
-## 12. Codex Phase 1 fail-closed state
+## 12. Row 28 — Gemini read-only physical path
+
+**Verdict: `PASS`.**
+
+Gemini `0.53.0` was driven through its normal non-interactive interface with
+the default models forced away from the previously observed upstream 503
+high-demand path:
+
+```text
+gemini -m gemini-3.1-flash-lite -p "Reply with exactly this token and nothing else: <TEST_ID>"
+```
+
+Exit `0`. The final stdout line was exactly the controlled `TEST_ID`. The
+process-scoped API key was never read, printed, persisted, or copied.
+
+### Bounded before/after metadata snapshot
+
+| Measure | Before | After |
+| ------- | ------ | ----- |
+| Gemini `chats` session files | `24` | `25` |
+| Files containing the controlled `TEST_ID` | — | `1` |
+| `rein sessions --agent gemini --json` records | `20` | `21` |
+| New indexed record IDs (set difference) | — | `1` |
+
+Attribution used only file names, sizes, modification times, and a literal
+`TEST_ID` match, so no unrelated transcript prose was read. Exactly one new
+record appeared: `gemini:b6a849e6-5aa8-4d1d-8dde-5bdd097dca3b`.
+
+### Discovery, search, and inspection
+
+| Assertion | Exit | Result |
+| --------- | ---- | ------ |
+| `rein sessions --agent gemini` | `0` | Controlled composite reference listed |
+| `rein sessions --agent gemini --json` | `0` | Record present; `capabilities.resume=false`, `capabilities.fork=false` |
+| `rein search <TEST_ID> --json` | `0` | Exactly `1` session returned, the controlled record |
+| `rein inspect gemini:b6a849e6-… --json` | `0` | `can_resume=false`, `can_fork=false` |
+
+`read_only_reason` was `Gemini CLI sessions are read-only in Phase 2` in every
+surface. Literal search matched because the Gemini record's search text
+includes bounded user-prompt text.
+
+### Read-only enforcement
+
+The physical controlled record carries no recorded workspace, so `resume` and
+`fork` refused at the workspace guard:
+
+- `rein resume gemini:b6a849e6-…` exited `5`;
+- `rein fork gemini:b6a849e6-…` exited `5`;
+- message: `recorded session workspace is unavailable: recorded session workspace is missing`;
+- source file SHA-256 and size were byte-identical before and after both
+  commands.
+
+`internal/sessionindex/launch.go` orders the workspace guard before the
+capability guard, so a workspace-less read-only record reports the workspace
+reason rather than the read-only reason. Both map to `ExitCompatibility` (`5`)
+and both refuse before any `LaunchPlan` is constructed, so zero vendor launch
+is structural rather than incidental.
+
+To exercise the read-only branch itself, a synthetic fixture carrying a
+recorded workspace was indexed through `GEMINI_CLI_HOME` pointed at a
+disposable tree outside the real Gemini home:
+
+- `rein resume gemini:fixture-r28-readonly` exited `5`;
+- `rein fork gemini:fixture-r28-readonly` exited `5`;
+- message: `native session action is unsupported: Gemini CLI sessions are read-only in Phase 2`;
+- fixture SHA-256 unchanged.
+
+No real Gemini session file was created, modified, or removed by Reinstate.
+
+## 13. Row 29 — OpenCode read-only physical path
+
+**Verdict: `PARTIAL`** — the read-only contract holds, but one confirmed
+metadata defect is recorded below.
+
+The fresh active OpenCode database was proven empty before any controlled
+work: `opencode session list --format json` exited `0` with empty stdout, and
+`rein sessions --agent opencode --json` returned `0` sessions. The stale
+incompatible database backup was not inspected, modified, restored, migrated,
+deleted, or located in this report.
+
+Exactly one controlled session was then created through the vendor's normal
+interface (`opencode --pure run <controlled prompt>`), yielding
+`opencode:ses_047b6cbcaffepaYgfx67TgcgVw`.
+
+### Bounded before/after metadata snapshot
+
+| Measure | Before | After |
+| ------- | ------ | ----- |
+| `opencode session list --format json` entries | `0` | `1` |
+| `rein sessions --agent opencode --json` records | `0` | `1` |
+
+### Discovery, search, and inspection
+
+| Assertion | Exit | Result |
+| --------- | ---- | ------ |
+| `rein sessions --agent opencode --json` | `0` | Controlled record present |
+| `rein search ses_047b6cbca… --json` | `0` | Exactly `1` session, the controlled record |
+| `rein inspect opencode:ses_047b6cbca… --json` | `0` | `can_resume=false`, `can_fork=false` |
+
+`read_only_reason` was `OpenCode sessions are read-only in Phase 2` in every
+surface.
+
+**Contract note — no prompt-text search.** Literal search on the controlled
+`TEST_ID` returned `0` sessions. This is by design, not a regression: the
+OpenCode record's search text is built from ID, title, project, workspace, and
+branch only, because the supported `session list` command returns no prompt
+text. Literal search over indexed metadata is therefore the applicable proof
+and it succeeded.
+
+### Confirmed defect — zero `updated_at`
+
+`opencode session list --format json` reports `updated` and `created` as
+top-level epoch-millisecond fields. `eventTimestamp`
+(`internal/sessionindex/claude.go:367`) only matches
+`timestamp`, `updatedAt`, `updated_at`, `lastUpdated`, `createdAt`, and
+`created_at`, and `openCodeRecord`
+(`internal/sessionindex/opencode.go:203-207`) only reads `updated` when it is
+nested under a `time` object. Neither path matches this vendor shape, so the
+record's `updated_at` is emitted as `0001-01-01T00:00:00Z`.
+
+Observed impact: `SortRecords` orders by `UpdatedAt` descending, so the zero
+timestamp sorts the session below every real record. With
+`rein sessions --limit 200 --json`, the only OpenCode session did not appear at
+all; it is reachable only through an explicit `--agent opencode` filter. The
+default limit is `100`, so the physical OpenCode path is effectively invisible
+in unfiltered listings on a populated host.
+
+### Read-only enforcement
+
+The controlled record carries a recorded workspace, so both commands reached
+the capability guard:
+
+- `rein resume opencode:ses_047b6cbca…` exited `5`;
+- `rein fork opencode:ses_047b6cbca…` exited `5`;
+- message: `native session action is unsupported: OpenCode sessions are read-only in Phase 2`;
+- OpenCode process count after both commands: `0`;
+- session count after both commands: still `1`, with identical ID and title.
+
+**Contract note — byte-level source stability.** The active OpenCode database
+file's SHA-256 changes on every read. This was attributed to the vendor, not to
+Reinstate: invoking `opencode session list --format json` alone, with no
+Reinstate process involved, changed the database SHA-256 on each of two
+consecutive calls while producing byte-identical JSON. The change is SQLite
+open-for-write bookkeeping inherent to OpenCode's command-mediated read path.
+Source mutation is therefore zero at the logical/session level but cannot be
+asserted at the byte level for OpenCode, unlike Gemini's file-read path, which
+was proven byte-stable.
+
+## 14. Codex Phase 1 fail-closed state
 
 `rein setup check --json` exited `5`:
 
@@ -455,7 +613,7 @@ This is the expected fail-closed result for Codex `0.146.0` Phase 1 encrypted
 sync writes. It does not fail the independently proven Phase 2 local
 resume/fork rows above. No vendor CLI was updated or downgraded.
 
-## 13. Retry and deviation ledger
+## 15. Retry and deviation ledger
 
 | Operation | Exit / state | Disposition |
 | --------- | ------------ | ----------- |
@@ -488,12 +646,16 @@ resume/fork rows above. No vendor CLI was updated or downgraded.
 | Row-6 parity attempt 1 | three product exits `0`; raw/SHA unequal | Bounded quiet-window retry; no key was excluded and no verdict was drawn from this attempt |
 | Row-6 parity attempt 2 | three product exits `0`; raw/SHA unequal | Second bounded quiet-window retry; no key was excluded and no verdict was drawn from this attempt |
 | Row-6 parity attempt 3 | three product exits `0`; raw/SHA unequal | One non-controlled key proved live in-window; excluded count `1`; all stable and controlled canonical records equal |
+| Row-28 first Gemini index lookup | product `0`; predicate false | Looked the record up by session file name; the Gemini record ID is the internal `sessionId`, not the file stem; before/after set-difference retry exited `0` and isolated exactly one new record |
+| Row-28 first read-only fixture | product `0`; fixture unparsed | Windows PowerShell `Set-Content -Encoding utf8` wrote a BOM, so the JSONL metadata line failed to parse and `message_count` was `0`; BOM-free `UTF8Encoding($false)` rewrite exited `0` and indexed the workspace correctly |
+| Row-29 controlled `opencode run` | no exit; moved to background, later stopped | The vendor run did not return within `300s` and held the database lock; the controlled session had already been created and was independently confirmed through `session list`; the stopped run produced no report evidence |
+| Row-29 first database mutation check | product exits `5`; hash unreadable | The still-running vendor process held an exclusive lock, so both hashes were null and the equality result was vacuous; re-run after the lock cleared produced real hashes and the vendor-attribution test below |
 
 The host PowerShell profile repeatedly emitted PSReadLine prediction warnings
 because command output was redirected. These warnings did not alter captured
 product exit codes.
 
-## 14. Final hygiene
+## 16. Final hygiene
 
 - original checkout HEAD:
   `5c60ec237ddded8e314cdb8c1449080ddc923395`;
@@ -510,9 +672,15 @@ product exit codes.
 - no transcripts, credentials, secrets, absolute private paths, build
   artifacts, index files, launcher helpers, or disposable workspaces are in
   the report diff;
+- Gemini API key: never read, printed, persisted, copied, or reported;
+- OpenCode stale-database backup: not inspected, modified, restored, migrated,
+  deleted, or located in this report; left in place for review;
+- row-28 synthetic fixture: written outside the repository and outside the real
+  Gemini home, reached only through `GEMINI_CLI_HOME`;
+- controlled Gemini and OpenCode sessions: left in place;
 - no cleanup or device reconciliation was performed.
 
-## 15. Targeted transfer block
+## 17. Targeted transfer block
 
 ```text
 PHASE2-WINDOWS-TARGETED-CLOSEOUT-V1
@@ -529,10 +697,20 @@ row_21_codex_resume=PASS
 row_22_claude_fork=PASS
 row_23_codex_fork=PASS
 row_26_picker=PASS
+row_28_gemini_read_only=PASS
+row_29_opencode_read_only=PARTIAL
 targeted_pass=7
 targeted_partial=0
 targeted_fail=0
 targeted_not_tested=0
+optional_physical_pass=1
+optional_physical_partial=1
+optional_physical_fail=0
+gemini_cli_version=0.53.0
+opencode_version=1.18.2
+opencode_updated_at_defect=true
+opencode_prompt_text_search=unsupported_by_design
+opencode_byte_level_source_stability=vendor_inherent_change
 codex_phase1_encrypted_writes=UNTESTED
 codex_phase2_local_resume_fork=PASS
 product_files_changed=0
