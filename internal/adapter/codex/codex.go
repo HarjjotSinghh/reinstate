@@ -79,11 +79,11 @@ func (a *Adapter) Detect(ctx context.Context) (adapter.Install, adapter.Compatib
 		if versionErr != nil {
 			return inst, adapter.CompatibilityUntested, nil
 		}
-		fields := strings.Fields(string(output))
-		if len(fields) < 2 {
+		reported := adapter.StableVersionFromOutput(string(output))
+		if reported == "" {
 			return inst, adapter.CompatibilityUntested, nil
 		}
-		inst.Version = fields[1]
+		inst.Version = reported
 		if !isSupportedVersion(inst.Version) {
 			return inst, adapter.CompatibilityUntested, nil
 		}
