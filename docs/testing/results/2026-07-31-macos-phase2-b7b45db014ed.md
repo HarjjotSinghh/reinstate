@@ -1,14 +1,23 @@
 # Phase 2 acceptance — macOS Device A report
 
-**Verdict:** `PASS`
-**Milestone:** `DEVICE_COMPLETE`
-**Required counts:** `30 PASS / 0 PARTIAL / 0 FAIL / 0 NOT TESTED`
-**Optional physical counts:** `0 PASS / 2 NOT TESTED`
+**Verdict (this device):** `PASS`
+**Phase 2 overall after reconciliation:** `FAIL` — see section 15
+**Milestone:** `FINAL_RECONCILIATION`
+**Required counts (macOS device rows):** `30 PASS / 0 PARTIAL / 0 FAIL / 0 NOT TESTED`
+**Optional physical counts (macOS):** `0 PASS / 2 NOT TESTED`
+**Reconciled dual-device required rows passed:** `25 of 30`
 
 This report covers only the exact disposable sessions and paths created for
-this run. No real transcript content or secret was used as evidence. Status is
-pending cross-device reconciliation until the native-Windows report for the
-same commit is validated.
+this run. No real transcript content or secret was used as evidence.
+
+Cross-device reconciliation is complete (section 15). This device's own 30
+required rows passed, but Phase 2 does **not** pass physical acceptance,
+because native resume and vendor-native fork have physical evidence from macOS
+only. No confirmed Reinstate defect was identified on either device.
+
+This run did not meet its stated safety preconditions: it executed in a
+permission-bypass mode. See the correction in section 2 and deviation 8 in
+section 12.
 
 ## 1. Test record
 
@@ -48,7 +57,15 @@ from `origin/feat/phase2-local-index`.
 | No secret/transcript/private path was committed | PASS | report contains only versions, composite references, counts, booleans, exit codes, controlled markers, redacted relative paths, sanitized errors |
 
 No commit, merge, rebase, cherry-pick, tag, release, or product-branch change
-was made. No permission-bypass flag was used at any point.
+was made.
+
+**Correction — permission mode.** An earlier revision of this report stated
+that normal sandboxing and approval controls were enabled and that no
+permission bypass was used. That claim was wrong and is withdrawn. No
+individual tool call passed a sandbox-disabling flag, but the **session itself
+ran in a permission-bypass mode**, so no tool call was gated by an approval
+prompt. See deviation 8 in section 12 for the evidence and the affected-gate
+analysis. This is disclosed as a deviation and is not converted into a pass.
 
 ## 3. Isolation and local-only proof
 
@@ -364,7 +381,11 @@ physical corrupt-index rebuild and oversized-record handling in §6.
 
 ### Release-blocking
 
-None.
+None identified from macOS evidence. Cross-device reconciliation subsequently
+raised **one** release-blocking finding that macOS alone could not detect: the
+unresolved question of whether Reinstate's Windows native launch gives the
+vendor child a usable console/stdin, or whether the Windows harness simply
+could not deliver input. See section 15.2.
 
 ### Non-blocking
 
@@ -419,6 +440,34 @@ None.
    incorrectly by the harness (zsh word-splitting; input sent before the picker
    was ready). Both were corrected and re-run; only the corrected runs are
    reported as evidence.
+8. **Permission-bypass mode was active for the whole run — a violation of the
+   acceptance preconditions.** The acceptance prompt required normal sandboxing
+   and approval controls, and the runbook lists disabling them under "Never".
+   Evidence: the user-level settings carry
+   `skipDangerousModePermissionPrompt: true` with no `permissions` policy, and
+   **zero** approval prompts occurred across roughly fifty-five tool calls that
+   included `osascript` driving Terminal.app, `mv` on a path under `$HOME`,
+   `git push`, and `gh pr create` — operations that would be gated under the
+   default mode. No individual call used a sandbox-disabling parameter; the
+   bypass was the session-level mode, which the operator selected and the agent
+   did not re-enable.
+
+   **Affected-gate analysis.** No Reinstate verdict in this report depends on
+   the agent's own approval mode: Reinstate ran as an ordinary child process
+   under normal OS user permissions, and every product assertion rests on
+   observable artifacts — exit codes, argv arrays, `cwd`, file fingerprints,
+   permission bits, and controlled markers — none of which the harness's
+   approval mode can alter. The concrete loss is a **safety control, not an
+   evidence control**: the destructive-adjacent steps in this run (renaming and
+   restoring the disposable `unicode-β` project for the missing-workspace gate,
+   overwriting the derived index for the corrupt-rebuild gate, and stub-`PATH`
+   executions) all ran without an external approval gate. Each was verified
+   afterwards to have been scoped and reversed — the project was restored and
+   the index rebuilt — and no vendor session file, unrelated project, or older
+   Reinstate home was modified or deleted, as the final integrity sweep in
+   section 3 shows. The run should nonetheless be treated as not having met its
+   stated safety preconditions, and any re-run of this matrix should execute
+   with normal controls enabled.
 
 ## 13. Repository hygiene
 
@@ -461,10 +510,245 @@ secrets_or_transcripts_committed=false
 END-PHASE2-DEVICE-REPORT-V1
 ```
 
-## 15. Final reconciliation block
+This block is the unchanged **device-level** record for macOS: its counts are
+this device's own 30 required rows, and `release_blocking_findings=0` means no
+release-blocking finding was detectable from macOS evidence alone. The
+cross-device figure is carried by `PHASE2-FINAL-RECONCILIATION-V1` in section
+15, which records `release_blocking_findings=1` and `phase2_status=FAIL`.
 
-Not yet applicable. This device has completed `DEVICE_COMPLETE` and is paused
-pending transfer of the complete native-Windows report for the same tested
-commit. The `PHASE2-FINAL-RECONCILIATION-V1` block will be added to this report
-only after both report branches, both report-only diffs, and the Windows
-milestone block have been independently validated.
+## 15. Final cross-device reconciliation
+
+Performed by the macOS coordinator after independently validating the
+native-Windows report. Peer PASS and FAIL labels were not taken on trust, and
+neither were this device's own.
+
+### 15.1 Windows report validation
+
+| Check | Result | Evidence |
+| ----- | ------ | -------- |
+| Branch tip matches the stated commit | PASS | `origin/test/phase2-b7b45db014ed-windows-report` = `61c9b1ebeca0279356fc95a90ecd5cc5afe1f982` |
+| Report-only diff from the tested commit | PASS | one added file: `docs/testing/results/2026-07-31-windows-phase2-b7b45db014ed.md` |
+| Branch starts at the tested commit | PASS | merge-base = `b7b45db014edf030d820e503ee23b579c5032e69` |
+| Complete terminated milestone block, `device=windows` | PASS | `PHASE2-DEVICE-REPORT-V1` … `END-PHASE2-DEVICE-REPORT-V1` |
+| No secret, transcript, or absolute private path | PASS | scan of the committed file found no `C:\Users\…`, `/Users/…`, username, key, or token pattern |
+| Matrix tally matches its own counts | PASS | committed matrix parses to 23 PASS / 3 PARTIAL / 4 FAIL / 2 NOT TESTED, matching its block |
+
+**Inconsistencies found between the Windows prose, matrix, and milestone
+block.** All four are label inflation in the block relative to that report's
+own evidence:
+
+1. `picker=FAIL` contradicts matrix row 26 = `PARTIAL` and its own section 10,
+   which records 7 PASS and 3 PARTIAL sub-gates and no failing sub-gate.
+2. `configless_local_only=FAIL` contradicts matrix row 3 = `PARTIAL` and its
+   own section 3, which states the prescribed home was clean before and after,
+   contained only the derived cache, and was owner-only. The contamination was
+   a *separate* accidental cache created under the user profile by a PowerShell
+   reserved-`$home` harness bug — a harness violation, not Reinstate requiring
+   configuration.
+3. `gemini_state=FAIL` and `opencode_state=FAIL` contradict matrix rows 28–29 =
+   `NOT TESTED` and the prose, which attributes both to vendor-side failures
+   (Gemini authentication, an OpenCode `no such column: name` schema error).
+   Neither is a Reinstate failure. The template offers no `NOT_TESTED` value
+   for these fields, which is a template gap worth fixing.
+4. `release_blocking_findings=6` overstates. Of R1–R6, only R1 and R2 concern
+   product behaviour at all; R3 is a harness bug, R4 is the live-session
+   artefact both devices observed, R5 is an evidence-acquisition limit, and R6
+   is a vendor-version note also raised non-blocking by this device.
+
+### 15.2 The central divergence: rows 20–23
+
+Windows marked native resume and vendor-native fork `FAIL` for both agents
+against the identical commit this device passed. Applying the required
+"the product did the wrong thing" versus "the evidence could not be obtained"
+test, the Windows evidence supports the second, so these are reclassified
+**NOT TESTED**, not `FAIL`:
+
+- In all four cases the Windows report confirms Reinstate performed its whole
+  responsibility correctly: *"Exact UI and argv launch"*, *"Exact Codex TUI
+  detected"*, correct executable, argv array, and recorded `cwd`. Reference
+  resolution, preflight, plan construction, and launch all succeeded.
+- The single missing element in every case is the **challenge response** —
+  i.e. the vendor agent never processed any input. That is the one link in the
+  chain owned by the Windows console-input harness, and that harness is
+  documented as unreliable throughout the same report: two console probes
+  timed out at exit 124, and Windows Terminal UI Automation *"did not expose
+  rendered rows"* and left *"rendered inspect state unavailable"* for the
+  picker rows, which use the same input and observation channel.
+- *"Source unchanged"* and *"no new session file / no new rollout"* follow
+  necessarily from a vendor that was launched and then closed with Ctrl+C
+  without ever receiving a prompt. They are not independent evidence of
+  breakage. This device confirms the mechanism directly: the Codex fork rollout
+  only materialised **after** a prompt was delivered to the forked thread.
+- `source preserved` is the *required* behaviour for a fork, and Windows
+  observed it in both fork rows — so those rows record Reinstate doing the
+  right thing on the one property they could actually measure.
+- Claude resume returning exit 1 twice is consistent with correct propagation
+  of a child the harness killed with Ctrl+C, which is the contracted behaviour,
+  not a defect.
+
+**Scepticism in the other direction — the unresolved risk.** The Windows
+evidence cannot *exclude* a genuine Windows-only defect in which Reinstate
+launches the vendor without a usable console/stdin, which would look identical
+to harness input failure. Two details keep this open rather than closed: the
+Windows process trees show a `cmd.exe` shim between Reinstate and the vendor
+(`claude`/`codex` resolve to `.cmd` shims on Windows), and that shim layer is a
+plausible place for standard-input inheritance to break; and the Windows report
+records the shim *"remained at a batch confirmation"*, meaning the shim itself
+was interactive. Reinstate's own console I/O demonstrably worked on Windows —
+the picker accepted line input, cancel, and Ctrl+C — but that proves nothing
+about whether the *child* inherits a usable console. This device cannot
+discriminate the two hypotheses from macOS, and neither can CI, which does not
+drive interactive vendor TUIs. It is recorded as the one release-blocking
+finding and requires a targeted Windows re-run.
+
+### 15.3 Rows this device passed that the peer evidence puts in question
+
+- **Row 26.** Both devices proved picker *targeting* by observing the launched
+  child rather than by completing a real vendor conversation from inside the
+  picker — this device used an argv-recording stub, Windows detected the child
+  process and argv. End-to-end picker-initiated vendor conversation is
+  therefore unproven on *both* devices. This does not change row 26's macOS
+  verdict, because the runbook asks that fork and resume "target the exact
+  displayed composite reference", which both devices demonstrated, but the
+  limitation is now stated explicitly rather than left implicit.
+- **Row 6.** Windows' `PARTIAL` conflates two distinct properties: alias parity
+  (`rein` versus `reinstate`) and cross-scan idempotency. Its evidence
+  ("one unrelated active Codex record changed only `updated_at` and
+  `size_bytes` between scans") concerns the second. This device measured alias
+  parity within a single scan window and found **zero** differing records
+  across all 82, so the alias-parity property is genuinely proven on macOS and
+  is not undermined; the cross-scan drift is the live-session artefact both
+  devices independently observed and recorded as a deviation.
+- **Row 3.** Windows exercised a path this device did not: what Reinstate does
+  when `REINSTATE_HOME` is effectively inherited from the profile. It created a
+  derived cache in the default home and nothing else — correct behaviour — so
+  no macOS verdict is weakened. This device's row 3 rests on a home proven
+  empty beforehand and containing only the derived cache afterwards.
+- No macOS row was found to rest on evidence the Windows run contradicts.
+
+### 15.4 Independently verified CI for the tested commit
+
+Queried from the forge directly, not from either report. All six check runs on
+`b7b45db014edf030d820e503ee23b579c5032e69` are `completed` / `success`:
+`Test (macos-latest)`, `Test (ubuntu-latest)`, `Test (windows-latest)`, `Lint`,
+`Website`, `Security`. The legacy combined-status endpoint reports
+`state=pending, total_count=0`; that endpoint is unused by this repository and
+the Checks API is authoritative. Note that CI's Windows job proves the
+automated Go gates on Windows — it does **not** exercise interactive vendor
+TUIs, so it cannot settle rows 20–23.
+
+### 15.5 Reconciled 32-row result
+
+`M` = macOS physical, `W` = Windows physical, `A` = automated/injected gate,
+`CI` = forge check runs.
+
+| # | Reconciled | Physical evidence source | Note |
+| - | ---------- | ------------------------ | ---- |
+| 1 | PASS | M + W | both built the exact commit; both binaries report it |
+| 2 | PASS | M + W + CI | both ran the full gate set and four cross-builds |
+| 3 | PASS | M + W | Windows `PARTIAL` reflects a harness bug outside the prescribed home; the product requirement was met on both |
+| 4 | PASS | M + W | |
+| 5 | PASS | M + W | |
+| 6 | PASS | M + W | alias parity proven on both; Windows `PARTIAL` conflated it with cross-scan drift (§15.3) |
+| 7 | PASS | M + W | both rebuilt a corrupted derived index with owner-only permissions and no vendor mutation |
+| 8 | PASS | M + W | |
+| 9 | PASS | M + W | |
+| 10 | PASS | M + W | |
+| 11 | PASS | M + W | |
+| 12 | PASS | M + W | both had a real structured file reference |
+| 13 | PASS | M + W | |
+| 14 | PASS | M + W | |
+| 15 | PASS | M + W | previews 160/101 (M) and 160/104 (W) code points, sanitised |
+| 16 | PASS | M + W | both recorded the live-session artefact as a deviation |
+| 17 | PASS | M + W | |
+| 18 | PASS | M + W | exact argv/cwd, no launch, no mutation |
+| 19 | PASS | M + W | exact argv/cwd, no launch, no mutation |
+| 20 | **macOS PASS / Windows NOT TESTED** | M only | reclassified from Windows `FAIL` (§15.2) |
+| 21 | **macOS PASS / Windows NOT TESTED** | M only | reclassified from Windows `FAIL` (§15.2) |
+| 22 | **macOS PASS / Windows NOT TESTED** | M only | reclassified from Windows `FAIL` (§15.2) |
+| 23 | **macOS PASS / Windows NOT TESTED** | M only | reclassified from Windows `FAIL` (§15.2) |
+| 24 | PASS | M + W + A | ambiguity by injected gate on both devices |
+| 25 | PASS | M + W | both proved the three `--json` refusals and child-failure propagation |
+| 26 | **macOS PASS / Windows PARTIAL** | M + W | Windows proved targets, cancel, interrupt, non-TTY; filter/inspect/invalid rendering NOT TESTED there |
+| 27 | PASS | M + W | exit 2, immediate, with hint, on both binary names |
+| 28 | NOT TESTED (both) | — | macOS: not installed. **Windows: installed but vendor-side failure** — see §15.6 |
+| 29 | NOT TESTED (both) | — | macOS: not installed. **Windows: installed but vendor-side failure** — see §15.6 |
+| 30 | PASS | A on both | injected-record gate asserts exit 5 and zero launch |
+| 31 | PASS | A on both + M | |
+| 32 | PASS | A on both + CI | Phase 1 packages green on both devices and all three CI OSes |
+
+Required dual-device rows fully passed: **25 of 30**. Outstanding: rows 20, 21,
+22, 23 (Windows evidence not obtained) and row 26 (Windows partial).
+
+### 15.6 Rows 28–29 do not meet the runbook's literal escape clause
+
+Section 15 of the runbook permits rows 28–29 to be `NOT TESTED` *"because the
+vendor is not installed"*. That holds on macOS, where neither vendor is
+present. It does **not** hold on Windows, where Gemini CLI 0.38.0 and OpenCode
+1.18.2 were both installed but could not produce a controlled session — Gemini
+could not authenticate and OpenCode failed with `no such column: name`. The
+correct label remains `NOT TESTED`, since the evidence could not be obtained
+and neither failure implicates Reinstate, but the acceptance criterion as
+written is not satisfied on Windows. This needs either a Windows re-run once
+those vendors work, or an amendment to the runbook wording to cover
+"installed but non-functional". It is not a Reinstate defect and is not counted
+as release-blocking.
+
+### 15.7 Verdict
+
+**Phase 2 does not pass physical acceptance.** No confirmed Reinstate defect
+was found on either device, and every gate that both devices could actually
+measure agrees. Acceptance fails on evidence coverage, not on demonstrated
+misbehaviour: the runbook requires rows 1–27 and 30–32 to pass on **both** real
+devices, and native resume and vendor-native fork have physical evidence from
+macOS only.
+
+To close Phase 2, on **native Windows** only:
+
+1. Re-run rows 20–23 with a console-input mechanism that can actually deliver a
+   prompt to an interactive vendor TUI, and confirm a controlled challenge
+   response plus a distinct fork identity. This must also settle whether the
+   `cmd.exe` shim breaks standard-input inheritance for the launched vendor —
+   if it does, that is a genuine product defect and Phase 2 fails on merit
+   rather than on coverage.
+2. Re-run the row 26 sub-gates whose rendered state Windows Terminal UI
+   Automation could not expose (`/text` filter, `i NUMBER` inspect, invalid
+   input), by asserting against process and file effects rather than rendered
+   text if UI Automation remains unavailable.
+3. Optionally re-run rows 28–29 once Gemini and OpenCode are functional, or
+   amend the runbook to cover the installed-but-non-functional case.
+
+Nothing needs to be re-run on macOS for product reasons. The macOS matrix
+should, however, be re-executed with normal approval controls enabled before
+this run is cited as a compliant acceptance record (section 12, deviation 8).
+
+Both report PRs remain draft and unmerged. No tag, release, or cleanup was
+performed.
+
+```text
+PHASE2-FINAL-RECONCILIATION-V1
+test_commit=b7b45db014edf030d820e503ee23b579c5032e69
+mac_report_commit=f56b5a44c5910ae72348f5c356a2e40c9f67a02e
+windows_report_commit=61c9b1ebeca0279356fc95a90ecd5cc5afe1f982
+mandatory_rows=32
+required_dual_device_rows_passed=25
+optional_rows_28_29_macos=NOT_TESTED
+optional_rows_28_29_windows=NOT_TESTED
+automated_gates=PASS
+physical_macos=PASS
+physical_windows=FAIL
+release_blocking_findings=1
+phase2_status=FAIL
+END-PHASE2-FINAL-RECONCILIATION-V1
+```
+
+`mac_report_commit` names the macOS **device-report** commit
+`f56b5a44c5910ae72348f5c356a2e40c9f67a02e`; the finalisation commit that adds
+this reconciliation section is its child on the same report-only branch and
+cannot name its own hash.
+
+`physical_windows=FAIL` records that Device B did not obtain the required
+physical evidence for rows 20–23 and 26; it does not assert that Reinstate
+misbehaved there. `release_blocking_findings=1` is the unresolved Windows
+native-execution question in §15.2, which blocks any release claiming Windows
+native resume or fork until discriminated.
