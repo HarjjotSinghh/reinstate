@@ -6,14 +6,16 @@ import sharp from 'sharp';
 
 const media = [
   {
-    source: 'public/brand/01_landscape.svg',
+    // Rasterize once in the diagram generator, then resize the committed PNG.
+    // Rendering SVG text directly varies across libvips/font stacks in CI.
+    source: 'public/brand/01_landscape.png',
     outputs: [
       { path: 'public/brand/01_landscape-768.webp', width: 768 },
       { path: 'public/brand/01_landscape-1536.webp', width: 1536 },
     ],
   },
   {
-    source: 'public/brand/05_architecture.svg',
+    source: 'public/brand/05_architecture.png',
     outputs: [
       { path: 'public/brand/05_architecture-768.webp', width: 768 },
       { path: 'public/brand/05_architecture-1536.webp', width: 1536 },
