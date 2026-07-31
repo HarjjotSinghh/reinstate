@@ -36,7 +36,7 @@ private paths.
 | Go version | `go1.26.1 windows/amd64`; Make gates pinned `GOTOOLCHAIN=go1.25.12` |
 | Make / C toolchain | MSYS2 GNU Make `4.4.1`; MSYS2 GCC `16.1.0`; `CGO_ENABLED=1` |
 | Report branch | `test/phase2-b7b45db014ed-windows-report` |
-| Draft PR | PENDING |
+| Draft PR | `#62` against `feat/phase2-local-index` |
 
 ## 2. Provenance and repository hygiene
 
@@ -46,8 +46,8 @@ private paths.
 | Binary reports the tested commit | PASS | Both Windows `.exe` aliases were locally built with full-SHA ldflags; `rein version --json` matched |
 | Product tree was clean before testing | PASS | Tracked change count `0` |
 | Report branch starts at the tested commit | PASS | Merge base equals the requested SHA |
-| Report is the only committed change | PENDING | Proved before commit in section 13; final staged and committed diff proof follows publication |
-| No secret/transcript/private path was committed | PENDING | Final staged and committed diff proof follows publication |
+| Report is the only committed change | PASS | Initial commit changed exactly the report; PR retargeted to exact tested base and reports one changed file |
+| No secret/transcript/private path was committed | PASS | Staged and committed report scans found no absolute private path or username; only the report is in the PR diff |
 
 The checkout contained a stale ignored `bin/rein.exe` from commit `e07a59b`.
 It was rejected as evidence and overwritten by an exact full-SHA local build.
@@ -428,6 +428,7 @@ failures:
 | Final hygiene assertion wrapper | `1` | Correctly detected untracked `.serena/` in disposable alpha project |
 | First report-only validation wrapper | `1` | `git diff --name-only` omits untracked files; corrected `git status --porcelain --untracked-files=all` proof passed |
 | First staged-diff validation wrapper | wrapper `1`; `git diff --cached --check` `2` | Three Markdown hard-break trailing spaces; removed and restaged |
+| Initial draft PR base | remote operation succeeded, wrong diff scope | Opened against `main`, which showed 5 commits/56 files because the tested commit is not on main; retargeted the same PR to exact-tip `feat/phase2-local-index`, yielding a report-only diff |
 
 No failed or retried command was silently relabeled PASS.
 
@@ -435,6 +436,7 @@ No failed or retried command was silently relabeled PASS.
 
 - report-only branch: `test/phase2-b7b45db014ed-windows-report`
 - tested base commit: `b7b45db014edf030d820e503ee23b579c5032e69`
+- draft PR: `#62`, base `feat/phase2-local-index`
 - changed files before report creation: `0`
 - intended changed files at commit: only
   `docs/testing/results/2026-07-31-windows-phase2-b7b45db014ed.md`
