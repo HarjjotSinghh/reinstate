@@ -1,5 +1,6 @@
 ---
 title: "How Reinstate syncs coding-agent sessions"
+navTitle: "How Reinstate works"
 description: "Understand Reinstate's adapters, structural path remapping, age encryption, immutable snapshots, conflict handling, and S3-compatible storage architecture."
 order: 2
 author: "Harjot Singh Rana"
@@ -53,21 +54,14 @@ vendor-native sessions without becoming a coding harness.
 ```
 
 <figure>
-  <picture>
-    <source
-      type="image/webp"
-      srcset="/brand/05_architecture-768.webp 768w, /brand/05_architecture-1536.webp 1536w"
-      sizes="(max-width: 768px) calc(100vw - 2rem), 768px"
-    />
-    <img
-      src="/brand/05_architecture.png"
-      alt="Reinstate architecture from Claude Code and Codex adapters through path normalization, client-side encryption, and immutable sync to user-owned storage"
-      width="2560"
-      height="1360"
-      loading="lazy"
-      decoding="async"
-    />
-  </picture>
+  <img
+    src="/brand/05_architecture.svg"
+    alt="Reinstate architecture from agent state watchers through path normalization, client-side encryption, sync, and restore"
+    width="2560"
+    height="1360"
+    loading="lazy"
+    decoding="async"
+  />
   <figcaption>
     Reinstate keeps vendor-native sessions intact while adapters, structural
     path remapping, client-side encryption, and immutable snapshots make
@@ -193,11 +187,11 @@ reality without tripling complexity.
 
 | Asset | Description |
 | ----- | ----------- |
-| [01_landscape.png](/brand/01_landscape.png) | Agent scope vs state portability |
-| [02_demand_timeline.png](/brand/02_demand_timeline.png) | Demand signals on vendor trackers |
-| [03_traction.png](/brand/03_traction.png) | GitHub traction landscape |
-| [04_market.png](/brand/04_market.png) | Market context |
-| [05_architecture.png](/brand/05_architecture.png) | MVP architecture |
+| [01_landscape.svg](/brand/01_landscape.svg) | Agent scope vs state portability |
+| [02_demand_timeline.svg](/brand/02_demand_timeline.svg) | Demand signals on vendor trackers |
+| [03_traction.svg](/brand/03_traction.svg) | GitHub traction landscape |
+| [04_market.svg](/brand/04_market.svg) | Market context |
+| [05_architecture.svg](/brand/05_architecture.svg) | MVP architecture |
 
 ## Package layout
 

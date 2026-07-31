@@ -17,6 +17,7 @@
     "generate:media": "node scripts/generate-responsive-media.mjs",
     "generate:og-art": "node scripts/generate-og-art-variants.mjs",
     "generate:github-social": "tsx scripts/generate-github-social.ts",
+    "generate:research-diagrams": "node scripts/generate-rebuilt-diagrams.mjs",
     "check:media": "node scripts/generate-responsive-media.mjs --check",
     "check:github-social": "tsx scripts/generate-github-social.ts --check",
     "check:path-visualizer": "node scripts/check-path-visualizer.mjs",

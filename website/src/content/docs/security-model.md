@@ -1,5 +1,6 @@
 ---
 title: "Reinstate security and encryption model"
+navTitle: "Security model"
 description: "See how Reinstate encrypts session data before upload, excludes credential files, stores storage keys, handles conflicts, and defines its threat boundaries."
 order: 4
 author: "Harjot Singh Rana"

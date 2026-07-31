@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Close the landing page with a clear continuity-tool comparison and an
   accessible macOS, Linux, and Windows installation call to action.
 
+### Changed
+
+- Replace the legacy DevSync research PNGs with canonical Reinstate SVG
+  diagrams across the README, repository documentation, research references,
+  landing page, and website documentation.
+
 ### Fixed
 
 - Align the closing illustrations' monitor stands, laptop keyboards, and

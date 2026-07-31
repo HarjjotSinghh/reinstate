@@ -1,5 +1,6 @@
 ---
 title: "Reinstate frequently asked questions"
+navTitle: "FAQ"
 description: "Get direct answers about Reinstate's current session-sync scope, supported agents, encryption, storage, offline behavior, cross-agent handoffs, and roadmap."
 order: 7
 author: "Harjot Singh Rana"

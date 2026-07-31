@@ -24,7 +24,7 @@ Three curves are crossing right now. First, the agent-CLI user base exploded: Cl
 
 A subtler timing point: the cohort in question self-selects into your target demographic. People who run two machines *and* multiple agent CLIs *and* care enough to customize MCP servers and skills are, definitionally, the most tool-forward developers in the industry — the ones who star repos, write blog posts, and pull their teams into new workflows. The Anthropic issue tracker frames the affected population as "likely a significant portion of the user base" [^11^]. Reddit threads about two-computer Claude Code setups recur across r/ClaudeAI and r/ClaudeCode [^35^][^36^]. Google's own forum has users telling Antigravity to "give the Google experience" of everything-follows-your-account [^49^]. Meanwhile the surface count keeps growing — Claude Code alone now spans terminal, VS Code and JetBrains extensions, a desktop app with local and remote session types, web, and mobile [^69^] — and every new surface a vendor adds is another place users expect their state to be waiting. A neutral layer that already handles five agents inherits each new agent's audience the day an adapter ships.
 
-![Where everyone sits: agent scope vs. state portability](assets/01_landscape.png)
+![Where everyone sits: agent scope vs. state portability](../../assets/01_landscape.svg)
 
 ---
 
@@ -58,7 +58,7 @@ Read the proposed solutions inside those requests and you get a ready-made produ
 
 They are also strikingly realistic about the hard parts: one requester explicitly concedes "even if local file paths or environments differ between machines, retaining the conversational context and high-level task history would significantly improve usability" [^3^] — meaning your path-mapping layer is understood by the market to be the crux, not an implementation detail. Notice what that requester did: they pre-emptively descoped the hardest sub-problem to make the feature more buildable, which is exactly the scope discipline §7 asks of Devsync itself. Notably, these threads remain open; the vendors' shipped answers (cloud VMs, relays) address adjacent needs while leaving the local-CLI continuity request itself unresolved [^10^][^1^], which is exactly the seam a third-party tool can occupy.
 
-![Demand timeline across vendor trackers](assets/02_demand_timeline.png)
+![Demand timeline across vendor trackers](../../assets/02_demand_timeline.svg)
 
 ### 2.2 In the wild: grassroots tools and DIY plumbing
 
@@ -82,7 +82,7 @@ The star counts tell the story cleanly: the agent CLIs themselves are enormous (
 
 One caution against over-reading low star counts: they measure discovery and positioning as much as demand. claude-sync launched in February 2026, is Claude-only, and its README is its entire marketing [^2^]; mcp-sync solves a same-machine problem most people solve by hand once and forget [^39^]. Meanwhile the two adjacent projects that nailed a compelling demo — Happy's "control Claude Code from your phone" and Vibe Kanban's "kanban board for your agents" — rocketed past 20K stars [^6^][^51^], proving this exact audience adopts meta-layer tooling aggressively when the value is visible in a screenshot. Cross-device resume is an unusually demo-able value proposition (a two-minute video of `claude --resume` reviving a Windows session on a Mac tells the whole story), which suggests the ceiling for a well-positioned sync tool is far above what the current crop's numbers imply.
 
-![GitHub traction: agent CLIs vs orchestrators vs sync tools](assets/03_traction.png)
+![GitHub traction: agent CLIs vs orchestrators vs sync tools](../../assets/03_traction.svg)
 
 ### 3.3 The orchestration neighborhood (why it is *not* your competition)
 
@@ -106,7 +106,7 @@ The strategic forecast that should shape Devsync: **every vendor will eventually
 
 A second-order point completes the moat analysis: vendor sync deepens vendor lock-in, which creates its own counter-pressure. If your Codex threads live in ChatGPT's cloud and your Claude sessions live in Anthropic's, your environment is fragmented *by design* — and the moment you want to leave a vendor, your history is the hostage. A neutral, encrypted, user-controlled store is the only architecture where the user owns the accumulated context layer independent of which model currently wins their preference [^21^][^65^]. There is precedent for this neutrality premium in the ecosystem itself: Grok Build deliberately auto-reads `CLAUDE.md` and `.claude/` (skills, agents, MCPs, hooks, rules) so "existing project context just works" [^33^] — vendors already interoperate with the *file* layer when it suits adoption. Devsync simply turns that de-facto file-level standard into maintained infrastructure with a sync engine attached.
 
-![Market context: run-rates behind the agent CLI wave](assets/04_market.png)
+![Market context: run-rates behind the agent CLI wave](../../assets/04_market.svg)
 
 ---
 
@@ -183,7 +183,7 @@ Keep the spreadsheet honest, though. The paying population is the intersection o
 
 The architecture is deliberately boring — the differentiation lives in adapter quality and trust posture, not exotic infrastructure. Five stages: per-agent **adapters** feed a **watcher** (fsnotify events, debounced, append-aware), whose changes pass a **normalizer** (path-tokenization both in file paths and inside transcript content, ignore rules, secret redaction), then **encryption** (age with passphrase-derived keys; per-device identities optional for team mode), then a **sync engine** (SQLite manifest, content-addressed chunks, delta/tail-append, conflict detection) talking to pluggable **backends** (R2/S3/GCS/WebDAV/Gist). Restore on device B inverts the flow: pull, decrypt, path-rewrite into the local layout, atomic swap with a timestamped backup — claude-sync's `~/.claude.backup.{timestamp}` behavior is the correct precedent for never destroying local state [^2^]. One manifest DB per device tracks remote object versions so `status`/`diff` are instant and offline.
 
-![Devsync MVP architecture](assets/05_architecture.png)
+![Reinstate MVP architecture](../../assets/05_architecture.svg)
 
 The restore side deserves the same engineering rigor as the upload side, because it is where data loss would happen. Every write into an agent's directory goes through a temp-file-and-rename cycle; any pull that would overwrite an existing local file first copies it to a timestamped backup directory, mirroring the `~/.claude.backup.{timestamp}` safety net claude-sync creates before touching a populated machine [^2^]. First-run on a new device is the highest-risk moment — the user has local state and remote state that both matter — so the initial `pull` defaults to `--dry-run` output and an explicit confirmation, exactly the flow existing tools converged on [^2^][^4^]. Get these boring details right and the tool earns the one thing that compounds: users trusting it with history they consider irreplaceable [^62^].
 

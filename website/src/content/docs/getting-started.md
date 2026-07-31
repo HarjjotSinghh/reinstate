@@ -1,5 +1,6 @@
 ---
 title: "Install and sync Reinstate across devices"
+navTitle: "Getting started"
 description: "Install Reinstate, configure encrypted S3-compatible storage, and restore a Claude Code or Codex session safely on another development machine."
 order: 1
 author: "Harjot Singh Rana"

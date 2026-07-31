@@ -1,5 +1,6 @@
 ---
 title: "Claude Code and Codex session adapters"
+navTitle: "Session adapters"
 description: "Learn how Reinstate adapters discover, normalize, and restore Claude Code and Codex sessions without translating native transcripts across vendors."
 order: 3
 author: "Harjot Singh Rana"

@@ -79,8 +79,8 @@ If you need a raw citation URL, open the original file in the table above.
 
 | File | From |
 |------|------|
-| `assets/01_landscape.png` | kimi |
-| `assets/02_demand_timeline.png` | kimi |
-| `assets/03_traction.png` | kimi |
-| `assets/04_market.png` | kimi |
-| `assets/05_architecture.png` | kimi |
+| [`assets/01_landscape.svg`](../../assets/01_landscape.svg) | kimi |
+| [`assets/02_demand_timeline.svg`](../../assets/02_demand_timeline.svg) | kimi |
+| [`assets/03_traction.svg`](../../assets/03_traction.svg) | kimi |
+| [`assets/04_market.svg`](../../assets/04_market.svg) | kimi |
+| [`assets/05_architecture.svg`](../../assets/05_architecture.svg) | kimi |

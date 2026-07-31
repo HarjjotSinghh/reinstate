@@ -15,6 +15,10 @@ export function docTitle(entry: DocEntry): string {
   return entry.data.title;
 }
 
+export function docNavTitle(entry: DocEntry): string {
+  return entry.data.navTitle;
+}
+
 export function docDescription(entry: DocEntry): string {
   return entry.data.description;
 }

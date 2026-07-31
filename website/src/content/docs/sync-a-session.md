@@ -1,5 +1,6 @@
 ---
 title: "Push one coding-agent session"
+navTitle: "Push a session"
 description: "Select, dry-run, encrypt, and push one supported Claude Code or Codex session to user-owned S3-compatible storage with Reinstate."
 order: 12
 author: "Harjot Singh Rana"
