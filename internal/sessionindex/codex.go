@@ -92,12 +92,59 @@ func resolveCodexRoot(explicit string) (string, error) {
 	return "", nil
 }
 
+// codexSessionIDFromFilename returns the native session identifier that Codex
+// encodes as the final component of a rollout filename. It returns an empty
+// string when the name does not end in a UUID, so unrecognised layouts keep
+// falling back to the identifiers recorded inside the file.
+func codexSessionIDFromFilename(path string) string {
+	stem := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+	fields := strings.Split(stem, "-")
+	if len(fields) < 5 {
+		return ""
+	}
+	candidate := strings.Join(fields[len(fields)-5:], "-")
+	if !looksLikeUUID(candidate) {
+		return ""
+	}
+	return candidate
+}
+
+func looksLikeUUID(value string) bool {
+	groups := strings.Split(value, "-")
+	if len(groups) != 5 {
+		return false
+	}
+	for index, width := range [5]int{8, 4, 4, 4, 12} {
+		if len(groups[index]) != width {
+			return false
+		}
+		for _, char := range groups[index] {
+			isDigit := char >= '0' && char <= '9'
+			isHex := (char >= 'a' && char <= 'f') || (char >= 'A' && char <= 'F')
+			if !isDigit && !isHex {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 func parseCodexSession(path string) (Record, []Warning, error) {
 	info, err := os.Stat(path)
 	if err != nil {
 		return Record{}, nil, err
 	}
 	id := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+	// Codex names every rollout file after that file's own native session,
+	// including forks. A fork additionally replays the source's records, so its
+	// session_meta may carry the source id either alongside or instead of its
+	// own. Pinning the identity to the filename keeps a fork addressable and
+	// stops it from being coalesced into the session it was forked from.
+	identityPinned := false
+	if fromName := codexSessionIDFromFilename(path); fromName != "" {
+		id = fromName
+		identityPinned = true
+	}
 	var (
 		workspace       string
 		branch          string
@@ -123,6 +170,7 @@ func parseCodexSession(path string) (Record, []Warning, error) {
 				continue
 			}
 			if value := firstString(values, "id", "sessionId", "session_id"); value != "" &&
+				!identityPinned &&
 				(strings.EqualFold(firstString(event, "type"), "session_meta") || index == 0) {
 				id = value
 			}
