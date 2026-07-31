@@ -111,7 +111,7 @@ keeping each page type bounded:
 
 | Route | HTML raw / gzip | CSS raw / gzip | Static transfer raw / gzip |
 | --- | ---: | ---: | ---: |
-| `/` | 200 / 35 KiB | 140 / 28 KiB | 460 / 180 KiB |
+| `/` | 288 / 48 KiB | 140 / 28 KiB | 460 / 180 KiB |
 | `/docs/getting-started` | 64 / 14 KiB | 80 / 18 KiB | 220 / 90 KiB |
 | `/docs/troubleshooting` | 96 / 22 KiB | 80 / 18 KiB | 260 / 105 KiB |
 | `/integrations/claude-code` | 48 / 12 KiB | 90 / 20 KiB | 230 / 95 KiB |

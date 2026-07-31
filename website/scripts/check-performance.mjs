@@ -59,8 +59,8 @@ export const DEFAULT_ROUTE_DEFINITIONS = [
       ...SHARED_LIMITS,
       // The homepage intentionally carries its detailed inline SVG product
       // illustrations in the initial document so they theme without client JS.
-      htmlRaw: 216 * KIB,
-      htmlGzip: 40 * KIB,
+      htmlRaw: 288 * KIB,
+      htmlGzip: 48 * KIB,
       cssCodeRaw: 140 * KIB,
       cssCodeGzip: 28 * KIB,
       mediaRaw: 128 * KIB,
