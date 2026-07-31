@@ -68,6 +68,22 @@ Before publishing the draft:
 4. Confirm archive contents include binary, license, notice, README, and changelog.
 5. Mark prerelease tags as pre-release; publish stable only after every release gate.
 
+Publishing the verified GitHub draft triggers **Publish package managers**.
+That workflow re-verifies the signed tag, main ancestry, checksums, and GitHub
+attestations before any enabled downstream job can run. Registry jobs are
+opt-in and protected by the `package-publish` environment. Complete the account,
+secret, repository-variable, and first-publication steps in
+[Package-manager publishing](docs/package-manager-publishing.md) before enabling
+them.
+
+Stable releases may promote to npm, JSR, Homebrew, Chocolatey, Scoop, WinGet,
+and AUR. Prereleases promote only to npm (`next`) and JSR. Do not publish a
+registry package from a draft release or from locally rebuilt binaries.
+
+The GitHub draft now also contains raw binaries and `.deb`, `.rpm`, `.apk`, and
+Arch package files. Confirm those files are covered by `checksums.txt` and
+artifact attestations before publishing the draft.
+
 ### 4. Publish the public installer routes
 
 Automatic Vercel Git deployments are disabled. After the GitHub release is

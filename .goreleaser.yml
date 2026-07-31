@@ -27,9 +27,26 @@ builds:
       - -X github.com/HarjjotSinghh/reinstate/internal/version.Version={{.Version}}
       - -X github.com/HarjjotSinghh/reinstate/internal/version.Commit={{.FullCommit}}
       - -X github.com/HarjjotSinghh/reinstate/internal/version.Date={{.Date}}
+  - id: rein-windows-alias
+    main: ./cmd/reinstate
+    binary: rein
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - windows
+    goarch:
+      - amd64
+    ldflags:
+      - -s -w
+      - -X github.com/HarjjotSinghh/reinstate/internal/version.Version={{.Version}}
+      - -X github.com/HarjjotSinghh/reinstate/internal/version.Commit={{.FullCommit}}
+      - -X github.com/HarjjotSinghh/reinstate/internal/version.Date={{.Date}}
 
 archives:
   - id: default
+    # The Windows ZIP intentionally contains both CLI names so portable package
+    # managers can expose rein and reinstate without wrapper scripts.
+    allow_different_binary_count: true
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     formats: [tar.gz]
     format_overrides:
@@ -40,6 +57,44 @@ archives:
       - NOTICE
       - README.md
       - CHANGELOG.md
+  - id: raw
+    ids:
+      - reinstate
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats: [binary]
+
+nfpms:
+  - id: linux-packages
+    ids:
+      - reinstate
+    package_name: reinstate
+    file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    vendor: Reinstate
+    homepage: https://reinstate.dev
+    maintainer: Harjot Singh Rana <harjot@harjot.co>
+    description: |-
+      Continuity layer for coding-agent work. Reinstate securely syncs supported
+      coding-agent sessions across configured devices using end-to-end encryption
+      and storage you control.
+    license: Apache-2.0
+    formats:
+      - apk
+      - archlinux
+      - deb
+      - rpm
+    bindir: /usr/bin
+    contents:
+      - src: /usr/bin/reinstate
+        dst: /usr/bin/rein
+        type: symlink
+      - src: LICENSE
+        dst: /usr/share/licenses/reinstate/LICENSE
+      - src: NOTICE
+        dst: /usr/share/doc/reinstate/NOTICE
+      - src: README.md
+        dst: /usr/share/doc/reinstate/README.md
+      - src: CHANGELOG.md
+        dst: /usr/share/doc/reinstate/CHANGELOG.md
 
 checksum:
   name_template: checksums.txt

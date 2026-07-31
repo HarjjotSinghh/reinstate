@@ -18,6 +18,7 @@
 | [Testing and fixtures](contributing/testing.md) | Synthetic-data and adapter test policy |
 | [Contributing an adapter](adapters/contributing-an-adapter.md) | Fail-closed adapter requirements |
 | [Release process](contributing/release-process.md) | Version and release contribution boundaries |
+| [Package-manager publishing](package-manager-publishing.md) | Maintainer distribution plan, registry setup, credentials, and promotion workflow |
 | [Architecture](architecture.md) | System design + continuity stack |
 | [Product strategy](product-strategy.md) | Positioning, ICP, layers, non-goals |
 | [Adapters](adapters.md) | Agent support matrix |

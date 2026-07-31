@@ -340,6 +340,7 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 | [Roadmap](ROADMAP.md) | Phases & non-goals |
 | [Contributing](CONTRIBUTING.md) | Dev setup & PR process |
 | [Releasing](RELEASING.md) | Maintainer release checklist |
+| [Package-manager publishing](docs/package-manager-publishing.md) | Maintainer registry rollout and authentication guide |
 | [Support](SUPPORT.md) | How to get help |
 | [Governance](GOVERNANCE.md) | Decision making |
 | [Changelog](CHANGELOG.md) | Release history |

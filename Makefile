@@ -75,7 +75,9 @@ verify: fmt-check vet lint test test-race vuln ## Full local merge gate; test in
 
 snapshot: ## goreleaser snapshot (requires goreleaser)
 	@command -v goreleaser >/dev/null 2>&1 || { echo "goreleaser required for snapshot"; exit 1; }
-	goreleaser release --snapshot --clean
+	@current_tag="$$(git describe --tags --match 'v[0-9]*' --abbrev=0)"; \
+	previous_tag="$$(git describe --tags --match 'v[0-9]*' --abbrev=0 "$$current_tag^" 2>/dev/null || true)"; \
+	GORELEASER_CURRENT_TAG="$$current_tag" GORELEASER_PREVIOUS_TAG="$$previous_tag" goreleaser release --snapshot --clean
 
 version: build ## Print embedded version
 	$(BINARY) version
