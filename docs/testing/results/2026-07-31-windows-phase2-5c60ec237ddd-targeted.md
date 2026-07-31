@@ -2,13 +2,14 @@
 
 **Targeted verdict:** `PASS`
 
-**Rows rerun:** `20 PASS / 21 PASS / 22 PASS / 23 PASS / 26 PASS`
+**Rows rerun:** `3 PASS / 6 PASS / 20 PASS / 21 PASS / 22 PASS / 23 PASS / 26 PASS`
 
 **New native-Windows regression gate:** `PASS`
 
 This is a supplemental native-Windows report for the explicitly targeted
-closeout only. It does not reclassify rows outside 20, 21, 22, 23, and 26,
-does not reconcile devices, and does not claim final Phase 2 certification.
+closeout only. It does not reclassify rows outside 3, 6, 20, 21, 22, 23, and
+26, does not reconcile devices, and does not claim final Phase 2
+certification.
 
 The report contains only controlled composite references, hashes, counts,
 booleans, exit codes, relative labels, and sanitized errors. It contains no
@@ -47,11 +48,140 @@ were intentionally left in place.
 | Exact full-SHA Windows build | `0` | `bin/rein.exe` built locally |
 | `rein version --json` | `0` | Full commit and `v0.1.0-38-g5c60ec2` matched |
 | `reinstate.exe` alias verification | `0` | Alias reported the same full commit |
+| Final-closeout `git fetch origin` | `0` | Requested commit remained available from `origin` |
+| Final-closeout `git checkout 5c60ec237ddded8e314cdb8c1449080ddc923395` | `0` | Product checkout detached at the exact commit |
+| Final-closeout `git status --porcelain` | `0` | Empty before the row-3 preflight |
+| Final-closeout exact full-SHA Windows build | `0` | `reinstate.exe` rebuilt; `rein.exe` copied byte-identically |
+| Both final-closeout `version --json` checks | `0` each | Both embedded the full exact commit; binary SHA-256 values matched |
 
 The original checkout and report worktree were both clean at the tested
 commit before report creation. Ignored build outputs were not staged.
 
-## 3. New Windows command-shim regression gate
+The final-closeout build command was:
+
+```text
+$env:GOTOOLCHAIN='go1.25.12'; $env:CGO_ENABLED='0'
+go build -ldflags <full-SHA-version-metadata> -o bin\reinstate.exe .\cmd\reinstate
+Copy-Item bin\reinstate.exe bin\rein.exe
+```
+
+The build and copy each exited `0`. Both absolute binaries then returned exit
+`0` from `version --json` and identified commit
+`5c60ec237ddded8e314cdb8c1449080ddc923395`.
+
+## 3. Row 3 — fresh configless home
+
+**Result:** `PASS`
+
+Run ID: `20260731-5c60ec237ddd-windows-final`.
+
+The final closeout used a new task-specific
+`$reinstateAcceptanceHome` variable. No spelling of PowerShell's reserved
+`$HOME` variable was assigned. Before the first Reinstate command:
+
+- the target path did not exist;
+- forbidden config/state/backup/key/credential/profile item count was `0`;
+- init/sync/storage/conflict/push/pull commands run was `0`;
+- `$env:REINSTATE_HOME` exactly equaled the fresh target;
+- three possible unintended profile-index locations were stamped for an
+  after-run comparison without reading any session content.
+
+The complete configless command surface used the two absolute exact-build
+binaries:
+
+| Command | Exit | Sanitized result |
+| ------- | ---- | ---------------- |
+| `& <absolute-rein-path> sessions` | `0` | `100` records; eight sanitized vendor warnings, with codes `coalesced_session_segments`, `oversized_record`, `session_read_failed`, and `source_scan_failed` |
+| `& <absolute-rein-path> sessions --json` | `0` | Parsed JSON; `100` records |
+| `& <absolute-reinstate-path> sessions --json` | `0` | Parsed JSON; `100` records |
+| `& <absolute-rein-path> list --help` | `0` | Phase 1 compatibility help remained distinct |
+
+Outputs were captured privately. No full listing, transcript text, private
+path, or uncontrolled session identifier is reproduced here. Every process
+received the exact isolated `REINSTATE_HOME` value. Prompt-pattern hits for
+passphrase, keyring, credential, access key, secret key, or storage endpoint
+were `0` across all four commands.
+
+Afterward, the isolated home contained exactly two relative items:
+
+```text
+cache/
+cache/session-index-v1.sqlite
+```
+
+Unexpected item count and forbidden config/sync/backup/key/credential/
+passphrase/profile/storage/backend item count were both `0`. No unintended
+profile-index stamp changed.
+
+The first ACL assertion wrapper exited `0` but conservatively reported its
+internal row predicate as false because it treated Windows `SYSTEM` and
+`Administrators` as unexpected non-owner principals. The bounded diagnostic
+retry exited `0` and proved, for the isolated home, cache directory, and
+database independently:
+
+- the current Windows user was the owner;
+- allow principals were exactly owner, `SYSTEM`, and `Administrators`;
+- broad allow principal count was `0`;
+- unexpected allow principal count was `0`.
+
+This is owner-only under the runbook's native-Windows permission model. The
+initial predicate was stricter than the acceptance definition; it did not
+change an ACL or product state.
+
+## 4. Row 6 — alias parity and idempotency
+
+**Result:** `PASS`
+
+The same cache-only isolated home and byte-identical exact-build `rein.exe`
+and `reinstate.exe` were used. One bounded PowerShell wrapper performed each
+attempt without agent interaction between commands and wrote raw stdout and
+stderr outside the repository:
+
+```text
+& <absolute-rein-path> sessions --json
+& <absolute-rein-path> sessions --json
+& <absolute-reinstate-path> sessions --json
+```
+
+The wrapper exited `0`. All nine product invocations across three attempts
+exited `0`, returned `100` records, and wrote zero stderr bytes.
+
+| Attempt | Output bytes | Raw equality | SHA-256 equality | Disposition |
+| ------- | ------------ | ------------ | ---------------- | ----------- |
+| `1` | `59306 / 59306 / 59306` | false | false | Quiet-window retry |
+| `2` | `59306 / 59306 / 59306` | false | false | Quiet-window retry |
+| `3` | `59306 / 59306 / 59306` | false | false | Proven-live exclusion analysis |
+
+The wrapper did not convert unexplained inequality into a pass. On the final
+attempt it found exactly one changed composite key, labelled here only as
+`unrelated_live_vendor_record_1`. It was a non-controlled Codex record whose
+size changed from `3495899` to `3499950` bytes and whose update timestamp
+changed from `2026-07-31T09:37:54Z` to `2026-07-31T09:38:21Z`. Both updates
+fell inside the bounded capture window
+`2026-07-31T09:37:50.8648546Z` through
+`2026-07-31T09:38:25.0419410Z`. Proven-live exclusion count was exactly `1`;
+unexplained-difference count was `0`.
+
+After excluding only that proven-live key, parsed evidence showed:
+
+- identical top-level and record schemas;
+- identical composite record-key sets;
+- identical deterministic order across both repeated `rein` scans and the
+  `reinstate` scan;
+- independent validation of `updated_at DESC, agent ASC, id ASC` ordering;
+- zero duplicate composite keys in every scan;
+- all nine controlled records present exactly once in every scan;
+- zero controlled canonical-JSON mismatches;
+- every remaining stable record byte-equivalent after canonical JSON
+  encoding;
+- unchanged refreshes left all stable records unchanged;
+- `rein` and `reinstate` returned identical stable records.
+
+The isolated home remained exactly cache-only after the parity wrapper.
+Temporary parity outputs were retained outside the repository and were not
+printed or staged.
+
+## 5. New Windows command-shim regression gate
 
 Command:
 
@@ -65,7 +195,7 @@ The parent test and both `resume` and `fork` subtests passed. This exercised
 the production `ExecLaunchRunner` through a native `claude.cmd` command shim
 and verified stdin, stdout, argv, and cwd preservation.
 
-## 4. Fresh controlled corpus
+## 6. Fresh controlled corpus
 
 No source or result from the earlier Device B run was carried forward.
 
@@ -93,7 +223,7 @@ workspace ended with an untracked `.serena/` directory created by vendor
 tooling. It was not inspected or removed. The disposable Codex workspace
 remained clean.
 
-## 5. Row 20 — Claude native resume
+## 7. Row 20 — Claude native resume
 
 **Result:** `PASS`
 
@@ -119,7 +249,7 @@ Evidence:
 This proves a real source append and controlled response, not process
 detection.
 
-## 6. Row 22 — Claude vendor-native fork
+## 8. Row 22 — Claude vendor-native fork
 
 **Result:** `PASS`
 
@@ -150,7 +280,7 @@ The combined assertion wrapper exited `14` after all vendor mutations because
 it read `inspect` fields at the JSON envelope root. No mutation was replayed.
 A read-only envelope-aware inspect retry exited `0`.
 
-## 7. Row 21 — Codex native resume
+## 9. Row 21 — Codex native resume
 
 **Result:** `PASS`
 
@@ -183,7 +313,7 @@ resent. A shared-read check proved the assistant response and cwd, the scoped
 terminal was closed by keyboard interrupt, and SQLite pre/post refresh values
 proved the source append.
 
-## 8. Row 23 — Codex vendor-native fork
+## 10. Row 23 — Codex vendor-native fork
 
 **Result:** `PASS` on a fresh-source retry.
 
@@ -234,7 +364,7 @@ Real native fork evidence:
 This directly re-proves the changed Codex fork-identity behavior when a fork
 rollout contains more than one `session_meta` identity.
 
-## 9. Row 26 — native interactive picker
+## 11. Row 26 — native interactive picker
 
 **Result:** `PASS`
 
@@ -312,7 +442,7 @@ go test -count=1 -v ./internal/cli -run '^TestInteractivePickerFiltersAndLaunche
 
 Exit: `0`.
 
-## 10. Codex Phase 1 fail-closed state
+## 12. Codex Phase 1 fail-closed state
 
 `rein setup check --json` exited `5`:
 
@@ -325,7 +455,7 @@ This is the expected fail-closed result for Codex `0.146.0` Phase 1 encrypted
 sync writes. It does not fail the independently proven Phase 2 local
 resume/fork rows above. No vendor CLI was updated or downgraded.
 
-## 11. Retry and deviation ledger
+## 13. Retry and deviation ledger
 
 | Operation | Exit / state | Disposition |
 | --------- | ------------ | ----------- |
@@ -347,12 +477,23 @@ resume/fork rows above. No vendor CLI was updated or downgraded.
 | Kernel-handle Ctrl+C retry | controller `0` | Exact process exit `0xC000013A`; no controlled launch |
 | First final-hygiene wrapper | `124` timeout | Reserved `$home` assignment failed and caused read-only enumeration outside the isolated home; no contents/mutation; excluded from report evidence |
 | Corrected bounded hygiene wrapper | `0` | Used `$reinHome`; isolated tree was cache-only |
+| Initial final-closeout build-metadata search | `1` | Exact command `rg -n "ldflags|buildDate|version\.Commit|var \(.*Commit|Commit string" Makefile* .github internal cmd -g "*.go" -g "Makefile*"`; native Windows rejected the positional wildcard; explicit-file retry exited `0`; no build had started |
+| Initial final-closeout ACL-precedent glob search | `1` | Exact search used positional `docs/testing/results/*windows*.md`; native Windows rejected the wildcard; `-g "*windows*.md"` retry exited `0` |
+| Two bounded no-match report searches | `1` each | Exact searches were `rg -n "ACL|permission|owner-only|owner only" <supplemental-report>` and `rg -n "Row 3|row_3|owner-only|native OS|ACL" docs/testing/results -g "*phase2*.md"`; later branch-object reads found the precedent; no files changed |
+| Combined branch/report-history discovery | `1` | Exact command combined `git branch -a --list "*phase2*"` with `git log --all --oneline -- <candidate-report-path> docs/testing/results`; useful output was returned, then `git ls-tree` retries exited `0` |
+| First report-branch ancestry wrapper | parser exit `1` | Inline `git merge-base` expression had a missing parenthesis; corrected bounded wrapper exited `0` and proved ancestry |
+| First report patch | tool verification error; no command exit | Console-mojibake heading text did not match the UTF-8 file; no partial edit occurred; smaller UTF-8-aware patches succeeded |
+| First pre-stage guard | wrapper exit `1` | Numeric `diff_check_exit=0` was incorrectly tested as a boolean false; nothing was staged; boolean-normalized retry exited `0` and staged exactly one report |
+| Row-3 ACL predicate | wrapper `0`, internal predicate false | Over-strict owner-SID-only rule rejected inherited `SYSTEM`/`Administrators`; bounded native-Windows ACL classification retry exited `0` with zero broad/unexpected allows |
+| Row-6 parity attempt 1 | three product exits `0`; raw/SHA unequal | Bounded quiet-window retry; no key was excluded and no verdict was drawn from this attempt |
+| Row-6 parity attempt 2 | three product exits `0`; raw/SHA unequal | Second bounded quiet-window retry; no key was excluded and no verdict was drawn from this attempt |
+| Row-6 parity attempt 3 | three product exits `0`; raw/SHA unequal | One non-controlled key proved live in-window; excluded count `1`; all stable and controlled canonical records equal |
 
 The host PowerShell profile repeatedly emitted PSReadLine prediction warnings
 because command output was redirected. These warnings did not alter captured
 product exit codes.
 
-## 12. Final hygiene
+## 14. Final hygiene
 
 - original checkout HEAD:
   `5c60ec237ddded8e314cdb8c1449080ddc923395`;
@@ -362,6 +503,8 @@ product exit codes.
 - only the requested supplemental report is intended for staging;
 - product files changed: `0`;
 - isolated Reinstate home: cache-only;
+- final row-3/row-6 isolated home: cache-only;
+- final parity evidence: retained outside the repository;
 - target launch process count: `0`;
 - target Windows Terminal window count: `0`;
 - no transcripts, credentials, secrets, absolute private paths, build
@@ -369,7 +512,7 @@ product exit codes.
   the report diff;
 - no cleanup or device reconciliation was performed.
 
-## 13. Targeted transfer block
+## 15. Targeted transfer block
 
 ```text
 PHASE2-WINDOWS-TARGETED-CLOSEOUT-V1
@@ -379,12 +522,14 @@ reinstate_version=v0.1.0-38-g5c60ec2
 report_path=docs/testing/results/2026-07-31-windows-phase2-5c60ec237ddd-targeted.md
 report_branch=test/phase2-5c60ec237ddd-windows-targeted
 native_windows_command_shim=PASS
+row_3_configless_isolation=PASS
+row_6_alias_parity_idempotency=PASS
 row_20_claude_resume=PASS
 row_21_codex_resume=PASS
 row_22_claude_fork=PASS
 row_23_codex_fork=PASS
 row_26_picker=PASS
-targeted_pass=5
+targeted_pass=7
 targeted_partial=0
 targeted_fail=0
 targeted_not_tested=0
