@@ -65,7 +65,7 @@
     "@phosphor-icons/react": "^2.1.10",
     "@tailwindcss/typography": "^0.5.20",
     "@tailwindcss/vite": "^4.3.3",
-    "astro": "^7.1.4",
+    "astro": "^7.1.5",
     "motion": "^12.42.2",
     "satori": "^0.29.0",
     "sharp": "^0.35.3",
