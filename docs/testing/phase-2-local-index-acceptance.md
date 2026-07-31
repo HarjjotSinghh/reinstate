@@ -190,6 +190,8 @@ The deterministic suite must cover:
 - search filters and terminal-control stripping;
 - exact executable/argv/cwd launch plans, missing executable/workspace,
   cancellation, and child failure propagation;
+- on native Windows, stdin/stdout, exact argv, and cwd inheritance through the
+  `.cmd` shim used by the real Claude launch path;
 - `sessions -> search -> inspect -> last --dry-run -> resume --dry-run ->
   fork --dry-run` without config or backend access; and
 - all Phase 1 tests.
@@ -216,8 +218,9 @@ Mandatory results:
 4. Repeating the command does not duplicate records.
 5. `rein list` remains the Phase 1 compatibility command and is not silently
    redefined as the Phase 2 canonical listing command. Its configured behavior
-   is covered by the Phase 1 regression suite; it is not expected to work from
-   this fresh configless home.
+   is covered by the Phase 1 regression suite. From this fresh configless home,
+   `rein list` may still succeed with its distinct Phase 1 output; the required
+   assertion is that it has not been redefined as an alias of `rein sessions`.
 6. The only permitted new Reinstate state is the private derived cache at
    `$REINSTATE_HOME/cache/session-index-v1.sqlite` and its SQLite support
    files while open.
