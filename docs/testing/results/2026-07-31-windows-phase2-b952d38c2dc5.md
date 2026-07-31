@@ -34,7 +34,7 @@ coordinator's cross-device reconciliation.
 | Git version | `2.52.0.windows.1` |
 | Go version | host `go1.26.1 windows/amd64`; gates used `GOTOOLCHAIN=go1.25.12` |
 | Report branch | `test/phase2-b952d38c2dc5-windows-report` |
-| Draft PR | Pending creation after the first report-only push |
+| Draft PR | [#71](https://github.com/HarjjotSinghh/reinstate/pull/71), draft and unmerged |
 
 Provenance: the tested commit was fetched without merge, is reachable from
 `origin/fix/opencode-top-level-timestamps`, is not reachable from
@@ -50,8 +50,8 @@ earlier requested product commit.
 | Binary reports the tested commit | PASS | `rein version --json` returned the full SHA; source-build SHA-256 `69C103248A6D6B0E916A0DD5437C7FE88BAB2DD220210D2ADF25BA33B6693C38` |
 | Product tree was clean before testing | PASS | `git status --short` was empty before the first build and physical gate |
 | Report branch starts at the tested commit | PASS | branch was created directly from the requested product SHA |
-| Report is the only committed change | PENDING W4 FINALIZATION | verified before staging; final commit/push proof is added after PR creation |
-| No secret/transcript/private path was committed | PENDING W4 FINALIZATION | report privacy scan and one-file diff required before push |
+| Report is the only committed change | PASS | staged, commit, merge-base-to-tip, and PR file lists contain this report only |
+| No secret/transcript/private path was committed | PASS | staged and final report privacy scans found no private path, username, token/key pattern, or transcript content |
 
 ## 3. Isolation and local-only proof
 
@@ -335,9 +335,10 @@ the only OpenCode evidence used for row 29.
 - product code unchanged: true
 - secrets/transcripts committed: `false`
 
-Final W4 verification must prove one report file in the staged and
-merge-base-to-tip diff, a clean privacy scan, a draft/unmerged PR, and exact
-local/remote branch parity.
+Final W4 verification proved one report file in the staged,
+merge-base-to-tip, and PR file lists; a clean privacy scan; draft/unmerged PR
+[#71](https://github.com/HarjjotSinghh/reinstate/pull/71); and exact
+local/remote branch parity after the final report update.
 
 ## 14. Device milestone block
 
