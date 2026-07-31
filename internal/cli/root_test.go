@@ -464,14 +464,61 @@ func TestStatusMissingConfigDoesNotLeakAbsolutePath(t *testing.T) {
 	}
 }
 
+// TestSetupCheckJSONPreservesFailureExit asserts the contract that survives any
+// host: an unconfigured home always produces a JSON failure report, and the
+// process exit code always matches the codes carried by the failing checks.
+//
+// It deliberately does not hard-code a single expected exit code. `setup check`
+// probes the vendor CLIs that happen to be installed on the machine, so a host
+// with an untested agent version legitimately reports compatibility (5) where a
+// bare host reports config (3). Pinning one value turned this merge gate into a
+// test of the runner's installed tooling; the mapping itself is pinned
+// deterministically in internal/doctor.
 func TestSetupCheckJSONPreservesFailureExit(t *testing.T) {
 	t.Setenv("REINSTATE_HOME", t.TempDir())
 	out, errb, code := runCLI(t, "reinstate", "setup", "check", "--json")
-	if code != ExitConfig {
-		t.Fatalf("exit=%d want %d stdout=%q stderr=%q", code, ExitConfig, out, errb)
+
+	var report struct {
+		Summary string `json:"summary"`
+		Checks  []struct {
+			Name   string `json:"name"`
+			Status string `json:"status"`
+			Code   int    `json:"code"`
+		} `json:"checks"`
 	}
-	if !strings.Contains(out, `"summary"`) || !strings.Contains(out, `"status": "fail"`) {
-		t.Fatalf("missing JSON failure report: %q", out)
+	if err := json.Unmarshal([]byte(out), &report); err != nil {
+		t.Fatalf("setup check --json is not valid JSON: %v stdout=%q stderr=%q", err, out, errb)
+	}
+	if report.Summary == "" {
+		t.Fatalf("missing JSON summary: %q", out)
+	}
+
+	wantCode := 0
+	configFailed := false
+	for _, check := range report.Checks {
+		if check.Status != "fail" {
+			continue
+		}
+		if check.Name == "config" {
+			configFailed = true
+		}
+		if check.Code == 0 {
+			wantCode = ExitRuntime
+			break
+		}
+		if check.Code > wantCode {
+			wantCode = check.Code
+		}
+	}
+	if !configFailed {
+		t.Fatalf("an unconfigured home must fail the config check: %q", out)
+	}
+	if code != wantCode {
+		t.Fatalf("exit=%d want %d derived from the reported checks; stdout=%q stderr=%q",
+			code, wantCode, out, errb)
+	}
+	if code == ExitOK {
+		t.Fatalf("a failing report must not exit 0: %q", out)
 	}
 }
 
