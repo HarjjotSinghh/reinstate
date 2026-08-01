@@ -63,10 +63,11 @@ Product layers and non-goals: [product-strategy.md](product-strategy.md),
    └────────────┘   └──────────────┘   └────────────┘   └────────────┘
 ```
 
-The continuity stack is the target architecture for later phases. Phase 1
-implements the adapter and encrypted-sync path. Local indexing, workspace
-fingerprints, checkpoints, configuration adapters, executors, and ACP
-integration are roadmap work.
+The continuity stack is delivered incrementally. Stable Phase 1 implements the
+mutation-capable adapter and encrypted-sync path. Phase 2 development adds the
+private local index, read capabilities, and Claude/Codex native launch plans.
+Workspace fingerprints, checkpoints, configuration adapters, and ACP
+integration remain later roadmap work.
 
 **Target flow before execution:** find session, load history, fingerprint
 workspace, check skills/MCP, optionally reconcile supported non-secret
@@ -77,7 +78,7 @@ own the agent loop.
 **Target flow after execution:** capture updates, update the index, and
 optionally sync encrypted state.
 
-### SessionExecutor (target contract)
+### Native execution capability
 
 ```text
 capabilities() → ExecutorCapabilities
@@ -85,8 +86,10 @@ canResume(session) → CompatibilityResult
 launch(preparedSession) → ExecutionHandle
 ```
 
-Implementations: Claude Code, Codex, Gemini CLI, OpenCode; later ACP-compatible
-agents. Reinstate Console may become a thin ACP **client**, not a full harness.
+Phase 2 implements structured native launch plans for Claude Code and Codex.
+Gemini CLI and OpenCode are deliberately read-only in this phase. Later
+executor capabilities and ACP-compatible agents may extend the same boundary.
+Reinstate Console may become a thin ACP **client**, not a full harness.
 
 ## Design principles
 
@@ -105,6 +108,8 @@ agents. Reinstate Console may become a thin ACP **client**, not a full harness.
    per-harness adapters; never mirror one harness's raw config into another.
 9. **Secrets stay local** — configuration profiles contain references, never
    raw API keys, OAuth tokens, cookies, or vendor credential stores.
+10. **Derived state is disposable** — the local index is private, rebuildable,
+    excluded from sync, and never a new source of truth.
 
 ## Pipeline stages
 
@@ -126,7 +131,66 @@ Session adapters and configuration adapters have separate support states. A
 harness may support session discovery before it supports any configuration
 capability.
 
-### 1A. Configuration adapters (target)
+### 1A. Phase 2 local read/index path
+
+Phase 1's `adapter.Adapter` remains the export/restore contract. Phase 2 uses a
+separate read capability so read-only agents never receive dummy mutation
+methods.
+
+```text
+vendor stores
+    │
+    ▼
+local session sources
+Claude │ Codex │ Gemini │ OpenCode
+    │
+    ▼
+$REINSTATE_HOME/cache/session-index-v1.sqlite
+    │
+    ├── sessions / search / inspect
+    └── resolve ──► native launch plan (Claude/Codex)
+```
+
+The local registry is config-independent. It does not reuse configured Phase 1
+project mappings, which would hide unmapped sessions on the same machine.
+
+The pure-Go SQLite index preserves `CGO_ENABLED=0` release builds. It stores:
+
+- composite identity `<agent>:<native-session-id>`;
+- source fingerprint, timestamps, workspace/project, branch, title/name;
+- bounded user-authored prompt text for literal search;
+- known structured file references, message counts, and capability flags.
+
+It excludes assistant messages/reasoning, tool output, environment dumps,
+credentials, auth stores, and unbounded fields. Source fingerprints enable
+incremental refresh. A successfully scanned source removes stale rows; an
+individual malformed session only emits a warning. An incomplete trailing
+JSONL record is ignored while the vendor is appending. A corrupt or
+incompatible derived database rebuilds without modifying vendor files.
+Multiple vendor files carrying the same native session ID are coalesced into
+one deterministic record; the composite identity remains stable across native
+continuations.
+
+Ordering is newest update first, then agent, then native ID. Search is literal,
+case-insensitive, and local; multiple terms are ANDed. Human preview text comes
+only from a user prompt, strips controls/collapses whitespace, and is capped at
+160 Unicode code points.
+
+### 1B. Phase 2 source capabilities
+
+| Source | Read/index | Native resume | Native fork | Encrypted sync |
+| ------ | ---------- | ------------- | ----------- | -------------- |
+| Claude Code | full | `claude --resume ID` | `claude --resume ID --fork-session` | Phase 1 |
+| Codex CLI | full | `codex resume ID` | `codex fork ID` | Phase 1 |
+| Gemini CLI | read-only | no | no | no |
+| OpenCode | read-only through documented JSON listing | no | no | no |
+
+Launch plans are an executable plus argv and cwd, never a shell command string.
+The recorded workspace must exist and the executor must be available before a
+real launch. Reinstate inherits the user's terminal, waits for the child, and
+propagates failure. `--dry-run` exposes the structured plan without launching.
+
+### 1C. Configuration adapters (target)
 
 Later phases add a canonical desired-state profile for MCP servers,
 skills/instructions, hooks/loops, plugins, marketplaces, and safe settings.
@@ -182,8 +246,10 @@ The make-or-break feature for Windows ↔ macOS dual setups:
 1. Pull ciphertext → decrypt → authenticate metadata and payload
 2. Let the matching adapter validate and rewrite known structural path fields
 3. If the destination exists, create a timestamped private backup
-4. Refuse overwrite while the matching agent process is active
-5. Restore with private permissions and atomic replacement
+4. If the exact destination session is active, leave it untouched and restore
+   the incoming snapshot as a distinct idempotent vendor-safe fork
+5. Otherwise restore with private permissions and atomic replacement, refusing
+   a concurrent write detected before final rename
 
 ## What is explicitly not synced
 
@@ -211,7 +277,8 @@ reality without tripling complexity.
 | Language | Go | Single static binary, cross-compile, proven by peers |
 | Crypto | age | Passphrase UX + auditability |
 | Storage | S3-compatible first | R2 free tier; rclone-style backends later |
-| Local state | Versioned JSON | Small, inspectable, atomically replaced |
+| Sync state | Versioned JSON | Small, inspectable, atomically replaced |
+| Local index | Pure-Go SQLite | Incremental queryable derived state; static builds |
 | Remote index | Encrypted JSON manifest | Conditional updates and conflict detection |
 
 ## Related diagrams
@@ -230,6 +297,8 @@ reality without tripling complexity.
 cmd/reinstate/          # CLI entrypoint (install as reinstate + rein)
 internal/
   adapter/              # per-agent adapters
+  sessionindex/         # Phase 2 sources, private index, query, native plans
+  cli/                  # sync commands + Phase 2 local commands/picker
   config/               # local config + path_map
   crypto/               # age encryption
   pathmap/              # portable path rewriting

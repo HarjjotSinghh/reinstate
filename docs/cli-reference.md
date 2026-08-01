@@ -2,6 +2,10 @@
 
 Binary names: `rein` and `reinstate` (identical behavior).
 
+Stable public installers currently provide the `v0.1.0` Phase 1 sync surface.
+The local commands below are Phase 2 current-source development until a signed
+later release passes physical Mac/Windows acceptance.
+
 ## Exit codes
 
 | Code | Meaning |
@@ -18,9 +22,17 @@ Binary names: `rein` and `reinstate` (identical behavior).
 ## Commands
 
 ```text
+rein
 rein version [--json]
 rein doctor [--json] [--self-test]
 rein setup check [--json]
+rein sessions [--agent claude|codex|gemini|opencode|all] [--json]
+rein search QUERY [QUERY...] [--agent ...] [--project FRAGMENT]
+            [--branch FRAGMENT] [--file FRAGMENT] [--limit N] [--json]
+rein inspect AGENT:SESSION_ID [--json]
+rein last [--agent claude|codex] [--project FRAGMENT] [--dry-run] [--json]
+rein resume AGENT:SESSION_ID [--dry-run] [--json]
+rein fork AGENT:SESSION_ID [--dry-run] [--json]
 rein init [--endpoint URL] [--bucket NAME] [--region auto] [--prefix ...]
           [--profile-id UUID] [--project ID=/absolute/local/path] [--yes]
 rein list [--agent claude|codex|all] [--json]
@@ -31,6 +43,70 @@ rein pull [--agent ...] [--session ...|--all] [--dry-run] [--json]
 rein conflicts list|show|resolve ...
 rein completion bash|zsh|fish|powershell
 ```
+
+## Phase 2 local commands
+
+`sessions`, `search`, and `inspect` refresh and read a private derived index
+without requiring `init`, config, storage credentials, a passphrase, keyring
+access, or a backend. The index lives at:
+
+```text
+$REINSTATE_HOME/cache/session-index-v1.sqlite
+```
+
+It is owner-only, never synced, safe to rebuild, and contains bounded
+user-authored prompt text plus known metadata/file fields. It excludes
+assistant messages/reasoning, tool output, environment dumps, credentials, and
+auth stores.
+
+Canonical references use:
+
+```text
+<agent>:<native-session-id>
+```
+
+A bare native ID is accepted only when it resolves to one indexed session.
+Ambiguous IDs fail with a request to use the composite reference. Result
+ordering is deterministic: newest update first, then agent, then native ID.
+
+Search is literal and case-insensitive. Multiple query terms are ANDed.
+`sessions` and `search` identify metadata without printing transcript passages.
+`inspect` may show a terminal-safe, whitespace-collapsed first-user-prompt
+preview capped at 160 Unicode code points; Phase 2 has no full-transcript dump.
+
+`resume`, `fork`, and `last` build a structured executable/argv/cwd plan and
+delegate execution to the source vendor:
+
+| Agent | Resume | Fork |
+| ----- | ------ | ---- |
+| Claude Code | `claude --resume ID` | `claude --resume ID --fork-session` |
+| Codex | `codex resume ID` | `codex fork ID` |
+| Gemini CLI | read-only | read-only |
+| OpenCode | read-only | read-only |
+
+Review the plan with `--dry-run --json`. A real launch inherits the terminal,
+waits for the child, and propagates failure. JSON mode requires `--dry-run` for
+`resume`, `fork`, and `last`, so native child output cannot corrupt the JSON
+document. A missing executable/workspace fails before launch. Read-only agents
+refuse resume/fork with compatibility exit `5`.
+
+On a TTY, bare `rein` refreshes and opens the numbered switcher:
+
+```text
+/text       filter
+i NUMBER    inspect
+f NUMBER    fork
+NUMBER      resume
+q           cancel
+```
+
+On a non-TTY, bare `rein` exits promptly with usage code `2` and a
+`rein sessions --json` hint.
+
+`rein list` remains the Phase 1 compatibility command used by sync scripts.
+`rein sessions` is the canonical config-independent local listing command.
+
+## Phase 1 encrypted sync
 
 Interactive encryption uses a hidden terminal prompt. Non-interactive
 automation must open a secret file/pipe and set `REINSTATE_PASSPHRASE_FD` to

@@ -1,28 +1,72 @@
 # Getting Started
 
-Reinstate synchronizes Claude Code and Codex CLI sessions across your machines
-through client-side encrypted, user-owned object storage.
+Reinstate is the continuity layer for coding-agent work. Its current Phase 2
+development surface finds, searches, inspects, resumes, and forks local
+sessions without configuration or cloud access. Stable `v0.1.0` synchronizes
+Claude Code and Codex CLI sessions across machines through client-side
+encrypted, user-owned object storage.
 
-> **Release status:** stable. The public installers pin `v0.1.0`. The native
+> **Release status:** the public installers pin stable `v0.1.0`. The native
 > Mac/Windows
 > [Phase 1 acceptance runbook](testing/phase-1-mac-windows-acceptance.md) passed
-> on real hardware for the candidate whose code this release ships unchanged;
-> the evidence is in [docs/testing/results](testing/results/).
+> all 23 mandatory RC8 rows on real hardware; the stable release then fixed and
+> re-verified the recorded non-blocking fork findings. Evidence is in
+> [docs/testing/results](testing/results/). Phase 2 is
+> implemented on the current development branch, but its physical Mac/Windows
+> acceptance remains pending and it is not in the v0.1.0 installers.
 
 ## Prerequisites
 
+For local Phase 2 commands:
+
+- macOS, native 64-bit Windows, Linux, or WSL2;
+- Go 1.25.12 or newer when building the current source; and
+- Claude Code and/or Codex CLI. Gemini CLI and OpenCode are read-only Phase 2
+  sources when installed.
+
+For optional encrypted multi-device sync, also provide:
+
 - macOS, native 64-bit Windows, Linux, or WSL2
-- Claude Code and/or Codex CLI
 - an S3-compatible bucket you control
 - the endpoint, bucket name, access-key ID, and secret access key
 - one long encryption passphrase that you can enter privately on every device
 
-Cloudflare R2 is the recommended Phase 1 backend. Reinstate does not need your
-Anthropic or OpenAI account credentials.
+Cloudflare R2 is the recommended Phase 1 backend. Local indexing does not need
+a backend, and Reinstate never needs your Anthropic, OpenAI, Google, or OpenCode
+account credentials.
 
 ## Install
 
-### macOS, Linux, or WSL2
+### Build the current Phase 2 source
+
+From this checkout:
+
+```sh
+make build
+./bin/rein version --json
+```
+
+Both `./bin/rein` and `./bin/reinstate` are the same binary. Use an isolated
+absolute home while evaluating the unreleased local index:
+
+```sh
+export REINSTATE_HOME="$HOME/.reinstate-phase2-local"
+```
+
+Native Windows PowerShell:
+
+```powershell
+New-Item -ItemType Directory -Force .\bin | Out-Null
+go build -o .\bin\rein.exe .\cmd\reinstate
+$env:REINSTATE_HOME = Join-Path $HOME ".reinstate-phase2-local"
+.\bin\rein.exe version --json
+```
+
+Do not use the stable public installer as evidence for an untagged Phase 2
+commit. A later signed release candidate will update the installer pin before
+physical certification.
+
+### Install stable v0.1.0 for encrypted sync on macOS, Linux, or WSL2
 
 ```sh
 curl -fsSL https://reinstate.dev/install.sh | sh
@@ -32,7 +76,7 @@ The default installation directory is `~/.local/bin`. The bootstrap prints an
 absolute `rein init` command that works immediately and adds the directory to
 the appropriate shell startup file for new terminals.
 
-### Native Windows PowerShell
+### Install stable v0.1.0 for encrypted sync on native Windows PowerShell
 
 ```powershell
 irm https://reinstate.dev/install.ps1 | iex
@@ -84,14 +128,82 @@ Get-Content $Installer
 
 ```sh
 rein version --json
+rein sessions --json
 rein setup check
 ```
 
-Before `init`, `setup check` should identify only that the Reinstate config is
-missing. Platform, keyring, or installed-agent compatibility failures need to
-be resolved before synchronization.
+`rein sessions --json` is configless and should refresh the local derived
+index. Before `init`, `setup check` should identify only that the sync config
+is missing. That is expected for local-only use; platform, keyring, or
+installed-agent compatibility failures need to be resolved before encrypted
+synchronization.
 
-## Configure the first device
+## Use the configless local index
+
+No S3/R2 values, credentials, keyring entry, encryption passphrase, or
+`config.toml` are required:
+
+```sh
+rein sessions
+rein search "stripe webhook retry"
+rein search "webhook retry" --agent claude --branch main
+rein inspect claude:SESSION_ID
+rein last --dry-run
+rein resume codex:SESSION_ID --dry-run
+rein fork claude:SESSION_ID --dry-run
+```
+
+Session references are canonical composite identities:
+
+```text
+claude:<native-session-id>
+codex:<native-session-id>
+gemini:<native-session-id>
+opencode:<native-session-id>
+```
+
+A bare native ID works only when exactly one indexed agent owns it. An
+ambiguous ID fails and asks for the composite form.
+
+Search is literal and case-insensitive. Multiple terms are ANDed. Narrow with
+`--agent`, `--project`, `--branch`, `--file`, and `--limit`. `sessions` and
+`search` return metadata, not transcript passages. `inspect` may show a
+whitespace-collapsed preview from a user-authored prompt capped at 160 Unicode
+code points; it never exposes a full-transcript mode in Phase 2.
+
+Review launch plans before starting a vendor:
+
+```sh
+rein last --dry-run --json
+rein resume claude:SESSION_ID --dry-run --json
+rein fork codex:SESSION_ID --dry-run --json
+```
+
+Reinstate uses an executable/argument array and the recorded working directory,
+not a shell command string. Remove `--dry-run` to inherit the current terminal
+and launch the same vendor. Gemini and OpenCode remain read-only and refuse
+resume/fork.
+
+On a TTY, bare `rein` opens the numbered switcher:
+
+```text
+/text       filter
+i NUMBER    inspect
+f NUMBER    fork
+NUMBER      resume
+q           cancel
+```
+
+For scripts, use `rein sessions --json`. Bare `rein` on a non-TTY exits
+promptly with that hint instead of waiting for input or selecting a session.
+
+The derived index lives at
+`$REINSTATE_HOME/cache/session-index-v1.sqlite`, is owner-only, never enters
+encrypted sync, and is safe to rebuild. It contains bounded user-authored
+prompt search text and metadata—not assistant reasoning/messages, tool output,
+environment dumps, credentials, or auth stores.
+
+## Configure the first sync device
 
 Use the same canonical project ID on every device but map it to each device's
 real absolute path:
@@ -211,9 +323,22 @@ Use the
 to test both installers, both agent prompts, bidirectional sync, backups,
 conflicts, wrong-passphrase refusal, and ciphertext-only remote storage.
 
+## Phase 2 sign-off
+
+The release-neutral
+[local-index acceptance runbook](testing/phase-2-local-index-acceptance.md)
+and [parallel operator prompts](testing/phase-2-agent-verification-prompts.md)
+cover configless behavior, search/preview privacy, native resume/fork, the
+interactive switcher, read-only adapters, and Phase 1 regression. Automated
+implementation evidence may be recorded now; physical native macOS and Windows
+reports are still pending.
+
 ## Safety defaults
 
 - remote manifests and snapshots are encrypted;
+- the local index is private derived state and never enters sync;
+- local search excludes assistant messages/reasoning, tool output, environment
+  dumps, and auth stores;
 - auth and credential files are hard-excluded;
 - pull validates before mutation and backs up existing targets;
 - divergent sessions create conflict records instead of silent overwrite;

@@ -4,10 +4,12 @@
 
 The **continuity layer for coding-agent work**. Phase 1 implements encrypted,
 bring-your-own-storage sync for same-vendor Claude Code and Codex sessions.
-Universal local search, verified resume, and cross-agent handoffs are later
-phases. A later universal configuration layer will also reconcile supported
-MCP servers, skills, hooks/loops, plugins, marketplaces, and safe settings
-across harnesses and devices.
+The current Phase 2 development branch adds universal local indexing, literal
+search, metadata inspection, and same-vendor resume/fork without cloud
+configuration. Verified resume and cross-agent handoffs remain later phases. A
+later universal configuration layer will reconcile supported MCP servers,
+skills, hooks/loops, plugins, marketplaces, and safe settings across harnesses
+and devices.
 
 Spine: *Reinstate is not another place to code — it makes every place you code continuous.*
 
@@ -28,6 +30,23 @@ reinstate version   # identical behavior
 
 Config and data live under `~/.reinstate/` either way.
 
+## Do local search and resume require `rein init` or a bucket?
+
+**No.** On the Phase 2 development branch:
+
+```bash
+rein sessions
+rein search "webhook retry"
+rein inspect claude:SESSION_ID
+rein resume claude:SESSION_ID --dry-run
+```
+
+These commands use a private derived index at
+`$REINSTATE_HOME/cache/session-index-v1.sqlite`. They do not need a sync
+profile, storage credentials, an encryption passphrase, keyring access, or a
+network backend. Stable `v0.1.0` public installers contain the Phase 1 sync
+surface; Phase 2 physical acceptance and release are still pending.
+
 ## Why not just use git?
 
 Git is **source** truth. Sessions are **context** truth — the reasoning trail,
@@ -45,8 +64,22 @@ translation. See [product-strategy.md](product-strategy.md).
 ## Do I need two computers?
 
 **No.** Multi-device sync is the flagship wedge, but one machine with multiple
-agents, sessions, projects, or worktrees is a first-class user. Phase 2+ local
-index/search/resume does not require remote storage.
+agents, sessions, projects, or worktrees is a first-class user. Phase 2 local
+index/search/resume is built for that workflow and does not require remote
+storage.
+
+## Does local search upload or semantically analyze my prompts?
+
+**No.** Search is literal, case-insensitive, and local. The index stores bounded
+user-authored prompt text and known metadata/file references with owner-only
+permissions. It excludes assistant messages/reasoning, tool output,
+environment dumps, credentials, and auth stores. `search` does not print the
+matching passage, and `inspect` caps its terminal-safe user preview at 160
+Unicode code points.
+
+User prompts can themselves contain sensitive text. The local index is not a
+redaction or DLP product, and a compromised local machine remains outside the
+threat model.
 
 ## Is Reinstate another ADE / agent IDE?
 
@@ -89,13 +122,17 @@ passphrase in a password manager.
 
 Session files remain local, but the current `status`, `diff`, `push`, and `pull`
 commands read the remote manifest and need access to your storage backend.
-Offline indexing and search are Phase 2 work.
+Phase 2 `sessions`, `search`, and `inspect` work offline and without sync
+configuration. Native resume/fork needs only the local vendor executable and
+recorded workspace.
 
 ## Windows + Mac?
 
-It is the primary design target, and path remapping is implemented. Exact
-native Windows, macOS amd64, WSL2, and two-device release-candidate acceptance
-are still open gates; see the [roadmap](../ROADMAP.md).
+It is the primary design target. Stable Phase 1 path remapping passed its
+23-row physical RC8 matrix on native macOS arm64 and Windows 11 amd64. Phase 2
+local-index physical acceptance on those two devices is a separate pending
+gate; macOS amd64 and WSL2 evidence is reported separately rather than
+fabricated.
 
 ## Is this affiliated with Anthropic / OpenAI / Google / xAI?
 
@@ -103,8 +140,10 @@ are still open gates; see the [roadmap](../ROADMAP.md).
 
 ## Production ready?
 
-Pre-1.0. See [ROADMAP.md](../ROADMAP.md) and [CHANGELOG.md](../CHANGELOG.md).
-Use with backups; report bugs via GitHub Issues.
+Pre-1.0. Stable `v0.1.0` completed Phase 1. Phase 2 implementation is in
+progress and physical certification is pending. See
+[ROADMAP.md](../ROADMAP.md) and [CHANGELOG.md](../CHANGELOG.md). Use with
+backups; report bugs via GitHub Issues.
 
 ## How do I contribute?
 

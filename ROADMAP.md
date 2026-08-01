@@ -2,7 +2,7 @@
 
 > Status legend: ✅ done · 🚧 in progress · 📋 planned · 💭 exploring · ❌ won't do (for now)
 
-Last updated: **2026-07-27** · Maintainer: [Harjot Singh Rana](https://github.com/HarjjotSinghh)
+Last updated: **2026-07-30** · Maintainer: [Harjot Singh Rana](https://github.com/HarjjotSinghh)
 
 This roadmap is a living document. Priorities follow real activation signals —
 especially **successfully resumed tasks per active user** — and vendor format
@@ -73,7 +73,7 @@ Not “number of devices connected.” That includes one-laptop and ten-device u
 
 ---
 
-## Phase 0 — Foundation 🚧
+## Phase 0 — Foundation ✅
 
 **Gate:** contracts, diagnostics, installers, fixtures, CI/release trust, and
 honest docs.
@@ -88,18 +88,21 @@ honest docs.
 | Synthetic fixtures + secret scanner | ✅ |
 | Hard CI/release definitions + local GoReleaser snapshot | ✅ |
 | Checksum-verifying installers + tested setup prompts | ✅ |
-| Clean native Windows, macOS amd64, and WSL2 acceptance | 🚧 |
+| Native Mac/Windows release acceptance | ✅ |
 
 ---
 
-## Phase 1 — Encrypted session sync (Claude + Codex) 🚧
+## Phase 1 — Encrypted session sync (Claude + Codex) ✅
 
 **Gate:** install, `init`, and same-vendor Claude Code (then Codex) resume across
 OS with encryption on and credentials never synced.
 
-*Status note (2026-07-25): implementation and local synthetic/macOS-arm64
-verification are green. Native Windows, macOS amd64, WSL2, two-device vendor
-resume, remote CI, and public SemVer release certification remain gates.*
+*Closed 2026-07-30 in stable `v0.1.0`. The RC8 physical run passed all 23
+mandatory rows on native macOS arm64 and Windows 11 amd64, including both
+same-vendor directions, encrypted remote storage, live-session safety,
+backups, no-op behavior, and keep-both recovery. The stable release then fixed
+the non-blocking fork-identity/repeat-write findings and re-verified the
+affected behavior before publication.*
 
 | Item | Status |
 | ---- | ------ |
@@ -111,37 +114,45 @@ resume, remote CI, and public SemVer release certification remain gates.*
 | Atomic restore + backups + locks | ✅ |
 | Claude Code adapter implementation + synthetic fixtures | ✅ |
 | Codex adapter implementation + synthetic fixtures | ✅ |
-| Exact-version native device resume matrix | 🚧 |
+| Exact-version native Mac/Windows resume matrix | ✅ |
 | Complete CLI surface for sync + human docs | ✅ |
-| Public `v0.1.0` release gates (signed artifacts, full OS matrix CI) | 🚧 |
+| Public `v0.1.0` release gates (signed artifacts, full OS matrix CI) | ✅ |
 
 ---
 
-## Phase 2 — Local universal session index 📋
+## Phase 2 — Local universal session index 🚧
 
 **No cloud dependency.** A single-device developer gets value in under five minutes.
 
 **Gate:** `rein` / `reinstate` with no remote config still finds and resumes
 local Claude (then Codex) sessions.
 
+*Status note (2026-07-30): implementation and automated merge gates are green
+on `feat/phase2-local-index`, including configless CLI E2E and required
+cross-builds. The release-neutral acceptance runbook, parallel Mac/Windows
+operator prompts, and report schema are defined. Physical native macOS and
+Windows acceptance is still pending and must not be inferred from Phase 1.*
+
 | Item | Status |
 | ---- | ------ |
-| Local session index (all supported agents on this machine) | 📋 |
-| `rein` / `reinstate` interactive session switcher (TUI/CLI picker) | 📋 |
-| `rein sessions` · `rein search` · `rein inspect` · `rein last` | 📋 |
-| `rein resume` (native agent launch by default) | 📋 |
-| `rein fork` | 📋 |
-| Search by prompt fragment, file, branch, project, agent | 📋 |
-| Preview metadata (not full secret-leaking transcript dumps by default) | 📋 |
-| Claude Code fully indexed first; then Codex | 📋 |
-| Gemini CLI + OpenCode discovery (read path) | 📋 |
+| Private derived local session index | 🚧 |
+| `rein` / `reinstate` interactive numbered switcher | 🚧 |
+| `rein sessions` · `rein search` · `rein inspect` · `rein last` | 🚧 |
+| `rein resume` (same-vendor native launch) | 🚧 |
+| `rein fork` (same-vendor native fork) | 🚧 |
+| Literal search by prompt, file, branch, project, agent | 🚧 |
+| Bounded metadata preview; no transcript dumps | 🚧 |
+| Claude Code + Codex full local capabilities | 🚧 |
+| Gemini CLI + OpenCode read-only discovery | 🚧 |
+| Fixture, corruption, privacy, execution, and Phase 1 regression gates | 🚧 |
+| Physical native macOS + Windows acceptance | 📋 |
 
 Example:
 
 ```bash
 rein search "stripe webhook retry"
-rein last
-rein resume <session-id>
+rein last --dry-run
+rein resume claude:<session-id>
 ```
 
 ---
@@ -387,9 +398,9 @@ handoffs attempted, config mismatches, remote resumes.
 ## Stable release policy
 
 - **Pre-1.0:** minor versions may include breaking CLI/config changes (CHANGELOG)
-- **`v0.1.0`:** Phase 1 public — Claude + Codex session sync, path remap,
-  security model enforced, and every required native cross-device resume row
-  verified on one exact release candidate
+- **`v0.1.0`:** Phase 1 public and complete — Claude + Codex session sync, path
+  remap, security model enforced, and every required native cross-device
+  resume row verified on one exact release candidate
 - **Later minors:** Phase 2+ land behind flags or clear SemVer notes
 - Releases: signed GitHub tags, checksums, SBOMs, source archive, and artifact
   attestations; see [RELEASING.md](RELEASING.md)
