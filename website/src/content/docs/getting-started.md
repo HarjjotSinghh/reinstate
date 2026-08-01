@@ -6,8 +6,8 @@ order: 1
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.1.0"
-updatedAt: 2026-07-27
+version: "v0.2.0-rc.1"
+updatedAt: 2026-08-01
 tags: ["installation", "session-sync", "claude-code", "codex", "s3"]
 targetQuery: "how to sync coding-agent sessions across devices"
 searchIntent: "how-to"
@@ -15,13 +15,13 @@ draft: false
 noindex: false
 ---
 
-Reinstate synchronizes same-vendor Claude Code and Codex CLI sessions across
-your machines through client-side-encrypted, user-owned S3-compatible storage.
+Reinstate finds and continues local coding-agent sessions without setup, and
+optionally synchronizes same-vendor Claude Code and Codex CLI sessions across
+machines through client-side-encrypted, user-owned S3-compatible storage.
 
-> **Release status:** stable. The public installers pin `v0.1.0`. Two-device
-> Phase 1 acceptance passed on macOS arm64 and native Windows amd64. macOS
-> amd64, Linux, and WSL2 are installer-compatible but were not part of that
-> acceptance run.
+> **Release status:** prerelease. The public installers pin `v0.2.0-rc.1`.
+> Phase 2 development acceptance passed on macOS arm64 and native Windows
+> amd64; exact tagged-artifact acceptance remains open before stable promotion.
 
 ## Prerequisites
 
@@ -48,7 +48,7 @@ Native Windows PowerShell:
 irm https://reinstate.dev/install.ps1 | iex
 ```
 
-Both bootstraps pin `v0.1.0`, verify the exact tagged canonical installer
+Both bootstraps pin `v0.2.0-rc.1`, verify the exact tagged canonical installer
 and release binary, install without elevation, configure a user-local PATH, and
 print the next command. They install the CLI only; interactive configuration
 begins when you run `rein init`.
@@ -67,6 +67,18 @@ Verify:
 rein version --json
 rein setup check
 ```
+
+Local discovery needs no initialization or cloud account:
+
+```sh
+rein sessions
+rein search "webhook retry"
+rein inspect claude:SESSION_ID
+rein resume claude:SESSION_ID --dry-run
+```
+
+These commands use a private derived local index. Native resume and fork stay
+same-vendor; Gemini CLI and OpenCode records are read-only in Phase 2.
 
 Before initialization, `setup check` should report only the missing Reinstate
 config. Platform, keyring, or agent-compatibility failures are blockers.

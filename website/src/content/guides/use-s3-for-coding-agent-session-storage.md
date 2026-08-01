@@ -30,7 +30,7 @@ estimatedMinutes: 15
 estimatedTaskMinutes: 35
 prerequisites:
   - "An AWS account and authority to create a private S3 bucket, IAM policy, and access key"
-  - "Reinstate v0.1.0 on a compatible device with Claude Code or Codex CLI"
+  - "Reinstate v0.2.0-rc.1 on a compatible device with Claude Code or Codex CLI"
   - "A harmless session in a repository whose absolute local path you know"
   - "A long encryption passphrase that will be entered privately and is not stored"
 howToSteps:
@@ -53,7 +53,7 @@ howToSteps:
 
 ## What this guide configures
 
-This guide connects Reinstate `v0.1.0` to an existing Amazon S3 bucket.
+This guide connects Reinstate `v0.2.0-rc.1` to an existing Amazon S3 bucket.
 Amazon Web Services owns the bucket, Region, IAM identity, access key, public
 access settings, retention, and billing. Reinstate owns the local project
 mapping, encrypted profile manifest, encrypted session snapshots, and
@@ -92,7 +92,7 @@ not by first-device initialization.
   credentials where possible.
 - Session resume remains **same-vendor**: Claude Code to Claude Code and Codex
   CLI to Codex CLI.
-- Reinstate v0.1.0 is a stable pre-1.0 release. Two-device Phase 1 acceptance
+- Reinstate v0.2.0-rc.1 is a pre-1.0 release candidate. Two-device Phase 1 acceptance
   passed on macOS arm64 and native Windows amd64. This guide is not itself
   acceptance evidence.
 
@@ -249,7 +249,7 @@ rein version --json
 rein setup check
 ```
 
-**Expected result:** the pinned installer reports `v0.1.0`. Before
+**Expected result:** the pinned installer reports `v0.2.0-rc.1`. Before
 initialization, `rein setup check` exits with code `3` and reports
 `config missing`. Resolve a platform, keyring, or installed-agent
 compatibility failure separately; a working S3 bucket cannot make an

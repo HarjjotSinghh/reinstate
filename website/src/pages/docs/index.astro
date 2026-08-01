@@ -11,14 +11,15 @@ const docs = await getOrderedDocs();
   title="Documentation"
   description="Learn how to install Reinstate, sync Claude Code and Codex sessions, remap project paths, and keep credentials out of encrypted storage."
   path="/docs"
-  updatedAt={new Date('2026-07-27')}
+  updatedAt={new Date('2026-08-01')}
   tags={['reinstate', 'documentation', 'coding-agent-session-sync']}
   article={false}
 >
   <p>
-    Reinstate's current release-candidate CLI syncs same-vendor Claude Code and Codex
-    sessions between devices through client-side-encrypted S3-compatible storage.
-    Universal configuration, cross-agent handoffs, and local session search remain roadmap work.
+    Reinstate's current release-candidate CLI finds local Claude Code, Codex, Gemini CLI,
+    and OpenCode sessions without configuration. It also syncs same-vendor Claude Code and
+    Codex sessions between devices through client-side-encrypted S3-compatible storage.
+    Universal configuration and cross-agent handoffs remain roadmap work.
   </p>
   <p>
     Prefer the short CLI alias <code>rein</code>. Full name <code>reinstate</code> is the same binary.

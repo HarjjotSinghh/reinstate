@@ -14,7 +14,7 @@ const description =
   {description}
   path="/about/reinstate"
   eyebrow="About Reinstate"
-  answer="Reinstate is an open-source continuity layer for coding-agent work. Today, its Phase 1 release candidate moves encrypted Claude Code and Codex sessions between configured devices; later phases add local search, verified resume, and explicit portable handoffs without turning Reinstate into another coding environment."
+  answer="Reinstate is an open-source continuity layer for coding-agent work. Stable Phase 1 moves encrypted Claude Code and Codex sessions between configured devices; the Phase 2 candidate adds configless local search and same-vendor native resume/fork. Verified resume and explicit portable handoffs remain later work."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'About Reinstate', path: '/about/reinstate' },
@@ -44,13 +44,15 @@ const description =
     <li>Canonical project identity and macOS ↔ Windows structural path remapping.</li>
     <li>Credential exclusions, OS-keyring storage, restore backups, and atomic writes.</li>
     <li>Checksum-verifying installers and compatibility checks that fail closed.</li>
+    <li>Configless local indexing, literal search, bounded inspect, and a TTY switcher.</li>
+    <li>Native same-vendor Claude Code/Codex resume and fork; read-only Gemini CLI/OpenCode discovery.</li>
   </ul>
   <div class="pc-callout">
-    <p>“Available” now means a stable pre-1.0 release.</p>
+    <p>“Available” now includes a signed pre-1.0 release candidate.</p>
     <p>
-      The implementation and local verification are green, but native Windows, macOS amd64, WSL2,
-      physical two-device resume, remote CI, and stable public-release certification remain gates
-      before v0.1.0.
+      Phase 2 development acceptance is green on macOS arm64 and native Windows, but the exact
+      v0.2.0-rc.1 installed artifacts must pass before stable promotion. macOS amd64 and WSL2 remain
+      separately reported targets rather than inferred support.
     </p>
   </div>
 
@@ -59,7 +61,7 @@ const description =
       <dt>Latest public source tag</dt>
       <dd>
         <a href={product.currentReleaseUrl}>{product.currentRelease}</a>
-        (stable pre-1.0 release)
+        (pre-1.0 release candidate)
       </dd>
     </div>
     <div>
@@ -72,7 +74,7 @@ const description =
     </div>
     <div>
       <dt>Supported operating systems</dt>
-      <dd>{product.supportedOperatingSystems.join(' and ')} targets; stable acceptance open</dd>
+      <dd>{product.supportedOperatingSystems.join(' and ')} targets; candidate artifact acceptance open</dd>
     </div>
   </dl>
 
@@ -90,12 +92,12 @@ const description =
         <tr>
           <td>1</td>
           <td>Encrypted same-vendor Claude Code and Codex session sync</td>
-          <td>Release candidate</td>
+          <td>Stable v0.1.0</td>
         </tr>
         <tr>
           <td>2</td>
           <td>Local universal session index, search, inspect, resume, and last-session commands</td>
-          <td>Planned</td>
+          <td>v0.2.0-rc.1 candidate</td>
         </tr>
         <tr>
           <td>3</td>
@@ -116,9 +118,8 @@ const description =
     </table>
   </div>
   <p>
-    Roadmap work is not present-day functionality. In particular, Reinstate does not yet provide
-    cross-agent transcript translation, a local session search interface, environment repair,
-    configuration sync, or team handoffs.
+    Roadmap work is not present-day functionality. In particular, Reinstate does not provide
+    cross-agent transcript translation, environment repair, configuration sync, or team handoffs.
   </p>
 
   <h2 id="not-an-ade">What Reinstate is not</h2>

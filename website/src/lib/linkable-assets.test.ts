@@ -106,8 +106,12 @@ describe('evidence-safe linkable assets', () => {
     expect(agentVersionHistory.map(({ version }) => version)).toEqual(
       releaseHistory.map(({ version }) => version),
     );
-    expect(agentVersionHistory).toHaveLength(9);
-    expect(new Set(agentVersionHistory.map(({ source }) => source)).size).toBe(9);
+    expect(agentVersionHistory).toHaveLength(10);
+    expect(new Set(agentVersionHistory.map(({ source }) => source)).size).toBe(10);
+    expect(
+      agentVersionHistory.find(({ version }) => version === 'v0.2.0-rc.1')
+        ?.rangeChange,
+    ).toContain('Codex CLI range from 0.133.0–0.145.0 to 0.133.0–0.146.0');
     expect(
       agentVersionHistory.find(({ version }) => version === 'v0.1.0-rc.3')
         ?.rangeChange,

@@ -6,8 +6,8 @@ order: 13
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.1.0"
-updatedAt: 2026-07-27
+version: "v0.2.0-rc.1"
+updatedAt: 2026-08-01
 tags: ["pull", "restore", "native-resume", "backup", "conflicts"]
 targetQuery: "restore a coding agent session with Reinstate"
 searchIntent: "how-to"
@@ -27,7 +27,7 @@ native command.
 
 ## Prerequisites
 
-- Reinstate `v0.1.0` installed and initialized on the destination.
+- Reinstate `v0.2.0-rc.1` installed and initialized on the destination.
 - The source profile's exact `profile_id`, storage bucket, prefix, and
   encryption passphrase.
 - The same canonical project ID mapped to this device's real absolute path.

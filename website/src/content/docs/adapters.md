@@ -6,8 +6,8 @@ order: 3
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.1.0"
-updatedAt: 2026-07-27
+version: "v0.2.0-rc.1"
+updatedAt: 2026-08-01
 tags: ["adapters", "claude-code", "codex", "same-vendor-resume"]
 targetQuery: "Reinstate supported coding agents"
 searchIntent: "agent-specific"
@@ -15,28 +15,29 @@ draft: false
 noindex: false
 ---
 
-Reinstate's implemented adapters discover, export, and restore vendor-native
-Claude Code and Codex sessions without translating sessions across agents.
-Same-vendor resume remains the only native resume path.
+Reinstate's adapters index vendor-native Claude Code, Codex, Gemini CLI, and
+OpenCode sessions without translating sessions across agents. Claude Code and
+Codex additionally support encrypted export/restore and native same-vendor
+resume/fork; Gemini CLI and OpenCode remain read-only.
 
-## Current release-candidate scope
+## Current v0.2.0-rc.1 scope
 
-| Adapter | Sessions | Path remapping | Universal configuration | Release state |
-| ------- | -------- | -------------- | ----------------------- | ------------- |
-| Claude Code | Implemented | Implemented | Post–Phase 1 | Native acceptance in progress |
-| OpenAI Codex CLI | Implemented | Implemented | Post–Phase 1 | Native acceptance in progress |
+| Adapter | Local index | Native resume/fork | Encrypted sync | Universal configuration |
+| ------- | ----------- | ------------------ | -------------- | ----------------------- |
+| Claude Code | Full | Same-vendor | Supported | Later |
+| OpenAI Codex CLI | Full | Same-vendor | Supported | Later |
+| Gemini CLI | Read-only | No | No | Later |
+| OpenCode | Read-only | No | No | Later |
 
-The stable v0.1.0 release has not completed every native operating-system
-and physical two-device gate. Check the
-[roadmap](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md)
-before treating a platform and agent-version combination as certified.
+Development acceptance passed all 30 required Phase 2 rows on macOS arm64 and
+native Windows. Exact `v0.2.0-rc.1` installed-artifact acceptance remains open;
+check the [roadmap](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md)
+before treating the candidate as stable.
 
 ## Later adapters
 
 | Adapter | Status |
 | ------- | ------ |
-| Gemini CLI | Planned after Phase 1 |
-| OpenCode | Planned after Phase 1 |
 | Cursor | Exploring |
 | Grok Build | Exploring |
 
@@ -69,10 +70,13 @@ snapshots; append-aware delta transfer remains roadmap work.
 
 ## What do adapters exclude?
 
-Adapters hard-exclude authentication material, credentials, tokens, caches,
-logs, and regenerable dependencies. Future configuration profiles may carry
-secret references, but never raw secret values. Tests use deterministic
-synthetic fixtures that are scanned for secrets.
+Sync adapters hard-exclude authentication material, credentials, tokens,
+caches, logs, and regenerable dependencies. The local index additionally
+excludes assistant reasoning/messages, tool output, environment dumps, and
+auth stores while retaining bounded user-authored search text and metadata.
+Future configuration profiles may carry secret references, but never raw
+secret values. Tests use deterministic synthetic fixtures that are scanned for
+secrets.
 
 ## Contributing an adapter
 

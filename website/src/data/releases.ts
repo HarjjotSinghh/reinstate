@@ -1,5 +1,11 @@
 export const releaseHistory = [
   {
+    version: 'v0.2.0-rc.1',
+    date: '2026-08-01',
+    summary:
+      'Phase 2 local index, literal search, metadata inspect, switcher, and same-vendor resume/fork release candidate.',
+  },
+  {
     version: 'v0.1.0',
     date: '2026-07-30',
     summary:
@@ -54,6 +60,5 @@ export const releaseHistory = [
 ] as const;
 
 export function releaseAnchor(version: string): string {
-  const candidate = version.match(/-rc\.(\d+)$/)?.[1];
-  return candidate ? `rc${candidate}` : version.replace(/[^a-z0-9]+/gi, '-');
+  return version.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
 }

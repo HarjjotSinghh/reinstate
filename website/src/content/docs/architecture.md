@@ -6,8 +6,8 @@ order: 2
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.1.0"
-updatedAt: 2026-07-27
+version: "v0.2.0-rc.1"
+updatedAt: 2026-08-01
 tags: ["architecture", "session-sync", "encryption", "path-remapping", "s3"]
 targetQuery: "how Reinstate works"
 searchIntent: "evaluation"

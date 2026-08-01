@@ -6,8 +6,8 @@ order: 15
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.1.0"
-updatedAt: 2026-07-27
+version: "v0.2.0-rc.1"
+updatedAt: 2026-08-01
 tags: ["limitations", "release-candidate", "compatibility", "same-vendor-resume", "roadmap"]
 targetQuery: "Reinstate limitations"
 searchIntent: "evaluation"
@@ -15,17 +15,16 @@ draft: false
 noindex: false
 ---
 
-Reinstate `v0.1.0` is a pre-1.0 continuity layer for encrypted,
-same-vendor Claude Code and Codex session sync. It is not yet a certified
-stable release, local universal session index, cross-agent translator,
-repository synchronizer, remote desktop, coding harness, or universal agent
-configuration system.
+Reinstate `v0.2.0-rc.1` is a pre-1.0 continuity layer with configless local
+session indexing and encrypted same-vendor Claude Code and Codex session sync.
+It is not yet a certified stable release, cross-agent translator, repository
+synchronizer, remote desktop, coding harness, or universal agent configuration
+system.
 
-> **Release gates remain open:** current implementation and local synthetic and
-> macOS-arm64 verification are green, while native Windows, macOS amd64, WSL2,
-> physical two-device resume, remote CI, and stable-release certification still
-> require evidence. This page does not convert planned or locally tested work
-> into a certified platform claim.
+> **Release gates remain open:** development acceptance passed on macOS arm64
+> and native Windows, while exact `v0.2.0-rc.1` installed-artifact acceptance,
+> macOS amd64, WSL2, and stable promotion still require evidence. This page
+> does not convert source-build evidence into a stable platform claim.
 
 ## Prerequisites
 
@@ -42,14 +41,14 @@ direction, not current CLI syntax or support.
 
 | Area | Reinstate boundary |
 | --- | --- |
-| Agents | Tested Claude Code and Codex CLI layouts only |
+| Agents | Claude Code and Codex full local/sync capabilities; Gemini CLI and OpenCode read-only local indexing |
 | Resume | Claude Code → Claude Code; Codex → Codex |
-| Primary platforms | macOS and native Windows, with open release gates |
+| Primary platforms | macOS arm64 and native Windows amd64, with candidate artifact gates open |
 | WSL | WSL2 documented and smoke-tested target with an open gate; WSL1 unsupported |
 | Storage | User-owned S3-compatible object storage; R2 recommended |
 | Transfer model | Manual push/pull of full immutable snapshots |
 | Configuration | Reinstate session-sync config only |
-| Release status | Stable v0.1.0; pre-1.0, so formats and interfaces may still change |
+| Release status | `v0.2.0-rc.1` prerelease; formats and interfaces may still change |
 
 Versions outside the tested stable ranges, including prereleases, are
 `UNTESTED`. Recognizable untested sessions may be discovered read-only, but
@@ -110,9 +109,9 @@ an independent backup and recovery plan.
 ## Storage and availability limits
 
 Current `status`, `diff`, `push`, and `pull` require the configured remote
-manifest and its passphrase. The Phase 2 local universal index is not yet
-implemented. Reinstate does not operate a hosted storage service or recover a
-provider account.
+manifest and its passphrase. Phase 2 `sessions`, `search`, and `inspect` use a
+private local derived index and require no backend. Reinstate does not operate
+a hosted storage service or recover a provider account.
 
 Storage compatibility depends on S3 object operations, conditional request
 semantics, credentials, region/endpoint correctness, availability, lifecycle

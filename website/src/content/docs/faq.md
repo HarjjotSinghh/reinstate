@@ -6,8 +6,8 @@ order: 7
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.1.0"
-updatedAt: 2026-07-27
+version: "v0.2.0-rc.1"
+updatedAt: 2026-08-01
 tags: ["faq", "session-sync", "claude-code", "codex", "security"]
 targetQuery: "what is Reinstate"
 searchIntent: "answer"
@@ -24,8 +24,10 @@ work.
 
 Reinstate is an open-source continuity layer for coding-agent work. Phase 1
 implements encrypted, bring-your-own-storage sync for same-vendor Claude Code
-and Codex sessions; universal search, verified resume, portable handoffs, and
-cross-harness configuration are later phases.
+and Codex sessions. Phase 2 adds configless local indexing, literal search,
+metadata inspection, a TTY switcher, and same-vendor native resume/fork.
+Verified resume, portable handoffs, and cross-harness configuration are later
+phases.
 
 See [What is Reinstate?](/about/reinstate) for current product facts, non-goals,
 roadmap boundaries, and maintainer information.
@@ -98,9 +100,9 @@ carry a lossy task checkpoint without pretending to translate native history.
 
 ## Do I need two computers?
 
-No. Multi-device sync is the first release wedge, while later local
-index/search/resume features are intended to help developers manage fragmented
-sessions and agents on one computer without a remote-storage dependency.
+No. Multi-device sync is the first release wedge, while Phase 2 local
+index/search/resume helps developers manage fragmented sessions and agents on
+one computer without a remote-storage dependency.
 
 ## Is Reinstate a cloud IDE or coding-agent harness?
 
@@ -154,9 +156,9 @@ passphrase in a password manager.
 
 ## Does this work offline?
 
-Session files remain local, but the current `status`, `diff`, `push`, and
-`pull` commands read the remote manifest and need access to your storage
-backend. Offline indexing and search are Phase 2 roadmap work.
+Session files remain local. Phase 2 `sessions`, `search`, and `inspect` work
+offline without sync configuration. The `status`, `diff`, `push`, and `pull`
+commands still read the remote manifest and need access to your storage backend.
 
 ## Does Reinstate support Windows and macOS?
 
@@ -181,8 +183,8 @@ syncing after an agent upgrade.
 
 ## Production ready?
 
-No. Reinstate is a stable pre-1.0 release while further native acceptance gates are
-open. See the [roadmap](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md)
+No. `v0.2.0-rc.1` is pre-1.0 release-candidate software while tagged-artifact
+acceptance is open. See the [roadmap](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md)
 and [changelog](https://github.com/HarjjotSinghh/reinstate/blob/main/CHANGELOG.md),
 use it with backups, and report bugs through GitHub Issues.
 

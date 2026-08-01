@@ -161,6 +161,16 @@ func TestDevelopmentVersionIgnoresWebsiteDeploymentTags(t *testing.T) {
 	}
 }
 
+func TestGoReleaserSnapshotVersionIgnoresWebsiteDeploymentTags(t *testing.T) {
+	config := read(t, ".goreleaser.yml")
+	if !strings.Contains(config, `version_template: "0.0.0-{{ .ShortCommit }}"`) {
+		t.Fatal("GoReleaser snapshots must use a commit-derived SemVer independent of the nearest tag")
+	}
+	if strings.Contains(config, `incpatch .Version`) {
+		t.Fatal("GoReleaser snapshots must not parse a website deployment tag as a CLI SemVer")
+	}
+}
+
 func TestVerifyAvoidsRedundantDoctestRuns(t *testing.T) {
 	command := exec.Command("make", "-n", "verify")
 	command.Dir = repoRoot(t)

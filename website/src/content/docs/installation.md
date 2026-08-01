@@ -6,8 +6,8 @@ order: 9
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.1.0"
-updatedAt: 2026-07-27
+version: "v0.2.0-rc.1"
+updatedAt: 2026-08-01
 tags: ["installation", "cli", "macos", "windows", "wsl2"]
 targetQuery: "install Reinstate CLI"
 searchIntent: "how-to"
@@ -16,13 +16,13 @@ noindex: false
 ---
 
 Install Reinstate with the official bootstrap for your operating system, then
-require `rein version --json` to report `v0.1.0`. The bootstrap verifies
+require `rein version --json` to report `v0.2.0-rc.1`. The bootstrap verifies
 the canonical tagged installer, release checksum, downloaded binary, and
 reported version before replacing an existing installation.
 
-> **Release status:** `v0.1.0` is pre-1.0 release-candidate software.
-> macOS and native Windows are the primary Phase 1 platforms; native Windows,
-> macOS amd64, WSL2, and physical two-device acceptance gates remain open.
+> **Release status:** `v0.2.0-rc.1` is pre-1.0 release-candidate software.
+> macOS arm64 and native Windows are the primary Phase 2 acceptance platforms;
+> exact tagged-artifact acceptance remains open before stable promotion.
 > A Linux binary is available, but plain Linux is not a certified Phase 1
 > agent-resume target.
 
@@ -124,7 +124,7 @@ failures before synchronization.
 ## Expected evidence
 
 - Both binary names resolve without an absolute path and report the same
-  `0.1.0` version.
+  `0.2.0-rc.1` version.
 - The binary architecture matches the current environment.
 - The installer reports successful checksum and candidate-version checks.
 - `rein setup check` runs as a read-only preflight and does not claim the

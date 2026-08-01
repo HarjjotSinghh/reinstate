@@ -2,19 +2,19 @@
 
 Reinstate is the continuity layer for coding-agent work. Its current Phase 2
 source finds, searches, inspects, resumes, and forks local
-sessions without configuration or cloud access. Stable `v0.1.0` synchronizes
-Claude Code and Codex CLI sessions across machines through client-side
-encrypted, user-owned object storage.
+sessions without configuration or cloud access. The `v0.2.0-rc.1` candidate
+also synchronizes Claude Code and Codex CLI sessions across machines through
+client-side-encrypted, user-owned object storage.
 
-> **Release status:** the public installers pin stable `v0.1.0`. The native
+> **Release status:** the public installers pin prerelease `v0.2.0-rc.1`. The native
 > Mac/Windows
 > [Phase 1 acceptance runbook](testing/phase-1-mac-windows-acceptance.md) passed
 > all 23 mandatory RC8 rows on real hardware; the stable release then fixed and
 > re-verified the recorded non-blocking fork findings. Evidence is in
 > [docs/testing/results](testing/results/). Phase 2 development acceptance also
 > passed all 30 required rows on macOS and native Windows at `b952d38`; it is
-> not in the v0.1.0 installers and still requires exact tagged-artifact
-> acceptance before a later stable release.
+> source is now in this candidate, which still requires exact tagged-artifact
+> acceptance before stable promotion.
 
 ## Prerequisites
 
@@ -67,7 +67,7 @@ Do not use the stable public installer as evidence for an untagged Phase 2
 commit. A signed release candidate must update the installer pin and pass the
 physical tagged-artifact matrix before stable promotion.
 
-### Install stable v0.1.0 for encrypted sync on macOS, Linux, or WSL2
+### Install v0.2.0-rc.1 on macOS, Linux, or WSL2
 
 ```sh
 curl -fsSL https://reinstate.dev/install.sh | sh
@@ -77,7 +77,7 @@ The default installation directory is `~/.local/bin`. The bootstrap prints an
 absolute `rein init` command that works immediately and adds the directory to
 the appropriate shell startup file for new terminals.
 
-### Install stable v0.1.0 for encrypted sync on native Windows PowerShell
+### Install v0.2.0-rc.1 on native Windows PowerShell
 
 ```powershell
 irm https://reinstate.dev/install.ps1 | iex
@@ -89,7 +89,7 @@ and the current PowerShell process.
 
 Both public bootstraps:
 
-1. pin `v0.1.0`;
+1. pin `v0.2.0-rc.1`;
 2. download the canonical installer from that exact signed Git tag;
 3. verify the canonical installer SHA-256;
 4. download only the matching GitHub Release asset and `checksums.txt`;

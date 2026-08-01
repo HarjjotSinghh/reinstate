@@ -44,9 +44,9 @@ rein resume claude:SESSION_ID --dry-run
 These commands use a private derived index at
 `$REINSTATE_HOME/cache/session-index-v1.sqlite`. They do not need a sync
 profile, storage credentials, an encryption passphrase, keyring access, or a
-network backend. Stable `v0.1.0` public installers contain the Phase 1 sync
-surface. Phase 2 development acceptance passed, but signed tagged-artifact
-acceptance and release are still pending.
+network backend. The `v0.2.0-rc.1` public installers contain both the Phase 1
+sync surface and Phase 2 local continuity. Development acceptance passed, but
+signed tagged-artifact acceptance is still pending before stable promotion.
 
 ## Why not just use git?
 
@@ -141,8 +141,9 @@ and WSL2 evidence is reported separately rather than fabricated.
 
 ## Production ready?
 
-Pre-1.0. Stable `v0.1.0` completed Phase 1. Phase 2 development acceptance is
-complete; exact tagged-artifact certification and stable publication are next. See
+Pre-1.0. Stable `v0.1.0` completed Phase 1. The `v0.2.0-rc.1` candidate contains
+development-accepted Phase 2; exact tagged-artifact certification and stable
+publication are next. See
 [ROADMAP.md](../ROADMAP.md) and [CHANGELOG.md](../CHANGELOG.md). Use with
 backups; report bugs via GitHub Issues.
 

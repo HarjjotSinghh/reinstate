@@ -59,7 +59,7 @@ This is **Codex to Codex** same-vendor continuity. Phase 1 does not turn a Codex
 rollout into a Claude Code transcript, and it does not silently reconstruct a
 session for another coding agent.
 
-The current public installer pins `v0.1.0`. It remains release-candidate
+The current public installer pins `v0.2.0-rc.1`. It remains release-candidate
 software while the remaining native platform and physical two-device
 acceptance rows are completed. Confirm the supported Codex CLI range on the
 [compatibility page](/compatibility) before transferring real work.
@@ -74,7 +74,7 @@ acceptance rows are completed. Confirm the supported Codex CLI range on the
   either mutating command.
 - Snapshots and manifests are encrypted locally; storage credentials stay in
   the OS keyring, and the passphrase is not stored.
-- `v0.1.0` is not a stable release and this guide is not evidence that the
+- `v0.2.0-rc.1` is not a stable release and this guide is not evidence that the
   outstanding physical two-device acceptance matrix has passed.
 
 ## Before you begin
@@ -104,7 +104,7 @@ own stable identifier and reuse it exactly on each device.
 | Linux native | POSIX installer | Installer-compatible; not covered by the two-device acceptance run. |
 | WSL2 amd64 | POSIX installer | Installer-compatible and documented for smoke testing; not covered by the two-device acceptance run. WSL1 is unsupported. |
 
-The repository currently records Codex CLI `0.133.0`–`0.145.0` as the tested
+The repository currently records Codex CLI `0.133.0`–`0.146.0` as the tested
 stable range. `rein setup check` is authoritative for the installed version:
 `UNTESTED` and `UNSUPPORTED` block transfer. These facts describe committed
 evidence, not completed physical Reinstate acceptance on every platform.
@@ -150,7 +150,7 @@ rein setup check
 ```
 
 **Expected result:** `rein version --json` returns a JSON object whose version
-is `v0.1.0` for the currently pinned installer. Before initialization,
+is `v0.2.0-rc.1` for the currently pinned installer. Before initialization,
 `rein setup check` exits with code `3` and reports `config missing`. That one
 pre-init failure is expected; a platform, keyring, or Codex compatibility
 failure is a separate blocker that must be resolved.

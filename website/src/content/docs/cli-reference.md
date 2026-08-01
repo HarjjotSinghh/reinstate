@@ -6,8 +6,8 @@ order: 14
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.1.0"
-updatedAt: 2026-07-27
+version: "v0.2.0-rc.1"
+updatedAt: 2026-08-01
 tags: ["cli", "command-reference", "session-sync", "troubleshooting", "rc6"]
 targetQuery: "Reinstate CLI commands"
 searchIntent: "navigational"
@@ -16,18 +16,19 @@ noindex: false
 ---
 
 The `rein` and `reinstate` names run the same binary. This reference covers
-every command shipped by Reinstate `v0.1.0`, including what it does, what
+every command shipped by Reinstate `v0.2.0-rc.1`, including what it does, what
 success looks like, the flags it accepts, platform-specific behavior, common
 failures, and the available recovery path.
 
-> **Current scope:** Reinstate supports same-vendor Claude Code and Codex session
-> transfer. Commands for search, generic resume, cross-agent handoff, MCP
-> servers, skills, plugins, marketplaces, or universal configuration are
-> roadmap work and do not exist in this release.
+> **Current scope:** Reinstate supports configless local discovery for Claude
+> Code, Codex, Gemini CLI, and OpenCode; native resume/fork remains same-vendor
+> and mutation-capable only for Claude Code and Codex. Cross-agent handoff, MCP
+> servers, skills, plugins, marketplaces, and universal configuration remain
+> roadmap work.
 
 ## Prerequisites
 
-- Install and verify `v0.1.0` before relying on this syntax.
+- Install and verify `v0.2.0-rc.1` before relying on this syntax.
 - Run `rein init` before commands that need configuration or remote storage.
 - Close the selected Claude Code or Codex process before a mutating pull or
   `conflicts resolve --keep-remote`.
@@ -94,7 +95,7 @@ rein version --json
 
 **Expected result:** human output contains the version string. JSON output
 contains `version`, `commit`, and `date`; the public Reinstate installer must report
-`0.1.0`.
+`0.2.0-rc.1`.
 
 **Parameters:** `--json` selects machine-readable output. The command accepts
 no session, agent, storage, or path arguments.
@@ -170,6 +171,90 @@ documented nonzero category.
 **Undo or recovery:** the command is read-only. Install a supported agent
 version, repair the reported configuration, or stop the transfer. Do not
 change a compatibility result merely to clear the gate.
+
+## Find and continue local sessions
+
+These commands refresh a private derived index at
+`$REINSTATE_HOME/cache/session-index-v1.sqlite`. They do not require
+`rein init`, storage credentials, an encryption passphrase, keyring access, or
+a network backend.
+
+### `rein sessions`
+
+**Purpose:** list local session metadata across supported read adapters.
+
+```sh
+rein sessions
+rein sessions --agent claude --json
+```
+
+**Expected result:** each row has a composite `agent:native-id` reference,
+timestamp, capability flags, and bounded metadata. Use `--agent
+claude|codex|gemini|opencode|all`; scripts should use `--json`.
+
+### `rein search`
+
+**Purpose:** find indexed sessions with literal, case-insensitive AND terms.
+
+```sh
+rein search "webhook retry" --agent codex --limit 20
+rein search SESSION_ID --json
+```
+
+**Expected result:** only matching metadata rows appear. Optional `--project`,
+`--branch`, and `--file` filters narrow the result. Search never prints the
+matching transcript passage.
+
+### `rein inspect`
+
+**Purpose:** inspect one exact composite reference without dumping a transcript.
+
+```sh
+rein inspect claude:SESSION_ID
+rein inspect opencode:SESSION_ID --json
+```
+
+**Expected result:** identity, workspace/project metadata, counts,
+capabilities, source fingerprint, and at most a 160-code-point user preview.
+
+### `rein last`
+
+**Purpose:** select and launch the newest resumable Claude Code or Codex session.
+
+```sh
+rein last --agent claude --dry-run
+rein last --project my-project
+```
+
+**Expected result:** `--dry-run` prints the exact executable, argument array,
+and working directory without launching a vendor. Remove it only after review.
+
+### `rein resume` and `rein fork`
+
+**Purpose:** launch a same-vendor native continuation or native fork.
+
+```sh
+rein resume codex:SESSION_ID --dry-run
+rein fork claude:SESSION_ID --dry-run
+```
+
+**Expected result:** the dry-run plan uses the recorded workspace and exact
+vendor-native ID. Claude Code and Codex may launch after review. Gemini CLI and
+OpenCode are read-only and refuse either action with compatibility exit `5`.
+JSON without `--dry-run` is refused because native child output is not a JSON
+response owned by Reinstate.
+
+### Bare `rein` / `reinstate`
+
+**Purpose:** open the numbered session switcher on an interactive TTY.
+
+```sh
+rein
+```
+
+Filter with `/text`, inspect with `i NUMBER`, resume with `NUMBER`, fork with
+`f NUMBER`, and quit with `q`. A non-TTY bare invocation exits promptly with a
+`rein sessions --json` hint.
 
 ## Configure a device
 
@@ -482,7 +567,7 @@ new shell.
 
 A complete same-vendor transfer record contains:
 
-- `rein version --json` showing `0.1.0`;
+- `rein version --json` showing `0.2.0-rc.1`;
 - a passing or truthfully blocked `rein setup check --json` on each device;
 - the exact agent and `SESSION_ID` selected by `rein list`;
 - successful push and pull dry-runs before each mutation;
