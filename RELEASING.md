@@ -88,8 +88,11 @@ against the derived CLI release at the immutable deployment URL, promotes only
 that verified deployment, and verifies both live routes again. Never run
 `vercel --prod` directly for a release.
 
-For a release candidate, start the committed Mac/Windows acceptance prompts
-only after both live routes install the new exact version.
+For a release candidate, start the committed four-environment acceptance
+dispatch only after both live routes install the new exact version. Native
+macOS arm64 and native Windows amd64 own the complete two-device matrix; native
+macOS amd64 and WSL2 amd64 provide the separate stable-platform evidence
+required by the preconditions above.
 
 ### 5. Publish website-only changes
 
