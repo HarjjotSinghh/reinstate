@@ -1,10 +1,10 @@
 # Phase 2 acceptance — native-Windows Device B report
 
-**Verdict:** `FAIL`
+**Verdict:** `PASS`
 
 **Milestone:** `DEVICE_COMPLETE`
 
-**Required counts:** `23 PASS / 1 PARTIAL / 6 FAIL / 0 NOT TESTED`
+**Required counts:** `30 PASS / 0 PARTIAL / 0 FAIL / 0 NOT TESTED`
 
 **Optional physical counts:** `2 PASS / 0 NOT TESTED`
 
@@ -15,11 +15,15 @@ passphrase, preserved OpenCode database backup, or unrelated session row was
 used as evidence. Device B is complete, but Phase 2 remains pending the Mac
 coordinator's cross-device reconciliation.
 
+The original `23 PASS / 1 PARTIAL / 6 FAIL` evidence is retained below. Dated
+targeted rechecks on the unchanged product commit supersede rows 2, 6, 21-23,
+26, and 32, producing the current all-green Windows matrix.
+
 ## 1. Test record
 
 | Field | Value |
 | ----- | ----- |
-| UTC date/time | `2026-07-31T15:28:22Z` through `2026-07-31T16:44:00Z` |
+| UTC date/time | original run `2026-07-31T15:28:22Z` through `2026-07-31T16:44:00Z`; targeted rechecks through `2026-08-01T06:59:22Z` |
 | Device | native-Windows Device B |
 | Tested Git commit | `b952d38c2dc57b0a96bc696860318ea7c2975800` |
 | Signed tag, if any | None; development acceptance |
@@ -27,8 +31,8 @@ coordinator's cross-device reconciliation.
 | OS/version/build | Microsoft Windows 11 Pro `10.0.26200`, build `26200` |
 | Architecture | 64-bit OS, native `amd64` process |
 | Native shell | Windows PowerShell Desktop `5.1.26100.8328` |
-| Claude Code version/state | `2.1.220`; installed; controlled resume physically exercised |
-| Codex CLI version/state | `codex-cli 0.146.0`; installed; controlled resume launch failed to complete |
+| Claude Code version/state | `2.1.220`; installed; controlled resume and fork physically passed |
+| Codex CLI version/state | `codex-cli 0.146.0`; installed; controlled resume and fork physically passed |
 | Gemini CLI version/state | `0.53.0`; installed; controlled read-only path passed |
 | OpenCode version/state | `1.18.2`; installed; controlled read-only path and timestamp regression passed |
 | Git version | `2.52.0.windows.1` |
@@ -85,6 +89,12 @@ and left no controlled process running.
 
 ## 5. Automated verification
 
+### Original run — 2026-07-31 (preserved)
+
+The following table and errors are the original W1 evidence. They remain here
+unchanged in substance; the later targeted recheck supersedes their row-2 and
+row-32 verdicts.
+
 | Gate | Result | Sanitized evidence |
 | ---- | ------ | ------------------ |
 | OpenCode regression test first | PASS | `go test ./internal/sessionindex -run OpenCode -count=1`, exit `0` |
@@ -113,7 +123,41 @@ Exact automated failures:
   `CGO_ENABLED=1`, exit `1`: C compiler `gcc` was not found.
 - `make verify` — exit `1`: `make` is not recognized.
 
+### Targeted recheck — 2026-08-01 (current verdict)
+
+The recheck used a fresh process-scoped Windows PowerShell environment and the
+already-installed MSYS2 toolchain; nothing was installed or added to the
+machine-wide or user `PATH`:
+
+```powershell
+$env:Path = 'C:\msys64\usr\bin;C:\msys64\mingw64\bin;' + $env:Path
+$env:GOTOOLCHAIN = 'go1.25.12'
+$env:CGO_ENABLED = '1'
+make verify
+go test -race ./... -count=1
+```
+
+- Exact product worktree `HEAD` was
+  `b952d38c2dc57b0a96bc696860318ea7c2975800` and clean.
+- `make verify` exited `0` with `verify ok`. Its sanitized 68-line log SHA-256
+  is `5579A496A1EFCA75B7D112C46C994397D4153E697E981D42937C58D9E0B6DE16`.
+- `go test -race ./... -count=1` exited `0` across every package. Its
+  sanitized 25-line log SHA-256 is
+  `7F16C2194407F1E967131F4B09FCD06A5E465AB01369D79E843549B664A54BBD`.
+- MSYS2 emitted a non-fatal `tee: /dev/stderr: No such file or directory`
+  compatibility warning during `make verify`; the command still completed all
+  gates and exited `0`.
+- The earlier rejected recheck against report commit `45fd25e` is preserved
+  outside the repository but is not product evidence because its build stamp
+  was not the requested product SHA.
+
+Current result: rows 2 and 32 are `PASS`. No installation is required on this
+device; the minimal safe remediation was the process-scoped `PATH` plus the
+explicit Go/CGO variables above.
+
 ## 6. Configless index and refresh
+
+### Original run — 2026-07-31 (preserved)
 
 - Fresh-home `rein sessions`, `rein sessions --json`,
   `reinstate sessions --json`, and `rein list --help` all exited `0`.
@@ -132,6 +176,37 @@ Exact automated failures:
   all warnings were equivalent. Row 6 is therefore `PARTIAL`, not `PASS`.
 - A deliberately concurrent alias check made one process fail with
   `SQLITE_BUSY`; it is a harness deviation and not used as alias evidence.
+
+### Delayed targeted alias recheck — 2026-08-01 (current verdict)
+
+The active Codex session was correctly treated as a moving vendor source. A
+disposable PowerShell checker outside the repository waited for its exact
+watched PID to exit, then ran the aliases sequentially, never concurrently:
+
+```powershell
+rein sessions --json
+reinstate sessions --json
+```
+
+The checker stored no raw session JSON or transcript content. It retained only
+sanitized comparison counts, ordered warning metadata, and hashes.
+
+- Attempt 1 is preserved but rejected as parity evidence: a new Codex process
+  began during the 60-second quiescence interval after the watched process
+  exited.
+- Attempt 2 completed before the next Codex process started. Both commands
+  exited `0`, both outputs parsed, and each contained 100 sessions and seven
+  warnings.
+- Complete normalized JSON, ordered sessions, ordered warnings, and ordering
+  were all exactly equal. Each corresponding pair of SHA-256 hashes matched.
+- The sanitized attempt-2 result SHA-256 is
+  `4C2D87DF04CA828CE4E41A40A6C601D5CF64A595150E860A3B3FE226B4AD6BA9`.
+- The first alias completed before the second began; no concurrent alias
+  process existed, no source/product mutation occurred, and no raw JSON was
+  stored.
+
+Current result: row 6 is `PASS`. The original `PARTIAL` was a moving-source
+harness limitation, not a reproducible Reinstate parity defect.
 
 ## 7. Search and inspect
 
@@ -164,7 +239,9 @@ source. Exact plans were:
 `last --project` selected the correct controlled Claude and Codex records.
 Global and agent-filter dry-runs also exited `0`.
 
-Physical results:
+### Original physical attempt — 2026-07-31 (preserved)
+
+Physical results from the original run:
 
 - Claude resume: `PASS`. The exact controlled source gained one controlled user
   marker event and one assistant event whose only text exactly matched the
@@ -190,7 +267,52 @@ Physical results:
   propagation passed the focused deterministic test suite; destructive
   physical manufacture was not used.
 
+### Human-keyboard targeted recheck — 2026-08-01 (current verdict)
+
+All rechecks ran in fresh real Windows Terminal windows with human keyboard
+input. Automated byte injection, ConPTY byte drivers, `AppActivate`, and
+`SendKeys` were not used. Clean child environments removed only the inherited
+nesting-marker names `CODEX_THREAD_ID` and `CLAUDECODE`; their values and all
+authentication material were never printed or inspected. Before every launch,
+the exact source fingerprint and clean controlled process state were checked,
+and Reinstate dry-run JSON re-proved executable, argv, CWD, and native ID.
+
+- **Codex resume — row 21 `PASS`.** Fresh source
+  `codex:019fb9d2-c35c-7142-8e7f-a6dd97b58109` launched as
+  `codex resume 019fb9d2-c35c-7142-8e7f-a6dd97b58109` through the exact
+  `PowerShell -> rein -> codex` chain. One exact controlled user challenge and
+  one exact assistant response were recorded. Reinstate exited `0`; refreshed
+  discovery retained exactly one source identity; the independent resume
+  dry-run remained exact; zero controlled processes remained.
+- **Claude vendor-native fork — row 22 `PASS`.** Fresh source
+  `claude:94957a40-15b9-4de1-975b-bc99e6478ba4` launched as
+  `claude --resume 94957a40-15b9-4de1-975b-bc99e6478ba4 --fork-session`
+  through `PowerShell -> rein -> cmd -> claude`. The source SHA-256 remained
+  `C623F76B89762A8728F7A2AB9ED34420CFD5317269F43B2F1BF2C83DEBFAF940`.
+  Fresh fork `claude:8ab38622-946c-412a-a103-a291b40bd2a0` recorded the exact
+  challenge/response, was separately rediscovered and inspected, and then
+  completed a second physical resume with a fresh exact response. Both vendor
+  runs exited `0`; zero controlled processes remained.
+- **Codex vendor-native fork — row 23 `PASS`.** Fresh source
+  `codex:019fbb8a-4e6e-71f2-8138-b9e3f77a1985` launched as
+  `codex fork 019fbb8a-4e6e-71f2-8138-b9e3f77a1985` through the exact
+  `PowerShell -> rein -> codex` chain. The source remained byte-identical.
+  Fresh rollout `codex:019fbb9f-8b44-76c3-a130-50e3f92dc3a7` contained both
+  source and fork `session_meta` events, but refresh correctly pinned identity
+  to the fork filename: source and fork each appeared exactly once as distinct
+  resumable/forkable records. The fork was inspected and physically resumed
+  independently with an exact fresh challenge/response. Both runs exited `0`;
+  zero controlled processes remained.
+- Every controlled process was matched by exact native ID and ancestry before
+  observation. No process was terminated during these successful rechecks;
+  documented vendor exit commands produced normal exit `0` throughout.
+
+The correctly equipped physical recheck did not reproduce a Reinstate defect.
+Rows 21-23 now pass on the unchanged product commit.
+
 ## 9. Interactive switcher
+
+### Original attempt — 2026-07-31 (preserved)
 
 The real Windows Terminal path used a fresh static title with application-title
 override suppression. Bare `rein` launched a real TTY picker, but the exact
@@ -199,10 +321,42 @@ line input landed, and `q` did not terminate the picker. The exact disposable
 `rein.exe` and PowerShell chain was terminated. No picker mutation was
 attempted afterward, and bare `reinstate` was not falsely called tested.
 
-Result: row 26 `FAIL`.
+Original result: row 26 `FAIL`.
 
 Non-TTY behavior passed independently for both binary names: piped empty input
 returned promptly with exit `2` and included the `rein sessions --json` hint.
+
+### Human-keyboard targeted recheck — 2026-08-01 (current verdict)
+
+The earlier targeted triage evidence for picker filter, inspect, invalid input,
+`q`, EOF/interrupt, both bare `rein` and bare `reinstate`, read-only routing,
+and the non-TTY refusal was retained. The missing capable-vendor routes were
+then exercised in real red-tabbed Windows Terminal windows with human keyboard
+input only:
+
+- **Picker resume:** the exact query
+  `REINSTATE-B952-PHASEC-CODEX-FORK-INDEPENDENT-RESUME-20260801T045341Z`
+  returned one row, exactly
+  `codex:019fbb9f-8b44-76c3-a130-50e3f92dc3a7`. Before selection no vendor
+  child existed and the source fingerprint matched. Human input `1` launched
+  exactly one `codex resume` child under the picker `rein.exe`; an exact fresh
+  challenge/response was recorded. Reinstate exited `0`, the project remained
+  clean, and zero controlled processes remained.
+- **Picker fork:** the exact query
+  `REINSTATE-B952-PHASEC-CLAUDE-FORK-INDEPENDENT-RESUME-20260801T041020Z`
+  returned one row, exactly
+  `claude:8ab38622-946c-412a-a103-a291b40bd2a0`. Before selection no vendor
+  child existed and the source fingerprint matched. Human input `f 1` launched
+  exactly `claude --resume 8ab38622-946c-412a-a103-a291b40bd2a0
+  --fork-session` through `rein -> cmd -> claude`. The source remained
+  byte-identical; distinct fork
+  `claude:0cb79679-ae10-432c-8295-df0ecc8315a3` recorded the exact fresh
+  challenge/response, was rediscovered and inspected, and completed an
+  independent physical resume with another exact response. Both runs exited
+  `0`; zero controlled processes remained.
+
+Current result: row 26 `PASS` for filter, inspect, resume, fork, invalid input,
+`q`, EOF/interrupt, both aliases, read-only routing, and non-TTY refusal.
 
 ## 10. Read-only adapters
 
@@ -251,11 +405,11 @@ the only OpenCode evidence used for row 29.
 | # | Gate | macOS | Windows |
 | - | ---- | ----- | ------- |
 | 1 | Exact tested commit/binary provenance | — | PASS — sections 1-2 |
-| 2 | Full local verification and required cross-builds | — | FAIL — section 5 |
+| 2 | Full local verification and required cross-builds | — | PASS — section 5 targeted recheck |
 | 3 | Fresh configless home; no `init`, credentials, passphrase, or backend | — | PASS — section 3 |
 | 4 | `rein sessions` discovers exact Claude sessions | — | PASS — sections 4, 6 |
 | 5 | `rein sessions` discovers exact Codex sessions | — | PASS — sections 4, 6 |
-| 6 | `rein` / `reinstate` JSON parity and deterministic ordering | — | PARTIAL — section 6 |
+| 6 | `rein` / `reinstate` JSON parity and deterministic ordering | — | PASS — section 6 delayed recheck |
 | 7 | Derived index path, rebuild, idempotency, and private permissions | — | PASS — sections 3, 6 |
 | 8 | Prompt-fragment literal search | — | PASS — section 7 |
 | 9 | Agent filter | — | PASS — sections 7, 10 |
@@ -270,22 +424,22 @@ the only OpenCode evidence used for row 29.
 | 18 | Claude dry-run plan has exact argv/cwd and no mutation | — | PASS — section 8 |
 | 19 | Codex dry-run plan has exact argv/cwd and no mutation | — | PASS — section 8 |
 | 20 | Claude native resume | — | PASS — section 8 |
-| 21 | Codex native resume | — | FAIL — section 8 |
-| 22 | Claude vendor-native fork, source preserved | — | FAIL — section 8 |
-| 23 | Codex vendor-native fork, source preserved | — | FAIL — section 8 |
+| 21 | Codex native resume | — | PASS — section 8 targeted recheck |
+| 22 | Claude vendor-native fork, source preserved | — | PASS — section 8 targeted recheck |
+| 23 | Codex vendor-native fork, source preserved | — | PASS — section 8 targeted recheck |
 | 24 | Missing/ambiguous reference and missing executor fail safely | — | PASS — sections 5, 8 |
 | 25 | JSON/native-child separation and child failure propagation | — | PASS — sections 5, 8 |
-| 26 | TTY picker filter, inspect, resume, fork, and cancel | — | FAIL — section 9 |
+| 26 | TTY picker filter, inspect, resume, fork, and cancel | — | PASS — section 9 targeted recheck |
 | 27 | Non-TTY prompt failure is immediate and actionable | — | PASS — section 9 |
 | 28 | Gemini read-only physical path, when installed | — | PASS — section 10 |
 | 29 | OpenCode read-only physical path, when installed | — | PASS — section 10 |
 | 30 | Read-only resume/fork refusal with exit `5` (physical or injected-record gate) | — | PASS — sections 8, 10 |
 | 31 | Malformed/concurrent/oversized fixture and privacy gates | — | PASS — section 5 |
-| 32 | Phase 1 automated regression remains green | — | FAIL — section 5 |
+| 32 | Phase 1 automated regression remains green | — | PASS — section 5 targeted recheck |
 
 ## 12. Findings
 
-### Release-blocking
+### Original release-blocking findings — 2026-07-31 (preserved)
 
 1. Required full verification and merge-gate evidence is red: `make` and `gcc`
    are absent, the full suite has three failures, race cannot build, and
@@ -298,6 +452,19 @@ the only OpenCode evidence used for row 29.
 5. The real TTY picker interaction matrix could not be proven and the picker
    did not accept the synthetic `q` path.
 
+### Targeted resolution — 2026-08-01
+
+All five original Windows blockers were resolved on the unchanged product
+commit: the existing MSYS2 toolchain made verification and race green; the
+quiescent sequential alias comparison was identical; Codex resume and both
+vendor-native forks passed with independent resume proof; and the real
+human-keyboard picker passed capable resume/fork in addition to its retained
+interaction evidence.
+
+Current Windows release-blocking findings: **none**. This is a Device B result,
+not final Phase 2 release sign-off; Mac coordinator reconciliation remains
+outside this report.
+
 ### Non-blocking
 
 1. OpenCode retains millisecond vendor epochs while the Reinstate index exposes
@@ -305,6 +472,10 @@ the only OpenCode evidence used for row 29.
    top-level `updated` epoch.
 2. OpenCode physical discovery is workspace-scoped on this installation; row
    29 passed from the controlled OpenCode workspace.
+3. Claude's enabled Serena integration created untracked `.serena/.gitignore`
+   and `.serena/project.yml` files in one disposable controlled project. They
+   were preserved as vendor-side evidence and were not committed; no Reinstate
+   product or report-worktree file was affected.
 
 ### Test-harness deviations
 
@@ -323,6 +494,16 @@ the only OpenCode evidence used for row 29.
   static titles.
 - Interactive vendors ignored synthetic exit keys. Exact controlled process
   trees were revalidated before termination; no unrelated process was stopped.
+- The first delayed alias attempt was contaminated by a newly started Codex
+  process during its quiescence interval. It was preserved but rejected; the
+  second attempt completed fully before the next process started.
+- Byte-only ConPTY and `AppActivate`/`SendKeys` evidence was explicitly retired.
+  Every passing targeted native/picker route used a human keyboard in real
+  Windows Terminal.
+- A compressed PowerShell PID predicate briefly misreported a still-live
+  picker as gone. A corrected read-only check immediately proved the same
+  picker/PID chain remained live; no input or product action occurred during
+  the false alarm, and the physical test then continued normally.
 
 ## 13. Repository hygiene
 
@@ -353,19 +534,19 @@ claude_ref=claude:2a05fa82-d17a-45f1-94c9-b1698ec63f25
 codex_ref=codex:019fb8d0-a4ef-7563-bf8b-873ba5a5cd01
 gemini_state=PASS
 opencode_state=PASS
-required_pass=23
-required_partial=1
-required_fail=6
+required_pass=30
+required_partial=0
+required_fail=0
 required_not_tested=0
 optional_physical_pass=2
 optional_physical_not_tested=0
 configless_local_only=PASS
 preview_privacy=PASS
-claude_resume_fork=FAIL
-codex_resume_fork=FAIL
-picker=FAIL
-phase1_regression=FAIL
-release_blocking_findings=5
+claude_resume_fork=PASS
+codex_resume_fork=PASS
+picker=PASS
+phase1_regression=PASS
+release_blocking_findings=0
 product_files_changed=0
 secrets_or_transcripts_committed=false
 END-PHASE2-DEVICE-REPORT-V1
