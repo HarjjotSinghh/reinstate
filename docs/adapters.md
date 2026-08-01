@@ -1,25 +1,70 @@
 # Adapters
 
-Reinstate uses per-agent **adapters** to discover, export, and restore
-vendor-native session files without translating sessions across agents.
-Later configuration adapters will separately normalize portable intent and
-render each harness's native MCP/skills/plugins/settings format.
+Reinstate separates per-agent capabilities:
 
-## Phase 1 (`v0.1.0`)
+- **local read adapters** discover bounded metadata and user-prompt search text;
+- **native executors** resume/fork through the same vendor;
+- **sync adapters** export and restore vendor-native session files; and
+- later **configuration adapters** normalize portable intent and render each
+  harness's native MCP/skills/plugins/settings format.
 
-| Adapter | Sessions | Universal configuration | Notes |
-| ------- | -------- | ----------------------- | ----- |
-| Claude Code | In scope | Post–Phase 1 | Same-vendor resume only |
-| OpenAI Codex CLI | In scope | Post–Phase 1 | Same-vendor resume only |
+One capability never implies another. Read-only agents do not receive dummy
+resume, fork, export, or restore implementations.
 
-## Later
+## Capability matrix
 
-| Adapter | Status |
-| ------- | ------ |
-| Gemini CLI | Planned after Phase 1 |
-| OpenCode | Planned after Phase 1 |
-| Cursor | Exploring |
-| Grok Build | Exploring |
+| Adapter | Phase 2 local index | Native resume/fork | `v0.1.0` encrypted sync | Universal config |
+| ------- | ------------------- | ------------------ | ------------------------- | ---------------- |
+| Claude Code | Implemented, development-accepted | Implemented, development-accepted | Supported | Later |
+| OpenAI Codex CLI | Implemented, development-accepted | Implemented, development-accepted | Supported | Later |
+| Gemini CLI | Read-only, development-accepted | No | No | Later |
+| OpenCode | Read-only, development-accepted | No | No | Later |
+| Cursor | Exploring | No | No | Exploring |
+| Grok Build | Exploring | No | No | Planned |
+
+Phase 2 automated gates and all 30 required development-acceptance rows passed
+on macOS and native Windows at `b952d38`. This is source-build evidence, not a
+published-release claim; exact tagged artifacts require a separate release run.
+
+## Phase 2 local read contract
+
+All local records use:
+
+```text
+<agent>:<native-session-id>
+```
+
+Local discovery is config-independent and does not inherit Phase 1 project
+mappings that would hide unmapped sessions. Sources expose only identity,
+timestamps, workspace/project, recorded branch, title/name, bounded
+user-authored prompt text, known file fields, counts, source fingerprint, and
+capabilities. Assistant messages/reasoning, tool output, environment dumps,
+credentials, and auth stores are excluded from the index.
+
+| Adapter | Read source |
+| ------- | ----------- |
+| Claude Code | Stream project JSONL; exclude subagent artifacts; ignore incomplete trailing record |
+| Codex CLI | Stream date-partitioned rollout JSONL and structural session metadata |
+| Gemini CLI | Defensively read recognizable project chat JSON under the vendor data root |
+| OpenCode | Use the documented local JSON session-list surface through a bounded runner |
+
+Local-index capabilities and Phase 1 sync compatibility are separate
+contracts. The local record advertises whether native resume/fork is available;
+the existing sync adapter continues to enforce its verified version range
+before export or restore.
+
+## Native execution
+
+| Agent | Resume | Fork |
+| ----- | ------ | ---- |
+| Claude Code | `claude --resume ID` | `claude --resume ID --fork-session` |
+| Codex | `codex resume ID` | `codex fork ID` |
+
+Plans store executable, argv, and recorded cwd separately. They never construct
+a shell command string. Gemini/OpenCode resume or fork fails with compatibility
+exit `5`.
+
+## Future configuration adapters
 
 Planned configuration targets include Claude Code, Codex, Gemini CLI, OpenCode,
 and Grok. Each adapter will advertise support independently for MCP servers,
@@ -31,8 +76,9 @@ See [universal-configuration.md](universal-configuration.md).
 
 ## Compatibility states
 
-See [compatibility.md](compatibility.md). Adapters report `SUPPORTED`, `UNTESTED`,
-`UNSUPPORTED`, or `NOT_INSTALLED`.
+See [compatibility.md](compatibility.md). Phase 1 sync adapters report
+`SUPPORTED`, `UNTESTED`, `UNSUPPORTED`, or `NOT_INSTALLED`; Phase 2 local
+records report read/native capabilities independently.
 
 ## Claude project identity
 
@@ -45,6 +91,9 @@ metadata; they are never reused as cross-device restore destinations.
 Reinstate verifies the exact planned destination after restore. A matching session
 ID elsewhere in `~/.claude/projects` is not accepted as success.
 
+The Phase 2 local reader intentionally sees all local top-level Claude sessions,
+including projects that are not mapped for encrypted sync.
+
 ## Codex project identity
 
 Codex stores the source working directory in each rollout's structural
@@ -56,8 +105,13 @@ device's `local_root`. This keeps Windows and macOS paths out of portable
 session identity while preserving Codex's native date-partitioned rollout
 layout.
 
+The Phase 2 local reader similarly indexes local Codex rollouts without
+requiring a canonical sync mapping.
+
 ## Exclusions
 
-Adapters hard-exclude auth, credentials, tokens, caches, logs, and regenerable
-dependencies. Future configuration profiles may carry secret **references** but
-never secret values. Fixtures are synthetic and scanned for secrets.
+Sync adapters hard-exclude auth, credentials, tokens, caches, logs, and
+regenerable dependencies. The Phase 2 index additionally excludes assistant
+messages/reasoning, tool output, environment dumps, and auth stores. Future
+configuration profiles may carry secret **references** but never secret
+values. Fixtures are synthetic and scanned for secrets.

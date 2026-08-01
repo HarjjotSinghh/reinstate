@@ -9,6 +9,99 @@ echo "$PATH"
 make build && ./bin/rein version
 ```
 
+## `rein sessions` says sync config is missing
+
+`rein sessions`, `search`, and `inspect` must not require sync configuration in
+Phase 2 source builds. Confirm that you are not running stable `v0.1.0`, which
+predates those commands:
+
+```bash
+rein version --json
+rein sessions --json
+```
+
+Do not run `rein init` merely to make local search work. If a Phase 2 build
+requests a bucket, credential, passphrase, or keyring entry for a local command,
+record the exact version and sanitized error and report it as a bug.
+
+## Local sessions are missing
+
+1. Run `rein sessions --json` and inspect only compatibility states and
+   warnings, not unrelated session content.
+2. Confirm the vendor is installed and has at least one normally persisted
+   session.
+3. Use a composite reference such as `claude:<id>` or `codex:<id>`.
+4. Check [compatibility.md](compatibility.md) and the sanitized local-index
+   warnings. Sync-adapter compatibility and local-index capability are
+   intentionally reported separately.
+5. Confirm `REINSTATE_HOME` is absolute and writable. The derived database is
+   `$REINSTATE_HOME/cache/session-index-v1.sqlite`.
+
+Phase 2 local discovery intentionally does not reuse configured Phase 1 project
+mappings, so an unmapped local project should still appear. Claude subagent
+artifacts are excluded from the top-level resumable list.
+
+## Local index is stale or corrupt
+
+Every local command refreshes before reading. Appended/new sessions should
+appear on the next `rein sessions` or `rein search`.
+
+The database is derived state and should rebuild automatically after corruption
+or schema incompatibility. If diagnosis requires a manual reset, close
+Reinstate and move—not immediately delete—the exact
+`session-index-v1.sqlite` database and its SQLite `-wal`/`-shm` companions out
+of `$REINSTATE_HOME/cache/`, then rerun:
+
+```bash
+rein sessions --json
+```
+
+Keep the moved files until the rebuilt results are verified. Never move or
+edit the vendor's Claude/Codex/Gemini/OpenCode session files to repair the
+index.
+
+## Session reference is ambiguous
+
+Bare native IDs are accepted only when one indexed agent owns the ID. Use the
+composite identity from `rein sessions`:
+
+```text
+claude:<native-session-id>
+codex:<native-session-id>
+```
+
+Reinstate must not guess an agent or launch anything on ambiguity.
+
+## Bare `rein` hangs or prints help in automation
+
+The numbered switcher is TTY-only. Scripts should use:
+
+```bash
+rein sessions --json
+```
+
+A non-TTY bare invocation should exit promptly with usage code `2` and that
+hint. If it waits for input, report the terminal/shell, OS, and redacted
+command invocation.
+
+## `resume`, `fork`, or `last` refuses to launch
+
+Review the structured plan first:
+
+```bash
+rein resume claude:SESSION_ID --dry-run --json
+rein fork codex:SESSION_ID --dry-run --json
+rein last --dry-run --json
+```
+
+The recorded workspace and vendor executable must exist. Claude and Codex
+launch through their own native commands; Reinstate does not translate one
+vendor's transcript into another. Gemini and OpenCode are read-only in Phase 2
+and intentionally return compatibility exit `5` for resume/fork.
+
+`--json` requires `--dry-run` for a launch command so native child output
+cannot be mixed into the JSON document.
+
 ## `pull` does not make `claude --resume` see sessions
 
 Usually a **path remap** issue:
@@ -57,9 +150,11 @@ before replacing them.
 
 ## Conflicts after using both machines the same day
 
-Expected if both sides modified the same session. Reinstate should create a
-`.conflict` fork rather than overwrite. Pick the winner manually; delete or
-archive the other.
+Expected if both sides modified the same session. Reinstate records a conflict
+rather than overwriting. Inspect its metadata with `rein conflicts show`, then
+choose `--keep-local`, `--keep-remote`, or `--keep-both`. Keep-both creates a
+distinct vendor-safe UUID session. Do not delete either branch until both
+resume successfully and the active conflict list is empty.
 
 ## Huge Codex history / slow sync
 
@@ -78,11 +173,16 @@ Defaults block common credential paths. If you overrode excludes:
 
 ## Agent was running during pull
 
-Close every process for the selected agent, then re-pull. Before overwriting
-an existing target, Reinstate blocks mutating pulls and `--keep-remote`
-conflict resolution while Claude Code or Codex may still be writing its
-session file. New-session restores, `--keep-both`, and `--dry-run` remain
-available.
+You do not need to close unrelated agents. The default `fork` policy scopes
+liveness to the exact selected session. If that session is in use, Reinstate
+leaves it untouched and restores the incoming snapshot beside it under a
+distinct vendor-safe UUID. Repeating the pull reuses the same fork without
+rewriting or backing up identical content.
+
+If configuration explicitly selects the `scoped` refusal policy, close the
+named session or change the reviewed policy; do not use a permission bypass.
+`--keep-remote` still refuses to replace a target that is in use, while
+`--keep-both` preserves both.
 
 ## Still stuck?
 

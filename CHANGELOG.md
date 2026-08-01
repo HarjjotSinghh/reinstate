@@ -9,21 +9,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add the Phase 2 configless local continuity surface: a private derived
+  session index plus `sessions`, literal `search`, metadata-only `inspect`,
+  `last`, same-vendor `resume`, same-vendor `fork`, and the no-argument
+  numbered switcher.
+- Add full local read/execution capability contracts for Claude Code and Codex,
+  with read-only Gemini CLI and OpenCode discovery paths. Composite
+  `agent:native-id` references prevent cross-vendor ambiguity; bare IDs are
+  accepted only when unique.
+- Add a release-neutral Phase 2 physical acceptance runbook, parallel macOS
+  Claude Code and native-Windows Codex operator prompts, a sanitized report
+  template, prompt-contract doctests, and the completed development-acceptance
+  reports. All 30 required rows passed on both devices at `b952d38`.
+- Add a native-Windows regression gate proving that the real Claude
+  resume/fork launch path preserves stdin, stdout, exact argv, and cwd through
+  the vendor's `.cmd` shim.
 - Close the landing page with a clear continuity-tool comparison and an
   accessible macOS, Linux, and Windows installation call to action.
 
 ### Changed
 
+- Make local discovery, search, and inspection independent of `rein init`,
+  object storage, credentials, encryption passphrases, project mappings, and
+  backend access. `rein list` remains available for Phase 1 compatibility;
+  `rein sessions` is the canonical configless local listing command.
+- Correct the Phase 2 acceptance contract for configless `rein list`: it may
+  succeed with its existing Phase 1 output, but must not be redefined as an
+  alias of the canonical `rein sessions` command.
+- Coalesce multiple local rollout files that belong to one native session ID
+  into one deterministic index record instead of treating vendor continuation
+  segments as an ambiguity or aborting the source refresh.
+- Close Phase 1 in the roadmap after stable `v0.1.0`; record Phase 2's green
+  automated implementation and two-device development acceptance while keeping
+  tagged-artifact release acceptance explicit.
 - Replace the legacy DevSync research PNGs with canonical Reinstate SVG
   diagrams across the README, repository documentation, research references,
   landing page, and website documentation.
 
 ### Fixed
 
+- Read OpenCode's top-level `updated` and `created` epoch timestamps so current
+  sessions retain their real ordering and remain visible in default listings.
 - Make all canonical Reinstate diagrams transparent and theme-aware so they
   blend into light and dark documentation backgrounds without losing contrast.
 - Align the closing illustrations' monitor stands, laptop keyboards, and
   encrypted-handoff spacing, and use the Reinstate mark consistently.
+
+### Security
+
+- Store the rebuildable local index under
+  `$REINSTATE_HOME/cache/session-index-v1.sqlite` with owner-only permissions.
+  Index only bounded user-authored prompt text and known metadata/file fields;
+  exclude assistant messages/reasoning, tool output, environment dumps, auth
+  stores, and credentials. Default command output never offers a full
+  transcript dump.
+- Build native launch plans as an executable plus argv and a recorded working
+  directory, never as a shell command string. Read-only adapters fail closed
+  for resume/fork instead of receiving dummy mutation behavior.
 
 ## [0.1.0] - 2026-07-30
 

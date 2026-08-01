@@ -4,17 +4,18 @@
 
 # Reinstate
 
-### Continue supported coding-agent sessions on another configured device
+### Find and continue coding-agent work across sessions and devices
 
 **Reinstate is an open-source tool that syncs encrypted Claude Code and Codex
 sessions between configured devices using your own S3-compatible storage.**
 The stable v0.1.0 release preserves same-vendor native resume across macOS
 and Windows project paths.
 
-The broader direction is a continuity layer for coding-agent work: local
-search, verified resume, explicit portable handoffs, and universal non-secret
-agent configuration are planned after Phase 1. They are not current CLI
-capabilities.
+Current source adds a configless local session index, literal search, metadata
+inspection, a numbered switcher, and same-vendor native resume/fork. Phase 2
+development acceptance passed all 30 required rows on macOS and native Windows
+at `b952d38`; exact tagged-artifact release acceptance is still required, and
+these commands are not in the stable v0.1.0 public installers.
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/HarjjotSinghh/reinstate)](https://goreportcard.com/report/github.com/HarjjotSinghh/reinstate)
@@ -55,9 +56,11 @@ capabilities.
 
 ## The problem
 
-You grind eight hours on your **Windows desktop** across Claude Code, Codex, with more agents planned after Phase 1… twenty sessions, four projects, full context.
+Even on one machine, you can have twenty sessions across Claude Code, Codex,
+projects, branches, and worktrees. Finding the right thread later becomes a
+memory problem.
 
-You open your **MacBook** on the couch.
+Then you open your **MacBook** on the couch.
 
 Git has the code. The agent does **not** have the conversation — the rejected approaches, the files already read three times, the style constraints you established mid-thread. Vendor tools save sessions **locally**. Switching machines is context death.
 
@@ -100,11 +103,13 @@ flowchart LR
 
 | | What you get |
 | --- | --- |
-| **Multi-agent** | Claude Code and Codex same-vendor session continuity in Phase 1 |
+| **Local recovery** | Configless local index/search/resume for Claude Code and Codex in current source |
+| **Multi-agent** | One metadata index; native execution always stays with the source vendor |
 | **Offline-capable origin** | Works when the other machine is **off** (stored sync, not a live relay) |
 | **Path remapping** | Windows ↔ macOS project paths rewritten so `--resume` actually finds sessions |
 | **Zero-knowledge** | Client-side encryption; bring-your-own storage |
-| **Sessions first** | Phase 1 deliberately excludes credentials, MCP, skills, and settings; universal configuration is later roadmap work |
+| **Bounded previews** | Metadata and a short user-prompt preview, never a default transcript dump |
+| **Sessions first** | Credentials, MCP, skills, and settings remain outside the session-index scope |
 | **Open source** | Apache-2.0 · auditable · patent grant · no vendor lock-in |
 
 Native vendor sync typically serves its own ecosystem. Unreviewed
@@ -120,13 +125,24 @@ sensitive artifacts. Reinstate instead provides
 
 ## Features
 
-- **Cross-device session sync** — continue the same agent thread on another machine
-- **Multi-agent adapters** — Claude Code, Codex, with more agents planned after Phase 1 (phased)
+Current source, development-accepted for Phase 2:
+
+- **Configless local index** — `rein sessions` works without `init` or cloud storage
+- **Literal search** — prompt, file, branch, project, agent, and session identity
+- **Metadata-first inspect** — bounded user-prompt preview; no full transcript mode
+- **Native continuation** — `last`, `resume`, and `fork` launch the source vendor
+- **Interactive switcher** — bare `rein` on a TTY; deterministic JSON for automation
+- **Read-only expansion** — Gemini CLI and OpenCode discovery without mutation
+
+Stable `v0.1.0`:
+
+- **Cross-device session sync** — continue the same Claude/Codex thread on another machine
+- **Multi-agent adapters** — same-vendor Claude Code and Codex session continuity
 - **End-to-end encryption** — [age](https://github.com/FiloSottile/age), passphrase-derived keys
 - **Bring-your-own storage** — Cloudflare R2, AWS S3, and S3-compatible storage
 - **OS-aware path remapping** — the hard problem treated as the product
 - **Safe by default** — credential denylist, atomic restore, conflict forks, local backups
-- **Simple CLI** — `rein init` · `push` · `pull` · `status` · `diff` · `conflicts`
+- **Simple sync CLI** — `rein init` · `push` · `pull` · `status` · `diff` · `conflicts`
   (`rein` is the short alias; `reinstate` is the full command — same binary)
 
 Later, Reinstate will extend continuity beyond sessions: declare MCP servers,
@@ -140,13 +156,46 @@ not part of the current CLI. See
 
 ## Quick start
 
-> **Note:** the v0.1 CLI surface below is implemented and the native two-device
-> Phase 1 acceptance has passed on real macOS and Windows hardware. The commands
-> below pin the published stable release `v0.1.0`.
+> **Release boundary:** the public installers currently pin stable `v0.1.0`,
+> whose Phase 1 encrypted-sync acceptance passed on real macOS and Windows
+> hardware. The local-index source passed the Phase 2 development matrix, but
+> remains unreleased until a signed candidate's installed artifacts pass the
+> release matrix on both platforms.
 >
 > **CLI:** prefer short alias **`rein`**. Full name **`reinstate`** works the same.
 
-### Install
+### Local continuity from the current source
+
+From this repository, with Go 1.25.12 or newer:
+
+```bash
+make build
+export REINSTATE_HOME="$HOME/.reinstate-phase2-local"
+
+./bin/rein sessions
+./bin/rein search "stripe webhook retry" --agent claude
+./bin/rein inspect claude:SESSION_ID
+./bin/rein last --dry-run
+./bin/rein resume codex:SESSION_ID --dry-run
+./bin/rein fork claude:SESSION_ID --dry-run
+./bin/rein
+```
+
+On native Windows PowerShell, build `.\bin\rein.exe` with
+`go build -o .\bin\rein.exe .\cmd\reinstate`, set `$env:REINSTATE_HOME`, and
+use that executable for the same commands.
+
+These commands refresh a private derived index at
+`$REINSTATE_HOME/cache/session-index-v1.sqlite`. They do not require `init`,
+storage credentials, a passphrase, or a network backend. Remove
+`--dry-run` only after reviewing the exact executable, argument array, and
+working directory. Native resume/fork remains same-vendor.
+
+Bare `rein` opens the numbered switcher only on a TTY. For scripts use
+`rein sessions --json`; a non-TTY bare invocation exits promptly with that
+hint.
+
+### Install stable v0.1.0 for encrypted sync
 
 macOS, Linux, or WSL2:
 
@@ -174,7 +223,7 @@ Shells without timed-read support refuse immediately and preserve the installed
 binary. For deliberate automation, review the version change first and set
 `REINSTATE_CONFIRM_REPLACE=1`.
 
-### Device A
+### Optional encrypted sync — Device A
 
 ```bash
 rein init --project github.com/acme/app=/absolute/path/to/app
@@ -187,7 +236,7 @@ Use the S3/R2 service endpoint as the endpoint and enter the bucket separately.
 Reinstate refuses to overwrite an initialized home by default. The explicit
 `--force` path backs up prior config and state together before replacement.
 
-### Device B
+### Optional encrypted sync — Device B
 
 ```bash
 rein init --profile-id <DEVICE_A_PROFILE_ID> \
@@ -208,13 +257,13 @@ Full walkthrough: **[docs/getting-started.md](docs/getting-started.md)**
 
 ## Supported agents
 
-| Agent | Sessions | Universal config target | Status |
-| ----- | :------: | :---------------------: | ------ |
-| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | ✅ | 📋 | Sessions: Phase 1 |
-| [OpenAI Codex CLI](https://github.com/openai/codex) | ✅ | 📋 | Sessions: Phase 1 |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | 📋 | 📋 | Later phase |
-| [OpenCode](https://opencode.ai) | 📋 | 📋 | Later phase |
-| [Grok Build](https://x.ai) | 📋 | 📋 | Later phase |
+| Agent | Local index | Resume/fork | Encrypted sync | Status |
+| ----- | :---------: | :---------: | :------------: | ------ |
+| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | ✅ full | ✅ native | ✅ | Development acceptance passed on macOS and Windows |
+| [OpenAI Codex CLI](https://github.com/openai/codex) | ✅ full | ✅ native | ✅ | Development acceptance passed on macOS and Windows |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | ✅ read-only | — | — | Physical read-only path passed on Windows; unavailable on test Mac |
+| [OpenCode](https://opencode.ai) | ✅ read-only | — | — | Physical read-only path passed on Windows; unavailable on test Mac |
+| [Grok Build](https://x.ai) | 📋 | — | — | Later phase |
 
 Details: **[docs/adapters.md](docs/adapters.md)**
 
@@ -230,22 +279,29 @@ flowchart TB
     GM[Gemini CLI]
     OC[OpenCode]
   end
-  subgraph Pipeline["Reinstate"]
-    AD[Adapters]
+  subgraph Local["Local continuity · no config/cloud"]
+    AD[Read adapters]
+    IX[Private derived index]
+    Q[Search · inspect · switcher]
+    EX[Same-vendor launch plan]
+  end
+  subgraph Sync["Optional encrypted sync"]
     NM[Normalize paths]
     EN[Encrypt · age]
-    SY[Sync engine · manifest]
+    SY[Manifest · push/pull]
   end
   BK[(Your bucket<br/>R2 / S3-compatible)]
-  Agents --> AD --> NM --> EN --> SY
+  Agents --> AD --> IX --> Q --> EX --> Agents
+  Agents --> NM --> EN --> SY
   SY <-->|ciphertext only| BK
   SY -->|pull · decrypt · remap · atomic restore| Agents
 ```
 
-1. **Adapters** read each tool’s local session layout
-2. **Pathmap** rewrites absolute paths to portable tokens and back
-3. **Crypto** encrypts before any upload
-4. **Sync** uses a local manifest; restores are atomic with backups
+1. **Local read adapters** derive bounded metadata and user-prompt search text
+2. **Index** stores owner-only, rebuildable SQLite state; it never enters sync
+3. **Executors** launch a supported session through its native vendor
+4. **Pathmap** rewrites known structural paths for optional cross-device sync
+5. **Crypto/sync** encrypt before upload and restore atomically with backups
 
 Deep dive: **[docs/architecture.md](docs/architecture.md)** · research diagram:
 
@@ -261,6 +317,7 @@ Deep dive: **[docs/architecture.md](docs/architecture.md)** · research diagram:
 | --------- | ------ |
 | E2E encryption | Ciphertext only on remote storage |
 | Credential denylist | `auth.json` and tokens never synced by default |
+| Private local index | Owner-only derived metadata; no assistant/tool-output corpus |
 | No vendor API keys required | Local files only |
 | Fail-safe restore | Backups + conflict forks |
 
@@ -273,7 +330,7 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 | Doc | Description |
 | --- | ----------- |
 | **Website** | [reinstate.dev](https://reinstate.dev) — product, documentation, compatibility, and security |
-| [Getting started](docs/getting-started.md) | Install, init, dual-device setup |
+| [Getting started](docs/getting-started.md) | Configless local index plus optional encrypted sync |
 | [Architecture](docs/architecture.md) | Pipeline, packages, design principles |
 | [Adapters](docs/adapters.md) | Per-agent layouts & support matrix |
 | [Universal configuration](docs/universal-configuration.md) | Planned MCP/skills/loops/plugins/settings portability |
@@ -341,9 +398,10 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 
 | Phase | Focus | Status |
 | ----- | ----- | ------ |
-| **0** | Contracts, diagnostics, installers, fixtures, release trust | 🚧 |
-| **1** | Claude + Codex encrypted same-vendor session sync | 🚧 |
-| **2–4** | Local index, verified resume, portable handoffs | 📋 |
+| **0** | Contracts, diagnostics, installers, fixtures, release trust | ✅ |
+| **1** | Claude + Codex encrypted same-vendor session sync | ✅ |
+| **2** | Configless local index, search, native resume/fork | 🚧 |
+| **3–4** | Verified resume, portable handoffs | 📋 |
 | **5–7** | Universal config + automatic sync, thin Console/ACP client, teams | 📋 / 💭 |
 
 Full detail: **[ROADMAP.md](ROADMAP.md)**

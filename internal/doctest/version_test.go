@@ -30,7 +30,7 @@ func read(t *testing.T, rel string) string {
 }
 
 // TestReleaseAndSupportClaims fails when docs invent released versions or
-// mark Phase-1-only adapters as implemented.
+// blur local read capabilities into unsupported mutation/sync claims.
 func TestReleaseAndSupportClaims(t *testing.T) {
 	changelog := read(t, "CHANGELOG.md")
 	if strings.Contains(changelog, "## [0.0.0]") {
@@ -63,20 +63,43 @@ func TestReleaseAndSupportClaims(t *testing.T) {
 		}
 	}
 
-	// Support matrix must not claim Gemini/OpenCode as Phase 1 complete.
-	for _, path := range []string{"docs/compatibility.md", "docs/adapters.md", "README.md", "SUPPORT.md"} {
-		body := read(t, path)
-		// Implemented checkmarks for agents that are out of Phase 1 scope.
-		badPatterns := []*regexp.Regexp{
-			regexp.MustCompile(`(?i)gemini.*✅`),
-			regexp.MustCompile(`(?i)opencode.*✅`),
-			regexp.MustCompile(`(?i)cursor.*✅`),
-			regexp.MustCompile(`(?i)\| *Gemini[^|]*\|[^|]*✅`),
+	// Gemini/OpenCode may advertise Phase 2 local read evidence, but neither may
+	// be presented as a Phase 1 sync adapter or a mutation-capable native
+	// executor. Keep the capability columns explicit instead of rejecting every
+	// implementation checkmark next to the agent name.
+	compatibility := read(t, "docs/compatibility.md")
+	for _, expected := range []string{
+		"| Gemini CLI | Not in Phase 1 |",
+		"| OpenCode | Not in Phase 1 |",
+	} {
+		if !strings.Contains(compatibility, expected) {
+			t.Errorf("docs/compatibility.md must retain stable Phase 1 exclusion %q", expected)
 		}
-		for _, re := range badPatterns {
-			if re.MatchString(body) {
-				t.Errorf("%s claims implemented support for a non-Phase-1 agent: %s", path, re.String())
-			}
+	}
+
+	adapters := read(t, "docs/adapters.md")
+	for _, re := range []*regexp.Regexp{
+		regexp.MustCompile(`(?m)^\| Gemini CLI \|[^\n]*\| No \| No \|`),
+		regexp.MustCompile(`(?m)^\| OpenCode \|[^\n]*\| No \| No \|`),
+	} {
+		if !re.MatchString(adapters) {
+			t.Errorf("docs/adapters.md must keep read-only adapter capabilities explicit: %s", re.String())
+		}
+	}
+
+	readme := read(t, "README.md")
+	for _, re := range []*regexp.Regexp{
+		regexp.MustCompile(`(?m)^\| \[Gemini CLI\][^\n]*\| — \| — \|`),
+		regexp.MustCompile(`(?m)^\| \[OpenCode\][^\n]*\| — \| — \|`),
+	} {
+		if !re.MatchString(readme) {
+			t.Errorf("README.md must not claim Gemini/OpenCode native mutation or encrypted sync: %s", re.String())
+		}
+	}
+
+	for _, path := range []string{"docs/compatibility.md", "docs/adapters.md", "README.md", "SUPPORT.md"} {
+		if regexp.MustCompile(`(?i)cursor.*✅`).MatchString(read(t, path)) {
+			t.Errorf("%s claims implemented Cursor support", path)
 		}
 	}
 

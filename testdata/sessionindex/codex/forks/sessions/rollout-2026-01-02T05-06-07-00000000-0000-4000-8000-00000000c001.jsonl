@@ -1,0 +1,4 @@
+{"type":"session_meta","payload":{"id":"00000000-0000-4000-8000-00000000c001","session_id":"00000000-0000-4000-8000-00000000c001","cwd":"/Users/fixture-user/code/demo","git":{"branch":"fixture/source"},"forked_from_id":"00000000-0000-4000-8000-00000000a001"}}
+{"type":"message","role":"user","content":"SOURCE-ONLY-PROMPT synthetic codex source turn"}
+{"type":"session_meta","payload":{"id":"00000000-0000-4000-8000-00000000a001","session_id":"00000000-0000-4000-8000-00000000a001","cwd":"/Users/fixture-user/code/demo"}}
+{"type":"message","role":"user","content":"FORK-B-ONLY-PROMPT synthetic codex fork turn"}
