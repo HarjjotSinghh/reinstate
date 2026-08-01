@@ -76,7 +76,7 @@ describe('central product-truth drift guard', () => {
 
       const source = await readFile(path, 'utf8');
       const releaseLabels = [
-        ...source.matchAll(/\bv?0\.1\.0-rc\.\d+\b|\bRC\d+\b/g),
+        ...source.matchAll(/\bv?\d+\.\d+\.\d+-rc\.\d+\b|\bRC\d+\b/g),
       ].map((match) => match[0]);
 
       for (const label of releaseLabels) {

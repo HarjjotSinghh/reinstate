@@ -6,8 +6,8 @@ order: 12
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.1.0"
-updatedAt: 2026-07-27
+version: "v0.2.0-rc.1"
+updatedAt: 2026-08-01
 tags: ["push", "session-sync", "claude-code", "codex", "dry-run"]
 targetQuery: "push a coding agent session with Reinstate"
 searchIntent: "how-to"
@@ -28,7 +28,7 @@ remote manifest.
 
 ## Prerequisites
 
-- Reinstate `v0.1.0` initialized on the source device.
+- Reinstate `v0.2.0-rc.1` initialized on the source device.
 - A successful `rein setup check` with the selected adapter marked
   `SUPPORTED`.
 - An existing encrypted profile and reachable S3-compatible storage.

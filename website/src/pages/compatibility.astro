@@ -20,7 +20,7 @@ const label = (value: string) =>
   {description}
   path="/compatibility"
   eyebrow="Compatibility"
-  answer="Reinstate supports same-vendor session sync for tested Claude Code and Codex CLI versions, with macOS and native Windows as the primary Phase 1 platforms. Stable v0.1 certification still depends on the remaining native-device and two-device release gates."
+  answer="Reinstate supports same-vendor session sync and native local continuation for tested Claude Code and Codex CLI versions, plus read-only Gemini CLI and OpenCode indexing. Phase 2 development acceptance passed on macOS arm64 and native Windows; v0.2.0-rc.1 artifact certification remains open."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'Compatibility', path: '/compatibility' },
@@ -59,14 +59,21 @@ const label = (value: string) =>
         }
         <tr>
           <td>Gemini CLI</td>
-          <td>Not in Phase 1</td>
+          <td>Phase 2 read-only local index</td>
           <td>None</td>
-          <td>Not supported</td>
-          <td>Not tested</td>
+          <td>Read-only; no native action</td>
+          <td>Windows physical path passed</td>
         </tr>
         <tr>
-          <td>OpenCode, Cursor, Grok Build</td>
-          <td>Not in Phase 1</td>
+          <td>OpenCode</td>
+          <td>Phase 2 read-only local index</td>
+          <td>None</td>
+          <td>Read-only; no native action</td>
+          <td>Windows physical path passed</td>
+        </tr>
+        <tr>
+          <td>Cursor, Grok Build</td>
+          <td>Not implemented</td>
           <td>None</td>
           <td>Not supported</td>
           <td>Not tested</td>

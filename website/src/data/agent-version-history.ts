@@ -16,6 +16,14 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.2.0-rc.1': {
+    rangeChange:
+      'Expanded the inclusive Codex CLI range from 0.133.0–0.145.0 to 0.133.0–0.146.0; the Claude Code range remains 2.1.219–2.1.220.',
+    compatibilityChange:
+      'Codex CLI 0.146.0 passed the complete Phase 2 physical matrix on both macOS and native Windows. The adapter still fails closed for stable versions above 0.146.0 and for every prerelease.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.2.0-rc.1/internal/adapter/codex/codex.go',
+  },
   'v0.1.0': {
     rangeChange: 'No agent-version range change documented.',
     compatibilityChange:

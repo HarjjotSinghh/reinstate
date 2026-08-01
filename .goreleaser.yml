@@ -55,7 +55,10 @@ source:
   prefix_template: "{{ .ProjectName }}-{{ .Version }}/"
 
 snapshot:
-  version_template: "{{ incpatch .Version }}-next"
+  # Snapshot preparation can run after a signed website-v... deployment tag.
+  # Do not derive this SemVer value from the nearest Git tag: website tags are
+  # deliberately not CLI release versions.
+  version_template: "0.0.0-{{ .ShortCommit }}"
 
 changelog:
   sort: asc

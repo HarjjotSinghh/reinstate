@@ -8,14 +8,14 @@
 
 **Reinstate is an open-source tool that syncs encrypted Claude Code and Codex
 sessions between configured devices using your own S3-compatible storage.**
-The stable v0.1.0 release preserves same-vendor native resume across macOS
-and Windows project paths.
+Stable `v0.1.0` preserves same-vendor encrypted sync across macOS and Windows
+project paths.
 
-Current source adds a configless local session index, literal search, metadata
-inspection, a numbered switcher, and same-vendor native resume/fork. Phase 2
-development acceptance passed all 30 required rows on macOS and native Windows
-at `b952d38`; exact tagged-artifact release acceptance is still required, and
-these commands are not in the stable v0.1.0 public installers.
+The `v0.2.0-rc.1` candidate adds a configless local session index, literal
+search, metadata inspection, a numbered switcher, and same-vendor native
+resume/fork. Phase 2 development acceptance passed all 30 required rows on
+macOS and native Windows at `b952d38`; exact tagged-artifact release acceptance
+is still required before stable promotion.
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/HarjjotSinghh/reinstate)](https://goreportcard.com/report/github.com/HarjjotSinghh/reinstate)
@@ -125,7 +125,7 @@ sensitive artifacts. Reinstate instead provides
 
 ## Features
 
-Current source, development-accepted for Phase 2:
+`v0.2.0-rc.1`, development-accepted for Phase 2:
 
 - **Configless local index** — `rein sessions` works without `init` or cloud storage
 - **Literal search** — prompt, file, branch, project, agent, and session identity
@@ -156,11 +156,10 @@ not part of the current CLI. See
 
 ## Quick start
 
-> **Release boundary:** the public installers currently pin stable `v0.1.0`,
-> whose Phase 1 encrypted-sync acceptance passed on real macOS and Windows
-> hardware. The local-index source passed the Phase 2 development matrix, but
-> remains unreleased until a signed candidate's installed artifacts pass the
-> release matrix on both platforms.
+> **Release boundary:** the public installers pin prerelease
+> `v0.2.0-rc.1`. Its source passed the Phase 2 development matrix, but stable
+> promotion remains blocked until the exact installed candidate artifacts pass
+> the release matrix on macOS and native Windows.
 >
 > **CLI:** prefer short alias **`rein`**. Full name **`reinstate`** works the same.
 
@@ -195,7 +194,7 @@ Bare `rein` opens the numbered switcher only on a TTY. For scripts use
 `rein sessions --json`; a non-TTY bare invocation exits promptly with that
 hint.
 
-### Install stable v0.1.0 for encrypted sync
+### Install the v0.2.0-rc.1 release candidate
 
 macOS, Linux, or WSL2:
 
@@ -209,7 +208,7 @@ Native Windows PowerShell:
 irm https://reinstate.dev/install.ps1 | iex
 ```
 
-Both bootstraps pin and verify `v0.1.0`, install without elevation, and
+Both bootstraps pin and verify `v0.2.0-rc.1`, install without elevation, and
 print the next command:
 
 ```bash

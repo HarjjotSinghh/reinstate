@@ -10,14 +10,14 @@ import {
 } from './schema';
 
 describe('SEO product truth', () => {
-  it('protects the current Phase 1 scope', () => {
+  it('protects the current prerelease product boundary', () => {
     expect(product.supportedAgents).toEqual(['Claude Code', 'Codex']);
     expect(product.supportedOperatingSystems).toEqual(['macOS', 'Windows']);
     expect(product.licenseName).toBe('Apache-2.0');
     expect(product.requiresAccount).toBe(false);
-    expect(product.releaseStatus).toBe('stable pre-1.0 release');
+    expect(product.releaseStatus).toBe('v0.2.0-rc.1 prerelease');
     expect(product.initialPublicReleaseDate).toBe('2026-07-25');
-    expect(product.stableRelease).toBeNull();
+    expect(product.stableRelease).toBe('v0.1.0');
   });
 
   it('keeps the advertised release synchronized with the changelog', () => {

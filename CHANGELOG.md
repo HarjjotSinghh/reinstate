@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0-rc.1] - 2026-08-01
+
+First Phase 2 release candidate. Development acceptance passed all 30 required
+rows on macOS and native Windows at product commit `b952d38`. Stable promotion
+remains blocked until the installed artifacts from this signed tag pass the
+tagged-artifact matrix on both devices.
+
 ### Added
 
 - Add the Phase 2 configless local continuity surface: a private derived
@@ -29,6 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Expand the fail-closed Codex CLI compatibility range through `0.146.0`, the
+  stable vendor version exercised by the completed Phase 2 physical matrix on
+  both macOS and native Windows.
 - Make local discovery, search, and inspection independent of `rein init`,
   object storage, credentials, encryption passphrases, project mappings, and
   backend access. `rein list` remains available for Phase 1 compatibility;
@@ -358,7 +368,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.2.0-rc.1...HEAD
+[0.2.0-rc.1]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0...v0.2.0-rc.1
 [0.1.0]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.8...v0.1.0
 [0.1.0-rc.8]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.7...v0.1.0-rc.8
 [0.1.0-rc.7]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.6...v0.1.0-rc.7

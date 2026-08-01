@@ -273,6 +273,43 @@ func TestPhase2AutonomousPromptContracts(t *testing.T) {
 	}
 }
 
+func TestPhase2RC1PromptContracts(t *testing.T) {
+	body := read(t, "docs/testing/v0.2.0-rc.1-agent-verification-prompts.md")
+	for _, value := range []string{
+		"v0.2.0-rc.1",
+		"Prompt 1 — Claude Code on macOS",
+		"Prompt 2 — Codex on native Windows",
+		"git verify-tag",
+		"five platform archives",
+		"five matching",
+		"attestation results",
+		"https://reinstate.dev/install.sh",
+		"https://reinstate.dev/install.ps1",
+		"brand-new isolated INSTALL_DIR",
+		"source build is supplemental",
+		"test/v0.2.0-rc.1-macos-report",
+		"test/v0.2.0-rc.1-windows-report",
+		"OpenCode",
+		"human-keyboard",
+		"Handoff sequence",
+		"Promote to stable only if",
+	} {
+		if !strings.Contains(strings.ToLower(body), strings.ToLower(value)) {
+			t.Errorf("v0.2.0-rc.1 prompts missing %q", value)
+		}
+	}
+	for _, forbidden := range []string{
+		"REINSTATE_PASSPHRASE=",
+		"--dangerously-skip-permissions",
+		"R2.txt",
+		"releases/latest",
+	} {
+		if strings.Contains(body, forbidden) {
+			t.Errorf("v0.2.0-rc.1 prompts contain unsafe instruction %q", forbidden)
+		}
+	}
+}
+
 func TestPhase2ReportTemplateContracts(t *testing.T) {
 	body := read(t, "docs/testing/results/phase-2-report-template.md")
 	for _, value := range []string{

@@ -12,20 +12,20 @@ sync** for:
 | Cursor | Not in Phase 1 |
 | Grok Build | Not in Phase 1 |
 
-Current source adds a separate Phase 2 local capability matrix:
+The `v0.2.0-rc.1` candidate adds a separate Phase 2 local capability matrix:
 
 | Agent | Local discovery/search/inspect | Native resume/fork | Physical Phase 2 evidence |
 | ----- | ------------------------------ | ------------------ | ------------------------- |
-| Claude Code | Implemented; unreleased | Same-vendor implemented; unreleased | Development acceptance passed on macOS and Windows |
-| OpenAI Codex CLI | Implemented; unreleased | Same-vendor implemented; unreleased | Development acceptance passed on macOS and Windows |
-| Gemini CLI | Read-only implemented; unreleased | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac |
-| OpenCode | Read-only implemented; unreleased | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac |
+| Claude Code | Included in candidate | Same-vendor included in candidate | Development acceptance passed on macOS and Windows |
+| OpenAI Codex CLI | Included in candidate | Same-vendor included in candidate | Development acceptance passed on macOS and Windows |
+| Gemini CLI | Read-only included in candidate | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac |
+| OpenCode | Read-only included in candidate | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac |
 | Cursor | Not implemented | Not implemented | Not applicable |
 | Grok Build | Not implemented | Not implemented | Not applicable |
 
 Automated fixture/fake-runner evidence and physical evidence are reported
-separately. This table does not claim that unreleased Phase 2 commands exist in
-the stable `v0.1.0` public installers.
+separately. This table does not promote candidate evidence to stable evidence;
+stable `v0.1.0` remains available while `v0.2.0-rc.1` is tested.
 
 This table covers session compatibility only. Planned universal configuration
 support will be reported separately per harness and per capability (MCP,
@@ -68,9 +68,11 @@ ranges on macOS arm64 plus deterministic synthetic fixtures:
 | Agent | Tested stable range |
 | ----- | ------------------- |
 | Claude Code | `2.1.219`–`2.1.220` |
-| OpenAI Codex CLI | `0.133.0`–`0.145.0` |
+| OpenAI Codex CLI | `0.133.0`–`0.146.0` |
 
-Stable `v0.1.0` contains these compatibility ranges plus
+The candidate expands Codex support through `0.146.0`, which passed the full
+Phase 2 physical matrix on both tested devices. Stable `v0.1.0` contains the
+earlier `0.133.0`–`0.145.0` Codex range plus
 destination-device Claude project-directory remapping and exact restore-path
 verification.
 Versions outside them, including prereleases, are `UNTESTED` and must not be

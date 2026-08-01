@@ -16,7 +16,7 @@ const currentReleaseDate = new Intl.DateTimeFormat('en', {
 }).format(new Date(`${product.currentReleaseDate}T00:00:00Z`));
 const answer =
   `The latest published Reinstate tag is ${product.currentRelease}, dated ${currentReleaseDate}. ` +
-  'Reinstate tightens cross-device project mapping and restore verification, improves additional-device storage validation, and keeps the public installers and acceptance evidence pinned to one release candidate.';
+  'This Phase 2 candidate adds configless local session discovery, literal search, bounded inspection, a TTY switcher, and same-vendor native resume/fork while retaining encrypted cross-device sync.';
 ---
 
 <PublicContentLayout
@@ -36,7 +36,7 @@ const answer =
     Current unreleased website work adds the SEO, answer-engine, AI-search, and social-preview
     foundation and introduces signed <code>website-vYYYY.MM.DD.N</code> deployment tags. A website
     tag can publish reviewed site changes from current <code>main</code> while the public CLI and
-    installer routes remain pinned to the separately signed <code>v0.1.0</code> release. It is
+    installer routes remain pinned to the separately signed <code>{product.currentRelease}</code> release. It is
     not a new Reinstate version or evidence that the remaining Reinstate acceptance gates have closed.
   </p>
   <p>
@@ -49,45 +49,45 @@ const answer =
   <h2 id={releaseAnchor(product.currentRelease)}>
     {product.currentRelease} · {currentReleaseDate}
   </h2>
-  <h3>Cross-device path and restore correctness</h3>
+  <h3>Configless local continuity</h3>
   <ul>
     <li>
-      Codex rollout working directories now resolve to configured canonical project IDs, exclude
-      unmapped projects, normalize source roots on export, and reject duplicate mappings.
+      <code>rein sessions</code>, literal <code>search</code>, metadata-only
+      <code>inspect</code>, and <code>last</code> work without initialization, credentials,
+      passphrases, or a network backend.
     </li>
     <li>
-      The Claude Code adapter uses canonical project mapping to compute destination-specific
-      project directories and verifies the restored session at the exact planned vendor path.
+      Bare <code>rein</code> opens a numbered TTY switcher; scripts use deterministic
+      <code>rein sessions --json</code> output.
     </li>
     <li>
-      Pull dry-runs report <code>would pull</code> instead of implying that sessions were already
-      restored.
+      The private derived index stores bounded user-authored search text and known metadata while
+      excluding assistant reasoning, tool output, environment dumps, credentials, and auth stores.
     </li>
   </ul>
-  <h3>Setup and storage validation</h3>
+  <h3>Same-vendor execution and read-only expansion</h3>
   <ul>
     <li>
-      An additional device validates the encrypted remote manifest with a readable object request,
-      avoiding Cloudflare R2's generic failure for a metadata-only probe.
+      Claude Code and Codex resume/fork use exact native IDs, recorded workspaces, and separate
+      executable/argv launch plans; dry-run exposes the plan before execution.
     </li>
     <li>
-      Setup preserves and confirms an existing absolute <code>REINSTATE_HOME</code> instead of
-      silently falling back to the default home.
+      Gemini CLI and OpenCode add read-only local discovery and fail closed with compatibility exit
+      <code>5</code> for resume or fork.
     </li>
     <li>
-      The missing-config error remains redacted rather than exposing an absolute local config path.
+      OpenCode top-level epoch timestamps retain real ordering and default-list visibility.
     </li>
   </ul>
-  <h3>Release and roadmap clarity</h3>
+  <h3>Acceptance boundary</h3>
   <ul>
-    <li>Public installers, setup prompts, and compatibility evidence are pinned to Reinstate.</li>
+    <li>All 30 required development-acceptance rows passed on macOS and native Windows.</li>
     <li>
-      Production deployment requires the signed-tag release workflow and verifies immutable and
-      promoted installer routes byte for byte.
+      The signed candidate, checksums, SBOMs, source archive, and public installers must still pass
+      exact tagged-artifact acceptance before stable promotion.
     </li>
     <li>
-      Post-Phase-1 direction now documents universal non-secret agent configuration without
-      expanding current CLI claims.
+      Stable <code>v0.1.0</code> remains available while this prerelease is evaluated.
     </li>
   </ul>
   <p>

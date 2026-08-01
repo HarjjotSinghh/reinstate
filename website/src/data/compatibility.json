@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "reinstateVersion": "v0.1.0",
-  "lastReviewed": "2026-07-27",
+  "reinstateVersion": "v0.2.0-rc.1",
+  "lastReviewed": "2026-08-01",
   "owner": {
     "name": "Harjot Singh Rana",
     "url": "https://harjot.co"
@@ -17,7 +17,7 @@
       "maximumTestedVersion": "2.1.220",
       "resumeMode": "Claude Code to Claude Code",
       "evidenceLevel": "source checks and deterministic synthetic fixtures",
-      "lastTested": "2026-07-27",
+      "lastTested": "2026-07-31",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/4a7ccac3bf9b43feff701938d29859460aef817d/internal/adapter/claude/claude_test.go",
       "notes": "Versions outside the inclusive range, including prereleases, fail closed as untested. This is not a claim that every physical platform gate has passed."
     },
@@ -27,12 +27,12 @@
       "integrationPath": "/integrations/codex",
       "status": "primary-release-target",
       "minimumTestedVersion": "0.133.0",
-      "maximumTestedVersion": "0.145.0",
+      "maximumTestedVersion": "0.146.0",
       "resumeMode": "Codex to Codex",
       "evidenceLevel": "source checks and deterministic synthetic fixtures",
-      "lastTested": "2026-07-27",
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/4a7ccac3bf9b43feff701938d29859460aef817d/internal/adapter/codex/codex_test.go",
-      "notes": "Versions outside the inclusive range, including prereleases, fail closed as untested. This is not a claim that every physical platform gate has passed."
+      "lastTested": "2026-07-31",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/v0.2.0-rc.1/internal/adapter/codex/codex_test.go",
+      "notes": "Codex CLI 0.146.0 passed the complete Phase 2 physical matrix on macOS and native Windows. Versions outside the inclusive range, including prereleases, fail closed as untested."
     }
   ],
   "environments": [
@@ -41,10 +41,10 @@
       "name": "macOS native · arm64",
       "claudeCode": "required",
       "codex": "required",
-      "status": "local-verification-green",
-      "lastTested": "2026-07-27",
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-07-27-macos-phase1-rc5.md",
-      "notes": "RC5 physical evidence exists; Reinstate remains a release candidate until the complete acceptance checklist is signed off."
+      "status": "development-acceptance-green",
+      "lastTested": "2026-07-31",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-07-31-macos-phase2-b952d38c2dc5.md",
+      "notes": "Phase 2 development acceptance passed all required rows; exact v0.2.0-rc.1 tagged artifacts remain to be certified."
     },
     {
       "id": "macos-amd64",
@@ -61,10 +61,10 @@
       "name": "Windows 11 native · amd64",
       "claudeCode": "required",
       "codex": "required",
-      "status": "release-gate-open",
-      "lastTested": "2026-07-27",
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-07-27-windows-phase1-rc5.md",
-      "notes": "RC5 physical evidence exists; Reinstate native two-device acceptance remains open."
+      "status": "development-acceptance-green",
+      "lastTested": "2026-08-01",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-07-31-windows-phase2-b952d38c2dc5.md",
+      "notes": "Phase 2 development acceptance passed all required rows plus Gemini/OpenCode physical paths; exact v0.2.0-rc.1 tagged artifacts remain to be certified."
     },
     {
       "id": "windows-11-wsl2-amd64",

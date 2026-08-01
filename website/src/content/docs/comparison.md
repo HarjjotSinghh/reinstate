@@ -6,8 +6,8 @@ order: 6
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.1.0"
-updatedAt: 2026-07-27
+version: "v0.2.0-rc.1"
+updatedAt: 2026-08-01
 tags: ["comparison", "session-sync", "developer-tools", "coding-agents"]
 targetQuery: "Reinstate alternatives"
 searchIntent: "comparison"
@@ -16,9 +16,10 @@ noindex: false
 ---
 
 Reinstate is a continuity layer for coding-agent work: the current release
-candidate syncs same-vendor Claude Code and Codex sessions through encrypted,
-user-owned storage. It complements native agent features, full coding
-environments, session browsers, and Git instead of replacing them.
+candidate indexes local sessions without configuration and syncs same-vendor
+Claude Code and Codex sessions through encrypted, user-owned storage. It
+complements native agent features, full coding environments, session browsers,
+and Git instead of replacing them.
 
 <figure>
   <img
@@ -40,6 +41,7 @@ environments, session browsers, and Git instead of replacing them.
 | Capability | Reinstate | Native agent features | General-purpose file sync |
 | ---------- | ------------- | --------------------- | ------------------------- |
 | Agent scope | Claude Code and Codex, same-vendor resume | One vendor ecosystem at a time | Any selected files, without agent semantics |
+| Local discovery | Claude Code/Codex full; Gemini CLI/OpenCode read-only | Vendor-specific | Filename/path only |
 | Storage ownership | Your S3-compatible bucket | Vendor-defined | User-selected |
 | Remote payload encryption | age-encrypted locally before upload | Vendor-defined | Depends on the chosen tool and setup |
 | Cross-OS project paths | Canonical project IDs and structural path remapping | Usually internal to the vendor workflow | Manual path and layout handling |
@@ -56,9 +58,9 @@ against their current documentation.
 
 Native session features stay inside their vendor's ecosystem. Reinstate's
 Phase 1 differentiator is neutral storage plus structural path remapping for
-same-vendor Claude Code and Codex sessions. A later local index, environment
-verification, configuration reconciliation, and portable handoffs will address
-cross-agent continuity explicitly.
+same-vendor Claude Code and Codex sessions. Phase 2 adds a configless local
+index and same-vendor native launch plans. Environment verification,
+configuration reconciliation, and portable handoffs remain later work.
 
 Reinstate does not claim to natively resume a Claude transcript inside Codex.
 
@@ -72,8 +74,8 @@ project-path remapping as a first-class concern.
 ## How does Reinstate differ from config-only tools?
 
 Config-only tools address settings rather than session continuity. Reinstate's
-current release scope is encrypted session sync; universal agent configuration
-is planned after Phase 1.
+current release scope is local session continuity plus encrypted session sync;
+universal agent configuration is planned for a later phase.
 
 The planned layer covers MCP servers, skills/instructions, hooks/loops, plugins,
 marketplaces, and safe settings. It translates desired state through verified
