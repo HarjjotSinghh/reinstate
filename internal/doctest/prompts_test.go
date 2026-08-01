@@ -174,7 +174,8 @@ func TestPhase2AcceptanceRunbookContracts(t *testing.T) {
 	body := read(t, "docs/testing/phase-2-local-index-acceptance.md")
 	for _, value := range []string{
 		"Current status:",
-		"Physical macOS and native-Windows acceptance remains pending",
+		"development acceptance passed all 30 required rows",
+		"tagged-artifact portions",
 		"without:",
 		"`rein init`",
 		"config.toml",

@@ -19,8 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   accepted only when unique.
 - Add a release-neutral Phase 2 physical acceptance runbook, parallel macOS
   Claude Code and native-Windows Codex operator prompts, a sanitized report
-  template, and prompt-contract doctests. Physical Phase 2 certification is
-  pending; the documentation does not infer it from Phase 1.
+  template, prompt-contract doctests, and the completed development-acceptance
+  reports. All 30 required rows passed on both devices at `b952d38`.
 - Add a native-Windows regression gate proving that the real Claude
   resume/fork launch path preserves stdin, stdout, exact argv, and cwd through
   the vendor's `.cmd` shim.
@@ -40,8 +40,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   into one deterministic index record instead of treating vendor continuation
   segments as an ambiguity or aborting the source refresh.
 - Close Phase 1 in the roadmap after stable `v0.1.0`; record Phase 2's green
-  automated implementation while keeping native macOS/Windows Phase 2
-  acceptance explicitly pending.
+  automated implementation and two-device development acceptance while keeping
+  tagged-artifact release acceptance explicit.
 - Replace the legacy DevSync research PNGs with canonical Reinstate SVG
   diagrams across the README, repository documentation, research references,
   landing page, and website documentation.

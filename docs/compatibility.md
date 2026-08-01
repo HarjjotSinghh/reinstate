@@ -12,14 +12,14 @@ sync** for:
 | Cursor | Not in Phase 1 |
 | Grok Build | Not in Phase 1 |
 
-The current Phase 2 development branch adds a separate local capability matrix:
+Current source adds a separate Phase 2 local capability matrix:
 
 | Agent | Local discovery/search/inspect | Native resume/fork | Physical Phase 2 evidence |
 | ----- | ------------------------------ | ------------------ | ------------------------- |
-| Claude Code | Implemented; unreleased | Same-vendor implemented; unreleased | Pending Mac/Windows run |
-| OpenAI Codex CLI | Implemented; unreleased | Same-vendor implemented; unreleased | Pending Mac/Windows run |
-| Gemini CLI | Read-only implemented; unreleased | Not supported in Phase 2 | Pending where installed |
-| OpenCode | Read-only implemented; unreleased | Not supported in Phase 2 | Pending where installed |
+| Claude Code | Implemented; unreleased | Same-vendor implemented; unreleased | Development acceptance passed on macOS and Windows |
+| OpenAI Codex CLI | Implemented; unreleased | Same-vendor implemented; unreleased | Development acceptance passed on macOS and Windows |
+| Gemini CLI | Read-only implemented; unreleased | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac |
+| OpenCode | Read-only implemented; unreleased | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac |
 | Cursor | Not implemented | Not implemented | Not applicable |
 | Grok Build | Not implemented | Not implemented | Not applicable |
 
@@ -37,9 +37,9 @@ supported session adapter will not imply configuration support. See
 
 | Environment | Stable Phase 1 evidence | Phase 2 physical evidence |
 | ----------- | ----------------------- | ------------------------- |
-| macOS native (arm64) | RC8 23-row run passed for Claude/Codex | Pending |
-| macOS native (amd64) | Release cross-build/CI; no physical report claimed here | Pending |
-| Windows 11 native (amd64) | RC8 23-row run passed for Claude/Codex | Pending |
+| macOS native (arm64) | RC8 23-row run passed for Claude/Codex | 30 required development rows passed at `b952d38` |
+| macOS native (amd64) | Release cross-build/CI; no physical report claimed here | Cross-build only; no physical report claimed |
+| Windows 11 native (amd64) | RC8 23-row run passed for Claude/Codex | 30 required rows plus Gemini/OpenCode physical paths passed at `b952d38` |
 | Windows 11 WSL2 (amd64) | Documented fixture/smoke path; distinct from native Windows | Separate smoke pending |
 
 ### Explicitly unsupported

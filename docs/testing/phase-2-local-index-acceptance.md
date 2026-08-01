@@ -5,11 +5,13 @@ macOS and native Windows hardware. It covers the configless local index,
 metadata search, native same-vendor resume and fork, and the interactive
 switcher. It does not repeat Phase 1's encrypted two-device sync exercise.
 
-**Current status:** implementation, automated E2E, merge gates, and required
-cross-builds are green in the development worktree.
-Physical macOS and native-Windows acceptance remains pending until two
-sanitized device reports pass every required row below against the same exact
-commit or signed release candidate.
+**Current status:** development acceptance passed all 30 required rows on
+macOS and native Windows against product commit `b952d38`. The sanitized
+reports are
+[macOS](results/2026-07-31-macos-phase2-b952d38c2dc5.md) and
+[Windows](results/2026-07-31-windows-phase2-b952d38c2dc5.md). A signed release
+candidate must repeat the tagged-artifact portions of this runbook on both
+devices before stable promotion.
 
 ## 1. Product boundary
 

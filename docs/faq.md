@@ -4,7 +4,7 @@
 
 The **continuity layer for coding-agent work**. Phase 1 implements encrypted,
 bring-your-own-storage sync for same-vendor Claude Code and Codex sessions.
-The current Phase 2 development branch adds universal local indexing, literal
+Current Phase 2 source adds universal local indexing, literal
 search, metadata inspection, and same-vendor resume/fork without cloud
 configuration. Verified resume and cross-agent handoffs remain later phases. A
 later universal configuration layer will reconcile supported MCP servers,
@@ -32,7 +32,7 @@ Config and data live under `~/.reinstate/` either way.
 
 ## Do local search and resume require `rein init` or a bucket?
 
-**No.** On the Phase 2 development branch:
+**No.** In Phase 2 source builds:
 
 ```bash
 rein sessions
@@ -45,7 +45,8 @@ These commands use a private derived index at
 `$REINSTATE_HOME/cache/session-index-v1.sqlite`. They do not need a sync
 profile, storage credentials, an encryption passphrase, keyring access, or a
 network backend. Stable `v0.1.0` public installers contain the Phase 1 sync
-surface; Phase 2 physical acceptance and release are still pending.
+surface. Phase 2 development acceptance passed, but signed tagged-artifact
+acceptance and release are still pending.
 
 ## Why not just use git?
 
@@ -130,9 +131,9 @@ recorded workspace.
 
 It is the primary design target. Stable Phase 1 path remapping passed its
 23-row physical RC8 matrix on native macOS arm64 and Windows 11 amd64. Phase 2
-local-index physical acceptance on those two devices is a separate pending
-gate; macOS amd64 and WSL2 evidence is reported separately rather than
-fabricated.
+development acceptance passed all 30 required rows on those devices at
+`b952d38`; signed release artifacts must repeat the release matrix. macOS amd64
+and WSL2 evidence is reported separately rather than fabricated.
 
 ## Is this affiliated with Anthropic / OpenAI / Google / xAI?
 
@@ -140,8 +141,8 @@ fabricated.
 
 ## Production ready?
 
-Pre-1.0. Stable `v0.1.0` completed Phase 1. Phase 2 implementation is in
-progress and physical certification is pending. See
+Pre-1.0. Stable `v0.1.0` completed Phase 1. Phase 2 development acceptance is
+complete; exact tagged-artifact certification and stable publication are next. See
 [ROADMAP.md](../ROADMAP.md) and [CHANGELOG.md](../CHANGELOG.md). Use with
 backups; report bugs via GitHub Issues.
 

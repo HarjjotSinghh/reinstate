@@ -11,11 +11,11 @@ sessions between configured devices using your own S3-compatible storage.**
 The stable v0.1.0 release preserves same-vendor native resume across macOS
 and Windows project paths.
 
-The current Phase 2 development branch adds a configless local session index,
-literal search, metadata inspection, a numbered switcher, and same-vendor
-native resume/fork. Its automated implementation and merge gates are green;
-physical Phase 2 acceptance on macOS and Windows is still pending, and these
-commands are not in the stable v0.1.0 public installers.
+Current source adds a configless local session index, literal search, metadata
+inspection, a numbered switcher, and same-vendor native resume/fork. Phase 2
+development acceptance passed all 30 required rows on macOS and native Windows
+at `b952d38`; exact tagged-artifact release acceptance is still required, and
+these commands are not in the stable v0.1.0 public installers.
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/HarjjotSinghh/reinstate)](https://goreportcard.com/report/github.com/HarjjotSinghh/reinstate)
@@ -103,7 +103,7 @@ flowchart LR
 
 | | What you get |
 | --- | --- |
-| **Local recovery** | Configless local index/search/resume for Claude Code and Codex in Phase 2 development |
+| **Local recovery** | Configless local index/search/resume for Claude Code and Codex in current source |
 | **Multi-agent** | One metadata index; native execution always stays with the source vendor |
 | **Offline-capable origin** | Works when the other machine is **off** (stored sync, not a live relay) |
 | **Path remapping** | Windows ↔ macOS project paths rewritten so `--resume` actually finds sessions |
@@ -125,7 +125,7 @@ sensitive artifacts. Reinstate instead provides
 
 ## Features
 
-Current source, under Phase 2 development:
+Current source, development-accepted for Phase 2:
 
 - **Configless local index** — `rein sessions` works without `init` or cloud storage
 - **Literal search** — prompt, file, branch, project, agent, and session identity
@@ -158,8 +158,9 @@ not part of the current CLI. See
 
 > **Release boundary:** the public installers currently pin stable `v0.1.0`,
 > whose Phase 1 encrypted-sync acceptance passed on real macOS and Windows
-> hardware. The local-index commands are current-source Phase 2 development
-> until a later signed release passes its own physical matrix.
+> hardware. The local-index source passed the Phase 2 development matrix, but
+> remains unreleased until a signed candidate's installed artifacts pass the
+> release matrix on both platforms.
 >
 > **CLI:** prefer short alias **`rein`**. Full name **`reinstate`** works the same.
 
@@ -258,10 +259,10 @@ Full walkthrough: **[docs/getting-started.md](docs/getting-started.md)**
 
 | Agent | Local index | Resume/fork | Encrypted sync | Status |
 | ----- | :---------: | :---------: | :------------: | ------ |
-| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | 🚧 full | 🚧 native | ✅ | Phase 2 physical acceptance pending |
-| [OpenAI Codex CLI](https://github.com/openai/codex) | 🚧 full | 🚧 native | ✅ | Phase 2 physical acceptance pending |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | 🚧 read-only | — | — | Automated read path green; physical evidence pending |
-| [OpenCode](https://opencode.ai) | 🚧 read-only | — | — | Automated fake-runner path green; physical evidence pending |
+| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | ✅ full | ✅ native | ✅ | Development acceptance passed on macOS and Windows |
+| [OpenAI Codex CLI](https://github.com/openai/codex) | ✅ full | ✅ native | ✅ | Development acceptance passed on macOS and Windows |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | ✅ read-only | — | — | Physical read-only path passed on Windows; unavailable on test Mac |
+| [OpenCode](https://opencode.ai) | ✅ read-only | — | — | Physical read-only path passed on Windows; unavailable on test Mac |
 | [Grok Build](https://x.ai) | 📋 | — | — | Later phase |
 
 Details: **[docs/adapters.md](docs/adapters.md)**

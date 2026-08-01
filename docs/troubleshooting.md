@@ -11,9 +11,9 @@ make build && ./bin/rein version
 
 ## `rein sessions` says sync config is missing
 
-`rein sessions`, `search`, and `inspect` must not require sync configuration on
-the Phase 2 development branch. Confirm that you are not running stable
-`v0.1.0`, which predates those commands:
+`rein sessions`, `search`, and `inspect` must not require sync configuration in
+Phase 2 source builds. Confirm that you are not running stable `v0.1.0`, which
+predates those commands:
 
 ```bash
 rein version --json

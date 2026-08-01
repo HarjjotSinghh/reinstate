@@ -1,7 +1,7 @@
 # Getting Started
 
 Reinstate is the continuity layer for coding-agent work. Its current Phase 2
-development surface finds, searches, inspects, resumes, and forks local
+source finds, searches, inspects, resumes, and forks local
 sessions without configuration or cloud access. Stable `v0.1.0` synchronizes
 Claude Code and Codex CLI sessions across machines through client-side
 encrypted, user-owned object storage.
@@ -11,9 +11,10 @@ encrypted, user-owned object storage.
 > [Phase 1 acceptance runbook](testing/phase-1-mac-windows-acceptance.md) passed
 > all 23 mandatory RC8 rows on real hardware; the stable release then fixed and
 > re-verified the recorded non-blocking fork findings. Evidence is in
-> [docs/testing/results](testing/results/). Phase 2 is
-> implemented on the current development branch, but its physical Mac/Windows
-> acceptance remains pending and it is not in the v0.1.0 installers.
+> [docs/testing/results](testing/results/). Phase 2 development acceptance also
+> passed all 30 required rows on macOS and native Windows at `b952d38`; it is
+> not in the v0.1.0 installers and still requires exact tagged-artifact
+> acceptance before a later stable release.
 
 ## Prerequisites
 
@@ -37,7 +38,7 @@ account credentials.
 
 ## Install
 
-### Build the current Phase 2 source
+### Build the current source
 
 From this checkout:
 
@@ -63,8 +64,8 @@ $env:REINSTATE_HOME = Join-Path $HOME ".reinstate-phase2-local"
 ```
 
 Do not use the stable public installer as evidence for an untagged Phase 2
-commit. A later signed release candidate will update the installer pin before
-physical certification.
+commit. A signed release candidate must update the installer pin and pass the
+physical tagged-artifact matrix before stable promotion.
 
 ### Install stable v0.1.0 for encrypted sync on macOS, Linux, or WSL2
 

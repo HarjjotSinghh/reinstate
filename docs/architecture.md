@@ -64,8 +64,8 @@ Product layers and non-goals: [product-strategy.md](product-strategy.md),
 ```
 
 The continuity stack is delivered incrementally. Stable Phase 1 implements the
-mutation-capable adapter and encrypted-sync path. Phase 2 development adds the
-private local index, read capabilities, and Claude/Codex native launch plans.
+mutation-capable adapter and encrypted-sync path. Development-accepted Phase 2
+adds the private local index, read capabilities, and Claude/Codex native launch plans.
 Workspace fingerprints, checkpoints, configuration adapters, and ACP
 integration remain later roadmap work.
 

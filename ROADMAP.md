@@ -2,7 +2,7 @@
 
 > Status legend: ✅ done · 🚧 in progress · 📋 planned · 💭 exploring · ❌ won't do (for now)
 
-Last updated: **2026-07-30** · Maintainer: [Harjot Singh Rana](https://github.com/HarjjotSinghh)
+Last updated: **2026-08-01** · Maintainer: [Harjot Singh Rana](https://github.com/HarjjotSinghh)
 
 This roadmap is a living document. Priorities follow real activation signals —
 especially **successfully resumed tasks per active user** — and vendor format
@@ -127,25 +127,27 @@ affected behavior before publication.*
 **Gate:** `rein` / `reinstate` with no remote config still finds and resumes
 local Claude (then Codex) sessions.
 
-*Status note (2026-07-30): implementation and automated merge gates are green
-on `feat/phase2-local-index`, including configless CLI E2E and required
-cross-builds. The release-neutral acceptance runbook, parallel Mac/Windows
-operator prompts, and report schema are defined. Physical native macOS and
-Windows acceptance is still pending and must not be inferred from Phase 1.*
+*Status note (2026-08-01): development acceptance passed all 30 required rows
+on macOS and native Windows against product commit `b952d38`, including real
+same-vendor resume/fork and the Windows-only Gemini/OpenCode physical paths.
+The reports are committed under `docs/testing/results/`. Phase 2 remains in
+progress until a signed release candidate's installed artifacts pass the same
+two-device release matrix and the stable release is published.*
 
 | Item | Status |
 | ---- | ------ |
-| Private derived local session index | 🚧 |
-| `rein` / `reinstate` interactive numbered switcher | 🚧 |
-| `rein sessions` · `rein search` · `rein inspect` · `rein last` | 🚧 |
-| `rein resume` (same-vendor native launch) | 🚧 |
-| `rein fork` (same-vendor native fork) | 🚧 |
-| Literal search by prompt, file, branch, project, agent | 🚧 |
-| Bounded metadata preview; no transcript dumps | 🚧 |
-| Claude Code + Codex full local capabilities | 🚧 |
-| Gemini CLI + OpenCode read-only discovery | 🚧 |
-| Fixture, corruption, privacy, execution, and Phase 1 regression gates | 🚧 |
-| Physical native macOS + Windows acceptance | 📋 |
+| Private derived local session index | ✅ |
+| `rein` / `reinstate` interactive numbered switcher | ✅ |
+| `rein sessions` · `rein search` · `rein inspect` · `rein last` | ✅ |
+| `rein resume` (same-vendor native launch) | ✅ |
+| `rein fork` (same-vendor native fork) | ✅ |
+| Literal search by prompt, file, branch, project, agent | ✅ |
+| Bounded metadata preview; no transcript dumps | ✅ |
+| Claude Code + Codex full local capabilities | ✅ |
+| Gemini CLI + OpenCode read-only discovery | ✅ |
+| Fixture, corruption, privacy, execution, and Phase 1 regression gates | ✅ |
+| Development acceptance on physical native macOS + Windows | ✅ |
+| Signed tagged-artifact acceptance and stable publication | 🚧 |
 
 Example:
 

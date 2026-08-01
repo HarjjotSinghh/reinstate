@@ -3,8 +3,9 @@
 Binary names: `rein` and `reinstate` (identical behavior).
 
 Stable public installers currently provide the `v0.1.0` Phase 1 sync surface.
-The local commands below are Phase 2 current-source development until a signed
-later release passes physical Mac/Windows acceptance.
+The local commands below passed Phase 2 development acceptance in current
+source, but remain unreleased until signed tagged artifacts pass physical
+macOS/Windows acceptance.
 
 ## Exit codes
 

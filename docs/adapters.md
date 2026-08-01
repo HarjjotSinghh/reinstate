@@ -15,16 +15,16 @@ resume, fork, export, or restore implementations.
 
 | Adapter | Phase 2 local index | Native resume/fork | `v0.1.0` encrypted sync | Universal config |
 | ------- | ------------------- | ------------------ | ------------------------- | ---------------- |
-| Claude Code | Implemented, unreleased | Implemented, unreleased | Supported | Later |
-| OpenAI Codex CLI | Implemented, unreleased | Implemented, unreleased | Supported | Later |
-| Gemini CLI | Read-only implemented, unreleased | No | No | Later |
-| OpenCode | Read-only implemented, unreleased | No | No | Later |
+| Claude Code | Implemented, development-accepted | Implemented, development-accepted | Supported | Later |
+| OpenAI Codex CLI | Implemented, development-accepted | Implemented, development-accepted | Supported | Later |
+| Gemini CLI | Read-only, development-accepted | No | No | Later |
+| OpenCode | Read-only, development-accepted | No | No | Later |
 | Cursor | Exploring | No | No | Exploring |
 | Grok Build | Exploring | No | No | Planned |
 
-Phase 2 automated implementation gates are green on the development branch.
-Native macOS and Windows physical acceptance is still pending; do not read the
-table as a published-release claim.
+Phase 2 automated gates and all 30 required development-acceptance rows passed
+on macOS and native Windows at `b952d38`. This is source-build evidence, not a
+published-release claim; exact tagged artifacts require a separate release run.
 
 ## Phase 2 local read contract
 
