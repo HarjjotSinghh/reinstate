@@ -4,7 +4,7 @@ package version
 // Version is set via -ldflags at release build time.
 var Version = "0.0.0-dev"
 
-// Commit is the git SHA when built from CI (optional).
+// Commit is the full git SHA when built from CI (optional).
 var Commit = "unknown"
 
 // Date is the build date (optional).

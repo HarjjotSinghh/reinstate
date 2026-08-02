@@ -171,6 +171,35 @@ func TestGoReleaserSnapshotVersionIgnoresWebsiteDeploymentTags(t *testing.T) {
 	}
 }
 
+func TestGoReleaserEmbedsFullCommitIdentity(t *testing.T) {
+	config := read(t, ".goreleaser.yml")
+	fullCommitFlag := `internal/version.Commit={{.FullCommit}}`
+	if !strings.Contains(config, fullCommitFlag) {
+		t.Fatalf("GoReleaser must embed the full release commit; missing %q", fullCommitFlag)
+	}
+	if strings.Contains(config, `internal/version.Commit={{.ShortCommit}}`) {
+		t.Fatal("GoReleaser still embeds a short commit in release binaries")
+	}
+
+	workflow := read(t, ".github/workflows/release.yml")
+	if !strings.Contains(workflow, `./scripts/check-release-binary-identity.sh dist`) {
+		t.Fatal("release workflow must execute an artifact and verify its full commit identity")
+	}
+}
+
+func TestMakefileLimitsCGOToRaceTests(t *testing.T) {
+	makefile := read(t, "Makefile")
+	if !strings.Contains(makefile, "git rev-parse HEAD") || strings.Contains(makefile, "git rev-parse --short HEAD") {
+		t.Fatal("development builds must embed the full commit identity")
+	}
+	if !strings.Contains(makefile, "test: ## Run unit tests\n\tCGO_ENABLED=0 ") {
+		t.Fatal("ordinary tests must disable CGO for a deterministic cross-platform gate")
+	}
+	if !strings.Contains(makefile, "test-race: ## Run tests with race detector\n\tCGO_ENABLED=1 ") {
+		t.Fatal("race tests must enable CGO explicitly instead of inheriting process state")
+	}
+}
+
 func TestVerifyAvoidsRedundantDoctestRuns(t *testing.T) {
 	command := exec.Command("make", "-n", "verify")
 	command.Dir = repoRoot(t)
