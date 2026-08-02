@@ -6,7 +6,7 @@ order: 7
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.2.0-rc.2"
+version: "v0.2.0-rc.3"
 updatedAt: 2026-08-01
 tags: ["faq", "session-sync", "claude-code", "codex", "security"]
 targetQuery: "what is Reinstate"
@@ -183,7 +183,7 @@ syncing after an agent upgrade.
 
 ## Production ready?
 
-No. `v0.2.0-rc.2` is pre-1.0 release-candidate software while tagged-artifact
+No. `v0.2.0-rc.3` is pre-1.0 release-candidate software while tagged-artifact
 acceptance is open. See the [roadmap](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md)
 and [changelog](https://github.com/HarjjotSinghh/reinstate/blob/main/CHANGELOG.md),
 use it with backups, and report bugs through GitHub Issues.

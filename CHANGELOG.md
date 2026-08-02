@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0-rc.3] - 2026-08-03
+
+Third Phase 2 release candidate. It keeps the RC2 product behavior and release
+identity fixes unchanged while adding opt-in, provenance-gated distribution
+through popular language and operating-system package managers.
+
+### Added
+
+- Add verified package payloads and publication workflows for npm, JSR,
+  Homebrew, Chocolatey, Scoop, WinGet, and AUR, plus native Debian, RPM,
+  Alpine, and Arch release packages and a maintainer onboarding guide.
+
 ## [0.2.0-rc.2] - 2026-08-02
 
 Second Phase 2 release candidate. It supersedes `v0.2.0-rc.1`, whose
@@ -50,10 +62,6 @@ tagged-artifact matrix on both devices.
   the vendor's `.cmd` shim.
 - Close the landing page with a clear continuity-tool comparison and an
   accessible macOS, Linux, and Windows installation call to action.
-- Add an opt-in, provenance-gated package distribution pipeline for npm, JSR,
-  Homebrew, Chocolatey, Scoop, WinGet, and AUR, plus native Debian, RPM, Alpine,
-  and Arch release packages and a maintainer onboarding guide.
-
 ### Changed
 
 - Expand the fail-closed Codex CLI compatibility range through `0.146.0`, the
@@ -388,7 +396,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.2.0-rc.2...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.2.0-rc.3...HEAD
+[0.2.0-rc.3]: https://github.com/HarjjotSinghh/reinstate/compare/v0.2.0-rc.2...v0.2.0-rc.3
 [0.2.0-rc.2]: https://github.com/HarjjotSinghh/reinstate/compare/v0.2.0-rc.1...v0.2.0-rc.2
 [0.2.0-rc.1]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0...v0.2.0-rc.1
 [0.1.0]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.8...v0.1.0

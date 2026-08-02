@@ -22,7 +22,7 @@
 - Capabilities: Claude Code `2.1.219`–`2.1.220` and Codex CLI `0.133.0`–`0.146.0` are the current inclusive source-tested stable ranges; out-of-range or prerelease versions fail closed as untested.
 - Limitations: the changelog does not publish exact historical ranges for RC1–RC2; current source tests do not close every physical platform gate.
 - Evidence: `website/src/data/compatibility.json`, adapter constants/tests, `CHANGELOG.md`, and release history.
-- Version: current release candidate `v0.2.0-rc.2`; stable release `v0.1.0`.
+- Version: current release candidate `v0.2.0-rc.3`; stable release `v0.1.0`.
 
 ## Outline
 

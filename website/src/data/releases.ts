@@ -1,5 +1,11 @@
 export const releaseHistory = [
   {
+    version: 'v0.2.0-rc.3',
+    date: '2026-08-03',
+    summary:
+      'Package-manager distribution candidate with verified npm, JSR, Homebrew, Scoop, Chocolatey, WinGet, AUR, and native Linux payload generation.',
+  },
+  {
     version: 'v0.2.0-rc.2',
     date: '2026-08-02',
     summary:

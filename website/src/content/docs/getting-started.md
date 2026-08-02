@@ -6,7 +6,7 @@ order: 1
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.2.0-rc.2"
+version: "v0.2.0-rc.3"
 updatedAt: 2026-08-01
 tags: ["installation", "session-sync", "claude-code", "codex", "s3"]
 targetQuery: "how to sync coding-agent sessions across devices"
@@ -19,7 +19,7 @@ Reinstate finds and continues local coding-agent sessions without setup, and
 optionally synchronizes same-vendor Claude Code and Codex CLI sessions across
 machines through client-side-encrypted, user-owned S3-compatible storage.
 
-> **Release status:** prerelease. The public installers pin `v0.2.0-rc.2`.
+> **Release status:** prerelease. The public installers pin `v0.2.0-rc.3`.
 > Phase 2 development acceptance passed on macOS arm64 and native Windows
 > amd64; exact tagged-artifact acceptance remains open before stable promotion.
 
@@ -48,7 +48,7 @@ Native Windows PowerShell:
 irm https://reinstate.dev/install.ps1 | iex
 ```
 
-Both bootstraps pin `v0.2.0-rc.2`, verify the exact tagged canonical installer
+Both bootstraps pin `v0.2.0-rc.3`, verify the exact tagged canonical installer
 and release binary, install without elevation, configure a user-local PATH, and
 print the next command. They install the CLI only; interactive configuration
 begins when you run `rein init`.
