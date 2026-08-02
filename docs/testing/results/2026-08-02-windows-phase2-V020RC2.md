@@ -30,7 +30,7 @@ under the available UI-automation policy. Missing evidence is `FAIL`.
 | Git version | `2.52.0.windows.1` |
 | Go version | `go1.25.12 windows/amd64` under the required process-scoped `GOTOOLCHAIN` |
 | Report branch | `test/v0.2.0-rc.2-windows-report` |
-| Draft PR | pending creation after the first report-only commit |
+| Draft PR | [#92](https://github.com/HarjjotSinghh/reinstate/pull/92) |
 
 ## 1a. Release-candidate artifact record
 
