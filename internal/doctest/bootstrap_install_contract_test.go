@@ -21,6 +21,14 @@ const (
 	publicWindowsInstallerSHA256 = "02c68984964556e7c685a275bde72dc812162e0b898be0f26718a0813efc0dfe"
 )
 
+func TestWebsiteCIInstallerPinMatchesPublicBootstrapVersion(t *testing.T) {
+	workflow := read(t, ".github/workflows/ci.yml")
+	want := "grep -F '" + publicBootstrapVersion + "'"
+	if got := strings.Count(workflow, want); got != 2 {
+		t.Fatalf("website CI must verify both public installers against %s; found %d matching assertions", publicBootstrapVersion, got)
+	}
+}
+
 func TestPublicBootstrapVercelHeaders(t *testing.T) {
 	var config struct {
 		Git struct {
