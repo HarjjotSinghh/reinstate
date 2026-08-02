@@ -32,7 +32,7 @@ commit.
 | Go version | go1.25.12 windows/amd64 |
 | Toolchain | GNU Make 4.4.1; MSYS2 GCC 16.1.0; process-scoped PATH; `GOTOOLCHAIN=go1.25.12`; `CGO_ENABLED=1` |
 | Report branch | `test/v0.2.0-rc.1-windows-report` |
-| Draft PR | pending creation |
+| Draft PR | `https://github.com/HarjjotSinghh/reinstate/pull/86` (open, draft, unmerged) |
 
 ## 2. Tagged release, installer, and installed-artifact evidence
 
@@ -66,8 +66,8 @@ commit.
 | Binary reports the tested commit | FAIL | Installed JSON contains only the seven-character short commit. |
 | Product tree was clean before testing | PASS | Porcelain status and diff were empty. |
 | Report branch starts at the tested commit | PASS | Branch merge-base equals `TEST_COMMIT`. |
-| Report is the only committed change | pending final publication validation | Explicit staging and base-to-tip validation will be recorded after commit. |
-| No secret/transcript/private path was committed | pending final publication validation | Privacy scan will run before push. |
+| Report is the only committed change | PASS | PR #86 and base-to-tip diff contain exactly this report file. |
+| No secret/transcript/private path was committed | PASS | Final privacy scan reported zero prohibited-path, credential, key, or transcript-pattern hits. |
 
 ## 4. Isolation and local-only proof
 
