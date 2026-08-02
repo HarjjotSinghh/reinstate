@@ -147,7 +147,7 @@ two-device release matrix and the stable release is published.*
 | Gemini CLI + OpenCode read-only discovery | ✅ |
 | Fixture, corruption, privacy, execution, and Phase 1 regression gates | ✅ |
 | Development acceptance on physical native macOS + Windows | ✅ |
-| Signed `v0.2.0-rc.1` tagged-artifact acceptance and stable publication | 🚧 |
+| Signed `v0.2.0-rc.2` tagged-artifact acceptance and stable publication | 🚧 |
 
 Example:
 

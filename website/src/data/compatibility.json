@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "reinstateVersion": "v0.2.0-rc.1",
-  "lastReviewed": "2026-08-01",
+  "reinstateVersion": "v0.2.0-rc.2",
+  "lastReviewed": "2026-08-02",
   "owner": {
     "name": "Harjot Singh Rana",
     "url": "https://harjot.co"
@@ -31,7 +31,7 @@
       "resumeMode": "Codex to Codex",
       "evidenceLevel": "source checks and deterministic synthetic fixtures",
       "lastTested": "2026-07-31",
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/v0.2.0-rc.1/internal/adapter/codex/codex_test.go",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/v0.2.0-rc.2/internal/adapter/codex/codex_test.go",
       "notes": "Codex CLI 0.146.0 passed the complete Phase 2 physical matrix on macOS and native Windows. Versions outside the inclusive range, including prereleases, fail closed as untested."
     }
   ],
@@ -44,7 +44,7 @@
       "status": "development-acceptance-green",
       "lastTested": "2026-07-31",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-07-31-macos-phase2-b952d38c2dc5.md",
-      "notes": "Phase 2 development acceptance passed all required rows; exact v0.2.0-rc.1 tagged artifacts remain to be certified."
+      "notes": "Phase 2 development acceptance passed all required rows; exact v0.2.0-rc.2 tagged artifacts remain to be certified."
     },
     {
       "id": "macos-amd64",
@@ -64,7 +64,7 @@
       "status": "development-acceptance-green",
       "lastTested": "2026-08-01",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-07-31-windows-phase2-b952d38c2dc5.md",
-      "notes": "Phase 2 development acceptance passed all required rows plus Gemini/OpenCode physical paths; exact v0.2.0-rc.1 tagged artifacts remain to be certified."
+      "notes": "Phase 2 development acceptance passed all required rows plus Gemini/OpenCode physical paths; exact v0.2.0-rc.2 tagged artifacts remain to be certified."
     },
     {
       "id": "windows-11-wsl2-amd64",

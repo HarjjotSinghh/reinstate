@@ -15,15 +15,15 @@ resume, fork, export, or restore implementations.
 
 | Adapter | Phase 2 local index | Native resume/fork | `v0.1.0` encrypted sync | Universal config |
 | ------- | ------------------- | ------------------ | ------------------------- | ---------------- |
-| Claude Code | Included in `v0.2.0-rc.1` | Included in `v0.2.0-rc.1` | Supported | Later |
-| OpenAI Codex CLI | Included in `v0.2.0-rc.1` | Included in `v0.2.0-rc.1` | Supported | Later |
-| Gemini CLI | Read-only in `v0.2.0-rc.1` | No | No | Later |
-| OpenCode | Read-only in `v0.2.0-rc.1` | No | No | Later |
+| Claude Code | Included in `v0.2.0-rc.2` | Included in `v0.2.0-rc.2` | Supported | Later |
+| OpenAI Codex CLI | Included in `v0.2.0-rc.2` | Included in `v0.2.0-rc.2` | Supported | Later |
+| Gemini CLI | Read-only in `v0.2.0-rc.2` | No | No | Later |
+| OpenCode | Read-only in `v0.2.0-rc.2` | No | No | Later |
 | Cursor | Exploring | No | No | Exploring |
 | Grok Build | Exploring | No | No | Planned |
 
 Phase 2 automated gates and all 30 required development-acceptance rows passed
-on macOS and native Windows at `b952d38`. Exact `v0.2.0-rc.1` tagged artifacts
+on macOS and native Windows at `b952d38`. Exact `v0.2.0-rc.2` tagged artifacts
 require a separate release run before stable promotion.
 
 ## Phase 2 local read contract

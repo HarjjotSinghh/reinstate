@@ -11,7 +11,7 @@ sessions between configured devices using your own S3-compatible storage.**
 Stable `v0.1.0` preserves same-vendor encrypted sync across macOS and Windows
 project paths.
 
-The `v0.2.0-rc.1` candidate adds a configless local session index, literal
+The `v0.2.0-rc.2` candidate adds a configless local session index, literal
 search, metadata inspection, a numbered switcher, and same-vendor native
 resume/fork. Phase 2 development acceptance passed all 30 required rows on
 macOS and native Windows at `b952d38`; exact tagged-artifact release acceptance
@@ -125,7 +125,7 @@ sensitive artifacts. Reinstate instead provides
 
 ## Features
 
-`v0.2.0-rc.1`, development-accepted for Phase 2:
+`v0.2.0-rc.2`, development-accepted for Phase 2:
 
 - **Configless local index** — `rein sessions` works without `init` or cloud storage
 - **Literal search** — prompt, file, branch, project, agent, and session identity
@@ -157,7 +157,7 @@ not part of the current CLI. See
 ## Quick start
 
 > **Release boundary:** the public installers pin prerelease
-> `v0.2.0-rc.1`. Its source passed the Phase 2 development matrix, but stable
+> `v0.2.0-rc.2`. Its source passed the Phase 2 development matrix, but stable
 > promotion remains blocked until the exact installed candidate artifacts pass
 > the release matrix on macOS and native Windows.
 >
@@ -194,7 +194,7 @@ Bare `rein` opens the numbered switcher only on a TTY. For scripts use
 `rein sessions --json`; a non-TTY bare invocation exits promptly with that
 hint.
 
-### Install the v0.2.0-rc.1 release candidate
+### Install the v0.2.0-rc.2 release candidate
 
 macOS, Linux, or WSL2:
 
@@ -208,7 +208,7 @@ Native Windows PowerShell:
 irm https://reinstate.dev/install.ps1 | iex
 ```
 
-Both bootstraps pin and verify `v0.2.0-rc.1`, install without elevation, and
+Both bootstraps pin and verify `v0.2.0-rc.2`, install without elevation, and
 print the next command:
 
 ```bash

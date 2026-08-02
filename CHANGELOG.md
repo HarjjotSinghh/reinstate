@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0-rc.2] - 2026-08-02
+
+Second Phase 2 release candidate. It supersedes `v0.2.0-rc.1`, whose
+native-Windows tagged-artifact certification stopped because release binaries
+embedded only a shortened commit and the required verification run inherited
+CGO into ordinary Windows tests. RC2 keeps the Phase 2 product behavior
+unchanged while correcting those release gates.
+
 ### Fixed
 
 - Embed the full 40-character source commit in local and GoReleaser binaries,
@@ -377,7 +385,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.2.0-rc.1...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.2.0-rc.2...HEAD
+[0.2.0-rc.2]: https://github.com/HarjjotSinghh/reinstate/compare/v0.2.0-rc.1...v0.2.0-rc.2
 [0.2.0-rc.1]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0...v0.2.0-rc.1
 [0.1.0]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.8...v0.1.0
 [0.1.0-rc.8]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0-rc.7...v0.1.0-rc.8

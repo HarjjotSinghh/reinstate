@@ -15,7 +15,7 @@ describe('SEO product truth', () => {
     expect(product.supportedOperatingSystems).toEqual(['macOS', 'Windows']);
     expect(product.licenseName).toBe('Apache-2.0');
     expect(product.requiresAccount).toBe(false);
-    expect(product.releaseStatus).toBe('v0.2.0-rc.1 prerelease');
+    expect(product.releaseStatus).toBe('v0.2.0-rc.2 prerelease');
     expect(product.initialPublicReleaseDate).toBe('2026-07-25');
     expect(product.stableRelease).toBe('v0.1.0');
   });
