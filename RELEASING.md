@@ -80,6 +80,12 @@ Stable releases may promote to npm, JSR, Homebrew, Chocolatey, Scoop, WinGet,
 and AUR. Prereleases promote only to npm (`next`) and JSR. Do not publish a
 registry package from a draft release or from locally rebuilt binaries.
 
+For stable `v0.2.0`, complete both the **Stable v0.2.0 publication reminder**
+and the **Post-publication documentation reminder** in
+[Package-manager publishing](docs/package-manager-publishing.md). Enabled CI is
+not evidence that a package is publicly listed, accepted by an external
+registry, or verified on its native platform.
+
 The GitHub draft now also contains raw binaries and `.deb`, `.rpm`, `.apk`, and
 Arch package files. Confirm those files are covered by `checksums.txt` and
 artifact attestations before publishing the draft.
