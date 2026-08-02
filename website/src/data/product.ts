@@ -23,11 +23,11 @@ export const product = {
   currentRelease: 'v0.2.0-rc.3',
   currentReleaseUrl:
     'https://github.com/HarjjotSinghh/reinstate/tree/v0.2.0-rc.3',
-  currentReleaseDate: '2026-08-03',
+  currentReleaseDate: '2026-08-02',
   initialPublicReleaseDate: '2026-07-25',
   stableRelease: 'v0.1.0',
   releaseStatus: 'v0.2.0-rc.3 prerelease',
-  lastVerified: '2026-08-03',
+  lastVerified: '2026-08-02',
   programmingLanguage: 'Go',
   requiresAccount: false,
   maintainer: {

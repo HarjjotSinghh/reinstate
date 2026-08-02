@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.2.0-rc.3] - 2026-08-03
+## [0.2.0-rc.3] - 2026-08-02
 
 Third Phase 2 release candidate. It keeps the RC2 product behavior and release
 identity fixes unchanged while adding opt-in, provenance-gated distribution
