@@ -2,11 +2,11 @@
 
 Reinstate is the continuity layer for coding-agent work. Its current Phase 2
 source finds, searches, inspects, resumes, and forks local
-sessions without configuration or cloud access. The `v0.2.0-rc.1` candidate
+sessions without configuration or cloud access. The `v0.2.0-rc.2` candidate
 also synchronizes Claude Code and Codex CLI sessions across machines through
 client-side-encrypted, user-owned object storage.
 
-> **Release status:** the public installers pin prerelease `v0.2.0-rc.1`. The native
+> **Release status:** the public installers pin prerelease `v0.2.0-rc.2`. The native
 > Mac/Windows
 > [Phase 1 acceptance runbook](testing/phase-1-mac-windows-acceptance.md) passed
 > all 23 mandatory RC8 rows on real hardware; the stable release then fixed and
@@ -67,7 +67,7 @@ Do not use the stable public installer as evidence for an untagged Phase 2
 commit. A signed release candidate must update the installer pin and pass the
 physical tagged-artifact matrix before stable promotion.
 
-### Install v0.2.0-rc.1 on macOS, Linux, or WSL2
+### Install v0.2.0-rc.2 on macOS, Linux, or WSL2
 
 ```sh
 curl -fsSL https://reinstate.dev/install.sh | sh
@@ -77,7 +77,7 @@ The default installation directory is `~/.local/bin`. The bootstrap prints an
 absolute `rein init` command that works immediately and adds the directory to
 the appropriate shell startup file for new terminals.
 
-### Install v0.2.0-rc.1 on native Windows PowerShell
+### Install v0.2.0-rc.2 on native Windows PowerShell
 
 ```powershell
 irm https://reinstate.dev/install.ps1 | iex
@@ -89,7 +89,7 @@ and the current PowerShell process.
 
 Both public bootstraps:
 
-1. pin `v0.2.0-rc.1`;
+1. pin `v0.2.0-rc.2`;
 2. download the canonical installer from that exact signed Git tag;
 3. verify the canonical installer SHA-256;
 4. download only the matching GitHub Release asset and `checksums.txt`;

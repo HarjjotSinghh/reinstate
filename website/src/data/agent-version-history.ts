@@ -16,6 +16,11 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.2.0-rc.2': {
+    rangeChange: 'No agent-version range change documented.',
+    compatibilityChange:
+      'No adapter behavior change from v0.2.0-rc.1. This candidate corrects release-artifact provenance and native-Windows verification without widening the tested Claude Code or Codex CLI ranges.',
+  },
   'v0.2.0-rc.1': {
     rangeChange:
       'Expanded the inclusive Codex CLI range from 0.133.0–0.145.0 to 0.133.0–0.146.0; the Claude Code range remains 2.1.219–2.1.220.',

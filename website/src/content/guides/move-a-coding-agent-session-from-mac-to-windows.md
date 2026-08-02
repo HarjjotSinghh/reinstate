@@ -30,7 +30,7 @@ estimatedMinutes: 17
 estimatedTaskMinutes: 45
 prerequisites:
   - "One native macOS computer and one native 64-bit Windows 11 computer you are authorized to configure"
-  - "Reinstate v0.2.0-rc.1 plus a tested Claude Code or Codex CLI version on both computers"
+  - "Reinstate v0.2.0-rc.2 plus a tested Claude Code or Codex CLI version on both computers"
   - "The same Git project checked out normally on both computers, even if its absolute paths differ"
   - "A private S3-compatible profile, its non-secret coordinates, and credentials for both OS keyrings"
   - "One harmless source session ID and a long encryption passphrase stored outside Reinstate"
@@ -55,7 +55,7 @@ howToSteps:
 ## What this guide proves—and what it does not
 
 This is an operator workflow for moving one supported, vendor-native session
-from macOS to **native Windows 11** through Reinstate `v0.2.0-rc.1`. It uses
+from macOS to **native Windows 11** through Reinstate `v0.2.0-rc.2`. It uses
 the same commands and stop conditions as the repository's
 [Phase 1 Mac/Windows acceptance runbook](https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/phase-1-mac-windows-acceptance.md),
 but completing it on personal devices is not release certification.

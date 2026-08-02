@@ -1,5 +1,11 @@
 export const releaseHistory = [
   {
+    version: 'v0.2.0-rc.2',
+    date: '2026-08-02',
+    summary:
+      'Full release-artifact commit provenance and deterministic native-Windows verification gates.',
+  },
+  {
     version: 'v0.2.0-rc.1',
     date: '2026-08-01',
     summary:
