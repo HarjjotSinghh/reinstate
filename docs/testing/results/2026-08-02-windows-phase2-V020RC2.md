@@ -1,15 +1,21 @@
 # Phase 2 acceptance — native-Windows Device B (`v0.2.0-rc.2` tagged artifacts)
 
-**Verdict:** `FAIL`
+**Verdict:** `PASS` after the targeted human-keyboard supersession in section 13
+**Original verdict (preserved):** `FAIL`
 **Milestone:** `DEVICE_COMPLETE`
-**Required counts:** `27 PASS / 0 PARTIAL / 5 FAIL / 0 NOT TESTED`
+**Required counts:** `32 PASS / 0 PARTIAL / 0 FAIL / 0 NOT TESTED`
+**Original required counts (preserved):** `27 PASS / 0 PARTIAL / 5 FAIL / 0 NOT TESTED`
 **Optional physical counts:** `2 PASS / 0 NOT TESTED`
 
 This report covers only the exact disposable sessions and paths created for
-this run. No real transcript content or secret was used as evidence. The
-installed artifact and every executed non-interactive product gate passed, but
-the required real Windows Terminal human-keyboard routes were not executable
-under the available UI-automation policy. Missing evidence is `FAIL`.
+this run and its targeted supersession. No real transcript content or secret
+is included. The original run ended `FAIL` because the required real Windows
+Terminal human-keyboard routes were not executable under the available
+UI-automation policy; missing evidence was correctly treated as `FAIL`. That
+original result and its five failed rows remain preserved below. A physical
+operator subsequently completed those exact gates with human keyboard input,
+and section 13 explicitly supersedes rows 20-23 and 26 without deleting the
+original evidence.
 
 ## 1. Test record
 
@@ -23,8 +29,8 @@ under the available UI-automation policy. Missing evidence is `FAIL`.
 | OS/version/build | Windows 11 Pro `10.0.26200`, build `26200` |
 | Architecture | native `windows/amd64`; OS and process both x64 |
 | Native shell | Windows PowerShell `5.1.26100.8328` Desktop; never WSL |
-| Claude Code version/state | `2.1.220`; installed; fresh controlled read/index path PASS; required human-keyboard resume/fork FAIL |
-| Codex CLI version/state | `0.146.0`; installed; fresh controlled read/index path PASS; required human-keyboard resume/fork FAIL |
+| Claude Code version/state | `2.1.220`; installed; fresh controlled read/index path PASS; targeted human-keyboard resume/fork PASS (section 13) |
+| Codex CLI version/state | `0.146.0`; installed; fresh controlled read/index path PASS; targeted human-keyboard resume/fork PASS (section 13) |
 | Gemini CLI version/state | `0.53.0`; installed; fresh controlled read-only path PASS |
 | OpenCode version/state | `1.18.2`; installed; fresh controlled read-only path PASS |
 | Git version | `2.52.0.windows.1` |
@@ -215,7 +221,11 @@ erased or reclassified as a product PASS on exit code alone.
   environment dump, auth content, or transcript body appeared.
 - Claude/Codex advertised resume and fork. Gemini/OpenCode advertised neither.
 
-## 8. Last, resume, and fork
+## 8. Last, resume, and fork - original run (preserved)
+
+The four `FAIL` rows in this section are the original Device B result. They are
+kept verbatim as historical evidence and are superseded only by the fresh
+physical evidence in section 13.
 
 | Gate | Result | Evidence |
 | ---- | ------ | -------- |
@@ -240,7 +250,10 @@ The controlled append used Claude's documented non-interactive resume mode to
 exercise refresh behavior. It is not substituted for any of the four required
 real Windows Terminal human-keyboard rows.
 
-## 9. Interactive switcher
+## 9. Interactive switcher - original run (preserved)
+
+This section preserves the original picker `FAIL`. Section 13 supplies the
+later physical human-keyboard evidence that supersedes matrix row 26.
 
 **FAIL.** No real Windows Terminal human-keyboard picker interaction was
 executed. The available Windows UI automation policy explicitly prohibited
@@ -305,13 +318,13 @@ the real interactive picker remain missing evidence and therefore row 26 is
 | 17 | `last` selects the correct resumable session and filters | — | PASS (§8) |
 | 18 | Claude dry-run plan has exact argv/cwd and no mutation | — | PASS (§8) |
 | 19 | Codex dry-run plan has exact argv/cwd and no mutation | — | PASS (§8) |
-| 20 | Claude native resume | — | FAIL — required human-keyboard route missing (§8, §12) |
-| 21 | Codex native resume | — | FAIL — required human-keyboard route missing (§8, §12) |
-| 22 | Claude vendor-native fork, source preserved | — | FAIL — required human-keyboard route missing (§8, §12) |
-| 23 | Codex vendor-native fork, source preserved | — | FAIL — required human-keyboard route missing (§8, §12) |
+| 20 | Claude native resume | — | PASS — targeted physical supersession (§13) |
+| 21 | Codex native resume | — | PASS — targeted physical supersession (§13) |
+| 22 | Claude vendor-native fork, source preserved | — | PASS — targeted physical supersession (§13) |
+| 23 | Codex vendor-native fork, source preserved | — | PASS — targeted physical supersession (§13) |
 | 24 | Missing/ambiguous reference and missing executor fail safely | — | PASS (§8) |
 | 25 | JSON/native-child separation and child failure propagation | — | PASS (§5, §8) |
-| 26 | TTY picker filter, inspect, resume, fork, and cancel | — | FAIL — real Windows Terminal input missing (§9, §12) |
+| 26 | TTY picker filter, inspect, resume, fork, and cancel | — | PASS — both aliases and full physical picker matrix (§13) |
 | 27 | Non-TTY prompt failure is immediate and actionable | — | PASS (§9) |
 | 28 | Gemini read-only physical path, when installed | — | PASS (§10) |
 | 29 | OpenCode read-only physical path, when installed | — | PASS (§10) |
@@ -321,7 +334,13 @@ the real interactive picker remain missing evidence and therefore row 26 is
 
 ## 12. Findings
 
-### Release-blocking
+### Effective release-blocking
+
+None. The targeted physical supersession in section 13 closes the sole Device B
+release-blocking finding. Device B reports no remaining release blocker; final
+cross-device certification remains the coordinator's responsibility.
+
+### Original release-blocking finding (preserved; superseded)
 
 1. **RC2-WIN-PHYSICAL-INPUT-MISSING:** Rows 20–23 and 26 lack the mandated
    real Windows Terminal human-keyboard evidence. The available UI automation
@@ -329,12 +348,21 @@ the real interactive picker remain missing evidence and therefore row 26 is
    byte-only ConPTY, AppActivate, and SendKeys. Device B tagged-artifact
    certification is therefore `FAIL`; stable promotion remains blocked.
 
+This finding was accurate at the original report commit. It is retained for
+auditability and is no longer effective after the fresh section 13 evidence.
+
 No installed-artifact, configless-index, search/privacy, Gemini, OpenCode, or
 automated product defect was observed in the gates that actually ran.
 
 ### Non-blocking
 
-None.
+1. **RC2-WIN-CLI-LATENCY:** During the physical rerun, Reinstate commands were
+   consistently noticeably slower than ordinary native PowerShell commands;
+   the operator observed some invocations taking roughly 20-30 seconds. This
+   was not an instrumented benchmark and macOS/Linux behavior is untested, so it
+   is not promoted to a measured cross-platform defect or an RC2 functional
+   blocker. Follow-up is tracked for `v0.3.0` in
+   [issue #96](https://github.com/HarjjotSinghh/reinstate/issues/96).
 
 ### Test-harness deviations
 
@@ -359,8 +387,96 @@ None.
    failed because its shell child returned no usable output. The exact targeted
    test and full doctest package passed in fresh PowerShell with MSYS2 restored;
    the failed attempt remains recorded in section 5.
+8. The first targeted-recheck shell was parented by a desktop launcher rather
+   than Windows Terminal and was rejected. A new native Windows Terminal tab
+   running 64-bit Windows PowerShell 5.1 was used for every passing physical
+   gate.
+9. PowerShell line wrapping caused several incomplete pasted expressions, and
+   the first native JSON capture displayed a Unicode path as mojibake. Those
+   attempts were rejected; process-scoped UTF-8 output settings produced the
+   exact existing Unicode workspace without changing any file.
+10. An unrelated tool created untracked local metadata in the disposable
+    Claude project. It was not inspected or committed; tracked project diff
+    count remained zero throughout the passing gates.
+11. The first physical Claude fork succeeded but its pre-launch hash variable
+    was lost when a terminal tab was accidentally closed. That evidence remains
+    preserved but contributes no replacement PASS. A second fresh Claude fork
+    completed the full pre-hash, launch, refresh, inspect, independent resume,
+    source-preservation, exit, and process-cleanup contract.
+12. Multiple private picker-marker attempts were mishandled or later disclosed
+    in operator output, and one verification block was accidentally run in a
+    PowerShell tab without the acceptance variables. The null-result block was
+    explicitly rejected. A fresh local marker produced a one-row controlled
+    filter and exact NUMBER resume before disclosure. Later corpus pollution was
+    shown honestly as two rows; `f 2` selected the controlled Claude source by
+    its full native ID. Raw marker values are excluded from this report.
+13. The physical interrupt returned Windows exit `-1073741510` (`0xC000013A`),
+    PowerShell success false, zero source mutations, and zero remaining picker
+    or vendor processes. This is the recorded Ctrl+C outcome, not a normal
+    cancellation exit.
 
-## 13. Repository hygiene
+## 13. Targeted human-keyboard supersession
+
+**UTC window:** `2026-08-02T21:52:21Z` through `2026-08-02T23:34:21Z`
+
+This targeted rerun used the same verified installed RC2 aliases, each with
+SHA-256
+`D66807A27A76199CF05127A76274E83BCDA998777B06BC1F8CC71D4E9C9BFE01`,
+and the unchanged full `TEST_COMMIT`
+`8dd6073118131dd4ecacfca3eb1cde3f07df5eb6`. It used new disposable Claude
+and Codex repositories, branches, files, vendor sessions, challenge markers,
+and `REINSTATE_HOME`. No development, RC1, original RC2 corpus, product code,
+or original report evidence was reused as passing behavior evidence.
+
+The operator used native Windows Terminal with 64-bit Windows PowerShell
+`5.1.26100.8328`. `CODEX_THREAD_ID`, `CLAUDECODE`, and
+`CLAUDE_CODE_CHILD_SESSION` were removed only by environment-variable name;
+their values and all authentication material were neither inspected nor
+printed. All vendor prompts, picker commands, exits, and Ctrl+C were entered by
+the human keyboard. ConPTY byte injection, AppActivate, SendKeys, terminal
+automation, and simulated keystrokes contributed zero PASS evidence.
+
+### Rows 20-23
+
+| Row | Effective result | Sanitized physical evidence |
+| --- | ---------------- | --------------------------- |
+| 20 - Claude native resume | PASS | Fresh source `claude:49708731-5a37-495e-a364-5cae504a7754`; exact dry-run `claude --resume <native-id>` and cwd; physical ancestry `powershell.exe > rein.exe > cmd.exe > claude.exe`; fresh exact response persisted; normal exit `0`; refreshed single identity; controlled file unchanged; tracked diff zero; zero remaining controlled processes. |
+| 21 - Codex native resume | PASS | Fresh source `codex:019fc483-990e-7cd2-ad85-284bbfa459f2`; filename-bound rollout identity; exact dry-run `codex resume <native-id>` and Unicode cwd; physical ancestry `powershell.exe > rein.exe > codex.exe`; fresh exact response persisted; normal exit `0`; refreshed single identity; controlled file unchanged; tracked diff zero; zero remaining controlled processes. |
+| 22 - Claude vendor-native fork | PASS | Full replacement run forked the Claude source to distinct `claude:fb4451db-4ad5-4108-aa9c-b8d64e27a5af`; dry-run argv included `--fork-session`; physical ancestry included the installed `rein.exe`; source SHA-256 remained `3502758B207952FD84E4CA514634757F271C4666C9868AF25C3A71349579D419`; fork marker was present only in the fork; refresh and inspect returned one source and one fork; independent physical fork resume exited `0`; zero remaining processes. |
+| 23 - Codex vendor-native fork | PASS | Source forked to distinct `codex:019fc4a9-4fef-7352-ba6e-1d1aff868588`; dry-run was `codex fork <native-id>`; physical ancestry was `powershell.exe > rein.exe > codex.exe`; new rollout filename contained the exact fork ID; source SHA-256 remained `67B88B5F0E499835DD34F96427E692E29CB57575E17E9C923208ED8C03686942`; refresh/inspect and independent physical resume passed with exit `0`; zero remaining processes. |
+
+### Row 26 - full physical picker matrix
+
+- `rein.exe` and `reinstate.exe` both ran as installed interactive aliases.
+- `/filter` produced a clean one-row controlled Claude result before later
+  operator disclosure; the private marker itself is omitted. `i NUMBER`
+  inspected the exact full native reference, including workspace, branch, and
+  resume/fork capabilities.
+- Recoverable invalid input printed the actionable input contract and returned
+  to the same picker. `q` cancelled with exit `0` and no mutations.
+- NUMBER resumed exact source
+  `claude:fb4451db-4ad5-4108-aa9c-b8d64e27a5af` through `reinstate.exe`.
+  The fresh response persisted only in that identity, the original source and
+  controlled file remained byte-identical, exit was `0`, and no controlled
+  process remained.
+- After later local-corpus pollution was displayed rather than hidden, `f 2`
+  selected that same exact Claude source by full ID. It created distinct fork
+  `claude:533f9369-3b49-4bc6-93d2-a217a6bd0617`; the new marker persisted only
+  in the fork. Selected-source SHA-256 was byte-identical before and after at
+  `8AFBA16C054DE91C53CB8C3CCAD7C719C66FA7277DFA23C44E51D2516A408FB9`.
+  Refresh and inspect found exactly one source and one new fork; exit was `0`;
+  no process remained.
+- A separate bare `rein.exe` picker received one physical Ctrl+C. It returned
+  `-1073741510` (`0xC000013A`), changed zero of five controlled vendor source
+  files, and left zero picker/vendor processes.
+
+The effective supersession is therefore exactly five rows: 20, 21, 22, 23,
+and 26 change from original `FAIL` to effective `PASS`. The resulting required
+matrix is `32 PASS / 0 PARTIAL / 0 FAIL / 0 NOT TESTED`, with
+`release_blocking_findings=0`. The original `27 PASS / 5 FAIL` narrative and
+all failed attempts remain preserved above.
+
+## 14. Repository hygiene
 
 - report-only branch: `test/v0.2.0-rc.2-windows-report`
 - tested base commit: `8dd6073118131dd4ecacfca3eb1cde3f07df5eb6`
@@ -371,7 +487,7 @@ None.
 - cleanup performed: `false`; all evidence preserved
 - merge/tag/deploy/stable claim: `false`
 
-## 14. Device milestone block
+## 15. Device milestone block
 
 ```text
 PHASE2-DEVICE-REPORT-V1
@@ -385,28 +501,30 @@ release_url=https://github.com/HarjjotSinghh/reinstate/releases/tag/v0.2.0-rc.2
 artifact_attestations=PASS_12_OF_12
 report_path=docs/testing/results/2026-08-02-windows-phase2-V020RC2.md
 report_branch=test/v0.2.0-rc.2-windows-report
-claude_ref=claude:580473d0-8090-4f47-9bf4-8248881108f5
-codex_ref=codex:019fc425-6155-7410-9c3e-713704f76795
+claude_ref=claude:49708731-5a37-495e-a364-5cae504a7754
+codex_ref=codex:019fc483-990e-7cd2-ad85-284bbfa459f2
 gemini_state=PASS
 opencode_state=PASS
-required_pass=27
+required_pass=32
 required_partial=0
-required_fail=5
+required_fail=0
 required_not_tested=0
 optional_physical_pass=2
 optional_physical_not_tested=0
 configless_local_only=PASS
 preview_privacy=PASS
-claude_resume_fork=FAIL
-codex_resume_fork=FAIL
-picker=FAIL
+claude_resume_fork=PASS
+codex_resume_fork=PASS
+picker=PASS
 phase1_regression=PASS
-release_blocking_findings=1
+release_blocking_findings=0
 product_files_changed=0
 secrets_or_transcripts_committed=false
 END-PHASE2-DEVICE-REPORT-V1
 ```
 
 Device B does not perform final cross-device reconciliation. This report must
-be transferred to the existing macOS-arm64 Claude coordinator. No stable claim
-is authorized while this device report is `FAIL`.
+be transferred to the existing macOS-arm64 Claude coordinator. Device B's
+effective result is `PASS`, but this is not a final cross-device or stable
+claim. No merge, tag, deployment, cleanup, or stable promotion is authorized by
+this report.
