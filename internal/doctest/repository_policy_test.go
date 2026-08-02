@@ -173,6 +173,9 @@ func TestGoReleaserSnapshotVersionIgnoresWebsiteDeploymentTags(t *testing.T) {
 
 func TestGoReleaserEmbedsFullCommitIdentity(t *testing.T) {
 	config := read(t, ".goreleaser.yml")
+	if !strings.Contains(config, "release:\n  draft: true") {
+		t.Fatal("GoReleaser must upload a draft so artifact validation finishes before publication")
+	}
 	fullCommitFlag := `internal/version.Commit={{.FullCommit}}`
 	if !strings.Contains(config, fullCommitFlag) {
 		t.Fatalf("GoReleaser must embed the full release commit; missing %q", fullCommitFlag)
