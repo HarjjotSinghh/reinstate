@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Embed the full 40-character source commit in local and GoReleaser binaries,
+  and execute a packaged artifact during release validation so shortened or
+  otherwise incorrect build provenance fails before publication.
+- Keep ordinary verification builds CGO-free and enable CGO explicitly only
+  for the race gate, avoiding inherited-CGO Windows runtime handle failures;
+  also make the formatting failure output portable on native Windows.
+
 ## [0.2.0-rc.1] - 2026-08-01
 
 First Phase 2 release candidate. Development acceptance passed all 30 required

@@ -67,6 +67,9 @@ jobs:
       - name: Validate release artifacts
         run: ./scripts/check-release-artifacts.sh dist
 
+      - name: Validate release binary identity
+        run: ./scripts/check-release-binary-identity.sh dist "$(git rev-parse HEAD)" "${GITHUB_REF_NAME#v}"
+
       - name: Test POSIX installer contract
         run: ./scripts/test-install.sh dist
 

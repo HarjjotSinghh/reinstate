@@ -13,7 +13,7 @@ FAST_PACKAGES := $(shell $(GOENV) $(GO) list -f '{{if and (ne .ImportPath "$(MOD
 GOLANGCI_LINT_VERSION := v2.11.4
 GOVULNCHECK_VERSION   := v1.6.0
 VERSION ?= $(shell git describe --tags --match 'v[0-9]*' --always --dirty 2>/dev/null || echo 0.0.0-dev)
-COMMIT  ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
+COMMIT  ?= $(shell git rev-parse HEAD 2>/dev/null || echo unknown)
 DATE    ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 LDFLAGS := -s -w \
 	-X $(MODULE)/internal/version.Version=$(VERSION) \
@@ -43,10 +43,10 @@ quick: fmt-check vet ## Fast development gate; release work must use verify
 	$(GOENV) $(GO) test $(FAST_PACKAGES)
 
 test: ## Run unit tests
-	$(GOENV) $(GO) test ./... -count=1
+	CGO_ENABLED=0 $(GOENV) $(GO) test ./... -count=1
 
 test-race: ## Run tests with race detector
-	$(GOENV) $(GO) test $(FAST_PACKAGES) -race -count=1 -timeout=20m
+	CGO_ENABLED=1 $(GOENV) $(GO) test $(FAST_PACKAGES) -race -count=1 -timeout=20m
 
 vet: ## go vet
 	$(GOENV) $(GO) vet ./...
@@ -55,7 +55,7 @@ fmt: ## gofmt write
 	gofmt -w .
 
 fmt-check: ## Fail if gofmt needed
-	@test -z "$$(gofmt -l . | tee /dev/stderr)"
+	@files="$$(gofmt -l .)"; test -z "$$files" || { printf '%s\n' "$$files" >&2; exit 1; }
 
 lint: ## Run the pinned golangci-lint release
 	$(GOENV) $(GO) run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION) run --timeout=5m ./...
