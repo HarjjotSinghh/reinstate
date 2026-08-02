@@ -6,7 +6,7 @@ order: 14
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.2.0-rc.2"
+version: "v0.2.0-rc.3"
 updatedAt: 2026-08-01
 tags: ["cli", "command-reference", "session-sync", "troubleshooting", "rc6"]
 targetQuery: "Reinstate CLI commands"
@@ -16,7 +16,7 @@ noindex: false
 ---
 
 The `rein` and `reinstate` names run the same binary. This reference covers
-every command shipped by Reinstate `v0.2.0-rc.2`, including what it does, what
+every command shipped by Reinstate `v0.2.0-rc.3`, including what it does, what
 success looks like, the flags it accepts, platform-specific behavior, common
 failures, and the available recovery path.
 
@@ -28,7 +28,7 @@ failures, and the available recovery path.
 
 ## Prerequisites
 
-- Install and verify `v0.2.0-rc.2` before relying on this syntax.
+- Install and verify `v0.2.0-rc.3` before relying on this syntax.
 - Run `rein init` before commands that need configuration or remote storage.
 - Close the selected Claude Code or Codex process before a mutating pull or
   `conflicts resolve --keep-remote`.
@@ -95,7 +95,7 @@ rein version --json
 
 **Expected result:** human output contains the version string. JSON output
 contains `version`, `commit`, and `date`; the public Reinstate installer must report
-`0.2.0-rc.2`.
+`0.2.0-rc.3`.
 
 **Parameters:** `--json` selects machine-readable output. The command accepts
 no session, agent, storage, or path arguments.
@@ -567,7 +567,7 @@ new shell.
 
 A complete same-vendor transfer record contains:
 
-- `rein version --json` showing `0.2.0-rc.2`;
+- `rein version --json` showing `0.2.0-rc.3`;
 - a passing or truthfully blocked `rein setup check --json` on each device;
 - the exact agent and `SESSION_ID` selected by `rein list`;
 - successful push and pull dry-runs before each mutation;

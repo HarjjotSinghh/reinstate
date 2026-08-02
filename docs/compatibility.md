@@ -12,7 +12,7 @@ sync** for:
 | Cursor | Not in Phase 1 |
 | Grok Build | Not in Phase 1 |
 
-The `v0.2.0-rc.2` candidate adds a separate Phase 2 local capability matrix:
+The `v0.2.0-rc.3` candidate adds a separate Phase 2 local capability matrix:
 
 | Agent | Local discovery/search/inspect | Native resume/fork | Physical Phase 2 evidence |
 | ----- | ------------------------------ | ------------------ | ------------------------- |
@@ -25,7 +25,7 @@ The `v0.2.0-rc.2` candidate adds a separate Phase 2 local capability matrix:
 
 Automated fixture/fake-runner evidence and physical evidence are reported
 separately. This table does not promote candidate evidence to stable evidence;
-stable `v0.1.0` remains available while `v0.2.0-rc.2` is tested.
+stable `v0.1.0` remains available while `v0.2.0-rc.3` is tested.
 
 This table covers session compatibility only. Planned universal configuration
 support will be reported separately per harness and per capability (MCP,

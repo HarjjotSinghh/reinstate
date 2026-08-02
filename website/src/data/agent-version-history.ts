@@ -16,6 +16,11 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.2.0-rc.3': {
+    rangeChange: 'No agent-version range change documented.',
+    compatibilityChange:
+      'No adapter behavior change from v0.2.0-rc.2. This candidate adds verified package-manager distribution metadata and native package artifacts without widening the tested Claude Code or Codex CLI ranges.',
+  },
   'v0.2.0-rc.2': {
     rangeChange: 'No agent-version range change documented.',
     compatibilityChange:

@@ -346,6 +346,42 @@ func TestPhase2RC2PromptContracts(t *testing.T) {
 	}
 }
 
+func TestPhase2RC3PromptContracts(t *testing.T) {
+	body := read(t, "docs/testing/v0.2.0-rc.3-agent-verification-prompts.md")
+	for _, value := range []string{
+		"v0.2.0-rc.3",
+		"Prompt 1 — Claude Code on macOS",
+		"Prompt 2 — Codex on native Windows",
+		"Prompt 3 — Claude Code on native macOS amd64",
+		"Prompt 4 — Codex inside genuine WSL2 amd64",
+		"full 40-character TEST_COMMIT",
+		"mandatory stop before product-behavior rows",
+		"remove any inherited",
+		"Makefile owns the per-gate",
+		"test/v0.2.0-rc.3-macos-report",
+		"test/v0.2.0-rc.3-windows-report",
+		"test/v0.2.0-rc.3-macos-amd64-report",
+		"test/v0.2.0-rc.3-wsl2-amd64-report",
+		"V020RC3-FINAL-RELEASE-RECONCILIATION-V1",
+		"raw signer-key fingerprint",
+		"corpus/evidence is forbidden",
+	} {
+		if !strings.Contains(strings.ToLower(body), strings.ToLower(value)) {
+			t.Errorf("v0.2.0-rc.3 prompts missing %q", value)
+		}
+	}
+	for _, forbidden := range []string{
+		"REINSTATE_PASSPHRASE=",
+		"--dangerously-skip-permissions",
+		"R2.txt",
+		"releases/latest",
+	} {
+		if strings.Contains(body, forbidden) {
+			t.Errorf("v0.2.0-rc.3 prompts contain unsafe instruction %q", forbidden)
+		}
+	}
+}
+
 func TestPhase2ReportTemplateContracts(t *testing.T) {
 	body := read(t, "docs/testing/results/phase-2-report-template.md")
 	for _, value := range []string{

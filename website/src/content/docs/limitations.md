@@ -6,7 +6,7 @@ order: 15
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.2.0-rc.2"
+version: "v0.2.0-rc.3"
 updatedAt: 2026-08-01
 tags: ["limitations", "release-candidate", "compatibility", "same-vendor-resume", "roadmap"]
 targetQuery: "Reinstate limitations"
@@ -15,14 +15,14 @@ draft: false
 noindex: false
 ---
 
-Reinstate `v0.2.0-rc.2` is a pre-1.0 continuity layer with configless local
+Reinstate `v0.2.0-rc.3` is a pre-1.0 continuity layer with configless local
 session indexing and encrypted same-vendor Claude Code and Codex session sync.
 It is not yet a certified stable release, cross-agent translator, repository
 synchronizer, remote desktop, coding harness, or universal agent configuration
 system.
 
 > **Release gates remain open:** development acceptance passed on macOS arm64
-> and native Windows, while exact `v0.2.0-rc.2` installed-artifact acceptance,
+> and native Windows, while exact `v0.2.0-rc.3` installed-artifact acceptance,
 > macOS amd64, WSL2, and stable promotion still require evidence. This page
 > does not convert source-build evidence into a stable platform claim.
 
@@ -48,7 +48,7 @@ direction, not current CLI syntax or support.
 | Storage | User-owned S3-compatible object storage; R2 recommended |
 | Transfer model | Manual push/pull of full immutable snapshots |
 | Configuration | Reinstate session-sync config only |
-| Release status | `v0.2.0-rc.2` prerelease; formats and interfaces may still change |
+| Release status | `v0.2.0-rc.3` prerelease; formats and interfaces may still change |
 
 Versions outside the tested stable ranges, including prereleases, are
 `UNTESTED`. Recognizable untested sessions may be discovered read-only, but
