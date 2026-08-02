@@ -48,6 +48,10 @@ jobs:
           git merge-base --is-ancestor "$TAG_COMMIT" origin/main
           grep -F "## [$VERSION]" CHANGELOG.md >/dev/null
           git diff --exit-code
+          PREVIOUS_TAG="$(git describe --tags --match 'v[0-9]*' --abbrev=0 "$TAG_COMMIT^" 2>/dev/null || true)"
+          if test -n "$PREVIOUS_TAG"; then
+            echo "GORELEASER_PREVIOUS_TAG=$PREVIOUS_TAG" >>"$GITHUB_ENV"
+          fi
 
       - name: Run tests
         run: go test ./... -count=1
@@ -63,12 +67,32 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
+
+      - name: Stage raw binary assets for local verification
+        run: ./scripts/stage-release-assets.sh dist
 
       - name: Validate release artifacts
         run: ./scripts/check-release-artifacts.sh dist
 
       - name: Validate release binary identity
         run: ./scripts/check-release-binary-identity.sh dist "$(git rev-parse HEAD)" "${GITHUB_REF_NAME#v}"
+
+      - name: Generate and validate package-manager metadata
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          RELEASE_DATE="$(git show -s --format=%cs "${GITHUB_REF_NAME}^{commit}")"
+          ./scripts/prepare-package-manager-assets.mjs \
+            --version "$VERSION" \
+            --dist dist \
+            --output dist/package-manager \
+            --release-date "$RELEASE_DATE"
+          for package_dir in dist/package-manager/npm/*; do
+            (cd "$package_dir" && npm pack --dry-run --json >/dev/null)
+          done
+          ruby -c dist/package-manager/homebrew/Formula/reinstate.rb
+          jq empty dist/package-manager/scoop/reinstate.json
+          bash -n dist/package-manager/aur/PKGBUILD
 
       - name: Test POSIX installer contract
         run: ./scripts/test-install.sh dist
@@ -83,5 +107,14 @@ jobs:
           subject-path: |
             dist/*.tar.gz
             dist/*.zip
+            dist/*.apk
+            dist/*.deb
+            dist/*.pkg.tar.zst
+            dist/*.rpm
             dist/*.sbom.json
             dist/checksums.txt
+            dist/reinstate_*_darwin_amd64
+            dist/reinstate_*_darwin_arm64
+            dist/reinstate_*_linux_amd64
+            dist/reinstate_*_linux_arm64
+            dist/reinstate_*_windows_amd64.exe

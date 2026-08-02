@@ -1,0 +1,371 @@
+name: Publish package managers
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published signed release tag to promote
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: package-publish-${{ github.event.release.tag_name || inputs.tag }}
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+
+jobs:
+  verify:
+    name: Verify canonical release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      prerelease: ${{ steps.release.outputs.prerelease }}
+      release_date: ${{ steps.release.outputs.release_date }}
+    permissions:
+      contents: read
+      attestations: read
+    steps:
+      - name: Checkout the release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Validate published signed release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="$RELEASE_TAG"
+          echo "$TAG" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$' >/dev/null
+          VERSION="${TAG#v}"
+          RELEASE_JSON="$(gh release view "$TAG" --json isDraft,isPrerelease,tagName)"
+          test "$(jq -r .isDraft <<<"$RELEASE_JSON")" = false
+          test "$(jq -r .tagName <<<"$RELEASE_JSON")" = "$TAG"
+          git fetch --force origin "refs/tags/$TAG:refs/tags/$TAG"
+          git config gpg.format ssh
+          git config gpg.ssh.allowedSignersFile "$GITHUB_WORKSPACE/.github/allowed_signers"
+          git verify-tag "$TAG"
+          TAG_COMMIT="$(git rev-list -n 1 "$TAG")"
+          test "$TAG_COMMIT" = "$(git rev-parse HEAD)"
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$TAG_COMMIT" origin/main
+          grep -F "## [$VERSION]" CHANGELOG.md >/dev/null
+          {
+            echo "version=$VERSION"
+            echo "prerelease=$(jq -r .isPrerelease <<<"$RELEASE_JSON")"
+            echo "release_date=$(git show -s --format=%cs "$TAG_COMMIT")"
+          } >>"$GITHUB_OUTPUT"
+
+      - name: Download canonical release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download "$RELEASE_TAG" --dir release-assets
+
+      - name: Verify checksums and GitHub attestations
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          (cd release-assets && sha256sum -c checksums.txt)
+          while read -r _ asset; do
+            gh attestation verify "release-assets/$asset" --repo "$GITHUB_REPOSITORY" >/dev/null
+          done < release-assets/checksums.txt
+          gh attestation verify release-assets/checksums.txt --repo "$GITHUB_REPOSITORY" >/dev/null
+          ./scripts/check-release-artifacts.sh release-assets
+
+      - name: Generate package-manager payloads
+        run: |
+          ./scripts/prepare-package-manager-assets.mjs \
+            --version "${{ steps.release.outputs.version }}" \
+            --dist release-assets \
+            --output package-manager \
+            --release-date "${{ steps.release.outputs.release_date }}"
+          for package_dir in package-manager/npm/*; do
+            (cd "$package_dir" && npm pack --dry-run --json >/dev/null)
+          done
+          ruby -c package-manager/homebrew/Formula/reinstate.rb
+          jq empty package-manager/scoop/reinstate.json
+          bash -n package-manager/aur/PKGBUILD
+
+      - name: Upload verified package-manager payloads
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: package-manager-${{ steps.release.outputs.version }}
+          path: package-manager
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+
+  npm:
+    name: npm
+    if: vars.PUBLISH_NPM == 'true'
+    needs: verify
+    runs-on: ubuntu-latest
+    environment: package-publish
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24.4.1"
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Download verified payloads
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: package-manager-${{ needs.verify.outputs.version }}
+          path: package-manager
+
+      - name: Publish platform packages, then the launcher
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          VERSION: ${{ needs.verify.outputs.version }}
+          PRERELEASE: ${{ needs.verify.outputs.prerelease }}
+        run: |
+          set -euo pipefail
+          DIST_TAG=latest
+          if test "$PRERELEASE" = true; then DIST_TAG=next; fi
+          find package-manager/npm -type f \( -name reinstate -o -name reinstate.exe -o -name rein.js \) -exec chmod +x {} +
+          for package_dir in package-manager/npm/cli-*; do
+            PACKAGE_NAME="$(jq -r .name "$package_dir/package.json")"
+            if npm view "$PACKAGE_NAME@$VERSION" version >/dev/null 2>&1; then
+              echo "$PACKAGE_NAME@$VERSION already published"
+            else
+              npx --yes npm@11.5.1 publish "$package_dir" --access public --tag "$DIST_TAG"
+            fi
+          done
+          if npm view "@reinstate/cli@$VERSION" version >/dev/null 2>&1; then
+            echo "@reinstate/cli@$VERSION already published"
+          else
+            npx --yes npm@11.5.1 publish package-manager/npm/cli --access public --tag "$DIST_TAG"
+          fi
+
+  jsr:
+    name: JSR
+    if: vars.PUBLISH_JSR == 'true'
+    needs: verify
+    runs-on: ubuntu-latest
+    environment: package-publish
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24.4.1"
+          package-manager-cache: false
+
+      - name: Download verified payloads
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: package-manager-${{ needs.verify.outputs.version }}
+          path: package-manager
+
+      - name: Publish checksum-verifying launcher
+        working-directory: package-manager/jsr
+        run: npx --yes jsr@0.14.3 publish --allow-dirty
+
+  homebrew:
+    name: Homebrew tap
+    if: vars.PUBLISH_HOMEBREW == 'true' && needs.verify.outputs.prerelease == 'false'
+    needs: verify
+    runs-on: ubuntu-latest
+    environment: package-publish
+    permissions:
+      contents: read
+    steps:
+      - name: Download verified payloads
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: package-manager-${{ needs.verify.outputs.version }}
+          path: package-manager
+
+      - name: Checkout Homebrew tap
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: HarjjotSinghh/homebrew-tap
+          token: ${{ secrets.PACKAGE_REPOSITORIES_TOKEN }}
+          path: homebrew-tap
+
+      - name: Update formula
+        env:
+          VERSION: ${{ needs.verify.outputs.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p homebrew-tap/Formula
+          cp package-manager/homebrew/Formula/reinstate.rb homebrew-tap/Formula/reinstate.rb
+          cd homebrew-tap
+          if test -z "$(git status --porcelain -- Formula/reinstate.rb)"; then exit 0; fi
+          git config user.name reinstate-release-bot
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add Formula/reinstate.rb
+          git commit -m "chore: update reinstate to $VERSION"
+          git push
+
+  scoop:
+    name: Scoop bucket
+    if: vars.PUBLISH_SCOOP == 'true' && needs.verify.outputs.prerelease == 'false'
+    needs: verify
+    runs-on: ubuntu-latest
+    environment: package-publish
+    permissions:
+      contents: read
+    steps:
+      - name: Download verified payloads
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: package-manager-${{ needs.verify.outputs.version }}
+          path: package-manager
+
+      - name: Checkout Scoop bucket
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: HarjjotSinghh/scoop-bucket
+          token: ${{ secrets.PACKAGE_REPOSITORIES_TOKEN }}
+          path: scoop-bucket
+
+      - name: Update manifest
+        env:
+          VERSION: ${{ needs.verify.outputs.version }}
+        run: |
+          set -euo pipefail
+          cp package-manager/scoop/reinstate.json scoop-bucket/reinstate.json
+          cd scoop-bucket
+          if test -z "$(git status --porcelain -- reinstate.json)"; then exit 0; fi
+          git config user.name reinstate-release-bot
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add reinstate.json
+          git commit -m "chore: update reinstate to $VERSION"
+          git push
+
+  chocolatey:
+    name: Chocolatey
+    if: vars.PUBLISH_CHOCOLATEY == 'true' && needs.verify.outputs.prerelease == 'false'
+    needs: verify
+    runs-on: windows-latest
+    environment: package-publish
+    permissions:
+      contents: read
+    steps:
+      - name: Download verified payloads
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: package-manager-${{ needs.verify.outputs.version }}
+          path: package-manager
+
+      - name: Pack and publish
+        shell: pwsh
+        env:
+          CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
+          VERSION: ${{ needs.verify.outputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $output = Join-Path $env:RUNNER_TEMP 'chocolatey-out'
+          New-Item -ItemType Directory -Path $output -Force | Out-Null
+          Push-Location package-manager/chocolatey
+          choco pack reinstate.nuspec --output-directory $output
+          Pop-Location
+          $existing = choco search reinstate --exact --all-versions --limit-output
+          if ($existing -contains "reinstate|$env:VERSION") {
+            Write-Host "reinstate $env:VERSION already published"
+            exit 0
+          }
+          $package = Get-ChildItem $output/reinstate.*.nupkg | Select-Object -First 1
+          choco push $package.FullName --source https://push.chocolatey.org/ --api-key $env:CHOCOLATEY_API_KEY
+
+  winget:
+    name: WinGet submission
+    if: vars.PUBLISH_WINGET == 'true' && needs.verify.outputs.prerelease == 'false'
+    needs: verify
+    runs-on: windows-latest
+    environment: package-publish
+    permissions:
+      contents: read
+    steps:
+      - name: Download verified payloads
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: package-manager-${{ needs.verify.outputs.version }}
+          path: package-manager
+
+      - name: Download pinned WinGetCreate
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $url = 'https://github.com/microsoft/winget-create/releases/download/v1.12.13.0/wingetcreate.exe'
+          Invoke-WebRequest $url -OutFile wingetcreate.exe
+          $actual = (Get-FileHash wingetcreate.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          $expected = '24042bd37915805615e6cf969ac57c6439124c3fe85823327f5f3fb24bd9ffea'
+          if ($actual -ne $expected) { throw "WinGetCreate checksum mismatch: $actual" }
+
+      - name: Submit manifest pull request
+        shell: pwsh
+        env:
+          WINGET_GITHUB_TOKEN: ${{ secrets.WINGET_GITHUB_TOKEN }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          ./wingetcreate.exe submit package-manager/winget --token $env:WINGET_GITHUB_TOKEN
+
+  aur:
+    name: Arch User Repository
+    if: vars.PUBLISH_AUR == 'true' && needs.verify.outputs.prerelease == 'false'
+    needs: verify
+    runs-on: ubuntu-latest
+    environment: package-publish
+    permissions:
+      contents: read
+    steps:
+      - name: Download verified payloads
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: package-manager-${{ needs.verify.outputs.version }}
+          path: package-manager
+
+      - name: Configure dedicated AUR SSH identity
+        env:
+          AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          AUR_KNOWN_HOSTS: ${{ secrets.AUR_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 "$RUNNER_TEMP/aur-ssh"
+          printf '%s\n' "$AUR_SSH_PRIVATE_KEY" >"$RUNNER_TEMP/aur-ssh/id_ed25519"
+          printf '%s\n' "$AUR_KNOWN_HOSTS" >"$RUNNER_TEMP/aur-ssh/known_hosts"
+          chmod 600 "$RUNNER_TEMP/aur-ssh/id_ed25519" "$RUNNER_TEMP/aur-ssh/known_hosts"
+          {
+            echo 'Host aur.archlinux.org'
+            echo '  User aur'
+            echo "  IdentityFile $RUNNER_TEMP/aur-ssh/id_ed25519"
+            echo "  UserKnownHostsFile $RUNNER_TEMP/aur-ssh/known_hosts"
+            echo '  IdentitiesOnly yes'
+            echo '  StrictHostKeyChecking yes'
+          } >"$RUNNER_TEMP/aur-ssh/config"
+          chmod 600 "$RUNNER_TEMP/aur-ssh/config"
+
+      - name: Publish reinstate-bin
+        env:
+          GIT_SSH_COMMAND: ssh -F ${{ runner.temp }}/aur-ssh/config
+          VERSION: ${{ needs.verify.outputs.version }}
+        run: |
+          set -euo pipefail
+          git -c init.defaultBranch=master clone ssh://aur@aur.archlinux.org/reinstate-bin.git aur-package
+          cp package-manager/aur/PKGBUILD package-manager/aur/.SRCINFO aur-package/
+          cd aur-package
+          if test -z "$(git status --porcelain -- PKGBUILD .SRCINFO)"; then exit 0; fi
+          git config user.name "Harjot Singh Rana"
+          git config user.email "harjot@harjot.co"
+          git add PKGBUILD .SRCINFO
+          git commit -m "Update to $VERSION"
+          git push origin master

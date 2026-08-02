@@ -50,6 +50,9 @@ tagged-artifact matrix on both devices.
   the vendor's `.cmd` shim.
 - Close the landing page with a clear continuity-tool comparison and an
   accessible macOS, Linux, and Windows installation call to action.
+- Add an opt-in, provenance-gated package distribution pipeline for npm, JSR,
+  Homebrew, Chocolatey, Scoop, WinGet, and AUR, plus native Debian, RPM, Alpine,
+  and Arch release packages and a maintainer onboarding guide.
 
 ### Changed
 
