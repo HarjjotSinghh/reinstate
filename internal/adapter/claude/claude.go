@@ -111,6 +111,14 @@ func isSupportedVersion(version string) bool {
 	return adapter.StableVersionInRange(version, minimumVerifiedClaudeVersion, maximumVerifiedClaudeVersion)
 }
 
+// SupportedVersion reports whether a stable Claude Code version is inside the
+// physically verified native session range. Native preflight uses the same
+// fail-closed contract as the sync adapter without executing an export or
+// restore.
+func SupportedVersion(version string) bool {
+	return isSupportedVersion(version)
+}
+
 func (a *Adapter) Discover(ctx context.Context, opts adapter.DiscoverOptions) ([]adapter.Session, error) {
 	_ = ctx
 	inst, compat, err := a.Detect(context.Background())
