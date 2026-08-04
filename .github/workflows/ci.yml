@@ -302,3 +302,4 @@ jobs:
           if ($submitExit -eq 0) {
             throw 'Read-only WinGet validation token unexpectedly published a manifest'
           }
+          exit 0
