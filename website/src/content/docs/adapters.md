@@ -4,18 +4,22 @@ Session adapters translate between each coding agent's **on-disk session
 layout** and Reinstate's normalized sync model. Later configuration adapters
 will normalize portable intent and render each harness's native configuration.
 
+Phase 4 adds separate, directional transcript-source and handoff-target
+capabilities. Byte-level session sync does not imply safe cross-agent history
+parsing or destination creation.
+
 > Status: interfaces and docs first; implementations land per [ROADMAP.md](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md).
 
 ## Support matrix
 
-| Agent | Sessions | Config / MCP / skills | Path remap | Resume command | Status |
-| ----- | :------: | :-------------------: | :--------: | -------------- | ------ |
-| **Claude Code** | ✅ RC5 candidate | 📋 Post–Phase 1 | ✅ critical | `claude --resume SESSION_ID` | 🧪 Acceptance |
-| **OpenAI Codex CLI** | ✅ RC5 candidate | 📋 Post–Phase 1 | ✅ | `codex resume SESSION_ID` | 🧪 Acceptance |
-| **Gemini CLI** | 📋 Phase 1 | 📋 | ✅ | `gemini --resume` | 📋 Planned |
-| **OpenCode** | 📋 Phase 1 | 📋 | ✅ | in-app session list | 📋 Planned |
-| **Grok Build** | 📋 Phase 2 | 📋 | ✅ | `grok -r` / `/resume` | 📋 Planned |
-| **Cursor** | 💭 best-effort | 💭 | 💭 | N/A (IDE) | 💭 Exploring |
+| Agent | Sessions | Cross-agent handoff | Config / MCP / skills | Path remap | Resume command | Status |
+| ----- | :------: | :-----------------: | :-------------------: | :--------: | -------------- | ------ |
+| **Claude Code** | ✅ RC5 candidate | 📋 Phase 4 source + target | 📋 Post–Phase 1 | ✅ critical | `claude --resume SESSION_ID` | 🧪 Acceptance |
+| **OpenAI Codex CLI** | ✅ RC5 candidate | 📋 Phase 4 source + target | 📋 Post–Phase 1 | ✅ | `codex resume SESSION_ID` | 🧪 Acceptance |
+| **Gemini CLI** | 📋 Later | 📋 after first pair | 📋 | ✅ | `gemini --resume` | 📋 Planned |
+| **OpenCode** | 📋 Later | 📋 after first pair | 📋 | ✅ | in-app session list | 📋 Planned |
+| **Grok Build** | 📋 Later | 💭 | 📋 | ✅ | `grok -r` / `/resume` | 📋 Planned |
+| **Cursor** | 💭 best-effort | 💭 | 💭 | 💭 | N/A (IDE) | 💭 Exploring |
 
 Legend: ✅ implemented · 🚧 acceptance in progress · 📋 planned · 💭 exploring
 
@@ -23,6 +27,12 @@ Configuration support is capability-specific. Each adapter will advertise
 support for MCP servers, skills/instructions, hooks/loops, plugins,
 marketplaces, and safe settings. Session support never implies configuration
 support. See [Universal agent configuration](universal-configuration.md).
+
+Cross-agent support is also capability-specific: source parse, structured
+handoff, destination launch, workspace/capability verification, fidelity
+reporting, and experimental reconstructed history are independent states.
+Claude → Codex and Codex → Claude are separate compatibility rows. See
+[Cross-agent continuation](cross-agent-continuation.md).
 
 ## Per-agent notes
 

@@ -1,5 +1,10 @@
 # Getting Started
 
+> **Cross-agent status:** the current release restores same-vendor sessions. A
+> Claude Code → Codex quota-switch handoff is core Phase 4 roadmap work and
+> creates a new linked destination session with explicit fidelity. See
+> [Cross-agent continuation](cross-agent-continuation.md).
+
 Reinstate synchronizes Claude Code and Codex CLI sessions through
 client-side-encrypted object storage that you control.
 

@@ -4,8 +4,8 @@
 
 The **continuity layer for coding-agent work**. Phase 1 implements encrypted,
 bring-your-own-storage sync for same-vendor Claude Code and Codex sessions.
-Universal search, verified resume, portable handoffs, and cross-harness
-configuration are later phases.
+Universal search, verified resume, core cross-agent continuation, and
+cross-harness configuration are later phases.
 
 ## What is `rein` vs `reinstate`?
 
@@ -32,8 +32,20 @@ asking a new agent to re-derive context is slow and incomplete.
 
 ## Will this resume a Claude session inside Codex?
 
-**Native resume:** no — same-vendor only. A later explicit portable handoff can
-carry a lossy task checkpoint without pretending to translate native history.
+**Current CLI:** no—native resume is same-vendor only.
+
+**Core Phase 4 roadmap:** yes. Claude Code ↔ Codex quota/outage continuation is
+the first pair, with Gemini CLI and OpenCode following. Reinstate creates a new
+linked destination session from task state, portable visible history,
+workspace/tool/test evidence, capability differences, and a fidelity report.
+
+It preserves the immutable source but cannot claim an identical foreign
+runtime. Credentials, approvals, hidden reasoning, and live processes do not
+transfer. Source system/developer messages remain audit history, and historical
+tools never re-execute. Reconstructed native history is experimental and
+pair/version-specific.
+
+See [Cross-agent continuation](cross-agent-continuation.md).
 
 ## Will Reinstate configure the same MCP server in every harness?
 

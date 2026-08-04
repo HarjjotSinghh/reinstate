@@ -8,8 +8,10 @@
 
 **The continuity layer for coding-agent work** — search, resume, and hand off sessions across agents, projects, environments, and devices.
 Phase 1 starts with encrypted same-vendor Claude Code and Codex session sync
-across devices; search, verified resume, portable handoffs, and universal agent
-configuration follow.
+across devices. Core cross-agent continuation follows: when one agent hits a
+usage limit, hand the same task to another through an explicit, fidelity-reported
+continuity capsule. Search, verified resume, and universal agent configuration
+complete the later continuity stack.
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/HarjjotSinghh/reinstate)](https://goreportcard.com/report/github.com/HarjjotSinghh/reinstate)
@@ -52,9 +54,16 @@ configuration follow.
 
 You grind eight hours on your **Windows desktop** across Claude Code, Codex, with more agents planned after Phase 1… twenty sessions, four projects, full context.
 
-You open your **MacBook** on the couch.
+Then either the device changes **or the agent's usage window closes**. You open
+the laptop—or switch from Claude Code to Codex because only Codex still has
+capacity.
 
 Git has the code. The agent does **not** have the conversation — the rejected approaches, the files already read three times, the style constraints you established mid-thread. Vendor tools save sessions **locally**. Switching machines is context death.
+
+Phase 1 solves the machine switch with same-vendor native resume. Phase 4 makes
+the agent switch a core workflow: the same task continues in a new linked native
+session with portable visible history, workspace truth, tool/test evidence, and
+an explicit fidelity report.
 
 ```mermaid
 flowchart LR
@@ -96,6 +105,7 @@ flowchart LR
 | | What you get |
 | --- | --- |
 | **Universal** | Multi-agent — not Claude-only, not Codex-only |
+| **Cross-agent continuity** | Core Phase 4 quota/outage handoff; same task, new linked destination session, measured fidelity |
 | **Offline-capable origin** | Works when the other machine is **off** (stored sync, not a live relay) |
 | **Path remapping** | Windows ↔ macOS project paths rewritten so `--resume` actually finds sessions |
 | **Zero-knowledge** | Client-side encryption; bring-your-own storage |
@@ -113,6 +123,7 @@ Native vendor sync will always own *one* ecosystem. DIY Syncthing/Drive hacks br
 ## Features
 
 - **Cross-device session sync** — continue the same agent thread on another machine
+- **Cross-agent continuation (Phase 4)** — switch from Claude Code to Codex (and back) after a quota limit without re-explaining the task; structured handoff first, reconstructed history experimental
 - **Multi-agent adapters** — Claude Code, Codex, with more agents planned after Phase 1 (phased)
 - **End-to-end encryption** — [age](https://github.com/FiloSottile/age), passphrase-derived keys
 - **Bring-your-own storage** — Cloudflare R2, AWS S3, and S3-compatible storage
@@ -127,6 +138,13 @@ once, then preview and apply the correct native configuration across Claude
 Code, Codex, Grok, OpenCode, Gemini CLI, and multiple devices. This is planned,
 not part of the current CLI. See
 [Universal agent configuration](docs/universal-configuration.md).
+
+Cross-agent continuation is planned earlier in Phase 4 and is core product
+scope, not a config side effect. It preserves the immutable source and every
+portable visible event, then creates a new destination-native session with a
+component-level fidelity report. It does not copy credentials, approvals,
+hidden reasoning, or source policy into the target. See
+[Cross-agent continuation](docs/cross-agent-continuation.md).
 
 ---
 
@@ -197,13 +215,13 @@ Full walkthrough: **[docs/getting-started.md](docs/getting-started.md)**
 
 ## Supported agents
 
-| Agent | Sessions | Universal config target | Status |
-| ----- | :------: | :---------------------: | ------ |
-| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | ✅ | 📋 | Sessions: Phase 1 |
-| [OpenAI Codex CLI](https://github.com/openai/codex) | ✅ | 📋 | Sessions: Phase 1 |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | 📋 | 📋 | Later phase |
-| [OpenCode](https://opencode.ai) | 📋 | 📋 | Later phase |
-| [Grok Build](https://x.ai) | 📋 | 📋 | Later phase |
+| Agent | Native sessions | Cross-agent handoff | Universal config | Status |
+| ----- | :-------------: | :-----------------: | :--------------: | ------ |
+| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | ✅ | 📋 Phase 4 source + target | 📋 | Sessions: Phase 1 |
+| [OpenAI Codex CLI](https://github.com/openai/codex) | ✅ | 📋 Phase 4 source + target | 📋 | Sessions: Phase 1 |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | 📋 | 📋 after first pair | 📋 | Later phase |
+| [OpenCode](https://opencode.ai) | 📋 | 📋 after first pair | 📋 | Later phase |
+| [Grok Build](https://x.ai) | 📋 | 💭 adapter evidence required | 📋 | Later phase |
 
 Details: **[docs/adapters.md](docs/adapters.md)**
 
@@ -236,6 +254,12 @@ flowchart TB
 3. **Crypto** encrypts before any upload
 4. **Sync** uses a local manifest; restores are atomic with backups
 
+For planned cross-agent continuation, source adapters additionally parse a
+versioned immutable boundary into a canonical capsule; target adapters create a
+new linked session from an inspectable projection. Tool calls are historical
+evidence, not actions to replay, and every normalized or omitted component is
+reported before launch.
+
 Deep dive: **[docs/architecture.md](docs/architecture.md)** · research diagram:
 
 <p align="center">
@@ -265,6 +289,7 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 | [Getting started](docs/getting-started.md) | Install, init, dual-device setup |
 | [Architecture](docs/architecture.md) | Pipeline, packages, design principles |
 | [Adapters](docs/adapters.md) | Per-agent layouts & support matrix |
+| [Cross-agent continuation](docs/cross-agent-continuation.md) | Quota-switch product spec, fidelity model, architecture, security, release gates |
 | [Universal configuration](docs/universal-configuration.md) | Planned MCP/skills/loops/plugins/settings portability |
 | [Security model](docs/security-model.md) | Threat model & defaults |
 | [Comparison](docs/comparison.md) | vs native sync, claude-sync, DIY |
@@ -332,7 +357,7 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 | ----- | ----- | ------ |
 | **0** | Contracts, diagnostics, installers, fixtures, release trust | 🚧 |
 | **1** | Claude + Codex encrypted same-vendor session sync | 🚧 |
-| **2–4** | Local index, verified resume, portable handoffs | 📋 |
+| **2–4** | Local index, verified resume, core cross-agent continuation | 📋 |
 | **5–7** | Universal config + automatic sync, thin Console/ACP client, teams | 📋 / 💭 |
 
 Full detail: **[ROADMAP.md](ROADMAP.md)**

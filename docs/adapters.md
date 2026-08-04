@@ -5,21 +5,27 @@ vendor-native session files without translating sessions across agents.
 Later configuration adapters will separately normalize portable intent and
 render each harness's native MCP/skills/plugins/settings format.
 
+Phase 4 adds separate, directional **transcript-source** and
+**handoff-target** capabilities. A session adapter that can sync bytes does not
+automatically qualify to parse portable history or create a safe destination
+session.
+
 ## Phase 1 (`v0.1.0`)
 
-| Adapter | Sessions | Universal configuration | Notes |
-| ------- | -------- | ----------------------- | ----- |
-| Claude Code | In scope | Post–Phase 1 | Same-vendor resume only |
-| OpenAI Codex CLI | In scope | Post–Phase 1 | Same-vendor resume only |
+| Adapter | Native sessions | Cross-agent handoff | Universal configuration | Notes |
+| ------- | --------------- | ------------------- | ----------------------- | ----- |
+| Claude Code | In scope | Phase 4 source + target | Post–Phase 1 | Phase 1 is same-vendor only |
+| OpenAI Codex CLI | In scope | Phase 4 source + target | Post–Phase 1 | Phase 1 is same-vendor only |
 
 ## Later
 
-| Adapter | Status |
-| ------- | ------ |
-| Gemini CLI | Planned after Phase 1 |
-| OpenCode | Planned after Phase 1 |
-| Cursor | Exploring |
-| Grok Build | Exploring |
+| Adapter | Session discovery | Cross-agent handoff |
+| ------- | ----------------- | ------------------- |
+| Gemini CLI | Planned after Phase 1 | Phase 4 after Claude ↔ Codex |
+| OpenCode | Planned after Phase 1 | Phase 4 after Claude ↔ Codex |
+| Cursor | Exploring | Exploring |
+| Grok Build | Exploring | Exploring |
+| Copilot CLI / Orca / others | Exploring | Requires public format/API and acceptance evidence |
 
 Planned configuration targets include Claude Code, Codex, Gemini CLI, OpenCode,
 and Grok. Each adapter will advertise support independently for MCP servers,
@@ -28,6 +34,24 @@ adapter that can resume sessions does not automatically support configuration,
 and unsupported or lossy mappings must be reported before apply.
 
 See [universal-configuration.md](universal-configuration.md).
+
+## Cross-agent capability states (Phase 4 target)
+
+Support is reported per direction and per version for:
+
+| Capability | Meaning |
+| ---------- | ------- |
+| Source parse | Safely reads visible messages, tool relationships, attachments, and unknown records |
+| Structured handoff | Builds a task/workspace capsule without needing the source model |
+| Destination launch | Creates and verifies a new destination-native session |
+| Reconstructed history | Projects normalized visible history into target-native storage; experimental unless explicitly promoted |
+| Capability verification | Reports missing tools, MCP, skills, instructions, sandbox, and runtime state |
+| Fidelity report | Classifies every component as exact/normalized/summarized/referenced/omitted |
+
+Claude → Codex and Codex → Claude are separate rows in the future compatibility
+matrix. “Supported session adapter” must never be shortened to “supported
+handoff.” See
+[cross-agent-continuation.md](cross-agent-continuation.md).
 
 ## Compatibility states
 

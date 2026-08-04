@@ -12,6 +12,9 @@ printed to the terminal. This document is the contract we design against.
 | Network eavesdropper | TLS to backend + encrypted payloads |
 | Accidental sync of API keys / OAuth | Hard denylist of credential paths (default on) |
 | Overwriting good local history | Timestamped backups + conflict forks |
+| Imported transcript injects destination policy | Source-attributed inert history; never promote source system/developer messages |
+| Historical tool call executes again | Tool calls/results are evidence only; destination re-authorizes every action |
+| Cross-agent handoff hides lost state | Component-level fidelity report and explicit omissions before launch |
 | Weak passphrase | age scrypt recipient + long-passphrase guidance; user responsibility |
 | Compromised local machine | **Out of scope** (OS-level compromise) |
 | Malicious release artifact | Checksums / supply-chain process (see SECURITY.md) |
@@ -81,6 +84,30 @@ See [universal-configuration.md](universal-configuration.md). Encryption protect
 portable desired state in remote storage; it does not make arbitrary plugin
 sources or copied credentials safe.
 
+## Future cross-agent continuation
+
+Cross-agent handoff crosses a second trust boundary: content produced under one
+harness's prompts, tools, permissions, and sandbox enters another harness.
+
+| Risk | Required mitigation |
+| ---- | ------------------- |
+| Source system prompt conflicts with destination policy | Preserve for audit only; never install it as destination authority |
+| Tool output contains prompt injection | Delimit and source-attribute imported history; treat it as untrusted evidence |
+| Pending or historical action is replayed | Mark interrupted; never execute during import; request destination approval again |
+| Transcript says a file/test changed when it did not | Current workspace and Git state outrank conversation claims |
+| Opaque reasoning/signature is incompatible | Keep same-vendor only when officially supported; otherwise report omitted |
+| Long transcript floods destination context | Explicit checkpoint/balanced/full policy, sidecar references, size/token preview |
+| Native destination file/DB synthesis corrupts history | Experimental exact-version gate, new ID, backup, native resume validation |
+| Handoff capsule leaks secrets | Credential excludes, redaction preview, private local mode, E2EE before remote sync |
+
+Continuity capsules live outside the repository by default with `0600`
+permissions. The raw source artifact is immutable; the canonical record and
+destination projection have separate hashes so the user can audit exactly what
+the destination received. Source and destination credentials, account state,
+approvals, cookies, tokens, and keychain entries never enter the capsule.
+
+See [cross-agent-continuation.md](cross-agent-continuation.md).
+
 ## Secrets inside transcripts
 
 Agents sometimes echo `.env` values or tokens into session logs. Reinstate:
@@ -88,6 +115,9 @@ Agents sometimes echo `.env` values or tokens into session logs. Reinstate:
 1. Encrypts everything it does sync (reduces blast radius of cloud leaks)
 2. Offers opt-in redaction patterns (Phase 2+) for high-entropy strings
 3. Syncs only explicitly discovered Claude Code/Codex session artifacts in Phase 1
+
+Planned cross-agent handoff also shows a redaction/fidelity preview before a
+capsule is written for a destination or encrypted remote store.
 
 **You remain responsible** for not pasting production secrets into agent chats.
 

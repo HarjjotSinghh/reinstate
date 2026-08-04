@@ -3,6 +3,12 @@
 Reinstate synchronizes Claude Code and Codex CLI sessions across your machines
 through client-side encrypted, user-owned object storage.
 
+> **Cross-agent status:** this release does not open a Claude Code session
+> inside Codex or vice versa. That quota-switch workflow is a core Phase 4
+> feature built as an explicit continuity-capsule handoff into a new linked
+> destination session. See
+> [cross-agent continuation](cross-agent-continuation.md).
+
 > **Release status:** the public installers currently pin
 > `v0.1.0-rc.5`. It is a release candidate until the native Mac/Windows
 > [Phase 1 acceptance runbook](testing/phase-1-mac-windows-acceptance.md) passes.
@@ -224,4 +230,5 @@ conflicts, wrong-passphrase refusal, and ciphertext-only remote storage.
 - [Configuration](configuration.md)
 - [Backup and recovery](backup-and-recovery.md)
 - [Security model](security-model.md)
+- [Cross-agent continuation roadmap](cross-agent-continuation.md)
 - [Troubleshooting](troubleshooting.md)

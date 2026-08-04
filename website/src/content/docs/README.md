@@ -8,6 +8,7 @@
 | [Phase 1 Mac + Windows acceptance](https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/phase-1-mac-windows-acceptance.md) | Strict two-device release checklist |
 | [Architecture](architecture.md) | System design |
 | [Adapters](adapters.md) | Agent support matrix |
+| [Cross-agent continuation](cross-agent-continuation.md) | Core quota/outage handoff and fidelity model |
 | [Universal agent configuration](universal-configuration.md) | Planned MCP/skills/loops/plugins/settings portability |
 | [Security model](security-model.md) | Threat model and defaults |
 | [Comparison](comparison.md) | vs alternatives |

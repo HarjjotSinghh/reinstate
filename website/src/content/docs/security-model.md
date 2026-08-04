@@ -12,6 +12,8 @@ printed to the terminal. This document is the contract we design against.
 | Network eavesdropper | TLS to backend + encrypted payloads |
 | Accidental sync of API keys / OAuth | Hard denylist of credential paths (default on) |
 | Overwriting good local history | Timestamped backups + conflict forks |
+| Imported transcript injects destination policy | Source-attributed inert history; source policy stays audit-only |
+| Historical tool call runs again | Never replay tools; destination authorizes new actions |
 | Weak passphrase | Documented guidance; Argon2 KDF; user responsibility |
 | Compromised local machine | **Out of scope** (OS-level compromise) |
 | Malicious release artifact | Checksums / supply-chain process (see SECURITY.md) |
@@ -70,6 +72,22 @@ sources/versions, show permissions and commands, and require explicit consent.
 Reinstate may track auth status and coordinate official login flows. Token reuse
 is allowed only where the protocol, provider, or harness explicitly supports
 it; copying private credential stores is never the fallback.
+
+## Future cross-agent continuation
+
+Imported history is untrusted evidence. Source system/developer messages are
+never promoted to destination authority, historical/pending tool calls never
+execute, current workspace truth overrides transcript claims, and destination
+permissions/MCP authentication are authorized again.
+
+The continuity capsule has separate hashes for the immutable source, canonical
+record, and exact destination projection. It is private (`0600`) and outside the
+repository by default, with redaction/fidelity preview before destination or
+remote writes. Credentials, approvals, hidden reasoning, account state, and
+live processes never enter the capsule. Native destination reconstruction is
+experimental and exact-version gated.
+
+See [Cross-agent continuation](cross-agent-continuation.md).
 
 ## Secrets inside transcripts
 

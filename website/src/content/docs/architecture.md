@@ -47,12 +47,37 @@ protocols.
 2. **Zero-knowledge remote** — only ciphertext on object storage.
 3. **Same-vendor resume** — restore puts bytes where `claude --resume` /
    `codex resume` already know how to read them.
-4. **Fail-safe conflicts** — never overwrite; fork and surface.
-5. **Adapter isolation** — format churn in one agent cannot break others.
-6. **Normalize configuration intent** — later configuration adapters render a
+4. **Explicit cross-agent continuation** — a continuity capsule preserves
+   portable visible history/task evidence, creates a linked destination session,
+   and reports fidelity; it never claims invisible native translation.
+5. **Fail-safe conflicts** — never overwrite; fork and surface.
+6. **Adapter isolation** — format churn in one agent cannot break others.
+7. **Normalize configuration intent** — later configuration adapters render a
    canonical desired-state profile into verified native harness formats.
-7. **Secrets stay local** — profiles contain references, never raw API keys,
+8. **Secrets stay local** — profiles contain references, never raw API keys,
    OAuth tokens, cookies, or vendor credential stores.
+9. **Imported history is inert** — source policy stays audit-only and old tool
+   calls never execute.
+
+## Cross-agent continuation (roadmap)
+
+```text
+immutable vendor artifact
+  → version-gated parse
+  → continuity capsule
+     task · normalized events · workspace · capabilities
+     security · fidelity · lineage
+  → inspectable destination projection
+  → acknowledgement
+  → new destination-native session
+```
+
+Session sync, transcript-source parsing, and handoff-target launch are separate,
+directional support states. Structured context injection is the safe default.
+Target-native file/database reconstruction is experimental, exact-version
+gated, uses a new ID, and never mutates the source.
+
+See [Cross-agent continuation](cross-agent-continuation.md).
 
 ## Pipeline stages
 

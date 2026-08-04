@@ -126,6 +126,11 @@ requirements, then read
 [Contributing an adapter](docs/adapters/contributing-an-adapter.md) and the
 [fixture policy](docs/contributing/testing.md).
 
+Phase 4 cross-agent work uses separate transcript-source and handoff-target
+capabilities. Do not infer handoff support from byte-level sync support. Read
+[the cross-agent continuation design](docs/cross-agent-continuation.md) before
+proposing history parsing, tool normalization, or destination session writes.
+
 Minimum for a new adapter PR:
 
 1. Implementation under `internal/adapter/<name>/`
@@ -134,6 +139,11 @@ Minimum for a new adapter PR:
    support matrix
 4. Defensive parsing (unknown line types must not crash)
 5. Explicit **exclude list** for credential / cache paths
+
+Cross-agent capability PRs additionally require directional source/target
+support, component-level fidelity reporting, inert historical tool calls,
+prompt-injection and secret fixtures, and exact vendor-version gates for any
+native reconstructed history.
 
 ## Coding standards
 

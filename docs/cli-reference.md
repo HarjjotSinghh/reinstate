@@ -54,6 +54,27 @@ Before overwriting an existing target, mutating `pull` and
 selected Claude Code or Codex process is active. Close the agent and retry.
 New-session restores, `--keep-both`, and `pull --dry-run` remain available.
 
+## Planned cross-agent continuation commands
+
+The following is Phase 4 design direction, **not current CLI syntax**:
+
+```text
+rein handoff --last --from claude --to codex --dry-run
+rein handoff <session-id> --to <agent>
+rein handoff inspect <handoff-id>
+rein handoff export <handoff-id> --format json|markdown
+rein resume <session-id> --with <agent>   # possible convenience alias
+```
+
+Planned policies are `checkpoint`, `balanced` (default), and `full`. Dry-run
+must show source/destination identity, workspace and capability differences,
+projection size, redactions, component-level fidelity, omissions, launch route,
+and every file that would be written. Cross-agent launch creates a new linked
+destination-native session; it is never displayed as same-vendor native resume.
+
+Exact flags require an RFC. See
+[cross-agent-continuation.md](cross-agent-continuation.md).
+
 ## Planned universal configuration commands
 
 The following is roadmap direction, **not current CLI syntax**:

@@ -2,7 +2,7 @@
 
 > Status legend: ✅ done · 🚧 in progress · 📋 planned · 💭 exploring · ❌ won't do (for now)
 
-Last updated: **2026-07-27** · Maintainer: [Harjot Singh Rana](https://github.com/HarjjotSinghh)
+Last updated: **2026-08-05** · Maintainer: [Harjot Singh Rana](https://github.com/HarjjotSinghh)
 
 This roadmap is a living document. Priorities follow real activation signals —
 especially **successfully resumed tasks per active user** — and vendor format
@@ -25,6 +25,11 @@ Explain it as:
 > environments, and devices — with environment verification so continuation is
 > correct, not just possible.
 
+Across vendors, “pick up where you left off” means the **same task in a new,
+linked destination session**, with an explicit fidelity report. It does not mean
+that unavailable hidden reasoning, vendor system state, credentials, or live
+processes become portable.
+
 **Multi-device encrypted sync is the entry wedge, not the entire product.**
 Single-device users still live with fragmented agents, sessions, projects,
 worktrees, and environments. Same primitives serve both.
@@ -39,7 +44,7 @@ copy credentials.
 ### Value ladder
 
 1. One session → another (find and resume)
-2. One agent → another (portable handoff)
+2. One agent → another (quota/outage/tool-switch continuation via portable handoff)
 3. One project environment → another (verified resume)
 4. One device → another (encrypted sync)
 5. Eventually one developer → another (team continuity)
@@ -49,7 +54,7 @@ copy credentials.
 | Layer | Who it serves | What |
 | ----- | ------------- | ---- |
 | **1. Session recovery** | Everyone | discover, search, preview, resume, fork, export |
-| **2. Agent portability** | Multi-agent users | handoffs, checkpoints, capability compare |
+| **2. Agent portability** | Multi-agent users | continuity capsules, conversation projection, capability compare, lineage |
 | **3. Environment continuity** | Serious users | MCP/skills/hooks/runtime/repo validation and repair |
 | **4. Cloud continuity** | Multi-device users | encrypted sync, backup, device handoff |
 | **5. Team continuity** | Teams (later) | shared checkpoints, onboarding, audit |
@@ -60,8 +65,9 @@ We do **not** aim to be:
 - A custom code editor, terminal emulator, or multi-agent scheduler
 - Dropbox for raw agent trees without path/environment intelligence
 - A vendor-locked cloud for a single agent
-- A perfect cross-agent transcript translator (native resume stays same-vendor;
-  handoffs use portable checkpoints)
+- An unqualified cross-agent “same exact session” translator (native resume
+  stays same-vendor; cross-agent work uses explicit portable handoffs with
+  measured fidelity)
 
 ---
 
@@ -133,6 +139,7 @@ local Claude (then Codex) sessions.
 | `rein fork` | 📋 |
 | Search by prompt fragment, file, branch, project, agent | 📋 |
 | Preview metadata (not full secret-leaking transcript dumps by default) | 📋 |
+| Session lineage metadata for later cross-agent handoffs | 📋 |
 | Claude Code fully indexed first; then Codex | 📋 |
 | Gemini CLI + OpenCode discovery (read path) | 📋 |
 
@@ -176,28 +183,52 @@ Continue without it or repair the environment first?
 
 ---
 
-## Phase 4 — Cross-agent handoff (portable checkpoints) 📋
+## Phase 4 — Cross-agent continuation (portable handoffs) 📋
 
-**Gate:** a task started in Claude can continue in Codex (and later Gemini)
-via an explicit portable checkpoint — not silent format magic.
+This is a **core product phase**, not a convenience export. The flagship gate:
+a developer reaches the Claude Code usage limit mid-task, closes Claude, and
+continues in Codex without re-explaining the work or making another Claude API
+call. The reverse direction must also pass. Gemini CLI and OpenCode follow.
+
+Cross-agent continuation creates a new destination-native session linked to the
+source. It preserves every portable visible element, verifies current workspace
+truth, and labels every normalization, summary, reference, redaction, and
+omission. It never presents format conversion as invisible native resume.
 
 | Item | Status |
 | ---- | ------ |
-| Portable checkpoint schema (goal, decisions, done/rejected, files, tests, next action) | 📋 |
-| `rein handoff` / `rein resume --with <agent>` | 📋 |
-| Native resume where same vendor | 📋 |
-| Verified handoff summaries everywhere | 📋 |
-| Experimental native migration only for supported pairs (labeled) | 📋 |
-| Capability diff (what the destination agent cannot do) | 📋 |
-| SessionExecutor interface (Claude, Codex, Gemini, OpenCode) | 📋 |
+| Versioned continuity-capsule schema (task, normalized events, workspace, capabilities, security, fidelity, lineage) | 📋 |
+| Immutable raw-source hash + canonical record + exact destination projection | 📋 |
+| Version-gated transcript readers for visible messages, tool relationships, attachments, compaction, and unknown records | 📋 |
+| Deterministic no-source-model fallback for quota/outage handoff | 📋 |
+| `checkpoint` / `balanced` / `full` context policies with size/token preview | 📋 |
+| `rein handoff` / `rein resume --with <agent>` + dry-run and inspect/export UX | 📋 |
+| Workspace truth and destination capability diff before launch | 📋 |
+| Claude Code ↔ Codex structured handoff, both directions | 📋 |
+| Destination acknowledgement before continuing mutations | 📋 |
+| Gemini CLI + OpenCode source/target support | 📋 |
+| Grok Build, Copilot CLI, Cursor/agent CLI, Orca, and others based on adapter evidence | 💭 |
+| Experimental target-native reconstruction only for exact supported pairs/versions | 📋 |
+| Directional compatibility matrix and synthetic/adversarial acceptance suite | 📋 |
+| SessionExecutor / ACP launch integration without owning the agent loop | 📋 |
 
 Fidelity model:
 
 | Mode | Meaning |
 | ---- | ------- |
-| **Native resume** | Claude → Claude Code (highest fidelity) |
-| **Portable handoff** | Claude → checkpoint → Codex (explicit, lossy by design) |
-| **Reconstructed conversation** | Normalized history (experimental, labeled) |
+| **Native resume** | Claude → Claude Code; vendor session semantics retained (highest fidelity) |
+| **Structured handoff** | Claude → capsule → Codex; task state + selected verbatim history + evidence (default cross-agent path) |
+| **Reconstructed conversation** | Portable visible history projected into a new native session (experimental, pair/version-specific) |
+
+Cross-agent records classify components as `exact`, `normalized`, `summarized`,
+`referenced`, or `omitted` with a reason. User messages and visible assistant
+replies should survive subject to explicit redaction. Source system/developer
+instructions are audit history, not destination authority; old tool calls are
+evidence and are never re-executed. Credentials, approvals, hidden reasoning,
+and live process state do not transfer.
+
+Detailed product, architecture, security, test, and delivery plan:
+[docs/cross-agent-continuation.md](docs/cross-agent-continuation.md).
 
 ---
 
@@ -275,11 +306,13 @@ Optional UI that **selects and prepares** sessions; agents still **execute**.
 | Unified transcript / task browser | 💭 |
 | Agent selector + capability viewer | 💭 |
 | Workspace status + mismatch warnings | 💭 |
-| ACP client for compatible agents (`session/resume`) | 💭 |
+| ACP client for compatible agents (`session/load` / `session/resume`) | 💭 |
 | Local web or lightweight desktop shell | 💭 |
 
 Reinstate owns continuity **before and after** execution. During execution,
 Claude Code / Codex / Gemini / OpenCode own the agent loop.
+ACP can reduce client/executor integration work, but resuming a session owned by
+one ACP agent does not itself define cross-vendor transcript import.
 
 ---
 
@@ -306,7 +339,8 @@ Claude Code / Codex / Gemini / OpenCode own the agent loop.
 | Worktree orchestration platform | Agents/harnesses own this |
 | Multi-agent PR review suite | Separate product |
 | Proprietary model router / agent marketplace | Not our layer |
-| Perfect silent Claude↔Codex transcript translation | Formats and tools differ; use portable handoffs |
+| Unqualified silent Claude↔Codex “same exact session” translation | Formats, tools, policies, and hidden state differ; use explicit handoffs with component-level fidelity |
+| Copying source system prompts, approvals, or tool calls into destination authority | Imported history is untrusted evidence; destination policy and authorization win |
 | Multi-tenant real-time CRDT collab | Sequential dual-machine (and dual-agent) use first |
 | Replacing git | Git remains source truth; Reinstate is context truth |
 | Shipping vendor API keys or copying vendor auth stores | Use local secret references and supported login flows; credentials never synced |
@@ -336,7 +370,8 @@ SessionExecutor
   launch(preparedSession) → ExecutionHandle
 ```
 
-Adapters implement discovery/transform; executors implement launch/resume.
+Adapters implement discovery/transform; continuation adapters build capsules
+and destination projections; executors implement launch/resume.
 Claude Code, Codex, Gemini, and OpenCode are first executors. ACP support
 can later unify clients that speak the standard.
 
@@ -355,6 +390,7 @@ Multiple **physical devices are optional** for Phase 2–4 value.
 Highest-value early users typically:
 
 - use Claude Code plus Codex or Gemini
+- switch agents when a subscription usage window, outage, or task fit demands it
 - work across multiple repositories / worktrees
 - keep many terminal sessions open
 - switch WSL, containers, SSH, or host environments
@@ -373,6 +409,7 @@ Landing / docs survey:
 - Continue sessions across computers
 - Find and resume old sessions
 - Move sessions between coding agents
+- Continue in another agent when the current agent hits a usage limit
 - Back up sessions automatically
 - Configure MCP servers once across harnesses and devices
 - Install the same skills, loops, plugins, and marketplaces across harnesses
@@ -391,6 +428,9 @@ handoffs attempted, config mismatches, remote resumes.
   security model enforced, and every required native cross-device resume row
   verified on one exact release candidate
 - **Later minors:** Phase 2+ land behind flags or clear SemVer notes
+- **Cross-agent GA:** no source-model dependency, Claude ↔ Codex bidirectional
+  acceptance, fidelity/security gates, and explicit experimental labels for any
+  reconstructed native history
 - Releases: signed GitHub tags, checksums, SBOMs, source archive, and artifact
   attestations; see [RELEASING.md](RELEASING.md)
 

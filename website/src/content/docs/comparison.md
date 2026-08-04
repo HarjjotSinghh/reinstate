@@ -10,6 +10,7 @@ and DIY file sync.
 | Capability | Native vendor sync | claude-sync | coding-agent-sync / MCP tools | DIY (Syncthing / Drive) | **Reinstate** |
 | ---------- | ------------------ | ----------- | ----------------------------- | ----------------------- | ------------- |
 | Sessions across devices | Per-vendor only | Claude only | Partial | Files only | **Multi-agent** |
+| Cross-agent task continuation | No | No | Partial | No | **Core Phase 4: capsule + verification + fidelity** |
 | Works when other machine is off | Cloud yes / Remote Control no | Yes | Yes | Yes | **Yes** |
 | MCP / skills / loops / plugins / settings | Vendor-local | Partial (Claude tree) | Often one artifact class | Manual | **Universal desired-state config (planned)** |
 | E2E encryption | Vendor-held plaintext | age | Often yes | Usually no | **age, BYO keys** |
@@ -28,6 +29,18 @@ are excellent *inside one ecosystem*. They will not:
 - Keep ciphertext on storage *you* control
 
 Reinstate's moat is **universality + neutrality + BYO encrypted storage**.
+
+## vs context-transfer tools
+
+Context-injection tools validate the quota-switch workflow; pair-specific tools
+also experiment with rewriting Claude/Codex native stores. Reinstate's planned
+differentiation is a versioned continuity capsule, immutable lineage, workspace
+truth, cross-OS path mapping, capability negotiation, security boundaries, and
+component-level fidelity.
+
+The safe default is a structured handoff into a new destination-native session.
+Reconstructed history is experimental and pair/version-specific. Credentials,
+approvals, hidden reasoning, and live process state do not become portable.
 
 ## vs claude-sync
 
@@ -60,11 +73,13 @@ Reinstate is resume-aware, agent-aware, and secure-by-default.
 ## Positioning one-liner
 
 > Vendor sync owns *one* agent. File sync owns *bytes*. Reinstate owns
-> **portable AI dev state** — sessions + environment — across agents and machines.
+> **portable AI dev state** — native sessions, explicit cross-agent continuity,
+> and verified environment — across agents and machines.
 
 ## Related
 
 - [Architecture](architecture.md)
 - [Adapters](adapters.md)
+- [Cross-agent continuation](cross-agent-continuation.md)
 - [Universal agent configuration](universal-configuration.md)
 - [Roadmap](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md)

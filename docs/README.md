@@ -21,6 +21,7 @@
 | [Architecture](architecture.md) | System design + continuity stack |
 | [Product strategy](product-strategy.md) | Positioning, ICP, layers, non-goals |
 | [Adapters](adapters.md) | Agent support matrix |
+| [Cross-agent continuation](cross-agent-continuation.md) | Core quota/outage handoff, fidelity model, architecture, delivery gates |
 | [Universal agent configuration](universal-configuration.md) | Planned cross-harness MCP/skills/loops/plugins/settings layer |
 | [Compatibility](compatibility.md) | Environments and compatibility states |
 | [Security model](security-model.md) | Threat model and defaults |
@@ -28,6 +29,7 @@
 | [FAQ](faq.md) | Common questions |
 | [Troubleshooting](troubleshooting.md) | Debug guide |
 | [ADR 0001](adr/0001-phase-0-phase-1-scope.md) | Phase 0 / Phase 1 scope decision |
+| [ADR 0002](adr/0002-cross-agent-continuation.md) | Cross-agent continuation decision |
 
 Project-level docs live in the repository root:
 

@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Promote cross-agent continuation to a core Phase 4 capability, with Claude
+  Code ↔ Codex quota/outage rollover as the first acceptance path and Gemini
+  CLI/OpenCode following.
+- Specify explicit continuity capsules, immutable source lineage, portable
+  visible history, workspace/capability verification, component-level fidelity,
+  and a deterministic no-source-model fallback; keep target-native transcript
+  reconstruction experimental and pair/version-specific.
+- Document cross-agent security boundaries: source policy stays audit-only,
+  historical tools never re-execute, destination permissions are re-authorized,
+  and credentials, approvals, hidden reasoning, and live process state do not
+  transfer.
 - Replace the legacy dark-gradient README banner with the landing page's
   paper-and-ink isometric cross-device session flow.
 - Expand the post-Phase-1 roadmap from a generic MCP/skills sync bullet into
@@ -160,7 +171,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 - **Phase 1 public `v0.1.0`:** Claude + Codex encrypted sync (engine largely in place)
 - **Phase 2:** local universal session switcher (`sessions` / `search` / `resume` / `last`)
 - **Phase 3:** verified resume (workspace + capability fingerprint)
-- **Phase 4:** portable cross-agent handoffs (explicit checkpoints)
+- **Phase 4:** core cross-agent continuation (explicit continuity capsules,
+  Claude Code ↔ Codex quota rollover first, reconstructed history experimental)
 - **Phase 5+:** universal cross-harness configuration + auto multi-device habit,
   thin Console/ACP client, team continuity
 

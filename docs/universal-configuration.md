@@ -153,5 +153,11 @@ configuration deepens continuity:
 5. Encrypted sync carries sessions and non-secret desired state to another
    device.
 
+The portable handoff is the Phase 4 continuity capsule, not raw config or a
+foreign native transcript. It records the source/destination capability diff;
+configuration reconciliation may repair supported non-secret desired state
+before launch, but credentials and source approvals remain local. See
+[cross-agent-continuation.md](cross-agent-continuation.md).
+
 See [ROADMAP.md](../ROADMAP.md), [architecture.md](architecture.md), and
 [security-model.md](security-model.md).

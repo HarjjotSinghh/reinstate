@@ -52,7 +52,7 @@ Product layers and non-goals: [product-strategy.md](product-strategy.md),
 └───────────────────────────┬─────────────────────────────────┘
                             │
 ┌───────────────────────────▼─────────────────────────────────┐
-│  Session index + workspace fingerprints + checkpoints       │
+│  Session index + workspace fingerprints + continuity capsule │
 └───────────────────────────┬─────────────────────────────────┘
                             │
           ┌─────────────────┼─────────────────┬─────────────────┐
@@ -70,8 +70,8 @@ integration are roadmap work.
 
 **Target flow before execution:** find session, load history, fingerprint
 workspace, check skills/MCP, optionally reconcile supported non-secret
-configuration, build a portable checkpoint if needed, and choose the
-destination agent.
+configuration, build a portable continuity capsule if needed, report fidelity
+and capability differences, and choose the destination agent.
 **During execution:** Claude Code / Codex / Gemini / OpenCode (or another ADE)
 own the agent loop.
 **Target flow after execution:** capture updates, update the index, and
@@ -88,6 +88,59 @@ launch(preparedSession) → ExecutionHandle
 Implementations: Claude Code, Codex, Gemini CLI, OpenCode; later ACP-compatible
 agents. Reinstate Console may become a thin ACP **client**, not a full harness.
 
+ACP `session/load` / `session/resume` can reduce integration work for an agent
+that already owns a session. ACP does not by itself define how a foreign
+vendor's transcript becomes that agent's history.
+
+### Cross-agent continuation (target)
+
+Cross-agent handoff has three separately hashable layers:
+
+```text
+immutable vendor artifact
+          │ version-gated parse
+          ▼
+canonical continuity capsule
+  task · normalized events · workspace · capabilities
+  security · fidelity · lineage
+          │ destination plan
+          ▼
+destination projection
+  bootstrap context/sidecar or experimental native reconstruction
+          │ acknowledge + launch
+          ▼
+new destination-native session
+```
+
+The source artifact remains immutable. The capsule records portable visible
+history and task state. The projection is exactly what the target receives.
+Every component is labeled `exact`, `normalized`, `summarized`, `referenced`,
+or `omitted` with a reason.
+
+Session sync and handoff support are separate contracts:
+
+```text
+TranscriptSource
+  probe(session) → SourceCompatibility
+  snapshot(session) → ImmutableBoundary
+  parse(boundary) → CanonicalEvents + ParseReport
+
+HandoffTarget
+  capabilities() → TargetCapabilities
+  plan(capsule, policy) → DestinationPlan + FidelityReport
+  materialize(plan) → PreparedSession
+  launch(prepared) → NativeSessionID
+  verify(nativeSessionID) → ContinuationResult
+```
+
+Support is directional and versioned. The default cross-agent route launches a
+new native session with an inspectable capsule. Direct synthesis of target
+session files/databases is experimental, exact-version gated, backed up, and
+never modifies the source.
+
+Full schema, pipeline, security contract, and release gates:
+[cross-agent-continuation.md](cross-agent-continuation.md).
+
 ## Design principles
 
 1. **Local-first** — agents remain the sole executors of sessions; Reinstate
@@ -95,8 +148,9 @@ agents. Reinstate Console may become a thin ACP **client**, not a full harness.
 2. **Zero-knowledge remote** — only ciphertext on object storage.
 3. **Native resume is same-vendor** — restore puts bytes where `claude --resume`
    / `codex resume` already know how to read them.
-4. **Cross-agent = portable handoffs** — explicit checkpoints, never silent
-   transcript translation.
+4. **Cross-agent = portable handoffs** — preserve portable visible history and
+   task evidence in a continuity capsule, create a linked destination session,
+   and report fidelity; never claim silent native translation.
 5. **Fail-safe conflicts** — never overwrite; fork and surface.
 6. **Adapter isolation** — format churn in one agent cannot break others.
 7. **Not an ADE** — no custom editor, terminal emulator, multi-agent scheduler,
@@ -105,6 +159,8 @@ agents. Reinstate Console may become a thin ACP **client**, not a full harness.
    per-harness adapters; never mirror one harness's raw config into another.
 9. **Secrets stay local** — configuration profiles contain references, never
    raw API keys, OAuth tokens, cookies, or vendor credential stores.
+10. **Imported history is inert** — source system/developer messages are audit
+    history, not destination authority, and historical tool calls never execute.
 
 ## Pipeline stages
 
@@ -125,6 +181,10 @@ Adapters implement a small Go interface under `internal/adapter/`.
 Session adapters and configuration adapters have separate support states. A
 harness may support session discovery before it supports any configuration
 capability.
+
+Transcript-source and handoff-target capabilities are separate again. An
+adapter may be able to sync a native session without safely parsing its visible
+history, or it may be a handoff source before it is a destination target.
 
 ### 1A. Configuration adapters (target)
 

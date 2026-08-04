@@ -4,8 +4,8 @@
 
 The **continuity layer for coding-agent work**. Phase 1 implements encrypted,
 bring-your-own-storage sync for same-vendor Claude Code and Codex sessions.
-Universal local search, verified resume, and cross-agent handoffs are later
-phases. A later universal configuration layer will also reconcile supported
+Universal local search, verified resume, and core cross-agent continuation are
+later phases. A later universal configuration layer will also reconcile supported
 MCP servers, skills, hooks/loops, plugins, marketplaces, and safe settings
 across harnesses and devices.
 
@@ -36,11 +36,36 @@ asking a new agent to re-derive context is slow and incomplete.
 
 ## Will this resume a Claude session inside Codex?
 
-**Native resume:** no — same-vendor only (Claude → Claude Code, Codex → Codex).
+**In the current CLI:** no. Phase 1 native resume is same-vendor only (Claude →
+Claude Code, Codex → Codex).
 
-**Portable handoff (roadmap):** yes, as an *explicit* checkpoint (goal,
-decisions, files touched, tests, next action) — not a silent perfect transcript
-translation. See [product-strategy.md](product-strategy.md).
+**Core Phase 4 roadmap:** yes. The flagship case is hitting the Claude Code
+usage limit and continuing the same task in Codex without another Claude model
+call; Codex → Claude must work too. Reinstate will create a new linked
+destination session from a portable continuity capsule containing task state,
+workspace/test truth, selected or full portable visible history, tool evidence,
+capability differences, lineage, and a component-level fidelity report.
+
+See [cross-agent continuation](cross-agent-continuation.md).
+
+## Will it preserve the exact conversation, tool calls, and system messages?
+
+It will preserve the immutable raw source artifact and carry every **portable,
+visible** element it safely can: user messages, visible assistant replies, tool
+calls/results as inert evidence, timestamps, files, decisions, tests, and
+attachments supported by the destination.
+
+It cannot honestly promise an identical foreign runtime. Vendor message roles,
+tools, IDs, sandboxes, policies, context compaction, and reasoning state differ.
+Hidden chain-of-thought or unavailable system prompts cannot be recovered;
+credentials, approvals, and live process state must not transfer. Source
+system/developer messages are audit history and are never promoted to
+destination policy automatically. Historical tool calls are never re-executed.
+
+The default cross-agent mode is a structured handoff. A fuller reconstructed
+conversation is experimental and available only for tested source/target/version
+pairs. The CLI will label each component `exact`, `normalized`, `summarized`,
+`referenced`, or `omitted` with a reason.
 
 ## Do I need two computers?
 

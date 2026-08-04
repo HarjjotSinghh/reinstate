@@ -5,6 +5,9 @@ Documentation is a product surface, not cleanup after the code.
 ## Rules
 
 - Describe released or verified behavior only.
+- Label cross-agent continuation as planned until its directional acceptance
+  gates pass. Say “same task in a new linked session,” not “same exact session,”
+  and include the fidelity boundary.
 - Keep manual setup and Claude Code/Codex agent prompts equivalent.
 - Use exact versions where compatibility depends on a vendor layout.
 - Never add real sessions, credentials, passphrases, bucket names, or private

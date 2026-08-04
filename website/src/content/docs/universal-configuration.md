@@ -1,5 +1,11 @@
 # Universal agent configuration (roadmap)
 
+Cross-agent task handoff is a separate Phase 4 continuity-capsule capability.
+Configuration reconciliation can repair supported non-secret destination
+capabilities before launch, but it never converts raw vendor config, source
+credentials, or approvals into destination session state. See
+[Cross-agent continuation](cross-agent-continuation.md).
+
 > Status: planned after Phase 1. These commands are design direction, not part
 > of the current `v0.1` CLI.
 
