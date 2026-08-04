@@ -7,6 +7,8 @@ This document describes prepared automation. A channel is **not a supported
 install route** until its first package has been published, installed on the
 native platform, and added to the user-facing install documentation. Until
 then, `https://reinstate.dev/install.sh` and `install.ps1` remain canonical.
+The Homebrew tap is additionally supported on Apple Silicon macOS after its
+stable `v0.2.0` native smoke test.
 
 ## Outcome and channel matrix
 
@@ -33,20 +35,24 @@ the prepared package intentionally uses `@reinstate/cli`.
 
 ## Rollout status
 
-Status recorded on 2026-08-02 after publishing `v0.2.0-rc.3`. This section is
+Status recorded on 2026-08-05 after publishing stable `v0.2.0`. This section is
 operational state, not a claim that every prepared channel is already a
 supported install route.
 
 | Channel | Current state | Next gate |
 | --- | --- | --- |
-| GitHub release and native Linux files | `v0.2.0-rc.3` is public with signed-tag validation, checksums, attestations, archives, raw binaries, SBOMs, `.deb`, `.rpm`, `.apk`, and `.pkg.tar.zst` files | Record the reviewed `v0.2.0` limited-platform decision and keep untested Linux routes labeled preview |
-| npm | `@reinstate/cli@0.2.0-rc.3` and its five platform packages are public | Configure trusted publishers for all six packages, verify OIDC, and publish stable with the `latest` tag |
+| GitHub release and native Linux files | Stable `v0.2.0` is public with a signed tag, 25 checksum- and attestation-verified assets, and verified public bootstraps | Keep Intel macOS and Linux/WSL2 artifacts labeled preview until their deferred physical acceptance closes |
+| npm | `@reinstate/cli@0.2.0-rc.3` and its five platform packages are public; stable was deliberately not published | Configure trusted publishers for all six packages, verify OIDC, and publish a future stable version with the `latest` tag |
 | JSR | Intentionally deferred because the maintainer's current account cannot create another scope; `PUBLISH_JSR` remains disabled | Obtain scope capacity or make an explicit namespace decision before enabling |
-| Homebrew | `HarjjotSinghh/homebrew-tap` exists; its restricted repository token is stored and `PUBLISH_HOMEBREW=true` | Stable workflow writes `Formula/reinstate.rb`; test Apple Silicon, Intel, and Linuxbrew |
-| Scoop | `HarjjotSinghh/scoop-bucket` exists; its restricted repository token is stored and `PUBLISH_SCOOP=true` | Stable workflow writes `reinstate.json`; test install, both aliases, update, and uninstall on native Windows |
-| Chocolatey | Credential setup is complete, publication is enabled, and package ID `reinstate` was unclaimed when checked | Stable workflow pushes the first package; complete community moderation and native-Windows verification |
-| WinGet | Submission token is stored and `PUBLISH_WINGET=true` | Stable workflow opens the manifest PR; complete Microsoft CLA/review and verify after merge |
+| Homebrew | Stable formula is live in `HarjjotSinghh/homebrew-tap`; Apple Silicon install, both aliases, formula test, no-op upgrade, and uninstall passed | Supported on Apple Silicon; keep Intel macOS and Linuxbrew unverified |
+| Scoop | Stable `reinstate.json` is live in `HarjjotSinghh/scoop-bucket` with the verified Windows ZIP hash | Test install, both aliases, update, and uninstall on native Windows before advertising it |
+| Chocolatey | Stable `reinstate` was submitted to the community repository and is pending moderation | Wait for approval, then verify on clean native Windows before advertising it |
+| WinGet | Stable manifests were submitted in [microsoft/winget-pkgs#412426](https://github.com/microsoft/winget-pkgs/pull/412426) | Complete CLA/automated review and verify after merge before advertising it |
 | AUR | Dedicated CI key and independently verified host key are stored; AUR account public-key registration was blocked by an upstream 503 | Add the public key to the AUR account, verify SSH authentication, then set `PUBLISH_AUR=true` |
+
+All repository `PUBLISH_*` switches are `false` after the one-time stable
+rollout. Each future publication requires an explicit channel enablement and
+protected-environment approval.
 
 The `package-publish` environment has a required reviewer. Publishing a
 verified GitHub Release starts the workflow automatically, but enabled registry
@@ -255,26 +261,27 @@ Do not close or remove this checklist merely because the automation is enabled.
 It is complete only when the stable packages are public, externally reviewed
 where required, and verified from clean native environments.
 
-- [ ] Merge the Apple Silicon macOS and native-Windows RC2 reports and their
+- [x] Merge the Apple Silicon macOS and native-Windows RC2 reports and their
       explicit `v0.2.0` limited-platform reconciliation. Keep Intel macOS and
       WSL2/Linux physical acceptance `NOT TESTED`, waived for this release only,
       and label those artifacts preview rather than certified.
-- [ ] Cut the signed stable `v0.2.0` tag from reviewed `main`, let the Release
+- [x] Cut the signed stable `v0.2.0` tag from reviewed `main`, let the Release
       workflow produce the draft, and independently verify its checksums,
       attestations, binary identity, installer contracts, and package payloads.
-- [ ] Publish the verified GitHub draft and approve the protected
+- [x] Publish the verified GitHub draft and approve the protected
       `package-publish` environment deployment.
 - [ ] Verify stable npm publication for `@reinstate/cli` and all five platform
       packages, including `latest`, provenance, clean install, both command
       aliases, update, and uninstall on every supported OS.
-- [ ] Decide whether JSR remains deferred; if enabled, complete its linked
+- [x] Decide whether JSR remains deferred; if enabled, complete its linked
       package/OIDC setup and native launcher verification.
-- [ ] Verify the Homebrew formula on Apple Silicon. Keep Intel macOS and
+- [x] Verify the Homebrew formula on Apple Silicon. Keep Intel macOS and
       Linuxbrew preview until their deferred physical acceptance completes.
 - [ ] Verify the Scoop manifest on native Windows.
 - [ ] Track Chocolatey until its first package passes moderation, then verify it
       on a clean native-Windows VM.
-- [ ] Track the WinGet manifest PR through CLA, automated validation, review,
+- [ ] Track [WinGet PR #412426](https://github.com/microsoft/winget-pkgs/pull/412426)
+      through CLA, automated validation, review,
       and merge, then verify it in Windows Sandbox.
 - [ ] Finish AUR account public-key registration, verify the dedicated key,
       enable `PUBLISH_AUR`, publish `reinstate-bin`, and clean-build/install it
@@ -289,16 +296,16 @@ where required, and verified from clean native environments.
 Only advertise a route after the corresponding item above passes. Once stable
 `v0.2.0` is live across the selected channels:
 
-- [ ] Update the install section and examples in `README.md`.
-- [ ] Update `docs/getting-started.md` and this channel matrix with every
+- [x] Update the install section and examples in `README.md`.
+- [x] Update `docs/getting-started.md` and this channel matrix with every
       verified install, upgrade, and uninstall command.
-- [ ] Update `website/src/content/docs/installation.md` and any homepage or
+- [x] Update `website/src/content/docs/installation.md` and any homepage or
       download callouts that should expose the new routes.
-- [ ] Update the stable release notes and `CHANGELOG.md` with links to the live
+- [x] Update the stable release notes and `CHANGELOG.md` with links to the live
       npm/JSR/package-manager records and external review PRs.
-- [ ] Record native smoke-test evidence and distinguish directly downloadable
+- [x] Record native smoke-test evidence and distinguish directly downloadable
       package files from repository-backed package-manager installs.
-- [ ] Remove prerelease-only wording and TODOs only after the live stable routes
+- [x] Remove prerelease-only wording and TODOs only after the live stable routes
       have been rechecked from clean environments.
 
 ## Failure and rollback rules

@@ -63,6 +63,16 @@ $env:REINSTATE_HOME = Join-Path $HOME ".reinstate-phase2-local"
 Do not use the stable public installer as evidence for an untagged commit. The
 installer proves only the signed release it pins.
 
+### Install v0.2.0 with Homebrew on Apple Silicon macOS
+
+```sh
+brew install HarjjotSinghh/tap/reinstate
+```
+
+The tap's stable formula passed install, both-alias identity, formula test,
+no-op upgrade, and uninstall checks on Apple Silicon. Intel macOS and
+Linuxbrew remain unverified for `v0.2.0`.
+
 ### Install v0.2.0 on macOS, Linux, or WSL2
 
 ```sh

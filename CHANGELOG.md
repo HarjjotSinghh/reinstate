@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Document the stable `v0.2.0` package-channel rollout and advertise the
+  physically verified Homebrew route on Apple Silicon macOS.
+
 ### Fixed
 
 - Emit schema-valid WinGet multi-file manifests and validate them with the
