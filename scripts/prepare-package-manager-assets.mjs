@@ -284,13 +284,17 @@ function chocolateyNuspec(version) {
 function wingetFiles(version, archive, checksum, releaseDate) {
   const identifier = "HarjotSinghRana.Reinstate";
   return {
-    [`${identifier}.yaml`]: `PackageIdentifier: ${identifier}
+    [`${identifier}.yaml`]: `# yaml-language-server: $schema=https://aka.ms/winget-manifest.version.1.10.0.schema.json
+
+PackageIdentifier: ${identifier}
 PackageVersion: ${version}
 DefaultLocale: en-US
 ManifestType: version
 ManifestVersion: 1.10.0
 `,
-    [`${identifier}.installer.yaml`]: `PackageIdentifier: ${identifier}
+    [`${identifier}.installer.yaml`]: `# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.10.0.schema.json
+
+PackageIdentifier: ${identifier}
 PackageVersion: ${version}
 InstallerLocale: en-US
 InstallerType: zip
@@ -300,18 +304,21 @@ NestedInstallerFiles:
     PortableCommandAlias: rein
   - RelativeFilePath: reinstate.exe
     PortableCommandAlias: reinstate
-Architecture: x64
-InstallerUrl: ${RELEASE_BASE}/v${version}/${archive}
-InstallerSha256: ${checksum.toUpperCase()}
 UpgradeBehavior: install
 Commands:
   - rein
   - reinstate
 ReleaseDate: ${releaseDate}
+Installers:
+  - Architecture: x64
+    InstallerUrl: ${RELEASE_BASE}/v${version}/${archive}
+    InstallerSha256: ${checksum.toUpperCase()}
 ManifestType: installer
 ManifestVersion: 1.10.0
 `,
-    [`${identifier}.locale.en-US.yaml`]: `PackageIdentifier: ${identifier}
+    [`${identifier}.locale.en-US.yaml`]: `# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.10.0.schema.json
+
+PackageIdentifier: ${identifier}
 PackageVersion: ${version}
 PackageLocale: en-US
 Publisher: Harjot Singh Rana

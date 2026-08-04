@@ -82,13 +82,19 @@ jobs:
           gh attestation verify release-assets/checksums.txt --repo "$GITHUB_REPOSITORY" >/dev/null
           ./scripts/check-release-artifacts.sh release-assets
 
+      - name: Checkout reviewed promotion tools
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: promotion-tools
+
       - name: Generate package-manager payloads
         run: |
-          ./scripts/prepare-package-manager-assets.mjs \
+          (cd promotion-tools && ./scripts/prepare-package-manager-assets.mjs \
             --version "${{ steps.release.outputs.version }}" \
-            --dist release-assets \
-            --output package-manager \
-            --release-date "${{ steps.release.outputs.release_date }}"
+            --dist "$GITHUB_WORKSPACE/release-assets" \
+            --output "$GITHUB_WORKSPACE/package-manager" \
+            --release-date "${{ steps.release.outputs.release_date }}")
           for package_dir in package-manager/npm/*; do
             (cd "$package_dir" && npm pack --dry-run --json >/dev/null)
           done

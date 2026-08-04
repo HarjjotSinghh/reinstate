@@ -15,6 +15,9 @@ func TestPackagePromotionStartsFromPublishedVerifiedRelease(t *testing.T) {
 		`git merge-base --is-ancestor "$TAG_COMMIT" origin/main`,
 		`gh attestation verify "release-assets/$asset"`,
 		"./scripts/check-release-artifacts.sh release-assets",
+		"Checkout reviewed promotion tools",
+		`ref: ${{ github.workflow_sha }}`,
+		`--dist "$GITHUB_WORKSPACE/release-assets"`,
 		"environment: package-publish",
 		"vars.PUBLISH_NPM == 'true'",
 		"vars.PUBLISH_JSR == 'true'",
@@ -90,6 +93,33 @@ func TestPackagePublishingGuideKeepsStableRolloutReminders(t *testing.T) {
 	} {
 		if !strings.Contains(guide, required) {
 			t.Errorf("package publishing guide is missing stable rollout reminder %q", required)
+		}
+	}
+}
+
+func TestWinGetManifestSchemaIsValidatedBeforePublication(t *testing.T) {
+	generator := read(t, "scripts/prepare-package-manager-assets.mjs")
+	for _, required := range []string{
+		"$schema=https://aka.ms/winget-manifest.version.1.10.0.schema.json",
+		"$schema=https://aka.ms/winget-manifest.installer.1.10.0.schema.json",
+		"$schema=https://aka.ms/winget-manifest.defaultLocale.1.10.0.schema.json",
+		"Installers:\n  - Architecture: x64",
+	} {
+		if !strings.Contains(generator, required) {
+			t.Errorf("WinGet generator is missing schema contract %q", required)
+		}
+	}
+
+	workflow := read(t, ".github/workflows/ci.yml")
+	for _, required := range []string{
+		"Validate WinGet manifests without publication",
+		"wingetcreate.exe submit package-manager/winget --no-open",
+		"Manifest validation succeeded: True",
+		"Read-only WinGet validation token unexpectedly published a manifest",
+		"24042bd37915805615e6cf969ac57c6439124c3fe85823327f5f3fb24bd9ffea",
+	} {
+		if !strings.Contains(workflow, required) {
+			t.Errorf("Windows release-packaging gate is missing %q", required)
 		}
 	}
 }

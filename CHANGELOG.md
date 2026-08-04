@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Emit schema-valid WinGet multi-file manifests and validate them with the
+  pinned official WinGetCreate binary during Windows release packaging.
+- Let a reviewed package-promotion workflow repair registry metadata for an
+  immutable release without moving its signed tag or rebuilding its binaries.
+
 ## [0.2.0] - 2026-08-05
 
 Second stable release. It ships the Phase 2 local continuity surface and the
