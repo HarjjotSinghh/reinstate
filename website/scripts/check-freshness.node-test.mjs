@@ -49,6 +49,12 @@ async function fixture(reviewDate = '2026-07-27') {
           source:
             'https://github.com/HarjjotSinghh/reinstate/blob/main/acceptance.md',
         },
+        {
+          id: 'preview-unverified',
+          status: 'preview-unverified',
+          lastTested: null,
+          source: 'https://github.com/HarjjotSinghh/reinstate/issues/97',
+        },
       ],
     }),
   );
@@ -76,7 +82,7 @@ async function fixture(reviewDate = '2026-07-27') {
   return root;
 }
 
-test('passes current records and preserves explicit open-gate nulls', async (t) => {
+test('passes current records and preserves explicit open and preview nulls', async (t) => {
   const root = await fixture();
   t.after(() => rm(root, { recursive: true, force: true }));
 

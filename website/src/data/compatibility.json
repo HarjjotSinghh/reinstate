@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "reinstateVersion": "v0.2.0-rc.3",
-  "lastReviewed": "2026-08-02",
+  "reinstateVersion": "v0.2.0",
+  "lastReviewed": "2026-08-04",
   "owner": {
     "name": "Harjot Singh Rana",
     "url": "https://harjot.co"
@@ -31,7 +31,7 @@
       "resumeMode": "Codex to Codex",
       "evidenceLevel": "source checks and deterministic synthetic fixtures",
       "lastTested": "2026-07-31",
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/v0.2.0-rc.3/internal/adapter/codex/codex_test.go",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/v0.2.0/internal/adapter/codex/codex_test.go",
       "notes": "Codex CLI 0.146.0 passed the complete Phase 2 physical matrix on macOS and native Windows. Versions outside the inclusive range, including prereleases, fail closed as untested."
     }
   ],
@@ -41,40 +41,40 @@
       "name": "macOS native · arm64",
       "claudeCode": "required",
       "codex": "required",
-      "status": "development-acceptance-green",
-      "lastTested": "2026-07-31",
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-07-31-macos-phase2-b952d38c2dc5.md",
-      "notes": "Phase 2 development acceptance passed all required rows; exact v0.2.0-rc.3 tagged artifacts remain to be certified."
+      "status": "stable-verified",
+      "lastTested": "2026-08-02",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-08-02-macos-phase2-V020RC2.md",
+      "notes": "The v0.2.0 runtime adapter tree is unchanged from the signed RC2 artifacts that passed the complete physical matrix on Apple Silicon macOS."
     },
     {
       "id": "macos-amd64",
       "name": "macOS native · amd64",
-      "claudeCode": "required-before-stable",
-      "codex": "required-before-stable",
-      "status": "release-gate-open",
+      "claudeCode": "preview-unverified",
+      "codex": "preview-unverified",
+      "status": "preview-unverified",
       "lastTested": null,
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/phase-1-mac-windows-acceptance.md",
-      "notes": "No completed physical-device result is claimed."
+      "source": "https://github.com/HarjjotSinghh/reinstate/issues/97",
+      "notes": "The archive is published for preview use, but no completed physical Intel Mac result is claimed for v0.2.0."
     },
     {
       "id": "windows-11-amd64",
       "name": "Windows 11 native · amd64",
       "claudeCode": "required",
       "codex": "required",
-      "status": "development-acceptance-green",
-      "lastTested": "2026-08-01",
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-07-31-windows-phase2-b952d38c2dc5.md",
-      "notes": "Phase 2 development acceptance passed all required rows plus Gemini/OpenCode physical paths; exact v0.2.0-rc.3 tagged artifacts remain to be certified."
+      "status": "stable-verified",
+      "lastTested": "2026-08-03",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-08-02-windows-phase2-V020RC2.md",
+      "notes": "The v0.2.0 runtime adapter tree is unchanged from the signed RC2 artifacts that passed all 32 physical rows on native Windows x64."
     },
     {
       "id": "windows-11-wsl2-amd64",
       "name": "Windows 11 WSL2 · amd64",
-      "claudeCode": "documented-smoke-target",
-      "codex": "documented-smoke-target",
-      "status": "release-gate-open",
+      "claudeCode": "preview-unverified",
+      "codex": "preview-unverified",
+      "status": "preview-unverified",
       "lastTested": null,
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/phase-1-mac-windows-acceptance.md",
-      "notes": "WSL2 is a separate device identity. No completed physical-device result is claimed; WSL1 is refused."
+      "source": "https://github.com/HarjjotSinghh/reinstate/issues/98",
+      "notes": "Linux and WSL2 archives are published for preview use, but no completed WSL2 physical result is claimed for v0.2.0. WSL1 remains unsupported."
     }
   ]
 }

@@ -16,7 +16,7 @@ const currentReleaseDate = new Intl.DateTimeFormat('en', {
 }).format(new Date(`${product.currentReleaseDate}T00:00:00Z`));
 const answer =
   `The latest published Reinstate tag is ${product.currentRelease}, dated ${currentReleaseDate}. ` +
-  'This Phase 2 candidate adds configless local session discovery, literal search, bounded inspection, a TTY switcher, and same-vendor native resume/fork while retaining encrypted cross-device sync.';
+  'This stable release adds configless local session discovery, literal search, bounded inspection, a TTY switcher, and same-vendor native resume/fork while retaining encrypted cross-device sync.';
 ---
 
 <PublicContentLayout
@@ -37,7 +37,7 @@ const answer =
     foundation and introduces signed <code>website-vYYYY.MM.DD.N</code> deployment tags. A website
     tag can publish reviewed site changes from current <code>main</code> while the public CLI and
     installer routes remain pinned to the separately signed <code>{product.currentRelease}</code> release. It is
-    not a new Reinstate version or evidence that the remaining Reinstate acceptance gates have closed.
+    not a new Reinstate version or evidence for any platform outside the documented stable boundary.
   </p>
   <p>
     The repository's
@@ -81,13 +81,13 @@ const answer =
   </ul>
   <h3>Acceptance boundary</h3>
   <ul>
-    <li>All 30 required development-acceptance rows passed on macOS and native Windows.</li>
+    <li>Signed artifacts passed the complete physical matrix on Apple Silicon macOS and native Windows x64.</li>
     <li>
-      The signed candidate, checksums, SBOMs, source archive, and public installers must still pass
-      exact tagged-artifact acceptance before stable promotion.
+      Intel macOS and Linux/WSL2 packages remain preview and unverified pending dedicated physical
+      acceptance.
     </li>
     <li>
-      Stable <code>v0.1.0</code> remains available while this prerelease is evaluated.
+      This release-specific waiver does not weaken the normal four-environment policy for later stable releases.
     </li>
   </ul>
   <p>

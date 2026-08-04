@@ -178,9 +178,12 @@ export async function collectFreshnessRecords(root = DEFAULT_ROOT) {
             entry.lastTested,
           ),
         );
-      } else if (entry.status !== 'release-gate-open') {
+      } else if (
+        entry.status !== 'release-gate-open' &&
+        entry.status !== 'preview-unverified'
+      ) {
         errors.push(
-          `src/data/compatibility.json#${entry.id}: missing lastTested without an open release gate`,
+          `src/data/compatibility.json#${entry.id}: missing lastTested without an open or preview gate`,
         );
       }
       if (

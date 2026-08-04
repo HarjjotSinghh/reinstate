@@ -2,10 +2,10 @@
 
 Binary names: `rein` and `reinstate` (identical behavior).
 
-Public installers pin the `v0.2.0-rc.3` candidate, including the Phase 1 sync
-surface and the Phase 2 local commands below. Phase 2 development acceptance
-passed, but stable promotion still requires physical acceptance of the exact
-signed artifacts on macOS and native Windows.
+Public installers pin stable `v0.2.0`, including the Phase 1 sync surface and
+the Phase 2 local commands below. Exact signed artifacts are physically
+verified on Apple Silicon macOS and native Windows x64. Intel macOS and
+Linux/WSL2 packages are preview and unverified for this release.
 
 ## Exit codes
 

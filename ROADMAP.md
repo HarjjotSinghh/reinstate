@@ -120,19 +120,19 @@ affected behavior before publication.*
 
 ---
 
-## Phase 2 — Local universal session index 🚧
+## Phase 2 — Local universal session index ✅
 
 **No cloud dependency.** A single-device developer gets value in under five minutes.
 
 **Gate:** `rein` / `reinstate` with no remote config still finds and resumes
 local Claude (then Codex) sessions.
 
-*Status note (2026-08-01): development acceptance passed all 30 required rows
-on macOS and native Windows against product commit `b952d38`, including real
-same-vendor resume/fork and the Windows-only Gemini/OpenCode physical paths.
-The reports are committed under `docs/testing/results/`. Phase 2 remains in
-progress until a signed release candidate's installed artifacts pass the same
-two-device release matrix and the stable release is published.*
+*Closed 2026-08-05 in stable `v0.2.0`. The complete tagged-artifact matrix
+passed on Apple Silicon macOS and native Windows x64, including real
+same-vendor resume/fork, the TTY picker, and the Windows-only Gemini/OpenCode
+physical paths. Intel macOS and Linux/WSL2 artifacts remain explicitly
+preview/unverified under a v0.2.0-only waiver; issues #97 and #98 track their
+deferred physical acceptance.*
 
 | Item | Status |
 | ---- | ------ |
@@ -149,7 +149,7 @@ two-device release matrix and the stable release is published.*
 | Development acceptance on physical native macOS + Windows | ✅ |
 | Multi-registry release automation and protected credentials | ✅ |
 | Stable package listings and post-publication install docs | 🚧 |
-| Signed `v0.2.0-rc.3` tagged-artifact acceptance and stable publication | 🚧 |
+| Signed `v0.2.0` primary-platform acceptance and stable publication | ✅ |
 
 Example:
 

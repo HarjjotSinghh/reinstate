@@ -1,10 +1,9 @@
 # Release discoverability and launch distribution
 
 This is an execution runbook, not evidence that a launch or external submission
-has happened. Reinstate is currently `v0.1.0`; native-device,
-macOS-amd64, WSL2, and complete two-device acceptance gates are still open.
-Do not publish a stable-launch narrative until the release evidence closes
-those gates.
+has happened. Stable `v0.2.0` support is limited to Apple Silicon macOS and
+native Windows x64. Intel macOS and Linux/WSL2 packages are preview and
+unverified; launch copy must preserve that boundary.
 
 ## Release input contract
 
@@ -338,7 +337,7 @@ meaningful update date, limitations, and downloadable evidence when useful.
 
 These are channel-specific plans, not evidence that publication or outreach has
 happened. Every packet must link to the exact deployed commit and preserve the
-release-candidate, same-vendor, and open-acceptance boundaries.
+stable-platform, preview-platform, and same-vendor boundaries.
 
 ### Demo video plan
 
@@ -386,7 +385,7 @@ Before opening one pull request:
 4. wait until the documented public setup path works for the exact listed
    release;
 5. propose one factual line using the canonical external description, source
-   URL, Apache-2.0 license, and current release-candidate qualification; and
+   URL, Apache-2.0 license, and current stable-platform qualification; and
 6. disclose maintainer affiliation in the pull request.
 
 Keep the rule URL, immutable proposed diff, pull-request URL, review outcome,

@@ -20,7 +20,7 @@ const label = (value: string) =>
   {description}
   path="/compatibility"
   eyebrow="Compatibility"
-  answer="Reinstate supports same-vendor session sync and native local continuation for tested Claude Code and Codex CLI versions, plus read-only Gemini CLI and OpenCode indexing. Phase 2 development acceptance passed on macOS arm64 and native Windows; v0.2.0-rc.3 artifact certification remains open."
+  answer="Stable v0.2.0 supports same-vendor session sync and native local continuation for tested Claude Code and Codex CLI versions, plus read-only Gemini CLI and OpenCode indexing. Apple Silicon macOS and native Windows x64 are verified; Intel macOS and Linux/WSL2 are preview and unverified."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'Compatibility', path: '/compatibility' },
@@ -90,7 +90,7 @@ const label = (value: string) =>
     Prereleases and versions outside each inclusive range are <code>UNTESTED</code>. The same
     reviewed records are available as <a href="/compatibility.json">machine-readable JSON</a>.
     The <a href="/compatibility/agent-version-history">agent-version change tracker</a> records
-    when the inclusive ranges and fail-closed behavior changed across release candidates.
+    when the inclusive ranges and fail-closed behavior changed across releases.
   </p>
 
   <h2 id="environment-matrix">Operating-system matrix</h2>

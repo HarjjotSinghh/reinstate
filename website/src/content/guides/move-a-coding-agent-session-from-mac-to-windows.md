@@ -30,7 +30,7 @@ estimatedMinutes: 17
 estimatedTaskMinutes: 45
 prerequisites:
   - "One native macOS computer and one native 64-bit Windows 11 computer you are authorized to configure"
-  - "Reinstate v0.2.0-rc.3 plus a tested Claude Code or Codex CLI version on both computers"
+  - "Reinstate v0.2.0 plus a tested Claude Code or Codex CLI version on both computers"
   - "The same Git project checked out normally on both computers, even if its absolute paths differ"
   - "A private S3-compatible profile, its non-secret coordinates, and credentials for both OS keyrings"
   - "One harmless source session ID and a long encryption passphrase stored outside Reinstate"
@@ -55,7 +55,7 @@ howToSteps:
 ## What this guide proves—and what it does not
 
 This is an operator workflow for moving one supported, vendor-native session
-from macOS to **native Windows 11** through Reinstate `v0.2.0-rc.3`. It uses
+from macOS to **native Windows 11** through Reinstate `v0.2.0`. It uses
 the same commands and stop conditions as the repository's
 [Phase 1 Mac/Windows acceptance runbook](https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/phase-1-mac-windows-acceptance.md),
 but completing it on personal devices is not release certification.
@@ -89,9 +89,10 @@ Code or Codex CLI remains responsible for native resume.
 - Keep independent backups. The encrypted remote profile is a continuity
   artifact, not a replacement for repository backups or a tested retention
   plan.
-- macOS amd64 and WSL2 acceptance still
-  contain open release gates. Do not describe a personal success as stable
-  Phase 1 certification.
+- Stable physical two-device acceptance passed on Apple Silicon macOS and
+  native Windows x64. Intel macOS and Linux/WSL2 remain installer-compatible,
+  preview and unverified. Do not describe a personal success there as stable
+  platform certification.
 
 ## Before you begin
 
@@ -111,11 +112,11 @@ screenshot, or test report.
 
 | Environment | Current qualification |
 | --- | --- |
-| macOS native arm64 | Current source compatibility evidence covers the documented Claude Code and Codex ranges; a real second device is still required for transfer evidence. |
-| macOS native amd64 | A required stable-release row that remains open. |
-| Windows 11 native amd64 | A primary Phase 1 target whose native installer, restore, and resume acceptance gate remains open until recorded evidence passes. |
-| WSL2 amd64 | Installer-compatible and documented for smoke testing, but it is not native Windows and its Phase 1 gate remains open. |
-| Linux native | Installer-compatible; not covered by the two-device acceptance run. |
+| macOS native arm64 | Stable and physically verified; a real second device is still required for your own transfer evidence. |
+| macOS native amd64 | Installer-compatible, preview, and unverified. |
+| Windows 11 native amd64 | Stable and physically verified. |
+| WSL2 amd64 | Installer-compatible, preview, and unverified; it is not native Windows. |
+| Linux native | Installer-compatible, preview, and unverified. |
 | WSL1 | Unsupported. |
 
 Current Reinstate source evidence recognizes Claude Code `2.1.219`–`2.1.220` and
@@ -186,7 +187,7 @@ commit, or unreviewed dirty working tree. Reinstate maps structural paths; it do
 not synchronize Git state or prove environment equivalence.
 
 **Expected result:** both `rein version --json` commands report
-`0.1.0`, the Mac and 64-bit native Windows environments are identified
+`0.2.0`, the Mac and 64-bit native Windows environments are identified
 separately, the same agent vendor is installed in a recognized range, and the
 same repository exists at two recorded absolute paths.
 
@@ -476,8 +477,8 @@ device requires that encrypted manifest and will fail closed if it disappears.
       existing target is backed up before replacement.
 - [ ] Claude Code or Codex resumes its own session ID from the mapped Windows
       project without a structural path error.
-- [ ] No claim says the repository's still-open physical two-device acceptance
-      matrix passed merely because this personal workflow succeeded.
+- [ ] No claim says an unverified platform passed merely because this personal
+      workflow succeeded.
 
 ## Current limitations
 
@@ -492,9 +493,8 @@ device requires that encrypted manifest and will fail closed if it disappears.
   MCP servers, skills, plugins, hooks, and settings remain device-local.
 - WSL2 is a separate installer-compatible environment with its own Linux
   paths and home; it is not the native Windows destination in this guide.
-- macOS amd64 and WSL2 smoke results remain
-  open gates for stable Phase 1. This guide is operational documentation, not
-  a certified Phase 1 agent-resume target result.
+- Intel macOS and Linux/WSL2 remain preview and unverified. This guide is
+  operational documentation, not physical acceptance evidence for them.
 - Reinstate's encryption protects remote confidentiality, but it cannot
   protect a compromised endpoint or recover a lost passphrase.
 

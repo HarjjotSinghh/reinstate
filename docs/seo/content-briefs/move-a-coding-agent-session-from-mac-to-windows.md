@@ -30,9 +30,9 @@
 - Current capabilities used: local discovery, encrypted same-vendor push/pull,
   canonical project mapping, structural path tokens, restore backup, atomic
   write, and native vendor resume.
-- Current limitations: native Windows and physical two-device acceptance remain
-  open release gates; WSL2 is separate and WSL1 is unsupported.
-- Version tested: source contract for Reinstate `v0.1.0`.
+- Current limitations: Apple Silicon macOS and native Windows x64 are stable;
+  Intel macOS and Linux/WSL2 are preview and unverified; WSL1 is unsupported.
+- Version tested: stable Reinstate `v0.2.0` contract.
 - Evidence: CLI/pathmap/adapter/sync tests, synthetic fixtures, compatibility
   data, and release notes.
 - Claims that require verification: physical-device success, performance,
@@ -76,8 +76,7 @@
 - [x] One dominant platform-specific intent
 - [x] Every command has purpose, output, parameters, platform context, failure,
   and safe recovery
-- [x] Same-vendor and release-candidate boundaries remain visible
+- [x] Same-vendor and stable/preview platform boundaries remain visible
 - [x] No real paths, credentials, or transcripts enter examples
 - [x] Structured steps match visible content
 - [x] Route-specific social card and local discoverability gates pass
-

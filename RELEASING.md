@@ -23,6 +23,19 @@ How maintainers cut a **Reinstate** release.
 - [ ] Snapshot archives, source archive, checksums, and SBOMs were inspected
 - [ ] Builds and vulnerability scans use the pinned Go 1.25.12 toolchain
 
+### v0.2.0 platform exception
+
+For `v0.2.0` only, the maintainer-approved reconciliation in
+`docs/testing/results/2026-08-02-macos-phase2-V020RC2.md` permits stable
+publication with verified support limited to Apple Silicon macOS
+(`darwin/arm64`) and native Windows x64 (`windows/amd64`). Intel macOS and
+Linux/WSL2 artifacts remain preview/unverified: they may be built, checksummed,
+SBOM-covered, and attested, but must not be described as physically certified.
+
+This exception does not satisfy or remove the normal four-environment
+precondition for later stable releases. Issues #97 and #98 track the deferred
+physical evidence.
+
 ## Steps
 
 ### 1. Prepare the release commit

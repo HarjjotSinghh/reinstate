@@ -7,12 +7,13 @@ const roadmapUrl = new URL('../pages/roadmap.astro', import.meta.url);
 const researchUrl = new URL('../pages/research/index.astro', import.meta.url);
 
 describe('roadmap and primary-evidence pages', () => {
-  it('separates the current release candidate from every later product phase', async () => {
+  it('separates the current stable release from every later product phase', async () => {
     const roadmap = await readFile(roadmapUrl, 'utf8');
 
-    expect(roadmap).toContain('v0.1.0');
-    expect(roadmap).toContain('Release candidate');
-    expect(roadmap.match(/<td>Planned<\/td>/g)?.length).toBeGreaterThanOrEqual(4);
+    expect(roadmap).toContain('v0.2.0');
+    expect(roadmap).toContain('Apple Silicon macOS');
+    expect(roadmap).toContain('preview and unverified');
+    expect(roadmap.match(/<td>Planned<\/td>/g)?.length).toBeGreaterThanOrEqual(3);
     expect(roadmap.match(/<td>Exploring<\/td>/g)?.length).toBeGreaterThanOrEqual(2);
     expect(roadmap).toContain('Native resume and portable handoff stay distinct');
     expect(roadmap).toContain('Raw API keys');

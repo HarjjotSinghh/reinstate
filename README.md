@@ -6,16 +6,16 @@
 
 ### Find and continue coding-agent work across sessions and devices
 
-**Reinstate is an open-source tool that syncs encrypted Claude Code and Codex
-sessions between configured devices using your own S3-compatible storage.**
-Stable `v0.1.0` preserves same-vendor encrypted sync across macOS and Windows
-project paths.
+**Reinstate is an open-source tool that finds local coding-agent sessions and
+syncs supported Claude Code and Codex sessions through your own encrypted
+S3-compatible storage.**
 
-The `v0.2.0-rc.3` candidate adds a configless local session index, literal
-search, metadata inspection, a numbered switcher, and same-vendor native
-resume/fork. Phase 2 development acceptance passed all 30 required rows on
-macOS and native Windows at `b952d38`; exact tagged-artifact release acceptance
-is still required before stable promotion.
+Stable `v0.2.0` adds a configless local session index, literal search, metadata
+inspection, a numbered switcher, and same-vendor native resume/fork. Apple
+Silicon macOS and native Windows x64 passed the complete physical matrix. Intel
+macOS and Linux/WSL2 downloads remain preview/unverified pending issues
+[#97](https://github.com/HarjjotSinghh/reinstate/issues/97) and
+[#98](https://github.com/HarjjotSinghh/reinstate/issues/98).
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/HarjjotSinghh/reinstate)](https://goreportcard.com/report/github.com/HarjjotSinghh/reinstate)
@@ -125,7 +125,7 @@ sensitive artifacts. Reinstate instead provides
 
 ## Features
 
-`v0.2.0-rc.3`, development-accepted for Phase 2:
+Stable `v0.2.0`:
 
 - **Configless local index** — `rein sessions` works without `init` or cloud storage
 - **Literal search** — prompt, file, branch, project, agent, and session identity
@@ -134,7 +134,7 @@ sensitive artifacts. Reinstate instead provides
 - **Interactive switcher** — bare `rein` on a TTY; deterministic JSON for automation
 - **Read-only expansion** — Gemini CLI and OpenCode discovery without mutation
 
-Stable `v0.1.0`:
+Also included from stable `v0.1.0`:
 
 - **Cross-device session sync** — continue the same Claude/Codex thread on another machine
 - **Multi-agent adapters** — same-vendor Claude Code and Codex session continuity
@@ -156,10 +156,10 @@ not part of the current CLI. See
 
 ## Quick start
 
-> **Release boundary:** the public installers pin prerelease
-> `v0.2.0-rc.3`. Its source passed the Phase 2 development matrix, but stable
-> promotion remains blocked until the exact installed candidate artifacts pass
-> the release matrix on macOS and native Windows.
+> **Platform boundary:** the public installers pin stable `v0.2.0`. Apple
+> Silicon macOS and native Windows x64 are physically verified. Intel macOS and
+> Linux/WSL2 artifacts are available as preview, checksum- and
+> attestation-verified downloads without a physical-certification claim.
 >
 > **CLI:** prefer short alias **`rein`**. Full name **`reinstate`** works the same.
 
@@ -194,7 +194,7 @@ Bare `rein` opens the numbered switcher only on a TTY. For scripts use
 `rein sessions --json`; a non-TTY bare invocation exits promptly with that
 hint.
 
-### Install the v0.2.0-rc.3 release candidate
+### Install stable v0.2.0
 
 macOS, Linux, or WSL2:
 
@@ -208,7 +208,7 @@ Native Windows PowerShell:
 irm https://reinstate.dev/install.ps1 | iex
 ```
 
-Both bootstraps pin and verify `v0.2.0-rc.3`, install without elevation, and
+Both bootstraps pin and verify `v0.2.0`, install without elevation, and
 print the next command:
 
 ```bash
@@ -258,8 +258,8 @@ Full walkthrough: **[docs/getting-started.md](docs/getting-started.md)**
 
 | Agent | Local index | Resume/fork | Encrypted sync | Status |
 | ----- | :---------: | :---------: | :------------: | ------ |
-| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | ✅ full | ✅ native | ✅ | Development acceptance passed on macOS and Windows |
-| [OpenAI Codex CLI](https://github.com/openai/codex) | ✅ full | ✅ native | ✅ | Development acceptance passed on macOS and Windows |
+| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | ✅ full | ✅ native | ✅ | Stable on Apple Silicon macOS and native Windows x64 |
+| [OpenAI Codex CLI](https://github.com/openai/codex) | ✅ full | ✅ native | ✅ | Stable on Apple Silicon macOS and native Windows x64 |
 | [Gemini CLI](https://github.com/google-gemini/gemini-cli) | ✅ read-only | — | — | Physical read-only path passed on Windows; unavailable on test Mac |
 | [OpenCode](https://opencode.ai) | ✅ read-only | — | — | Physical read-only path passed on Windows; unavailable on test Mac |
 | [Grok Build](https://x.ai) | 📋 | — | — | Later phase |
@@ -412,7 +412,7 @@ Full detail: **[ROADMAP.md](ROADMAP.md)**
 
 | Channel | Tag | Notes |
 | ------- | --- | ----- |
-| **Latest** | [![Release](https://img.shields.io/github/v/release/HarjjotSinghh/reinstate?label=latest)](https://github.com/HarjjotSinghh/reinstate/releases/latest) | Stable builds, once published |
+| **Latest** | [![Release](https://img.shields.io/github/v/release/HarjjotSinghh/reinstate?label=latest)](https://github.com/HarjjotSinghh/reinstate/releases/latest) | Stable builds |
 | **Pre-release** | [![Pre-release](https://img.shields.io/github/v/release/HarjjotSinghh/reinstate?include_prereleases&label=pre)](https://github.com/HarjjotSinghh/reinstate/releases) | Early adopters |
 | **SemVer** | pre-1.0 | Breaking changes possible in minors — see CHANGELOG |
 

@@ -5,7 +5,7 @@ export const prerender = true;
 
 const title = 'Reinstate Roadmap: From Encrypted Sync to Work Continuity';
 const description =
-  'Review what Reinstate implements today, which acceptance gates remain, and which session search, verified resume, handoff, and configuration features are planned.';
+  'Review what Reinstate implements today, the stable v0.2.0 platform boundary, and which verified resume, handoff, and configuration features are planned.';
 ---
 
 <PublicContentLayout
@@ -13,7 +13,7 @@ const description =
   {description}
   path="/roadmap"
   eyebrow="Product roadmap"
-  answer="Reinstate implements the Phase 0 foundation, Phase 1 encrypted same-vendor session sync, and the Phase 2 local session index with same-vendor native resume/fork. Phase 2 development acceptance passed; tagged-artifact certification is open. Verified resume, portable cross-agent handoffs, universal non-secret configuration, a thin console, and team continuity remain later phases."
+  answer="Stable v0.2.0 implements the Phase 0 foundation, Phase 1 encrypted same-vendor session sync, and the Phase 2 local session index with same-vendor native resume/fork. Apple Silicon macOS and native Windows x64 are physically verified; Intel macOS and Linux/WSL2 are preview and unverified. Verified resume, portable cross-agent handoffs, universal non-secret configuration, a thin console, and team continuity remain later phases."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'Roadmap', path: '/roadmap' },
@@ -30,9 +30,9 @@ const description =
   <div class="pc-callout">
     <p>Current release boundary</p>
     <p>
-      <code>v0.1.0</code> supports encrypted same-vendor Claude Code and Codex session
-      synchronization through user-owned S3-compatible storage. Native Windows, macOS amd64,
-      WSL2, and full physical two-device acceptance still contain open release gates.
+      Stable <code>v0.2.0</code> supports encrypted same-vendor Claude Code and Codex session
+      synchronization plus configless local continuity. Apple Silicon macOS and native Windows
+      x64 are verified stable platforms; Intel macOS and Linux/WSL2 are preview and unverified.
     </p>
   </div>
 
@@ -51,20 +51,20 @@ const description =
         <tr>
           <td>0</td>
           <td>Trustworthy contracts, diagnostics, installers, fixtures, CI, and documentation</td>
-          <td>In progress</td>
-          <td>Clean native-device and WSL2 acceptance</td>
+          <td>Complete</td>
+          <td>Released foundation and evidence contracts</td>
         </tr>
         <tr>
           <td>1</td>
           <td>Encrypted same-vendor Claude Code and Codex session sync</td>
-          <td>Release candidate</td>
-          <td>Install, push, pull, restore, and native resume across the required matrix</td>
+          <td>Stable</td>
+          <td>Verified on Apple Silicon macOS and native Windows x64</td>
         </tr>
         <tr>
           <td>2</td>
           <td>Local universal session index, search, inspect, and native resume</td>
-          <td>Planned</td>
-          <td>Useful local-only continuation without remote configuration</td>
+          <td>Stable</td>
+          <td>Complete physical matrix on the two verified stable platforms</td>
         </tr>
         <tr>
           <td>3</td>

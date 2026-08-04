@@ -1,5 +1,11 @@
 export const releaseHistory = [
   {
+    version: 'v0.2.0',
+    date: '2026-08-05',
+    summary:
+      'Stable Phase 2 local continuity on verified Apple Silicon macOS and native Windows x64; Intel macOS and Linux/WSL2 artifacts remain preview.',
+  },
+  {
     version: 'v0.2.0-rc.3',
     date: '2026-08-02',
     summary:

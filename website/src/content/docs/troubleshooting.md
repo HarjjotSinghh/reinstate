@@ -6,7 +6,7 @@ order: 8
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.2.0-rc.3"
+version: "v0.2.0"
 updatedAt: 2026-08-01
 tags:
   ["troubleshooting", "session-sync", "path-remapping", "passphrase", "codex"]
@@ -19,7 +19,7 @@ noindex: false
 Use the smallest possible command while diagnosing a sync problem: one agent
 and one explicit session ID. Do not paste passphrases, storage credentials,
 session text, raw configuration, or unredacted absolute paths into an issue.
-Reinstate `v0.2.0-rc.3` is a pre-1.0 release candidate; Claude Code and Codex
+Reinstate `v0.2.0` is a stable pre-1.0 release; Claude Code and Codex
 resume only their own native sessions.
 
 ## Why is the `rein` binary not found after installation?
@@ -136,7 +136,7 @@ the raw roots into a public issue.
 
 ### Corrective action
 
-Require Reinstate `0.2.0-rc.3` on both candidate-test devices. Correct the destination
+Require Reinstate `0.2.0` on both test devices. Correct the destination
 mapping for the existing canonical project ID, close Claude Code, and repeat
 the scoped dry-run. If Reinstate rejects a legacy snapshot whose Claude project
 identity cannot be mapped, install Reinstate on the source device and push that one

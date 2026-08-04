@@ -58,7 +58,7 @@ describe('Mac, Windows, and backup outcome content', () => {
     expect(text).toContain('does not provide a general `rein undo`');
   });
 
-  it('qualifies native Windows, WSL, path remapping, and open acceptance gates', () => {
+  it('qualifies native Windows, WSL, path remapping, and preview boundaries', () => {
     const combined = squashWhitespace(`${guide}\n${desktop}`);
 
     for (const fact of [
@@ -70,7 +70,7 @@ describe('Mac, Windows, and backup outcome content', () => {
       'known structural fields',
       'same-vendor',
       'physical acceptance checklist',
-      'open release gates',
+      'preview and unverified',
     ]) {
       expect(combined, fact).toContain(fact);
     }

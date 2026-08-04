@@ -30,7 +30,7 @@ estimatedMinutes: 15
 estimatedTaskMinutes: 35
 prerequisites:
   - "An AWS account and authority to create a private S3 bucket, IAM policy, and access key"
-  - "Reinstate v0.2.0-rc.3 on a compatible device with Claude Code or Codex CLI"
+  - "Reinstate v0.2.0 on a compatible device with Claude Code or Codex CLI"
   - "A harmless session in a repository whose absolute local path you know"
   - "A long encryption passphrase that will be entered privately and is not stored"
 howToSteps:
@@ -53,7 +53,7 @@ howToSteps:
 
 ## What this guide configures
 
-This guide connects Reinstate `v0.2.0-rc.3` to an existing Amazon S3 bucket.
+This guide connects Reinstate `v0.2.0` to an existing Amazon S3 bucket.
 Amazon Web Services owns the bucket, Region, IAM identity, access key, public
 access settings, retention, and billing. Reinstate owns the local project
 mapping, encrypted profile manifest, encrypted session snapshots, and
@@ -92,9 +92,9 @@ not by first-device initialization.
   credentials where possible.
 - Session resume remains **same-vendor**: Claude Code to Claude Code and Codex
   CLI to Codex CLI.
-- Reinstate v0.2.0-rc.3 is a pre-1.0 release candidate. Two-device Phase 1 acceptance
-  passed on macOS arm64 and native Windows amd64. This guide is not itself
-  acceptance evidence.
+- Reinstate v0.2.0 is stable on Apple Silicon macOS and native Windows x64.
+  Intel macOS and Linux/WSL2 are preview and unverified. This guide is not
+  itself acceptance evidence.
 
 ## Before you begin
 
@@ -111,11 +111,11 @@ real transcript, or downloaded snapshot into a prompt.
 
 | Environment | Installer path | Current qualification |
 | --- | --- | --- |
-| macOS native arm64 | POSIX installer | Current source compatibility evidence covers the documented Claude Code and Codex ranges. |
-| macOS native amd64 | POSIX installer | Installer-compatible; not covered by the two-device acceptance run. |
-| Windows 11 native amd64 | PowerShell installer | Covered by the two-device Phase 1 acceptance run, which passed. |
-| Linux native | POSIX installer | Installer-compatible; not covered by the two-device acceptance run. |
-| WSL2 amd64 | POSIX installer | Installer-compatible and documented for smoke testing; not covered by the two-device acceptance run. WSL1 is unsupported. |
+| macOS native arm64 | POSIX installer | Stable and physically verified. |
+| macOS native amd64 | POSIX installer | Preview and unverified. |
+| Windows 11 native amd64 | PowerShell installer | Stable and physically verified. |
+| Linux native | POSIX installer | Preview and unverified. |
+| WSL2 amd64 | POSIX installer | Preview and unverified. WSL1 is unsupported. |
 
 Storage access does not override agent compatibility. `rein setup check` must
 report `SUPPORTED` for the installed agent before a push or pull.
@@ -249,7 +249,7 @@ rein version --json
 rein setup check
 ```
 
-**Expected result:** the pinned installer reports `v0.2.0-rc.3`. Before
+**Expected result:** the pinned installer reports `v0.2.0`. Before
 initialization, `rein setup check` exits with code `3` and reports
 `config missing`. Resolve a platform, keyring, or installed-agent
 compatibility failure separately; a working S3 bucket cannot make an
@@ -470,8 +470,8 @@ Permanent deletion is irreversible.
   lifecycle restoration.
 - Phase 1 transfers full immutable session snapshots; delta transfer,
   retention controls, and remote garbage collection remain later work.
-- Current native resume is same-vendor only and the stable physical platform
-  acceptance matrix remains incomplete.
+- Current native resume is same-vendor only. Stable physical verification is
+  limited to Apple Silicon macOS and native Windows x64.
 
 ## Amazon S3 storage FAQ
 

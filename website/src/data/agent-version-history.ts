@@ -16,6 +16,13 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.2.0': {
+    rangeChange: 'No agent-version range change documented.',
+    compatibilityChange:
+      'Ships the RC2-tested runtime adapter tree unchanged. Apple Silicon macOS and native Windows x64 are verified stable platforms; Intel macOS and Linux/WSL2 artifacts remain preview until their deferred physical acceptance completes.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.2.0/internal/adapter/codex/codex.go',
+  },
   'v0.2.0-rc.3': {
     rangeChange: 'No agent-version range change documented.',
     compatibilityChange:
