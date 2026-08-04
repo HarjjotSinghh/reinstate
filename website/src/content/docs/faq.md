@@ -164,8 +164,8 @@ commands still read the remote manifest and need access to your storage backend.
 
 Windows ↔ macOS is the primary design target, and the structural path-remapping
 implementation shipped in v0.1.0, and v0.2.0 physical acceptance passed on
-Apple Silicon macOS and native Windows x64. Intel macOS and Linux/WSL2 are
-preview and unverified; check the
+Apple Silicon macOS and native Windows x64. Intel macOS, WSL2, and other POSIX
+packages are preview and unverified; check the
 [roadmap](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md).
 
 ## What happens when Claude Code or Codex changes its session format?
@@ -184,7 +184,7 @@ syncing after an agent upgrade.
 ## Production ready?
 
 `v0.2.0` is a stable pre-1.0 release on Apple Silicon macOS and native Windows
-x64. Intel macOS and Linux/WSL2 packages are preview and unverified. See the
+x64. Intel macOS, WSL2, and other POSIX packages are preview and unverified. See the
 [roadmap](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md)
 and [changelog](https://github.com/HarjjotSinghh/reinstate/blob/main/CHANGELOG.md),
 use it with backups, and report bugs through GitHub Issues.
