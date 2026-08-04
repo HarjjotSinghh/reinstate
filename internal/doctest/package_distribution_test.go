@@ -93,3 +93,28 @@ func TestPackagePublishingGuideKeepsStableRolloutReminders(t *testing.T) {
 		}
 	}
 }
+
+func TestWinGetManifestSchemaIsValidatedBeforePublication(t *testing.T) {
+	generator := read(t, "scripts/prepare-package-manager-assets.mjs")
+	for _, required := range []string{
+		"$schema=https://aka.ms/winget-manifest.version.1.10.0.schema.json",
+		"$schema=https://aka.ms/winget-manifest.installer.1.10.0.schema.json",
+		"$schema=https://aka.ms/winget-manifest.defaultLocale.1.10.0.schema.json",
+		"Installers:\n  - Architecture: x64",
+	} {
+		if !strings.Contains(generator, required) {
+			t.Errorf("WinGet generator is missing schema contract %q", required)
+		}
+	}
+
+	workflow := read(t, ".github/workflows/ci.yml")
+	for _, required := range []string{
+		"Validate WinGet manifests",
+		"wingetcreate.exe validate package-manager/winget",
+		"24042bd37915805615e6cf969ac57c6439124c3fe85823327f5f3fb24bd9ffea",
+	} {
+		if !strings.Contains(workflow, required) {
+			t.Errorf("Windows release-packaging gate is missing %q", required)
+		}
+	}
+}
