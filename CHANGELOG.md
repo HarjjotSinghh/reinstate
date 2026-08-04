@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+
+- Record the live package-channel rollout state and add explicit stable
+  `v0.2.0` publication and post-publication documentation checklists.
+
 ## [0.2.0-rc.3] - 2026-08-02
 
 Third Phase 2 release candidate. It keeps the RC2 product behavior and release

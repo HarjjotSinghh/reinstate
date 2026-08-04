@@ -31,6 +31,29 @@ then, `https://reinstate.dev/install.sh` and `install.ps1` remain canonical.
 The unscoped npm name `reinstate` is already owned by an unrelated project, so
 the prepared package intentionally uses `@reinstate/cli`.
 
+## Rollout status
+
+Status recorded on 2026-08-02 after publishing `v0.2.0-rc.3`. This section is
+operational state, not a claim that every prepared channel is already a
+supported install route.
+
+| Channel | Current state | Next gate |
+| --- | --- | --- |
+| GitHub release and native Linux files | `v0.2.0-rc.3` is public with signed-tag validation, checksums, attestations, archives, raw binaries, SBOMs, `.deb`, `.rpm`, `.apk`, and `.pkg.tar.zst` files | Record the reviewed `v0.2.0` limited-platform decision and keep untested Linux routes labeled preview |
+| npm | `@reinstate/cli@0.2.0-rc.3` and its five platform packages are public | Configure trusted publishers for all six packages, verify OIDC, and publish stable with the `latest` tag |
+| JSR | Intentionally deferred because the maintainer's current account cannot create another scope; `PUBLISH_JSR` remains disabled | Obtain scope capacity or make an explicit namespace decision before enabling |
+| Homebrew | `HarjjotSinghh/homebrew-tap` exists; its restricted repository token is stored and `PUBLISH_HOMEBREW=true` | Stable workflow writes `Formula/reinstate.rb`; test Apple Silicon, Intel, and Linuxbrew |
+| Scoop | `HarjjotSinghh/scoop-bucket` exists; its restricted repository token is stored and `PUBLISH_SCOOP=true` | Stable workflow writes `reinstate.json`; test install, both aliases, update, and uninstall on native Windows |
+| Chocolatey | Credential setup is complete, publication is enabled, and package ID `reinstate` was unclaimed when checked | Stable workflow pushes the first package; complete community moderation and native-Windows verification |
+| WinGet | Submission token is stored and `PUBLISH_WINGET=true` | Stable workflow opens the manifest PR; complete Microsoft CLA/review and verify after merge |
+| AUR | Dedicated CI key and independently verified host key are stored; AUR account public-key registration was blocked by an upstream 503 | Add the public key to the AUR account, verify SSH authentication, then set `PUBLISH_AUR=true` |
+
+The `package-publish` environment has a required reviewer. Publishing a
+verified GitHub Release starts the workflow automatically, but enabled registry
+jobs do not cross that environment gate until a maintainer approves the run.
+Stable-only conditions then prevent Homebrew, Scoop, Chocolatey, WinGet, and
+AUR from receiving a prerelease.
+
 ## Release architecture
 
 ```mermaid
@@ -225,6 +248,58 @@ Enable channels gradually so failures stay attributable:
 7. Submit Chocolatey, WinGet, and AUR, accounting for their reviews.
 8. Only after native installs pass, add each live command to `README.md`,
    `docs/getting-started.md`, the website, and release notes.
+
+## Stable v0.2.0 publication reminder
+
+Do not close or remove this checklist merely because the automation is enabled.
+It is complete only when the stable packages are public, externally reviewed
+where required, and verified from clean native environments.
+
+- [ ] Merge the Apple Silicon macOS and native-Windows RC2 reports and their
+      explicit `v0.2.0` limited-platform reconciliation. Keep Intel macOS and
+      WSL2/Linux physical acceptance `NOT TESTED`, waived for this release only,
+      and label those artifacts preview rather than certified.
+- [ ] Cut the signed stable `v0.2.0` tag from reviewed `main`, let the Release
+      workflow produce the draft, and independently verify its checksums,
+      attestations, binary identity, installer contracts, and package payloads.
+- [ ] Publish the verified GitHub draft and approve the protected
+      `package-publish` environment deployment.
+- [ ] Verify stable npm publication for `@reinstate/cli` and all five platform
+      packages, including `latest`, provenance, clean install, both command
+      aliases, update, and uninstall on every supported OS.
+- [ ] Decide whether JSR remains deferred; if enabled, complete its linked
+      package/OIDC setup and native launcher verification.
+- [ ] Verify the Homebrew formula on Apple Silicon. Keep Intel macOS and
+      Linuxbrew preview until their deferred physical acceptance completes.
+- [ ] Verify the Scoop manifest on native Windows.
+- [ ] Track Chocolatey until its first package passes moderation, then verify it
+      on a clean native-Windows VM.
+- [ ] Track the WinGet manifest PR through CLA, automated validation, review,
+      and merge, then verify it in Windows Sandbox.
+- [ ] Finish AUR account public-key registration, verify the dedicated key,
+      enable `PUBLISH_AUR`, publish `reinstate-bin`, and clean-build/install it
+      in an Arch environment.
+- [ ] Verify supported stable routes against the stable commit. Checksum and
+      attest the versioned `.deb`, `.rpm`, `.apk`, `.pkg.tar.zst`, and Linux
+      archive assets, but retain their preview label until physical Linux/WSL2
+      acceptance completes.
+
+## Post-publication documentation reminder
+
+Only advertise a route after the corresponding item above passes. Once stable
+`v0.2.0` is live across the selected channels:
+
+- [ ] Update the install section and examples in `README.md`.
+- [ ] Update `docs/getting-started.md` and this channel matrix with every
+      verified install, upgrade, and uninstall command.
+- [ ] Update `website/src/content/docs/installation.md` and any homepage or
+      download callouts that should expose the new routes.
+- [ ] Update the stable release notes and `CHANGELOG.md` with links to the live
+      npm/JSR/package-manager records and external review PRs.
+- [ ] Record native smoke-test evidence and distinguish directly downloadable
+      package files from repository-backed package-manager installs.
+- [ ] Remove prerelease-only wording and TODOs only after the live stable routes
+      have been rechecked from clean environments.
 
 ## Failure and rollback rules
 

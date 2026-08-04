@@ -74,3 +74,22 @@ func TestGoReleaserBuildsRawAndNativePackageArtifacts(t *testing.T) {
 		}
 	}
 }
+
+func TestPackagePublishingGuideKeepsStableRolloutReminders(t *testing.T) {
+	guide := read(t, "docs/package-manager-publishing.md")
+	for _, required := range []string{
+		"## Rollout status",
+		"## Stable v0.2.0 publication reminder",
+		"## Post-publication documentation reminder",
+		"limited-platform reconciliation",
+		"README.md",
+		"docs/getting-started.md",
+		"website/src/content/docs/installation.md",
+		"CHANGELOG.md",
+		"PUBLISH_AUR",
+	} {
+		if !strings.Contains(guide, required) {
+			t.Errorf("package publishing guide is missing stable rollout reminder %q", required)
+		}
+	}
+}
