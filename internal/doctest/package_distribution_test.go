@@ -109,8 +109,10 @@ func TestWinGetManifestSchemaIsValidatedBeforePublication(t *testing.T) {
 
 	workflow := read(t, ".github/workflows/ci.yml")
 	for _, required := range []string{
-		"Validate WinGet manifests",
-		"wingetcreate.exe validate package-manager/winget",
+		"Validate WinGet manifests without publication",
+		"wingetcreate.exe submit package-manager/winget --no-open",
+		"Manifest validation succeeded: True",
+		"Read-only WinGet validation token unexpectedly published a manifest",
 		"24042bd37915805615e6cf969ac57c6439124c3fe85823327f5f3fb24bd9ffea",
 	} {
 		if !strings.Contains(workflow, required) {

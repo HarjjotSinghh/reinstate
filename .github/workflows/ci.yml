@@ -280,8 +280,10 @@ jobs:
             if ($errors.Count -gt 0) { throw ($errors | Out-String) }
           }
 
-      - name: Validate WinGet manifests
+      - name: Validate WinGet manifests without publication
         shell: pwsh
+        env:
+          WINGET_VALIDATION_TOKEN: ${{ github.token }}
         run: |
           $ErrorActionPreference = 'Stop'
           $url = 'https://github.com/microsoft/winget-create/releases/download/v1.12.13.0/wingetcreate.exe'
@@ -289,4 +291,12 @@ jobs:
           $actual = (Get-FileHash wingetcreate.exe -Algorithm SHA256).Hash.ToLowerInvariant()
           $expected = '24042bd37915805615e6cf969ac57c6439124c3fe85823327f5f3fb24bd9ffea'
           if ($actual -ne $expected) { throw "WinGetCreate checksum mismatch: $actual" }
-          ./wingetcreate.exe validate package-manager/winget
+          $validation = & ./wingetcreate.exe submit package-manager/winget --no-open --token $env:WINGET_VALIDATION_TOKEN 2>&1 | Out-String
+          $submitExit = $LASTEXITCODE
+          $validation
+          if ($validation -notmatch 'Manifest validation succeeded: True') {
+            throw 'WinGetCreate did not validate the generated manifests'
+          }
+          if ($submitExit -eq 0) {
+            throw 'Read-only WinGet validation token unexpectedly published a manifest'
+          }
