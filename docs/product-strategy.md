@@ -24,6 +24,13 @@ lose the thread.
 Cross-device encrypted sync is a **sharp entry wedge**. It is not the whole
 product identity.
 
+A second sharp problem is **quota-forced agent switching**. A developer may hit
+Claude Code's or Codex's usage window while the task is unfinished, then open a
+different harness because that subscription still has capacity. Today the code
+is present but the task thread, rejected approaches, tool evidence, and latest
+intent are stranded. Cross-agent continuation is therefore core continuity,
+not an export accessory.
+
 The long-term environment problem is also larger than verification. Developers
 currently repeat MCP, skill, plugin, hook/loop, marketplace, and setting changes
 for every harness and device. Reinstate should provide a canonical non-secret
@@ -60,6 +67,11 @@ Hierarchy of value:
 Reinstate owns continuity **before and after** execution.
 Coding agents own the **execution loop**.
 
+For cross-agent work, the precise promise is **same task, new linked native
+session**. Reinstate must show fidelity and capability differences; it must not
+claim that inaccessible hidden reasoning, system state, approvals, or
+credentials became portable.
+
 ---
 
 ## Do we serve single-device users?
@@ -68,7 +80,7 @@ Coding agents own the **execution loop**.
 
 | Audience | How they get value |
 | -------- | ------------------ |
-| One machine, multi-agent / multi-session | Local index, search, `last`, resume, verified environment, handoffs, cross-harness configuration |
+| One machine, multi-agent / multi-session | Local index, search, `last`, resume, quota/outage handoffs, verified environment, cross-harness configuration |
 | Multi-machine | Everything above + encrypted session and non-secret config sync / cloud continuity |
 | Teams (later) | Shared checkpoints, onboarding, audit |
 
@@ -92,7 +104,8 @@ Reinstate must not win by recreating “another picker.”
 ## Feature themes for same-device users
 
 1. **Where was that conversation?** — searchable development memory
-2. **Switch agents without re-explaining** — portable checkpoints
+2. **Switch agents without re-explaining** — continuity capsules with portable
+   visible history, task state, evidence, fidelity, and lineage
 3. **Crash / reboot / context limit recovery** — `rein last`
 4. **Parallel tasks** — task-level control plane across terminals
 5. **Environment drift** — pre-resume mismatch report
@@ -105,11 +118,16 @@ Reinstate must not win by recreating “another picker.”
 
 | Mode | Fidelity | Label |
 | ---- | -------- | ----- |
-| Native resume (same vendor) | Highest | Default when possible |
-| Portable handoff (checkpoint) | Lossy, explicit | Primary cross-agent path |
-| Reconstructed conversation | Experimental | Never silent |
+| Native resume (same vendor) | Highest; vendor semantics retained | Default when possible |
+| Structured handoff | Portable task state + selected verbatim history + evidence | Primary cross-agent path |
+| Reconstructed conversation | Portable visible history projected into a new native session | Experimental; pair/version-specific |
 
-Never claim perfect Claude ↔ Codex native transcript translation.
+Never claim perfect Claude ↔ Codex native transcript translation. User messages
+and visible assistant/tool evidence should be retained where portable, but
+source system/developer messages remain audit history, historical tools are
+never re-executed, and unavailable hidden state is reported as omitted.
+
+Full design: [cross-agent-continuation.md](cross-agent-continuation.md).
 
 ---
 
@@ -117,9 +135,9 @@ Never claim perfect Claude ↔ Codex native transcript translation.
 
 ### 1. Continuity core (library / engine)
 
-Adapters, indexing, canonical schema, workspace fingerprints, checkpoints,
-encryption, sync protocol, session transforms, and universal configuration
-normalization/rendering.
+Adapters, indexing, canonical capsule/event schema, workspace fingerprints,
+checkpoints, fidelity reports, lineage, encryption, sync protocol, destination
+projections, and universal configuration normalization/rendering.
 
 ### 2. Reinstate CLI / TUI (primary)
 
@@ -149,6 +167,18 @@ coding to external agents.
 ### 4. Reinstate Cloud
 
 Encrypted multi-device sync, backup, device management, later team handoffs.
+
+### Cross-agent continuation is not a Reinstate runtime
+
+The quota-switch flow captures a source session, verifies the workspace,
+projects a portable capsule into a **new destination session**, launches the
+chosen agent, and records lineage. Claude Code, Codex, Gemini, or OpenCode still
+owns prompting, permissions, tools, and execution after launch.
+
+The first GA pair is Claude Code ↔ Codex. The flow must work when the source CLI
+is closed or rate-limited and cannot depend on a source model summary. Gemini
+CLI and OpenCode follow. Other agents require directional adapter and
+acceptance evidence.
 
 ---
 
@@ -204,6 +234,7 @@ Landing survey options:
 - Continue sessions across computers
 - Find and resume old sessions
 - Move sessions between coding agents
+- Continue in another agent after a usage limit or outage
 - Back up sessions automatically
 - Configure MCP servers once across harnesses and devices
 - Install the same skills, loops, plugins, and marketplaces across harnesses
@@ -211,7 +242,8 @@ Landing survey options:
 - Hand work to another developer
 
 Opt-in local telemetry (metadata only, never transcripts): search, resume,
-handoff attempts, mismatch detections, remote resumes.
+handoff attempts/acknowledgements, source-target support state, mismatch
+detections, remote resumes, and time to first useful destination action.
 
 ---
 
@@ -224,7 +256,7 @@ substrate for:
 
 - Phase 2 local index / switcher
 - Phase 3 verified resume
-- Phase 4 handoffs
+- Phase 4 core cross-agent continuation via portable handoffs
 - Phase 5 universal configuration + automated multi-device habit
 - Phase 6 thin console / ACP
 

@@ -2,12 +2,12 @@
 title: "Reinstate compared with vendor and file sync"
 navTitle: "Compare approaches"
 description: "Compare Reinstate with native agent sync, session browsers, full agent development environments, single-agent utilities, and do-it-yourself file syncing."
-order: 6
+order: 7
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
 version: "v0.2.0"
-updatedAt: 2026-08-01
+updatedAt: 2026-08-04
 tags: ["comparison", "session-sync", "developer-tools", "coding-agents"]
 targetQuery: "Reinstate alternatives"
 searchIntent: "comparison"
@@ -47,7 +47,7 @@ and Git instead of replacing them.
 | Cross-OS project paths | Canonical project IDs and structural path remapping | Usually internal to the vendor workflow | Manual path and layout handling |
 | Credential handling | Known credential artifacts are hard-excluded | Vendor-defined | User-maintained exclusions |
 | Transfer model | Full immutable snapshots in Phase 1 | Vendor-defined | File-level |
-| Cross-agent handoff | Explicit portable checkpoints are roadmap work | Outside Reinstate's native-resume model | No transcript semantics |
+| Cross-agent handoff | Core Phase 4: capsule, verification, and fidelity | Outside Reinstate's native-resume model | No transcript semantics |
 | MCP, skills, plugins, settings | Universal desired-state configuration is roadmap work | Vendor-local capabilities | Manual file selection |
 
 This table describes Reinstate's verified product scope, not a ranking
@@ -63,6 +63,18 @@ index and same-vendor native launch plans. Environment verification,
 configuration reconciliation, and portable handoffs remain later work.
 
 Reinstate does not claim to natively resume a Claude transcript inside Codex.
+
+## How does Reinstate differ from context-transfer tools?
+
+Context-injection tools validate the quota-switch workflow; pair-specific tools
+also experiment with rewriting Claude/Codex native stores. Reinstate's planned
+differentiation is a versioned continuity capsule, immutable lineage, workspace
+truth, cross-OS path mapping, capability negotiation, security boundaries, and
+component-level fidelity.
+
+The safe default is a structured handoff into a new destination-native session.
+Reconstructed history is experimental and pair/version-specific. Credentials,
+approvals, hidden reasoning, and live process state do not become portable.
 
 ## How does Reinstate differ from single-agent sync tools?
 
@@ -96,11 +108,12 @@ context and does not replace commits, branches, remotes, or repository sync.
 
 > Vendor sync owns *one* agent. File sync owns *bytes*. Reinstate owns
 > **coding-agent continuity** — sessions first, verified environments and
-> explicit handoffs later — across agents and machines.
+> core cross-agent handoffs next — across agents and machines.
 
 ## Related
 
 - [Architecture](/docs/architecture)
 - [Adapters](/docs/adapters)
+- [Cross-agent continuation](/docs/cross-agent-continuation)
 - [Universal agent configuration](/docs/universal-configuration)
 - [Roadmap](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md)

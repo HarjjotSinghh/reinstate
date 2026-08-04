@@ -2,18 +2,24 @@
 title: "Universal agent configuration roadmap"
 navTitle: "Universal configuration"
 description: "Explore the planned non-secret desired-state model for rendering MCP servers, skills, hooks, plugins, marketplaces, and safe settings across coding agents."
-order: 5
+order: 6
 author: "Harjot Singh Rana"
 status: planned
 schemaType: tech-article
 version: "roadmap"
-updatedAt: 2026-07-27
+updatedAt: 2026-08-04
 tags: ["roadmap", "mcp", "skills", "plugins", "agent-configuration"]
 targetQuery: "sync MCP servers and coding-agent configuration"
 searchIntent: "solution"
 draft: false
 noindex: false
 ---
+
+Cross-agent task handoff is a separate Phase 4 continuity-capsule capability.
+Configuration reconciliation can repair supported non-secret destination
+capabilities before launch, but it never converts raw vendor config, source
+credentials, or approvals into destination session state. See
+[Cross-agent continuation](/docs/cross-agent-continuation).
 
 > Status: planned after Phase 1. These commands are design direction, not part
 > of the current `v0.1` CLI.

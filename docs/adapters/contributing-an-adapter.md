@@ -19,6 +19,28 @@ Use only synthetic fixtures described in
 does not establish support: record the exact real vendor version and each
 verified device journey separately.
 
+## Cross-agent capabilities (Phase 4)
+
+Transcript-source and handoff-target support are separate, directional
+contracts. A sync adapter does not inherit either one.
+
+A cross-agent adapter contribution must additionally:
+
+1. declare the exact source → target direction and vendor versions;
+2. preserve an immutable source boundary and unknown records without guessing;
+3. classify every record as exact, normalized, summarized, referenced, or
+   omitted with a reason;
+4. keep source system/developer messages audit-only and historical tool calls
+   inert;
+5. exclude credentials, approvals, hidden reasoning, and account state;
+6. verify current workspace and capability truth before destination launch;
+7. use a new destination ID and backup/validate any experimental native writes;
+8. cover quota/offline source, partial writes, long history, prompt injection,
+   secrets, missing tools, and cross-OS paths with synthetic fixtures; and
+9. update the directional compatibility matrix without claiming other pairs.
+
+See [Cross-agent continuation](../cross-agent-continuation.md).
+
 ## Configuration adapters (later phase)
 
 Universal configuration uses a related but distinct contract. A configuration

@@ -26,6 +26,10 @@ MCP/skills scope with the unfinished scaffold, inventing release history
 5. Authentication files and credentials are never synced.
 6. Same-vendor resume only — no cross-agent transcript translation.
 
+This is a Phase 1 boundary, not a permanent rejection of cross-agent
+continuation. Phase 4's explicit portable-handoff decision is recorded in
+[ADR 0002](0002-cross-agent-continuation.md).
+
 ## Consequences
 
 - Roadmap, changelog, README, citation metadata, and support docs must match

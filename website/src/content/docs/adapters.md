@@ -7,7 +7,7 @@ author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
 version: "v0.2.0"
-updatedAt: 2026-08-01
+updatedAt: 2026-08-04
 tags: ["adapters", "claude-code", "codex", "same-vendor-resume"]
 targetQuery: "Reinstate supported coding agents"
 searchIntent: "agent-specific"
@@ -20,14 +20,18 @@ OpenCode sessions without translating sessions across agents. Claude Code and
 Codex additionally support encrypted export/restore and native same-vendor
 resume/fork; Gemini CLI and OpenCode remain read-only.
 
+Phase 4 adds separate, directional transcript-source and handoff-target
+capabilities. Byte-level session sync does not imply safe cross-agent history
+parsing or destination creation.
+
 ## Current v0.2.0 scope
 
-| Adapter | Local index | Native resume/fork | Encrypted sync | Universal configuration |
-| ------- | ----------- | ------------------ | -------------- | ----------------------- |
-| Claude Code | Full | Same-vendor | Supported | Later |
-| OpenAI Codex CLI | Full | Same-vendor | Supported | Later |
-| Gemini CLI | Read-only | No | No | Later |
-| OpenCode | Read-only | No | No | Later |
+| Adapter | Local index | Native resume/fork | Encrypted sync | Cross-agent handoff | Universal configuration |
+| ------- | ----------- | ------------------ | -------------- | ------------------- | ----------------------- |
+| Claude Code | Full | Same-vendor | Supported | Phase 4 source + target | Later |
+| OpenAI Codex CLI | Full | Same-vendor | Supported | Phase 4 source + target | Later |
+| Gemini CLI | Read-only | No | No | After first pair | Later |
+| OpenCode | Read-only | No | No | After first pair | Later |
 
 Stable `v0.2.0` passed the complete installed-artifact physical matrix on Apple
 Silicon macOS and native Windows x64. Intel macOS and Linux/WSL2 packages are
@@ -45,6 +49,12 @@ Configuration support is capability-specific and planned separately. Session
 support never implies support for MCP servers, skills, hooks, plugins,
 marketplaces, or settings. See
 [Universal agent configuration](/docs/universal-configuration).
+
+Cross-agent support is also capability-specific: source parse, structured
+handoff, destination launch, workspace/capability verification, fidelity
+reporting, and experimental reconstructed history are independent states.
+Claude → Codex and Codex → Claude are separate compatibility rows. See
+[Cross-agent continuation](/docs/cross-agent-continuation).
 
 ## How does the Claude Code adapter remap a project?
 

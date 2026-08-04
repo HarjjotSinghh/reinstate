@@ -6,6 +6,12 @@ configuration or cloud access. It also synchronizes Claude Code and Codex CLI
 sessions across machines through
 client-side-encrypted, user-owned object storage.
 
+> **Cross-agent status:** this release does not open a Claude Code session
+> inside Codex or vice versa. That quota-switch workflow is a core Phase 4
+> feature built as an explicit continuity-capsule handoff into a new linked
+> destination session. See
+> [cross-agent continuation](cross-agent-continuation.md).
+
 > **Release status:** the public installers pin stable `v0.2.0`. Exact signed
 > artifacts passed the complete physical matrix on Apple Silicon macOS and
 > native Windows x64. Intel macOS and Linux/WSL2 packages are available as
@@ -352,4 +358,5 @@ reports are still pending.
 - [Configuration](configuration.md)
 - [Backup and recovery](backup-and-recovery.md)
 - [Security model](security-model.md)
+- [Cross-agent continuation roadmap](cross-agent-continuation.md)
 - [Troubleshooting](troubleshooting.md)
