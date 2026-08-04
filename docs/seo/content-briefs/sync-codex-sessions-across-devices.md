@@ -29,9 +29,9 @@
 - Current capabilities used: same-vendor rollout discovery, structural
   `session_meta.cwd` tokenization, local encryption, immutable snapshots,
   destination path expansion, backup/atomic restore, and native Codex resume.
-- Current limitations: pre-1.0 stable release; native Windows, macOS amd64,
-  WSL2, remote CI, and physical two-device acceptance remain open gates.
-- Version tested: Reinstate `v0.1.0`; Codex ranges live on compatibility.
+- Current limitations: pre-1.0 stable release; Intel macOS and Linux/WSL2 are
+  preview and unverified.
+- Version tested: stable Reinstate `v0.2.0`; Codex ranges live on compatibility.
 - Evidence: adapter/pathmap/crypto/sync implementation and tests, deterministic
   synthetic rollout fixtures, CLI contracts, and release notes.
 - Claims that require verification: physical restore success, performance,

@@ -44,9 +44,10 @@ rein resume claude:SESSION_ID --dry-run
 These commands use a private derived index at
 `$REINSTATE_HOME/cache/session-index-v1.sqlite`. They do not need a sync
 profile, storage credentials, an encryption passphrase, keyring access, or a
-network backend. The `v0.2.0-rc.3` public installers contain both the Phase 1
-sync surface and Phase 2 local continuity. Development acceptance passed, but
-signed tagged-artifact acceptance is still pending before stable promotion.
+network backend. The stable `v0.2.0` public installers contain both the Phase 1
+sync surface and Phase 2 local continuity. Signed artifacts passed the complete
+physical matrix on Apple Silicon macOS and native Windows x64; Intel macOS and
+Linux/WSL2 are preview, unverified platforms for this release.
 
 ## Why not just use git?
 
@@ -129,11 +130,10 @@ recorded workspace.
 
 ## Windows + Mac?
 
-It is the primary design target. Stable Phase 1 path remapping passed its
-23-row physical RC8 matrix on native macOS arm64 and Windows 11 amd64. Phase 2
-development acceptance passed all 30 required rows on those devices at
-`b952d38`; signed release artifacts must repeat the release matrix. macOS amd64
-and WSL2 evidence is reported separately rather than fabricated.
+It is the primary design target. Stable `v0.2.0` passed the complete physical
+matrix on Apple Silicon macOS and native Windows x64. Intel macOS and
+Linux/WSL2 packages are preview and unverified; their missing evidence is
+reported explicitly rather than fabricated.
 
 ## Is this affiliated with Anthropic / OpenAI / Google / xAI?
 
@@ -141,9 +141,9 @@ and WSL2 evidence is reported separately rather than fabricated.
 
 ## Production ready?
 
-Pre-1.0. Stable `v0.1.0` completed Phase 1. The `v0.2.0-rc.3` candidate contains
-development-accepted Phase 2; exact tagged-artifact certification and stable
-publication are next. See
+Pre-1.0. Stable `v0.2.0` includes Phase 1 encrypted sync and Phase 2 local
+continuity. Apple Silicon macOS and native Windows x64 are physically verified;
+Intel macOS and Linux/WSL2 remain preview and unverified. See
 [ROADMAP.md](../ROADMAP.md) and [CHANGELOG.md](../CHANGELOG.md). Use with
 backups; report bugs via GitHub Issues.
 

@@ -7,7 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Documentation
+## [0.2.0] - 2026-08-05
+
+Second stable release. It ships the Phase 2 local continuity surface and the
+RC3 package-distribution pipeline without changing the runtime adapter code
+that passed the complete RC2 physical matrix on Apple Silicon macOS and native
+Windows x64.
+
+Stable support for this release is deliberately limited to those two verified
+platforms. Intel macOS and Linux/WSL2 artifacts are built, checksummed,
+SBOM-covered, and attested, but remain preview/unverified until their deferred
+physical acceptance issues close.
+
+### Added
+
+- Add configless local session discovery, literal search, bounded metadata
+  inspection, last-session selection, same-vendor native resume/fork, and the
+  interactive numbered switcher.
+- Add full local capabilities for Claude Code and Codex plus read-only Gemini
+  CLI and OpenCode discovery.
+- Add provenance-gated npm and native package artifacts together with opt-in,
+  protected publication workflows for additional package managers.
+
+### Changed
+
+- Embed the full 40-character source commit in release binaries and keep normal
+  verification CGO-free except for the explicit race gate.
+- Record the v0.2.0-only limited-platform waiver: Apple Silicon macOS and
+  native Windows x64 are verified; Intel macOS and Linux/WSL2 remain preview.
 
 - Record the live package-channel rollout state and add explicit stable
   `v0.2.0` publication and post-publication documentation checklists.
@@ -401,7 +428,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.2.0-rc.3...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0...v0.2.0
 [0.2.0-rc.3]: https://github.com/HarjjotSinghh/reinstate/compare/v0.2.0-rc.2...v0.2.0-rc.3
 [0.2.0-rc.2]: https://github.com/HarjjotSinghh/reinstate/compare/v0.2.0-rc.1...v0.2.0-rc.2
 [0.2.0-rc.1]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0...v0.2.0-rc.1

@@ -91,9 +91,8 @@ describe('editorial content foundation', () => {
 
       for (const requiredFact of [
         'Expected result:',
-        'Installer-compatible',
-        'not covered by the two-device acceptance run',
-        'physical two-device acceptance',
+        'Stable and physically verified',
+        'preview and unverified',
         'does not provide a general `rein undo`',
         '`--dry-run`',
         'same-vendor',

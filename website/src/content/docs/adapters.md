@@ -6,7 +6,7 @@ order: 3
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.2.0-rc.3"
+version: "v0.2.0"
 updatedAt: 2026-08-01
 tags: ["adapters", "claude-code", "codex", "same-vendor-resume"]
 targetQuery: "Reinstate supported coding agents"
@@ -20,7 +20,7 @@ OpenCode sessions without translating sessions across agents. Claude Code and
 Codex additionally support encrypted export/restore and native same-vendor
 resume/fork; Gemini CLI and OpenCode remain read-only.
 
-## Current v0.2.0-rc.3 scope
+## Current v0.2.0 scope
 
 | Adapter | Local index | Native resume/fork | Encrypted sync | Universal configuration |
 | ------- | ----------- | ------------------ | -------------- | ----------------------- |
@@ -29,10 +29,10 @@ resume/fork; Gemini CLI and OpenCode remain read-only.
 | Gemini CLI | Read-only | No | No | Later |
 | OpenCode | Read-only | No | No | Later |
 
-Development acceptance passed all 30 required Phase 2 rows on macOS arm64 and
-native Windows. Exact `v0.2.0-rc.3` installed-artifact acceptance remains open;
-check the [roadmap](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md)
-before treating the candidate as stable.
+Stable `v0.2.0` passed the complete installed-artifact physical matrix on Apple
+Silicon macOS and native Windows x64. Intel macOS and Linux/WSL2 packages are
+preview and unverified; check the
+[compatibility page](/compatibility) before relying on them.
 
 ## Later adapters
 

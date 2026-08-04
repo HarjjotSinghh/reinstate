@@ -7,13 +7,13 @@ import {
 } from '../../scripts/check-cli-release.mjs';
 
 const checker = new URL('../../scripts/check-cli-release.mjs', import.meta.url);
-const TAG = 'v0.2.0-rc.3';
+const TAG = 'v0.2.0';
 
 function release(overrides: Record<string, unknown> = {}) {
   return {
     tagName: TAG,
     isDraft: false,
-    isPrerelease: true,
+    isPrerelease: false,
     publishedAt: '2026-07-27T09:14:04Z',
     assets: expectedCliReleaseAssets(TAG).map((name) => ({
       name,
@@ -37,7 +37,7 @@ describe('published GitHub CLI release contract', () => {
     expect(platformArchives).toHaveLength(5);
     expect(assets.filter((name) => name.endsWith('.sbom.json'))).toHaveLength(5);
     expect(assets).toContain('checksums.txt');
-    expect(assets).toContain('reinstate_0.2.0-rc.3_source.tar.gz');
+    expect(assets).toContain('reinstate_0.2.0_source.tar.gz');
     for (const archive of platformArchives) {
       expect(assets).toContain(`${archive}.sbom.json`);
     }
@@ -52,9 +52,9 @@ describe('published GitHub CLI release contract', () => {
   it('rejects invalid or mismatched tags', () => {
     for (const tag of [
       '',
-      '0.2.0-rc.3',
+      '0.2.0',
       'v0.1',
-      'v0.2.0-rc.3;echo unsafe',
+      'v0.2.0;echo unsafe',
       'website-v2026.07.28.1',
     ]) {
       expect(() => expectedCliReleaseAssets(tag)).toThrow(
@@ -85,9 +85,9 @@ describe('published GitHub CLI release contract', () => {
     const required = expectedCliReleaseAssets(TAG);
     const missing = [
       'checksums.txt',
-      'reinstate_0.2.0-rc.3_windows_amd64.zip',
-      'reinstate_0.2.0-rc.3_linux_arm64.tar.gz.sbom.json',
-      'reinstate_0.2.0-rc.3_source.tar.gz',
+      'reinstate_0.2.0_windows_amd64.zip',
+      'reinstate_0.2.0_linux_arm64.tar.gz.sbom.json',
+      'reinstate_0.2.0_source.tar.gz',
     ];
     const assets = required
       .filter((name) => !missing.includes(name))

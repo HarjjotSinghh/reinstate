@@ -29,9 +29,9 @@
 - Current capabilities used: same-vendor discovery, encrypted push/pull,
   canonical project mapping, destination-key restore verification, backups,
   conflict checks, and Claude's native resume command.
-- Current limitations: pre-1.0 stable release; native Windows, macOS amd64,
-  WSL2, remote CI, and physical two-device acceptance remain open gates.
-- Version tested: source contract for Reinstate `v0.1.0`; Claude stable
+- Current limitations: pre-1.0 stable release; Intel macOS and Linux/WSL2 are
+  preview and unverified.
+- Version tested: stable Reinstate `v0.2.0`; Claude stable
   range is maintained on the compatibility page.
 - Evidence: CLI help/contracts, adapter/pathmap/crypto/sync tests, synthetic
   fixtures, compatibility data, and release notes.

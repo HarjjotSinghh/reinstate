@@ -1,9 +1,9 @@
 # Compatibility
 
-Stable Reinstate Phase 1 (`v0.1.0`) implements **same-vendor encrypted session
-sync** for:
+Stable Reinstate `v0.2.0` implements **same-vendor encrypted session sync** and
+the Phase 2 local continuity surface for:
 
-| Agent | Status in v0.1.0 |
+| Agent | Stable v0.2.0 capability |
 | ----- | ---------------- |
 | Claude Code | Primary — required on release matrix |
 | OpenAI Codex CLI | Primary — required on release matrix |
@@ -12,20 +12,20 @@ sync** for:
 | Cursor | Not in Phase 1 |
 | Grok Build | Not in Phase 1 |
 
-The `v0.2.0-rc.3` candidate adds a separate Phase 2 local capability matrix:
+The Phase 2 local capability matrix is:
 
 | Agent | Local discovery/search/inspect | Native resume/fork | Physical Phase 2 evidence |
 | ----- | ------------------------------ | ------------------ | ------------------------- |
-| Claude Code | Included in candidate | Same-vendor included in candidate | Development acceptance passed on macOS and Windows |
-| OpenAI Codex CLI | Included in candidate | Same-vendor included in candidate | Development acceptance passed on macOS and Windows |
-| Gemini CLI | Read-only included in candidate | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac |
-| OpenCode | Read-only included in candidate | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac |
+| Claude Code | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64 |
+| OpenAI Codex CLI | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64 |
+| Gemini CLI | Read-only included | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac |
+| OpenCode | Read-only included | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac |
 | Cursor | Not implemented | Not implemented | Not applicable |
 | Grok Build | Not implemented | Not implemented | Not applicable |
 
 Automated fixture/fake-runner evidence and physical evidence are reported
-separately. This table does not promote candidate evidence to stable evidence;
-stable `v0.1.0` remains available while `v0.2.0-rc.3` is tested.
+separately. Stable support is limited to the two physically verified primary
+platforms; preview artifacts do not inherit their evidence.
 
 This table covers session compatibility only. Planned universal configuration
 support will be reported separately per harness and per capability (MCP,
@@ -37,10 +37,10 @@ supported session adapter will not imply configuration support. See
 
 | Environment | Stable Phase 1 evidence | Phase 2 physical evidence |
 | ----------- | ----------------------- | ------------------------- |
-| macOS native (arm64) | RC8 23-row run passed for Claude/Codex | 30 required development rows passed at `b952d38` |
-| macOS native (amd64) | Release cross-build/CI; no physical report claimed here | Cross-build only; no physical report claimed |
-| Windows 11 native (amd64) | RC8 23-row run passed for Claude/Codex | 30 required rows plus Gemini/OpenCode physical paths passed at `b952d38` |
-| Windows 11 WSL2 (amd64) | Documented fixture/smoke path; distinct from native Windows | Separate smoke pending |
+| macOS native (arm64) | RC8 23-row run passed for Claude/Codex | Stable verified: all 30 required tagged-artifact rows passed |
+| macOS native (amd64) | Release cross-build/CI | Preview/unverified; no physical report claimed ([#97](https://github.com/HarjjotSinghh/reinstate/issues/97)) |
+| Windows 11 native (amd64) | RC8 23-row run passed for Claude/Codex | Stable verified: all required rows plus Gemini/OpenCode physical paths passed |
+| Windows 11 WSL2 (amd64) | Documented fixture path; distinct from native Windows | Preview/unverified; no physical report claimed ([#98](https://github.com/HarjjotSinghh/reinstate/issues/98)) |
 
 ### Explicitly unsupported
 
@@ -70,11 +70,10 @@ ranges on macOS arm64 plus deterministic synthetic fixtures:
 | Claude Code | `2.1.219`–`2.1.220` |
 | OpenAI Codex CLI | `0.133.0`–`0.146.0` |
 
-The candidate expands Codex support through `0.146.0`, which passed the full
-Phase 2 physical matrix on both tested devices. Stable `v0.1.0` contains the
-earlier `0.133.0`–`0.145.0` Codex range plus
+Stable `v0.2.0` expands Codex support through `0.146.0`, which passed the full
+Phase 2 physical matrix on both verified platforms. It retains the
 destination-device Claude project-directory remapping and exact restore-path
-verification.
+verification introduced in `v0.1.0`.
 Versions outside them, including prereleases, are `UNTESTED` and must not be
 called stable until their release matrix rows pass. The repository does not
 fabricate native or physical results for a platform absent from the recorded

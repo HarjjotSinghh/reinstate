@@ -31,9 +31,9 @@
 - Current capabilities used: S3-compatible backend, local age encryption,
   immutable snapshots, encrypted manifest, storage probe, scoped credentials.
 - Current limitations: BYO storage charges and policy remain the user's
-  responsibility; session tokens are not a Reinstate credential field; stable
-  platform acceptance remains open.
-- Version tested: Reinstate `v0.1.0` source contract.
+  responsibility; session tokens are not a Reinstate credential field; Intel
+  macOS and Linux/WSL2 are preview and unverified.
+- Version tested: stable Reinstate `v0.2.0` contract.
 - Evidence: S3 backend tests, config schema, CLI help, threat model, and current
   storage documentation.
 - Claims that require verification: AWS console UI, prices, service limits, and
