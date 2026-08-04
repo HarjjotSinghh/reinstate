@@ -291,8 +291,10 @@ jobs:
           $actual = (Get-FileHash wingetcreate.exe -Algorithm SHA256).Hash.ToLowerInvariant()
           $expected = '24042bd37915805615e6cf969ac57c6439124c3fe85823327f5f3fb24bd9ffea'
           if ($actual -ne $expected) { throw "WinGetCreate checksum mismatch: $actual" }
+          $ErrorActionPreference = 'Continue'
           $validation = & ./wingetcreate.exe submit package-manager/winget --no-open --token $env:WINGET_VALIDATION_TOKEN 2>&1 | Out-String
           $submitExit = $LASTEXITCODE
+          $ErrorActionPreference = 'Stop'
           $validation
           if ($validation -notmatch 'Manifest validation succeeded: True') {
             throw 'WinGetCreate did not validate the generated manifests'
