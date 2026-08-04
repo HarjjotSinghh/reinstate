@@ -196,6 +196,16 @@ hint.
 
 ### Install stable v0.2.0
 
+Apple Silicon macOS with Homebrew:
+
+```bash
+brew install HarjjotSinghh/tap/reinstate
+```
+
+The tap's stable formula passed install, both-alias identity, formula test,
+no-op upgrade, and uninstall checks on Apple Silicon. Intel macOS and
+Linuxbrew remain unverified for `v0.2.0`.
+
 macOS, Linux, or WSL2:
 
 ```bash

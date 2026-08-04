@@ -7,7 +7,7 @@ author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
 version: "v0.2.0"
-updatedAt: 2026-08-01
+updatedAt: 2026-08-04
 tags: ["installation", "cli", "macos", "windows", "wsl2"]
 targetQuery: "install Reinstate CLI"
 searchIntent: "how-to"
@@ -35,6 +35,17 @@ reported version before replacing an existing installation.
 Installation does not require an Anthropic account credential, OpenAI account
 credential, S3 credential, or Reinstate passphrase. Those secrets belong to
 later setup prompts, never the installer command or an agent chat.
+
+## Install with Homebrew on Apple Silicon macOS
+
+```sh
+brew install HarjjotSinghh/tap/reinstate
+```
+
+The stable formula passed install, both-alias identity, formula test, no-op
+upgrade, and uninstall checks on Apple Silicon. Intel macOS and Linuxbrew
+remain unverified for `v0.2.0`; use the bootstrap below if you prefer the
+canonical installer path.
 
 ## Install with the official bootstrap
 
