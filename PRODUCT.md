@@ -18,6 +18,15 @@ Expand:
 > environments, and devices — verifying that the workspace and capabilities
 > still match before you continue.
 
+Core cross-agent outcome:
+
+> When one agent hits a usage limit, continue the same task in another supported
+> agent without starting the explanation over.
+
+That continuation is an explicit, inspectable handoff into a new linked native
+session. “Same task” does not imply the same vendor session ID or unavailable
+hidden runtime state.
+
 Spine:
 
 > **Reinstate is not another place to code. It makes every place you code continuous.**
@@ -39,6 +48,7 @@ They care about:
 - finding the right session later
 - resuming without re-prompting from zero
 - switching agents without losing the task thread
+- escaping quota windows or outages without abandoning in-progress work
 - catching environment drift (branch, MCP, skills, runtime)
 - configuring MCP servers and other agent capabilities once instead of
   repeating setup in every harness
@@ -58,7 +68,9 @@ early access.
 Reinstate provides **continuity infrastructure**:
 
 1. **Session recovery** — discover, search, preview, resume, fork
-2. **Agent portability** — portable checkpoints / handoffs (not silent translation)
+2. **Agent portability** — continuity capsules, portable visible history,
+   capability-aware handoffs, fidelity reports, and lineage (not silent native
+   translation)
 3. **Environment continuity** — verify and eventually reconcile repo/branch,
    MCP/skills/hooks/loops/plugins/settings across supported harnesses
 4. **Cloud continuity** — E2EE BYO storage (R2/S3 first), path remapping,
@@ -68,6 +80,13 @@ Reinstate provides **continuity infrastructure**:
 Agents remain the executors. Reinstate does **not** become a full ADE/IDE.
 It translates portable desired state into native harness configuration; it does
 not become a plugin runtime or marketplace.
+
+Cross-agent continuation is a core post-Phase-1 capability. Claude Code ↔ Codex
+is the first pair, with a no-source-model quota-exhaustion path. Gemini CLI and
+OpenCode follow. Reconstructed native histories remain experimental and
+pair/version-specific; the supported default is a structured handoff with a
+component-level fidelity report. See
+[docs/cross-agent-continuation.md](docs/cross-agent-continuation.md).
 
 Site purpose: convert continuity-aware agent users into waitlist/docs/GitHub
 stars; establish trust (E2EE, BYO storage, open source); position against
@@ -82,7 +101,7 @@ docs accurate to the repo; brand feels like infrastructure you trust.
 **Precise · portable · zero-knowledge**
 
 Voice: concrete, CLI-native, no hype verbs. Prefer specific claims (path
-remapping, age encryption, verified resume, portable handoff) over abstract
+remapping, age encryption, verified resume, continuity capsule, fidelity report) over abstract
 empowerment. Verb-friendly language: *reinstate this session*, *pull on the
 laptop*, short alias **`rein`**.
 
@@ -106,7 +125,7 @@ Illustration is the brand, not decoration.
 
 ## Design principles
 
-1. **Show the mechanism.** Continuity: find → verify → resume/handoff → (optional) sync.
+1. **Show the mechanism.** Continuity: find → verify → resume or capsule handoff → acknowledge → (optional) sync.
 2. **Infrastructure honesty.** Real CLI, real docs, real security defaults.
 3. **Sharp, never soft.** Depth from outlines and flat faces.
 4. **One accent.** Chartreuse is the only loud colour.

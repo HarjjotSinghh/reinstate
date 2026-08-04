@@ -2,7 +2,7 @@
 title: "Reinstate CLI command reference"
 navTitle: "CLI reference"
 description: "Use every current Reinstate command with its purpose, parameters, expected evidence, platform notes, failure modes, and safe recovery path."
-order: 14
+order: 15
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article

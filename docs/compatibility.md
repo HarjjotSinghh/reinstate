@@ -33,6 +33,27 @@ skills/instructions, hooks/loops, plugins, marketplaces, safe settings). A
 supported session adapter will not imply configuration support. See
 [universal-configuration.md](universal-configuration.md).
 
+It also does **not** imply cross-agent handoff support. Phase 4 will publish a
+directional matrix with separate source-parser, structured-handoff,
+destination-launch, reconstructed-history, workspace-verification, and fidelity
+states.
+
+## Cross-agent continuation (planned)
+
+| Direction | Structured handoff | Reconstructed native history |
+| --------- | ------------------ | ---------------------------- |
+| Claude Code → Codex | Phase 4 first GA pair | Experimental, exact versions only |
+| Codex → Claude Code | Phase 4 first GA pair | Experimental, exact versions only |
+| Claude/Codex ↔ Gemini CLI | Planned after first pair | Exploring |
+| Claude/Codex ↔ OpenCode | Planned after first pair | Exploring |
+| Grok Build, Copilot CLI, Cursor, Orca, others | Requires adapter evidence | Uncommitted |
+
+The GA path must work with the source CLI closed/rate-limited and no source
+model call. It creates a new destination-native session with explicit lineage
+and reports normalized, summarized, referenced, redacted, omitted, and
+unsupported material. See
+[cross-agent-continuation.md](cross-agent-continuation.md).
+
 ## Environments
 
 | Environment | Stable Phase 1 evidence | Phase 2 physical evidence |

@@ -10,9 +10,10 @@ not another place to code.
 
 ## Feature matrix
 
-| Capability | Native vendor sync | claude-sync | coding-agent-sync / MCP tools | DIY (Syncthing / Drive) | **Reinstate** |
-| ---------- | ------------------ | ----------- | ----------------------------- | ----------------------- | ------------- |
-| Sessions across devices | Per-vendor only | Claude only | Partial | Files only | **Multi-agent** |
+| Capability | Native vendor sync | claude-sync | Context-transfer tools | DIY (Syncthing / Drive) | **Reinstate** |
+| ---------- | ------------------ | ----------- | ---------------------- | ----------------------- | ------------- |
+| Sessions across devices | Per-vendor only | Claude only | Varies | Files only | **Multi-agent** |
+| Cross-agent task continuation | No | No | Structured prompt or pair-specific reconstruction | No | **Core Phase 4: capsule + workspace/capability verification + fidelity** |
 | Works when other machine is off | Cloud yes / Remote Control no | Yes | Yes | Yes | **Yes** |
 | MCP / skills / loops / plugins / settings | Vendor-local | Partial (Claude tree) | Often one artifact class | Manual | **Universal desired-state config (planned)** |
 | E2E encryption | Vendor-held plaintext | age | Often yes | Usually no | **age, BYO keys** |
@@ -35,6 +36,25 @@ excellent *inside one ecosystem*. They will not:
 Reinstate's moat is **universality + environment verification + neutrality + BYO E2EE**.
 Phase 1 proves the encrypted-sync foundation with same-vendor Claude Code and
 Codex sessions; environment verification and portable handoffs follow.
+
+## vs context-transfer tools
+
+Projects such as [`continues`](https://github.com/yigitkonur/cli-continues)
+validate the quota-switch workflow by parsing multiple local stores and
+injecting a structured context document. Projects such as
+[`sessionbridge`](https://github.com/tongtongtju/sessionbridge) explore
+pair-specific Claude ↔ Codex native-file reconstruction.
+
+Reinstate's planned differentiation is not the bare ability to paste context.
+It is a versioned continuity capsule, immutable source lineage, current
+workspace truth, cross-OS path mapping, destination capability negotiation,
+secret/prompt-injection boundaries, and a component-level fidelity report.
+Structured handoff is the safe default; reconstructed native history is
+experimental and exact-version gated.
+
+No tool can honestly carry unavailable hidden reasoning, credentials,
+approvals, or live process state across vendors. Reinstate preserves the raw
+source for audit and labels what the destination actually received.
 
 ## vs session browsers (e.g. SpecStory-class tools)
 
@@ -82,11 +102,13 @@ Reinstate is resume-aware, agent-aware, and secure-by-default.
 ## Positioning one-liner
 
 > Vendor sync owns *one* agent. File sync owns *bytes*. Reinstate owns
-> **portable AI dev state** — sessions first, environment next — across agents and machines.
+> **portable AI dev state** — native sessions, explicit cross-agent continuity,
+> and verified environment — across agents and machines.
 
 ## Related
 
 - [Architecture](architecture.md)
 - [Adapters](adapters.md)
 - [Universal agent configuration](universal-configuration.md)
+- [Cross-agent continuation](cross-agent-continuation.md)
 - [Roadmap](../ROADMAP.md)

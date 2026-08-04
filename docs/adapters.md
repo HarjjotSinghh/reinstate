@@ -4,9 +4,18 @@ Reinstate separates per-agent capabilities:
 
 - **local read adapters** discover bounded metadata and user-prompt search text;
 - **native executors** resume/fork through the same vendor;
-- **sync adapters** export and restore vendor-native session files; and
+- **sync adapters** export and restore vendor-native session files;
+- Phase 4 **transcript-source** and **handoff-target** adapters parse portable
+  history and create linked destination sessions; and
 - later **configuration adapters** normalize portable intent and render each
   harness's native MCP/skills/plugins/settings format.
+
+Phase 4 adds separate, directional **transcript-source** and
+**handoff-target** capabilities. A session adapter that can sync bytes does not
+automatically qualify to parse portable history or create a safe destination
+session.
+
+## Phase 1 (`v0.1.0`)
 
 One capability never implies another. Read-only agents do not receive dummy
 resume, fork, export, or restore implementations.
@@ -64,6 +73,16 @@ Plans store executable, argv, and recorded cwd separately. They never construct
 a shell command string. Gemini/OpenCode resume or fork fails with compatibility
 exit `5`.
 
+## Future session and handoff adapters
+
+| Adapter | Session discovery | Cross-agent handoff |
+| ------- | ----------------- | ------------------- |
+| Gemini CLI | Read-only in `v0.2.0` | Phase 4 after Claude ↔ Codex |
+| OpenCode | Read-only in `v0.2.0` | Phase 4 after Claude ↔ Codex |
+| Cursor | Exploring | Exploring |
+| Grok Build | Exploring | Exploring |
+| Copilot CLI / Orca / others | Exploring | Requires public format/API and acceptance evidence |
+
 ## Future configuration adapters
 
 Planned configuration targets include Claude Code, Codex, Gemini CLI, OpenCode,
@@ -73,6 +92,24 @@ adapter that can resume sessions does not automatically support configuration,
 and unsupported or lossy mappings must be reported before apply.
 
 See [universal-configuration.md](universal-configuration.md).
+
+## Cross-agent capability states (Phase 4 target)
+
+Support is reported per direction and per version for:
+
+| Capability | Meaning |
+| ---------- | ------- |
+| Source parse | Safely reads visible messages, tool relationships, attachments, and unknown records |
+| Structured handoff | Builds a task/workspace capsule without needing the source model |
+| Destination launch | Creates and verifies a new destination-native session |
+| Reconstructed history | Projects normalized visible history into target-native storage; experimental unless explicitly promoted |
+| Capability verification | Reports missing tools, MCP, skills, instructions, sandbox, and runtime state |
+| Fidelity report | Classifies every component as exact/normalized/summarized/referenced/omitted |
+
+Claude → Codex and Codex → Claude are separate rows in the future compatibility
+matrix. “Supported session adapter” must never be shortened to “supported
+handoff.” See
+[cross-agent-continuation.md](cross-agent-continuation.md).
 
 ## Compatibility states
 

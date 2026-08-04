@@ -1,10 +1,10 @@
 ---
 const agents = [
-  { name: 'Claude Code', sessions: true, config: true, status: 'Priority (v0.1)' },
-  { name: 'OpenAI Codex CLI', sessions: true, config: true, status: 'Priority (v0.1)' },
-  { name: 'Gemini CLI', sessions: false, config: false, status: 'Phase 1' },
-  { name: 'OpenCode', sessions: false, config: false, status: 'Phase 1' },
-  { name: 'Grok Build', sessions: false, config: false, status: 'Phase 2' },
+  { name: 'Claude Code', sessions: true, handoff: 'Phase 4', config: true, status: 'Priority (v0.1)' },
+  { name: 'OpenAI Codex CLI', sessions: true, handoff: 'Phase 4', config: true, status: 'Priority (v0.1)' },
+  { name: 'Gemini CLI', sessions: false, handoff: 'Later', config: false, status: 'Planned' },
+  { name: 'OpenCode', sessions: false, handoff: 'Later', config: false, status: 'Planned' },
+  { name: 'Grok Build', sessions: false, handoff: 'Exploring', config: false, status: 'Exploring' },
 ];
 ---
 
@@ -14,8 +14,9 @@ const agents = [
       Supported agents
     </h2>
     <p class="mt-4 max-w-xl measure text-pretty text-muted">
-      Same-vendor resume only. Cross-agent value is portable config, skills, and environment —
-      not replaying one model’s transcript into another.
+      Phase 1 resumes same-vendor sessions. Core Phase 4 adds explicit cross-agent
+      continuation: same task, new linked destination session, measured fidelity —
+      not an invisible claim that unlike vendor runtimes are identical.
     </p>
 
     <div class="mt-10 overflow-x-auto rounded-xl border border-border">
@@ -24,6 +25,7 @@ const agents = [
           <tr>
             <th class="px-4 py-3 font-medium">Agent</th>
             <th class="px-4 py-3 font-medium">Sessions</th>
+            <th class="px-4 py-3 font-medium">Cross-agent</th>
             <th class="px-4 py-3 font-medium">Config / MCP</th>
             <th class="px-4 py-3 font-medium">Status</th>
           </tr>
@@ -34,6 +36,7 @@ const agents = [
               <tr class="border-b border-border last:border-0">
                 <td class="px-4 py-3.5 font-medium text-ink">{a.name}</td>
                 <td class="px-4 py-3.5 text-muted">{a.sessions ? 'Yes' : 'Planned'}</td>
+                <td class="px-4 py-3.5 text-muted">{a.handoff}</td>
                 <td class="px-4 py-3.5 text-muted">{a.config ? 'Yes' : 'Planned'}</td>
                 <td class="px-4 py-3.5">
                   <span class="inline-flex rounded-md border border-border bg-surface px-2 py-0.5 font-mono text-xs text-ink">
@@ -47,7 +50,8 @@ const agents = [
       </table>
     </div>
     <p class="mt-4 text-sm text-muted">
-      Details in <a href="/docs/adapters" class="text-ink underline-offset-3 hover:underline">adapters docs</a>.
+      Details in <a href="/docs/adapters" class="text-ink underline-offset-3 hover:underline">adapters docs</a>
+      and the <a href="/docs/cross-agent-continuation" class="text-ink underline-offset-3 hover:underline">continuation design</a>.
     </p>
   </div>
 </section>

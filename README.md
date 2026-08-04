@@ -17,6 +17,11 @@ macOS and Linux/WSL2 downloads remain preview/unverified pending issues
 [#97](https://github.com/HarjjotSinghh/reinstate/issues/97) and
 [#98](https://github.com/HarjjotSinghh/reinstate/issues/98).
 
+Core Phase 4 work extends that continuity across agents: when one harness hits
+a quota or outage, Reinstate hands the same task to another through an explicit,
+fidelity-reported continuity capsule and creates a new linked destination
+session.
+
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/HarjjotSinghh/reinstate)](https://goreportcard.com/report/github.com/HarjjotSinghh/reinstate)
 [![Release](https://img.shields.io/github/v/release/HarjjotSinghh/reinstate?include_prereleases&sort=semver)](https://github.com/HarjjotSinghh/reinstate/releases)
@@ -60,9 +65,16 @@ Even on one machine, you can have twenty sessions across Claude Code, Codex,
 projects, branches, and worktrees. Finding the right thread later becomes a
 memory problem.
 
-Then you open your **MacBook** on the couch.
+Then either the device changes **or the agent's usage window closes**. You open
+the laptop—or switch from Claude Code to Codex because only Codex still has
+capacity.
 
 Git has the code. The agent does **not** have the conversation — the rejected approaches, the files already read three times, the style constraints you established mid-thread. Vendor tools save sessions **locally**. Switching machines is context death.
+
+Phase 1 solves the machine switch with same-vendor native resume. Phase 4 makes
+the agent switch a core workflow: the same task continues in a new linked native
+session with portable visible history, workspace truth, tool/test evidence, and
+an explicit fidelity report.
 
 ```mermaid
 flowchart LR
@@ -104,7 +116,8 @@ flowchart LR
 | | What you get |
 | --- | --- |
 | **Local recovery** | Configless local index/search/resume for Claude Code and Codex in current source |
-| **Multi-agent** | One metadata index; native execution always stays with the source vendor |
+| **Multi-agent** | One metadata index; current native resume/fork stays with the source vendor |
+| **Cross-agent continuity** | Core Phase 4 quota/outage handoff; same task, new linked destination session, measured fidelity |
 | **Offline-capable origin** | Works when the other machine is **off** (stored sync, not a live relay) |
 | **Path remapping** | Windows ↔ macOS project paths rewritten so `--resume` actually finds sessions |
 | **Zero-knowledge** | Client-side encryption; bring-your-own storage |
@@ -138,6 +151,10 @@ Also included from stable `v0.1.0`:
 
 - **Cross-device session sync** — continue the same Claude/Codex thread on another machine
 - **Multi-agent adapters** — same-vendor Claude Code and Codex session continuity
+
+Planned core continuity:
+
+- **Cross-agent continuation (Phase 4)** — switch from Claude Code to Codex (and back) after a quota limit without re-explaining the task; structured handoff first, reconstructed history experimental
 - **End-to-end encryption** — [age](https://github.com/FiloSottile/age), passphrase-derived keys
 - **Bring-your-own storage** — Cloudflare R2, AWS S3, and S3-compatible storage
 - **OS-aware path remapping** — the hard problem treated as the product
@@ -151,6 +168,13 @@ once, then preview and apply the correct native configuration across Claude
 Code, Codex, Grok, OpenCode, Gemini CLI, and multiple devices. This is planned,
 not part of the current CLI. See
 [Universal agent configuration](docs/universal-configuration.md).
+
+Cross-agent continuation is planned earlier in Phase 4 and is core product
+scope, not a config side effect. It preserves the immutable source and every
+portable visible event, then creates a new destination-native session with a
+component-level fidelity report. It does not copy credentials, approvals,
+hidden reasoning, or source policy into the target. See
+[Cross-agent continuation](docs/cross-agent-continuation.md).
 
 ---
 
@@ -256,13 +280,13 @@ Full walkthrough: **[docs/getting-started.md](docs/getting-started.md)**
 
 ## Supported agents
 
-| Agent | Local index | Resume/fork | Encrypted sync | Status |
-| ----- | :---------: | :---------: | :------------: | ------ |
-| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | ✅ full | ✅ native | ✅ | Stable on Apple Silicon macOS and native Windows x64 |
-| [OpenAI Codex CLI](https://github.com/openai/codex) | ✅ full | ✅ native | ✅ | Stable on Apple Silicon macOS and native Windows x64 |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | ✅ read-only | — | — | Physical read-only path passed on Windows; unavailable on test Mac |
-| [OpenCode](https://opencode.ai) | ✅ read-only | — | — | Physical read-only path passed on Windows; unavailable on test Mac |
-| [Grok Build](https://x.ai) | 📋 | — | — | Later phase |
+| Agent | Local index | Resume/fork | Encrypted sync | Cross-agent handoff | Status |
+| ----- | :---------: | :---------: | :------------: | :-----------------: | ------ |
+| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | ✅ full | ✅ native | ✅ | 📋 Phase 4 source + target | Stable on Apple Silicon macOS and native Windows x64 |
+| [OpenAI Codex CLI](https://github.com/openai/codex) | ✅ full | ✅ native | ✅ | 📋 Phase 4 source + target | Stable on Apple Silicon macOS and native Windows x64 |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | ✅ read-only | — | — | 📋 after first pair | Physical read-only path passed on Windows; unavailable on test Mac |
+| [OpenCode](https://opencode.ai) | ✅ read-only | — | — | 📋 after first pair | Physical read-only path passed on Windows; unavailable on test Mac |
+| [Grok Build](https://x.ai) | 📋 | — | — | 💭 adapter evidence required | Later phase |
 
 Details: **[docs/adapters.md](docs/adapters.md)**
 
@@ -302,6 +326,12 @@ flowchart TB
 4. **Pathmap** rewrites known structural paths for optional cross-device sync
 5. **Crypto/sync** encrypt before upload and restore atomically with backups
 
+For planned cross-agent continuation, source adapters additionally parse a
+versioned immutable boundary into a canonical capsule; target adapters create a
+new linked session from an inspectable projection. Tool calls are historical
+evidence, not actions to replay, and every normalized or omitted component is
+reported before launch.
+
 Deep dive: **[docs/architecture.md](docs/architecture.md)** · research diagram:
 
 <p align="center">
@@ -332,6 +362,7 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 | [Getting started](docs/getting-started.md) | Configless local index plus optional encrypted sync |
 | [Architecture](docs/architecture.md) | Pipeline, packages, design principles |
 | [Adapters](docs/adapters.md) | Per-agent layouts & support matrix |
+| [Cross-agent continuation](docs/cross-agent-continuation.md) | Quota-switch product spec, fidelity model, architecture, security, release gates |
 | [Universal configuration](docs/universal-configuration.md) | Planned MCP/skills/loops/plugins/settings portability |
 | [Security model](docs/security-model.md) | Threat model & defaults |
 | [Comparison](docs/comparison.md) | vs native sync, claude-sync, DIY |
@@ -401,7 +432,7 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 | **0** | Contracts, diagnostics, installers, fixtures, release trust | ✅ |
 | **1** | Claude + Codex encrypted same-vendor session sync | ✅ |
 | **2** | Configless local index, search, native resume/fork | 🚧 |
-| **3–4** | Verified resume, portable handoffs | 📋 |
+| **3–4** | Verified resume, core cross-agent continuation | 📋 |
 | **5–7** | Universal config + automatic sync, thin Console/ACP client, teams | 📋 / 💭 |
 
 Full detail: **[ROADMAP.md](ROADMAP.md)**

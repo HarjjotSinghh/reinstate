@@ -2,7 +2,7 @@
 title: "Reinstate limitations and stable-platform boundaries"
 navTitle: "Limitations"
 description: "Review Reinstate limitations for agents, operating systems, native resume, storage, snapshots, path remapping, security, and release certification."
-order: 15
+order: 16
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page

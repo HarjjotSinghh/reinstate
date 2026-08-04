@@ -2,7 +2,7 @@
 title: "Configure Reinstate profiles and project paths"
 navTitle: "Profiles and paths"
 description: "Configure a Reinstate profile, S3-compatible storage coordinates, OS-keyring credentials, and portable project mappings across development devices."
-order: 10
+order: 11
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page

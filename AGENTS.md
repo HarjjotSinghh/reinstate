@@ -70,7 +70,9 @@ Read `references/` and `docs/product-strategy.md`. Positioning:
 > a single agent folder; not another ADE.
 
 Phase 1 remains deliberately narrow: same-vendor Claude Code and Codex session
-sync. Portable handoffs, MCP, skills, config, and broader indexing come later.
+sync. Core cross-agent continuation via explicit portable handoffs, plus MCP,
+skills, config, and broader indexing, comes later. The cross-agent design and
+fidelity contract live in `docs/cross-agent-continuation.md`.
 The later configuration direction is **universal agent configuration**:
 declare MCP servers, skills, hooks/loops, plugins, marketplaces, instructions,
 and safe settings once; adapters render them into supported harnesses and

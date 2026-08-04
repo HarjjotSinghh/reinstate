@@ -2,12 +2,12 @@
 title: "Reinstate frequently asked questions"
 navTitle: "FAQ"
 description: "Get direct answers about Reinstate's current session-sync scope, supported agents, encryption, storage, offline behavior, cross-agent handoffs, and roadmap."
-order: 7
+order: 8
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
 version: "v0.2.0"
-updatedAt: 2026-08-01
+updatedAt: 2026-08-04
 tags: ["faq", "session-sync", "claude-code", "codex", "security"]
 targetQuery: "what is Reinstate"
 searchIntent: "answer"
@@ -26,8 +26,8 @@ Reinstate is an open-source continuity layer for coding-agent work. Phase 1
 implements encrypted, bring-your-own-storage sync for same-vendor Claude Code
 and Codex sessions. Phase 2 adds configless local indexing, literal search,
 metadata inspection, a TTY switcher, and same-vendor native resume/fork.
-Verified resume, portable handoffs, and cross-harness configuration are later
-phases.
+Verified resume, core cross-agent continuation, and cross-harness configuration
+are later phases.
 
 See [What is Reinstate?](/about/reinstate) for current product facts, non-goals,
 roadmap boundaries, and maintainer information.
@@ -95,8 +95,20 @@ restoring the session. See [installation and sync](/docs/getting-started).
 
 ## Will this resume a Claude session inside Codex?
 
-**Native resume:** no — same-vendor only. A later explicit portable handoff can
-carry a lossy task checkpoint without pretending to translate native history.
+**Current CLI:** no—native resume is same-vendor only.
+
+**Core Phase 4 roadmap:** yes. Claude Code ↔ Codex quota/outage continuation is
+the first pair, with additional agents following. Reinstate creates a new
+linked destination session from task state, portable visible history,
+workspace/tool/test evidence, capability differences, and a fidelity report.
+
+It preserves the immutable source but cannot claim an identical foreign
+runtime. Credentials, approvals, hidden reasoning, and live processes do not
+transfer. Source system/developer messages remain audit history, and historical
+tools never re-execute. Reconstructed native history is experimental and
+pair/version-specific.
+
+See [Cross-agent continuation](/docs/cross-agent-continuation).
 
 ## Do I need two computers?
 

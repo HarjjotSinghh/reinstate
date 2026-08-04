@@ -7,7 +7,7 @@ author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
 version: "v0.2.0"
-updatedAt: 2026-08-01
+updatedAt: 2026-08-04
 tags: ["installation", "session-sync", "claude-code", "codex", "s3"]
 targetQuery: "how to sync coding-agent sessions across devices"
 searchIntent: "how-to"
@@ -18,6 +18,11 @@ noindex: false
 Reinstate finds and continues local coding-agent sessions without setup, and
 optionally synchronizes same-vendor Claude Code and Codex CLI sessions across
 machines through client-side-encrypted, user-owned S3-compatible storage.
+
+> **Cross-agent status:** the current release restores same-vendor sessions. A
+> Claude Code → Codex quota-switch handoff is core Phase 4 roadmap work and
+> creates a new linked destination session with explicit fidelity. See
+> [Cross-agent continuation](/docs/cross-agent-continuation).
 
 > **Release status:** stable. The public installers pin `v0.2.0`. Exact signed
 > artifacts passed the complete physical matrix on Apple Silicon macOS and

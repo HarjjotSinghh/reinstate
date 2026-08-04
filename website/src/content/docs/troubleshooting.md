@@ -2,7 +2,7 @@
 title: "Troubleshoot Reinstate session sync"
 navTitle: "Troubleshooting"
 description: "Fix Reinstate installation, compatibility, session selection, mapping, manifest, passphrase, conflict, credential, performance, and active-agent errors safely."
-order: 8
+order: 9
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page

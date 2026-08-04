@@ -2,7 +2,7 @@
 title: "Configure storage for encrypted Reinstate sessions"
 navTitle: "Storage"
 description: "Understand Reinstate's S3-compatible storage fields, object layout, required permissions, encrypted payloads, profile isolation, and retention limits."
-order: 11
+order: 12
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
