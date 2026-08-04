@@ -10,7 +10,17 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/HarjjotSinghh/reinstate/internal/environment"
 )
+
+func syntheticCredentialRemote(user, password, destination, query string) string {
+	value := "https://" + user + ":" + password + "@" + destination
+	if query != "" {
+		value += "?" + query
+	}
+	return value
+}
 
 func TestStoreReplaceSearchResolveDeleteAndPermissions(t *testing.T) {
 	t.Parallel()
@@ -57,6 +67,20 @@ func TestStoreReplaceSearchResolveDeleteAndPermissions(t *testing.T) {
 	claude.Project = "PAYMÉNTS"
 	claude.Branch = "FÉATURE/retry"
 	claude.Files = []string{"internal/ÜBER-webhook.go"}
+	claude.RecordedEnvironment = environment.RecordedEnvironment{
+		RepositoryID: environment.RecordedField{
+			Value:      syntheticCredentialRemote("fixture", "secret", "github.com/example/payments.git", "token=secret"),
+			Provenance: "codex.session_meta.git.repository_url",
+		},
+		Branch: environment.RecordedField{
+			Value:      "FÉATURE/retry",
+			Provenance: "codex.session_meta.git.branch",
+		},
+		GitHead: environment.RecordedField{
+			Value:      "0123456789abcdef0123456789abcdef01234567",
+			Provenance: "codex.session_meta.git.commit_hash",
+		},
+	}
 	codex := testRecord(AgentCodex, "same", base, "/work/b", 1)
 	second := testRecord(AgentClaude, "second", base.Add(2*time.Minute), "/work/a", 2)
 	second.CanResume = false
@@ -112,6 +136,10 @@ func TestStoreReplaceSearchResolveDeleteAndPermissions(t *testing.T) {
 	resolved, err := store.Resolve(ctx, "claude:same")
 	if err != nil || resolved.Agent != AgentClaude {
 		t.Fatalf("qualified resolve = %+v, %v", resolved, err)
+	}
+	if resolved.RecordedEnvironment.RepositoryID.Value != environment.NormalizeRepositoryID("https://github.com/example/payments.git") ||
+		resolved.RecordedEnvironment.GitHead.Value != "0123456789abcdef0123456789abcdef01234567" {
+		t.Fatalf("recorded environment round trip = %+v", resolved.RecordedEnvironment)
 	}
 	_, err = store.Resolve(ctx, "same")
 	var ambiguous *AmbiguousReferenceError
@@ -205,7 +233,9 @@ func TestStoreRebuildsCorruptAndIncompatibleDerivedState(t *testing.T) {
 		t.Fatal(err)
 	}
 	incompatible.mu.RLock()
-	_, err = incompatible.db.Exec("PRAGMA user_version = 99")
+	// Schema v1 is disposable derived state. Opening it under v2 must rebuild
+	// rather than attempt an in-place migration or retain stale records.
+	_, err = incompatible.db.Exec("PRAGMA user_version = 1")
 	incompatible.mu.RUnlock()
 	if err != nil {
 		t.Fatal(err)
@@ -224,6 +254,76 @@ func TestStoreRebuildsCorruptAndIncompatibleDerivedState(t *testing.T) {
 	}
 	if len(records) != 0 {
 		t.Fatalf("rebuilt incompatible store has %d records", len(records))
+	}
+}
+
+func TestPrelaunchBaselinePersistsAcrossVendorSourceAppend(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	store, err := Open(filepath.Join(t.TempDir(), "index.sqlite"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = store.Close() })
+
+	record := testRecord(AgentCodex, "prelaunch", time.Now(), "/session.jsonl", 1)
+	if _, err := store.ReplaceSource(ctx, AgentCodex, []Record{record}); err != nil {
+		t.Fatal(err)
+	}
+	observedAt := time.Date(2026, 8, 5, 1, 2, 3, 4, time.UTC)
+	baseline := environment.PrelaunchBaseline{
+		SessionRef:        record.Reference(),
+		RepositoryID:      "git@github.com:example/reinstate.git",
+		Branch:            "phase-three",
+		GitHead:           "0123456789abcdef0123456789abcdef01234567",
+		WorkingTreeDigest: strings.Repeat("a", 64),
+		WorkingTreeState:  environment.WorkingTreeModified,
+		ObservedAt:        observedAt,
+		Provenance:        environment.PrelaunchObservedProvenance,
+		SourceSessionRef:  "codex:source-session",
+		Capabilities: []environment.Capability{
+			{Agent: "codex", Kind: "mcp", Name: "github", Scope: "project", State: "enabled", Provenance: environment.PrelaunchObservedProvenance},
+		},
+		Runtimes: []environment.Runtime{
+			{Name: "go", Version: "1.25.12", SourceKind: "go_mod", Provenance: environment.PrelaunchObservedProvenance},
+		},
+	}
+	if err := store.PutPrelaunchBaseline(ctx, baseline); err != nil {
+		t.Fatal(err)
+	}
+
+	// A successful native run appends to the vendor source and therefore changes
+	// its fingerprint. That update must not erase the independently observed
+	// prelaunch baseline.
+	record.SourceModTime++
+	record.SourceSize++
+	record.SizeBytes++
+	if _, err := store.ReplaceSource(ctx, AgentCodex, []Record{record}); err != nil {
+		t.Fatal(err)
+	}
+	got, err := store.GetPrelaunchBaseline(ctx, record.Reference())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.RepositoryID != environment.NormalizeRepositoryID("git@github.com:example/reinstate.git") ||
+		got.WorkingTreeState != environment.WorkingTreeModified ||
+		got.WorkingTreeDigest != "sha256:"+strings.Repeat("a", 64) ||
+		!got.ObservedAt.Equal(observedAt) ||
+		got.SourceSessionRef != "codex:source-session" ||
+		len(got.Capabilities) != 1 || got.Capabilities[0].Name != "github" ||
+		len(got.Runtimes) != 1 || got.Runtimes[0].Name != "go" {
+		t.Fatalf("prelaunch baseline = %+v", got)
+	}
+
+	if err := store.DeletePrelaunchBaseline(ctx, record.Reference()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.GetPrelaunchBaseline(ctx, record.Reference()); !errors.Is(err, ErrPrelaunchBaselineNotFound) {
+		t.Fatalf("deleted baseline error = %v", err)
+	}
+	baseline.Provenance = "vendor_claim"
+	if err := store.PutPrelaunchBaseline(ctx, baseline); err == nil {
+		t.Fatal("untrusted prelaunch provenance unexpectedly accepted")
 	}
 }
 

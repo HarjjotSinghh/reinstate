@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 	"unicode/utf8"
+
+	"github.com/HarjjotSinghh/reinstate/internal/environment"
 )
 
 func TestSafeTextRemovesTerminalControlsAndCollapsesWhitespace(t *testing.T) {
@@ -46,6 +48,19 @@ func TestCoalesceRecordsMergesNativeSessionSegmentsDeterministically(t *testing.
 	old.SearchText = "old searchable marker"
 	old.Files = []string{"old.go"}
 	old.MessageCount = 2
+	old.RecordedEnvironment = environment.RecordedEnvironment{
+		RepositoryID: environment.RecordedField{
+			Value:      "https://github.com/example/demo.git",
+			Provenance: "codex.session_meta.git.repository_url",
+		},
+		GitHead: environment.RecordedField{
+			Value:      "0123456789abcdef0123456789abcdef01234567",
+			Provenance: "codex.session_meta.git.commit_hash",
+		},
+		Requirements: []environment.Requirement{{
+			Kind: "mcp", Name: "github", Provenance: "codex.session_meta.mcp",
+		}},
+	}
 	newer := testRecord(
 		AgentCodex,
 		"shared-id",
@@ -57,6 +72,15 @@ func TestCoalesceRecordsMergesNativeSessionSegmentsDeterministically(t *testing.
 	newer.SearchText = "new searchable marker"
 	newer.Files = []string{"new.go"}
 	newer.MessageCount = 3
+	newer.RecordedEnvironment = environment.RecordedEnvironment{
+		Branch: environment.RecordedField{
+			Value:      "phase-three",
+			Provenance: "codex.session_meta.git.branch",
+		},
+		Requirements: []environment.Requirement{{
+			Kind: "mcp", Name: "github", Provenance: "codex.session_meta.mcp",
+		}},
+	}
 
 	records, warnings := CoalesceRecords([]Record{newer, old})
 	if len(records) != 1 || len(warnings) != 1 {
@@ -77,6 +101,12 @@ func TestCoalesceRecordsMergesNativeSessionSegmentsDeterministically(t *testing.
 	}
 	if got := strings.Join(record.Files, ","); got != "new.go,old.go" {
 		t.Fatalf("files = %q", got)
+	}
+	if record.RecordedEnvironment.RepositoryID.Value != environment.NormalizeRepositoryID("https://github.com/example/demo.git") ||
+		record.RecordedEnvironment.Branch.Value != "phase-three" ||
+		record.RecordedEnvironment.GitHead.Value != "0123456789abcdef0123456789abcdef01234567" ||
+		len(record.RecordedEnvironment.Requirements) != 1 {
+		t.Fatalf("coalesced recorded environment = %+v", record.RecordedEnvironment)
 	}
 	if warnings[0].Code != "coalesced_session_segments" {
 		t.Fatalf("warning = %+v", warnings[0])

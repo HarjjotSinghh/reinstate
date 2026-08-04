@@ -103,6 +103,20 @@ func TestPlanLaunchRejectsReadOnlyAndMissingWorkspace(t *testing.T) {
 	}
 }
 
+func TestPlanLaunchReportsReadOnlyBeforeMissingWorkspace(t *testing.T) {
+	record := Record{
+		ID: "gemini-id", Agent: AgentGemini,
+		ReadOnlyReason: "Gemini CLI sessions are read-only in Phase 3",
+	}
+	_, err := PlanLaunch(record, OperationResume)
+	if !errors.Is(err, ErrNativeActionUnsupported) {
+		t.Fatalf("error = %v, want native-action unsupported", err)
+	}
+	if errors.Is(err, ErrWorkspaceUnavailable) {
+		t.Fatalf("read-only record reported workspace error: %v", err)
+	}
+}
+
 func TestRunLaunchUsesInjectedStructuredPlanAndPropagatesFailure(t *testing.T) {
 	t.Parallel()
 	sentinel := errors.New("child exit")

@@ -40,9 +40,6 @@ func PlanLaunch(record Record, operation string) (LaunchPlan, error) {
 	if strings.TrimSpace(record.ID) == "" {
 		return LaunchPlan{}, errors.New("native session ID is missing")
 	}
-	if strings.TrimSpace(record.Workspace) == "" {
-		return LaunchPlan{}, fmt.Errorf("%w: recorded session workspace is missing", ErrWorkspaceUnavailable)
-	}
 	switch operation {
 	case OperationResume:
 		if !record.CanResume {
@@ -52,6 +49,12 @@ func PlanLaunch(record Record, operation string) (LaunchPlan, error) {
 		if !record.CanFork {
 			return LaunchPlan{}, unsupportedNativeAction(record, operation)
 		}
+	}
+	// Capability is checked before workspace so a read-only record always
+	// reports its real compatibility contract and never reaches environment or
+	// launch probing merely because its vendor omitted a workspace.
+	if strings.TrimSpace(record.Workspace) == "" {
+		return LaunchPlan{}, fmt.Errorf("%w: recorded session workspace is missing", ErrWorkspaceUnavailable)
 	}
 
 	plan := LaunchPlan{
