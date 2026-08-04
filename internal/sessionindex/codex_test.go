@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/HarjjotSinghh/reinstate/internal/environment"
 )
 
 func TestCodexSourceIndexesRolloutShapesWithoutAssistantText(t *testing.T) {
@@ -13,7 +15,7 @@ func TestCodexSourceIndexesRolloutShapesWithoutAssistantText(t *testing.T) {
 	root := t.TempDir()
 	path := filepath.Join(root, "sessions", "2026", "07", "rollout-fixture.jsonl")
 	writeSyntheticJSONL(t, path, []string{
-		`{"timestamp":"2026-07-30T09:00:00Z","type":"session_meta","payload":{"id":"codex-456","cwd":"/Users/alice/work/reinstate","git":{"branch":"phase-two"}}}`,
+		`{"timestamp":"2026-07-30T09:00:00Z","type":"session_meta","payload":{"id":"codex-456","cwd":"/Users/alice/work/reinstate","git":{"branch":"phase-two","repository_url":"https://fixture-user:fixture-secret@github.com/example/reinstate.git?token=fixture-secret","commit_hash":"0123456789abcdef0123456789abcdef01234567"}}}`,
 		`{"timestamp":"2026-07-30T09:01:00Z","type":"event_msg","payload":{"type":"user_message","message":"Find local sessions"}}`,
 		`{"timestamp":"2026-07-30T09:02:00Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"ENVIRONMENT_DUMP_SECRET"}]}}`,
 		`{"timestamp":"2026-07-30T09:03:00Z","type":"response_item","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"ASSISTANT_REASONING_SECRET"}]}}`,
@@ -36,6 +38,12 @@ func TestCodexSourceIndexesRolloutShapesWithoutAssistantText(t *testing.T) {
 	}
 	if record.Branch != "phase-two" {
 		t.Fatalf("branch = %q", record.Branch)
+	}
+	if record.RecordedEnvironment.RepositoryID.Value != environment.NormalizeRepositoryID("https://github.com/example/reinstate.git") ||
+		record.RecordedEnvironment.RepositoryID.Provenance != "codex.session_meta.git.repository_url" ||
+		record.RecordedEnvironment.Branch.Value != "phase-two" ||
+		record.RecordedEnvironment.GitHead.Value != "0123456789abcdef0123456789abcdef01234567" {
+		t.Fatalf("recorded environment = %+v", record.RecordedEnvironment)
 	}
 	if record.PromptPreview != "Find local sessions" {
 		t.Fatalf("preview = %q", record.PromptPreview)

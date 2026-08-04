@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/HarjjotSinghh/reinstate/internal/environment"
 )
 
 // ClaudeSource discovers Claude Code's local project JSONL sessions without
@@ -110,14 +112,15 @@ func parseClaudeSession(path, projectsRoot string) (Record, []Warning, error) {
 	id := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
 	project := claudeProjectName(path, projectsRoot)
 	var (
-		workspace    string
-		branch       string
-		title        string
-		latest       int64
-		messageCount int
-		prompts      boundedText
-		firstPrompt  string
-		files        = make(map[string]struct{})
+		workspace           string
+		branch              string
+		title               string
+		latest              int64
+		messageCount        int
+		prompts             boundedText
+		firstPrompt         string
+		files               = make(map[string]struct{})
+		recordedEnvironment environment.RecordedEnvironment
 	)
 
 	warnings, err := visitJSONL(path, func(line []byte) {
@@ -131,8 +134,18 @@ func parseClaudeSession(path, projectsRoot string) (Record, []Warning, error) {
 		if value := firstString(event, "cwd", "workingDirectory", "workdir"); value != "" {
 			workspace = value
 		}
-		if value := firstString(event, "gitBranch", "branch"); value != "" {
+		if value := firstString(event, "gitBranch"); value != "" {
 			branch = value
+			recordedEnvironment.Branch = environment.RecordedField{
+				Value:      value,
+				Provenance: "claude.event.gitBranch",
+			}
+		} else if value := firstString(event, "branch"); value != "" {
+			branch = value
+			recordedEnvironment.Branch = environment.RecordedField{
+				Value:      value,
+				Provenance: "claude.event.branch",
+			}
 		}
 		eventType := strings.ToLower(firstString(event, "type"))
 		if value := firstString(event, "customTitle"); value != "" {
@@ -180,24 +193,25 @@ func parseClaudeSession(path, projectsRoot string) (Record, []Warning, error) {
 	}
 
 	return Record{
-		Key:           CompositeReference(AgentClaude, id),
-		ID:            id,
-		Agent:         AgentClaude,
-		Title:         title,
-		Project:       project,
-		Workspace:     workspace,
-		Branch:        branch,
-		UpdatedAt:     time.Unix(latest, 0).UTC(),
-		SizeBytes:     info.Size(),
-		MessageCount:  messageCount,
-		PromptPreview: preview,
-		Files:         fileList,
-		CanResume:     true,
-		CanFork:       true,
-		SourcePath:    path,
-		SourceModTime: info.ModTime().UnixNano(),
-		SourceSize:    info.Size(),
-		SearchText:    BuildSearchText(id, title, project, workspace, branch, prompts.String(), strings.Join(fileList, " ")),
+		Key:                 CompositeReference(AgentClaude, id),
+		ID:                  id,
+		Agent:               AgentClaude,
+		Title:               title,
+		Project:             project,
+		Workspace:           workspace,
+		Branch:              branch,
+		UpdatedAt:           time.Unix(latest, 0).UTC(),
+		SizeBytes:           info.Size(),
+		MessageCount:        messageCount,
+		PromptPreview:       preview,
+		Files:               fileList,
+		CanResume:           true,
+		CanFork:             true,
+		RecordedEnvironment: recordedEnvironment,
+		SourcePath:          path,
+		SourceModTime:       info.ModTime().UnixNano(),
+		SourceSize:          info.Size(),
+		SearchText:          BuildSearchText(id, title, project, workspace, branch, prompts.String(), strings.Join(fileList, " ")),
 	}, warnings, nil
 }
 

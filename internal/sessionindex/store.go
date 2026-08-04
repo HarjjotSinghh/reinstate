@@ -14,11 +14,17 @@ import (
 	"time"
 
 	_ "modernc.org/sqlite"
+
+	"github.com/HarjjotSinghh/reinstate/internal/environment"
 )
 
 const indexFileName = "session-index-v1.sqlite"
 
 var errIncompatibleSchema = errors.New("incompatible session-index schema")
+
+// ErrPrelaunchBaselineNotFound means no private Reinstate observation exists
+// for the requested session reference.
+var ErrPrelaunchBaselineNotFound = errors.New("prelaunch baseline not found")
 
 // ReplaceResult summarizes one atomic source replacement.
 type ReplaceResult struct {
@@ -337,6 +343,128 @@ func (s *Store) Last(ctx context.Context, filter Filter) (Record, error) {
 	return records[0], nil
 }
 
+// PutPrelaunchBaseline stores one private, derived observation independently
+// from vendor source fingerprints. A later native append may update the session
+// record without invalidating the last prelaunch truth Reinstate observed.
+func (s *Store) PutPrelaunchBaseline(ctx context.Context, baseline environment.PrelaunchBaseline) error {
+	baseline, err := environment.NormalizePrelaunchBaseline(baseline)
+	if err != nil {
+		return fmt.Errorf("normalize prelaunch baseline: %w", err)
+	}
+	capabilitiesJSON, err := json.Marshal(baseline.Capabilities)
+	if err != nil {
+		return fmt.Errorf("encode prelaunch capabilities: %w", err)
+	}
+	runtimesJSON, err := json.Marshal(baseline.Runtimes)
+	if err != nil {
+		return fmt.Errorf("encode prelaunch runtimes: %w", err)
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.db == nil {
+		return errors.New("session-index store is closed")
+	}
+	_, err = s.db.ExecContext(ctx, `INSERT INTO prelaunch_baselines (
+		session_ref, repository_id, branch, git_head, working_tree_digest,
+		working_tree_state, observed_at, provenance, source_session_ref,
+		capabilities_json, runtimes_json
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	ON CONFLICT(session_ref) DO UPDATE SET
+		repository_id = excluded.repository_id,
+		branch = excluded.branch,
+		git_head = excluded.git_head,
+		working_tree_digest = excluded.working_tree_digest,
+		working_tree_state = excluded.working_tree_state,
+		observed_at = excluded.observed_at,
+		provenance = excluded.provenance,
+		source_session_ref = excluded.source_session_ref,
+		capabilities_json = excluded.capabilities_json,
+		runtimes_json = excluded.runtimes_json`,
+		baseline.SessionRef,
+		baseline.RepositoryID,
+		baseline.Branch,
+		baseline.GitHead,
+		baseline.WorkingTreeDigest,
+		string(baseline.WorkingTreeState),
+		timeToDatabase(baseline.ObservedAt),
+		baseline.Provenance,
+		baseline.SourceSessionRef,
+		string(capabilitiesJSON),
+		string(runtimesJSON),
+	)
+	return err
+}
+
+// GetPrelaunchBaseline returns the last private Reinstate observation for a
+// session. It never reads or refreshes vendor state.
+func (s *Store) GetPrelaunchBaseline(ctx context.Context, sessionRef string) (environment.PrelaunchBaseline, error) {
+	sessionRef = SafeText(strings.TrimSpace(sessionRef), environment.MaxSessionReferenceRunes)
+	if sessionRef == "" {
+		return environment.PrelaunchBaseline{}, fmt.Errorf("%w: empty session reference", ErrPrelaunchBaselineNotFound)
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.db == nil {
+		return environment.PrelaunchBaseline{}, errors.New("session-index store is closed")
+	}
+	var baseline environment.PrelaunchBaseline
+	var workingTreeState string
+	var observedAt int64
+	var capabilitiesJSON, runtimesJSON string
+	err := s.db.QueryRowContext(ctx, `SELECT
+		session_ref, repository_id, branch, git_head, working_tree_digest,
+		working_tree_state, observed_at, provenance, source_session_ref,
+		capabilities_json, runtimes_json
+		FROM prelaunch_baselines WHERE session_ref = ?`, sessionRef).Scan(
+		&baseline.SessionRef,
+		&baseline.RepositoryID,
+		&baseline.Branch,
+		&baseline.GitHead,
+		&baseline.WorkingTreeDigest,
+		&workingTreeState,
+		&observedAt,
+		&baseline.Provenance,
+		&baseline.SourceSessionRef,
+		&capabilitiesJSON,
+		&runtimesJSON,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return environment.PrelaunchBaseline{}, fmt.Errorf("%w: %s", ErrPrelaunchBaselineNotFound, sessionRef)
+	}
+	if err != nil {
+		return environment.PrelaunchBaseline{}, err
+	}
+	baseline.WorkingTreeState = environment.WorkingTreeState(workingTreeState)
+	baseline.ObservedAt = timeFromDatabase(observedAt)
+	if err := json.Unmarshal([]byte(capabilitiesJSON), &baseline.Capabilities); err != nil {
+		return environment.PrelaunchBaseline{}, fmt.Errorf("decode prelaunch capabilities: %w", err)
+	}
+	if err := json.Unmarshal([]byte(runtimesJSON), &baseline.Runtimes); err != nil {
+		return environment.PrelaunchBaseline{}, fmt.Errorf("decode prelaunch runtimes: %w", err)
+	}
+	baseline, err = environment.NormalizePrelaunchBaseline(baseline)
+	if err != nil {
+		return environment.PrelaunchBaseline{}, fmt.Errorf("decode prelaunch baseline: %w", err)
+	}
+	return baseline, nil
+}
+
+// DeletePrelaunchBaseline removes one private observation without touching the
+// vendor session or its indexed record.
+func (s *Store) DeletePrelaunchBaseline(ctx context.Context, sessionRef string) error {
+	sessionRef = SafeText(strings.TrimSpace(sessionRef), environment.MaxSessionReferenceRunes)
+	if sessionRef == "" {
+		return errors.New("prelaunch baseline session reference must not be empty")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.db == nil {
+		return errors.New("session-index store is closed")
+	}
+	_, err := s.db.ExecContext(ctx, `DELETE FROM prelaunch_baselines WHERE session_ref = ?`, sessionRef)
+	return err
+}
+
 func (s *Store) queryRecords(ctx context.Context, query string, args ...any) ([]Record, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -368,15 +496,19 @@ func upsertRecord(ctx context.Context, tx *sql.Tx, source string, record Record)
 	if err != nil {
 		return err
 	}
+	recordedEnvironmentJSON, err := json.Marshal(record.RecordedEnvironment)
+	if err != nil {
+		return err
+	}
 	_, err = tx.ExecContext(
 		ctx,
 		`INSERT INTO sessions (
 			key, id, agent, source, title, project, workspace, branch,
 			project_fold, workspace_fold, branch_fold, updated_at, size_bytes,
 			message_count, prompt_preview, files_json, file_text, can_resume,
-			can_fork, read_only_reason, source_path, source_mod_time, source_size,
-			search_text
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				can_fork, read_only_reason, recorded_environment_json, source_path,
+				source_mod_time, source_size, search_text
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(key) DO UPDATE SET
 			id = excluded.id,
 			agent = excluded.agent,
@@ -395,9 +527,10 @@ func upsertRecord(ctx context.Context, tx *sql.Tx, source string, record Record)
 			files_json = excluded.files_json,
 			file_text = excluded.file_text,
 			can_resume = excluded.can_resume,
-			can_fork = excluded.can_fork,
-			read_only_reason = excluded.read_only_reason,
-			source_path = excluded.source_path,
+				can_fork = excluded.can_fork,
+				read_only_reason = excluded.read_only_reason,
+				recorded_environment_json = excluded.recorded_environment_json,
+				source_path = excluded.source_path,
 			source_mod_time = excluded.source_mod_time,
 			source_size = excluded.source_size,
 			search_text = excluded.search_text`,
@@ -421,6 +554,7 @@ func upsertRecord(ctx context.Context, tx *sql.Tx, source string, record Record)
 		boolToDatabase(record.CanResume),
 		boolToDatabase(record.CanFork),
 		record.ReadOnlyReason,
+		string(recordedEnvironmentJSON),
 		record.SourcePath,
 		record.SourceModTime,
 		record.SourceSize,
@@ -437,6 +571,7 @@ func scanRecord(scanner rowScanner) (Record, error) {
 	var record Record
 	var updatedAt int64
 	var filesJSON string
+	var recordedEnvironmentJSON string
 	var canResume, canFork int
 	err := scanner.Scan(
 		&record.Key,
@@ -454,6 +589,7 @@ func scanRecord(scanner rowScanner) (Record, error) {
 		&canResume,
 		&canFork,
 		&record.ReadOnlyReason,
+		&recordedEnvironmentJSON,
 		&record.SourcePath,
 		&record.SourceModTime,
 		&record.SourceSize,
@@ -468,13 +604,21 @@ func scanRecord(scanner rowScanner) (Record, error) {
 	if err := json.Unmarshal([]byte(filesJSON), &record.Files); err != nil {
 		return Record{}, fmt.Errorf("decode indexed files for %s: %w", record.Key, err)
 	}
+	if err := json.Unmarshal([]byte(recordedEnvironmentJSON), &record.RecordedEnvironment); err != nil {
+		return Record{}, fmt.Errorf("decode indexed environment for %s: %w", record.Key, err)
+	}
+	record.RecordedEnvironment, err = environment.NormalizeRecordedEnvironment(record.RecordedEnvironment)
+	if err != nil {
+		return Record{}, fmt.Errorf("normalize indexed environment for %s: %w", record.Key, err)
+	}
 	return record, nil
 }
 
 const recordSelect = `SELECT
 	key, id, agent, title, project, workspace, branch, updated_at, size_bytes,
 	message_count, prompt_preview, files_json, can_resume, can_fork,
-	read_only_reason, source_path, source_mod_time, source_size, search_text
+	read_only_reason, recorded_environment_json, source_path, source_mod_time,
+	source_size, search_text
 	FROM sessions`
 
 const createSchema = `CREATE TABLE IF NOT EXISTS sessions (
@@ -498,6 +642,7 @@ const createSchema = `CREATE TABLE IF NOT EXISTS sessions (
 	can_resume INTEGER NOT NULL,
 	can_fork INTEGER NOT NULL,
 	read_only_reason TEXT NOT NULL,
+	recorded_environment_json TEXT NOT NULL,
 	source_path TEXT NOT NULL,
 	source_mod_time INTEGER NOT NULL,
 	source_size INTEGER NOT NULL,
@@ -505,7 +650,20 @@ const createSchema = `CREATE TABLE IF NOT EXISTS sessions (
 );
 CREATE INDEX IF NOT EXISTS sessions_source ON sessions(source);
 CREATE INDEX IF NOT EXISTS sessions_native_id ON sessions(id);
-CREATE INDEX IF NOT EXISTS sessions_order ON sessions(updated_at DESC, agent, id);`
+CREATE INDEX IF NOT EXISTS sessions_order ON sessions(updated_at DESC, agent, id);
+CREATE TABLE IF NOT EXISTS prelaunch_baselines (
+	session_ref TEXT PRIMARY KEY NOT NULL,
+	repository_id TEXT NOT NULL,
+	branch TEXT NOT NULL,
+	git_head TEXT NOT NULL,
+	working_tree_digest TEXT NOT NULL,
+	working_tree_state TEXT NOT NULL,
+	observed_at INTEGER NOT NULL,
+	provenance TEXT NOT NULL,
+	source_session_ref TEXT NOT NULL,
+	capabilities_json TEXT NOT NULL,
+	runtimes_json TEXT NOT NULL
+);`
 
 func openDatabase(path string) (*sql.DB, error) {
 	db, err := sql.Open("sqlite", path)
@@ -578,7 +736,7 @@ func verifySchema(db *sql.DB) error {
 		"key": false, "id": false, "agent": false, "source": false,
 		"source_path": false, "source_mod_time": false, "source_size": false,
 		"search_text": false, "project_fold": false, "workspace_fold": false,
-		"branch_fold": false,
+		"branch_fold": false, "recorded_environment_json": false,
 	}
 	for rows.Next() {
 		var columnID, notNull, primaryKey int
@@ -603,7 +761,48 @@ func verifySchema(db *sql.DB) error {
 			return fmt.Errorf("%w: missing column %s", errIncompatibleSchema, name)
 		}
 	}
-	return rows.Err()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	if err := rows.Close(); err != nil {
+		return err
+	}
+	baselineRows, err := db.Query("PRAGMA table_info(prelaunch_baselines)")
+	if err != nil {
+		return err
+	}
+	defer func() { _ = baselineRows.Close() }()
+	baselineRequired := map[string]bool{
+		"session_ref": false, "repository_id": false, "branch": false,
+		"git_head": false, "working_tree_digest": false,
+		"working_tree_state": false, "observed_at": false,
+		"provenance": false, "source_session_ref": false,
+		"capabilities_json": false, "runtimes_json": false,
+	}
+	for baselineRows.Next() {
+		var columnID, notNull, primaryKey int
+		var name, columnType string
+		var defaultValue any
+		if err := baselineRows.Scan(
+			&columnID,
+			&name,
+			&columnType,
+			&notNull,
+			&defaultValue,
+			&primaryKey,
+		); err != nil {
+			return err
+		}
+		if _, exists := baselineRequired[name]; exists {
+			baselineRequired[name] = true
+		}
+	}
+	for name, found := range baselineRequired {
+		if !found {
+			return fmt.Errorf("%w: missing prelaunch baseline column %s", errIncompatibleSchema, name)
+		}
+	}
+	return baselineRows.Err()
 }
 
 func ensurePrivateParent(path string) error {

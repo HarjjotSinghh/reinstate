@@ -42,6 +42,12 @@ func TestClaudeSourceIndexesOnlySafeUserContent(t *testing.T) {
 	if record.Branch != "feature/index" {
 		t.Fatalf("branch = %q", record.Branch)
 	}
+	if record.RecordedEnvironment.Branch.Value != "feature/index" ||
+		record.RecordedEnvironment.Branch.Provenance != "claude.event.gitBranch" ||
+		record.RecordedEnvironment.RepositoryID.Value != "" ||
+		record.RecordedEnvironment.GitHead.Value != "" {
+		t.Fatalf("recorded environment = %+v", record.RecordedEnvironment)
+	}
 	if record.PromptPreview != "Implement literal search" {
 		t.Fatalf("preview = %q", record.PromptPreview)
 	}

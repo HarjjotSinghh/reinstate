@@ -13,6 +13,8 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/HarjjotSinghh/reinstate/internal/environment"
 )
 
 const (
@@ -163,6 +165,11 @@ func NormalizeRecord(record Record) (Record, error) {
 	record.ReadOnlyReason = SafeText(record.ReadOnlyReason, maxReadOnlyRunes)
 	record.Files = NormalizeFiles(record.Files)
 	record.UpdatedAt = record.UpdatedAt.UTC()
+	var err error
+	record.RecordedEnvironment, err = environment.NormalizeRecordedEnvironment(record.RecordedEnvironment)
+	if err != nil {
+		return Record{}, fmt.Errorf("normalize recorded environment: %w", err)
+	}
 
 	if record.SizeBytes < 0 || record.SourceSize < 0 {
 		return Record{}, errors.New("session sizes must not be negative")
@@ -250,6 +257,7 @@ func mergeRecordSegments(segments []Record) Record {
 	record.PromptPreview = ""
 	record.CanResume = false
 	record.CanFork = false
+	record.RecordedEnvironment = environment.RecordedEnvironment{}
 
 	for _, segment := range segments {
 		record.SizeBytes = saturatingAddInt64(record.SizeBytes, segment.SizeBytes)
@@ -293,6 +301,7 @@ func mergeRecordSegments(segments []Record) Record {
 	// title with the native-ID fallback from a later segment.
 	for index := len(segments) - 1; index >= 0; index-- {
 		segment := segments[index]
+		mergeRecordedEnvironment(&record.RecordedEnvironment, segment.RecordedEnvironment)
 		if record.Workspace == "" && segment.Workspace != "" {
 			record.Workspace = segment.Workspace
 		}
@@ -308,6 +317,25 @@ func mergeRecordSegments(segments []Record) Record {
 		}
 	}
 	return record
+}
+
+func mergeRecordedEnvironment(target *environment.RecordedEnvironment, source environment.RecordedEnvironment) {
+	if target.RepositoryID.Value == "" && source.RepositoryID.Value != "" {
+		target.RepositoryID = source.RepositoryID
+	}
+	if target.Branch.Value == "" && source.Branch.Value != "" {
+		target.Branch = source.Branch
+	}
+	if target.GitHead.Value == "" && source.GitHead.Value != "" {
+		target.GitHead = source.GitHead
+	}
+	if len(source.Requirements) != 0 {
+		target.Requirements = append(target.Requirements, source.Requirements...)
+		normalized, err := environment.NormalizeRecordedEnvironment(*target)
+		if err == nil {
+			*target = normalized
+		}
+	}
 }
 
 func saturatingAddInt64(left, right int64) int64 {

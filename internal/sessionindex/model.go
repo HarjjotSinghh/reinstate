@@ -7,11 +7,13 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/HarjjotSinghh/reinstate/internal/environment"
 )
 
 const (
 	// SchemaVersion is the on-disk session-index schema version.
-	SchemaVersion = 1
+	SchemaVersion = 2
 
 	// DefaultLimit is used when a query does not specify a result limit.
 	DefaultLimit = 100
@@ -52,6 +54,10 @@ type Record struct {
 	CanResume      bool      `json:"can_resume"`
 	CanFork        bool      `json:"can_fork"`
 	ReadOnlyReason string    `json:"read_only_reason,omitempty"`
+	// RecordedEnvironment contains only bounded facts explicitly present in
+	// recognized vendor metadata. Live workspace observations are stored
+	// separately and never inferred during indexing.
+	RecordedEnvironment environment.RecordedEnvironment `json:"recorded_environment,omitempty"`
 
 	SourcePath    string `json:"-"`
 	SourceModTime int64  `json:"-"`

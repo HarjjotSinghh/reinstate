@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/HarjjotSinghh/reinstate/internal/environment"
 )
 
 // CodexSource discovers local Codex CLI rollout files without requiring a
@@ -146,16 +148,17 @@ func parseCodexSession(path string) (Record, []Warning, error) {
 		identityPinned = true
 	}
 	var (
-		workspace       string
-		branch          string
-		title           string
-		latest          int64
-		messageCount    int
-		directPrompts   boundedText
-		fallbackPrompts boundedText
-		directPreview   string
-		fallbackPreview string
-		files           = make(map[string]struct{})
+		workspace           string
+		branch              string
+		title               string
+		latest              int64
+		messageCount        int
+		directPrompts       boundedText
+		fallbackPrompts     boundedText
+		directPreview       string
+		fallbackPreview     string
+		files               = make(map[string]struct{})
+		recordedEnvironment environment.RecordedEnvironment
 	)
 
 	warnings, err := visitJSONL(path, func(line []byte) {
@@ -190,6 +193,30 @@ func parseCodexSession(path string) (Record, []Warning, error) {
 		if git, ok := payload["git"].(map[string]any); ok {
 			if value := firstString(git, "branch"); value != "" {
 				branch = value
+				if eventType == "session_meta" {
+					recordedEnvironment.Branch = environment.RecordedField{
+						Value:      value,
+						Provenance: "codex.session_meta.git.branch",
+					}
+				}
+			}
+			if eventType == "session_meta" {
+				if value := firstString(git, "repository_url"); value != "" {
+					if repositoryID := environment.NormalizeRepositoryID(value); repositoryID != "" {
+						recordedEnvironment.RepositoryID = environment.RecordedField{
+							Value:      repositoryID,
+							Provenance: "codex.session_meta.git.repository_url",
+						}
+					}
+				}
+				if value := firstString(git, "commit_hash"); value != "" {
+					if gitHead := environment.NormalizeGitHead(value); gitHead != "" {
+						recordedEnvironment.GitHead = environment.RecordedField{
+							Value:      gitHead,
+							Provenance: "codex.session_meta.git.commit_hash",
+						}
+					}
+				}
 			}
 		}
 
@@ -244,24 +271,25 @@ func parseCodexSession(path string) (Record, []Warning, error) {
 	}
 
 	return Record{
-		Key:           CompositeReference(AgentCodex, id),
-		ID:            id,
-		Agent:         AgentCodex,
-		Title:         title,
-		Project:       project,
-		Workspace:     workspace,
-		Branch:        branch,
-		UpdatedAt:     time.Unix(latest, 0).UTC(),
-		SizeBytes:     info.Size(),
-		MessageCount:  messageCount,
-		PromptPreview: preview,
-		Files:         fileList,
-		CanResume:     true,
-		CanFork:       true,
-		SourcePath:    path,
-		SourceModTime: info.ModTime().UnixNano(),
-		SourceSize:    info.Size(),
-		SearchText:    BuildSearchText(id, title, project, workspace, branch, promptText, strings.Join(fileList, " ")),
+		Key:                 CompositeReference(AgentCodex, id),
+		ID:                  id,
+		Agent:               AgentCodex,
+		Title:               title,
+		Project:             project,
+		Workspace:           workspace,
+		Branch:              branch,
+		UpdatedAt:           time.Unix(latest, 0).UTC(),
+		SizeBytes:           info.Size(),
+		MessageCount:        messageCount,
+		PromptPreview:       preview,
+		Files:               fileList,
+		CanResume:           true,
+		CanFork:             true,
+		RecordedEnvironment: recordedEnvironment,
+		SourcePath:          path,
+		SourceModTime:       info.ModTime().UnixNano(),
+		SourceSize:          info.Size(),
+		SearchText:          BuildSearchText(id, title, project, workspace, branch, promptText, strings.Join(fileList, " ")),
 	}, warnings, nil
 }
 
