@@ -1,8 +1,8 @@
 package capability
 
 import (
+	"context"
 	"path/filepath"
-	"sort"
 	"strings"
 )
 
@@ -10,7 +10,17 @@ import (
 // and Codex. It performs local filesystem reads only and never executes a
 // command or follows a symlink.
 func Discover(opts Options) Inventory {
-	c := newCollector()
+	return DiscoverContext(context.Background(), opts)
+}
+
+// DiscoverContext is Discover with cooperative cancellation. Cancellation is
+// transactional: it returns no partial items or diagnostics, only a fixed,
+// path-free cancellation diagnostic.
+func DiscoverContext(ctx context.Context, opts Options) Inventory {
+	c := newCollectorContext(ctx)
+	if c.cancelled() {
+		return cancelledInventory()
+	}
 	opts = normalizeOptions(opts, c)
 	scanClaude(c, opts)
 	scanCodex(c, opts)
@@ -18,13 +28,19 @@ func Discover(opts Options) Inventory {
 }
 
 func normalizeOptions(opts Options, c *collector) Options {
+	if opts.ClaudeHome == "" && opts.UserHome != "" {
+		opts.ClaudeHome = filepath.Join(opts.UserHome, ".claude")
+	}
 	if opts.CodexHome == "" && opts.UserHome != "" {
 		opts.CodexHome = filepath.Join(opts.UserHome, ".codex")
 	}
 	if opts.WorkingDir == "" {
 		opts.WorkingDir = opts.ProjectRoot
 	}
-	for _, root := range []string{opts.UserHome, opts.CodexHome, opts.ProjectRoot, opts.WorkingDir, opts.ManagedRoot} {
+	for _, root := range []string{opts.UserHome, opts.ClaudeHome, opts.CodexHome, opts.ProjectRoot, opts.WorkingDir, opts.ManagedRoot} {
+		if c.cancelled() {
+			return opts
+		}
 		if root != "" && !filepath.IsAbs(root) {
 			c.addDiagnostic(Diagnostic{Code: DiagnosticInvalidRoot})
 		}
@@ -38,15 +54,32 @@ func normalizeOptions(opts Options, c *collector) Options {
 }
 
 func scanClaude(c *collector, opts Options) {
-	if filepath.IsAbs(opts.UserHome) {
-		claudeHome := filepath.Join(opts.UserHome, ".claude")
-		addInstructionFile(c, opts.UserHome, filepath.Join(claudeHome, "CLAUDE.md"), AgentClaude, ScopeUser, SourceClaudeMemory, "CLAUDE.md", false)
-		scanSkillRoot(c, opts.UserHome, filepath.Join(claudeHome, "skills"), AgentClaude, ScopeUser, SourceClaudeSkill, false)
-		scanLegacyCommands(c, opts.UserHome, filepath.Join(claudeHome, "commands"), ScopeUser)
-		scanClaudeStateMCP(c, opts.UserHome, filepath.Join(opts.UserHome, ".claude.json"), opts)
+	if filepath.IsAbs(opts.ClaudeHome) {
+		claudeAnchor := opts.ClaudeHome
+		if filepath.IsAbs(opts.UserHome) && withinRoot(opts.UserHome, opts.ClaudeHome) {
+			// A default $HOME/.claude is not itself a trusted root. Anchor it at
+			// the verified home so a symlink cannot redirect discovery.
+			claudeAnchor = opts.UserHome
+		}
+		addInstructionFile(c, claudeAnchor, filepath.Join(opts.ClaudeHome, "CLAUDE.md"), AgentClaude, ScopeUser, SourceClaudeMemory, "CLAUDE.md", false)
+		scanSkillRoot(c, claudeAnchor, filepath.Join(opts.ClaudeHome, "skills"), AgentClaude, ScopeUser, SourceClaudeSkill, false)
+		scanLegacyCommands(c, claudeAnchor, filepath.Join(opts.ClaudeHome, "commands"), ScopeUser)
+
+		// Claude's legacy default state is ~/.claude.json. With an explicit
+		// CLAUDE_CONFIG_DIR, global state is isolated beneath that directory.
+		statePath := filepath.Join(opts.ClaudeHome, ".claude.json")
+		stateAnchor := claudeAnchor
+		if filepath.IsAbs(opts.UserHome) && filepath.Clean(opts.ClaudeHome) == filepath.Join(filepath.Clean(opts.UserHome), ".claude") {
+			statePath = filepath.Join(opts.UserHome, ".claude.json")
+			stateAnchor = opts.UserHome
+		}
+		scanClaudeStateMCP(c, stateAnchor, statePath, opts)
 	}
 
 	for _, dir := range projectDirectories(opts, c, AgentClaude) {
+		if c.cancelled() {
+			return
+		}
 		addInstructionFile(c, opts.ProjectRoot, filepath.Join(dir, "CLAUDE.md"), AgentClaude, ScopeProject, SourceClaudeMemory, "CLAUDE.md", false)
 		addInstructionFile(c, opts.ProjectRoot, filepath.Join(dir, ".claude", "CLAUDE.md"), AgentClaude, ScopeProject, SourceClaudeMemory, "CLAUDE.md", false)
 		addInstructionFile(c, opts.ProjectRoot, filepath.Join(dir, "CLAUDE.local.md"), AgentClaude, ScopeLocal, SourceClaudeMemory, "CLAUDE.local.md", false)
@@ -65,6 +98,9 @@ func scanClaude(c *collector, opts Options) {
 }
 
 func scanCodex(c *collector, opts Options) {
+	if c.cancelled() {
+		return
+	}
 	if filepath.IsAbs(opts.CodexHome) {
 		codexAnchor := opts.CodexHome
 		if filepath.IsAbs(opts.UserHome) && withinRoot(opts.UserHome, opts.CodexHome) {
@@ -81,6 +117,9 @@ func scanCodex(c *collector, opts Options) {
 	}
 
 	for _, dir := range projectDirectories(opts, c, AgentCodex) {
+		if c.cancelled() {
+			return
+		}
 		addInstructionFile(c, opts.ProjectRoot, filepath.Join(dir, "AGENTS.override.md"), AgentCodex, ScopeProject, SourceCodexInstruction, "AGENTS.override.md", false)
 		addInstructionFile(c, opts.ProjectRoot, filepath.Join(dir, "AGENTS.md"), AgentCodex, ScopeProject, SourceCodexInstruction, "AGENTS.md", false)
 		scanSkillRoot(c, opts.ProjectRoot, filepath.Join(dir, ".agents", "skills"), AgentCodex, ScopeProject, SourceCodexSkill, false)
@@ -127,6 +166,9 @@ func projectDirectories(opts Options, c *collector, agent Agent) []string {
 	}
 	current := filepath.Clean(opts.ProjectRoot)
 	for depth, part := range strings.Split(rel, string(filepath.Separator)) {
+		if c.cancelled() {
+			return nil
+		}
 		if depth+1 >= maxDepth {
 			c.addDiagnostic(Diagnostic{Agent: agent, Kind: KindInstruction, Scope: ScopeProject, Code: DiagnosticLimitReached})
 			break
@@ -138,10 +180,13 @@ func projectDirectories(opts Options, c *collector, agent Agent) []string {
 }
 
 func addInstructionFile(c *collector, root, path string, agent Agent, scope Scope, source SourceKind, name string, lazy bool) {
-	if !filepath.IsAbs(root) {
+	if c.cancelled() || !filepath.IsAbs(root) {
 		return
 	}
-	status, _ := inspectPath(root, path, -1)
+	status, _ := inspectPath(c.ctx, root, path, -1)
+	if c.cancelled() {
+		return
+	}
 	switch status {
 	case pathRegular:
 		c.add(Item{Agent: agent, Kind: KindInstruction, Name: name, Scope: scope, State: StateCandidate, SourceKind: source, Lazy: lazy})
@@ -154,10 +199,13 @@ func addInstructionFile(c *collector, root, path string, agent Agent, scope Scop
 }
 
 func scanSkillRoot(c *collector, anchor, root string, agent Agent, scope Scope, source SourceKind, lazy bool) {
-	if !filepath.IsAbs(anchor) {
+	if c.cancelled() || !filepath.IsAbs(anchor) {
 		return
 	}
-	status, _ := inspectPath(anchor, root, -1)
+	status, _ := inspectPath(c.ctx, anchor, root, -1)
+	if c.cancelled() {
+		return
+	}
 	if status == pathMissing {
 		return
 	}
@@ -173,14 +221,17 @@ func scanSkillRoot(c *collector, anchor, root string, agent Agent, scope Scope, 
 }
 
 func scanSkillDirs(c *collector, anchor, dir string, agent Agent, scope Scope, source SourceKind, lazy bool, depth int) {
-	if c.full(agent, KindSkill) {
+	if c.cancelled() || c.full(agent, KindSkill) {
 		return
 	}
 	if depth >= maxDepth {
 		c.addDiagnostic(Diagnostic{Agent: agent, Kind: KindSkill, Scope: scope, Code: DiagnosticLimitReached})
 		return
 	}
-	entries, truncated, status := readDirBounded(anchor, dir)
+	entries, truncated, status := readDirBounded(c.ctx, anchor, dir)
+	if c.cancelled() {
+		return
+	}
 	if status != pathDirectory {
 		c.addDiagnostic(Diagnostic{Agent: agent, Kind: KindSkill, Scope: scope, Code: diagnosticForStatus(status)})
 		return
@@ -189,11 +240,14 @@ func scanSkillDirs(c *collector, anchor, dir string, agent Agent, scope Scope, s
 		c.addDiagnostic(Diagnostic{Agent: agent, Kind: KindSkill, Scope: scope, Code: DiagnosticLimitReached})
 	}
 	for _, entry := range entries {
-		if c.full(agent, KindSkill) {
+		if c.cancelled() || c.full(agent, KindSkill) {
 			return
 		}
 		path := filepath.Join(dir, entry.Name())
-		status, _ := inspectPath(anchor, path, -1)
+		status, _ := inspectPath(c.ctx, anchor, path, -1)
+		if c.cancelled() {
+			return
+		}
 		if status == pathSymlink {
 			c.add(Item{Agent: agent, Kind: KindSkill, Name: entry.Name(), Scope: scope, State: StateUnverified, SourceKind: source, Lazy: lazy})
 			c.addDiagnostic(Diagnostic{Agent: agent, Kind: KindSkill, Scope: scope, Code: DiagnosticSymlink})
@@ -202,7 +256,10 @@ func scanSkillDirs(c *collector, anchor, dir string, agent Agent, scope Scope, s
 		if status != pathDirectory {
 			continue
 		}
-		skillStatus, _ := inspectPath(anchor, filepath.Join(path, "SKILL.md"), -1)
+		skillStatus, _ := inspectPath(c.ctx, anchor, filepath.Join(path, "SKILL.md"), -1)
+		if c.cancelled() {
+			return
+		}
 		switch skillStatus {
 		case pathRegular:
 			c.add(Item{Agent: agent, Kind: KindSkill, Name: entry.Name(), Scope: scope, State: StateCandidate, SourceKind: source, Lazy: lazy})
@@ -221,10 +278,13 @@ func scanLegacyCommands(c *collector, anchor, root string, scope Scope) {
 }
 
 func scanNamedFiles(c *collector, anchor, root string, agent Agent, kind Kind, scope Scope, source SourceKind, extension string, lazy bool) {
-	if !filepath.IsAbs(anchor) {
+	if c.cancelled() || !filepath.IsAbs(anchor) {
 		return
 	}
-	status, _ := inspectPath(anchor, root, -1)
+	status, _ := inspectPath(c.ctx, anchor, root, -1)
+	if c.cancelled() {
+		return
+	}
 	if status == pathMissing {
 		return
 	}
@@ -240,14 +300,17 @@ func scanNamedFiles(c *collector, anchor, root string, agent Agent, kind Kind, s
 }
 
 func scanNamedFilesAt(c *collector, anchor, dir string, agent Agent, kind Kind, scope Scope, source SourceKind, extension string, lazy bool, depth int) {
-	if c.full(agent, kind) {
+	if c.cancelled() || c.full(agent, kind) {
 		return
 	}
 	if depth >= maxDepth {
 		c.addDiagnostic(Diagnostic{Agent: agent, Kind: kind, Scope: scope, Code: DiagnosticLimitReached})
 		return
 	}
-	entries, truncated, status := readDirBounded(anchor, dir)
+	entries, truncated, status := readDirBounded(c.ctx, anchor, dir)
+	if c.cancelled() {
+		return
+	}
 	if status != pathDirectory {
 		c.addDiagnostic(Diagnostic{Agent: agent, Kind: kind, Scope: scope, Code: diagnosticForStatus(status)})
 		return
@@ -256,11 +319,14 @@ func scanNamedFilesAt(c *collector, anchor, dir string, agent Agent, kind Kind, 
 		c.addDiagnostic(Diagnostic{Agent: agent, Kind: kind, Scope: scope, Code: DiagnosticLimitReached})
 	}
 	for _, entry := range entries {
-		if c.full(agent, kind) {
+		if c.cancelled() || c.full(agent, kind) {
 			return
 		}
 		path := filepath.Join(dir, entry.Name())
-		status, _ := inspectPath(anchor, path, -1)
+		status, _ := inspectPath(c.ctx, anchor, path, -1)
+		if c.cancelled() {
+			return
+		}
 		if status == pathSymlink {
 			if strings.EqualFold(filepath.Ext(entry.Name()), extension) {
 				c.add(Item{Agent: agent, Kind: kind, Name: strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name())), Scope: scope, State: StateUnverified, SourceKind: source, Lazy: lazy})
@@ -276,15 +342,4 @@ func scanNamedFilesAt(c *collector, anchor, dir string, agent Agent, kind Kind, 
 			c.add(Item{Agent: agent, Kind: kind, Name: strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name())), Scope: scope, State: StateCandidate, SourceKind: source, Lazy: lazy})
 		}
 	}
-}
-
-func sortedUnique(values []string) []string {
-	sort.Strings(values)
-	out := values[:0]
-	for _, value := range values {
-		if len(out) == 0 || value != out[len(out)-1] {
-			out = append(out, value)
-		}
-	}
-	return out
 }

@@ -1,6 +1,7 @@
 package capability
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 	"unicode/utf8"
 )
 
@@ -93,13 +95,13 @@ command = "`+secretSentinel+`"
 		{Agent: AgentClaude, Kind: KindSkill, Name: "legacy", Scope: ScopeUser, State: StateCandidate, SourceKind: SourceClaudeLegacyCmd},
 		{Agent: AgentCodex, Kind: KindSkill, Name: "codex-managed", Scope: ScopeManaged, State: StateCandidate, SourceKind: SourceCodexSkill},
 		{Agent: AgentCodex, Kind: KindInstruction, Name: "AGENTS.override.md", Scope: ScopeProject, State: StateCandidate, SourceKind: SourceCodexInstruction},
-		{Agent: AgentClaude, Kind: KindMCP, Name: "claude-user-mcp", Scope: ScopeUser, State: StateDeclared, SourceKind: SourceClaudeStateJSON},
-		{Agent: AgentClaude, Kind: KindMCP, Name: "claude-local-mcp", Scope: ScopeLocal, State: StateDeclared, SourceKind: SourceClaudeStateJSON},
-		{Agent: AgentClaude, Kind: KindMCP, Name: "claude-project-mcp", Scope: ScopeProject, State: StateDeclared, SourceKind: SourceClaudeMCPJSON},
-		{Agent: AgentClaude, Kind: KindMCP, Name: "claude-managed-mcp", Scope: ScopeManaged, State: StateDeclared, SourceKind: SourceClaudeManagedMCP},
-		{Agent: AgentCodex, Kind: KindMCP, Name: "codex-user-mcp", Scope: ScopeUser, State: StateDeclared, SourceKind: SourceCodexMCPConfigTOML},
-		{Agent: AgentCodex, Kind: KindMCP, Name: "codex-project-mcp", Scope: ScopeProject, State: StateDeclared, SourceKind: SourceCodexMCPConfigTOML},
-		{Agent: AgentCodex, Kind: KindMCP, Name: "codex-managed-mcp", Scope: ScopeManaged, State: StateDeclared, SourceKind: SourceCodexMCPConfigTOML},
+		{Agent: AgentClaude, Kind: KindMCP, Name: "claude-user-mcp", Scope: ScopeUser, State: StateDeclared, SourceKind: SourceClaudeStateJSON, Transport: TransportStdio},
+		{Agent: AgentClaude, Kind: KindMCP, Name: "claude-local-mcp", Scope: ScopeLocal, State: StateDeclared, SourceKind: SourceClaudeStateJSON, Transport: TransportUnknown},
+		{Agent: AgentClaude, Kind: KindMCP, Name: "claude-project-mcp", Scope: ScopeProject, State: StateDeclared, SourceKind: SourceClaudeMCPJSON, Transport: TransportUnknown},
+		{Agent: AgentClaude, Kind: KindMCP, Name: "claude-managed-mcp", Scope: ScopeManaged, State: StateDeclared, SourceKind: SourceClaudeManagedMCP, Transport: TransportUnknown},
+		{Agent: AgentCodex, Kind: KindMCP, Name: "codex-user-mcp", Scope: ScopeUser, State: StateDeclared, SourceKind: SourceCodexMCPConfigTOML, Transport: TransportStdio},
+		{Agent: AgentCodex, Kind: KindMCP, Name: "codex-project-mcp", Scope: ScopeProject, State: StateDeclared, SourceKind: SourceCodexMCPConfigTOML, Transport: TransportHTTP},
+		{Agent: AgentCodex, Kind: KindMCP, Name: "codex-managed-mcp", Scope: ScopeManaged, State: StateDeclared, SourceKind: SourceCodexMCPConfigTOML, Transport: TransportStdio},
 	} {
 		if !containsItem(got.Items, want) {
 			t.Errorf("missing item %+v\nall: %+v", want, got.Items)
@@ -110,6 +112,9 @@ command = "`+secretSentinel+`"
 	assertSorted(t, got)
 	if got2 := Discover(Options{GOOS: "darwin", UserHome: home, CodexHome: codexHome, ProjectRoot: project, WorkingDir: workdir, ManagedRoot: managed}); !reflect.DeepEqual(got, got2) {
 		t.Fatal("inventory is not deterministic across identical scans")
+	}
+	if got2 := DiscoverContext(context.Background(), Options{GOOS: "darwin", UserHome: home, CodexHome: codexHome, ProjectRoot: project, WorkingDir: workdir, ManagedRoot: managed}); !reflect.DeepEqual(got, got2) {
+		t.Fatal("Discover compatibility wrapper differs from DiscoverContext")
 	}
 }
 
@@ -300,6 +305,121 @@ func TestDenseTOMLNamesAreBoundedAndDeterministic(t *testing.T) {
 	assertInventoryPrivate(t, first, root, secretSentinel)
 }
 
+func TestCustomClaudeHomeOverridesDefaultConfigRoot(t *testing.T) {
+	root := t.TempDir()
+	home := filepath.Join(root, "home")
+	custom := filepath.Join(root, "custom-claude")
+	writeTestFile(t, filepath.Join(home, ".claude", "skills", "default-only", "SKILL.md"), secretSentinel)
+	writeTestFile(t, filepath.Join(home, ".claude.json"), `{"mcpServers":{"default-state-only":{"command":"`+secretSentinel+`"}}}`)
+	writeTestFile(t, filepath.Join(custom, "CLAUDE.md"), secretSentinel)
+	writeTestFile(t, filepath.Join(custom, "skills", "custom-skill", "SKILL.md"), secretSentinel)
+	writeTestFile(t, filepath.Join(custom, "commands", "custom-command.md"), secretSentinel)
+	writeTestFile(t, filepath.Join(custom, ".claude.json"), `{"mcpServers":{"custom-state":{"command":"`+secretSentinel+`"}}}`)
+
+	got := Discover(Options{GOOS: "darwin", UserHome: home, ClaudeHome: custom})
+	if !containsItem(got.Items, Item{Agent: AgentClaude, Kind: KindInstruction, Name: "CLAUDE.md", Scope: ScopeUser, State: StateCandidate, SourceKind: SourceClaudeMemory}) {
+		t.Fatalf("custom Claude instruction root was not scanned: %+v", got.Items)
+	}
+	if !containsName(got.Items, AgentClaude, KindSkill, ScopeUser, "custom-skill") ||
+		!containsName(got.Items, AgentClaude, KindSkill, ScopeUser, "custom-command") {
+		t.Fatalf("custom Claude root was not scanned: %+v", got.Items)
+	}
+	if containsName(got.Items, AgentClaude, KindSkill, ScopeUser, "default-only") {
+		t.Fatalf("default Claude root was scanned despite explicit override: %+v", got.Items)
+	}
+	if !containsName(got.Items, AgentClaude, KindMCP, ScopeUser, "custom-state") ||
+		containsName(got.Items, AgentClaude, KindMCP, ScopeUser, "default-state-only") {
+		t.Fatalf("custom Claude state root was not isolated: %+v", got.Items)
+	}
+	assertInventoryPrivate(t, got, root, secretSentinel)
+}
+
+func TestDiscoverContextCancellationIsTransactionalAndPrivate(t *testing.T) {
+	root := t.TempDir()
+	home := filepath.Join(root, "home")
+	writeTestFile(t, filepath.Join(home, ".claude", "CLAUDE.md"), secretSentinel)
+	for i := 0; i < 80; i++ {
+		writeTestFile(t, filepath.Join(home, ".claude", "skills", fmt.Sprintf("skill-%03d", i), "SKILL.md"), secretSentinel)
+	}
+
+	want := Inventory{Items: []Item{}, Diagnostics: []Diagnostic{{Code: DiagnosticCancelled}}}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if got := DiscoverContext(ctx, Options{GOOS: "darwin", UserHome: home}); !reflect.DeepEqual(got, want) {
+		t.Fatalf("immediate cancellation returned partial inventory: %+v", got)
+	}
+
+	firstContext := newStepCancelContext(140)
+	first := DiscoverContext(firstContext, Options{GOOS: "darwin", UserHome: home})
+	if !firstContext.cancelled || !reflect.DeepEqual(first, want) {
+		t.Fatalf("mid-scan cancellation was not transactional: cancelled=%v inventory=%+v", firstContext.cancelled, first)
+	}
+	secondContext := newStepCancelContext(140)
+	second := DiscoverContext(secondContext, Options{GOOS: "darwin", UserHome: home})
+	if !reflect.DeepEqual(first, second) {
+		t.Fatalf("cancellation result is not deterministic: first=%+v second=%+v", first, second)
+	}
+	raw, err := json.Marshal(first)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, wantJSON := string(raw), `{"items":[],"diagnostics":[{"code":"cancelled"}]}`; got != wantJSON {
+		t.Fatalf("cancellation JSON changed or leaked context: got %s want %s", got, wantJSON)
+	}
+	assertInventoryPrivate(t, first, root, secretSentinel)
+}
+
+func TestMCPTransportInferenceIsConservativeAndPrivate(t *testing.T) {
+	root := t.TempDir()
+	home := filepath.Join(root, "home")
+	project := filepath.Join(root, "project")
+	writeTestFile(t, filepath.Join(project, ".mcp.json"), `{"mcpServers":{
+"json-stdio":{"type":"stdio","command":"`+secretSentinel+`"},
+"json-http":{"type":"http","url":"https://`+secretSentinel+`.invalid"},
+"json-sse":{"type":"sse","url":"https://`+secretSentinel+`.invalid"},
+"json-command":{"command":"`+secretSentinel+`"},
+"json-url-ambiguous":{"url":"https://`+secretSentinel+`.invalid"},
+"json-conflict":{"type":"http","command":"`+secretSentinel+`"},
+"json-hostile":{"type":"`+secretSentinel+`","headers":{"Authorization":"`+secretSentinel+`"}}
+}}`)
+	writeTestFile(t, filepath.Join(home, ".codex", "config.toml"), `
+[mcp_servers.codex-stdio]
+command = "`+secretSentinel+`"
+[mcp_servers.codex-http]
+url = "https://`+secretSentinel+`.invalid"
+[mcp_servers.codex-sse]
+type = "sse"
+url = "https://`+secretSentinel+`.invalid"
+[mcp_servers.codex-conflict]
+type = "http"
+command = "`+secretSentinel+`"
+[mcp_servers.codex-hostile]
+transport = "`+secretSentinel+`"
+command = "`+secretSentinel+`"
+`)
+
+	got := Discover(Options{GOOS: "darwin", UserHome: home, ProjectRoot: project, WorkingDir: project})
+	for name, want := range map[string]Transport{
+		"json-stdio":         TransportStdio,
+		"json-http":          TransportHTTP,
+		"json-sse":           TransportSSE,
+		"json-command":       TransportStdio,
+		"json-url-ambiguous": TransportUnknown,
+		"json-conflict":      TransportUnknown,
+		"json-hostile":       TransportUnknown,
+		"codex-stdio":        TransportStdio,
+		"codex-http":         TransportHTTP,
+		"codex-sse":          TransportSSE,
+		"codex-conflict":     TransportUnknown,
+		"codex-hostile":      TransportUnknown,
+	} {
+		if item, ok := findMCPItem(got.Items, name); !ok || item.Transport != want {
+			t.Errorf("transport %q = %q (found=%v), want %q", name, item.Transport, ok, want)
+		}
+	}
+	assertInventoryPrivate(t, got, root, secretSentinel, "Authorization", "https://")
+}
+
 func TestJSONShapeIsStableAndOmitsRoots(t *testing.T) {
 	root := t.TempDir()
 	item := Item{Agent: AgentClaude, Kind: KindSkill, Name: "safe", Scope: ScopeUser, State: StateCandidate, SourceKind: SourceClaudeSkill}
@@ -308,7 +428,7 @@ func TestJSONShapeIsStableAndOmitsRoots(t *testing.T) {
 		Options   Options   `json:"options"`
 	}{
 		Inventory: Inventory{Items: []Item{item}},
-		Options:   Options{GOOS: "darwin", UserHome: root, CodexHome: root, ProjectRoot: root, WorkingDir: root, ManagedRoot: root},
+		Options:   Options{GOOS: "darwin", UserHome: root, ClaudeHome: root, CodexHome: root, ProjectRoot: root, WorkingDir: root, ManagedRoot: root},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -383,6 +503,41 @@ func countKind(items []Item, agent Agent, kind Kind) int {
 		}
 	}
 	return count
+}
+
+func findMCPItem(items []Item, name string) (Item, bool) {
+	for _, item := range items {
+		if item.Kind == KindMCP && item.Name == name {
+			return item, true
+		}
+	}
+	return Item{}, false
+}
+
+type stepCancelContext struct {
+	done      chan struct{}
+	remaining int
+	cancelled bool
+}
+
+func newStepCancelContext(checks int) *stepCancelContext {
+	return &stepCancelContext{done: make(chan struct{}), remaining: checks}
+}
+
+func (c *stepCancelContext) Deadline() (time.Time, bool) { return time.Time{}, false }
+func (c *stepCancelContext) Done() <-chan struct{}       { return c.done }
+func (c *stepCancelContext) Value(any) any               { return nil }
+func (c *stepCancelContext) Err() error {
+	if c.cancelled {
+		return context.Canceled
+	}
+	c.remaining--
+	if c.remaining <= 0 {
+		c.cancelled = true
+		close(c.done)
+		return context.Canceled
+	}
+	return nil
 }
 
 func hasDiagnostic(diagnostics []Diagnostic, agent Agent, kind Kind, scope Scope, code DiagnosticCode) bool {
