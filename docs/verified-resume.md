@@ -251,8 +251,12 @@ authorization and returns safety exit `7` without launching.
 
 The real native runner then invokes the same refresh, plan, report, and exact
 acknowledgement guard once more after checking the privately bound absolute
-executable and workspace directory, immediately before creating the child
-process. Private executable and workspace paths are never serialized in the
+executable and workspace directory. After that guard returns, it rechecks the
+platform-native filesystem identities of both targets plus executable metadata
+immediately before creating the child process. This rejects replacements made
+during the guard; it is a strongest-practical fail-closed check, not a claim
+that process creation and the host filesystem are one atomic operation. Private
+executable and workspace paths or identities are never serialized in the
 environment report.
 
 `--allow-environment-warning` accepts only a warning ID present in the freshly

@@ -13,8 +13,9 @@ How maintainers cut a **Reinstate** release.
 - [ ] `main` is green on CI
 - [ ] CHANGELOG `[Unreleased]` section is accurate
 - [ ] No open P0 security issues
-- [ ] For a stable release, macOS arm64, macOS amd64, native Windows amd64, and
-      WSL2 acceptance rows pass
+- [ ] For a stable release, fresh Apple Silicon macOS and native Windows x64
+      acceptance rows pass and the separate stable promotion decision is
+      recorded
 - [ ] For a release candidate, prior candidate failures are recorded and every
       known release blocker has a regression test or an explicit unresolved
       disposition
@@ -23,34 +24,68 @@ How maintainers cut a **Reinstate** release.
 - [ ] Snapshot archives, source archive, checksums, and SBOMs were inspected
 - [ ] Builds and vulnerability scans use the pinned Go 1.25.12 toolchain
 
-### v0.2.0 platform exception
+### Supported platform boundary
 
-For `v0.2.0` only, the maintainer-approved reconciliation in
+The maintainer-approved `v0.2.0` reconciliation in
 `docs/testing/results/2026-08-02-macos-phase2-V020RC2.md` permits stable
 publication with verified support limited to Apple Silicon macOS
-(`darwin/arm64`) and native Windows x64 (`windows/amd64`). Intel macOS and
-Linux/WSL2 artifacts remain preview/unverified: they may be built, checksummed,
-SBOM-covered, and attested, but must not be described as physically certified.
+(`darwin/arm64`) and native Windows x64 (`windows/amd64`). Those remain the
+supported mandatory platforms for Phase 3 RC and stable acceptance.
 
-This exception does not satisfy or remove the normal four-environment
-precondition for later stable releases. Issues #97 and #98 track the deferred
+Intel macOS and Linux/WSL2 artifacts are unsupported/unverified optional
+evidence: they may be built, checksummed, SBOM-covered, and attested, but their
+absence or failure does not block RC1 or stable `v0.3.0`. Never describe them as
+physically certified or supported. Issues #97 and #98 track that optional
 physical evidence.
+
+### v0.3.0-rc.1 candidate evidence
+
+The committed
+[`v0.3.0-rc.1` dispatch](docs/testing/v0.3.0-rc.1-agent-verification-prompts.md)
+requires two tagged-artifact reports: Apple Silicon macOS and native Windows
+x64. Those reports decide whether RC1 passed candidate acceptance; they do not
+authorize stable `v0.3.0`. Stable promotion requires a separate reviewed stable
+decision and fresh tagged-artifact validation on the same two supported
+platforms. Intel macOS and WSL2 remain unsupported/unverified optional evidence
+and are never stable blockers.
 
 ## Steps
 
 ### 1. Prepare the release commit
 
-```bash
-# Update CHANGELOG and compatibility evidence.
-make verify
-goreleaser release --snapshot --clean
-sh scripts/test-install.sh dist
+The release commit itself must contain both public bootstrap files pinned to
+the exact new CLI tag, with each canonical installer digest recomputed from the
+final `scripts/install.*` bytes. It must also contain synchronized changelog,
+compatibility, citation, website release truth, and candidate-dispatch updates.
+Do not tag a commit whose bootstraps still name the previous release: the
+signed website deployment later requires those files to be byte-identical to
+the CLI tag, so a post-tag pin-only edit cannot repair it.
 
+```bash
+# Update release truth, public bootstrap pins, and compatibility evidence.
 git add --all
 git commit -m "chore(release): vX.Y.Z"
+
+# Verify the exact clean release commit before pushing its PR branch.
+GOTOOLCHAIN=go1.25.12 go mod tidy -diff
+make verify
+make snapshot
+./scripts/stage-release-assets.sh dist
+./scripts/check-release-artifacts.sh dist
+sh scripts/test-install.sh dist
+git diff --exit-code -- go.mod go.sum
+test -z "$(git status --porcelain)"
+
 git push -u origin release/vX.Y.Z
 # Open a draft PR, pass protected-main CI, review, and merge.
 ```
+
+GoReleaser's before hook runs `go mod tidy`; the post-snapshot diff and clean
+check prove that it did not silently change the committed module graph or any
+other tracked release input. `stage-release-assets.sh` is required before the
+artifact and installer checks because raw GoReleaser binaries originate inside
+target-specific directories and must be staged under their checksummed release
+asset names.
 
 ### 2. Tag and push
 
@@ -105,8 +140,9 @@ artifact attestations before publishing the draft.
 
 ### 4. Publish the public installer routes
 
-Automatic Vercel Git deployments are disabled. After the GitHub release is
-published, confirm both public bootstrap files pin that same release, update a
+Automatic Vercel Git deployments are disabled. The public bootstrap pins were
+already committed before the CLI tag in Step 1. After the GitHub release is
+published, confirm both tagged bootstrap files pin that same release, update a
 clean local `main`, and create a signed, annotated
 `website-vYYYY.MM.DD.N` tag at the exact `origin/main` commit. Link the existing
 Vercel project if necessary. Push the tag and wait for the
@@ -123,11 +159,14 @@ against the derived CLI release at the immutable deployment URL, promotes only
 that verified deployment, and verifies both live routes again. Never run
 `vercel --prod` directly for a release.
 
-For a release candidate, start the committed four-environment acceptance
-dispatch only after both live routes install the new exact version. Native
-macOS arm64 and native Windows amd64 own the complete two-device matrix; native
-macOS amd64 and WSL2 amd64 provide the separate stable-platform evidence
-required by the preconditions above.
+For a release candidate, start its committed candidate-specific acceptance
+dispatch only after both live routes install the new exact version. For
+`v0.3.0-rc.1`, Apple Silicon macOS and native Windows x64 own the mandatory
+two-device matrix. Passing those two reports means only that RC1 passed
+tagged-artifact acceptance. Stable `v0.3.0` still requires a separate promotion
+decision and fresh/reconciled tagged-artifact results from those two supported
+platforms. Native macOS amd64 and WSL2 amd64 are unsupported/unverified optional
+evidence and do not block RC1 or stable `v0.3.0`.
 
 ### 5. Publish website-only changes
 

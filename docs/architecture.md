@@ -235,7 +235,8 @@ identities are credential-free opaque digests; working-tree comparisons store
 state/counts/digests, not filenames or diffs. It never fetches.
 
 The agent observer checks executable presence, a strictly parsed installed
-version, and a recognized same-vendor layout. The capability observer performs
+version, a recognized same-vendor layout, and a private filesystem identity
+that the native runner rechecks after its final guard. The capability observer performs
 bounded known-path discovery for sanitized instruction/skill/MCP names,
 scope/state, and coarse MCP transport. It does not return contents, paths,
 commands, arguments, raw URLs, headers, environment values, or credentials.
