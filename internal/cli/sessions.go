@@ -578,6 +578,9 @@ func confirmEnvironmentWarnings(ctx context.Context, writer io.Writer, readLine 
 		if canceled {
 			return false, nil
 		}
+		if promptContext.Err() != nil {
+			return false, nil
+		}
 		if err != nil {
 			return false, localRuntimeError("read environment confirmation", err)
 		}
