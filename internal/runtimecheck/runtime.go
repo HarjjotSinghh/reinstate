@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -25,6 +26,19 @@ const (
 	defaultTimeout      = 2 * time.Second
 )
 
+var (
+	// ErrExecutableNotFound identifies a runtime that is not available on PATH.
+	ErrExecutableNotFound = errors.New("runtime executable is unavailable")
+	// ErrProbeFailed identifies a version probe infrastructure failure. It is
+	// deliberately distinct from an absent runtime so policy cannot silently
+	// turn a timeout, cancellation, or malformed execution into a compatibility
+	// warning.
+	ErrProbeFailed = errors.New("runtime version probe failed")
+	// ErrOutputLimit identifies a version command that exceeded the bounded
+	// output budget.
+	ErrOutputLimit = errors.New("runtime version output exceeded limit")
+)
+
 // Status is a privacy-safe runtime comparison result.
 type Status string
 
@@ -33,6 +47,7 @@ const (
 	StatusChanged Status = "changed"
 	StatusMissing Status = "missing"
 	StatusUnknown Status = "unknown"
+	StatusError   Status = "error"
 )
 
 // Result describes one deterministic project runtime declaration.
@@ -60,6 +75,15 @@ type Options struct {
 
 // Inspect reports recognized Node and Go declarations below workspace.
 func Inspect(ctx context.Context, workspace string, opts Options) []Result {
+	workspace = strings.TrimSpace(workspace)
+	if workspace == "" {
+		return []Result{}
+	}
+	workspaceInfo, err := os.Stat(workspace)
+	if err != nil || !workspaceInfo.IsDir() {
+		return []Result{}
+	}
+
 	timeout := opts.Timeout
 	if timeout <= 0 {
 		timeout = defaultTimeout
@@ -130,8 +154,13 @@ func inspectRuntime(
 	}
 	raw, err := runner.Version(ctx, name, args...)
 	if err != nil {
-		result.Status = StatusMissing
-		result.Message = "declared runtime is unavailable"
+		if errors.Is(err, ErrExecutableNotFound) {
+			result.Status = StatusMissing
+			result.Message = "declared runtime is unavailable"
+			return result
+		}
+		result.Status = StatusError
+		result.Message = "runtime version probe failed"
 		return result
 	}
 	actual, ok := parseOutput(raw)
@@ -203,37 +232,60 @@ func goDeclaration(workspace string) (versionConstraint, string, declarationStat
 		return versionConstraint{}, "go_mod", state
 	}
 	var goValue, toolchainValue string
+	var sawGo, sawToolchain bool
 	for _, rawLine := range strings.Split(string(data), "\n") {
-		line := strings.TrimSpace(rawLine)
+		line := rawLine
+		if comment := strings.Index(line, "//"); comment >= 0 {
+			line = line[:comment]
+		}
+		line = strings.TrimSpace(line)
 		fields := strings.Fields(line)
-		if len(fields) != 2 {
+		if len(fields) == 0 {
 			continue
 		}
 		switch fields[0] {
 		case "go":
+			if sawGo || len(fields) != 2 {
+				return versionConstraint{}, "go_mod_go", declarationUnknown
+			}
+			sawGo = true
 			goValue = fields[1]
 		case "toolchain":
-			toolchainValue = strings.TrimPrefix(fields[1], "go")
+			if sawToolchain || len(fields) != 2 {
+				return versionConstraint{}, "go_mod_toolchain", declarationUnknown
+			}
+			sawToolchain = true
+			toolchainValue = fields[1]
 		}
 	}
-	value := toolchainValue
+	value := ""
 	source := "go_mod_toolchain"
-	if value == "" {
+	switch {
+	case toolchainValue == "default":
+		value = goValue
+		source = "go_mod_go"
+	case toolchainValue != "":
+		if !strings.HasPrefix(toolchainValue, "go") || toolchainValue == "go" {
+			return versionConstraint{}, source, declarationUnknown
+		}
+		value = strings.TrimPrefix(toolchainValue, "go")
+	default:
 		value = goValue
 		source = "go_mod_go"
 	}
 	if value == "" {
 		return versionConstraint{}, "", declarationAbsent
 	}
-	constraint, ok := parseConstraint(value)
-	if !ok {
+	parsed, components, ok := parseVersion(value)
+	if !ok || components < 2 || strings.HasPrefix(value, "v") {
 		return versionConstraint{}, source, declarationUnknown
 	}
 	// A go directive is a minimum language/toolchain requirement. An explicit
 	// toolchain directive is also treated as a minimum so compatible patch
 	// releases do not become false mismatches.
-	constraint.kind = constraintMinimum
-	return constraint, source, declarationValid
+	return versionConstraint{
+		kind: constraintMinimum, version: parsed, display: safeVersionText(value),
+	}, source, declarationValid
 }
 
 func readDeclarationFile(path string) (string, declarationState) {
@@ -249,6 +301,10 @@ func readDeclarationFile(path string) (string, declarationState) {
 }
 
 func readBoundedRegularFile(path string) ([]byte, declarationState) {
+	return readBoundedRegularFileWithOpener(path, os.Open)
+}
+
+func readBoundedRegularFileWithOpener(path string, opener func(string) (*os.File, error)) ([]byte, declarationState) {
 	info, err := os.Lstat(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -259,13 +315,21 @@ func readBoundedRegularFile(path string) ([]byte, declarationState) {
 	if !info.Mode().IsRegular() || info.Size() > maxDeclarationBytes {
 		return nil, declarationUnknown
 	}
-	file, err := os.Open(path)
+	file, err := opener(path)
 	if err != nil {
 		return nil, declarationUnknown
 	}
 	defer func() { _ = file.Close() }()
+	openedInfo, err := file.Stat()
+	if err != nil || !openedInfo.Mode().IsRegular() || openedInfo.Size() > maxDeclarationBytes || !os.SameFile(info, openedInfo) {
+		return nil, declarationUnknown
+	}
 	data, err := io.ReadAll(io.LimitReader(file, maxDeclarationBytes+1))
 	if err != nil || len(data) > maxDeclarationBytes {
+		return nil, declarationUnknown
+	}
+	finalInfo, err := file.Stat()
+	if err != nil || !os.SameFile(openedInfo, finalInfo) || finalInfo.Size() != openedInfo.Size() {
 		return nil, declarationUnknown
 	}
 	return data, declarationValid
@@ -282,30 +346,102 @@ func (r ExecRunner) Version(ctx context.Context, name string, args ...string) (s
 	if limit <= 0 || limit > maxVersionOutput {
 		limit = maxVersionOutput
 	}
-	command := exec.CommandContext(ctx, name, args...)
+	probe, ok := knownProbe(name, args)
+	if !ok {
+		return "", fmt.Errorf("%w: unsupported runtime probe", ErrProbeFailed)
+	}
+	resolved, err := exec.LookPath(name)
+	if err != nil {
+		if errors.Is(err, exec.ErrNotFound) || errors.Is(err, os.ErrNotExist) {
+			return "", fmt.Errorf("%w: %s", ErrExecutableNotFound, probe)
+		}
+		return "", fmt.Errorf("%w: executable lookup", ErrProbeFailed)
+	}
+	command := exec.CommandContext(ctx, resolved, args...)
 	command.Stdin = nil
+	command.Dir = neutralWorkingDirectory(resolved)
+	command.Env = sanitizedEnvironment(probe, os.Environ())
 	var output limitedBuffer
 	output.limit = limit
 	command.Stdout = &output
 	command.Stderr = &output
 	if err := command.Run(); err != nil {
-		return "", err
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return "", fmt.Errorf("%w: %w", ErrProbeFailed, ctxErr)
+		}
+		if errors.Is(err, os.ErrNotExist) {
+			return "", fmt.Errorf("%w: %s", ErrExecutableNotFound, probe)
+		}
+		return "", fmt.Errorf("%w: command execution", ErrProbeFailed)
 	}
 	if output.overflow {
-		return "", errors.New("runtime version output exceeded limit")
+		return "", fmt.Errorf("%w: %w", ErrProbeFailed, ErrOutputLimit)
 	}
 	return output.String(), nil
 }
 
+func neutralWorkingDirectory(executable string) string {
+	volume := filepath.VolumeName(executable)
+	if volume != "" {
+		return volume + string(os.PathSeparator)
+	}
+	return string(os.PathSeparator)
+}
+
+func knownProbe(name string, args []string) (string, bool) {
+	base := strings.ToLower(filepath.Base(name))
+	base = strings.TrimSuffix(base, filepath.Ext(base))
+	switch {
+	case base == "node" && len(args) == 1 && args[0] == "--version":
+		return "node", true
+	case base == "go" && len(args) == 1 && args[0] == "version":
+		return "go", true
+	default:
+		return "", false
+	}
+}
+
+func sanitizedEnvironment(probe string, inherited []string) []string {
+	blocked := map[string]struct{}{}
+	forced := []string(nil)
+	switch probe {
+	case "node":
+		blocked["NODE_OPTIONS"] = struct{}{}
+	case "go":
+		for _, key := range []string{"GOENV", "GOFLAGS", "GONOSUMDB", "GOPROXY", "GOSUMDB", "GOTOOLCHAIN", "GOWORK"} {
+			blocked[key] = struct{}{}
+		}
+		forced = []string{
+			"GOENV=off",
+			"GOFLAGS=",
+			"GOPROXY=off",
+			"GOSUMDB=off",
+			"GOTOOLCHAIN=local",
+			"GOWORK=off",
+		}
+	}
+	result := make([]string, 0, len(inherited)+len(forced))
+	for _, entry := range inherited {
+		separator := strings.IndexByte(entry, '=')
+		if separator > 0 {
+			if _, remove := blocked[strings.ToUpper(entry[:separator])]; remove {
+				continue
+			}
+		}
+		result = append(result, entry)
+	}
+	return append(result, forced...)
+}
+
 type limitedBuffer struct {
-	bytes.Buffer
+	buffer   bytes.Buffer
 	limit    int64
 	overflow bool
 }
 
 func (b *limitedBuffer) Write(p []byte) (int, error) {
 	original := len(p)
-	remaining := b.limit - int64(b.Len())
+	remaining := b.limit - int64(b.buffer.Len())
 	if remaining <= 0 {
 		b.overflow = true
 		return original, nil
@@ -314,8 +450,12 @@ func (b *limitedBuffer) Write(p []byte) (int, error) {
 		p = p[:remaining]
 		b.overflow = true
 	}
-	_, _ = b.Buffer.Write(p)
+	_, _ = b.buffer.Write(p)
 	return original, nil
+}
+
+func (b *limitedBuffer) String() string {
+	return b.buffer.String()
 }
 
 type constraintKind int
@@ -327,12 +467,16 @@ const (
 	constraintCaret
 	constraintTilde
 	constraintMajorRange
+	constraintMinor
 )
 
 type versionConstraint struct {
 	kind    constraintKind
 	version version
-	display string
+	upper   version
+	// lowerExclusive is used only by explicit two-comparator ranges.
+	lowerExclusive bool
+	display        string
 }
 
 func (c versionConstraint) match(actual version) bool {
@@ -345,35 +489,45 @@ func (c versionConstraint) match(actual version) bool {
 	case constraintMajor:
 		return actual.major == c.version.major
 	case constraintCaret:
-		return actual.major == c.version.major && comparison >= 0
+		return comparison >= 0 && actual.compare(c.upper) < 0
 	case constraintTilde:
-		return actual.major == c.version.major && actual.minor == c.version.minor && comparison >= 0
+		return comparison >= 0 && actual.compare(c.upper) < 0
 	case constraintMajorRange:
-		return actual.major == c.version.major
+		if c.lowerExclusive && comparison <= 0 {
+			return false
+		}
+		if !c.lowerExclusive && comparison < 0 {
+			return false
+		}
+		return actual.compare(c.upper) < 0
+	case constraintMinor:
+		return actual.major == c.version.major && actual.minor == c.version.minor
 	default:
 		return false
 	}
 }
 
-var majorRangePattern = regexp.MustCompile(`^>=?\s*v?([0-9]+)(?:\.0(?:\.0)?)?\s+<\s*v?([0-9]+)(?:\.0(?:\.0)?)?$`)
+var majorRangePattern = regexp.MustCompile(`^(>=|>)\s*v?([0-9]+)(?:\.0(?:\.0)?)?\s+<\s*v?([0-9]+)(?:\.0(?:\.0)?)?$`)
 
 func parseConstraint(raw string) (versionConstraint, bool) {
 	value := strings.TrimSpace(raw)
 	display := safeVersionText(value)
-	if match := majorRangePattern.FindStringSubmatch(value); len(match) == 3 {
-		lower, _ := strconv.Atoi(match[1])
-		upper, _ := strconv.Atoi(match[2])
-		if upper == lower+1 {
+	if match := majorRangePattern.FindStringSubmatch(value); len(match) == 4 {
+		lowerVersion, lowerComponents, lowerOK := parseVersion(match[2])
+		upperVersion, upperComponents, upperOK := parseVersion(match[3])
+		lower, upper := lowerVersion.major, upperVersion.major
+		if lowerOK && upperOK && lowerComponents == 1 && upperComponents == 1 && lower < math.MaxInt && upper == lower+1 {
 			return versionConstraint{
-				kind: constraintMajorRange, version: version{major: lower}, display: display,
+				kind: constraintMajorRange, version: version{major: lower}, upper: version{major: upper},
+				lowerExclusive: match[1] == ">", display: display,
 			}, true
 		}
 	}
 	if strings.HasSuffix(value, ".x") || strings.HasSuffix(value, ".*") {
 		majorText := strings.TrimSuffix(strings.TrimSuffix(value, ".x"), ".*")
-		major, err := strconv.Atoi(strings.TrimPrefix(majorText, "v"))
-		if err == nil && major >= 0 {
-			return versionConstraint{kind: constraintMajor, version: version{major: major}, display: display}, true
+		parsed, components, ok := parseVersion(majorText)
+		if ok && components == 1 {
+			return versionConstraint{kind: constraintMajor, version: parsed, display: display}, true
 		}
 	}
 
@@ -393,10 +547,61 @@ func parseConstraint(raw string) (versionConstraint, bool) {
 	if !ok {
 		return versionConstraint{}, false
 	}
-	if kind == constraintExact && components == 1 {
-		kind = constraintMajor
+	constraint := versionConstraint{kind: kind, version: parsed, display: display}
+	switch kind {
+	case constraintExact:
+		switch components {
+		case 1:
+			constraint.kind = constraintMajor
+		case 2:
+			constraint.kind = constraintMinor
+		}
+	case constraintCaret:
+		upper, ok := caretUpperBound(parsed, components)
+		if !ok {
+			return versionConstraint{}, false
+		}
+		constraint.upper = upper
+	case constraintTilde:
+		upper, ok := tildeUpperBound(parsed, components)
+		if !ok {
+			return versionConstraint{}, false
+		}
+		constraint.upper = upper
 	}
-	return versionConstraint{kind: kind, version: parsed, display: display}, true
+	return constraint, true
+}
+
+func caretUpperBound(value version, components int) (version, bool) {
+	switch {
+	case value.major > 0:
+		next, ok := increment(value.major)
+		return version{major: next}, ok
+	case components == 1:
+		return version{major: 1}, true
+	case value.minor > 0 || components == 2:
+		next, ok := increment(value.minor)
+		return version{minor: next}, ok
+	default:
+		next, ok := increment(value.patch)
+		return version{patch: next}, ok
+	}
+}
+
+func tildeUpperBound(value version, components int) (version, bool) {
+	if components == 1 {
+		next, ok := increment(value.major)
+		return version{major: next}, ok
+	}
+	next, ok := increment(value.minor)
+	return version{major: value.major, minor: next}, ok
+}
+
+func increment(value int) (int, bool) {
+	if value == math.MaxInt {
+		return 0, false
+	}
+	return value + 1, true
 }
 
 type version struct {
@@ -407,8 +612,8 @@ type version struct {
 
 func parseVersion(raw string) (version, int, bool) {
 	value := strings.TrimSpace(strings.TrimPrefix(raw, "v"))
-	if index := strings.IndexAny(value, "+-"); index >= 0 {
-		value = value[:index]
+	if strings.ContainsAny(value, "+-") {
+		return version{}, 0, false
 	}
 	parts := strings.Split(value, ".")
 	if len(parts) < 1 || len(parts) > 3 {
@@ -416,7 +621,7 @@ func parseVersion(raw string) (version, int, bool) {
 	}
 	numbers := [3]int{}
 	for index, part := range parts {
-		if part == "" {
+		if part == "" || len(part) > 1 && part[0] == '0' {
 			return version{}, 0, false
 		}
 		number, err := strconv.Atoi(part)
@@ -429,13 +634,17 @@ func parseVersion(raw string) (version, int, bool) {
 }
 
 func (v version) compare(other version) int {
-	if v.major != other.major {
-		return v.major - other.major
+	left := [...]int{v.major, v.minor, v.patch}
+	right := [...]int{other.major, other.minor, other.patch}
+	for index := range left {
+		if left[index] < right[index] {
+			return -1
+		}
+		if left[index] > right[index] {
+			return 1
+		}
 	}
-	if v.minor != other.minor {
-		return v.minor - other.minor
-	}
-	return v.patch - other.patch
+	return 0
 }
 
 func (v version) String() string {
@@ -452,13 +661,12 @@ func parseNodeOutput(raw string) (version, bool) {
 }
 
 func parseGoOutput(raw string) (version, bool) {
-	for _, field := range strings.Fields(raw) {
-		if strings.HasPrefix(field, "go1.") {
-			parsed, _, ok := parseVersion(strings.TrimPrefix(field, "go"))
-			return parsed, ok
-		}
+	fields := strings.Fields(raw)
+	if len(fields) != 4 || fields[0] != "go" || fields[1] != "version" || !strings.HasPrefix(fields[2], "go1.") || !strings.Contains(fields[3], "/") {
+		return version{}, false
 	}
-	return version{}, false
+	parsed, _, ok := parseVersion(strings.TrimPrefix(fields[2], "go"))
+	return parsed, ok
 }
 
 func safeVersionText(value string) string {
