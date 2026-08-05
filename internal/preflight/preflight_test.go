@@ -427,6 +427,9 @@ func newFixture(t *testing.T, remote string) *fixture {
 	if err := os.Mkdir(filepath.Join(agentRoot, marker), 0o700); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.WriteFile(filepath.Join(agentRoot, agent), []byte("controlled agent"), 0o700); err != nil {
+		t.Fatal(err)
+	}
 	value := &fixture{workspace: workspacePath, remote: remote}
 	value.options = Options{
 		Workspace: workspace.ProbeOptions{Runner: workspace.GitRunnerFunc(func(_ context.Context, _ string, args ...string) ([]byte, error) {

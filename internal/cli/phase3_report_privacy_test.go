@@ -19,9 +19,10 @@ func TestEnvironmentHumanRendererUsesPrivacySafeFieldAllowlist(t *testing.T) {
 		Checks: []preflight.Check{{
 			ID: "git.branch", Status: preflight.StatusChanged,
 			Severity: preflight.SeverityWarning,
-			Expected: hidden, Actual: hidden,
+			Expected: "main", Actual: "release-candidate",
 			Provenance: workspace.ProvenanceVendorRecorded,
 			Message:    "the current branch differs from the recorded branch",
+			Repair:     "switch to the expected branch or review this exact warning",
 		}},
 		Workspace: workspace.Fingerprint{
 			Workspace: workspace.WorkspaceFingerprint{Path: hidden},
@@ -47,6 +48,9 @@ func TestEnvironmentHumanRendererUsesPrivacySafeFieldAllowlist(t *testing.T) {
 		"severity=warning",
 		"provenance=vendor_recorded",
 		"the current branch differs from the recorded branch",
+		"Expected: \"main\"",
+		"Actual: \"release-candidate\"",
+		"Repair: switch to the expected branch or review this exact warning",
 	} {
 		if !strings.Contains(rendered, required) {
 			t.Fatalf("human environment report omitted %q: %s", required, rendered)

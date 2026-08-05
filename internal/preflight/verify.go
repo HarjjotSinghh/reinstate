@@ -80,7 +80,7 @@ func Verify(ctx context.Context, input Input, options Options) (Report, error) {
 	if capabilityOptions.WorkingDir == "" {
 		capabilityOptions.WorkingDir = input.Workspace
 	}
-	capabilityInventory := capability.DiscoverContext(verifyCtx, capabilityOptions)
+	capabilityInventory := capability.DiscoverAgentContext(verifyCtx, capability.Agent(input.Agent), capabilityOptions)
 	if err := ctx.Err(); err != nil {
 		return Report{}, err
 	}
@@ -132,12 +132,18 @@ func workspaceExpectation(input Input) workspace.Expectation {
 		baseline := input.Baseline
 		if baseline.RepositoryID != "" {
 			expected.RepositoryID = &workspace.ExpectedString{Value: baseline.RepositoryID, Provenance: workspace.ProvenanceReinstatePrelaunchObserved}
+		} else if input.Recorded.RepositoryID.Value != "" {
+			expected.RepositoryID = &workspace.ExpectedString{Value: input.Recorded.RepositoryID.Value, Provenance: workspace.ProvenanceVendorRecorded}
 		}
 		if baseline.Branch != "" {
 			expected.Branch = &workspace.ExpectedString{Value: baseline.Branch, Provenance: workspace.ProvenanceReinstatePrelaunchObserved}
+		} else if input.Recorded.Branch.Value != "" {
+			expected.Branch = &workspace.ExpectedString{Value: input.Recorded.Branch.Value, Provenance: workspace.ProvenanceVendorRecorded}
 		}
 		if baseline.GitHead != "" {
 			expected.Head = &workspace.ExpectedString{Value: baseline.GitHead, Provenance: workspace.ProvenanceReinstatePrelaunchObserved}
+		} else if input.Recorded.GitHead.Value != "" {
+			expected.Head = &workspace.ExpectedString{Value: input.Recorded.GitHead.Value, Provenance: workspace.ProvenanceVendorRecorded}
 		}
 		if baseline.WorkingTreeState != environment.WorkingTreeUnavailable {
 			dirty := baseline.WorkingTreeState == environment.WorkingTreeModified
@@ -411,9 +417,10 @@ func runtimeChecks(input Input, results []runtimecheck.Result) []Check {
 		checks = append(checks, check)
 		if prior, ok := baseline[result.Name]; ok {
 			baselineCheck := Check{ID: "runtime." + safeIDPart(result.Name) + ".baseline",
-				Expected: runtimeIdentity(prior.SourceKind, prior.Version), Actual: runtimeIdentity(result.SourceKind, result.Actual),
+				Expected:   runtimeIdentity(prior.SourceKind, prior.Declared, prior.Version),
+				Actual:     runtimeIdentity(result.SourceKind, result.Declared, result.Actual),
 				Provenance: workspace.ProvenanceReinstatePrelaunchObserved}
-			if prior.Version != "" && prior.Version == result.Actual && prior.SourceKind == result.SourceKind {
+			if prior.Version != "" && prior.Version == result.Actual && prior.Declared == result.Declared && prior.SourceKind == result.SourceKind {
 				baselineCheck.Status, baselineCheck.Severity, baselineCheck.Message = StatusMatch, SeverityInfo, "the runtime matches the previous prelaunch observation"
 			} else {
 				baselineCheck.Status, baselineCheck.Severity, baselineCheck.Message = StatusChanged, SeverityWarning, "the runtime differs from the previous prelaunch observation"
@@ -423,7 +430,7 @@ func runtimeChecks(input Input, results []runtimecheck.Result) []Check {
 		} else if input.Baseline != nil {
 			checks = append(checks, Check{ID: "runtime." + safeIDPart(result.Name) + ".baseline",
 				Status: StatusChanged, Severity: SeverityWarning,
-				Actual:     runtimeIdentity(result.SourceKind, result.Actual),
+				Actual:     runtimeIdentity(result.SourceKind, result.Declared, result.Actual),
 				Provenance: workspace.ProvenanceReinstatePrelaunchObserved,
 				Message:    "a new runtime declaration is present since the previous prelaunch observation",
 				Repair:     "review the runtime change or acknowledge this exact warning", ExitCode: exitcode.Safety})
@@ -434,7 +441,8 @@ func runtimeChecks(input Input, results []runtimecheck.Result) []Check {
 			continue
 		}
 		checks = append(checks, Check{ID: "runtime." + safeIDPart(name) + ".baseline",
-			Status: StatusMissing, Severity: SeverityWarning, Expected: runtimeIdentity(prior.SourceKind, prior.Version),
+			Status: StatusMissing, Severity: SeverityWarning,
+			Expected:   runtimeIdentity(prior.SourceKind, prior.Declared, prior.Version),
 			Provenance: workspace.ProvenanceReinstatePrelaunchObserved,
 			Message:    "a previously observed runtime declaration is missing",
 			Repair:     "restore the runtime declaration or acknowledge this exact warning", ExitCode: exitcode.Safety})
@@ -442,11 +450,8 @@ func runtimeChecks(input Input, results []runtimecheck.Result) []Check {
 	return checks
 }
 
-func runtimeIdentity(sourceKind, version string) string {
-	if version == "" {
-		return sourceKind
-	}
-	return sourceKind + "@" + version
+func runtimeIdentity(sourceKind, declared, version string) string {
+	return sourceKind + ":declared=" + declared + ":actual=" + version
 }
 
 func normalizeChecks(checks []Check) []Check {

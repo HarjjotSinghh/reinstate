@@ -2,7 +2,11 @@
 // native coding-agent continuation.
 package workspace
 
-import "time"
+import (
+	"time"
+
+	"github.com/HarjjotSinghh/reinstate/internal/fileidentity"
+)
 
 const SchemaVersion = 1
 
@@ -71,6 +75,9 @@ type WorkspaceFingerprint struct {
 	Path      string `json:"-"`
 	Exists    bool   `json:"exists"`
 	Directory bool   `json:"directory"`
+	// Identity privately binds the observed directory object to the final
+	// launch. It is never serialized in human or JSON reports.
+	Identity fileidentity.Identity `json:"-"`
 }
 
 type WorkingTreeState string

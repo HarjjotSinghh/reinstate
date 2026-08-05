@@ -91,7 +91,7 @@ func TestCoalesceRecordsMergesNativeSessionSegmentsDeterministically(t *testing.
 		record.Title != "Useful vendor title" ||
 		record.PromptPreview != "first user prompt" ||
 		record.MessageCount != 5 ||
-		!strings.HasPrefix(record.SourcePath, "aggregate://codex/shared-id/") {
+		record.SourcePath != "/sessions/new.jsonl" {
 		t.Fatalf("coalesced record = %+v", record)
 	}
 	for _, expected := range []string{"old searchable marker", "new searchable marker"} {
@@ -113,8 +113,16 @@ func TestCoalesceRecordsMergesNativeSessionSegmentsDeterministically(t *testing.
 	}
 
 	reversed, _ := CoalesceRecords([]Record{old, newer})
-	if len(reversed) != 1 || reversed[0].SourcePath != record.SourcePath {
+	if len(reversed) != 1 || reversed[0].SourcePath != record.SourcePath ||
+		reversed[0].SourceModTime != record.SourceModTime {
 		t.Fatalf("aggregate fingerprint is not deterministic: %+v / %+v", record, reversed)
+	}
+
+	changedOld := old
+	changedOld.SourceModTime++
+	changed, _ := CoalesceRecords([]Record{changedOld, newer})
+	if changed[0].SourceModTime == record.SourceModTime {
+		t.Fatal("aggregate freshness token did not change with an older segment")
 	}
 }
 

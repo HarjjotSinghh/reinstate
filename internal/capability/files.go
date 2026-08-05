@@ -109,7 +109,7 @@ func readBounded(ctx context.Context, root, path string) ([]byte, pathStatus) {
 	if err != nil {
 		return nil, pathFailed
 	}
-	defer rootHandle.Close()
+	defer func() { _ = rootHandle.Close() }()
 	if contextCancelled(ctx) {
 		return nil, pathCancelled
 	}
@@ -117,7 +117,7 @@ func readBounded(ctx context.Context, root, path string) ([]byte, pathStatus) {
 	if err != nil {
 		return nil, pathFailed
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	if contextCancelled(ctx) {
 		return nil, pathCancelled
 	}
@@ -175,7 +175,7 @@ func readDirBounded(ctx context.Context, root, path string) ([]os.DirEntry, bool
 	if err != nil {
 		return nil, false, pathFailed
 	}
-	defer rootHandle.Close()
+	defer func() { _ = rootHandle.Close() }()
 	if contextCancelled(ctx) {
 		return nil, false, pathCancelled
 	}
@@ -183,7 +183,7 @@ func readDirBounded(ctx context.Context, root, path string) ([]os.DirEntry, bool
 	if err != nil {
 		return nil, false, pathFailed
 	}
-	defer dir.Close()
+	defer func() { _ = dir.Close() }()
 	if contextCancelled(ctx) {
 		return nil, false, pathCancelled
 	}

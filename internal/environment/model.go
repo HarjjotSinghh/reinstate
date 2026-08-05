@@ -71,6 +71,7 @@ type Capability struct {
 // filesystem path.
 type Runtime struct {
 	Name       string `json:"name"`
+	Declared   string `json:"declared,omitempty"`
 	Version    string `json:"version,omitempty"`
 	SourceKind string `json:"source_kind"`
 	Provenance string `json:"provenance"`
@@ -294,7 +295,7 @@ func normalizeRequirement(value Requirement) (Requirement, error) {
 		return Requirement{}, errors.New("environment requirement needs kind, name, and provenance")
 	}
 	for _, current := range result.Kind {
-		if !(current >= 'a' && current <= 'z' || current >= '0' && current <= '9' || current == '_' || current == '-') {
+		if (current < 'a' || current > 'z') && (current < '0' || current > '9') && current != '_' && current != '-' {
 			return Requirement{}, errors.New("invalid environment requirement kind")
 		}
 	}
@@ -367,6 +368,7 @@ func normalizeRuntimes(values []Runtime) ([]Runtime, error) {
 	seen := make(map[string]struct{}, len(values))
 	for _, value := range values {
 		value.Name = strings.ToLower(normalizeMetadata(value.Name, 128))
+		value.Declared = normalizeMetadata(value.Declared, MaxRequirementVersionRunes)
 		value.Version = normalizeMetadata(value.Version, MaxRequirementVersionRunes)
 		value.SourceKind = strings.ToLower(normalizeMetadata(value.SourceKind, 128))
 		value.Provenance = normalizeMetadata(value.Provenance, MaxProvenanceRunes)
@@ -379,7 +381,7 @@ func normalizeRuntimes(values []Runtime) ([]Runtime, error) {
 		if value.Provenance != PrelaunchObservedProvenance {
 			return nil, errors.New("unsupported runtime provenance")
 		}
-		key := value.Name + "\x00" + value.Version + "\x00" + value.SourceKind + "\x00" + value.Provenance
+		key := value.Name + "\x00" + value.Declared + "\x00" + value.Version + "\x00" + value.SourceKind + "\x00" + value.Provenance
 		if _, exists := seen[key]; exists {
 			continue
 		}
@@ -388,8 +390,8 @@ func normalizeRuntimes(values []Runtime) ([]Runtime, error) {
 	}
 	sort.Slice(result, func(i, j int) bool {
 		left, right := result[i], result[j]
-		leftKey := left.Name + "\x00" + left.Version + "\x00" + left.SourceKind + "\x00" + left.Provenance
-		rightKey := right.Name + "\x00" + right.Version + "\x00" + right.SourceKind + "\x00" + right.Provenance
+		leftKey := left.Name + "\x00" + left.Declared + "\x00" + left.Version + "\x00" + left.SourceKind + "\x00" + left.Provenance
+		rightKey := right.Name + "\x00" + right.Declared + "\x00" + right.Version + "\x00" + right.SourceKind + "\x00" + right.Provenance
 		return leftKey < rightKey
 	})
 	if len(result) == 0 {
@@ -407,7 +409,7 @@ func normalizeGitHead(value string, maxRunes int) string {
 		return ""
 	}
 	for _, current := range value {
-		if !(current >= '0' && current <= '9' || current >= 'a' && current <= 'f') {
+		if (current < '0' || current > '9') && (current < 'a' || current > 'f') {
 			return ""
 		}
 	}
@@ -421,7 +423,7 @@ func normalizeDigest(value string) string {
 		return ""
 	}
 	for _, current := range value {
-		if !(current >= '0' && current <= '9' || current >= 'a' && current <= 'f') {
+		if (current < '0' || current > '9') && (current < 'a' || current > 'f') {
 			return ""
 		}
 	}
@@ -430,8 +432,8 @@ func normalizeDigest(value string) string {
 
 func safeToken(value string) bool {
 	for _, current := range value {
-		if !(current >= 'a' && current <= 'z' || current >= '0' && current <= '9' ||
-			current == '_' || current == '-' || current == '.') {
+		if (current < 'a' || current > 'z') && (current < '0' || current > '9') &&
+			current != '_' && current != '-' && current != '.' {
 			return false
 		}
 	}
@@ -440,7 +442,7 @@ func safeToken(value string) bool {
 
 func isLowerHex(value string) bool {
 	for _, current := range value {
-		if !(current >= '0' && current <= '9' || current >= 'a' && current <= 'f') {
+		if (current < '0' || current > '9') && (current < 'a' || current > 'f') {
 			return false
 		}
 	}

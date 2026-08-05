@@ -182,7 +182,7 @@ func TestNormalizePrelaunchBaseline(t *testing.T) {
 			{Agent: "codex", Kind: "mcp", Name: "github", Scope: "project", State: "present", Provenance: PrelaunchObservedProvenance},
 		},
 		Runtimes: []Runtime{
-			{Name: "node", Version: "22.12.0", SourceKind: "executable", Provenance: PrelaunchObservedProvenance},
+			{Name: "node", Declared: ">=22 <23", Version: "22.12.0", SourceKind: "executable", Provenance: PrelaunchObservedProvenance},
 			{Name: "go", Version: "1.25.12", SourceKind: "go_mod", Provenance: PrelaunchObservedProvenance},
 		},
 	})
@@ -197,7 +197,7 @@ func TestNormalizePrelaunchBaseline(t *testing.T) {
 		t.Fatalf("normalized baseline = %+v", baseline)
 	}
 	if len(baseline.Capabilities) != 2 || baseline.Capabilities[0].Agent != "claude" ||
-		len(baseline.Runtimes) != 2 || baseline.Runtimes[0].Name != "go" {
+		len(baseline.Runtimes) != 2 || baseline.Runtimes[0].Name != "go" || baseline.Runtimes[1].Declared != ">=22 <23" {
 		t.Fatalf("normalized inventories = capabilities:%+v runtimes:%+v", baseline.Capabilities, baseline.Runtimes)
 	}
 

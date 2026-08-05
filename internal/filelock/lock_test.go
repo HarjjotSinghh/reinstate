@@ -15,7 +15,7 @@ func TestAcquireSerializesIndependentHandles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer first.Close()
+	defer func() { _ = first.Close() }()
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
 	if _, err := Acquire(ctx, path); !errors.Is(err, context.DeadlineExceeded) {
@@ -40,12 +40,12 @@ func TestSharedLocksCoexistAndBlockExclusive(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer first.Close()
+	defer func() { _ = first.Close() }()
 	second, err := AcquireShared(context.Background(), path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer second.Close()
+	defer func() { _ = second.Close() }()
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
 	if _, err := Acquire(ctx, path); !errors.Is(err, context.DeadlineExceeded) {

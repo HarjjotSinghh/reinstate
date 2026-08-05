@@ -10,6 +10,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/spf13/cobra"
 
 	"github.com/HarjjotSinghh/reinstate/internal/agentcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/environment"
@@ -232,6 +235,50 @@ func TestPhase3WarningAcknowledgementAndTTYRules(t *testing.T) {
 	}
 }
 
+func TestPhase3WarningPromptCancellationDeclinesWithSafetyExit(t *testing.T) {
+	t.Parallel()
+	ctx, cancel := context.WithCancel(context.Background())
+	command := &cobra.Command{}
+	command.SetContext(ctx)
+	var output bytes.Buffer
+	command.SetOut(&output)
+	started := make(chan struct{})
+	blocked := make(chan struct{})
+	reader := func() (string, bool, error) {
+		close(started)
+		<-blocked
+		return "yes", true, nil
+	}
+	result := make(chan error, 1)
+	go func() {
+		_, err := authorizeEnvironment(
+			command,
+			localCommandOptions{terminalCheck: func(io.Reader, io.Writer) bool { return true }},
+			phase3Report(
+				preflight.Input{SessionRef: "claude:controlled", Agent: sessionindex.AgentClaude},
+				preflight.DecisionConfirmationRequired,
+				warningCheck("baseline.unavailable"),
+			),
+			sessionindex.LaunchPlan{Agent: sessionindex.AgentClaude, SessionRef: "claude:controlled", Operation: sessionindex.OperationResume},
+			nil,
+			reader,
+		)
+		result <- err
+	}()
+	<-started
+	cancel()
+	select {
+	case err := <-result:
+		var exitErr *ExitError
+		if !errors.As(err, &exitErr) || exitErr.Code != ExitSafety {
+			t.Fatalf("cancellation error = %v, want safety exit %d", err, ExitSafety)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("warning confirmation did not react to cancellation")
+	}
+	close(blocked)
+}
+
 func TestPhase3BaselinePersistsOnlyAfterSuccessfulChild(t *testing.T) {
 	workspacePath := t.TempDir()
 	source := staticSessionSource{name: sessionindex.AgentClaude, result: sessionindex.ScanResult{Records: []sessionindex.Record{phase3Record(workspacePath)}}}
@@ -371,6 +418,9 @@ func newFinalGuardFixture(t *testing.T) finalGuardFixture {
 	if err := os.MkdirAll(filepath.Join(agentRoot, "projects"), 0o700); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.WriteFile(filepath.Join(root, "controlled-claude"), []byte("controlled agent"), 0o700); err != nil {
+		t.Fatal(err)
+	}
 
 	remote := "https://example.com/org/repo.git"
 	record := phase3Record(workspacePath)
@@ -477,7 +527,7 @@ func assertNoPhase3Baseline(t *testing.T, home, reference string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 	if _, err := store.GetPrelaunchBaseline(context.Background(), reference); !errors.Is(err, sessionindex.ErrPrelaunchBaselineNotFound) {
 		t.Fatalf("unexpected baseline for %s: %v", reference, err)
 	}

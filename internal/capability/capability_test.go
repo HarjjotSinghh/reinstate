@@ -139,6 +139,68 @@ func TestDiscoverWindowsManagedLocationsOnly(t *testing.T) {
 	assertInventoryPrivate(t, got, root, secretSentinel)
 }
 
+func TestDiscoverAgentContextSkipsUnselectedAgent(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name      string
+		selected  Agent
+		other     Agent
+		configure func(t *testing.T, home, project string)
+		want      Item
+	}{
+		{
+			name:     "Claude does not inspect Codex configuration",
+			selected: AgentClaude,
+			other:    AgentCodex,
+			configure: func(t *testing.T, home, _ string) {
+				writeTestFile(t, filepath.Join(home, ".claude", "CLAUDE.md"), "selected")
+				writeTestFile(t, filepath.Join(home, ".codex", "config.toml"), "[mcp_servers.unterminated")
+			},
+			want: Item{Agent: AgentClaude, Kind: KindInstruction, Name: "CLAUDE.md", Scope: ScopeUser, State: StateCandidate, SourceKind: SourceClaudeMemory},
+		},
+		{
+			name:     "Codex does not inspect Claude configuration",
+			selected: AgentCodex,
+			other:    AgentClaude,
+			configure: func(t *testing.T, home, project string) {
+				writeTestFile(t, filepath.Join(home, ".codex", "AGENTS.md"), "selected")
+				writeTestFile(t, filepath.Join(project, ".mcp.json"), `{"mcpServers":`)
+			},
+			want: Item{Agent: AgentCodex, Kind: KindInstruction, Name: "AGENTS.md", Scope: ScopeUser, State: StateCandidate, SourceKind: SourceCodexInstruction},
+		},
+	} {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			root := t.TempDir()
+			home := filepath.Join(root, "home")
+			project := filepath.Join(root, "project")
+			test.configure(t, home, project)
+
+			opts := Options{GOOS: "darwin", UserHome: home, ProjectRoot: project, WorkingDir: project}
+			if test.selected == AgentClaude {
+				opts.CodexHome = "relative-unrelated-codex-home"
+			} else {
+				opts.ClaudeHome = "relative-unrelated-claude-home"
+			}
+			got := DiscoverAgentContext(context.Background(), test.selected, opts)
+			if !containsItem(got.Items, test.want) {
+				t.Fatalf("selected-agent inventory omitted %+v: %+v", test.want, got)
+			}
+			for _, item := range got.Items {
+				if item.Agent == test.other {
+					t.Fatalf("selected-agent inventory included unrelated item: %+v", item)
+				}
+			}
+			for _, diagnostic := range got.Diagnostics {
+				if diagnostic.Agent == test.other || diagnostic.Code == DiagnosticMalformed {
+					t.Fatalf("selected-agent inventory inspected unrelated configuration: %+v", got.Diagnostics)
+				}
+			}
+		})
+	}
+}
+
 func TestSanitizesNamesAndDedupesNormalizedEntries(t *testing.T) {
 	root := t.TempDir()
 	project := filepath.Join(root, "project")

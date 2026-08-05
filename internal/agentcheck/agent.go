@@ -15,6 +15,7 @@ import (
 
 	"github.com/HarjjotSinghh/reinstate/internal/adapter/claude"
 	"github.com/HarjjotSinghh/reinstate/internal/adapter/codex"
+	"github.com/HarjjotSinghh/reinstate/internal/fileidentity"
 )
 
 const (
@@ -44,6 +45,9 @@ type Result struct {
 	// ExecutablePath binds the private executable selected by LookPath to the
 	// later native launch. It is deliberately absent from public JSON.
 	ExecutablePath string `json:"-"`
+	// ExecutableIdentity binds the private filesystem object and its metadata
+	// to the final native launch boundary. It is deliberately absent from JSON.
+	ExecutableIdentity fileidentity.Identity `json:"-"`
 }
 
 // VersionOutput keeps the two process streams separate so a warning written to
@@ -68,6 +72,8 @@ type Options struct {
 	Timeout    time.Duration
 	MaxOutput  int64
 	Executable string
+	// CaptureIdentity overrides private executable identity capture in tests.
+	CaptureIdentity func(context.Context, string) (fileidentity.Identity, error)
 }
 
 // Inspect verifies executable, local session layout, and current version.
@@ -145,12 +151,30 @@ func Inspect(ctx context.Context, agentName string, opts Options) Result {
 	if runner == nil {
 		runner = ExecRunner{MaxOutput: opts.MaxOutput}
 	}
+	captureIdentity := opts.CaptureIdentity
+	if captureIdentity == nil {
+		captureIdentity = fileidentity.CaptureExecutable
+	}
+	beforeIdentity, err := captureIdentity(probeCtx, resolved)
+	if err != nil || !beforeIdentity.IsRegular() {
+		result.Status = StatusError
+		result.Message = "native agent executable identity is unavailable"
+		return result
+	}
 	output, err := runner.Version(probeCtx, resolved, "--version")
 	if err != nil {
 		result.Status = StatusError
 		result.Message = "native agent version probe failed"
 		return result
 	}
+	afterIdentity, err := captureIdentity(probeCtx, resolved)
+	if err != nil || !afterIdentity.IsRegular() ||
+		!fileidentity.SameExecutable(beforeIdentity, afterIdentity) {
+		result.Status = StatusError
+		result.Message = "native agent executable changed during version verification"
+		return result
+	}
+	result.ExecutableIdentity = afterIdentity
 	version, ok := definition.parseVersion(output)
 	if !ok {
 		result.Message = "native agent version is unrecognized"
@@ -268,7 +292,7 @@ func recognizedLayout(root, marker string) bool {
 	if err != nil {
 		return false
 	}
-	defer rootHandle.Close()
+	defer func() { _ = rootHandle.Close() }()
 
 	openedRoot, err := rootHandle.Open(".")
 	if err != nil {
@@ -303,7 +327,8 @@ func recognizedLayout(root, marker string) bool {
 
 // ExecRunner is a shell-free, output-bounded vendor version runner.
 type ExecRunner struct {
-	MaxOutput int64
+	MaxOutput       int64
+	testEnvironment []string
 }
 
 // Version runs the exact executable and fixed arguments without stdin.
@@ -314,6 +339,8 @@ func (runner ExecRunner) Version(ctx context.Context, executable string, args ..
 	}
 	command := exec.CommandContext(ctx, executable, args...)
 	command.Stdin = nil
+	command.Dir = neutralWorkingDirectory(executable)
+	command.Env = append(sanitizedVersionEnvironment(os.Environ()), runner.testEnvironment...)
 	stdout := boundedBuffer{limit: limit}
 	stderr := boundedBuffer{limit: limit}
 	command.Stdout = &stdout
@@ -325,6 +352,36 @@ func (runner ExecRunner) Version(ctx context.Context, executable string, args ..
 		return VersionOutput{}, errors.New("native agent version output exceeded limit")
 	}
 	return VersionOutput{Stdout: stdout.String(), Stderr: stderr.String()}, nil
+}
+
+func neutralWorkingDirectory(executable string) string {
+	volume := filepath.VolumeName(executable)
+	if volume != "" {
+		return volume + string(os.PathSeparator)
+	}
+	return string(os.PathSeparator)
+}
+
+// sanitizedVersionEnvironment retains only the operating-system values needed
+// to start a resolved executable (including script launchers) and locale/temp
+// behavior. In particular, it excludes NODE_OPTIONS and vendor/project config
+// selectors that could execute project-controlled code during a safe probe.
+func sanitizedVersionEnvironment(inherited []string) []string {
+	allowed := map[string]struct{}{
+		"COMSPEC": {}, "LANG": {}, "LC_ALL": {}, "PATH": {}, "PATHEXT": {},
+		"SYSTEMROOT": {}, "TEMP": {}, "TMP": {}, "TMPDIR": {}, "WINDIR": {},
+	}
+	result := make([]string, 0, len(allowed))
+	for _, entry := range inherited {
+		separator := strings.IndexByte(entry, '=')
+		if separator <= 0 {
+			continue
+		}
+		if _, ok := allowed[strings.ToUpper(entry[:separator])]; ok {
+			result = append(result, entry)
+		}
+	}
+	return result
 }
 
 type boundedBuffer struct {
