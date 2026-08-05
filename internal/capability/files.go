@@ -1,6 +1,7 @@
 package capability
 
 import (
+	"context"
 	"errors"
 	"io"
 	"os"
@@ -19,9 +20,13 @@ const (
 	pathOversized
 	pathUnsafe
 	pathFailed
+	pathCancelled
 )
 
-func inspectPath(root, path string, sizeLimit int64) (pathStatus, os.FileInfo) {
+func inspectPath(ctx context.Context, root, path string, sizeLimit int64) (pathStatus, os.FileInfo) {
+	if contextCancelled(ctx) {
+		return pathCancelled, nil
+	}
 	rootAbs, err := filepath.Abs(root)
 	if err != nil {
 		return pathUnsafe, nil
@@ -38,6 +43,9 @@ func inspectPath(root, path string, sizeLimit int64) (pathStatus, os.FileInfo) {
 	current := rootAbs
 	if rel != "." {
 		for _, part := range strings.Split(rel, string(filepath.Separator)) {
+			if contextCancelled(ctx) {
+				return pathCancelled, nil
+			}
 			current = filepath.Join(current, part)
 			info, statErr := os.Lstat(current)
 			if errors.Is(statErr, os.ErrNotExist) {
@@ -52,6 +60,9 @@ func inspectPath(root, path string, sizeLimit int64) (pathStatus, os.FileInfo) {
 		}
 	}
 
+	if contextCancelled(ctx) {
+		return pathCancelled, nil
+	}
 	info, err := os.Lstat(pathAbs)
 	if errors.Is(err, os.ErrNotExist) {
 		return pathMissing, nil
@@ -74,8 +85,8 @@ func inspectPath(root, path string, sizeLimit int64) (pathStatus, os.FileInfo) {
 	return pathRegular, info
 }
 
-func readBounded(root, path string) ([]byte, pathStatus) {
-	status, before := inspectPath(root, path, maxConfigBytes)
+func readBounded(ctx context.Context, root, path string) ([]byte, pathStatus) {
+	status, before := inspectPath(ctx, root, path, maxConfigBytes)
 	if status != pathRegular {
 		return nil, status
 	}
@@ -91,32 +102,57 @@ func readBounded(root, path string) ([]byte, pathStatus) {
 	if err != nil {
 		return nil, pathUnsafe
 	}
+	if contextCancelled(ctx) {
+		return nil, pathCancelled
+	}
 	rootHandle, err := os.OpenRoot(rootAbs)
 	if err != nil {
 		return nil, pathFailed
 	}
 	defer rootHandle.Close()
+	if contextCancelled(ctx) {
+		return nil, pathCancelled
+	}
 	f, err := rootHandle.Open(rel)
 	if err != nil {
 		return nil, pathFailed
 	}
 	defer f.Close()
+	if contextCancelled(ctx) {
+		return nil, pathCancelled
+	}
 	after, err := f.Stat()
 	if err != nil || !after.Mode().IsRegular() || after.Size() > maxConfigBytes || !os.SameFile(before, after) {
 		return nil, pathFailed
 	}
-	b, err := io.ReadAll(io.LimitReader(f, maxConfigBytes+1))
-	if err != nil {
-		return nil, pathFailed
+	b := make([]byte, 0, min(int(before.Size()), int(maxConfigBytes)))
+	chunk := make([]byte, 32<<10)
+	for {
+		if contextCancelled(ctx) {
+			return nil, pathCancelled
+		}
+		n, readErr := f.Read(chunk)
+		if n > 0 {
+			if int64(len(b)+n) > maxConfigBytes {
+				return nil, pathOversized
+			}
+			b = append(b, chunk[:n]...)
+		}
+		if errors.Is(readErr, io.EOF) {
+			break
+		}
+		if readErr != nil {
+			return nil, pathFailed
+		}
 	}
-	if int64(len(b)) > maxConfigBytes {
-		return nil, pathOversized
+	if contextCancelled(ctx) {
+		return nil, pathCancelled
 	}
 	return b, pathRegular
 }
 
-func readDirBounded(root, path string) ([]os.DirEntry, bool, pathStatus) {
-	status, before := inspectPath(root, path, -1)
+func readDirBounded(ctx context.Context, root, path string) ([]os.DirEntry, bool, pathStatus) {
+	status, before := inspectPath(ctx, root, path, -1)
 	if status != pathDirectory {
 		return nil, false, status
 	}
@@ -132,16 +168,25 @@ func readDirBounded(root, path string) ([]os.DirEntry, bool, pathStatus) {
 	if err != nil {
 		return nil, false, pathUnsafe
 	}
+	if contextCancelled(ctx) {
+		return nil, false, pathCancelled
+	}
 	rootHandle, err := os.OpenRoot(rootAbs)
 	if err != nil {
 		return nil, false, pathFailed
 	}
 	defer rootHandle.Close()
+	if contextCancelled(ctx) {
+		return nil, false, pathCancelled
+	}
 	dir, err := rootHandle.Open(rel)
 	if err != nil {
 		return nil, false, pathFailed
 	}
 	defer dir.Close()
+	if contextCancelled(ctx) {
+		return nil, false, pathCancelled
+	}
 	after, err := dir.Stat()
 	if err != nil || !after.IsDir() || !os.SameFile(before, after) {
 		return nil, false, pathFailed
@@ -149,8 +194,14 @@ func readDirBounded(root, path string) ([]os.DirEntry, bool, pathStatus) {
 	entries := make([]os.DirEntry, 0, maxEntries)
 	truncated := false
 	for {
+		if contextCancelled(ctx) {
+			return nil, false, pathCancelled
+		}
 		batch, readErr := dir.ReadDir(64)
 		for _, entry := range batch {
+			if contextCancelled(ctx) {
+				return nil, false, pathCancelled
+			}
 			if len(entries) < maxEntries {
 				entries = append(entries, entry)
 				continue
@@ -158,6 +209,9 @@ func readDirBounded(root, path string) ([]os.DirEntry, bool, pathStatus) {
 			truncated = true
 			maxIndex := 0
 			for i := 1; i < len(entries); i++ {
+				if contextCancelled(ctx) {
+					return nil, false, pathCancelled
+				}
 				if entries[i].Name() > entries[maxIndex].Name() {
 					maxIndex = i
 				}
@@ -173,8 +227,18 @@ func readDirBounded(root, path string) ([]os.DirEntry, bool, pathStatus) {
 			return nil, false, pathFailed
 		}
 	}
+	if contextCancelled(ctx) {
+		return nil, false, pathCancelled
+	}
 	sort.Slice(entries, func(i, j int) bool { return entries[i].Name() < entries[j].Name() })
+	if contextCancelled(ctx) {
+		return nil, false, pathCancelled
+	}
 	return entries, truncated, pathDirectory
+}
+
+func contextCancelled(ctx context.Context) bool {
+	return ctx != nil && ctx.Err() != nil
 }
 
 func withinRoot(root, path string) bool {
@@ -190,6 +254,8 @@ func diagnosticForStatus(status pathStatus) DiagnosticCode {
 		return DiagnosticOversized
 	case pathUnsafe:
 		return DiagnosticUnsafePath
+	case pathCancelled:
+		return DiagnosticCancelled
 	default:
 		return DiagnosticReadFailed
 	}

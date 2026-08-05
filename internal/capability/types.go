@@ -49,6 +49,17 @@ const (
 	StateUnverified State = "unverified"
 )
 
+// Transport is a privacy-safe MCP transport classification. It never contains
+// a command, URL, argument, header, environment value, or parser output.
+type Transport string
+
+const (
+	TransportUnknown Transport = "unknown"
+	TransportStdio   Transport = "stdio"
+	TransportHTTP    Transport = "http"
+	TransportSSE     Transport = "sse"
+)
+
 // SourceKind is a path-free description of the declaration format.
 type SourceKind string
 
@@ -75,6 +86,7 @@ type Item struct {
 	Scope      Scope      `json:"scope"`
 	State      State      `json:"state"`
 	SourceKind SourceKind `json:"source_kind"`
+	Transport  Transport  `json:"transport,omitempty"`
 	Lazy       bool       `json:"lazy"`
 }
 
@@ -97,6 +109,7 @@ const (
 	DiagnosticUnsafePath    DiagnosticCode = "unsafe_path"
 	DiagnosticLimitReached  DiagnosticCode = "limit_reached"
 	DiagnosticUnsupportedOS DiagnosticCode = "unsupported_os"
+	DiagnosticCancelled     DiagnosticCode = "cancelled"
 )
 
 // Diagnostic never contains an error string or filesystem path. In
@@ -121,11 +134,12 @@ type Inventory struct {
 // can point it at a disposable directory while injecting GOOS.
 //
 // ProjectRoot and WorkingDir must be absolute, and WorkingDir must be within
-// ProjectRoot. Project declarations are not scanned otherwise. CodexHome may
-// be omitted to use UserHome/.codex.
+// ProjectRoot. Project declarations are not scanned otherwise. ClaudeHome and
+// CodexHome may be omitted to use UserHome/.claude and UserHome/.codex.
 type Options struct {
 	GOOS        string `json:"goos,omitempty"`
 	UserHome    string `json:"-"`
+	ClaudeHome  string `json:"-"`
 	CodexHome   string `json:"-"`
 	ProjectRoot string `json:"-"`
 	WorkingDir  string `json:"-"`

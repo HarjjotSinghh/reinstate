@@ -1,6 +1,7 @@
 package capability
 
 import (
+	"context"
 	"sort"
 	"strings"
 	"unicode"
@@ -8,6 +9,7 @@ import (
 )
 
 type collector struct {
+	ctx           context.Context
 	items         []Item
 	diagnostics   []Diagnostic
 	counts        map[string]int
@@ -16,14 +18,29 @@ type collector struct {
 }
 
 func newCollector() *collector {
+	return newCollectorContext(context.Background())
+}
+
+func newCollectorContext(ctx context.Context) *collector {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	return &collector{
+		ctx:           ctx,
 		counts:        make(map[string]int),
 		limited:       make(map[string]bool),
 		diagnosticSet: make(map[Diagnostic]struct{}),
 	}
 }
 
+func (c *collector) cancelled() bool {
+	return c != nil && c.ctx != nil && c.ctx.Err() != nil
+}
+
 func (c *collector) add(item Item) {
+	if c.cancelled() {
+		return
+	}
 	item.Name = sanitizeName(item.Name)
 	if item.Name == "" {
 		return
@@ -41,6 +58,9 @@ func (c *collector) add(item Item) {
 }
 
 func (c *collector) addDiagnostic(d Diagnostic) {
+	if c.cancelled() {
+		return
+	}
 	if _, exists := c.diagnosticSet[d]; exists {
 		return
 	}
@@ -49,10 +69,13 @@ func (c *collector) addDiagnostic(d Diagnostic) {
 }
 
 func (c *collector) full(agent Agent, kind Kind) bool {
-	return c.counts[string(agent)+"\x00"+string(kind)] >= maxEntries
+	return c.cancelled() || c.counts[string(agent)+"\x00"+string(kind)] >= maxEntries
 }
 
 func (c *collector) inventory() Inventory {
+	if c.cancelled() {
+		return cancelledInventory()
+	}
 	sort.Slice(c.items, func(i, j int) bool {
 		a, b := c.items[i], c.items[j]
 		if a.Agent != b.Agent {
@@ -77,9 +100,18 @@ func (c *collector) inventory() Inventory {
 		if a.SourceKind != b.SourceKind {
 			return a.SourceKind < b.SourceKind
 		}
+		if a.Transport != b.Transport {
+			return a.Transport < b.Transport
+		}
 		return !a.Lazy && b.Lazy
 	})
+	if c.cancelled() {
+		return cancelledInventory()
+	}
 	c.items = dedupeItems(c.items)
+	if c.cancelled() {
+		return cancelledInventory()
+	}
 
 	sort.Slice(c.diagnostics, func(i, j int) bool {
 		a, b := c.diagnostics[i], c.diagnostics[j]
@@ -94,9 +126,22 @@ func (c *collector) inventory() Inventory {
 		}
 		return a.Code < b.Code
 	})
+	if c.cancelled() {
+		return cancelledInventory()
+	}
 	c.diagnostics = dedupeDiagnostics(c.diagnostics)
+	if c.cancelled() {
+		return cancelledInventory()
+	}
 
 	return Inventory{Items: c.items, Diagnostics: c.diagnostics}
+}
+
+func cancelledInventory() Inventory {
+	return Inventory{
+		Items:       []Item{},
+		Diagnostics: []Diagnostic{{Code: DiagnosticCancelled}},
+	}
 }
 
 func dedupeItems(items []Item) []Item {
@@ -106,7 +151,7 @@ func dedupeItems(items []Item) []Item {
 		key := strings.Join([]string{
 			string(item.Agent), string(item.Kind), string(item.Scope),
 			strings.ToLower(item.Name), string(item.State),
-			string(item.SourceKind), boolString(item.Lazy),
+			string(item.SourceKind), string(item.Transport), boolString(item.Lazy),
 		}, "\x00")
 		if len(out) != 0 && key == prior {
 			continue
