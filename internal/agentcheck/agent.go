@@ -41,6 +41,9 @@ type Result struct {
 	Version           string `json:"version,omitempty"`
 	Status            Status `json:"status"`
 	Message           string `json:"message"`
+	// ExecutablePath binds the private executable selected by LookPath to the
+	// later native launch. It is deliberately absent from public JSON.
+	ExecutablePath string `json:"-"`
 }
 
 // VersionOutput keeps the two process streams separate so a warning written to
@@ -91,7 +94,14 @@ func Inspect(ctx context.Context, agentName string, opts Options) Result {
 		result.Message = "native agent executable is unavailable"
 		return result
 	}
+	resolved, err = filepath.Abs(resolved)
+	if err != nil {
+		result.Status = StatusError
+		result.Message = "native agent executable path is unavailable"
+		return result
+	}
 	result.ExecutablePresent = true
+	result.ExecutablePath = resolved
 
 	root := opts.Root
 	if root == "" {

@@ -83,7 +83,7 @@ func TestCompareNonGitWithoutBaselineWarnsButGitExpectationBlocks(t *testing.T) 
 	t.Parallel()
 	fingerprint := Fingerprint{
 		Workspace: WorkspaceFingerprint{Path: "/work", Exists: true, Directory: true},
-		Git:       GitFingerprint{WorkingTree: WorkingTreeFingerprint{State: WorkingTreeUnavailable}},
+		Git:       GitFingerprint{Available: true, WorkingTree: WorkingTreeFingerprint{State: WorkingTreeUnavailable}},
 	}
 	without := Compare(Expectation{}, fingerprint)
 	if without.Decision != DecisionConfirmationRequired || checkByID(t, without, "git.working_tree").Severity != SeverityWarning {
