@@ -279,6 +279,18 @@ func TestPhase3WarningPromptCancellationDeclinesWithSafetyExit(t *testing.T) {
 	close(blocked)
 }
 
+func TestPhase3WarningPromptCancellationWinsOverConcurrentYes(t *testing.T) {
+	t.Parallel()
+	ctx, cancel := context.WithCancel(context.Background())
+	confirmed, err := confirmEnvironmentWarnings(ctx, io.Discard, func() (string, bool, error) {
+		cancel()
+		return "yes", true, nil
+	})
+	if err != nil || confirmed {
+		t.Fatalf("confirmation/error = %t / %v, want declined without runtime error", confirmed, err)
+	}
+}
+
 func TestPhase3BaselinePersistsOnlyAfterSuccessfulChild(t *testing.T) {
 	workspacePath := t.TempDir()
 	source := staticSessionSource{name: sessionindex.AgentClaude, result: sessionindex.ScanResult{Records: []sessionindex.Record{phase3Record(workspacePath)}}}

@@ -45,12 +45,17 @@ func CaptureExecutable(ctx context.Context, path string) (Identity, error) {
 	}
 	hash := sha256.New()
 	buffer := make([]byte, 64<<10)
+	var total int64
 	for {
 		if err := ctx.Err(); err != nil {
 			return Identity{}, err
 		}
 		count, readErr := handle.Read(buffer)
 		if count > 0 {
+			total += int64(count)
+			if total > before.Size() {
+				return Identity{}, errors.New("executable grew while its identity was captured")
+			}
 			_, _ = hash.Write(buffer[:count])
 		}
 		if errors.Is(readErr, io.EOF) {
@@ -59,6 +64,9 @@ func CaptureExecutable(ctx context.Context, path string) (Identity, error) {
 		if readErr != nil {
 			return Identity{}, readErr
 		}
+	}
+	if total != before.Size() {
+		return Identity{}, errors.New("executable was truncated while its identity was captured")
 	}
 	after, err := handle.Stat()
 	if err != nil {
@@ -71,6 +79,9 @@ func CaptureExecutable(ctx context.Context, path string) (Identity, error) {
 	if volume != afterVolume || file != afterFile || before.Size() != after.Size() ||
 		before.ModTime() != after.ModTime() || before.Mode() != after.Mode() {
 		return Identity{}, errors.New("executable changed while its identity was captured")
+	}
+	if err := ctx.Err(); err != nil {
+		return Identity{}, err
 	}
 	identity := Identity{
 		volume: volume, file: file, size: after.Size(),

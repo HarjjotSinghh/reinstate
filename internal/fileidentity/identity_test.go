@@ -2,6 +2,7 @@ package fileidentity
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -63,5 +64,18 @@ func TestIdentityCapturesDirectory(t *testing.T) {
 	identity, err := Capture(path)
 	if err != nil || !identity.IsDir() {
 		t.Fatalf("directory identity/error = %+v / %v", identity, err)
+	}
+}
+
+func TestCaptureExecutableHonorsCanceledContext(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "agent")
+	if err := os.WriteFile(path, []byte("controlled executable"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, err := CaptureExecutable(ctx, path); !errors.Is(err, context.Canceled) {
+		t.Fatalf("CaptureExecutable() error = %v, want canceled", err)
 	}
 }
