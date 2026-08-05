@@ -2,7 +2,7 @@
 
 > Status legend: ✅ done · 🚧 in progress · 📋 planned · 💭 exploring · ❌ won't do (for now)
 
-Last updated: **2026-08-01** · Maintainer: [Harjot Singh Rana](https://github.com/HarjjotSinghh)
+Last updated: **2026-08-05** · Maintainer: [Harjot Singh Rana](https://github.com/HarjjotSinghh)
 
 This roadmap is a living document. Priorities follow real activation signals —
 especially **successfully resumed tasks per active user** — and vendor format
@@ -161,19 +161,24 @@ rein resume claude:<session-id>
 
 ---
 
-## Phase 3 — Verified resume (signature capability) 📋
+## Phase 3 — Verified resume (signature capability) 🚧
 
 **Gate:** before launch, Reinstate reports environment truth and refuses silent
 bad continuation.
 
+*Implemented in the current development source. Local verification and review
+are in progress; `v0.3.0-rc.1` has not been published or physically certified.
+The stable `v0.2.0` installers therefore do not include this behavior yet.*
+
 | Item | Status |
 | ---- | ------ |
-| Workspace fingerprint (repo, branch, HEAD, working tree) | 📋 |
-| Agent version / layout compatibility (existing states) | 📋 |
-| Skills / MCP / instruction-file presence checks | 📋 |
-| Runtime checks (Node/runtime mismatches where known) | 📋 |
-| Clear continue-without vs repair-first UX | 📋 |
-| `rein inspect` environment report (JSON + human) | 📋 |
+| Workspace fingerprint (repo, branch, HEAD, working tree) | ✅ |
+| Agent version / layout compatibility (existing states) | ✅ |
+| Skills / MCP / instruction-file presence checks | ✅ |
+| Runtime checks (recognized Node and Go declarations) | ✅ |
+| Exact warning acknowledgement vs non-overridable blocker policy | ✅ |
+| `rein inspect` environment report (JSON + human) | ✅ |
+| Adversarial, performance, review, and `v0.3.0-rc.1` release gates | 🚧 |
 
 Example output:
 
@@ -186,7 +191,8 @@ GitHub MCP       missing
 Node version     mismatch
 
 This session can be resumed, but GitHub MCP is unavailable.
-Continue without it or repair the environment first?
+TTY: Continue with these environment warnings? Type yes or no [no]
+Automation: --allow-environment-warning <exact-check-id>
 ```
 
 ---

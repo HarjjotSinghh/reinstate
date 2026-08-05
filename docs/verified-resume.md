@@ -72,6 +72,20 @@ index may retain only recognized names, versions, digests, and provenance. It
 must not retain configuration values, commands, arguments, environment
 variables, instruction contents, skill contents, secrets, or transcript text.
 
+The private state lives in
+`$REINSTATE_HOME/cache/session-index-v2.sqlite`. Its owner-only `.lock` file
+protects database lifetime and destructive corruption repair; its owner-only
+`.write.lock` serializes ordinary writers and transactional rebuilds across
+`rein` and `reinstate` processes. The database and both
+locks are hard-excluded from sync. Session rows can be rediscovered from vendor
+sources; deleting/moving v2 also deletes prelaunch comparison history and makes
+the next launch truthfully return to `baseline.unavailable`.
+
+On Unix, owner-only means mode `0700` for the cache directory and `0600` for
+the database and locks. On Windows, Reinstate installs a protected DACL granting
+full access only to the current user, LocalSystem, and Administrators; it does
+not rely on a custom directory's inherited ACL or on Windows `chmod` behavior.
+
 ## Report schema
 
 The environment report is additive to the Phase 2 inspect and dry-run JSON
@@ -97,9 +111,9 @@ contracts:
 }
 ```
 
-Checks are emitted in a fixed order by stable check ID. The report contains no
-generation timestamp, so identical observations produce identical normalized
-JSON.
+Checks are emitted in a fixed deterministic order, with safety-critical groups
+first and stable check IDs within groups. The report contains no generation
+timestamp, so identical observations produce identical normalized JSON.
 
 ### Status
 
@@ -117,7 +131,7 @@ JSON.
 | Severity | Launch effect |
 | -------- | ------------- |
 | `info` | No launch effect. |
-| `warning` | Requires a human confirmation or `--continue-without`. |
+| `warning` | Requires a human confirmation or every exact warning ID to be acknowledged for that invocation. |
 | `block` | Launch is refused and cannot be overridden. |
 
 The aggregate decision is:
@@ -158,9 +172,13 @@ Policy:
 | Different known repository identity | Block, safety exit `7` |
 | Recorded branch differs from current branch | Warning |
 | Trustworthy recorded HEAD differs from current HEAD | Warning with local ahead/behind/diverged detail |
-| Current working tree modified | Warning |
+| Working tree modified with no baseline, or digest/state changed from baseline | Warning; an unchanged previously observed dirty digest may match |
 | Historical repository/HEAD/tree baseline unavailable | Warning `baseline.unavailable`; comparison remains `unknown` |
 | Probe infrastructure failure | Block, runtime exit `1` |
+
+When more than one blocker is observed, deterministic exit precedence is
+runtime infrastructure `1`, then known safety mismatch `7`, then compatibility
+`5`. The complete report still includes every check.
 
 Detached HEAD, unborn repositories, linked worktrees, symlinked workspaces,
 non-Git workspaces, missing Git, and locally unavailable comparison commits are
@@ -225,11 +243,25 @@ Real `resume`, `fork`, `last`, and picker launches apply the same policy:
    by a repeatable `--allow-environment-warning CHECK_ID`; and
 7. launch the unchanged vendor executable/argv/cwd only after authorization.
 
+After authorization Reinstate refreshes and resolves the exact qualified
+session again, rebuilds the native plan, repeats the complete preflight, and
+requires the plan and report to be identical before execution. A source,
+workspace, repository, executable, plan, or report change invalidates the
+authorization and returns safety exit `7` without launching.
+
+The real native runner then invokes the same refresh, plan, report, and exact
+acknowledgement guard once more after checking the privately bound absolute
+executable and workspace directory, immediately before creating the child
+process. Private executable and workspace paths are never serialized in the
+environment report.
+
 `--allow-environment-warning` accepts only a warning ID present in the freshly
 computed report. It is invocation-scoped, has no wildcard, and is not persisted.
-Unknown, stale, duplicated, or non-warning IDs are rejected. It cannot bypass a
-missing workspace or executable, an unverified agent layout/version, a known
-repository identity mismatch, or a verifier failure. Broad `--force`,
+On a warning-only report, unknown, stale, duplicated, or informational IDs are
+rejected. A blocked report takes its blocker exit before acknowledgements are
+considered. The flag cannot bypass a missing workspace or executable, an
+unverified agent layout/version, a known repository identity mismatch, or a
+verifier failure. Broad `--force`,
 `--continue-without`, `--no-check`, and environment-variable bypasses are
 intentionally not provided.
 
@@ -242,7 +274,9 @@ runtime contract.
 Verification is on the execution path, so it must stay local and bounded:
 
 - no verification work during ordinary `sessions` or `search`;
-- one preflight for `inspect` and one immediately before a selected launch;
+- one preflight for `inspect` or dry-run; a real launch displays/authorizes one
+  report, then repeats the bounded preflight after the selected-source refresh
+  and requires exact equality immediately before execution;
 - no recursive project-tree walk;
 - fixed known-path checks for instructions, skills, and runtime declarations;
 - bounded configuration parsing and name counts;

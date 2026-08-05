@@ -7,6 +7,10 @@ the Phase 2 local commands below. Exact signed artifacts are physically
 verified on Apple Silicon macOS and native Windows x64. Intel macOS and
 Linux/WSL2 packages are preview and unverified for this release.
 
+The command synopsis below follows the current development source. Stable
+`v0.2.0` does not include the Phase 3 environment report or
+`--allow-environment-warning` flag.
+
 ## Exit codes
 
 | Code | Meaning |
@@ -31,9 +35,12 @@ rein sessions [--agent claude|codex|gemini|opencode|all] [--json]
 rein search QUERY [QUERY...] [--agent ...] [--project FRAGMENT]
             [--branch FRAGMENT] [--file FRAGMENT] [--limit N] [--json]
 rein inspect AGENT:SESSION_ID [--json]
-rein last [--agent claude|codex] [--project FRAGMENT] [--dry-run] [--json]
+rein last [--agent claude|codex|all] [--project FRAGMENT] [--dry-run] [--json]
+          [--allow-environment-warning CHECK_ID ...]
 rein resume AGENT:SESSION_ID [--dry-run] [--json]
+            [--allow-environment-warning CHECK_ID ...]
 rein fork AGENT:SESSION_ID [--dry-run] [--json]
+          [--allow-environment-warning CHECK_ID ...]
 rein init [--endpoint URL] [--bucket NAME] [--region auto] [--prefix ...]
           [--profile-id UUID] [--project ID=/absolute/local/path] [--yes]
 rein list [--agent claude|codex|all] [--json]
@@ -45,17 +52,24 @@ rein conflicts list|show|resolve ...
 rein completion bash|zsh|fish|powershell
 ```
 
-## Phase 2 local commands
+## Local commands
 
 `sessions`, `search`, and `inspect` refresh and read a private derived index
 without requiring `init`, config, storage credentials, a passphrase, keyring
-access, or a backend. The index lives at:
+access, or a backend. Stable `v0.2.0` used the Phase 2 v1 index. Current Phase 3
+source deliberately moves to a separate path so an older binary cannot erase
+new baseline metadata:
 
 ```text
-$REINSTATE_HOME/cache/session-index-v1.sqlite
+$REINSTATE_HOME/cache/session-index-v2.sqlite
 ```
 
-It is owner-only, never synced, safe to rebuild, and contains bounded
+The database and its `.lock` and `.write.lock` files are owner-only and never
+synced. The shared/exclusive `.lock` protects database lifetime and rebuild;
+the `.write.lock` serializes ordinary writers across processes. Session rows
+are safe to rebuild; successful prelaunch observations are private continuity
+metadata and therefore live in the versioned v2 store rather than the Phase 2
+v1 file. The database contains bounded
 user-authored prompt text plus known metadata/file fields. It excludes
 assistant messages/reasoning, tool output, environment dumps, credentials, and
 auth stores.
@@ -85,11 +99,12 @@ delegate execution to the source vendor:
 | Gemini CLI | read-only | read-only |
 | OpenCode | read-only | read-only |
 
-Review the plan with `--dry-run --json`. A real launch inherits the terminal,
-waits for the child, and propagates failure. JSON mode requires `--dry-run` for
-`resume`, `fork`, and `last`, so native child output cannot corrupt the JSON
-document. A missing executable/workspace fails before launch. Read-only agents
-refuse resume/fork with compatibility exit `5`.
+Review the plan with `--dry-run --json`. Current Phase 3 source also includes
+the verified-resume `environment` report described below. A real launch
+inherits the terminal, waits for the child, and propagates failure. JSON mode
+requires `--dry-run` for `resume`, `fork`, and `last`, so native child output
+cannot corrupt the JSON document. Read-only agents refuse resume/fork with
+compatibility exit `5` before any environment probe or vendor launch.
 
 On a TTY, bare `rein` refreshes and opens the numbered switcher:
 
@@ -106,6 +121,98 @@ On a non-TTY, bare `rein` exits promptly with usage code `2` and a
 
 `rein list` remains the Phase 1 compatibility command used by sync scripts.
 `rein sessions` is the canonical config-independent local listing command.
+
+## Phase 3 verified resume (current source)
+
+Phase 3 is implemented in the current development source but is not included
+in the stable `v0.2.0` installers. Before any real Claude or Codex native
+continuation, Reinstate builds a deterministic, local-only environment report.
+The same report is exposed by `inspect` and native dry-runs and enforced by
+`resume`, `fork`, `last`, and picker resume/fork.
+
+The report covers:
+
+- selected-source freshness and the recorded workspace;
+- an offline repository fingerprint, branch, HEAD, and privacy-safe working
+  tree state/digest;
+- installed same-vendor executable, verified version, and recognized layout;
+- bounded logical names/states for recognized instruction files, skills, and
+  MCP declarations; and
+- supported Node and Go runtime declarations and locally installed versions.
+
+It does not fetch, install, repair, checkout, reset, run project scripts, or
+contact a network service. It omits dirty filenames, raw remote URLs,
+instruction/skill contents, MCP commands/arguments/URLs/headers/environment
+values, credentials, and raw environment dumps.
+
+`rein inspect SESSION` always emits the report. Human output prints an
+`Environment decision` and deterministic check lines. JSON adds:
+
+```json
+{
+  "environment": {
+    "schema_version": 1,
+    "session_ref": "claude:SESSION_ID",
+    "decision": "confirmation_required",
+    "checks": []
+  }
+}
+```
+
+Inspect does not prompt or launch. A successfully generated blocked report
+still exits `0`; automation must read `environment.decision`. Failure to
+produce an honest report exits `1`.
+
+Native dry-runs preserve the launch-plan keys and add `environment`. They
+never prompt or launch. Ready and warning-only reports exit `0`. A blocked
+dry-run emits one report-bearing error and returns its applicable exit code.
+A dry-run does not need warning acknowledgements because it cannot launch; if
+warning flags are supplied, their IDs are validated, but a partial valid set is
+not treated as launch authorization.
+
+### Launch decisions and warning acknowledgement
+
+| Decision | Real launch behavior |
+| -------- | -------------------- |
+| `ready` | Launches after a final identical refresh and preflight. |
+| `confirmation_required` | On a TTY, prompts `yes`/`no` with default `no`; otherwise every warning must be acknowledged by exact ID. |
+| `blocked` | Refuses without prompting; no flag can override it. |
+
+For non-interactive use, repeat the flag for every warning in the fresh report:
+
+```sh
+rein resume claude:SESSION_ID \
+  --allow-environment-warning baseline.unavailable \
+  --allow-environment-warning git.branch
+```
+
+The flag is invocation-scoped and accepts only an exact current warning ID.
+Empty, duplicate, wildcard, unknown, stale, and informational IDs are usage
+errors (`2`). Supplying only some current warnings is a safety refusal (`7`).
+A blocked report takes its applicable blocker exit before acknowledgements are
+considered; naming a blocker can never authorize it. There is no `--force`,
+wildcard, persisted approval, environment-variable bypass, or
+`--continue-without` alias.
+
+A real terminal prompt accepts exactly `yes` or `no`; empty input and `no`
+decline. EOF also declines. Decline/refusal returns safety exit `7` without a
+vendor launch.
+
+The first preflight for an existing session warns with
+`baseline.unavailable`; inspection never turns the current workspace into
+historical truth. After an authorized native child exits successfully,
+Reinstate stores the immediately preceding observation with
+`reinstate_prelaunch_observed` provenance. Failed, declined, cancelled, blocked,
+or child-error launches do not establish or advance it. A subsequent preflight
+can compare repository identity, branch, HEAD, working-tree digest,
+capabilities, and recognized runtimes with that private baseline.
+
+Known repository replacement and stale selected-source metadata are safety
+blockers (`7`). A missing workspace/executable or unverified agent layout/version
+is a compatibility blocker (`5`). Probe infrastructure failure is runtime
+failure (`1`). When multiple blockers exist, deterministic precedence is
+runtime `1`, safety `7`, then compatibility `5`; the report still includes all
+checks.
 
 ## Phase 1 encrypted sync
 

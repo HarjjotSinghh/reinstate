@@ -5,6 +5,8 @@ Reinstate separates per-agent capabilities:
 - **local read adapters** discover bounded metadata and user-prompt search text;
 - **native executors** resume/fork through the same vendor;
 - **sync adapters** export and restore vendor-native session files; and
+- **environment observers** report safe current facts before same-vendor
+  execution without mutating native configuration; and
 - later **configuration adapters** normalize portable intent and render each
   harness's native MCP/skills/plugins/settings format.
 
@@ -63,6 +65,46 @@ before export or restore.
 Plans store executable, argv, and recorded cwd separately. They never construct
 a shell command string. Gemini/OpenCode resume or fork fails with compatibility
 exit `5`.
+
+## Phase 3 environment-observer contract (current source)
+
+Phase 3 verification is implemented in the current development source; it is
+not part of stable `v0.2.0` and has not yet completed release-candidate
+certification. It adds observation to Claude/Codex native execution, not a new
+execution adapter and not cross-vendor translation.
+
+| Adapter | Phase 3 verified-resume observation |
+| ------- | ----------------------------------- |
+| Claude Code | Workspace, executable/version/layout, instruction/skill/MCP names, and recognized runtimes |
+| OpenAI Codex CLI | Workspace, executable/version/layout, instruction/skill/MCP names, and recognized runtimes |
+| Gemini CLI | No native launch; read-only refusal occurs before preflight |
+| OpenCode | No native launch; read-only refusal occurs before preflight |
+
+The verifier treats these capabilities independently:
+
+- executable discovery and a strictly parsed installed version;
+- a recognized, same-vendor session layout rooted at the selected record;
+- instruction, skill, and MCP declaration names/state in recognized user and
+  project locations; and
+- supported Node/Go project declarations and installed runtime versions.
+
+Capability enumeration is bounded and passive. It never executes a skill,
+instruction, configuration file, MCP command, package manager, or project
+script. It reports sanitized logical names, scope/state, and an MCP transport
+classification (`stdio`, `http`, `sse`, or `unknown`) only. It does not report
+paths, file contents, commands, arguments, raw URLs, headers, environment
+values, authentication state, or credentials. Escaping symlinks and
+unsupported/malformed shapes yield fixed diagnostics rather than raw parser
+output.
+
+An observed capability is not automatically a historical requirement. On the
+first inspection, presence is current truth only. A prior successful prelaunch
+baseline or a recognized vendor-recorded requirement is required before
+Reinstate claims a match/missing/change comparison. The baseline is saved only
+after an authorized native child exits successfully.
+
+See [Verified resume](verified-resume.md) for launch decisions, exact warning
+acknowledgements, exit codes, and provenance.
 
 ## Future configuration adapters
 

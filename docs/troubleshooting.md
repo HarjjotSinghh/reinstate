@@ -34,8 +34,9 @@ record the exact version and sanitized error and report it as a bug.
 4. Check [compatibility.md](compatibility.md) and the sanitized local-index
    warnings. Sync-adapter compatibility and local-index capability are
    intentionally reported separately.
-5. Confirm `REINSTATE_HOME` is absolute and writable. The derived database is
-   `$REINSTATE_HOME/cache/session-index-v1.sqlite`.
+5. Confirm `REINSTATE_HOME` is absolute and writable. Current Phase 3 source
+   uses `$REINSTATE_HOME/cache/session-index-v2.sqlite`; stable `v0.2.0` uses
+   the separate `session-index-v1.sqlite` database.
 
 Phase 2 local discovery intentionally does not reuse configured Phase 1 project
 mappings, so an unmapped local project should still appear. Claude subagent
@@ -48,15 +49,19 @@ appear on the next `rein sessions` or `rein search`.
 
 The database is derived state and should rebuild automatically after corruption
 or schema incompatibility. If diagnosis requires a manual reset, close
-Reinstate and move—not immediately delete—the exact
-`session-index-v1.sqlite` database and its SQLite `-wal`/`-shm` companions out
+Reinstate and confirm `rein version --json`. For current Phase 3 source,
+move—not immediately delete—the exact
+`session-index-v2.sqlite` database, its `.lock` and `.write.lock` coordination
+files, and any SQLite `-journal`/`-wal`/`-shm` companions out
 of `$REINSTATE_HOME/cache/`, then rerun:
 
 ```bash
 rein sessions --json
 ```
 
-Keep the moved files until the rebuilt results are verified. Never move or
+Moving v2 also discards private prelaunch comparison history, so the next real
+launch will truthfully require the `baseline.unavailable` warning again. Keep
+the moved files until the rebuilt results are verified. Never move or
 edit the vendor's Claude/Codex/Gemini/OpenCode session files to repair the
 index.
 
@@ -101,6 +106,56 @@ and intentionally return compatibility exit `5` for resume/fork.
 
 `--json` requires `--dry-run` for a launch command so native child output
 cannot be mixed into the JSON document.
+
+### Current Phase 3 source: read the environment decision
+
+Stable `v0.2.0` does not yet include verified resume. In the current Phase 3
+source, `inspect` and native dry-runs include an `environment` report:
+
+```bash
+rein inspect claude:SESSION_ID --json
+rein resume claude:SESSION_ID --dry-run --json
+```
+
+- `ready` means no warning or blocker was found.
+- `confirmation_required` means a real launch needs explicit consent.
+- `blocked` means the report is diagnostic only; no bypass exists.
+
+`baseline.unavailable` on the first inspection/launch is expected. Reinstate
+does not pretend the currently observed repository was the historical session
+environment. On a TTY, review the report and type exactly `yes` at the prompt.
+The default, empty input, `no`, or EOF refuses with safety exit `7`. For
+non-interactive use, repeat an exact flag for every current warning:
+
+```bash
+rein resume claude:SESSION_ID \
+  --allow-environment-warning baseline.unavailable \
+  --allow-environment-warning git.branch
+```
+
+Do not copy IDs from an older run: the report is recomputed before launch.
+Unknown, stale, duplicate, wildcard, and informational IDs are usage errors
+(`2`); acknowledging only some current warnings is a safety refusal (`7`). A
+blocked report returns its blocker exit regardless of supplied IDs—blockers
+are never acknowledgements. There is no `--force` or persisted approval.
+
+Common non-overridable blockers:
+
+| Symptom | Exit | Action |
+| ------- | ---- | ------ |
+| Workspace missing/not a directory, executable missing, or agent version/layout unverified | `5` | Restore a supported same-vendor workspace/agent installation; do not substitute another vendor. |
+| Known repository identity differs or selected vendor source could not refresh | `7` | Check that the recorded path still names the intended repository/session and retry. |
+| Bounded Git, agent, capability, or runtime probe failed | `1` | Resolve the local probe failure or timeout; do not bypass it. |
+
+When several blockers exist, exit precedence is runtime `1`, safety `7`, then
+compatibility `5`; inspect the complete report because all checks remain
+present. A blocked `inspect` itself exits `0` when the report was generated
+successfully—automation must read `environment.decision`.
+
+If a successful child later appears not to have established a baseline, verify
+that it exited normally. Declined, cancelled, blocked, failed, or child-error
+launches intentionally do not store one. Moving/resetting the v2 index also
+removes baseline history, so the next launch warns again.
 
 ## `pull` does not make `claude --resume` see sessions
 
