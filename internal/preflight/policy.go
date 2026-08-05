@@ -96,7 +96,7 @@ func BaselineFromReport(report Report, observedAt time.Time) (environment.Prelau
 			continue
 		}
 		baseline.Runtimes = append(baseline.Runtimes, environment.Runtime{
-			Name: result.Name, Version: result.Actual, SourceKind: result.SourceKind,
+			Name: result.Name, Declared: result.Declared, Version: result.Actual, SourceKind: result.SourceKind,
 			Provenance: environment.PrelaunchObservedProvenance,
 		})
 	}
@@ -194,7 +194,7 @@ func validCheckID(value string) bool {
 		return false
 	}
 	for _, current := range value {
-		if !(current >= 'a' && current <= 'z' || current >= '0' && current <= '9' || current == '.' || current == '_' || current == '-') {
+		if (current < 'a' || current > 'z') && (current < '0' || current > '9') && current != '.' && current != '_' && current != '-' {
 			return false
 		}
 	}

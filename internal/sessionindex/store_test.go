@@ -318,7 +318,7 @@ func TestConcurrentOpenersConvergeOnOneRepairedCorruptIndex(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen repaired index: %v", err)
 	}
-	defer reopened.Close()
+	defer func() { _ = reopened.Close() }()
 	if got, err := reopened.Resolve(context.Background(), record.Reference()); err != nil || got.Reference() != record.Reference() {
 		t.Fatalf("reopened repaired index lost shared state: %+v, %v", got, err)
 	}
@@ -352,7 +352,7 @@ func TestPrelaunchBaselinePersistsAcrossVendorSourceAppend(t *testing.T) {
 			{Agent: "codex", Kind: "mcp", Name: "github", Scope: "project", State: "enabled", Provenance: environment.PrelaunchObservedProvenance},
 		},
 		Runtimes: []environment.Runtime{
-			{Name: "go", Version: "1.25.12", SourceKind: "go_mod", Provenance: environment.PrelaunchObservedProvenance},
+			{Name: "go", Declared: "1.25.12", Version: "1.25.12", SourceKind: "go_mod", Provenance: environment.PrelaunchObservedProvenance},
 		},
 	}
 	if err := store.PutPrelaunchBaseline(ctx, baseline); err != nil {
@@ -378,7 +378,7 @@ func TestPrelaunchBaselinePersistsAcrossVendorSourceAppend(t *testing.T) {
 		!got.ObservedAt.Equal(observedAt) ||
 		got.SourceSessionRef != "codex:source-session" ||
 		len(got.Capabilities) != 1 || got.Capabilities[0].Name != "github" ||
-		len(got.Runtimes) != 1 || got.Runtimes[0].Name != "go" {
+		len(got.Runtimes) != 1 || got.Runtimes[0].Name != "go" || got.Runtimes[0].Declared != "1.25.12" {
 		t.Fatalf("prelaunch baseline = %+v", got)
 	}
 
@@ -453,12 +453,12 @@ func TestIndependentStoresSerializeConcurrentWriters(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer first.Close()
+	defer func() { _ = first.Close() }()
 	second, err := Open(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer second.Close()
+	defer func() { _ = second.Close() }()
 	stores := []*Store{first, second}
 	var wait sync.WaitGroup
 	errorsFound := make(chan error, 40)
@@ -492,7 +492,7 @@ func TestCorruptBaselineJSONIsBoundedAndPathFree(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 	record := testRecord(AgentCodex, "corrupt", time.Now(), "/session.jsonl", 1)
 	if _, err := store.ReplaceSource(ctx, AgentCodex, []Record{record}); err != nil {
 		t.Fatal(err)
@@ -556,7 +556,7 @@ func TestOpenRebuildsDerivedIndexWithOrphanedPrelaunchBaseline(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Open did not rebuild orphaned derived state: %v", err)
 	}
-	defer rebuilt.Close()
+	defer func() { _ = rebuilt.Close() }()
 	if records, err := rebuilt.All(ctx, 10); err != nil {
 		t.Fatal(err)
 	} else if len(records) != 0 {
@@ -598,7 +598,7 @@ func TestStoreTamperedRowsReturnFixedCorruptionErrorWithoutLeaking(t *testing.T)
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer store.Close()
+			defer func() { _ = store.Close() }()
 			record := testRecord(AgentClaude, "tampered", time.Now(), "/session.jsonl", 1)
 			if _, err := store.ReplaceSource(ctx, AgentClaude, []Record{record}); err != nil {
 				t.Fatal(err)
@@ -700,7 +700,7 @@ func TestTwoIndependentStoresCanRebuildConcurrentlyAndRemainUsable(t *testing.T)
 	if err != nil {
 		t.Fatalf("reopen after concurrent rebuild: %v", err)
 	}
-	defer reopened.Close()
+	defer func() { _ = reopened.Close() }()
 	if records, err := reopened.All(context.Background(), 10); err != nil {
 		t.Fatalf("reopened store unusable: %v", err)
 	} else if len(records) != 0 {

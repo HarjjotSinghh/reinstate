@@ -27,17 +27,50 @@ func DiscoverContext(ctx context.Context, opts Options) Inventory {
 	return c.inventory()
 }
 
+// DiscoverAgentContext discovers declarations for exactly one supported agent.
+// It does not inspect the other agent's roots, so unrelated configuration cannot
+// consume the selected agent's preflight deadline or contribute diagnostics.
+func DiscoverAgentContext(ctx context.Context, agent Agent, opts Options) Inventory {
+	c := newCollectorContext(ctx)
+	if c.cancelled() {
+		return cancelledInventory()
+	}
+	if agent != AgentClaude && agent != AgentCodex {
+		c.addDiagnostic(Diagnostic{Code: DiagnosticInvalidRoot})
+		return c.inventory()
+	}
+	opts = normalizeAgentOptions(opts, c, agent)
+	switch agent {
+	case AgentClaude:
+		scanClaude(c, opts)
+	case AgentCodex:
+		scanCodex(c, opts)
+	}
+	return c.inventory()
+}
+
 func normalizeOptions(opts Options, c *collector) Options {
-	if opts.ClaudeHome == "" && opts.UserHome != "" {
+	return normalizeAgentOptions(opts, c, "")
+}
+
+func normalizeAgentOptions(opts Options, c *collector, agent Agent) Options {
+	if (agent == "" || agent == AgentClaude) && opts.ClaudeHome == "" && opts.UserHome != "" {
 		opts.ClaudeHome = filepath.Join(opts.UserHome, ".claude")
 	}
-	if opts.CodexHome == "" && opts.UserHome != "" {
+	if (agent == "" || agent == AgentCodex) && opts.CodexHome == "" && opts.UserHome != "" {
 		opts.CodexHome = filepath.Join(opts.UserHome, ".codex")
 	}
 	if opts.WorkingDir == "" {
 		opts.WorkingDir = opts.ProjectRoot
 	}
-	for _, root := range []string{opts.UserHome, opts.ClaudeHome, opts.CodexHome, opts.ProjectRoot, opts.WorkingDir, opts.ManagedRoot} {
+	roots := []string{opts.UserHome, opts.ProjectRoot, opts.WorkingDir, opts.ManagedRoot}
+	if agent == "" || agent == AgentClaude {
+		roots = append(roots, opts.ClaudeHome)
+	}
+	if agent == "" || agent == AgentCodex {
+		roots = append(roots, opts.CodexHome)
+	}
+	for _, root := range roots {
 		if c.cancelled() {
 			return opts
 		}

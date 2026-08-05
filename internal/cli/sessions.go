@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
+	"os/signal"
 	"reflect"
 	"strconv"
 	"strings"
@@ -17,6 +19,7 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/environment"
 	"github.com/HarjjotSinghh/reinstate/internal/preflight"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
+	"github.com/HarjjotSinghh/reinstate/internal/workspace"
 )
 
 type localCommandOptions struct {
@@ -377,10 +380,12 @@ func launchLocalRecord(
 	runner := options.launchRunner
 	if runner == nil {
 		runner = sessionindex.ExecLaunchRunner{
-			Stdin:      cmd.InOrStdin(),
-			Stdout:     cmd.OutOrStdout(),
-			Stderr:     cmd.ErrOrStderr(),
-			Executable: secondReport.Agent.ExecutablePath,
+			Stdin:              cmd.InOrStdin(),
+			Stdout:             cmd.OutOrStdout(),
+			Stderr:             cmd.ErrOrStderr(),
+			Executable:         secondReport.Agent.ExecutablePath,
+			ExecutableIdentity: secondReport.Agent.ExecutableIdentity,
+			WorkspaceIdentity:  secondReport.Workspace.Workspace.Identity,
 			BeforeExec: finalEnvironmentGuard(
 				cmd, options, index, secondRecord, secondPlan, secondReport, authorizedWarnings,
 			),
@@ -562,12 +567,17 @@ func authorizeEnvironment(
 }
 
 func confirmEnvironmentWarnings(ctx context.Context, writer io.Writer, readLine lineReader) (bool, error) {
+	promptContext, stop := signal.NotifyContext(ctx, os.Interrupt)
+	defer stop()
 	for {
-		if err := ctx.Err(); err != nil {
-			return false, localRuntimeError("read environment confirmation", err)
+		if err := promptContext.Err(); err != nil {
+			return false, nil
 		}
 		_, _ = fmt.Fprint(writer, "Continue with these environment warnings? Type yes or no [no]: ")
-		line, ok, err := readLine()
+		line, ok, err, canceled := readLineWithContext(promptContext, readLine)
+		if canceled {
+			return false, nil
+		}
 		if err != nil {
 			return false, localRuntimeError("read environment confirmation", err)
 		}
@@ -582,6 +592,26 @@ func confirmEnvironmentWarnings(ctx context.Context, writer io.Writer, readLine 
 		default:
 			PrintHuman(writer, "Enter exactly yes or no.")
 		}
+	}
+}
+
+type lineReadResult struct {
+	line string
+	ok   bool
+	err  error
+}
+
+func readLineWithContext(ctx context.Context, readLine lineReader) (string, bool, error, bool) {
+	result := make(chan lineReadResult, 1)
+	go func() {
+		line, ok, err := readLine()
+		result <- lineReadResult{line: line, ok: ok, err: err}
+	}()
+	select {
+	case <-ctx.Done():
+		return "", false, nil, true
+	case value := <-result:
+		return value.line, value.ok, value.err, false
 	}
 }
 
@@ -823,6 +853,9 @@ func writeLocalInspect(
 
 func writeEnvironmentReportHuman(writer io.Writer, report preflight.Report) {
 	PrintHuman(writer, "Environment decision: %s", report.Decision)
+	if report.BlockExitCode != 0 {
+		PrintHuman(writer, "Environment block exit code: %d", report.BlockExitCode)
+	}
 	for _, check := range report.Checks {
 		PrintHuman(
 			writer,
@@ -833,6 +866,36 @@ func writeEnvironmentReportHuman(writer io.Writer, report preflight.Report) {
 			check.Provenance,
 			check.Message,
 		)
+		if value, ok := environmentReportValueHuman(check.Expected); ok {
+			PrintHuman(writer, "  Expected: %s", value)
+		}
+		if value, ok := environmentReportValueHuman(check.Actual); ok {
+			PrintHuman(writer, "  Actual: %s", value)
+		}
+		if check.Repair != "" {
+			PrintHuman(writer, "  Repair: %s", check.Repair)
+		}
+	}
+}
+
+func environmentReportValueHuman(value any) (string, bool) {
+	switch current := value.(type) {
+	case nil:
+		return "", false
+	case bool:
+		return strconv.FormatBool(current), true
+	case string:
+		return strconv.Quote(current), true
+	case workspace.WorkingTreeState:
+		return strconv.Quote(string(current)), true
+	case []string:
+		quoted := make([]string, 0, len(current))
+		for _, item := range current {
+			quoted = append(quoted, strconv.Quote(item))
+		}
+		return "[" + strings.Join(quoted, ", ") + "]", true
+	default:
+		return "", false
 	}
 }
 
@@ -921,6 +984,9 @@ func localResolveError(err error) error {
 }
 
 func localLaunchError(err error) error {
+	if errors.Is(err, sessionindex.ErrLaunchBoundaryChanged) {
+		return NewExitError(ExitSafety, err.Error())
+	}
 	if errors.Is(err, sessionindex.ErrNativeActionUnsupported) ||
 		errors.Is(err, sessionindex.ErrExecutableNotFound) ||
 		errors.Is(err, sessionindex.ErrWorkspaceUnavailable) {

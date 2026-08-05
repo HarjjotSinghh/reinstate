@@ -3,6 +3,7 @@ package sessionindex
 import (
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestAgentRootMatchesIndexedCustomLayouts(t *testing.T) {
@@ -24,6 +25,20 @@ func TestAgentRootMatchesIndexedCustomLayouts(t *testing.T) {
 				t.Fatalf("AgentRoot() = %q, want %q", got, test.root)
 			}
 		})
+	}
+}
+
+func TestAgentRootSurvivesCoalescedCustomAgentHome(t *testing.T) {
+	t.Parallel()
+	root := filepath.Join(t.TempDir(), "custom-codex")
+	old := Record{Agent: AgentCodex, ID: "same", Key: "codex:same", SourcePath: filepath.Join(root, "sessions", "2026", "old.jsonl"), SourceModTime: 1}
+	newer := old
+	newer.SourcePath = filepath.Join(root, "sessions", "2026", "new.jsonl")
+	newer.SourceModTime = 2
+	newer.UpdatedAt = time.Now().UTC()
+	records, _ := CoalesceRecords([]Record{old, newer})
+	if got := AgentRoot(records[0]); got != root {
+		t.Fatalf("AgentRoot(coalesced) = %q, want %q", got, root)
 	}
 }
 

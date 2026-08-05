@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/HarjjotSinghh/reinstate/internal/fileidentity"
 )
 
 func TestPlanLaunchExactNativeArgv(t *testing.T) {
@@ -179,6 +181,95 @@ func TestExecLaunchRunnerGuardRejectionPreventsChildCreation(t *testing.T) {
 	}
 	if _, err := os.Stat(marker); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("child marker exists after guard rejection: %v", err)
+	}
+}
+
+func TestExecLaunchRunnerRejectsLaunchTargetReplacementAfterGuard(t *testing.T) {
+	t.Parallel()
+	for _, target := range []string{"executable", "workspace"} {
+		target := target
+		t.Run(target, func(t *testing.T) {
+			t.Parallel()
+			root := t.TempDir()
+			executable := filepath.Join(root, "agent")
+			if err := os.WriteFile(executable, []byte("original executable"), 0o700); err != nil {
+				t.Fatal(err)
+			}
+			executableIdentity, err := fileidentity.CaptureExecutable(context.Background(), executable)
+			if err != nil {
+				t.Fatal(err)
+			}
+			workspace := filepath.Join(root, "workspace")
+			if err := os.Mkdir(workspace, 0o700); err != nil {
+				t.Fatal(err)
+			}
+			plan := LaunchPlan{
+				Agent: AgentClaude, SessionRef: "claude:controlled", Operation: OperationResume,
+				Executable: "claude", Args: []string{"--resume", "controlled"}, Dir: workspace,
+			}
+			runner := ExecLaunchRunner{
+				Executable: executable, ExecutableIdentity: executableIdentity,
+				BeforeExec: func(context.Context, LaunchPlan) error {
+					switch target {
+					case "executable":
+						replacement := filepath.Join(root, "replacement-agent")
+						if err := os.WriteFile(replacement, []byte("replacement executable contents"), 0o700); err != nil {
+							return err
+						}
+						return os.Rename(replacement, executable)
+					case "workspace":
+						old := filepath.Join(root, "old-workspace")
+						if err := os.Rename(workspace, old); err != nil {
+							return err
+						}
+						return os.Mkdir(workspace, 0o700)
+					default:
+						return errors.New("unexpected target")
+					}
+				},
+			}
+			err = runner.Run(context.Background(), plan)
+			if !errors.Is(err, ErrLaunchBoundaryChanged) {
+				t.Fatalf("Run() error = %v, want launch-boundary change", err)
+			}
+		})
+	}
+}
+
+func TestExecLaunchRunnerRejectsWorkspaceReplacedAfterAuthorization(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	workspace := filepath.Join(root, "workspace")
+	if err := os.Mkdir(workspace, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	authorizedIdentity, err := fileidentity.Capture(workspace)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(workspace, filepath.Join(root, "old-workspace")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(workspace, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	executable := filepath.Join(root, "agent")
+	if err := os.WriteFile(executable, []byte("controlled executable"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	executableIdentity, err := fileidentity.CaptureExecutable(context.Background(), executable)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = (ExecLaunchRunner{
+		Executable: executable, ExecutableIdentity: executableIdentity,
+		WorkspaceIdentity: authorizedIdentity,
+	}).Run(context.Background(), LaunchPlan{
+		Agent: AgentClaude, SessionRef: "claude:controlled", Operation: OperationResume,
+		Executable: "claude", Args: []string{"--resume", "controlled"}, Dir: workspace,
+	})
+	if !errors.Is(err, ErrLaunchBoundaryChanged) {
+		t.Fatalf("Run() error = %v, want launch-boundary change", err)
 	}
 }
 

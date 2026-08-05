@@ -6,10 +6,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/HarjjotSinghh/reinstate/internal/fileidentity"
 )
+
+func testExecutableIdentity(ctx context.Context, _ string) (fileidentity.Identity, error) {
+	return fileidentity.CaptureExecutable(ctx, os.Args[0])
+}
 
 type fakeRunner struct {
 	output VersionOutput
@@ -17,6 +24,12 @@ type fakeRunner struct {
 	name   string
 	args   []string
 	ctxErr error
+}
+
+type versionRunnerFunc func(context.Context, string, ...string) (VersionOutput, error)
+
+func (runner versionRunnerFunc) Version(ctx context.Context, name string, args ...string) (VersionOutput, error) {
+	return runner(ctx, name, args...)
 }
 
 func (runner *fakeRunner) Version(ctx context.Context, name string, args ...string) (VersionOutput, error) {
@@ -48,7 +61,8 @@ func TestInspectSupportedAgents(t *testing.T) {
 				LookPath: func(value string) (string, error) {
 					return "/verified/" + value, nil
 				},
-				Runner: runner,
+				Runner:          runner,
+				CaptureIdentity: testExecutableIdentity,
 			})
 			if result.Status != StatusSupported || !result.ExecutablePresent ||
 				!result.LayoutRecognized || result.Layout != test.layout {
@@ -100,7 +114,8 @@ func TestInspectFailsClosed(t *testing.T) {
 					}
 					return "/verified/" + value, nil
 				},
-				Runner: runner,
+				Runner:          runner,
+				CaptureIdentity: testExecutableIdentity,
 			})
 			if result.Status != test.want || !strings.Contains(result.Message, test.message) {
 				t.Fatalf("result = %+v", result)
@@ -126,11 +141,42 @@ func TestInspectUsesSingleBoundedContext(t *testing.T) {
 		LookPath: func(string) (string, error) {
 			return "/verified/claude", nil
 		},
-		Runner:  runner,
-		Timeout: time.Second,
+		Runner:          runner,
+		CaptureIdentity: testExecutableIdentity,
+		Timeout:         time.Second,
 	})
 	if result.Status != StatusSupported || runner.ctxErr != nil {
 		t.Fatalf("result/context = %+v / %v", result, runner.ctxErr)
+	}
+}
+
+func TestInspectRejectsExecutableReplacementDuringVersionProbe(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	if err := os.Mkdir(filepath.Join(root, "projects"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	executable := filepath.Join(root, "claude")
+	if err := os.WriteFile(executable, []byte("original"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	result := Inspect(context.Background(), "claude", Options{
+		Root:     root,
+		LookPath: func(string) (string, error) { return executable, nil },
+		Runner: versionRunnerFunc(func(context.Context, string, ...string) (VersionOutput, error) {
+			replacement := filepath.Join(root, "replacement")
+			if err := os.WriteFile(replacement, []byte("replacement contents"), 0o700); err != nil {
+				return VersionOutput{}, err
+			}
+			if err := os.Rename(replacement, executable); err != nil {
+				return VersionOutput{}, err
+			}
+			return VersionOutput{Stdout: "2.1.220 (Claude Code)\n"}, nil
+		}),
+	})
+	if result.Status != StatusError || !strings.Contains(result.Message, "changed during") ||
+		!result.ExecutableIdentity.IsZero() {
+		t.Fatalf("result = %+v", result)
 	}
 }
 
@@ -218,7 +264,8 @@ func TestInspectUsesVendorEnvironmentRootWithoutDisclosingIt(t *testing.T) {
 					}
 					return ""
 				},
-				Runner: &fakeRunner{output: VersionOutput{Stdout: test.version}},
+				Runner:          &fakeRunner{output: VersionOutput{Stdout: test.version}},
+				CaptureIdentity: testExecutableIdentity,
 			})
 			if result.Status != StatusSupported || strings.Join(requested, ",") != test.environment {
 				t.Fatalf("result/requested = %+v / %v", result, requested)
@@ -241,8 +288,9 @@ func TestInspectExplicitRootOverridesVendorEnvironment(t *testing.T) {
 			t.Fatal("Getenv called with an explicit root")
 			return ""
 		},
-		LookPath: func(string) (string, error) { return "/verified/codex", nil },
-		Runner:   &fakeRunner{output: VersionOutput{Stdout: "codex-cli 0.146.0\n"}},
+		LookPath:        func(string) (string, error) { return "/verified/codex", nil },
+		Runner:          &fakeRunner{output: VersionOutput{Stdout: "codex-cli 0.146.0\n"}},
+		CaptureIdentity: testExecutableIdentity,
 	})
 	if result.Status != StatusSupported {
 		t.Fatalf("result = %+v", result)
@@ -299,11 +347,13 @@ func TestExecRunnerSeparatesAndBoundsOutput(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("GO_WANT_AGENTCHECK_HELPER_PROCESS", "1")
-	t.Setenv("AGENTCHECK_HELPER_STDOUT", "codex-cli 0.146.0\n")
-	t.Setenv("AGENTCHECK_HELPER_STDERR", "warning\n")
-	t.Setenv("AGENTCHECK_HELPER_EXIT", "0")
-	output, err := (ExecRunner{}).Version(context.Background(), executable, "-test.run=^TestAgentCheckHelperProcess$")
+	runner := ExecRunner{testEnvironment: []string{
+		"GO_WANT_AGENTCHECK_HELPER_PROCESS=1",
+		"AGENTCHECK_HELPER_STDOUT=codex-cli 0.146.0\n",
+		"AGENTCHECK_HELPER_STDERR=warning\n",
+		"AGENTCHECK_HELPER_EXIT=0",
+	}}
+	output, err := runner.Version(context.Background(), executable, "-test.run=^TestAgentCheckHelperProcess$")
 	if err != nil || output.Stdout != "codex-cli 0.146.0\n" || output.Stderr != "warning\n" {
 		t.Fatalf("output/error = %+v / %v", output, err)
 	}
@@ -317,13 +367,61 @@ func TestExecRunnerSeparatesAndBoundsOutput(t *testing.T) {
 		{name: "stderr", stderr: "abcdef"},
 	} {
 		t.Run(test.name+" overflow", func(t *testing.T) {
-			t.Setenv("AGENTCHECK_HELPER_STDOUT", test.stdout)
-			t.Setenv("AGENTCHECK_HELPER_STDERR", test.stderr)
-			output, err := (ExecRunner{MaxOutput: 3}).Version(context.Background(), executable, "-test.run=^TestAgentCheckHelperProcess$")
+			runner := ExecRunner{MaxOutput: 3, testEnvironment: []string{
+				"GO_WANT_AGENTCHECK_HELPER_PROCESS=1",
+				"AGENTCHECK_HELPER_STDOUT=" + test.stdout,
+				"AGENTCHECK_HELPER_STDERR=" + test.stderr,
+				"AGENTCHECK_HELPER_EXIT=0",
+			}}
+			output, err := runner.Version(context.Background(), executable, "-test.run=^TestAgentCheckHelperProcess$")
 			if err == nil || output != (VersionOutput{}) {
 				t.Fatalf("bounded output/error = %+v / %v", output, err)
 			}
 		})
+	}
+}
+
+func TestExecRunnerSanitizesEnvironmentAndWorkingDirectory(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX executable fixture")
+	}
+	unsafeDirectory := t.TempDir()
+	executable := filepath.Join(t.TempDir(), "claude")
+	if err := os.WriteFile(executable, []byte(`#!/bin/sh
+if [ -n "${NODE_OPTIONS+x}" ]; then exit 40; fi
+if [ -n "${CLAUDE_CONFIG_DIR+x}" ]; then exit 41; fi
+if [ "$PWD" = "$UNSAFE_AGENTCHECK_CWD" ]; then exit 42; fi
+printf '2.1.220 (Claude Code)\n'
+`), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	originalDirectory, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(unsafeDirectory); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(originalDirectory) })
+	t.Setenv("NODE_OPTIONS", "--require=private-project-code.js")
+	t.Setenv("CLAUDE_CONFIG_DIR", filepath.Join(unsafeDirectory, "private-config"))
+	t.Setenv("UNSAFE_AGENTCHECK_CWD", unsafeDirectory)
+
+	output, err := (ExecRunner{}).Version(context.Background(), executable, "--version")
+	if err != nil || output.Stdout != "2.1.220 (Claude Code)\n" {
+		t.Fatalf("output/error = %+v / %v", output, err)
+	}
+}
+
+func TestSanitizedVersionEnvironmentIsMinimalAndCaseInsensitive(t *testing.T) {
+	environment := sanitizedVersionEnvironment([]string{
+		"Path=/bin", "Node_Options=--require=secret.js", "CLAUDE_CONFIG_DIR=secret", "SAFE=value", "Temp=/tmp",
+	})
+	joined := strings.Join(environment, "\n")
+	if !strings.Contains(joined, "Path=/bin") || !strings.Contains(joined, "Temp=/tmp") ||
+		strings.Contains(strings.ToUpper(joined), "NODE_OPTIONS=") ||
+		strings.Contains(joined, "CLAUDE_CONFIG_DIR") || strings.Contains(joined, "SAFE=value") {
+		t.Fatalf("sanitized environment = %v", environment)
 	}
 }
 

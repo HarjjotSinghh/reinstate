@@ -16,7 +16,7 @@ var (
 	ErrGitUnavailable   = errors.New("git executable is unavailable")
 	ErrOutputTooLarge   = errors.New("git command output exceeds the safe limit")
 	ErrNotRepository    = errors.New("workspace is not a Git repository")
-	ErrUnsafeGitCommand = errors.New("Git command is outside the read-only probe allowlist")
+	ErrUnsafeGitCommand = errors.New("git command is outside the read-only probe allowlist")
 )
 
 type GitRunner interface {

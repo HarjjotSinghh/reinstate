@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/HarjjotSinghh/reinstate/internal/fileidentity"
 )
 
 var gitStatusArgs = []string{
@@ -85,7 +87,7 @@ func probe(ctx context.Context, workspace string, runner GitRunner) (ProbeResult
 		},
 	}}
 
-	info, err := os.Stat(workspace)
+	initialIdentity, err := fileidentity.Capture(workspace)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			result.Diagnostics = append(result.Diagnostics, Diagnostic{
@@ -101,7 +103,7 @@ func probe(ctx context.Context, workspace string, runner GitRunner) (ProbeResult
 		return result, nil
 	}
 	result.Fingerprint.Workspace.Exists = true
-	if !info.IsDir() {
+	if !initialIdentity.IsDir() {
 		result.Diagnostics = append(result.Diagnostics, Diagnostic{
 			ID: "workspace.available", Status: StatusMissing, Severity: SeverityBlock,
 			Message: "the recorded workspace is not a directory",
@@ -117,6 +119,16 @@ func probe(ctx context.Context, workspace string, runner GitRunner) (ProbeResult
 	}
 	workspace = filepath.Clean(workspace)
 	result.Fingerprint.Workspace.Path = safeMetadata(workspace, 4096)
+	resolvedIdentity, err := fileidentity.Capture(workspace)
+	if err != nil || !resolvedIdentity.IsDir() ||
+		!fileidentity.SameObject(initialIdentity, resolvedIdentity) {
+		result.Diagnostics = append(result.Diagnostics, Diagnostic{
+			ID: "workspace.available", Status: StatusError, Severity: SeverityBlock,
+			Message: "the recorded workspace changed while it was inspected",
+		})
+		return result, nil
+	}
+	result.Fingerprint.Workspace.Identity = resolvedIdentity
 
 	rootOutput, runErr := runner.Run(ctx, workspace,
 		"rev-parse", "--path-format=absolute", "--show-toplevel",
@@ -285,7 +297,7 @@ func validObjectID(value string) bool {
 		return false
 	}
 	for _, current := range value {
-		if !(current >= '0' && current <= '9') && !(current >= 'a' && current <= 'f') && !(current >= 'A' && current <= 'F') {
+		if (current < '0' || current > '9') && (current < 'a' || current > 'f') && (current < 'A' || current > 'F') {
 			return false
 		}
 	}

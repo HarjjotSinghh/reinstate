@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -257,8 +258,12 @@ func mergeRecordSegments(segments []Record) Record {
 	}
 	record.Files = NormalizeFiles(files)
 	record.SearchText = BuildSearchText(searchParts...)
-	record.SourcePath = "aggregate://" + record.Agent + "/" + record.ID + "/" +
-		fmt.Sprintf("%x", fingerprint.Sum(nil))
+	// Keep an actual vendor source path so AgentRoot can recover custom
+	// CLAUDE_CONFIG_DIR/CODEX_HOME roots for later verified-resume checks. Fold
+	// every segment's private freshness tuple into SourceModTime instead; the
+	// value is an opaque local change token, not a public wall-clock timestamp.
+	digest := fingerprint.Sum(nil)
+	record.SourceModTime = int64(binary.BigEndian.Uint64(digest[:8]) & uint64(^uint64(0)>>1))
 	if record.CanFork && !record.CanResume {
 		record.CanResume = true
 	}
