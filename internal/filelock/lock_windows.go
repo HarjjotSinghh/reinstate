@@ -10,10 +10,18 @@ import (
 )
 
 func tryExclusive(file *os.File) (bool, error) {
+	return try(file, windows.LOCKFILE_EXCLUSIVE_LOCK|windows.LOCKFILE_FAIL_IMMEDIATELY)
+}
+
+func tryShared(file *os.File) (bool, error) {
+	return try(file, windows.LOCKFILE_FAIL_IMMEDIATELY)
+}
+
+func try(file *os.File, flags uint32) (bool, error) {
 	overlapped := new(windows.Overlapped)
 	err := windows.LockFileEx(
 		windows.Handle(file.Fd()),
-		windows.LOCKFILE_EXCLUSIVE_LOCK|windows.LOCKFILE_FAIL_IMMEDIATELY,
+		flags,
 		0,
 		1,
 		0,

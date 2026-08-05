@@ -229,3 +229,36 @@ func TestNormalizePrelaunchBaseline(t *testing.T) {
 		})
 	}
 }
+
+func TestNormalizePrelaunchBaselineRejectsNestedForgedProvenance(t *testing.T) {
+	t.Parallel()
+	base := PrelaunchBaseline{
+		SessionRef: "codex:controlled", WorkingTreeState: WorkingTreeUnavailable,
+		ObservedAt: time.Now(), Provenance: PrelaunchObservedProvenance,
+	}
+	for name, mutate := range map[string]func(*PrelaunchBaseline){
+		"capability": func(baseline *PrelaunchBaseline) {
+			baseline.Capabilities = []Capability{{
+				Agent: "codex", Kind: "mcp", Name: "controlled-server", Scope: "project",
+				State: "declared", Transport: "stdio", Provenance: "vendor_claim",
+			}}
+		},
+		"runtime": func(baseline *PrelaunchBaseline) {
+			baseline.Runtimes = []Runtime{{
+				Name: "go", Version: "1.25.12", SourceKind: "go_mod", Provenance: "vendor_claim",
+			}}
+		},
+	} {
+		name, mutate := name, mutate
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			baseline := base
+			mutate(&baseline)
+			if _, err := NormalizePrelaunchBaseline(baseline); err == nil {
+				t.Fatalf("NormalizePrelaunchBaseline accepted forged %s provenance", name)
+			} else if strings.Contains(err.Error(), "vendor_claim") {
+				t.Fatalf("validation error leaked hostile provenance: %v", err)
+			}
+		})
+	}
+}

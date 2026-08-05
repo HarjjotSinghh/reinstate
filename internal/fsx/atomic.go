@@ -74,7 +74,10 @@ func WriteFileAtomicFail(path string, data []byte, perm os.FileMode) error {
 
 // EnsureOwnerOnlyDir creates dir with 0700 where supported.
 func EnsureOwnerOnlyDir(path string) error {
-	return os.MkdirAll(path, 0o700)
+	if err := os.MkdirAll(path, 0o700); err != nil {
+		return err
+	}
+	return ProtectOwnerOnly(path, true)
 }
 
 // OwnerOnlyFilePerm is 0600.
