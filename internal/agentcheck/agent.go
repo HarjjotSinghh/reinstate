@@ -9,10 +9,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
-	"github.com/HarjjotSinghh/reinstate/internal/adapter"
 	"github.com/HarjjotSinghh/reinstate/internal/adapter/claude"
 	"github.com/HarjjotSinghh/reinstate/internal/adapter/codex"
 )
@@ -43,9 +43,16 @@ type Result struct {
 	Message           string `json:"message"`
 }
 
+// VersionOutput keeps the two process streams separate so a warning written to
+// stderr cannot be mistaken for authoritative version output.
+type VersionOutput struct {
+	Stdout string
+	Stderr string
+}
+
 // VersionRunner runs one fixed vendor --version probe.
 type VersionRunner interface {
-	Version(context.Context, string, ...string) (string, error)
+	Version(context.Context, string, ...string) (VersionOutput, error)
 }
 
 // Options makes filesystem and process boundaries injectable for tests.
@@ -53,6 +60,7 @@ type Options struct {
 	Home       string
 	Root       string
 	LookPath   func(string) (string, error)
+	Getenv     func(string) string
 	Runner     VersionRunner
 	Timeout    time.Duration
 	MaxOutput  int64
@@ -87,6 +95,13 @@ func Inspect(ctx context.Context, agentName string, opts Options) Result {
 
 	root := opts.Root
 	if root == "" {
+		getenv := opts.Getenv
+		if getenv == nil {
+			getenv = os.Getenv
+		}
+		root = getenv(definition.rootEnvironment)
+	}
+	if root == "" {
 		home := opts.Home
 		if home == "" {
 			home, err = os.UserHomeDir()
@@ -97,14 +112,14 @@ func Inspect(ctx context.Context, agentName string, opts Options) Result {
 			}
 		}
 		for _, candidate := range definition.roots(home) {
-			if isDirectory(candidate) {
+			if layoutCandidateExists(candidate) {
 				root = candidate
 				break
 			}
 		}
 	}
 	result.Layout = definition.layout
-	if root == "" || !isDirectory(filepath.Join(root, definition.marker)) {
+	if root == "" || !recognizedLayout(root, definition.marker) {
 		result.Message = "native agent session layout is unrecognized"
 		return result
 	}
@@ -122,11 +137,12 @@ func Inspect(ctx context.Context, agentName string, opts Options) Result {
 	}
 	output, err := runner.Version(probeCtx, resolved, "--version")
 	if err != nil {
+		result.Status = StatusError
 		result.Message = "native agent version probe failed"
 		return result
 	}
-	version := adapter.StableVersionFromOutput(output)
-	if version == "" {
+	version, ok := definition.parseVersion(output)
+	if !ok {
 		result.Message = "native agent version is unrecognized"
 		return result
 	}
@@ -141,37 +157,138 @@ func Inspect(ctx context.Context, agentName string, opts Options) Result {
 }
 
 type definition struct {
-	executable string
-	layout     string
-	marker     string
-	roots      func(string) []string
-	supported  func(string) bool
+	executable      string
+	layout          string
+	marker          string
+	rootEnvironment string
+	roots           func(string) []string
+	parseVersion    func(VersionOutput) (string, bool)
+	supported       func(string) bool
 }
 
 var definitions = map[string]definition{
 	"claude": {
-		executable: "claude",
-		layout:     "projects-jsonl",
-		marker:     "projects",
+		executable:      "claude",
+		layout:          "projects-jsonl",
+		marker:          "projects",
+		rootEnvironment: "CLAUDE_CONFIG_DIR",
 		roots: func(home string) []string {
 			return []string{filepath.Join(home, ".claude"), filepath.Join(home, ".config", "claude")}
 		},
-		supported: claude.SupportedVersion,
+		parseVersion: parseClaudeVersion,
+		supported:    claude.SupportedVersion,
 	},
 	"codex": {
-		executable: "codex",
-		layout:     "sessions-rollout-jsonl",
-		marker:     "sessions",
+		executable:      "codex",
+		layout:          "sessions-rollout-jsonl",
+		marker:          "sessions",
+		rootEnvironment: "CODEX_HOME",
 		roots: func(home string) []string {
 			return []string{filepath.Join(home, ".codex"), filepath.Join(home, ".config", "codex")}
 		},
-		supported: codex.SupportedVersion,
+		parseVersion: parseCodexVersion,
+		supported:    codex.SupportedVersion,
 	},
 }
 
-func isDirectory(path string) bool {
-	info, err := os.Stat(path)
-	return err == nil && info.IsDir()
+var (
+	claudeVersionPattern = regexp.MustCompile(`^((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)) \(Claude Code\)$`)
+	codexVersionPattern  = regexp.MustCompile(`^codex-cli ((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))$`)
+)
+
+func parseClaudeVersion(output VersionOutput) (string, bool) {
+	return parseVersionLine(output, claudeVersionPattern)
+}
+
+func parseCodexVersion(output VersionOutput) (string, bool) {
+	return parseVersionLine(output, codexVersionPattern)
+}
+
+func parseVersionLine(output VersionOutput, pattern *regexp.Regexp) (string, bool) {
+	if output.Stderr != "" {
+		return "", false
+	}
+	line, ok := oneVersionLine(output.Stdout)
+	if !ok {
+		return "", false
+	}
+	matches := pattern.FindStringSubmatch(line)
+	if len(matches) != 2 {
+		return "", false
+	}
+	return matches[1], true
+}
+
+func oneVersionLine(output string) (string, bool) {
+	if strings.HasSuffix(output, "\r\n") {
+		output = strings.TrimSuffix(output, "\r\n")
+	} else if strings.HasSuffix(output, "\n") {
+		output = strings.TrimSuffix(output, "\n")
+	}
+	if output == "" || strings.ContainsAny(output, "\r\n") {
+		return "", false
+	}
+	for _, character := range output {
+		if character < 0x20 || character == 0x7f {
+			return "", false
+		}
+	}
+	return output, true
+}
+
+func layoutCandidateExists(path string) bool {
+	_, err := os.Lstat(path)
+	return err == nil
+}
+
+// recognizedLayout opens the marker relative to an os.Root and compares the
+// object before, during, and after opening. The marker and the root itself must
+// be real directories, never symlinks. This fails closed if either path is
+// replaced while it is being inspected.
+func recognizedLayout(root, marker string) bool {
+	rootAbs, err := filepath.Abs(root)
+	if err != nil {
+		return false
+	}
+	rootBefore, err := os.Lstat(rootAbs)
+	if err != nil || !rootBefore.IsDir() || rootBefore.Mode()&os.ModeSymlink != 0 {
+		return false
+	}
+	rootHandle, err := os.OpenRoot(rootAbs)
+	if err != nil {
+		return false
+	}
+	defer rootHandle.Close()
+
+	openedRoot, err := rootHandle.Open(".")
+	if err != nil {
+		return false
+	}
+	openedRootInfo, statErr := openedRoot.Stat()
+	closeErr := openedRoot.Close()
+	if statErr != nil || closeErr != nil || !openedRootInfo.IsDir() || !os.SameFile(rootBefore, openedRootInfo) {
+		return false
+	}
+
+	markerBefore, err := rootHandle.Lstat(marker)
+	if err != nil || !markerBefore.IsDir() || markerBefore.Mode()&os.ModeSymlink != 0 {
+		return false
+	}
+	openedMarker, err := rootHandle.Open(marker)
+	if err != nil {
+		return false
+	}
+	openedMarkerInfo, statErr := openedMarker.Stat()
+	closeErr = openedMarker.Close()
+	if statErr != nil || closeErr != nil || !openedMarkerInfo.IsDir() || !os.SameFile(markerBefore, openedMarkerInfo) {
+		return false
+	}
+	markerAfter, err := rootHandle.Lstat(marker)
+	if err != nil || markerAfter.Mode()&os.ModeSymlink != 0 || !os.SameFile(markerBefore, markerAfter) {
+		return false
+	}
+	rootAfter, err := os.Lstat(rootAbs)
+	return err == nil && rootAfter.Mode()&os.ModeSymlink == 0 && os.SameFile(rootBefore, rootAfter)
 }
 
 // ExecRunner is a shell-free, output-bounded vendor version runner.
@@ -180,35 +297,35 @@ type ExecRunner struct {
 }
 
 // Version runs the exact executable and fixed arguments without stdin.
-func (runner ExecRunner) Version(ctx context.Context, executable string, args ...string) (string, error) {
+func (runner ExecRunner) Version(ctx context.Context, executable string, args ...string) (VersionOutput, error) {
 	limit := runner.MaxOutput
 	if limit <= 0 || limit > maxVersionOutput {
 		limit = maxVersionOutput
 	}
 	command := exec.CommandContext(ctx, executable, args...)
 	command.Stdin = nil
-	var output boundedBuffer
-	output.limit = limit
-	command.Stdout = &output
-	command.Stderr = &output
+	stdout := boundedBuffer{limit: limit}
+	stderr := boundedBuffer{limit: limit}
+	command.Stdout = &stdout
+	command.Stderr = &stderr
 	if err := command.Run(); err != nil {
-		return "", err
+		return VersionOutput{}, err
 	}
-	if output.overflow {
-		return "", errors.New("native agent version output exceeded limit")
+	if stdout.overflow || stderr.overflow {
+		return VersionOutput{}, errors.New("native agent version output exceeded limit")
 	}
-	return output.String(), nil
+	return VersionOutput{Stdout: stdout.String(), Stderr: stderr.String()}, nil
 }
 
 type boundedBuffer struct {
-	bytes.Buffer
+	buffer   bytes.Buffer
 	limit    int64
 	overflow bool
 }
 
 func (buffer *boundedBuffer) Write(value []byte) (int, error) {
 	original := len(value)
-	remaining := buffer.limit - int64(buffer.Len())
+	remaining := buffer.limit - int64(buffer.buffer.Len())
 	if remaining <= 0 {
 		buffer.overflow = true
 		return original, nil
@@ -217,6 +334,10 @@ func (buffer *boundedBuffer) Write(value []byte) (int, error) {
 		value = value[:remaining]
 		buffer.overflow = true
 	}
-	_, _ = buffer.Buffer.Write(value)
+	_, _ = buffer.buffer.Write(value)
 	return original, nil
+}
+
+func (buffer *boundedBuffer) String() string {
+	return buffer.buffer.String()
 }
