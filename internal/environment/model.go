@@ -62,6 +62,7 @@ type Capability struct {
 	Name       string `json:"name"`
 	Scope      string `json:"scope"`
 	State      string `json:"state"`
+	Transport  string `json:"transport,omitempty"`
 	Provenance string `json:"provenance"`
 }
 
@@ -313,6 +314,7 @@ func normalizeCapabilities(values []Capability) ([]Capability, error) {
 		value.Name = normalizeMetadata(value.Name, MaxRequirementNameRunes)
 		value.Scope = strings.ToLower(normalizeMetadata(value.Scope, 128))
 		value.State = strings.ToLower(normalizeMetadata(value.State, 64))
+		value.Transport = strings.ToLower(normalizeMetadata(value.Transport, 16))
 		value.Provenance = normalizeMetadata(value.Provenance, MaxProvenanceRunes)
 		if value.Agent == "" || value.Kind == "" || value.Name == "" ||
 			value.Scope == "" || value.State == "" || value.Provenance == "" {
@@ -323,8 +325,15 @@ func normalizeCapabilities(values []Capability) ([]Capability, error) {
 				return nil, errors.New("invalid capability identity")
 			}
 		}
+		if value.Transport != "" && value.Transport != "unknown" && value.Transport != "stdio" &&
+			value.Transport != "http" && value.Transport != "sse" {
+			return nil, errors.New("invalid capability transport")
+		}
+		if value.Provenance != PrelaunchObservedProvenance {
+			return nil, errors.New("unsupported capability provenance")
+		}
 		key := value.Agent + "\x00" + value.Kind + "\x00" + value.Name + "\x00" +
-			value.Scope + "\x00" + value.State + "\x00" + value.Provenance
+			value.Scope + "\x00" + value.State + "\x00" + value.Transport + "\x00" + value.Provenance
 		if _, exists := seen[key]; exists {
 			continue
 		}
@@ -339,9 +348,9 @@ func normalizeCapabilities(values []Capability) ([]Capability, error) {
 	sort.Slice(result, func(i, j int) bool {
 		left, right := result[i], result[j]
 		leftKey := left.Agent + "\x00" + left.Kind + "\x00" + left.Name + "\x00" +
-			left.Scope + "\x00" + left.State + "\x00" + left.Provenance
+			left.Scope + "\x00" + left.State + "\x00" + left.Transport + "\x00" + left.Provenance
 		rightKey := right.Agent + "\x00" + right.Kind + "\x00" + right.Name + "\x00" +
-			right.Scope + "\x00" + right.State + "\x00" + right.Provenance
+			right.Scope + "\x00" + right.State + "\x00" + right.Transport + "\x00" + right.Provenance
 		return leftKey < rightKey
 	})
 	if len(result) == 0 {
@@ -366,6 +375,9 @@ func normalizeRuntimes(values []Runtime) ([]Runtime, error) {
 		}
 		if !safeToken(value.Name) || !safeToken(value.SourceKind) {
 			return nil, errors.New("invalid runtime identity")
+		}
+		if value.Provenance != PrelaunchObservedProvenance {
+			return nil, errors.New("unsupported runtime provenance")
 		}
 		key := value.Name + "\x00" + value.Version + "\x00" + value.SourceKind + "\x00" + value.Provenance
 		if _, exists := seen[key]; exists {

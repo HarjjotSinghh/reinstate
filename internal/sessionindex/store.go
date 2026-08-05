@@ -13,17 +13,21 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	_ "modernc.org/sqlite"
 
 	"github.com/HarjjotSinghh/reinstate/internal/environment"
 	"github.com/HarjjotSinghh/reinstate/internal/filelock"
+	"github.com/HarjjotSinghh/reinstate/internal/fsx"
 )
 
 const (
 	indexFileName              = "session-index-v2.sqlite"
 	maxRecordedEnvironmentJSON = 1 << 20
 	maxBaselineInventoryJSON   = 2 << 20
+	maxFilesJSON               = 4 << 20
+	maxStoredSourcePathRunes   = 32 << 10
 	maximumBaselineFutureSkew  = 24 * time.Hour
 	indexOpenLockTimeout       = 10 * time.Second
 )
@@ -51,8 +55,9 @@ type ReplaceResult struct {
 type Store struct {
 	path string
 
-	mu sync.RWMutex
-	db *sql.DB
+	mu           sync.RWMutex
+	db           *sql.DB
+	lifetimeLock *filelock.Lock
 }
 
 // IndexPath returns the current private derived-index location below a
@@ -82,26 +87,85 @@ func Open(path string) (*Store, error) {
 	}
 	lockContext, cancel := context.WithTimeout(context.Background(), indexOpenLockTimeout)
 	defer cancel()
-	lock, err := filelock.Acquire(lockContext, path+".lock")
+	lock, err := filelock.AcquireShared(lockContext, path+".lock")
 	if err != nil {
 		return nil, fmt.Errorf("lock session index: %w", err)
 	}
-	defer func() { _ = lock.Close() }()
 
 	db, err := openDatabase(path)
 	if err != nil {
 		if !isRebuildableDatabaseError(err) {
+			_ = lock.Close()
+			return nil, err
+		}
+		_ = lock.Close()
+		writer, writerErr := filelock.Acquire(lockContext, path+".write.lock")
+		if writerErr != nil {
+			return nil, fmt.Errorf("lock session index writer: %w", writerErr)
+		}
+		defer func() { _ = writer.Close() }()
+		// Another process may have repaired the database while this opener
+		// waited for the writer lock. Rejoin the lifetime shared lock and retry
+		// before requesting destructive recovery.
+		lock, err = filelock.AcquireShared(lockContext, path+".lock")
+		if err != nil {
+			return nil, fmt.Errorf("lock repaired session index: %w", err)
+		}
+		db, err = openDatabase(path)
+		if err == nil {
+			return &Store{path: path, db: db, lifetimeLock: lock}, nil
+		}
+		if !isRebuildableDatabaseError(err) {
+			_ = lock.Close()
+			return nil, err
+		}
+		_ = lock.Close()
+		lock, err = filelock.Acquire(lockContext, path+".lock")
+		if err != nil {
+			return nil, fmt.Errorf("lock session index rebuild: %w", err)
+		}
+		// Another process may have rebuilt the file while this opener waited.
+		db, err = openDatabase(path)
+		if err == nil {
+			shared, shareErr := replaceExclusiveWithShared(lockContext, path, lock)
+			if shareErr != nil {
+				_ = db.Close()
+				return nil, shareErr
+			}
+			return &Store{path: path, db: db, lifetimeLock: shared}, nil
+		}
+		if !isRebuildableDatabaseError(err) {
+			_ = lock.Close()
 			return nil, err
 		}
 		if removeErr := removeDatabaseFiles(path); removeErr != nil {
+			_ = lock.Close()
 			return nil, errors.Join(err, removeErr)
 		}
 		db, err = openDatabase(path)
 		if err != nil {
+			_ = lock.Close()
 			return nil, fmt.Errorf("rebuild session index: %w", err)
 		}
+		shared, shareErr := replaceExclusiveWithShared(lockContext, path, lock)
+		if shareErr != nil {
+			_ = db.Close()
+			return nil, shareErr
+		}
+		lock = shared
 	}
-	return &Store{path: path, db: db}, nil
+	return &Store{path: path, db: db, lifetimeLock: lock}, nil
+}
+
+func replaceExclusiveWithShared(ctx context.Context, path string, exclusive *filelock.Lock) (*filelock.Lock, error) {
+	if err := exclusive.Close(); err != nil {
+		return nil, fmt.Errorf("release exclusive session index lock: %w", err)
+	}
+	shared, err := filelock.AcquireShared(ctx, path+".lock")
+	if err != nil {
+		return nil, fmt.Errorf("restore shared session index lock: %w", err)
+	}
+	return shared, nil
 }
 
 // Path returns the SQLite file path.
@@ -120,10 +184,19 @@ func (s *Store) Close() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.db == nil {
-		return nil
+		if s.lifetimeLock == nil {
+			return nil
+		}
+		err := s.lifetimeLock.Close()
+		s.lifetimeLock = nil
+		return err
 	}
 	err := s.db.Close()
 	s.db = nil
+	if s.lifetimeLock != nil {
+		err = errors.Join(err, s.lifetimeLock.Close())
+		s.lifetimeLock = nil
+	}
 	return err
 }
 
@@ -132,31 +205,31 @@ func (s *Store) Rebuild(ctx context.Context) error {
 	if s == nil {
 		return errors.New("session-index store is nil")
 	}
-	lock, err := filelock.Acquire(ctx, s.path+".lock")
+	writeLock, err := filelock.Acquire(ctx, s.path+".write.lock")
 	if err != nil {
-		return fmt.Errorf("lock session index rebuild: %w", err)
+		return fmt.Errorf("lock session index writer: %w", err)
 	}
-	defer func() { _ = lock.Close() }()
+	defer func() { _ = writeLock.Close() }()
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	if s.db != nil {
-		if err := s.db.Close(); err != nil {
-			return err
-		}
-		s.db = nil
+	if s.db == nil {
+		return errors.New("session-index store is closed")
 	}
-	if err := removeDatabaseFiles(s.path); err != nil {
-		return err
-	}
-	db, err := openDatabase(s.path)
+	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
-	s.db = db
-	return nil
+	defer func() { _ = tx.Rollback() }()
+	// Baselines are linked to sessions with ON DELETE CASCADE. Clearing the
+	// derived rows transactionally preserves the database identity, so other
+	// live Store handles never become split-brain readers of an unlinked file.
+	if _, err := tx.ExecContext(ctx, `DELETE FROM sessions`); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 // ReplaceSource atomically upserts a complete successful scan and deletes
@@ -195,7 +268,7 @@ func (s *Store) ReplaceSource(
 		normalized = append(normalized, record)
 	}
 
-	lock, err := filelock.Acquire(ctx, s.path+".lock")
+	lock, err := filelock.Acquire(ctx, s.path+".write.lock")
 	if err != nil {
 		return result, fmt.Errorf("lock session index update: %w", err)
 	}
@@ -404,7 +477,7 @@ func (s *Store) PutPrelaunchBaseline(ctx context.Context, baseline environment.P
 	if baseline.ObservedAt.After(time.Now().UTC().Add(maximumBaselineFutureSkew)) {
 		return errors.New("prelaunch observation time is too far in the future")
 	}
-	lock, err := filelock.Acquire(ctx, s.path+".lock")
+	lock, err := filelock.Acquire(ctx, s.path+".write.lock")
 	if err != nil {
 		return fmt.Errorf("lock prelaunch baseline update: %w", err)
 	}
@@ -506,7 +579,7 @@ func (s *Store) DeletePrelaunchBaseline(ctx context.Context, sessionRef string) 
 	if sessionRef == "" {
 		return errors.New("prelaunch baseline session reference must not be empty")
 	}
-	lock, err := filelock.Acquire(ctx, s.path+".lock")
+	lock, err := filelock.Acquire(ctx, s.path+".write.lock")
 	if err != nil {
 		return fmt.Errorf("lock prelaunch baseline deletion: %w", err)
 	}
@@ -696,13 +769,16 @@ func scanRecord(scanner rowScanner) (Record, error) {
 		&record.SearchText,
 	)
 	if err != nil {
-		return Record{}, err
+		return Record{}, ErrIndexDataCorrupt
 	}
 	record.UpdatedAt = timeFromDatabase(updatedAt)
 	record.CanResume = canResume != 0
 	record.CanFork = canFork != 0
+	if len(filesJSON) > maxFilesJSON {
+		return Record{}, ErrIndexDataCorrupt
+	}
 	if err := json.Unmarshal([]byte(filesJSON), &record.Files); err != nil {
-		return Record{}, fmt.Errorf("decode indexed files for %s: %w", record.Key, err)
+		return Record{}, ErrIndexDataCorrupt
 	}
 	if len(recordedEnvironmentJSON) > maxRecordedEnvironmentJSON {
 		return Record{}, ErrIndexDataCorrupt
@@ -714,14 +790,77 @@ func scanRecord(scanner rowScanner) (Record, error) {
 	if err != nil {
 		return Record{}, ErrIndexDataCorrupt
 	}
+	if err := validateStoredRecord(record); err != nil {
+		return Record{}, ErrIndexDataCorrupt
+	}
 	return record, nil
 }
 
+func validateStoredRecord(record Record) error {
+	if utf8.RuneCountInString(record.SourcePath) > maxStoredSourcePathRunes ||
+		len(record.SearchText) > MaxSearchTextBytes || !validStoredSearchText(record.SearchText) {
+		return ErrIndexDataCorrupt
+	}
+	searchText := record.SearchText
+	record.SearchText = ""
+	normalized, err := NormalizeRecord(record)
+	if err != nil {
+		return err
+	}
+	// Search text includes bounded prompt metadata not otherwise retained, so
+	// validate it independently above. Every other stored public field must
+	// already be canonical; silently repairing attacker-controlled derived rows
+	// would make later safety comparisons ambiguous.
+	normalized.SearchText = searchText
+	original := recordWithSearch(record, searchText)
+	if normalized.Key != original.Key || normalized.ID != original.ID || normalized.Agent != original.Agent {
+		return errors.New("non-canonical identity")
+	}
+	if normalized.Title != original.Title || normalized.Project != original.Project ||
+		normalized.Workspace != original.Workspace || normalized.Branch != original.Branch ||
+		normalized.PromptPreview != original.PromptPreview || normalized.ReadOnlyReason != original.ReadOnlyReason {
+		return errors.New("non-canonical metadata")
+	}
+	if !normalized.UpdatedAt.Equal(original.UpdatedAt) || normalized.SizeBytes != original.SizeBytes ||
+		normalized.MessageCount != original.MessageCount || normalized.CanResume != original.CanResume ||
+		normalized.CanFork != original.CanFork {
+		return errors.New("non-canonical numeric state")
+	}
+	if !reflect.DeepEqual(normalized.Files, original.Files) {
+		return errors.New("non-canonical file references")
+	}
+	if !reflect.DeepEqual(normalized.RecordedEnvironment, original.RecordedEnvironment) {
+		return errors.New("non-canonical recorded environment")
+	}
+	if normalized.SourcePath != original.SourcePath || normalized.SourceModTime != original.SourceModTime ||
+		normalized.SourceSize != original.SourceSize || normalized.SearchText != original.SearchText {
+		return errors.New("non-canonical source state")
+	}
+	return nil
+}
+
+func validStoredSearchText(value string) bool {
+	for _, line := range strings.Split(value, "\n") {
+		if SafeText(line, 0) != line {
+			return false
+		}
+	}
+	return true
+}
+
+func recordWithSearch(record Record, searchText string) Record {
+	record.SearchText = searchText
+	return record
+}
+
 const recordSelect = `SELECT
-	key, id, agent, title, project, workspace, branch, updated_at, size_bytes,
-	message_count, prompt_preview, files_json, can_resume, can_fork,
-	read_only_reason, substr(recorded_environment_json, 1, 1048577), source_path, source_mod_time,
-	source_size, search_text
+	substr(key, 1, 4162), substr(id, 1, 4097), substr(agent, 1, 65),
+	substr(title, 1, 513), substr(project, 1, 4097), substr(workspace, 1, 4097),
+	substr(branch, 1, 4097), updated_at, size_bytes, message_count,
+	substr(prompt_preview, 1, 161), substr(files_json, 1, 4194305), can_resume, can_fork,
+	substr(read_only_reason, 1, 513), substr(recorded_environment_json, 1, 1048577),
+	substr(source_path, 1, 32769), source_mod_time, source_size,
+	substr(search_text, 1, 262145)
 	FROM sessions`
 
 const createSchema = `CREATE TABLE IF NOT EXISTS sessions (
@@ -798,6 +937,19 @@ func openDatabase(path string) (*sql.DB, error) {
 	if integrity != "ok" {
 		return closeOnError(fmt.Errorf("session-index integrity check failed: %s", integrity))
 	}
+	foreignKeyRows, err := db.Query("PRAGMA foreign_key_check")
+	if err != nil {
+		return closeOnError(err)
+	}
+	hasForeignKeyViolation := foreignKeyRows.Next()
+	foreignKeyErr := foreignKeyRows.Err()
+	closeForeignKeyErr := foreignKeyRows.Close()
+	if foreignKeyErr != nil || closeForeignKeyErr != nil {
+		return closeOnError(errors.Join(foreignKeyErr, closeForeignKeyErr))
+	}
+	if hasForeignKeyViolation {
+		return closeOnError(fmt.Errorf("%w: foreign key violation", errIncompatibleSchema))
+	}
 	var version int
 	if err := db.QueryRow("PRAGMA user_version").Scan(&version); err != nil {
 		return closeOnError(err)
@@ -823,7 +975,7 @@ func openDatabase(path string) (*sql.DB, error) {
 	default:
 		return closeOnError(fmt.Errorf("%w: found %d, expected %d", errIncompatibleSchema, version, SchemaVersion))
 	}
-	if err := os.Chmod(path, 0o600); err != nil {
+	if err := fsx.ProtectOwnerOnly(path, false); err != nil {
 		return closeOnError(fmt.Errorf("protect session index: %w", err))
 	}
 	return db, nil
@@ -951,7 +1103,7 @@ func ensurePrivateParent(path string) error {
 	if err := os.MkdirAll(parent, 0o700); err != nil {
 		return err
 	}
-	if err := os.Chmod(parent, 0o700); err != nil {
+	if err := fsx.ProtectOwnerOnly(parent, true); err != nil {
 		return fmt.Errorf("protect session-index directory: %w", err)
 	}
 	return nil

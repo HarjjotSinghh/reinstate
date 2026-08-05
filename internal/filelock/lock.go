@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"os"
 	"time"
+
+	"github.com/HarjjotSinghh/reinstate/internal/fsx"
 )
 
 const retryInterval = 20 * time.Millisecond
@@ -20,16 +22,26 @@ type Lock struct {
 
 // Acquire waits until path can be exclusively locked or ctx ends.
 func Acquire(ctx context.Context, path string) (*Lock, error) {
+	return acquire(ctx, path, tryExclusive)
+}
+
+// AcquireShared holds a shared lock until Close. It is used to prevent a
+// derived database from being replaced while any process has it open.
+func AcquireShared(ctx context.Context, path string) (*Lock, error) {
+	return acquire(ctx, path, tryShared)
+}
+
+func acquire(ctx context.Context, path string, attempt func(*os.File) (bool, error)) (*Lock, error) {
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o600)
 	if err != nil {
 		return nil, fmt.Errorf("open lock file: %w", err)
 	}
-	if err := os.Chmod(path, 0o600); err != nil {
+	if err := fsx.ProtectOwnerOnly(path, false); err != nil {
 		_ = file.Close()
 		return nil, fmt.Errorf("protect lock file: %w", err)
 	}
 	for {
-		acquired, lockErr := tryExclusive(file)
+		acquired, lockErr := attempt(file)
 		if lockErr != nil {
 			_ = file.Close()
 			return nil, fmt.Errorf("acquire file lock: %w", lockErr)
