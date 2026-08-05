@@ -105,11 +105,12 @@ flowchart LR
 | --- | --- |
 | **Local recovery** | Configless local index/search/resume for Claude Code and Codex in current source |
 | **Multi-agent** | One metadata index; native execution always stays with the source vendor |
+| **Verified resume** | Current source checks the workspace, agent, capabilities, and recognized runtimes before launch |
 | **Offline-capable origin** | Works when the other machine is **off** (stored sync, not a live relay) |
 | **Path remapping** | Windows ↔ macOS project paths rewritten so `--resume` actually finds sessions |
 | **Zero-knowledge** | Client-side encryption; bring-your-own storage |
 | **Bounded previews** | Metadata and a short user-prompt preview, never a default transcript dump |
-| **Sessions first** | Credentials, MCP, skills, and settings remain outside the session-index scope |
+| **Privacy-safe environment truth** | Capability names and state may be indexed; contents, commands, values, credentials, and raw URLs are excluded |
 | **Open source** | Apache-2.0 · auditable · patent grant · no vendor lock-in |
 
 Native vendor sync typically serves its own ecosystem. Unreviewed
@@ -133,6 +134,21 @@ Stable `v0.2.0`:
 - **Native continuation** — `last`, `resume`, and `fork` launch the source vendor
 - **Interactive switcher** — bare `rein` on a TTY; deterministic JSON for automation
 - **Read-only expansion** — Gemini CLI and OpenCode discovery without mutation
+
+Implemented in the current development source for Phase 3 (not yet a published
+release candidate):
+
+- **Verified resume** — deterministic environment reports on `inspect`, native
+  dry-runs, direct launches, `last`, and picker selections
+- **Workspace truth** — offline repository identity, branch, HEAD, and
+  privacy-safe working-tree checks without fetching or printing filenames
+- **Agent and capability checks** — fail-closed Claude/Codex version and layout
+  verification plus bounded, name-only instruction, skill, and MCP inventory
+- **Runtime checks** — recognized Node and Go declarations inspected without
+  running project scripts
+- **Exact authorization** — warnings require terminal confirmation or every
+  invocation-scoped `--allow-environment-warning CHECK_ID`; blockers cannot be
+  overridden
 
 Also included from stable `v0.1.0`:
 
@@ -169,7 +185,7 @@ From this repository, with Go 1.25.12 or newer:
 
 ```bash
 make build
-export REINSTATE_HOME="$HOME/.reinstate-phase2-local"
+export REINSTATE_HOME="$HOME/.reinstate-phase3-local"
 
 ./bin/rein sessions
 ./bin/rein search "stripe webhook retry" --agent claude
@@ -185,10 +201,26 @@ On native Windows PowerShell, build `.\bin\rein.exe` with
 use that executable for the same commands.
 
 These commands refresh a private derived index at
-`$REINSTATE_HOME/cache/session-index-v1.sqlite`. They do not require `init`,
-storage credentials, a passphrase, or a network backend. Remove
-`--dry-run` only after reviewing the exact executable, argument array, and
-working directory. Native resume/fork remains same-vendor.
+`$REINSTATE_HOME/cache/session-index-v2.sqlite`. Its owner-only `.lock` and
+`.write.lock` files protect destructive repair and serialize writers/rebuilds across concurrent
+`rein`/`reinstate` processes. None is synced. These commands do not require
+`init`, storage credentials, a passphrase, or a network backend.
+
+Current Phase 3 source adds an `environment` report to `inspect` and native
+dry-runs. A first launch truthfully warns with `baseline.unavailable`; it never
+manufactures a historical match. Review the report, then either confirm on a
+TTY or acknowledge every current warning explicitly in automation:
+
+```bash
+./bin/rein resume claude:SESSION_ID \
+  --allow-environment-warning baseline.unavailable
+```
+
+Acknowledgements apply only to that invocation. Missing workspaces,
+unrecognized agent versions/layouts, known repository replacement, stale
+source metadata, and verifier failures remain non-overridable. A private
+`reinstate_prelaunch_observed` baseline is stored only after the authorized
+same-vendor child exits successfully. Native resume/fork remains same-vendor.
 
 Bare `rein` opens the numbered switcher only on a TTY. For scripts use
 `rein sessions --json`; a non-TTY bare invocation exits promptly with that
@@ -307,10 +339,13 @@ flowchart TB
 ```
 
 1. **Local read adapters** derive bounded metadata and user-prompt search text
-2. **Index** stores owner-only, rebuildable SQLite state; it never enters sync
-3. **Executors** launch a supported session through its native vendor
-4. **Pathmap** rewrites known structural paths for optional cross-device sync
-5. **Crypto/sync** encrypt before upload and restore atomically with backups
+2. **Index** stores owner-only SQLite session rows and private prelaunch
+   baselines; it never enters sync
+3. **Verified resume (current source)** observes the fresh workspace, agent,
+   capabilities, and runtimes and applies exact warning/blocker policy
+4. **Executors** launch a supported session through its native vendor
+5. **Pathmap** rewrites known structural paths for optional cross-device sync
+6. **Crypto/sync** encrypt before upload and restore atomically with backups
 
 Deep dive: **[docs/architecture.md](docs/architecture.md)** · research diagram:
 
@@ -328,6 +363,7 @@ Deep dive: **[docs/architecture.md](docs/architecture.md)** · research diagram:
 | Credential denylist | `auth.json` and tokens never synced by default |
 | Private local index | Owner-only derived metadata; no assistant/tool-output corpus |
 | No vendor API keys required | Local files only |
+| Verified-resume boundary | Offline checks, exact warning consent, non-overridable blockers |
 | Fail-safe restore | Backups + conflict forks |
 
 Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[docs/security-model.md](docs/security-model.md)**
@@ -340,6 +376,7 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 | --- | ----------- |
 | **Website** | [reinstate.dev](https://reinstate.dev) — product, documentation, compatibility, and security |
 | [Getting started](docs/getting-started.md) | Configless local index plus optional encrypted sync |
+| [Verified resume](docs/verified-resume.md) | Phase 3 environment report, provenance, policy, and privacy contract |
 | [Architecture](docs/architecture.md) | Pipeline, packages, design principles |
 | [Adapters](docs/adapters.md) | Per-agent layouts & support matrix |
 | [Universal configuration](docs/universal-configuration.md) | Planned MCP/skills/loops/plugins/settings portability |
@@ -410,8 +447,9 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 | ----- | ----- | ------ |
 | **0** | Contracts, diagnostics, installers, fixtures, release trust | ✅ |
 | **1** | Claude + Codex encrypted same-vendor session sync | ✅ |
-| **2** | Configless local index, search, native resume/fork | 🚧 |
-| **3–4** | Verified resume, portable handoffs | 📋 |
+| **2** | Configless local index, search, native resume/fork | ✅ |
+| **3** | Verified resume (implemented in current source; RC1 gates in progress) | 🚧 |
+| **4** | Portable handoffs | 📋 |
 | **5–7** | Universal config + automatic sync, thin Console/ACP client, teams | 📋 / 💭 |
 
 Full detail: **[ROADMAP.md](ROADMAP.md)**

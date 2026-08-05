@@ -64,15 +64,18 @@ Product layers and non-goals: [product-strategy.md](product-strategy.md),
 ```
 
 The continuity stack is delivered incrementally. Stable Phase 1 implements the
-mutation-capable adapter and encrypted-sync path. Development-accepted Phase 2
-adds the private local index, read capabilities, and Claude/Codex native launch plans.
-Workspace fingerprints, checkpoints, configuration adapters, and ACP
-integration remain later roadmap work.
+mutation-capable adapter and encrypted-sync path. Stable Phase 2 adds the
+private local index, read capabilities, and Claude/Codex native launch plans.
+Phase 3 verified resume is implemented in the current development source and
+is completing review/release-candidate gates. Portable checkpoints,
+configuration adapters, and ACP integration remain later roadmap work.
 
-**Target flow before execution:** find session, load history, fingerprint
-workspace, check skills/MCP, optionally reconcile supported non-secret
-configuration, build a portable checkpoint if needed, and choose the
-destination agent.
+**Current Phase 3 flow before execution:** find one same-vendor session,
+refresh its source, build the native launch plan, fingerprint the workspace,
+observe supported skills/MCP/instructions and runtimes, authorize the immutable
+report, repeat the refresh/plan/report, and launch only if nothing changed.
+Future flows may optionally reconcile supported non-secret configuration or
+build a portable checkpoint when changing vendors.
 **During execution:** Claude Code / Codex / Gemini / OpenCode (or another ADE)
 own the agent loop.
 **Target flow after execution:** capture updates, update the index, and
@@ -108,8 +111,10 @@ Reinstate Console may become a thin ACP **client**, not a full harness.
    per-harness adapters; never mirror one harness's raw config into another.
 9. **Secrets stay local** — configuration profiles contain references, never
    raw API keys, OAuth tokens, cookies, or vendor credential stores.
-10. **Derived state is disposable** — the local index is private, rebuildable,
-    excluded from sync, and never a new source of truth.
+10. **Derived state is private, never authoritative** — local session rows are
+    rebuildable and excluded from sync. Explicitly deleting v2 also deletes
+    useful prelaunch comparison history, so the next launch returns to honest
+    `baseline.unavailable` uncertainty.
 
 ## Pipeline stages
 
@@ -145,14 +150,23 @@ local session sources
 Claude │ Codex │ Gemini │ OpenCode
     │
     ▼
-$REINSTATE_HOME/cache/session-index-v1.sqlite
+$REINSTATE_HOME/cache/session-index-v2.sqlite
     │
     ├── sessions / search / inspect
     └── resolve ──► native launch plan (Claude/Codex)
 ```
 
-The local registry is config-independent. It does not reuse configured Phase 1
+The v2 registry also stores private, successful prelaunch observations used by
+verified resume. A shared/exclusive `.lock` protects database lifetime and
+destructive corruption repair, while a separate `.write.lock` serializes
+ordinary updates and transactional rebuilds from both
+binary aliases. The database and both owner-only lock files are local derived
+state and are never synced. The local registry is
+config-independent. It does not reuse configured Phase 1
 project mappings, which would hide unmapped sessions on the same machine.
+Unix permissions are enforced with `0700`/`0600`; native Windows uses a
+protected DACL limited to the current user, LocalSystem, and Administrators,
+including when `REINSTATE_HOME` is under a broadly inherited custom parent.
 
 The pure-Go SQLite index preserves `CGO_ENABLED=0` release builds. It stores:
 
@@ -190,7 +204,61 @@ The recorded workspace must exist and the executor must be available before a
 real launch. Reinstate inherits the user's terminal, waits for the child, and
 propagates failure. `--dry-run` exposes the structured plan without launching.
 
-### 1C. Configuration adapters (target)
+### 1C. Phase 3 verified-resume path (current source)
+
+Phase 3 composes four read-only observers behind one deterministic preflight:
+
+```text
+selected fresh session record + prior private baseline
+                    │
+                    ▼
+     workspace │ agent │ capability │ runtime observers
+                    │
+                    ▼
+       immutable report + ready/warn/block decision
+                    │
+          exact warning authorization
+                    │
+       refresh + rebuild plan/report + equality check
+                    │
+       launch-bound refresh/report guard in real runner
+                    │
+                    ▼
+         same-vendor native child execution
+                    │ successful exit only
+                    ▼
+       persist reinstate_prelaunch_observed baseline
+```
+
+The workspace observer uses fixed, shell-free local Git commands. Repository
+identities are credential-free opaque digests; working-tree comparisons store
+state/counts/digests, not filenames or diffs. It never fetches.
+
+The agent observer checks executable presence, a strictly parsed installed
+version, and a recognized same-vendor layout. The capability observer performs
+bounded known-path discovery for sanitized instruction/skill/MCP names,
+scope/state, and coarse MCP transport. It does not return contents, paths,
+commands, arguments, raw URLs, headers, environment values, or credentials.
+The runtime observer understands only supported Node/Go declarations and runs
+bounded version probes in a sanitized environment—never package-manager hooks
+or project code.
+
+First inspection cannot reconstruct history and therefore reports
+`baseline.unavailable`. Only the exact observation immediately preceding an
+authorized native child that exits successfully can become a private baseline.
+Blocked, declined, cancelled, stale, changed-after-authorization, or failed
+launches do not update it.
+
+The report is additive to `inspect` and dry-run JSON. Human and machine output
+share the same stable checks and provenance. TTY warnings default to no;
+automation must acknowledge every exact current warning ID. Blockers have no
+bypass. Gemini/OpenCode remain read-only and refuse before preflight.
+
+See [verified-resume.md](verified-resume.md) for the policy and
+[phase-3-verified-resume-acceptance.md](testing/phase-3-verified-resume-acceptance.md)
+for the release gate.
+
+### 1D. Configuration adapters (target)
 
 Later phases add a canonical desired-state profile for MCP servers,
 skills/instructions, hooks/loops, plugins, marketplaces, and safe settings.
@@ -298,7 +366,13 @@ cmd/reinstate/          # CLI entrypoint (install as reinstate + rein)
 internal/
   adapter/              # per-agent adapters
   sessionindex/         # Phase 2 sources, private index, query, native plans
-  cli/                  # sync commands + Phase 2 local commands/picker
+  workspace/            # local-only repository/worktree fingerprinting
+  agentcheck/           # same-vendor executable/version/layout checks
+  capability/           # bounded name-only instruction/skill/MCP inventory
+  runtimecheck/         # recognized Node/Go declarations and version probes
+  environment/          # bounded recorded facts and private baselines
+  preflight/            # deterministic Phase 3 report and authorization policy
+  cli/                  # sync commands + local commands/picker/preflight UX
   config/               # local config + path_map
   crypto/               # age encryption
   pathmap/              # portable path rewriting
