@@ -241,14 +241,48 @@ func visitJSONL(path string, visit func([]byte)) ([]Warning, error) {
 }
 
 type boundedText struct {
-	value string
+	value  strings.Builder
+	sealed bool
 }
 
 func (b *boundedText) Add(value string) {
-	b.value = BuildSearchText(b.value, value)
+	if b.sealed {
+		return
+	}
+	value = SafeText(value, 0)
+	if value == "" {
+		return
+	}
+
+	// Appending must be linear in the amount of new text. Rebuilding through
+	// BuildSearchText on every message re-sanitized and copied the complete
+	// accumulated transcript prefix, turning long sessions into quadratic work.
+	// A space is the canonical separator because the final BuildSearchText call
+	// collapses all whitespace before the value reaches the private index.
+	remaining := MaxSearchTextBytes - b.value.Len()
+	if b.value.Len() > 0 {
+		if remaining <= 1 {
+			b.sealed = true
+			return
+		}
+		value = truncateUTF8Bytes(value, remaining-1)
+		if value == "" {
+			// Do not commit a separator for a multibyte value that cannot fit.
+			// Legacy accumulation trims that separator on the next call, which
+			// can leave room for a later smaller value.
+			return
+		}
+		b.value.WriteByte(' ')
+	} else {
+		value = truncateUTF8Bytes(value, remaining)
+	}
+	b.value.WriteString(value)
+	if b.value.Len() == MaxSearchTextBytes {
+		b.sealed = true
+	}
 }
 
-func (b *boundedText) String() string { return b.value }
+func (b *boundedText) String() string { return b.value.String() }
 
 func extractTextContent(value any) string {
 	switch typed := value.(type) {

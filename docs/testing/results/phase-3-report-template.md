@@ -48,7 +48,7 @@ with either value in the required matrix has a `FAIL` device verdict.
 | Go version/toolchain | `go1.25.12` |
 | Normal-corpus size | `<session/capability counts>` |
 | Large-corpus size | `<session/capability counts>` |
-| Report branch | `test/v0.3.0-rc.1-<macos-arm64|windows-amd64>-report` |
+| Report branch | `test/v0.3.0-rc.1-<platform>-report` |
 | Device-report commit | `<full commit containing the terminated device block>` |
 | Draft report PR | `<URL or NOT CREATED>` |
 
@@ -140,22 +140,75 @@ the installed tagged artifact.
 
 ## 6. Performance evidence
 
-Use three cold full-refresh samples and twenty warm samples for both the normal
-and synthetic large corpus. Cold samples must begin with the derived index
-absent; warm samples reuse a completed refresh without changing source files.
-Record every sample privately and commit only aggregates.
+The installed `rein` alias is the only timed executable. Fill every field below
+from the fixed RC1 contract; do not pool commands. Raw sample logs, JSON,
+transcripts, source content, and private absolute paths remain outside the
+repository.
 
-| Corpus/mode | Samples | Median | p95 | Maximum | RC1 ceiling | Result |
-| ----------- | ------- | ------ | --- | ------- | ----------- | ------ |
-| Normal warm inspect/dry-run | 20 |  |  |  | macOS p95 `2s`; Windows p95 `4s` | `NOT TESTED` |
-| Normal cold full refresh | 3 |  |  |  | macOS max `8s`; Windows max `12s` | `NOT TESTED` |
-| Large warm inspect/dry-run | 20 |  |  |  | macOS p95 `4s`; Windows p95 `8s` | `NOT TESTED` |
-| Large cold full refresh | 3 |  |  |  | macOS max `12s`; Windows max `18s` | `NOT TESTED` |
+| Fixed precondition | Sanitized evidence | Result |
+| ------------------ | ------------------ | ------ |
+| Harness came from exact tagged source; generator `phase3perf-v1`; canonical digest `4bf0b653ce76dcc3f7dd93916399bfdea8b658e1fbe41a9423608f2e7a6f8a76`; materialized digests recorded |  | `NOT TESTED` |
+| Normal corpus is exactly 4 Claude + 4 Codex records, 16 capability names, 4 events/2 messages/2 file refs per record, `NORMAL_LIMIT=100`, and both anchors visible |  | `NOT TESTED` |
+| Large corpus is exactly 500 Claude + 500 Codex records, 256 capability names, 4 events/2 messages/2 file refs per record, `LARGE_LIMIT=1000`, and both anchors visible |  | `NOT TESTED` |
+| Both controlled workspaces are clean remote-free `main` Git repositories at frozen HEAD `697ed29583a03045783557c3e8aeec92d9f7f01c` before and after |  | `NOT TESTED` |
+| Dedicated functional/baseline performance homes; isolated Reinstate/Claude/Codex/Gemini/process homes, temp, cwd, and cold evidence per corpus |  | `NOT TESTED` |
+| Curated PATH entries/executables are canonical, physical, trusted, and outside source/evidence; OpenCode omitted; ambient capabilities absent; environment digest recorded |  | `NOT TESTED` |
+| Capture is bounded and raw output discarded; monotonic process-start-to-exit clock, 30-second timeout, 1 warmup, 20 warm samples, 3 cold samples, nearest-rank p95 |  | `NOT TESTED` |
+| Untimed `rein`/`reinstate` parity for version JSON and normalized help, with exact version/full commit and required help surface |  | `NOT TESTED` |
+| Untimed `rein`/`reinstate` exit and normalized-JSON parity for all seven commands, normal corpus |  | `NOT TESTED` |
+| Untimed `rein`/`reinstate` exit and normalized-JSON parity for all seven commands, large corpus |  | `NOT TESTED` |
+| Three normal and three large cold resets moved only the exact v2 index/lock/SQLite companion family into preserved private evidence |  | `NOT TESTED` |
+| Controlled vendor fingerprints unchanged across normal timings |  | `NOT TESTED` |
+| Controlled vendor fingerprints unchanged across large timings |  | `NOT TESTED` |
+| Hardware, OS/build, filesystem, agent versions, and generic antivirus state recorded |  | `NOT TESTED` |
 
-Also record deterministic command/file counts, timeout count, and any comparable
-same-host Phase 3 p95. Any timeout, 20–30 second regression, unbounded growth,
-or greater than 25 percent comparable same-host p95 regression is blocking even
-when an aggregate happens to fit an absolute ceiling.
+The exact timed command shapes were:
+
+```text
+rein sessions --limit CORPUS_LIMIT --json
+rein search CORPUS_QUERY --limit CORPUS_LIMIT --json
+rein inspect CORPUS_CLAUDE_REF --json
+rein resume CORPUS_CLAUDE_REF --dry-run --json
+rein resume CORPUS_CODEX_REF --dry-run --json
+rein fork CORPUS_CLAUDE_REF --dry-run --json
+rein fork CORPUS_CODEX_REF --dry-run --json
+```
+
+Each warm row represents one untimed warmup followed by twenty sequential
+independent processes. Each cold startup row represents three fresh dedicated
+home/process launches; each cold corpus row represents three independent
+absent-v2-index process launches. `Validated` means every sample exited zero
+and passed its command-specific schema/content validation. Help is validated as
+bounded text rather than parsed as JSON.
+
+| Corpus | Mode | Logical command | Samples | Median | p95 | Maximum | Timeouts | Validated | RC1 ceiling | Result |
+| ------ | ---- | --------------- | ------- | ------ | --- | ------- | -------- | --------- | ----------- | ------ |
+| Startup | Cold | `version --json`, fresh dedicated home | 3 |  |  |  |  |  | macOS max `4s`; Windows max `8s` | `NOT TESTED` |
+| Startup | Warm | `version --json` | 20 |  |  |  |  |  | macOS p95 `2s`; Windows p95 `4s` | `NOT TESTED` |
+| Startup | Cold | `--help`, fresh dedicated home | 3 |  |  |  |  |  | macOS max `4s`; Windows max `8s` | `NOT TESTED` |
+| Startup | Warm | `--help` | 20 |  |  |  |  |  | macOS p95 `2s`; Windows p95 `4s` | `NOT TESTED` |
+| Normal | Cold | Normal cold full refresh: sessions, limit 100 | 3 |  |  |  |  |  | macOS max `8s`; Windows max `12s` | `NOT TESTED` |
+| Normal | Warm | sessions, limit 100 | 20 |  |  |  |  |  | macOS p95 `2s`; Windows p95 `4s` | `NOT TESTED` |
+| Normal | Warm | search normal marker, limit 100 | 20 |  |  |  |  |  | macOS p95 `2s`; Windows p95 `4s` | `NOT TESTED` |
+| Normal | Warm | inspect Claude anchor | 20 |  |  |  |  |  | macOS p95 `2s`; Windows p95 `4s` | `NOT TESTED` |
+| Normal | Warm | Claude resume dry-run | 20 |  |  |  |  |  | macOS p95 `2s`; Windows p95 `4s` | `NOT TESTED` |
+| Normal | Warm | Codex resume dry-run | 20 |  |  |  |  |  | macOS p95 `2s`; Windows p95 `4s` | `NOT TESTED` |
+| Normal | Warm | Claude fork dry-run | 20 |  |  |  |  |  | macOS p95 `2s`; Windows p95 `4s` | `NOT TESTED` |
+| Normal | Warm | Codex fork dry-run | 20 |  |  |  |  |  | macOS p95 `2s`; Windows p95 `4s` | `NOT TESTED` |
+| Large | Cold | Large cold full refresh: sessions, limit 1000 | 3 |  |  |  |  |  | macOS max `12s`; Windows max `18s` | `NOT TESTED` |
+| Large | Warm | sessions, limit 1000 | 20 |  |  |  |  |  | macOS p95 `4s`; Windows p95 `8s` | `NOT TESTED` |
+| Large | Warm | search large marker, limit 1000 | 20 |  |  |  |  |  | macOS p95 `4s`; Windows p95 `8s` | `NOT TESTED` |
+| Large | Warm | inspect Claude anchor | 20 |  |  |  |  |  | macOS p95 `4s`; Windows p95 `8s` | `NOT TESTED` |
+| Large | Warm | Claude resume dry-run | 20 |  |  |  |  |  | macOS p95 `4s`; Windows p95 `8s` | `NOT TESTED` |
+| Large | Warm | Codex resume dry-run | 20 |  |  |  |  |  | macOS p95 `4s`; Windows p95 `8s` | `NOT TESTED` |
+| Large | Warm | Claude fork dry-run | 20 |  |  |  |  |  | macOS p95 `4s`; Windows p95 `8s` | `NOT TESTED` |
+| Large | Warm | Codex fork dry-run | 20 |  |  |  |  |  | macOS p95 `4s`; Windows p95 `8s` | `NOT TESTED` |
+
+Record deterministic command/file counts and comparable same-host Phase 3 p95
+per logical command. Any alias mismatch, failed validation, controlled-source
+mutation, timeout, 20–30 second regression, unbounded growth, or greater than
+25 percent comparable same-host per-command p95 regression is blocking even
+when an absolute ceiling passes.
 
 ## 7. Findings and repository hygiene
 

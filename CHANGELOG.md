@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Make bounded user-prompt indexing linear instead of quadratic for long
+  Claude, Codex, and Gemini sessions, with reproducible 1,000-record CLI/index
+  benchmarks and tagged-artifact latency gates for issue #96.
 - Document the stable `v0.2.0` package-channel rollout and advertise the
   physically verified Homebrew route on Apple Silicon macOS.
 - Move the local continuity index to versioned
@@ -44,6 +47,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   subprocess/config read; reject unverified agent versions and hard
   repository mismatches; and serialize derived-index writes across concurrent
   `rein` and `reinstate` processes.
+- Pin Git probes to the physically discovered repository/worktree, disable
+  config includes and repository-controlled executable paths, and require an
+  explicit warning acknowledgment whenever working-tree certainty cannot be
+  established without trusting repository behavior or a racy observation.
 
 ## [0.2.0] - 2026-08-05
 
