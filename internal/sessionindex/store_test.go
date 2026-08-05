@@ -3,6 +3,7 @@ package sessionindex
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -316,6 +317,126 @@ func TestPrelaunchBaselinePersistsAcrossVendorSourceAppend(t *testing.T) {
 	baseline.Provenance = "vendor_claim"
 	if err := store.PutPrelaunchBaseline(ctx, baseline); err == nil {
 		t.Fatal("untrusted prelaunch provenance unexpectedly accepted")
+	}
+}
+
+func TestPrelaunchBaselineIsMonotonicAndCascadesWithSession(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	store, err := Open(filepath.Join(t.TempDir(), "index.sqlite"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = store.Close() })
+	record := testRecord(AgentClaude, "monotonic", time.Now(), "/session.jsonl", 1)
+	if _, err := store.ReplaceSource(ctx, AgentClaude, []Record{record}); err != nil {
+		t.Fatal(err)
+	}
+	base := environment.PrelaunchBaseline{
+		SessionRef: record.Reference(), WorkingTreeState: environment.WorkingTreeUnavailable,
+		ObservedAt: time.Date(2026, 8, 5, 1, 2, 3, 0, time.UTC),
+		Provenance: environment.PrelaunchObservedProvenance, SourceSessionRef: record.Reference(),
+	}
+	newer := base
+	newer.ObservedAt = base.ObservedAt.Add(time.Minute)
+	newer.Branch = "newer"
+	if err := store.PutPrelaunchBaseline(ctx, newer); err != nil {
+		t.Fatal(err)
+	}
+	older := base
+	older.Branch = "older"
+	if err := store.PutPrelaunchBaseline(ctx, older); !errors.Is(err, ErrPrelaunchBaselineOlder) {
+		t.Fatalf("older baseline error = %v", err)
+	}
+	equalConflict := newer
+	equalConflict.Branch = "conflict"
+	if err := store.PutPrelaunchBaseline(ctx, equalConflict); !errors.Is(err, ErrPrelaunchBaselineConflict) {
+		t.Fatalf("equal conflicting baseline error = %v", err)
+	}
+	if err := store.PutPrelaunchBaseline(ctx, newer); err != nil {
+		t.Fatalf("idempotent baseline error = %v", err)
+	}
+	got, err := store.GetPrelaunchBaseline(ctx, record.Reference())
+	if err != nil || got.Branch != "newer" {
+		t.Fatalf("stored baseline = %+v, %v", got, err)
+	}
+	if _, err := store.ReplaceSource(ctx, AgentClaude, nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.GetPrelaunchBaseline(ctx, record.Reference()); !errors.Is(err, ErrPrelaunchBaselineNotFound) {
+		t.Fatalf("orphan baseline survived deletion: %v", err)
+	}
+	if err := store.PutPrelaunchBaseline(ctx, newer); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("baseline for absent session error = %v", err)
+	}
+}
+
+func TestIndependentStoresSerializeConcurrentWriters(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "shared.sqlite")
+	first, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer first.Close()
+	second, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer second.Close()
+	stores := []*Store{first, second}
+	var wait sync.WaitGroup
+	errorsFound := make(chan error, 40)
+	for index := 0; index < 40; index++ {
+		index := index
+		wait.Add(1)
+		go func() {
+			defer wait.Done()
+			agent := AgentClaude
+			if index%2 == 1 {
+				agent = AgentCodex
+			}
+			record := testRecord(agent, fmt.Sprintf("concurrent-%d", index), time.Unix(int64(index+1), 0), fmt.Sprintf("/%d", index), int64(index+1))
+			_, writeErr := stores[index%len(stores)].ReplaceSource(ctx, agent, []Record{record})
+			if writeErr != nil {
+				errorsFound <- writeErr
+			}
+		}()
+	}
+	wait.Wait()
+	close(errorsFound)
+	for writeErr := range errorsFound {
+		t.Fatalf("concurrent store write failed: %v", writeErr)
+	}
+}
+
+func TestCorruptBaselineJSONIsBoundedAndPathFree(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	store, err := Open(filepath.Join(t.TempDir(), "index.sqlite"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	record := testRecord(AgentCodex, "corrupt", time.Now(), "/session.jsonl", 1)
+	if _, err := store.ReplaceSource(ctx, AgentCodex, []Record{record}); err != nil {
+		t.Fatal(err)
+	}
+	store.mu.Lock()
+	_, err = store.db.ExecContext(ctx, `INSERT INTO prelaunch_baselines (
+		session_ref, repository_id, branch, git_head, working_tree_digest,
+		working_tree_state, observed_at, provenance, source_session_ref,
+		capabilities_json, runtimes_json
+	) VALUES (?, '', '', '', '', 'unavailable', ?, ?, ?, ?, '[]')`,
+		record.Reference(), time.Now().UnixNano(), environment.PrelaunchObservedProvenance,
+		record.Reference(), strings.Repeat("x", maxBaselineInventoryJSON+100))
+	store.mu.Unlock()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.GetPrelaunchBaseline(ctx, record.Reference()); !errors.Is(err, ErrIndexDataCorrupt) || strings.Contains(err.Error(), "xxx") {
+		t.Fatalf("corrupt baseline error = %v", err)
 	}
 }
 

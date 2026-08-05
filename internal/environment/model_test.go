@@ -123,6 +123,46 @@ func TestNormalizeRecordedEnvironmentRequiresPerFieldProvenance(t *testing.T) {
 	}
 }
 
+func TestNormalizeEnvironmentStripsTerminalSequencesAndKeepsDistinctProvenance(t *testing.T) {
+	t.Parallel()
+	value, err := NormalizeRecordedEnvironment(RecordedEnvironment{
+		Branch: RecordedField{Value: "\x1b[31mfeature/safe\x1b[0m", Provenance: "vendor.branch"},
+		Requirements: []Requirement{
+			{Kind: "mcp", Name: "github", Provenance: "vendor.requirement.one"},
+			{Kind: "mcp", Name: "github", Provenance: "vendor.requirement.two"},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if value.Branch.Value != "feature/safe" || strings.Contains(value.Branch.Value, "[31m") {
+		t.Fatalf("sanitized branch = %q", value.Branch.Value)
+	}
+	if len(value.Requirements) != 2 || value.Requirements[0].Provenance == value.Requirements[1].Provenance {
+		t.Fatalf("requirements = %+v", value.Requirements)
+	}
+}
+
+func TestEnvironmentValidationErrorsDoNotEchoHostileValues(t *testing.T) {
+	t.Parallel()
+	sentinel := "PRIVATE-CONTROLLED-SENTINEL"
+	_, err := NormalizePrelaunchBaseline(PrelaunchBaseline{
+		SessionRef: "codex:one", WorkingTreeState: WorkingTreeState(sentinel),
+		ObservedAt: time.Now(), Provenance: sentinel,
+	})
+	if err == nil || strings.Contains(err.Error(), sentinel) {
+		t.Fatalf("validation error = %v", err)
+	}
+	_, err = NormalizePrelaunchBaseline(PrelaunchBaseline{
+		SessionRef: "codex:one", WorkingTreeState: WorkingTreeUnavailable,
+		ObservedAt: time.Now(), Provenance: PrelaunchObservedProvenance,
+		Capabilities: []Capability{{Agent: sentinel + "/escape", Kind: "mcp", Name: "one", Scope: "user", State: "present", Provenance: PrelaunchObservedProvenance}},
+	})
+	if err == nil || strings.Contains(err.Error(), sentinel) {
+		t.Fatalf("capability validation error = %v", err)
+	}
+}
+
 func TestNormalizePrelaunchBaseline(t *testing.T) {
 	t.Parallel()
 	observed := time.Date(2026, 8, 5, 1, 2, 3, 4, time.FixedZone("test", 3600))
