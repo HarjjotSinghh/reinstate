@@ -254,6 +254,50 @@ func TestCIVerificationUsesOptimizedRaceGate(t *testing.T) {
 	}
 }
 
+func TestWorkflowOrdinaryGoGatesDisableCGO(t *testing.T) {
+	tests := map[string][]string{
+		".github/workflows/ci.yml": {
+			"Test",
+			"Build",
+		},
+		".github/workflows/security.yml": {
+			"Build",
+			"Enforce workflow policy",
+		},
+		".github/workflows/release.yml": {
+			"Run tests",
+		},
+	}
+
+	for path, stepNames := range tests {
+		workflow := read(t, path)
+		for _, stepName := range stepNames {
+			stepStart := "- name: " + stepName
+			start := strings.Index(workflow, stepStart)
+			if start < 0 {
+				t.Errorf("%s is missing workflow step %q", path, stepName)
+				continue
+			}
+			step := workflow[start:]
+			if next := strings.Index(step[len(stepStart):], "\n      - name:"); next >= 0 {
+				step = step[:len(stepStart)+next]
+			}
+			if !strings.Contains(step, "CGO_ENABLED: \"0\"") {
+				t.Errorf("%s step %q must explicitly disable CGO", path, stepName)
+			}
+		}
+	}
+
+	ciWorkflow := read(t, ".github/workflows/ci.yml")
+	if !strings.Contains(ciWorkflow, "run: make test-race") {
+		t.Fatal("CI must retain the explicitly CGO-enabled Makefile race gate")
+	}
+	makefile := read(t, "Makefile")
+	if !strings.Contains(makefile, "test-race: ## Run tests with race detector\n\tCGO_ENABLED=1 ") {
+		t.Fatal("the CI race target must keep CGO explicitly enabled")
+	}
+}
+
 func TestQuickGateStaysFocusedAndNonRelease(t *testing.T) {
 	command := exec.Command("make", "-n", "quick")
 	command.Dir = repoRoot(t)

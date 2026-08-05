@@ -54,6 +54,8 @@ jobs:
           fi
 
       - name: Run tests
+        env:
+          CGO_ENABLED: "0"
         run: go test ./... -count=1
 
       - name: Install Syft
