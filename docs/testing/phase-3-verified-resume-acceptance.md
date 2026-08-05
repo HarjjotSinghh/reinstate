@@ -36,10 +36,21 @@ release-candidate certification requires:
 1. Apple Silicon macOS (`darwin/arm64`); and
 2. native Windows x64 (`windows/amd64`, never WSL for the Windows column).
 
-Intel macOS and Linux/WSL2 artifacts remain separately tracked platform
-evidence. RC1 may be published for testing without claiming stable support on
-those platforms. Stable `v0.3.0` still follows `RELEASING.md`; the v0.2.0
-limited-platform waiver does not silently carry forward.
+These are the supported mandatory platforms for RC1 and stable `v0.3.0`.
+Intel macOS and Linux/WSL2 are unsupported/unverified optional evidence. Do not
+install them solely for acceptance, count a missing or failed result as a
+release failure, or claim support based on built artifacts. They do not block
+RC1 or stable `v0.3.0`. Stable promotion still requires a separate decision and
+fresh tagged-artifact validation on both supported platforms under
+`RELEASING.md`; an RC1 pass does not automatically authorize stable.
+
+The exact tag-specific instructions are the committed
+[`v0.3.0-rc.1` dispatch](v0.3.0-rc.1-agent-verification-prompts.md). Each device
+uses the cumulative sanitized
+[Phase 3 report template](results/phase-3-report-template.md). The dispatch
+fixes report branches, artifact/full-commit checks, corpus sizes, absolute
+performance ceilings, and final reconciliation rules before physical testing
+starts.
 
 ## Automated development gate
 
@@ -146,7 +157,9 @@ on native Windows. Release-blocking ceilings are two and four seconds. Cold
 full-refresh and large-corpus ceilings must be declared in the candidate
 dispatch before testing. Any timeout, unbounded command/file count, 20–30
 second regression, or more than 25 percent same-host p95 regression is a
-blocker.
+blocker. For `v0.3.0-rc.1`, those corpus definitions and ceilings are frozen in
+[`v0.3.0-rc.1-agent-verification-prompts.md`](v0.3.0-rc.1-agent-verification-prompts.md);
+device reports may not relax them after observing results.
 
 CI gates deterministic command/file-count and complexity ratios rather than
 flaky wall-clock assertions. Absolute ceilings belong to the physical matrix.

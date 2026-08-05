@@ -106,8 +106,12 @@ semantic-search, analytics, or network service.
 
 Native resume/fork uses a composite `agent:native-id` reference. Reinstate
 resolves the reference, verifies the recorded workspace and executable, and
-executes an argv array directly. It never interpolates the session ID into a
-shell command. Gemini/OpenCode are read-only and fail closed for launch.
+executes an argv array directly. The production runner binds and rechecks
+platform-native executable/workspace identities immediately before process
+creation; this rejects controlled swaps during the final guard without claiming
+an atomic filesystem/process-start primitive that the host does not provide. It
+never interpolates the session ID into a shell command. Gemini/OpenCode are
+read-only and fail closed for launch.
 
 ## Verified-resume boundary (current source)
 
