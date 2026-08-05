@@ -11,8 +11,8 @@ import (
 	"sort"
 	"strings"
 	"time"
-	"unicode"
 
+	"github.com/HarjjotSinghh/reinstate/internal/safetext"
 	"github.com/HarjjotSinghh/reinstate/internal/workspace"
 )
 
@@ -79,9 +79,9 @@ type Runtime struct {
 // vendor metadata. Missing facts remain empty instead of being inferred from a
 // later inspection of the live workspace.
 type RecordedEnvironment struct {
-	RepositoryID RecordedField `json:"repository_id,omitempty"`
-	Branch       RecordedField `json:"branch,omitempty"`
-	GitHead      RecordedField `json:"git_head,omitempty"`
+	RepositoryID RecordedField `json:"repository_id,omitzero"`
+	Branch       RecordedField `json:"branch,omitzero"`
+	GitHead      RecordedField `json:"git_head,omitzero"`
 	Requirements []Requirement `json:"requirements,omitempty"`
 }
 
@@ -146,7 +146,7 @@ func NormalizeRecordedEnvironment(value RecordedEnvironment) (RecordedEnvironmen
 		if normalizeErr != nil {
 			return RecordedEnvironment{}, normalizeErr
 		}
-		key := normalized.Kind + "\x00" + normalized.Name + "\x00" + normalized.Version
+		key := normalized.Kind + "\x00" + normalized.Name + "\x00" + normalized.Version + "\x00" + normalized.Provenance
 		if _, exists := seen[key]; exists {
 			continue
 		}
@@ -201,12 +201,12 @@ func NormalizePrelaunchBaseline(value PrelaunchBaseline) (PrelaunchBaseline, err
 	value.ObservedAt = value.ObservedAt.UTC()
 	value.Provenance = normalizeMetadata(value.Provenance, MaxProvenanceRunes)
 	if value.Provenance != PrelaunchObservedProvenance {
-		return PrelaunchBaseline{}, fmt.Errorf("unsupported prelaunch provenance %q", value.Provenance)
+		return PrelaunchBaseline{}, errors.New("unsupported prelaunch provenance")
 	}
 	switch value.WorkingTreeState {
 	case WorkingTreeClean, WorkingTreeModified, WorkingTreeUnavailable:
 	default:
-		return PrelaunchBaseline{}, fmt.Errorf("unsupported working tree state %q", value.WorkingTreeState)
+		return PrelaunchBaseline{}, errors.New("unsupported working tree state")
 	}
 	if value.WorkingTreeState != WorkingTreeUnavailable && value.WorkingTreeDigest == "" {
 		return PrelaunchBaseline{}, errors.New("available working tree state requires a digest")
@@ -294,7 +294,7 @@ func normalizeRequirement(value Requirement) (Requirement, error) {
 	}
 	for _, current := range result.Kind {
 		if !(current >= 'a' && current <= 'z' || current >= '0' && current <= '9' || current == '_' || current == '-') {
-			return Requirement{}, fmt.Errorf("invalid environment requirement kind %q", result.Kind)
+			return Requirement{}, errors.New("invalid environment requirement kind")
 		}
 	}
 	return result, nil
@@ -318,12 +318,9 @@ func normalizeCapabilities(values []Capability) ([]Capability, error) {
 			value.Scope == "" || value.State == "" || value.Provenance == "" {
 			return nil, errors.New("capability needs agent, kind, name, scope, state, and provenance")
 		}
-		for label, token := range map[string]string{
-			"agent": value.Agent, "kind": value.Kind,
-			"scope": value.Scope, "state": value.State,
-		} {
+		for _, token := range []string{value.Agent, value.Kind, value.Scope, value.State} {
 			if !safeToken(token) {
-				return nil, fmt.Errorf("invalid capability %s %q", label, token)
+				return nil, errors.New("invalid capability identity")
 			}
 		}
 		key := value.Agent + "\x00" + value.Kind + "\x00" + value.Name + "\x00" +
@@ -334,7 +331,7 @@ func normalizeCapabilities(values []Capability) ([]Capability, error) {
 		group := value.Agent + "\x00" + value.Kind
 		perKind[group]++
 		if perKind[group] > MaxCapabilitiesPerKind {
-			return nil, fmt.Errorf("capabilities for agent %q kind %q exceed maximum of %d", value.Agent, value.Kind, MaxCapabilitiesPerKind)
+			return nil, fmt.Errorf("capability group exceeds maximum of %d", MaxCapabilitiesPerKind)
 		}
 		seen[key] = struct{}{}
 		result = append(result, value)
@@ -368,7 +365,7 @@ func normalizeRuntimes(values []Runtime) ([]Runtime, error) {
 			return nil, errors.New("runtime needs name, source kind, and provenance")
 		}
 		if !safeToken(value.Name) || !safeToken(value.SourceKind) {
-			return nil, fmt.Errorf("invalid runtime identity %q/%q", value.Name, value.SourceKind)
+			return nil, errors.New("invalid runtime identity")
 		}
 		key := value.Name + "\x00" + value.Version + "\x00" + value.SourceKind + "\x00" + value.Provenance
 		if _, exists := seen[key]; exists {
@@ -439,33 +436,5 @@ func isLowerHex(value string) bool {
 }
 
 func normalizeMetadata(value string, maxRunes int) string {
-	value = strings.ToValidUTF8(value, "")
-	var result strings.Builder
-	wroteSpace := false
-	runes := 0
-	for _, current := range value {
-		if unicode.IsSpace(current) {
-			if result.Len() > 0 {
-				wroteSpace = true
-			}
-			continue
-		}
-		if unicode.IsControl(current) || unicode.In(current, unicode.Cf) {
-			continue
-		}
-		if wroteSpace {
-			if maxRunes > 0 && runes >= maxRunes {
-				break
-			}
-			result.WriteByte(' ')
-			runes++
-			wroteSpace = false
-		}
-		if maxRunes > 0 && runes >= maxRunes {
-			break
-		}
-		result.WriteRune(current)
-		runes++
-	}
-	return strings.TrimSpace(result.String())
+	return safetext.Text(value, maxRunes)
 }

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 	"sync"
@@ -16,15 +17,28 @@ import (
 	_ "modernc.org/sqlite"
 
 	"github.com/HarjjotSinghh/reinstate/internal/environment"
+	"github.com/HarjjotSinghh/reinstate/internal/filelock"
 )
 
-const indexFileName = "session-index-v1.sqlite"
+const (
+	indexFileName              = "session-index-v2.sqlite"
+	maxRecordedEnvironmentJSON = 1 << 20
+	maxBaselineInventoryJSON   = 2 << 20
+	maximumBaselineFutureSkew  = 24 * time.Hour
+	indexOpenLockTimeout       = 10 * time.Second
+)
 
 var errIncompatibleSchema = errors.New("incompatible session-index schema")
 
 // ErrPrelaunchBaselineNotFound means no private Reinstate observation exists
 // for the requested session reference.
 var ErrPrelaunchBaselineNotFound = errors.New("prelaunch baseline not found")
+
+var (
+	ErrPrelaunchBaselineOlder    = errors.New("prelaunch baseline is older than the stored observation")
+	ErrPrelaunchBaselineConflict = errors.New("prelaunch baseline conflicts at the same observation time")
+	ErrIndexDataCorrupt          = errors.New("session-index derived data is invalid")
+)
 
 // ReplaceResult summarizes one atomic source replacement.
 type ReplaceResult struct {
@@ -41,7 +55,9 @@ type Store struct {
 	db *sql.DB
 }
 
-// IndexPath returns the Phase 2 index location below a Reinstate home.
+// IndexPath returns the current private derived-index location below a
+// Reinstate home. v2 is separate from the Phase 2 v1 file so downgrades cannot
+// destroy non-reconstructible verified-resume baselines.
 func IndexPath(reinstateHome string) string {
 	return filepath.Join(reinstateHome, "cache", indexFileName)
 }
@@ -64,6 +80,13 @@ func Open(path string) (*Store, error) {
 	if err := ensurePrivateParent(path); err != nil {
 		return nil, err
 	}
+	lockContext, cancel := context.WithTimeout(context.Background(), indexOpenLockTimeout)
+	defer cancel()
+	lock, err := filelock.Acquire(lockContext, path+".lock")
+	if err != nil {
+		return nil, fmt.Errorf("lock session index: %w", err)
+	}
+	defer func() { _ = lock.Close() }()
 
 	db, err := openDatabase(path)
 	if err != nil {
@@ -109,6 +132,11 @@ func (s *Store) Rebuild(ctx context.Context) error {
 	if s == nil {
 		return errors.New("session-index store is nil")
 	}
+	lock, err := filelock.Acquire(ctx, s.path+".lock")
+	if err != nil {
+		return fmt.Errorf("lock session index rebuild: %w", err)
+	}
+	defer func() { _ = lock.Close() }()
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if err := ctx.Err(); err != nil {
@@ -167,6 +195,11 @@ func (s *Store) ReplaceSource(
 		normalized = append(normalized, record)
 	}
 
+	lock, err := filelock.Acquire(ctx, s.path+".lock")
+	if err != nil {
+		return result, fmt.Errorf("lock session index update: %w", err)
+	}
+	defer func() { _ = lock.Close() }()
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.db == nil {
@@ -355,16 +388,54 @@ func (s *Store) PutPrelaunchBaseline(ctx context.Context, baseline environment.P
 	if err != nil {
 		return fmt.Errorf("encode prelaunch capabilities: %w", err)
 	}
+	if len(capabilitiesJSON) > maxBaselineInventoryJSON {
+		return errors.New("prelaunch capability inventory exceeds safe encoded size")
+	}
 	runtimesJSON, err := json.Marshal(baseline.Runtimes)
 	if err != nil {
 		return fmt.Errorf("encode prelaunch runtimes: %w", err)
 	}
+	if len(runtimesJSON) > maxBaselineInventoryJSON {
+		return errors.New("prelaunch runtime inventory exceeds safe encoded size")
+	}
+	if baseline.ObservedAt.Year() < 1970 || baseline.ObservedAt.Year() > 2262 {
+		return errors.New("prelaunch observation time is outside the safe storage range")
+	}
+	if baseline.ObservedAt.After(time.Now().UTC().Add(maximumBaselineFutureSkew)) {
+		return errors.New("prelaunch observation time is too far in the future")
+	}
+	lock, err := filelock.Acquire(ctx, s.path+".lock")
+	if err != nil {
+		return fmt.Errorf("lock prelaunch baseline update: %w", err)
+	}
+	defer func() { _ = lock.Close() }()
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.db == nil {
 		return errors.New("session-index store is closed")
 	}
-	_, err = s.db.ExecContext(ctx, `INSERT INTO prelaunch_baselines (
+	var sessionExists int
+	if err := s.db.QueryRowContext(ctx, `SELECT 1 FROM sessions WHERE key = ?`, baseline.SessionRef).Scan(&sessionExists); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("%w: baseline session is absent", ErrNotFound)
+		}
+		return err
+	}
+	existing, existingErr := getPrelaunchBaseline(s.db.QueryRowContext(ctx, baselineSelect+` WHERE session_ref = ?`, baseline.SessionRef))
+	if existingErr == nil {
+		switch {
+		case baseline.ObservedAt.Before(existing.ObservedAt):
+			return ErrPrelaunchBaselineOlder
+		case baseline.ObservedAt.Equal(existing.ObservedAt):
+			if reflect.DeepEqual(baseline, existing) {
+				return nil
+			}
+			return ErrPrelaunchBaselineConflict
+		}
+	} else if !errors.Is(existingErr, sql.ErrNoRows) {
+		return existingErr
+	}
+	result, err := s.db.ExecContext(ctx, `INSERT INTO prelaunch_baselines (
 		session_ref, repository_id, branch, git_head, working_tree_digest,
 		working_tree_state, observed_at, provenance, source_session_ref,
 		capabilities_json, runtimes_json
@@ -379,7 +450,8 @@ func (s *Store) PutPrelaunchBaseline(ctx context.Context, baseline environment.P
 		provenance = excluded.provenance,
 		source_session_ref = excluded.source_session_ref,
 		capabilities_json = excluded.capabilities_json,
-		runtimes_json = excluded.runtimes_json`,
+		runtimes_json = excluded.runtimes_json
+	WHERE excluded.observed_at > prelaunch_baselines.observed_at`,
 		baseline.SessionRef,
 		baseline.RepositoryID,
 		baseline.Branch,
@@ -392,7 +464,17 @@ func (s *Store) PutPrelaunchBaseline(ctx context.Context, baseline environment.P
 		string(capabilitiesJSON),
 		string(runtimesJSON),
 	)
-	return err
+	if err != nil {
+		return err
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows != 1 {
+		return ErrPrelaunchBaselineConflict
+	}
+	return nil
 }
 
 // GetPrelaunchBaseline returns the last private Reinstate observation for a
@@ -407,44 +489,12 @@ func (s *Store) GetPrelaunchBaseline(ctx context.Context, sessionRef string) (en
 	if s.db == nil {
 		return environment.PrelaunchBaseline{}, errors.New("session-index store is closed")
 	}
-	var baseline environment.PrelaunchBaseline
-	var workingTreeState string
-	var observedAt int64
-	var capabilitiesJSON, runtimesJSON string
-	err := s.db.QueryRowContext(ctx, `SELECT
-		session_ref, repository_id, branch, git_head, working_tree_digest,
-		working_tree_state, observed_at, provenance, source_session_ref,
-		capabilities_json, runtimes_json
-		FROM prelaunch_baselines WHERE session_ref = ?`, sessionRef).Scan(
-		&baseline.SessionRef,
-		&baseline.RepositoryID,
-		&baseline.Branch,
-		&baseline.GitHead,
-		&baseline.WorkingTreeDigest,
-		&workingTreeState,
-		&observedAt,
-		&baseline.Provenance,
-		&baseline.SourceSessionRef,
-		&capabilitiesJSON,
-		&runtimesJSON,
-	)
+	baseline, err := getPrelaunchBaseline(s.db.QueryRowContext(ctx, baselineSelect+` WHERE session_ref = ?`, sessionRef))
 	if errors.Is(err, sql.ErrNoRows) {
 		return environment.PrelaunchBaseline{}, fmt.Errorf("%w: %s", ErrPrelaunchBaselineNotFound, sessionRef)
 	}
 	if err != nil {
 		return environment.PrelaunchBaseline{}, err
-	}
-	baseline.WorkingTreeState = environment.WorkingTreeState(workingTreeState)
-	baseline.ObservedAt = timeFromDatabase(observedAt)
-	if err := json.Unmarshal([]byte(capabilitiesJSON), &baseline.Capabilities); err != nil {
-		return environment.PrelaunchBaseline{}, fmt.Errorf("decode prelaunch capabilities: %w", err)
-	}
-	if err := json.Unmarshal([]byte(runtimesJSON), &baseline.Runtimes); err != nil {
-		return environment.PrelaunchBaseline{}, fmt.Errorf("decode prelaunch runtimes: %w", err)
-	}
-	baseline, err = environment.NormalizePrelaunchBaseline(baseline)
-	if err != nil {
-		return environment.PrelaunchBaseline{}, fmt.Errorf("decode prelaunch baseline: %w", err)
 	}
 	return baseline, nil
 }
@@ -456,13 +506,60 @@ func (s *Store) DeletePrelaunchBaseline(ctx context.Context, sessionRef string) 
 	if sessionRef == "" {
 		return errors.New("prelaunch baseline session reference must not be empty")
 	}
+	lock, err := filelock.Acquire(ctx, s.path+".lock")
+	if err != nil {
+		return fmt.Errorf("lock prelaunch baseline deletion: %w", err)
+	}
+	defer func() { _ = lock.Close() }()
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.db == nil {
 		return errors.New("session-index store is closed")
 	}
-	_, err := s.db.ExecContext(ctx, `DELETE FROM prelaunch_baselines WHERE session_ref = ?`, sessionRef)
+	_, err = s.db.ExecContext(ctx, `DELETE FROM prelaunch_baselines WHERE session_ref = ?`, sessionRef)
 	return err
+}
+
+const baselineSelect = `SELECT
+	session_ref, repository_id, branch, git_head, working_tree_digest,
+	working_tree_state, observed_at, provenance, source_session_ref,
+	substr(capabilities_json, 1, 2097153), substr(runtimes_json, 1, 2097153)
+	FROM prelaunch_baselines`
+
+func getPrelaunchBaseline(scanner rowScanner) (environment.PrelaunchBaseline, error) {
+	var baseline environment.PrelaunchBaseline
+	var workingTreeState string
+	var observedAt int64
+	var capabilitiesJSON, runtimesJSON string
+	if err := scanner.Scan(
+		&baseline.SessionRef,
+		&baseline.RepositoryID,
+		&baseline.Branch,
+		&baseline.GitHead,
+		&baseline.WorkingTreeDigest,
+		&workingTreeState,
+		&observedAt,
+		&baseline.Provenance,
+		&baseline.SourceSessionRef,
+		&capabilitiesJSON,
+		&runtimesJSON,
+	); err != nil {
+		return environment.PrelaunchBaseline{}, err
+	}
+	if len(capabilitiesJSON) > maxBaselineInventoryJSON || len(runtimesJSON) > maxBaselineInventoryJSON {
+		return environment.PrelaunchBaseline{}, ErrIndexDataCorrupt
+	}
+	baseline.WorkingTreeState = environment.WorkingTreeState(workingTreeState)
+	baseline.ObservedAt = timeFromDatabase(observedAt)
+	if json.Unmarshal([]byte(capabilitiesJSON), &baseline.Capabilities) != nil ||
+		json.Unmarshal([]byte(runtimesJSON), &baseline.Runtimes) != nil {
+		return environment.PrelaunchBaseline{}, ErrIndexDataCorrupt
+	}
+	normalized, err := environment.NormalizePrelaunchBaseline(baseline)
+	if err != nil {
+		return environment.PrelaunchBaseline{}, ErrIndexDataCorrupt
+	}
+	return normalized, nil
 }
 
 func (s *Store) queryRecords(ctx context.Context, query string, args ...any) ([]Record, error) {
@@ -499,6 +596,9 @@ func upsertRecord(ctx context.Context, tx *sql.Tx, source string, record Record)
 	recordedEnvironmentJSON, err := json.Marshal(record.RecordedEnvironment)
 	if err != nil {
 		return err
+	}
+	if len(recordedEnvironmentJSON) > maxRecordedEnvironmentJSON {
+		return errors.New("recorded environment exceeds safe encoded size")
 	}
 	_, err = tx.ExecContext(
 		ctx,
@@ -604,12 +704,15 @@ func scanRecord(scanner rowScanner) (Record, error) {
 	if err := json.Unmarshal([]byte(filesJSON), &record.Files); err != nil {
 		return Record{}, fmt.Errorf("decode indexed files for %s: %w", record.Key, err)
 	}
+	if len(recordedEnvironmentJSON) > maxRecordedEnvironmentJSON {
+		return Record{}, ErrIndexDataCorrupt
+	}
 	if err := json.Unmarshal([]byte(recordedEnvironmentJSON), &record.RecordedEnvironment); err != nil {
-		return Record{}, fmt.Errorf("decode indexed environment for %s: %w", record.Key, err)
+		return Record{}, ErrIndexDataCorrupt
 	}
 	record.RecordedEnvironment, err = environment.NormalizeRecordedEnvironment(record.RecordedEnvironment)
 	if err != nil {
-		return Record{}, fmt.Errorf("normalize indexed environment for %s: %w", record.Key, err)
+		return Record{}, ErrIndexDataCorrupt
 	}
 	return record, nil
 }
@@ -617,7 +720,7 @@ func scanRecord(scanner rowScanner) (Record, error) {
 const recordSelect = `SELECT
 	key, id, agent, title, project, workspace, branch, updated_at, size_bytes,
 	message_count, prompt_preview, files_json, can_resume, can_fork,
-	read_only_reason, recorded_environment_json, source_path, source_mod_time,
+	read_only_reason, substr(recorded_environment_json, 1, 1048577), source_path, source_mod_time,
 	source_size, search_text
 	FROM sessions`
 
@@ -652,7 +755,7 @@ CREATE INDEX IF NOT EXISTS sessions_source ON sessions(source);
 CREATE INDEX IF NOT EXISTS sessions_native_id ON sessions(id);
 CREATE INDEX IF NOT EXISTS sessions_order ON sessions(updated_at DESC, agent, id);
 CREATE TABLE IF NOT EXISTS prelaunch_baselines (
-	session_ref TEXT PRIMARY KEY NOT NULL,
+	session_ref TEXT PRIMARY KEY NOT NULL REFERENCES sessions(key) ON DELETE CASCADE,
 	repository_id TEXT NOT NULL,
 	branch TEXT NOT NULL,
 	git_head TEXT NOT NULL,
@@ -732,12 +835,13 @@ func verifySchema(db *sql.DB) error {
 		return err
 	}
 	defer func() { _ = rows.Close() }()
-	required := map[string]bool{
-		"key": false, "id": false, "agent": false, "source": false,
-		"source_path": false, "source_mod_time": false, "source_size": false,
-		"search_text": false, "project_fold": false, "workspace_fold": false,
-		"branch_fold": false, "recorded_environment_json": false,
+	required := map[string]string{
+		"key": "TEXT", "id": "TEXT", "agent": "TEXT", "source": "TEXT",
+		"source_path": "TEXT", "source_mod_time": "INTEGER", "source_size": "INTEGER",
+		"search_text": "TEXT", "project_fold": "TEXT", "workspace_fold": "TEXT",
+		"branch_fold": "TEXT", "recorded_environment_json": "TEXT",
 	}
+	foundRequired := make(map[string]bool, len(required))
 	for rows.Next() {
 		var columnID, notNull, primaryKey int
 		var name, columnType string
@@ -752,11 +856,15 @@ func verifySchema(db *sql.DB) error {
 		); err != nil {
 			return err
 		}
-		if _, exists := required[name]; exists {
-			required[name] = true
+		if expectedType, exists := required[name]; exists {
+			if strings.ToUpper(columnType) != expectedType || notNull != 1 || name == "key" && primaryKey != 1 {
+				return fmt.Errorf("%w: invalid column contract", errIncompatibleSchema)
+			}
+			foundRequired[name] = true
 		}
 	}
-	for name, found := range required {
+	for name := range required {
+		found := foundRequired[name]
 		if !found {
 			return fmt.Errorf("%w: missing column %s", errIncompatibleSchema, name)
 		}
@@ -772,13 +880,14 @@ func verifySchema(db *sql.DB) error {
 		return err
 	}
 	defer func() { _ = baselineRows.Close() }()
-	baselineRequired := map[string]bool{
-		"session_ref": false, "repository_id": false, "branch": false,
-		"git_head": false, "working_tree_digest": false,
-		"working_tree_state": false, "observed_at": false,
-		"provenance": false, "source_session_ref": false,
-		"capabilities_json": false, "runtimes_json": false,
+	baselineRequired := map[string]string{
+		"session_ref": "TEXT", "repository_id": "TEXT", "branch": "TEXT",
+		"git_head": "TEXT", "working_tree_digest": "TEXT",
+		"working_tree_state": "TEXT", "observed_at": "INTEGER",
+		"provenance": "TEXT", "source_session_ref": "TEXT",
+		"capabilities_json": "TEXT", "runtimes_json": "TEXT",
 	}
+	baselineFound := make(map[string]bool, len(baselineRequired))
 	for baselineRows.Next() {
 		var columnID, notNull, primaryKey int
 		var name, columnType string
@@ -793,16 +902,48 @@ func verifySchema(db *sql.DB) error {
 		); err != nil {
 			return err
 		}
-		if _, exists := baselineRequired[name]; exists {
-			baselineRequired[name] = true
+		if expectedType, exists := baselineRequired[name]; exists {
+			if strings.ToUpper(columnType) != expectedType || notNull != 1 || name == "session_ref" && primaryKey != 1 {
+				return fmt.Errorf("%w: invalid prelaunch baseline column contract", errIncompatibleSchema)
+			}
+			baselineFound[name] = true
 		}
 	}
-	for name, found := range baselineRequired {
+	for name := range baselineRequired {
+		found := baselineFound[name]
 		if !found {
 			return fmt.Errorf("%w: missing prelaunch baseline column %s", errIncompatibleSchema, name)
 		}
 	}
-	return baselineRows.Err()
+	if err := baselineRows.Err(); err != nil {
+		return err
+	}
+	if err := baselineRows.Close(); err != nil {
+		return err
+	}
+	foreignRows, err := db.Query("PRAGMA foreign_key_list(prelaunch_baselines)")
+	if err != nil {
+		return err
+	}
+	defer func() { _ = foreignRows.Close() }()
+	validForeignKey := false
+	for foreignRows.Next() {
+		var id, sequence int
+		var table, from, to, onUpdate, onDelete, match string
+		if err := foreignRows.Scan(&id, &sequence, &table, &from, &to, &onUpdate, &onDelete, &match); err != nil {
+			return err
+		}
+		if table == "sessions" && from == "session_ref" && to == "key" && strings.EqualFold(onDelete, "CASCADE") {
+			validForeignKey = true
+		}
+	}
+	if err := foreignRows.Err(); err != nil {
+		return err
+	}
+	if !validForeignKey {
+		return fmt.Errorf("%w: missing prelaunch baseline cascade", errIncompatibleSchema)
+	}
+	return nil
 }
 
 func ensurePrivateParent(path string) error {

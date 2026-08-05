@@ -113,3 +113,44 @@ func TestIndexRejectsDuplicateSourcesAndHonorsCancellation(t *testing.T) {
 		t.Fatalf("cancelled source scans = %d", source.scanCall)
 	}
 }
+
+func TestRefreshAgentAndRefreshAndResolveBindSelectedFreshness(t *testing.T) {
+	t.Parallel()
+	store, err := Open(filepath.Join(t.TempDir(), "index.sqlite"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = store.Close() })
+	claude := &fakeSource{name: AgentClaude, result: ScanResult{Records: []Record{
+		testRecord(AgentClaude, "one", time.Unix(1, 0), "/one", 1),
+	}}}
+	codex := &fakeSource{name: AgentCodex, result: ScanResult{Records: []Record{
+		testRecord(AgentCodex, "two", time.Unix(2, 0), "/two", 1),
+	}}}
+	index, err := NewIndex(store, claude, codex)
+	if err != nil {
+		t.Fatal(err)
+	}
+	record, refresh, fresh, err := index.RefreshAndResolve(context.Background(), "claude:one")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if record.Reference() != "claude:one" || !fresh || !refresh.SourceFresh(AgentClaude) || refresh.SourceFresh(AgentCodex) {
+		t.Fatalf("targeted resolve = record:%s fresh:%t refresh:%+v", record.Reference(), fresh, refresh)
+	}
+	if claude.scanCall != 1 || codex.scanCall != 0 {
+		t.Fatalf("targeted scan calls claude=%d codex=%d", claude.scanCall, codex.scanCall)
+	}
+
+	claude.err = errors.New("controlled source failure")
+	record, refresh, fresh, err = index.RefreshAndResolve(context.Background(), "claude:one")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if record.Reference() != "claude:one" || fresh || refresh.SourceFresh(AgentClaude) {
+		t.Fatalf("stale resolve = record:%s fresh:%t refresh:%+v", record.Reference(), fresh, refresh)
+	}
+	if _, err := index.RefreshAgent(context.Background(), "missing-agent"); err == nil {
+		t.Fatal("missing target source unexpectedly refreshed")
+	}
+}

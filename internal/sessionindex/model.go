@@ -57,7 +57,7 @@ type Record struct {
 	// RecordedEnvironment contains only bounded facts explicitly present in
 	// recognized vendor metadata. Live workspace observations are stored
 	// separately and never inferred during indexing.
-	RecordedEnvironment environment.RecordedEnvironment `json:"recorded_environment,omitempty"`
+	RecordedEnvironment environment.RecordedEnvironment `json:"recorded_environment,omitzero"`
 
 	SourcePath    string `json:"-"`
 	SourceModTime int64  `json:"-"`
