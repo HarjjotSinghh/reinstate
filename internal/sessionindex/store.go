@@ -8,17 +8,41 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	_ "modernc.org/sqlite"
+
+	"github.com/HarjjotSinghh/reinstate/internal/environment"
+	"github.com/HarjjotSinghh/reinstate/internal/filelock"
+	"github.com/HarjjotSinghh/reinstate/internal/fsx"
 )
 
-const indexFileName = "session-index-v1.sqlite"
+const (
+	indexFileName              = "session-index-v2.sqlite"
+	maxRecordedEnvironmentJSON = 1 << 20
+	maxBaselineInventoryJSON   = 2 << 20
+	maxFilesJSON               = 4 << 20
+	maxStoredSourcePathRunes   = 32 << 10
+	maximumBaselineFutureSkew  = 24 * time.Hour
+	indexOpenLockTimeout       = 10 * time.Second
+)
 
 var errIncompatibleSchema = errors.New("incompatible session-index schema")
+
+// ErrPrelaunchBaselineNotFound means no private Reinstate observation exists
+// for the requested session reference.
+var ErrPrelaunchBaselineNotFound = errors.New("prelaunch baseline not found")
+
+var (
+	ErrPrelaunchBaselineOlder    = errors.New("prelaunch baseline is older than the stored observation")
+	ErrPrelaunchBaselineConflict = errors.New("prelaunch baseline conflicts at the same observation time")
+	ErrIndexDataCorrupt          = errors.New("session-index derived data is invalid")
+)
 
 // ReplaceResult summarizes one atomic source replacement.
 type ReplaceResult struct {
@@ -31,11 +55,14 @@ type ReplaceResult struct {
 type Store struct {
 	path string
 
-	mu sync.RWMutex
-	db *sql.DB
+	mu           sync.RWMutex
+	db           *sql.DB
+	lifetimeLock *filelock.Lock
 }
 
-// IndexPath returns the Phase 2 index location below a Reinstate home.
+// IndexPath returns the current private derived-index location below a
+// Reinstate home. v2 is separate from the Phase 2 v1 file so downgrades cannot
+// destroy non-reconstructible verified-resume baselines.
 func IndexPath(reinstateHome string) string {
 	return filepath.Join(reinstateHome, "cache", indexFileName)
 }
@@ -58,21 +85,87 @@ func Open(path string) (*Store, error) {
 	if err := ensurePrivateParent(path); err != nil {
 		return nil, err
 	}
+	lockContext, cancel := context.WithTimeout(context.Background(), indexOpenLockTimeout)
+	defer cancel()
+	lock, err := filelock.AcquireShared(lockContext, path+".lock")
+	if err != nil {
+		return nil, fmt.Errorf("lock session index: %w", err)
+	}
 
 	db, err := openDatabase(path)
 	if err != nil {
 		if !isRebuildableDatabaseError(err) {
+			_ = lock.Close()
+			return nil, err
+		}
+		_ = lock.Close()
+		writer, writerErr := filelock.Acquire(lockContext, path+".write.lock")
+		if writerErr != nil {
+			return nil, fmt.Errorf("lock session index writer: %w", writerErr)
+		}
+		defer func() { _ = writer.Close() }()
+		// Another process may have repaired the database while this opener
+		// waited for the writer lock. Rejoin the lifetime shared lock and retry
+		// before requesting destructive recovery.
+		lock, err = filelock.AcquireShared(lockContext, path+".lock")
+		if err != nil {
+			return nil, fmt.Errorf("lock repaired session index: %w", err)
+		}
+		db, err = openDatabase(path)
+		if err == nil {
+			return &Store{path: path, db: db, lifetimeLock: lock}, nil
+		}
+		if !isRebuildableDatabaseError(err) {
+			_ = lock.Close()
+			return nil, err
+		}
+		_ = lock.Close()
+		lock, err = filelock.Acquire(lockContext, path+".lock")
+		if err != nil {
+			return nil, fmt.Errorf("lock session index rebuild: %w", err)
+		}
+		// Another process may have rebuilt the file while this opener waited.
+		db, err = openDatabase(path)
+		if err == nil {
+			shared, shareErr := replaceExclusiveWithShared(lockContext, path, lock)
+			if shareErr != nil {
+				_ = db.Close()
+				return nil, shareErr
+			}
+			return &Store{path: path, db: db, lifetimeLock: shared}, nil
+		}
+		if !isRebuildableDatabaseError(err) {
+			_ = lock.Close()
 			return nil, err
 		}
 		if removeErr := removeDatabaseFiles(path); removeErr != nil {
+			_ = lock.Close()
 			return nil, errors.Join(err, removeErr)
 		}
 		db, err = openDatabase(path)
 		if err != nil {
+			_ = lock.Close()
 			return nil, fmt.Errorf("rebuild session index: %w", err)
 		}
+		shared, shareErr := replaceExclusiveWithShared(lockContext, path, lock)
+		if shareErr != nil {
+			_ = db.Close()
+			return nil, shareErr
+		}
+		lock = shared
 	}
-	return &Store{path: path, db: db}, nil
+	return &Store{path: path, db: db, lifetimeLock: lock}, nil
+}
+
+func replaceExclusiveWithShared(ctx context.Context, path string, exclusive *filelock.Lock) (*filelock.Lock, error) {
+	if err := exclusive.Close(); err != nil {
+		return nil, fmt.Errorf("release exclusive session index lock: %w", err)
+	}
+	shared, err := filelock.AcquireShared(ctx, path+".lock")
+	if err != nil {
+		return nil, fmt.Errorf("restore shared session index lock: %w", err)
+	}
+	return shared, nil
 }
 
 // Path returns the SQLite file path.
@@ -91,10 +184,19 @@ func (s *Store) Close() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.db == nil {
-		return nil
+		if s.lifetimeLock == nil {
+			return nil
+		}
+		err := s.lifetimeLock.Close()
+		s.lifetimeLock = nil
+		return err
 	}
 	err := s.db.Close()
 	s.db = nil
+	if s.lifetimeLock != nil {
+		err = errors.Join(err, s.lifetimeLock.Close())
+		s.lifetimeLock = nil
+	}
 	return err
 }
 
@@ -103,26 +205,31 @@ func (s *Store) Rebuild(ctx context.Context) error {
 	if s == nil {
 		return errors.New("session-index store is nil")
 	}
+	writeLock, err := filelock.Acquire(ctx, s.path+".write.lock")
+	if err != nil {
+		return fmt.Errorf("lock session index writer: %w", err)
+	}
+	defer func() { _ = writeLock.Close() }()
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	if s.db != nil {
-		if err := s.db.Close(); err != nil {
-			return err
-		}
-		s.db = nil
+	if s.db == nil {
+		return errors.New("session-index store is closed")
 	}
-	if err := removeDatabaseFiles(s.path); err != nil {
-		return err
-	}
-	db, err := openDatabase(s.path)
+	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
-	s.db = db
-	return nil
+	defer func() { _ = tx.Rollback() }()
+	// Baselines are linked to sessions with ON DELETE CASCADE. Clearing the
+	// derived rows transactionally preserves the database identity, so other
+	// live Store handles never become split-brain readers of an unlinked file.
+	if _, err := tx.ExecContext(ctx, `DELETE FROM sessions`); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 // ReplaceSource atomically upserts a complete successful scan and deletes
@@ -161,6 +268,11 @@ func (s *Store) ReplaceSource(
 		normalized = append(normalized, record)
 	}
 
+	lock, err := filelock.Acquire(ctx, s.path+".write.lock")
+	if err != nil {
+		return result, fmt.Errorf("lock session index update: %w", err)
+	}
+	defer func() { _ = lock.Close() }()
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.db == nil {
@@ -337,6 +449,200 @@ func (s *Store) Last(ctx context.Context, filter Filter) (Record, error) {
 	return records[0], nil
 }
 
+// PutPrelaunchBaseline stores one private, derived observation independently
+// from vendor source fingerprints. A later native append may update the session
+// record without invalidating the last prelaunch truth Reinstate observed.
+func (s *Store) PutPrelaunchBaseline(ctx context.Context, baseline environment.PrelaunchBaseline) error {
+	baseline, err := environment.NormalizePrelaunchBaseline(baseline)
+	if err != nil {
+		return fmt.Errorf("normalize prelaunch baseline: %w", err)
+	}
+	capabilitiesJSON, err := json.Marshal(baseline.Capabilities)
+	if err != nil {
+		return fmt.Errorf("encode prelaunch capabilities: %w", err)
+	}
+	if len(capabilitiesJSON) > maxBaselineInventoryJSON {
+		return errors.New("prelaunch capability inventory exceeds safe encoded size")
+	}
+	runtimesJSON, err := json.Marshal(baseline.Runtimes)
+	if err != nil {
+		return fmt.Errorf("encode prelaunch runtimes: %w", err)
+	}
+	if len(runtimesJSON) > maxBaselineInventoryJSON {
+		return errors.New("prelaunch runtime inventory exceeds safe encoded size")
+	}
+	if baseline.ObservedAt.Year() < 1970 || baseline.ObservedAt.Year() > 2262 {
+		return errors.New("prelaunch observation time is outside the safe storage range")
+	}
+	if baseline.ObservedAt.After(time.Now().UTC().Add(maximumBaselineFutureSkew)) {
+		return errors.New("prelaunch observation time is too far in the future")
+	}
+	observedAt := timeToDatabase(baseline.ObservedAt)
+	canonicalObservedAt := timeFromDatabase(observedAt)
+	if !canonicalObservedAt.Equal(baseline.ObservedAt) {
+		return errors.New("prelaunch observation time is outside the lossless storage range")
+	}
+	// Compare the same representation that SQLite persists. This strips any
+	// process-local monotonic reading and makes an identical retry idempotent.
+	baseline.ObservedAt = canonicalObservedAt
+	lock, err := filelock.Acquire(ctx, s.path+".write.lock")
+	if err != nil {
+		return fmt.Errorf("lock prelaunch baseline update: %w", err)
+	}
+	defer func() { _ = lock.Close() }()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.db == nil {
+		return errors.New("session-index store is closed")
+	}
+	var sessionExists int
+	if err := s.db.QueryRowContext(ctx, `SELECT 1 FROM sessions WHERE key = ?`, baseline.SessionRef).Scan(&sessionExists); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("%w: baseline session is absent", ErrNotFound)
+		}
+		return err
+	}
+	existing, existingErr := getPrelaunchBaseline(s.db.QueryRowContext(ctx, baselineSelect+` WHERE session_ref = ?`, baseline.SessionRef))
+	if existingErr == nil {
+		switch {
+		case baseline.ObservedAt.Before(existing.ObservedAt):
+			return ErrPrelaunchBaselineOlder
+		case baseline.ObservedAt.Equal(existing.ObservedAt):
+			if reflect.DeepEqual(baseline, existing) {
+				return nil
+			}
+			return ErrPrelaunchBaselineConflict
+		}
+	} else if !errors.Is(existingErr, sql.ErrNoRows) {
+		return existingErr
+	}
+	result, err := s.db.ExecContext(ctx, `INSERT INTO prelaunch_baselines (
+		session_ref, repository_id, branch, git_head, working_tree_digest,
+		working_tree_state, observed_at, provenance, source_session_ref,
+		capabilities_json, runtimes_json
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	ON CONFLICT(session_ref) DO UPDATE SET
+		repository_id = excluded.repository_id,
+		branch = excluded.branch,
+		git_head = excluded.git_head,
+		working_tree_digest = excluded.working_tree_digest,
+		working_tree_state = excluded.working_tree_state,
+		observed_at = excluded.observed_at,
+		provenance = excluded.provenance,
+		source_session_ref = excluded.source_session_ref,
+		capabilities_json = excluded.capabilities_json,
+		runtimes_json = excluded.runtimes_json
+	WHERE excluded.observed_at > prelaunch_baselines.observed_at`,
+		baseline.SessionRef,
+		baseline.RepositoryID,
+		baseline.Branch,
+		baseline.GitHead,
+		baseline.WorkingTreeDigest,
+		string(baseline.WorkingTreeState),
+		observedAt,
+		baseline.Provenance,
+		baseline.SourceSessionRef,
+		string(capabilitiesJSON),
+		string(runtimesJSON),
+	)
+	if err != nil {
+		return err
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows != 1 {
+		return ErrPrelaunchBaselineConflict
+	}
+	return nil
+}
+
+// GetPrelaunchBaseline returns the last private Reinstate observation for a
+// session. It never reads or refreshes vendor state.
+func (s *Store) GetPrelaunchBaseline(ctx context.Context, sessionRef string) (environment.PrelaunchBaseline, error) {
+	sessionRef = SafeText(strings.TrimSpace(sessionRef), environment.MaxSessionReferenceRunes)
+	if sessionRef == "" {
+		return environment.PrelaunchBaseline{}, fmt.Errorf("%w: empty session reference", ErrPrelaunchBaselineNotFound)
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.db == nil {
+		return environment.PrelaunchBaseline{}, errors.New("session-index store is closed")
+	}
+	baseline, err := getPrelaunchBaseline(s.db.QueryRowContext(ctx, baselineSelect+` WHERE session_ref = ?`, sessionRef))
+	if errors.Is(err, sql.ErrNoRows) {
+		return environment.PrelaunchBaseline{}, fmt.Errorf("%w: %s", ErrPrelaunchBaselineNotFound, sessionRef)
+	}
+	if err != nil {
+		return environment.PrelaunchBaseline{}, err
+	}
+	return baseline, nil
+}
+
+// DeletePrelaunchBaseline removes one private observation without touching the
+// vendor session or its indexed record.
+func (s *Store) DeletePrelaunchBaseline(ctx context.Context, sessionRef string) error {
+	sessionRef = SafeText(strings.TrimSpace(sessionRef), environment.MaxSessionReferenceRunes)
+	if sessionRef == "" {
+		return errors.New("prelaunch baseline session reference must not be empty")
+	}
+	lock, err := filelock.Acquire(ctx, s.path+".write.lock")
+	if err != nil {
+		return fmt.Errorf("lock prelaunch baseline deletion: %w", err)
+	}
+	defer func() { _ = lock.Close() }()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.db == nil {
+		return errors.New("session-index store is closed")
+	}
+	_, err = s.db.ExecContext(ctx, `DELETE FROM prelaunch_baselines WHERE session_ref = ?`, sessionRef)
+	return err
+}
+
+const baselineSelect = `SELECT
+	session_ref, repository_id, branch, git_head, working_tree_digest,
+	working_tree_state, observed_at, provenance, source_session_ref,
+	substr(capabilities_json, 1, 2097153), substr(runtimes_json, 1, 2097153)
+	FROM prelaunch_baselines`
+
+func getPrelaunchBaseline(scanner rowScanner) (environment.PrelaunchBaseline, error) {
+	var baseline environment.PrelaunchBaseline
+	var workingTreeState string
+	var observedAt int64
+	var capabilitiesJSON, runtimesJSON string
+	if err := scanner.Scan(
+		&baseline.SessionRef,
+		&baseline.RepositoryID,
+		&baseline.Branch,
+		&baseline.GitHead,
+		&baseline.WorkingTreeDigest,
+		&workingTreeState,
+		&observedAt,
+		&baseline.Provenance,
+		&baseline.SourceSessionRef,
+		&capabilitiesJSON,
+		&runtimesJSON,
+	); err != nil {
+		return environment.PrelaunchBaseline{}, err
+	}
+	if len(capabilitiesJSON) > maxBaselineInventoryJSON || len(runtimesJSON) > maxBaselineInventoryJSON {
+		return environment.PrelaunchBaseline{}, ErrIndexDataCorrupt
+	}
+	baseline.WorkingTreeState = environment.WorkingTreeState(workingTreeState)
+	baseline.ObservedAt = timeFromDatabase(observedAt)
+	if json.Unmarshal([]byte(capabilitiesJSON), &baseline.Capabilities) != nil ||
+		json.Unmarshal([]byte(runtimesJSON), &baseline.Runtimes) != nil {
+		return environment.PrelaunchBaseline{}, ErrIndexDataCorrupt
+	}
+	normalized, err := environment.NormalizePrelaunchBaseline(baseline)
+	if err != nil {
+		return environment.PrelaunchBaseline{}, ErrIndexDataCorrupt
+	}
+	return normalized, nil
+}
+
 func (s *Store) queryRecords(ctx context.Context, query string, args ...any) ([]Record, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -368,15 +674,22 @@ func upsertRecord(ctx context.Context, tx *sql.Tx, source string, record Record)
 	if err != nil {
 		return err
 	}
+	recordedEnvironmentJSON, err := json.Marshal(record.RecordedEnvironment)
+	if err != nil {
+		return err
+	}
+	if len(recordedEnvironmentJSON) > maxRecordedEnvironmentJSON {
+		return errors.New("recorded environment exceeds safe encoded size")
+	}
 	_, err = tx.ExecContext(
 		ctx,
 		`INSERT INTO sessions (
 			key, id, agent, source, title, project, workspace, branch,
 			project_fold, workspace_fold, branch_fold, updated_at, size_bytes,
 			message_count, prompt_preview, files_json, file_text, can_resume,
-			can_fork, read_only_reason, source_path, source_mod_time, source_size,
-			search_text
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				can_fork, read_only_reason, recorded_environment_json, source_path,
+				source_mod_time, source_size, search_text
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(key) DO UPDATE SET
 			id = excluded.id,
 			agent = excluded.agent,
@@ -395,9 +708,10 @@ func upsertRecord(ctx context.Context, tx *sql.Tx, source string, record Record)
 			files_json = excluded.files_json,
 			file_text = excluded.file_text,
 			can_resume = excluded.can_resume,
-			can_fork = excluded.can_fork,
-			read_only_reason = excluded.read_only_reason,
-			source_path = excluded.source_path,
+				can_fork = excluded.can_fork,
+				read_only_reason = excluded.read_only_reason,
+				recorded_environment_json = excluded.recorded_environment_json,
+				source_path = excluded.source_path,
 			source_mod_time = excluded.source_mod_time,
 			source_size = excluded.source_size,
 			search_text = excluded.search_text`,
@@ -421,6 +735,7 @@ func upsertRecord(ctx context.Context, tx *sql.Tx, source string, record Record)
 		boolToDatabase(record.CanResume),
 		boolToDatabase(record.CanFork),
 		record.ReadOnlyReason,
+		string(recordedEnvironmentJSON),
 		record.SourcePath,
 		record.SourceModTime,
 		record.SourceSize,
@@ -437,6 +752,7 @@ func scanRecord(scanner rowScanner) (Record, error) {
 	var record Record
 	var updatedAt int64
 	var filesJSON string
+	var recordedEnvironmentJSON string
 	var canResume, canFork int
 	err := scanner.Scan(
 		&record.Key,
@@ -454,27 +770,105 @@ func scanRecord(scanner rowScanner) (Record, error) {
 		&canResume,
 		&canFork,
 		&record.ReadOnlyReason,
+		&recordedEnvironmentJSON,
 		&record.SourcePath,
 		&record.SourceModTime,
 		&record.SourceSize,
 		&record.SearchText,
 	)
 	if err != nil {
-		return Record{}, err
+		return Record{}, ErrIndexDataCorrupt
 	}
 	record.UpdatedAt = timeFromDatabase(updatedAt)
 	record.CanResume = canResume != 0
 	record.CanFork = canFork != 0
+	if len(filesJSON) > maxFilesJSON {
+		return Record{}, ErrIndexDataCorrupt
+	}
 	if err := json.Unmarshal([]byte(filesJSON), &record.Files); err != nil {
-		return Record{}, fmt.Errorf("decode indexed files for %s: %w", record.Key, err)
+		return Record{}, ErrIndexDataCorrupt
+	}
+	if len(recordedEnvironmentJSON) > maxRecordedEnvironmentJSON {
+		return Record{}, ErrIndexDataCorrupt
+	}
+	if err := json.Unmarshal([]byte(recordedEnvironmentJSON), &record.RecordedEnvironment); err != nil {
+		return Record{}, ErrIndexDataCorrupt
+	}
+	record.RecordedEnvironment, err = environment.NormalizeRecordedEnvironment(record.RecordedEnvironment)
+	if err != nil {
+		return Record{}, ErrIndexDataCorrupt
+	}
+	if err := validateStoredRecord(record); err != nil {
+		return Record{}, ErrIndexDataCorrupt
 	}
 	return record, nil
 }
 
+func validateStoredRecord(record Record) error {
+	if utf8.RuneCountInString(record.SourcePath) > maxStoredSourcePathRunes ||
+		len(record.SearchText) > MaxSearchTextBytes || !validStoredSearchText(record.SearchText) {
+		return ErrIndexDataCorrupt
+	}
+	searchText := record.SearchText
+	record.SearchText = ""
+	normalized, err := NormalizeRecord(record)
+	if err != nil {
+		return err
+	}
+	// Search text includes bounded prompt metadata not otherwise retained, so
+	// validate it independently above. Every other stored public field must
+	// already be canonical; silently repairing attacker-controlled derived rows
+	// would make later safety comparisons ambiguous.
+	normalized.SearchText = searchText
+	original := recordWithSearch(record, searchText)
+	if normalized.Key != original.Key || normalized.ID != original.ID || normalized.Agent != original.Agent {
+		return errors.New("non-canonical identity")
+	}
+	if normalized.Title != original.Title || normalized.Project != original.Project ||
+		normalized.Workspace != original.Workspace || normalized.Branch != original.Branch ||
+		normalized.PromptPreview != original.PromptPreview || normalized.ReadOnlyReason != original.ReadOnlyReason {
+		return errors.New("non-canonical metadata")
+	}
+	if !normalized.UpdatedAt.Equal(original.UpdatedAt) || normalized.SizeBytes != original.SizeBytes ||
+		normalized.MessageCount != original.MessageCount || normalized.CanResume != original.CanResume ||
+		normalized.CanFork != original.CanFork {
+		return errors.New("non-canonical numeric state")
+	}
+	if !reflect.DeepEqual(normalized.Files, original.Files) {
+		return errors.New("non-canonical file references")
+	}
+	if !reflect.DeepEqual(normalized.RecordedEnvironment, original.RecordedEnvironment) {
+		return errors.New("non-canonical recorded environment")
+	}
+	if normalized.SourcePath != original.SourcePath || normalized.SourceModTime != original.SourceModTime ||
+		normalized.SourceSize != original.SourceSize || normalized.SearchText != original.SearchText {
+		return errors.New("non-canonical source state")
+	}
+	return nil
+}
+
+func validStoredSearchText(value string) bool {
+	for _, line := range strings.Split(value, "\n") {
+		if SafeText(line, 0) != line {
+			return false
+		}
+	}
+	return true
+}
+
+func recordWithSearch(record Record, searchText string) Record {
+	record.SearchText = searchText
+	return record
+}
+
 const recordSelect = `SELECT
-	key, id, agent, title, project, workspace, branch, updated_at, size_bytes,
-	message_count, prompt_preview, files_json, can_resume, can_fork,
-	read_only_reason, source_path, source_mod_time, source_size, search_text
+	substr(key, 1, 4162), substr(id, 1, 4097), substr(agent, 1, 65),
+	substr(title, 1, 513), substr(project, 1, 4097), substr(workspace, 1, 4097),
+	substr(branch, 1, 4097), updated_at, size_bytes, message_count,
+	substr(prompt_preview, 1, 161), substr(files_json, 1, 4194305), can_resume, can_fork,
+	substr(read_only_reason, 1, 513), substr(recorded_environment_json, 1, 1048577),
+	substr(source_path, 1, 32769), source_mod_time, source_size,
+	substr(search_text, 1, 262145)
 	FROM sessions`
 
 const createSchema = `CREATE TABLE IF NOT EXISTS sessions (
@@ -498,6 +892,7 @@ const createSchema = `CREATE TABLE IF NOT EXISTS sessions (
 	can_resume INTEGER NOT NULL,
 	can_fork INTEGER NOT NULL,
 	read_only_reason TEXT NOT NULL,
+	recorded_environment_json TEXT NOT NULL,
 	source_path TEXT NOT NULL,
 	source_mod_time INTEGER NOT NULL,
 	source_size INTEGER NOT NULL,
@@ -505,7 +900,20 @@ const createSchema = `CREATE TABLE IF NOT EXISTS sessions (
 );
 CREATE INDEX IF NOT EXISTS sessions_source ON sessions(source);
 CREATE INDEX IF NOT EXISTS sessions_native_id ON sessions(id);
-CREATE INDEX IF NOT EXISTS sessions_order ON sessions(updated_at DESC, agent, id);`
+CREATE INDEX IF NOT EXISTS sessions_order ON sessions(updated_at DESC, agent, id);
+CREATE TABLE IF NOT EXISTS prelaunch_baselines (
+	session_ref TEXT PRIMARY KEY NOT NULL REFERENCES sessions(key) ON DELETE CASCADE,
+	repository_id TEXT NOT NULL,
+	branch TEXT NOT NULL,
+	git_head TEXT NOT NULL,
+	working_tree_digest TEXT NOT NULL,
+	working_tree_state TEXT NOT NULL,
+	observed_at INTEGER NOT NULL,
+	provenance TEXT NOT NULL,
+	source_session_ref TEXT NOT NULL,
+	capabilities_json TEXT NOT NULL,
+	runtimes_json TEXT NOT NULL
+);`
 
 func openDatabase(path string) (*sql.DB, error) {
 	db, err := sql.Open("sqlite", path)
@@ -537,6 +945,19 @@ func openDatabase(path string) (*sql.DB, error) {
 	if integrity != "ok" {
 		return closeOnError(fmt.Errorf("session-index integrity check failed: %s", integrity))
 	}
+	foreignKeyRows, err := db.Query("PRAGMA foreign_key_check")
+	if err != nil {
+		return closeOnError(err)
+	}
+	hasForeignKeyViolation := foreignKeyRows.Next()
+	foreignKeyErr := foreignKeyRows.Err()
+	closeForeignKeyErr := foreignKeyRows.Close()
+	if foreignKeyErr != nil || closeForeignKeyErr != nil {
+		return closeOnError(errors.Join(foreignKeyErr, closeForeignKeyErr))
+	}
+	if hasForeignKeyViolation {
+		return closeOnError(fmt.Errorf("%w: foreign key violation", errIncompatibleSchema))
+	}
 	var version int
 	if err := db.QueryRow("PRAGMA user_version").Scan(&version); err != nil {
 		return closeOnError(err)
@@ -562,7 +983,7 @@ func openDatabase(path string) (*sql.DB, error) {
 	default:
 		return closeOnError(fmt.Errorf("%w: found %d, expected %d", errIncompatibleSchema, version, SchemaVersion))
 	}
-	if err := os.Chmod(path, 0o600); err != nil {
+	if err := fsx.ProtectOwnerOnly(path, false); err != nil {
 		return closeOnError(fmt.Errorf("protect session index: %w", err))
 	}
 	return db, nil
@@ -574,12 +995,13 @@ func verifySchema(db *sql.DB) error {
 		return err
 	}
 	defer func() { _ = rows.Close() }()
-	required := map[string]bool{
-		"key": false, "id": false, "agent": false, "source": false,
-		"source_path": false, "source_mod_time": false, "source_size": false,
-		"search_text": false, "project_fold": false, "workspace_fold": false,
-		"branch_fold": false,
+	required := map[string]string{
+		"key": "TEXT", "id": "TEXT", "agent": "TEXT", "source": "TEXT",
+		"source_path": "TEXT", "source_mod_time": "INTEGER", "source_size": "INTEGER",
+		"search_text": "TEXT", "project_fold": "TEXT", "workspace_fold": "TEXT",
+		"branch_fold": "TEXT", "recorded_environment_json": "TEXT",
 	}
+	foundRequired := make(map[string]bool, len(required))
 	for rows.Next() {
 		var columnID, notNull, primaryKey int
 		var name, columnType string
@@ -594,16 +1016,94 @@ func verifySchema(db *sql.DB) error {
 		); err != nil {
 			return err
 		}
-		if _, exists := required[name]; exists {
-			required[name] = true
+		if expectedType, exists := required[name]; exists {
+			if strings.ToUpper(columnType) != expectedType || notNull != 1 || name == "key" && primaryKey != 1 {
+				return fmt.Errorf("%w: invalid column contract", errIncompatibleSchema)
+			}
+			foundRequired[name] = true
 		}
 	}
-	for name, found := range required {
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	if err := rows.Close(); err != nil {
+		return err
+	}
+	for name := range required {
+		found := foundRequired[name]
 		if !found {
 			return fmt.Errorf("%w: missing column %s", errIncompatibleSchema, name)
 		}
 	}
-	return rows.Err()
+	baselineRows, err := db.Query("PRAGMA table_info(prelaunch_baselines)")
+	if err != nil {
+		return err
+	}
+	defer func() { _ = baselineRows.Close() }()
+	baselineRequired := map[string]string{
+		"session_ref": "TEXT", "repository_id": "TEXT", "branch": "TEXT",
+		"git_head": "TEXT", "working_tree_digest": "TEXT",
+		"working_tree_state": "TEXT", "observed_at": "INTEGER",
+		"provenance": "TEXT", "source_session_ref": "TEXT",
+		"capabilities_json": "TEXT", "runtimes_json": "TEXT",
+	}
+	baselineFound := make(map[string]bool, len(baselineRequired))
+	for baselineRows.Next() {
+		var columnID, notNull, primaryKey int
+		var name, columnType string
+		var defaultValue any
+		if err := baselineRows.Scan(
+			&columnID,
+			&name,
+			&columnType,
+			&notNull,
+			&defaultValue,
+			&primaryKey,
+		); err != nil {
+			return err
+		}
+		if expectedType, exists := baselineRequired[name]; exists {
+			if strings.ToUpper(columnType) != expectedType || notNull != 1 || name == "session_ref" && primaryKey != 1 {
+				return fmt.Errorf("%w: invalid prelaunch baseline column contract", errIncompatibleSchema)
+			}
+			baselineFound[name] = true
+		}
+	}
+	if err := baselineRows.Err(); err != nil {
+		return err
+	}
+	if err := baselineRows.Close(); err != nil {
+		return err
+	}
+	for name := range baselineRequired {
+		found := baselineFound[name]
+		if !found {
+			return fmt.Errorf("%w: missing prelaunch baseline column %s", errIncompatibleSchema, name)
+		}
+	}
+	foreignRows, err := db.Query("PRAGMA foreign_key_list(prelaunch_baselines)")
+	if err != nil {
+		return err
+	}
+	defer func() { _ = foreignRows.Close() }()
+	validForeignKey := false
+	for foreignRows.Next() {
+		var id, sequence int
+		var table, from, to, onUpdate, onDelete, match string
+		if err := foreignRows.Scan(&id, &sequence, &table, &from, &to, &onUpdate, &onDelete, &match); err != nil {
+			return err
+		}
+		if table == "sessions" && from == "session_ref" && to == "key" && strings.EqualFold(onDelete, "CASCADE") {
+			validForeignKey = true
+		}
+	}
+	if err := foreignRows.Err(); err != nil {
+		return err
+	}
+	if !validForeignKey {
+		return fmt.Errorf("%w: missing prelaunch baseline cascade", errIncompatibleSchema)
+	}
+	return nil
 }
 
 func ensurePrivateParent(path string) error {
@@ -611,7 +1111,7 @@ func ensurePrivateParent(path string) error {
 	if err := os.MkdirAll(parent, 0o700); err != nil {
 		return err
 	}
-	if err := os.Chmod(parent, 0o700); err != nil {
+	if err := fsx.ProtectOwnerOnly(parent, true); err != nil {
 		return fmt.Errorf("protect session-index directory: %w", err)
 	}
 	return nil

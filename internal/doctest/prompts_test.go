@@ -414,6 +414,185 @@ func TestPhase2ReportTemplateContracts(t *testing.T) {
 	}
 }
 
+func TestPhase3AcceptanceRunbookContracts(t *testing.T) {
+	body := read(t, "docs/testing/phase-3-verified-resume-acceptance.md")
+	for _, value := range []string{
+		"Required environments for RC1",
+		"Apple Silicon macOS",
+		"native Windows x64",
+		"v0.3.0-rc.1-agent-verification-prompts.md",
+		"results/phase-3-report-template.md",
+		"Rows 1–32",
+		"baseline.unavailable",
+		"reinstate_prelaunch_observed",
+		"--allow-environment-warning CHECK_ID",
+		"full-refresh and large-corpus ceilings",
+		"device reports may not relax them",
+		"supported mandatory platforms",
+		"unsupported/unverified optional evidence",
+		"They do not block",
+		"PHASE3-DEVICE-REPORT-V1",
+		"END-PHASE3-DEVICE-REPORT-V1",
+		"product_files_changed=0",
+		"secrets_or_transcripts_committed=false",
+	} {
+		if !strings.Contains(strings.ToLower(body), strings.ToLower(value)) {
+			t.Errorf("Phase 3 acceptance runbook missing %q", value)
+		}
+	}
+	for _, forbidden := range []string{
+		"REINSTATE_PASSPHRASE=",
+		"--dangerously-skip-permissions",
+		"releases/latest",
+		"silently translate",
+	} {
+		if strings.Contains(body, forbidden) {
+			t.Errorf("Phase 3 acceptance runbook contains unsafe instruction %q", forbidden)
+		}
+	}
+}
+
+func TestPhase3RC1PromptContracts(t *testing.T) {
+	body := read(t, "docs/testing/v0.3.0-rc.1-agent-verification-prompts.md")
+	for _, value := range []string{
+		"v0.3.0-rc.1",
+		"Prompt 1 — Claude Code on Apple Silicon macOS",
+		"Prompt 2 — Codex on native Windows x64",
+		"exact 25-asset set",
+		"checksums.txt plus 24",
+		"checksummed assets",
+		"literal full TEST_COMMIT",
+		"mandatory stop before product-behavior rows",
+		"source build is supplemental",
+		"https://reinstate.dev/install.sh",
+		"https://reinstate.dev/install.ps1",
+		"brand-new isolated INSTALL_DIR",
+		"test/v0.3.0-rc.1-macos-arm64-report",
+		"test/v0.3.0-rc.1-windows-amd64-report",
+		"REPORT_DATE-macos-phase3-V030RC1.md",
+		"REPORT_DATE-windows-phase3-V030RC1.md",
+		"1,000 bounded",
+		"256 capability names",
+		"maximum `8s`",
+		"maximum `12s`",
+		"maximum `18s`",
+		"greater than 25 percent comparable same-host p95 regression",
+		"all five required fuzz-smoke surfaces",
+		"staged release assets",
+		"PHASE3-DEVICE-REPORT-V1",
+		"END-PHASE3-DEVICE-REPORT-V1",
+		"PHASE3-RC1-FINAL-RECONCILIATION-V1",
+		"END-PHASE3-RC1-FINAL-RECONCILIATION-V1",
+		"stable_v0.3.0_authorized=false",
+		"Never amend or force-push evidence",
+		"unsupported/unverified optional evidence",
+		"block RC1 or stable",
+		"stable promotion decision",
+	} {
+		if !strings.Contains(strings.ToLower(body), strings.ToLower(value)) {
+			t.Errorf("v0.3.0-rc.1 prompts missing %q", value)
+		}
+	}
+	for _, forbidden := range []string{
+		"REINSTATE_PASSPHRASE=",
+		"--dangerously-skip-permissions",
+		"releases/latest",
+		"git clone ",
+		"print the transcript",
+		"cat the transcript",
+	} {
+		if strings.Contains(body, forbidden) {
+			t.Errorf("v0.3.0-rc.1 prompts contain unsafe instruction %q", forbidden)
+		}
+	}
+}
+
+func TestPhase3ReportTemplateContracts(t *testing.T) {
+	body := read(t, "docs/testing/results/phase-3-report-template.md")
+	for _, value := range []string{
+		"cumulative",
+		"sanitized",
+		"32 NOT TESTED",
+		"Exact 25-asset release set",
+		"literal full 40-character tested commit",
+		"Required 32-row matrix",
+		"Normal cold full refresh",
+		"Large cold full refresh",
+		"macOS max `8s`; Windows max `12s`",
+		"macOS max `12s`; Windows max `18s`",
+		"Release-blocking",
+		"Non-blocking",
+		"Test-harness deviations",
+		"PHASE3-DEVICE-REPORT-V1",
+		"END-PHASE3-DEVICE-REPORT-V1",
+		"PHASE3-RC1-FINAL-RECONCILIATION-V1",
+		"END-PHASE3-RC1-FINAL-RECONCILIATION-V1",
+		"required counts must sum to 32",
+		"product_files_changed=0",
+		"secrets_or_transcripts_committed=false",
+		"stable_v0.3.0_authorized=false",
+		"supported mandatory",
+		"unsupported/unverified optional evidence",
+		"not block RC1 or stable",
+		"separate stable",
+	} {
+		if !strings.Contains(strings.ToLower(body), strings.ToLower(value)) {
+			t.Errorf("Phase 3 report template missing %q", value)
+		}
+	}
+	for _, forbidden := range []string{
+		"REINSTATE_PASSPHRASE=",
+		"--dangerously-skip-permissions",
+	} {
+		if strings.Contains(body, forbidden) {
+			t.Errorf("Phase 3 report template contains unsafe instruction %q", forbidden)
+		}
+	}
+}
+
+func TestReleaseRunbookStagesAndFreezesReleaseInputs(t *testing.T) {
+	body := read(t, "RELEASING.md")
+	for _, value := range []string{
+		"release commit itself must contain both public bootstrap files",
+		"post-tag pin-only edit cannot repair it",
+		"v0.3.0-rc.1-agent-verification-prompts.md",
+		"two tagged-artifact reports",
+		"supported mandatory platforms",
+		"unsupported/unverified optional evidence",
+		"separate reviewed stable",
+		"GOTOOLCHAIN=go1.25.12 go mod tidy -diff",
+		"./scripts/stage-release-assets.sh dist",
+		"./scripts/check-release-artifacts.sh dist",
+		"sh scripts/test-install.sh dist",
+		"git diff --exit-code -- go.mod go.sum",
+		"test -z \"$(git status --porcelain)\"",
+	} {
+		if !strings.Contains(strings.ToLower(body), strings.ToLower(value)) {
+			t.Errorf("release runbook missing %q", value)
+		}
+	}
+
+	snapshot := strings.Index(body, "make snapshot")
+	stage := strings.Index(body, "./scripts/stage-release-assets.sh dist")
+	artifactCheck := strings.Index(body, "./scripts/check-release-artifacts.sh dist")
+	installerCheck := strings.Index(body, "sh scripts/test-install.sh dist")
+	tidyDiff := strings.Index(body, "git diff --exit-code -- go.mod go.sum")
+	clean := strings.Index(body, `test -z "$(git status --porcelain)"`)
+	if snapshot < 0 || stage < snapshot || artifactCheck < stage || installerCheck < artifactCheck || tidyDiff < installerCheck || clean < tidyDiff {
+		t.Fatal("release runbook must snapshot, stage, inspect, test installers, then prove tidy and clean in that order")
+	}
+	for _, forbidden := range []string{
+		"committed four-environment acceptance dispatch",
+		"For a stable release, macOS arm64, macOS amd64",
+		"normal four-environment",
+		"evidence required before stable `v0.3.0`",
+	} {
+		if strings.Contains(body, forbidden) {
+			t.Errorf("release runbook still contains obsolete platform policy %q", forbidden)
+		}
+	}
+}
+
 func TestPrivateAcceptanceInputIsIgnored(t *testing.T) {
 	body := read(t, ".gitignore")
 	if !strings.Contains(body, "[Rr]2.txt") {

@@ -2,10 +2,13 @@ package sessionindex
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
 	"unicode/utf8"
+
+	"github.com/HarjjotSinghh/reinstate/internal/environment"
 )
 
 func TestSafeTextRemovesTerminalControlsAndCollapsesWhitespace(t *testing.T) {
@@ -46,6 +49,19 @@ func TestCoalesceRecordsMergesNativeSessionSegmentsDeterministically(t *testing.
 	old.SearchText = "old searchable marker"
 	old.Files = []string{"old.go"}
 	old.MessageCount = 2
+	old.RecordedEnvironment = environment.RecordedEnvironment{
+		RepositoryID: environment.RecordedField{
+			Value:      "https://github.com/example/demo.git",
+			Provenance: "codex.session_meta.git.repository_url",
+		},
+		GitHead: environment.RecordedField{
+			Value:      "0123456789abcdef0123456789abcdef01234567",
+			Provenance: "codex.session_meta.git.commit_hash",
+		},
+		Requirements: []environment.Requirement{{
+			Kind: "mcp", Name: "github", Provenance: "codex.session_meta.mcp",
+		}},
+	}
 	newer := testRecord(
 		AgentCodex,
 		"shared-id",
@@ -57,6 +73,15 @@ func TestCoalesceRecordsMergesNativeSessionSegmentsDeterministically(t *testing.
 	newer.SearchText = "new searchable marker"
 	newer.Files = []string{"new.go"}
 	newer.MessageCount = 3
+	newer.RecordedEnvironment = environment.RecordedEnvironment{
+		Branch: environment.RecordedField{
+			Value:      "phase-three",
+			Provenance: "codex.session_meta.git.branch",
+		},
+		Requirements: []environment.Requirement{{
+			Kind: "mcp", Name: "github", Provenance: "codex.session_meta.mcp",
+		}},
+	}
 
 	records, warnings := CoalesceRecords([]Record{newer, old})
 	if len(records) != 1 || len(warnings) != 1 {
@@ -67,7 +92,7 @@ func TestCoalesceRecordsMergesNativeSessionSegmentsDeterministically(t *testing.
 		record.Title != "Useful vendor title" ||
 		record.PromptPreview != "first user prompt" ||
 		record.MessageCount != 5 ||
-		!strings.HasPrefix(record.SourcePath, "aggregate://codex/shared-id/") {
+		record.SourcePath != "/sessions/new.jsonl" {
 		t.Fatalf("coalesced record = %+v", record)
 	}
 	for _, expected := range []string{"old searchable marker", "new searchable marker"} {
@@ -78,13 +103,61 @@ func TestCoalesceRecordsMergesNativeSessionSegmentsDeterministically(t *testing.
 	if got := strings.Join(record.Files, ","); got != "new.go,old.go" {
 		t.Fatalf("files = %q", got)
 	}
+	if record.RecordedEnvironment.RepositoryID.Value != environment.NormalizeRepositoryID("https://github.com/example/demo.git") ||
+		record.RecordedEnvironment.Branch.Value != "phase-three" ||
+		record.RecordedEnvironment.GitHead.Value != "0123456789abcdef0123456789abcdef01234567" ||
+		len(record.RecordedEnvironment.Requirements) != 1 {
+		t.Fatalf("coalesced recorded environment = %+v", record.RecordedEnvironment)
+	}
 	if warnings[0].Code != "coalesced_session_segments" {
 		t.Fatalf("warning = %+v", warnings[0])
 	}
 
 	reversed, _ := CoalesceRecords([]Record{old, newer})
-	if len(reversed) != 1 || reversed[0].SourcePath != record.SourcePath {
+	if len(reversed) != 1 || reversed[0].SourcePath != record.SourcePath ||
+		reversed[0].SourceModTime != record.SourceModTime {
 		t.Fatalf("aggregate fingerprint is not deterministic: %+v / %+v", record, reversed)
+	}
+
+	changedOld := old
+	changedOld.SourceModTime++
+	changed, _ := CoalesceRecords([]Record{changedOld, newer})
+	if changed[0].SourceModTime == record.SourceModTime {
+		t.Fatal("aggregate freshness token did not change with an older segment")
+	}
+}
+
+func TestCoalesceRecordsBoundsRequirementsAcrossSegments(t *testing.T) {
+	t.Parallel()
+	old := testRecord(AgentCodex, "bounded", time.Unix(1, 0), "/sessions/old.jsonl", 1)
+	newer := testRecord(AgentCodex, "bounded", time.Unix(2, 0), "/sessions/new.jsonl", 2)
+	for index := range 200 {
+		old.RecordedEnvironment.Requirements = append(old.RecordedEnvironment.Requirements, environment.Requirement{
+			Kind: "mcp", Name: fmt.Sprintf("old-%03d", index), Provenance: "codex.session_meta.mcp",
+		})
+		newer.RecordedEnvironment.Requirements = append(newer.RecordedEnvironment.Requirements, environment.Requirement{
+			Kind: "mcp", Name: fmt.Sprintf("new-%03d", index), Provenance: "codex.session_meta.mcp",
+		})
+	}
+	if _, err := NormalizeRecord(old); err != nil {
+		t.Fatalf("old segment must be independently valid: %v", err)
+	}
+	if _, err := NormalizeRecord(newer); err != nil {
+		t.Fatalf("newer segment must be independently valid: %v", err)
+	}
+	forward, _ := CoalesceRecords([]Record{old, newer})
+	reversed, _ := CoalesceRecords([]Record{newer, old})
+	if len(forward) != 1 || len(reversed) != 1 {
+		t.Fatalf("coalesced records = %d forward / %d reversed, want 1 each", len(forward), len(reversed))
+	}
+	if len(forward[0].RecordedEnvironment.Requirements) != environment.MaxRequirements {
+		t.Fatalf("coalesced requirements = %d, want %d", len(forward[0].RecordedEnvironment.Requirements), environment.MaxRequirements)
+	}
+	if !reflect.DeepEqual(forward[0].RecordedEnvironment.Requirements, reversed[0].RecordedEnvironment.Requirements) {
+		t.Fatal("coalesced requirement bound depends on input order")
+	}
+	if _, err := NormalizeRecord(forward[0]); err != nil {
+		t.Fatalf("bounded coalesced record is invalid: %v", err)
 	}
 }
 

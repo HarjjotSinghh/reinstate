@@ -4,10 +4,11 @@
 
 The **continuity layer for coding-agent work**. Phase 1 implements encrypted,
 bring-your-own-storage sync for same-vendor Claude Code and Codex sessions.
-Current Phase 2 source adds universal local indexing, literal
+Stable Phase 2 adds universal local indexing, literal
 search, metadata inspection, and same-vendor resume/fork without cloud
-configuration. Verified resume and cross-agent handoffs remain later phases. A
-later universal configuration layer will reconcile supported MCP servers,
+configuration. Current development source also implements Phase 3 verified
+resume; review and release-candidate acceptance are still in progress.
+Cross-agent handoffs remain a later phase. A later universal configuration layer will reconcile supported MCP servers,
 skills, hooks/loops, plugins, marketplaces, and safe settings across harnesses
 and devices.
 
@@ -32,7 +33,7 @@ Config and data live under `~/.reinstate/` either way.
 
 ## Do local search and resume require `rein init` or a bucket?
 
-**No.** In Phase 2 source builds:
+**No.** In Phase 2 and later builds:
 
 ```bash
 rein sessions
@@ -41,13 +42,16 @@ rein inspect claude:SESSION_ID
 rein resume claude:SESSION_ID --dry-run
 ```
 
-These commands use a private derived index at
-`$REINSTATE_HOME/cache/session-index-v1.sqlite`. They do not need a sync
-profile, storage credentials, an encryption passphrase, keyring access, or a
-network backend. The stable `v0.2.0` public installers contain both the Phase 1
-sync surface and Phase 2 local continuity. Signed artifacts passed the complete
-physical matrix on Apple Silicon macOS and native Windows x64; Intel macOS and
-Linux/WSL2 are preview, unverified platforms for this release.
+Current Phase 3 source uses a private derived index at
+`$REINSTATE_HOME/cache/session-index-v2.sqlite` (plus owner-only `.lock` and
+`.write.lock` coordination files). Stable `v0.2.0` uses the earlier v1 index
+and has no Phase 3 baselines; the paths are separate by design. Neither version
+needs a sync profile, storage credentials, an encryption passphrase, keyring
+access, or a network backend. The stable `v0.2.0` public installers contain
+both the Phase 1 sync surface and Phase 2 local continuity. Signed artifacts
+passed the complete physical matrix on Apple Silicon macOS and native Windows
+x64; Intel macOS and Linux/WSL2 are preview, unverified platforms for this
+release.
 
 ## Why not just use git?
 
@@ -62,6 +66,41 @@ asking a new agent to re-derive context is slow and incomplete.
 **Portable handoff (roadmap):** yes, as an *explicit* checkpoint (goal,
 decisions, files touched, tests, next action) — not a silent perfect transcript
 translation. See [product-strategy.md](product-strategy.md).
+
+## What does verified resume verify?
+
+In the current Phase 3 development source, `rein inspect`, native dry-runs,
+direct `resume`/`fork`, `last`, and picker launches share one deterministic
+environment report. It covers fresh session-source metadata, the selected
+workspace and local Git state, the installed same-vendor agent/version/layout,
+bounded instruction/skill/MCP logical names, and recognized Node/Go runtime
+declarations.
+
+It is verification, not repair. Reinstate does not fetch, clone, checkout,
+reset, install, rewrite native configuration, run project scripts, or contact a
+network service during preflight. It does not print dirty filenames, raw Git
+remote URLs, instruction/skill contents, MCP commands/arguments/URLs/headers or
+environment values, credentials, or raw environment dumps.
+
+The first check reports `baseline.unavailable` because the vendor session does
+not contain a complete historical environment snapshot. Only after an
+authorized same-vendor child exits successfully does Reinstate retain the
+immediately preceding observation as a private baseline. That proves what was
+observed before the previous successful launch; it is not relabeled as
+session-start truth.
+
+## Can I bypass an environment warning or blocker?
+
+Warnings require explicit consent for each launch. A terminal prompt defaults
+to no. Non-interactive callers must repeat
+`--allow-environment-warning CHECK_ID` for every exact current warning. The IDs
+are invocation-scoped; unknown, stale, duplicate, wildcard, informational, and
+blocker IDs are rejected.
+
+Blockers cannot be bypassed. Missing workspaces/executables, unverified agent
+versions/layouts, known repository replacement, stale selected-source
+metadata, and verifier failures must be resolved before launch. There is no
+broad `--force`, wildcard, saved approval, or environment-variable bypass.
 
 ## Do I need two computers?
 
@@ -125,8 +164,9 @@ passphrase in a password manager.
 Session files remain local, but the current `status`, `diff`, `push`, and `pull`
 commands read the remote manifest and need access to your storage backend.
 Phase 2 `sessions`, `search`, and `inspect` work offline and without sync
-configuration. Native resume/fork needs only the local vendor executable and
-recorded workspace.
+configuration. Phase 3 verification is also offline and never fetches. Native
+resume/fork needs only the local same-vendor executable and recorded workspace;
+the vendor itself may later use its own network features after launch.
 
 ## Windows + Mac?
 
@@ -146,6 +186,9 @@ continuity. Apple Silicon macOS and native Windows x64 are physically verified;
 Intel macOS and Linux/WSL2 remain preview and unverified. See
 [ROADMAP.md](../ROADMAP.md) and [CHANGELOG.md](../CHANGELOG.md). Use with
 backups; report bugs via GitHub Issues.
+
+Phase 3 verified resume is implemented only in the current development source
+until `v0.3.0-rc.1` is built and certified. No stable `v0.3.0` claim is made.
 
 ## How do I contribute?
 

@@ -7,10 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add deterministic verified-resume reports for workspace/repository state,
+  same-vendor executable compatibility, instruction/skill/MCP presence, and
+  recognized Node/Go runtimes across `inspect`, dry-runs, direct launches, and
+  the interactive picker.
+- Add exact invocation-scoped `--allow-environment-warning CHECK_ID`
+  acknowledgments and private `reinstate_prelaunch_observed` baselines saved
+  only after a successful same-vendor native child exits.
+- Add local-only, privacy-safe repository fingerprints, capability transports,
+  runtime declarations, stale-source checks, and deterministic report-bearing
+  compatibility/safety/runtime refusals.
+
 ### Changed
 
+- Make bounded user-prompt indexing linear instead of quadratic for long
+  Claude, Codex, and Gemini sessions, with reproducible 1,000-record CLI/index
+  benchmarks and tagged-artifact latency gates for issue #96.
 - Document the stable `v0.2.0` package-channel rollout and advertise the
   physically verified Homebrew route on Apple Silicon macOS.
+- Move the local continuity index to versioned
+  `cache/session-index-v2.sqlite` storage so Phase 3 baselines cannot be
+  destroyed by an older Phase 2 binary.
+- Coordinate derived-index lifetime/rebuild operations through an owner-only
+  `.lock` file and serialize writers through an owner-only `.write.lock` file.
 
 ### Fixed
 
@@ -18,6 +39,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pinned official WinGetCreate binary during Windows release packaging.
 - Let a reviewed package-promotion workflow repair registry metadata for an
   immutable release without moving its signed tag or rebuilding its binaries.
+
+### Security
+
+- Keep environment verification local-only and shell-free; hash repository
+  identities; omit dirty filenames and configuration values; bound every
+  subprocess/config read; reject unverified agent versions and hard
+  repository mismatches; and serialize derived-index writes across concurrent
+  `rein` and `reinstate` processes.
+- Pin Git probes to the physically discovered repository/worktree, disable
+  config includes and repository-controlled executable paths, and require an
+  explicit warning acknowledgment whenever working-tree certainty cannot be
+  established without trusting repository behavior or a racy observation.
 
 ## [0.2.0] - 2026-08-05
 

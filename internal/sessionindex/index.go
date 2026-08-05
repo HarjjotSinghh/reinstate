@@ -43,6 +43,18 @@ func (r RefreshResult) Failed() bool {
 	return false
 }
 
+// SourceFresh reports whether the named source participated in this refresh
+// and completed successfully. An absent source is never considered fresh.
+func (r RefreshResult) SourceFresh(name string) bool {
+	name = strings.ToLower(strings.TrimSpace(name))
+	for _, source := range r.Sources {
+		if source.Name == name {
+			return source.Error == ""
+		}
+	}
+	return false
+}
+
 // Index orchestrates sources and the private derived store.
 type Index struct {
 	store   *Store
@@ -111,6 +123,21 @@ func (i *Index) Store() *Store {
 // and leaves that source's old rows intact; context and SQLite failures remain
 // fatal because freshness cannot be represented honestly.
 func (i *Index) Refresh(ctx context.Context) (RefreshResult, error) {
+	return i.refresh(ctx, "")
+}
+
+// RefreshAgent scans one selected agent source. It avoids unrelated vendor
+// scans while preserving freshness for the exact record being inspected or
+// launched.
+func (i *Index) RefreshAgent(ctx context.Context, agent string) (RefreshResult, error) {
+	agent = strings.ToLower(SafeText(strings.TrimSpace(agent), 64))
+	if agent == "" || agent == "all" {
+		return RefreshResult{}, errors.New("target refresh requires one agent")
+	}
+	return i.refresh(ctx, agent)
+}
+
+func (i *Index) refresh(ctx context.Context, selected string) (RefreshResult, error) {
 	var result RefreshResult
 	if i == nil || i.store == nil {
 		return result, errors.New("session index is nil")
@@ -120,6 +147,9 @@ func (i *Index) Refresh(ctx context.Context) (RefreshResult, error) {
 			return result, err
 		}
 		name := strings.ToLower(SafeText(strings.TrimSpace(source.Name()), 64))
+		if selected != "" && name != selected {
+			continue
+		}
 		status := SourceRefresh{Name: name}
 		scan, err := source.Scan(ctx)
 		if err != nil {
@@ -163,7 +193,33 @@ func (i *Index) Refresh(ctx context.Context) (RefreshResult, error) {
 			result.Warnings = append(result.Warnings, warning)
 		}
 	}
+	if selected != "" && len(result.Sources) == 0 {
+		return result, fmt.Errorf("session source %q is unavailable", selected)
+	}
 	return result, nil
+}
+
+// RefreshAndResolve refreshes the narrowest knowable source, resolves the
+// exact requested identity, and binds freshness to the resolved record.
+func (i *Index) RefreshAndResolve(ctx context.Context, reference string) (Record, RefreshResult, bool, error) {
+	agent, _, qualified := ParseCompositeReference(reference)
+	var (
+		refresh RefreshResult
+		err     error
+	)
+	if qualified {
+		refresh, err = i.RefreshAgent(ctx, agent)
+	} else {
+		refresh, err = i.Refresh(ctx)
+	}
+	if err != nil {
+		return Record{}, refresh, false, err
+	}
+	record, err := i.Resolve(ctx, reference)
+	if err != nil {
+		return Record{}, refresh, false, err
+	}
+	return record, refresh, refresh.SourceFresh(record.Agent), nil
 }
 
 // Search reads current derived state. Call Refresh first when freshness matters.

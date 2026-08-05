@@ -6,6 +6,11 @@ configuration or cloud access. It also synchronizes Claude Code and Codex CLI
 sessions across machines through
 client-side-encrypted, user-owned object storage.
 
+The current development source additionally implements Phase 3 verified
+resume: a privacy-safe environment report and launch gate for same-vendor
+Claude/Codex continuation. It has not yet been published as `v0.3.0-rc.1` or
+certified as stable.
+
 > **Release status:** the public installers pin stable `v0.2.0`. Exact signed
 > artifacts passed the complete physical matrix on Apple Silicon macOS and
 > native Windows x64. Intel macOS and Linux/WSL2 packages are available as
@@ -48,7 +53,7 @@ Both `./bin/rein` and `./bin/reinstate` are the same binary. Use an isolated
 absolute home when evaluating a source build:
 
 ```sh
-export REINSTATE_HOME="$HOME/.reinstate-phase2-local"
+export REINSTATE_HOME="$HOME/.reinstate-phase3-local"
 ```
 
 Native Windows PowerShell:
@@ -56,7 +61,7 @@ Native Windows PowerShell:
 ```powershell
 New-Item -ItemType Directory -Force .\bin | Out-Null
 go build -o .\bin\rein.exe .\cmd\reinstate
-$env:REINSTATE_HOME = Join-Path $HOME ".reinstate-phase2-local"
+$env:REINSTATE_HOME = Join-Path $HOME ".reinstate-phase3-local"
 .\bin\rein.exe version --json
 ```
 
@@ -191,6 +196,36 @@ not a shell command string. Remove `--dry-run` to inherit the current terminal
 and launch the same vendor. Gemini and OpenCode remain read-only and refuse
 resume/fork.
 
+Current Phase 3 source includes a deterministic `environment` report in
+`inspect` and native dry-run output. It checks the fresh selected source,
+workspace/repository, installed same-vendor agent, name-only capabilities, and
+recognized Node/Go runtime declarations. The verifier is local-only: it does
+not fetch, install, checkout, repair, run project scripts, or contact a network
+service.
+
+The first real launch for an existing session reports
+`baseline.unavailable`. That is deliberate: current state is not session-start
+truth. Review all warnings. On a real terminal, answer the prompt with exactly
+`yes`; the default is `no`. In automation, acknowledge every exact current
+warning ID for that invocation:
+
+```sh
+rein resume claude:SESSION_ID \
+  --allow-environment-warning baseline.unavailable
+```
+
+Repeat `--allow-environment-warning` when the report contains multiple
+warnings. Unknown, duplicate, wildcard, informational, stale, and blocker IDs
+are rejected, and a partial set does not launch. Missing workspaces or
+executables, unverified agent versions/layouts, known repository replacement,
+stale source metadata, and verifier failures cannot be bypassed.
+
+Only after the authorized same-vendor child exits successfully does Reinstate
+store the prelaunch observation as a private
+`reinstate_prelaunch_observed` baseline. A failed, declined, cancelled, or
+blocked launch does not establish or update it. See
+[Verified resume](verified-resume.md) for the complete contract.
+
 On a TTY, bare `rein` opens the numbered switcher:
 
 ```text
@@ -205,10 +240,18 @@ For scripts, use `rein sessions --json`. Bare `rein` on a non-TTY exits
 promptly with that hint instead of waiting for input or selecting a session.
 
 The derived index lives at
-`$REINSTATE_HOME/cache/session-index-v1.sqlite`, is owner-only, never enters
-encrypted sync, and is safe to rebuild. It contains bounded user-authored
+`$REINSTATE_HOME/cache/session-index-v2.sqlite`, with owner-only sibling
+`.lock` and `.write.lock` files. The first protects database lifetime/rebuild;
+the second serializes ordinary writers across processes. None enters encrypted
+sync. Vendor session rows can be rebuilt; the v2 store also retains private
+successful prelaunch observations used by verified resume. It contains bounded user-authored
 prompt search text and metadata—not assistant reasoning/messages, tool output,
 environment dumps, credentials, or auth stores.
+
+That v2 path describes the current Phase 3 source. Stable `v0.2.0` uses
+`session-index-v1.sqlite` and stores no prelaunch baselines. The separate
+versioned path prevents an older binary from silently rebuilding away Phase 3
+comparison history.
 
 ## Configure the first sync device
 

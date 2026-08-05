@@ -7,7 +7,11 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
+	"time"
+
+	"github.com/HarjjotSinghh/reinstate/internal/fileidentity"
 )
 
 const (
@@ -19,6 +23,7 @@ var (
 	ErrNativeActionUnsupported = errors.New("native session action is unsupported")
 	ErrExecutableNotFound      = errors.New("native agent executable is unavailable")
 	ErrWorkspaceUnavailable    = errors.New("recorded session workspace is unavailable")
+	ErrLaunchBoundaryChanged   = errors.New("native launch target changed at the execution boundary")
 )
 
 // LaunchPlan is a shell-free native child process description.
@@ -40,9 +45,6 @@ func PlanLaunch(record Record, operation string) (LaunchPlan, error) {
 	if strings.TrimSpace(record.ID) == "" {
 		return LaunchPlan{}, errors.New("native session ID is missing")
 	}
-	if strings.TrimSpace(record.Workspace) == "" {
-		return LaunchPlan{}, fmt.Errorf("%w: recorded session workspace is missing", ErrWorkspaceUnavailable)
-	}
 	switch operation {
 	case OperationResume:
 		if !record.CanResume {
@@ -52,6 +54,12 @@ func PlanLaunch(record Record, operation string) (LaunchPlan, error) {
 		if !record.CanFork {
 			return LaunchPlan{}, unsupportedNativeAction(record, operation)
 		}
+	}
+	// Capability is checked before workspace so a read-only record always
+	// reports its real compatibility contract and never reaches environment or
+	// launch probing merely because its vendor omitted a workspace.
+	if strings.TrimSpace(record.Workspace) == "" {
+		return LaunchPlan{}, fmt.Errorf("%w: recorded session workspace is missing", ErrWorkspaceUnavailable)
 	}
 
 	plan := LaunchPlan{
@@ -95,21 +103,85 @@ type ExecLaunchRunner struct {
 	Stdin  io.Reader
 	Stdout io.Writer
 	Stderr io.Writer
+	// Executable is the private absolute path verified immediately before
+	// launch. It is never added to LaunchPlan or public output.
+	Executable string
+	// ExecutableIdentity is the private identity captured by the successful
+	// compatibility probe. The production runner requires it to remain stable.
+	ExecutableIdentity fileidentity.Identity
+	// WorkspaceIdentity is the private directory identity captured by the
+	// authorized environment report.
+	WorkspaceIdentity fileidentity.Identity
+	// BeforeExec is the final launch-bound safety guard. Production uses it to
+	// revalidate the selected source, plan, and environment after executable
+	// and directory checks and immediately before creating the native child.
+	BeforeExec func(context.Context, LaunchPlan) error
 }
 
 func (runner ExecLaunchRunner) Run(ctx context.Context, plan LaunchPlan) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if err := validateLaunchPlan(plan); err != nil {
 		return err
 	}
-	if _, err := exec.LookPath(plan.Executable); err != nil {
-		return fmt.Errorf("%w: find %s executable: %v", ErrExecutableNotFound, plan.Executable, err)
+	executable := strings.TrimSpace(runner.Executable)
+	if executable == "" {
+		var err error
+		executable, err = exec.LookPath(plan.Executable)
+		if err != nil {
+			return fmt.Errorf("%w: find %s executable: %v", ErrExecutableNotFound, plan.Executable, err)
+		}
+	} else if !filepath.IsAbs(executable) {
+		return fmt.Errorf("%w: verified executable path is not absolute", ErrExecutableNotFound)
 	}
-	info, err := os.Stat(plan.Dir)
+	executableIdentity, err := captureExecutableAtBoundary(ctx, executable)
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return ctxErr
+	}
+	if err != nil || !executableIdentity.IsRegular() {
+		return fmt.Errorf("%w: inspect verified executable", ErrExecutableNotFound)
+	}
+	if !runner.ExecutableIdentity.IsZero() &&
+		!fileidentity.SameExecutable(runner.ExecutableIdentity, executableIdentity) {
+		return fmt.Errorf("%w: verified executable identity changed", ErrLaunchBoundaryChanged)
+	}
+	workspaceIdentity, err := fileidentity.Capture(plan.Dir)
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return ctxErr
+	}
 	if err != nil {
-		return fmt.Errorf("%w: inspect recorded workspace %q: %v", ErrWorkspaceUnavailable, plan.Dir, err)
+		return fmt.Errorf("%w: recorded workspace cannot be inspected", ErrWorkspaceUnavailable)
 	}
-	if !info.IsDir() {
-		return fmt.Errorf("%w: recorded workspace %q is not a directory", ErrWorkspaceUnavailable, plan.Dir)
+	if !workspaceIdentity.IsDir() {
+		return fmt.Errorf("%w: recorded workspace is not a directory", ErrWorkspaceUnavailable)
+	}
+	if !runner.WorkspaceIdentity.IsZero() &&
+		!fileidentity.SameObject(runner.WorkspaceIdentity, workspaceIdentity) {
+		return fmt.Errorf("%w: authorized workspace identity changed", ErrLaunchBoundaryChanged)
+	}
+	if runner.BeforeExec != nil {
+		if err := runner.BeforeExec(ctx, plan); err != nil {
+			return err
+		}
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	finalExecutableIdentity, err := captureExecutableAtBoundary(ctx, executable)
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return ctxErr
+	}
+	if err != nil || !fileidentity.SameExecutable(executableIdentity, finalExecutableIdentity) {
+		return fmt.Errorf("%w: verified executable changed after final guard", ErrLaunchBoundaryChanged)
+	}
+	finalWorkspaceIdentity, err := fileidentity.Capture(plan.Dir)
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return ctxErr
+	}
+	if err != nil || !fileidentity.SameObject(workspaceIdentity, finalWorkspaceIdentity) ||
+		!finalWorkspaceIdentity.IsDir() {
+		return fmt.Errorf("%w: recorded workspace changed after final guard", ErrLaunchBoundaryChanged)
 	}
 
 	stdin := runner.Stdin
@@ -125,27 +197,42 @@ func (runner ExecLaunchRunner) Run(ctx context.Context, plan LaunchPlan) error {
 		stderr = os.Stderr
 	}
 
-	command := exec.CommandContext(ctx, plan.Executable, plan.Args...)
+	command := exec.CommandContext(ctx, executable, plan.Args...)
 	command.Dir = plan.Dir
 	command.Stdin = stdin
 	command.Stdout = stdout
 	command.Stderr = stderr
 	if err := command.Run(); err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return ctxErr
+		}
 		return fmt.Errorf("%s native %s failed: %w", plan.Agent, plan.Operation, err)
 	}
-	return nil
+	return ctx.Err()
+}
+
+func captureExecutableAtBoundary(ctx context.Context, path string) (fileidentity.Identity, error) {
+	bounded, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	return fileidentity.CaptureExecutable(bounded, path)
 }
 
 // RunLaunch validates a structured plan through the selected runner and waits
 // for the native child to finish.
 func RunLaunch(ctx context.Context, plan LaunchPlan, runner LaunchRunner) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if err := validateLaunchPlan(plan); err != nil {
 		return err
 	}
 	if runner == nil {
 		runner = ExecLaunchRunner{}
 	}
-	return runner.Run(ctx, plan)
+	if err := runner.Run(ctx, plan); err != nil {
+		return err
+	}
+	return ctx.Err()
 }
 
 func validateLaunchPlan(plan LaunchPlan) error {

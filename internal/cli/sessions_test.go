@@ -12,8 +12,27 @@ import (
 	"testing"
 	"time"
 
+	"github.com/HarjjotSinghh/reinstate/internal/preflight"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
+	"github.com/HarjjotSinghh/reinstate/internal/workspace"
 )
+
+type readyPreflightVerifier struct{}
+
+func (readyPreflightVerifier) Verify(_ context.Context, input preflight.Input) (preflight.Report, error) {
+	return preflight.Report{
+		SchemaVersion: preflight.SchemaVersion,
+		SessionRef:    input.SessionRef,
+		Decision:      preflight.DecisionReady,
+		Checks: []preflight.Check{{
+			ID: "source.fresh", Status: preflight.StatusMatch, Severity: preflight.SeverityInfo,
+			Provenance: workspace.ProvenanceCurrentObservation, Message: "controlled source is fresh",
+		}},
+		Workspace: workspace.Fingerprint{Git: workspace.GitFingerprint{
+			WorkingTree: workspace.WorkingTreeFingerprint{State: workspace.WorkingTreeUnavailable},
+		}},
+	}, nil
+}
 
 type staticSessionSource struct {
 	name   string
@@ -59,6 +78,7 @@ func runLocalCLI(
 		Args:                args,
 		SessionSources:      sources,
 		SessionLaunchRunner: runner,
+		PreflightVerifier:   readyPreflightVerifier{},
 		TerminalChecker: func(io.Reader, io.Writer) bool {
 			return terminal
 		},

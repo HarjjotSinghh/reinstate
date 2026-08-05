@@ -254,6 +254,149 @@ func TestCIVerificationUsesOptimizedRaceGate(t *testing.T) {
 	}
 }
 
+func TestWorkflowOrdinaryGoGatesDisableCGO(t *testing.T) {
+	tests := map[string][]string{
+		".github/workflows/ci.yml": {
+			"Test",
+			"Build",
+		},
+		".github/workflows/security.yml": {
+			"Build",
+			"Enforce workflow policy",
+		},
+		".github/workflows/release.yml": {
+			"Run tests",
+		},
+	}
+
+	for path, stepNames := range tests {
+		workflow := read(t, path)
+		for _, stepName := range stepNames {
+			step, found := workflowStep(workflow, stepName)
+			if !found {
+				t.Errorf("%s is missing workflow step %q", path, stepName)
+				continue
+			}
+			if value, found := workflowStepEnvValue(step, "CGO_ENABLED"); !found || value != `"0"` {
+				t.Errorf("%s step %q must explicitly disable CGO", path, stepName)
+			}
+		}
+	}
+
+	ciWorkflow := read(t, ".github/workflows/ci.yml")
+	if !strings.Contains(ciWorkflow, "run: make test-race") {
+		t.Fatal("CI must retain the explicitly CGO-enabled Makefile race gate")
+	}
+	makefile := read(t, "Makefile")
+	if !strings.Contains(makefile, "test-race: ## Run tests with race detector\n\tCGO_ENABLED=1 ") {
+		t.Fatal("the CI race target must keep CGO explicitly enabled")
+	}
+}
+
+// workflowStep is intentionally a narrow indentation-aware reader for the
+// repository's conventional Actions step layout, not a general YAML parser.
+// Keeping the boundary at the next sibling sequence item prevents a nearby
+// step's environment from satisfying the policy check accidentally.
+func workflowStep(workflow, name string) (string, bool) {
+	lines := strings.Split(workflow, "\n")
+	for index, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "- name: "+name {
+			continue
+		}
+		indent := len(line) - len(strings.TrimLeft(line, " \t"))
+		end := len(lines)
+		for next := index + 1; next < len(lines); next++ {
+			candidate := lines[next]
+			candidateTrimmed := strings.TrimSpace(candidate)
+			if candidateTrimmed == "" || strings.HasPrefix(candidateTrimmed, "#") {
+				continue
+			}
+			candidateIndent := len(candidate) - len(strings.TrimLeft(candidate, " \t"))
+			if candidateIndent < indent || candidateIndent == indent && strings.HasPrefix(candidateTrimmed, "- ") {
+				end = next
+				break
+			}
+		}
+		return strings.Join(lines[index:end], "\n"), true
+	}
+	return "", false
+}
+
+// workflowStepEnvValue reads only direct entries in a step's env mapping. It
+// deliberately ignores comments and run-script text so policy prose cannot
+// masquerade as an effective Actions environment setting.
+func workflowStepEnvValue(step, key string) (string, bool) {
+	lines := strings.Split(step, "\n")
+	if len(lines) == 0 {
+		return "", false
+	}
+	stepIndent := len(lines[0]) - len(strings.TrimLeft(lines[0], " \t"))
+	for index, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		envIndent := len(line) - len(strings.TrimLeft(line, " \t"))
+		if trimmed != "env:" || envIndent != stepIndent+2 {
+			continue
+		}
+		for next := index + 1; next < len(lines); next++ {
+			candidate := lines[next]
+			candidateTrimmed := strings.TrimSpace(candidate)
+			if candidateTrimmed == "" || strings.HasPrefix(candidateTrimmed, "#") {
+				continue
+			}
+			candidateIndent := len(candidate) - len(strings.TrimLeft(candidate, " \t"))
+			if candidateIndent <= envIndent {
+				break
+			}
+			if candidateIndent != envIndent+2 {
+				continue
+			}
+			name, value, found := strings.Cut(candidateTrimmed, ":")
+			if found && strings.TrimSpace(name) == key {
+				return strings.TrimSpace(value), true
+			}
+		}
+	}
+	return "", false
+}
+
+func TestWorkflowStepDoesNotBorrowSiblingEnvironment(t *testing.T) {
+	workflow := `jobs:
+  test:
+    steps:
+      - name: Test
+        run: go test ./...
+      - name: Build
+        env:
+          CGO_ENABLED: "0"
+        run: go build ./...`
+	step, found := workflowStep(workflow, "Test")
+	if !found || strings.Contains(step, "CGO_ENABLED") || strings.Contains(step, "name: Build") {
+		t.Fatalf("workflow step boundary is invalid: found=%t step=%q", found, step)
+	}
+}
+
+func TestWorkflowStepEnvironmentIgnoresCommentsAndRunText(t *testing.T) {
+	step := `      - name: Test
+        # CGO_ENABLED: "0"
+        run: |
+          env:
+            CGO_ENABLED: "0"
+          go test ./... # CGO_ENABLED: "0"`
+	if value, found := workflowStepEnvValue(step, "CGO_ENABLED"); found {
+		t.Fatalf("non-env text produced CGO setting %q", value)
+	}
+
+	step = `      - name: Test
+        env:
+          # CGO_ENABLED: "1"
+          CGO_ENABLED: "0"
+        run: go test ./...`
+	if value, found := workflowStepEnvValue(step, "CGO_ENABLED"); !found || value != `"0"` {
+		t.Fatalf("env CGO setting = %q, found=%t", value, found)
+	}
+}
+
 func TestQuickGateStaysFocusedAndNonRelease(t *testing.T) {
 	command := exec.Command("make", "-n", "quick")
 	command.Dir = repoRoot(t)

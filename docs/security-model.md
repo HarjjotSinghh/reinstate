@@ -14,6 +14,8 @@ printed to the terminal. This document is the contract we design against.
 | Local index broadens plaintext exposure | Owner-only, bounded derived fields; no assistant/tool-output corpus; safe rebuild |
 | Search/preview dumps sensitive history | Metadata-only results; bounded terminal-safe user-prompt preview |
 | Session reference becomes shell injection | Executable + argv + cwd launch plan; no shell command string |
+| Environment drift causes a wrong continuation | Local verified-resume report; exact warning consent; hard blockers fail closed |
+| Environment inspection leaks config/secrets | Name/state/digest-only observations; bounded safe diagnostics; no network or project execution |
 | Overwriting good local history | Timestamped backups + conflict forks |
 | Weak passphrase | age scrypt recipient + long-passphrase guidance; user responsibility |
 | Compromised local machine | **Out of scope** (OS-level compromise) |
@@ -70,17 +72,20 @@ The same boundary applies to the planned universal configuration profile: it
 may contain secret references, but raw API keys, OAuth tokens, cookies, and
 vendor credential stores are not portable configuration.
 
-## Phase 2 local index
+## Local continuity index
 
 The local index is plaintext derived state on the user's own machine. Remote
-E2E encryption does not apply to it. Its controls are:
+E2E encryption does not apply to it. The table describes the current Phase 3
+source; stable `v0.2.0` uses a separate v1 database without baselines. Its
+controls are:
 
 | Property | Contract |
 | -------- | -------- |
-| Location | `$REINSTATE_HOME/cache/session-index-v1.sqlite` |
-| Permissions | Owner-only directory and database under the native OS model |
+| Location | `$REINSTATE_HOME/cache/session-index-v2.sqlite` plus `.lock` and `.write.lock` coordination files |
+| Permissions | Unix `0700`/`0600`; protected Windows DACL for current user, LocalSystem, and Administrators, independent of inherited custom-parent ACLs |
+| Concurrency | Shared/exclusive `.lock` protects database lifetime/destructive repair; `.write.lock` serializes writers and transactional rebuilds |
 | Sync | Hard-excluded; never uploaded or treated as a session |
-| Recovery | Rebuild from vendor sources after deletion, corruption, or version mismatch |
+| Recovery | Session rows rebuild from vendor sources; deleting v2 also loses private prelaunch baselines and must be explicit |
 | Search text | Bounded user-authored prompts only |
 | Metadata | Identity, timestamps, workspace/project, branch, known file refs, counts, capabilities |
 | Excluded corpus | Assistant reasoning/messages, tool output, environment dumps, credentials, auth stores |
@@ -101,8 +106,56 @@ semantic-search, analytics, or network service.
 
 Native resume/fork uses a composite `agent:native-id` reference. Reinstate
 resolves the reference, verifies the recorded workspace and executable, and
-executes an argv array directly. It never interpolates the session ID into a
-shell command. Gemini/OpenCode are read-only and fail closed for launch.
+executes an argv array directly. The production runner binds and rechecks
+platform-native executable/workspace identities immediately before process
+creation; this rejects controlled swaps during the final guard without claiming
+an atomic filesystem/process-start primitive that the host does not provide. It
+never interpolates the session ID into a shell command. Gemini/OpenCode are
+read-only and fail closed for launch.
+
+## Verified-resume boundary (current source)
+
+Phase 3 is implemented in the current development source but is not part of
+stable `v0.2.0` until release-candidate and physical acceptance complete.
+Before a Claude/Codex native continuation, Reinstate computes a deterministic
+local report and applies one fail-closed policy to direct resume/fork, `last`,
+and picker launch paths.
+
+The verifier may read only bounded facts from the selected workspace and
+recognized agent locations. Git commands are fixed argv calls, use no shell,
+and never fetch. Runtime probes invoke only recognized version commands in a
+sanitized environment and never run package-manager lifecycle scripts or
+project code. Capability probes are fixed known-path reads; they do not execute
+instructions, skills, MCP declarations, or native configuration.
+
+The report and private baseline may contain:
+
+- an opaque credential-free repository identity, branch, Git object ID, and
+  working-tree state/count/digest (never dirty filenames or diffs);
+- installed agent/runtime names and versions;
+- sanitized instruction/skill/MCP logical names, scope/state, and coarse MCP
+  transport; and
+- explicit provenance for every comparison.
+
+They exclude raw repository URLs, filesystem paths for capability entries,
+instruction/skill contents, MCP commands/arguments/URLs/headers/environment
+values, raw child output, raw environment variables, credentials, and
+transcripts. Probe errors are converted to bounded static diagnostics.
+
+An initial `baseline.unavailable` warning is safer than inventing session-start
+truth. Current observation becomes a private
+`reinstate_prelaunch_observed` baseline only after the authorized same-vendor
+child exits successfully. Failed, declined, cancelled, blocked, or child-error
+launches do not update it. Baselines are neither vendor-session content nor
+synced state.
+
+Warnings require explicit, invocation-scoped authorization: a TTY prompt
+defaults to no; automation must provide every exact current
+`--allow-environment-warning CHECK_ID`. Broad force/wildcard/persisted or
+environment-variable bypasses do not exist. Known repository replacement,
+stale selected-source metadata, missing workspace/executable, unverified
+agent version/layout, and verifier failure are blockers and cannot be
+acknowledged away.
 
 ## Future configuration reconciliation
 
