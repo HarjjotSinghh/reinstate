@@ -7,9 +7,11 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 func TestProbeRealRepositoryAndWorkingTreePrivacy(t *testing.T) {
@@ -91,7 +93,11 @@ func TestProbeRealRepositoryIsConcurrencySafe(t *testing.T) {
 		wait.Add(1)
 		go func() {
 			defer wait.Done()
-			result, err := Probe(context.Background(), repository, ProbeOptions{})
+			// This gate exercises thread safety, not the production deadline. Eight
+			// hardened probes start many short-lived Git processes concurrently;
+			// on native Windows that deliberate load can correctly exhaust the
+			// default two-second budget without exposing a concurrency defect.
+			result, err := Probe(context.Background(), repository, ProbeOptions{Timeout: 30 * time.Second})
 			if err != nil {
 				errorsFound <- err
 				return
@@ -189,7 +195,9 @@ type unexpectedProbeResult struct {
 }
 
 func (err *unexpectedProbeResult) Error() string {
-	return "unexpected concurrent probe result"
+	return "unexpected concurrent probe result: repository=" +
+		strconv.FormatBool(err.result.Fingerprint.Git.Repository) +
+		" diagnostics=" + strconv.Itoa(len(err.result.Diagnostics))
 }
 
 func initTestRepository(t *testing.T) string {

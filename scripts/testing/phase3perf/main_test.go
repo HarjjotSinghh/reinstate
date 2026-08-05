@@ -210,6 +210,67 @@ func TestEveryGeneratedSessionHasFrozenSchema(t *testing.T) {
 	}
 }
 
+func TestWorkspaceMaterializationEscapesWindowsJSONPath(t *testing.T) {
+	spec, err := loadSpec()
+	if err != nil {
+		t.Fatal(err)
+	}
+	timestamp := time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)
+	windowsWorkspace := `D:\Reinstate Acceptance\quoted"workspace`
+	claude, err := claudeFixture(spec, spec.Normal, 0, fixtureID(1, 0), timestamp, workspacePlaceholder)
+	if err != nil {
+		t.Fatal(err)
+	}
+	codex, err := codexFixture(spec, spec.Normal, 0, fixtureID(2, 0), timestamp, workspacePlaceholder)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, canonical := range map[string][]byte{"claude": claude, "codex": codex} {
+		t.Run(name, func(t *testing.T) {
+			materialized, err := materializeWorkspace(canonical, windowsWorkspace)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if bytes.Contains(materialized, []byte(`D:\Reinstate`)) {
+				t.Fatal("materialized JSON contains an unescaped Windows separator")
+			}
+			foundWorkspace := false
+			for _, line := range bytes.Split(bytes.TrimSuffix(materialized, []byte{'\n'}), []byte{'\n'}) {
+				var value any
+				if err := json.Unmarshal(line, &value); err != nil {
+					t.Fatalf("materialized Windows JSONL is malformed: %v", err)
+				}
+				if containsStringValue(value, windowsWorkspace) {
+					foundWorkspace = true
+				}
+			}
+			if !foundWorkspace {
+				t.Fatal("materialized JSONL did not preserve the exact Windows workspace")
+			}
+		})
+	}
+}
+
+func containsStringValue(value any, wanted string) bool {
+	switch typed := value.(type) {
+	case string:
+		return typed == wanted
+	case []any:
+		for _, item := range typed {
+			if containsStringValue(item, wanted) {
+				return true
+			}
+		}
+	case map[string]any:
+		for _, item := range typed {
+			if containsStringValue(item, wanted) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func TestMoveColdIndexFamilyPreservesOnlyExactFiles(t *testing.T) {
 	root := t.TempDir()
 	cache := filepath.Join(root, "reinstate-home", "cache")

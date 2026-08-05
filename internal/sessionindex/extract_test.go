@@ -139,6 +139,12 @@ func TestCoalesceRecordsBoundsRequirementsAcrossSegments(t *testing.T) {
 			Kind: "mcp", Name: fmt.Sprintf("new-%03d", index), Provenance: "codex.session_meta.mcp",
 		})
 	}
+	if _, err := NormalizeRecord(old); err != nil {
+		t.Fatalf("old segment must be independently valid: %v", err)
+	}
+	if _, err := NormalizeRecord(newer); err != nil {
+		t.Fatalf("newer segment must be independently valid: %v", err)
+	}
 	forward, _ := CoalesceRecords([]Record{old, newer})
 	reversed, _ := CoalesceRecords([]Record{newer, old})
 	if len(forward) != 1 || len(forward[0].RecordedEnvironment.Requirements) != environment.MaxRequirements {
@@ -147,8 +153,8 @@ func TestCoalesceRecordsBoundsRequirementsAcrossSegments(t *testing.T) {
 	if !reflect.DeepEqual(forward[0].RecordedEnvironment.Requirements, reversed[0].RecordedEnvironment.Requirements) {
 		t.Fatal("coalesced requirement bound depends on input order")
 	}
-	if _, err := environment.NormalizeRecordedEnvironment(forward[0].RecordedEnvironment); err != nil {
-		t.Fatalf("bounded coalesced environment is invalid: %v", err)
+	if _, err := NormalizeRecord(forward[0]); err != nil {
+		t.Fatalf("bounded coalesced record is invalid: %v", err)
 	}
 }
 

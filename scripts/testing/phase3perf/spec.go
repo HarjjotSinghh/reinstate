@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -252,7 +253,10 @@ func buildCorpus(root string, spec fixtureSpec, corpus corpusSpec) ([]fixtureFil
 			return nil, corpusManifest{}, err
 		}
 		rel := filepath.ToSlash(filepath.Join(rootName, "claude", "projects", "phase3-performance", id+".jsonl"))
-		materialized := bytes.ReplaceAll(content, []byte(workspacePlaceholder), []byte(workspace))
+		materialized, err := materializeWorkspace(content, workspace)
+		if err != nil {
+			return nil, corpusManifest{}, err
+		}
 		files = append(files, fixtureFile{RelativePath: rel, Canonical: content, Materialized: materialized, Mode: 0o600, ModTime: timestamp})
 		sourceBytes += int64(len(materialized))
 	}
@@ -266,7 +270,10 @@ func buildCorpus(root string, spec fixtureSpec, corpus corpusSpec) ([]fixtureFil
 		date := timestamp.UTC().Format("2006/01/02")
 		name := "rollout-" + timestamp.UTC().Format("2006-01-02T15-04-05") + "-" + id + ".jsonl"
 		rel := filepath.ToSlash(filepath.Join(rootName, "codex", "sessions", filepath.FromSlash(date), name))
-		materialized := bytes.ReplaceAll(content, []byte(workspacePlaceholder), []byte(workspace))
+		materialized, err := materializeWorkspace(content, workspace)
+		if err != nil {
+			return nil, corpusManifest{}, err
+		}
 		files = append(files, fixtureFile{RelativePath: rel, Canonical: content, Materialized: materialized, Mode: 0o600, ModTime: timestamp})
 		sourceBytes += int64(len(materialized))
 	}
@@ -336,6 +343,18 @@ func buildCorpus(root string, spec fixtureSpec, corpus corpusSpec) ([]fixtureFil
 		CanonicalRelativeFilePaths: paths,
 	}
 	return files, manifest, nil
+}
+
+func materializeWorkspace(content []byte, workspace string) ([]byte, error) {
+	encoded, err := json.Marshal(workspace)
+	if err != nil || len(encoded) < 2 || encoded[0] != '"' || encoded[len(encoded)-1] != '"' {
+		return nil, errors.New("encode materialized workspace path")
+	}
+	// The placeholder already occurs inside JSON string values. Replace it with
+	// the encoded string payload, not raw filesystem bytes: Windows separators,
+	// quotes, and controls must retain JSON escaping.
+	replacement := encoded[1 : len(encoded)-1]
+	return bytes.ReplaceAll(content, []byte(workspacePlaceholder), replacement), nil
 }
 
 func directoryFixture(rootName, relative string) fixtureFile {
@@ -451,7 +470,7 @@ type digestWriter interface {
 func writeDigestEntry(hash digestWriter, path string, content []byte) {
 	_, _ = hash.Write([]byte(path))
 	_, _ = hash.Write([]byte{0})
-	_, _ = fmt.Fprintf(hash, "%d", len(content))
+	_, _ = hash.Write([]byte(strconv.Itoa(len(content))))
 	_, _ = hash.Write([]byte{0})
 	_, _ = hash.Write(content)
 	_, _ = hash.Write([]byte{0})

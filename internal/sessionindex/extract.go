@@ -294,6 +294,13 @@ func mergeRecordSegments(segments []Record) Record {
 }
 
 func mergeRecordedEnvironment(target *environment.RecordedEnvironment, source environment.RecordedEnvironment) {
+	normalizedSource, err := environment.NormalizeRecordedEnvironment(source)
+	if err != nil {
+		// Vendor metadata is optional. Discard an invalid segment's environment
+		// rather than allowing it to make the coalesced record unpersistable.
+		return
+	}
+	source = normalizedSource
 	if target.RepositoryID.Value == "" && source.RepositoryID.Value != "" {
 		target.RepositoryID = source.RepositoryID
 	}
@@ -303,17 +310,33 @@ func mergeRecordedEnvironment(target *environment.RecordedEnvironment, source en
 	if target.GitHead.Value == "" && source.GitHead.Value != "" {
 		target.GitHead = source.GitHead
 	}
+	seen := make(map[environment.Requirement]struct{}, len(target.Requirements))
+	for _, requirement := range target.Requirements {
+		seen[requirement] = struct{}{}
+	}
 	for _, requirement := range source.Requirements {
+		if _, duplicate := seen[requirement]; duplicate {
+			continue
+		}
 		if len(target.Requirements) >= environment.MaxRequirements {
 			break
 		}
-		candidate := *target
-		candidate.Requirements = append(append([]environment.Requirement(nil), target.Requirements...), requirement)
-		normalized, err := environment.NormalizeRecordedEnvironment(candidate)
-		if err == nil {
-			*target = normalized
-		}
+		seen[requirement] = struct{}{}
+		target.Requirements = append(target.Requirements, requirement)
 	}
+	sort.Slice(target.Requirements, func(i, j int) bool {
+		left, right := target.Requirements[i], target.Requirements[j]
+		if left.Kind != right.Kind {
+			return left.Kind < right.Kind
+		}
+		if left.Name != right.Name {
+			return left.Name < right.Name
+		}
+		if left.Version != right.Version {
+			return left.Version < right.Version
+		}
+		return left.Provenance < right.Provenance
+	})
 }
 
 func saturatingAddInt64(left, right int64) int64 {
