@@ -52,6 +52,7 @@ func TestInspectSupportedAgents(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.agent, func(t *testing.T) {
 			root := t.TempDir()
+			executable := filepath.Join(root, "bin", test.agent)
 			if err := os.Mkdir(filepath.Join(root, test.marker), 0o700); err != nil {
 				t.Fatal(err)
 			}
@@ -59,7 +60,7 @@ func TestInspectSupportedAgents(t *testing.T) {
 			result := Inspect(context.Background(), test.agent, Options{
 				Root: root,
 				LookPath: func(value string) (string, error) {
-					return "/verified/" + value, nil
+					return filepath.Join(root, "bin", value), nil
 				},
 				Runner:          runner,
 				CaptureIdentity: testExecutableIdentity,
@@ -68,7 +69,7 @@ func TestInspectSupportedAgents(t *testing.T) {
 				!result.LayoutRecognized || result.Layout != test.layout {
 				t.Fatalf("result = %+v", result)
 			}
-			if runner.name != "/verified/"+test.agent || strings.Join(runner.args, " ") != "--version" {
+			if runner.name != executable || strings.Join(runner.args, " ") != "--version" {
 				t.Fatalf("runner = %q %v", runner.name, runner.args)
 			}
 		})
