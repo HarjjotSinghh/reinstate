@@ -49,6 +49,7 @@ func TestCLIPhase2SyntheticContinuityFlow(t *testing.T) {
 			Args:                args,
 			SessionSources:      sources,
 			SessionLaunchRunner: runner,
+			PreflightVerifier:   readyPreflightVerifier{},
 		})
 		return stdout.String(), stderr.String(), code
 	}

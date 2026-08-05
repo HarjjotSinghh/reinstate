@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -13,12 +14,15 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/HarjjotSinghh/reinstate/internal/config"
+	"github.com/HarjjotSinghh/reinstate/internal/environment"
+	"github.com/HarjjotSinghh/reinstate/internal/preflight"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
 )
 
 type localCommandOptions struct {
 	sources       []sessionindex.Source
 	launchRunner  sessionindex.LaunchRunner
+	verifier      preflight.Verifier
 	terminalCheck func(io.Reader, io.Writer) bool
 }
 
@@ -51,8 +55,14 @@ type localSessionsOutput struct {
 }
 
 type localInspectOutput struct {
-	Session  sessionindex.Record `json:"session"`
-	Warnings []localWarning      `json:"warnings,omitempty"`
+	Session     sessionindex.Record `json:"session"`
+	Environment preflight.Report    `json:"environment"`
+	Warnings    []localWarning      `json:"warnings,omitempty"`
+}
+
+type localLaunchOutput struct {
+	sessionindex.LaunchPlan
+	Environment preflight.Report `json:"environment"`
 }
 
 func newSessionsCmd(options localCommandOptions) *cobra.Command {
@@ -128,16 +138,20 @@ func newInspectCmd(options localCommandOptions) *cobra.Command {
 		Short: "Inspect safe metadata for one local session",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			index, refresh, err := openRefreshedLocalIndex(cmd, options)
+			index, err := openLocalIndex(options)
 			if err != nil {
 				return err
 			}
 			defer func() { _ = index.Close() }()
-			record, err := index.Resolve(cmd.Context(), args[0])
+			record, refresh, fresh, err := index.RefreshAndResolve(cmd.Context(), args[0])
 			if err != nil {
 				return localResolveError(err)
 			}
-			return writeLocalInspect(cmd, record, refresh.Warnings, asJSON)
+			report, err := verifyLocalRecord(cmd.Context(), options, index, record, fresh)
+			if err != nil {
+				return err
+			}
+			return writeLocalInspect(cmd, record, report, refresh.Warnings, asJSON)
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "emit machine-readable JSON")
@@ -147,6 +161,7 @@ func newInspectCmd(options localCommandOptions) *cobra.Command {
 func newLastCmd(options localCommandOptions) *cobra.Command {
 	var asJSON bool
 	var dryRun bool
+	var allowedWarnings []string
 	var filter sessionindex.Filter
 	cmd := &cobra.Command{
 		Use:   "last",
@@ -160,7 +175,7 @@ func newLastCmd(options localCommandOptions) *cobra.Command {
 				return NewExitError(ExitUsage, "--json requires --dry-run for native agent launches")
 			}
 			filter.ResumableOnly = true
-			index, _, err := openRefreshedLocalIndex(cmd, options)
+			index, refresh, err := openRefreshedLocalIndex(cmd, options)
 			if err != nil {
 				return err
 			}
@@ -169,13 +184,22 @@ func newLastCmd(options localCommandOptions) *cobra.Command {
 			if err != nil {
 				return localResolveError(err)
 			}
-			return launchLocalRecord(cmd, options, record, sessionindex.OperationResume, dryRun, asJSON)
+			return launchLocalRecord(
+				cmd, options, index, record, refresh.SourceFresh(record.Agent),
+				sessionindex.OperationResume, dryRun, asJSON, allowedWarnings, nil,
+			)
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "emit machine-readable JSON")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "print the native launch plan without starting the agent")
 	cmd.Flags().StringVar(&filter.Agent, "agent", "all", "agent filter: claude|codex|all")
 	cmd.Flags().StringVar(&filter.Project, "project", "", "project or workspace fragment")
+	cmd.Flags().StringArrayVar(
+		&allowedWarnings,
+		"allow-environment-warning",
+		nil,
+		"acknowledge one exact current environment warning ID (repeatable)",
+	)
 	return cmd
 }
 
@@ -190,6 +214,7 @@ func newForkCmd(options localCommandOptions) *cobra.Command {
 func newNativeActionCmd(options localCommandOptions, operation string) *cobra.Command {
 	var asJSON bool
 	var dryRun bool
+	var allowedWarnings []string
 	cmd := &cobra.Command{
 		Use:   operation + " SESSION",
 		Short: strings.ToUpper(operation[:1]) + operation[1:] + " a session through its native coding agent",
@@ -198,20 +223,29 @@ func newNativeActionCmd(options localCommandOptions, operation string) *cobra.Co
 			if asJSON && !dryRun {
 				return NewExitError(ExitUsage, "--json requires --dry-run for native agent launches")
 			}
-			index, _, err := openRefreshedLocalIndex(cmd, options)
+			index, err := openLocalIndex(options)
 			if err != nil {
 				return err
 			}
 			defer func() { _ = index.Close() }()
-			record, err := index.Resolve(cmd.Context(), args[0])
+			record, _, fresh, err := index.RefreshAndResolve(cmd.Context(), args[0])
 			if err != nil {
 				return localResolveError(err)
 			}
-			return launchLocalRecord(cmd, options, record, operation, dryRun, asJSON)
+			return launchLocalRecord(
+				cmd, options, index, record, fresh, operation, dryRun, asJSON,
+				allowedWarnings, nil,
+			)
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "emit machine-readable JSON")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "print the native launch plan without starting the agent")
+	cmd.Flags().StringArrayVar(
+		&allowedWarnings,
+		"allow-environment-warning",
+		nil,
+		"acknowledge one exact current environment warning ID (repeatable)",
+	)
 	return cmd
 }
 
@@ -228,17 +262,9 @@ func openRefreshedLocalIndex(
 	cmd *cobra.Command,
 	options localCommandOptions,
 ) (*sessionindex.Index, sessionindex.RefreshResult, error) {
-	home, err := config.Home()
+	index, err := openLocalIndex(options)
 	if err != nil {
-		return nil, sessionindex.RefreshResult{}, NewExitError(ExitConfig, err.Error())
-	}
-	sources := options.sources
-	if sources == nil {
-		sources = defaultLocalSources()
-	}
-	index, err := sessionindex.OpenIndex(home, sources...)
-	if err != nil {
-		return nil, sessionindex.RefreshResult{}, localRuntimeError("open local session index", err)
+		return nil, sessionindex.RefreshResult{}, err
 	}
 	refresh, err := index.Refresh(cmd.Context())
 	if err != nil {
@@ -248,21 +274,51 @@ func openRefreshedLocalIndex(
 	return index, refresh, nil
 }
 
+func openLocalIndex(options localCommandOptions) (*sessionindex.Index, error) {
+	home, err := config.Home()
+	if err != nil {
+		return nil, NewExitError(ExitConfig, err.Error())
+	}
+	sources := options.sources
+	if sources == nil {
+		sources = defaultLocalSources()
+	}
+	index, err := sessionindex.OpenIndex(home, sources...)
+	if err != nil {
+		return nil, localRuntimeError("open local session index", err)
+	}
+	return index, nil
+}
+
 func launchLocalRecord(
 	cmd *cobra.Command,
 	options localCommandOptions,
+	index *sessionindex.Index,
 	record sessionindex.Record,
+	sourceFresh bool,
 	operation string,
 	dryRun bool,
 	asJSON bool,
+	allowedWarnings []string,
+	readLine lineReader,
 ) error {
 	plan, err := sessionindex.PlanLaunch(record, operation)
 	if err != nil {
 		return localLaunchError(err)
 	}
+	report, err := verifyLocalRecord(cmd.Context(), options, index, record, sourceFresh)
+	if err != nil {
+		return err
+	}
 	if dryRun {
 		if asJSON {
-			return WriteJSON(cmd.OutOrStdout(), plan)
+			if report.Decision == preflight.DecisionBlocked {
+				return blockedEnvironmentError(report, plan)
+			}
+			if err := validateDryRunWarningIDs(report, plan, allowedWarnings); err != nil {
+				return err
+			}
+			return WriteJSON(cmd.OutOrStdout(), localLaunchOutput{LaunchPlan: plan, Environment: report})
 		}
 		PrintHuman(
 			cmd.OutOrStdout(),
@@ -271,20 +327,291 @@ func launchLocalRecord(
 			plan.Args,
 			plan.Dir,
 		)
+		writeEnvironmentReportHuman(cmd.OutOrStdout(), report)
+		if report.Decision == preflight.DecisionBlocked {
+			return blockedEnvironmentError(report, plan)
+		}
+		if err := validateDryRunWarningIDs(report, plan, allowedWarnings); err != nil {
+			return err
+		}
 		return nil
+	}
+
+	writeEnvironmentReportHuman(cmd.OutOrStdout(), report)
+	authorizedWarnings, err := authorizeEnvironment(
+		cmd, options, report, plan, allowedWarnings, readLine,
+	)
+	if err != nil {
+		return err
+	}
+
+	// Re-read the exact qualified identity and repeat every observation after
+	// authorization. A plan or report change invalidates that authorization.
+	secondRecord, _, secondFresh, err := index.RefreshAndResolve(cmd.Context(), record.Reference())
+	if err != nil {
+		if errors.Is(err, sessionindex.ErrNotFound) || errors.Is(err, sessionindex.ErrAmbiguous) {
+			return environmentReportError(report, plan, ExitSafety, "selected session changed after environment authorization")
+		}
+		return localRuntimeError("refresh selected session before launch", err)
+	}
+	secondPlan, err := sessionindex.PlanLaunch(secondRecord, operation)
+	if err != nil {
+		return environmentReportError(report, plan, ExitSafety, "selected session changed after environment authorization")
+	}
+	secondReport, err := verifyLocalRecord(cmd.Context(), options, index, secondRecord, secondFresh)
+	if err != nil {
+		return err
+	}
+	if !reflect.DeepEqual(plan, secondPlan) || !reflect.DeepEqual(report, secondReport) {
+		return environmentReportError(secondReport, secondPlan, ExitSafety, "environment changed after authorization; review and retry")
+	}
+	secondAuthorization, err := preflight.Authorize(secondReport, authorizedWarnings)
+	if err != nil || !secondAuthorization.Allowed {
+		return environmentReportError(secondReport, secondPlan, authorizationExitCode(secondAuthorization), authorizationMessage(err))
+	}
+
+	candidate, err := preflight.BaselineFromReport(secondReport, time.Now().UTC())
+	if err != nil {
+		return localRuntimeError("build prelaunch environment baseline", err)
 	}
 	runner := options.launchRunner
 	if runner == nil {
 		runner = sessionindex.ExecLaunchRunner{
-			Stdin:  cmd.InOrStdin(),
-			Stdout: cmd.OutOrStdout(),
-			Stderr: cmd.ErrOrStderr(),
+			Stdin:      cmd.InOrStdin(),
+			Stdout:     cmd.OutOrStdout(),
+			Stderr:     cmd.ErrOrStderr(),
+			Executable: secondReport.Agent.ExecutablePath,
+			BeforeExec: finalEnvironmentGuard(
+				cmd, options, index, secondRecord, secondPlan, secondReport, authorizedWarnings,
+			),
 		}
 	}
-	if err := sessionindex.RunLaunch(cmd.Context(), plan, runner); err != nil {
+	if err := sessionindex.RunLaunch(cmd.Context(), secondPlan, runner); err != nil {
+		var exitErr *ExitError
+		if errors.As(err, &exitErr) {
+			return exitErr
+		}
 		return localLaunchError(err)
 	}
+	if err := index.Store().PutPrelaunchBaseline(cmd.Context(), candidate); err != nil {
+		return localRuntimeError("persist successful prelaunch environment baseline", err)
+	}
 	return nil
+}
+
+func finalEnvironmentGuard(
+	cmd *cobra.Command,
+	options localCommandOptions,
+	index *sessionindex.Index,
+	record sessionindex.Record,
+	plan sessionindex.LaunchPlan,
+	report preflight.Report,
+	authorizedWarnings []string,
+) func(context.Context, sessionindex.LaunchPlan) error {
+	return func(ctx context.Context, runnerPlan sessionindex.LaunchPlan) error {
+		if !reflect.DeepEqual(plan, runnerPlan) {
+			return environmentReportError(report, plan, ExitSafety, "native launch plan changed at the execution boundary")
+		}
+		latest, _, fresh, err := index.RefreshAndResolve(ctx, record.Reference())
+		if err != nil {
+			if errors.Is(err, sessionindex.ErrNotFound) || errors.Is(err, sessionindex.ErrAmbiguous) {
+				return environmentReportError(report, plan, ExitSafety, "selected session changed at the execution boundary")
+			}
+			return localRuntimeError("refresh selected session at the execution boundary", err)
+		}
+		latestPlan, err := sessionindex.PlanLaunch(latest, plan.Operation)
+		if err != nil {
+			return environmentReportError(report, plan, ExitSafety, "selected session changed at the execution boundary")
+		}
+		latestReport, err := verifyLocalRecord(ctx, options, index, latest, fresh)
+		if err != nil {
+			return err
+		}
+		if !reflect.DeepEqual(plan, latestPlan) || !reflect.DeepEqual(report, latestReport) {
+			return environmentReportError(latestReport, latestPlan, ExitSafety, "environment changed at the execution boundary; review and retry")
+		}
+		authorization, err := preflight.Authorize(latestReport, authorizedWarnings)
+		if err != nil || !authorization.Allowed {
+			return environmentReportError(latestReport, latestPlan, authorizationExitCode(authorization), authorizationMessage(err))
+		}
+		return nil
+	}
+}
+
+func blockedEnvironmentError(report preflight.Report, plan sessionindex.LaunchPlan) error {
+	authorization, err := preflight.Authorize(report, nil)
+	return environmentReportError(report, plan, authorizationExitCode(authorization), authorizationMessage(err))
+}
+
+type lineReader func() (line string, ok bool, err error)
+
+func scannerLineReader(scanner *bufio.Scanner) lineReader {
+	return func() (string, bool, error) {
+		if scanner.Scan() {
+			return scanner.Text(), true, nil
+		}
+		return "", false, scanner.Err()
+	}
+}
+
+func verifyLocalRecord(
+	ctx context.Context,
+	options localCommandOptions,
+	index *sessionindex.Index,
+	record sessionindex.Record,
+	sourceFresh bool,
+) (preflight.Report, error) {
+	if options.verifier == nil {
+		return preflight.Report{}, localRuntimeError("verify native environment", errors.New("environment verifier is unavailable"))
+	}
+	var baselinePointer = (*environment.PrelaunchBaseline)(nil)
+	baseline, err := index.Store().GetPrelaunchBaseline(ctx, record.Reference())
+	switch {
+	case err == nil:
+		baselinePointer = &baseline
+	case errors.Is(err, sessionindex.ErrPrelaunchBaselineNotFound):
+	case err != nil:
+		return preflight.Report{}, localRuntimeError("read prelaunch environment baseline", err)
+	}
+	report, err := options.verifier.Verify(ctx, preflight.Input{
+		SessionRef:  record.Reference(),
+		Agent:       record.Agent,
+		Workspace:   record.Workspace,
+		AgentRoot:   sessionindex.AgentRoot(record),
+		Recorded:    record.RecordedEnvironment,
+		Baseline:    baselinePointer,
+		SourceFresh: sourceFresh,
+	})
+	if err != nil {
+		return preflight.Report{}, localRuntimeError("verify native environment", err)
+	}
+	if report.SessionRef != record.Reference() {
+		return preflight.Report{}, localRuntimeError("verify native environment", errors.New("environment report identity does not match selected session"))
+	}
+	if err := preflight.ValidateReport(report); err != nil {
+		return preflight.Report{}, localRuntimeError("verify native environment", err)
+	}
+	return report, nil
+}
+
+func validateDryRunWarningIDs(
+	report preflight.Report,
+	plan sessionindex.LaunchPlan,
+	allowed []string,
+) error {
+	if len(allowed) == 0 {
+		return nil
+	}
+	requested := make(map[string]struct{}, len(allowed))
+	for _, raw := range allowed {
+		requested[strings.TrimSpace(raw)] = struct{}{}
+	}
+	validation := report
+	validation.Decision = preflight.DecisionReady
+	validation.BlockExitCode = 0
+	validation.Checks = nil
+	for _, check := range report.Checks {
+		if check.Severity != preflight.SeverityWarning {
+			validation.Checks = append(validation.Checks, check)
+			continue
+		}
+		if _, ok := requested[check.ID]; ok {
+			validation.Checks = append(validation.Checks, check)
+			validation.Decision = preflight.DecisionConfirmationRequired
+		}
+	}
+	authorization, err := preflight.Authorize(validation, allowed)
+	if err != nil {
+		return environmentReportError(report, plan, authorizationExitCode(authorization), err.Error())
+	}
+	return nil
+}
+
+func authorizeEnvironment(
+	cmd *cobra.Command,
+	options localCommandOptions,
+	report preflight.Report,
+	plan sessionindex.LaunchPlan,
+	allowed []string,
+	readLine lineReader,
+) ([]string, error) {
+	if report.Decision != preflight.DecisionConfirmationRequired || len(allowed) != 0 ||
+		!options.terminalCheck(cmd.InOrStdin(), cmd.OutOrStdout()) {
+		authorization, err := preflight.Authorize(report, allowed)
+		if err != nil || !authorization.Allowed {
+			return nil, environmentReportError(report, plan, authorizationExitCode(authorization), authorizationMessage(err))
+		}
+		return preflight.WarningIDs(report), nil
+	}
+	if readLine == nil {
+		readLine = scannerLineReader(bufio.NewScanner(cmd.InOrStdin()))
+	}
+	confirmed, err := confirmEnvironmentWarnings(cmd.Context(), cmd.OutOrStdout(), readLine)
+	if err != nil {
+		return nil, err
+	}
+	if !confirmed {
+		return nil, environmentReportError(report, plan, ExitSafety, "environment warning confirmation declined")
+	}
+	warnings := preflight.WarningIDs(report)
+	authorization, err := preflight.Authorize(report, warnings)
+	if err != nil || !authorization.Allowed {
+		return nil, environmentReportError(report, plan, authorizationExitCode(authorization), authorizationMessage(err))
+	}
+	return warnings, nil
+}
+
+func confirmEnvironmentWarnings(ctx context.Context, writer io.Writer, readLine lineReader) (bool, error) {
+	for {
+		if err := ctx.Err(); err != nil {
+			return false, localRuntimeError("read environment confirmation", err)
+		}
+		_, _ = fmt.Fprint(writer, "Continue with these environment warnings? Type yes or no [no]: ")
+		line, ok, err := readLine()
+		if err != nil {
+			return false, localRuntimeError("read environment confirmation", err)
+		}
+		if !ok {
+			return false, nil
+		}
+		switch strings.ToLower(strings.TrimSpace(line)) {
+		case "yes":
+			return true, nil
+		case "", "no":
+			return false, nil
+		default:
+			PrintHuman(writer, "Enter exactly yes or no.")
+		}
+	}
+}
+
+func environmentReportError(
+	report preflight.Report,
+	plan sessionindex.LaunchPlan,
+	code int,
+	message string,
+) *ExitError {
+	if code == 0 {
+		code = ExitRuntime
+	}
+	err := NewExitError(code, message)
+	err.Details["environment"] = report
+	err.Details["launch_plan"] = plan
+	return err
+}
+
+func authorizationExitCode(authorization preflight.Authorization) int {
+	if authorization.ExitCode != 0 {
+		return authorization.ExitCode
+	}
+	return ExitRuntime
+}
+
+func authorizationMessage(err error) string {
+	if err == nil {
+		return "environment authorization failed"
+	}
+	return err.Error()
 }
 
 func runSessionPicker(cmd *cobra.Command, options localCommandOptions) error {
@@ -301,7 +628,7 @@ func runSessionPicker(cmd *cobra.Command, options localCommandOptions) error {
 	}
 	defer func() { _ = index.Close() }()
 
-	reader := bufio.NewScanner(cmd.InOrStdin())
+	reader := scannerLineReader(bufio.NewScanner(cmd.InOrStdin()))
 	filter := sessionindex.Filter{Limit: sessionindex.DefaultLimit}
 	for {
 		records, err := index.Search(cmd.Context(), filter)
@@ -309,13 +636,14 @@ func runSessionPicker(cmd *cobra.Command, options localCommandOptions) error {
 			return localRuntimeError("read local session index", err)
 		}
 		printPicker(cmd.OutOrStdout(), records, filter.Query)
-		if !reader.Scan() {
-			if err := reader.Err(); err != nil {
+		input, ok, err := reader()
+		if !ok {
+			if err != nil {
 				return localRuntimeError("read picker input", err)
 			}
 			return nil
 		}
-		input := strings.TrimSpace(reader.Text())
+		input = strings.TrimSpace(input)
 		switch {
 		case input == "" || strings.EqualFold(input, "q"):
 			return nil
@@ -328,7 +656,15 @@ func runSessionPicker(cmd *cobra.Command, options localCommandOptions) error {
 				PrintHuman(cmd.OutOrStdout(), "Invalid session number.")
 				continue
 			}
-			if err := writeLocalInspect(cmd, records[indexValue], nil, false); err != nil {
+			record, refresh, fresh, err := index.RefreshAndResolve(cmd.Context(), records[indexValue].Reference())
+			if err != nil {
+				return localResolveError(err)
+			}
+			report, err := verifyLocalRecord(cmd.Context(), options, index, record, fresh)
+			if err != nil {
+				return err
+			}
+			if err := writeLocalInspect(cmd, record, report, refresh.Warnings, false); err != nil {
 				return err
 			}
 			continue
@@ -338,13 +674,21 @@ func runSessionPicker(cmd *cobra.Command, options localCommandOptions) error {
 				PrintHuman(cmd.OutOrStdout(), "Invalid session number.")
 				continue
 			}
+			record, _, fresh, err := index.RefreshAndResolve(cmd.Context(), records[indexValue].Reference())
+			if err != nil {
+				return localResolveError(err)
+			}
 			return launchLocalRecord(
 				cmd,
 				options,
-				records[indexValue],
+				index,
+				record,
+				fresh,
 				sessionindex.OperationFork,
 				false,
 				false,
+				nil,
+				reader,
 			)
 		default:
 			indexValue, ok := pickerIndex(input, len(records))
@@ -352,13 +696,21 @@ func runSessionPicker(cmd *cobra.Command, options localCommandOptions) error {
 				PrintHuman(cmd.OutOrStdout(), "Enter a number, /text, i NUMBER, f NUMBER, or q.")
 				continue
 			}
+			record, _, fresh, err := index.RefreshAndResolve(cmd.Context(), records[indexValue].Reference())
+			if err != nil {
+				return localResolveError(err)
+			}
 			return launchLocalRecord(
 				cmd,
 				options,
-				records[indexValue],
+				index,
+				record,
+				fresh,
 				sessionindex.OperationResume,
 				false,
 				false,
+				nil,
+				reader,
 			)
 		}
 	}
@@ -432,13 +784,15 @@ func writeLocalSessions(
 func writeLocalInspect(
 	cmd *cobra.Command,
 	record sessionindex.Record,
+	report preflight.Report,
 	warnings []sessionindex.Warning,
 	asJSON bool,
 ) error {
 	if asJSON {
 		return WriteJSON(cmd.OutOrStdout(), localInspectOutput{
-			Session:  record,
-			Warnings: publicLocalWarnings(warnings),
+			Session:     record,
+			Environment: report,
+			Warnings:    publicLocalWarnings(warnings),
 		})
 	}
 	writeLocalWarnings(cmd.ErrOrStderr(), warnings)
@@ -463,7 +817,23 @@ func writeLocalInspect(
 	if record.PromptPreview != "" {
 		PrintHuman(cmd.OutOrStdout(), "User prompt preview: %s", record.PromptPreview)
 	}
+	writeEnvironmentReportHuman(cmd.OutOrStdout(), report)
 	return nil
+}
+
+func writeEnvironmentReportHuman(writer io.Writer, report preflight.Report) {
+	PrintHuman(writer, "Environment decision: %s", report.Decision)
+	for _, check := range report.Checks {
+		PrintHuman(
+			writer,
+			"Environment check: %s status=%s severity=%s provenance=%s — %s",
+			check.ID,
+			check.Status,
+			check.Severity,
+			check.Provenance,
+			check.Message,
+		)
+	}
 }
 
 func summarizeLocalRecord(record sessionindex.Record) localSessionSummary {

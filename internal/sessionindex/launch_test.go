@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 )
@@ -154,6 +155,40 @@ func TestExecLaunchRunnerClassifiesPreflightFailures(t *testing.T) {
 	})
 	if !errors.Is(err, ErrWorkspaceUnavailable) {
 		t.Fatalf("workspace error = %v", err)
+	}
+}
+
+func TestExecLaunchRunnerGuardRejectionPreventsChildCreation(t *testing.T) {
+	marker := filepath.Join(t.TempDir(), "child-created")
+	t.Setenv("REINSTATE_LAUNCH_GUARD_HELPER_MARKER", marker)
+	executable, err := filepath.Abs(os.Args[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	guardErr := errors.New("controlled final guard rejection")
+	plan := LaunchPlan{
+		Agent: AgentClaude, SessionRef: "claude:controlled", Operation: OperationResume,
+		Executable: "claude", Args: []string{"-test.run=^TestExecLaunchRunnerGuardHelper$"}, Dir: t.TempDir(),
+	}
+	err = RunLaunch(context.Background(), plan, ExecLaunchRunner{
+		Executable: executable,
+		BeforeExec: func(context.Context, LaunchPlan) error { return guardErr },
+	})
+	if !errors.Is(err, guardErr) {
+		t.Fatalf("guard rejection error = %v", err)
+	}
+	if _, err := os.Stat(marker); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("child marker exists after guard rejection: %v", err)
+	}
+}
+
+func TestExecLaunchRunnerGuardHelper(t *testing.T) {
+	marker := os.Getenv("REINSTATE_LAUNCH_GUARD_HELPER_MARKER")
+	if marker == "" {
+		return
+	}
+	if err := os.WriteFile(marker, []byte("child ran"), 0o600); err != nil {
+		t.Fatal(err)
 	}
 }
 
