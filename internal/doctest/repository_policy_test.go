@@ -277,7 +277,7 @@ func TestWorkflowOrdinaryGoGatesDisableCGO(t *testing.T) {
 				t.Errorf("%s is missing workflow step %q", path, stepName)
 				continue
 			}
-			if !strings.Contains(step, "CGO_ENABLED: \"0\"") {
+			if value, found := workflowStepEnvValue(step, "CGO_ENABLED"); !found || value != `"0"` {
 				t.Errorf("%s step %q must explicitly disable CGO", path, stepName)
 			}
 		}
@@ -323,6 +323,43 @@ func workflowStep(workflow, name string) (string, bool) {
 	return "", false
 }
 
+// workflowStepEnvValue reads only direct entries in a step's env mapping. It
+// deliberately ignores comments and run-script text so policy prose cannot
+// masquerade as an effective Actions environment setting.
+func workflowStepEnvValue(step, key string) (string, bool) {
+	lines := strings.Split(step, "\n")
+	if len(lines) == 0 {
+		return "", false
+	}
+	stepIndent := len(lines[0]) - len(strings.TrimLeft(lines[0], " \t"))
+	for index, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		envIndent := len(line) - len(strings.TrimLeft(line, " \t"))
+		if trimmed != "env:" || envIndent != stepIndent+2 {
+			continue
+		}
+		for next := index + 1; next < len(lines); next++ {
+			candidate := lines[next]
+			candidateTrimmed := strings.TrimSpace(candidate)
+			if candidateTrimmed == "" || strings.HasPrefix(candidateTrimmed, "#") {
+				continue
+			}
+			candidateIndent := len(candidate) - len(strings.TrimLeft(candidate, " \t"))
+			if candidateIndent <= envIndent {
+				break
+			}
+			if candidateIndent != envIndent+2 {
+				continue
+			}
+			name, value, found := strings.Cut(candidateTrimmed, ":")
+			if found && strings.TrimSpace(name) == key {
+				return strings.TrimSpace(value), true
+			}
+		}
+	}
+	return "", false
+}
+
 func TestWorkflowStepDoesNotBorrowSiblingEnvironment(t *testing.T) {
 	workflow := `jobs:
   test:
@@ -336,6 +373,27 @@ func TestWorkflowStepDoesNotBorrowSiblingEnvironment(t *testing.T) {
 	step, found := workflowStep(workflow, "Test")
 	if !found || strings.Contains(step, "CGO_ENABLED") || strings.Contains(step, "name: Build") {
 		t.Fatalf("workflow step boundary is invalid: found=%t step=%q", found, step)
+	}
+}
+
+func TestWorkflowStepEnvironmentIgnoresCommentsAndRunText(t *testing.T) {
+	step := `      - name: Test
+        # CGO_ENABLED: "0"
+        run: |
+          env:
+            CGO_ENABLED: "0"
+          go test ./... # CGO_ENABLED: "0"`
+	if value, found := workflowStepEnvValue(step, "CGO_ENABLED"); found {
+		t.Fatalf("non-env text produced CGO setting %q", value)
+	}
+
+	step = `      - name: Test
+        env:
+          # CGO_ENABLED: "1"
+          CGO_ENABLED: "0"
+        run: go test ./...`
+	if value, found := workflowStepEnvValue(step, "CGO_ENABLED"); !found || value != `"0"` {
+		t.Fatalf("env CGO setting = %q, found=%t", value, found)
 	}
 }
 

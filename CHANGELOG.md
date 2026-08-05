@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   recognized Node/Go runtimes across `inspect`, dry-runs, direct launches, and
   the interactive picker.
 - Add exact invocation-scoped `--allow-environment-warning CHECK_ID`
-  acknowledgements and private `reinstate_prelaunch_observed` baselines saved
+  acknowledgments and private `reinstate_prelaunch_observed` baselines saved
   only after a successful same-vendor native child exits.
 - Add local-only, privacy-safe repository fingerprints, capability transports,
   runtime declarations, stale-source checks, and deterministic report-bearing

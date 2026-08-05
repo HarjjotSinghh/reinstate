@@ -147,7 +147,10 @@ func TestCoalesceRecordsBoundsRequirementsAcrossSegments(t *testing.T) {
 	}
 	forward, _ := CoalesceRecords([]Record{old, newer})
 	reversed, _ := CoalesceRecords([]Record{newer, old})
-	if len(forward) != 1 || len(forward[0].RecordedEnvironment.Requirements) != environment.MaxRequirements {
+	if len(forward) != 1 || len(reversed) != 1 {
+		t.Fatalf("coalesced records = %d forward / %d reversed, want 1 each", len(forward), len(reversed))
+	}
+	if len(forward[0].RecordedEnvironment.Requirements) != environment.MaxRequirements {
 		t.Fatalf("coalesced requirements = %d, want %d", len(forward[0].RecordedEnvironment.Requirements), environment.MaxRequirements)
 	}
 	if !reflect.DeepEqual(forward[0].RecordedEnvironment.Requirements, reversed[0].RecordedEnvironment.Requirements) {
