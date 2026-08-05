@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
+import { product } from '../data/product';
 
 const docsRoot = new URL('../content/docs/', import.meta.url);
 const documents = [
@@ -62,10 +63,9 @@ describe('operational documentation contract', () => {
     }
 
     expect(frontmatterField(frontmatter, 'status')).toBe('current');
+    expect(frontmatterField(frontmatter, 'version')).toBe(`"${product.currentRelease}"`);
     expect(frontmatterField(frontmatter, 'draft')).toBe('false');
     expect(frontmatterField(frontmatter, 'noindex')).toBe('false');
-    expect(body).toContain('v0.2.0');
-
     const opening = body.split(/^##\s+/m)[0]?.replace(/^>\s?/gm, '').trim() ?? '';
     expect(opening.length, `${file}: answer-first opening`).toBeGreaterThan(120);
 

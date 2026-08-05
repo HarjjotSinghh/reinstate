@@ -33,5 +33,7 @@ files and refuses to proceed if their pins differ.
 - For a website-only change, use
   `./scripts/deploy-website-production.sh website-vYYYY.MM.DD.N`; preserve exact
   installer parity with the CLI release derived from both public bootstraps.
-- Leave stable tagging and publication to the authorized maintainer after all
-  native Windows, WSL2, and macOS acceptance rows pass.
+- Leave RC and stable tagging/publication to the authorized maintainer. Phase 3
+  requires Apple Silicon macOS and native Windows x64 acceptance; Intel macOS
+  and Linux/WSL2 are optional, unsupported/unverified evidence and do not block
+  RC1 or stable `v0.3.0`.

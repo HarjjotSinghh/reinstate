@@ -1,5 +1,12 @@
 # Compatibility
 
+Release candidate `v0.3.0-rc.1` adds Phase 3 verified resume to the stable
+`v0.2.0` surface. Its Apple Silicon macOS and native Windows x64 tagged-artifact
+acceptance is pending. Intel macOS and Linux/WSL2 remain optional,
+unsupported/unverified evidence and do not block RC1. Passing RC1 will not
+authorize stable `v0.3.0`; that requires a separate reviewed promotion and
+fresh tagged-artifact validation.
+
 Stable Reinstate `v0.2.0` implements **same-vendor encrypted session sync** and
 the Phase 2 local continuity surface for:
 
@@ -62,8 +69,8 @@ Every Phase 1 sync-adapter discovery result reports one of:
 | `UNSUPPORTED` | Known-incompatible layout/version | Fail closed; link to this page |
 | `NOT_INSTALLED` | No local installation/root found | Informational |
 
-Current source compatibility evidence covers these inclusive stable-version
-ranges on macOS arm64 plus deterministic synthetic fixtures:
+The `v0.3.0-rc.1` source compatibility policy keeps these inclusive agent
+version ranges; candidate physical evidence is still pending:
 
 | Agent | Tested stable range |
 | ----- | ------------------- |

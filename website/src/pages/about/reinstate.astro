@@ -14,7 +14,7 @@ const description =
   {description}
   path="/about/reinstate"
   eyebrow="About Reinstate"
-  answer="Reinstate is an open-source continuity layer for coding-agent work. Stable v0.2.0 moves encrypted Claude Code and Codex sessions between configured devices and adds configless local search plus same-vendor native resume/fork. Environment verification and explicit portable handoffs remain later work."
+  answer="Reinstate is an open-source continuity layer for coding-agent work. Stable v0.2.0 moves encrypted Claude Code and Codex sessions between configured devices and adds configless local search plus same-vendor native resume/fork. Candidate v0.3.0-rc.1 adds verified resume; tagged-artifact acceptance is pending. Explicit portable handoffs remain later work."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'About Reinstate', path: '/about/reinstate' },
@@ -46,9 +46,10 @@ const description =
     <li>Checksum-verifying installers and compatibility checks that fail closed.</li>
     <li>Configless local indexing, literal search, bounded inspect, and a TTY switcher.</li>
     <li>Native same-vendor Claude Code/Codex resume and fork; read-only Gemini CLI/OpenCode discovery.</li>
+    <li>RC1 verified-resume reports and gates for repository, agent, capability, and runtime state.</li>
   </ul>
   <div class="pc-callout">
-    <p>“Available” means stable on the platforms that completed physical acceptance.</p>
+    <p>Stable and release-candidate evidence remain distinct.</p>
     <p>
       Stable v0.2.0 is physically verified on Apple Silicon macOS and native Windows x64. Intel
       macOS and Linux/WSL2 packages are preview and unverified rather than inferred support.
@@ -60,7 +61,7 @@ const description =
       <dt>Latest public source tag</dt>
       <dd>
         <a href={product.currentReleaseUrl}>{product.currentRelease}</a>
-        (pre-1.0 stable release)
+        (pre-1.0 release candidate; tagged-artifact acceptance pending)
       </dd>
     </div>
     <div>
@@ -101,7 +102,7 @@ const description =
         <tr>
           <td>3</td>
           <td>Verified resume against repo, branch, runtime, MCP, and skill state</td>
-          <td>Planned</td>
+          <td>RC1 candidate; acceptance pending</td>
         </tr>
         <tr>
           <td>4</td>
@@ -117,7 +118,7 @@ const description =
     </table>
   </div>
   <p>
-    Roadmap work is not present-day functionality. In particular, Reinstate does not provide
+    Later roadmap work is not present-day functionality. In particular, Reinstate does not provide
     cross-agent transcript translation, environment repair, configuration sync, or team handoffs.
   </p>
 
@@ -165,7 +166,7 @@ const description =
       <a href="/roadmap">Product roadmap</a>
       <a href="/integrations">Current integrations</a>
       <a href="/security">Security model</a>
-      <a href="/docs/getting-started">Try the stable release</a>
+      <a href="/docs/getting-started">Install or evaluate Reinstate</a>
     </nav>
   </section>
 </PublicContentLayout>

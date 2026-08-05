@@ -5,7 +5,7 @@ export const prerender = true;
 
 const title = 'Reinstate Roadmap: From Encrypted Sync to Work Continuity';
 const description =
-  'Review what Reinstate implements today, the stable v0.2.0 platform boundary, and which verified resume, handoff, and configuration features are planned.';
+  'Review stable v0.2.0, the v0.3.0-rc.1 verified-resume candidate, and which handoff and configuration features remain planned.';
 ---
 
 <PublicContentLayout
@@ -13,7 +13,7 @@ const description =
   {description}
   path="/roadmap"
   eyebrow="Product roadmap"
-  answer="Stable v0.2.0 implements the Phase 0 foundation, Phase 1 encrypted same-vendor session sync, and the Phase 2 local session index with same-vendor native resume/fork. Apple Silicon macOS and native Windows x64 are physically verified; Intel macOS and Linux/WSL2 are preview and unverified. Verified resume, portable cross-agent handoffs, universal non-secret configuration, a thin console, and team continuity remain later phases."
+  answer="Stable v0.2.0 implements encrypted same-vendor sync and local continuity. Candidate v0.3.0-rc.1 adds verified resume, with tagged-artifact acceptance pending on Apple Silicon macOS and native Windows x64. Intel macOS and Linux/WSL2 remain optional and unverified. Portable cross-agent handoffs, universal non-secret configuration, a thin console, and team continuity remain later phases."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'Roadmap', path: '/roadmap' },
@@ -33,6 +33,8 @@ const description =
       Stable <code>v0.2.0</code> supports encrypted same-vendor Claude Code and Codex session
       synchronization plus configless local continuity. Apple Silicon macOS and native Windows
       x64 are verified stable platforms; Intel macOS and Linux/WSL2 are preview and unverified.
+      Candidate <code>v0.3.0-rc.1</code> adds verified resume, but its tagged-artifact acceptance is
+      pending and stable <code>v0.3.0</code> is not authorized.
     </p>
   </div>
 
@@ -69,8 +71,8 @@ const description =
         <tr>
           <td>3</td>
           <td>Verified resume against repository, runtime, agent, MCP, and skill state</td>
-          <td>Planned</td>
-          <td>Report environment truth before launch and refuse silent bad continuation</td>
+          <td>RC1 candidate</td>
+          <td>Tagged-artifact acceptance pending on the two mandatory platforms</td>
         </tr>
         <tr>
           <td>4</td>

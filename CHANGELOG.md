@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0-rc.1] - 2026-08-05
+
+First Phase 3 release candidate. It adds verified resume to the Phase 2 local
+continuity surface. Tagged-artifact acceptance on Apple Silicon macOS and
+native Windows x64 is still pending; this candidate does not authorize stable
+`v0.3.0`.
+
 ### Added
 
 - Add deterministic verified-resume reports for workspace/repository state,
@@ -473,7 +480,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0-rc.1...HEAD
+[0.3.0-rc.1]: https://github.com/HarjjotSinghh/reinstate/compare/v0.2.0...v0.3.0-rc.1
 [0.2.0]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0...v0.2.0
 [0.2.0-rc.3]: https://github.com/HarjjotSinghh/reinstate/compare/v0.2.0-rc.2...v0.2.0-rc.3
 [0.2.0-rc.2]: https://github.com/HarjjotSinghh/reinstate/compare/v0.2.0-rc.1...v0.2.0-rc.2

@@ -1,6 +1,7 @@
 package doctest
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -13,7 +14,7 @@ func TestPackagePromotionStartsFromPublishedVerifiedRelease(t *testing.T) {
 		"workflow_dispatch:",
 		`git verify-tag "$TAG"`,
 		`git merge-base --is-ancestor "$TAG_COMMIT" origin/main`,
-		`gh attestation verify "release-assets/$asset"`,
+		`gh attestation verify "$1"`,
 		"./scripts/check-release-artifacts.sh release-assets",
 		"Checkout reviewed promotion tools",
 		`ref: ${{ github.workflow_sha }}`,
@@ -34,6 +35,76 @@ func TestPackagePromotionStartsFromPublishedVerifiedRelease(t *testing.T) {
 
 	if strings.Contains(workflow, "push:\n    tags:") {
 		t.Error("package managers must not publish directly from a tag push")
+	}
+}
+
+func TestPackagePromotionBindsEveryAttestationToReleaseProvenance(t *testing.T) {
+	workflow := read(t, ".github/workflows/package-publish.yml")
+	activeLines := make([]string, 0, strings.Count(workflow, "\n")+1)
+	for _, line := range strings.Split(workflow, "\n") {
+		if strings.HasPrefix(strings.TrimSpace(line), "#") {
+			continue
+		}
+		activeLines = append(activeLines, line)
+	}
+	active := strings.Join(activeLines, "\n")
+
+	function := regexp.MustCompile(`(?ms)^          verify_attestation\(\) \{\n            gh attestation verify "\$1" \\\n              --repo "\$GITHUB_REPOSITORY" \\\n              --source-ref "refs/tags/\$TAG" \\\n              --source-digest "\$TAG_COMMIT" \\\n              --predicate-type "https://slsa\.dev/provenance/v1" >/dev/null\n          \}$`)
+	if !function.MatchString(active) {
+		t.Fatal("package promotion must bind attestation verification to repository, exact tag ref, full tag commit, and SLSA v1 provenance")
+	}
+
+	for _, required := range []string{
+		`TAG="$RELEASE_TAG"`,
+		`TAG_COMMIT="$(git rev-list -n 1 "$TAG")"`,
+		`verify_attestation "release-assets/$asset"`,
+		`verify_attestation release-assets/checksums.txt`,
+	} {
+		line := regexp.MustCompile(`(?m)^\s*` + regexp.QuoteMeta(required) + `\s*$`)
+		if !line.MatchString(active) {
+			t.Errorf("package promotion is missing active release-attestation command %q", required)
+		}
+	}
+
+	if got := strings.Count(active, `gh attestation verify`); got != 1 {
+		t.Fatalf("all package-promotion attestations must use the one provenance-bound verifier; found %d active gh invocations", got)
+	}
+}
+
+func TestPackagePromotionReleaseChannelMatchesTagSemVer(t *testing.T) {
+	workflow := read(t, ".github/workflows/package-publish.yml")
+	activeLines := make([]string, 0, strings.Count(workflow, "\n")+1)
+	for _, line := range strings.Split(workflow, "\n") {
+		if strings.HasPrefix(strings.TrimSpace(line), "#") {
+			continue
+		}
+		activeLines = append(activeLines, line)
+	}
+	active := strings.Join(activeLines, "\n")
+
+	for _, required := range []string{
+		`EXPECTED_PRERELEASE=false`,
+		`if [[ "$VERSION" == *-* ]]; then EXPECTED_PRERELEASE=true; fi`,
+		`ACTUAL_PRERELEASE="$(jq -r .isPrerelease <<<"$RELEASE_JSON")"`,
+		`test "$ACTUAL_PRERELEASE" = "$EXPECTED_PRERELEASE"`,
+		`echo "prerelease=$ACTUAL_PRERELEASE"`,
+	} {
+		line := regexp.MustCompile(`(?m)^\s*` + regexp.QuoteMeta(required) + `\s*$`)
+		if !line.MatchString(active) {
+			t.Errorf("package promotion is missing active release-channel assertion %q", required)
+		}
+	}
+
+	for _, stableOnly := range []string{
+		"vars.PUBLISH_HOMEBREW == 'true' && needs.verify.outputs.prerelease == 'false'",
+		"vars.PUBLISH_SCOOP == 'true' && needs.verify.outputs.prerelease == 'false'",
+		"vars.PUBLISH_CHOCOLATEY == 'true' && needs.verify.outputs.prerelease == 'false'",
+		"vars.PUBLISH_WINGET == 'true' && needs.verify.outputs.prerelease == 'false'",
+		"vars.PUBLISH_AUR == 'true' && needs.verify.outputs.prerelease == 'false'",
+	} {
+		if !strings.Contains(active, stableOnly) {
+			t.Errorf("stable-only package lane lost prerelease guard %q", stableOnly)
+		}
 	}
 }
 

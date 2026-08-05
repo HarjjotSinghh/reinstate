@@ -2,14 +2,13 @@
 
 Binary names: `rein` and `reinstate` (identical behavior).
 
-Public installers pin stable `v0.2.0`, including the Phase 1 sync surface and
-the Phase 2 local commands below. Exact signed artifacts are physically
-verified on Apple Silicon macOS and native Windows x64. Intel macOS and
-Linux/WSL2 packages are preview and unverified for this release.
+Public installers pin candidate `v0.3.0-rc.1`, including the Phase 1/2 surface
+and Phase 3 verified resume. Tagged-artifact acceptance is pending on Apple
+Silicon macOS and native Windows x64. Stable remains `v0.2.0`; Intel macOS and
+Linux/WSL2 are optional and unverified for RC1.
 
-The command synopsis below follows the current development source. Stable
-`v0.2.0` does not include the Phase 3 environment report or
-`--allow-environment-warning` flag.
+The command synopsis below follows `v0.3.0-rc.1`. Stable `v0.2.0` does not
+include the Phase 3 environment report or `--allow-environment-warning` flag.
 
 ## Exit codes
 
@@ -56,8 +55,8 @@ rein completion bash|zsh|fish|powershell
 
 `sessions`, `search`, and `inspect` refresh and read a private derived index
 without requiring `init`, config, storage credentials, a passphrase, keyring
-access, or a backend. Stable `v0.2.0` used the Phase 2 v1 index. Current Phase 3
-source deliberately moves to a separate path so an older binary cannot erase
+access, or a backend. Stable `v0.2.0` used the Phase 2 v1 index. `v0.3.0-rc.1`
+deliberately moves to a separate path so an older binary cannot erase
 new baseline metadata:
 
 ```text
@@ -99,7 +98,7 @@ delegate execution to the source vendor:
 | Gemini CLI | read-only | read-only |
 | OpenCode | read-only | read-only |
 
-Review the plan with `--dry-run --json`. Current Phase 3 source also includes
+Review the plan with `--dry-run --json`. `v0.3.0-rc.1` also includes
 the verified-resume `environment` report described below. A real launch
 inherits the terminal, waits for the child, and propagates failure. JSON mode
 requires `--dry-run` for `resume`, `fork`, and `last`, so native child output
@@ -122,11 +121,11 @@ On a non-TTY, bare `rein` exits promptly with usage code `2` and a
 `rein list` remains the Phase 1 compatibility command used by sync scripts.
 `rein sessions` is the canonical config-independent local listing command.
 
-## Phase 3 verified resume (current source)
+## Phase 3 verified resume (`v0.3.0-rc.1`)
 
-Phase 3 is implemented in the current development source but is not included
-in the stable `v0.2.0` installers. Before any real Claude or Codex native
-continuation, Reinstate builds a deterministic, local-only environment report.
+Phase 3 is included in candidate `v0.3.0-rc.1`; tagged-artifact acceptance is
+pending, and stable `v0.2.0` does not include it. Before any real Claude or
+Codex native continuation, Reinstate builds a deterministic, local-only environment report.
 The same report is exposed by `inspect` and native dry-runs and enforced by
 `resume`, `fork`, `last`, and picker resume/fork.
 

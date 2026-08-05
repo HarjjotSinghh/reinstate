@@ -166,9 +166,9 @@ rein resume claude:<session-id>
 **Gate:** before launch, Reinstate reports environment truth and refuses silent
 bad continuation.
 
-*Implemented in the current development source. Local verification and review
-are in progress; `v0.3.0-rc.1` has not been published or physically certified.
-The stable `v0.2.0` installers therefore do not include this behavior yet.*
+*Included in release candidate `v0.3.0-rc.1`. Tagged-artifact acceptance on
+Apple Silicon macOS and native Windows x64 is pending; this candidate does not
+authorize stable `v0.3.0`. Stable `v0.2.0` does not include this behavior.*
 
 | Item | Status |
 | ---- | ------ |

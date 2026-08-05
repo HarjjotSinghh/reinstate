@@ -106,8 +106,12 @@ describe('evidence-safe linkable assets', () => {
     expect(agentVersionHistory.map(({ version }) => version)).toEqual(
       releaseHistory.map(({ version }) => version),
     );
-    expect(agentVersionHistory).toHaveLength(13);
-    expect(new Set(agentVersionHistory.map(({ source }) => source)).size).toBe(13);
+    expect(agentVersionHistory).toHaveLength(14);
+    expect(new Set(agentVersionHistory.map(({ source }) => source)).size).toBe(14);
+    expect(
+      agentVersionHistory.find(({ version }) => version === 'v0.3.0-rc.1')
+        ?.rangeChange,
+    ).toBe('No agent-version range change documented.');
     expect(
       agentVersionHistory.find(({ version }) => version === 'v0.2.0-rc.3')
         ?.rangeChange,
