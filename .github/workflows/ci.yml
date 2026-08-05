@@ -40,6 +40,8 @@ jobs:
         run: go vet ./...
 
       - name: Test
+        env:
+          CGO_ENABLED: "0"
         run: go test ./... -count=1
 
       - name: Race
@@ -47,6 +49,8 @@ jobs:
         run: make test-race
 
       - name: Build
+        env:
+          CGO_ENABLED: "0"
         run: go build -o bin/reinstate ./cmd/reinstate
 
   website:

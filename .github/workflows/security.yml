@@ -36,6 +36,8 @@ jobs:
           build-mode: manual
 
       - name: Build
+        env:
+          CGO_ENABLED: "0"
         run: go build ./...
 
       - name: Analyze
@@ -86,6 +88,8 @@ jobs:
           cache: false
 
       - name: Enforce workflow policy
+        env:
+          CGO_ENABLED: "0"
         run: |
           go test ./internal/doctest -run TestWorkflow -count=1
           go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
