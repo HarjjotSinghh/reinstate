@@ -6,7 +6,7 @@ order: 7
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.2.0"
+version: "v0.3.0-rc.1"
 updatedAt: 2026-08-01
 tags: ["faq", "session-sync", "claude-code", "codex", "security"]
 targetQuery: "what is Reinstate"
@@ -26,8 +26,9 @@ Reinstate is an open-source continuity layer for coding-agent work. Phase 1
 implements encrypted, bring-your-own-storage sync for same-vendor Claude Code
 and Codex sessions. Phase 2 adds configless local indexing, literal search,
 metadata inspection, a TTY switcher, and same-vendor native resume/fork.
-Verified resume, portable handoffs, and cross-harness configuration are later
-phases.
+Release candidate `v0.3.0-rc.1` adds verified resume; its tagged-artifact
+acceptance is pending. Portable handoffs and cross-harness configuration remain
+later phases.
 
 See [What is Reinstate?](/about/reinstate) for current product facts, non-goals,
 roadmap boundaries, and maintainer information.
@@ -184,7 +185,9 @@ syncing after an agent upgrade.
 ## Production ready?
 
 `v0.2.0` is a stable pre-1.0 release on Apple Silicon macOS and native Windows
-x64. Intel macOS, WSL2, and other POSIX packages are preview and unverified. See the
+x64. `v0.3.0-rc.1` adds verified resume, but candidate acceptance is pending
+and it does not authorize stable `v0.3.0`. Intel macOS, WSL2, and other POSIX
+packages are optional and unverified. See the
 [roadmap](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md)
 and [changelog](https://github.com/HarjjotSinghh/reinstate/blob/main/CHANGELOG.md),
 use it with backups, and report bugs through GitHub Issues.

@@ -6,7 +6,7 @@ order: 1
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.2.0"
+version: "v0.3.0-rc.1"
 updatedAt: 2026-08-01
 tags: ["installation", "session-sync", "claude-code", "codex", "s3"]
 targetQuery: "how to sync coding-agent sessions across devices"
@@ -19,13 +19,14 @@ Reinstate finds and continues local coding-agent sessions without setup, and
 optionally synchronizes same-vendor Claude Code and Codex CLI sessions across
 machines through client-side-encrypted, user-owned S3-compatible storage.
 
-> **Release status:** stable. The public installers pin `v0.2.0`. Exact signed
-> artifacts passed the complete physical matrix on Apple Silicon macOS and
-> native Windows x64. Intel macOS and Linux/WSL2 are preview and unverified.
+> **Release status:** the public installers pin candidate `v0.3.0-rc.1`.
+> Tagged-artifact acceptance is pending on Apple Silicon macOS and native
+> Windows x64. Stable remains `v0.2.0`; Intel macOS and Linux/WSL2 are optional
+> and unverified.
 
 ## Prerequisites
 
-- Apple Silicon macOS or native 64-bit Windows for verified stable support
+- Apple Silicon macOS or native 64-bit Windows for mandatory RC1 acceptance
 - Intel macOS, Linux, or WSL2 only as preview, unverified environments; WSL1 is refused
 - Claude Code and/or Codex CLI
 - an S3-compatible bucket you control, such as Cloudflare R2
@@ -48,13 +49,13 @@ Native Windows PowerShell:
 irm https://reinstate.dev/install.ps1 | iex
 ```
 
-Both bootstraps pin `v0.2.0`, verify the exact tagged canonical installer
+Both bootstraps pin `v0.3.0-rc.1`, verify the exact tagged canonical installer
 and release binary, install without elevation, configure a user-local PATH, and
 print the next command. They install the CLI only; interactive configuration
 begins when you run `rein init`.
 
 The POSIX bootstrap can install the binary on Intel macOS, Linux, or WSL2, but
-those environments are preview and unverified in v0.2.0.
+those environments are optional and unverified for v0.3.0-rc.1.
 
 Default locations:
 

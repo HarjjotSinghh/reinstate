@@ -50,6 +50,10 @@ jobs:
           RELEASE_JSON="$(gh release view "$TAG" --json isDraft,isPrerelease,tagName)"
           test "$(jq -r .isDraft <<<"$RELEASE_JSON")" = false
           test "$(jq -r .tagName <<<"$RELEASE_JSON")" = "$TAG"
+          EXPECTED_PRERELEASE=false
+          if [[ "$VERSION" == *-* ]]; then EXPECTED_PRERELEASE=true; fi
+          ACTUAL_PRERELEASE="$(jq -r .isPrerelease <<<"$RELEASE_JSON")"
+          test "$ACTUAL_PRERELEASE" = "$EXPECTED_PRERELEASE"
           git fetch --force origin "refs/tags/$TAG:refs/tags/$TAG"
           git config gpg.format ssh
           git config gpg.ssh.allowedSignersFile "$GITHUB_WORKSPACE/.github/allowed_signers"
@@ -61,7 +65,7 @@ jobs:
           grep -F "## [$VERSION]" CHANGELOG.md >/dev/null
           {
             echo "version=$VERSION"
-            echo "prerelease=$(jq -r .isPrerelease <<<"$RELEASE_JSON")"
+            echo "prerelease=$ACTUAL_PRERELEASE"
             echo "release_date=$(git show -s --format=%cs "$TAG_COMMIT")"
           } >>"$GITHUB_OUTPUT"
 
@@ -75,11 +79,20 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          TAG="$RELEASE_TAG"
+          TAG_COMMIT="$(git rev-list -n 1 "$TAG")"
+          verify_attestation() {
+            gh attestation verify "$1" \
+              --repo "$GITHUB_REPOSITORY" \
+              --source-ref "refs/tags/$TAG" \
+              --source-digest "$TAG_COMMIT" \
+              --predicate-type "https://slsa.dev/provenance/v1" >/dev/null
+          }
           (cd release-assets && sha256sum -c checksums.txt)
           while read -r _ asset; do
-            gh attestation verify "release-assets/$asset" --repo "$GITHUB_REPOSITORY" >/dev/null
+            verify_attestation "release-assets/$asset"
           done < release-assets/checksums.txt
-          gh attestation verify release-assets/checksums.txt --repo "$GITHUB_REPOSITORY" >/dev/null
+          verify_attestation release-assets/checksums.txt
           ./scripts/check-release-artifacts.sh release-assets
 
       - name: Checkout reviewed promotion tools

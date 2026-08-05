@@ -1,5 +1,11 @@
 export const releaseHistory = [
   {
+    version: 'v0.3.0-rc.1',
+    date: '2026-08-05',
+    summary:
+      'First Phase 3 verified-resume candidate; Apple Silicon macOS and native Windows x64 tagged-artifact acceptance is pending.',
+  },
+  {
     version: 'v0.2.0',
     date: '2026-08-05',
     summary:

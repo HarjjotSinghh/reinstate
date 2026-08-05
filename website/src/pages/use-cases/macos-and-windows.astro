@@ -86,10 +86,10 @@ const description =
 
   <h2 id="platform-status">Platform status</h2>
   <p>
-    macOS native and Windows 11 native are primary Phase 1 targets. Current source compatibility
-    evidence covers macOS arm64 plus deterministic synthetic fixtures. Native Windows acceptance,
-    macOS amd64, WSL2 smoke coverage, and physical two-device resume remain release gates before
-    stable v0.1 certification.
+    Stable v0.2.0 passed physical acceptance on Apple Silicon macOS and native Windows x64.
+    Candidate v0.3.0-rc.1 uses those same two mandatory targets, with tagged-artifact acceptance
+    pending. Intel macOS and WSL2 remain optional, unsupported/unverified evidence and do not block
+    RC1 or stable v0.3.0.
   </p>
   <div class="pc-callout">
     <p>Do not merge native Windows and WSL into one device.</p>
@@ -120,9 +120,9 @@ const description =
     <li>Native cross-agent transcript conversion.</li>
   </ul>
   <p>
-    Environment fingerprinting and verified resume are later roadmap phases. Reinstate restores supported
-    native session state and structural paths; it does not yet prove that every part of the coding
-    environment matches.
+    Candidate v0.3.0-rc.1 reports privacy-safe repository, agent, capability, and runtime truth
+    before native resume. It does not repair the environment or prove that every dependency and
+    source file matches.
   </p>
 
   <section class="pc-related" aria-labelledby="related-heading">

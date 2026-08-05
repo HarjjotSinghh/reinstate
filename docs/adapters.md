@@ -66,12 +66,12 @@ Plans store executable, argv, and recorded cwd separately. They never construct
 a shell command string. Gemini/OpenCode resume or fork fails with compatibility
 exit `5`.
 
-## Phase 3 environment-observer contract (current source)
+## Phase 3 environment-observer contract (`v0.3.0-rc.1`)
 
-Phase 3 verification is implemented in the current development source; it is
-not part of stable `v0.2.0` and has not yet completed release-candidate
-certification. It adds observation to Claude/Codex native execution, not a new
-execution adapter and not cross-vendor translation.
+Phase 3 verification is included in release candidate `v0.3.0-rc.1`; it is not
+part of stable `v0.2.0`, its tagged-artifact acceptance is pending, and it does
+not authorize stable `v0.3.0`. It adds observation to Claude/Codex native
+execution, not a new execution adapter and not cross-vendor translation.
 
 | Adapter | Phase 3 verified-resume observation |
 | ------- | ----------------------------------- |

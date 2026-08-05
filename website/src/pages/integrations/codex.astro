@@ -41,10 +41,10 @@ const description =
     </div>
   </dl>
   <p>
-    The stated range is the current source compatibility evidence for macOS arm64 plus
-    deterministic synthetic fixtures. Native Windows, macOS amd64, WSL2, and physical two-device
-    acceptance remain release gates for stable v0.1. A version outside the range is
-    <code>UNTESTED</code>; Reinstate permits read-only discovery but refuses export and restore.
+    The stated range is the `v0.3.0-rc.1` source policy. Stable v0.2.0 passed Apple Silicon macOS
+    and native Windows x64 acceptance; RC1 tagged-artifact acceptance on those two mandatory
+    platforms is pending. Intel macOS and WSL2 are optional and unverified. A version outside the
+    range is <code>UNTESTED</code>; Reinstate permits read-only discovery but refuses export and restore.
   </p>
 
   <h2 id="how-it-works">How Codex session sync works</h2>

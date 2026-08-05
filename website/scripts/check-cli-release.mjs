@@ -16,12 +16,27 @@ export function expectedCliReleaseAssets(tag) {
     `reinstate_${version}_linux_arm64.tar.gz`,
     `reinstate_${version}_windows_amd64.zip`,
   ];
+  const rawBinaries = [
+    `reinstate_${version}_darwin_amd64`,
+    `reinstate_${version}_darwin_arm64`,
+    `reinstate_${version}_linux_amd64`,
+    `reinstate_${version}_linux_arm64`,
+    `reinstate_${version}_windows_amd64.exe`,
+  ];
+  const linuxPackages = ['amd64', 'arm64'].flatMap((architecture) => [
+    `reinstate_${version}_linux_${architecture}.apk`,
+    `reinstate_${version}_linux_${architecture}.deb`,
+    `reinstate_${version}_linux_${architecture}.pkg.tar.zst`,
+    `reinstate_${version}_linux_${architecture}.rpm`,
+  ]);
 
   return [
     'checksums.txt',
     ...archives,
     ...archives.map((archive) => `${archive}.sbom.json`),
     `reinstate_${version}_source.tar.gz`,
+    ...rawBinaries,
+    ...linuxPackages,
   ];
 }
 
@@ -41,6 +56,12 @@ export function validateCliRelease(candidate, tag) {
   }
   if (candidate.isDraft !== false) {
     throw new Error(`GitHub CLI release ${tag} must not be a draft`);
+  }
+  const expectedPrerelease = tag.includes('-');
+  if (candidate.isPrerelease !== expectedPrerelease) {
+    throw new Error(
+      `GitHub CLI release ${tag} isPrerelease must be ${expectedPrerelease}`,
+    );
   }
   if (
     typeof candidate.publishedAt !== 'string' ||
@@ -78,6 +99,14 @@ export function validateCliRelease(candidate, tag) {
   if (missing.length > 0) {
     throw new Error(
       `GitHub CLI release ${tag} is missing required assets: ${missing.join(', ')}`,
+    );
+  }
+  const unexpected = assetNames.filter(
+    (asset) => !requiredAssets.includes(asset),
+  );
+  if (unexpected.length > 0) {
+    throw new Error(
+      `GitHub CLI release ${tag} has unexpected assets: ${unexpected.join(', ')}`,
     );
   }
   const assetsByName = new Map(

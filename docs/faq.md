@@ -6,8 +6,8 @@ The **continuity layer for coding-agent work**. Phase 1 implements encrypted,
 bring-your-own-storage sync for same-vendor Claude Code and Codex sessions.
 Stable Phase 2 adds universal local indexing, literal
 search, metadata inspection, and same-vendor resume/fork without cloud
-configuration. Current development source also implements Phase 3 verified
-resume; review and release-candidate acceptance are still in progress.
+configuration. Release candidate `v0.3.0-rc.1` also implements Phase 3 verified
+resume; tagged-artifact acceptance is pending and stable `v0.3.0` is not authorized.
 Cross-agent handoffs remain a later phase. A later universal configuration layer will reconcile supported MCP servers,
 skills, hooks/loops, plugins, marketplaces, and safe settings across harnesses
 and devices.
@@ -42,16 +42,15 @@ rein inspect claude:SESSION_ID
 rein resume claude:SESSION_ID --dry-run
 ```
 
-Current Phase 3 source uses a private derived index at
+The `v0.3.0-rc.1` candidate uses a private derived index at
 `$REINSTATE_HOME/cache/session-index-v2.sqlite` (plus owner-only `.lock` and
 `.write.lock` coordination files). Stable `v0.2.0` uses the earlier v1 index
 and has no Phase 3 baselines; the paths are separate by design. Neither version
 needs a sync profile, storage credentials, an encryption passphrase, keyring
-access, or a network backend. The stable `v0.2.0` public installers contain
-both the Phase 1 sync surface and Phase 2 local continuity. Signed artifacts
-passed the complete physical matrix on Apple Silicon macOS and native Windows
-x64; Intel macOS and Linux/WSL2 are preview, unverified platforms for this
-release.
+access, or a network backend. Stable `v0.2.0` contains the Phase 1 sync surface
+and Phase 2 local continuity. The public installers now pin candidate
+`v0.3.0-rc.1`; its Apple Silicon macOS/native Windows x64 acceptance is pending,
+and Intel macOS plus Linux/WSL2 remain optional and unverified.
 
 ## Why not just use git?
 
@@ -69,7 +68,7 @@ translation. See [product-strategy.md](product-strategy.md).
 
 ## What does verified resume verify?
 
-In the current Phase 3 development source, `rein inspect`, native dry-runs,
+In the `v0.3.0-rc.1` candidate, `rein inspect`, native dry-runs,
 direct `resume`/`fork`, `last`, and picker launches share one deterministic
 environment report. It covers fresh session-source metadata, the selected
 workspace and local Git state, the installed same-vendor agent/version/layout,
@@ -187,8 +186,8 @@ Intel macOS and Linux/WSL2 remain preview and unverified. See
 [ROADMAP.md](../ROADMAP.md) and [CHANGELOG.md](../CHANGELOG.md). Use with
 backups; report bugs via GitHub Issues.
 
-Phase 3 verified resume is implemented only in the current development source
-until `v0.3.0-rc.1` is built and certified. No stable `v0.3.0` claim is made.
+Phase 3 verified resume is included in `v0.3.0-rc.1`; tagged-artifact acceptance
+is pending. No stable `v0.3.0` claim is made.
 
 ## How do I contribute?
 
