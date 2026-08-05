@@ -5,23 +5,44 @@ import "slices"
 // Compare evaluates current observations only against trustworthy expected
 // values. Missing historical baselines remain unknown and never become match.
 func Compare(expected Expectation, actual Fingerprint) Comparison {
-	checks := []Check{
-		compareWorkspace(expected.Workspace, actual.Workspace),
-		compareRepository(expected.RepositoryID, actual.Git),
-		compareBranch(expected.Branch, actual.Git),
-		compareHead(expected.Head, actual.Git),
-		compareWorkingTree(expected.Dirty, expected.WorkingTreeDigest, actual.Git),
+	checks := []Check{compareWorkspace(expected.Workspace, actual.Workspace)}
+	if !actual.Git.Available {
+		checks = append(checks, unavailableGitChecks(expected)...)
+	} else {
+		checks = append(checks,
+			compareRepository(expected.RepositoryID, actual.Git),
+			compareBranch(expected.Branch, actual.Git),
+			compareHead(expected.Head, actual.Git),
+			compareWorkingTree(expected.Dirty, expected.WorkingTreeDigest, actual.Git),
+		)
 	}
 	return Comparison{Decision: aggregateDecision(checks, nil), Checks: checks}
+}
+
+func unavailableGitChecks(expected Expectation) []Check {
+	return []Check{
+		{ID: "git.repository", Status: StatusUnknown, Severity: SeverityInfo,
+			Provenance: expectationProvenance(expected.RepositoryID),
+			Message:    "repository identity was not compared because Git is unavailable"},
+		{ID: "git.branch", Status: StatusUnknown, Severity: SeverityInfo,
+			Provenance: expectationProvenance(expected.Branch),
+			Message:    "branch identity was not compared because Git is unavailable"},
+		{ID: "git.head", Status: StatusUnknown, Severity: SeverityInfo,
+			Provenance: expectationProvenance(expected.Head),
+			Message:    "Git HEAD was not compared because Git is unavailable"},
+		{ID: "git.working_tree", Status: StatusUnknown, Severity: SeverityInfo,
+			Provenance: workingTreeProvenance(expected.Dirty, expected.WorkingTreeDigest),
+			Message:    "working-tree state was not compared because Git is unavailable"},
+	}
 }
 
 func compareWorkspace(expected *ExpectedString, actual WorkspaceFingerprint) Check {
 	check := Check{
 		ID: "workspace.available", Provenance: expectationProvenance(expected),
-		Actual: actual.Path,
+		Actual: actual.Exists && actual.Directory,
 	}
 	if expected != nil {
-		check.Expected = expected.Value
+		check.Expected = true
 	}
 	switch {
 	case !actual.Exists:

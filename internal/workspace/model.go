@@ -68,7 +68,7 @@ type Expectation struct {
 }
 
 type WorkspaceFingerprint struct {
-	Path      string `json:"path"`
+	Path      string `json:"-"`
 	Exists    bool   `json:"exists"`
 	Directory bool   `json:"directory"`
 }
@@ -113,7 +113,7 @@ type CommitRelation struct {
 type GitFingerprint struct {
 	Available            bool                   `json:"available"`
 	Repository           bool                   `json:"repository"`
-	Root                 string                 `json:"root,omitempty"`
+	Root                 string                 `json:"-"`
 	RepositoryID         string                 `json:"repository_id,omitempty"`
 	RepositoryIDSource   string                 `json:"repository_id_source,omitempty"`
 	Branch               string                 `json:"branch,omitempty"`
