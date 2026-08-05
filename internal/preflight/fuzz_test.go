@@ -1,6 +1,7 @@
 package preflight
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/HarjjotSinghh/reinstate/internal/exitcode"
@@ -12,6 +13,7 @@ func FuzzAuthorizeWarningIDs(f *testing.F) {
 	f.Add("*", "baseline.unavailable")
 	f.Add("git.branch", "git.branch")
 	f.Add("stale.warning", "")
+	f.Add(" baseline.unavailable ", "\tgit.branch\n")
 	f.Fuzz(func(t *testing.T, first, second string) {
 		report := validPolicyReport([]Check{
 			{ID: "baseline.unavailable", Status: StatusUnknown, Severity: SeverityWarning, Provenance: workspace.ProvenanceUnavailable, ExitCode: exitcode.Safety},
@@ -19,6 +21,8 @@ func FuzzAuthorizeWarningIDs(f *testing.F) {
 			{ID: "agent.version", Status: StatusMatch, Severity: SeverityInfo, Provenance: workspace.ProvenanceCurrentObservation},
 		})
 		authorization, err := Authorize(report, []string{first, second})
+		first = strings.TrimSpace(first)
+		second = strings.TrimSpace(second)
 		exact := first == "baseline.unavailable" && second == "git.branch" ||
 			first == "git.branch" && second == "baseline.unavailable"
 		if exact {

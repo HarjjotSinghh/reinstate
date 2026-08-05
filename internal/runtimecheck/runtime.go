@@ -18,6 +18,8 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/HarjjotSinghh/reinstate/internal/executabletrust"
 )
 
 const (
@@ -93,7 +95,7 @@ func Inspect(ctx context.Context, workspace string, opts Options) []Result {
 
 	runner := opts.Runner
 	if runner == nil {
-		runner = ExecRunner{MaxOutput: maxVersionOutput}
+		runner = ExecRunner{MaxOutput: maxVersionOutput, Workspace: workspace}
 	}
 
 	var results []Result
@@ -338,6 +340,9 @@ func readBoundedRegularFileWithOpener(path string, opener func(string) (*os.File
 // ExecRunner is the production shell-free, output-bounded version runner.
 type ExecRunner struct {
 	MaxOutput int64
+	// Workspace is the executable trust boundary. Runtime lookup ignores PATH
+	// entries and candidates owned by this directory.
+	Workspace string
 }
 
 // Version runs name with fixed arguments and returns bounded combined output.
@@ -350,17 +355,22 @@ func (r ExecRunner) Version(ctx context.Context, name string, args ...string) (s
 	if !ok {
 		return "", fmt.Errorf("%w: unsupported runtime probe", ErrProbeFailed)
 	}
-	resolved, err := exec.LookPath(name)
+	environment := os.Environ()
+	resolution, err := executabletrust.Resolve(name, r.Workspace, environment)
 	if err != nil {
-		if errors.Is(err, exec.ErrNotFound) || errors.Is(err, os.ErrNotExist) {
+		if errors.Is(err, executabletrust.ErrUnavailable) {
 			return "", fmt.Errorf("%w: %s", ErrExecutableNotFound, probe)
 		}
 		return "", fmt.Errorf("%w: executable lookup", ErrProbeFailed)
 	}
-	command := exec.CommandContext(ctx, resolved, args...)
+	command := exec.CommandContext(ctx, resolution.Executable, args...)
 	command.Stdin = nil
-	command.Dir = neutralWorkingDirectory(resolved)
-	command.Env = sanitizedEnvironment(probe, os.Environ())
+	command.Dir = neutralWorkingDirectory(resolution.Executable)
+	command.Env = replaceEnvironmentValue(
+		sanitizedEnvironment(probe, environment),
+		"PATH",
+		resolution.SearchPath,
+	)
 	var output limitedBuffer
 	output.limit = limit
 	command.Stdout = &output
@@ -431,6 +441,18 @@ func sanitizedEnvironment(probe string, inherited []string) []string {
 		result = append(result, entry)
 	}
 	return append(result, forced...)
+}
+
+func replaceEnvironmentValue(environment []string, key, value string) []string {
+	result := make([]string, 0, len(environment)+1)
+	for _, entry := range environment {
+		currentKey, _, ok := strings.Cut(entry, "=")
+		if ok && strings.EqualFold(currentKey, key) {
+			continue
+		}
+		result = append(result, entry)
+	}
+	return append(result, key+"="+value)
 }
 
 type limitedBuffer struct {

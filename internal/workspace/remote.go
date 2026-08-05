@@ -64,7 +64,11 @@ func normalizeRemote(raw string) (string, error) {
 		}
 		host = parsed.Hostname()
 		port = parsed.Port()
-		repositoryPath, err = url.PathUnescape(parsed.EscapedPath())
+		escapedPath := parsed.EscapedPath()
+		if hasEncodedPathSeparator(escapedPath) {
+			return "", ErrRemoteIdentityUnavailable
+		}
+		repositoryPath, err = url.PathUnescape(escapedPath)
 		if err != nil {
 			return "", ErrRemoteIdentityUnavailable
 		}
@@ -90,7 +94,9 @@ func normalizeRemote(raw string) (string, error) {
 		host = net.JoinHostPort(host, port)
 	}
 
-	repositoryPath = strings.ReplaceAll(repositoryPath, "\\", "/")
+	if strings.Contains(repositoryPath, "\\") {
+		return "", ErrRemoteIdentityUnavailable
+	}
 	repositoryPath = strings.Trim(repositoryPath, "/")
 	if strings.HasSuffix(strings.ToLower(repositoryPath), ".git") {
 		repositoryPath = repositoryPath[:len(repositoryPath)-4]
@@ -115,6 +121,11 @@ func normalizeRemote(raw string) (string, error) {
 	return host + "/" + repositoryPath, nil
 }
 
+func hasEncodedPathSeparator(value string) bool {
+	value = strings.ToLower(value)
+	return strings.Contains(value, "%2f") || strings.Contains(value, "%5c")
+}
+
 func hasUnsafeRemoteRune(value string) bool {
 	for _, current := range value {
 		if unicode.IsControl(current) || unicode.In(current, unicode.Cf) {
@@ -133,8 +144,10 @@ func defaultPort(scheme, port string) bool {
 		return port == "80"
 	case "https":
 		return port == "443"
-	case "ssh", "git":
-		return port == "22" || scheme == "git" && port == "9418"
+	case "ssh":
+		return port == "22"
+	case "git":
+		return port == "9418"
 	default:
 		return false
 	}

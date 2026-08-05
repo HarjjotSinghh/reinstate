@@ -272,15 +272,10 @@ func TestWorkflowOrdinaryGoGatesDisableCGO(t *testing.T) {
 	for path, stepNames := range tests {
 		workflow := read(t, path)
 		for _, stepName := range stepNames {
-			stepStart := "- name: " + stepName
-			start := strings.Index(workflow, stepStart)
-			if start < 0 {
+			step, found := workflowStep(workflow, stepName)
+			if !found {
 				t.Errorf("%s is missing workflow step %q", path, stepName)
 				continue
-			}
-			step := workflow[start:]
-			if next := strings.Index(step[len(stepStart):], "\n      - name:"); next >= 0 {
-				step = step[:len(stepStart)+next]
 			}
 			if !strings.Contains(step, "CGO_ENABLED: \"0\"") {
 				t.Errorf("%s step %q must explicitly disable CGO", path, stepName)
@@ -295,6 +290,52 @@ func TestWorkflowOrdinaryGoGatesDisableCGO(t *testing.T) {
 	makefile := read(t, "Makefile")
 	if !strings.Contains(makefile, "test-race: ## Run tests with race detector\n\tCGO_ENABLED=1 ") {
 		t.Fatal("the CI race target must keep CGO explicitly enabled")
+	}
+}
+
+// workflowStep is intentionally a narrow indentation-aware reader for the
+// repository's conventional Actions step layout, not a general YAML parser.
+// Keeping the boundary at the next sibling sequence item prevents a nearby
+// step's environment from satisfying the policy check accidentally.
+func workflowStep(workflow, name string) (string, bool) {
+	lines := strings.Split(workflow, "\n")
+	for index, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "- name: "+name {
+			continue
+		}
+		indent := len(line) - len(strings.TrimLeft(line, " \t"))
+		end := len(lines)
+		for next := index + 1; next < len(lines); next++ {
+			candidate := lines[next]
+			candidateTrimmed := strings.TrimSpace(candidate)
+			if candidateTrimmed == "" || strings.HasPrefix(candidateTrimmed, "#") {
+				continue
+			}
+			candidateIndent := len(candidate) - len(strings.TrimLeft(candidate, " \t"))
+			if candidateIndent < indent || candidateIndent == indent && strings.HasPrefix(candidateTrimmed, "- ") {
+				end = next
+				break
+			}
+		}
+		return strings.Join(lines[index:end], "\n"), true
+	}
+	return "", false
+}
+
+func TestWorkflowStepDoesNotBorrowSiblingEnvironment(t *testing.T) {
+	workflow := `jobs:
+  test:
+    steps:
+      - name: Test
+        run: go test ./...
+      - name: Build
+        env:
+          CGO_ENABLED: "0"
+        run: go build ./...`
+	step, found := workflowStep(workflow, "Test")
+	if !found || strings.Contains(step, "CGO_ENABLED") || strings.Contains(step, "name: Build") {
+		t.Fatalf("workflow step boundary is invalid: found=%t step=%q", found, step)
 	}
 }
 

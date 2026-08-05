@@ -78,8 +78,11 @@ protects database lifetime and destructive corruption repair; its owner-only
 `.write.lock` serializes ordinary writers and transactional rebuilds across
 `rein` and `reinstate` processes. The database and both
 locks are hard-excluded from sync. Session rows can be rediscovered from vendor
-sources; deleting/moving v2 also deletes prelaunch comparison history and makes
-the next launch truthfully return to `baseline.unavailable`.
+sources. After Reinstate is closed, moving the complete v2 database/lock family
+aside preserves those moved bytes as recoverable evidence but removes its
+comparison history from the active index. Deleting or explicitly rebuilding v2
+removes the active comparison history. In every case the next launch truthfully
+returns to `baseline.unavailable`.
 
 On Unix, owner-only means mode `0700` for the cache directory and `0600` for
 the database and locks. On Windows, Reinstate installs a protected DACL granting
@@ -145,6 +148,20 @@ The aggregate decision is:
 Git inspection is local-only and shell-free. Reinstate never fetches or
 contacts a remote during preflight. Each subprocess is context-cancellable and
 bounded by a short timeout.
+
+Reinstate discovers the nearest valid physical `.git` marker without consulting
+repository configuration, then pins both the Git directory and canonical
+working-tree root for every probe. Repository identity reads only local config
+with includes disabled. Working-tree inspection uses conversion-free plumbing;
+it never invokes repository clean/process filters, external diffs, textconv,
+fsmonitor commands, or recursive submodule status.
+
+Repository-controlled includes, filters/attributes, `core.worktree`,
+`core.ignoreStat`, submodules, hidden index flags, or a concurrent
+branch/index/working-tree change make the working-tree observation `uncertain`.
+An uncertain observation is always an explicit `git.working_tree` warning
+requiring acknowledgment and never matches a previously recorded digest, even
+when the visible counts and digest are equal.
 
 The fingerprint reports:
 

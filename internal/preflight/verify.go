@@ -61,6 +61,9 @@ func Verify(ctx context.Context, input Input, options Options) (Report, error) {
 	if agentOptions.Root == "" {
 		agentOptions.Root = input.AgentRoot
 	}
+	if agentOptions.Workspace == "" {
+		agentOptions.Workspace = input.Workspace
+	}
 	agentOptions.Timeout = remainingTimeout(verifyCtx, agentOptions.Timeout)
 	agentResult := agentcheck.Inspect(verifyCtx, input.Agent, agentOptions)
 
@@ -89,6 +92,9 @@ func Verify(ctx context.Context, input Input, options Options) (Report, error) {
 	runtimeOptions := options.Runtime
 	runtimeOptions.Timeout = remainingTimeout(verifyCtx, runtimeOptions.Timeout)
 	runtimeResults := runtimecheck.Inspect(verifyCtx, input.Workspace, runtimeOptions)
+	if err := ctx.Err(); err != nil {
+		return Report{}, err
+	}
 
 	report := Report{
 		SchemaVersion: SchemaVersion,
@@ -121,6 +127,9 @@ func Verify(ctx context.Context, input Input, options Options) (Report, error) {
 	report.Checks = append(report.Checks, runtimeChecks(input, runtimeResults)...)
 	report.Checks = normalizeChecks(report.Checks)
 	report.Decision, report.BlockExitCode = aggregate(report.Checks)
+	if err := ctx.Err(); err != nil {
+		return Report{}, err
+	}
 	return report, nil
 }
 

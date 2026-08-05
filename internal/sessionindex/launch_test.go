@@ -141,6 +141,38 @@ func TestRunLaunchUsesInjectedStructuredPlanAndPropagatesFailure(t *testing.T) {
 	}
 }
 
+func TestRunLaunchDoesNotInvokeRunnerAfterCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	called := false
+	plan := LaunchPlan{
+		Agent: AgentCodex, SessionRef: "codex:id", Operation: OperationResume,
+		Executable: "codex", Args: []string{"resume", "id"}, Dir: "/work",
+	}
+	err := RunLaunch(ctx, plan, launchRunnerFunc(func(context.Context, LaunchPlan) error {
+		called = true
+		return nil
+	}))
+	if !errors.Is(err, context.Canceled) || called {
+		t.Fatalf("RunLaunch() error/called = %v / %t", err, called)
+	}
+}
+
+func TestRunLaunchPropagatesCancellationRaisedByRunner(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	plan := LaunchPlan{
+		Agent: AgentCodex, SessionRef: "codex:id", Operation: OperationResume,
+		Executable: "codex", Args: []string{"resume", "id"}, Dir: "/work",
+	}
+	err := RunLaunch(ctx, plan, launchRunnerFunc(func(context.Context, LaunchPlan) error {
+		cancel()
+		return nil
+	}))
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("RunLaunch() error = %v, want runner cancellation", err)
+	}
+}
+
 func TestExecLaunchRunnerClassifiesPreflightFailures(t *testing.T) {
 	t.Parallel()
 	err := (ExecLaunchRunner{}).Run(context.Background(), LaunchPlan{
@@ -181,6 +213,33 @@ func TestExecLaunchRunnerGuardRejectionPreventsChildCreation(t *testing.T) {
 	}
 	if _, err := os.Stat(marker); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("child marker exists after guard rejection: %v", err)
+	}
+}
+
+func TestExecLaunchRunnerPropagatesCancellationAtFinalGuard(t *testing.T) {
+	marker := filepath.Join(t.TempDir(), "child-created")
+	t.Setenv("REINSTATE_LAUNCH_GUARD_HELPER_MARKER", marker)
+	executable, err := filepath.Abs(os.Args[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	plan := LaunchPlan{
+		Agent: AgentClaude, SessionRef: "claude:controlled", Operation: OperationResume,
+		Executable: "claude", Args: []string{"-test.run=^TestExecLaunchRunnerGuardHelper$"}, Dir: t.TempDir(),
+	}
+	err = RunLaunch(ctx, plan, ExecLaunchRunner{
+		Executable: executable,
+		BeforeExec: func(context.Context, LaunchPlan) error {
+			cancel()
+			return nil
+		},
+	})
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("guard cancellation error = %v", err)
+	}
+	if _, err := os.Stat(marker); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("child marker exists after guard cancellation: %v", err)
 	}
 }
 

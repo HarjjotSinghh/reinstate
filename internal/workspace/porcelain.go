@@ -32,6 +32,7 @@ func parsePorcelainV2(output []byte) (parsedStatus, error) {
 		relation:    CommitRelation{Relation: RelationUnknown, LocalOnly: true},
 		workingTree: WorkingTreeFingerprint{State: WorkingTreeClean},
 	}
+	workingTreeUncertain := false
 	tokens := bytes.Split(output, []byte{0})
 	seen := make(map[string]string)
 	for index := 0; index < len(tokens); index++ {
@@ -81,6 +82,11 @@ func parsePorcelainV2(output []byte) (parsedStatus, error) {
 					return parsedStatus{}, fmt.Errorf("%w: invalid branch relation counts", ErrInvalidGitStatus)
 				}
 				result.relation = relationFromCounts(ahead, behind)
+			case "reinstate.working-tree":
+				if value != "uncertain" {
+					return parsedStatus{}, fmt.Errorf("%w: invalid Reinstate working-tree state", ErrInvalidGitStatus)
+				}
+				workingTreeUncertain = true
 			}
 		case '1', '2':
 			_, _ = treeDigest.Write(token)
@@ -125,7 +131,7 @@ func parsePorcelainV2(output []byte) (parsedStatus, error) {
 			return parsedStatus{}, fmt.Errorf("%w: unknown record type", ErrInvalidGitStatus)
 		}
 	}
-	if result.upstreamSet && !result.relation.Knowable {
+	if !result.upstreamSet {
 		result.relation = CommitRelation{Relation: RelationUnknown, LocalOnly: true}
 	}
 	if _, ok := seen["branch.oid"]; !ok {
@@ -134,6 +140,7 @@ func parsePorcelainV2(output []byte) (parsedStatus, error) {
 	if _, ok := seen["branch.head"]; !ok {
 		return parsedStatus{}, fmt.Errorf("%w: missing branch head", ErrInvalidGitStatus)
 	}
+	result.workingTree.Uncertain = workingTreeUncertain
 	result.workingTree.Digest = "sha256:" + hex.EncodeToString(treeDigest.Sum(nil))
 	return result, nil
 }

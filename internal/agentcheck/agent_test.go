@@ -414,6 +414,111 @@ printf '2.1.220 (Claude Code)\n'
 	}
 }
 
+func TestInspectRejectsWorkspaceOwnedVendorAndDelegatedRuntime(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX executable fixture")
+	}
+	workspace := t.TempDir()
+	agentRoot := filepath.Join(workspace, "agent-root")
+	unsafeBin := filepath.Join(workspace, "tools")
+	trustedBin := t.TempDir()
+	marker := filepath.Join(t.TempDir(), "workspace-code-executed")
+	for _, directory := range []string{filepath.Join(agentRoot, "projects"), unsafeBin} {
+		if err := os.MkdirAll(directory, 0o700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	unsafeScript := fmt.Sprintf("#!/bin/sh\nprintf unsafe >%q\nexit 99\n", marker)
+	if err := os.WriteFile(filepath.Join(unsafeBin, "claude"), []byte(unsafeScript), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(unsafeBin, "node"), []byte(unsafeScript), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(trustedBin, "claude"), []byte("#!/usr/bin/env node\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(trustedBin, "node"), []byte("#!/bin/sh\nprintf '2.1.220 (Claude Code)\\n'\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", strings.Join([]string{unsafeBin, trustedBin}, string(os.PathListSeparator)))
+	result := Inspect(context.Background(), "claude", Options{
+		Root: agentRoot, Workspace: workspace, Timeout: 10 * time.Second,
+	})
+	if result.Status != StatusSupported || !result.ExecutablePresent || !result.LayoutRecognized {
+		t.Fatalf("result = %+v", result)
+	}
+	wantExecutable, err := filepath.EvalSymlinks(filepath.Join(trustedBin, "claude"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.ExecutablePath != wantExecutable {
+		t.Fatalf("executable = %q, want %q", result.ExecutablePath, wantExecutable)
+	}
+	if _, err := os.Stat(marker); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("workspace-owned vendor or delegated runtime executed: %v", err)
+	}
+}
+
+func TestInspectDefaultsExecutableTrustBoundaryToCurrentDirectory(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX executable fixture")
+	}
+	workspace := t.TempDir()
+	agentRoot := filepath.Join(workspace, "agent-root")
+	trustedBin := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(agentRoot, "projects"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(trustedBin, "claude"), []byte("#!/bin/sh\nprintf '2.1.220 (Claude Code)\\n'\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	original, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(workspace); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(original) })
+	t.Setenv("PATH", trustedBin)
+
+	result := Inspect(context.Background(), "claude", Options{
+		Root: agentRoot, Timeout: 10 * time.Second,
+	})
+	if result.Status != StatusSupported {
+		t.Fatalf("result = %+v", result)
+	}
+}
+
+func TestInspectAcceptsTrustedAbsoluteExecutableOverride(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX executable fixture")
+	}
+	workspace := t.TempDir()
+	agentRoot := filepath.Join(workspace, "agent-root")
+	trustedBin := t.TempDir()
+	executable := filepath.Join(trustedBin, "claude")
+	if err := os.MkdirAll(filepath.Join(agentRoot, "projects"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(executable, []byte("#!/bin/sh\nprintf '2.1.220 (Claude Code)\\n'\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+
+	result := Inspect(context.Background(), "claude", Options{
+		Root: agentRoot, Workspace: workspace, Executable: executable,
+		Timeout: 10 * time.Second,
+	})
+	wantExecutable, err := filepath.EvalSymlinks(executable)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != StatusSupported || result.ExecutablePath != wantExecutable {
+		t.Fatalf("result = %+v", result)
+	}
+}
+
 func TestSanitizedVersionEnvironmentIsMinimalAndCaseInsensitive(t *testing.T) {
 	environment := sanitizedVersionEnvironment([]string{
 		"Path=/bin", "Node_Options=--require=secret.js", "CLAUDE_CONFIG_DIR=secret", "SAFE=value", "Temp=/tmp",
@@ -423,6 +528,16 @@ func TestSanitizedVersionEnvironmentIsMinimalAndCaseInsensitive(t *testing.T) {
 		strings.Contains(strings.ToUpper(joined), "NODE_OPTIONS=") ||
 		strings.Contains(joined, "CLAUDE_CONFIG_DIR") || strings.Contains(joined, "SAFE=value") {
 		t.Fatalf("sanitized environment = %v", environment)
+	}
+}
+
+func TestReplaceEnvironmentValueRemovesCaseVariants(t *testing.T) {
+	t.Parallel()
+	environment := replaceEnvironmentValue([]string{"Path=/unsafe", "PATH=/also-unsafe", "TEMP=/tmp"}, "PATH", "/trusted")
+	joined := strings.Join(environment, "\n")
+	if strings.Count(strings.ToUpper(joined), "PATH=") != 1 || strings.Contains(joined, "/unsafe") ||
+		strings.Contains(joined, "/also-unsafe") || !strings.Contains(joined, "PATH=/trusted") {
+		t.Fatalf("replacement environment = %v", environment)
 	}
 }
 

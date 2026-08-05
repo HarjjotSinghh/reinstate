@@ -15,6 +15,21 @@ import (
 
 const secretSentinel = "PHASE3-SECRET-SENTINEL-DO-NOT-LEAK"
 
+func TestEmptyCollectorReturnsCanonicalSlices(t *testing.T) {
+	t.Parallel()
+	inventory := newCollector().inventory()
+	if inventory.Items == nil || inventory.Diagnostics == nil {
+		t.Fatalf("empty inventory contains nil slices: %+v", inventory)
+	}
+	encoded, err := json.Marshal(inventory)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(encoded), `"items":[]`) || strings.Contains(string(encoded), `"items":null`) {
+		t.Fatalf("empty inventory JSON shape = %s", encoded)
+	}
+}
+
 func TestDiscoverDarwinNameOnlyInventory(t *testing.T) {
 	root := t.TempDir()
 	home := filepath.Join(root, "home")

@@ -2,6 +2,7 @@ package sessionindex
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -123,6 +124,31 @@ func TestCoalesceRecordsMergesNativeSessionSegmentsDeterministically(t *testing.
 	changed, _ := CoalesceRecords([]Record{changedOld, newer})
 	if changed[0].SourceModTime == record.SourceModTime {
 		t.Fatal("aggregate freshness token did not change with an older segment")
+	}
+}
+
+func TestCoalesceRecordsBoundsRequirementsAcrossSegments(t *testing.T) {
+	t.Parallel()
+	old := testRecord(AgentCodex, "bounded", time.Unix(1, 0), "/sessions/old.jsonl", 1)
+	newer := testRecord(AgentCodex, "bounded", time.Unix(2, 0), "/sessions/new.jsonl", 2)
+	for index := range 200 {
+		old.RecordedEnvironment.Requirements = append(old.RecordedEnvironment.Requirements, environment.Requirement{
+			Kind: "mcp", Name: fmt.Sprintf("old-%03d", index), Provenance: "codex.session_meta.mcp",
+		})
+		newer.RecordedEnvironment.Requirements = append(newer.RecordedEnvironment.Requirements, environment.Requirement{
+			Kind: "mcp", Name: fmt.Sprintf("new-%03d", index), Provenance: "codex.session_meta.mcp",
+		})
+	}
+	forward, _ := CoalesceRecords([]Record{old, newer})
+	reversed, _ := CoalesceRecords([]Record{newer, old})
+	if len(forward) != 1 || len(forward[0].RecordedEnvironment.Requirements) != environment.MaxRequirements {
+		t.Fatalf("coalesced requirements = %d, want %d", len(forward[0].RecordedEnvironment.Requirements), environment.MaxRequirements)
+	}
+	if !reflect.DeepEqual(forward[0].RecordedEnvironment.Requirements, reversed[0].RecordedEnvironment.Requirements) {
+		t.Fatal("coalesced requirement bound depends on input order")
+	}
+	if _, err := environment.NormalizeRecordedEnvironment(forward[0].RecordedEnvironment); err != nil {
+		t.Fatalf("bounded coalesced environment is invalid: %v", err)
 	}
 }
 

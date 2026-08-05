@@ -3,6 +3,7 @@ package filelock
 import (
 	"context"
 	"errors"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -50,5 +51,19 @@ func TestSharedLocksCoexistAndBlockExclusive(t *testing.T) {
 	defer cancel()
 	if _, err := Acquire(ctx, path); !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("exclusive acquire error = %v", err)
+	}
+}
+
+func TestAcquireChecksContextAfterRetryableAttempt(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cancelled-retry.lock")
+	ctx, cancel := context.WithCancel(context.Background())
+	attempts := 0
+	_, err := acquire(ctx, path, func(*os.File) (bool, error) {
+		attempts++
+		cancel()
+		return false, nil
+	})
+	if !errors.Is(err, context.Canceled) || attempts != 1 {
+		t.Fatalf("acquire error/attempts = %v / %d", err, attempts)
 	}
 }

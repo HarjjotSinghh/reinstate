@@ -79,6 +79,24 @@ func TestCompareTrustsExplicitPrelaunchBaselineAndTreeDigest(t *testing.T) {
 	}
 }
 
+func TestCompareNeverMatchesAnUncertainWorkingTree(t *testing.T) {
+	t.Parallel()
+	fingerprint := baseFingerprint()
+	fingerprint.Git.WorkingTree = WorkingTreeFingerprint{
+		State: WorkingTreeClean, Uncertain: true,
+		Digest: "sha256:" + strings.Repeat("c", 64),
+	}
+	comparison := Compare(Expectation{WorkingTreeDigest: &ExpectedString{
+		Value:      fingerprint.Git.WorkingTree.Digest,
+		Provenance: ProvenanceReinstatePrelaunchObserved,
+	}}, fingerprint)
+	tree := checkByID(t, comparison, "git.working_tree")
+	if tree.Status == StatusMatch || tree.Status != StatusUnknown ||
+		tree.Severity != SeverityWarning || comparison.Decision != DecisionConfirmationRequired {
+		t.Fatalf("uncertain tree comparison = %+v decision=%s", tree, comparison.Decision)
+	}
+}
+
 func TestCompareNonGitWithoutBaselineWarnsButGitExpectationBlocks(t *testing.T) {
 	t.Parallel()
 	fingerprint := Fingerprint{

@@ -185,6 +185,12 @@ func compareWorkingTree(expected *ExpectedBool, expectedDigest *ExpectedString, 
 		ID: "git.working_tree", Provenance: workingTreeProvenance(expected, expectedDigest),
 		Actual: actual.State,
 	}
+	if actual.Uncertain {
+		check.Status, check.Severity = StatusUnknown, SeverityWarning
+		check.Message = "the working tree could not be compared without trusting repository-controlled behavior"
+		check.Repair = "review warning git.working_tree before continuing"
+		return check
+	}
 	if actual.State == WorkingTreeUnavailable {
 		if expected != nil && trustedProvenance(expected.Provenance) ||
 			expectedDigest != nil && trustedProvenance(expectedDigest.Provenance) {

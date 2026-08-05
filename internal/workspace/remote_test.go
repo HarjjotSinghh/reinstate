@@ -45,6 +45,72 @@ func TestRepositoryIDFromRemoteNormalizesTransportAndCredentials(t *testing.T) {
 	}
 }
 
+func TestRepositoryIDFromRemoteUsesSchemeSpecificDefaultPorts(t *testing.T) {
+	t.Parallel()
+	identity := func(remote string) string {
+		t.Helper()
+		value, err := RepositoryIDFromRemote(remote)
+		if err != nil {
+			t.Fatalf("RepositoryIDFromRemote(%q): %v", remote, err)
+		}
+		return value
+	}
+
+	if got, want := identity("git://example.com:9418/team/repo.git"), identity("git://example.com/team/repo.git"); got != want {
+		t.Fatalf("git default port changed identity: %q != %q", got, want)
+	}
+	if got, want := identity("git://example.com:22/team/repo.git"), identity("git://example.com/team/repo.git"); got == want {
+		t.Fatalf("git non-default port 22 was stripped: %q", got)
+	}
+	if got, want := identity("ssh://git@example.com:22/team/repo.git"), identity("ssh://git@example.com/team/repo.git"); got != want {
+		t.Fatalf("ssh default port changed identity: %q != %q", got, want)
+	}
+	if got, want := identity("ssh://git@example.com:9418/team/repo.git"), identity("ssh://git@example.com/team/repo.git"); got == want {
+		t.Fatalf("ssh non-default port 9418 was stripped: %q", got)
+	}
+}
+
+func TestRepositoryIDFromRemoteRejectsEncodedPathSeparators(t *testing.T) {
+	t.Parallel()
+	for _, remote := range []string{
+		"https://example.com/team%2frepo.git",
+		"https://example.com/team%2Frepo.git",
+		"ssh://git@example.com/team%5crepo.git",
+		"ssh://git@example.com/team%5Crepo.git",
+	} {
+		if _, err := RepositoryIDFromRemote(remote); !errors.Is(err, ErrRemoteIdentityUnavailable) {
+			t.Fatalf("RepositoryIDFromRemote(%q) error = %v", remote, err)
+		}
+	}
+
+	literal, err := RepositoryIDFromRemote("https://example.com/team/repo.git")
+	if err != nil {
+		t.Fatalf("literal path: %v", err)
+	}
+	encodedUnreserved, err := RepositoryIDFromRemote("https://example.com/%74eam/repo.git")
+	if err != nil {
+		t.Fatalf("encoded unreserved path: %v", err)
+	}
+	if encodedUnreserved != literal {
+		t.Fatalf("encoded unreserved identity = %q, want %q", encodedUnreserved, literal)
+	}
+}
+
+func TestRepositoryIDFromRemoteRejectsRawBackslashPath(t *testing.T) {
+	t.Parallel()
+	for _, remote := range []string{
+		`git@example.com:team\repo.git`,
+		`https://example.com/team\repo.git`,
+	} {
+		if _, err := RepositoryIDFromRemote(remote); !errors.Is(err, ErrRemoteIdentityUnavailable) {
+			t.Fatalf("RepositoryIDFromRemote(%q) error = %v", remote, err)
+		}
+	}
+	if _, err := RepositoryIDFromRemote("git@example.com:team/repo.git"); err != nil {
+		t.Fatalf("SCP slash path: %v", err)
+	}
+}
+
 func TestRepositoryIDFromRemoteRejectsNonPortableAndUnsafeValues(t *testing.T) {
 	t.Parallel()
 	tests := []string{

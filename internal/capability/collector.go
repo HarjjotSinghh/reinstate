@@ -133,6 +133,12 @@ func (c *collector) inventory() Inventory {
 	if c.cancelled() {
 		return cancelledInventory()
 	}
+	if c.items == nil {
+		c.items = []Item{}
+	}
+	if c.diagnostics == nil {
+		c.diagnostics = []Diagnostic{}
+	}
 
 	return Inventory{Items: c.items, Diagnostics: c.diagnostics}
 }

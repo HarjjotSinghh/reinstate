@@ -445,6 +445,45 @@ func TestPrelaunchBaselineIsMonotonicAndCascadesWithSession(t *testing.T) {
 	}
 }
 
+func TestPrelaunchBaselineTimestampStorageIsLosslessAndIdempotent(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	store, err := Open(filepath.Join(t.TempDir(), "index.sqlite"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = store.Close() })
+	record := testRecord(AgentClaude, "timestamp", time.Now(), "/session.jsonl", 1)
+	if _, err := store.ReplaceSource(ctx, AgentClaude, []Record{record}); err != nil {
+		t.Fatal(err)
+	}
+	zone := time.FixedZone("controlled", 5*60*60+30*60)
+	baseline := environment.PrelaunchBaseline{
+		SessionRef: record.Reference(), WorkingTreeState: environment.WorkingTreeUnavailable,
+		ObservedAt: time.Date(2026, 8, 5, 1, 2, 3, 123456789, zone),
+		Provenance: environment.PrelaunchObservedProvenance, SourceSessionRef: record.Reference(),
+	}
+	if err := store.PutPrelaunchBaseline(ctx, baseline); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.PutPrelaunchBaseline(ctx, baseline); err != nil {
+		t.Fatalf("identical timestamp retry is not idempotent: %v", err)
+	}
+	stored, err := store.GetPrelaunchBaseline(ctx, record.Reference())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !stored.ObservedAt.Equal(baseline.ObservedAt) || stored.ObservedAt.Location() != time.UTC {
+		t.Fatalf("stored timestamp = %s (%s), want same instant in UTC", stored.ObservedAt, stored.ObservedAt.Location())
+	}
+
+	overflow := baseline
+	overflow.ObservedAt = time.Date(2262, 12, 31, 23, 59, 59, 0, time.UTC)
+	if err := store.PutPrelaunchBaseline(ctx, overflow); err == nil {
+		t.Fatalf("overflow timestamp error = %v", err)
+	}
+}
+
 func TestIndependentStoresSerializeConcurrentWriters(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

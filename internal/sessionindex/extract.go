@@ -303,9 +303,13 @@ func mergeRecordedEnvironment(target *environment.RecordedEnvironment, source en
 	if target.GitHead.Value == "" && source.GitHead.Value != "" {
 		target.GitHead = source.GitHead
 	}
-	if len(source.Requirements) != 0 {
-		target.Requirements = append(target.Requirements, source.Requirements...)
-		normalized, err := environment.NormalizeRecordedEnvironment(*target)
+	for _, requirement := range source.Requirements {
+		if len(target.Requirements) >= environment.MaxRequirements {
+			break
+		}
+		candidate := *target
+		candidate.Requirements = append(append([]environment.Requirement(nil), target.Requirements...), requirement)
+		normalized, err := environment.NormalizeRecordedEnvironment(candidate)
 		if err == nil {
 			*target = normalized
 		}

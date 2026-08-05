@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"bytes"
+	"encoding/json"
 	"strings"
 	"testing"
 )
@@ -14,6 +15,37 @@ func statusFixture(records ...string) []byte {
 		"# branch.ab +2 -1",
 	}
 	return []byte(strings.Join(append(headers, records...), "\x00") + "\x00")
+}
+
+func TestParsePorcelainV2CarriesBoundedUncertainty(t *testing.T) {
+	t.Parallel()
+	parsed, err := parsePorcelainV2([]byte(
+		"# branch.oid " + strings.Repeat("a", 40) +
+			"\x00# branch.head main\x00# reinstate.working-tree uncertain\x00",
+	))
+	if err != nil || !parsed.workingTree.Uncertain {
+		t.Fatalf("uncertain status/error = %+v / %v", parsed, err)
+	}
+	encoded, err := json.Marshal(parsed.workingTree)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(encoded, []byte(`"uncertain":true`)) {
+		t.Fatalf("uncertainty omitted from JSON: %s", encoded)
+	}
+	clean, err := json.Marshal(WorkingTreeFingerprint{State: WorkingTreeClean})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(clean, []byte("uncertain")) {
+		t.Fatalf("false uncertainty was serialized: %s", clean)
+	}
+	if _, err := parsePorcelainV2([]byte(
+		"# branch.oid " + strings.Repeat("a", 40) +
+			"\x00# branch.head main\x00# reinstate.working-tree guessed\x00",
+	)); err == nil {
+		t.Fatal("invalid private uncertainty header was accepted")
+	}
 }
 
 func TestParsePorcelainV2TracksStateWithoutPaths(t *testing.T) {
@@ -99,6 +131,21 @@ func TestParsePorcelainV2DetachedUnbornAndClean(t *testing.T) {
 				t.Fatalf("parsed = %+v", parsed)
 			}
 		})
+	}
+}
+
+func TestParsePorcelainV2DoesNotTrustRelationWithoutUpstream(t *testing.T) {
+	t.Parallel()
+	parsed, err := parsePorcelainV2([]byte(
+		"# branch.oid " + strings.Repeat("a", 40) +
+			"\x00# branch.head main\x00# branch.ab +2 -1\x00",
+	))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if parsed.upstream != "" || parsed.upstreamSet || parsed.relation.Knowable ||
+		parsed.relation.Relation != RelationUnknown || !parsed.relation.LocalOnly {
+		t.Fatalf("relation without upstream = %+v", parsed)
 	}
 }
 

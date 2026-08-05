@@ -30,10 +30,17 @@ func try(file *os.File, flags uint32) (bool, error) {
 	if err == nil {
 		return true, nil
 	}
-	if errors.Is(err, windows.ERROR_LOCK_VIOLATION) {
+	if retryableLockError(err) {
 		return false, nil
 	}
 	return false, err
+}
+
+func retryableLockError(err error) bool {
+	// FAIL_IMMEDIATELY normally reports LOCK_VIOLATION. Treat a platform or
+	// filesystem surfacing IO_PENDING as the same transient contention signal
+	// so the context-bounded outer acquisition loop retries it.
+	return errors.Is(err, windows.ERROR_LOCK_VIOLATION) || errors.Is(err, windows.ERROR_IO_PENDING)
 }
 
 func unlock(file *os.File) error {

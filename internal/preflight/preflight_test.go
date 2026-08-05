@@ -34,6 +34,15 @@ type versionRunner struct {
 	err    error
 }
 
+type cancelingVersionRunner struct {
+	cancel context.CancelFunc
+}
+
+func (runner cancelingVersionRunner) Version(context.Context, string, ...string) (string, error) {
+	runner.cancel()
+	return "v20.11.1\n", nil
+}
+
 func (runner versionRunner) Version(context.Context, string, ...string) (string, error) {
 	return runner.output, runner.err
 }
@@ -416,6 +425,25 @@ func TestRuntimeInfrastructureStatusMapsToRuntimeBlock(t *testing.T) {
 	}
 }
 
+func TestVerifyPropagatesParentCancellationDuringRuntimeInspection(t *testing.T) {
+	fixture := newFixture(t, "https://example.com/org/repo.git")
+	if err := os.WriteFile(filepath.Join(fixture.workspace, ".nvmrc"), []byte("20.11.1\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	fixture.options.Runtime.Runner = cancelingVersionRunner{cancel: cancel}
+
+	report, err := Verify(ctx, Input{
+		SessionRef: "claude:controlled", Agent: "claude", Workspace: fixture.workspace, SourceFresh: true,
+	}, fixture.options)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("Verify() error = %v, want parent cancellation; report=%+v", err, report)
+	}
+	if !reflect.DeepEqual(report, Report{}) {
+		t.Fatalf("cancelled Verify() returned a partial report: %+v", report)
+	}
+}
+
 type fixture struct {
 	workspace string
 	remote    string
@@ -448,7 +476,7 @@ func newFixture(t *testing.T, remote string) *fixture {
 				return []byte("# branch.oid " + testHead + "\x00# branch.head main\x00"), nil
 			case reflect.DeepEqual(args, []string{"rev-parse", "--is-shallow-repository"}):
 				return []byte("false\n"), nil
-			case reflect.DeepEqual(args, []string{"config", "--null", "--get-regexp", `^remote\..*\.url$`}):
+			case reflect.DeepEqual(args, []string{"config", "--local", "--no-includes", "--null", "--get-regexp", `^remote\..*\.url$`}):
 				return []byte("remote.origin.url\n" + value.remote + "\x00"), nil
 			default:
 				return nil, errors.New("unexpected git probe")

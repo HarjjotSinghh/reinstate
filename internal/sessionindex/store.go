@@ -477,6 +477,14 @@ func (s *Store) PutPrelaunchBaseline(ctx context.Context, baseline environment.P
 	if baseline.ObservedAt.After(time.Now().UTC().Add(maximumBaselineFutureSkew)) {
 		return errors.New("prelaunch observation time is too far in the future")
 	}
+	observedAt := timeToDatabase(baseline.ObservedAt)
+	canonicalObservedAt := timeFromDatabase(observedAt)
+	if !canonicalObservedAt.Equal(baseline.ObservedAt) {
+		return errors.New("prelaunch observation time is outside the lossless storage range")
+	}
+	// Compare the same representation that SQLite persists. This strips any
+	// process-local monotonic reading and makes an identical retry idempotent.
+	baseline.ObservedAt = canonicalObservedAt
 	lock, err := filelock.Acquire(ctx, s.path+".write.lock")
 	if err != nil {
 		return fmt.Errorf("lock prelaunch baseline update: %w", err)
@@ -531,7 +539,7 @@ func (s *Store) PutPrelaunchBaseline(ctx context.Context, baseline environment.P
 		baseline.GitHead,
 		baseline.WorkingTreeDigest,
 		string(baseline.WorkingTreeState),
-		timeToDatabase(baseline.ObservedAt),
+		observedAt,
 		baseline.Provenance,
 		baseline.SourceSessionRef,
 		string(capabilitiesJSON),
@@ -1015,17 +1023,17 @@ func verifySchema(db *sql.DB) error {
 			foundRequired[name] = true
 		}
 	}
-	for name := range required {
-		found := foundRequired[name]
-		if !found {
-			return fmt.Errorf("%w: missing column %s", errIncompatibleSchema, name)
-		}
-	}
 	if err := rows.Err(); err != nil {
 		return err
 	}
 	if err := rows.Close(); err != nil {
 		return err
+	}
+	for name := range required {
+		found := foundRequired[name]
+		if !found {
+			return fmt.Errorf("%w: missing column %s", errIncompatibleSchema, name)
+		}
 	}
 	baselineRows, err := db.Query("PRAGMA table_info(prelaunch_baselines)")
 	if err != nil {
@@ -1061,17 +1069,17 @@ func verifySchema(db *sql.DB) error {
 			baselineFound[name] = true
 		}
 	}
-	for name := range baselineRequired {
-		found := baselineFound[name]
-		if !found {
-			return fmt.Errorf("%w: missing prelaunch baseline column %s", errIncompatibleSchema, name)
-		}
-	}
 	if err := baselineRows.Err(); err != nil {
 		return err
 	}
 	if err := baselineRows.Close(); err != nil {
 		return err
+	}
+	for name := range baselineRequired {
+		found := baselineFound[name]
+		if !found {
+			return fmt.Errorf("%w: missing prelaunch baseline column %s", errIncompatibleSchema, name)
+		}
 	}
 	foreignRows, err := db.Query("PRAGMA foreign_key_list(prelaunch_baselines)")
 	if err != nil {

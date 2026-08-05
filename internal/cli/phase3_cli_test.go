@@ -235,6 +235,38 @@ func TestPhase3WarningAcknowledgementAndTTYRules(t *testing.T) {
 	}
 }
 
+func TestPhase3DryRunWarningIDValidationUsesUsageExit(t *testing.T) {
+	workspacePath := t.TempDir()
+	source := staticSessionSource{name: sessionindex.AgentClaude, result: sessionindex.ScanResult{Records: []sessionindex.Record{phase3Record(workspacePath)}}}
+	verifier := preflightVerifierFunc(func(_ context.Context, input preflight.Input) (preflight.Report, error) {
+		return phase3Report(input, preflight.DecisionConfirmationRequired, warningCheck("baseline.unavailable")), nil
+	})
+	for _, test := range []struct {
+		name     string
+		allowed  []string
+		wantCode int
+	}{
+		{name: "exact current warning", allowed: []string{"baseline.unavailable"}, wantCode: ExitOK},
+		{name: "unknown", allowed: []string{"stale.warning"}, wantCode: ExitUsage},
+		{name: "wildcard", allowed: []string{"*"}, wantCode: ExitUsage},
+		{name: "duplicate", allowed: []string{"baseline.unavailable", "baseline.unavailable"}, wantCode: ExitUsage},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			args := []string{"resume", "claude:phase3-one", "--dry-run", "--json"}
+			for _, warning := range test.allowed {
+				args = append(args, "--allow-environment-warning", warning)
+			}
+			_, stderr, code := executePhase3CLI(t, t.TempDir(), []sessionindex.Source{source}, verifier, nil, "", false, args...)
+			if code != test.wantCode {
+				t.Fatalf("exit=%d want=%d stderr=%q", code, test.wantCode, stderr)
+			}
+			if test.wantCode == ExitUsage && !strings.Contains(stderr, `"code": "usage"`) {
+				t.Fatalf("dry-run warning validation did not retain usage semantics: %s", stderr)
+			}
+		})
+	}
+}
+
 func TestPhase3WarningPromptCancellationDeclinesWithSafetyExit(t *testing.T) {
 	t.Parallel()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -460,7 +492,7 @@ func newFinalGuardFixture(t *testing.T) finalGuardFixture {
 			return []byte("# branch.oid 1111111111111111111111111111111111111111\x00# branch.head main\x00"), nil
 		case strings.Join(args, "\x00") == "rev-parse\x00--is-shallow-repository":
 			return []byte("false\n"), nil
-		case strings.Join(args, "\x00") == "config\x00--null\x00--get-regexp\x00^remote\\..*\\.url$":
+		case strings.Join(args, "\x00") == "config\x00--local\x00--no-includes\x00--null\x00--get-regexp\x00^remote\\..*\\.url$":
 			return []byte("remote.origin.url\n" + remote + "\x00"), nil
 		default:
 			return nil, errors.New("unexpected controlled Git probe")

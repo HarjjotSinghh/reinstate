@@ -119,6 +119,9 @@ type ExecLaunchRunner struct {
 }
 
 func (runner ExecLaunchRunner) Run(ctx context.Context, plan LaunchPlan) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if err := validateLaunchPlan(plan); err != nil {
 		return err
 	}
@@ -133,6 +136,9 @@ func (runner ExecLaunchRunner) Run(ctx context.Context, plan LaunchPlan) error {
 		return fmt.Errorf("%w: verified executable path is not absolute", ErrExecutableNotFound)
 	}
 	executableIdentity, err := captureExecutableAtBoundary(ctx, executable)
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return ctxErr
+	}
 	if err != nil || !executableIdentity.IsRegular() {
 		return fmt.Errorf("%w: inspect verified executable", ErrExecutableNotFound)
 	}
@@ -141,6 +147,9 @@ func (runner ExecLaunchRunner) Run(ctx context.Context, plan LaunchPlan) error {
 		return fmt.Errorf("%w: verified executable identity changed", ErrLaunchBoundaryChanged)
 	}
 	workspaceIdentity, err := fileidentity.Capture(plan.Dir)
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return ctxErr
+	}
 	if err != nil {
 		return fmt.Errorf("%w: recorded workspace cannot be inspected", ErrWorkspaceUnavailable)
 	}
@@ -156,11 +165,20 @@ func (runner ExecLaunchRunner) Run(ctx context.Context, plan LaunchPlan) error {
 			return err
 		}
 	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	finalExecutableIdentity, err := captureExecutableAtBoundary(ctx, executable)
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return ctxErr
+	}
 	if err != nil || !fileidentity.SameExecutable(executableIdentity, finalExecutableIdentity) {
 		return fmt.Errorf("%w: verified executable changed after final guard", ErrLaunchBoundaryChanged)
 	}
 	finalWorkspaceIdentity, err := fileidentity.Capture(plan.Dir)
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return ctxErr
+	}
 	if err != nil || !fileidentity.SameObject(workspaceIdentity, finalWorkspaceIdentity) ||
 		!finalWorkspaceIdentity.IsDir() {
 		return fmt.Errorf("%w: recorded workspace changed after final guard", ErrLaunchBoundaryChanged)
@@ -185,9 +203,12 @@ func (runner ExecLaunchRunner) Run(ctx context.Context, plan LaunchPlan) error {
 	command.Stdout = stdout
 	command.Stderr = stderr
 	if err := command.Run(); err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return ctxErr
+		}
 		return fmt.Errorf("%s native %s failed: %w", plan.Agent, plan.Operation, err)
 	}
-	return nil
+	return ctx.Err()
 }
 
 func captureExecutableAtBoundary(ctx context.Context, path string) (fileidentity.Identity, error) {
@@ -199,13 +220,19 @@ func captureExecutableAtBoundary(ctx context.Context, path string) (fileidentity
 // RunLaunch validates a structured plan through the selected runner and waits
 // for the native child to finish.
 func RunLaunch(ctx context.Context, plan LaunchPlan, runner LaunchRunner) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if err := validateLaunchPlan(plan); err != nil {
 		return err
 	}
 	if runner == nil {
 		runner = ExecLaunchRunner{}
 	}
-	return runner.Run(ctx, plan)
+	if err := runner.Run(ctx, plan); err != nil {
+		return err
+	}
+	return ctx.Err()
 }
 
 func validateLaunchPlan(plan LaunchPlan) error {

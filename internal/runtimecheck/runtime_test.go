@@ -348,6 +348,18 @@ func TestSanitizedEnvironmentRemovesExecutionAndNetworkControls(t *testing.T) {
 	if strings.Contains(joined, "network.invalid") || strings.Contains(joined, "go1.99.0") || !strings.Contains(joined, "SAFE=value") {
 		t.Fatalf("unsafe go environment = %v", goEnvironment)
 	}
+
+	filteredPath := replaceEnvironmentValue(
+		[]string{"Path=/workspace", "PATH=/also-unsafe", "SAFE=value"},
+		"PATH",
+		"/trusted/bin",
+	)
+	joined = strings.Join(filteredPath, "\n")
+	if strings.Count(strings.ToUpper(joined), "PATH=") != 1 ||
+		strings.Contains(joined, "/workspace") || strings.Contains(joined, "/also-unsafe") ||
+		!strings.Contains(joined, "PATH=/trusted/bin") {
+		t.Fatalf("filtered PATH environment = %v", filteredPath)
+	}
 }
 
 func TestExecRunnerSanitizesNodeEnvironmentAndWorkingDirectory(t *testing.T) {
@@ -373,7 +385,7 @@ printf 'v20.11.1\n'
 	t.Setenv("NODE_OPTIONS", "--require=private-project-code.js")
 	t.Setenv("UNSAFE_PROBE_CWD", unsafeDirectory)
 
-	output, err := (ExecRunner{}).Version(context.Background(), "node", "--version")
+	output, err := (ExecRunner{Workspace: unsafeDirectory}).Version(context.Background(), "node", "--version")
 	if err != nil || strings.TrimSpace(output) != "v20.11.1" {
 		t.Fatalf("output/error = %q / %v", output, err)
 	}
@@ -401,9 +413,137 @@ printf 'go version go1.25.12 test/arch\n'
 	t.Setenv("GOSUMDB", "sum.network.invalid")
 	t.Setenv("GOFLAGS", "-mod=mod")
 
-	output, err := (ExecRunner{}).Version(context.Background(), "go", "version")
+	output, err := (ExecRunner{Workspace: t.TempDir()}).Version(context.Background(), "go", "version")
 	if err != nil || strings.TrimSpace(output) != "go version go1.25.12 test/arch" {
 		t.Fatalf("output/error = %q / %v", output, err)
+	}
+}
+
+func TestInspectNeverExecutesWorkspaceOwnedRuntimeFromPATH(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX executable fixture")
+	}
+	tests := []struct {
+		name          string
+		executable    string
+		declaration   string
+		contents      string
+		trustedOutput string
+	}{
+		{
+			name:          "node",
+			executable:    "node",
+			declaration:   ".nvmrc",
+			contents:      "20.11.1\n",
+			trustedOutput: "v20.11.1",
+		},
+		{
+			name:          "go",
+			executable:    "go",
+			declaration:   "go.mod",
+			contents:      "module example.com/trust-boundary\n\ngo 1.25.12\n",
+			trustedOutput: "go version go1.25.12 test/arch",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			workspace := t.TempDir()
+			trustedDirectory := t.TempDir()
+			marker := filepath.Join(t.TempDir(), "workspace-runtime-executed")
+			if err := os.WriteFile(filepath.Join(workspace, test.declaration), []byte(test.contents), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			writeProbeScript(t, filepath.Join(workspace, test.executable), `#!/bin/sh
+printf 'executed\n' >"$WORKSPACE_RUNTIME_MARKER"
+printf 'workspace-owned runtime must not run\n'
+`)
+			writeProbeScript(t, filepath.Join(trustedDirectory, test.executable), `#!/bin/sh
+case ":$PATH:" in
+  *":$WORKSPACE_RUNTIME_DIRECTORY:"*) exit 89 ;;
+esac
+printf '%s\n' '`+test.trustedOutput+`'
+`)
+			t.Setenv("PATH", strings.Join([]string{workspace, trustedDirectory}, string(os.PathListSeparator)))
+			t.Setenv("WORKSPACE_RUNTIME_MARKER", marker)
+			t.Setenv("WORKSPACE_RUNTIME_DIRECTORY", workspace)
+
+			results := Inspect(context.Background(), workspace, Options{})
+			if len(results) != 1 || results[0].Status != StatusMatch {
+				t.Fatalf("results = %+v", results)
+			}
+			if _, err := os.Stat(marker); !errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("workspace-owned runtime was executed: %v", err)
+			}
+		})
+	}
+}
+
+func TestInspectUsesOutermostRepositoryRuntimeTrustBoundary(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX executable fixture")
+	}
+	repository := t.TempDir()
+	workspace := filepath.Join(repository, "nested", "workspace")
+	unsafeDirectory := filepath.Join(repository, "tools")
+	trustedDirectory := t.TempDir()
+	marker := filepath.Join(t.TempDir(), "repository-runtime-executed")
+	for _, directory := range []string{
+		filepath.Join(repository, ".git"),
+		filepath.Join(workspace, ".git"),
+		unsafeDirectory,
+	} {
+		if err := os.MkdirAll(directory, 0o700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(workspace, ".nvmrc"), []byte("20.11.1\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	writeProbeScript(t, filepath.Join(unsafeDirectory, "node"), `#!/bin/sh
+printf 'executed\n' >"$REPOSITORY_RUNTIME_MARKER"
+printf 'v99.0.0\n'
+`)
+	writeProbeScript(t, filepath.Join(trustedDirectory, "node"), `#!/bin/sh
+case ":$PATH:" in
+  *":$REPOSITORY_RUNTIME_DIRECTORY:"*) exit 89 ;;
+esac
+printf 'v20.11.1\n'
+`)
+	t.Setenv("PATH", strings.Join([]string{unsafeDirectory, trustedDirectory}, string(os.PathListSeparator)))
+	t.Setenv("REPOSITORY_RUNTIME_MARKER", marker)
+	t.Setenv("REPOSITORY_RUNTIME_DIRECTORY", unsafeDirectory)
+
+	results := Inspect(context.Background(), workspace, Options{})
+	if len(results) != 1 || results[0].Status != StatusMatch {
+		t.Fatalf("results = %+v", results)
+	}
+	if _, err := os.Stat(marker); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("enclosing-repository runtime was executed: %v", err)
+	}
+}
+
+func TestInspectTreatsWorkspaceOnlyRuntimeAsUnavailable(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX executable fixture")
+	}
+	workspace := t.TempDir()
+	marker := filepath.Join(t.TempDir(), "workspace-runtime-executed")
+	if err := os.WriteFile(filepath.Join(workspace, ".nvmrc"), []byte("20.11.1\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	writeProbeScript(t, filepath.Join(workspace, "node"), `#!/bin/sh
+printf 'executed\n' >"$WORKSPACE_RUNTIME_MARKER"
+printf 'v20.11.1\n'
+`)
+	t.Setenv("PATH", workspace)
+	t.Setenv("WORKSPACE_RUNTIME_MARKER", marker)
+
+	results := Inspect(context.Background(), workspace, Options{})
+	if len(results) != 1 || results[0].Status != StatusMissing {
+		t.Fatalf("results = %+v", results)
+	}
+	if _, err := os.Stat(marker); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("workspace-owned runtime was executed: %v", err)
 	}
 }
 
@@ -413,7 +553,7 @@ func TestExecRunnerDoesNotHonorForcedGoToolchainSelection(t *testing.T) {
 	}
 	t.Setenv("GOTOOLCHAIN", "go1.99.0+auto")
 	t.Setenv("GOPROXY", "https://network.invalid")
-	output, err := (ExecRunner{}).Version(context.Background(), "go", "version")
+	output, err := (ExecRunner{Workspace: t.TempDir()}).Version(context.Background(), "go", "version")
 	if err != nil {
 		t.Fatalf("local Go version probe failed: %v", err)
 	}
@@ -436,7 +576,7 @@ func TestExecRunnerTimeoutAndOutputLimitAreTyped(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 25*time.Millisecond)
 		defer cancel()
 		started := time.Now()
-		_, err := (ExecRunner{}).Version(ctx, "node", "--version")
+		_, err := (ExecRunner{Workspace: t.TempDir()}).Version(ctx, "node", "--version")
 		if elapsed := time.Since(started); elapsed > time.Second {
 			t.Fatalf("timeout took %s", elapsed)
 		}
@@ -448,7 +588,7 @@ func TestExecRunnerTimeoutAndOutputLimitAreTyped(t *testing.T) {
 		directory := t.TempDir()
 		writeProbeScript(t, filepath.Join(directory, "node"), "#!/bin/sh\nprintf '%5000s' x\n")
 		t.Setenv("PATH", directory)
-		output, err := (ExecRunner{MaxOutput: 32}).Version(context.Background(), "node", "--version")
+		output, err := (ExecRunner{MaxOutput: 32, Workspace: t.TempDir()}).Version(context.Background(), "node", "--version")
 		if !errors.Is(err, ErrProbeFailed) || !errors.Is(err, ErrOutputLimit) {
 			t.Fatalf("output length/error = %d / %v", len(output), err)
 		}

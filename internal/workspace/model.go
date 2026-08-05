@@ -90,6 +90,7 @@ const (
 
 type WorkingTreeFingerprint struct {
 	State           WorkingTreeState `json:"state"`
+	Uncertain       bool             `json:"uncertain,omitempty"`
 	Digest          string           `json:"digest,omitempty"`
 	Staged          int              `json:"staged"`
 	Unstaged        int              `json:"unstaged"`

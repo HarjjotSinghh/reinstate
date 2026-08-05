@@ -15,6 +15,7 @@ import (
 
 	"github.com/HarjjotSinghh/reinstate/internal/adapter/claude"
 	"github.com/HarjjotSinghh/reinstate/internal/adapter/codex"
+	"github.com/HarjjotSinghh/reinstate/internal/executabletrust"
 	"github.com/HarjjotSinghh/reinstate/internal/fileidentity"
 )
 
@@ -64,8 +65,11 @@ type VersionRunner interface {
 
 // Options makes filesystem and process boundaries injectable for tests.
 type Options struct {
-	Home       string
-	Root       string
+	Home string
+	Root string
+	// Workspace is the executable trust boundary used by production lookup.
+	// Repository-owned PATH entries and executable candidates are excluded.
+	Workspace  string
 	LookPath   func(string) (string, error)
 	Getenv     func(string) string
 	Runner     VersionRunner
@@ -86,15 +90,35 @@ func Inspect(ctx context.Context, agentName string, opts Options) Result {
 		return result
 	}
 
-	lookPath := opts.LookPath
-	if lookPath == nil {
-		lookPath = exec.LookPath
-	}
 	executable := opts.Executable
 	if executable == "" {
 		executable = definition.executable
 	}
-	resolved, err := lookPath(executable)
+	resolved := ""
+	trustedSearchPath := ""
+	var err error
+	if opts.LookPath != nil {
+		resolved, err = opts.LookPath(executable)
+	} else {
+		trustWorkspace := opts.Workspace
+		if trustWorkspace == "" {
+			trustWorkspace, err = os.Getwd()
+		}
+		lookupName := executable
+		environment := os.Environ()
+		if filepath.IsAbs(executable) {
+			lookupName = filepath.Base(executable)
+			environment = replaceEnvironmentValue(environment, "PATH", filepath.Dir(executable))
+		}
+		resolution, resolveErr := executabletrust.Resolve(lookupName, trustWorkspace, environment)
+		if resolveErr == nil {
+			resolved = resolution.Executable
+			trustedSearchPath = resolution.SearchPath
+		}
+		if err == nil {
+			err = resolveErr
+		}
+	}
 	if err != nil || strings.TrimSpace(resolved) == "" {
 		result.Status = StatusNotInstalled
 		result.Message = "native agent executable is unavailable"
@@ -149,7 +173,7 @@ func Inspect(ctx context.Context, agentName string, opts Options) Result {
 	defer cancel()
 	runner := opts.Runner
 	if runner == nil {
-		runner = ExecRunner{MaxOutput: opts.MaxOutput}
+		runner = ExecRunner{MaxOutput: opts.MaxOutput, SearchPath: trustedSearchPath}
 	}
 	captureIdentity := opts.CaptureIdentity
 	if captureIdentity == nil {
@@ -327,7 +351,10 @@ func recognizedLayout(root, marker string) bool {
 
 // ExecRunner is a shell-free, output-bounded vendor version runner.
 type ExecRunner struct {
-	MaxOutput       int64
+	MaxOutput int64
+	// SearchPath is the already-validated executable search path. It prevents
+	// script launchers from delegating to workspace-owned runtimes.
+	SearchPath      string
 	testEnvironment []string
 }
 
@@ -340,7 +367,11 @@ func (runner ExecRunner) Version(ctx context.Context, executable string, args ..
 	command := exec.CommandContext(ctx, executable, args...)
 	command.Stdin = nil
 	command.Dir = neutralWorkingDirectory(executable)
-	command.Env = append(sanitizedVersionEnvironment(os.Environ()), runner.testEnvironment...)
+	environment := sanitizedVersionEnvironment(os.Environ())
+	if runner.SearchPath != "" {
+		environment = replaceEnvironmentValue(environment, "PATH", runner.SearchPath)
+	}
+	command.Env = append(environment, runner.testEnvironment...)
 	stdout := boundedBuffer{limit: limit}
 	stderr := boundedBuffer{limit: limit}
 	command.Stdout = &stdout
@@ -382,6 +413,18 @@ func sanitizedVersionEnvironment(inherited []string) []string {
 		}
 	}
 	return result
+}
+
+func replaceEnvironmentValue(environment []string, key, value string) []string {
+	result := make([]string, 0, len(environment)+1)
+	for _, entry := range environment {
+		currentKey, _, ok := strings.Cut(entry, "=")
+		if ok && strings.EqualFold(currentKey, key) {
+			continue
+		}
+		result = append(result, entry)
+	}
+	return append(result, key+"="+value)
 }
 
 type boundedBuffer struct {

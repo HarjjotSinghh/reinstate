@@ -507,27 +507,25 @@ func validateDryRunWarningIDs(
 	if len(allowed) == 0 {
 		return nil
 	}
-	requested := make(map[string]struct{}, len(allowed))
-	for _, raw := range allowed {
-		requested[strings.TrimSpace(raw)] = struct{}{}
-	}
-	validation := report
-	validation.Decision = preflight.DecisionReady
-	validation.BlockExitCode = 0
-	validation.Checks = nil
+	current := make(map[string]struct{})
 	for _, check := range report.Checks {
-		if check.Severity != preflight.SeverityWarning {
-			validation.Checks = append(validation.Checks, check)
-			continue
-		}
-		if _, ok := requested[check.ID]; ok {
-			validation.Checks = append(validation.Checks, check)
-			validation.Decision = preflight.DecisionConfirmationRequired
+		if check.Severity == preflight.SeverityWarning {
+			current[check.ID] = struct{}{}
 		}
 	}
-	authorization, err := preflight.Authorize(validation, allowed)
-	if err != nil {
-		return environmentReportError(report, plan, authorizationExitCode(authorization), err.Error())
+	seen := make(map[string]struct{}, len(allowed))
+	for _, raw := range allowed {
+		id := strings.TrimSpace(raw)
+		if id == "" || strings.ContainsAny(id, "*?[]") {
+			return environmentReportError(report, plan, ExitUsage, fmt.Sprintf("invalid environment warning ID %q", id))
+		}
+		if _, duplicate := seen[id]; duplicate {
+			return environmentReportError(report, plan, ExitUsage, fmt.Sprintf("duplicate environment warning ID %q", id))
+		}
+		seen[id] = struct{}{}
+		if _, exists := current[id]; !exists {
+			return environmentReportError(report, plan, ExitUsage, fmt.Sprintf("environment warning ID %q is not a current warning", id))
+		}
 	}
 	return nil
 }

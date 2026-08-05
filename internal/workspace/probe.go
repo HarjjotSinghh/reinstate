@@ -45,12 +45,16 @@ func Verify(
 		return Verification{}, err
 	}
 	if expected.Head != nil && trustedProvenance(expected.Head.Provenance) {
-		observed.Fingerprint.Git.ExpectedHeadRelation = resolveHeadRelation(
+		relation, relationErr := resolveHeadRelation(
 			probeContext,
 			runner,
 			observed.Fingerprint.Git,
 			expected.Head.Value,
 		)
+		if relationErr != nil {
+			return Verification{}, relationErr
+		}
+		observed.Fingerprint.Git.ExpectedHeadRelation = relation
 	}
 	comparison := Compare(expected, observed.Fingerprint)
 	comparison.Decision = aggregateDecision(comparison.Checks, observed.Diagnostics)
@@ -133,6 +137,9 @@ func probe(ctx context.Context, workspace string, runner GitRunner) (ProbeResult
 	rootOutput, runErr := runner.Run(ctx, workspace,
 		"rev-parse", "--path-format=absolute", "--show-toplevel",
 	)
+	if callerCancellation(ctx) != nil {
+		return ProbeResult{}, context.Canceled
+	}
 	if runErr != nil {
 		return classifyInitialGitFailure(ctx, result, runErr)
 	}
@@ -154,6 +161,9 @@ func probe(ctx context.Context, workspace string, runner GitRunner) (ProbeResult
 	result.Fingerprint.Git.rootPath = root
 
 	statusOutput, runErr := runner.Run(ctx, root, gitStatusArgs...)
+	if callerCancellation(ctx) != nil {
+		return ProbeResult{}, context.Canceled
+	}
 	if runErr != nil {
 		appendGitDiagnostic(&result, ctx, "git.status", runErr)
 		return result, nil
@@ -175,6 +185,9 @@ func probe(ctx context.Context, workspace string, runner GitRunner) (ProbeResult
 	result.Fingerprint.Git.UpstreamRelation = status.relation
 
 	shallowOutput, runErr := runner.Run(ctx, root, "rev-parse", "--is-shallow-repository")
+	if callerCancellation(ctx) != nil {
+		return ProbeResult{}, context.Canceled
+	}
 	if runErr != nil {
 		appendGitDiagnostic(&result, ctx, "git.shallow", runErr)
 		return result, nil
@@ -190,8 +203,11 @@ func probe(ctx context.Context, workspace string, runner GitRunner) (ProbeResult
 	result.Fingerprint.Git.Shallow = shallow
 
 	remoteOutput, remoteErr := runner.Run(ctx, root,
-		"config", "--null", "--get-regexp", `^remote\..*\.url$`,
+		"config", "--local", "--no-includes", "--null", "--get-regexp", `^remote\..*\.url$`,
 	)
+	if callerCancellation(ctx) != nil {
+		return ProbeResult{}, context.Canceled
+	}
 	if remoteErr == nil {
 		primary, identities := selectRemoteIdentity(parseRemoteIdentities(remoteOutput))
 		result.Fingerprint.Git.RepositoryID = primary
@@ -199,12 +215,17 @@ func probe(ctx context.Context, workspace string, runner GitRunner) (ProbeResult
 		if primary != "" {
 			result.Fingerprint.Git.RepositoryIDSource = "remote"
 		}
-	} else if exit, ok := commandExitCode(remoteErr); !ok || exit != 1 {
-		appendGitDiagnostic(&result, ctx, "git.repository_identity", remoteErr)
+	} else {
+		if exit, ok := commandExitCode(remoteErr); !ok || exit != 1 {
+			appendGitDiagnostic(&result, ctx, "git.repository_identity", remoteErr)
+		}
 	}
 
 	if result.Fingerprint.Git.RepositoryID == "" && !shallow && status.head != "" {
 		rootsOutput, rootsErr := runner.Run(ctx, root, "rev-list", "--max-parents=0", "HEAD")
+		if callerCancellation(ctx) != nil {
+			return ProbeResult{}, context.Canceled
+		}
 		if rootsErr == nil {
 			roots := validObjectIDs(strings.Fields(string(rootsOutput)))
 			if len(roots) > 0 {
@@ -220,7 +241,7 @@ func probe(ctx context.Context, workspace string, runner GitRunner) (ProbeResult
 }
 
 func classifyInitialGitFailure(ctx context.Context, result ProbeResult, err error) (ProbeResult, error) {
-	if errors.Is(err, context.Canceled) && errors.Is(ctx.Err(), context.Canceled) && !errors.Is(ctx.Err(), context.DeadlineExceeded) {
+	if callerCancellation(ctx) != nil {
 		return ProbeResult{}, context.Canceled
 	}
 	if errors.Is(err, ErrGitUnavailable) {
@@ -249,6 +270,13 @@ func classifyInitialGitFailure(ctx context.Context, result ProbeResult, err erro
 	return result, nil
 }
 
+func callerCancellation(ctx context.Context) error {
+	if errors.Is(ctx.Err(), context.Canceled) {
+		return context.Canceled
+	}
+	return nil
+}
+
 func appendGitDiagnostic(result *ProbeResult, ctx context.Context, id string, err error) {
 	message := "a bounded Git probe failed"
 	if errors.Is(err, context.DeadlineExceeded) || errors.Is(ctx.Err(), context.DeadlineExceeded) {
@@ -263,33 +291,44 @@ func appendGitDiagnostic(result *ProbeResult, ctx context.Context, id string, er
 	})
 }
 
-func resolveHeadRelation(ctx context.Context, runner GitRunner, git GitFingerprint, expected string) CommitRelation {
+func resolveHeadRelation(
+	ctx context.Context,
+	runner GitRunner,
+	git GitFingerprint,
+	expected string,
+) (CommitRelation, error) {
 	unknown := CommitRelation{Relation: RelationUnknown, LocalOnly: true}
+	if callerCancellation(ctx) != nil {
+		return unknown, context.Canceled
+	}
 	expected = strings.ToLower(strings.TrimSpace(expected))
 	if !validObjectID(expected) || !validObjectID(git.Head) || !git.Repository || git.Shallow {
-		return unknown
+		return unknown, nil
 	}
 	if expected == git.Head {
-		return relationFromCounts(0, 0)
+		return relationFromCounts(0, 0), nil
 	}
 	root := git.rootPath
 	if root == "" {
 		root = git.Root
 	}
 	output, err := runner.Run(ctx, root, "rev-list", "--left-right", "--count", expected+"..."+git.Head)
+	if callerCancellation(ctx) != nil {
+		return unknown, context.Canceled
+	}
 	if err != nil {
-		return unknown
+		return unknown, nil
 	}
 	fields := strings.Fields(string(output))
 	if len(fields) != 2 {
-		return unknown
+		return unknown, nil
 	}
 	expectedOnly, leftErr := strconv.Atoi(fields[0])
 	currentOnly, rightErr := strconv.Atoi(fields[1])
 	if leftErr != nil || rightErr != nil || expectedOnly < 0 || currentOnly < 0 {
-		return unknown
+		return unknown, nil
 	}
-	return relationFromCounts(currentOnly, expectedOnly)
+	return relationFromCounts(currentOnly, expectedOnly), nil
 }
 
 func validObjectID(value string) bool {
