@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
+	"github.com/HarjjotSinghh/reinstate/internal/preflight"
 	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
 	syncengine "github.com/HarjjotSinghh/reinstate/internal/sync"
@@ -47,6 +48,9 @@ type Options struct {
 	SessionSources []sessionindex.Source
 	// SessionLaunchRunner overrides native vendor process execution in tests.
 	SessionLaunchRunner sessionindex.LaunchRunner
+	// PreflightVerifier overrides verified-resume environment inspection in
+	// deterministic tests. Production uses the bounded local verifier service.
+	PreflightVerifier preflight.Verifier
 	// TerminalChecker overrides TTY detection in switcher tests.
 	TerminalChecker func(io.Reader, io.Writer) bool
 }
@@ -62,9 +66,13 @@ func Execute(opts Options) int {
 	if opts.Args != nil {
 		root.SetArgs(opts.Args)
 	}
-	err := root.Execute()
+	executed, err := root.ExecuteC()
 	if err == nil {
 		return ExitOK
+	}
+	if ee, ok := err.(*ExitError); ok {
+		WriteError(root.ErrOrStderr(), commandJSONMode(executed, root), ee)
+		return ee.Code
 	}
 	// Cobra usage errors
 	if strings.Contains(err.Error(), "unknown command") ||
@@ -75,15 +83,6 @@ func Execute(opts Options) int {
 		strings.Contains(err.Error(), "invalid argument") ||
 		strings.Contains(err.Error(), "unknown shorthand") {
 		return ExitUsage
-	}
-	if ee, ok := err.(*ExitError); ok {
-		jsonMode := false
-		if f := root.PersistentFlags().Lookup("json"); f != nil {
-			jsonMode, _ = root.PersistentFlags().GetBool("json")
-		}
-		// Prefer command-local --json when present on the leaf.
-		WriteError(root.ErrOrStderr(), jsonMode, ee)
-		return ee.Code
 	}
 	_, _ = fmt.Fprintln(root.ErrOrStderr(), err.Error())
 	return ExitCodeFrom(err)
@@ -102,12 +101,18 @@ func NewRoot(opts Options) *cobra.Command {
 	local := localCommandOptions{
 		sources:       opts.SessionSources,
 		launchRunner:  opts.SessionLaunchRunner,
+		verifier:      opts.PreflightVerifier,
 		terminalCheck: opts.TerminalChecker,
 	}
+	if local.verifier == nil {
+		local.verifier = preflight.DefaultService()
+	}
 	if local.terminalCheck == nil {
-		local.terminalCheck = func(in io.Reader, _ io.Writer) bool {
-			file, ok := in.(*os.File)
-			return ok && term.IsTerminal(int(file.Fd()))
+		local.terminalCheck = func(in io.Reader, out io.Writer) bool {
+			inputFile, inputOK := in.(*os.File)
+			outputFile, outputOK := out.(*os.File)
+			return inputOK && outputOK && term.IsTerminal(int(inputFile.Fd())) &&
+				term.IsTerminal(int(outputFile.Fd()))
 		}
 	}
 	var jsonGlobal bool
@@ -177,6 +182,24 @@ func NewRoot(opts Options) *cobra.Command {
 		return NewExitError(ExitUsage, err.Error())
 	})
 	return root
+}
+
+func commandJSONMode(executed, root *cobra.Command) bool {
+	if executed != nil {
+		if flag := executed.Flags().Lookup("json"); flag != nil && flag.Changed {
+			value, err := executed.Flags().GetBool("json")
+			if err == nil {
+				return value
+			}
+		}
+	}
+	if root != nil {
+		if flag := root.PersistentFlags().Lookup("json"); flag != nil {
+			value, err := root.PersistentFlags().GetBool("json")
+			return err == nil && value
+		}
+	}
+	return false
 }
 
 func RunContext(ctx context.Context, opts Options) int {

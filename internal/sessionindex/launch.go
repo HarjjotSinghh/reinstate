@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -98,14 +99,28 @@ type ExecLaunchRunner struct {
 	Stdin  io.Reader
 	Stdout io.Writer
 	Stderr io.Writer
+	// Executable is the private absolute path verified immediately before
+	// launch. It is never added to LaunchPlan or public output.
+	Executable string
+	// BeforeExec is the final launch-bound safety guard. Production uses it to
+	// revalidate the selected source, plan, and environment after executable
+	// and directory checks and immediately before creating the native child.
+	BeforeExec func(context.Context, LaunchPlan) error
 }
 
 func (runner ExecLaunchRunner) Run(ctx context.Context, plan LaunchPlan) error {
 	if err := validateLaunchPlan(plan); err != nil {
 		return err
 	}
-	if _, err := exec.LookPath(plan.Executable); err != nil {
-		return fmt.Errorf("%w: find %s executable: %v", ErrExecutableNotFound, plan.Executable, err)
+	executable := strings.TrimSpace(runner.Executable)
+	if executable == "" {
+		var err error
+		executable, err = exec.LookPath(plan.Executable)
+		if err != nil {
+			return fmt.Errorf("%w: find %s executable: %v", ErrExecutableNotFound, plan.Executable, err)
+		}
+	} else if !filepath.IsAbs(executable) {
+		return fmt.Errorf("%w: verified executable path is not absolute", ErrExecutableNotFound)
 	}
 	info, err := os.Stat(plan.Dir)
 	if err != nil {
@@ -113,6 +128,11 @@ func (runner ExecLaunchRunner) Run(ctx context.Context, plan LaunchPlan) error {
 	}
 	if !info.IsDir() {
 		return fmt.Errorf("%w: recorded workspace %q is not a directory", ErrWorkspaceUnavailable, plan.Dir)
+	}
+	if runner.BeforeExec != nil {
+		if err := runner.BeforeExec(ctx, plan); err != nil {
+			return err
+		}
 	}
 
 	stdin := runner.Stdin
@@ -128,7 +148,7 @@ func (runner ExecLaunchRunner) Run(ctx context.Context, plan LaunchPlan) error {
 		stderr = os.Stderr
 	}
 
-	command := exec.CommandContext(ctx, plan.Executable, plan.Args...)
+	command := exec.CommandContext(ctx, executable, plan.Args...)
 	command.Dir = plan.Dir
 	command.Stdin = stdin
 	command.Stdout = stdout
