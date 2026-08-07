@@ -42,12 +42,21 @@ physical evidence.
 
 The committed
 [`v0.3.0-rc.1` dispatch](docs/testing/v0.3.0-rc.1-agent-verification-prompts.md)
-requires two tagged-artifact reports: Apple Silicon macOS and native Windows
-x64. Those reports decide whether RC1 passed candidate acceptance; they do not
-authorize stable `v0.3.0`. Stable promotion requires a separate reviewed stable
-decision and fresh tagged-artifact validation on the same two supported
-platforms. Intel macOS and WSL2 remain unsupported/unverified optional evidence
-and are never stable blockers.
+required two tagged-artifact reports: Apple Silicon macOS and native Windows
+x64. macOS passed (32/32); native Windows failed (9 PASS / 23 FAIL) with six
+root blockers, including Windows executable trust for extensionless `codex`
+and host/tooling gaps. RC1 does **not** authorize stable `v0.3.0`.
+
+### v0.3.0-rc.2 candidate evidence
+
+The next Phase 3 candidate uses
+[`v0.3.0-rc.2` dispatch](docs/testing/v0.3.0-rc.2-agent-verification-prompts.md)
+plus the pinned
+[Windows acceptance host](docs/testing/windows-acceptance-host.md). Those two
+device reports decide RC2 tagged-artifact acceptance only. Stable promotion
+still requires a separate reviewed stable decision and fresh tagged-artifact
+validation on the same two supported platforms. Intel macOS and WSL2 remain
+unsupported/unverified optional evidence and are never stable blockers.
 
 ## Steps
 
@@ -161,12 +170,14 @@ that verified deployment, and verifies both live routes again. Never run
 
 For a release candidate, start its committed candidate-specific acceptance
 dispatch only after both live routes install the new exact version. For
-`v0.3.0-rc.1`, Apple Silicon macOS and native Windows x64 own the mandatory
-two-device matrix. Passing those two reports means only that RC1 passed
+`v0.3.0-rc.2`, Apple Silicon macOS and native Windows x64 own the mandatory
+two-device matrix; provision Windows per
+[windows-acceptance-host.md](docs/testing/windows-acceptance-host.md) before
+product rows. Passing those two reports means only that RC2 passed
 tagged-artifact acceptance. Stable `v0.3.0` still requires a separate promotion
 decision and fresh/reconciled tagged-artifact results from those two supported
 platforms. Native macOS amd64 and WSL2 amd64 are unsupported/unverified optional
-evidence and do not block RC1 or stable `v0.3.0`.
+evidence and do not block RC2 or stable `v0.3.0`.
 
 ### 5. Publish website-only changes
 

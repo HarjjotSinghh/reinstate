@@ -556,6 +556,8 @@ func TestReleaseRunbookStagesAndFreezesReleaseInputs(t *testing.T) {
 		"release commit itself must contain both public bootstrap files",
 		"post-tag pin-only edit cannot repair it",
 		"v0.3.0-rc.1-agent-verification-prompts.md",
+		"v0.3.0-rc.2-agent-verification-prompts.md",
+		"windows-acceptance-host.md",
 		"two tagged-artifact reports",
 		"supported mandatory platforms",
 		"unsupported/unverified optional evidence",
