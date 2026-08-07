@@ -16,10 +16,17 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.3.0-rc.2': {
+    rangeChange: 'No agent-version range change documented.',
+    compatibilityChange:
+      'Corrects Windows trusted executable resolution for extensionless vendor names via PATHEXT without widening Claude Code 2.1.219–2.1.220 or Codex CLI 0.133.0–0.146.0. Tagged-artifact acceptance is pending.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.3.0-rc.2/internal/executabletrust/resolve.go',
+  },
   'v0.3.0-rc.1': {
     rangeChange: 'No agent-version range change documented.',
     compatibilityChange:
-      'Adds Phase 3 verified-resume observation and authorization without widening the Claude Code 2.1.219–2.1.220 or Codex CLI 0.133.0–0.146.0 ranges. Tagged-artifact acceptance is pending.',
+      'Adds Phase 3 verified-resume observation and authorization without widening the Claude Code 2.1.219–2.1.220 or Codex CLI 0.133.0–0.146.0 ranges. macOS acceptance passed; native Windows failed.',
     implementationSource:
       'https://github.com/HarjjotSinghh/reinstate/blob/v0.3.0-rc.1/internal/preflight/verify.go',
   },

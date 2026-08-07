@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0-rc.2] - 2026-08-07
+
+Corrective Phase 3 release candidate after `v0.3.0-rc.1` failed native Windows
+x64 tagged-artifact acceptance. Apple Silicon macOS and native Windows x64
+acceptance for this candidate is still pending; it does not authorize stable
+`v0.3.0`.
+
 ### Fixed
 
 - Resolve Windows vendor tools through PATHEXT so extensionless names such as
@@ -26,9 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.0-rc.1] - 2026-08-05
 
 First Phase 3 release candidate. It adds verified resume to the Phase 2 local
-continuity surface. Tagged-artifact acceptance on Apple Silicon macOS and
-native Windows x64 is still pending; this candidate does not authorize stable
-`v0.3.0`.
+continuity surface. Apple Silicon macOS tagged-artifact acceptance passed;
+native Windows x64 failed. This candidate does not authorize stable `v0.3.0`.
 
 ### Added
 

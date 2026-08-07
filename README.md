@@ -17,7 +17,7 @@ macOS and Linux/WSL2 downloads remain preview/unverified pending issues
 [#97](https://github.com/HarjjotSinghh/reinstate/issues/97) and
 [#98](https://github.com/HarjjotSinghh/reinstate/issues/98).
 
-Current release candidate `v0.3.0-rc.1` adds Phase 3 verified resume. Its
+Current release candidate `v0.3.0-rc.2` adds Phase 3 verified resume. Its
 tagged-artifact acceptance on Apple Silicon macOS and native Windows x64 is
 pending; it is not stable `v0.3.0`.
 
@@ -109,7 +109,7 @@ flowchart LR
 | --- | --- |
 | **Local recovery** | Configless local index/search/resume for Claude Code and Codex |
 | **Multi-agent** | One metadata index; native execution always stays with the source vendor |
-| **Verified resume** | `v0.3.0-rc.1` checks the workspace, agent, capabilities, and recognized runtimes before launch |
+| **Verified resume** | `v0.3.0-rc.2` checks the workspace, agent, capabilities, and recognized runtimes before launch |
 | **Offline-capable origin** | Works when the other machine is **off** (stored sync, not a live relay) |
 | **Path remapping** | Windows ↔ macOS project paths rewritten so `--resume` actually finds sessions |
 | **Zero-knowledge** | Client-side encryption; bring-your-own storage |
@@ -139,7 +139,7 @@ Stable `v0.2.0`:
 - **Interactive switcher** — bare `rein` on a TTY; deterministic JSON for automation
 - **Read-only expansion** — Gemini CLI and OpenCode discovery without mutation
 
-Included in the `v0.3.0-rc.1` release candidate (tagged-artifact acceptance
+Included in the `v0.3.0-rc.2` release candidate (tagged-artifact acceptance
 pending):
 
 - **Verified resume** — deterministic environment reports on `inspect`, native
@@ -176,7 +176,7 @@ not part of the current CLI. See
 
 ## Quick start
 
-> **Platform boundary:** the public installers pin candidate `v0.3.0-rc.1`.
+> **Platform boundary:** the public installers pin candidate `v0.3.0-rc.2`.
 > Tagged-artifact acceptance is pending on Apple Silicon macOS and native
 > Windows x64. Stable remains `v0.2.0`; Intel macOS and Linux/WSL2 remain
 > optional and unverified for RC1.
@@ -210,7 +210,7 @@ These commands refresh a private derived index at
 `rein`/`reinstate` processes. None is synced. These commands do not require
 `init`, storage credentials, a passphrase, or a network backend.
 
-The `v0.3.0-rc.1` candidate adds an `environment` report to `inspect` and native
+The `v0.3.0-rc.2` candidate adds an `environment` report to `inspect` and native
 dry-runs. A first launch truthfully warns with `baseline.unavailable`; it never
 manufactures a historical match. Review the report, then either confirm on a
 TTY or acknowledge every current warning explicitly in automation:
@@ -242,7 +242,7 @@ The tap's stable formula passed install, both-alias identity, formula test,
 no-op upgrade, and uninstall checks on Apple Silicon. Intel macOS and
 Linuxbrew remain unverified for `v0.2.0`.
 
-### Install the v0.3.0-rc.1 candidate
+### Install the v0.3.0-rc.2 candidate
 
 These public bootstrap routes install the candidate, not the stable Homebrew
 formula. RC1 tagged-artifact acceptance is pending.
@@ -259,7 +259,7 @@ Native Windows PowerShell:
 irm https://reinstate.dev/install.ps1 | iex
 ```
 
-Both bootstraps pin and verify `v0.3.0-rc.1`, install without elevation, and
+Both bootstraps pin and verify `v0.3.0-rc.2`, install without elevation, and
 print the next command:
 
 ```bash
@@ -457,7 +457,7 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 | **0** | Contracts, diagnostics, installers, fixtures, release trust | ✅ |
 | **1** | Claude + Codex encrypted same-vendor session sync | ✅ |
 | **2** | Configless local index, search, native resume/fork | ✅ |
-| **3** | Verified resume (included in `v0.3.0-rc.1`; tagged-artifact acceptance pending) | 🚧 |
+| **3** | Verified resume (included in `v0.3.0-rc.2`; tagged-artifact acceptance pending) | 🚧 |
 | **4** | Portable handoffs | 📋 |
 | **5–7** | Universal config + automatic sync, thin Console/ACP client, teams | 📋 / 💭 |
 
