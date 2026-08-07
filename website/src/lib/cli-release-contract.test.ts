@@ -7,7 +7,7 @@ import {
 } from '../../scripts/check-cli-release.mjs';
 
 const checker = new URL('../../scripts/check-cli-release.mjs', import.meta.url);
-const TAG = 'v0.3.0-rc.1';
+const TAG = 'v0.3.0-rc.2';
 
 function release(overrides: Record<string, unknown> = {}) {
   return {
@@ -56,7 +56,9 @@ describe('published GitHub CLI release contract', () => {
     expect(rawBinaries).toHaveLength(5);
     expect(linuxPackages).toHaveLength(8);
     expect(assets).toContain('checksums.txt');
-    expect(assets).toContain('reinstate_0.3.0-rc.1_source.tar.gz');
+    expect(assets).toContain(
+      `reinstate_${TAG.replace(/^v/, '')}_source.tar.gz`,
+    );
     for (const archive of platformArchives) {
       expect(assets).toContain(`${archive}.sbom.json`);
     }
@@ -123,18 +125,19 @@ describe('published GitHub CLI release contract', () => {
 
   it('reports every missing required asset and rejects duplicate names', () => {
     const required = expectedCliReleaseAssets(TAG);
+    const version = TAG.replace(/^v/, '');
     const missing = [
       'checksums.txt',
-      'reinstate_0.3.0-rc.1_windows_amd64.zip',
-      'reinstate_0.3.0-rc.1_linux_arm64.tar.gz.sbom.json',
-      'reinstate_0.3.0-rc.1_source.tar.gz',
+      `reinstate_${version}_windows_amd64.zip`,
+      `reinstate_${version}_linux_arm64.tar.gz.sbom.json`,
+      `reinstate_${version}_source.tar.gz`,
     ];
     const assets = required
       .filter((name) => !missing.includes(name))
       .map((name) => ({ name }));
 
     expect(() => validateCliRelease(release({ assets }), TAG)).toThrow(
-      missing.join(', '),
+      `missing required assets: ${missing.join(', ')}`,
     );
     expect(() =>
       validateCliRelease(

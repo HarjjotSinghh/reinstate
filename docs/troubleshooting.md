@@ -34,7 +34,7 @@ record the exact version and sanitized error and report it as a bug.
 4. Check [compatibility.md](compatibility.md) and the sanitized local-index
    warnings. Sync-adapter compatibility and local-index capability are
    intentionally reported separately.
-5. Confirm `REINSTATE_HOME` is absolute and writable. `v0.3.0-rc.1`
+5. Confirm `REINSTATE_HOME` is absolute and writable. `v0.3.0-rc.2`
    uses `$REINSTATE_HOME/cache/session-index-v2.sqlite`; stable `v0.2.0` uses
    the separate `session-index-v1.sqlite` database.
 
@@ -49,7 +49,7 @@ appear on the next `rein sessions` or `rein search`.
 
 The database is derived state and should rebuild automatically after corruption
 or schema incompatibility. If diagnosis requires a manual reset, close
-Reinstate and confirm `rein version --json`. For `v0.3.0-rc.1`,
+Reinstate and confirm `rein version --json`. For `v0.3.0-rc.2`,
 move—not immediately delete—the exact
 `session-index-v2.sqlite` database, its `.lock` and `.write.lock` coordination
 files, and any SQLite `-journal`/`-wal`/`-shm` companions out
@@ -107,9 +107,9 @@ and intentionally return compatibility exit `5` for resume/fork.
 `--json` requires `--dry-run` for a launch command so native child output
 cannot be mixed into the JSON document.
 
-### v0.3.0-rc.1: read the environment decision
+### v0.3.0-rc.2: read the environment decision
 
-Stable `v0.2.0` does not include verified resume. In candidate `v0.3.0-rc.1`,
+Stable `v0.2.0` does not include verified resume. In candidate `v0.3.0-rc.2`,
 `inspect` and native dry-runs include an `environment` report:
 
 ```bash

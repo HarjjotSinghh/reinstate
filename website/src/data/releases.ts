@@ -1,9 +1,15 @@
 export const releaseHistory = [
   {
+    version: 'v0.3.0-rc.2',
+    date: '2026-08-07',
+    summary:
+      'Corrective Phase 3 candidate: Windows PATHEXT vendor-tool trust, PowerShell-native release gates, and Windows acceptance host docs after RC1 Windows FAIL.',
+  },
+  {
     version: 'v0.3.0-rc.1',
     date: '2026-08-05',
     summary:
-      'First Phase 3 verified-resume candidate; Apple Silicon macOS and native Windows x64 tagged-artifact acceptance is pending.',
+      'First Phase 3 verified-resume candidate. Apple Silicon macOS tagged-artifact acceptance passed; native Windows x64 failed (not stable).',
   },
   {
     version: 'v0.2.0',

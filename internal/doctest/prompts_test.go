@@ -421,6 +421,7 @@ func TestPhase3AcceptanceRunbookContracts(t *testing.T) {
 		"Apple Silicon macOS",
 		"native Windows x64",
 		"v0.3.0-rc.1-agent-verification-prompts.md",
+		"v0.3.0-rc.2-agent-verification-prompts.md",
 		"results/phase-3-report-template.md",
 		"Rows 1–32",
 		"baseline.unavailable",
@@ -503,6 +504,54 @@ func TestPhase3RC1PromptContracts(t *testing.T) {
 	} {
 		if strings.Contains(body, forbidden) {
 			t.Errorf("v0.3.0-rc.1 prompts contain unsafe instruction %q", forbidden)
+		}
+	}
+}
+
+func TestPhase3RC2PromptContracts(t *testing.T) {
+	body := read(t, "docs/testing/v0.3.0-rc.2-agent-verification-prompts.md")
+	for _, value := range []string{
+		"v0.3.0-rc.2",
+		"Prompt 1 — Claude Code on Apple Silicon macOS",
+		"Prompt 2 — Codex on native Windows x64",
+		"exact 25-asset set",
+		"checksums.txt plus 24",
+		"checksummed assets",
+		"literal full TEST_COMMIT",
+		"mandatory stop before product-behavior rows",
+		"source build is supplemental",
+		"https://reinstate.dev/install.sh",
+		"https://reinstate.dev/install.ps1",
+		"brand-new isolated INSTALL_DIR",
+		"test/v0.3.0-rc.2-macos-arm64-report",
+		"test/v0.3.0-rc.2-windows-amd64-report",
+		"REPORT_DATE-macos-phase3-V030RC2.md",
+		"REPORT_DATE-windows-phase3-V030RC2.md",
+		"windows-acceptance-host.md",
+		"PowerShell-native",
+		"PHASE3-DEVICE-REPORT-V1",
+		"END-PHASE3-DEVICE-REPORT-V1",
+		"PHASE3-RC2-FINAL-RECONCILIATION-V1",
+		"END-PHASE3-RC2-FINAL-RECONCILIATION-V1",
+		"stable_v0.3.0_authorized=false",
+		"Never amend or force-push evidence",
+		"unsupported/unverified optional evidence",
+		"stable promotion decision",
+	} {
+		if !strings.Contains(strings.ToLower(body), strings.ToLower(value)) {
+			t.Errorf("v0.3.0-rc.2 prompts missing %q", value)
+		}
+	}
+	for _, forbidden := range []string{
+		"REINSTATE_PASSPHRASE=",
+		"--dangerously-skip-permissions",
+		"releases/latest",
+		"git clone ",
+		"print the transcript",
+		"cat the transcript",
+	} {
+		if strings.Contains(body, forbidden) {
+			t.Errorf("v0.3.0-rc.2 prompts contain unsafe instruction %q", forbidden)
 		}
 	}
 }
