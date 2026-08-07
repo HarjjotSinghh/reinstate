@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0-rc.3] - 2026-08-07
+
+Corrective Phase 3 release candidate after `v0.3.0-rc.2` failed native Windows
+x64 tagged-artifact acceptance (Codex executable trust and snapshot/PowerShell
+release gates). Apple Silicon macOS and native Windows x64 acceptance for this
+candidate is pending; it does not authorize stable `v0.3.0`.
+
 ### Fixed
 
 - Harden Windows trusted executable resolution for real Codex/Claude installs:
@@ -24,9 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.0-rc.2] - 2026-08-07
 
 Corrective Phase 3 release candidate after `v0.3.0-rc.1` failed native Windows
-x64 tagged-artifact acceptance. Apple Silicon macOS and native Windows x64
-acceptance for this candidate is still pending; it does not authorize stable
-`v0.3.0`.
+x64 tagged-artifact acceptance. Native Windows x64 acceptance for this candidate
+failed again (Codex trust and snapshot/PowerShell gates). It does not authorize
+stable `v0.3.0`.
 
 ### Fixed
 

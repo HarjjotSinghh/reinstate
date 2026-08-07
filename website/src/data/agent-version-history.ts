@@ -16,6 +16,13 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.3.0-rc.3': {
+    rangeChange: 'No agent-version range change documented.',
+    compatibilityChange:
+      'Hardens Windows trusted executable resolution and PowerShell snapshot/staging gates after RC2 native Windows FAIL without widening Claude Code 2.1.219–2.1.220 or Codex CLI 0.133.0–0.146.0. Tagged-artifact acceptance is pending.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.3.0-rc.3/internal/executabletrust/resolve.go',
+  },
   'v0.3.0-rc.2': {
     rangeChange: 'No agent-version range change documented.',
     compatibilityChange:

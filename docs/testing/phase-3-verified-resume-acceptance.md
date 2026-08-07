@@ -45,7 +45,7 @@ fresh tagged-artifact validation on both supported platforms under
 `RELEASING.md`; an RC1 pass does not automatically authorize stable.
 
 The exact tag-specific instructions are the committed
-[`v0.3.0-rc.2` dispatch](v0.3.0-rc.2-agent-verification-prompts.md) (RC1 used [`v0.3.0-rc.1` dispatch](v0.3.0-rc.1-agent-verification-prompts.md)). Each device
+[`v0.3.0-rc.3` dispatch](v0.3.0-rc.3-agent-verification-prompts.md) (prior: [`v0.3.0-rc.2`](v0.3.0-rc.2-agent-verification-prompts.md), [`v0.3.0-rc.1`](v0.3.0-rc.1-agent-verification-prompts.md)) (RC1 used [`v0.3.0-rc.1` dispatch](v0.3.0-rc.1-agent-verification-prompts.md)). Each device
 uses the cumulative sanitized
 [Phase 3 report template](results/phase-3-report-template.md). The dispatch
 fixes report branches, artifact/full-commit checks, corpus sizes, absolute
@@ -246,16 +246,16 @@ Windows; startup cold maxima are four and eight seconds. The candidate dispatch
 must freeze full-refresh and large-corpus ceilings; device reports may not relax them. Any failed
 result validation, source mutation, timeout, unbounded command/file count,
 20–30 second regression, or more than 25 percent comparable same-host
-per-command p95 regression is a blocker. For `v0.3.0-rc.2`, the values and
+per-command p95 regression is a blocker. For `v0.3.0-rc.3`, the values and
 ceilings are frozen in
-[`v0.3.0-rc.2-agent-verification-prompts.md`](v0.3.0-rc.2-agent-verification-prompts.md).
+[`v0.3.0-rc.3-agent-verification-prompts.md`](v0.3.0-rc.3-agent-verification-prompts.md).
 
 CI gates deterministic command/file-count and complexity ratios rather than
 flaky wall-clock assertions. Absolute ceilings belong to the physical matrix.
 
 ## Tagged-candidate chain
 
-For `v0.3.0-rc.2`:
+For `v0.3.0-rc.3`:
 
 1. merge the reviewed implementation through protected `main`;
 2. create an annotated signed tag at the exact merged commit;
@@ -278,7 +278,7 @@ Each immutable report ends with exactly one terminated block:
 ```text
 PHASE3-DEVICE-REPORT-V1
 device=<macos-arm64|windows-amd64>
-test_tag=v0.3.0-rc.2
+test_tag=v0.3.0-rc.3
 test_commit=<40-character commit>
 installed_binary_sha256=<sha256>
 required_pass=<count>

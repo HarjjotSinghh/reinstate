@@ -3,11 +3,12 @@
 Release candidate `v0.3.0-rc.1` added Phase 3 verified resume to the stable
 `v0.2.0` surface. Apple Silicon macOS tagged-artifact acceptance passed;
 native Windows x64 failed (including extensionless Codex executable trust).
-Current candidate `v0.3.0-rc.2` is the corrective build; its tagged-artifact
-acceptance is pending. Intel macOS and Linux/WSL2 remain optional,
-unsupported/unverified evidence and do not block RC2. Passing RC2 will not
-authorize stable `v0.3.0`; that requires a separate reviewed promotion and
-fresh tagged-artifact validation.
+RC2 still failed Windows acceptance (Codex trust and snapshot/PowerShell
+gates). Current candidate `v0.3.0-rc.3` hardens those Windows paths; its
+tagged-artifact acceptance is pending. Intel macOS and Linux/WSL2 remain
+optional, unsupported/unverified evidence and do not block RC3. Passing RC3
+will not authorize stable `v0.3.0`; that requires a separate reviewed promotion
+and fresh tagged-artifact validation.
 
 Stable Reinstate `v0.2.0` implements **same-vendor encrypted session sync** and
 the Phase 2 local continuity surface for:

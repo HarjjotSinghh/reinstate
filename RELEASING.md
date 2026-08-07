@@ -47,6 +47,16 @@ x64. macOS passed (32/32); native Windows failed (9 PASS / 23 FAIL) with six
 root blockers, including Windows executable trust for extensionless `codex`
 and host/tooling gaps. RC1 does **not** authorize stable `v0.3.0`.
 
+### v0.3.0-rc.3 candidate evidence
+
+The next Phase 3 candidate uses
+[`v0.3.0-rc.3` dispatch](docs/testing/v0.3.0-rc.3-agent-verification-prompts.md)
+plus the pinned
+[Windows acceptance host](docs/testing/windows-acceptance-host.md). Those two
+device reports decide RC3 tagged-artifact acceptance only. Stable promotion
+still requires a separate reviewed stable decision and fresh tagged-artifact
+validation on the same two supported platforms.
+
 ### v0.3.0-rc.2 candidate evidence
 
 [`v0.3.0-rc.2` dispatch](docs/testing/v0.3.0-rc.2-agent-verification-prompts.md)
@@ -171,14 +181,14 @@ that verified deployment, and verifies both live routes again. Never run
 
 For a release candidate, start its committed candidate-specific acceptance
 dispatch only after both live routes install the new exact version. For
-`v0.3.0-rc.2`, Apple Silicon macOS and native Windows x64 own the mandatory
+`v0.3.0-rc.3`, Apple Silicon macOS and native Windows x64 own the mandatory
 two-device matrix; provision Windows per
 [windows-acceptance-host.md](docs/testing/windows-acceptance-host.md) before
-product rows. Passing those two reports means only that RC2 passed
+product rows. Passing those two reports means only that RC3 passed
 tagged-artifact acceptance. Stable `v0.3.0` still requires a separate promotion
 decision and fresh/reconciled tagged-artifact results from those two supported
 platforms. Native macOS amd64 and WSL2 amd64 are unsupported/unverified optional
-evidence and do not block RC2 or stable `v0.3.0`.
+evidence and do not block RC3 or stable `v0.3.0`.
 
 ### 5. Publish website-only changes
 
