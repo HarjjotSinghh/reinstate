@@ -180,7 +180,7 @@ func Inspect(ctx context.Context, agentName string, opts Options) Result {
 		captureIdentity = fileidentity.CaptureExecutable
 	}
 	beforeIdentity, err := captureIdentity(probeCtx, resolved)
-	if err != nil || !beforeIdentity.IsRegular() {
+	if err != nil || !beforeIdentity.IsLaunchable() {
 		result.Status = StatusError
 		result.Message = "native agent executable identity is unavailable"
 		return result
@@ -192,7 +192,7 @@ func Inspect(ctx context.Context, agentName string, opts Options) Result {
 		return result
 	}
 	afterIdentity, err := captureIdentity(probeCtx, resolved)
-	if err != nil || !afterIdentity.IsRegular() ||
+	if err != nil || !afterIdentity.IsLaunchable() ||
 		!fileidentity.SameExecutable(beforeIdentity, afterIdentity) {
 		result.Status = StatusError
 		result.Message = "native agent executable changed during version verification"

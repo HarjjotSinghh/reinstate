@@ -73,10 +73,11 @@ verify: fmt-check vet lint test test-race vuln ## Full local merge gate; test in
 	@$(MAKE) build
 	@echo "verify ok"
 
-snapshot: ## goreleaser snapshot (requires goreleaser)
-	@command -v goreleaser >/dev/null 2>&1 || { echo "goreleaser required for snapshot"; exit 1; }
-	@current_tag="$$(git describe --tags --match 'v[0-9]*' --abbrev=0)"; \
+snapshot: ## goreleaser snapshot (requires goreleaser; Windows: scripts/snapshot.ps1)
+	@command -v goreleaser >/dev/null 2>&1 || { echo "goreleaser required for snapshot (Windows: scripts/snapshot.ps1)"; exit 1; }
+	@current_tag="$$(git describe --tags --match 'v[0-9]*' --abbrev=0 2>/dev/null)" || { echo "git describe failed; run: git fetch --tags"; exit 1; }; \
 	previous_tag="$$(git describe --tags --match 'v[0-9]*' --abbrev=0 "$$current_tag^" 2>/dev/null || true)"; \
+	echo "snapshot: GORELEASER_CURRENT_TAG=$$current_tag GORELEASER_PREVIOUS_TAG=$$previous_tag"; \
 	GORELEASER_CURRENT_TAG="$$current_tag" GORELEASER_PREVIOUS_TAG="$$previous_tag" goreleaser release --snapshot --clean
 
 version: build ## Print embedded version
