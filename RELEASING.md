@@ -49,11 +49,12 @@ and host/tooling gaps. RC1 does **not** authorize stable `v0.3.0`.
 
 ### v0.3.0-rc.2 candidate evidence
 
-The next Phase 3 candidate uses
 [`v0.3.0-rc.2` dispatch](docs/testing/v0.3.0-rc.2-agent-verification-prompts.md)
 plus the pinned
-[Windows acceptance host](docs/testing/windows-acceptance-host.md). Those two
-device reports decide RC2 tagged-artifact acceptance only. Stable promotion
+[Windows acceptance host](docs/testing/windows-acceptance-host.md) were used for
+tagged-artifact acceptance. Native Windows x64 failed again (Codex trust and
+snapshot/PowerShell staging gates among the blockers); do not promote stable
+from RC2. Corrective product fixes land before `v0.3.0-rc.3`. Stable promotion
 still requires a separate reviewed stable decision and fresh tagged-artifact
 validation on the same two supported platforms. Intel macOS and WSL2 remain
 unsupported/unverified optional evidence and are never stable blockers.

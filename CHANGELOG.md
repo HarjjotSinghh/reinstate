@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Harden Windows trusted executable resolution for real Codex/Claude installs:
+  strip quoted PATH entries, keep PATHEXT shims even when host PATHEXT is
+  incomplete, fall back when EvalSymlinks fails, and stop collapsing the trust
+  boundary to the volume root on unreadable ancestors (RC2 Windows blocker).
+- Fix PowerShell `stage-release-assets.ps1` to resolve GoReleaser paths as
+  repository-root-relative `dist/...` entries, matching the shell stager.
+
+### Added
+
+- Add `scripts/snapshot.ps1` for native Windows GoReleaser snapshots with
+  explicit tag env vars and non-masked exit codes.
+
 ## [0.3.0-rc.2] - 2026-08-07
 
 Corrective Phase 3 release candidate after `v0.3.0-rc.1` failed native Windows

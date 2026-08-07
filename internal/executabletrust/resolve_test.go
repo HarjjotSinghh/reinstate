@@ -222,7 +222,8 @@ func TestResolveRejectsRelativeEmptyAndInvalidInputs(t *testing.T) {
 
 func TestWindowsPathExtensionsOrderAndDefaults(t *testing.T) {
 	got := windowsPathExtensions([]string{"PATHEXT=.EXE;.CMD;.exe;.BAT"})
-	want := []string{".EXE", ".CMD", ".BAT"}
+	// Host order is preserved; missing PE/script shims (e.g. .com) are appended.
+	want := []string{".EXE", ".CMD", ".BAT", ".com"}
 	if len(got) != len(want) {
 		t.Fatalf("extensions = %#v, want %#v", got, want)
 	}
@@ -243,6 +244,15 @@ func TestWindowsPathExtensionsOrderAndDefaults(t *testing.T) {
 			t.Fatalf("defaults %#v missing %q", defaults, required)
 		}
 	}
+
+	// Restricted hosts sometimes drop .CMD; we re-add common shims.
+	restricted := windowsPathExtensions([]string{"PATHEXT=.EXE"})
+	restrictedJoined := strings.ToLower(strings.Join(restricted, ";"))
+	for _, required := range []string{".exe", ".cmd", ".bat", ".com"} {
+		if !strings.Contains(restrictedJoined, required) {
+			t.Fatalf("restricted %#v missing %q", restricted, required)
+		}
+	}
 }
 
 func TestExecutableCandidatesExpandPathExtOnlyOnWindows(t *testing.T) {
@@ -250,17 +260,19 @@ func TestExecutableCandidatesExpandPathExtOnlyOnWindows(t *testing.T) {
 	environment := []string{"PATHEXT=.COM;.EXE;.CMD"}
 	candidates := executableCandidates(directory, "codex", environment)
 	if runtime.GOOS == "windows" {
-		want := []string{
+		// Case variants collapse via pathKey, preserving PATHEXT order; .bat is
+		// appended because restricted PATHEXT lists still need common shims.
+		wantPrefix := []string{
 			filepath.Join(directory, "codex.COM"),
 			filepath.Join(directory, "codex.EXE"),
 			filepath.Join(directory, "codex.CMD"),
 		}
-		if len(candidates) != len(want) {
-			t.Fatalf("candidates = %#v, want %#v", candidates, want)
+		if len(candidates) < len(wantPrefix) {
+			t.Fatalf("candidates = %#v, want at least %#v", candidates, wantPrefix)
 		}
-		for index := range want {
-			if candidates[index] != want[index] {
-				t.Fatalf("candidates = %#v, want %#v", candidates, want)
+		for index := range wantPrefix {
+			if candidates[index] != wantPrefix[index] {
+				t.Fatalf("candidates = %#v, want prefix %#v", candidates, wantPrefix)
 			}
 		}
 		// Names that already carry an extension stay exact.
@@ -272,6 +284,53 @@ func TestExecutableCandidatesExpandPathExtOnlyOnWindows(t *testing.T) {
 	}
 	if len(candidates) != 1 || candidates[0] != filepath.Join(directory, "codex") {
 		t.Fatalf("non-Windows candidates = %#v", candidates)
+	}
+}
+
+func TestNormalizePathEntryStripsQuotes(t *testing.T) {
+	got := normalizePathEntry(`  "C:\Program Files\nodejs"  `)
+	want := `C:\Program Files\nodejs`
+	if got != want {
+		t.Fatalf("normalizePathEntry = %q, want %q", got, want)
+	}
+}
+
+func TestResolveQuotedWindowsPathEntry(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Windows quoted PATH regression")
+	}
+	workspace := t.TempDir()
+	trusted := t.TempDir()
+	realExecutable, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	payload, err := os.ReadFile(realExecutable)
+	if err != nil {
+		t.Fatal(err)
+	}
+	installed := filepath.Join(trusted, "codex.exe")
+	if err := os.WriteFile(installed, payload, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	resolution, err := Resolve("codex", workspace, []string{
+		`PATH="` + trusted + `"`,
+		"PATHEXT=.COM;.EXE;.BAT;.CMD",
+	})
+	if err != nil {
+		t.Fatalf("Resolve with quoted PATH: %v", err)
+	}
+	want, err := filepath.EvalSymlinks(installed)
+	if err != nil {
+		// EvalSymlinks can fail on some Windows temp trees; accept Abs form.
+		want, err = filepath.Abs(installed)
+		if err != nil {
+			t.Fatal(err)
+		}
+		want = filepath.Clean(want)
+	}
+	if resolution.Executable != want && pathKey(resolution.Executable) != pathKey(want) {
+		t.Fatalf("Executable = %q, want %q", resolution.Executable, want)
 	}
 }
 

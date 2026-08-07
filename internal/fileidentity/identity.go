@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"runtime"
 )
 
 const maxExecutableBytes = 512 << 20
@@ -36,8 +37,8 @@ func CaptureExecutable(ctx context.Context, path string) (Identity, error) {
 	if err != nil {
 		return Identity{}, err
 	}
-	if !before.Mode().IsRegular() || before.Size() < 0 || before.Size() > maxExecutableBytes {
-		return Identity{}, errors.New("executable is not a bounded regular file")
+	if !isBoundedLaunchable(before) {
+		return Identity{}, errors.New("executable is not a bounded launchable file")
 	}
 	volume, file, err := platformIdentity(handle, before)
 	if err != nil {
@@ -135,6 +136,34 @@ func (identity Identity) IsZero() bool { return identity == (Identity{}) }
 
 // IsRegular reports whether the captured object is a regular file.
 func (identity Identity) IsRegular() bool { return identity.mode.IsRegular() }
+
+// IsLaunchable reports whether the captured object may be launched as a host
+// executable. On Windows this includes irregular reparse shims that still
+// launch under CreateProcess.
+func (identity Identity) IsLaunchable() bool {
+	if identity.mode.IsRegular() {
+		return true
+	}
+	if runtime.GOOS != "windows" {
+		return false
+	}
+	modeType := identity.mode & os.ModeType
+	return modeType == 0 || modeType == os.ModeIrregular || modeType == os.ModeSymlink
+}
+
+func isBoundedLaunchable(info os.FileInfo) bool {
+	if info == nil || info.IsDir() || info.Size() < 0 || info.Size() > maxExecutableBytes {
+		return false
+	}
+	if info.Mode().IsRegular() {
+		return true
+	}
+	if runtime.GOOS != "windows" {
+		return false
+	}
+	modeType := info.Mode() & os.ModeType
+	return modeType == 0 || modeType == os.ModeIrregular || modeType == os.ModeSymlink
+}
 
 // IsDir reports whether the captured object is a directory.
 func (identity Identity) IsDir() bool { return identity.mode.IsDir() }

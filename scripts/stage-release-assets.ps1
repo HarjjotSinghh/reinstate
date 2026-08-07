@@ -2,6 +2,12 @@
 <#
 .SYNOPSIS
   PowerShell-native parity for scripts/stage-release-assets.sh (no jq required).
+
+.DESCRIPTION
+  GoReleaser writes raw binary paths in artifacts.json relative to the repository
+  root (for example dist/reinstate_windows_amd64_v1/reinstate.exe), not relative
+  to the dist directory itself. This script resolves those paths from the
+  process working directory and copies them to top-level checksummed names.
 #>
 param(
     [string]$DistDir = "dist"
@@ -10,6 +16,20 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+function Get-RepoRelativeFullPath {
+    param(
+        [Parameter(Mandatory = $true)][string]$PathValue,
+        [Parameter(Mandatory = $true)][string]$RepoRoot
+    )
+    if ([System.IO.Path]::IsPathRooted($PathValue)) {
+        return [System.IO.Path]::GetFullPath($PathValue)
+    }
+    # artifacts.json paths are repo-root-relative (dist/...), matching the shell helper.
+    $combined = Join-Path $RepoRoot ($PathValue -replace '/', [System.IO.Path]::DirectorySeparatorChar)
+    return [System.IO.Path]::GetFullPath($combined)
+}
+
+$repoRoot = (Get-Location).Path
 $resolvedDist = (Resolve-Path -LiteralPath $DistDir).Path
 $artifactsPath = Join-Path $resolvedDist "artifacts.json"
 if (-not (Test-Path -LiteralPath $artifactsPath)) {
@@ -21,11 +41,17 @@ if ($null -eq $artifacts) {
     throw "artifacts.json is empty or invalid"
 }
 
+$staged = 0
 foreach ($artifact in @($artifacts)) {
     $type = [string]$artifact.type
     $extraId = ""
-    if ($null -ne $artifact.extra -and $null -ne $artifact.extra.ID) {
-        $extraId = [string]$artifact.extra.ID
+    if ($null -ne $artifact.extra) {
+        # GoReleaser emits Extra.ID; tolerate id for forward compatibility.
+        if ($null -ne $artifact.extra.ID) {
+            $extraId = [string]$artifact.extra.ID
+        } elseif ($null -ne $artifact.extra.id) {
+            $extraId = [string]$artifact.extra.id
+        }
     }
     if ($type -ne "Binary" -or $extraId -ne "raw") {
         continue
@@ -40,23 +66,23 @@ foreach ($artifact in @($artifacts)) {
         throw "refusing unsafe release asset name: $assetName"
     }
 
-    $fullSource = if ([System.IO.Path]::IsPathRooted($sourcePath)) {
-        $sourcePath
-    } else {
-        Join-Path $resolvedDist $sourcePath
-    }
-    $fullSource = [System.IO.Path]::GetFullPath($fullSource)
+    $fullSource = Get-RepoRelativeFullPath -PathValue $sourcePath -RepoRoot $repoRoot
     $distPrefix = $resolvedDist.TrimEnd('\', '/') + [System.IO.Path]::DirectorySeparatorChar
     if (-not $fullSource.StartsWith($distPrefix, [System.StringComparison]::OrdinalIgnoreCase) -and
         -not ($fullSource.Equals($resolvedDist, [System.StringComparison]::OrdinalIgnoreCase))) {
-        throw "refusing to stage binary outside $resolvedDist: $fullSource"
+        throw "refusing to stage binary outside $resolvedDist: $fullSource (from $sourcePath)"
     }
     if (-not (Test-Path -LiteralPath $fullSource)) {
-        throw "missing raw binary source: $fullSource"
+        throw "missing raw binary source: $fullSource (from $sourcePath)"
     }
 
     $destination = Join-Path $resolvedDist $assetName
     Copy-Item -LiteralPath $fullSource -Destination $destination -Force
+    $staged++
 }
 
-Write-Host "staged raw release binaries into $resolvedDist"
+if ($staged -eq 0) {
+    throw "no raw Binary artifacts with extra.ID=raw were staged from $artifactsPath"
+}
+
+Write-Host "staged $staged raw release binaries into $resolvedDist"

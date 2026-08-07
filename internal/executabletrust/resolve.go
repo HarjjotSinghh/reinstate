@@ -26,13 +26,13 @@ type Resolution struct {
 // the trust boundary. This deliberately over-filters nested repositories so a
 // workspace-controlled inner .git marker cannot re-admit executable siblings
 // from the enclosing repository. Both PATH directories and executable
-// candidates are checked after symlink evaluation, and the returned PATH
-// contains only the retained trusted directories.
+// candidates are checked after symlink evaluation when possible, and the
+// returned PATH contains only the retained trusted directories.
 //
 // On Windows, extensionless names such as "codex" are resolved through PATHEXT
-// (for example codex.exe / codex.cmd). PATHEXT is read from the supplied
-// environment first, then the process environment, then a safe default list.
-// Unix-like platforms resolve the exact basename only.
+// (for example codex.exe / codex.cmd). PATH entries may be quoted; PATHEXT is
+// read from the supplied environment first, then the process environment, then
+// a safe default list. Unix-like platforms resolve the exact basename only.
 func Resolve(name, workspace string, environment []string) (Resolution, error) {
 	if !validName(name) {
 		return Resolution{}, ErrUnavailable
@@ -77,26 +77,15 @@ func trustBoundary(workspace string) (string, error) {
 		case errors.Is(markerErr, os.ErrNotExist):
 			// No marker at this level.
 		default:
-			// If marker inspection itself is unreliable, exclude the entire
-			// filesystem tree rather than treating an uncertain ancestor as
-			// trusted executable search space.
-			return filesystemRoot(current), nil
+			// Unreadable ancestors must not collapse the trust boundary to the
+			// filesystem root. On Windows that would treat nearly every host
+			// PATH entry as workspace-owned and make vendor tools unresolvable.
+			// Continue walking; only successful markers expand the boundary.
 		}
 
 		parent := filepath.Dir(current)
 		if parent == current {
 			return boundary, nil
-		}
-		current = parent
-	}
-}
-
-func filesystemRoot(value string) string {
-	current := filepath.Clean(value)
-	for {
-		parent := filepath.Dir(current)
-		if parent == current {
-			return current
 		}
 		current = parent
 	}
@@ -115,9 +104,17 @@ func canonicalDirectory(value string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	canonical, err := filepath.EvalSymlinks(filepath.Clean(absolute))
+	cleaned := filepath.Clean(absolute)
+	canonical, err := filepath.EvalSymlinks(cleaned)
 	if err != nil {
-		return "", err
+		// Windows can fail EvalSymlinks on otherwise usable directories (long
+		// paths, certain reparse points). Fall back to a cleaned absolute path
+		// when Stat confirms a directory.
+		info, statErr := os.Stat(cleaned)
+		if statErr != nil || !info.IsDir() {
+			return "", ErrUnavailable
+		}
+		return cleaned, nil
 	}
 	info, err := os.Stat(canonical)
 	if err != nil || !info.IsDir() {
@@ -130,6 +127,7 @@ func trustedSearchDirectories(pathValue, boundary string) []string {
 	seen := make(map[string]struct{})
 	result := make([]string, 0)
 	for _, entry := range filepath.SplitList(pathValue) {
+		entry = normalizePathEntry(entry)
 		if entry == "" || !filepath.IsAbs(entry) {
 			continue
 		}
@@ -151,6 +149,19 @@ func trustedSearchDirectories(pathValue, boundary string) []string {
 	return result
 }
 
+// normalizePathEntry strips Windows PATH quoting and surrounding whitespace.
+// Entries like `"C:\Program Files\nodejs"` are common and otherwise fail IsAbs.
+func normalizePathEntry(entry string) string {
+	entry = strings.TrimSpace(entry)
+	if len(entry) >= 2 {
+		if (entry[0] == '"' && entry[len(entry)-1] == '"') ||
+			(entry[0] == '\'' && entry[len(entry)-1] == '\'') {
+			entry = strings.TrimSpace(entry[1 : len(entry)-1])
+		}
+	}
+	return entry
+}
+
 func canonicalExecutable(value, boundary string) (string, error) {
 	absolute, err := filepath.Abs(value)
 	if err != nil {
@@ -161,33 +172,82 @@ func canonicalExecutable(value, boundary string) (string, error) {
 		return "", ErrUnavailable
 	}
 	canonical, err := filepath.EvalSymlinks(absolute)
-	if err != nil || withinFilesystem(canonical, boundary) {
+	if err != nil {
+		// Fall back when the candidate exists as a usable non-directory file.
+		// This matches real Windows npm/cargo installs where EvalSymlinks can
+		// fail while CreateProcess can still launch the PE or .cmd shim.
+		info, statErr := os.Stat(absolute)
+		if statErr != nil || !isLaunchableFile(info) {
+			return "", ErrUnavailable
+		}
+		if withinFilesystem(absolute, boundary) {
+			return "", ErrUnavailable
+		}
+		return absolute, nil
+	}
+	if withinFilesystem(canonical, boundary) {
 		return "", ErrUnavailable
 	}
 	info, err := os.Stat(canonical)
-	if err != nil || !info.Mode().IsRegular() {
+	if err != nil || !isLaunchableFile(info) {
 		return "", ErrUnavailable
 	}
 	return filepath.Clean(canonical), nil
 }
 
+// isLaunchableFile reports whether info is a non-directory host file we may
+// hand to CreateProcess / exec. On Windows, Mode().IsRegular() is false for
+// some reparse-point shims and App Execution Aliases that still launch.
+func isLaunchableFile(info os.FileInfo) bool {
+	if info == nil || info.IsDir() {
+		return false
+	}
+	if info.Mode().IsRegular() {
+		return true
+	}
+	if runtime.GOOS != "windows" {
+		return false
+	}
+	modeType := info.Mode() & os.ModeType
+	return modeType == 0 || modeType == os.ModeIrregular || modeType == os.ModeSymlink
+}
+
 // executableCandidates returns the filesystem paths to try for name inside
 // directory. On Windows, extensionless vendor names such as "codex" expand
 // through PATHEXT so installed codex.exe / codex.cmd shims resolve. Names that
-// already include a final extension are tried exactly once.
+// already include a final extension are tried exactly once. Extension case
+// variants are included because some hosts store mixed-case PATHEXT values
+// while the filesystem entry uses another case.
 func executableCandidates(directory, name string, environment []string) []string {
 	if runtime.GOOS != "windows" {
 		return []string{filepath.Join(directory, name)}
 	}
 	if windowsNameHasExtension(name) {
-		return []string{filepath.Join(directory, name)}
+		return uniquePaths([]string{filepath.Join(directory, name)})
 	}
 	extensions := windowsPathExtensions(environment)
-	candidates := make([]string, 0, len(extensions))
+	candidates := make([]string, 0, len(extensions)*2)
 	for _, extension := range extensions {
-		candidates = append(candidates, filepath.Join(directory, name+extension))
+		candidates = append(candidates,
+			filepath.Join(directory, name+extension),
+			filepath.Join(directory, name+strings.ToLower(extension)),
+		)
 	}
-	return candidates
+	return uniquePaths(candidates)
+}
+
+func uniquePaths(values []string) []string {
+	seen := make(map[string]struct{}, len(values))
+	result := make([]string, 0, len(values))
+	for _, value := range values {
+		key := pathKey(value)
+		if _, exists := seen[key]; exists {
+			continue
+		}
+		seen[key] = struct{}{}
+		result = append(result, value)
+	}
+	return result
 }
 
 func windowsNameHasExtension(name string) bool {
@@ -224,6 +284,16 @@ func windowsPathExtensions(environment []string) []string {
 	}
 	if len(extensions) == 0 {
 		return []string{".com", ".exe", ".bat", ".cmd"}
+	}
+	// Ensure the common PE/script shims remain present even when a host PATHEXT
+	// list is incomplete (some restricted shells drop .CMD/.EXE).
+	for _, required := range []string{".exe", ".cmd", ".bat", ".com"} {
+		key := strings.ToLower(required)
+		if _, exists := seen[key]; exists {
+			continue
+		}
+		seen[key] = struct{}{}
+		extensions = append(extensions, required)
 	}
 	return extensions
 }
