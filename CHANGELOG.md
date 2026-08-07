@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.3.0-rc.3] - 2026-08-08
+## [0.3.0-rc.3] - 2026-08-07
 
 Corrective Phase 3 release candidate after `v0.3.0-rc.2` failed native Windows
 x64 tagged-artifact acceptance (Codex executable trust and snapshot/PowerShell

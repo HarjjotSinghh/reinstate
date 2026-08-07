@@ -1,7 +1,7 @@
 export const releaseHistory = [
   {
     version: 'v0.3.0-rc.3',
-    date: '2026-08-08',
+    date: '2026-08-07',
     summary:
       'Corrective Phase 3 candidate after RC2 Windows FAIL: hardened Codex PATHEXT/PATH trust, PowerShell snapshot staging, and Windows acceptance host gates.',
   },
