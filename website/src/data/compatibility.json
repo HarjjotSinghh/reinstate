@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "reinstateVersion": "v0.3.0-rc.2",
+  "reinstateVersion": "v0.3.0-rc.3",
   "lastReviewed": "2026-08-05",
   "owner": {
     "name": "Harjot Singh Rana",
@@ -44,7 +44,7 @@
       "status": "stable-verified",
       "lastTested": "2026-08-02",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-08-02-macos-phase2-V020RC2.md",
-      "notes": "Stable v0.2.0 passed its complete physical matrix here. This is historical stable evidence, not a claim that v0.3.0-rc.2 tagged-artifact acceptance has passed."
+      "notes": "Stable v0.2.0 passed its complete physical matrix here. This is historical stable evidence, not a claim that v0.3.0-rc.3 tagged-artifact acceptance has passed."
     },
     {
       "id": "macos-amd64",
@@ -54,7 +54,7 @@
       "status": "preview-unverified",
       "lastTested": null,
       "source": "https://github.com/HarjjotSinghh/reinstate/issues/97",
-      "notes": "No completed physical Intel Mac result is claimed for stable v0.2.0 or v0.3.0-rc.2; this optional environment does not block RC2."
+      "notes": "No completed physical Intel Mac result is claimed for stable v0.2.0 or v0.3.0-rc.3; this optional environment does not block RC3."
     },
     {
       "id": "windows-11-amd64",
@@ -64,7 +64,7 @@
       "status": "stable-verified",
       "lastTested": "2026-08-03",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-08-02-windows-phase2-V020RC2.md",
-      "notes": "Stable v0.2.0 passed all 32 physical rows here. This is historical stable evidence, not a claim that v0.3.0-rc.2 tagged-artifact acceptance has passed."
+      "notes": "Stable v0.2.0 passed all 32 physical rows here. This is historical stable evidence, not a claim that v0.3.0-rc.3 tagged-artifact acceptance has passed."
     },
     {
       "id": "windows-11-wsl2-amd64",
@@ -74,7 +74,7 @@
       "status": "preview-unverified",
       "lastTested": null,
       "source": "https://github.com/HarjjotSinghh/reinstate/issues/98",
-      "notes": "No completed WSL2 physical result is claimed for stable v0.2.0 or v0.3.0-rc.2; this optional environment does not block RC2. WSL1 remains unsupported."
+      "notes": "No completed WSL2 physical result is claimed for stable v0.2.0 or v0.3.0-rc.3; this optional environment does not block RC3. WSL1 remains unsupported."
     }
   ]
 }

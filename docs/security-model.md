@@ -75,7 +75,7 @@ vendor credential stores are not portable configuration.
 ## Local continuity index
 
 The local index is plaintext derived state on the user's own machine. Remote
-E2E encryption does not apply to it. The table describes `v0.3.0-rc.2`;
+E2E encryption does not apply to it. The table describes `v0.3.0-rc.3`;
 stable `v0.2.0` uses a separate v1 database without baselines. Its
 controls are:
 
@@ -113,9 +113,9 @@ an atomic filesystem/process-start primitive that the host does not provide. It
 never interpolates the session ID into a shell command. Gemini/OpenCode are
 read-only and fail closed for launch.
 
-## Verified-resume boundary (`v0.3.0-rc.2`)
+## Verified-resume boundary (`v0.3.0-rc.3`)
 
-Phase 3 is included in candidate `v0.3.0-rc.2`; tagged-artifact acceptance is
+Phase 3 is included in candidate `v0.3.0-rc.3`; tagged-artifact acceptance is
 pending, and stable `v0.2.0` does not include it.
 Before a Claude/Codex native continuation, Reinstate computes a deterministic
 local report and applies one fail-closed policy to direct resume/fork, `last`,

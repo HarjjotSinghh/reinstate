@@ -13,7 +13,7 @@ describe('roadmap and primary-evidence pages', () => {
     expect(roadmap).toContain('v0.2.0');
     expect(roadmap).toContain('Apple Silicon macOS');
     expect(roadmap).toContain('preview and unverified');
-    expect(roadmap).toContain('v0.3.0-rc.2');
+    expect(roadmap).toContain('v0.3.0-rc.3');
     expect(roadmap).toContain('tagged-artifact acceptance');
     expect(roadmap.match(/<td>Planned<\/td>/g)?.length).toBeGreaterThanOrEqual(2);
     expect(roadmap.match(/<td>Exploring<\/td>/g)?.length).toBeGreaterThanOrEqual(2);
