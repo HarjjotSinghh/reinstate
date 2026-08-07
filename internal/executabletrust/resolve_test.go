@@ -219,3 +219,140 @@ func TestResolveRejectsRelativeEmptyAndInvalidInputs(t *testing.T) {
 		t.Fatalf("relative PATH error = %v", err)
 	}
 }
+
+func TestWindowsPathExtensionsOrderAndDefaults(t *testing.T) {
+	got := windowsPathExtensions([]string{"PATHEXT=.EXE;.CMD;.exe;.BAT"})
+	want := []string{".EXE", ".CMD", ".BAT"}
+	if len(got) != len(want) {
+		t.Fatalf("extensions = %#v, want %#v", got, want)
+	}
+	for index := range want {
+		if got[index] != want[index] {
+			t.Fatalf("extensions = %#v, want %#v", got, want)
+		}
+	}
+
+	// Empty PATHEXT falls through to process env or the safe default list.
+	defaults := windowsPathExtensions([]string{"PATHEXT="})
+	if len(defaults) == 0 {
+		t.Fatal("expected default Windows path extensions")
+	}
+	joined := strings.ToLower(strings.Join(defaults, ";"))
+	for _, required := range []string{".exe", ".cmd"} {
+		if !strings.Contains(joined, required) {
+			t.Fatalf("defaults %#v missing %q", defaults, required)
+		}
+	}
+}
+
+func TestExecutableCandidatesExpandPathExtOnlyOnWindows(t *testing.T) {
+	directory := filepath.Join(string(os.PathSeparator), "trusted", "bin")
+	environment := []string{"PATHEXT=.COM;.EXE;.CMD"}
+	candidates := executableCandidates(directory, "codex", environment)
+	if runtime.GOOS == "windows" {
+		want := []string{
+			filepath.Join(directory, "codex.COM"),
+			filepath.Join(directory, "codex.EXE"),
+			filepath.Join(directory, "codex.CMD"),
+		}
+		if len(candidates) != len(want) {
+			t.Fatalf("candidates = %#v, want %#v", candidates, want)
+		}
+		for index := range want {
+			if candidates[index] != want[index] {
+				t.Fatalf("candidates = %#v, want %#v", candidates, want)
+			}
+		}
+		// Names that already carry an extension stay exact.
+		exact := executableCandidates(directory, "codex.exe", environment)
+		if len(exact) != 1 || exact[0] != filepath.Join(directory, "codex.exe") {
+			t.Fatalf("exact candidates = %#v", exact)
+		}
+		return
+	}
+	if len(candidates) != 1 || candidates[0] != filepath.Join(directory, "codex") {
+		t.Fatalf("non-Windows candidates = %#v", candidates)
+	}
+}
+
+func TestResolveExtensionlessWindowsVendorName(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Windows PATHEXT regression")
+	}
+	workspace := t.TempDir()
+	trusted := t.TempDir()
+	realExecutable, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	payload, err := os.ReadFile(realExecutable)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// RC1 failure shape: installed tool is codex.exe while callers look up "codex".
+	installed := filepath.Join(trusted, "codex.exe")
+	if err := os.WriteFile(installed, payload, 0o700); err != nil {
+		t.Fatal(err)
+	}
+
+	resolution, err := Resolve("codex", workspace, []string{
+		"PATH=" + trusted,
+		"PATHEXT=.COM;.EXE;.BAT;.CMD",
+	})
+	if err != nil {
+		t.Fatalf("Resolve(codex): %v", err)
+	}
+	want, err := filepath.EvalSymlinks(installed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resolution.Executable != want {
+		t.Fatalf("Executable = %q, want %q", resolution.Executable, want)
+	}
+}
+
+func TestResolveWindowsCmdShimAndSkipsWorkspaceOwnedExe(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Windows PATHEXT regression")
+	}
+	workspace := t.TempDir()
+	unsafe := filepath.Join(workspace, "tools")
+	trusted := t.TempDir()
+	if err := os.MkdirAll(unsafe, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	realExecutable, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	payload, err := os.ReadFile(realExecutable)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(unsafe, "claude.exe"), payload, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	// .cmd is a common npm shim form on native Windows.
+	installed := filepath.Join(trusted, "claude.cmd")
+	if err := os.WriteFile(installed, []byte("@echo off\r\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+
+	resolution, err := Resolve("claude", workspace, []string{
+		"PATH=" + strings.Join([]string{unsafe, trusted}, string(os.PathListSeparator)),
+		"PATHEXT=.COM;.EXE;.BAT;.CMD",
+	})
+	if err != nil {
+		t.Fatalf("Resolve(claude): %v", err)
+	}
+	want, err := filepath.EvalSymlinks(installed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resolution.Executable != want {
+		t.Fatalf("Executable = %q, want %q", resolution.Executable, want)
+	}
+	if strings.Contains(strings.ToLower(resolution.SearchPath), strings.ToLower(unsafe)) {
+		t.Fatalf("SearchPath retained workspace directory: %q", resolution.SearchPath)
+	}
+}

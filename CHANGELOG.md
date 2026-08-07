@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Resolve Windows vendor tools through PATHEXT so extensionless names such as
+  `codex` and `claude` select trusted `*.exe` / `*.cmd` shims outside the
+  workspace boundary (RC1 native Windows blocker).
+
+### Added
+
+- Add PowerShell-native release gates with full artifact/SBOM/source parity:
+  `scripts/check-release-artifacts.ps1`, `scripts/stage-release-assets.ps1`, and
+  `scripts/check-release-binary-identity.ps1`, so Windows acceptance no longer
+  depends on `sha256sum` / `unzip` / `jq`.
+- Document the pinned native Windows acceptance host and RC2 device prompts in
+  `docs/testing/windows-acceptance-host.md` and
+  `docs/testing/v0.3.0-rc.2-agent-verification-prompts.md`.
+
 ## [0.3.0-rc.1] - 2026-08-05
 
 First Phase 3 release candidate. It adds verified resume to the Phase 2 local

@@ -5,7 +5,6 @@ package executabletrust
 import (
 	"errors"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -29,6 +28,11 @@ type Resolution struct {
 // from the enclosing repository. Both PATH directories and executable
 // candidates are checked after symlink evaluation, and the returned PATH
 // contains only the retained trusted directories.
+//
+// On Windows, extensionless names such as "codex" are resolved through PATHEXT
+// (for example codex.exe / codex.cmd). PATHEXT is read from the supplied
+// environment first, then the process environment, then a safe default list.
+// Unix-like platforms resolve the exact basename only.
 func Resolve(name, workspace string, environment []string) (Resolution, error) {
 	if !validName(name) {
 		return Resolution{}, ErrUnavailable
@@ -45,15 +49,13 @@ func Resolve(name, workspace string, environment []string) (Resolution, error) {
 	searchDirectories := trustedSearchDirectories(pathValue, boundary)
 	searchPath := strings.Join(searchDirectories, string(os.PathListSeparator))
 	for _, directory := range searchDirectories {
-		candidate, lookPathErr := exec.LookPath(filepath.Join(directory, name))
-		if lookPathErr != nil {
-			continue
+		for _, candidate := range executableCandidates(directory, name, environment) {
+			resolved, candidateErr := canonicalExecutable(candidate, boundary)
+			if candidateErr != nil {
+				continue
+			}
+			return Resolution{Executable: resolved, SearchPath: searchPath}, nil
 		}
-		candidate, candidateErr := canonicalExecutable(candidate, boundary)
-		if candidateErr != nil {
-			continue
-		}
-		return Resolution{Executable: candidate, SearchPath: searchPath}, nil
 	}
 	return Resolution{}, ErrUnavailable
 }
@@ -167,6 +169,63 @@ func canonicalExecutable(value, boundary string) (string, error) {
 		return "", ErrUnavailable
 	}
 	return filepath.Clean(canonical), nil
+}
+
+// executableCandidates returns the filesystem paths to try for name inside
+// directory. On Windows, extensionless vendor names such as "codex" expand
+// through PATHEXT so installed codex.exe / codex.cmd shims resolve. Names that
+// already include a final extension are tried exactly once.
+func executableCandidates(directory, name string, environment []string) []string {
+	if runtime.GOOS != "windows" {
+		return []string{filepath.Join(directory, name)}
+	}
+	if windowsNameHasExtension(name) {
+		return []string{filepath.Join(directory, name)}
+	}
+	extensions := windowsPathExtensions(environment)
+	candidates := make([]string, 0, len(extensions))
+	for _, extension := range extensions {
+		candidates = append(candidates, filepath.Join(directory, name+extension))
+	}
+	return candidates
+}
+
+func windowsNameHasExtension(name string) bool {
+	// Match Go's Windows LookPath hasExt: a final "." after the last separator.
+	// validName already rejects separators, so filepath.Ext is sufficient.
+	return filepath.Ext(name) != ""
+}
+
+func windowsPathExtensions(environment []string) []string {
+	value, ok := environmentValue(environment, "PATHEXT")
+	if !ok || strings.TrimSpace(value) == "" {
+		value = os.Getenv("PATHEXT")
+	}
+	if strings.TrimSpace(value) == "" {
+		return []string{".com", ".exe", ".bat", ".cmd"}
+	}
+	extensions := make([]string, 0)
+	seen := make(map[string]struct{})
+	for _, part := range strings.Split(value, ";") {
+		extension := strings.TrimSpace(part)
+		if extension == "" {
+			continue
+		}
+		if !strings.HasPrefix(extension, ".") {
+			extension = "." + extension
+		}
+		// Preserve PATHEXT order; compare case-insensitively for dedupe only.
+		key := strings.ToLower(extension)
+		if _, exists := seen[key]; exists {
+			continue
+		}
+		seen[key] = struct{}{}
+		extensions = append(extensions, extension)
+	}
+	if len(extensions) == 0 {
+		return []string{".com", ".exe", ".bat", ".cmd"}
+	}
+	return extensions
 }
 
 func within(candidate, boundary string) bool {
