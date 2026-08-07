@@ -16,6 +16,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/HarjjotSinghh/reinstate/internal/config"
+	"github.com/HarjjotSinghh/reinstate/internal/doctor"
 	"github.com/HarjjotSinghh/reinstate/internal/environment"
 	"github.com/HarjjotSinghh/reinstate/internal/preflight"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
@@ -328,7 +329,7 @@ func launchLocalRecord(
 			"%s %q in %s",
 			plan.Executable,
 			plan.Args,
-			plan.Dir,
+			doctor.RedactPath(plan.Dir),
 		)
 		writeEnvironmentReportHuman(cmd.OutOrStdout(), report)
 		if report.Decision == preflight.DecisionBlocked {
@@ -831,7 +832,8 @@ func writeLocalInspect(
 	PrintHuman(cmd.OutOrStdout(), "Agent: %s", record.Agent)
 	PrintHuman(cmd.OutOrStdout(), "Title: %s", record.Title)
 	PrintHuman(cmd.OutOrStdout(), "Project: %s", record.Project)
-	PrintHuman(cmd.OutOrStdout(), "Workspace: %s", record.Workspace)
+	// Human output never prints absolute workspace paths (RC3 privacy finding).
+	PrintHuman(cmd.OutOrStdout(), "Workspace: %s", doctor.RedactPath(record.Workspace))
 	PrintHuman(cmd.OutOrStdout(), "Branch: %s", record.Branch)
 	PrintHuman(cmd.OutOrStdout(), "Updated: %s", record.UpdatedAt.Format(time.RFC3339))
 	PrintHuman(cmd.OutOrStdout(), "Messages: %d", record.MessageCount)
@@ -886,13 +888,14 @@ func environmentReportValueHuman(value any) (string, bool) {
 	case bool:
 		return strconv.FormatBool(current), true
 	case string:
-		return strconv.Quote(current), true
+		// Redact absolute paths that may appear in expected/actual string fields.
+		return strconv.Quote(doctor.RedactPath(current)), true
 	case workspace.WorkingTreeState:
 		return strconv.Quote(string(current)), true
 	case []string:
 		quoted := make([]string, 0, len(current))
 		for _, item := range current {
-			quoted = append(quoted, strconv.Quote(item))
+			quoted = append(quoted, strconv.Quote(doctor.RedactPath(item)))
 		}
 		return "[" + strings.Join(quoted, ", ") + "]", true
 	default:

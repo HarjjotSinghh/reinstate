@@ -46,7 +46,9 @@ Prefer `scripts/snapshot.ps1` on native Windows. It sets the same
 archive SBOMs are required by the gate.
 
 `stage-release-assets.ps1` resolves GoReleaser `path` fields as **repository
-root-relative** (`dist/...`), matching `stage-release-assets.sh`.
+root-relative** (`dist/...`), matching `stage-release-assets.sh`. Error strings
+use `${variable}` form so Windows PowerShell 5.1 does not treat `$name:` as a
+drive-scoped variable.
 
 ## Pre-flight checklist (before product matrix)
 

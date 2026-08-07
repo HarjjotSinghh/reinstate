@@ -70,10 +70,12 @@ foreach ($artifact in @($artifacts)) {
     $distPrefix = $resolvedDist.TrimEnd('\', '/') + [System.IO.Path]::DirectorySeparatorChar
     if (-not $fullSource.StartsWith($distPrefix, [System.StringComparison]::OrdinalIgnoreCase) -and
         -not ($fullSource.Equals($resolvedDist, [System.StringComparison]::OrdinalIgnoreCase))) {
-        throw "refusing to stage binary outside $resolvedDist: $fullSource (from $sourcePath)"
+        # Use ${} so Windows PowerShell 5.1 does not parse $resolvedDist: as a
+        # drive-scoped variable (parse error at $resolvedDist:).
+        throw "refusing to stage binary outside ${resolvedDist}: ${fullSource} (from ${sourcePath})"
     }
     if (-not (Test-Path -LiteralPath $fullSource)) {
-        throw "missing raw binary source: $fullSource (from $sourcePath)"
+        throw "missing raw binary source: ${fullSource} (from ${sourcePath})"
     }
 
     $destination = Join-Path $resolvedDist $assetName
@@ -85,4 +87,4 @@ if ($staged -eq 0) {
     throw "no raw Binary artifacts with extra.ID=raw were staged from $artifactsPath"
 }
 
-Write-Host "staged $staged raw release binaries into $resolvedDist"
+Write-Host "staged $staged raw release binaries into ${resolvedDist}"

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix Windows PowerShell 5.1 parse failure in `stage-release-assets.ps1` when
+  interpolating `$resolvedDist:` (RC3 artifact-gate blocker).
+- Redact absolute workspace paths in human `inspect` / dry-run output (RC3
+  privacy finding on installed-artifact human inspect).
+
 ## [0.3.0-rc.3] - 2026-08-07
 
 Corrective Phase 3 release candidate after `v0.3.0-rc.2` failed native Windows
