@@ -146,7 +146,11 @@ func TestProbeSupportsLinkedWorktreeWithPinnedRoot(t *testing.T) {
 	if err := os.Mkdir(nested, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	result, err := Probe(context.Background(), nested, ProbeOptions{})
+	// This integration test validates linked-worktree root handling, not the
+	// production two-second probe budget. The hardened probe launches several
+	// local Git commands; Windows CI can legitimately need longer while the
+	// runner is under load.
+	result, err := Probe(context.Background(), nested, ProbeOptions{Timeout: 30 * time.Second})
 	if err != nil {
 		t.Fatal(err)
 	}

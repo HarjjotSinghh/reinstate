@@ -20,10 +20,10 @@ func Redact(s string) string {
 	}
 	out := s
 	if rh := strings.TrimSpace(os.Getenv("REINSTATE_HOME")); rh != "" {
-		out = strings.ReplaceAll(out, rh, "${REINSTATE_HOME}")
+		out = redactPathRoot(out, rh, "${REINSTATE_HOME}")
 	}
 	if home, err := os.UserHomeDir(); err == nil && home != "" {
-		out = strings.ReplaceAll(out, home, "${HOME}")
+		out = redactPathRoot(out, home, "${HOME}")
 		// username segment
 		base := filepath.Base(home)
 		if base != "" && base != "/" && base != "\\" {
@@ -43,6 +43,42 @@ func Redact(s string) string {
 		out = out[:200] + "…[REDACTED_SESSION]"
 	}
 	return out
+}
+
+// redactPathRoot replaces a configured home path only when it is a complete
+// path component. A raw prefix replacement would turn /home/alice2 into
+// ${HOME}2 and prevent RedactPath from recognizing and removing that absolute
+// sibling path.
+func redactPathRoot(value, root, replacement string) string {
+	root = strings.TrimRight(root, "/\\")
+	if root == "" || root == "." || root == "/" || root == `\` ||
+		len(root) == 2 && root[1] == ':' {
+		return value
+	}
+
+	var out strings.Builder
+	for start := 0; start < len(value); {
+		match := strings.Index(value[start:], root)
+		if match < 0 {
+			out.WriteString(value[start:])
+			break
+		}
+		match += start
+		end := match + len(root)
+		if end == len(value) || isPathSeparator(value[end]) {
+			out.WriteString(value[start:match])
+			out.WriteString(replacement)
+			start = end
+			continue
+		}
+		out.WriteString(value[start:end])
+		start = end
+	}
+	return out.String()
+}
+
+func isPathSeparator(value byte) bool {
+	return value == '/' || value == '\\'
 }
 
 // RedactPath removes absolute paths from human-facing output while preserving
