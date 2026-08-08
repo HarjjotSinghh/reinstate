@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix Windows PowerShell 5.1 parse failure in `stage-release-assets.ps1` when
+  interpolating `$resolvedDist:` (RC3 artifact-gate blocker).
+- Fully redact absolute workspace paths in human `inspect` / dry-run output,
+  including Windows paths outside the canonical user home and sibling paths
+  that share a configured-home prefix (RC3 privacy finding on installed-artifact
+  human inspect).
+- Tolerate GoReleaser metadata records without `extra` under PowerShell strict
+  mode, and use native `tar.exe` for drive-qualified archives when MSYS2 is on
+  `PATH` (RC3 Windows artifact-gate blockers).
+- Duplicate configured automation passphrase descriptors before reading them,
+  so Windows handle reuse cannot invalidate unrelated Go runtime handles.
+- Preserve the exact parent preflight deadline across observer probes instead
+  of creating an earlier nested timeout.
+
 ## [0.3.0-rc.3] - 2026-08-07
 
 Corrective Phase 3 release candidate after `v0.3.0-rc.2` failed native Windows

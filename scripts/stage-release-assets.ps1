@@ -44,16 +44,20 @@ if ($null -eq $artifacts) {
 $staged = 0
 foreach ($artifact in @($artifacts)) {
     $type = [string]$artifact.type
-    $extraId = ""
-    if ($null -ne $artifact.extra) {
-        # GoReleaser emits Extra.ID; tolerate id for forward compatibility.
-        if ($null -ne $artifact.extra.ID) {
-            $extraId = [string]$artifact.extra.ID
-        } elseif ($null -ne $artifact.extra.id) {
-            $extraId = [string]$artifact.extra.id
-        }
+    if ($type -ne "Binary") {
+        continue
     }
-    if ($type -ne "Binary" -or $extraId -ne "raw") {
+    $extraProperty = $artifact.PSObject.Properties["extra"]
+    if ($null -eq $extraProperty -or $null -eq $extraProperty.Value) {
+        continue
+    }
+    # GoReleaser emits Extra.ID; tolerate id for forward compatibility.
+    $extra = $extraProperty.Value
+    $extraIDProperty = $extra.PSObject.Properties["ID"]
+    if ($null -eq $extraIDProperty) {
+        $extraIDProperty = $extra.PSObject.Properties["id"]
+    }
+    if ($null -eq $extraIDProperty -or [string]$extraIDProperty.Value -ne "raw") {
         continue
     }
 
@@ -70,10 +74,12 @@ foreach ($artifact in @($artifacts)) {
     $distPrefix = $resolvedDist.TrimEnd('\', '/') + [System.IO.Path]::DirectorySeparatorChar
     if (-not $fullSource.StartsWith($distPrefix, [System.StringComparison]::OrdinalIgnoreCase) -and
         -not ($fullSource.Equals($resolvedDist, [System.StringComparison]::OrdinalIgnoreCase))) {
-        throw "refusing to stage binary outside $resolvedDist: $fullSource (from $sourcePath)"
+        # Use ${} so Windows PowerShell 5.1 does not parse $resolvedDist: as a
+        # drive-scoped variable (parse error at $resolvedDist:).
+        throw "refusing to stage binary outside ${resolvedDist}: ${fullSource} (from ${sourcePath})"
     }
     if (-not (Test-Path -LiteralPath $fullSource)) {
-        throw "missing raw binary source: $fullSource (from $sourcePath)"
+        throw "missing raw binary source: ${fullSource} (from ${sourcePath})"
     }
 
     $destination = Join-Path $resolvedDist $assetName
@@ -85,4 +91,4 @@ if ($staged -eq 0) {
     throw "no raw Binary artifacts with extra.ID=raw were staged from $artifactsPath"
 }
 
-Write-Host "staged $staged raw release binaries into $resolvedDist"
+Write-Host "staged $staged raw release binaries into ${resolvedDist}"

@@ -491,6 +491,60 @@ func TestInspectDefaultsExecutableTrustBoundaryToCurrentDirectory(t *testing.T) 
 	}
 }
 
+// TestWindowsRealCodexExecutableTrust is an opt-in native-host acceptance
+// check. It uses only a temporary layout and asks the installed Codex binary
+// for its version; it never reads vendor session data. Set
+// REINSTATE_REAL_CODEX_PATH to an installed codex.exe or codex.cmd to run it.
+func TestWindowsRealCodexExecutableTrust(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("native Windows acceptance only")
+	}
+	executable := os.Getenv("REINSTATE_REAL_CODEX_PATH")
+	if executable == "" {
+		t.Skip("set REINSTATE_REAL_CODEX_PATH to run against an installed Codex executable")
+	}
+	executable, err := filepath.Abs(executable)
+	if err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Stat(executable)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.IsDir() {
+		t.Fatalf("Codex executable is a directory")
+	}
+	if extension := strings.ToLower(filepath.Ext(executable)); extension != ".exe" && extension != ".cmd" {
+		t.Fatalf("Codex executable extension = %q, want .exe or .cmd", extension)
+	}
+
+	root := t.TempDir()
+	if err := os.Mkdir(filepath.Join(root, "sessions"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	workspace := t.TempDir()
+	relative, relErr := filepath.Rel(workspace, executable)
+	if relErr == nil && relative != ".." && !strings.HasPrefix(relative, ".."+string(os.PathSeparator)) && !filepath.IsAbs(relative) {
+		t.Fatalf("Codex executable must be outside the throwaway workspace")
+	}
+
+	path := filepath.Dir(executable)
+	if inherited := os.Getenv("PATH"); inherited != "" {
+		path += string(os.PathListSeparator) + inherited
+	}
+	t.Setenv("PATH", path)
+	t.Setenv("PATHEXT", ".EXE;.CMD")
+	result := Inspect(context.Background(), "codex", Options{
+		Root: root, Workspace: workspace, Timeout: 10 * time.Second,
+	})
+	if result.Status != StatusSupported || !result.ExecutablePresent || !result.LayoutRecognized {
+		t.Fatalf("result = %+v", result)
+	}
+	if !strings.EqualFold(filepath.Clean(result.ExecutablePath), filepath.Clean(executable)) {
+		t.Fatalf("resolved executable = %q, want %q", result.ExecutablePath, executable)
+	}
+}
+
 func TestInspectAcceptsTrustedAbsoluteExecutableOverride(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("POSIX executable fixture")

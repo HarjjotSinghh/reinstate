@@ -20,10 +20,10 @@ func Redact(s string) string {
 	}
 	out := s
 	if rh := strings.TrimSpace(os.Getenv("REINSTATE_HOME")); rh != "" {
-		out = strings.ReplaceAll(out, rh, "${REINSTATE_HOME}")
+		out = redactPathRoot(out, rh, "${REINSTATE_HOME}")
 	}
 	if home, err := os.UserHomeDir(); err == nil && home != "" {
-		out = strings.ReplaceAll(out, home, "${HOME}")
+		out = redactPathRoot(out, home, "${HOME}")
 		// username segment
 		base := filepath.Base(home)
 		if base != "" && base != "/" && base != "\\" {
@@ -45,7 +45,57 @@ func Redact(s string) string {
 	return out
 }
 
-// RedactPath redacts absolute home prefixes.
+// redactPathRoot replaces a configured home path only when it is a complete
+// path component. A raw prefix replacement would turn /home/alice2 into
+// ${HOME}2 and prevent RedactPath from recognizing and removing that absolute
+// sibling path.
+func redactPathRoot(value, root, replacement string) string {
+	root = strings.TrimRight(root, "/\\")
+	if root == "" || root == "." || root == "/" || root == `\` ||
+		len(root) == 2 && root[1] == ':' {
+		return value
+	}
+
+	var out strings.Builder
+	for start := 0; start < len(value); {
+		match := strings.Index(value[start:], root)
+		if match < 0 {
+			out.WriteString(value[start:])
+			break
+		}
+		match += start
+		end := match + len(root)
+		if end == len(value) || isPathSeparator(value[end]) {
+			out.WriteString(value[start:match])
+			out.WriteString(replacement)
+			start = end
+			continue
+		}
+		out.WriteString(value[start:end])
+		start = end
+	}
+	return out.String()
+}
+
+func isPathSeparator(value byte) bool {
+	return value == '/' || value == '\\'
+}
+
+// RedactPath removes absolute paths from human-facing output while preserving
+// already-redacted home tokens.
 func RedactPath(p string) string {
-	return Redact(p)
+	redacted := Redact(p)
+	if isAbsolutePath(redacted) {
+		return "[REDACTED_PATH]"
+	}
+	return redacted
+}
+
+func isAbsolutePath(p string) bool {
+	if filepath.IsAbs(p) || strings.HasPrefix(p, "/") || strings.HasPrefix(p, `\`) {
+		return true
+	}
+	return len(p) >= 3 &&
+		((p[0] >= 'A' && p[0] <= 'Z') || (p[0] >= 'a' && p[0] <= 'z')) &&
+		p[1] == ':' && (p[2] == '\\' || p[2] == '/')
 }

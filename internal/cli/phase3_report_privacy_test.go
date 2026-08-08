@@ -2,15 +2,55 @@ package cli
 
 import (
 	"bytes"
+	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/spf13/cobra"
 
 	"github.com/HarjjotSinghh/reinstate/internal/agentcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/capability"
 	"github.com/HarjjotSinghh/reinstate/internal/preflight"
 	"github.com/HarjjotSinghh/reinstate/internal/runtimecheck"
+	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
 	"github.com/HarjjotSinghh/reinstate/internal/workspace"
 )
+
+func TestLocalInspectHumanRedactsAbsoluteWorkspacePath(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	root := string(filepath.Separator)
+	if volume := filepath.VolumeName(home); volume != "" {
+		root = volume + root
+	}
+	privateWorkspace := filepath.Join(root, "reinstate-private", "secret-project")
+	if !filepath.IsAbs(privateWorkspace) {
+		t.Fatalf("test workspace must be absolute: %q", privateWorkspace)
+	}
+	record := sessionindex.Record{
+		Agent: "claude", ID: "privacy-one", Title: "privacy",
+		Project: "secret-project", Workspace: privateWorkspace,
+		CanResume: true, CanFork: true,
+	}
+	report := preflight.Report{Decision: preflight.DecisionReady}
+	var stdout, stderr bytes.Buffer
+	cmd := &cobra.Command{}
+	cmd.SetOut(&stdout)
+	cmd.SetErr(&stderr)
+	if err := writeLocalInspect(cmd, record, report, nil, false); err != nil {
+		t.Fatal(err)
+	}
+	rendered := stdout.String()
+	if strings.Contains(rendered, privateWorkspace) {
+		t.Fatalf("human inspect leaked absolute workspace path: %s", rendered)
+	}
+	if !strings.Contains(rendered, "Workspace:") {
+		t.Fatalf("human inspect omitted workspace line: %s", rendered)
+	}
+	if !strings.Contains(rendered, "[REDACTED_PATH]") {
+		t.Fatalf("human inspect did not show redacted workspace: %s", rendered)
+	}
+}
 
 func TestEnvironmentHumanRendererUsesPrivacySafeFieldAllowlist(t *testing.T) {
 	const hidden = "PHASE3-HUMAN-HIDDEN-SENTINEL"

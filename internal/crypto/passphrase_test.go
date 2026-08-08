@@ -28,8 +28,8 @@ func TestReadPassphraseFromConfiguredFD(t *testing.T) {
 		t.Fatalf("got %q", got)
 	}
 	Zero(got)
-	if _, err := file.Seek(0, 0); err == nil {
-		t.Fatal("configured passphrase descriptor remained open")
+	if _, err := file.Seek(0, 0); err != nil {
+		t.Fatalf("configured passphrase descriptor was closed: %v", err)
 	}
 }
 

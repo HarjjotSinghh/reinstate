@@ -23,13 +23,13 @@ func ReadPassphrase(input io.Reader, promptOut io.Writer) ([]byte, error) {
 		if err != nil || fd < 0 {
 			return nil, fmt.Errorf("REINSTATE_PASSPHRASE_FD must be a valid file descriptor")
 		}
-		file := os.NewFile(uintptr(fd), "reinstate-passphrase-fd")
-		if file == nil {
+		file, err := duplicatePassphraseFD(uintptr(fd))
+		if err != nil || file == nil {
 			return nil, fmt.Errorf("REINSTATE_PASSPHRASE_FD is unavailable")
 		}
-		// The configured descriptor is single-use and belongs to Reinstate.
-		// Close this wrapper deterministically: on Windows, leaving its finalizer
-		// armed can close an unrelated file after the OS reuses the handle.
+		// Read and close only a duplicate. A caller that owns the configured
+		// descriptor may keep its wrapper alive, so closing the original handle
+		// here can close an unrelated reused Windows handle later.
 		defer func() { _ = file.Close() }()
 		return readBoundedSecret(file)
 	}
