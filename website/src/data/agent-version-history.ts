@@ -16,10 +16,17 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.3.0-rc.5': {
+    rangeChange: 'No agent-version range change documented.',
+    compatibilityChange:
+      'Carries the RC4 Windows-first product fixes and makes PowerShell release-artifact verification portable without widening Claude Code 2.1.219–2.1.220 or Codex CLI 0.133.0–0.146.0. Tagged-artifact acceptance is pending.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.3.0-rc.5/scripts/check-release-artifacts.ps1',
+  },
   'v0.3.0-rc.4': {
     rangeChange: 'No agent-version range change documented.',
     compatibilityChange:
-      'Fixes the RC3 native-Windows PowerShell 5.1 staging and human-output privacy blockers without widening Claude Code 2.1.219–2.1.220 or Codex CLI 0.133.0–0.146.0. Tagged-artifact acceptance is pending.',
+      'Fixes the RC3 native-Windows PowerShell 5.1 staging and human-output privacy blockers without widening Claude Code 2.1.219–2.1.220 or Codex CLI 0.133.0–0.146.0. Its release workflow failed before publication.',
     implementationSource:
       'https://github.com/HarjjotSinghh/reinstate/blob/v0.3.0-rc.4/internal/doctor/redact.go',
   },

@@ -5,10 +5,12 @@ Release candidate `v0.3.0-rc.1` added Phase 3 verified resume to the stable
 native Windows x64 failed (including extensionless Codex executable trust).
 RC2 still failed Windows acceptance (Codex trust and snapshot/PowerShell
 gates). RC3 still failed Windows acceptance on the PowerShell 5.1 staging parser
-and absolute-path privacy gates. Current candidate `v0.3.0-rc.4` fixes those
-findings after Windows-first product smoke and macOS pre-tag verification; its
-tagged-artifact acceptance is pending. Intel macOS and Linux/WSL2 remain
-optional, unsupported/unverified evidence and do not block RC4. Passing RC4
+and absolute-path privacy gates. RC4 fixed those findings after Windows-first
+product smoke, but its release workflow failed before publication while the
+PowerShell artifact verifier ran on Ubuntu. Current candidate `v0.3.0-rc.5`
+adds a CI-proven portable verifier; its tagged-artifact acceptance is pending.
+Intel macOS and Linux/WSL2 remain optional, unsupported/unverified evidence and
+do not block RC5. Passing RC5
 will not authorize stable `v0.3.0`; that requires a separate reviewed promotion
 and fresh tagged-artifact validation.
 

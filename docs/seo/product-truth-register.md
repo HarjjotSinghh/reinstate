@@ -2,7 +2,7 @@
 
 Last reviewed: 2026-08-08
 Canonical website source: `website/src/data/product.ts`
-Reviewed release: `v0.3.0-rc.4` (candidate acceptance pending; stable remains `v0.2.0`)
+Reviewed release: `v0.3.0-rc.5` (candidate acceptance pending; stable remains `v0.2.0`)
 
 This is the required output of the repository-local
 `reinstate-product-truth` workflow. It separates released facts from roadmap
@@ -27,7 +27,7 @@ marketing claim.
 | Paths | Recognized structural project roots are tokenized and expanded through a canonical project ID; arbitrary prose is not rewritten | `internal/pathmap`, adapter tests, configuration docs |
 | License | Apache-2.0 | `LICENSE`, `product.ts` |
 | Account requirement | The CLI does not require a Reinstate account | released architecture and `product.ts` |
-| Current release | `v0.3.0-rc.4` candidate, acceptance pending; `v0.2.0` remains stable | changelog, release history, compatibility data |
+| Current release | `v0.3.0-rc.5` candidate, acceptance pending; `v0.2.0` remains stable | changelog, release history, compatibility data |
 | Maintainer | Harjot Singh Rana | repository metadata and `product.ts` |
 
 ## Conflicting claims and resolution
@@ -36,7 +36,7 @@ marketing claim.
 | --- | --- | --- | --- |
 | Live GitHub About description | “Sync and resume coding-agent work across every device” is broader than verified OS/acceptance scope | Unsupported as written | Owner-operated update remains required; exact replacement is in `launch-distribution.md`. |
 | Live GitHub topics/social preview | Topics are incomplete and the generic social image does not match the canonical entity/brand packet | Stale external entity metadata | Reviewed topics and reproducible 1280×640 image are prepared; application remains an external repository-settings action. |
-| Roadmap surfaces | Portable handoffs, universal configuration, and team continuity can be mistaken for current features | Planned | Current pages distinguish stable v0.2.0, the RC4 verified-resume candidate, and later roadmap work. |
+| Roadmap surfaces | Portable handoffs, universal configuration, and team continuity can be mistaken for current features | Planned | Current pages distinguish stable v0.2.0, the RC5 verified-resume candidate, and later roadmap work. |
 | OS language | Availability of a Linux binary can be mistaken for certified Phase 1 Linux agent resume | Ambiguous without qualification | Published install and guide copy says plain Linux is not a certified Phase 1 agent-resume target. |
 | `rein doctor --self-test` | “Synthetic storage test” could be read as a probe of configured remote storage | Ambiguous | CLI reference now states that the self-test uses in-memory sync and local files; real storage evidence comes from `init`, `status`, or scoped sync operations. |
 | Structured data | A schema type or claim could exceed visible current content | Unsupported if unmatched | Generated-build CI now requires visible parity for page/article names, FAQ questions, HowTo steps, breadcrumbs, and dates. |
@@ -95,7 +95,7 @@ separately allowed to preserve historical releases.
 
 ## Unresolved questions and evidence gates
 
-1. `v0.3.0-rc.4` needs completed Apple Silicon macOS and native Windows x64
+1. `v0.3.0-rc.5` needs completed Apple Silicon macOS and native Windows x64
    tagged-artifact evidence before candidate acceptance can pass.
 2. Stable `v0.3.0` needs a separate reviewed promotion and fresh tagged-artifact
    validation; stable remains `v0.2.0` until then.

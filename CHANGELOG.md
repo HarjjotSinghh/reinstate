@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0-rc.5] - 2026-08-08
+
+Corrective Phase 3 release candidate after the signed `v0.3.0-rc.4` release
+workflow failed before publication. The RC4 draft remained unpublished and
+unattested, and the live public installers stayed on `v0.3.0-rc.3`. RC5
+carries the Windows-first RC4 product fixes plus a portable PowerShell verifier
+that is exercised on Ubuntu before tagging. Fresh tagged-artifact acceptance
+on both mandatory devices is pending; it does not authorize stable `v0.3.0`.
+
 ### Fixed
 
 - Make the PowerShell release-artifact verifier select native `tar.exe` only
@@ -18,8 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Corrective Phase 3 release candidate after `v0.3.0-rc.3` failed native Windows
 x64 tagged-artifact acceptance on the PowerShell 5.1 staging parser and human
 output privacy gates. RC4 was developed and smoke-tested Windows-first, then
-verified on Apple Silicon macOS. Fresh tagged-artifact acceptance on both
-mandatory devices is pending; it does not authorize stable `v0.3.0`.
+verified on Apple Silicon macOS. Its signed-tag release workflow failed during
+Ubuntu PowerShell artifact verification before publication or attestation, so
+RC4 has no tagged-artifact device acceptance and does not authorize stable
+`v0.3.0`.
 
 ### Fixed
 

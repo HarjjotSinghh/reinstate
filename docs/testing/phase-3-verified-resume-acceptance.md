@@ -36,16 +36,17 @@ release-candidate certification requires:
 1. Apple Silicon macOS (`darwin/arm64`); and
 2. native Windows x64 (`windows/amd64`, never WSL for the Windows column).
 
-These are the supported mandatory platforms for RC4 and stable `v0.3.0`.
+These are the supported mandatory platforms for RC5 and stable `v0.3.0`.
 Intel macOS and Linux/WSL2 are unsupported/unverified optional evidence. Do not
 install them solely for acceptance, count a missing or failed result as a
 release failure, or claim support based on built artifacts. They do not block
-RC4 or stable `v0.3.0`. Stable promotion still requires a separate decision and
+RC5 or stable `v0.3.0`. Stable promotion still requires a separate decision and
 fresh tagged-artifact validation on both supported platforms under
-`RELEASING.md`; an RC4 pass does not automatically authorize stable.
+`RELEASING.md`; an RC5 pass does not automatically authorize stable.
 
 The exact tag-specific instructions are the committed
-[`v0.3.0-rc.4` dispatch](v0.3.0-rc.4-agent-verification-prompts.md) (prior:
+[`v0.3.0-rc.5` dispatch](v0.3.0-rc.5-agent-verification-prompts.md) (prior:
+[`v0.3.0-rc.4`](v0.3.0-rc.4-agent-verification-prompts.md),
 [`v0.3.0-rc.3`](v0.3.0-rc.3-agent-verification-prompts.md),
 [`v0.3.0-rc.2`](v0.3.0-rc.2-agent-verification-prompts.md), and
 [`v0.3.0-rc.1`](v0.3.0-rc.1-agent-verification-prompts.md)). Each device
@@ -249,16 +250,16 @@ Windows; startup cold maxima are four and eight seconds. The candidate dispatch
 must freeze full-refresh and large-corpus ceilings; device reports may not relax them. Any failed
 result validation, source mutation, timeout, unbounded command/file count,
 20–30 second regression, or more than 25 percent comparable same-host
-per-command p95 regression is a blocker. For `v0.3.0-rc.4`, the values and
+per-command p95 regression is a blocker. For `v0.3.0-rc.5`, the values and
 ceilings are frozen in
-[`v0.3.0-rc.4-agent-verification-prompts.md`](v0.3.0-rc.4-agent-verification-prompts.md).
+[`v0.3.0-rc.5-agent-verification-prompts.md`](v0.3.0-rc.5-agent-verification-prompts.md).
 
 CI gates deterministic command/file-count and complexity ratios rather than
 flaky wall-clock assertions. Absolute ceilings belong to the physical matrix.
 
 ## Tagged-candidate chain
 
-For `v0.3.0-rc.4`:
+For `v0.3.0-rc.5`:
 
 1. merge the reviewed implementation through protected `main`;
 2. create an annotated signed tag at the exact merged commit;
@@ -271,7 +272,7 @@ For `v0.3.0-rc.4`:
 7. install into fresh isolated directories on both required devices; and
 8. run this complete matrix against those installed binaries.
 
-RC4 publication means “ready for tagged-artifact acceptance.” It does not mean
+RC5 publication means “ready for tagged-artifact acceptance.” It does not mean
 stable `v0.3.0`, and no report may make that claim.
 
 ## Device report block
@@ -281,7 +282,7 @@ Each immutable report ends with exactly one terminated block:
 ```text
 PHASE3-DEVICE-REPORT-V1
 device=<macos-arm64|windows-amd64>
-test_tag=v0.3.0-rc.4
+test_tag=v0.3.0-rc.5
 test_commit=<40-character commit>
 installed_binary_sha256=<sha256>
 required_pass=<count>
