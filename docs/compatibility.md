@@ -4,9 +4,11 @@ Release candidate `v0.3.0-rc.1` added Phase 3 verified resume to the stable
 `v0.2.0` surface. Apple Silicon macOS tagged-artifact acceptance passed;
 native Windows x64 failed (including extensionless Codex executable trust).
 RC2 still failed Windows acceptance (Codex trust and snapshot/PowerShell
-gates). Current candidate `v0.3.0-rc.3` hardens those Windows paths; its
+gates). RC3 still failed Windows acceptance on the PowerShell 5.1 staging parser
+and absolute-path privacy gates. Current candidate `v0.3.0-rc.4` fixes those
+findings after Windows-first product smoke and macOS pre-tag verification; its
 tagged-artifact acceptance is pending. Intel macOS and Linux/WSL2 remain
-optional, unsupported/unverified evidence and do not block RC3. Passing RC3
+optional, unsupported/unverified evidence and do not block RC4. Passing RC4
 will not authorize stable `v0.3.0`; that requires a separate reviewed promotion
 and fresh tagged-artifact validation.
 

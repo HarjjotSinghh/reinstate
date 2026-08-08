@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0-rc.4] - 2026-08-08
+
+Corrective Phase 3 release candidate after `v0.3.0-rc.3` failed native Windows
+x64 tagged-artifact acceptance on the PowerShell 5.1 staging parser and human
+output privacy gates. RC4 was developed and smoke-tested Windows-first, then
+verified on Apple Silicon macOS. Fresh tagged-artifact acceptance on both
+mandatory devices is pending; it does not authorize stable `v0.3.0`.
+
 ### Fixed
 
 - Fix Windows PowerShell 5.1 parse failure in `stage-release-assets.ps1` when
@@ -27,8 +35,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Corrective Phase 3 release candidate after `v0.3.0-rc.2` failed native Windows
 x64 tagged-artifact acceptance (Codex executable trust and snapshot/PowerShell
-release gates). Apple Silicon macOS and native Windows x64 acceptance for this
-candidate is pending; it does not authorize stable `v0.3.0`.
+release gates). Native Windows x64 acceptance failed again on the PowerShell
+5.1 staging parser and human-output path privacy gates. It does not authorize
+stable `v0.3.0`.
 
 ### Fixed
 
