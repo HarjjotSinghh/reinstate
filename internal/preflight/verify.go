@@ -591,16 +591,13 @@ func baselineOrVendorProvenance(value string) workspace.Provenance {
 	return workspace.ProvenanceVendorRecorded
 }
 
-func remainingTimeout(ctx context.Context, requested time.Duration) time.Duration {
-	remaining := DefaultVerifierTimeout
-	if deadline, ok := ctx.Deadline(); ok {
-		remaining = time.Until(deadline)
-	}
-	if requested > 0 && requested < remaining {
+// remainingTimeout returns the observer's own limit. The parent context
+// already carries the shared verifier deadline, and deriving a duration from
+// time.Until(parentDeadline) creates a slightly earlier nested deadline. That
+// gap can let later observers run after an earlier one times out.
+func remainingTimeout(_ context.Context, requested time.Duration) time.Duration {
+	if requested > 0 {
 		return requested
 	}
-	if remaining <= 0 {
-		return time.Nanosecond
-	}
-	return remaining
+	return DefaultVerifierTimeout
 }

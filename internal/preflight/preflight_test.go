@@ -56,6 +56,26 @@ func (runner agentVersionRunner) Version(context.Context, string, ...string) (ag
 	return runner.output, runner.err
 }
 
+func TestRemainingTimeoutPreservesParentDeadline(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	parentDeadline, ok := ctx.Deadline()
+	if !ok {
+		t.Fatal("parent context has no deadline")
+	}
+
+	timeout := remainingTimeout(ctx, 0)
+	if timeout != DefaultVerifierTimeout {
+		t.Fatalf("default observer timeout = %s, want %s", timeout, DefaultVerifierTimeout)
+	}
+	child, cancelChild := context.WithTimeout(ctx, timeout)
+	defer cancelChild()
+	childDeadline, ok := child.Deadline()
+	if !ok || !childDeadline.Equal(parentDeadline) {
+		t.Fatalf("child deadline = %s, want parent deadline %s", childDeadline, parentDeadline)
+	}
+}
+
 func TestVerifyFirstObservationThenStableBaseline(t *testing.T) {
 	t.Parallel()
 	fixture := newFixture(t, syntheticCredentialRemote("user", "secret", "example.com/org/repo.git", "token=private#fragment"))
