@@ -40,7 +40,13 @@ function Get-RelativeArchiveEntries {
     }
 
     if ($ArchivePath -like "*.tar.gz" -or $ArchivePath -like "*.tgz") {
-        $entries = @(& tar -tzf $ArchivePath 2>$null)
+        $nativeTar = Join-Path $env:SystemRoot "System32\tar.exe"
+        if (-not (Test-Path -LiteralPath $nativeTar)) {
+            throw "native Windows tar.exe is unavailable: $nativeTar"
+        }
+        # Do not resolve tar from PATH: an MSYS2 tar treats PowerShell drive
+        # paths as remote archive names.
+        $entries = @(& $nativeTar -tzf $ArchivePath 2>$null)
         if ($LASTEXITCODE -ne 0) {
             throw "cannot list archive members: $ArchivePath"
         }

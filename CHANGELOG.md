@@ -11,8 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix Windows PowerShell 5.1 parse failure in `stage-release-assets.ps1` when
   interpolating `$resolvedDist:` (RC3 artifact-gate blocker).
-- Redact absolute workspace paths in human `inspect` / dry-run output (RC3
-  privacy finding on installed-artifact human inspect).
+- Fully redact absolute workspace paths in human `inspect` / dry-run output,
+  including Windows paths outside the canonical user home (RC3 privacy finding
+  on installed-artifact human inspect).
+- Tolerate GoReleaser metadata records without `extra` under PowerShell strict
+  mode, and use native `tar.exe` for drive-qualified archives when MSYS2 is on
+  `PATH` (RC3 Windows artifact-gate blockers).
 
 ## [0.3.0-rc.3] - 2026-08-07
 

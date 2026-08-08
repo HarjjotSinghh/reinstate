@@ -44,16 +44,20 @@ if ($null -eq $artifacts) {
 $staged = 0
 foreach ($artifact in @($artifacts)) {
     $type = [string]$artifact.type
-    $extraId = ""
-    if ($null -ne $artifact.extra) {
-        # GoReleaser emits Extra.ID; tolerate id for forward compatibility.
-        if ($null -ne $artifact.extra.ID) {
-            $extraId = [string]$artifact.extra.ID
-        } elseif ($null -ne $artifact.extra.id) {
-            $extraId = [string]$artifact.extra.id
-        }
+    if ($type -ne "Binary") {
+        continue
     }
-    if ($type -ne "Binary" -or $extraId -ne "raw") {
+    $extraProperty = $artifact.PSObject.Properties["extra"]
+    if ($null -eq $extraProperty -or $null -eq $extraProperty.Value) {
+        continue
+    }
+    # GoReleaser emits Extra.ID; tolerate id for forward compatibility.
+    $extra = $extraProperty.Value
+    $extraIDProperty = $extra.PSObject.Properties["ID"]
+    if ($null -eq $extraIDProperty) {
+        $extraIDProperty = $extra.PSObject.Properties["id"]
+    }
+    if ($null -eq $extraIDProperty -or [string]$extraIDProperty.Value -ne "raw") {
         continue
     }
 

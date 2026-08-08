@@ -45,7 +45,21 @@ func Redact(s string) string {
 	return out
 }
 
-// RedactPath redacts absolute home prefixes.
+// RedactPath removes absolute paths from human-facing output while preserving
+// already-redacted home tokens.
 func RedactPath(p string) string {
-	return Redact(p)
+	redacted := Redact(p)
+	if isAbsolutePath(redacted) {
+		return "[REDACTED_PATH]"
+	}
+	return redacted
+}
+
+func isAbsolutePath(p string) bool {
+	if filepath.IsAbs(p) || strings.HasPrefix(p, "/") || strings.HasPrefix(p, `\`) {
+		return true
+	}
+	return len(p) >= 3 &&
+		((p[0] >= 'A' && p[0] <= 'Z') || (p[0] >= 'a' && p[0] <= 'z')) &&
+		p[1] == ':' && (p[2] == '\\' || p[2] == '/')
 }

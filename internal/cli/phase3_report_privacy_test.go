@@ -17,12 +17,16 @@ import (
 )
 
 func TestLocalInspectHumanRedactsAbsoluteWorkspacePath(t *testing.T) {
-	const absolute = "/Users/private-user/code/secret-project"
 	home := t.TempDir()
 	t.Setenv("HOME", home)
-	// Prefer HOME redaction when the path is under home; otherwise ensure
-	// absolute private path text does not appear verbatim.
-	privateWorkspace := filepath.Join(home, "code", "secret-project")
+	root := string(filepath.Separator)
+	if volume := filepath.VolumeName(home); volume != "" {
+		root = volume + root
+	}
+	privateWorkspace := filepath.Join(root, "reinstate-private", "secret-project")
+	if !filepath.IsAbs(privateWorkspace) {
+		t.Fatalf("test workspace must be absolute: %q", privateWorkspace)
+	}
 	record := sessionindex.Record{
 		Agent: "claude", ID: "privacy-one", Title: "privacy",
 		Project: "secret-project", Workspace: privateWorkspace,
@@ -37,13 +41,13 @@ func TestLocalInspectHumanRedactsAbsoluteWorkspacePath(t *testing.T) {
 		t.Fatal(err)
 	}
 	rendered := stdout.String()
-	if strings.Contains(rendered, privateWorkspace) || strings.Contains(rendered, absolute) {
+	if strings.Contains(rendered, privateWorkspace) {
 		t.Fatalf("human inspect leaked absolute workspace path: %s", rendered)
 	}
 	if !strings.Contains(rendered, "Workspace:") {
 		t.Fatalf("human inspect omitted workspace line: %s", rendered)
 	}
-	if !strings.Contains(rendered, "${HOME}") && !strings.Contains(rendered, "secret-project") {
+	if !strings.Contains(rendered, "[REDACTED_PATH]") {
 		t.Fatalf("human inspect did not show redacted workspace: %s", rendered)
 	}
 }
