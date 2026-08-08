@@ -9,6 +9,24 @@ import (
 	"testing"
 )
 
+func TestPowerShellArtifactCheckSelectsTarByOperatingSystem(t *testing.T) {
+	body := read(t, "scripts/check-release-artifacts.ps1")
+	for _, required := range []string{
+		`$env:OS -eq "Windows_NT"`,
+		`Join-Path $env:SystemRoot "System32\tar.exe"`,
+		`Get-Command tar -CommandType Application -ErrorAction Stop`,
+		`Select-Object -First 1`,
+		`& $archiveTar -tzf $ArchivePath`,
+	} {
+		if !strings.Contains(body, required) {
+			t.Errorf("PowerShell artifact check is missing %q", required)
+		}
+	}
+	if strings.Contains(body, `& $nativeTar -tzf $ArchivePath`) {
+		t.Error("PowerShell artifact check still invokes a Windows-only tar variable unconditionally")
+	}
+}
+
 func TestWindowsStageReleaseAssetsSkipsArtifactsWithoutExtra(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.Skip("native Windows PowerShell contract")

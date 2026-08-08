@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Make the PowerShell release-artifact verifier select native `tar.exe` only
+  on Windows and the host `tar` application on other PowerShell platforms;
+  exercise that exact gate in pull-request release packaging before tagging.
+
 ## [0.3.0-rc.4] - 2026-08-08
 
 Corrective Phase 3 release candidate after `v0.3.0-rc.3` failed native Windows

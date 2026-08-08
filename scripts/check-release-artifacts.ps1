@@ -6,7 +6,8 @@
 .DESCRIPTION
   Validates a staged release directory without GNU tools (sha256sum, unzip, jq).
   Windows acceptance must treat this script as the required artifact gate when
-  the POSIX helper is unavailable.
+  the POSIX helper is unavailable. Release CI also runs it under PowerShell on
+  Ubuntu so the two implementations cannot drift.
 #>
 param(
     [string]$DistDir = "dist"
@@ -40,13 +41,19 @@ function Get-RelativeArchiveEntries {
     }
 
     if ($ArchivePath -like "*.tar.gz" -or $ArchivePath -like "*.tgz") {
-        $nativeTar = Join-Path $env:SystemRoot "System32\tar.exe"
-        if (-not (Test-Path -LiteralPath $nativeTar)) {
-            throw "native Windows tar.exe is unavailable: $nativeTar"
+        if ($env:OS -eq "Windows_NT") {
+            $archiveTar = Join-Path $env:SystemRoot "System32\tar.exe"
+            if (-not (Test-Path -LiteralPath $archiveTar)) {
+                throw "native Windows tar.exe is unavailable: $archiveTar"
+            }
+            # Do not resolve tar from PATH on Windows: an MSYS2 tar treats
+            # PowerShell drive paths as remote archive names.
+        } else {
+            $tarCommand = Get-Command tar -CommandType Application -ErrorAction Stop |
+                Select-Object -First 1
+            $archiveTar = $tarCommand.Source
         }
-        # Do not resolve tar from PATH: an MSYS2 tar treats PowerShell drive
-        # paths as remote archive names.
-        $entries = @(& $nativeTar -tzf $ArchivePath 2>$null)
+        $entries = @(& $archiveTar -tzf $ArchivePath 2>$null)
         if ($LASTEXITCODE -ne 0) {
             throw "cannot list archive members: $ArchivePath"
         }
