@@ -6,7 +6,7 @@ order: 13
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.3.0-rc.4"
+version: "v0.3.0-rc.5"
 updatedAt: 2026-08-01
 tags: ["pull", "restore", "native-resume", "backup", "conflicts"]
 targetQuery: "restore a coding agent session with Reinstate"
@@ -49,7 +49,7 @@ rein diff --agent AGENT --session SESSION_ID --json
 `status` and `diff` request the hidden encryption passphrase because they read
 the remote manifest. Confirm that the remote key uses the intended agent and
 session. Metadata does not prove that the repository checkout matches the
-source. The `v0.3.0-rc.4` verified-resume report checks the local repository
+source. The `v0.3.0-rc.5` verified-resume report checks the local repository
 before native launch; it does not replace review of this remote restore plan.
 
 ## Dry-run the restore

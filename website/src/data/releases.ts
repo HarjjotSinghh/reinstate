@@ -1,9 +1,15 @@
 export const releaseHistory = [
   {
+    version: 'v0.3.0-rc.5',
+    date: '2026-08-08',
+    summary:
+      'Corrective Phase 3 candidate after RC4 stayed unpublished: portable PowerShell artifact verification with the Windows-first product fixes intact.',
+  },
+  {
     version: 'v0.3.0-rc.4',
     date: '2026-08-08',
     summary:
-      'Windows-first corrective Phase 3 candidate: PowerShell 5.1 staging, absolute-path privacy, passphrase-handle safety, and deterministic preflight deadlines.',
+      'Windows-first Phase 3 candidate whose signed-tag workflow failed before publication during Ubuntu PowerShell artifact verification.',
   },
   {
     version: 'v0.3.0-rc.3',
