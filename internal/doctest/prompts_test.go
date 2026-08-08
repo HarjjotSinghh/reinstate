@@ -417,13 +417,13 @@ func TestPhase2ReportTemplateContracts(t *testing.T) {
 func TestPhase3AcceptanceRunbookContracts(t *testing.T) {
 	body := read(t, "docs/testing/phase-3-verified-resume-acceptance.md")
 	for _, value := range []string{
-		"Required environments for RC1",
+		"Required environments for Phase 3 candidates",
 		"Apple Silicon macOS",
 		"native Windows x64",
 		"v0.3.0-rc.1-agent-verification-prompts.md",
 		"v0.3.0-rc.2-agent-verification-prompts.md",
 		"v0.3.0-rc.3-agent-verification-prompts.md",
-		"v0.3.0-rc.3-agent-verification-prompts.md",
+		"v0.3.0-rc.4-agent-verification-prompts.md",
 		"results/phase-3-report-template.md",
 		"Rows 1–32",
 		"baseline.unavailable",
@@ -587,6 +587,35 @@ func TestPhase3RC3PromptContracts(t *testing.T) {
 	}
 }
 
+func TestPhase3RC4PromptContracts(t *testing.T) {
+	body := read(t, "docs/testing/v0.3.0-rc.4-agent-verification-prompts.md")
+	for _, value := range []string{
+		"v0.3.0-rc.4",
+		"Prompt 1 — Claude Code on Apple Silicon macOS",
+		"Prompt 2 — Codex on native Windows x64",
+		"exact 25-asset set",
+		"checksums.txt plus 24",
+		"literal full TEST_COMMIT",
+		"https://reinstate.dev/install.sh",
+		"https://reinstate.dev/install.ps1",
+		"test/v0.3.0-rc.4-macos-arm64-report",
+		"test/v0.3.0-rc.4-windows-amd64-report",
+		"REPORT_DATE-macos-phase3-V030RC4.md",
+		"REPORT_DATE-windows-phase3-V030RC4.md",
+		"windows-acceptance-host.md",
+		"snapshot.ps1",
+		"PHASE3-DEVICE-REPORT-V1",
+		"END-PHASE3-DEVICE-REPORT-V1",
+		"PHASE3-RC4-FINAL-RECONCILIATION-V1",
+		"END-PHASE3-RC4-FINAL-RECONCILIATION-V1",
+		"stable_v0.3.0_authorized=false",
+	} {
+		if !strings.Contains(strings.ToLower(body), strings.ToLower(value)) {
+			t.Errorf("v0.3.0-rc.4 prompts missing %q", value)
+		}
+	}
+}
+
 func TestPhase3ReportTemplateContracts(t *testing.T) {
 	body := read(t, "docs/testing/results/phase-3-report-template.md")
 	for _, value := range []string{
@@ -638,6 +667,7 @@ func TestReleaseRunbookStagesAndFreezesReleaseInputs(t *testing.T) {
 		"v0.3.0-rc.1-agent-verification-prompts.md",
 		"v0.3.0-rc.2-agent-verification-prompts.md",
 		"v0.3.0-rc.3-agent-verification-prompts.md",
+		"v0.3.0-rc.4-agent-verification-prompts.md",
 		"windows-acceptance-host.md",
 		"two tagged-artifact reports",
 		"supported mandatory platforms",

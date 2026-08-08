@@ -16,10 +16,17 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.3.0-rc.4': {
+    rangeChange: 'No agent-version range change documented.',
+    compatibilityChange:
+      'Fixes the RC3 native-Windows PowerShell 5.1 staging and human-output privacy blockers without widening Claude Code 2.1.219–2.1.220 or Codex CLI 0.133.0–0.146.0. Tagged-artifact acceptance is pending.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.3.0-rc.4/internal/doctor/redact.go',
+  },
   'v0.3.0-rc.3': {
     rangeChange: 'No agent-version range change documented.',
     compatibilityChange:
-      'Hardens Windows trusted executable resolution and PowerShell snapshot/staging gates after RC2 native Windows FAIL without widening Claude Code 2.1.219–2.1.220 or Codex CLI 0.133.0–0.146.0. Tagged-artifact acceptance is pending.',
+      'Hardens Windows trusted executable resolution and PowerShell snapshot/staging gates after RC2 native Windows FAIL without widening Claude Code 2.1.219–2.1.220 or Codex CLI 0.133.0–0.146.0. Native Windows acceptance still failed on later staging/privacy gates.',
     implementationSource:
       'https://github.com/HarjjotSinghh/reinstate/blob/v0.3.0-rc.3/internal/executabletrust/resolve.go',
   },

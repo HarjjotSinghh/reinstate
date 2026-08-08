@@ -6,12 +6,12 @@ configuration or cloud access. It also synchronizes Claude Code and Codex CLI
 sessions across machines through
 client-side-encrypted, user-owned object storage.
 
-Release candidate `v0.3.0-rc.3` additionally implements Phase 3 verified
+Release candidate `v0.3.0-rc.4` additionally implements Phase 3 verified
 resume: a privacy-safe environment report and launch gate for same-vendor
 Claude/Codex continuation. Its tagged-artifact acceptance is pending, and it
 is not stable `v0.3.0`.
 
-> **Release status:** the public installers pin candidate `v0.3.0-rc.3`.
+> **Release status:** the public installers pin candidate `v0.3.0-rc.4`.
 > Apple Silicon macOS and native Windows x64 tagged-artifact acceptance is
 > pending. Stable remains `v0.2.0`; Intel macOS and Linux/WSL2 remain optional,
 > unsupported/unverified evidence tracked in [#97](https://github.com/HarjjotSinghh/reinstate/issues/97)
@@ -77,7 +77,7 @@ The tap's stable formula passed install, both-alias identity, formula test,
 no-op upgrade, and uninstall checks on Apple Silicon. Intel macOS and
 Linuxbrew remain unverified for `v0.2.0`.
 
-### Install v0.3.0-rc.3 on macOS, Linux, or WSL2
+### Install v0.3.0-rc.4 on macOS, Linux, or WSL2
 
 ```sh
 curl -fsSL https://reinstate.dev/install.sh | sh
@@ -87,7 +87,7 @@ The default installation directory is `~/.local/bin`. The bootstrap prints an
 absolute `rein init` command that works immediately and adds the directory to
 the appropriate shell startup file for new terminals.
 
-### Install v0.3.0-rc.3 on native Windows PowerShell
+### Install v0.3.0-rc.4 on native Windows PowerShell
 
 ```powershell
 irm https://reinstate.dev/install.ps1 | iex
@@ -99,7 +99,7 @@ and the current PowerShell process.
 
 Both public bootstraps:
 
-1. pin `v0.3.0-rc.3`;
+1. pin `v0.3.0-rc.4`;
 2. download the canonical installer from that exact signed Git tag;
 3. verify the canonical installer SHA-256;
 4. download only the matching GitHub Release asset and `checksums.txt`;
@@ -195,7 +195,7 @@ not a shell command string. Remove `--dry-run` to inherit the current terminal
 and launch the same vendor. Gemini and OpenCode remain read-only and refuse
 resume/fork.
 
-The `v0.3.0-rc.3` candidate includes a deterministic `environment` report in
+The `v0.3.0-rc.4` candidate includes a deterministic `environment` report in
 `inspect` and native dry-run output. It checks the fresh selected source,
 workspace/repository, installed same-vendor agent, name-only capabilities, and
 recognized Node/Go runtime declarations. The verifier is local-only: it does
@@ -247,7 +247,7 @@ successful prelaunch observations used by verified resume. It contains bounded u
 prompt search text and metadata—not assistant reasoning/messages, tool output,
 environment dumps, credentials, or auth stores.
 
-That v2 path describes `v0.3.0-rc.3`. Stable `v0.2.0` uses
+That v2 path describes `v0.3.0-rc.4`. Stable `v0.2.0` uses
 `session-index-v1.sqlite` and stores no prelaunch baselines. The separate
 versioned path prevents an older binary from silently rebuilding away Phase 3
 comparison history.

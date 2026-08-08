@@ -261,7 +261,7 @@ Do not close or remove this checklist merely because the automation is enabled.
 It is complete only when the stable packages are public, externally reviewed
 where required, and verified from clean native environments.
 
-- [x] Merge the Apple Silicon macOS and native-Windows RC3 reports and their
+- [x] Merge the Apple Silicon macOS and native-Windows RC4 reports and their
       explicit `v0.2.0` limited-platform reconciliation. Keep Intel macOS and
       WSL2/Linux physical acceptance `NOT TESTED`, waived for this release only,
       and label those artifacts preview rather than certified.

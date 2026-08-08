@@ -49,11 +49,20 @@ and host/tooling gaps. RC1 does **not** authorize stable `v0.3.0`.
 
 ### v0.3.0-rc.3 candidate evidence
 
-The next Phase 3 candidate uses
+The Phase 3 candidate used
 [`v0.3.0-rc.3` dispatch](docs/testing/v0.3.0-rc.3-agent-verification-prompts.md)
 plus the pinned
+[Windows acceptance host](docs/testing/windows-acceptance-host.md). Native
+Windows x64 failed on PowerShell 5.1 staging and human-output privacy; do not
+promote stable from RC3.
+
+### v0.3.0-rc.4 candidate evidence
+
+The Windows-first corrective candidate uses
+[`v0.3.0-rc.4` dispatch](docs/testing/v0.3.0-rc.4-agent-verification-prompts.md)
+plus the pinned
 [Windows acceptance host](docs/testing/windows-acceptance-host.md). Those two
-device reports decide RC3 tagged-artifact acceptance only. Stable promotion
+device reports decide RC4 tagged-artifact acceptance only. Stable promotion
 still requires a separate reviewed stable decision and fresh tagged-artifact
 validation on the same two supported platforms.
 
@@ -181,14 +190,14 @@ that verified deployment, and verifies both live routes again. Never run
 
 For a release candidate, start its committed candidate-specific acceptance
 dispatch only after both live routes install the new exact version. For
-`v0.3.0-rc.3`, Apple Silicon macOS and native Windows x64 own the mandatory
+`v0.3.0-rc.4`, Apple Silicon macOS and native Windows x64 own the mandatory
 two-device matrix; provision Windows per
 [windows-acceptance-host.md](docs/testing/windows-acceptance-host.md) before
-product rows. Passing those two reports means only that RC3 passed
+product rows. Passing those two reports means only that RC4 passed
 tagged-artifact acceptance. Stable `v0.3.0` still requires a separate promotion
 decision and fresh/reconciled tagged-artifact results from those two supported
 platforms. Native macOS amd64 and WSL2 amd64 are unsupported/unverified optional
-evidence and do not block RC3 or stable `v0.3.0`.
+evidence and do not block RC4 or stable `v0.3.0`.
 
 ### 5. Publish website-only changes
 
