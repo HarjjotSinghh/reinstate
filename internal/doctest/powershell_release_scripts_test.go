@@ -15,6 +15,7 @@ func TestPowerShellArtifactCheckSelectsTarByOperatingSystem(t *testing.T) {
 		`$env:OS -eq "Windows_NT"`,
 		`Join-Path $env:SystemRoot "System32\tar.exe"`,
 		`Get-Command tar -CommandType Application -ErrorAction Stop`,
+		`Select-Object -First 1`,
 		`& $archiveTar -tzf $ArchivePath`,
 	} {
 		if !strings.Contains(body, required) {

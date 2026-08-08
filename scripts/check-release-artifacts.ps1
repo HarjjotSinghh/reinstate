@@ -49,7 +49,8 @@ function Get-RelativeArchiveEntries {
             # Do not resolve tar from PATH on Windows: an MSYS2 tar treats
             # PowerShell drive paths as remote archive names.
         } else {
-            $tarCommand = Get-Command tar -CommandType Application -ErrorAction Stop
+            $tarCommand = Get-Command tar -CommandType Application -ErrorAction Stop |
+                Select-Object -First 1
             $archiveTar = $tarCommand.Source
         }
         $entries = @(& $archiveTar -tzf $ArchivePath 2>$null)
