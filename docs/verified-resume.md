@@ -286,9 +286,11 @@ verifier failure. Broad `--force`,
 `--continue-without`, `--no-check`, and environment-variable bypasses are
 intentionally not provided.
 
-Declining a prompt, EOF at a required prompt, or warning-level refusal in a
-non-terminal returns safety exit `7`. Child exit behavior remains the existing
-runtime contract.
+Declining a prompt, EOF or Ctrl+C at a required prompt, or warning-level refusal
+in a non-terminal returns safety exit `7`. On Windows, Reinstate reads this
+prompt in terminal mode so Ctrl+C is handled as a refusal instead of the console
+terminating the process. Child exit behavior remains the existing runtime
+contract.
 
 ## Performance budget
 

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Handle Ctrl+C at the environment-warning prompt as a deterministic safety
+  refusal on Windows, returning exit `7` without launching the vendor instead
+  of allowing the console to terminate Reinstate with `0xC000013A`.
+
 ### Changed
 
 - Treat incomplete capability probe diagnostics (for example symlink-skipped
