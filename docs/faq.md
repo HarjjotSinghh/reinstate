@@ -6,7 +6,7 @@ The **continuity layer for coding-agent work**. Phase 1 implements encrypted,
 bring-your-own-storage sync for same-vendor Claude Code and Codex sessions.
 Stable Phase 2 adds universal local indexing, literal
 search, metadata inspection, and same-vendor resume/fork without cloud
-configuration. Release candidate `v0.3.0-rc.7` also implements Phase 3 verified
+configuration. Stable `v0.3.0` also implements Phase 3 verified
 resume; tagged-artifact acceptance is pending and stable `v0.3.0` is not authorized.
 Cross-agent handoffs remain a later phase. A later universal configuration layer will reconcile supported MCP servers,
 skills, hooks/loops, plugins, marketplaces, and safe settings across harnesses
@@ -42,14 +42,14 @@ rein inspect claude:SESSION_ID
 rein resume claude:SESSION_ID --dry-run
 ```
 
-The `v0.3.0-rc.7` candidate uses a private derived index at
+The `v0.3.0` candidate uses a private derived index at
 `$REINSTATE_HOME/cache/session-index-v2.sqlite` (plus owner-only `.lock` and
 `.write.lock` coordination files). Stable `v0.2.0` uses the earlier v1 index
 and has no Phase 3 baselines; the paths are separate by design. Neither version
 needs a sync profile, storage credentials, an encryption passphrase, keyring
 access, or a network backend. Stable `v0.2.0` contains the Phase 1 sync surface
 and Phase 2 local continuity. The public installers now pin candidate
-`v0.3.0-rc.7`; its Apple Silicon macOS/native Windows x64 acceptance is pending,
+`v0.3.0`; its Apple Silicon macOS/native Windows x64 acceptance is pending,
 and Intel macOS plus Linux/WSL2 remain optional and unverified.
 
 ## Why not just use git?
@@ -68,7 +68,7 @@ translation. See [product-strategy.md](product-strategy.md).
 
 ## What does verified resume verify?
 
-In the `v0.3.0-rc.7` candidate, `rein inspect`, native dry-runs,
+In the `v0.3.0` candidate, `rein inspect`, native dry-runs,
 direct `resume`/`fork`, `last`, and picker launches share one deterministic
 environment report. It covers fresh session-source metadata, the selected
 workspace and local Git state, the installed same-vendor agent/version/layout,
@@ -180,14 +180,11 @@ reported explicitly rather than fabricated.
 
 ## Production ready?
 
-Pre-1.0. Stable `v0.2.0` includes Phase 1 encrypted sync and Phase 2 local
-continuity. Apple Silicon macOS and native Windows x64 are physically verified;
-Intel macOS and Linux/WSL2 remain preview and unverified. See
-[ROADMAP.md](../ROADMAP.md) and [CHANGELOG.md](../CHANGELOG.md). Use with
-backups; report bugs via GitHub Issues.
-
-Phase 3 verified resume is included in `v0.3.0-rc.7`; tagged-artifact acceptance
-is pending. No stable `v0.3.0` claim is made.
+Pre-1.0. Stable `v0.3.0` includes Phase 1 encrypted sync, Phase 2 local
+continuity, and Phase 3 verified resume. Apple Silicon macOS and native
+Windows x64 are physically verified; Intel macOS and Linux/WSL2 remain preview
+and unverified. See [ROADMAP.md](../ROADMAP.md) and
+[CHANGELOG.md](../CHANGELOG.md). Use with backups; report bugs via GitHub Issues.
 
 ## How do I contribute?
 

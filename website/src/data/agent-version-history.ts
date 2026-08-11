@@ -16,6 +16,14 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.3.0': {
+    rangeChange:
+      'Claude Code 2.1.219–2.1.227 and Codex CLI 0.133.0–0.147.0 unchanged from RC7.',
+    compatibilityChange:
+      'Stable Phase 3 release after dual-platform tagged-artifact acceptance PASS on v0.3.0-rc.7. Fresh stable dual validation is required after tag publication.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.3.0/docs/testing/results/2026-08-11-macos-phase3-V030RC7.md',
+  },
   'v0.3.0-rc.7': {
     rangeChange:
       'Claude Code 2.1.219–2.1.227 and Codex CLI 0.133.0–0.147.0 unchanged from RC6.',

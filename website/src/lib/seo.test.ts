@@ -16,10 +16,10 @@ describe('SEO product truth', () => {
     expect(product.licenseName).toBe('Apache-2.0');
     expect(product.requiresAccount).toBe(false);
     expect(product.releaseStatus).toBe(
-      'v0.3.0-rc.7 candidate · tagged-artifact acceptance pending',
+      'v0.3.0 stable · dual-platform verified resume',
     );
     expect(product.initialPublicReleaseDate).toBe('2026-07-25');
-    expect(product.stableRelease).toBe('v0.2.0');
+    expect(product.stableRelease).toBe('v0.3.0');
   });
 
   it('keeps the advertised release synchronized with the changelog', () => {

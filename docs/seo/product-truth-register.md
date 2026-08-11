@@ -2,7 +2,7 @@
 
 Last reviewed: 2026-08-08
 Canonical website source: `website/src/data/product.ts`
-Reviewed release: `v0.3.0-rc.7` (candidate acceptance pending; stable remains `v0.2.0`)
+Reviewed release: `v0.3.0` (stable after dual-platform RC7 acceptance PASS)
 
 This is the required output of the repository-local
 `reinstate-product-truth` workflow. It separates released facts from roadmap
@@ -27,7 +27,7 @@ marketing claim.
 | Paths | Recognized structural project roots are tokenized and expanded through a canonical project ID; arbitrary prose is not rewritten | `internal/pathmap`, adapter tests, configuration docs |
 | License | Apache-2.0 | `LICENSE`, `product.ts` |
 | Account requirement | The CLI does not require a Reinstate account | released architecture and `product.ts` |
-| Current release | `v0.3.0-rc.7` candidate, acceptance pending; `v0.2.0` remains stable | changelog, release history, compatibility data |
+| Current release | `v0.3.0` stable · dual-platform verified resume | changelog, release history, compatibility data |
 | Maintainer | Harjot Singh Rana | repository metadata and `product.ts` |
 
 ## Conflicting claims and resolution
@@ -95,10 +95,9 @@ separately allowed to preserve historical releases.
 
 ## Unresolved questions and evidence gates
 
-1. `v0.3.0-rc.7` needs completed Apple Silicon macOS and native Windows x64
-   tagged-artifact evidence before candidate acceptance can pass.
-2. Stable `v0.3.0` needs a separate reviewed promotion and fresh tagged-artifact
-   validation; stable remains `v0.2.0` until then.
+1. Stable `v0.3.0` promotion is authorized after dual-platform RC7
+   tagged-artifact acceptance PASS; fresh dual-platform tagged-artifact
+   validation on the stable tag remains the post-publish evidence gate.
 3. Search Console, Bing, IndexNow production ownership, Plausible, WAF/log,
    field Core Web Vitals, and manual AI-query evidence require owner/account or
    deployed-production access.

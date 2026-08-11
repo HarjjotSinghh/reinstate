@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-11
+
+Phase 3 stable release: verified resume for Claude Code and Codex on Apple
+Silicon macOS and native Windows x64. Dual-platform tagged-artifact acceptance
+passed on candidate `v0.3.0-rc.7` (`rc7_tagged_artifact_acceptance=PASS`). Fresh
+stable validation is required on both platforms after this tag; this section
+documents the product ship, not a waiver of that gate.
+
+### Added
+
+- Verified resume and fork with environment preflight, exact warning
+  acknowledgements, and prelaunch baselines for Claude Code and Codex.
+- Deterministic Phase 3 local smoke covering exit policies, capability
+  content-free checks, fork/alias parity, and repository safety.
+
+### Fixed
+
+- Windows Ctrl+C at the environment-warning prompt returns safety exit `7`.
+- Non-TTY native launch fails closed unless an explicit local-smoke override is set.
+- Capability probe incompleteness demoted from acknowledgement-forcing warnings
+  where appropriate; cancelled probes remain blocking.
+
+### Changed
+
+- Claude Code fail-closed range through `2.1.227`; Codex CLI through `0.147.0`.
+
+
 ## [0.3.0-rc.7] - 2026-08-11
 
 Phase 3 release candidate after `v0.3.0-rc.6` dual-platform tagged-artifact
@@ -616,7 +643,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0-rc.7...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0-rc.7...v0.3.0
 [0.3.0-rc.7]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0-rc.6...v0.3.0-rc.7
 [0.3.0-rc.6]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0-rc.5...v0.3.0-rc.6
 [0.3.0-rc.5]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0-rc.4...v0.3.0-rc.5
