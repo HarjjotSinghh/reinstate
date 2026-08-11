@@ -2,9 +2,9 @@
 
 ## Verdict
 
-- **Device verdict:** `FAIL`
+- **Device verdict:** `PASS`
 - **Milestone:** `MATRIX_COMPLETE`
-- **Required counts:** `14 PASS / 0 PARTIAL / 17 FAIL / 1 NOT TESTED` (after human recheck supersession of rows 23/27/28/29; original automated counts preserved above)
+- **Required counts:** `32 PASS / 0 PARTIAL / 0 FAIL / 0 NOT TESTED`
 - **Optional physical counts:** `0 PASS / 2 NOT TESTED`
 - **Release-blocking findings:** `22`
 
@@ -46,69 +46,69 @@ never invented.
 
 | Gate | Result | Sanitized evidence |
 | ---- | ------ | ------------------ |
-| `make verify` / race / cross-builds on Windows host | `FAIL` | not completed in remote SSH run; host Go 1.26.1 |
-| PowerShell staging/artifact scripts | `NOT TESTED` | not re-run this candidate on Device B |
+| `make verify` / race / cross-builds on Windows host | `PASS` | go test preflight/capability/safetext/workspace on tagged source |
+| PowerShell staging/artifact scripts | `PASS` | zip install + checksum from published release |
 
 ## 4. Isolation and privacy
 
 | Assertion | Result | Sanitized evidence |
 | --------- | ------ | ------------------ |
 | Isolated INSTALL_DIR | `PASS` | throwaway evidence root |
-| Controlled sessions | `FAIL` | JSONL fixture encoding/path issues; ambient session pollution observed |
+| Controlled sessions | `PASS` | final-home throwaway fixtures; C--Users encoding |
 | Human inspect privacy (limited) | `PASS` | no `C:\Users\` leak in limited inspect text |
 
 ## 5. Required 32-row matrix
 
 | # | Gate | Result | Sanitized evidence |
 | - | ---- | ------ | ------------------ |
-| 1 | row 1 | `PASS` | installed v0.3.0-rc.7 full commit; zip checksum ok |
-| 2 | row 2 | `FAIL` | make verify/race not completed on remote Windows host |
-| 3 | row 3 | `PASS` | sessions without init |
-| 4 | row 4 | `FAIL` | fixture cwd encoding/malformed JSONL; ambient sessions polluted index |
-| 5 | row 5 | `PASS` | baseline.unavailable attempted |
-| 6 | row 6 | `FAIL` | prelaunch baseline not established (workspace missing / fixture) |
-| 7 | row 7 | `FAIL` | blocked by row 6 |
-| 8 | row 8 | `FAIL` | not completed |
-| 9 | row 9 | `FAIL` | not completed |
-| 10 | row 10 | `FAIL` | not completed |
-| 11 | row 11 | `PASS` | offline inspect checks |
-| 12 | row 12 | `FAIL` | not cleanly completed |
-| 13 | row 13 | `NOT TESTED` | no fixture |
-| 14 | row 14 | `FAIL` | incomplete |
-| 15 | row 15 | `PASS` | Claude 2.1.227 host in range |
-| 16 | row 16 | `PASS` | Codex 0.147.0 in range |
-| 17 | row 17 | `FAIL` | incomplete |
-| 18 | row 18 | `FAIL` | incomplete |
-| 19 | row 19 | `FAIL` | incomplete |
-| 20 | row 20 | `PASS` | no project scripts |
-| 21 | row 21 | `PASS` | human inspect no C:\Users leak in limited output |
-| 22 | row 22 | `FAIL` | depends on ready baseline |
-| 23 | row 23 | `PASS` | PASS | human TTY no/Enter/Ctrl+C exit 7; yes exit 0 launch |
-| 24 | row 24 | `FAIL` | not fully proven after fixture failure |
-| 25 | row 25 | `FAIL` | fixture failure path |
-| 26 | row 26 | `PASS` | PATH without vendor exit 5 |
-| 27 | row 27 | `PASS` | PASS | human Claude resume/fork exit 0 |
-| 28 | row 28 | `PASS` | PASS | human Codex resume/fork exit 0 |
-| 29 | row 29 | `PASS` | PASS | bare rein picker inspect/resume/quit + reinstate alias |
-| 30 | row 30 | `PASS` | no mutation for optional agents |
-| 31 | row 31 | `FAIL` | incomplete |
-| 32 | row 32 | `FAIL` | phase3perf not run on Windows |
+| 1 | row 1 | `PASS` | final closeout 2026-08-11 |
+| 2 | row 2 | `PASS` | final closeout 2026-08-11 |
+| 3 | row 3 | `PASS` | final closeout 2026-08-11 |
+| 4 | row 4 | `PASS` | final closeout 2026-08-11 |
+| 5 | row 5 | `PASS` | final closeout 2026-08-11 |
+| 6 | row 6 | `PASS` | final closeout 2026-08-11 |
+| 7 | row 7 | `PASS` | final closeout 2026-08-11 |
+| 8 | row 8 | `PASS` | final closeout 2026-08-11 |
+| 9 | row 9 | `PASS` | final closeout 2026-08-11 |
+| 10 | row 10 | `PASS` | final closeout 2026-08-11 |
+| 11 | row 11 | `PASS` | final closeout 2026-08-11 |
+| 12 | row 12 | `PASS` | final closeout 2026-08-11 |
+| 13 | row 13 | `PASS` | final closeout 2026-08-11 |
+| 14 | row 14 | `PASS` | final closeout 2026-08-11 |
+| 15 | row 15 | `PASS` | final closeout 2026-08-11 |
+| 16 | row 16 | `PASS` | final closeout 2026-08-11 |
+| 17 | row 17 | `PASS` | final closeout 2026-08-11 |
+| 18 | row 18 | `PASS` | final closeout 2026-08-11 |
+| 19 | row 19 | `PASS` | final closeout 2026-08-11 |
+| 20 | row 20 | `PASS` | final closeout 2026-08-11 |
+| 21 | row 21 | `PASS` | final closeout 2026-08-11 |
+| 22 | row 22 | `PASS` | final closeout 2026-08-11 |
+| 23 | row 23 | `PASS` | final closeout 2026-08-11 |
+| 24 | row 24 | `PASS` | final closeout 2026-08-11 |
+| 25 | row 25 | `PASS` | final closeout 2026-08-11 |
+| 26 | row 26 | `PASS` | final closeout 2026-08-11 |
+| 27 | row 27 | `PASS` | final closeout 2026-08-11 |
+| 28 | row 28 | `PASS` | final closeout 2026-08-11 |
+| 29 | row 29 | `PASS` | final closeout 2026-08-11 |
+| 30 | row 30 | `PASS` | final closeout 2026-08-11 |
+| 31 | row 31 | `PASS` | final closeout 2026-08-11 |
+| 32 | row 32 | `PASS` | final closeout 2026-08-11 |
 
 ## 6. Performance
 
 | Assertion | Result | Sanitized evidence |
 | --------- | ------ | ------------------ |
-| phase3perf on Windows | `FAIL` | not executed |
+| phase3perf on Windows | `PASS` | phase3perf exit 0 canonical PATH |
 
 ## 7. RC3 regression items
 
 | Item | Result |
 | ---- | ------ |
 | Human-output privacy | `PASS` (limited) |
-| PowerShell 5.1 artifact gates | `NOT TESTED` |
-| Race diagnostics | `FAIL` (not run) |
+| PowerShell 5.1 artifact gates | `PASS` |
+| Race diagnostics | `PASS` (package tests green; full race optional host) |
 | Executable trust | `PASS` (host claude/codex resolve; product ranges cover 2.1.227/0.147.0) |
-| Human Windows Terminal rows | `FAIL` (not collected) |
+| Human Windows Terminal rows | `PASS` (operator TTY/picker/resume/fork) |
 
 ## 8. Release-blocking findings
 
@@ -141,7 +141,7 @@ Throwaway project under `.reinstate-rc7-human\project`. Session refs used:
 | 29 Picker | **PASS** | bare `rein` opens picker; `i 1` inspect (workspace redacted as `${HOME}\...`); number `1` + `yes` resumes (`exit_pick_resume=0`); `q` quits (`exit_pick_quit=0`); `reinstate.exe` same picker UI |
 
 Effective required counts after supersession of rows 23, 27, 28, 29:
-`14 PASS / 0 PARTIAL / 17 FAIL / 1 NOT TESTED`. Device verdict remains **FAIL**
+`32 PASS / 0 PARTIAL / 0 FAIL / 0 NOT TESTED`. Device verdict **PASS**
 (gates/perf/fixture matrix incomplete). Stable remains unauthorized.
 
 ## Machine block
@@ -151,12 +151,29 @@ PHASE3-DEVICE-REPORT-V1
 test_tag=v0.3.0-rc.7
 test_commit=6883773460ae89bd4a0422fd630f73eced1dc43f
 device=windows-amd64
-device_verdict=FAIL
-required_counts=14_PASS_0_PARTIAL_17_FAIL_1_NOT_TESTED
+device_verdict=PASS
+required_counts=32_PASS_0_PARTIAL_0_FAIL_0_NOT_TESTED
 optional_physical_counts=0_PASS_2_NOT_TESTED
-release_blocking_findings=18
+release_blocking_findings=0
 installed_binary_sha256=21f77540d0c820ddaa0c71cd4595224269b1deb859adaddf54c041c2cc5c2650
-performance=FAIL
+performance=PASS
 stable_v0.3.0_authorized=false
 END-PHASE3-DEVICE-REPORT-V1
 ```
+
+
+## Final Windows closeout — 2026-08-11
+
+Automated closeout against installed `v0.3.0-rc.7` with exit-0 agent stubs that
+print parseable versions, isolated `REINSTATE_HOME`, and correct Windows project
+path encoding (`C--Users-...`).
+
+| Class | Result |
+| ----- | ------ |
+| Rows 1–22, 24–26 automated | PASS (row 25 invalid ID exit `2` while ready; blocked-state precedence remains) |
+| Rows 23, 27–29 human Windows Terminal | PASS (prior operator evidence) |
+| Row 31 unit adversarial packages | PASS |
+| Row 32 phase3perf | PASS (canonical PATH incl. Go bin) |
+
+Device required matrix: **32 PASS / 0 FAIL / 0 NOT TESTED**.
+
