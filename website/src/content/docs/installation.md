@@ -6,7 +6,7 @@ order: 9
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.3.0-rc.5"
+version: "v0.3.0-rc.6"
 updatedAt: 2026-08-04
 tags: ["installation", "cli", "macos", "windows", "wsl2"]
 targetQuery: "install Reinstate CLI"
@@ -16,17 +16,17 @@ noindex: false
 ---
 
 Install Reinstate with the official bootstrap for your operating system, then
-require `rein version --json` to report `v0.3.0-rc.5`. The bootstrap verifies
+require `rein version --json` to report `v0.3.0-rc.6`. The bootstrap verifies
 the canonical tagged installer, release checksum, downloaded binary, and
 reported version before replacing an existing installation.
 
-> **Release status:** `v0.3.0-rc.5` is a pre-1.0 candidate whose tagged-artifact
+> **Release status:** `v0.3.0-rc.6` is a pre-1.0 candidate whose tagged-artifact
 > acceptance is pending on Apple Silicon macOS and native Windows x64. Stable
 > remains `v0.2.0`; Intel macOS and Linux/WSL2 remain optional and unverified.
 
 ## Prerequisites
 
-- Apple Silicon macOS or native Windows x64 for mandatory RC5 acceptance, or
+- Apple Silicon macOS or native Windows x64 for mandatory RC6 acceptance, or
   an optional unverified environment (Intel macOS, Linux, or WSL2). WSL1 is refused.
 - A user account that can write to a user-local installation directory.
 - HTTPS access to `reinstate.dev` and the project's GitHub Release assets.

@@ -68,12 +68,22 @@ stable from RC4.
 
 ### v0.3.0-rc.5 candidate evidence
 
-The corrective release-workflow candidate uses
+The corrective release-workflow candidate used
 [`v0.3.0-rc.5` dispatch](docs/testing/v0.3.0-rc.5-agent-verification-prompts.md)
 plus the pinned
-[Windows acceptance host](docs/testing/windows-acceptance-host.md). Those two
-device reports decide RC5 tagged-artifact acceptance only. Stable promotion
-still requires a separate reviewed stable decision and fresh tagged-artifact
+[Windows acceptance host](docs/testing/windows-acceptance-host.md). Dual-platform
+tagged-artifact acceptance failed when primary-host Claude/Codex installs were
+outside the fail-closed ranges; do not promote stable from RC5.
+
+### v0.3.0-rc.6 candidate evidence
+
+The compatibility-widen candidate uses
+[`v0.3.0-rc.6` dispatch](docs/testing/v0.3.0-rc.6-agent-verification-prompts.md)
+plus the pinned
+[Windows acceptance host](docs/testing/windows-acceptance-host.md). RC6 expands
+Claude Code through `2.1.227` and Codex CLI through `0.147.0`. Those two device
+reports decide RC6 tagged-artifact acceptance only. Stable promotion still
+requires a separate reviewed stable decision and fresh tagged-artifact
 validation on the same two supported platforms.
 
 ### v0.3.0-rc.2 candidate evidence
@@ -200,7 +210,7 @@ that verified deployment, and verifies both live routes again. Never run
 
 For a release candidate, start its committed candidate-specific acceptance
 dispatch only after both live routes install the new exact version. For
-`v0.3.0-rc.5`, Apple Silicon macOS and native Windows x64 own the mandatory
+`v0.3.0-rc.6`, Apple Silicon macOS and native Windows x64 own the mandatory
 two-device matrix; provision Windows per
 [windows-acceptance-host.md](docs/testing/windows-acceptance-host.md) before
 product rows. Passing those two reports means only that RC5 passed

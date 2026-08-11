@@ -16,6 +16,14 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.3.0-rc.6': {
+    rangeChange:
+      'Expanded the inclusive Claude Code range from 2.1.219–2.1.220 to 2.1.219–2.1.227 and the Codex CLI range from 0.133.0–0.146.0 to 0.133.0–0.147.0.',
+    compatibilityChange:
+      'Widens fail-closed product ranges so current primary-host Claude Code 2.1.225/2.1.227 and Codex CLI 0.147.0 installs are SUPPORTED for dual-platform Phase 3 retest. Versions above the new maxima remain UNTESTED. Tagged-artifact acceptance is pending.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.3.0-rc.6/internal/adapter/claude/claude.go',
+  },
   'v0.3.0-rc.5': {
     rangeChange: 'No agent-version range change documented.',
     compatibilityChange:

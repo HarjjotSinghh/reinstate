@@ -7,10 +7,12 @@ RC2 still failed Windows acceptance (Codex trust and snapshot/PowerShell
 gates). RC3 still failed Windows acceptance on the PowerShell 5.1 staging parser
 and absolute-path privacy gates. RC4 fixed those findings after Windows-first
 product smoke, but its release workflow failed before publication while the
-PowerShell artifact verifier ran on Ubuntu. Current candidate `v0.3.0-rc.5`
-adds a CI-proven portable verifier; its tagged-artifact acceptance is pending.
+PowerShell artifact verifier ran on Ubuntu. RC5 published that portable
+verifier but failed dual-platform acceptance on out-of-range agent versions.
+Current candidate `v0.3.0-rc.6` widens the fail-closed Claude/Codex ranges for
+retest; its tagged-artifact acceptance is pending.
 Intel macOS and Linux/WSL2 remain optional, unsupported/unverified evidence and
-do not block RC5. Passing RC5
+do not block RC6. Passing RC6
 will not authorize stable `v0.3.0`; that requires a separate reviewed promotion
 and fresh tagged-artifact validation.
 
@@ -78,20 +80,23 @@ Every Phase 1 sync-adapter discovery result reports one of:
 
 The Phase 3 source compatibility policy keeps these inclusive agent version
 ranges until a later candidate widens them with fresh device evidence.
-Claude Code `2.1.222` is correctly refused as untested (fail closed); widening
-needs its own matrix, not a silent stable bump:
+Candidate `v0.3.0-rc.6` widens the fail-closed ranges so current primary-host
+installs (Claude Code through `2.1.227`, Codex CLI through `0.147.0`) are
+`SUPPORTED` for dual-platform retest; versions above the maxima remain
+`UNTESTED` until a later matrix expands them again:
 
-| Agent | Tested stable range |
+| Agent | Inclusive source-tested range (RC6) |
 | ----- | ------------------- |
-| Claude Code | `2.1.219`–`2.1.220` |
-| OpenAI Codex CLI | `0.133.0`–`0.146.0` |
+| Claude Code | `2.1.219`–`2.1.227` |
+| OpenAI Codex CLI | `0.133.0`–`0.147.0` |
 
-Stable `v0.2.0` expands Codex support through `0.146.0`, which passed the full
-Phase 2 physical matrix on both verified platforms. It retains the
-destination-device Claude project-directory remapping and exact restore-path
-verification introduced in `v0.1.0`.
-Versions outside them, including prereleases, are `UNTESTED` and must not be
-called stable until their release matrix rows pass. The repository does not
+Stable `v0.2.0` still documents the older Phase 2 physical ceiling (Claude
+`2.1.219`–`2.1.220`, Codex through `0.146.0`). RC6 does not rewrite that stable
+claim; it only expands the RC product gates pending fresh tagged-artifact
+acceptance. Destination-device Claude project-directory remapping and exact
+restore-path verification from `v0.1.0` remain.
+Versions outside the current product maxima, including prereleases, are
+`UNTESTED` and must not be called stable until their release matrix rows pass. The repository does not
 fabricate native or physical results for a platform absent from the recorded
 reports. Phase 1 has no unsafe compatibility override.
 

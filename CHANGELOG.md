@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0-rc.6] - 2026-08-11
+
+Phase 3 release candidate after `v0.3.0-rc.5` dual-platform tagged-artifact
+acceptance failed with host agent versions outside the fail-closed ranges
+(Claude Code `2.1.225`/`2.1.227` and Codex CLI `0.147.0`). RC6 widens those
+inclusive ranges for retest on current primary-host installs. Fresh Apple
+Silicon macOS and native Windows x64 tagged-artifact acceptance is required;
+this candidate does not authorize stable `v0.3.0`.
+
+### Changed
+
+- Expand the fail-closed Claude Code compatibility range through `2.1.227`
+  (was `2.1.220`) and the Codex CLI range through `0.147.0` (was `0.146.0`),
+  covering current Mac and Windows primary-host installs used for Phase 3
+  retest. Versions above the new maxima remain `UNTESTED`.
+
 ## [0.3.0-rc.5] - 2026-08-08
 
 Corrective Phase 3 release candidate after the signed `v0.3.0-rc.4` release
@@ -565,7 +581,12 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0-rc.1...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0-rc.6...HEAD
+[0.3.0-rc.6]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0-rc.5...v0.3.0-rc.6
+[0.3.0-rc.5]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0-rc.4...v0.3.0-rc.5
+[0.3.0-rc.4]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0-rc.3...v0.3.0-rc.4
+[0.3.0-rc.3]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0-rc.2...v0.3.0-rc.3
+[0.3.0-rc.2]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0-rc.1...v0.3.0-rc.2
 [0.3.0-rc.1]: https://github.com/HarjjotSinghh/reinstate/compare/v0.2.0...v0.3.0-rc.1
 [0.2.0]: https://github.com/HarjjotSinghh/reinstate/compare/v0.1.0...v0.2.0
 [0.2.0-rc.3]: https://github.com/HarjjotSinghh/reinstate/compare/v0.2.0-rc.2...v0.2.0-rc.3

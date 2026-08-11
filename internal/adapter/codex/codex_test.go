@@ -174,8 +174,9 @@ func TestCodexSupportedVersionRange(t *testing.T) {
 		{version: "0.145.0", want: true},
 		{version: "0.145.1", want: true},
 		{version: "0.146.0", want: true},
-		{version: "0.146.1", want: false},
-		{version: "0.146.0-beta.1", want: false},
+		{version: "0.147.0", want: true},
+		{version: "0.147.1", want: false},
+		{version: "0.147.0-beta.1", want: false},
 		{version: "not-a-version", want: false},
 	}
 	for _, tt := range tests {

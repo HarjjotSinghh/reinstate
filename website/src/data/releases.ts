@@ -1,5 +1,11 @@
 export const releaseHistory = [
   {
+    version: 'v0.3.0-rc.6',
+    date: '2026-08-11',
+    summary:
+      'Phase 3 candidate that widens Claude Code through 2.1.227 and Codex CLI through 0.147.0 after RC5 host-version acceptance failures.',
+  },
+  {
     version: 'v0.3.0-rc.5',
     date: '2026-08-08',
     summary:

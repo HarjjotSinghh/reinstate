@@ -65,8 +65,8 @@ You need:
 The RC compatibility evidence currently recognizes these inclusive stable
 version ranges:
 
-- Claude Code `2.1.219`–`2.1.220`
-- Codex CLI `0.133.0`–`0.145.0`
+- Claude Code `2.1.219`–`2.1.227`
+- Codex CLI `0.133.0`–`0.147.0`
 
 Check the installed tools.
 

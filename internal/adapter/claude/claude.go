@@ -27,7 +27,7 @@ const maxJSONLRecordBytes = 16 << 20
 
 const (
 	minimumVerifiedClaudeVersion = "2.1.219"
-	maximumVerifiedClaudeVersion = "2.1.220"
+	maximumVerifiedClaudeVersion = "2.1.227"
 )
 
 // Adapter implements adapter.Adapter for Claude Code.
