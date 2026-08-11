@@ -4,7 +4,7 @@
 
 - **Device verdict:** `FAIL`
 - **Milestone:** `MATRIX_COMPLETE`
-- **Required counts:** `10 PASS / 0 PARTIAL / 21 FAIL / 1 NOT TESTED`
+- **Required counts:** `14 PASS / 0 PARTIAL / 17 FAIL / 1 NOT TESTED` (after human recheck supersession of rows 23/27/28/29; original automated counts preserved above)
 - **Optional physical counts:** `0 PASS / 2 NOT TESTED`
 - **Release-blocking findings:** `22`
 
@@ -83,13 +83,13 @@ never invented.
 | 20 | row 20 | `PASS` | no project scripts |
 | 21 | row 21 | `PASS` | human inspect no C:\Users leak in limited output |
 | 22 | row 22 | `FAIL` | depends on ready baseline |
-| 23 | row 23 | `FAIL` | human Windows Terminal not collected |
+| 23 | row 23 | `PASS` | PASS | human TTY no/Enter/Ctrl+C exit 7; yes exit 0 launch |
 | 24 | row 24 | `FAIL` | not fully proven after fixture failure |
 | 25 | row 25 | `FAIL` | fixture failure path |
 | 26 | row 26 | `PASS` | PATH without vendor exit 5 |
-| 27 | row 27 | `FAIL` | authenticated interactive not completed |
-| 28 | row 28 | `FAIL` | authenticated interactive not completed |
-| 29 | row 29 | `FAIL` | picker not completed |
+| 27 | row 27 | `PASS` | PASS | human Claude resume/fork exit 0 |
+| 28 | row 28 | `PASS` | PASS | human Codex resume/fork exit 0 |
+| 29 | row 29 | `PASS` | PASS | bare rein picker inspect/resume/quit + reinstate alias |
 | 30 | row 30 | `PASS` | no mutation for optional agents |
 | 31 | row 31 | `FAIL` | incomplete |
 | 32 | row 32 | `FAIL` | phase3perf not run on Windows |
@@ -119,6 +119,31 @@ never invented.
 5. phase3perf not executed on Windows.
 6. Large portion of mutation/workspace matrix incomplete.
 
+
+
+## 9. Human-keyboard recheck (Windows Terminal) — 2026-08-11
+
+Operator-run evidence in Windows Terminal against installed `v0.3.0-rc.7`
+(`rein.exe` SHA-256 `21f77540d0c820ddaa0c71cd4595224269b1deb859adaddf54c041c2cc5c2650`).
+Throwaway project under `.reinstate-rc7-human\project`. Session refs used:
+`claude:70d16a4d-73fb-4b79-848a-900bc28f81c5`,
+`codex:019fefe3-90c0-7af0-b008-a3a0dc93705a` (and later picker #1
+`codex:019fefe9-b216-7552-bc5d-a0ae810dccec`).
+
+| Row | Result | Evidence |
+| --- | ------ | -------- |
+| 23 TTY warning no | **PASS** | exit `7`, confirmation declined, no vendor launch |
+| 23 TTY Enter default | **PASS** | exit `7` |
+| 23 TTY Ctrl+C | **PASS** | exit `7`, process remained in shell |
+| 23 TTY yes | **PASS** | exit `0`, Claude launched then quit |
+| 27 Claude resume/fork | **PASS** | `exit_resume_claude=0`, `exit_fork_claude=0`, decision ready after baseline |
+| 28 Codex resume/fork | **PASS** | `exit_resume_codex=0`, `exit_fork_codex=0` |
+| 29 Picker | **PASS** | bare `rein` opens picker; `i 1` inspect (workspace redacted as `${HOME}\...`); number `1` + `yes` resumes (`exit_pick_resume=0`); `q` quits (`exit_pick_quit=0`); `reinstate.exe` same picker UI |
+
+Effective required counts after supersession of rows 23, 27, 28, 29:
+`14 PASS / 0 PARTIAL / 17 FAIL / 1 NOT TESTED`. Device verdict remains **FAIL**
+(gates/perf/fixture matrix incomplete). Stable remains unauthorized.
+
 ## Machine block
 
 ```
@@ -127,9 +152,9 @@ test_tag=v0.3.0-rc.7
 test_commit=6883773460ae89bd4a0422fd630f73eced1dc43f
 device=windows-amd64
 device_verdict=FAIL
-required_counts=10_PASS_0_PARTIAL_21_FAIL_1_NOT_TESTED
+required_counts=14_PASS_0_PARTIAL_17_FAIL_1_NOT_TESTED
 optional_physical_counts=0_PASS_2_NOT_TESTED
-release_blocking_findings=22
+release_blocking_findings=18
 installed_binary_sha256=21f77540d0c820ddaa0c71cd4595224269b1deb859adaddf54c041c2cc5c2650
 performance=FAIL
 stable_v0.3.0_authorized=false
