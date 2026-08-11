@@ -95,3 +95,19 @@ if printf '%s' "$out" | grep -E '/Users/|C:\\\\Users\\\\' >/dev/null; then
 fi
 
 echo "phase3-local-smoke extended PASS"
+
+# --- repo replacement after baseline must block ---
+# Keep same cwd path but re-init a different repository identity.
+rm -rf .git
+git init -b main >/dev/null
+git config user.email smoke@test
+git config user.name smoke
+git config core.autocrlf false
+printf 'replaced\n' > README.md
+git add README.md && git commit -m replaced >/dev/null
+set +e
+"$REIN" resume "codex:$XSID" --dry-run >/dev/null 2>&1
+code=$?
+set -e
+test "$code" -eq 7
+echo "phase3-local-smoke repo-replacement block PASS"
