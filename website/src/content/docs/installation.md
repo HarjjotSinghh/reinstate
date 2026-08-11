@@ -1,12 +1,12 @@
 ---
 title: "Install the Reinstate CLI"
 navTitle: "Install the CLI"
-description: "Install the pinned Reinstate release candidate on macOS, native Windows, or WSL2, verify its checksum and version, and diagnose PATH failures."
+description: "Install the pinned Reinstate stable release on macOS, native Windows, or WSL2, verify its checksum and version, and diagnose PATH failures."
 order: 9
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.3.0-rc.7"
+version: "v0.3.0"
 updatedAt: 2026-08-04
 tags: ["installation", "cli", "macos", "windows", "wsl2"]
 targetQuery: "install Reinstate CLI"
@@ -16,17 +16,17 @@ noindex: false
 ---
 
 Install Reinstate with the official bootstrap for your operating system, then
-require `rein version --json` to report `v0.3.0-rc.7`. The bootstrap verifies
+require `rein version --json` to report `v0.3.0`. The bootstrap verifies
 the canonical tagged installer, release checksum, downloaded binary, and
 reported version before replacing an existing installation.
 
-> **Release status:** `v0.3.0-rc.7` is a pre-1.0 candidate whose tagged-artifact
-> acceptance is pending on Apple Silicon macOS and native Windows x64. Stable
-> remains `v0.2.0`; Intel macOS and Linux/WSL2 remain optional and unverified.
+> **Release status:** `v0.3.0` is the current pre-1.0 stable release with
+> dual-platform verified resume on Apple Silicon macOS and native Windows x64.
+> Intel macOS and Linux/WSL2 remain optional and unverified.
 
 ## Prerequisites
 
-- Apple Silicon macOS or native Windows x64 for mandatory RC7 acceptance, or
+- Apple Silicon macOS or native Windows x64 for mandatory Phase 3 acceptance, or
   an optional unverified environment (Intel macOS, Linux, or WSL2). WSL1 is refused.
 - A user account that can write to a user-local installation directory.
 - HTTPS access to `reinstate.dev` and the project's GitHub Release assets.

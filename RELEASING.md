@@ -86,10 +86,10 @@ tagged-artifact acceptance failed (macOS 16 PASS / 12 FAIL / 4 NOT TESTED) on
 real-launch baseline, authenticated resume/fork, capability mutation matrix,
 and required TTY/picker evidence; do not promote stable from RC6.
 
-### v0.3.0-rc.7 candidate evidence
+### v0.3.0 stable evidence
 
 The post-RC6 harden candidate uses
-[`v0.3.0-rc.7` dispatch](docs/testing/v0.3.0-rc.7-agent-verification-prompts.md)
+[`v0.3.0` dispatch](docs/testing/v0.3.0-rc.7-agent-verification-prompts.md)
 plus the pinned
 [Windows acceptance host](docs/testing/windows-acceptance-host.md). RC7 packages
 non-TTY fail-closed native launch, Windows Ctrl+C safety at the warning prompt,

@@ -161,14 +161,14 @@ rein resume claude:<session-id>
 
 ---
 
-## Phase 3 — Verified resume (signature capability) 🚧
+## Phase 3 — Verified resume (signature capability) ✅
 
 **Gate:** before launch, Reinstate reports environment truth and refuses silent
 bad continuation.
 
-*Included in release candidate `v0.3.0-rc.7`. Tagged-artifact acceptance on
-Apple Silicon macOS and native Windows x64 is pending; this candidate does not
-authorize stable `v0.3.0`. Stable `v0.2.0` does not include this behavior.*
+*Closed in stable `v0.3.0` after dual-platform tagged-artifact acceptance PASS
+on candidate `v0.3.0-rc.7` (Apple Silicon macOS and native Windows x64). Fresh
+stable dual validation remains a post-publish evidence gate.*
 
 | Item | Status |
 | ---- | ------ |
@@ -178,7 +178,7 @@ authorize stable `v0.3.0`. Stable `v0.2.0` does not include this behavior.*
 | Runtime checks (recognized Node and Go declarations) | ✅ |
 | Exact warning acknowledgement vs non-overridable blocker policy | ✅ |
 | `rein inspect` environment report (JSON + human) | ✅ |
-| Adversarial, performance, review, and `v0.3.0-rc.7` release gates | 🚧 |
+| Adversarial, performance, review, and `v0.3.0` release gates | ✅ |
 
 Example output:
 

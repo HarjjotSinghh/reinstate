@@ -1,5 +1,11 @@
 export const releaseHistory = [
   {
+    version: 'v0.3.0',
+    date: '2026-08-11',
+    summary:
+      'Phase 3 stable: verified resume for Claude Code and Codex after dual-platform RC7 acceptance PASS.',
+  },
+  {
     version: 'v0.3.0-rc.7',
     date: '2026-08-11',
     summary:

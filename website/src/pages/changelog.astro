@@ -16,7 +16,7 @@ const currentReleaseDate = new Intl.DateTimeFormat('en', {
 }).format(new Date(`${product.currentReleaseDate}T00:00:00Z`));
 const answer =
   `The latest published Reinstate tag is ${product.currentRelease}, dated ${currentReleaseDate}. ` +
-  `This release candidate adds verified resume to the ${product.stableRelease} local continuity surface; tagged-artifact acceptance is pending and stable v0.3.0 is not authorized.`;
+  `Stable ${product.currentRelease} adds verified resume on Apple Silicon macOS and native Windows x64 after dual-platform RC7 acceptance PASS.`;
 ---
 
 <PublicContentLayout
@@ -36,8 +36,9 @@ const answer =
     Current unreleased website work adds the SEO, answer-engine, AI-search, and social-preview
     foundation and introduces signed <code>website-vYYYY.MM.DD.N</code> deployment tags. A website
     tag can publish reviewed site changes from current <code>main</code> while the public CLI and
-    installer routes remain pinned to the separately signed <code>{product.currentRelease}</code> candidate. It is
-    not a new Reinstate version or evidence for any platform outside the documented stable boundary.
+    installer routes remain pinned to the separately signed <code>{product.currentRelease}</code> stable
+    release. It is not a new Reinstate version or evidence for any platform outside the documented
+    stable boundary.
   </p>
   <p>
     The repository's
@@ -78,14 +79,16 @@ const answer =
   </ul>
   <h3>Acceptance boundary</h3>
   <ul>
-    <li>RC6 tagged-artifact acceptance is pending on Apple Silicon macOS and native Windows x64.</li>
     <li>
-      Intel macOS and Linux/WSL2 remain optional, unsupported/unverified evidence and do not block
-      this candidate.
+      Dual-platform tagged-artifact acceptance PASS on candidate <code>v0.3.0-rc.7</code>
+      (Apple Silicon macOS and native Windows x64).
     </li>
     <li>
-      Passing RC6 will not authorize stable <code>v0.3.0</code>; stable promotion requires a separate
-      reviewed decision and fresh tagged-artifact validation.
+      Intel macOS and Linux/WSL2 remain optional, unsupported/unverified evidence and do not block
+      this stable release.
+    </li>
+    <li>
+      Fresh dual-platform validation on the stable tag is the post-publish evidence gate.
     </li>
   </ul>
   <p>

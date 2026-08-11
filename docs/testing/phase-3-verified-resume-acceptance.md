@@ -45,7 +45,7 @@ fresh tagged-artifact validation on both supported platforms under
 `RELEASING.md`; an RC7 pass does not automatically authorize stable.
 
 The exact tag-specific instructions are the committed
-[`v0.3.0-rc.7` dispatch](v0.3.0-rc.7-agent-verification-prompts.md) (prior:
+[`v0.3.0` dispatch](v0.3.0-rc.7-agent-verification-prompts.md) (prior:
 [`v0.3.0-rc.6`](v0.3.0-rc.6-agent-verification-prompts.md),
 [`v0.3.0-rc.5`](v0.3.0-rc.5-agent-verification-prompts.md),
 [`v0.3.0-rc.4`](v0.3.0-rc.4-agent-verification-prompts.md),
@@ -252,7 +252,7 @@ Windows; startup cold maxima are four and eight seconds. The candidate dispatch
 must freeze full-refresh and large-corpus ceilings; device reports may not relax them. Any failed
 result validation, source mutation, timeout, unbounded command/file count,
 20–30 second regression, or more than 25 percent comparable same-host
-per-command p95 regression is a blocker. For `v0.3.0-rc.7`, the values and
+per-command p95 regression is a blocker. For `v0.3.0`, the values and
 ceilings are frozen in
 [`v0.3.0-rc.7-agent-verification-prompts.md`](v0.3.0-rc.7-agent-verification-prompts.md).
 
@@ -261,7 +261,7 @@ flaky wall-clock assertions. Absolute ceilings belong to the physical matrix.
 
 ## Tagged-candidate chain
 
-For `v0.3.0-rc.7`:
+For `v0.3.0`:
 
 1. merge the reviewed implementation through protected `main`;
 2. create an annotated signed tag at the exact merged commit;
@@ -284,7 +284,7 @@ Each immutable report ends with exactly one terminated block:
 ```text
 PHASE3-DEVICE-REPORT-V1
 device=<macos-arm64|windows-amd64>
-test_tag=v0.3.0-rc.7
+test_tag=v0.3.0
 test_commit=<40-character commit>
 installed_binary_sha256=<sha256>
 required_pass=<count>
