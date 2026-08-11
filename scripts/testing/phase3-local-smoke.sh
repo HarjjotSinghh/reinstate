@@ -62,7 +62,7 @@ test "$dec_c" = "ready"
 test "$dec_x" = "ready"
 echo "phase3-local-smoke PASS (claude=$dec_c codex=$dec_x rein=$("$REIN" version --json | python3 -c 'import json,sys; print(json.load(sys.stdin)["version"])'))"
 
-# --- extended assertions ---
+# --- extended assertions (before repo-replacement mutates the fixture) ---
 # invalid warning ID
 set +e
 "$REIN" resume "claude:$CSID" --allow-environment-warning not.a.real.id >/dev/null 2>&1
@@ -85,7 +85,9 @@ code=$?
 set -e
 test "$code" -eq 7
 "$REIN" resume "claude:$CSID" --allow-environment-warning git.working_tree >/dev/null
+# Restore a clean tree and re-baseline so later ready-state rows are not poisoned.
 git checkout -- README.md >/dev/null
+"$REIN" resume "claude:$CSID" --allow-environment-warning git.working_tree >/dev/null
 
 # privacy: human inspect should not emit absolute home paths
 out=$("$REIN" inspect "claude:$CSID" 2>/dev/null || true)
@@ -94,9 +96,58 @@ if printf '%s' "$out" | grep -E '/Users/|C:\\\\Users\\\\' >/dev/null; then
   exit 1
 fi
 
+# fork dry-run while environment is still ready
+"$REIN" fork "claude:$CSID" --dry-run --json >"$EVID/fork-c.json"
+"$REIN" fork "codex:$XSID" --dry-run --json >"$EVID/fork-x.json"
+python3 - "$EVID" <<'PY'
+import json, pathlib, sys
+evid = pathlib.Path(sys.argv[1])
+for name in ("fork-c.json", "fork-x.json"):
+    d = json.loads((evid / name).read_text())
+    assert d.get("operation") == "fork", d
+    assert d["environment"]["decision"] == "ready", d["environment"]["decision"]
+print("fork dry-run PASS")
+PY
+
+# alias parity: rein vs reinstate (same binary family)
+"$REIN" sessions --limit 10 --json >"$EVID/sessions-rein.json"
+"$(dirname "$REIN")/reinstate" sessions --limit 10 --json >"$EVID/sessions-reinstate.json"
+python3 - "$EVID" <<'PY'
+import json, pathlib, sys
+evid = pathlib.Path(sys.argv[1])
+a = json.loads((evid / "sessions-rein.json").read_text())
+b = json.loads((evid / "sessions-reinstate.json").read_text())
+sa = sorted(s["id"] for s in a["sessions"])
+sb = sorted(s["id"] for s in b["sessions"])
+assert sa == sb and len(sa) >= 2, (sa, sb)
+print("alias parity PASS", len(sa))
+PY
+
+# missing workspace: rewrite codex cwd, expect exit 5, then restore for later rows
+CODEX_ROLL="$EVID/codex/sessions/rollout-$XSID.jsonl"
+cp "$CODEX_ROLL" "$EVID/codex-rollout.bak"
+python3 - "$CODEX_ROLL" <<'PY'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1])
+lines = []
+for line in p.read_text().splitlines():
+    o = json.loads(line)
+    if o.get("type") == "session_meta":
+        o["payload"]["cwd"] = "/tmp/reinstate-missing-workspace-path-does-not-exist"
+    lines.append(json.dumps(o))
+p.write_text("\n".join(lines) + "\n")
+PY
+set +e
+"$REIN" resume "codex:$XSID" --dry-run >/dev/null 2>&1
+code=$?
+set -e
+test "$code" -eq 5
+mv "$EVID/codex-rollout.bak" "$CODEX_ROLL"
+echo "missing-workspace block PASS (exit=5)"
+
 echo "phase3-local-smoke extended PASS"
 
-# --- repo replacement after baseline must block ---
+# --- repo replacement after baseline must block (last: mutates project git) ---
 # Keep same cwd path but re-init a different repository identity.
 rm -rf .git
 git init -b main >/dev/null
@@ -111,3 +162,4 @@ code=$?
 set -e
 test "$code" -eq 7
 echo "phase3-local-smoke repo-replacement block PASS"
+echo "phase3-local-smoke ALL PASS"
