@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 
 	"github.com/HarjjotSinghh/reinstate/internal/agentcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/environment"
@@ -320,6 +321,20 @@ func TestPhase3WarningPromptCancellationWinsOverConcurrentYes(t *testing.T) {
 	})
 	if err != nil || confirmed {
 		t.Fatalf("confirmation/error = %t / %v, want declined without runtime error", confirmed, err)
+	}
+}
+
+func TestTerminalLineReaderTreatsControlCAsClosedInput(t *testing.T) {
+	t.Parallel()
+	stream := struct {
+		io.Reader
+		io.Writer
+	}{Reader: strings.NewReader("\x03"), Writer: io.Discard}
+	terminal := term.NewTerminal(&stream, "")
+	reader := terminalLineReader(terminal.ReadLine)
+	line, ok, err := reader()
+	if err != nil || ok || line != "" {
+		t.Fatalf("line/ok/error = %q / %t / %v, want closed input", line, ok, err)
 	}
 }
 

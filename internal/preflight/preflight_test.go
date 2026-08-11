@@ -418,19 +418,28 @@ func TestCapabilityDiagnosticAcknowledgementsAreScopeSpecific(t *testing.T) {
 	if len(checks) != 2 || checks[0].ID == checks[1].ID {
 		t.Fatalf("same-code scoped diagnostics did not get distinct IDs: %+v", checks)
 	}
+	for _, check := range checks {
+		if check.Severity != SeverityInfo || check.ExitCode != 0 {
+			t.Fatalf("incomplete capability probe must be informational: %+v", check)
+		}
+	}
+	// Informational diagnostics must not require acknowledgements.
 	report := validPolicyReport(checks)
-	if authorization, err := Authorize(report, []string{checks[0].ID}); err == nil || authorization.Allowed || authorization.ExitCode != exitcode.Safety {
-		t.Fatalf("partial scoped acknowledgement = %+v, %v", authorization, err)
+	if authorization, err := Authorize(report, nil); err != nil || !authorization.Allowed {
+		t.Fatalf("informational diagnostics must authorize without acknowledgements: %+v, %v", authorization, err)
+	}
+	// Acknowledging an informational probe ID is rejected as not a current warning.
+	if authorization, err := Authorize(report, []string{checks[0].ID}); err == nil || authorization.Allowed || authorization.ExitCode != exitcode.Usage {
+		t.Fatalf("informational probe ID acknowledgement = %+v, %v", authorization, err)
 	}
 
-	priorReport := validPolicyReport(capabilityChecks(Input{Agent: "claude"}, capability.Inventory{Diagnostics: []capability.Diagnostic{user}}))
-	priorID := priorReport.Checks[0].ID
-	if authorization, err := Authorize(priorReport, []string{priorID}); err != nil || !authorization.Allowed {
-		t.Fatalf("current scoped acknowledgement = %+v, %v", authorization, err)
-	}
-	currentReport := validPolicyReport(capabilityChecks(Input{Agent: "claude"}, capability.Inventory{Diagnostics: []capability.Diagnostic{project}}))
-	if authorization, err := Authorize(currentReport, []string{priorID}); err == nil || authorization.Allowed || authorization.ExitCode != exitcode.Usage {
-		t.Fatalf("stale cross-scope acknowledgement = %+v, %v", authorization, err)
+	// Cancelled probes remain hard blockers.
+	cancelled := capabilityChecks(Input{Agent: "claude"}, capability.Inventory{Diagnostics: []capability.Diagnostic{{
+		Agent: capability.AgentClaude, Kind: capability.KindSkill, Scope: capability.ScopeUser,
+		Code: capability.DiagnosticCancelled,
+	}}})
+	if len(cancelled) != 1 || cancelled[0].Severity != SeverityBlock || cancelled[0].ExitCode != exitcode.Runtime {
+		t.Fatalf("cancelled capability probe = %+v", cancelled)
 	}
 }
 

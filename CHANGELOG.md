@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Handle Ctrl+C at the environment-warning prompt as a deterministic safety
+  refusal on Windows, returning exit `7` without launching the vendor instead
+  of allowing the console to terminate Reinstate with `0xC000013A`.
+- Fail closed before spawning a native agent when stdin is not a TTY, with a
+  clear safety exit pointing operators at a real terminal or `--dry-run`.
+  Deterministic local smoke may set `REINSTATE_ALLOW_NON_TTY_LAUNCH=1`.
+
+### Changed
+
+- Treat incomplete capability probe diagnostics (for example symlink-skipped
+  managed discovery) as informational checks. They still appear on environment
+  reports but no longer require `--allow-environment-warning` acknowledgements
+  on every resume; only cancelled/deadline probes remain blocking.
+- Honor `CLAUDE_CONFIG_DIR` and `CODEX_HOME` when building the default preflight
+  capability discovery roots so throwaway agent homes stay isolated from the
+  operator ambient trees for those roots.
+
 ## [0.3.0-rc.6] - 2026-08-11
 
 Phase 3 release candidate after `v0.3.0-rc.5` dual-platform tagged-artifact

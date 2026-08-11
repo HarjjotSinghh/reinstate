@@ -547,12 +547,24 @@ func authorizeEnvironment(
 		}
 		return preflight.WarningIDs(report), nil
 	}
-	if readLine == nil {
-		readLine = scannerLineReader(bufio.NewScanner(cmd.InOrStdin()))
+	promptInput := environmentPromptInput{
+		readLine: readLine,
+		restore:  func() error { return nil },
 	}
-	confirmed, err := confirmEnvironmentWarnings(cmd.Context(), cmd.OutOrStdout(), readLine)
-	if err != nil {
-		return nil, err
+	if promptInput.readLine == nil {
+		var err error
+		promptInput, err = newEnvironmentPromptInput(cmd.InOrStdin(), cmd.OutOrStdout())
+		if err != nil {
+			return nil, localRuntimeError("prepare environment confirmation", err)
+		}
+	}
+	confirmed, confirmErr := confirmEnvironmentWarnings(cmd.Context(), cmd.OutOrStdout(), promptInput.readLine)
+	restoreErr := promptInput.restore()
+	if confirmErr != nil {
+		return nil, confirmErr
+	}
+	if restoreErr != nil {
+		return nil, localRuntimeError("restore terminal after environment confirmation", restoreErr)
 	}
 	if !confirmed {
 		return nil, environmentReportError(report, plan, ExitSafety, "environment warning confirmation declined")
@@ -989,6 +1001,9 @@ func localResolveError(err error) error {
 
 func localLaunchError(err error) error {
 	if errors.Is(err, sessionindex.ErrLaunchBoundaryChanged) {
+		return NewExitError(ExitSafety, err.Error())
+	}
+	if errors.Is(err, sessionindex.ErrNonInteractiveLaunch) {
 		return NewExitError(ExitSafety, err.Error())
 	}
 	if errors.Is(err, sessionindex.ErrNativeActionUnsupported) ||

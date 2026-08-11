@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/term"
+
 	"github.com/HarjjotSinghh/reinstate/internal/fileidentity"
 )
 
@@ -24,6 +26,10 @@ var (
 	ErrExecutableNotFound      = errors.New("native agent executable is unavailable")
 	ErrWorkspaceUnavailable    = errors.New("recorded session workspace is unavailable")
 	ErrLaunchBoundaryChanged   = errors.New("native launch target changed at the execution boundary")
+	// ErrNonInteractiveLaunch is returned when a native vendor resume/fork is
+	// attempted without a TTY. Codex and Claude Code refuse non-interactive
+	// stdio; fail closed with a clear contract before spawning the child.
+	ErrNonInteractiveLaunch = errors.New("native agent resume/fork requires an interactive terminal")
 )
 
 // LaunchPlan is a shell-free native child process description.
@@ -197,6 +203,14 @@ func (runner ExecLaunchRunner) Run(ctx context.Context, plan LaunchPlan) error {
 		stderr = os.Stderr
 	}
 
+	// Production vendors require a real interactive terminal. Allow tests and
+	// deterministic local smoke stubs to opt out with REINSTATE_ALLOW_NON_TTY_LAUNCH=1.
+	if !allowNonInteractiveNativeLaunch() {
+		if file, ok := stdin.(*os.File); ok && !term.IsTerminal(int(file.Fd())) {
+			return fmt.Errorf("%w: re-run from a real TTY or use --dry-run for non-interactive inspection", ErrNonInteractiveLaunch)
+		}
+	}
+
 	command := exec.CommandContext(ctx, executable, plan.Args...)
 	command.Dir = plan.Dir
 	command.Stdin = stdin
@@ -209,6 +223,15 @@ func (runner ExecLaunchRunner) Run(ctx context.Context, plan LaunchPlan) error {
 		return fmt.Errorf("%s native %s failed: %w", plan.Agent, plan.Operation, err)
 	}
 	return ctx.Err()
+}
+
+func allowNonInteractiveNativeLaunch() bool {
+	switch strings.TrimSpace(strings.ToLower(os.Getenv("REINSTATE_ALLOW_NON_TTY_LAUNCH"))) {
+	case "1", "true", "yes", "on":
+		return true
+	default:
+		return false
+	}
 }
 
 func captureExecutableAtBoundary(ctx context.Context, path string) (fileidentity.Identity, error) {

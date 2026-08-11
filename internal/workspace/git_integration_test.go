@@ -69,9 +69,11 @@ func TestVerifyRealRepositoryComputesExpectedHeadRelation(t *testing.T) {
 	runTestGit(t, repository, "add", "second.txt")
 	runTestGit(t, repository, "commit", "-m", "second")
 
+	// Windows CI is slower under concurrent package load; the default 2s probe
+	// budget can expire before rev-list finishes and silently yields unknown.
 	verification, err := Verify(context.Background(), repository, Expectation{
 		Head: trustedString(expected),
-	}, ProbeOptions{})
+	}, ProbeOptions{Timeout: 30 * time.Second})
 	if err != nil {
 		t.Fatal(err)
 	}

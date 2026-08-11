@@ -205,7 +205,8 @@ service.
 The first real launch for an existing session reports
 `baseline.unavailable`. That is deliberate: current state is not session-start
 truth. Review all warnings. On a real terminal, answer the prompt with exactly
-`yes`; the default is `no`. In automation, acknowledge every exact current
+`yes`; the default is `no`. Enter, EOF, or Ctrl+C declines with safety exit `7`
+and does not launch the vendor. In automation, acknowledge every exact current
 warning ID for that invocation:
 
 ```sh
