@@ -11,8 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/HarjjotSinghh/reinstate/internal/fileidentity"
 	"golang.org/x/term"
+
+	"github.com/HarjjotSinghh/reinstate/internal/fileidentity"
 )
 
 const (
