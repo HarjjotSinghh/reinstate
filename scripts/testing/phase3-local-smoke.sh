@@ -50,6 +50,8 @@ sdir = pathlib.Path(evid)/"codex"/"sessions"
 PY
 
 export REINSTATE_HOME="$EVID/home" CLAUDE_CONFIG_DIR="$EVID/claude" CODEX_HOME="$EVID/codex"
+# Stubs exit 0 without a TTY; production native launches still require a real terminal.
+export REINSTATE_ALLOW_NON_TTY_LAUNCH=1
 export PATH="$EVID/stubs:$(dirname "$REIN"):/usr/bin:/bin:/opt/homebrew/bin${PATH:+:$PATH}"
 
 "$REIN" resume "codex:$XSID" --allow-environment-warning baseline.unavailable >/dev/null

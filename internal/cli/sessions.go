@@ -1003,6 +1003,9 @@ func localLaunchError(err error) error {
 	if errors.Is(err, sessionindex.ErrLaunchBoundaryChanged) {
 		return NewExitError(ExitSafety, err.Error())
 	}
+	if errors.Is(err, sessionindex.ErrNonInteractiveLaunch) {
+		return NewExitError(ExitSafety, err.Error())
+	}
 	if errors.Is(err, sessionindex.ErrNativeActionUnsupported) ||
 		errors.Is(err, sessionindex.ErrExecutableNotFound) ||
 		errors.Is(err, sessionindex.ErrWorkspaceUnavailable) {

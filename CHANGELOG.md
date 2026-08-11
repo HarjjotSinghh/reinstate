@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Handle Ctrl+C at the environment-warning prompt as a deterministic safety
   refusal on Windows, returning exit `7` without launching the vendor instead
   of allowing the console to terminate Reinstate with `0xC000013A`.
+- Fail closed before spawning a native agent when stdin is not a TTY, with a
+  clear safety exit pointing operators at a real terminal or `--dry-run`.
+  Deterministic local smoke may set `REINSTATE_ALLOW_NON_TTY_LAUNCH=1`.
 
 ### Changed
 
