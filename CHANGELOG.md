@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Treat incomplete capability probe diagnostics (for example symlink-skipped
+  managed discovery) as informational checks. They still appear on environment
+  reports but no longer require `--allow-environment-warning` acknowledgements
+  on every resume; only cancelled/deadline probes remain blocking.
+- Honor `CLAUDE_CONFIG_DIR` and `CODEX_HOME` when building the default preflight
+  capability discovery roots so throwaway agent homes stay isolated from the
+  operator ambient trees for those roots.
+
 ## [0.3.0-rc.6] - 2026-08-11
 
 Phase 3 release candidate after `v0.3.0-rc.5` dual-platform tagged-artifact

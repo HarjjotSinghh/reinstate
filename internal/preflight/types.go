@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/HarjjotSinghh/reinstate/internal/agentcheck"
@@ -105,6 +106,11 @@ type Service struct {
 
 // DefaultService returns the production local-only verifier configuration.
 // Private filesystem roots are inputs only and are excluded from reports.
+//
+// When CLAUDE_CONFIG_DIR or CODEX_HOME are set, capability discovery uses those
+// throwaway roots so isolated acceptance homes do not silently mix with the
+// operator's ambient agent trees for session-layout probes. UserHome remains
+// the real home for path mapping; ClaudeHome/CodexHome override only those roots.
 func DefaultService() Service {
 	userHome, _ := os.UserHomeDir()
 	managedRoot := ""
@@ -116,9 +122,16 @@ func DefaultService() Service {
 			managedRoot = volume + string(filepath.Separator)
 		}
 	}
-	return Service{Options: Options{Capability: capability.Options{
+	opts := capability.Options{
 		GOOS: runtime.GOOS, UserHome: userHome, ManagedRoot: managedRoot,
-	}}}
+	}
+	if value := strings.TrimSpace(os.Getenv("CLAUDE_CONFIG_DIR")); value != "" {
+		opts.ClaudeHome = value
+	}
+	if value := strings.TrimSpace(os.Getenv("CODEX_HOME")); value != "" {
+		opts.CodexHome = value
+	}
+	return Service{Options: Options{Capability: opts}}
 }
 
 // Verify implements Verifier.

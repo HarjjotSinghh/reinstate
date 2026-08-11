@@ -281,10 +281,13 @@ func capabilityChecks(input Input, inventory capability.Inventory) []Check {
 	var checks []Check
 	for _, diagnostic := range inventory.Diagnostics {
 		id := capabilityDiagnosticCheckID(diagnostic)
-		check := Check{ID: id, Status: StatusUnknown, Severity: SeverityWarning,
+		// Incomplete discovery is reportable and privacy-safe, but must not require
+		// per-invocation acknowledgements. Only a cancelled/deadline probe blocks.
+		// Ambient managed/user trees often yield stable symlink_skipped diagnostics
+		// that otherwise force --allow-environment-warning noise on every resume.
+		check := Check{ID: id, Status: StatusUnknown, Severity: SeverityInfo,
 			Actual: string(diagnostic.Code), Provenance: workspace.ProvenanceCurrentObservation,
-			Message: capabilityDiagnosticMessage(diagnostic),
-			Repair:  "review the named capability probe warning before continuing", ExitCode: exitcode.Safety}
+			Message: capabilityDiagnosticMessage(diagnostic)}
 		if diagnostic.Code == capability.DiagnosticCancelled {
 			check.Status, check.Severity, check.ExitCode = StatusError, SeverityBlock, exitcode.Runtime
 			check.Message = "capability discovery exceeded the bounded preflight deadline"
