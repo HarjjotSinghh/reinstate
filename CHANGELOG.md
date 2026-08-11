@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0-rc.7] - 2026-08-11
+
+Phase 3 release candidate after `v0.3.0-rc.6` dual-platform tagged-artifact
+acceptance failed (macOS 16 PASS / 12 FAIL / 4 NOT TESTED) on real-launch
+baseline, authenticated same-vendor resume/fork, capability mutation coverage,
+and required TTY/picker evidence. RC7 packages the post-RC6 harden stack for
+retest. Fresh Apple Silicon macOS and native Windows x64 tagged-artifact
+acceptance is required; this candidate does not authorize stable `v0.3.0`.
+
 ### Fixed
 
 - Handle Ctrl+C at the environment-warning prompt as a deterministic safety
@@ -25,6 +34,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Honor `CLAUDE_CONFIG_DIR` and `CODEX_HOME` when building the default preflight
   capability discovery roots so throwaway agent homes stay isolated from the
   operator ambient trees for those roots.
+
+### Tests
+
+- Expand deterministic `./bin/rein` Phase 3 local smoke with fork dry-run,
+  alias parity, missing-workspace exit `5`, content-free skill/instruction/MCP
+  capability rows, branch divergence, and same-path repository replacement
+  exit `7`.
 
 ## [0.3.0-rc.6] - 2026-08-11
 
@@ -600,7 +616,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0-rc.6...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0-rc.7...HEAD
+[0.3.0-rc.7]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0-rc.6...v0.3.0-rc.7
 [0.3.0-rc.6]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0-rc.5...v0.3.0-rc.6
 [0.3.0-rc.5]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0-rc.4...v0.3.0-rc.5
 [0.3.0-rc.4]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0-rc.3...v0.3.0-rc.4

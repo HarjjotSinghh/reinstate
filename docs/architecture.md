@@ -66,7 +66,7 @@ Product layers and non-goals: [product-strategy.md](product-strategy.md),
 The continuity stack is delivered incrementally. Stable Phase 1 implements the
 mutation-capable adapter and encrypted-sync path. Stable Phase 2 adds the
 private local index, read capabilities, and Claude/Codex native launch plans.
-Phase 3 verified resume is included in release candidate `v0.3.0-rc.6`, whose
+Phase 3 verified resume is included in release candidate `v0.3.0-rc.7`, whose
 tagged-artifact acceptance is pending. Portable checkpoints,
 configuration adapters, and ACP integration remain later roadmap work.
 
@@ -204,7 +204,7 @@ The recorded workspace must exist and the executor must be available before a
 real launch. Reinstate inherits the user's terminal, waits for the child, and
 propagates failure. `--dry-run` exposes the structured plan without launching.
 
-### 1C. Phase 3 verified-resume path (`v0.3.0-rc.6`)
+### 1C. Phase 3 verified-resume path (`v0.3.0-rc.7`)
 
 Phase 3 composes four read-only observers behind one deterministic preflight:
 

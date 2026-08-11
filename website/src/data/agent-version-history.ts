@@ -16,11 +16,19 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.3.0-rc.7': {
+    rangeChange:
+      'Claude Code 2.1.219–2.1.227 and Codex CLI 0.133.0–0.147.0 unchanged from RC6.',
+    compatibilityChange:
+      'Packages the post-RC6 Phase 3 harden stack (non-TTY fail-closed native launch, Windows Ctrl+C safety, capability probe demotion, isolated CLAUDE_CONFIG_DIR/CODEX_HOME roots, expanded local smoke) without widening Claude Code 2.1.219–2.1.227 or Codex CLI 0.133.0–0.147.0. Tagged-artifact acceptance is pending.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.3.0-rc.7/scripts/testing/phase3-local-smoke.sh',
+  },
   'v0.3.0-rc.6': {
     rangeChange:
       'Expanded the inclusive Claude Code range from 2.1.219–2.1.220 to 2.1.219–2.1.227 and the Codex CLI range from 0.133.0–0.146.0 to 0.133.0–0.147.0.',
     compatibilityChange:
-      'Widens fail-closed product ranges so current primary-host Claude Code 2.1.225/2.1.227 and Codex CLI 0.147.0 installs are SUPPORTED for dual-platform Phase 3 retest. Versions above the new maxima remain UNTESTED. Tagged-artifact acceptance is pending.',
+      'Widened fail-closed product ranges so primary-host Claude Code 2.1.225/2.1.227 and Codex CLI 0.147.0 installs were SUPPORTED for dual-platform Phase 3 retest. Dual-platform tagged-artifact acceptance failed on real-launch baseline, TTY/picker, and related host evidence rows.',
     implementationSource:
       'https://github.com/HarjjotSinghh/reinstate/blob/v0.3.0-rc.6/internal/adapter/claude/claude.go',
   },

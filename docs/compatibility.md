@@ -9,7 +9,7 @@ and absolute-path privacy gates. RC4 fixed those findings after Windows-first
 product smoke, but its release workflow failed before publication while the
 PowerShell artifact verifier ran on Ubuntu. RC5 published that portable
 verifier but failed dual-platform acceptance on out-of-range agent versions.
-Current candidate `v0.3.0-rc.6` widens the fail-closed Claude/Codex ranges for
+Current candidate `v0.3.0-rc.7` widens the fail-closed Claude/Codex ranges for
 retest; its tagged-artifact acceptance is pending.
 Intel macOS and Linux/WSL2 remain optional, unsupported/unverified evidence and
 do not block RC6. Passing RC6
@@ -80,7 +80,7 @@ Every Phase 1 sync-adapter discovery result reports one of:
 
 The Phase 3 source compatibility policy keeps these inclusive agent version
 ranges until a later candidate widens them with fresh device evidence.
-Candidate `v0.3.0-rc.6` widens the fail-closed ranges so current primary-host
+Candidate `v0.3.0-rc.7` widens the fail-closed ranges so current primary-host
 installs (Claude Code through `2.1.227`, Codex CLI through `0.147.0`) are
 `SUPPORTED` for dual-platform retest; versions above the maxima remain
 `UNTESTED` until a later matrix expands them again:
