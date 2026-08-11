@@ -318,7 +318,7 @@ check.
 
 ## Acceptance gate
 
-`v0.3.0-rc.6` may be published only after:
+`v0.3.0-rc.7` may be published only after:
 
 - deterministic unit, integration, adversarial, privacy, timeout, and
   concurrency tests pass;

@@ -1,5 +1,11 @@
 export const releaseHistory = [
   {
+    version: 'v0.3.0-rc.7',
+    date: '2026-08-11',
+    summary:
+      'Phase 3 candidate after RC6 dual FAIL: packages non-TTY fail-closed, Windows Ctrl+C safety, capability probe demotion, isolated agent homes, and expanded local Phase 3 smoke for retest.',
+  },
+  {
     version: 'v0.3.0-rc.6',
     date: '2026-08-11',
     summary:

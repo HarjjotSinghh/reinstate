@@ -106,8 +106,12 @@ describe('evidence-safe linkable assets', () => {
     expect(agentVersionHistory.map(({ version }) => version)).toEqual(
       releaseHistory.map(({ version }) => version),
     );
-    expect(agentVersionHistory).toHaveLength(19);
-    expect(new Set(agentVersionHistory.map(({ source }) => source)).size).toBe(19);
+    expect(agentVersionHistory).toHaveLength(20);
+    expect(new Set(agentVersionHistory.map(({ source }) => source)).size).toBe(20);
+    expect(
+      agentVersionHistory.find(({ version }) => version === 'v0.3.0-rc.7')
+        ?.rangeChange,
+    ).toContain('2.1.219–2.1.227');
     expect(
       agentVersionHistory.find(({ version }) => version === 'v0.3.0-rc.6')
         ?.rangeChange,
@@ -135,7 +139,7 @@ describe('evidence-safe linkable assets', () => {
         ?.rangeChange,
     ).toContain('Claude Code 2.1.219–2.1.220');
     expect(
-      agentVersionHistory.find(({ version }) => version === 'v0.3.0-rc.6')
+      agentVersionHistory.find(({ version }) => version === 'v0.3.0-rc.7')
         ?.rangeChange,
     ).toContain(
       `${compatibility.agents[0].minimumTestedVersion}–${compatibility.agents[0].maximumTestedVersion}`,
