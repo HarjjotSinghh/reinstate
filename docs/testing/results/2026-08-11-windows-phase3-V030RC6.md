@@ -4,7 +4,7 @@
 
 - **Device verdict:** `FAIL`
 - **Milestone:** `MATRIX_COMPLETE`
-- **Required counts:** `12 PASS / 0 PARTIAL / 14 FAIL / 6 NOT TESTED`
+- **Required counts:** `6 PASS / 0 PARTIAL / 20 FAIL / 6 NOT TESTED`
 - **Optional physical counts:** `0 PASS / 2 NOT TESTED`
 - **Release-blocking findings:** `6`
 
@@ -126,9 +126,9 @@ device=windows-amd64
 test_tag=v0.3.0-rc.6
 test_commit=2ac3c49b68f40b1b7825e7ff737978de6091759b
 installed_binary_sha256=a7a76aeed8479cc4531257bcef64297174a129b99664d90eb0228866fc8ddfcb
-required_pass=12
+required_pass=6
 required_partial=0
-required_fail=14
+required_fail=20
 required_not_tested=6
 optional_physical_pass=0
 optional_physical_not_tested=2
