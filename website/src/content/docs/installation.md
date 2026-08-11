@@ -26,7 +26,7 @@ reported version before replacing an existing installation.
 
 ## Prerequisites
 
-- Apple Silicon macOS or native Windows x64 for mandatory RC6 acceptance, or
+- Apple Silicon macOS or native Windows x64 for mandatory RC7 acceptance, or
   an optional unverified environment (Intel macOS, Linux, or WSL2). WSL1 is refused.
 - A user account that can write to a user-local installation directory.
 - HTTPS access to `reinstate.dev` and the project's GitHub Release assets.
