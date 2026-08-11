@@ -26,7 +26,7 @@ machines through client-side-encrypted, user-owned S3-compatible storage.
 
 ## Prerequisites
 
-- Apple Silicon macOS or native 64-bit Windows for mandatory RC5 acceptance
+- Apple Silicon macOS or native 64-bit Windows for mandatory RC6 acceptance
 - Intel macOS, Linux, or WSL2 only as preview, unverified environments; WSL1 is refused
 - Claude Code and/or Codex CLI
 - an S3-compatible bucket you control, such as Cloudflare R2
