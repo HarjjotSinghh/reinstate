@@ -106,12 +106,14 @@ describe('evidence-safe linkable assets', () => {
     expect(agentVersionHistory.map(({ version }) => version)).toEqual(
       releaseHistory.map(({ version }) => version),
     );
-    expect(agentVersionHistory).toHaveLength(18);
-    expect(new Set(agentVersionHistory.map(({ source }) => source)).size).toBe(18);
+    expect(agentVersionHistory).toHaveLength(19);
+    expect(new Set(agentVersionHistory.map(({ source }) => source)).size).toBe(19);
     expect(
       agentVersionHistory.find(({ version }) => version === 'v0.3.0-rc.6')
         ?.rangeChange,
-    ).toBe('No agent-version range change documented.');
+    ).toBe(
+      'Expanded the inclusive Claude Code range from 2.1.219–2.1.220 to 2.1.219–2.1.227 and the Codex CLI range from 0.133.0–0.146.0 to 0.133.0–0.147.0.',
+    );
     expect(
       agentVersionHistory.find(({ version }) => version === 'v0.3.0-rc.4')
         ?.rangeChange,
@@ -131,10 +133,14 @@ describe('evidence-safe linkable assets', () => {
     expect(
       agentVersionHistory.find(({ version }) => version === 'v0.1.0-rc.3')
         ?.rangeChange,
+    ).toContain('Claude Code 2.1.219–2.1.220');
+    expect(
+      agentVersionHistory.find(({ version }) => version === 'v0.3.0-rc.6')
+        ?.rangeChange,
     ).toContain(
-      `Claude Code ${compatibility.agents[0].minimumTestedVersion}–${compatibility.agents[0].maximumTestedVersion}`,
+      `${compatibility.agents[0].minimumTestedVersion}–${compatibility.agents[0].maximumTestedVersion}`,
     );
-    expect(changelog).toContain('Accept the tested Claude Code `2.1.219`–`2.1.227`');
+    expect(changelog).toContain('Claude Code compatibility range through `2.1.227`');
     expect(tracker).toContain('compatibility.agents.map');
     expect(tracker).toContain('No change documented');
     expect(tracker).toContain('source-level gate');
