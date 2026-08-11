@@ -59,3 +59,37 @@ dec_x=$("$REIN" inspect "codex:$XSID" --json | python3 -c 'import json,sys; prin
 test "$dec_c" = "ready"
 test "$dec_x" = "ready"
 echo "phase3-local-smoke PASS (claude=$dec_c codex=$dec_x rein=$("$REIN" version --json | python3 -c 'import json,sys; print(json.load(sys.stdin)["version"])'))"
+
+# --- extended assertions ---
+# invalid warning ID
+set +e
+"$REIN" resume "claude:$CSID" --allow-environment-warning not.a.real.id >/dev/null 2>&1
+code=$?
+set -e
+test "$code" -eq 2
+
+# hard blocker without vendor on PATH
+set +e
+PATH="$(dirname "$REIN"):/usr/bin:/bin" "$REIN" resume "claude:$CSID" --dry-run >/dev/null 2>&1
+code=$?
+set -e
+test "$code" -eq 5
+
+# dirty tree requires ack
+printf 'dirty\n' >> README.md
+set +e
+"$REIN" resume "claude:$CSID" >/dev/null 2>&1
+code=$?
+set -e
+test "$code" -eq 7
+"$REIN" resume "claude:$CSID" --allow-environment-warning git.working_tree >/dev/null
+git checkout -- README.md >/dev/null
+
+# privacy: human inspect should not emit absolute home paths
+out=$("$REIN" inspect "claude:$CSID" 2>/dev/null || true)
+if printf '%s' "$out" | grep -E '/Users/|C:\\\\Users\\\\' >/dev/null; then
+  echo "privacy FAIL: absolute user path in human inspect" >&2
+  exit 1
+fi
+
+echo "phase3-local-smoke extended PASS"
