@@ -109,7 +109,7 @@ describe('evidence-safe linkable assets', () => {
     expect(agentVersionHistory).toHaveLength(18);
     expect(new Set(agentVersionHistory.map(({ source }) => source)).size).toBe(18);
     expect(
-      agentVersionHistory.find(({ version }) => version === 'v0.3.0-rc.5')
+      agentVersionHistory.find(({ version }) => version === 'v0.3.0-rc.6')
         ?.rangeChange,
     ).toBe('No agent-version range change documented.');
     expect(
@@ -134,7 +134,7 @@ describe('evidence-safe linkable assets', () => {
     ).toContain(
       `Claude Code ${compatibility.agents[0].minimumTestedVersion}–${compatibility.agents[0].maximumTestedVersion}`,
     );
-    expect(changelog).toContain('Accept the tested Claude Code `2.1.219`–`2.1.220`');
+    expect(changelog).toContain('Accept the tested Claude Code `2.1.219`–`2.1.227`');
     expect(tracker).toContain('compatibility.agents.map');
     expect(tracker).toContain('No change documented');
     expect(tracker).toContain('source-level gate');
