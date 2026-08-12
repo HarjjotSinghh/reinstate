@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   records into canonical capsule events, with synthetic fixtures under
   `testdata/handoff/claude/` and R8 attachment guidance in
   `docs/session-storage-map.md`.
+- Codex CLI transcript reader (`internal/transcript/codex.go`): maps rollout
+  JSONL into canonical capsule events with `event_msg`-over-`response_item`
+  dedup, filename-UUID session identity for forks, and R4
+  `vendor_opaque_state` omission for reasoning / encrypted reasoning items.
+  Synthetic fixtures under `testdata/handoff/codex/`.
 - Gemini CLI source-only transcript reader (`internal/transcript/gemini.go`)
   for Phase 4 handoff capsules: legacy `messages[]` JSON and JSONL+`$set`,
   vendor-aligned `$rewindTo` replay (exclusive of the target id), and

@@ -1,0 +1,6 @@
+{"timestamp":"2026-08-01T13:00:00Z","type":"session_meta","payload":{"id":"00000000-0000-4000-8000-00000000ee01","cwd":"/Users/fixture-user/code/demo"}}
+{"timestamp":"2026-08-01T13:00:01Z","type":"event_msg","payload":{"type":"user_message","message":"Explain the approach"}}
+{"timestamp":"2026-08-01T13:00:02Z","type":"response_item","payload":{"type":"reasoning","id":"rs_synthetic_1","summary":[{"type":"summary_text","text":"HIDDEN_SUMMARY_MUST_NOT_SURFACE"}],"encrypted_content":"gAAAAABsynthetic-encrypted-reasoning-blob-not-a-real-secret"}}
+{"timestamp":"2026-08-01T13:00:03Z","type":"response_item","payload":{"type":"reasoning","id":"rs_synthetic_2","summary":[]}}
+{"timestamp":"2026-08-01T13:00:04Z","type":"response_item","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"VISIBLE_ASSISTANT_ONLY"}]}}
+{"timestamp":"2026-08-01T13:00:04Z","type":"event_msg","payload":{"type":"agent_message","message":"VISIBLE_ASSISTANT_ONLY"}}

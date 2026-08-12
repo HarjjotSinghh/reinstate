@@ -1,0 +1,4 @@
+{"timestamp":"2026-08-01T14:00:00Z","type":"session_meta","payload":{"id":"00000000-0000-4000-8000-00000000ff01","cwd":"/Users/fixture-user/code/demo"}}
+{"timestamp":"2026-08-01T14:00:01Z","type":"event_msg","payload":{"type":"user_message","message":"Complete turn before partial"}}
+{"timestamp":"2026-08-01T14:00:02Z","type":"event_msg","payload":{"type":"agent_message","message":"Complete assistant reply"}}
+{"timestamp":"2026-08-01T14:00:03Z","type":"event_msg","payload":{"type":"user_message","message":"PARTIAL_LINE_SHOULD_NOT_PARSE

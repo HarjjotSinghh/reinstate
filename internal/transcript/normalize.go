@@ -114,6 +114,15 @@ func ClassifyUnknown(nativeType string) (capsule.Actor, capsule.Kind, capsule.Po
 	return capsule.ActorUnknown, capsule.KindUnknown, capsule.PortabilityReferenced, "unrecognized_record_type"
 }
 
+func firstNonEmpty(values ...string) string {
+	for _, v := range values {
+		if strings.TrimSpace(v) != "" {
+			return v
+		}
+	}
+	return ""
+}
+
 // TruncateBlock shortens block text to at most maxBytes, always appending
 // TruncationMarker when truncation occurs. maxBytes must be large enough to
 // hold the marker; otherwise the result is only the marker (still visible).

@@ -736,15 +736,6 @@ func asBool(v any) bool {
 	return b
 }
 
-func firstNonEmpty(values ...string) string {
-	for _, v := range values {
-		if strings.TrimSpace(v) != "" {
-			return v
-		}
-	}
-	return ""
-}
-
 func parseClaudeTime(v any) time.Time {
 	switch typed := v.(type) {
 	case string:

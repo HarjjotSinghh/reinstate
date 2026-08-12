@@ -1,0 +1,7 @@
+{"timestamp":"2026-08-01T12:00:00Z","type":"session_meta","payload":{"id":"00000000-0000-4000-8000-00000000dd01","cwd":"/Users/fixture-user/code/demo"}}
+{"timestamp":"2026-08-01T12:00:01Z","type":"event_msg","payload":{"type":"user_message","message":"Run two tools in parallel"}}
+{"timestamp":"2026-08-01T12:00:02Z","type":"response_item","payload":{"type":"function_call","call_id":"call_alpha","name":"read_file","arguments":"{\"path\":\"alpha.go\"}"}}
+{"timestamp":"2026-08-01T12:00:03Z","type":"response_item","payload":{"type":"function_call","call_id":"call_beta","name":"read_file","arguments":"{\"path\":\"beta.go\"}"}}
+{"timestamp":"2026-08-01T12:00:04Z","type":"response_item","payload":{"type":"function_call_output","call_id":"call_beta","output":"BETA_CONTENTS"}}
+{"timestamp":"2026-08-01T12:00:05Z","type":"response_item","payload":{"type":"function_call_output","call_id":"call_alpha","output":"ALPHA_CONTENTS"}}
+{"timestamp":"2026-08-01T12:00:06Z","type":"event_msg","payload":{"type":"agent_message","message":"Both files read"}}

@@ -1,0 +1,5 @@
+{"timestamp":"2026-08-01T15:00:00Z","type":"session_meta","payload":{"id":"00000000-0000-4000-8000-00000000a101","cwd":"/Users/fixture-user/code/demo"}}
+{"timestamp":"2026-08-01T15:00:01Z","type":"event_msg","payload":{"type":"user_message","message":"Probe unknown records"}}
+{"timestamp":"2026-08-01T15:00:02Z","type":"totally_unknown_record","payload":{"hello":"world"}}
+{"timestamp":"2026-08-01T15:00:03Z","type":"response_item","payload":{"type":"web_search_call","id":"ws_synthetic","status":"completed"}}
+{"timestamp":"2026-08-01T15:00:04Z","type":"event_msg","payload":{"type":"agent_message","message":"Saw unknown types"}}
