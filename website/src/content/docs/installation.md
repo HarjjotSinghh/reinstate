@@ -42,10 +42,9 @@ later setup prompts, never the installer command or an agent chat.
 brew install HarjjotSinghh/tap/reinstate
 ```
 
-The stable formula passed install, both-alias identity, formula test, no-op
-upgrade, and uninstall checks on Apple Silicon. Intel macOS and Linuxbrew
-remain unverified for `v0.2.0`; use the bootstrap below if you prefer the
-canonical installer path.
+The tap formula tracks stable `v0.3.0`. Intel macOS and Linuxbrew
+remain optional and unverified for this release; use the bootstrap below if
+you prefer the canonical installer path.
 
 ## Install with the official bootstrap
 

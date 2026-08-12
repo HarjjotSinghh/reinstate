@@ -8,12 +8,12 @@ client-side-encrypted, user-owned object storage.
 
 Stable `v0.3.0` additionally implements Phase 3 verified
 resume: a privacy-safe environment report and launch gate for same-vendor
-Claude/Codex continuation. Its tagged-artifact acceptance is pending, and it
-is not stable `v0.3.0`.
+Claude/Codex continuation. Dual-platform tagged-artifact acceptance passed on
+Apple Silicon macOS and native Windows x64.
 
 > **Release status:** the public installers pin stable `v0.3.0`.
-> Apple Silicon macOS and native Windows x64 tagged-artifact acceptance is
-> pending. Stable is `v0.3.0`; Intel macOS and Linux/WSL2 remain optional,
+> Apple Silicon macOS and native Windows x64 tagged-artifact acceptance passed
+> (`stable_v0.3.0_authorized=true`). Intel macOS and Linux/WSL2 remain optional,
 > unsupported/unverified evidence tracked in [#97](https://github.com/HarjjotSinghh/reinstate/issues/97)
 > and [#98](https://github.com/HarjjotSinghh/reinstate/issues/98).
 
@@ -67,15 +67,14 @@ $env:REINSTATE_HOME = Join-Path $HOME ".reinstate-phase3-local"
 Do not use a public installer as evidence for another commit. The installer
 proves only the exact signed release candidate it pins.
 
-### Install v0.2.0 with Homebrew on Apple Silicon macOS
+### Install v0.3.0 with Homebrew on Apple Silicon macOS
 
 ```sh
 brew install HarjjotSinghh/tap/reinstate
 ```
 
-The tap's stable formula passed install, both-alias identity, formula test,
-no-op upgrade, and uninstall checks on Apple Silicon. Intel macOS and
-Linuxbrew remain unverified for `v0.2.0`.
+The tap formula tracks stable `v0.3.0`. Intel macOS and Linuxbrew remain
+optional and unverified for this release.
 
 ### Install v0.3.0 on macOS, Linux, or WSL2
 

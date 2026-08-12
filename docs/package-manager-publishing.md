@@ -35,19 +35,19 @@ the prepared package intentionally uses `@reinstate/cli`.
 
 ## Rollout status
 
-Status recorded on 2026-08-05 after publishing stable `v0.2.0`. This section is
+Status recorded on 2026-08-12 after promoting stable `v0.3.0`. This section is
 operational state, not a claim that every prepared channel is already a
 supported install route.
 
 | Channel | Current state | Next gate |
 | --- | --- | --- |
-| GitHub release and native Linux files | Stable `v0.2.0` is public with a signed tag, 25 checksum- and attestation-verified assets, and verified public bootstraps | Keep Intel macOS and Linux/WSL2 artifacts labeled preview until their deferred physical acceptance closes |
-| npm | `@reinstate/cli@0.2.0-rc.3` and its five platform packages are public; stable was deliberately not published | Configure trusted publishers for all six packages, verify OIDC, and publish a future stable version with the `latest` tag |
+| GitHub release and native Linux files | Stable `v0.3.0` is public with a signed tag, 25 checksum- and attestation-verified assets, and verified public bootstraps pin `v0.3.0` | Keep Intel macOS and Linux/WSL2 artifacts labeled preview until their deferred physical acceptance closes |
+| npm | `@reinstate/cli@0.2.0-rc.3` remains the latest published npm line; stable `0.3.0` payloads were generated but not published (no npm auth / `PUBLISH_NPM` off) | Configure trusted publishers, enable `PUBLISH_NPM`, and publish `@reinstate/cli@0.3.0` plus platform packages with the `latest` tag |
 | JSR | Intentionally deferred because the maintainer's current account cannot create another scope; `PUBLISH_JSR` remains disabled | Obtain scope capacity or make an explicit namespace decision before enabling |
-| Homebrew | Stable formula is live in `HarjjotSinghh/homebrew-tap`; Apple Silicon install, both aliases, formula test, no-op upgrade, and uninstall passed | Supported on Apple Silicon; keep Intel macOS and Linuxbrew unverified |
-| Scoop | Stable `reinstate.json` is live in `HarjjotSinghh/scoop-bucket` with the verified Windows ZIP hash | Test install, both aliases, update, and uninstall on native Windows before advertising it |
-| Chocolatey | Stable `reinstate` was submitted to the community repository and is pending moderation | Wait for approval, then verify on clean native Windows before advertising it |
-| WinGet | Stable manifests were submitted in [microsoft/winget-pkgs#412426](https://github.com/microsoft/winget-pkgs/pull/412426) | Complete CLA/automated review and verify after merge before advertising it |
+| Homebrew | Stable `0.3.0` formula is live in `HarjjotSinghh/homebrew-tap`; Apple Silicon install and formula test passed for `v0.3.0` | Supported on Apple Silicon; keep Intel macOS and Linuxbrew unverified |
+| Scoop | Stable `0.3.0` `reinstate.json` is live in `HarjjotSinghh/scoop-bucket` with the verified Windows ZIP hash | Test install, both aliases, update, and uninstall on native Windows before advertising it in user-facing install docs |
+| Chocolatey | Still pending community moderation from the earlier stable submission; not bumped for `v0.3.0` | Wait for approval or submit a `0.3.0` package, then verify on clean native Windows before advertising it |
+| WinGet | Earlier stable PR remains the open review path; not re-submitted for `v0.3.0` in this bump | Complete CLA/automated review and verify after merge before advertising it |
 | AUR | Dedicated CI key and independently verified host key are stored; AUR account public-key registration was blocked by an upstream 503 | Add the public key to the AUR account, verify SSH authentication, then set `PUBLISH_AUR=true` |
 
 All repository `PUBLISH_*` switches are `false` after the one-time stable

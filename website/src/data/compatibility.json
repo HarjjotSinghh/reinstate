@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "reinstateVersion": "v0.3.0",
-  "lastReviewed": "2026-08-11",
+  "lastReviewed": "2026-08-12",
   "owner": {
     "name": "Harjot Singh Rana",
     "url": "https://harjot.co"
@@ -16,10 +16,10 @@
       "minimumTestedVersion": "2.1.219",
       "maximumTestedVersion": "2.1.227",
       "resumeMode": "Claude Code to Claude Code",
-      "evidenceLevel": "source checks and deterministic synthetic fixtures",
+      "evidenceLevel": "source checks, deterministic synthetic fixtures, and dual-platform tagged-artifact acceptance",
       "lastTested": "2026-08-11",
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/66c164183f50218c0490aafd37d27f73808f792b/internal/adapter/claude/claude_test.go",
-      "notes": "Versions outside the inclusive range, including prereleases, fail closed as untested. RC6 widens the ceiling through 2.1.227 for current primary-host retest; tagged-artifact acceptance is pending."
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-08-11-macos-phase3-V030.md",
+      "notes": "Versions outside the inclusive range, including prereleases, fail closed as untested. Stable v0.3.0 accepts Claude Code through 2.1.227 after dual-platform tagged-artifact acceptance PASS."
     },
     {
       "id": "codex",
@@ -29,52 +29,52 @@
       "minimumTestedVersion": "0.133.0",
       "maximumTestedVersion": "0.147.0",
       "resumeMode": "Codex to Codex",
-      "evidenceLevel": "source checks and deterministic synthetic fixtures",
+      "evidenceLevel": "source checks, deterministic synthetic fixtures, and dual-platform tagged-artifact acceptance",
       "lastTested": "2026-08-11",
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/66c164183f50218c0490aafd37d27f73808f792b/internal/adapter/codex/codex_test.go",
-      "notes": "Codex CLI range includes 0.147.0 for RC6 retest. Versions outside the inclusive range, including prereleases, fail closed as untested; RC6 tagged-artifact acceptance is pending."
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-08-11-macos-phase3-V030.md",
+      "notes": "Stable v0.3.0 accepts Codex CLI through 0.147.0 after dual-platform tagged-artifact acceptance PASS. Versions outside the inclusive range, including prereleases, fail closed as untested."
     }
   ],
   "environments": [
     {
       "id": "macos-arm64",
-      "name": "macOS native \u00b7 arm64",
+      "name": "macOS native · arm64",
       "claudeCode": "required",
       "codex": "required",
       "status": "stable-verified",
-      "lastTested": "2026-08-02",
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-08-02-macos-phase2-V020RC2.md",
-      "notes": "Stable v0.2.0 passed its complete physical matrix here. This is historical stable evidence, not a claim that v0.3.0 tagged-artifact acceptance has passed."
+      "lastTested": "2026-08-11",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-08-11-macos-phase3-V030.md",
+      "notes": "Stable v0.3.0 passed the complete 32-row Phase 3 tagged-artifact matrix here (fc4f015)."
     },
     {
       "id": "macos-amd64",
-      "name": "macOS native \u00b7 amd64",
+      "name": "macOS native · amd64",
       "claudeCode": "preview-unverified",
       "codex": "preview-unverified",
       "status": "preview-unverified",
       "lastTested": null,
       "source": "https://github.com/HarjjotSinghh/reinstate/issues/97",
-      "notes": "No completed physical Intel Mac result is claimed for stable v0.2.0 or v0.3.0; this optional environment does not block RC6."
+      "notes": "No completed physical Intel Mac result is claimed for stable v0.2.0 or v0.3.0; this optional environment does not block stable."
     },
     {
       "id": "windows-11-amd64",
-      "name": "Windows 11 native \u00b7 amd64",
+      "name": "Windows 11 native · amd64",
       "claudeCode": "required",
       "codex": "required",
       "status": "stable-verified",
-      "lastTested": "2026-08-03",
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-08-02-windows-phase2-V020RC2.md",
-      "notes": "Stable v0.2.0 passed all 32 physical rows here. This is historical stable evidence, not a claim that v0.3.0 tagged-artifact acceptance has passed."
+      "lastTested": "2026-08-11",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-08-11-windows-phase3-V030.md",
+      "notes": "Stable v0.3.0 passed the complete 32-row Phase 3 tagged-artifact matrix here (fc4f015)."
     },
     {
       "id": "windows-11-wsl2-amd64",
-      "name": "Windows 11 WSL2 \u00b7 amd64",
+      "name": "Windows 11 WSL2 · amd64",
       "claudeCode": "preview-unverified",
       "codex": "preview-unverified",
       "status": "preview-unverified",
       "lastTested": null,
       "source": "https://github.com/HarjjotSinghh/reinstate/issues/98",
-      "notes": "No completed WSL2 physical result is claimed for stable v0.2.0 or v0.3.0; this optional environment does not block RC6. WSL1 remains unsupported."
+      "notes": "No completed WSL2 physical result is claimed for stable v0.2.0 or v0.3.0; this optional environment does not block stable. WSL1 remains unsupported."
     }
   ]
 }

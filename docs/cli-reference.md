@@ -3,9 +3,9 @@
 Binary names: `rein` and `reinstate` (identical behavior).
 
 Public installers pin stable `v0.3.0`, including the Phase 1/2 surface
-and Phase 3 verified resume. Tagged-artifact acceptance is pending on Apple
-Silicon macOS and native Windows x64. Stable is `v0.3.0`; Intel macOS and
-Linux/WSL2 are optional and unverified for RC5.
+and Phase 3 verified resume. Dual-platform tagged-artifact acceptance passed on
+Apple Silicon macOS and native Windows x64. Intel macOS and Linux/WSL2 remain
+optional and unverified.
 
 The command synopsis below follows `v0.3.0`. Stable `v0.2.0` does not
 include the Phase 3 environment report or `--allow-environment-warning` flag.
