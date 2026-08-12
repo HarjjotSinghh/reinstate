@@ -19,6 +19,9 @@ import (
 const (
 	OperationResume = "resume"
 	OperationFork   = "fork"
+	// OperationHandoff launches a destination agent for a structured handoff
+	// (Phase 4). Reuses the same ExecLaunchRunner TTY and identity guards.
+	OperationHandoff = "handoff"
 )
 
 var (
@@ -268,7 +271,7 @@ func validateLaunchPlan(plan LaunchPlan) error {
 	if plan.Dir == "" {
 		return fmt.Errorf("%w: launch working directory is missing", ErrWorkspaceUnavailable)
 	}
-	if plan.Operation != OperationResume && plan.Operation != OperationFork {
+	if plan.Operation != OperationResume && plan.Operation != OperationFork && plan.Operation != OperationHandoff {
 		return fmt.Errorf("unknown launch operation %q", plan.Operation)
 	}
 	return nil
