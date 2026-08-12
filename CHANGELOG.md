@@ -21,6 +21,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reported `UNTESTED` and `rein handoff claude:<id>` exited 5, while
   `rein inspect` called the same agent supported in the same invocation, and the
   Codex reader applied no version check at all.
+- A source agent whose version probe times out is no longer accepted as if it
+  had no version at all. The bounded `--version` probe reported "unknown" when
+  it merely ran out of time, and the reader contract answers "unknown" with
+  SUPPORTED — the branch that exists so a handoff still works when the source
+  agent is uninstalled. An installed, determinable, out-of-range agent was
+  therefore accepted silently whenever the machine was briefly busy, which real
+  agent CLIs can cause on their own since they are language runtimes that can
+  exceed a two-second budget. A timed-out probe is now measured once more, and
+  a measurement that still fails is reported as a failed measurement rather
+  than an absent one: installed-but-unread is UNTESTED, refused without
+  `--allow-untested`. An agent that is genuinely not installed still resolves
+  to SUPPORTED, unchanged.
+- A handoff now tells the destination which files actually changed. The
+  workspace probe keeps the pathnames behind the counts it already computed,
+  `BindWorkspace` rewrites each one into a `${REPO:<id>}/…` token, and the
+  capsule, `projection.md`, and the destination bootstrap all carry the list.
+  Previously every handoff reported `Changed files: (none)` and emitted no
+  `changed_files` key at all, even over a dirty working tree — the destination
+  was told the repository was clean when it was not. The list is capped at 64
+  paths so a large dirty tree cannot exhaust the capsule or the 8 KiB bootstrap
+  budget; whenever entries are dropped, at the cap or under argv pressure, the
+  count of omitted entries is rendered instead of a silently short list.
+- A transcript's file claims are no longer marked
+  `evidence_conflicts_with_workspace` unless live Git actually produced a
+  complete changed-file list. An unavailable, uncertain, or capped observation
+  is missing evidence, not counter-evidence, and previously every handoff built
+  without a live observation contradicted its own transcript.
 - Transcript readers now rewrite the paths they lift out of vendor tool calls,
   tool results, and attachments into portable `${REPO:<id>}` / `${HOME}` tokens
   before they reach a capsule. A path outside every configured root becomes a

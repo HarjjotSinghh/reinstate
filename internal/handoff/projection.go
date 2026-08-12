@@ -39,6 +39,7 @@ type projectionDocument struct {
 	LatestUserRequest   string                   `json:"latest_user_request"`
 	Workspace           projectionWorkspace      `json:"workspace"`
 	ChangedFiles        []string                 `json:"changed_files"`
+	ChangedFilesOmitted int                      `json:"changed_files_omitted,omitempty"`
 	Tests               []string                 `json:"tests"`
 	MissingCapabilities []projectionMissing      `json:"missing_capabilities"`
 	RedactionSummary    []projectionRedactionRow `json:"redaction_summary"`
@@ -112,7 +113,7 @@ func RenderProjection(c capsule.Capsule) ([]byte, error) {
 	writeSection(&b, "Goal", displayOrNone(c.Task.Goal.Text))
 	writeSection(&b, "Latest user request", displayOrNone(c.Task.LatestUserIntent.Text))
 	writeSection(&b, "Workspace truth", workspaceTruthText(c.Workspace))
-	writeSection(&b, "Changed files", listOrNone(changedFiles(c)))
+	writeSection(&b, "Changed files", listOrNone(changedFilesDisplay(c)))
 	writeSection(&b, "Test state", listOrNone(testState(c)))
 	writeSection(&b, "Missing capabilities", listOrNone(missingCapabilityLines(c.Capabilities.Missing)))
 	writeSection(&b, "Redaction summary", listOrNone(redactionSummaryLines(c.Security.Redactions)))
@@ -154,6 +155,7 @@ func RenderJSON(c capsule.Capsule) ([]byte, error) {
 			WorkingTreeDigest: c.Workspace.WorkingTreeDigest,
 		},
 		ChangedFiles:        changedFiles(c),
+		ChangedFilesOmitted: c.Workspace.ChangedFilesOmitted,
 		Tests:               testState(c),
 		MissingCapabilities: missingCapabilityRows(c.Capabilities.Missing),
 		RedactionSummary:    redactionSummaryRows(c.Security.Redactions),
@@ -196,7 +198,7 @@ type bootstrapLimits struct {
 func buildBootstrap(c capsule.Capsule, projPath string, lim bootstrapLimits) []byte {
 	goal := c.Task.Goal.Text
 	latest := c.Task.LatestUserIntent.Text
-	files := changedFiles(c)
+	files := changedFilesDisplay(c)
 	tests := testState(c)
 	missing := missingCapabilityLines(c.Capabilities.Missing)
 	redactions := redactionSummaryLines(c.Security.Redactions)
@@ -405,6 +407,19 @@ func changedFiles(c capsule.Capsule) []string {
 	return append([]string(nil), c.Task.ChangedFiles.Items...)
 }
 
+// changedFilesDisplay is the human-facing changed-file list. When the capsule
+// could not carry every changed path, the omitted count is rendered as its own
+// entry: a destination that reads a short list without it would conclude the
+// unlisted files are unmodified.
+func changedFilesDisplay(c capsule.Capsule) []string {
+	items := changedFiles(c)
+	if c.Workspace.ChangedFilesOmitted > 0 {
+		items = append(items, fmt.Sprintf(
+			"(+%d more changed files not listed)", c.Workspace.ChangedFilesOmitted))
+	}
+	return items
+}
+
 func testState(c capsule.Capsule) []string {
 	if len(c.Workspace.Tests) > 0 {
 		return append([]string(nil), c.Workspace.Tests...)
@@ -511,20 +526,28 @@ func normalizeNewlines(s string) string {
 	return s
 }
 
+// boundStringList shrinks a list to fit the argv budget. Dropping entries is
+// allowed; hiding that they were dropped is not, so the last slot carries the
+// omitted count instead of another entry.
 func boundStringList(items []string, maxItems, maxItemRunes int) []string {
 	if maxItems <= 0 {
 		return nil
 	}
+	omitted := 0
 	if len(items) > maxItems {
-		items = items[:maxItems]
+		omitted = len(items) - (maxItems - 1)
+		items = items[:maxItems-1]
 	}
-	out := make([]string, len(items))
+	out := make([]string, len(items), len(items)+1)
 	for i, item := range items {
 		if maxItemRunes > 0 {
 			out[i] = boundRunes(item, maxItemRunes)
 		} else {
 			out[i] = item
 		}
+	}
+	if omitted > 0 {
+		out = append(out, fmt.Sprintf("(+%d more not listed)", omitted))
 	}
 	return out
 }

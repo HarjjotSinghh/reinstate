@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strconv"
 	"strings"
@@ -54,6 +55,57 @@ func TestProbeRealRepositoryAndWorkingTreePrivacy(t *testing.T) {
 	}
 	if strings.Contains(string(encoded), privateName) || strings.Contains(string(encoded), "example.com/team/private") {
 		t.Fatalf("probe exposed private Git metadata: %s", encoded)
+	}
+}
+
+// The production probe never runs `git status` itself: it synthesizes the
+// porcelain subset from plumbing output. This exercises that real path so a
+// changed-file list can never pass a hand-written fixture and then find nothing
+// against an actual repository.
+func TestProbeRealRepositoryListsStagedUnstagedAndUntrackedPaths(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is unavailable")
+	}
+	repository := initTestRepository(t)
+
+	if err := os.WriteFile(filepath.Join(repository, "tracked.txt"), []byte("edited"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(repository, "staged.txt"), []byte("staged"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	runTestGit(t, repository, "add", "staged.txt")
+	if err := os.MkdirAll(filepath.Join(repository, "nested"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	untracked := filepath.Join(repository, "nested", "new file.txt")
+	if err := os.WriteFile(untracked, []byte("new"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := Probe(context.Background(), repository, ProbeOptions{Timeout: 30 * time.Second})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tree := result.Fingerprint.Git.WorkingTree
+	want := []string{"nested/new file.txt", "staged.txt", "tracked.txt"}
+	if !reflect.DeepEqual(tree.Changed, want) {
+		t.Fatalf("changed = %#v, want %#v (diagnostics %+v)", tree.Changed, want, result.Diagnostics)
+	}
+	if tree.ChangedOmitted != 0 || tree.State != WorkingTreeModified {
+		t.Fatalf("working tree = %+v", tree)
+	}
+
+	// The list exists in memory for the handoff binding and nowhere in the
+	// report a user can print or paste.
+	encoded, err := json.Marshal(result)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range want {
+		if strings.Contains(string(encoded), path) {
+			t.Fatalf("probe report serialized a working-tree path %q: %s", path, encoded)
+		}
 	}
 }
 

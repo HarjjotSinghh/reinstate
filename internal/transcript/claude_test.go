@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/HarjjotSinghh/reinstate/internal/agentcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/capsule"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
 )
@@ -303,8 +304,10 @@ func TestClaudeParseDeterministicIDsAndHashes(t *testing.T) {
 func TestClaudeProbeVersionGate(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	fixed := func(version string, known bool) VersionResolver {
-		return func(context.Context, sessionindex.Record) (string, bool) { return version, known }
+	fixed := func(version string, evidence agentcheck.VersionEvidence) VersionResolver {
+		return func(context.Context, sessionindex.Record) (string, agentcheck.VersionEvidence) {
+			return version, evidence
+		}
 	}
 
 	supported := fixtureRecord(t, "compaction")
@@ -313,9 +316,11 @@ func TestClaudeProbeVersionGate(t *testing.T) {
 		resolver VersionResolver
 		want     Compatibility
 	}{
-		{name: "in range", resolver: fixed("2.1.228", true), want: CompatibilitySupported},
-		{name: "outside range", resolver: fixed("2.1.229", true), want: CompatibilityUntested},
-		{name: "undeterminable", resolver: fixed("", false), want: CompatibilitySupported},
+		{name: "in range", resolver: fixed("2.1.228", agentcheck.VersionDetermined), want: CompatibilitySupported},
+		{name: "outside range", resolver: fixed("2.1.229", agentcheck.VersionDetermined), want: CompatibilityUntested},
+		{name: "undeterminable", resolver: fixed("", agentcheck.VersionUnavailable), want: CompatibilitySupported},
+		// Installed but unread is uncertainty, not absence: it must not pass.
+		{name: "probe failed", resolver: fixed("", agentcheck.VersionProbeFailed), want: CompatibilityUntested},
 	} {
 		compat, err := (&ClaudeReader{ResolveVersion: test.resolver}).Probe(ctx, supported)
 		if err != nil {
@@ -334,7 +339,7 @@ func TestClaudeProbeVersionGate(t *testing.T) {
 	if err := os.WriteFile(bad, []byte("{}\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	compat, err := (&ClaudeReader{ResolveVersion: fixed("2.1.228", true)}).Probe(ctx,
+	compat, err := (&ClaudeReader{ResolveVersion: fixed("2.1.228", agentcheck.VersionDetermined)}).Probe(ctx,
 		sessionindex.Record{Agent: "claude", ID: "session", SourcePath: bad})
 	if err != nil {
 		t.Fatal(err)

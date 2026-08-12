@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -25,6 +26,36 @@ type parsedStatus struct {
 	workingTree WorkingTreeFingerprint
 }
 
+// changedPathSet accumulates the pathnames behind the working-tree counts.
+// Git can report the same path from more than one record (a staged and an
+// unstaged change to one file), so membership is by path.
+type changedPathSet map[string]struct{}
+
+func (set changedPathSet) add(rawPath string) {
+	path := safeMetadata(rawPath, 4096)
+	if path == "" {
+		return
+	}
+	set[path] = struct{}{}
+}
+
+// sorted returns the capped, ordered path list and the number of distinct
+// paths left out of it.
+func (set changedPathSet) sorted() ([]string, int) {
+	if len(set) == 0 {
+		return nil, 0
+	}
+	paths := make([]string, 0, len(set))
+	for path := range set {
+		paths = append(paths, path)
+	}
+	sort.Strings(paths)
+	if len(paths) <= MaxChangedPaths {
+		return paths, 0
+	}
+	return paths[:MaxChangedPaths], len(paths) - MaxChangedPaths
+}
+
 func parsePorcelainV2(output []byte) (parsedStatus, error) {
 	treeDigest := sha256.New()
 	_, _ = treeDigest.Write([]byte("reinstate.workspace.working-tree.v1\x00"))
@@ -33,6 +64,7 @@ func parsePorcelainV2(output []byte) (parsedStatus, error) {
 		workingTree: WorkingTreeFingerprint{State: WorkingTreeClean},
 	}
 	workingTreeUncertain := false
+	changed := make(changedPathSet)
 	tokens := bytes.Split(output, []byte{0})
 	seen := make(map[string]string)
 	for index := 0; index < len(tokens); index++ {
@@ -97,6 +129,7 @@ func parsePorcelainV2(output []byte) (parsedStatus, error) {
 			}
 			result.workingTree.State = WorkingTreeModified
 			incrementChangeCounts(&result.workingTree, fields[1], fields[2])
+			changed.add(recordPath(token[0], line))
 			if token[0] == '2' {
 				// Porcelain -z emits the rename source as a separate token. It is
 				// a pathname, not another status/header record.
@@ -104,6 +137,9 @@ func parsePorcelainV2(output []byte) (parsedStatus, error) {
 				if index >= len(tokens) || len(tokens[index]) == 0 {
 					return parsedStatus{}, fmt.Errorf("%w: missing rename source", ErrInvalidGitStatus)
 				}
+				// A rename changed both names: the destination now exists and the
+				// source no longer does. Both belong in the changed-path list.
+				changed.add(string(tokens[index]))
 				_, _ = treeDigest.Write(tokens[index])
 				_, _ = treeDigest.Write([]byte{0})
 			}
@@ -116,6 +152,7 @@ func parsePorcelainV2(output []byte) (parsedStatus, error) {
 			}
 			result.workingTree.State = WorkingTreeModified
 			boundedIncrement(&result.workingTree.Conflicted, &result.workingTree.CountsTruncated)
+			changed.add(recordPath('u', line))
 			if submoduleChanged(fields[2]) {
 				boundedIncrement(&result.workingTree.Submodule, &result.workingTree.CountsTruncated)
 			}
@@ -124,6 +161,7 @@ func parsePorcelainV2(output []byte) (parsedStatus, error) {
 			_, _ = treeDigest.Write([]byte{0})
 			result.workingTree.State = WorkingTreeModified
 			boundedIncrement(&result.workingTree.Untracked, &result.workingTree.CountsTruncated)
+			changed.add(recordPath('?', line))
 		case '!':
 			// Ignored paths are not requested, but accepting them keeps the
 			// parser forward-compatible without treating them as modifications.
@@ -142,7 +180,58 @@ func parsePorcelainV2(output []byte) (parsedStatus, error) {
 	}
 	result.workingTree.Uncertain = workingTreeUncertain
 	result.workingTree.Digest = "sha256:" + hex.EncodeToString(treeDigest.Sum(nil))
+	result.workingTree.Changed, result.workingTree.ChangedOmitted = changed.sorted()
 	return result, nil
+}
+
+// recordPath extracts the pathname from one porcelain-v2 change record.
+//
+// Two record shapes reach this parser. Git's own `status --porcelain=v2` emits
+// the full column set, and resolvedGitRunner.safeStatus synthesizes the same
+// record types from plumbing output with only the type, XY, and submodule
+// columns. Columns are counted rather than trimmed, because a pathname may
+// contain spaces and, under -z, is never quoted. The full shape is recognized
+// by its six-digit octal mode column, so a synthesized pathname that merely
+// contains spaces is never mistaken for one.
+func recordPath(recordType byte, line string) string {
+	switch recordType {
+	case '?':
+		return pathAfterColumns(line, 1, 1)
+	case '1':
+		return pathAfterColumns(line, 8, 3)
+	case '2':
+		return pathAfterColumns(line, 9, 3)
+	case 'u':
+		return pathAfterColumns(line, 10, 3)
+	default:
+		return ""
+	}
+}
+
+func pathAfterColumns(line string, fullColumns, shortColumns int) string {
+	if fullColumns > shortColumns {
+		parts := strings.SplitN(line, " ", fullColumns+1)
+		if len(parts) == fullColumns+1 && isOctalFileMode(parts[shortColumns]) {
+			return parts[fullColumns]
+		}
+	}
+	parts := strings.SplitN(line, " ", shortColumns+1)
+	if len(parts) != shortColumns+1 {
+		return ""
+	}
+	return parts[shortColumns]
+}
+
+func isOctalFileMode(value string) bool {
+	if len(value) != 6 {
+		return false
+	}
+	for index := 0; index < len(value); index++ {
+		if value[index] < '0' || value[index] > '7' {
+			return false
+		}
+	}
+	return true
 }
 
 func incrementChangeCounts(tree *WorkingTreeFingerprint, xy, submodule string) {
