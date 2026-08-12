@@ -26,6 +26,7 @@ const (
 	AgentCodex    = "codex"
 	AgentGemini   = "gemini"
 	AgentOpenCode = "opencode"
+	AgentGrok     = "grok"
 )
 
 var (

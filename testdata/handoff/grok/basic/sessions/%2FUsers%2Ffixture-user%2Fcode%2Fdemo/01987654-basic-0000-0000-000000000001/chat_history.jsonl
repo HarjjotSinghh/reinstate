@@ -1,0 +1,3 @@
+{"type":"system","content":"Synthetic system preamble"}
+{"type":"user","content":[{"type":"text","text":"Basic Grok handoff user prompt"}],"prompt_index":0}
+{"type":"assistant","content":"Basic Grok handoff assistant reply","tool_calls":[]}
