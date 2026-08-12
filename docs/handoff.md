@@ -1,11 +1,12 @@
 # Cross-agent handoff
 
-Phase 4 lets you continue the same task in a different coding agent. You start
-in Claude Code, hit a usage limit, and continue in Codex — without re-explaining
-the work and without another Claude API call. The reverse works too.
+Phase 4 `v0.4.0-rc.1` lets you continue the same task in a different coding
+agent. You start in Claude Code, hit a usage limit, and hand the task to Codex
+without re-explaining the work or making another Claude API call. The reverse
+works too.
 
-This document is the implementation contract for `v0.4.0`. It deliberately does
-not claim that a session is transferred. Design detail lives in
+This document is the implementation contract for `v0.4.0-rc.1`. It deliberately
+does not claim that a session is transferred. Design detail lives in
 [cross-agent-continuation.md](cross-agent-continuation.md); the delivery plan
 lives in [the Phase 4 plan](superpowers/plans/2026-08-12-phase-4-cross-agent-handoff-plan.md).
 
@@ -18,31 +19,29 @@ Git, compares what the destination can actually do, and hands the destination a
 bounded, source-attributed briefing plus an inspectable capsule file. The
 destination restates its understanding before it changes anything.
 
-It is **the same task**, not the same session.
+It continues **the same task in a new destination session**.
 
 ## Continuity modes
 
 Reinstate labels these separately in the CLI, in JSON, and in docs:
 
-| Mode | Destination | Fidelity | Status in `v0.4.0` |
+| Mode | Destination | Fidelity | Status in `v0.4.0-rc.1` |
 | ---- | ----------- | -------- | ------------------ |
 | **Native resume** | Same agent | Highest; vendor session semantics kept | Shipped since `v0.2.0` |
-| **Structured handoff** | Different agent | Task state + selected verbatim history + evidence | **This phase** |
-| **Reconstructed conversation** | Different agent | Visible history written into target-native storage | Not shipped; not planned for `v0.4.0` |
+| **Structured handoff** | Different agent | Task state + selected verbatim history + evidence | **`v0.4.0-rc.1`** |
+| **Reconstructed conversation** | Different agent | Visible history written into target-native storage | Not shipped in `v0.4.0-rc.1` |
 
-If you see the word "resume" without "native", it is a handoff.
-
-## Supported directions in `v0.4.0`
+## Supported directions in `v0.4.0-rc.1`
 
 | Source → | Claude Code | Codex CLI | Gemini CLI | OpenCode | Grok Build |
 | -------- | :---------: | :-------: | :--------: | :------: | :--------: |
-| **Claude Code** | native resume | **handoff** | rc.2 | rc.2 | not planned |
-| **Codex CLI** | **handoff** | native resume | rc.2 | rc.2 | not planned |
-| **Gemini CLI** | **handoff** | **handoff** | — | rc.2 | not planned |
-| **OpenCode** | **handoff** | **handoff** | rc.2 | — | not planned |
-| **Grok Build** | **handoff** | **handoff** | rc.2 | rc.2 | — |
+| **Claude Code** | same-vendor native resume | **structured handoff** | not in rc.1 | not in rc.1 | not planned |
+| **Codex CLI** | **structured handoff** | same-vendor native resume | not in rc.1 | not in rc.1 | not planned |
+| **Gemini CLI** | **structured handoff** | **structured handoff** | not a target (source-only) | not in rc.1 | not planned |
+| **OpenCode** | **structured handoff** | **structured handoff** | not in rc.1 | not a target (source-only) | not planned |
+| **Grok Build** | **structured handoff** | **structured handoff** | not in rc.1 | not in rc.1 | not a target (source-only) |
 
-Gemini CLI, OpenCode, and Grok Build are **source-only** in `v0.4.0`: you can
+Gemini CLI, OpenCode, and Grok Build are **source-only** in `v0.4.0-rc.1`: you can
 hand off *from* them, not *to* them. Support is directional and versioned — a
 supported session adapter never implies a supported handoff.
 
@@ -140,8 +139,8 @@ closed. Everything below is computed locally, with no network and no model call:
 Reinstate does **not** deterministically invent a list of "decisions" or
 "rejected approaches". Those are reported as omitted, because guessing them from
 prose produces confident nonsense. Your verbatim recent messages carry that
-information honestly instead. An optional summarizer can fill them in when a
-model is available; it is off by default and never on the critical path.
+information honestly instead. A future optional summarizer may fill them in,
+but no source model call is part of the rc.1 critical path.
 
 ## Security
 
@@ -158,7 +157,7 @@ Imported history is untrusted data. Reinstate treats it that way:
 5. Credentials, auth stores, and keychains are never read.
 6. Capsules live outside your repository, owner-only (`0700` directories,
    `0600` files; a protected DACL on Windows), and are **not synced** in
-   `v0.4.0`.
+   `v0.4.0-rc.1`.
 7. The destination re-authorizes every permission, network action, secret
    lookup, and MCP login under its own policy.
 8. An unknown source or destination version fails closed with exit code `5`.
@@ -183,7 +182,8 @@ $REINSTATE_HOME/handoffs/
 ```
 
 Deleting `handoffs/` loses lineage and nothing else. Your sessions stay in their
-own vendor stores; Reinstate never modifies a source session.
+own vendor stores; Reinstate never modifies a source session or writes a
+destination vendor's internal session files.
 
 ## The acknowledgement step
 
@@ -195,7 +195,7 @@ Before the destination changes anything, it is asked to restate:
 4. anything missing or uncertain;
 5. its proposed next action.
 
-Be clear about the limit: in `v0.4.0` this is a **prompt-level contract**.
+Be clear about the limit: in `v0.4.0-rc.1` this is a **prompt-level contract**.
 Reinstate prepares and verifies the briefing, but it does not run the
 destination's agent loop and cannot force it to comply. `rein handoff inspect
 <id>` lets you record whether the acknowledgement was correct, so the success
