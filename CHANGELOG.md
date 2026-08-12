@@ -9,6 +9,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `rein handoff` for explicit structured handoffs into a new Claude Code or
+  Codex session, including deterministic `--dry-run`, launch-free
+  materialization, `rein resume --with`, picker handoff actions, and local
+  `handoff list`, `inspect`, and `export` history.
+- A model-free handoff pipeline and canonical continuity capsule for Claude
+  Code, Codex CLI, Gemini CLI, OpenCode, and Grok Build sources. Gemini,
+  OpenCode, and Grok are source-only in `v0.4.0-rc.1`; destination launch is
+  limited to Claude Code and Codex through their documented CLIs.
+- A private, local-only `$REINSTATE_HOME/handoffs/` artifact store with
+  append-only lineage, owner-only protection, and a hard sync exclusion. The
+  handoff path never writes vendor-internal session files.
+- Phase 4 adversarial and golden coverage for inert transcript evidence,
+  source-instruction exclusion, delimiter escaping, bounded reads, secret
+  redaction, capsule determinism, output parity, and 200-turn projection
+  ceilings.
+- Claude Code handoff destination (`internal/handoff.ClaudeTarget`): ADR 0003
+  argv `claude --session-id <uuid-v4> "<bootstrap>"` in the verified workspace,
+  pinned-ID verification under this device's project key, and R5 fail-closed
+  collision refusal after bounded UUID regeneration (no vendor-internal writes).
+  `sessionindex.OperationHandoff` lets `ExecLaunchRunner` apply the same TTY and
+  identity guards to destination launches.
+- Codex CLI handoff destination (`internal/handoff/target_codex.go`): launches
+  `codex "<bootstrap>"` in the verified workspace, reconciles the
+  vendor-assigned session ID after launch (resolved / unresolved / ambiguous),
+  and falls back to a `projection.md`-only bootstrap when argv exceeds
+  `DefaultMaxArgvBytes` (R6). Never writes vendor-internal Codex files.
+- Handoff projection renderer (`RenderBootstrap`, `RenderProjection`,
+  `RenderJSON`) with imported-history framing, delimiter escape, source
+  system/developer exclusion, and an 8 KiB bootstrap ceiling
+  (`internal/handoff/projection.go`; goldens under
+  `testdata/handoff/golden/projection/`).
+- Handoff context policies (`checkpoint` / `balanced` / `full`) with
+  newest-first projection budgeting, visible truncation markers, deterministic
+  token estimates (`ceil(utf8_bytes / 4)`), and sidecar references for every
+  excluded event (`internal/handoff` policy + estimate; `capsule.SidecarRef`).
+- Claude Code transcript reader (`internal/transcript`) that snapshots complete
+  JSONL boundaries and maps user/assistant/tool/summary/attachment/unknown
+  records into canonical capsule events, with synthetic fixtures under
+  `testdata/handoff/claude/` and R8 attachment guidance in
+  `docs/session-storage-map.md`.
+- Codex CLI transcript reader (`internal/transcript/codex.go`): maps rollout
+  JSONL into canonical capsule events with `event_msg`-over-`response_item`
+  dedup, filename-UUID session identity for forks, and R4
+  `vendor_opaque_state` omission for reasoning / encrypted reasoning items.
+  Synthetic fixtures under `testdata/handoff/codex/`.
+- OpenCode source-only transcript reader (`internal/transcript`): MessageV2
+  storage tier under `storage/message/` + `storage/part/`, with metadata
+  fallback via `opencode session list` when bodies are unavailable
+  (`source_bodies_unavailable`). Windows uses the documented XDG data root
+  (`%USERPROFILE%\.local\share\opencode`), not `%LOCALAPPDATA%`.
+- `internal/handoff.BindWorkspace` binds Phase 3 preflight workspace truth into
+  a continuity-capsule workspace with `${REPO:<id>}` portable path tokens.
+  Blocked preflight reports surface as `handoff.BlockedError` with the same
+  exit codes Phase 3 uses; warning reports still require acknowledgement.
+- Gemini CLI source-only transcript reader (`internal/transcript/gemini.go`)
+  for Phase 4 handoff capsules: legacy `messages[]` JSON and JSONL+`$set`,
+  vendor-aligned `$rewindTo` replay (exclusive of the target id), and
+  `kind:subagent` exclusion. Fixtures under `testdata/handoff/gemini/`.
 - Phase 4 planning set for `v0.4.0` cross-agent handoff: the continuity-capsule
   design and ADR 0002, a user-facing handoff contract, a per-OS local session
   storage map for Claude Code, Codex, Gemini CLI, OpenCode, and Grok Build, the
@@ -39,6 +97,11 @@ again on the published stable tag (`stable_v0.3.0_authorized=true`).
 ### Fixed
 
 - Windows Ctrl+C at the environment-warning prompt returns safety exit `7`.
+- Handoff artifacts written outside the store — destination planned files and
+  `handoff export --out` / `handoff --export` — are now owner-only on Windows.
+  They went through a plain `0600` write, which Windows ignores, leaving the
+  inherited DACL in place; they now use the same protected DACL as the rest of
+  `$REINSTATE_HOME/handoffs/`.
 - Non-TTY native launch fails closed unless an explicit local-smoke override is set.
 - Capability probe incompleteness demoted from acknowledgement-forcing warnings
   where appropriate; cancelled probes remain blocking.

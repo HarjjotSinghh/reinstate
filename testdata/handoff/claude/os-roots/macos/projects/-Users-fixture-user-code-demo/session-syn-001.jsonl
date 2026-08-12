@@ -1,0 +1,2 @@
+{"type":"user","uuid":"os-macos-u1","sessionId":"00000000-0000-4000-8000-00000000os01","cwd":"/Users/fixture-user/code/demo","timestamp":"2026-08-01T12:00:00Z","message":{"role":"user","content":"Synthetic Claude macOS OS-root fixture"}}
+{"type":"assistant","uuid":"os-macos-a1","sessionId":"00000000-0000-4000-8000-00000000os01","timestamp":"2026-08-01T12:00:01Z","message":{"role":"assistant","content":[{"type":"text","text":"Synthetic Claude macOS OS-root reply"}]}}

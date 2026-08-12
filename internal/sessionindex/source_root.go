@@ -14,7 +14,7 @@ func AgentRoot(record Record) string {
 	switch strings.ToLower(record.Agent) {
 	case AgentClaude:
 		marker = "projects"
-	case AgentCodex:
+	case AgentCodex, AgentGrok:
 		marker = "sessions"
 	default:
 		return ""

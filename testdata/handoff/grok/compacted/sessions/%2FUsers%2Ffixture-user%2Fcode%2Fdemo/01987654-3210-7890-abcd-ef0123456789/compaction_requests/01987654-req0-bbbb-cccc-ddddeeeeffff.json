@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "request_id": "01987654-req0-bbbb-cccc-ddddeeeeffff",
+  "created_at": "2026-08-12T02:04:50Z",
+  "trigger": "manual",
+  "prompt_variant": "short",
+  "model": "grok-code",
+  "user_context": null,
+  "chat_history": [
+    {
+      "type": "system",
+      "content": "Synthetic system preamble"
+    },
+    {
+      "type": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "PRE_COMPACT_USER_TURN"
+        }
+      ],
+      "prompt_index": 0
+    },
+    {
+      "type": "assistant",
+      "content": "PRE_COMPACT_ASSISTANT_TURN",
+      "tool_calls": []
+    },
+    {
+      "type": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Synthetic /compact summarization prompt"
+        }
+      ],
+      "synthetic_reason": "compaction_meta"
+    }
+  ],
+  "tools": [],
+  "summary": "Compaction summary standing in for earlier turns"
+}

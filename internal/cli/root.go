@@ -43,8 +43,8 @@ type Options struct {
 	// The production command leaves it nil.
 	EnvelopeCodec syncengine.EnvelopeCodec
 	// SessionSources overrides config-independent local discovery in tests.
-	// A nil slice selects the production Claude, Codex, Gemini, and OpenCode
-	// sources.
+	// A nil slice selects the production Claude, Codex, Gemini, OpenCode, and
+	// Grok sources.
 	SessionSources []sessionindex.Source
 	// SessionLaunchRunner overrides native vendor process execution in tests.
 	SessionLaunchRunner sessionindex.LaunchRunner
@@ -168,6 +168,7 @@ func NewRoot(opts Options) *cobra.Command {
 		newSearchCmd(local),
 		newInspectCmd(local),
 		newLastCmd(local),
+		newHandoffCmd(handoffCommandOptions{local: local, processChecker: processChecker}),
 		newResumeCmd(local),
 		newForkCmd(local),
 		newStatusCmd(),

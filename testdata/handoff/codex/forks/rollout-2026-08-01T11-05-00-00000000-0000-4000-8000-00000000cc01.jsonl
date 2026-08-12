@@ -1,0 +1,6 @@
+{"timestamp":"2026-08-01T11:00:00Z","type":"session_meta","payload":{"id":"00000000-0000-4000-8000-00000000bb01","session_id":"00000000-0000-4000-8000-00000000bb01","cwd":"/Users/fixture-user/code/demo","git":{"branch":"fixture/source"},"forked_from_id":"00000000-0000-4000-8000-00000000bb01"}}
+{"timestamp":"2026-08-01T11:00:01Z","type":"event_msg","payload":{"type":"user_message","message":"SOURCE-ONLY-PROMPT synthetic codex source turn"}}
+{"timestamp":"2026-08-01T11:00:02Z","type":"event_msg","payload":{"type":"agent_message","message":"SOURCE-ONLY-ASSIST acknowledged"}}
+{"timestamp":"2026-08-01T11:05:00Z","type":"session_meta","payload":{"id":"00000000-0000-4000-8000-00000000bb01","cwd":"/Users/fixture-user/code/demo","forked_from_id":"00000000-0000-4000-8000-00000000bb01"}}
+{"timestamp":"2026-08-01T11:05:01Z","type":"event_msg","payload":{"type":"user_message","message":"FORK-A-ONLY-PROMPT continue from the fork"}}
+{"timestamp":"2026-08-01T11:05:02Z","type":"event_msg","payload":{"type":"agent_message","message":"FORK-A-ONLY-ASSIST working on the fork branch"}}

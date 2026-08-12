@@ -72,6 +72,17 @@ func WriteFileAtomicFail(path string, data []byte, perm os.FileMode) error {
 	return fmt.Errorf("injected atomic write failure")
 }
 
+// WritePrivateFile atomically writes one owner-only file. It is the single
+// write path for private artifacts: 0600 where the filesystem honours Unix
+// permission bits, and the protected DACL on Windows, where os.Chmod only
+// toggles the read-only attribute.
+func WritePrivateFile(path string, data []byte) error {
+	if err := WriteFileAtomic(path, data, OwnerOnlyFilePerm); err != nil {
+		return err
+	}
+	return ProtectOwnerOnly(path, false)
+}
+
 // EnsureOwnerOnlyDir creates dir with 0700 where supported.
 func EnsureOwnerOnlyDir(path string) error {
 	if err := os.MkdirAll(path, 0o700); err != nil {

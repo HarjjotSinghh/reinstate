@@ -1,0 +1,3 @@
+{"type":"user","uuid":"u1","sessionId":"00000000-0000-4000-8000-000000000001","cwd":"/Users/fixture-user/code/demo","timestamp":"2026-08-01T10:00:00Z","message":{"role":"user","content":"Synthetic compaction request"}}
+{"type":"assistant","uuid":"a1","sessionId":"00000000-0000-4000-8000-000000000001","timestamp":"2026-08-01T10:00:01Z","message":{"role":"assistant","content":[{"type":"text","text":"Synthetic assistant reply before summary"}]}}
+{"type":"summary","uuid":"s1","sessionId":"00000000-0000-4000-8000-000000000001","timestamp":"2026-08-01T10:00:02Z","summary":"Synthetic compacted summary of prior turns","leafUuid":"a1"}

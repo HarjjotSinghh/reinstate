@@ -1,0 +1,6 @@
+{"sessionId":"gemini-handoff-shared","projectHash":"projhashfixture","startTime":"2026-08-12T04:00:00Z","lastUpdated":"2026-08-12T04:00:00Z","directories":["/Users/fixture-user/code/demo"],"kind":"main"}
+{"id":"user-1","timestamp":"2026-08-12T04:01:00Z","type":"user","content":[{"text":"Shared user turn for layout equivalence"}]}
+{"id":"model-1","timestamp":"2026-08-12T04:02:00Z","type":"gemini","content":"Shared model turn for layout equivalence","toolCalls":[{"name":"read_file","args":{"path":"README.md"},"result":"fixture file contents"}]}
+{"id":"user-2","timestamp":"2026-08-12T04:03:00Z","type":"user","content":"Follow-up user turn"}
+{"id":"model-2","timestamp":"2026-08-12T04:04:00Z","type":"model","content":"Follow-up model turn"}
+{"$set":{"summary":"Shared legacy/jsonl conversation","lastUpdated":"2026-08-12T04:05:00Z"}}

@@ -1,8 +1,9 @@
 # Reinstate product-truth register
 
-Last reviewed: 2026-08-08
+Last reviewed: 2026-08-12
 Canonical website source: `website/src/data/product.ts`
-Reviewed release: `v0.3.0` (stable after dual-platform RC7 acceptance PASS)
+Reviewed release: `v0.3.0` stable; `v0.4.0-rc.1` candidate prepared, not yet
+physically certified or released
 
 This is the required output of the repository-local
 `reinstate-product-truth` workflow. It separates released facts from roadmap
@@ -19,7 +20,8 @@ marketing claim.
 | Audience | Developers continuing coding-agent work across work/personal computers, desktop/laptop, projects, or environments | product strategy and published use cases |
 | Current agents | Claude Code and Codex CLI | adapter registry, compatibility data, setup checks |
 | Native-resume boundary | Claude Code → Claude Code and Codex → Codex only | adapter implementation, docs, protected claim tests |
-| Cross-agent behavior | Explicit portable handoff is later roadmap work; no silent transcript translation | roadmap, universal-configuration docs, AGENTS.md |
+| Cross-agent behavior | `v0.4.0-rc.1` candidate code provides explicit structured handoff into a new Claude Code or Codex session; it does not translate or transfer a native session | handoff contract, ADR 0003, CLI/doctest contracts |
+| Candidate source scope | Claude Code, Codex CLI, Gemini CLI, OpenCode, and Grok Build can be sources; Gemini, OpenCode, and Grok are source-only in rc.1 | directional compatibility matrix, reader tests |
 | Current OS targets | Apple Silicon macOS and native Windows x64 are mandatory RC/stable targets; Intel macOS and Linux/WSL2 are optional and unsupported/unverified | release runbook, compatibility data, limitations |
 | Encryption | Supported session snapshots and manifests are encrypted locally before upload using the current age envelope implementation | `internal/crypto`, sync engine, threat model |
 | Storage | User-owned Amazon S3, Cloudflare R2, or compatible S3 storage | backend/config implementation and storage docs |
@@ -36,7 +38,8 @@ marketing claim.
 | --- | --- | --- | --- |
 | Live GitHub About description | “Sync and resume coding-agent work across every device” is broader than verified OS/acceptance scope | Unsupported as written | Owner-operated update remains required; exact replacement is in `launch-distribution.md`. |
 | Live GitHub topics/social preview | Topics are incomplete and the generic social image does not match the canonical entity/brand packet | Stale external entity metadata | Reviewed topics and reproducible 1280×640 image are prepared; application remains an external repository-settings action. |
-| Roadmap surfaces | Portable handoffs, universal configuration, and team continuity can be mistaken for current features | Planned | Current pages distinguish stable v0.2.0, the RC5 verified-resume candidate, and later roadmap work. |
+| Candidate surfaces | Phase 4 structured handoff can be mistaken for stable behavior before tagged-artifact acceptance | Candidate, not stable | Current stable stays `v0.3.0`; rc.1 wording must say candidate and must not claim physical certification or GA. |
+| Roadmap surfaces | Universal configuration and team continuity can be mistaken for current features | Planned | Current pages separate stable `v0.3.0`, the Phase 4 candidate, and later roadmap work. |
 | OS language | Availability of a Linux binary can be mistaken for certified Phase 1 Linux agent resume | Ambiguous without qualification | Published install and guide copy says plain Linux is not a certified Phase 1 agent-resume target. |
 | `rein doctor --self-test` | “Synthetic storage test” could be read as a probe of configured remote storage | Ambiguous | CLI reference now states that the self-test uses in-memory sync and local files; real storage evidence comes from `init`, `status`, or scoped sync operations. |
 | Structured data | A schema type or claim could exceed visible current content | Unsupported if unmatched | Generated-build CI now requires visible parity for page/article names, FAQ questions, HowTo steps, breadcrumbs, and dates. |
@@ -49,10 +52,11 @@ marketing claim.
   Apple Silicon macOS/native Windows tagged-artifact evidence;
 - stable support for Intel macOS, WSL2, or plain Linux without completed
   acceptance evidence;
-- Claude Code ↔ Codex native transcript translation;
+- Claude Code ↔ Codex native transcript translation, native cross-agent
+  resume, the same native session, lossless transfer, or full-context claims;
+- Gemini CLI, OpenCode, or Grok Build as `v0.4.0-rc.1` handoff destinations;
 - credential, auth-token, or raw vendor-config-tree synchronization;
-- generic `rein resume`, `rein search`, handoff, MCP, skill, plugin, or
-  marketplace commands in Reinstate;
+- MCP, skill, plugin, marketplace, or agent-runtime commands in Reinstate;
 - customer counts, ratings, reviews, awards, market share, benchmarks,
   performance rates, restore-success rates, and productivity savings;
 - formal security-audit or absolute-security guarantees;
@@ -95,9 +99,10 @@ separately allowed to preserve historical releases.
 
 ## Unresolved questions and evidence gates
 
-1. Stable `v0.3.0` promotion is authorized after dual-platform RC7
-   tagged-artifact acceptance PASS; fresh dual-platform tagged-artifact
-   validation on the stable tag remains the post-publish evidence gate.
+1. `v0.4.0-rc.1` still requires signed tagged-artifact acceptance on Apple
+   Silicon macOS and native Windows x64; candidate preparation is not a pass.
+2. Fresh dual-platform tagged-artifact validation remains required before any
+   later stable `v0.4.0` promotion.
 3. Search Console, Bing, IndexNow production ownership, Plausible, WAF/log,
    field Core Web Vitals, and manual AI-query evidence require owner/account or
    deployed-production access.

@@ -3,6 +3,7 @@ package fixture
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -65,5 +66,55 @@ func TestGenerateMatchesCommittedFixtures(t *testing.T) {
 		if string(generatedBody) != expected || string(committedBody) != expected {
 			t.Errorf("fixture drift: %s", relative)
 		}
+	}
+}
+
+func TestGenerateHandoffMatchesCommitted(t *testing.T) {
+	committedRoot := filepath.Join("..", "..", "testdata", "handoff")
+	if os.Getenv("UPDATE_HANDOFF_FIXTURES") == "1" {
+		if err := GenerateHandoff(committedRoot); err != nil {
+			t.Fatal(err)
+		}
+	}
+	generated := t.TempDir()
+	if err := GenerateHandoff(generated); err != nil {
+		t.Fatal(err)
+	}
+	for _, dir := range HandoffTreeDirs {
+		info, err := os.Stat(filepath.Join(committedRoot, filepath.FromSlash(dir)))
+		if err != nil || !info.IsDir() {
+			t.Fatalf("missing §10 tree dir %s: %v", dir, err)
+		}
+	}
+	check := func(relative string) {
+		t.Helper()
+		want, err := os.ReadFile(filepath.Join(generated, filepath.FromSlash(relative)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := os.ReadFile(filepath.Join(committedRoot, filepath.FromSlash(relative)))
+		if err != nil {
+			t.Fatalf("missing committed handoff fixture %s: %v", relative, err)
+		}
+		if string(got) != string(want) {
+			t.Errorf("handoff fixture drift: %s", relative)
+		}
+	}
+	for relative := range HandoffSyntheticFiles {
+		check(relative)
+	}
+	check("claude/long-history/projects/-Users-fixture-user-code-demo/session-syn-001.jsonl")
+	check("codex/long-history/rollout-2026-08-01T10-00-00-00000000-0000-4000-8000-00000000aa01.jsonl")
+}
+
+func TestLongHistoryTurnCounts(t *testing.T) {
+	claudeLines := strings.Count(ClaudeLongHistoryJSONL(), "\n")
+	if claudeLines != 400 {
+		t.Fatalf("claude long-history lines = %d, want 400", claudeLines)
+	}
+	codex := CodexLongHistoryJSONL()
+	users := strings.Count(codex, `"type":"user_message"`)
+	if users != 200 {
+		t.Fatalf("codex user_message count = %d, want 200", users)
 	}
 }

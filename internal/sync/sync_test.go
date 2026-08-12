@@ -234,6 +234,24 @@ func TestRefuseCredentialPush(t *testing.T) {
 	}
 }
 
+func TestRefuseHandoffsPush(t *testing.T) {
+	dir := t.TempDir()
+	session := filepath.Join(dir, "handoffs", "abc", "capsule.json")
+	if err := os.MkdirAll(filepath.Dir(session), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(session, []byte(`{}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	eng := testEngine(&Engine{Backend: memory.New(), Passphrase: "p"})
+	if _, err := eng.PushSession(context.Background(), PushItem{
+		Agent: "claude", SessionID: "s", LocalPath: session,
+		RelativePath: "handoffs/abc/capsule.json",
+	}, false); err == nil {
+		t.Fatal("expected handoffs path refusal")
+	}
+}
+
 func TestPullDryRunStillAuthenticatesAndValidates(t *testing.T) {
 	dir := t.TempDir()
 	session := filepath.Join(dir, "session.jsonl")

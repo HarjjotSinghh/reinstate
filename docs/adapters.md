@@ -3,7 +3,11 @@
 Reinstate separates per-agent capabilities:
 
 - **local read adapters** discover bounded metadata and user-prompt search text;
+- **transcript readers** convert a frozen source boundary into canonical,
+  fidelity-labeled events without calling the source model;
 - **native executors** resume/fork through the same vendor;
+- **handoff targets** plan and launch a new destination session through the
+  destination vendor's documented CLI;
 - **sync adapters** export and restore vendor-native session files; and
 - **environment observers** report safe current facts before same-vendor
   execution without mutating native configuration; and
@@ -15,18 +19,20 @@ resume, fork, export, or restore implementations.
 
 ## Capability matrix
 
-| Adapter | Phase 2 local index | Native resume/fork | `v0.1.0` encrypted sync | Universal config |
-| ------- | ------------------- | ------------------ | ------------------------- | ---------------- |
-| Claude Code | Included in `v0.2.0` | Included in `v0.2.0` | Supported | Later |
-| OpenAI Codex CLI | Included in `v0.2.0` | Included in `v0.2.0` | Supported | Later |
-| Gemini CLI | Read-only in `v0.2.0` | No | No | Later |
-| OpenCode | Read-only in `v0.2.0` | No | No | Later |
-| Cursor | Exploring | No | No | Exploring |
-| Grok Build | Exploring | No | No | Planned |
+| Adapter | Local index | Native resume/fork | rc.1 handoff source | rc.1 handoff target | Encrypted sync | Universal config |
+| ------- | ----------- | ------------------ | --------------------- | --------------------- | -------------- | ---------------- |
+| Claude Code | Included in `v0.2.0` | Included in `v0.2.0` | Yes | Yes | Supported | Later |
+| OpenAI Codex CLI | Included in `v0.2.0` | Included in `v0.2.0` | Yes | Yes | Supported | Later |
+| Gemini CLI | Read-only in `v0.2.0` | No | Source-only | No | No | Later |
+| OpenCode | Read-only in `v0.2.0` | No | Source-only | No | No | Later |
+| Grok Build | Read-only in `v0.4.0-rc.1` | No | Source-only | No | No | Planned |
+| Cursor | Exploring | No | No | No | No | Exploring |
 
 Phase 2 automated gates and the complete tagged-artifact matrix passed on Apple
 Silicon macOS and native Windows x64. Stable `v0.2.0` support is limited to
 those verified platforms; Intel macOS and Linux/WSL2 remain preview/unverified.
+The rc.1 handoff columns remain candidate scope until tagged Phase 4 acceptance
+passes on macOS arm64 and Windows amd64.
 
 ## Phase 2 local read contract
 
@@ -106,6 +112,31 @@ after an authorized native child exits successfully.
 See [Verified resume](verified-resume.md) for launch decisions, exact warning
 acknowledgements, exit codes, and provenance.
 
+## Phase 4 structured-handoff contract (`v0.4.0-rc.1`)
+
+Handoff support is directional. Claude Code and Codex are both sources and
+targets. Gemini CLI, OpenCode, and Grok Build are source-only: their transcript
+readers can build a capsule, but Reinstate will not launch them as handoff
+destinations in rc.1.
+
+A reader snapshots only complete source records, performs bounded local parsing,
+and preserves unknown or unavailable material through explicit fidelity states.
+The deterministic path works with the source CLI closed and makes no source
+model or network call. Source system/developer messages remain audit-only;
+historical tool calls are inert evidence.
+
+A handoff target creates a new destination session through the vendor's
+documented CLI in the verified workspace. Reinstate does not write Claude,
+Codex, Gemini, OpenCode, or Grok internal session files. The target receives a
+bounded bootstrap plus a private, inspectable projection and is asked to
+acknowledge the task state before mutation. That acknowledgement is enforced at
+the prompt level only.
+
+Capsules and lineage remain local under `$REINSTATE_HOME/handoffs/`, with
+owner-only permissions and no Phase 4 sync scope. See
+[Cross-agent handoff](handoff.md) and the
+[directional compatibility matrix](compatibility.md#phase-4-structured-handoff-candidate).
+
 ## Future configuration adapters
 
 Planned configuration targets include Claude Code, Codex, Gemini CLI, OpenCode,
@@ -154,6 +185,8 @@ requiring a canonical sync mapping.
 
 Sync adapters hard-exclude auth, credentials, tokens, caches, logs, and
 regenerable dependencies. The Phase 2 index additionally excludes assistant
-messages/reasoning, tool output, environment dumps, and auth stores. Future
-configuration profiles may carry secret **references** but never secret
-values. Fixtures are synthetic and scanned for secrets.
+messages/reasoning, tool output, environment dumps, and auth stores. Handoff
+readers never read credential stores and redact detected secrets before any
+capsule artifact is written. Future configuration profiles may carry secret
+**references** but never secret values. Fixtures are synthetic and scanned for
+secrets.

@@ -7,8 +7,9 @@ and Phase 3 verified resume. Dual-platform tagged-artifact acceptance passed on
 Apple Silicon macOS and native Windows x64. Intel macOS and Linux/WSL2 remain
 optional and unverified.
 
-The command synopsis below follows `v0.3.0`. Stable `v0.2.0` does not
-include the Phase 3 environment report or `--allow-environment-warning` flag.
+Stable `v0.3.0` includes the Phase 3 environment report and
+`--allow-environment-warning` flag. The command synopsis below additionally
+includes the `v0.4.0-rc.1` structured-handoff surface.
 
 ## Exit codes
 
@@ -20,7 +21,7 @@ include the Phase 3 environment report or `--allow-environment-warning` flag.
 | 3 | missing/invalid config |
 | 4 | authentication or storage failure |
 | 5 | agent/layout compatibility failure |
-| 6 | sync conflict |
+| 6 | ambiguous session reference or sync conflict |
 | 7 | safety refusal |
 
 ## Commands
@@ -36,10 +37,21 @@ rein search QUERY [QUERY...] [--agent ...] [--project FRAGMENT]
 rein inspect AGENT:SESSION_ID [--json]
 rein last [--agent claude|codex|all] [--project FRAGMENT] [--dry-run] [--json]
           [--allow-environment-warning CHECK_ID ...]
-rein resume AGENT:SESSION_ID [--dry-run] [--json]
+rein resume AGENT:SESSION_ID [--dry-run] [--json] [--fork]
+            [--with claude|codex]
             [--allow-environment-warning CHECK_ID ...]
 rein fork AGENT:SESSION_ID [--dry-run] [--json]
           [--allow-environment-warning CHECK_ID ...]
+rein handoff [AGENT:]SESSION_ID --to claude|codex
+             [--policy checkpoint|balanced|full] [--dry-run|--no-launch]
+             [--json] [--export PATH] [--allow-warning ID ...]
+             [--allow-active] [--allow-untested] [--show-redactions]
+rein handoff --last [--from claude|codex|gemini|opencode|grok]
+             --to claude|codex [handoff flags]
+rein handoff list [--json] [--limit N]
+rein handoff inspect HANDOFF_ID [--json]
+             [--acknowledged|--not-acknowledged]
+rein handoff export HANDOFF_ID --format json|markdown [--out PATH]
 rein init [--endpoint URL] [--bucket NAME] [--region auto] [--prefix ...]
           [--profile-id UUID] [--project ID=/absolute/local/path] [--yes]
 rein list [--agent claude|codex|all] [--json]
@@ -111,6 +123,7 @@ On a TTY, bare `rein` refreshes and opens the numbered switcher:
 /text       filter
 i NUMBER    inspect
 f NUMBER    fork
+h NUMBER    structured handoff; then choose claude or codex
 NUMBER      resume
 q           cancel
 ```
@@ -121,11 +134,73 @@ On a non-TTY, bare `rein` exits promptly with usage code `2` and a
 `rein list` remains the Phase 1 compatibility command used by sync scripts.
 `rein sessions` is the canonical config-independent local listing command.
 
+## Phase 4 structured handoff (`v0.4.0-rc.1`)
+
+A structured handoff continues the same task in a new Claude Code or Codex
+session. It is not native resume: Reinstate does not reconstruct vendor history,
+write a vendor-internal session file, or claim that the destination is the same
+session. Source parsing and projection are local and require no source model
+call. Gemini CLI, OpenCode, and Grok Build are source-only in rc.1; only Claude
+Code and Codex are destinations.
+
+### `rein handoff`
+
+`rein handoff [SESSION] --to AGENT` accepts:
+
+| Flag | Contract |
+| ---- | -------- |
+| `--last` | Select the newest matching source instead of `SESSION`. |
+| `--from AGENT` | Restrict `--last` to one source agent. |
+| `--to AGENT` | Required destination: `claude` or `codex`. |
+| `--policy checkpoint\|balanced\|full` | Projection policy; default `balanced`. |
+| `--dry-run` | Preview using temporary files only; no durable handoff and no launch. |
+| `--json` | Emit machine-readable, launch-free output; requires `--dry-run` or `--no-launch`. |
+| `--no-launch` | Store the capsule and print the exact command without spawning the destination. |
+| `--export PATH` | Also write the projection to `PATH`; incompatible with `--dry-run`. |
+| `--allow-warning ID` | Acknowledge one exact current warning ID; repeat for each warning. |
+| `--allow-active` | Freeze the last complete source record while its agent is active. |
+| `--allow-untested` | Proceed with an untested source or destination layout. |
+| `--show-redactions` | Show redaction categories and counts, never values. |
+
+### `rein handoff list`
+
+Accepts `--json` and `--limit N` (default `100`).
+
+### `rein handoff inspect`
+
+`rein handoff inspect HANDOFF_ID` accepts `--json`, `--acknowledged`, and
+`--not-acknowledged`; the two acknowledgement flags are mutually exclusive.
+
+### `rein handoff export`
+
+`rein handoff export HANDOFF_ID` requires `--format json|markdown` and accepts
+`--out PATH`; without `--out`, it writes to stdout.
+
+### `rein resume --with` and `--fork`
+
+`rein resume SESSION --with AGENT` is a convenience alias for
+`rein handoff SESSION --to AGENT`. It accepts `--dry-run`, `--json`, and
+repeatable `--allow-environment-warning ID`, translated to exact handoff
+warning acknowledgements. With this alias, `--json` requires `--dry-run`;
+`resume --with` has no `--no-launch` mode. The alias prints a one-line
+structured-handoff notice. `rein resume SESSION --fork` instead invokes the
+source agent's native fork path; `--with` and `--fork` are mutually exclusive.
+
+### Handoff exit codes
+
+Handoff exit codes use the shared table above: `2` for bad flags, unknown
+agents, and invalid launch/JSON combinations; `3` for invalid local config; `5`
+for an untested or unsupported source/destination layout; `6` for an ambiguous
+session reference; `7` for unacknowledged warnings or safety refusal; and `1`
+for runtime failure. A planned or completed handoff returns `0`. No Phase 4
+handoff path uses authentication/storage code `4`.
+
 ## Phase 3 verified resume (`v0.3.0`)
 
-Phase 3 is included in stable `v0.3.0`; tagged-artifact acceptance is
-pending, and stable `v0.2.0` does not include it. Before any real Claude or
-Codex native continuation, Reinstate builds a deterministic, local-only environment report.
+Phase 3 is included in stable `v0.3.0`; tagged-artifact acceptance passed on
+Apple Silicon macOS and native Windows x64. Stable `v0.2.0` does not include
+it. Before any real Claude or Codex native continuation, Reinstate builds a
+deterministic, local-only environment report.
 The same report is exposed by `inspect` and native dry-runs and enforced by
 `resume`, `fork`, `last`, and picker resume/fork.
 

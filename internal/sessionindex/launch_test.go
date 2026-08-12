@@ -192,6 +192,39 @@ func TestExecLaunchRunnerClassifiesPreflightFailures(t *testing.T) {
 	}
 }
 
+func TestExecLaunchRunnerDistinguishesPostSpawnExitFromStartFailure(t *testing.T) {
+	t.Setenv("REINSTATE_ALLOW_NON_TTY_LAUNCH", "1")
+	t.Setenv("REINSTATE_LAUNCH_EXIT_HELPER", "1")
+	executable, err := filepath.Abs(os.Args[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	plan := LaunchPlan{
+		Agent: AgentClaude, SessionRef: "claude:controlled", Operation: OperationHandoff,
+		Executable: "claude", Args: []string{"-test.run=^TestExecLaunchRunnerExitHelper$"}, Dir: t.TempDir(),
+	}
+	err = (ExecLaunchRunner{Executable: executable}).Run(context.Background(), plan)
+	if !errors.Is(err, ErrChildStarted) {
+		t.Fatalf("post-spawn error = %v, want ErrChildStarted", err)
+	}
+
+	invalid := filepath.Join(t.TempDir(), "invalid-executable")
+	if err := os.WriteFile(invalid, []byte("not an executable format"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	err = (ExecLaunchRunner{Executable: invalid}).Run(context.Background(), plan)
+	if err == nil || errors.Is(err, ErrChildStarted) {
+		t.Fatalf("pre-spawn error = %v, must not claim child started", err)
+	}
+}
+
+func TestExecLaunchRunnerExitHelper(t *testing.T) {
+	if os.Getenv("REINSTATE_LAUNCH_EXIT_HELPER") == "" {
+		return
+	}
+	os.Exit(17)
+}
+
 func TestExecLaunchRunnerGuardRejectionPreventsChildCreation(t *testing.T) {
 	marker := filepath.Join(t.TempDir(), "child-created")
 	t.Setenv("REINSTATE_LAUNCH_GUARD_HELPER_MARKER", marker)

@@ -4,11 +4,11 @@
 
 # Reinstate
 
-### Find and continue coding-agent work across sessions and devices
+### Find, verify, resume, and hand off coding-agent work
 
-**Reinstate is an open-source tool that finds local coding-agent sessions and
-syncs supported Claude Code and Codex sessions through your own encrypted
-S3-compatible storage.**
+**Reinstate is the open-source continuity layer for coding-agent work: search,
+resume, and hand off tasks across agents, projects, environments, and devices,
+with optional encrypted sync through your own S3-compatible storage.**
 
 Stable `v0.3.0` adds Phase 3 verified resume on top of the configless local
 session index, literal search, metadata inspection, numbered switcher, and
@@ -17,6 +17,12 @@ passed dual-platform tagged-artifact acceptance on candidate `v0.3.0-rc.7`.
 Intel macOS and Linux/WSL2 downloads remain preview/unverified pending issues
 [#97](https://github.com/HarjjotSinghh/reinstate/issues/97) and
 [#98](https://github.com/HarjjotSinghh/reinstate/issues/98).
+
+The Phase 4 `v0.4.0-rc.1` candidate adds explicit structured handoffs into new
+Claude Code or Codex sessions. Claude Code, Codex CLI, Gemini CLI, OpenCode,
+and Grok Build can be sources; Gemini, OpenCode, and Grok are source-only in
+rc.1. Release-candidate support remains pending tagged dual-platform
+acceptance.
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/HarjjotSinghh/reinstate)](https://goreportcard.com/report/github.com/HarjjotSinghh/reinstate)
@@ -59,7 +65,8 @@ Intel macOS and Linux/WSL2 downloads remain preview/unverified pending issues
 
 Even on one machine, you can have twenty sessions across Claude Code, Codex,
 projects, branches, and worktrees. Finding the right thread later becomes a
-memory problem.
+memory problem. Switching agents can also mean re-explaining the task when the
+source agent is closed, logged out, or rate-limited.
 
 Then you open your **MacBook** on the couch.
 
@@ -105,7 +112,7 @@ flowchart LR
 | | What you get |
 | --- | --- |
 | **Local recovery** | Configless local index/search/resume for Claude Code and Codex |
-| **Multi-agent** | One metadata index; native execution always stays with the source vendor |
+| **Multi-agent** | Structured handoffs continue the same task in a new Claude Code or Codex session |
 | **Verified resume** | `v0.3.0` checks the workspace, agent, capabilities, and recognized runtimes before launch |
 | **Offline-capable origin** | Works when the other machine is **off** (stored sync, not a live relay) |
 | **Path remapping** | Windows ↔ macOS project paths rewritten so `--resume` actually finds sessions |
@@ -126,6 +133,23 @@ sensitive artifacts. Reinstate instead provides
 ---
 
 ## Features
+
+Phase 4 candidate `v0.4.0-rc.1`:
+
+- **Directional structured handoff** — Claude Code and Codex are destinations;
+  Claude Code, Codex, Gemini, OpenCode, and Grok are sources
+- **No source model dependency** — parse and checkpoint locally while the
+  source CLI is closed, logged out, rate-limited, or offline
+- **Auditable fidelity** — each component is labeled `exact`, `normalized`,
+  `summarized`, `referenced`, or `omitted`, with reasons
+- **Destination capability diff** — report missing tools, MCP servers, skills,
+  instructions, attachments, and context before launch
+- **Private local capsules** — owner-only artifacts and append-only lineage
+  under `$REINSTATE_HOME/handoffs/`, hard-excluded from sync
+- **Safe destination launch** — start a new session through the vendor's
+  documented CLI; never write vendor-internal session files
+- **Prompt-level acknowledgement** — ask the destination to restate the task,
+  workspace truth, uncertainty, and next action before mutation
 
 Stable `v0.3.0`:
 
@@ -299,13 +323,17 @@ Full walkthrough: **[docs/getting-started.md](docs/getting-started.md)**
 
 ## Supported agents
 
-| Agent | Local index | Resume/fork | Encrypted sync | Status |
-| ----- | :---------: | :---------: | :------------: | ------ |
-| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | ✅ full | ✅ native | ✅ | Stable on Apple Silicon macOS and native Windows x64 |
-| [OpenAI Codex CLI](https://github.com/openai/codex) | ✅ full | ✅ native | ✅ | Stable on Apple Silicon macOS and native Windows x64 |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | ✅ read-only | — | — | Physical read-only path passed on Windows; unavailable on test Mac |
-| [OpenCode](https://opencode.ai) | ✅ read-only | — | — | Physical read-only path passed on Windows; unavailable on test Mac |
-| [Grok Build](https://x.ai) | 📋 | — | — | Later phase |
+| Agent | Local index | Native resume/fork | Handoff source | Handoff target | Encrypted sync |
+| ----- | :---------: | :----------------: | :------------: | :------------: | :------------: |
+| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | ✅ full | ✅ same-vendor | rc.1 | rc.1 | ✅ |
+| [OpenAI Codex CLI](https://github.com/openai/codex) | ✅ full | ✅ same-vendor | rc.1 | rc.1 | ✅ |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | ✅ read-only | — | rc.1 source-only | — | — |
+| [OpenCode](https://opencode.ai) | ✅ read-only | — | rc.1 source-only | — | — |
+| [Grok Build](https://x.ai) | rc.1 read-only | — | rc.1 source-only | — | — |
+
+The handoff columns describe the `v0.4.0-rc.1` candidate and remain subject to
+tagged macOS arm64 and Windows amd64 acceptance. Native resume/fork and
+encrypted sync remain same-vendor capabilities.
 
 Details: **[docs/adapters.md](docs/adapters.md)**
 
@@ -348,6 +376,12 @@ flowchart TB
 5. **Pathmap** rewrites known structural paths for optional cross-device sync
 6. **Crypto/sync** encrypt before upload and restore atomically with backups
 
+For a structured handoff, Reinstate freezes a read-only source boundary,
+parses it locally, verifies the live workspace, builds a private continuity
+capsule, and launches a new destination session through the destination
+vendor's documented CLI. Imported history is inert evidence; no source model
+call or vendor-internal write is part of this path.
+
 Deep dive: **[docs/architecture.md](docs/architecture.md)** · research diagram:
 
 <p align="center">
@@ -365,6 +399,7 @@ Deep dive: **[docs/architecture.md](docs/architecture.md)** · research diagram:
 | Private local index | Owner-only derived metadata; no assistant/tool-output corpus |
 | No vendor API keys required | Local files only |
 | Verified-resume boundary | Offline checks, exact warning consent, non-overridable blockers |
+| Structured-handoff boundary | Redaction before write, inert imported history, no vendor-store mutation |
 | Fail-safe restore | Backups + conflict forks |
 
 Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[docs/security-model.md](docs/security-model.md)**
@@ -378,6 +413,7 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 | **Website** | [reinstate.dev](https://reinstate.dev) — product, documentation, compatibility, and security |
 | [Getting started](docs/getting-started.md) | Configless local index plus optional encrypted sync |
 | [Verified resume](docs/verified-resume.md) | Phase 3 environment report, provenance, policy, and privacy contract |
+| [Cross-agent handoff](docs/handoff.md) | Phase 4 scope, fidelity, security, storage, and directional support |
 | [Architecture](docs/architecture.md) | Pipeline, packages, design principles |
 | [Adapters](docs/adapters.md) | Per-agent layouts & support matrix |
 | [Universal configuration](docs/universal-configuration.md) | Planned MCP/skills/loops/plugins/settings portability |
@@ -450,7 +486,7 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 | **1** | Claude + Codex encrypted same-vendor session sync | ✅ |
 | **2** | Configless local index, search, native resume/fork | ✅ |
 | **3** | Verified resume (stable `v0.3.0`) | ✅ |
-| **4** | Portable handoffs | 📋 |
+| **4** | Structured cross-agent handoffs (`v0.4.0-rc.1` candidate) | 🚧 |
 | **5–7** | Universal config + automatic sync, thin Console/ACP client, teams | 📋 / 💭 |
 
 Full detail: **[ROADMAP.md](ROADMAP.md)**

@@ -1,0 +1,69 @@
+# Gitleaks configuration for Reinstate.
+#
+# This file EXTENDS the upstream default rule set (`extend.useDefault = true`);
+# it never replaces or disables it. Every allowlist below is scoped to a
+# specific rule ID, a specific set of file paths, AND the exact synthetic
+# literal that lives in those files (`condition = "AND"`), so real credentials
+# committed anywhere in this repository - including in the same files - are
+# still reported.
+#
+# Why path-scoped allowlists instead of `.gitleaksignore`:
+# `.gitleaksignore` entries are fingerprints of the form
+# `<commit-sha>:<path>:<rule>:<line>`. CI runs `gitleaks git` over the full
+# history, and feature branches are squash-merged into `main`, which mints new
+# commit SHAs. Fingerprints recorded on a branch therefore stop matching after
+# the squash and the scan fails again on `main`. Path-scoped allowlists are
+# commit-independent and survive the squash. The existing `.gitleaksignore`
+# entry (a public host-key fingerprint quoted in an RC5 acceptance report) is
+# still honoured - gitleaks loads it independently of this config.
+
+title = "Reinstate gitleaks configuration"
+
+[extend]
+useDefault = true
+
+# Synthetic, AWS-shaped placeholder credential: `AKIA` followed by the letters
+# A-P in order. It is not a real AWS access key, has never been valid, and
+# grants nothing.
+#
+# It exists to prove the Phase 4 security contract. `internal/secretscan` must
+# redact credentials before any handoff capsule is written to disk (see
+# `docs/superpowers/plans/2026-08-12-phase-4-cross-agent-handoff-plan.md`,
+# section 7, rule 4: "Redaction runs before write"). The adversarial fixture
+# feeds this string through the handoff pipeline and the two tests assert that
+# it is replaced by a `[redacted:...]` marker. Removing or defanging the string
+# would delete the meaning of the tests.
+#
+# `.gitleaks.toml` is listed as a path because the allowlist regex below must
+# spell out the literal in order to stay exact; it is allowlisted only for that
+# one literal.
+[[allowlists]]
+description = "Synthetic AWS-shaped placeholder used by the Phase 4 redaction tests and adversarial fixture"
+targetRules = ["aws-access-token"]
+condition = "AND"
+paths = [
+  '''^internal/handoff/security_test\.go$''',
+  '''^internal/handoff/pipeline_test\.go$''',
+  '''^testdata/handoff/adversarial/secret-leakage/projects/-Users-fixture-user-code-demo/session-secret-leakage\.jsonl$''',
+  '''^\.gitleaks\.toml$''',
+]
+regexes = [
+  '''^AKIAABCDEFGHIJKLMNOP$''',
+]
+
+# Synthetic transcript record identifiers (`msg_fixtureasst001`,
+# `msg_fixtureuser001`) baked into the golden handoff capsules. They are
+# fabricated OpenCode message IDs used to pin deterministic capsule output;
+# they are not credentials and authenticate nothing. The `generic-api-key`
+# rule matches them only because they follow a `"record_key":` field.
+[[allowlists]]
+description = "Synthetic fixture record identifiers in the golden handoff capsules"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = [
+  '''^testdata/handoff/golden/capsule/opencode-to-claude\.json$''',
+  '''^testdata/handoff/golden/capsule/opencode-to-codex\.json$''',
+]
+regexes = [
+  '''^msg_fixture(?:asst|user)001$''',
+]

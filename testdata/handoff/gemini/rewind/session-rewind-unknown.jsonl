@@ -1,0 +1,5 @@
+{"sessionId":"gemini-handoff-rewind-unknown","projectHash":"projhashfixture","startTime":"2026-08-12T03:00:00Z","lastUpdated":"2026-08-12T03:00:00Z","directories":["/Users/fixture-user/code/demo"],"kind":"main"}
+{"id":"user-1","timestamp":"2026-08-12T03:01:00Z","type":"user","content":"Keep this user turn"}
+{"id":"model-1","timestamp":"2026-08-12T03:02:00Z","type":"gemini","content":"Keep this model turn"}
+{"$rewindTo":"missing-id-not-in-file"}
+{"$set":{"summary":"Unknown rewind target is a no-op","lastUpdated":"2026-08-12T03:03:00Z"}}

@@ -19,6 +19,9 @@ import (
 const (
 	OperationResume = "resume"
 	OperationFork   = "fork"
+	// OperationHandoff launches a destination agent for a structured handoff
+	// (Phase 4). Reuses the same ExecLaunchRunner TTY and identity guards.
+	OperationHandoff = "handoff"
 )
 
 var (
@@ -26,6 +29,10 @@ var (
 	ErrExecutableNotFound      = errors.New("native agent executable is unavailable")
 	ErrWorkspaceUnavailable    = errors.New("recorded session workspace is unavailable")
 	ErrLaunchBoundaryChanged   = errors.New("native launch target changed at the execution boundary")
+	// ErrChildStarted marks an error returned after the native child process was
+	// successfully created. Callers may reconcile vendor state before returning
+	// the wrapped wait/exit error.
+	ErrChildStarted = errors.New("native agent child definitely started")
 	// ErrNonInteractiveLaunch is returned when a native vendor resume/fork is
 	// attempted without a TTY. Codex and Claude Code refuse non-interactive
 	// stdio; fail closed with a clear contract before spawning the child.
@@ -216,13 +223,16 @@ func (runner ExecLaunchRunner) Run(ctx context.Context, plan LaunchPlan) error {
 	command.Stdin = stdin
 	command.Stdout = stdout
 	command.Stderr = stderr
-	if err := command.Run(); err != nil {
-		if ctxErr := ctx.Err(); ctxErr != nil {
-			return ctxErr
-		}
-		return fmt.Errorf("%s native %s failed: %w", plan.Agent, plan.Operation, err)
+	if err := command.Start(); err != nil {
+		return fmt.Errorf("%s native %s failed to start: %w", plan.Agent, plan.Operation, err)
 	}
-	return ctx.Err()
+	if err := command.Wait(); err != nil {
+		return fmt.Errorf("%w: %s native %s failed: %w", ErrChildStarted, plan.Agent, plan.Operation, err)
+	}
+	if err := ctx.Err(); err != nil {
+		return fmt.Errorf("%w: %s native %s completed after context error: %w", ErrChildStarted, plan.Agent, plan.Operation, err)
+	}
+	return nil
 }
 
 func allowNonInteractiveNativeLaunch() bool {
@@ -268,7 +278,7 @@ func validateLaunchPlan(plan LaunchPlan) error {
 	if plan.Dir == "" {
 		return fmt.Errorf("%w: launch working directory is missing", ErrWorkspaceUnavailable)
 	}
-	if plan.Operation != OperationResume && plan.Operation != OperationFork {
+	if plan.Operation != OperationResume && plan.Operation != OperationFork && plan.Operation != OperationHandoff {
 		return fmt.Errorf("unknown launch operation %q", plan.Operation)
 	}
 	return nil

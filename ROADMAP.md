@@ -2,7 +2,7 @@
 
 > Status legend: ✅ done · 🚧 in progress · 📋 planned · 💭 exploring · ❌ won't do (for now)
 
-Last updated: **2026-08-05** · Maintainer: [Harjot Singh Rana](https://github.com/HarjjotSinghh)
+Last updated: **2026-08-12** · Maintainer: [Harjot Singh Rana](https://github.com/HarjjotSinghh)
 
 This roadmap is a living document. Priorities follow real activation signals —
 especially **successfully resumed tasks per active user** — and vendor format
@@ -197,28 +197,36 @@ Automation: --allow-environment-warning <exact-check-id>
 
 ---
 
-## Phase 4 — Cross-agent handoff (portable checkpoints) 📋
+## Phase 4 — Cross-agent handoff (portable checkpoints) 🚧
 
-**Gate:** a task started in Claude can continue in Codex (and later Gemini)
-via an explicit portable checkpoint — not silent format magic.
+**Gate:** tagged `v0.4.0-rc.1` artifacts complete Claude Code → Codex and Codex
+→ Claude structured handoffs on macOS arm64 and Windows amd64. Each path starts
+a new destination session for the same task, with no source model call and no
+vendor-internal writes.
 
 | Item | Status |
 | ---- | ------ |
-| Portable checkpoint schema (goal, decisions, done/rejected, files, tests, next action) | 📋 |
-| `rein handoff` / `rein resume --with <agent>` | 📋 |
-| Native resume where same vendor | 📋 |
-| Verified handoff summaries everywhere | 📋 |
-| Experimental native migration only for supported pairs (labeled) | 📋 |
-| Capability diff (what the destination agent cannot do) | 📋 |
-| SessionExecutor interface (Claude, Codex, Gemini, OpenCode) | 📋 |
+| Deterministic continuity capsule, checkpoint derivation, and fidelity report | ✅ |
+| Source readers for Claude Code, Codex, Gemini, OpenCode, and Grok Build | ✅ |
+| Claude Code and Codex destination targets through documented vendor CLIs | ✅ |
+| Capability diff (what the destination agent cannot do) | ✅ |
+| Local-only private capsule store and append-only lineage | ✅ |
+| `rein handoff` / `rein resume --with <agent>` | 🚧 |
+| Adversarial, golden, determinism, performance, and documentation gates | 🚧 |
+| Tagged dual-platform `v0.4.0-rc.1` acceptance | 🚧 |
+
+Gemini CLI, OpenCode, and Grok Build are source-only in rc.1. Claude Code and
+Codex are the only handoff targets. Capsules are hard-excluded from sync, and
+the destination acknowledgement is a prompt-level contract rather than an
+enforced agent protocol.
 
 Fidelity model:
 
 | Mode | Meaning |
 | ---- | ------- |
 | **Native resume** | Claude → Claude Code (highest fidelity) |
-| **Portable handoff** | Claude → checkpoint → Codex (explicit, lossy by design) |
-| **Reconstructed conversation** | Normalized history (experimental, labeled) |
+| **Structured handoff** | A new destination session receives task state, selected history, evidence, and an explicit fidelity report |
+| **Reconstructed conversation** | Reserved and not shipped in `v0.4.0-rc.1` |
 
 ---
 

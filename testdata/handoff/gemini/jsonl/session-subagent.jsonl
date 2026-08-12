@@ -1,0 +1,2 @@
+{"sessionId":"gemini-handoff-subagent","projectHash":"projhashfixture","kind":"subagent"}
+{"id":"child-user","type":"user","content":"SUBAGENT_PROMPT_MUST_NOT_EMIT"}
