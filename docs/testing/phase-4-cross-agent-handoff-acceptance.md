@@ -23,6 +23,31 @@ installer that still pins stable `v0.3.0`.
 - Build development evidence from a clean worktree. Test release evidence from
   verified installed artifacts, not an untagged local rebuild.
 - Use a fresh isolated Reinstate home and fresh disposable Git repositories.
+- Isolate **every** vendor before the first command. Export all of these, even
+  for agents you do not expect the run to touch:
+
+  | Vendor | Variable |
+  | ------ | -------- |
+  | Reinstate | `REINSTATE_HOME` |
+  | Claude Code | `CLAUDE_CONFIG_DIR` |
+  | Codex CLI | `CODEX_HOME` |
+  | Gemini CLI | `GEMINI_CLI_HOME` |
+  | Grok Build | `GROK_HOME` |
+
+  Each source falls back to its documented default when its variable is unset,
+  so one omission silently reads the operator's real tree. A `v0.4.0-rc.1` run
+  omitted `GROK_HOME` and indexed the operator's real `~/.grok` sessions; the
+  product was correct and the harness was wrong, but the contract still treats
+  operator-tree access as a blocker, so that run was discarded and restarted.
+
+  **OpenCode has no equivalent override.** It is read through
+  `opencode session list`, which always targets the real store. Until an
+  override exists, either uninstall/skip OpenCode for the run and record its
+  rows `NOT TESTED`, or record explicitly that OpenCode rows were collected
+  without isolation. Never report them as isolated.
+- After the first index refresh, verify the session list contains **only**
+  sessions the run itself created. Any unexpected session is an isolation
+  failure: destroy the Reinstate home and restart, do not continue.
 - Create fresh controlled sessions for each agent. Do not reuse a Phase 2 or
   Phase 3 corpus, and do not reuse an earlier candidate's handoffs.
 - Never commit a transcript, full prompt, response, secret, credential, MCP
