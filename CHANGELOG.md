@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Codex CLI handoff destination (`internal/handoff/target_codex.go`): launches
+  `codex "<bootstrap>"` in the verified workspace, reconciles the
+  vendor-assigned session ID after launch (resolved / unresolved / ambiguous),
+  and falls back to a `projection.md`-only bootstrap when argv exceeds
+  `DefaultMaxArgvBytes` (R6). Never writes vendor-internal Codex files.
 - Handoff context policies (`checkpoint` / `balanced` / `full`) with
   newest-first projection budgeting, visible truncation markers, deterministic
   token estimates (`ceil(utf8_bytes / 4)`), and sidecar references for every
