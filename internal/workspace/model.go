@@ -12,6 +12,16 @@ const SchemaVersion = 1
 
 const DefaultProbeTimeout = 2 * time.Second
 
+// MaxChangedPaths bounds WorkingTreeFingerprint.Changed.
+//
+// The list travels into a continuity capsule, where it is counted twice against
+// capsule.MaxFileReferences (once as workspace truth, once as the derived task
+// checkpoint) and rendered into an 8 KiB destination bootstrap. A cap this size
+// leaves the transcript's own file references room inside those budgets while
+// still naming far more files than a briefing can usefully show. Paths past the
+// cap are counted in ChangedOmitted rather than dropped in silence.
+const MaxChangedPaths = 64
+
 type Provenance string
 
 const (
@@ -98,6 +108,18 @@ type WorkingTreeFingerprint struct {
 	Conflicted      int              `json:"conflicted"`
 	Submodule       int              `json:"submodule"`
 	CountsTruncated bool             `json:"counts_truncated,omitempty"`
+
+	// Changed holds the repository-relative paths behind the counts above,
+	// sorted, de-duplicated, and capped at MaxChangedPaths. It is never
+	// serialized: a probe report is printed by verify and doctor, and a path
+	// list would leak working-tree contents into those reports and into any
+	// log that captures them. Only a handoff consumes it, and only after
+	// internal/pathmap has rewritten every entry into a portable token.
+	Changed []string `json:"-"`
+	// ChangedOmitted counts distinct changed paths that exceeded the cap.
+	// A consumer that renders Changed must surface this count; a silently
+	// short list would tell the destination the tree is cleaner than it is.
+	ChangedOmitted int `json:"-"`
 }
 
 type Relation string

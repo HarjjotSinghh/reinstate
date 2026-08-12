@@ -71,9 +71,11 @@ type Options struct {
 	AllowWarnings []string
 	// NoRedact skips secretscan. Refused for Grok sources.
 	NoRedact bool
-	// ChangedFiles are live Git porcelain paths for DeriveCheckpoint. The
-	// workspace package does not expose path lists; callers must supply them
-	// (empty is honest when unavailable — do not invent paths).
+	// ChangedFiles overrides the live Git porcelain paths for DeriveCheckpoint.
+	// Production leaves it empty: BindWorkspace observes the working tree and
+	// supplies the tokenized list. Tests set it to pin an exact list without a
+	// real repository. It never invents paths — an empty override falls back to
+	// the observation, and an unavailable observation stays empty.
 	ChangedFiles []string
 	// Capability configures DiscoverAgentContext. When UserHome is empty,
 	// discovery skips real home roots (tests must not point at ~/.claude).
@@ -277,10 +279,18 @@ func Plan(ctx context.Context, rec sessionindex.Record, opts Options) (PlanResul
 	if err != nil {
 		return PlanResult{}, pipelineWrap(exitcode.Runtime, err)
 	}
+	// The changed-file list is live workspace truth, so it comes from the
+	// workspace binding rather than from the transcript. An explicit override
+	// wins only when a caller supplied one.
+	changedFiles := opts.ChangedFiles
+	if len(changedFiles) == 0 {
+		changedFiles = ws.ChangedFiles
+	}
 	task := DeriveCheckpoint(CheckpointInput{
-		Events:    redactedEvents,
-		Workspace: report.Workspace,
-		Changed:   append([]string(nil), opts.ChangedFiles...),
+		Events:           redactedEvents,
+		Workspace:        report.Workspace,
+		Changed:          append([]string(nil), changedFiles...),
+		ChangedTruncated: ws.ChangedFilesOmitted > 0,
 	})
 	ws.ChangedFiles = append([]string(nil), task.ChangedFiles.Items...)
 	ws.Tests = append([]string(nil), task.Tests.Items...)

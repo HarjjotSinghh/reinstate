@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -186,6 +187,108 @@ func TestBindWorkspaceRejectsAbsolutePathsInCapsule(t *testing.T) {
 	}
 	if !strings.Contains(string(raw), "${REPO:github.com/example/demo}") {
 		t.Fatalf("portable root missing from canonical bytes: %s", raw)
+	}
+}
+
+func TestBindWorkspaceTokenizesLiveChangedFiles(t *testing.T) {
+	t.Parallel()
+
+	abs := filepath.Join(t.TempDir(), "demo")
+	rec := sessionindex.Record{
+		Key: "claude:session-changed", Agent: "claude", Project: "github.com/example/demo", Workspace: abs,
+	}
+	observed := fingerprint(abs, "main", "abc123", workspace.WorkingTreeModified, "digest-changed")
+	observed.Git.WorkingTree.Changed = []string{"calc.go", "internal/handoff/workspace.go", "nested/new file.txt"}
+	verifier := &fakeVerifier{report: preflight.Report{
+		SchemaVersion: preflight.SchemaVersion,
+		Decision:      preflight.DecisionReady,
+		Checks: []preflight.Check{{
+			ID: "source.fresh", Status: preflight.StatusMatch, Severity: preflight.SeverityInfo,
+			Provenance: workspace.ProvenanceCurrentObservation, Message: "source is fresh",
+		}},
+		Workspace: observed,
+	}}
+
+	bound, _, err := BindWorkspace(context.Background(), verifier, rec)
+	if err != nil {
+		t.Fatalf("BindWorkspace: %v", err)
+	}
+	want := []string{
+		"${REPO:github.com/example/demo}/calc.go",
+		"${REPO:github.com/example/demo}/internal/handoff/workspace.go",
+		"${REPO:github.com/example/demo}/nested/new file.txt",
+	}
+	if !reflect.DeepEqual(bound.ChangedFiles, want) {
+		t.Fatalf("ChangedFiles = %#v, want %#v", bound.ChangedFiles, want)
+	}
+	if bound.ChangedFilesOmitted != 0 {
+		t.Fatalf("ChangedFilesOmitted = %d, want 0", bound.ChangedFilesOmitted)
+	}
+
+	// The whole point of tokenizing: nothing the destination device cannot
+	// resolve, and nothing the capsule refuses.
+	for _, item := range bound.ChangedFiles {
+		if capsule.AbsolutePathForbidden(item) || strings.Contains(item, abs) {
+			t.Fatalf("absolute path reached the capsule workspace: %q", item)
+		}
+	}
+	doc := minimalCapsule(bound)
+	raw, err := capsule.CanonicalBytes(doc)
+	if err != nil {
+		t.Fatalf("CanonicalBytes: %v", err)
+	}
+	if strings.Contains(string(raw), abs) {
+		t.Fatalf("absolute path leaked into canonical capsule bytes: %s", raw)
+	}
+	if !strings.Contains(string(raw), "${REPO:github.com/example/demo}/calc.go") {
+		t.Fatalf("tokenized changed file missing from canonical bytes: %s", raw)
+	}
+}
+
+func TestBindWorkspaceCarriesChangedFileOmissionCount(t *testing.T) {
+	t.Parallel()
+
+	abs := filepath.Join(t.TempDir(), "demo")
+	rec := sessionindex.Record{
+		Key: "claude:session-capped", Agent: "claude", Project: "github.com/example/demo", Workspace: abs,
+	}
+	observed := fingerprint(abs, "main", "abc123", workspace.WorkingTreeModified, "digest-capped")
+	observed.Git.WorkingTree.Changed = []string{"calc.go"}
+	observed.Git.WorkingTree.ChangedOmitted = 41
+	verifier := &fakeVerifier{report: preflight.Report{
+		SchemaVersion: preflight.SchemaVersion,
+		Decision:      preflight.DecisionReady,
+		Workspace:     observed,
+	}}
+
+	bound, _, err := BindWorkspace(context.Background(), verifier, rec)
+	if err != nil {
+		t.Fatalf("BindWorkspace: %v", err)
+	}
+	if bound.ChangedFilesOmitted != 41 {
+		t.Fatalf("ChangedFilesOmitted = %d, want 41", bound.ChangedFilesOmitted)
+	}
+}
+
+func TestBindWorkspaceCleanTreeClaimsNoChangedFiles(t *testing.T) {
+	t.Parallel()
+
+	abs := filepath.Join(t.TempDir(), "demo")
+	rec := sessionindex.Record{
+		Key: "claude:session-clean", Agent: "claude", Project: "github.com/example/demo", Workspace: abs,
+	}
+	verifier := &fakeVerifier{report: preflight.Report{
+		SchemaVersion: preflight.SchemaVersion,
+		Decision:      preflight.DecisionReady,
+		Workspace:     fingerprint(abs, "main", "abc123", workspace.WorkingTreeClean, "digest-clean"),
+	}}
+
+	bound, _, err := BindWorkspace(context.Background(), verifier, rec)
+	if err != nil {
+		t.Fatalf("BindWorkspace: %v", err)
+	}
+	if bound.Dirty || len(bound.ChangedFiles) != 0 || bound.ChangedFilesOmitted != 0 {
+		t.Fatalf("clean workspace bound as %+v", bound)
 	}
 }
 

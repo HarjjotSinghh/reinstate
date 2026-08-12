@@ -21,6 +21,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reported `UNTESTED` and `rein handoff claude:<id>` exited 5, while
   `rein inspect` called the same agent supported in the same invocation, and the
   Codex reader applied no version check at all.
+- A handoff now tells the destination which files actually changed. The
+  workspace probe keeps the pathnames behind the counts it already computed,
+  `BindWorkspace` rewrites each one into a `${REPO:<id>}/…` token, and the
+  capsule, `projection.md`, and the destination bootstrap all carry the list.
+  Previously every handoff reported `Changed files: (none)` and emitted no
+  `changed_files` key at all, even over a dirty working tree — the destination
+  was told the repository was clean when it was not. The list is capped at 64
+  paths so a large dirty tree cannot exhaust the capsule or the 8 KiB bootstrap
+  budget; whenever entries are dropped, at the cap or under argv pressure, the
+  count of omitted entries is rendered instead of a silently short list.
+- A transcript's file claims are no longer marked
+  `evidence_conflicts_with_workspace` unless live Git actually produced a
+  complete changed-file list. An unavailable, uncertain, or capped observation
+  is missing evidence, not counter-evidence, and previously every handoff built
+  without a live observation contradicted its own transcript.
 - Transcript readers now rewrite the paths they lift out of vendor tool calls,
   tool results, and attachments into portable `${REPO:<id>}` / `${HOME}` tokens
   before they reach a capsule. A path outside every configured root becomes a

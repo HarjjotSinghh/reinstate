@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -170,6 +171,81 @@ func TestRenderBootstrapMaxBytes(t *testing.T) {
 	if !bytes.Contains(got, []byte(projectionName)) {
 		t.Fatal("oversized bootstrap lost projection.md pointer")
 	}
+}
+
+// A destination reading a short changed-file list would otherwise conclude the
+// unlisted files are unmodified. Both places the list can shrink — the probe cap
+// and the argv budget — have to say so on the page.
+func TestChangedFileTruncationIsVisibleEverywhereItHappens(t *testing.T) {
+	t.Parallel()
+
+	t.Run("probe cap", func(t *testing.T) {
+		c := goldenCapsule()
+		c.Workspace.ChangedFilesOmitted = 137
+
+		md, err := RenderProjection(c)
+		if err != nil {
+			t.Fatalf("RenderProjection: %v", err)
+		}
+		boot, err := RenderBootstrap(c, "handoffs/demo")
+		if err != nil {
+			t.Fatalf("RenderBootstrap: %v", err)
+		}
+		js, err := RenderJSON(c)
+		if err != nil {
+			t.Fatalf("RenderJSON: %v", err)
+		}
+		const marker = "(+137 more changed files not listed)"
+		if !bytes.Contains(md, []byte(marker)) {
+			t.Fatalf("projection hid the omitted count:\n%s", md)
+		}
+		if !bytes.Contains(boot, []byte(marker)) {
+			t.Fatalf("bootstrap hid the omitted count:\n%s", boot)
+		}
+		if !bytes.Contains(js, []byte(`"changed_files_omitted":137`)) {
+			t.Fatalf("projection JSON hid the omitted count: %s", js)
+		}
+	})
+
+	t.Run("argv budget", func(t *testing.T) {
+		c := goldenCapsule()
+		c.Task.Goal.Text = strings.Repeat("G", 20<<10)
+		c.Task.LatestUserIntent.Text = strings.Repeat("U", 20<<10)
+		c.Workspace.ChangedFiles = nil
+		for i := 0; i < 60; i++ {
+			c.Workspace.ChangedFiles = append(c.Workspace.ChangedFiles,
+				"${REPO:demo}/internal/pkg"+strconv.Itoa(i)+"/file.go")
+		}
+
+		got, err := RenderBootstrap(c, "handoffs/demo")
+		if err != nil {
+			t.Fatalf("RenderBootstrap: %v", err)
+		}
+		if len(got) > BootstrapMaxBytes {
+			t.Fatalf("bootstrap len = %d, exceeds BootstrapMaxBytes=%d", len(got), BootstrapMaxBytes)
+		}
+		if !bytes.Contains(got, []byte("more not listed)")) {
+			t.Fatalf("argv-budget truncation was silent:\n%s", got)
+		}
+	})
+
+	t.Run("clean tree stays none", func(t *testing.T) {
+		c := goldenCapsule()
+		c.Workspace.ChangedFiles = nil
+		c.Workspace.ChangedFilesOmitted = 0
+		c.Task.ChangedFiles = capsule.ListField{Portability: capsule.PortabilityExact}
+
+		md, err := RenderProjection(c)
+		if err != nil {
+			t.Fatalf("RenderProjection: %v", err)
+		}
+		if !bytes.Contains(md, []byte("## Changed files\n(none)\n")) {
+			t.Fatalf("clean tree did not render (none):\n%s", md)
+		}
+		if bytes.Contains(md, []byte("not listed)")) {
+			t.Fatalf("clean tree claimed omitted files:\n%s", md)
+		}
+	})
 }
 
 func TestRenderOutputsOSIdenticalNewlines(t *testing.T) {

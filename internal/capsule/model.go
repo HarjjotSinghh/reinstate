@@ -104,8 +104,12 @@ type Workspace struct {
 	Dirty             bool     `json:"dirty"`
 	WorkingTreeDigest string   `json:"working_tree_digest,omitempty"`
 	ChangedFiles      []string `json:"changed_files,omitempty"`
-	Tests             []string `json:"tests,omitempty"`
-	Path              string   `json:"-"`
+	// ChangedFilesOmitted counts changed paths the bound list could not carry.
+	// Renderers must show it: a destination shown a short list without a count
+	// is being told the working tree is cleaner than it is.
+	ChangedFilesOmitted int      `json:"changed_files_omitted,omitempty"`
+	Tests               []string `json:"tests,omitempty"`
+	Path                string   `json:"-"`
 }
 
 // Conversation holds canonical events and an optional sidecar history ref.

@@ -3,6 +3,9 @@ package workspace
 import (
 	"bytes"
 	"encoding/json"
+	"reflect"
+	"sort"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -48,7 +51,7 @@ func TestParsePorcelainV2CarriesBoundedUncertainty(t *testing.T) {
 	}
 }
 
-func TestParsePorcelainV2TracksStateWithoutPaths(t *testing.T) {
+func TestParsePorcelainV2TracksStateAndChangedPaths(t *testing.T) {
 	t.Parallel()
 	output := statusFixture(
 		"1 M. N... 100644 100644 100644 aaaaaaa bbbbbbb staged.go",
@@ -71,6 +74,108 @@ func TestParsePorcelainV2TracksStateWithoutPaths(t *testing.T) {
 		tree.Untracked != 1 || tree.Conflicted != 1 || tree.Submodule != 1 ||
 		!strings.HasPrefix(tree.Digest, "sha256:") {
 		t.Fatalf("working tree = %+v", tree)
+	}
+	// The control character in the untracked fixture is stripped: a raw newline
+	// inside a path would break every line-oriented rendering downstream.
+	want := []string{"conflict.go", "staged.go", "unicode-βname.go", "unstaged-submodule"}
+	if !reflect.DeepEqual(tree.Changed, want) || tree.ChangedOmitted != 0 {
+		t.Fatalf("changed = %#v omitted=%d, want %#v", tree.Changed, tree.ChangedOmitted, want)
+	}
+}
+
+// The synthesized subset safeStatus builds from plumbing output carries no mode
+// or object-id columns. Both shapes must yield the same pathname, including
+// when the pathname itself contains spaces, which -z never quotes.
+func TestParsePorcelainV2ReadsPathsFromBothRecordShapes(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name    string
+		records []string
+		want    []string
+	}{
+		{
+			name: "synthesized subset",
+			records: []string{
+				"1 MM N... calc.go",
+				"1 .M N... dir/with space.go",
+				"u UU N... merge me.go",
+				"? untracked file.txt",
+			},
+			want: []string{"calc.go", "dir/with space.go", "merge me.go", "untracked file.txt"},
+		},
+		{
+			name: "vendor porcelain with spaces",
+			records: []string{
+				"1 M. N... 100644 100644 100644 aaaaaaa bbbbbbb dir/with space.go",
+				"u UU N... 100644 100644 100644 100644 aaaaaaa bbbbbbb ccccccc merge me.go",
+			},
+			want: []string{"dir/with space.go", "merge me.go"},
+		},
+		{
+			name: "rename records both names",
+			records: []string{
+				"2 R. N... 100644 100644 100644 aaaaaaa bbbbbbb R100 new/name.go\x00old/name.go",
+			},
+			want: []string{"new/name.go", "old/name.go"},
+		},
+		{
+			name:    "one path reported staged and unstaged is listed once",
+			records: []string{"1 MM N... calc.go"},
+			want:    []string{"calc.go"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			parsed, err := parsePorcelainV2(statusFixture(test.records...))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !reflect.DeepEqual(parsed.workingTree.Changed, test.want) {
+				t.Fatalf("changed = %#v, want %#v", parsed.workingTree.Changed, test.want)
+			}
+		})
+	}
+}
+
+// A large dirty tree must not silently shrink: the list is capped and the
+// remainder is counted so every renderer can say how much it is not showing.
+func TestParsePorcelainV2CapsChangedPathsAndCountsTheRemainder(t *testing.T) {
+	t.Parallel()
+	const total = MaxChangedPaths + 25
+	records := make([]string, 0, total)
+	for index := 0; index < total; index++ {
+		records = append(records, "? file-"+strconv.Itoa(1000+index)+".txt")
+	}
+	parsed, err := parsePorcelainV2(statusFixture(records...))
+	if err != nil {
+		t.Fatal(err)
+	}
+	tree := parsed.workingTree
+	if len(tree.Changed) != MaxChangedPaths {
+		t.Fatalf("changed list = %d entries, want the %d cap", len(tree.Changed), MaxChangedPaths)
+	}
+	if tree.ChangedOmitted != total-MaxChangedPaths {
+		t.Fatalf("omitted = %d, want %d", tree.ChangedOmitted, total-MaxChangedPaths)
+	}
+	if !sort.StringsAreSorted(tree.Changed) {
+		t.Fatalf("changed list is not deterministic: %#v", tree.Changed)
+	}
+	if tree.Untracked != total {
+		t.Fatalf("counts must stay complete even when the list is capped: %d", tree.Untracked)
+	}
+}
+
+// A clean tree must never produce a path, in any form.
+func TestParsePorcelainV2CleanTreeReportsNoChangedPaths(t *testing.T) {
+	t.Parallel()
+	parsed, err := parsePorcelainV2(statusFixture())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if parsed.workingTree.State != WorkingTreeClean ||
+		len(parsed.workingTree.Changed) != 0 || parsed.workingTree.ChangedOmitted != 0 {
+		t.Fatalf("clean tree = %+v", parsed.workingTree)
 	}
 }
 

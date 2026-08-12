@@ -65,6 +65,20 @@ func TestDeriveCheckpoint_UnmatchedToolCallPendingInterrupted(t *testing.T) {
 	}
 }
 
+// completeWorkspaceObservation is a live Git observation with nothing missing:
+// the only state in which a transcript claim can be contradicted.
+func completeWorkspaceObservation() workspace.Fingerprint {
+	return workspace.Fingerprint{
+		SchemaVersion: workspace.SchemaVersion,
+		Provenance:    workspace.ProvenanceCurrentObservation,
+		Git: workspace.GitFingerprint{
+			Available:   true,
+			Repository:  true,
+			WorkingTree: workspace.WorkingTreeFingerprint{State: workspace.WorkingTreeModified},
+		},
+	}
+}
+
 func TestDeriveCheckpoint_TranscriptClaimConflictsWithGit(t *testing.T) {
 	events := []capsule.Event{
 		userMsg(1, "touch a file"),
@@ -73,8 +87,9 @@ func TestDeriveCheckpoint_TranscriptClaimConflictsWithGit(t *testing.T) {
 	}
 
 	task := DeriveCheckpoint(CheckpointInput{
-		Events:  events,
-		Changed: []string{"live/from-git.go"}, // Git does not report the transcript claim
+		Events:    events,
+		Workspace: completeWorkspaceObservation(),
+		Changed:   []string{"live/from-git.go"}, // Git does not report the transcript claim
 	})
 
 	if task.ChangedFiles.Items[0] != "live/from-git.go" {
@@ -91,6 +106,88 @@ func TestDeriveCheckpoint_TranscriptClaimConflictsWithGit(t *testing.T) {
 	}
 	if task.FilesTouchedPerTranscript.Portability != capsule.PortabilityReferenced {
 		t.Fatalf("files_touched portability = %q", task.FilesTouchedPerTranscript.Portability)
+	}
+}
+
+// A conflict marking is a claim about the repository. Without a complete live
+// observation there is nothing to make that claim from, and asserting one
+// anyway is the same over-claiming the derivation table forbids.
+func TestDeriveCheckpoint_NoConflictClaimWithoutCompleteWorkspaceEvidence(t *testing.T) {
+	events := []capsule.Event{
+		userMsg(1, "touch a file"),
+		toolCall(2, "call_1", "Edit", `{"file_path":"claimed/only-in-transcript.go"}`),
+		toolResult(3, "call_1", false, "ok"),
+	}
+
+	uncertain := completeWorkspaceObservation()
+	uncertain.Git.WorkingTree.Uncertain = true
+	truncatedCounts := completeWorkspaceObservation()
+	truncatedCounts.Git.WorkingTree.CountsTruncated = true
+	omittedPaths := completeWorkspaceObservation()
+	omittedPaths.Git.WorkingTree.ChangedOmitted = 3
+	unavailable := completeWorkspaceObservation()
+	unavailable.Git.WorkingTree.State = workspace.WorkingTreeUnavailable
+
+	tests := []struct {
+		name      string
+		in        CheckpointInput
+		wantClaim bool
+	}{
+		{
+			name: "no observation at all",
+			in:   CheckpointInput{Events: events, Changed: []string{"live/from-git.go"}},
+		},
+		{
+			name: "git unavailable",
+			in: CheckpointInput{Events: events, Changed: []string{"live/from-git.go"},
+				Workspace: workspace.Fingerprint{}},
+		},
+		{
+			name: "working tree unavailable",
+			in: CheckpointInput{Events: events, Changed: []string{"live/from-git.go"},
+				Workspace: unavailable},
+		},
+		{
+			name: "observation uncertain",
+			in: CheckpointInput{Events: events, Changed: []string{"live/from-git.go"},
+				Workspace: uncertain},
+		},
+		{
+			name: "counts truncated",
+			in: CheckpointInput{Events: events, Changed: []string{"live/from-git.go"},
+				Workspace: truncatedCounts},
+		},
+		{
+			name: "changed paths capped in the probe",
+			in: CheckpointInput{Events: events, Changed: []string{"live/from-git.go"},
+				Workspace: omittedPaths},
+		},
+		{
+			name: "changed list truncated downstream",
+			in: CheckpointInput{Events: events, Changed: []string{"live/from-git.go"},
+				Workspace: completeWorkspaceObservation(), ChangedTruncated: true},
+		},
+		{
+			name: "complete observation contradicts the claim",
+			in: CheckpointInput{Events: events, Changed: []string{"live/from-git.go"},
+				Workspace: completeWorkspaceObservation()},
+			wantClaim: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			task := DeriveCheckpoint(test.in)
+			got := task.FilesTouchedPerTranscript.Reason == reasonEvidenceConflictsWithWorkspace
+			if got != test.wantClaim {
+				t.Fatalf("conflict marked = %t, want %t (reason %q)",
+					got, test.wantClaim, task.FilesTouchedPerTranscript.Reason)
+			}
+			if len(task.FilesTouchedPerTranscript.Items) != 1 {
+				t.Fatalf("transcript claims must survive either way: %#v",
+					task.FilesTouchedPerTranscript.Items)
+			}
+		})
 	}
 }
 

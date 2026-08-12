@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/HarjjotSinghh/reinstate/internal/capsule"
@@ -89,13 +90,49 @@ func bindCapsuleWorkspace(report preflight.Report, rec sessionindex.Record) (cap
 		return capsule.Workspace{}, fmt.Errorf("handoff: failed to emit portable workspace root for %q", projectID)
 	}
 
+	changed, omitted := portableChangedFiles(mapper, report.Workspace.Git)
+
 	return capsule.Workspace{
-		ProjectID:         projectID,
-		Root:              root,
-		Branch:            report.Workspace.Git.Branch,
-		Head:              report.Workspace.Git.Head,
-		Dirty:             report.Workspace.Git.WorkingTree.State == workspace.WorkingTreeModified,
-		WorkingTreeDigest: report.Workspace.Git.WorkingTree.Digest,
-		Path:              abs,
+		ProjectID:           projectID,
+		Root:                root,
+		Branch:              report.Workspace.Git.Branch,
+		Head:                report.Workspace.Git.Head,
+		Dirty:               report.Workspace.Git.WorkingTree.State == workspace.WorkingTreeModified,
+		WorkingTreeDigest:   report.Workspace.Git.WorkingTree.Digest,
+		ChangedFiles:        changed,
+		ChangedFilesOmitted: omitted,
+		Path:                abs,
 	}, nil
+}
+
+// portableChangedFiles rewrites the live Git porcelain paths observed by the
+// workspace probe into pathmap tokens.
+//
+// Porcelain reports paths relative to the repository root, so each one is
+// re-anchored there before normalization; the result is a ${REPO:<id>}/… token
+// the destination device can resolve. A path that somehow escapes every
+// configured root becomes an external token rather than an absolute path,
+// because a capsule may not carry one. Anything that still looks absolute is
+// dropped and counted, never emitted.
+func portableChangedFiles(mapper pathmap.Mapper, git workspace.GitFingerprint) ([]string, int) {
+	omitted := git.WorkingTree.ChangedOmitted
+	root := strings.TrimSpace(git.Root)
+	if root == "" || len(git.WorkingTree.Changed) == 0 {
+		return nil, omitted
+	}
+	out := make([]string, 0, len(git.WorkingTree.Changed))
+	seen := make(map[string]struct{}, len(git.WorkingTree.Changed))
+	for _, relative := range git.WorkingTree.Changed {
+		token := mapper.NormalizePortable(filepath.Join(root, filepath.FromSlash(relative)))
+		if token == "" || capsule.AbsolutePathForbidden(token) {
+			omitted++
+			continue
+		}
+		if _, duplicate := seen[token]; duplicate {
+			continue
+		}
+		seen[token] = struct{}{}
+		out = append(out, token)
+	}
+	return out, omitted
 }

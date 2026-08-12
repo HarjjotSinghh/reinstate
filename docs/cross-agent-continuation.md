@@ -206,7 +206,8 @@ workspace:
   branch: <branch>
   head: <commit>
   dirty: true
-  changed_files: []
+  changed_files: []          # live Git porcelain, portable tokens, bounded
+  changed_files_omitted: 0   # entries the bound list could not carry
   tests: []
 conversation:
   events: []

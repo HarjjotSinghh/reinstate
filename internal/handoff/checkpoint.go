@@ -16,6 +16,10 @@ type CheckpointInput struct {
 	Events    []capsule.Event
 	Workspace workspace.Fingerprint
 	Changed   []string // live git porcelain, NOT transcript claims
+	// ChangedTruncated reports that Changed is a bounded prefix of the real
+	// list. A truncated list cannot contradict a transcript claim, so it
+	// suppresses the evidence-conflict marking below.
+	ChangedTruncated bool
 }
 
 const (
@@ -55,8 +59,6 @@ var testRunnerAllowlist = []string{
 // DeriveCheckpoint builds task state with zero model calls and zero network.
 // It implements the architecture plan §6 derivation table exactly.
 func DeriveCheckpoint(in CheckpointInput) capsule.Task {
-	_ = in.Workspace // reserved for callers; live file truth arrives via Changed
-
 	userTexts := nonMetaUserTexts(in.Events)
 	latest := ""
 	if len(userTexts) > 0 {
@@ -82,7 +84,7 @@ func DeriveCheckpoint(in CheckpointInput) capsule.Task {
 
 	calls, resultsByCall := indexToolPairs(in.Events)
 	completed, pending := classifyToolEvidence(calls, resultsByCall)
-	touched, conflict := filesTouchedFromTranscript(calls, in.Changed)
+	touched, conflict := filesTouchedFromTranscript(calls, in.Changed, changedFilesAreComplete(in))
 	tests := deriveTests(calls, resultsByCall)
 
 	changed := append([]string(nil), in.Changed...)
@@ -270,7 +272,32 @@ func toolResultIsError(ev capsule.Event) bool {
 	return false
 }
 
-func filesTouchedFromTranscript(calls []toolCallView, changed []string) (paths []string, conflict bool) {
+// changedFilesAreComplete reports whether live Git produced a complete
+// changed-file list for this handoff.
+//
+// The truth hierarchy lets current workspace state contradict a transcript
+// claim, but only when that state was actually observed. An unavailable,
+// uncertain, or bounded observation is missing evidence, not counter-evidence,
+// and marking a claim as contradicted on that basis would be its own
+// over-claim.
+func changedFilesAreComplete(in CheckpointInput) bool {
+	if in.ChangedTruncated {
+		return false
+	}
+	git := in.Workspace.Git
+	if !git.Available || !git.Repository {
+		return false
+	}
+	tree := git.WorkingTree
+	return tree.State != workspace.WorkingTreeUnavailable &&
+		!tree.Uncertain && !tree.CountsTruncated && tree.ChangedOmitted == 0
+}
+
+func filesTouchedFromTranscript(
+	calls []toolCallView,
+	changed []string,
+	changedIsComplete bool,
+) (paths []string, conflict bool) {
 	seen := make(map[string]struct{})
 	for _, call := range calls {
 		collectFileRefs(call.Input, seen)
@@ -286,6 +313,9 @@ func filesTouchedFromTranscript(calls []toolCallView, changed []string) (paths [
 	}
 	sort.Strings(paths)
 
+	if !changedIsComplete {
+		return paths, false
+	}
 	changedSet := make(map[string]struct{}, len(changed))
 	for _, c := range changed {
 		changedSet[normalizePathKey(c)] = struct{}{}
