@@ -61,12 +61,26 @@ type pipelineTarget struct {
 	materialized int
 	launched     int
 	verified     int
+	verifyErr    error
+	maxArgvBytes int
+}
+
+type pipelineClaudeTarget struct {
+	*ClaudeTarget
+}
+
+func (t *pipelineClaudeTarget) Compatible(context.Context) (adapter.Compatibility, error) {
+	return adapter.CompatibilitySupported, nil
 }
 
 func (t *pipelineTarget) Name() string { return sessionindex.AgentClaude }
 
 func (t *pipelineTarget) Capabilities() TargetCapabilities {
-	return TargetCapabilities{Agent: sessionindex.AgentClaude, SupportsPinnedID: true, SupportsInitialPrompt: true, MaxArgvBytes: DefaultMaxArgvBytes}
+	maxArgvBytes := t.maxArgvBytes
+	if maxArgvBytes == 0 {
+		maxArgvBytes = DefaultMaxArgvBytes
+	}
+	return TargetCapabilities{Agent: sessionindex.AgentClaude, SupportsPinnedID: true, SupportsInitialPrompt: true, MaxArgvBytes: maxArgvBytes}
 }
 
 func (t *pipelineTarget) Compatible(context.Context) (adapter.Compatibility, error) {
@@ -97,18 +111,22 @@ func (t *pipelineTarget) Launch(ctx context.Context, plan DestinationPlan, runne
 
 func (t *pipelineTarget) Verify(context.Context, DestinationPlan, time.Time) (string, string, error) {
 	t.verified++
+	if t.verifyErr != nil {
+		return "", VerifyUnresolved, t.verifyErr
+	}
 	return "destination-session", VerifyResolved, nil
 }
 
 type pipelineRunner struct {
 	calls int
 	plan  sessionindex.LaunchPlan
+	err   error
 }
 
 func (r *pipelineRunner) Run(_ context.Context, plan sessionindex.LaunchPlan) error {
 	r.calls++
 	r.plan = plan
-	return nil
+	return r.err
 }
 
 func TestPlanRedactsBeforeCheckpointAndIsDeterministic(t *testing.T) {
@@ -282,6 +300,35 @@ func TestPlanRejectsInvalidOptionsBeforeSideEffects(t *testing.T) {
 	}
 }
 
+func TestPlanRequiresResolverAndBusyCheck(t *testing.T) {
+	rec, _, _, _, opts := pipelineFixture(t)
+	opts.ResolveSource = nil
+	_, err := Plan(context.Background(), rec, opts)
+	assertPipelineCode(t, err, exitcode.Runtime)
+
+	_, _, _, _, opts = pipelineFixture(t)
+	opts.SessionBusy = nil
+	_, err = Plan(context.Background(), rec, opts)
+	assertPipelineCode(t, err, exitcode.Runtime)
+}
+
+func TestPlanPreservesAncestorLineageRoot(t *testing.T) {
+	rec, _, _, _, opts := pipelineFixture(t)
+	opts.ParentLineageRoot = "ancestor-handoff"
+	plan, err := Plan(context.Background(), rec, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(plan.TempDir) })
+	if plan.LineageRoot != opts.ParentLineageRoot || plan.Capsule.Identity.LineageRoot != opts.ParentLineageRoot {
+		t.Fatalf("lineage root = %q / %q", plan.LineageRoot, plan.Capsule.Identity.LineageRoot)
+	}
+	computed, err := capsule.ComputeID(plan.Capsule)
+	if err != nil || computed != plan.HandoffID {
+		t.Fatalf("descendant content ID = %q, %v; want %q", computed, err, plan.HandoffID)
+	}
+}
+
 func TestExecutePersistsLaunchesVerifiesAndRecordsLineage(t *testing.T) {
 	rec, _, _, target, opts := pipelineFixture(t)
 	runner := &pipelineRunner{}
@@ -319,6 +366,47 @@ func TestExecutePersistsLaunchesVerifiesAndRecordsLineage(t *testing.T) {
 	entries, err := store.List(10)
 	if err != nil || len(entries) != 1 || entries[0].HandoffID != result.HandoffID {
 		t.Fatalf("lineage list = %+v, %v", entries, err)
+	}
+}
+
+func TestExecuteRecordsLineageWhenPostLaunchVerifyFails(t *testing.T) {
+	rec, _, _, target, opts := pipelineFixture(t)
+	runner := &pipelineRunner{}
+	opts.LaunchRunner = runner
+	target.verifyErr = errors.New("reconciliation unavailable")
+
+	result, err := Execute(context.Background(), rec, opts, true)
+	assertPipelineCode(t, err, exitcode.Runtime)
+	if !result.Launched || result.DestinationState != VerifyUnresolved {
+		t.Fatalf("result = %+v", result)
+	}
+	store, openErr := OpenStore(opts.ReinstateHome)
+	if openErr != nil {
+		t.Fatal(openErr)
+	}
+	entries, listErr := store.List(10)
+	if listErr != nil || len(entries) != 1 || !entries[0].Launched || entries[0].Destination.State != VerifyUnresolved {
+		t.Fatalf("lineage after verify failure = %+v, %v", entries, listErr)
+	}
+}
+
+func TestExecuteRecordsLineageWhenLaunchReturnsError(t *testing.T) {
+	rec, _, _, _, opts := pipelineFixture(t)
+	runner := &pipelineRunner{err: errors.New("child exit status 1")}
+	opts.LaunchRunner = runner
+
+	result, err := Execute(context.Background(), rec, opts, true)
+	assertPipelineCode(t, err, exitcode.Runtime)
+	if result.Launched || result.DestinationState != VerifyUnresolved {
+		t.Fatalf("launch-error result = %+v", result)
+	}
+	store, openErr := OpenStore(opts.ReinstateHome)
+	if openErr != nil {
+		t.Fatal(openErr)
+	}
+	entries, listErr := store.List(10)
+	if listErr != nil || len(entries) != 1 || entries[0].Launched || entries[0].Destination.State != VerifyUnresolved {
+		t.Fatalf("lineage after launch error = %+v, %v", entries, listErr)
 	}
 }
 
@@ -369,7 +457,27 @@ func TestPlanCapsuleContentIDContract(t *testing.T) {
 	}
 }
 
-func TestClaudePipelineSeparatePlansHaveByteIdenticalArgv(t *testing.T) {
+func TestPlanDestinationArgvFallbackUsesAbsoluteProjectionPath(t *testing.T) {
+	target := &pipelineTarget{maxArgvBytes: 1024}
+	home := filepath.Join(t.TempDir(), "reinstate-home")
+	c := capsule.Capsule{
+		Identity:  capsule.Identity{ID: "capsule-id"},
+		Workspace: capsule.Workspace{Path: t.TempDir()},
+	}
+	plan, _, err := planDestination(
+		context.Background(), target, c, PolicyBalanced,
+		Options{ReinstateHome: home}, bytes.Repeat([]byte("x"), 2048),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := filepath.Join(home, handoffsDirName, c.Identity.ID, projectionFile)
+	if !filepath.IsAbs(want) || !strings.Contains(string(plan.Bootstrap), want) {
+		t.Fatalf("fallback bootstrap = %q, want absolute projection path %q", plan.Bootstrap, want)
+	}
+}
+
+func TestClaudePipelineDryRunAndExecuteHaveByteIdenticalArgv(t *testing.T) {
 	rec, _, _, _, opts := pipelineFixture(t)
 	target := &ClaudeTarget{
 		SessionExists: func(context.Context, string) (bool, error) { return false, nil },
@@ -377,20 +485,19 @@ func TestClaudePipelineSeparatePlansHaveByteIdenticalArgv(t *testing.T) {
 			return RenderBootstrap(c, permanentHandoffDir(opts.ReinstateHome, c.Identity.ID))
 		},
 	}
-	opts.Target = target
+	opts.Target = &pipelineClaudeTarget{ClaudeTarget: target}
 	first, err := Plan(context.Background(), rec, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = os.RemoveAll(first.TempDir) })
-	second, err := Plan(context.Background(), rec, opts)
+	executed, err := Execute(context.Background(), rec, opts, false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { _ = os.RemoveAll(second.TempDir) })
-	if !reflect.DeepEqual(first.Destination.Args, second.Destination.Args) ||
-		!bytes.Equal(first.Destination.Bootstrap, second.Destination.Bootstrap) {
-		t.Fatalf("dry-run/execute plans differ: first=%+v second=%+v", first.Destination, second.Destination)
+	if !reflect.DeepEqual(first.Destination.Args, executed.Plan.Destination.Args) ||
+		!bytes.Equal(first.Destination.Bootstrap, executed.Plan.Destination.Bootstrap) {
+		t.Fatalf("dry-run/execute plans differ: dry=%+v execute=%+v", first.Destination, executed.Plan.Destination)
 	}
 }
 
@@ -446,6 +553,12 @@ func pipelineFixture(t *testing.T) (sessionindex.Record, *pipelineReader, *pipel
 	opts := Options{
 		ToAgent: sessionindex.AgentClaude, Policy: PolicyBalanced, Reader: reader,
 		Verifier: verifier, Target: target, ReinstateHome: filepath.Join(t.TempDir(), "reinstate-home"),
+		ResolveSource: func(_ context.Context, input sessionindex.Record) (sessionindex.Record, bool, error) {
+			return input, true, nil
+		},
+		SessionBusy: func(context.Context, string, processcheck.Target) (bool, bool, error) {
+			return false, true, nil
+		},
 	}
 	return rec, reader, verifier, target, opts
 }

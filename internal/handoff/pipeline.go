@@ -62,6 +62,9 @@ type Options struct {
 	LaunchRunner sessionindex.LaunchRunner
 	// ReinstateHome is $REINSTATE_HOME (absolute). Required for Execute store writes.
 	ReinstateHome string
+	// ParentLineageRoot preserves an ancestor handoff root when handing back.
+	// Empty starts a new lineage rooted at the resulting capsule ID.
+	ParentLineageRoot string
 	// AllowActive takes a boundary while the source agent is running.
 	AllowActive bool
 	// AllowUntested proceeds on CompatibilityUntested source or destination.
@@ -158,23 +161,27 @@ func Plan(ctx context.Context, rec sessionindex.Record, opts Options) (PlanResul
 	if err := ctx.Err(); err != nil {
 		return PlanResult{}, pipelineWrap(exitcode.Runtime, err)
 	}
-	if opts.ResolveSource != nil {
-		resolved, fresh, err := opts.ResolveSource(ctx, rec)
-		if err != nil {
-			code := exitcode.Runtime
-			switch {
-			case errors.Is(err, sessionindex.ErrAmbiguous):
-				code = exitcode.Conflict
-			case errors.Is(err, sessionindex.ErrNotFound):
-				code = exitcode.Usage
-			}
-			return PlanResult{}, pipelineWrap(code, fmt.Errorf("handoff: resolve source: %w", err))
-		}
-		if !fresh {
-			return PlanResult{}, pipelineErrorf(exitcode.Compatibility, "%w: source session index is not fresh", ErrCompatibility)
-		}
-		rec = resolved
+	if opts.ResolveSource == nil {
+		return PlanResult{}, pipelineErrorf(exitcode.Runtime, "handoff: source resolver is required")
 	}
+	if opts.SessionBusy == nil {
+		return PlanResult{}, pipelineErrorf(exitcode.Runtime, "handoff: session busy check is required")
+	}
+	resolved, fresh, err := opts.ResolveSource(ctx, rec)
+	if err != nil {
+		code := exitcode.Runtime
+		switch {
+		case errors.Is(err, sessionindex.ErrAmbiguous):
+			code = exitcode.Conflict
+		case errors.Is(err, sessionindex.ErrNotFound):
+			code = exitcode.Usage
+		}
+		return PlanResult{}, pipelineWrap(code, fmt.Errorf("handoff: resolve source: %w", err))
+	}
+	if !fresh {
+		return PlanResult{}, pipelineErrorf(exitcode.Compatibility, "%w: source session index is not fresh", ErrCompatibility)
+	}
+	rec = resolved
 	to := normalizeAgent(opts.ToAgent)
 	if to == "" {
 		return PlanResult{}, pipelineErrorf(exitcode.Usage, "%w: --to AGENT is required", ErrUsage)
@@ -206,21 +213,19 @@ func Plan(ctx context.Context, rec sessionindex.Record, opts Options) (PlanResul
 	}
 
 	sourceMayAdvance := false
-	if opts.SessionBusy != nil && strings.TrimSpace(rec.SourcePath) != "" {
-		busy, _, err := opts.SessionBusy(ctx, rec.Agent, processcheck.Target{
-			SessionID:   rec.ID,
-			Path:        rec.SourcePath,
-			ProjectRoot: rec.Workspace,
-		})
-		if err != nil {
-			return PlanResult{}, pipelineWrap(exitcode.Runtime, fmt.Errorf("handoff: session busy check: %w", err))
-		}
-		if busy && !opts.AllowActive {
-			return PlanResult{}, pipelineErrorf(exitcode.Safety, "%w: source session is active; close it or pass --allow-active", ErrSafety)
-		}
-		if busy && opts.AllowActive {
-			sourceMayAdvance = true
-		}
+	busy, _, err := opts.SessionBusy(ctx, rec.Agent, processcheck.Target{
+		SessionID:   rec.ID,
+		Path:        rec.SourcePath,
+		ProjectRoot: rec.Workspace,
+	})
+	if err != nil {
+		return PlanResult{}, pipelineWrap(exitcode.Runtime, fmt.Errorf("handoff: session busy check: %w", err))
+	}
+	if busy && !opts.AllowActive {
+		return PlanResult{}, pipelineErrorf(exitcode.Safety, "%w: source session is active; close it or pass --allow-active", ErrSafety)
+	}
+	if busy && opts.AllowActive {
+		sourceMayAdvance = true
 	}
 
 	compat, err := reader.Probe(ctx, rec)
@@ -344,7 +349,12 @@ func Plan(ctx context.Context, rec sessionindex.Record, opts Options) (PlanResul
 
 	// Compute content ID before projection hashes (hashes depend on the id path).
 	c.Identity.ID = ""
-	c.Identity.LineageRoot = ""
+	c.Identity.LineageRoot = strings.TrimSpace(opts.ParentLineageRoot)
+	if c.Identity.LineageRoot != "" {
+		if err := validateHandoffID(c.Identity.LineageRoot); err != nil {
+			return PlanResult{}, pipelineWrap(exitcode.Usage, fmt.Errorf("handoff: parent lineage root: %w", err))
+		}
+	}
 	c.Projection.BootstrapSHA256 = ""
 	c.Projection.MarkdownSHA256 = ""
 	id, err := capsule.ComputeID(c)
@@ -352,7 +362,9 @@ func Plan(ctx context.Context, rec sessionindex.Record, opts Options) (PlanResul
 		return PlanResult{}, pipelineWrap(exitcode.Runtime, err)
 	}
 	c.Identity.ID = id
-	c.Identity.LineageRoot = id
+	if c.Identity.LineageRoot == "" {
+		c.Identity.LineageRoot = id
+	}
 
 	handoffDir := permanentHandoffDir(opts.ReinstateHome, id)
 	projectionMD, err := RenderProjection(c)
@@ -499,18 +511,25 @@ func Execute(ctx context.Context, rec sessionindex.Record, opts Options, launch 
 	destID := plan.Destination.SessionID
 	destState := VerifyUnresolved
 	launched := false
+	var launchErr error
+	var verifyErr error
 	if launch {
 		launchStart := now
 		if err := target.Launch(ctx, plan.Destination, opts.LaunchRunner); err != nil {
-			return ExecuteResult{Plan: plan}, pipelineWrap(exitcode.Runtime, err)
+			launchErr = err
+		} else {
+			launched = true
+			verifiedID, state, err := target.Verify(ctx, plan.Destination, launchStart)
+			if verifiedID != "" {
+				destID = verifiedID
+			}
+			if err != nil {
+				verifyErr = err
+				destState = VerifyUnresolved
+			} else {
+				destState = state
+			}
 		}
-		launched = true
-		verifiedID, state, verifyErr := target.Verify(ctx, plan.Destination, launchStart)
-		if verifyErr != nil {
-			return ExecuteResult{Plan: plan}, pipelineWrap(exitcode.Runtime, verifyErr)
-		}
-		destID = verifiedID
-		destState = state
 	}
 
 	entry := LineageEntry{
@@ -538,14 +557,21 @@ func Execute(ctx context.Context, rec sessionindex.Record, opts Options, launch 
 		return ExecuteResult{Plan: plan}, pipelineWrap(exitcode.Runtime, err)
 	}
 
-	return ExecuteResult{
+	result := ExecuteResult{
 		Plan:                 plan,
 		HandoffID:            id,
 		Launched:             launched,
 		DestinationSessionID: destID,
 		DestinationState:     destState,
 		Lineage:              entry,
-	}, nil
+	}
+	if launchErr != nil {
+		return result, pipelineWrap(exitcode.Runtime, fmt.Errorf("handoff: destination launch failed; outcome unresolved: %w", launchErr))
+	}
+	if verifyErr != nil {
+		return result, pipelineWrap(exitcode.Runtime, fmt.Errorf("handoff: verify destination after launch: %w", verifyErr))
+	}
+	return result, nil
 }
 
 func resolveTarget(opts Options, to string) (HandoffTarget, error) {
@@ -592,7 +618,11 @@ func planDestination(
 		caps := target.Capabilities()
 		if err := ValidateDestinationArgv(plan, caps.MaxArgvBytes); err != nil {
 			// Codex-style short fallback when full bootstrap exceeds argv budget.
-			short := []byte("Reinstate structured handoff — not native resume. Read projection.md and continue from that briefing only. Acknowledge before any mutation.")
+			projectionPath := filepath.Join(permanentHandoffDir(opts.ReinstateHome, c.Identity.ID), projectionFile)
+			if !filepath.IsAbs(projectionPath) {
+				return DestinationPlan{}, fidelity, pipelineErrorf(exitcode.Config, "handoff: absolute reinstate home is required for argv fallback")
+			}
+			short := []byte("Reinstate structured handoff — not native resume. Read " + projectionPath + " and continue from that briefing only. Acknowledge before any mutation.")
 			plan.Bootstrap = short
 			plan = rewriteBootstrapArgs(plan, short)
 			if err := ValidateDestinationArgv(plan, caps.MaxArgvBytes); err != nil {
@@ -600,7 +630,6 @@ func planDestination(
 			}
 		}
 	}
-	_ = opts
 	return plan, fidelity, nil
 }
 
