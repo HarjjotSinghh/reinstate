@@ -154,7 +154,7 @@ Code and Codex are destinations.
 | `--to AGENT` | Required destination: `claude` or `codex`. |
 | `--policy checkpoint\|balanced\|full` | Projection policy; default `balanced`. |
 | `--dry-run` | Preview using temporary files only; no durable handoff and no launch. |
-| `--json` | Emit machine-readable output; a handoff launch also requires `--dry-run` or `--no-launch`. |
+| `--json` | Emit machine-readable, launch-free output; requires `--dry-run` or `--no-launch`. |
 | `--no-launch` | Store the capsule and print the exact command without spawning the destination. |
 | `--export PATH` | Also write the projection to `PATH`; incompatible with `--dry-run`. |
 | `--allow-warning ID` | Acknowledge one exact current warning ID; repeat for each warning. |
@@ -181,9 +181,10 @@ Accepts `--json` and `--limit N` (default `100`).
 `rein resume SESSION --with AGENT` is a convenience alias for
 `rein handoff SESSION --to AGENT`. It accepts `--dry-run`, `--json`, and
 repeatable `--allow-environment-warning ID`, translated to exact handoff
-warning acknowledgements. The alias prints a one-line structured-handoff
-notice. `rein resume SESSION --fork` instead invokes the source agent's native
-fork path; `--with` and `--fork` are mutually exclusive.
+warning acknowledgements. With this alias, `--json` requires `--dry-run`;
+`resume --with` has no `--no-launch` mode. The alias prints a one-line
+structured-handoff notice. `rein resume SESSION --fork` instead invokes the
+source agent's native fork path; `--with` and `--fork` are mutually exclusive.
 
 ### Handoff exit codes
 

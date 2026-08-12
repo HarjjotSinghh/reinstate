@@ -71,24 +71,111 @@ func TestPhase4DirectionalCompatibilityIsDocumented(t *testing.T) {
 
 func TestProductDocsDoNotClaimCrossAgentNativeIdentity(t *testing.T) {
 	paths := []string{
-		"README.md", "docs/README.md", "docs/adapters.md", "docs/compatibility.md",
-		"docs/cli-reference.md", "docs/faq.md", "docs/comparison.md",
-		"docs/getting-started.md", "docs/security-model.md", "docs/handoff.md",
+		"README.md", "ROADMAP.md", "CHANGELOG.md", "docs/README.md",
+		"docs/adapters.md", "docs/compatibility.md", "docs/cli-reference.md",
+		"docs/comparison.md", "docs/cross-agent-continuation.md", "docs/faq.md",
+		"docs/getting-started.md", "docs/handoff.md", "docs/security-model.md",
 		"docs/troubleshooting.md", "docs/seo/product-truth-register.md",
 	}
-	crossAgent := regexp.MustCompile(`(?i)(cross-agent|structured handoff|handoff)`)
-	identityClaim := regexp.MustCompile(`(?i)(native resume|same session)`)
-	truthful := regexp.MustCompile(`(?i)(not native resume|never[^.]*native resume|does not[^.]*same session|not[^.]*same session|same-vendor native resume)`)
 	for _, path := range paths {
-		for number, line := range strings.Split(read(t, path), "\n") {
-			if strings.HasPrefix(line, "| Agent |") || strings.HasPrefix(line, "| Adapter |") {
-				continue
-			}
-			if crossAgent.MatchString(line) && identityClaim.MatchString(line) && !truthful.MatchString(line) {
-				t.Errorf("%s:%d makes an affirmative cross-agent identity claim: %s", path, number+1, line)
+		for number, paragraph := range markdownParagraphs(read(t, path)) {
+			if claimsCrossAgentNativeIdentity(paragraph) {
+				t.Errorf("%s paragraph %d makes an affirmative cross-agent identity claim: %s", path, number+1, paragraph)
 			}
 		}
 	}
+}
+
+func TestCrossAgentIdentityClaimClassifier(t *testing.T) {
+	tests := []struct {
+		name      string
+		paragraph string
+		want      bool
+	}{
+		{"positive same session mutation", "A structured handoff continues the\nsame session in Codex.", true},
+		{"positive native mutation", "Cross-agent handoff provides native resume.", true},
+		{"positive reverse mutation", "Native resume is the cross-agent handoff mode.", true},
+		{"positive mixed mutation", "Native resume stays same-vendor. A structured handoff preserves the same session.", true},
+		{"positive repeated native mutation", "Native resume stays same-vendor. A structured handoff provides native resume.", true},
+		{"positive after negation mutation", "One handoff is not native resume. Another cross-agent handoff provides native resume.", true},
+		{"negative direct", "A structured handoff is not native resume.", false},
+		{"negative ordinary contraction", "A cross-agent handoff isn't native resume.", false},
+		{"negative does not imply", "A handoff doesn't imply native resume.", false},
+		{"negative same session", "A handoff creates a new session, not the same session.", false},
+		{"negative cannot preserve", "A handoff cannot preserve the same session.", false},
+		{"negative same vendor", "Native resume stays same-vendor; cross-agent work uses a structured handoff.", false},
+		{"negative invalid claim", "Same exact session and lossless native resume are not valid cross-agent claims.", false},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			paragraphs := markdownParagraphs(test.paragraph)
+			if len(paragraphs) != 1 {
+				t.Fatalf("markdownParagraphs() returned %d paragraphs, want 1", len(paragraphs))
+			}
+			if got := claimsCrossAgentNativeIdentity(paragraphs[0]); got != test.want {
+				t.Fatalf("claimsCrossAgentNativeIdentity()=%t want %t for %q", got, test.want, test.paragraph)
+			}
+		})
+	}
+}
+
+var markdownParagraphBreak = regexp.MustCompile(`\n[\t ]*\n+`)
+
+func markdownParagraphs(doc string) []string {
+	doc = strings.ReplaceAll(doc, "\r\n", "\n")
+	blocks := markdownParagraphBreak.Split(doc, -1)
+	paragraphs := make([]string, 0, len(blocks))
+	for _, block := range blocks {
+		lines := strings.Split(strings.TrimSpace(block), "\n")
+		table := len(lines) > 0
+		for _, line := range lines {
+			if !strings.HasPrefix(strings.TrimSpace(line), "|") {
+				table = false
+				break
+			}
+		}
+		paragraph := strings.Join(strings.Fields(block), " ")
+		if table {
+			for index, line := range lines {
+				lines[index] = strings.Join(strings.Fields(line), " ")
+			}
+			paragraph = strings.Join(lines, "\n")
+		}
+		if paragraph != "" {
+			paragraphs = append(paragraphs, paragraph)
+		}
+	}
+	return paragraphs
+}
+
+var (
+	crossAgentTerm = regexp.MustCompile(`(?i)(cross-agent|structured handoff|handoff)`)
+	identityTerm   = regexp.MustCompile(`(?i)(native resume|same(?: exact)? session)`)
+	nativeTruth    = regexp.MustCompile(`(?i)(native resume/fork\s*\||same[- ]vendor|same (?:agent|harness/vendor)|claude\s*→\s*claude(?: code)?|codex\s*→\s*codex|not (?:a )?native resume|isn't native resume|does(?: not|n't)[^|]{0,80}native resume|(?:never|cannot|can't|without|rather than)[^|]{0,80}native resume|native resume[^|]{0,80}(?:is|are) not(?: valid)?|native resume[^|]{0,40}(?:stays|remains|is) same[- ]vendor)`)
+	sessionTruth   = regexp.MustCompile(`(?i)(not (?:the )?same(?: exact)? session|isn't the same(?: exact)? session|does(?: not|n't)[^|]{0,80}same(?: exact)? session|(?:never|cannot|can't|without|rather than)[^|]{0,80}same(?: exact)? session|same(?: exact)? session[^|]{0,80}(?:is|are) not valid|same session[^|]{0,40}(?:overclaim|claim))`)
+	claimBreak     = regexp.MustCompile(`[.!?;]+(?:\s+|$)`)
+)
+
+func claimsCrossAgentNativeIdentity(paragraph string) bool {
+	for _, row := range strings.Split(paragraph, "\n") {
+		for _, clause := range claimBreak.Split(row, -1) {
+			if !crossAgentTerm.MatchString(clause) {
+				continue
+			}
+			for _, identity := range identityTerm.FindAllString(clause, -1) {
+				if strings.Contains(strings.ToLower(identity), "native resume") {
+					if !nativeTruth.MatchString(clause) {
+						return true
+					}
+					continue
+				}
+				if !sessionTruth.MatchString(clause) {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 func findCommand(t *testing.T, root *cobra.Command, path string) *cobra.Command {
