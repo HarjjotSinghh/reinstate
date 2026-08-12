@@ -98,6 +98,8 @@ func TestCrossAgentIdentityClaimClassifier(t *testing.T) {
 		{"positive mixed mutation", "Native resume stays same-vendor. A structured handoff preserves the same session.", true},
 		{"positive repeated native mutation", "Native resume stays same-vendor. A structured handoff provides native resume.", true},
 		{"positive after negation mutation", "One handoff is not native resume. Another cross-agent handoff provides native resume.", true},
+		{"positive same-clause native mutation", "A handoff is not native resume, but it provides native resume.", true},
+		{"positive same-clause session mutation", "A structured handoff does not preserve the same session, but it opens the same session.", true},
 		{"negative direct", "A structured handoff is not native resume.", false},
 		{"negative ordinary contraction", "A cross-agent handoff isn't native resume.", false},
 		{"negative does not imply", "A handoff doesn't imply native resume.", false},
@@ -151,8 +153,8 @@ func markdownParagraphs(doc string) []string {
 var (
 	crossAgentTerm = regexp.MustCompile(`(?i)(cross-agent|structured handoff|handoff)`)
 	identityTerm   = regexp.MustCompile(`(?i)(native resume|same(?: exact)? session)`)
-	nativeTruth    = regexp.MustCompile(`(?i)(native resume/fork\s*\||same[- ]vendor|same (?:agent|harness/vendor)|claude\s*→\s*claude(?: code)?|codex\s*→\s*codex|not (?:a )?native resume|isn't native resume|does(?: not|n't)[^|]{0,80}native resume|(?:never|cannot|can't|without|rather than)[^|]{0,80}native resume|native resume[^|]{0,80}(?:is|are) not(?: valid)?|native resume[^|]{0,40}(?:stays|remains|is) same[- ]vendor)`)
-	sessionTruth   = regexp.MustCompile(`(?i)(not (?:the )?same(?: exact)? session|isn't the same(?: exact)? session|does(?: not|n't)[^|]{0,80}same(?: exact)? session|(?:never|cannot|can't|without|rather than)[^|]{0,80}same(?: exact)? session|same(?: exact)? session[^|]{0,80}(?:is|are) not valid|same session[^|]{0,40}(?:overclaim|claim))`)
+	nativeTruth    = regexp.MustCompile(`(?i)(IDENTITY_TERM/fork\s*\||same[- ]vendor\s+IDENTITY_TERM|not (?:a )?IDENTITY_TERM|isn't IDENTITY_TERM|does(?: not|n't)[^|]{0,80}IDENTITY_TERM|(?:never|cannot|can't|without|rather than)[^|]{0,80}IDENTITY_TERM|IDENTITY_TERM[^|]{0,80}(?:is|are) not(?: valid)?|IDENTITY_TERM[^|]{0,80}(?:same (?:agent|harness/vendor)|claude\s*→\s*claude(?: code)?|codex\s*→\s*codex)|IDENTITY_TERM[^|]{0,40}(?:stays|remains|is) same[- ]vendor)`)
+	sessionTruth   = regexp.MustCompile(`(?i)(not (?:the )?IDENTITY_TERM|isn't the IDENTITY_TERM|does(?: not|n't)[^|]{0,80}IDENTITY_TERM|(?:never|cannot|can't|without|rather than)[^|]{0,80}IDENTITY_TERM|IDENTITY_TERM[^|]{0,80}(?:is|are) not valid|IDENTITY_TERM[^|]{0,40}(?:overclaim|claim))`)
 	claimBreak     = regexp.MustCompile(`[.!?;]+(?:\s+|$)`)
 )
 
@@ -162,20 +164,45 @@ func claimsCrossAgentNativeIdentity(paragraph string) bool {
 			if !crossAgentTerm.MatchString(clause) {
 				continue
 			}
-			for _, identity := range identityTerm.FindAllString(clause, -1) {
-				if strings.Contains(strings.ToLower(identity), "native resume") {
-					if !nativeTruth.MatchString(clause) {
+			matches := identityTerm.FindAllStringIndex(clause, -1)
+			for index, match := range matches {
+				identity := strings.ToLower(clause[match[0]:match[1]])
+				context := identityOccurrenceContext(clause, matches, index, identity)
+				if strings.Contains(identity, "native resume") {
+					if !nativeTruth.MatchString(context) {
 						return true
 					}
 					continue
 				}
-				if !sessionTruth.MatchString(clause) {
+				if !sessionTruth.MatchString(context) {
 					return true
 				}
 			}
 		}
 	}
 	return false
+}
+
+func identityOccurrenceContext(clause string, matches [][]int, current int, identity string) string {
+	start, end := 0, len(clause)
+	for index := current - 1; index >= 0; index-- {
+		if sameIdentityKind(clause[matches[index][0]:matches[index][1]], identity) {
+			start = matches[index][1]
+			break
+		}
+	}
+	for index := current + 1; index < len(matches); index++ {
+		if sameIdentityKind(clause[matches[index][0]:matches[index][1]], identity) {
+			end = matches[index][0]
+			break
+		}
+	}
+	match := matches[current]
+	return clause[start:match[0]] + "IDENTITY_TERM" + clause[match[1]:end]
+}
+
+func sameIdentityKind(left, right string) bool {
+	return strings.Contains(strings.ToLower(left), "native resume") == strings.Contains(right, "native resume")
 }
 
 func findCommand(t *testing.T, root *cobra.Command, path string) *cobra.Command {
