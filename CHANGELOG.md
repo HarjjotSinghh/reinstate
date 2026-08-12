@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Gemini CLI source-only transcript reader (`internal/transcript/gemini.go`)
+  for Phase 4 handoff capsules: legacy `messages[]` JSON and JSONL+`$set`,
+  vendor-aligned `$rewindTo` replay (exclusive of the target id), and
+  `kind:subagent` exclusion. Fixtures under `testdata/handoff/gemini/`.
+
 - Phase 4 planning set for `v0.4.0` cross-agent handoff: the continuity-capsule
   design and ADR 0002, a user-facing handoff contract, a per-OS local session
   storage map for Claude Code, Codex, Gemini CLI, OpenCode, and Grok Build, the

@@ -146,7 +146,12 @@ truncates (vendor removes from and including the target id). Phase 4 capsule
 readers must replay rewinds **before** emitting canonical events, otherwise
 the capsule contains turns the user already discarded.
 
-Synthetic fixtures: `testdata/sessionindex/gemini/{macos,windows}/`.
+`internal/transcript/gemini.go` (WP-08) aligns with that vendor cut: the
+target id and everything after it are excluded from the capsule. The Phase 2
+index reader still uses an inclusive slice for search metadata only.
+
+Synthetic fixtures: `testdata/sessionindex/gemini/{macos,windows}/` and
+`testdata/handoff/gemini/{rewind,legacy-json,jsonl}/`.
 Research note: [research/2026-08-12-phase-4-r1-r2-r3.md](research/2026-08-12-phase-4-r1-r2-r3.md).
 
 ---
