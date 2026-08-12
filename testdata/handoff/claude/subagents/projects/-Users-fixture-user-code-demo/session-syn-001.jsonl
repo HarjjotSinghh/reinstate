@@ -1,0 +1,2 @@
+{"type":"user","uuid":"u1","sessionId":"00000000-0000-4000-8000-000000000001","cwd":"/Users/fixture-user/code/demo","timestamp":"2026-08-01T12:00:00Z","message":{"role":"user","content":"Synthetic main session request"}}
+{"type":"assistant","uuid":"a1","sessionId":"00000000-0000-4000-8000-000000000001","timestamp":"2026-08-01T12:00:01Z","message":{"role":"assistant","content":"Synthetic main session reply"}}

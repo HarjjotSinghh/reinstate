@@ -1,0 +1,4 @@
+{"type":"user","uuid":"u1","sessionId":"00000000-0000-4000-8000-000000000001","cwd":"/Users/fixture-user/code/demo","timestamp":"2026-08-01T15:00:00Z","message":{"role":"user","content":"Synthetic unknown-record request"}}
+{"type":"totally_novel_vendor_record","uuid":"x1","sessionId":"00000000-0000-4000-8000-000000000001","timestamp":"2026-08-01T15:00:01Z","payload":{"note":"synthetic unknown"}}
+{"type":"user","uuid":"u2","sessionId":"00000000-0000-4000-8000-000000000001","timestamp":"2026-08-01T15:00:02Z","isMeta":true,"message":{"role":"user","content":"Synthetic harness meta prompt"}}
+{"type":"system","uuid":"sys1","sessionId":"00000000-0000-4000-8000-000000000001","timestamp":"2026-08-01T15:00:03Z","message":{"role":"system","content":"Synthetic system instruction"}}
