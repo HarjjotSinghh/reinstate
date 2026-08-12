@@ -385,7 +385,7 @@ func TestResumeForkFlagUsesNativeFork(t *testing.T) {
 func TestPickerHandoffIsExplicitAndRoutesToPipeline(t *testing.T) {
 	home, vendorHome, sources, _ := handoffCLIFixture(t)
 	t.Setenv("REINSTATE_HOME", home)
-	t.Setenv("HOME", vendorHome)
+	setVendorHome(t, vendorHome)
 	t.Setenv("CLAUDE_CONFIG_DIR", "")
 	t.Setenv("CODEX_HOME", "")
 	runner := &recordingLaunchRunner{}

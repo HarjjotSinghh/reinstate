@@ -97,6 +97,11 @@ again on the published stable tag (`stable_v0.3.0_authorized=true`).
 ### Fixed
 
 - Windows Ctrl+C at the environment-warning prompt returns safety exit `7`.
+- Handoff artifacts written outside the store — destination planned files and
+  `handoff export --out` / `handoff --export` — are now owner-only on Windows.
+  They went through a plain `0600` write, which Windows ignores, leaving the
+  inherited DACL in place; they now use the same protected DACL as the rest of
+  `$REINSTATE_HOME/handoffs/`.
 - Non-TTY native launch fails closed unless an explicit local-smoke override is set.
 - Capability probe incompleteness demoted from acknowledgement-forcing warnings
   where appropriate; cancelled probes remain blocking.

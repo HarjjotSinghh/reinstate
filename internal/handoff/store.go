@@ -372,10 +372,7 @@ func (s *Store) acquireLock(name string) (*filelock.Lock, error) {
 }
 
 func writePrivateFile(path string, data []byte) error {
-	if err := fsx.WriteFileAtomic(path, data, fsx.OwnerOnlyFilePerm); err != nil {
-		return err
-	}
-	return fsx.ProtectOwnerOnly(path, false)
+	return fsx.WritePrivateFile(path, data)
 }
 
 func optionalRead(path string) ([]byte, error) {

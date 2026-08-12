@@ -555,7 +555,7 @@ func exportHandoffProjection(path string, body []byte) error {
 	if path == "" {
 		return nil
 	}
-	if err := fsx.WriteFileAtomic(path, body, fsx.OwnerOnlyFilePerm); err != nil {
+	if err := fsx.WritePrivateFile(path, body); err != nil {
 		return NewExitError(ExitRuntime, "write handoff projection export: "+err.Error())
 	}
 	return nil
@@ -693,7 +693,7 @@ func newHandoffExportCmd() *cobra.Command {
 				_, err = cmd.OutOrStdout().Write(body)
 				return handoffCLIError(err)
 			}
-			if err := fsx.WriteFileAtomic(out, body, fsx.OwnerOnlyFilePerm); err != nil {
+			if err := fsx.WritePrivateFile(out, body); err != nil {
 				return handoffCLIError(err)
 			}
 			PrintHuman(cmd.OutOrStdout(), "%s: exported %s to %s", handoffHumanPrefix(capsuleDestinationAgent(c)), format, doctor.RedactPath(filepath.Clean(out)))

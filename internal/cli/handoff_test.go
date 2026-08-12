@@ -16,6 +16,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/HarjjotSinghh/reinstate/internal/capsule"
+	"github.com/HarjjotSinghh/reinstate/internal/fsx"
 	"github.com/HarjjotSinghh/reinstate/internal/handoff"
 	"github.com/HarjjotSinghh/reinstate/internal/preflight"
 	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
@@ -308,7 +309,7 @@ func TestHandoffPipelineExitCodes(t *testing.T) {
 
 	t.Run("safety", func(t *testing.T) {
 		t.Setenv("REINSTATE_HOME", home)
-		t.Setenv("HOME", vendorHome)
+		setVendorHome(t, vendorHome)
 		var stdout, stderr bytes.Buffer
 		code := Execute(Options{
 			Name: "rein", Stdout: &stdout, Stderr: &stderr,
@@ -325,7 +326,7 @@ func TestHandoffPipelineExitCodes(t *testing.T) {
 
 	t.Run("runtime", func(t *testing.T) {
 		t.Setenv("REINSTATE_HOME", home)
-		t.Setenv("HOME", vendorHome)
+		setVendorHome(t, vendorHome)
 		var stderr bytes.Buffer
 		code := Execute(Options{
 			Name: "rein", Stderr: &stderr,
@@ -403,12 +404,12 @@ func TestHandoffListInspectAcknowledgeAndExport(t *testing.T) {
 	if code != ExitOK {
 		t.Fatalf("file export exit=%d stderr=%s", code, stderr)
 	}
-	info, err := os.Stat(out)
+	private, detail, err := fsx.OwnerOnly(out, false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if info.Mode().Perm() != 0o600 {
-		t.Fatalf("export mode=%#o want 0600", info.Mode().Perm())
+	if !private {
+		t.Fatalf("exported capsule is not owner-only: %s", detail)
 	}
 }
 
@@ -445,10 +446,19 @@ func handoffCLIFixture(t *testing.T) (string, string, []sessionindex.Source, str
 	return home, vendorHome, sources, transcriptPath
 }
 
+// setVendorHome points agent detection at a synthetic vendor home. UserHomeDir
+// reads HOME on Unix and USERPROFILE on Windows, so both must be set or the
+// destination adapter probes the real profile and reports NOT_INSTALLED.
+func setVendorHome(t *testing.T, vendorHome string) {
+	t.Helper()
+	t.Setenv("HOME", vendorHome)
+	t.Setenv("USERPROFILE", vendorHome)
+}
+
 func runHandoffCLI(t *testing.T, home, vendorHome string, sources []sessionindex.Source, runner sessionindex.LaunchRunner, args ...string) (string, string, int) {
 	t.Helper()
 	t.Setenv("REINSTATE_HOME", home)
-	t.Setenv("HOME", vendorHome)
+	setVendorHome(t, vendorHome)
 	t.Setenv("CLAUDE_CONFIG_DIR", "")
 	t.Setenv("CODEX_HOME", "")
 	var stdout, stderr bytes.Buffer

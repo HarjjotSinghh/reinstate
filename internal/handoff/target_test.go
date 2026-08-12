@@ -11,6 +11,7 @@ import (
 
 	"github.com/HarjjotSinghh/reinstate/internal/adapter"
 	"github.com/HarjjotSinghh/reinstate/internal/capsule"
+	"github.com/HarjjotSinghh/reinstate/internal/fsx"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
 )
 
@@ -129,12 +130,12 @@ func TestWritePlannedFilesWritesAfterArgvOK(t *testing.T) {
 	if string(got) != string(body) {
 		t.Fatalf("content = %q, want %q", got, body)
 	}
-	info, err := os.Stat(path)
+	private, detail, err := fsx.OwnerOnly(path, false)
 	if err != nil {
-		t.Fatalf("Stat: %v", err)
+		t.Fatalf("OwnerOnly: %v", err)
 	}
-	if info.Mode().Perm() != 0o600 {
-		t.Fatalf("mode = %04o, want 0600", info.Mode().Perm())
+	if !private {
+		t.Fatalf("planned file is not owner-only: %s", detail)
 	}
 }
 
