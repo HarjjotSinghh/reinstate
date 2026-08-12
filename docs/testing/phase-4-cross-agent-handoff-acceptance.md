@@ -11,6 +11,12 @@ authority is [cross-agent-continuation.md](../cross-agent-continuation.md) and
 A candidate passes only when installed tagged artifacts produce truthful,
 privacy-safe handoffs that a destination agent can actually continue from.
 
+The first candidate is pinned to the signed tag `v0.4.0-rc.1`. Use the
+[v0.4.0-rc.1 dispatch](v0.4.0-rc.1-agent-verification-prompts.md) and the
+[Phase 4 report template](results/phase-4-report-template.md). Do not start
+physical testing from an integration commit, source build, draft release, or
+installer that still pins stable `v0.3.0`.
+
 ## Evidence policy
 
 - Test one immutable full commit and signed tag on every device.
@@ -169,8 +175,8 @@ supported platforms is `PASS`. One `FAIL` on one platform fails the candidate.
 
 ## Candidate dispatches
 
-Per-tag instructions live beside this document as
-`v0.4.0-rc.N-agent-verification-prompts.md`. The dispatch fixes report branches,
-artifact and full-commit checks, corpus sizes, absolute performance ceilings,
-and final reconciliation rules **before** physical testing starts. Do not begin
-a run without one.
+The current per-tag instructions are the
+[`v0.4.0-rc.1` dispatch](v0.4.0-rc.1-agent-verification-prompts.md). It fixes
+report branches, artifact and full-commit checks, corpus sizes, absolute
+performance ceilings, and final reconciliation rules before physical testing
+starts. Do not begin a run without the dispatch for the exact tested tag.
