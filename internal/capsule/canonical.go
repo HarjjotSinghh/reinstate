@@ -6,11 +6,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"path/filepath"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
+
+	"github.com/HarjjotSinghh/reinstate/internal/pathmap"
 )
 
 // CanonicalBytes returns the deterministic encoding used for hashing:
@@ -18,7 +18,7 @@ import (
 // no sub-second component, and no wall-clock field anywhere in the output.
 //
 // Absolute filesystem paths are rejected. Portable pathmap tokens (${REPO:…},
-// ${HOME}…, ${WORK:…}) are allowed.
+// ${HOME}…, ${WORK:…}, ${EXTERNAL:…}) are allowed.
 func CanonicalBytes(c Capsule) ([]byte, error) {
 	c = normalizeCapsule(c)
 	raw, err := json.Marshal(c)
@@ -182,23 +182,25 @@ func rejectAbsolutePaths(v any) error {
 	}
 }
 
-func isForbiddenAbsolutePath(p string) bool {
-	if p == "" {
-		return false
-	}
-	if isPortablePathToken(p) {
-		return false
-	}
-	if filepath.IsAbs(p) || strings.HasPrefix(p, "/") || strings.HasPrefix(p, `\`) {
-		return true
-	}
-	return len(p) >= 3 &&
-		((p[0] >= 'A' && p[0] <= 'Z') || (p[0] >= 'a' && p[0] <= 'z')) &&
-		p[1] == ':' && (p[2] == '\\' || p[2] == '/')
+// AbsolutePathForbidden reports whether CanonicalBytes rejects s because it is
+// an absolute filesystem path rather than a portable pathmap token.
+//
+// Transcript readers use this predicate at their emit boundary so a reader can
+// never produce a value the capsule refuses. It is exported to keep exactly one
+// definition of "absolute path" in the codebase; it does not relax the rule.
+func AbsolutePathForbidden(s string) bool {
+	return isForbiddenAbsolutePath(s)
 }
 
+func isForbiddenAbsolutePath(p string) bool {
+	if p == "" || isPortablePathToken(p) {
+		return false
+	}
+	return pathmap.IsAbsolutePlatform(p)
+}
+
+// isPortablePathToken defers to pathmap so the token vocabulary and the
+// definition of an absolute path have exactly one owner.
 func isPortablePathToken(p string) bool {
-	return strings.HasPrefix(p, "${REPO:") ||
-		strings.HasPrefix(p, "${HOME}") ||
-		strings.HasPrefix(p, "${WORK:")
+	return pathmap.IsToken(p)
 }

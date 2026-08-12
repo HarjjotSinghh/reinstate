@@ -38,11 +38,24 @@ type Boundary struct {
 	ModTimeNS  int64  `json:"mod_time_ns"`
 	Partial    bool   `json:"partial,omitempty"` // true when SizeBytes > ByteOffset
 	path       string // never serialized
+	paths      PathContext
 }
 
 // Path returns the private absolute source path frozen into the boundary.
 func (b Boundary) Path() string {
 	return b.path
+}
+
+// WithPathContext freezes the roots used to tokenize vendor paths during Parse.
+// Readers attach it in Snapshot, where the source record is still available.
+func (b Boundary) WithPathContext(paths PathContext) Boundary {
+	b.paths = paths
+	return b
+}
+
+// PathContext returns the tokenization roots frozen into the boundary.
+func (b Boundary) PathContext() PathContext {
+	return b.paths
 }
 
 // SnapshotJSONL opens path read-only and freezes the last complete JSONL record

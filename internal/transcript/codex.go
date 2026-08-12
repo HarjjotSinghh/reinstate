@@ -19,29 +19,38 @@ func init() {
 }
 
 // CodexReader converts Codex CLI rollout JSONL into canonical capsule events.
-type CodexReader struct{}
+type CodexReader struct {
+	// ResolveVersion overrides installed-version resolution. Nil resolves
+	// through internal/agentcheck; tests inject a fake so no unit test depends
+	// on the contributor's installed agents.
+	ResolveVersion VersionResolver
+}
 
 // Name returns the stable agent key "codex".
 func (r *CodexReader) Name() string { return sessionindex.AgentCodex }
 
-// Probe reports whether the record looks like a Codex rollout JSONL session.
-func (r *CodexReader) Probe(_ context.Context, rec sessionindex.Record) (Compatibility, error) {
+// Probe applies the shared reader compatibility contract in compat.go — the
+// same contract as the Claude reader, including the version rule that this
+// reader previously skipped entirely.
+func (r *CodexReader) Probe(ctx context.Context, rec sessionindex.Record) (Compatibility, error) {
+	return probeCompatibility(ctx, rec, codexRecognizedLayout(rec), r.ResolveVersion), nil
+}
+
+func codexRecognizedLayout(rec sessionindex.Record) bool {
 	if rec.Agent != "" && !strings.EqualFold(rec.Agent, sessionindex.AgentCodex) {
-		return CompatibilityUnsupported, nil
+		return false
 	}
 	path := strings.TrimSpace(rec.SourcePath)
 	if path == "" {
-		return CompatibilityUnsupported, nil
+		return false
 	}
-	if !strings.EqualFold(filepath.Ext(path), ".jsonl") {
-		return CompatibilityUnsupported, nil
-	}
-	return CompatibilitySupported, nil
+	return strings.EqualFold(filepath.Ext(path), ".jsonl")
 }
 
-// Snapshot freezes the last complete JSONL record boundary. Session identity
-// comes from the filename UUID when present (codexSessionIDFromFilename
-// semantics), never from in-file session_meta IDs, so forks stay addressable.
+// Snapshot freezes the last complete JSONL record boundary, together with the
+// roots Parse tokenizes vendor paths against. Session identity comes from the
+// filename UUID when present (codexSessionIDFromFilename semantics), never from
+// in-file session_meta IDs, so forks stay addressable.
 func (r *CodexReader) Snapshot(_ context.Context, rec sessionindex.Record) (Boundary, error) {
 	path := strings.TrimSpace(rec.SourcePath)
 	if path == "" {
@@ -54,7 +63,11 @@ func (r *CodexReader) Snapshot(_ context.Context, rec sessionindex.Record) (Boun
 	if sessionID == "" {
 		sessionID = strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
 	}
-	return SnapshotJSONL(path, sessionindex.AgentCodex, sessionID, MaxJSONLineBytes)
+	boundary, err := SnapshotJSONL(path, sessionindex.AgentCodex, sessionID, MaxJSONLineBytes)
+	if err != nil {
+		return Boundary{}, err
+	}
+	return boundary.WithPathContext(PathContextFor(rec)), nil
 }
 
 // Parse converts a frozen Codex rollout boundary into canonical events.
@@ -144,7 +157,7 @@ func (r *CodexReader) Parse(_ context.Context, b Boundary) ([]capsule.Event, Par
 			}
 		}
 
-		ev, ok, skippedUnknown := codexMapRecord(b.SessionID, line.lineNumber, line.byteOffset, line.event, payload, line.raw)
+		ev, ok, skippedUnknown := codexMapRecord(b.paths, b.SessionID, line.lineNumber, line.byteOffset, line.event, payload, line.raw)
 		if skippedUnknown {
 			report.UnknownRecords++
 		}
@@ -161,11 +174,17 @@ func (r *CodexReader) Parse(_ context.Context, b Boundary) ([]capsule.Event, Par
 	}
 
 	events = LinkToolResults(events)
+	for i := range events {
+		// Backstop for the path contract in paths.go. Codex content hashes
+		// digest the frozen vendor record, so they stay stable here.
+		b.paths.TokenizeBlocks(events[i].Blocks)
+	}
 	report.Events = len(events)
 	return events, report, nil
 }
 
 func codexMapRecord(
+	paths PathContext,
 	sessionID string,
 	lineNumber int,
 	byteOffset int64,
@@ -184,7 +203,7 @@ func codexMapRecord(
 	case "event_msg":
 		return codexMapEventMsg(src, payload, raw)
 	case "response_item":
-		return codexMapResponseItem(src, payload, raw)
+		return codexMapResponseItem(paths, src, payload, raw)
 	case "session_meta":
 		ev := baseEvent(src, raw)
 		ev.Actor = capsule.ActorHarness
@@ -253,7 +272,7 @@ func codexMapEventMsg(src capsule.SourcePointer, payload map[string]any, raw []b
 	}
 }
 
-func codexMapResponseItem(src capsule.SourcePointer, payload map[string]any, raw []byte) (capsule.Event, bool, bool) {
+func codexMapResponseItem(paths PathContext, src capsule.SourcePointer, payload map[string]any, raw []byte) (capsule.Event, bool, bool) {
 	payloadType := strings.ToLower(mapString(payload, "type"))
 	ev := baseEvent(src, raw)
 	ev.NativeType = "response_item/" + payloadType
@@ -300,6 +319,9 @@ func codexMapResponseItem(src capsule.SourcePointer, payload map[string]any, raw
 				args = string(rawArgs)
 			}
 		}
+		// Codex carries call arguments as a JSON document in a string; vendor
+		// paths live inside it (workdir, path, argv entries).
+		args = paths.TokenizeJSONText(args)
 		ev.Actor = capsule.ActorAssistant
 		ev.Kind = capsule.KindToolCall
 		ev.NativeName = name
@@ -333,6 +355,7 @@ func codexMapResponseItem(src capsule.SourcePointer, payload map[string]any, raw
 		if output == "" {
 			output = codexExtractTextContent(payload["output"])
 		}
+		output = paths.Tokenize(output)
 		ev.Actor = capsule.ActorTool
 		ev.Kind = capsule.KindToolResult
 		ev.LinkedCallID = callID

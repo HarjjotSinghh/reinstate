@@ -11,15 +11,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/HarjjotSinghh/reinstate/internal/adapter"
 	"github.com/HarjjotSinghh/reinstate/internal/capsule"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
 )
 
 const (
 	claudeAgentName           = "claude"
-	claudeMinVerifiedVersion  = "2.1.219"
-	claudeMaxVerifiedVersion  = "2.1.228"
 	claudeLayoutProjectsJSONL = "projects-jsonl"
 
 	reasonHarnessMeta           = "harness_meta_record"
@@ -41,26 +38,25 @@ func init() {
 // ClaudeReader converts Claude Code project JSONL transcripts into canonical
 // capsule events. It never writes vendor files and never reads a live
 // contributor ~/.claude tree — callers pass an indexed session record.
-type ClaudeReader struct{}
+type ClaudeReader struct {
+	// ResolveVersion overrides installed-version resolution. Nil resolves
+	// through internal/agentcheck; tests inject a fake so no unit test depends
+	// on the contributor's installed agents.
+	ResolveVersion VersionResolver
+}
 
 // Name returns the stable agent key "claude".
 func (r *ClaudeReader) Name() string { return claudeAgentName }
 
-// Probe reports layout/version support for a Claude session record.
-// Unrecognized layouts are UNSUPPORTED; recognizable layouts outside the
-// docs/compatibility.md range are UNTESTED.
-func (r *ClaudeReader) Probe(_ context.Context, rec sessionindex.Record) (Compatibility, error) {
-	if !claudeRecognizedLayout(rec.SourcePath) {
-		return CompatibilityUnsupported, nil
-	}
-	version := claudeVersionAt(rec)
-	if !adapter.StableVersionInRange(version, claudeMinVerifiedVersion, claudeMaxVerifiedVersion) {
-		return CompatibilityUntested, nil
-	}
-	return CompatibilitySupported, nil
+// Probe applies the shared reader compatibility contract in compat.go:
+// layout decides support, and a version is only consulted when the installed
+// agent can actually report one.
+func (r *ClaudeReader) Probe(ctx context.Context, rec sessionindex.Record) (Compatibility, error) {
+	return probeCompatibility(ctx, rec, claudeRecognizedLayout(rec.SourcePath), r.ResolveVersion), nil
 }
 
-// Snapshot freezes the last complete JSONL record boundary for the session.
+// Snapshot freezes the last complete JSONL record boundary for the session,
+// together with the roots Parse tokenizes vendor paths against.
 func (r *ClaudeReader) Snapshot(_ context.Context, rec sessionindex.Record) (Boundary, error) {
 	if rec.SourcePath == "" {
 		return Boundary{}, fmt.Errorf("transcript: claude snapshot requires source path")
@@ -69,7 +65,11 @@ func (r *ClaudeReader) Snapshot(_ context.Context, rec sessionindex.Record) (Bou
 	if sessionID == "" {
 		sessionID = strings.TrimSuffix(filepath.Base(rec.SourcePath), filepath.Ext(rec.SourcePath))
 	}
-	return SnapshotJSONL(rec.SourcePath, claudeAgentName, sessionID, 0)
+	boundary, err := SnapshotJSONL(rec.SourcePath, claudeAgentName, sessionID, 0)
+	if err != nil {
+		return Boundary{}, err
+	}
+	return boundary.WithPathContext(PathContextFor(rec)), nil
 }
 
 // Parse converts a frozen Claude boundary into canonical events.
@@ -108,6 +108,11 @@ func (r *ClaudeReader) Parse(_ context.Context, b Boundary) ([]capsule.Event, Pa
 
 	events = LinkToolResults(events)
 	for i := range events {
+		// Backstop for the path contract in paths.go: no structural value
+		// leaves the reader as an absolute path.
+		if b.paths.TokenizeBlocks(events[i].Blocks) {
+			events[i].ContentHash = hashClaudeContent(events[i])
+		}
 		report.ByKind[events[i].Kind]++
 	}
 	report.Events = len(events)
@@ -127,22 +132,6 @@ func claudeRecognizedLayout(path string) bool {
 		return false
 	}
 	return strings.Contains(lower, "/projects/")
-}
-
-func claudeVersionAt(rec sessionindex.Record) string {
-	root := sessionindex.AgentRoot(rec)
-	if root == "" {
-		return "unknown"
-	}
-	data, err := os.ReadFile(filepath.Join(root, "version"))
-	if err != nil {
-		return "unknown"
-	}
-	version := strings.TrimSpace(string(data))
-	if version == "" {
-		return "unknown"
-	}
-	return version
 }
 
 func parseClaudeRecord(
@@ -394,9 +383,12 @@ func emitClaudeBlocks(
 			ev.Reason = reasonToolUseNormalized
 			ev.NativeName = asString(block["name"])
 			ev.CallID = asString(block["id"])
+			// Tool inputs carry vendor paths (file_path, workdir, paths[]).
+			// Tokenize inside the decoded JSON so each value is judged alone.
+			tokenizedInput, _ := b.paths.TokenizeJSON(block["input"])
 			inputBlock := capsule.Block{
 				Type: capsule.BlockTypeToolInput,
-				Text: compactJSON(block["input"]),
+				Text: compactJSON(tokenizedInput),
 			}
 			inputBlock.Size = int64(len(inputBlock.Text))
 			if len(inputBlock.Text) > capsule.MaxTextBlockBytes {
@@ -418,7 +410,7 @@ func emitClaudeBlocks(
 			ev.LinkedCallID = firstNonEmpty(asString(block["tool_use_id"]), asString(block["toolUseId"]))
 			out := capsule.Block{
 				Type:    capsule.BlockTypeToolOutput,
-				Text:    claudeToolResultText(block["content"]),
+				Text:    b.paths.Tokenize(claudeToolResultText(block["content"])),
 				IsError: asBool(block["is_error"]) || asBool(block["isError"]),
 			}
 			out.Size = int64(len(out.Text))

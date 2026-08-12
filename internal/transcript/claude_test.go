@@ -297,40 +297,36 @@ func TestClaudeParseDeterministicIDsAndHashes(t *testing.T) {
 	}
 }
 
+// TestClaudeProbeVersionGate covers the shared contract in compat.go with an
+// injected resolver, so the result never depends on the contributor's installed
+// Claude Code. See compat_test.go for the resolution path itself.
 func TestClaudeProbeVersionGate(t *testing.T) {
 	t.Parallel()
-	r := &ClaudeReader{}
 	ctx := context.Background()
+	fixed := func(version string, known bool) VersionResolver {
+		return func(context.Context, sessionindex.Record) (string, bool) { return version, known }
+	}
 
 	supported := fixtureRecord(t, "compaction")
-	compat, err := r.Probe(ctx, supported)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if compat != CompatibilitySupported {
-		t.Fatalf("supported fixture probe = %q", compat)
+	for _, test := range []struct {
+		name     string
+		resolver VersionResolver
+		want     Compatibility
+	}{
+		{name: "in range", resolver: fixed("2.1.228", true), want: CompatibilitySupported},
+		{name: "outside range", resolver: fixed("2.1.229", true), want: CompatibilityUntested},
+		{name: "undeterminable", resolver: fixed("", false), want: CompatibilitySupported},
+	} {
+		compat, err := (&ClaudeReader{ResolveVersion: test.resolver}).Probe(ctx, supported)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if compat != test.want {
+			t.Fatalf("%s probe = %q, want %q", test.name, compat, test.want)
+		}
 	}
 
 	dir := t.TempDir()
-	projects := filepath.Join(dir, "projects", "fixture-project")
-	if err := os.MkdirAll(projects, 0o700); err != nil {
-		t.Fatal(err)
-	}
-	session := filepath.Join(projects, "session.jsonl")
-	if err := os.WriteFile(session, []byte(`{"type":"user","message":{"content":"x"}}`+"\n"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(dir, "version"), []byte("2.1.229\n"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	compat, err = r.Probe(ctx, sessionindex.Record{Agent: "claude", ID: "session", SourcePath: session})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if compat != CompatibilityUntested {
-		t.Fatalf("outside-range probe = %q, want UNTESTED", compat)
-	}
-
 	bad := filepath.Join(dir, "not-projects", "session.jsonl")
 	if err := os.MkdirAll(filepath.Dir(bad), 0o700); err != nil {
 		t.Fatal(err)
@@ -338,7 +334,8 @@ func TestClaudeProbeVersionGate(t *testing.T) {
 	if err := os.WriteFile(bad, []byte("{}\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	compat, err = r.Probe(ctx, sessionindex.Record{Agent: "claude", ID: "session", SourcePath: bad})
+	compat, err := (&ClaudeReader{ResolveVersion: fixed("2.1.228", true)}).Probe(ctx,
+		sessionindex.Record{Agent: "claude", ID: "session", SourcePath: bad})
 	if err != nil {
 		t.Fatal(err)
 	}

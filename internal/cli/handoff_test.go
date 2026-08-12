@@ -422,9 +422,10 @@ func handoffCLIFixture(t *testing.T) (string, string, []sessionindex.Source, str
 	if err := os.MkdirAll(filepath.Join(claudeRoot, "projects"), 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(claudeRoot, "version"), []byte("2.1.227\n"), 0o600); err != nil {
-		t.Fatal(err)
-	}
+	// A real Claude Code installation has no <root>/version file, so the
+	// destination adapter learns its version the way it does on a real host:
+	// by asking the executable. The fake keeps that hermetic.
+	fakeAgentBin(t, map[string]string{"claude": "2.1.227 (Claude Code)"})
 	transcriptPath := filepath.Join(workspace, "rollout-source-session.jsonl")
 	body := []byte("{\"timestamp\":\"2026-08-12T09:00:00Z\",\"type\":\"event_msg\",\"payload\":{\"type\":\"user_message\",\"message\":\"Continue the controlled task\"}}\n")
 	if err := os.WriteFile(transcriptPath, body, 0o600); err != nil {

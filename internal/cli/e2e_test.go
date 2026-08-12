@@ -55,6 +55,10 @@ func TestCLISyntheticSyncPath(t *testing.T) {
 	if err := os.MkdirAll(sourceClaudeRoot, 0o700); err != nil {
 		t.Fatal(err)
 	}
+	// Sync-adapter fixture only. The sync adapter fails closed on an unknown
+	// version because it writes into the vendor tree; this file keeps that
+	// contract hermetic here. Handoff source probing does not read it — see the
+	// shared reader contract in internal/transcript/compat.go.
 	if err := os.WriteFile(filepath.Join(userHome, ".claude", "version"), []byte("2.1.219\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}

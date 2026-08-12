@@ -214,6 +214,31 @@ func Inspect(ctx context.Context, agentName string, opts Options) Result {
 	return result
 }
 
+// InstalledVersion returns the agent's self-reported version using exactly the
+// mechanism Inspect uses: trusted executable resolution, an identity check
+// around a bounded `--version` probe, and the vendor-specific parser.
+//
+// ok is false whenever the version cannot be determined — the agent is not
+// installed, its executable is not on a trusted PATH, the session layout under
+// opts.Root is unrecognized, or `--version` output does not parse. That result
+// means "unknown", never "incompatible": callers decide whether missing
+// information should block, and read-only callers must not.
+func InstalledVersion(ctx context.Context, agentName string, opts Options) (string, bool) {
+	result := Inspect(ctx, agentName, opts)
+	version := strings.TrimSpace(result.Version)
+	return version, version != ""
+}
+
+// SupportedVersion reports whether version is inside the agent's verified range
+// as published in docs/compatibility.md. Unknown agents are never supported.
+func SupportedVersion(agentName, version string) bool {
+	definition, ok := definitions[strings.ToLower(strings.TrimSpace(agentName))]
+	if !ok {
+		return false
+	}
+	return definition.supported(strings.TrimSpace(version))
+}
+
 type definition struct {
 	executable      string
 	layout          string
