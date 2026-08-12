@@ -8,7 +8,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -359,17 +358,8 @@ func TestResumeWithProducesHandoffPlanAndNotice(t *testing.T) {
 		t.Fatalf("dry-run launched: %+v", runner.plans)
 	}
 
-	var direct, alias handoffPlanOutput
-	if err := json.Unmarshal([]byte(directOut), &direct); err != nil {
-		t.Fatalf("decode direct handoff: %v\n%s", err, directOut)
-	}
-	if err := json.Unmarshal([]byte(aliasOut), &alias); err != nil {
-		t.Fatalf("decode resume --with: %v\n%s", err, aliasOut)
-	}
-	normalizeHandoffPlanPaths(&direct)
-	normalizeHandoffPlanPaths(&alias)
-	if !reflect.DeepEqual(direct, alias) {
-		t.Fatalf("resume --with plan differs\ndirect: %+v\nalias:  %+v", direct, alias)
+	if directOut != aliasOut {
+		t.Fatalf("resume --with plan differs\ndirect: %s\nalias:  %s", directOut, aliasOut)
 	}
 }
 
@@ -377,8 +367,18 @@ func TestResumeWithForkConflictIsUsageError(t *testing.T) {
 	home, vendorHome, sources, _ := handoffCLIFixture(t)
 	stdout, stderr, code := runHandoffCLI(t, home, vendorHome, sources, nil,
 		"resume", "codex:source-session", "--with", "claude", "--fork")
-	if code != ExitUsage {
+	if code != ExitUsage || !strings.Contains(stderr, "mutually exclusive") {
 		t.Fatalf("resume --with --fork exit=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+}
+
+func TestResumeForkFlagUsesNativeFork(t *testing.T) {
+	workspace := t.TempDir()
+	runner := &recordingLaunchRunner{}
+	stdout, stderr, code := runLocalCLI(t, localTestSources(workspace), runner, "", false,
+		"resume", "claude:claude-one", "--fork")
+	if code != ExitOK || len(runner.plans) != 1 || runner.plans[0].Operation != sessionindex.OperationFork {
+		t.Fatalf("resume --fork exit=%d plans=%+v stdout=%q stderr=%q", code, runner.plans, stdout, stderr)
 	}
 }
 
@@ -411,12 +411,15 @@ func TestPickerHandoffIsExplicitAndRoutesToPipeline(t *testing.T) {
 	}
 }
 
-func normalizeHandoffPlanPaths(output *handoffPlanOutput) {
-	if len(output.Destination.Args) > 0 {
-		output.Destination.Args[len(output.Destination.Args)-1] = filepath.Base(output.Destination.Args[len(output.Destination.Args)-1])
+func TestPickerDefaultRemainsNativeResume(t *testing.T) {
+	workspace := t.TempDir()
+	runner := &recordingLaunchRunner{}
+	stdout, stderr, code := runLocalCLI(t, localTestSources(workspace), runner, "1\n", true)
+	if code != ExitOK || len(runner.plans) != 1 || runner.plans[0].Operation != sessionindex.OperationResume {
+		t.Fatalf("picker default exit=%d plans=%+v stdout=%q stderr=%q", code, runner.plans, stdout, stderr)
 	}
-	for index, path := range output.PlannedFiles {
-		output.PlannedFiles[index] = filepath.Base(path)
+	if strings.Contains(stderr, "Structured handoff") {
+		t.Fatalf("picker default entered handoff mode: %q", stderr)
 	}
 }
 

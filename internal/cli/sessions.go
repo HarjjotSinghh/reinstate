@@ -218,6 +218,7 @@ func newForkCmd(options localCommandOptions) *cobra.Command {
 func newNativeActionCmd(options localCommandOptions, operation string, allowHandoff bool) *cobra.Command {
 	var asJSON bool
 	var dryRun bool
+	var fork bool
 	var withAgent string
 	var allowedWarnings []string
 	cmd := &cobra.Command{
@@ -225,9 +226,16 @@ func newNativeActionCmd(options localCommandOptions, operation string, allowHand
 		Short: strings.ToUpper(operation[:1]) + operation[1:] + " a session through its native coding agent",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if strings.TrimSpace(withAgent) != "" && fork {
+				return NewExitError(ExitUsage, "--with and --fork are mutually exclusive")
+			}
 			if strings.TrimSpace(withAgent) != "" {
 				PrintHuman(cmd.ErrOrStderr(), "%s.", handoffHumanPrefix(withAgent))
 				return runHandoffAlias(cmd, args[0], withAgent, dryRun, asJSON, allowedWarnings)
+			}
+			action := operation
+			if fork {
+				action = sessionindex.OperationFork
 			}
 			if asJSON && !dryRun {
 				return NewExitError(ExitUsage, "--json requires --dry-run for native agent launches")
@@ -242,7 +250,7 @@ func newNativeActionCmd(options localCommandOptions, operation string, allowHand
 				return localResolveError(err)
 			}
 			return launchLocalRecord(
-				cmd, options, index, record, fresh, operation, dryRun, asJSON,
+				cmd, options, index, record, fresh, action, dryRun, asJSON,
 				allowedWarnings, nil,
 			)
 		},
@@ -251,6 +259,7 @@ func newNativeActionCmd(options localCommandOptions, operation string, allowHand
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "print the native launch plan without starting the agent")
 	if allowHandoff {
 		cmd.Flags().StringVar(&withAgent, "with", "", "continue the same task through a structured handoff to claude|codex")
+		cmd.Flags().BoolVar(&fork, "fork", false, "fork through the native agent instead of resuming")
 	}
 	cmd.Flags().StringArrayVar(
 		&allowedWarnings,
