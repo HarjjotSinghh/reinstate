@@ -17,6 +17,7 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/capsule"
 	"github.com/HarjjotSinghh/reinstate/internal/exitcode"
 	"github.com/HarjjotSinghh/reinstate/internal/preflight"
+	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
 	"github.com/HarjjotSinghh/reinstate/internal/transcript"
 	"github.com/HarjjotSinghh/reinstate/internal/workspace"
@@ -432,6 +433,12 @@ func adversarialPipeline(t *testing.T, fixtureName string) (sessionindex.Record,
 		Verifier: securityVerifier{report: report}, Reader: &transcript.ClaudeReader{}, Target: target,
 		ReinstateHome: filepath.Join(t.TempDir(), "reinstate-home"),
 		AllowWarnings: []string{"handoff.capability.attachment.support"},
+		ResolveSource: func(_ context.Context, input sessionindex.Record) (sessionindex.Record, bool, error) {
+			return input, true, nil
+		},
+		SessionBusy: func(context.Context, string, processcheck.Target) (bool, bool, error) {
+			return false, true, nil
+		},
 	}
 	return rec, opts, target
 }
