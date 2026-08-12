@@ -16,6 +16,14 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.4.0-rc.2': {
+    rangeChange:
+      'Widened the inclusive Claude Code range from 2.1.219–2.1.228 to 2.1.219–2.1.229. The Codex CLI range is unchanged at 0.133.0–0.147.0.',
+    compatibilityChange:
+      'Second Phase 4 candidate. v0.4.0-rc.1 physical acceptance FAILED, and this candidate fixes what it found: Claude-sourced handoffs no longer depend on a version file real installs never create, reader-emitted paths are tokenized before capsule validation, live changed files reach the destination, a timed-out version probe is classified UNTESTED instead of accepted, and capsule validation checks path-typed fields instead of rejecting prose that starts with a slash. The 2.1.229 patch is source-tested only, and dual-platform tagged-artifact acceptance is pending; this candidate does not authorize stable v0.4.0.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.4.0-rc.2/internal/handoff/projection.go',
+  },
   'v0.4.0-rc.1': {
     rangeChange:
       'Widened the inclusive Claude Code range from 2.1.219–2.1.227 to 2.1.219–2.1.228. The Codex CLI range is unchanged at 0.133.0–0.147.0.',

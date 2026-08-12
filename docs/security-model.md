@@ -167,7 +167,7 @@ stale selected-source metadata, missing workspace/executable, unverified
 agent version/layout, and verifier failure are blockers and cannot be
 acknowledged away.
 
-## Structured-handoff boundary (`v0.4.0-rc.1`)
+## Structured-handoff boundary (`v0.4.0-rc.2`)
 
 A structured handoff continues the same task in a new Claude Code or Codex
 session. Claude Code, Codex, Gemini CLI, OpenCode, and Grok Build are supported

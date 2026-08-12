@@ -112,10 +112,22 @@ still requires a separate reviewed stable decision and fresh tagged-artifact
 validation on the same two supported platforms. Intel macOS and WSL2 remain
 unsupported/unverified optional evidence and are never stable blockers.
 
-### v0.4.0-rc.1 candidate gate
+### v0.4.0-rc.1 candidate evidence
+
+The `v0.4.0-rc.1` dual-platform run **failed**. Claude Code was unusable as a
+handoff source on every real installation (a source probe required an
+`<agent-root>/version` file real installs never create, so Claude-sourced
+handoffs exited `5`), reader-emitted absolute paths were rejected by capsule
+validation, `changed_files` was never populated, a timed-out version probe was
+accepted as an absent agent, and any message beginning with a slash aborted the
+handoff. One run also omitted `GROK_HOME` and indexed the operator's real
+`~/.grok` tree, so that run was discarded and restarted. RC1 does **not**
+authorize stable `v0.4.0`, and the corrective fixes land in `v0.4.0-rc.2`.
+
+### v0.4.0-rc.2 candidate gate
 
 The Phase 4 candidate uses the committed
-[`v0.4.0-rc.1` dispatch](docs/testing/v0.4.0-rc.1-agent-verification-prompts.md)
+[`v0.4.0-rc.2` dispatch](docs/testing/v0.4.0-rc.2-agent-verification-prompts.md)
 and [Phase 4 acceptance contract](docs/testing/phase-4-cross-agent-handoff-acceptance.md).
 Start its two independent device runs only after the signed tag is published,
 all release artifacts verify, and both live installer routes pin that exact
@@ -137,7 +149,7 @@ window both hosts moved past the ceiling within a day (macOS `2.1.225` ->
 `2.1.228`, Windows `2.1.228` -> `2.1.229`). Re-check both hosts' installed
 versions immediately before tagging, not only when planning the candidate.
 
-`v0.4.0-rc.1` publication means ready for tagged-artifact acceptance. It is not
+`v0.4.0-rc.2` publication means ready for tagged-artifact acceptance. It is not
 evidence that the matrix passed, does not authorize stable `v0.4.0`, and does
 not change the current stable release from `v0.3.0`.
 

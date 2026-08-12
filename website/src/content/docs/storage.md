@@ -6,7 +6,7 @@ order: 11
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.4.0-rc.1"
+version: "v0.4.0-rc.2"
 updatedAt: 2026-08-01
 tags: ["storage", "s3", "cloudflare-r2", "encryption", "least-privilege"]
 targetQuery: "Reinstate session storage configuration"
