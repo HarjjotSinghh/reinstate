@@ -19,7 +19,7 @@ import (
 const (
 	claudeAgentName           = "claude"
 	claudeMinVerifiedVersion  = "2.1.219"
-	claudeMaxVerifiedVersion  = "2.1.227"
+	claudeMaxVerifiedVersion  = "2.1.228"
 	claudeLayoutProjectsJSONL = "projects-jsonl"
 
 	reasonHarnessMeta           = "harness_meta_record"

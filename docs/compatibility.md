@@ -102,14 +102,18 @@ Every Phase 1 sync-adapter discovery result reports one of:
 
 The Phase 3 source compatibility policy keeps these inclusive agent version
 ranges until a later release widens them with fresh device evidence.
-Stable `v0.3.0` widens the fail-closed ranges so current primary-host
-installs (Claude Code through `2.1.227`, Codex CLI through `0.147.0`) are
-`SUPPORTED` after dual-platform tagged-artifact acceptance; versions above the
-maxima remain `UNTESTED` until a later matrix expands them again:
+Stable `v0.3.0` widened the fail-closed ranges so its primary-host installs
+(Claude Code through `2.1.227`, Codex CLI through `0.147.0`) were `SUPPORTED`
+after dual-platform tagged-artifact acceptance. The unreleased `v0.4.0-rc.1`
+candidate widens the Claude Code ceiling one patch further, through `2.1.228`,
+so the Phase 4 acceptance hosts are not blocked by their installed agent;
+`2.1.228` is covered by the range but has not yet completed dual-platform
+tagged-artifact acceptance. Versions above the maxima remain `UNTESTED` until a
+later matrix expands them again:
 
-| Agent | Inclusive source-tested range (v0.3.0) |
+| Agent | Inclusive source-tested range (v0.4.0-rc.1) |
 | ----- | ------------------- |
-| Claude Code | `2.1.219`–`2.1.227` |
+| Claude Code | `2.1.219`–`2.1.228` |
 | OpenAI Codex CLI | `0.133.0`–`0.147.0` |
 
 Stable `v0.2.0` still documents the older Phase 2 physical ceiling (Claude

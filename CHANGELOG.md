@@ -108,7 +108,13 @@ again on the published stable tag (`stable_v0.3.0_authorized=true`).
 
 ### Changed
 
-- Claude Code fail-closed range through `2.1.227`; Codex CLI through `0.147.0`.
+- Widen the fail-closed Claude Code compatibility range through `2.1.228` (was
+  `2.1.227`) so both `v0.4.0-rc.1` physical acceptance hosts run an in-range
+  Claude Code install instead of exiting `5` on every Claude row. The Codex CLI
+  range is unchanged at `0.133.0`–`0.147.0`. As with `v0.3.0-rc.6`, the range
+  moves before the evidence: `2.1.228` is now covered by the fail-closed range
+  but has not completed dual-platform tagged-artifact acceptance, which the
+  `v0.4.0-rc.1` run supplies. Versions above `2.1.228` remain `UNTESTED`.
 
 
 ## [0.3.0-rc.7] - 2026-08-11

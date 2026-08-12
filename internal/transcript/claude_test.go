@@ -320,7 +320,7 @@ func TestClaudeProbeVersionGate(t *testing.T) {
 	if err := os.WriteFile(session, []byte(`{"type":"user","message":{"content":"x"}}`+"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "version"), []byte("2.1.228\n"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "version"), []byte("2.1.229\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	compat, err = r.Probe(ctx, sessionindex.Record{Agent: "claude", ID: "session", SourcePath: session})

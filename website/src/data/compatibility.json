@@ -14,12 +14,12 @@
       "integrationPath": "/integrations/claude-code",
       "status": "primary-release-target",
       "minimumTestedVersion": "2.1.219",
-      "maximumTestedVersion": "2.1.227",
+      "maximumTestedVersion": "2.1.228",
       "resumeMode": "Claude Code to Claude Code",
       "evidenceLevel": "source checks, deterministic synthetic fixtures, and dual-platform tagged-artifact acceptance",
       "lastTested": "2026-08-11",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-08-11-macos-phase3-V030.md",
-      "notes": "Versions outside the inclusive range, including prereleases, fail closed as untested. Stable v0.3.0 accepts Claude Code through 2.1.227 after dual-platform tagged-artifact acceptance PASS."
+      "notes": "Versions outside the inclusive range, including prereleases, fail closed as untested. Stable v0.3.0 accepts Claude Code through 2.1.227 after dual-platform tagged-artifact acceptance PASS. The unreleased v0.4.0-rc.1 candidate covers 2.1.228 as well; that one patch is source-tested only and its dual-platform tagged-artifact acceptance is pending."
     },
     {
       "id": "codex",
