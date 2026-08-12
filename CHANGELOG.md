@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `rein handoff` for explicit structured handoffs into a new Claude Code or
+  Codex session, including deterministic `--dry-run`, launch-free
+  materialization, `rein resume --with`, picker handoff actions, and local
+  `handoff list`, `inspect`, and `export` history.
+- A model-free handoff pipeline and canonical continuity capsule for Claude
+  Code, Codex CLI, Gemini CLI, OpenCode, and Grok Build sources. Gemini,
+  OpenCode, and Grok are source-only in `v0.4.0-rc.1`; destination launch is
+  limited to Claude Code and Codex through their documented CLIs.
+- A private, local-only `$REINSTATE_HOME/handoffs/` artifact store with
+  append-only lineage, owner-only protection, and a hard sync exclusion. The
+  handoff path never writes vendor-internal session files.
+- Phase 4 adversarial and golden coverage for inert transcript evidence,
+  source-instruction exclusion, delimiter escaping, bounded reads, secret
+  redaction, capsule determinism, output parity, and 200-turn projection
+  ceilings.
 - Claude Code handoff destination (`internal/handoff.ClaudeTarget`): ADR 0003
   argv `claude --session-id <uuid-v4> "<bootstrap>"` in the verified workspace,
   pinned-ID verification under this device's project key, and R5 fail-closed

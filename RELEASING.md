@@ -30,13 +30,14 @@ The maintainer-approved `v0.2.0` reconciliation in
 `docs/testing/results/2026-08-02-macos-phase2-V020RC2.md` permits stable
 publication with verified support limited to Apple Silicon macOS
 (`darwin/arm64`) and native Windows x64 (`windows/amd64`). Those remain the
-supported mandatory platforms for Phase 3 RC and stable acceptance.
+supported mandatory platforms for Phase 3 and Phase 4 candidate and stable
+acceptance.
 
 Intel macOS and Linux/WSL2 artifacts are unsupported/unverified optional
 evidence: they may be built, checksummed, SBOM-covered, and attested, but their
-absence or failure does not block RC1 or stable `v0.3.0`. Never describe them as
-physically certified or supported. Issues #97 and #98 track that optional
-physical evidence.
+absence or failure does not block a candidate or stable promotion. Never
+describe them as physically certified or supported. Issues #97 and #98 track
+that optional physical evidence.
 
 ### v0.3.0-rc.1 candidate evidence
 
@@ -110,6 +111,23 @@ from RC2. Corrective product fixes land before `v0.3.0-rc.3`. Stable promotion
 still requires a separate reviewed stable decision and fresh tagged-artifact
 validation on the same two supported platforms. Intel macOS and WSL2 remain
 unsupported/unverified optional evidence and are never stable blockers.
+
+### v0.4.0-rc.1 candidate gate
+
+The Phase 4 candidate uses the committed
+[`v0.4.0-rc.1` dispatch](docs/testing/v0.4.0-rc.1-agent-verification-prompts.md)
+and [Phase 4 acceptance contract](docs/testing/phase-4-cross-agent-handoff-acceptance.md).
+Start its two independent device runs only after the signed tag is published,
+all release artifacts verify, and both live installer routes pin that exact
+candidate. Required Claude ↔ Codex structured handoff, fidelity, workspace,
+security, CLI, and performance rows must all pass on Apple Silicon macOS and
+native Windows x64. Gemini CLI, OpenCode, and Grok Build remain optional
+source-only rows and may be `NOT TESTED` only when genuinely absent; do not
+install them solely for acceptance.
+
+`v0.4.0-rc.1` publication means ready for tagged-artifact acceptance. It is not
+evidence that the matrix passed, does not authorize stable `v0.4.0`, and does
+not change the current stable release from `v0.3.0`.
 
 ## Steps
 
@@ -222,15 +240,15 @@ that verified deployment, and verifies both live routes again. Never run
 `vercel --prod` directly for a release.
 
 For a release candidate, start its committed candidate-specific acceptance
-dispatch only after both live routes install the new exact version. For
-`v0.3.0-rc.6`, Apple Silicon macOS and native Windows x64 own the mandatory
-two-device matrix; provision Windows per
+dispatch only after both live routes install the new exact version. Apple
+Silicon macOS and native Windows x64 own the mandatory two-device matrix;
+provision Windows per
 [windows-acceptance-host.md](docs/testing/windows-acceptance-host.md) before
-product rows. Passing those two reports means only that RC5 passed
-tagged-artifact acceptance. Stable `v0.3.0` still requires a separate promotion
-decision and fresh/reconciled tagged-artifact results from those two supported
-platforms. Native macOS amd64 and WSL2 amd64 are unsupported/unverified optional
-evidence and do not block RC5 or stable `v0.3.0`.
+product rows. A passing candidate matrix certifies only that exact tagged
+candidate. Stable promotion remains a separate reviewed decision with fresh
+tagged-artifact evidence on both supported platforms. Native macOS amd64 and
+WSL2 amd64 are unsupported/unverified optional evidence and do not block a
+candidate or stable promotion.
 
 ### 5. Publish website-only changes
 
