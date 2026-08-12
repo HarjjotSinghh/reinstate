@@ -129,3 +129,20 @@ macOS source benchmark. Issue #96 is only physically resolved for the release
 line when the installed RC artifact completes the fixed normal and 1,000-record
 cold/warm matrix on Apple Silicon and native Windows without a timeout, an
 unbounded-growth signal, or a comparable same-host regression.
+
+## Phase 4 structured-handoff development ceiling
+
+The deterministic 200-turn Claude fixture must complete parse, capsule
+construction and canonical encoding, and balanced projection rendering within
+an absolute **2,000 ms** wall-clock ceiling. The balanced projection is also
+bounded to **98,304 bytes**. The checked test is:
+
+```bash
+GOTOOLCHAIN=go1.25.12 go test ./internal/handoff \
+  -run TestLongHistoryParseCapsuleProjectionUnderCeiling -count=1 -v
+```
+
+The initial development result on Apple M4 Pro `darwin/arm64` with Go 1.25.12
+was **9.9 ms** and a **46,541-byte** projection on 2026-08-12. This local
+source result is not a native-Windows or installed-candidate claim; candidate
+dispatches must record absolute milliseconds on both supported platforms.
