@@ -3,6 +3,7 @@ package capsule
 import (
 	"bytes"
 	"math/rand"
+	"strings"
 	"testing"
 	"time"
 )
@@ -71,9 +72,14 @@ func TestComputeIDFixedPoint(t *testing.T) {
 		t.Fatalf("ComputeID is not a fixed point: %q vs %q", id, again)
 	}
 
-	// Capsule with the ID set must still hash to the same ID when cleared.
+	// Self-referential and post-render derived fields are outside the identity
+	// preimage, so assigning them preserves the fixed point.
 	c.Identity.ID = id
 	c.Identity.LineageRoot = id
+	c.Projection.EstimatedBytes = 1234
+	c.Projection.EstimatedTokens = 309
+	c.Projection.BootstrapSHA256 = strings.Repeat("a", 64)
+	c.Projection.MarkdownSHA256 = strings.Repeat("b", 64)
 	rooted, err := ComputeID(c)
 	if err != nil {
 		t.Fatalf("ComputeID with lineage: %v", err)
@@ -103,7 +109,7 @@ func TestComputeIDChangesWhenFieldChanges(t *testing.T) {
 	}
 	mutations := []mutation{
 		{"schema", func(c *Capsule) { c.Schema = Schema + "-x" }},
-		{"lineage_root", func(c *Capsule) { c.Identity.LineageRoot = "other" }},
+		{"ancestor_lineage_root", func(c *Capsule) { c.Identity.LineageRoot = "other" }},
 		{"parent.agent", func(c *Capsule) { c.Identity.Parent.Agent = "codex" }},
 		{"raw_source.session_id", func(c *Capsule) { c.RawSource.SessionID = "other-session" }},
 		{"task.goal", func(c *Capsule) { c.Task.Goal.Text = "other goal" }},
@@ -119,6 +125,8 @@ func TestComputeIDChangesWhenFieldChanges(t *testing.T) {
 		{"security.warning", func(c *Capsule) { c.Security.DestinationWarning = "grok_source_upload_history" }},
 		{"fidelity.overall", func(c *Capsule) { c.Fidelity.Overall = PortabilityReferenced }},
 		{"projection.policy", func(c *Capsule) { c.Projection.Policy = "full" }},
+		{"projection.included_event_ids", func(c *Capsule) { c.Projection.IncludedEventIDs = []string{"other"} }},
+		{"projection.sidecar_ref", func(c *Capsule) { c.Projection.SidecarRef = "sidecar/events.jsonl" }},
 		{"event.portability", func(c *Capsule) {
 			c.Conversation.Events[0].Portability = PortabilityNormalized
 			c.Conversation.Events[0].Reason = "normalized_for_test"
@@ -137,6 +145,43 @@ func TestComputeIDChangesWhenFieldChanges(t *testing.T) {
 			}
 			if id == baseID {
 				t.Fatalf("ComputeID unchanged after mutating %s", m.name)
+			}
+		})
+	}
+}
+
+func TestComputeIDExcludesOnlySelfAndRenderedArtifactFields(t *testing.T) {
+	t.Parallel()
+
+	base := sampleCapsule()
+	want, err := ComputeID(base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	excluded := []struct {
+		name string
+		edit func(*Capsule)
+	}{
+		{"identity.id", func(c *Capsule) { c.Identity.ID = "other" }},
+		{"identity.self_lineage_root", func(c *Capsule) {
+			c.Identity.ID = "self"
+			c.Identity.LineageRoot = "self"
+		}},
+		{"projection.estimated_bytes", func(c *Capsule) { c.Projection.EstimatedBytes++ }},
+		{"projection.estimated_tokens", func(c *Capsule) { c.Projection.EstimatedTokens++ }},
+		{"projection.bootstrap_sha256", func(c *Capsule) { c.Projection.BootstrapSHA256 = "other" }},
+		{"projection.markdown_sha256", func(c *Capsule) { c.Projection.MarkdownSHA256 = "other" }},
+	}
+	for _, tt := range excluded {
+		t.Run(tt.name, func(t *testing.T) {
+			c := sampleCapsule()
+			tt.edit(&c)
+			got, err := ComputeID(c)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != want {
+				t.Fatalf("derived field changed ID: got %q, want %q", got, want)
 			}
 		})
 	}

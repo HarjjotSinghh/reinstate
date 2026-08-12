@@ -2,7 +2,7 @@ package handoff
 
 import (
 	"context"
-	"crypto/rand"
+	"crypto/sha256"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -19,16 +19,10 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
 )
 
-const (
-	claudeTargetName = "claude"
-	// claudeSessionIDAttempts is how many crypto/rand UUIDs Plan may try before
-	// refusing (R5). Vendor collision-on-reuse behavior is unpublished; never
-	// guess silent overwrite.
-	claudeSessionIDAttempts = 8
-)
+const claudeTargetName = "claude"
 
-// ErrClaudeSessionIDCollision means Plan could not allocate a UUID that is
-// absent from the indexed Claude sessions after claudeSessionIDAttempts tries.
+// ErrClaudeSessionIDCollision means the capsule-derived destination UUID is
+// already present in the indexed Claude sessions.
 var ErrClaudeSessionIDCollision = errors.New("handoff: Claude --session-id collided with indexed sessions; refuse rather than overwrite")
 
 // ClaudeSessionExists reports whether a Claude session ID is already present in
@@ -49,7 +43,7 @@ type ClaudeTarget struct {
 	// When nil, Plan does not treat any UUID as colliding (callers must wire
 	// the index before production Plan).
 	SessionExists ClaudeSessionExists
-	// NewSessionID generates a UUID v4. Nil uses crypto/rand.
+	// NewSessionID overrides deterministic capsule-derived UUID generation in tests.
 	NewSessionID func() (string, error)
 	// Bootstrap builds the argv prompt. Nil uses a bounded stub; WP-18 replaces
 	// this with RenderBootstrap when wired by the CLI.
@@ -85,7 +79,7 @@ func (t *ClaudeTarget) Compatible(ctx context.Context) (adapter.Compatibility, e
 	return compat, err
 }
 
-// Plan allocates a non-colliding UUID v4 and builds the ADR 0003 argv.
+// Plan derives a non-colliding UUID v4 and builds the ADR 0003 argv.
 func (t *ClaudeTarget) Plan(c capsule.Capsule, policy Policy) (DestinationPlan, capsule.Fidelity, error) {
 	workspace := strings.TrimSpace(c.Workspace.Path)
 	if workspace == "" {
@@ -103,7 +97,7 @@ func (t *ClaudeTarget) Plan(c capsule.Capsule, policy Policy) (DestinationPlan, 
 		bootstrap = append([]byte(nil), bootstrap[:BootstrapMaxBytes]...)
 	}
 
-	sessionID, err := t.allocateSessionID(context.Background())
+	sessionID, err := t.allocateSessionID(context.Background(), c)
 	if err != nil {
 		return DestinationPlan{}, capsule.Fidelity{}, err
 	}
@@ -200,29 +194,26 @@ func (t *ClaudeTarget) renderBootstrap(c capsule.Capsule, policy Policy) ([]byte
 	return []byte(msg), nil
 }
 
-func (t *ClaudeTarget) allocateSessionID(ctx context.Context) (string, error) {
-	newID := newClaudeSessionID
+func (t *ClaudeTarget) allocateSessionID(ctx context.Context, c capsule.Capsule) (string, error) {
+	id, err := claudeSessionID(c)
 	if t != nil && t.NewSessionID != nil {
-		newID = t.NewSessionID
+		id, err = t.NewSessionID()
 	}
-	for attempt := 0; attempt < claudeSessionIDAttempts; attempt++ {
-		id, err := newID()
-		if err != nil {
-			return "", fmt.Errorf("handoff: generate Claude session id: %w", err)
-		}
-		id = strings.TrimSpace(id)
-		if id == "" {
-			return "", errors.New("handoff: generated Claude session id is empty")
-		}
-		exists, err := t.sessionExists(ctx, id)
-		if err != nil {
-			return "", err
-		}
-		if !exists {
-			return id, nil
-		}
+	if err != nil {
+		return "", fmt.Errorf("handoff: generate Claude session id: %w", err)
 	}
-	return "", fmt.Errorf("%w after %d attempts (R5)", ErrClaudeSessionIDCollision, claudeSessionIDAttempts)
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return "", errors.New("handoff: generated Claude session id is empty")
+	}
+	exists, err := t.sessionExists(ctx, id)
+	if err != nil {
+		return "", err
+	}
+	if exists {
+		return "", fmt.Errorf("%w (R5)", ErrClaudeSessionIDCollision)
+	}
+	return id, nil
 }
 
 func (t *ClaudeTarget) sessionExists(ctx context.Context, sessionID string) (bool, error) {
@@ -247,16 +238,22 @@ func (t *ClaudeTarget) claudeRoot() (string, error) {
 	return "", nil
 }
 
-// newClaudeSessionID returns a UUID v4 from crypto/rand.
-func newClaudeSessionID() (string, error) {
-	var b [16]byte
-	if _, err := rand.Read(b[:]); err != nil {
-		return "", err
+// claudeSessionID returns a deterministic UUIDv4 derived from the capsule
+// content ID. Separate dry-run and execute planning therefore use exact argv.
+func claudeSessionID(c capsule.Capsule) (string, error) {
+	id := strings.TrimSpace(c.Identity.ID)
+	if id == "" {
+		var err error
+		id, err = capsule.ComputeID(c)
+		if err != nil {
+			return "", err
+		}
 	}
+	b := sha256.Sum256([]byte("reinstate:claude-session:" + id))
 	b[6] = (b[6] & 0x0f) | 0x40 // version 4
 	b[8] = (b[8] & 0x3f) | 0x80 // variant 10
 	var node uint64
-	for _, v := range b[10:] {
+	for _, v := range b[10:16] {
 		node = node<<8 | uint64(v)
 	}
 	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x",

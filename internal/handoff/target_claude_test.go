@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -88,48 +89,31 @@ func TestClaudeTargetPlanArgvExact(t *testing.T) {
 	}
 }
 
-func TestClaudeTargetPlanRegeneratesThenRefusesCollision(t *testing.T) {
+func TestClaudeTargetPlanDeterministicAndRefusesCollision(t *testing.T) {
 	t.Parallel()
 
 	workspace := t.TempDir()
-	calls := 0
-	ids := []string{
-		"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-		"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
-	}
+	c := claudeTestCapsule(workspace)
 	target := &ClaudeTarget{
-		NewSessionID: func() (string, error) {
-			if calls < len(ids) {
-				id := ids[calls]
-				calls++
-				return id, nil
-			}
-			calls++
-			return "cccccccc-cccc-4ccc-8ccc-cccccccccccc", nil
-		},
-		SessionExists: func(_ context.Context, id string) (bool, error) {
-			return id == ids[0], nil
-		},
+		SessionExists: func(context.Context, string) (bool, error) { return false, nil },
 		Bootstrap: func(capsule.Capsule, Policy) ([]byte, error) {
 			return []byte("ok"), nil
 		},
 	}
 
-	plan, _, err := target.Plan(claudeTestCapsule(workspace), PolicyCheckpoint)
+	first, _, err := target.Plan(c, PolicyCheckpoint)
 	if err != nil {
-		t.Fatalf("Plan after one collision: %v", err)
+		t.Fatal(err)
 	}
-	if plan.SessionID != ids[1] {
-		t.Fatalf("SessionID = %q, want regenerated %q", plan.SessionID, ids[1])
+	second, _, err := target.Plan(c, PolicyCheckpoint)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if calls != 2 {
-		t.Fatalf("NewSessionID calls = %d, want 2", calls)
+	if first.SessionID != second.SessionID || !reflect.DeepEqual(first.Args, second.Args) {
+		t.Fatalf("separate plans differ: first=%+v second=%+v", first, second)
 	}
 
-	always := &ClaudeTarget{
-		NewSessionID: func() (string, error) {
-			return "dddddddd-dddd-4ddd-8ddd-dddddddddddd", nil
-		},
+	colliding := &ClaudeTarget{
 		SessionExists: func(context.Context, string) (bool, error) {
 			return true, nil
 		},
@@ -137,7 +121,7 @@ func TestClaudeTargetPlanRegeneratesThenRefusesCollision(t *testing.T) {
 			return []byte("ok"), nil
 		},
 	}
-	_, _, err = always.Plan(claudeTestCapsule(workspace), PolicyCheckpoint)
+	_, _, err = colliding.Plan(c, PolicyCheckpoint)
 	if !errors.Is(err, ErrClaudeSessionIDCollision) {
 		t.Fatalf("Plan error = %v, want %v", err, ErrClaudeSessionIDCollision)
 	}
@@ -272,12 +256,17 @@ func TestClaudeTargetMaterializeNoVendorWrites(t *testing.T) {
 	}
 }
 
-func TestNewClaudeSessionIDIsUUIDv4(t *testing.T) {
+func TestClaudeSessionIDIsDeterministicUUIDv4(t *testing.T) {
 	t.Parallel()
 
-	id, err := newClaudeSessionID()
+	c := claudeTestCapsule(t.TempDir())
+	id, err := claudeSessionID(c)
 	if err != nil {
 		t.Fatal(err)
+	}
+	again, err := claudeSessionID(c)
+	if err != nil || again != id {
+		t.Fatalf("deterministic ID = %q, %v; want %q", again, err, id)
 	}
 	parts := strings.Split(id, "-")
 	if len(parts) != 5 || len(parts[0]) != 8 || len(parts[1]) != 4 || len(parts[2]) != 4 || len(parts[3]) != 4 || len(parts[4]) != 12 {

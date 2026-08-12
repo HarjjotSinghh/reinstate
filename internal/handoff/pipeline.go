@@ -81,7 +81,7 @@ type Options struct {
 	Target HandoffTarget
 	// SessionExists wires Claude UUID collision checks (production index).
 	SessionExists ClaudeSessionExists
-	// NewSessionID overrides Claude UUID generation (tests / determinism).
+	// NewSessionID overrides Claude deterministic UUID generation in tests.
 	NewSessionID func() (string, error)
 	// Now overrides time.Now for lineage timestamps (tests).
 	Now func() time.Time
@@ -161,7 +161,14 @@ func Plan(ctx context.Context, rec sessionindex.Record, opts Options) (PlanResul
 	if opts.ResolveSource != nil {
 		resolved, fresh, err := opts.ResolveSource(ctx, rec)
 		if err != nil {
-			return PlanResult{}, pipelineWrap(exitcode.Runtime, fmt.Errorf("handoff: resolve source: %w", err))
+			code := exitcode.Runtime
+			switch {
+			case errors.Is(err, sessionindex.ErrAmbiguous):
+				code = exitcode.Conflict
+			case errors.Is(err, sessionindex.ErrNotFound):
+				code = exitcode.Usage
+			}
+			return PlanResult{}, pipelineWrap(code, fmt.Errorf("handoff: resolve source: %w", err))
 		}
 		if !fresh {
 			return PlanResult{}, pipelineErrorf(exitcode.Compatibility, "%w: source session index is not fresh", ErrCompatibility)

@@ -232,6 +232,26 @@ func TestPlanRefreshesAndResolvesSourceFirst(t *testing.T) {
 	}
 	_, err = Plan(context.Background(), rec, opts)
 	assertPipelineCode(t, err, exitcode.Compatibility)
+
+	resolverErrors := []struct {
+		name string
+		err  error
+		code int
+	}{
+		{"ambiguous", sessionindex.ErrAmbiguous, exitcode.Conflict},
+		{"not found", sessionindex.ErrNotFound, exitcode.Usage},
+		{"runtime", errors.New("scan failed"), exitcode.Runtime},
+	}
+	for _, tt := range resolverErrors {
+		t.Run(tt.name, func(t *testing.T) {
+			copy := opts
+			copy.ResolveSource = func(context.Context, sessionindex.Record) (sessionindex.Record, bool, error) {
+				return sessionindex.Record{}, false, tt.err
+			}
+			_, err := Plan(context.Background(), rec, copy)
+			assertPipelineCode(t, err, tt.code)
+		})
+	}
 }
 
 func TestPlanRejectsInvalidOptionsBeforeSideEffects(t *testing.T) {
@@ -345,7 +365,32 @@ func TestPlanCapsuleContentIDContract(t *testing.T) {
 		t.Fatal(err)
 	}
 	if computed != plan.Capsule.Identity.ID {
-		t.Skipf("blocked by capsule identity contract: ComputeID(final capsule)=%s, stored ID=%s", computed, plan.Capsule.Identity.ID)
+		t.Fatalf("ComputeID(final capsule)=%s, stored ID=%s", computed, plan.Capsule.Identity.ID)
+	}
+}
+
+func TestClaudePipelineSeparatePlansHaveByteIdenticalArgv(t *testing.T) {
+	rec, _, _, _, opts := pipelineFixture(t)
+	target := &ClaudeTarget{
+		SessionExists: func(context.Context, string) (bool, error) { return false, nil },
+		Bootstrap: func(c capsule.Capsule, _ Policy) ([]byte, error) {
+			return RenderBootstrap(c, permanentHandoffDir(opts.ReinstateHome, c.Identity.ID))
+		},
+	}
+	opts.Target = target
+	first, err := Plan(context.Background(), rec, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(first.TempDir) })
+	second, err := Plan(context.Background(), rec, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(second.TempDir) })
+	if !reflect.DeepEqual(first.Destination.Args, second.Destination.Args) ||
+		!bytes.Equal(first.Destination.Bootstrap, second.Destination.Bootstrap) {
+		t.Fatalf("dry-run/execute plans differ: first=%+v second=%+v", first.Destination, second.Destination)
 	}
 }
 

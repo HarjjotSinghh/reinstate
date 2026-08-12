@@ -41,10 +41,22 @@ func CanonicalBytes(c Capsule) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// ComputeID returns the first 32 hex chars of sha256(CanonicalBytes) with
-// Identity.ID cleared, so the ID is a fixed point over its own content.
+// ComputeID returns the first 32 hex chars of sha256 over the capsule's
+// canonical identity preimage. The preimage excludes Identity.ID, a
+// self-referential LineageRoot equal to that ID, and projection size/hash
+// fields because they are derived from the ID or from artifacts rendered after
+// the ID is assigned. A distinct ancestor LineageRoot remains identity-bearing,
+// as do policy, included event IDs, sidecar selection, and source/task/workspace
+// content.
 func ComputeID(c Capsule) (string, error) {
+	if c.Identity.LineageRoot == c.Identity.ID {
+		c.Identity.LineageRoot = ""
+	}
 	c.Identity.ID = ""
+	c.Projection.EstimatedBytes = 0
+	c.Projection.EstimatedTokens = 0
+	c.Projection.BootstrapSHA256 = ""
+	c.Projection.MarkdownSHA256 = ""
 	b, err := CanonicalBytes(c)
 	if err != nil {
 		return "", err
