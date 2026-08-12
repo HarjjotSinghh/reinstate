@@ -22,13 +22,19 @@
 | [Architecture](architecture.md) | System design + continuity stack |
 | [Product strategy](product-strategy.md) | Positioning, ICP, layers, non-goals |
 | [Adapters](adapters.md) | Agent support matrix |
+| [Cross-agent handoff](handoff.md) | Planned Phase 4 product contract for continuing a task in another agent |
+| [Cross-agent continuation design](cross-agent-continuation.md) | Capsule, fidelity, pipeline, and security design |
+| [Local session storage map](session-storage-map.md) | Where each supported agent stores sessions, per OS, with confidence levels |
 | [Universal agent configuration](universal-configuration.md) | Planned cross-harness MCP/skills/loops/plugins/settings layer |
 | [Compatibility](compatibility.md) | Environments and compatibility states |
 | [Security model](security-model.md) | Threat model and defaults |
 | [Comparison](comparison.md) | vs alternatives |
 | [FAQ](faq.md) | Common questions |
 | [Troubleshooting](troubleshooting.md) | Debug guide |
+| [Phase 4 handoff acceptance](testing/phase-4-cross-agent-handoff-acceptance.md) | Release-neutral cross-agent acceptance matrix |
 | [ADR 0001](adr/0001-phase-0-phase-1-scope.md) | Phase 0 / Phase 1 scope decision |
+| [ADR 0002](adr/0002-cross-agent-continuation.md) | Cross-agent continuation is a core explicit handoff |
+| [ADR 0003](adr/0003-phase-4-rc1-scope-and-launch-route.md) | Phase 4 `v0.4.0-rc.1` scope, launch route, and capsule storage |
 
 Project-level docs live in the repository root:
 
