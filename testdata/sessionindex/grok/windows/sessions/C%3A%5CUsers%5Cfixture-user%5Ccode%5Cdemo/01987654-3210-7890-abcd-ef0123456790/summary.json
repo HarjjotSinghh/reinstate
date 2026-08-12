@@ -1,0 +1,14 @@
+{
+  "info": {
+    "id": "01987654-3210-7890-abcd-ef0123456790",
+    "cwd": "C:\\Users\\fixture-user\\code\\demo"
+  },
+  "session_summary": "Synthetic Grok Windows fixture session",
+  "created_at": "2026-08-12T02:00:00Z",
+  "updated_at": "2026-08-12T02:10:00Z",
+  "num_messages": 2,
+  "num_chat_messages": 2,
+  "current_model_id": "grok-code",
+  "chat_format_version": 1,
+  "next_trace_turn": 1
+}

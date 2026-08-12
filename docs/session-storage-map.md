@@ -124,7 +124,8 @@ reasoning items may be opaque or encrypted and are **never** translated.
 ## 3. Gemini CLI
 
 **Confidence: Verified (read path)** — `internal/sessionindex/gemini.go`.
-**Documented** for resume semantics.
+**Documented** for resume semantics and `$rewindTo` on-disk behavior
+(R3, 2026-08-12).
 
 | Aspect | Value |
 | ------ | ----- |
@@ -137,9 +138,16 @@ reasoning items may be opaque or encrypted and are **never** translated.
 | Subagents | `kind: "subagent"` sessions are excluded |
 | Native resume | `gemini --resume` / `-r`; project-scoped |
 
-`$rewindTo` truncates the message list back to a named message ID. Any Phase 4
-reader must replay rewinds **before** emitting canonical events, otherwise the
-capsule contains turns the user already discarded.
+### `$rewindTo` (R3 — Documented)
+
+On-disk JSONL is **append-only**: prior message lines stay in the file; a
+`{"$rewindTo":"<messageId>"}` record is appended. The **active** conversation
+truncates (vendor removes from and including the target id). Phase 4 capsule
+readers must replay rewinds **before** emitting canonical events, otherwise
+the capsule contains turns the user already discarded.
+
+Synthetic fixtures: `testdata/sessionindex/gemini/{macos,windows}/`.
+Research note: [research/2026-08-12-phase-4-r1-r2-r3.md](research/2026-08-12-phase-4-r1-r2-r3.md).
 
 ---
 
@@ -148,44 +156,81 @@ capsule contains turns the user already discarded.
 **Confidence: Verified (list path)** — `internal/sessionindex/opencode.go` uses
 the supported `opencode session list --format json` command and deliberately
 does not read private storage.
-**Observed** for the on-disk layout below.
+**Documented** for on-disk `storage/message/` layout and Windows root (R1,
+2026-08-12).
 
 | Aspect | Value |
 | ------ | ----- |
 | Supported read API | `opencode session list --format json` |
-| Storage root (Linux/macOS) | `~/.local/share/opencode/storage` |
-| Storage root (Windows) | **Unverified** — likely `%LOCALAPPDATA%\opencode` or `%USERPROFILE%\.local\share\opencode` |
-| Session index | `storage/session/<project-hash>/<session-id>.json` |
-| Messages | `storage/message/<session-id>/msg_<message-id>.json` |
-| Message parts | `storage/part/…` |
+| Storage root (Linux/macOS) | `~/.local/share/opencode` (`storage/` underneath) |
+| Storage root (Windows) | `%USERPROFILE%\.local\share\opencode` (same XDG layout; **not** `%LOCALAPPDATA%`) |
+| Env override | `XDG_DATA_HOME` (when set) |
+| Session index | `storage/session/<project-id>/<session-id>.json` |
+| Messages | `storage/message/<session-id>/<message-id>.json` (`msg…` ids) |
+| Message parts | `storage/part/<message-id>/<part-id>.json` (`prt…` ids; body text lives here) |
 | Session diffs | `storage/session_diff/…` |
 | Session ID shape | `ses_…` |
 | Resume | `opencode run "<prompt>" --session <id>` / `--continue` (`-c`) |
 
+### Message record schema (R1 — Documented)
+
+Each message file is a MessageV2 `Info` object discriminated on `role`
+(`user` | `assistant`). Required user fields include `id`, `sessionID`,
+`role`, `time.created`, `agent`, and `model.{providerID,modelID}`. Assistant
+records add `parentID`, `modelID`, `providerID`, `mode`, `agent`,
+`path.{cwd,root}`, `cost`, and `tokens`. Evidence: anomalyco/opencode
+`packages/opencode/src/session/message-v2.ts` and
+`packages/opencode/src/storage/storage.ts` (`Storage.write` →
+`<data>/storage/<key…>.json`). Windows root evidence: vendor troubleshooting
+docs + `packages/core/src/global.ts` + `xdg-basedir`.
+
 **Phase 4 constraint:** the session list command returns metadata only — no
 message bodies. Building a capsule **from** an OpenCode session therefore
-requires reading `storage/message/<session-id>/` directly. That is a new,
-private, undocumented surface. Treat it as a version-gated reader that fails
-closed on an unrecognized layout, and keep the metadata-only path as the
-fallback. Confirm the Windows root physically before shipping.
+requires reading `storage/message/<session-id>/` (plus parts) directly.
+Treat it as a version-gated reader that fails closed on an unrecognized
+layout. Newest OpenCode also keeps messages in SQLite
+(`SessionMessageTable`); if `storage/message/` is absent, omit capsule body
+rather than guessing a SQL schema.
+
+Synthetic fixtures: `testdata/sessionindex/opencode/{macos,windows}/`.
+Research note: [research/2026-08-12-phase-4-r1-r2-r3.md](research/2026-08-12-phase-4-r1-r2-r3.md).
 
 ---
 
 ## 5. Grok Build CLI (xAI)
 
-**Confidence: Documented** (vendor docs + changelog).
+**Confidence: Documented** (vendor docs + source; R2/R3 resolved 2026-08-12).
 **No Reinstate reader exists yet.**
 
 | Aspect | Value |
 | ------ | ----- |
+| Root (override) | `$GROK_HOME` |
 | Root (macOS/Linux) | `~/.grok` |
 | Root (Windows) | `%USERPROFILE%\.grok` |
 | Config | `<root>/config.toml` |
-| Sessions | `<root>/sessions/` — auto-saved, keyed by working directory |
-| Contents | Prompts, responses, tool calls, and file snapshots |
+| Sessions | `<root>/sessions/<encoded-cwd>/<session-uuid>/` (directory, not a single file) |
+| Index entry | `summary.json` (`Info { id, cwd }` + counts/timestamps/model) |
+| Authoritative log | `updates.jsonl` (append-only ACP/update stream) |
+| Model-facing history | `chat_history.jsonl` (`ConversationItem` JSONL; `chat_format_version` 0 legacy / 1 current) |
+| Compaction artifacts | `compaction_checkpoints/`, `compaction_requests/` |
 | Resume | `grok --resume <session-id>`, `grok --continue` |
 | In-TUI picker | `/resume` lists recent sessions for the current workspace |
-| Compaction | `/compact [context]` rewrites history in place |
+| Compaction | `/compact [context]` rewrites `chat_history.jsonl`; preserves request/checkpoint side files |
+
+### Workspace key encoding (R2 — Documented)
+
+`encode_cwd_dirname` (`xai-grok-config/src/paths.rs`):
+
+1. URL-encode the absolute working directory.
+2. If ≤ 255 bytes → use that as the directory name.
+3. If longer → `{slug}-{blake3_hex16}` and write the original path to `.cwd`.
+
+### `/compact` (R3 — Documented)
+
+Active `chat_history.jsonl` is **atomically replaced** (prior turns removed
+from that file). Pre-compaction turns are **preserved** in
+`compaction_requests/` (full request payload) and compaction markers are
+**appended** to `updates.jsonl` pointing at `compaction_checkpoints/`.
 
 ### Required privacy warning
 
@@ -202,17 +247,15 @@ storage. Phase 4 must therefore:
 For v0.4.0-rc.1, Grok is a **source only**: you may hand off *from* Grok, and
 Grok sessions appear in the local index. Grok is not a destination.
 
-### Open research (blocking a Grok reader)
+### Remaining omissions for a Grok reader
 
-- Exact per-session filename and on-disk schema (`session-<timestamp>.json`
-  is community-observed, not vendor-confirmed).
-- How the working-directory key is encoded in the path.
-- Whether `/compact` destroys pre-compaction turns or preserves them.
-- Whether file snapshots are inline or content-addressed side files.
+- Exact ACP envelope wrapping for every `updates.jsonl` line variant —
+  treat unknown lines as opaque.
+- Whether file snapshots are inline or content-addressed side files —
+  still **omitted** (no confirmed vendor schema in this pass).
 
-Resolve these against a real install on both macOS and Windows, then commit
-synthetic fixtures. Never inspect a contributor's real `~/.grok` tree into the
-repository.
+Synthetic fixtures: `testdata/sessionindex/grok/{macos,windows}/`.
+Research note: [research/2026-08-12-phase-4-r1-r2-r3.md](research/2026-08-12-phase-4-r1-r2-r3.md).
 
 ---
 
@@ -223,8 +266,8 @@ repository.
 | Claude Code | `~/.claude/projects/` | `%USERPROFILE%\.claude\projects\` | `~/.claude/projects/` | `CLAUDE_CONFIG_DIR` |
 | Codex CLI | `~/.codex/sessions/` | `%USERPROFILE%\.codex\sessions\` | `~/.codex/sessions/` | `CODEX_HOME` |
 | Gemini CLI | `~/.gemini/tmp/` | `%USERPROFILE%\.gemini\tmp\` | `~/.gemini/tmp/` | `GEMINI_CLI_HOME` |
-| OpenCode | `~/.local/share/opencode/storage/` | **Unverified** | `~/.local/share/opencode/storage/` | none known |
-| Grok Build | `~/.grok/sessions/` | `%USERPROFILE%\.grok\sessions\` | `~/.grok/sessions/` | none known |
+| OpenCode | `~/.local/share/opencode/storage/` | `%USERPROFILE%\.local\share\opencode\storage\` | `~/.local/share/opencode/storage/` | `XDG_DATA_HOME` |
+| Grok Build | `~/.grok/sessions/` | `%USERPROFILE%\.grok\sessions\` | `~/.grok/sessions/` | `GROK_HOME` |
 
 Native Windows and WSL2 are **different devices** with different agent trees.
 Reinstate never treats one agent-state directory as shared between them.
@@ -249,7 +292,8 @@ Reinstate never treats one agent-state directory as shared between them.
 
 - [Claude Code sessions](https://code.claude.com/docs/en/sessions) · [headless mode](https://code.claude.com/docs/en/headless)
 - [OpenAI Codex CLI](https://github.com/openai/codex) · [Codex session lifecycle](https://codex.danielvaughan.com/2026/06/05/codex-cli-session-lifecycle-archive-resume-fork-compact-management/)
-- [Gemini CLI session management](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/session-management.md) · [checkpointing](https://google-gemini.github.io/gemini-cli/docs/cli/checkpointing.html)
-- [OpenCode CLI](https://opencode.ai/docs/cli/) · [OpenCode troubleshooting/storage](https://opencode.ai/docs/troubleshooting/)
-- [xAI Grok Build sessions](https://docs.x.ai/build/features/sessions) · [Grok Build changelog](https://x.ai/build/changelog)
+- [Gemini CLI session management](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/session-management.md) · [checkpointing](https://google-gemini.github.io/gemini-cli/docs/cli/checkpointing.html) · [rewind](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/rewind.md) · [`chatRecordingService.ts`](https://github.com/google-gemini/gemini-cli/blob/main/packages/core/src/services/chatRecordingService.ts)
+- [OpenCode CLI](https://opencode.ai/docs/cli/) · [OpenCode troubleshooting/storage](https://opencode.ai/docs/troubleshooting/) · [storage.ts](https://github.com/anomalyco/opencode/blob/dev/packages/opencode/src/storage/storage.ts) · [message-v2.ts](https://github.com/anomalyco/opencode/blob/dev/packages/opencode/src/session/message-v2.ts) · [global.ts](https://github.com/anomalyco/opencode/blob/dev/packages/core/src/global.ts)
+- [xAI Grok Build sessions](https://docs.x.ai/build/features/sessions) · [Grok Build changelog](https://x.ai/build/changelog) · [17-sessions.md (source)](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/17-sessions.md) · [`encode_cwd_dirname`](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-config/src/paths.rs)
 - [Grok Build CLI wire-level analysis (privacy)](https://gist.github.com/cereblab/dc9a40bc26120f4540e4e09b75ffb547)
+- Phase 4 R1–R3 research note: [research/2026-08-12-phase-4-r1-r2-r3.md](research/2026-08-12-phase-4-r1-r2-r3.md)
