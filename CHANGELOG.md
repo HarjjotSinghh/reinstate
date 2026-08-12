@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Widen the fail-closed Claude Code compatibility range through `2.1.229` (was
+  `2.1.228`). Claude Code auto-updates: during the `v0.4.0-rc.1` window the
+  macOS host moved `2.1.225` -> `2.1.228` mid-run and the Windows host reached
+  `2.1.229`, so the ceiling widened one release earlier was already stale before
+  physical acceptance could start. `2.1.229` is covered by the range but has not
+  completed dual-platform tagged-artifact acceptance; the Codex CLI range is
+  unchanged at `0.133.0`-`0.147.0`.
+
 ### Fixed
 
 - Handoff source probing no longer depends on a `<agent-root>/version` file that

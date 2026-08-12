@@ -317,7 +317,7 @@ func TestClaudeProbeVersionGate(t *testing.T) {
 		want     Compatibility
 	}{
 		{name: "in range", resolver: fixed("2.1.228", agentcheck.VersionDetermined), want: CompatibilitySupported},
-		{name: "outside range", resolver: fixed("2.1.229", agentcheck.VersionDetermined), want: CompatibilityUntested},
+		{name: "outside range", resolver: fixed("2.1.230", agentcheck.VersionDetermined), want: CompatibilityUntested},
 		{name: "undeterminable", resolver: fixed("", agentcheck.VersionUnavailable), want: CompatibilitySupported},
 		// Installed but unread is uncertainty, not absence: it must not pass.
 		{name: "probe failed", resolver: fixed("", agentcheck.VersionProbeFailed), want: CompatibilityUntested},
