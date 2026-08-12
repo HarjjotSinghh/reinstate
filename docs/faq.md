@@ -7,7 +7,8 @@ bring-your-own-storage sync for same-vendor Claude Code and Codex sessions.
 Stable Phase 2 adds universal local indexing, literal
 search, metadata inspection, and same-vendor resume/fork without cloud
 configuration. Stable `v0.3.0` also implements Phase 3 verified
-resume; tagged-artifact acceptance is pending and stable `v0.3.0` is not authorized.
+resume with dual-platform tagged-artifact acceptance PASS on Apple Silicon
+macOS and native Windows x64.
 Cross-agent handoffs remain a later phase. A later universal configuration layer will reconcile supported MCP servers,
 skills, hooks/loops, plugins, marketplaces, and safe settings across harnesses
 and devices.
@@ -48,9 +49,9 @@ The `v0.3.0` candidate uses a private derived index at
 and has no Phase 3 baselines; the paths are separate by design. Neither version
 needs a sync profile, storage credentials, an encryption passphrase, keyring
 access, or a network backend. Stable `v0.2.0` contains the Phase 1 sync surface
-and Phase 2 local continuity. The public installers now pin candidate
-`v0.3.0`; its Apple Silicon macOS/native Windows x64 acceptance is pending,
-and Intel macOS plus Linux/WSL2 remain optional and unverified.
+and Phase 2 local continuity. The public installers pin stable
+`v0.3.0` after dual-platform tagged-artifact acceptance PASS.
+Intel macOS plus Linux/WSL2 remain optional and unverified.
 
 ## Why not just use git?
 

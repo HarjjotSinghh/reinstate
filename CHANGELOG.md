@@ -7,13 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Align user-facing docs, setup prompts, and website release notices with
+  stable `v0.3.0` dual-platform tagged-artifact acceptance PASS, and point
+  Homebrew/Scoop install routes at the `0.3.0` formula and bucket manifests.
+
 ## [0.3.0] - 2026-08-11
 
 Phase 3 stable release: verified resume for Claude Code and Codex on Apple
 Silicon macOS and native Windows x64. Dual-platform tagged-artifact acceptance
-passed on candidate `v0.3.0-rc.7` (`rc7_tagged_artifact_acceptance=PASS`). Fresh
-stable validation is required on both platforms after this tag; this section
-documents the product ship, not a waiver of that gate.
+passed on candidate `v0.3.0-rc.7` (`rc7_tagged_artifact_acceptance=PASS`), then
+again on the published stable tag (`stable_v0.3.0_authorized=true`).
 
 ### Added
 

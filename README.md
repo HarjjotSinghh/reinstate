@@ -224,7 +224,7 @@ Bare `rein` opens the numbered switcher only on a TTY. For scripts use
 `rein sessions --json`; a non-TTY bare invocation exits promptly with that
 hint.
 
-### Install stable v0.2.0 with Homebrew
+### Install stable v0.3.0 with Homebrew
 
 Apple Silicon macOS with Homebrew:
 
@@ -232,14 +232,12 @@ Apple Silicon macOS with Homebrew:
 brew install HarjjotSinghh/tap/reinstate
 ```
 
-The tap's stable formula passed install, both-alias identity, formula test,
-no-op upgrade, and uninstall checks on Apple Silicon. Intel macOS and
-Linuxbrew remain unverified for `v0.2.0`.
+The tap formula tracks stable `v0.3.0`. Intel macOS and Linuxbrew remain
+optional and unverified for this release.
 
 ### Install stable v0.3.0
 
-These public bootstrap routes install stable `v0.3.0`. Prefer them until the
-Homebrew formula is promoted for this tag.
+These public bootstrap routes also install stable `v0.3.0`.
 
 macOS, Linux, or WSL2:
 

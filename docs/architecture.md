@@ -66,8 +66,8 @@ Product layers and non-goals: [product-strategy.md](product-strategy.md),
 The continuity stack is delivered incrementally. Stable Phase 1 implements the
 mutation-capable adapter and encrypted-sync path. Stable Phase 2 adds the
 private local index, read capabilities, and Claude/Codex native launch plans.
-Phase 3 verified resume is included in stable `v0.3.0`, whose
-tagged-artifact acceptance is pending. Portable checkpoints,
+Phase 3 verified resume is included in stable `v0.3.0` after dual-platform
+tagged-artifact acceptance PASS. Portable checkpoints,
 configuration adapters, and ACP integration remain later roadmap work.
 
 **Phase 3 RC1 flow before execution:** find one same-vendor session,

@@ -26,8 +26,8 @@ Reinstate is an open-source continuity layer for coding-agent work. Phase 1
 implements encrypted, bring-your-own-storage sync for same-vendor Claude Code
 and Codex sessions. Phase 2 adds configless local indexing, literal search,
 metadata inspection, a TTY switcher, and same-vendor native resume/fork.
-Stable `v0.3.0` adds verified resume; its tagged-artifact
-acceptance is pending. Portable handoffs and cross-harness configuration remain
+Stable `v0.3.0` adds verified resume after dual-platform tagged-artifact
+acceptance PASS. Portable handoffs and cross-harness configuration remain
 later phases.
 
 See [What is Reinstate?](/about/reinstate) for current product facts, non-goals,
