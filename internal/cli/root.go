@@ -168,6 +168,7 @@ func NewRoot(opts Options) *cobra.Command {
 		newSearchCmd(local),
 		newInspectCmd(local),
 		newLastCmd(local),
+		newHandoffCmd(handoffCommandOptions{local: local, processChecker: processChecker}),
 		newResumeCmd(local),
 		newForkCmd(local),
 		newStatusCmd(),
