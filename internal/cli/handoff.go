@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -19,10 +21,12 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/capsule"
 	"github.com/HarjjotSinghh/reinstate/internal/config"
 	"github.com/HarjjotSinghh/reinstate/internal/doctor"
+	"github.com/HarjjotSinghh/reinstate/internal/fileidentity"
 	"github.com/HarjjotSinghh/reinstate/internal/fsx"
 	"github.com/HarjjotSinghh/reinstate/internal/handoff"
 	"github.com/HarjjotSinghh/reinstate/internal/preflight"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
+	"github.com/HarjjotSinghh/reinstate/internal/transcript"
 )
 
 const handoffMode = "structured handoff"
@@ -43,7 +47,7 @@ type handoffPlanOutput struct {
 	Workspace              capsule.Workspace      `json:"workspace"`
 	Capabilities           capsule.CapabilityDiff `json:"capabilities"`
 	Fidelity               capsule.Fidelity       `json:"fidelity"`
-	Parse                  any                    `json:"parse"`
+	Parse                  transcript.ParseReport `json:"parse"`
 	PlannedFiles           []string               `json:"planned_files"`
 	EstimatedBytes         int64                  `json:"estimated_bytes"`
 	EstimatedTokens        int                    `json:"estimated_tokens"`
@@ -109,7 +113,19 @@ func newHandoffCmd(options handoffCommandOptions) *cobra.Command {
 			if err := validateHandoffSelection(args, last, from, to, dryRun, noLaunch, asJSON, exportPath); err != nil {
 				return err
 			}
-			index, err := openLocalIndex(options.local)
+			home, err := config.Home()
+			if err != nil {
+				return NewExitError(ExitConfig, err.Error())
+			}
+			indexHome := home
+			if dryRun {
+				indexHome, err = os.MkdirTemp("", "reinstate-handoff-index-*")
+				if err != nil {
+					return NewExitError(ExitRuntime, "create temporary handoff index: "+err.Error())
+				}
+				defer func() { _ = os.RemoveAll(indexHome) }()
+			}
+			index, err := openHandoffIndex(options.local, indexHome)
 			if err != nil {
 				return err
 			}
@@ -119,17 +135,13 @@ func newHandoffCmd(options handoffCommandOptions) *cobra.Command {
 			if err != nil {
 				return handoffResolveError(err)
 			}
-			home, err := config.Home()
-			if err != nil {
-				return NewExitError(ExitConfig, err.Error())
-			}
 			pipelineOptions := handoff.Options{
 				ToAgent:       strings.ToLower(strings.TrimSpace(to)),
 				Policy:        handoff.Policy(strings.ToLower(strings.TrimSpace(policy))),
 				Verifier:      options.local.verifier,
 				ResolveSource: handoffResolver(index),
 				SessionBusy:   handoff.SessionBusyFunc(options.processChecker),
-				LaunchRunner:  handoffLaunchRunner(cmd, options.local),
+				LaunchRunner:  options.local.launchRunner,
 				ReinstateHome: home,
 				AllowActive:   allowActive,
 				AllowUntested: allowUntested,
@@ -145,8 +157,20 @@ func newHandoffCmd(options handoffCommandOptions) *cobra.Command {
 					defer func() { _ = os.RemoveAll(plan.TempDir) }()
 				}
 			} else {
+				if !noLaunch && pipelineOptions.LaunchRunner == nil {
+					var authorizedPlan handoff.PlanResult
+					authorizedPlan, err = handoff.Plan(cmd.Context(), record, pipelineOptions)
+					if authorizedPlan.TempDir != "" {
+						defer func() { _ = os.RemoveAll(authorizedPlan.TempDir) }()
+					}
+					if err == nil {
+						pipelineOptions.LaunchRunner, err = hardenedHandoffRunner(cmd, record, pipelineOptions, authorizedPlan)
+					}
+				}
 				var result handoff.ExecuteResult
-				result, err = handoff.Execute(cmd.Context(), record, pipelineOptions, !noLaunch)
+				if err == nil {
+					result, err = handoff.Execute(cmd.Context(), record, pipelineOptions, !noLaunch)
+				}
 				plan = result.Plan
 			}
 			if plan.HandoffID != "" {
@@ -262,15 +286,109 @@ func handoffCapabilityOptions(verifier preflight.Verifier) capability.Options {
 	return capability.Options{}
 }
 
-func handoffLaunchRunner(cmd *cobra.Command, options localCommandOptions) sessionindex.LaunchRunner {
-	if options.launchRunner != nil {
-		return options.launchRunner
+func openHandoffIndex(options localCommandOptions, home string) (*sessionindex.Index, error) {
+	sources := options.sources
+	if sources == nil {
+		sources = defaultLocalSources()
+	}
+	index, err := sessionindex.OpenIndex(home, sources...)
+	if err != nil {
+		return nil, localRuntimeError("open handoff session index", err)
+	}
+	return index, nil
+}
+
+func hardenedHandoffRunner(cmd *cobra.Command, record sessionindex.Record, options handoff.Options, expected handoff.PlanResult) (sessionindex.LaunchRunner, error) {
+	executable, err := exec.LookPath(expected.Destination.Executable)
+	if err != nil {
+		return nil, handoffCLIError(&handoff.PipelineError{Code: ExitCompatibility, Err: fmt.Errorf("destination executable %q is unavailable: %w", expected.Destination.Executable, err)})
+	}
+	executable, err = filepath.Abs(executable)
+	if err != nil {
+		return nil, handoffCLIError(err)
+	}
+	executableIdentity, err := fileidentity.CaptureExecutable(cmd.Context(), executable)
+	if err != nil {
+		return nil, handoffCLIError(fmt.Errorf("inspect destination executable: %w", err))
+	}
+	if !executableIdentity.IsRegular() {
+		return nil, handoffCLIError(errors.New("destination executable is not a regular file"))
+	}
+	workspaceIdentity, err := fileidentity.Capture(expected.Destination.Dir)
+	if err != nil {
+		return nil, handoffCLIError(fmt.Errorf("inspect destination workspace: %w", err))
+	}
+	if !workspaceIdentity.IsDir() {
+		return nil, handoffCLIError(errors.New("destination workspace is not a directory"))
 	}
 	return sessionindex.ExecLaunchRunner{
-		Stdin:  cmd.InOrStdin(),
-		Stdout: cmd.OutOrStdout(),
-		Stderr: cmd.ErrOrStderr(),
+		Stdin: cmd.InOrStdin(), Stdout: cmd.OutOrStdout(), Stderr: cmd.ErrOrStderr(),
+		Executable: executable, ExecutableIdentity: executableIdentity, WorkspaceIdentity: workspaceIdentity,
+		BeforeExec: func(ctx context.Context, launch sessionindex.LaunchPlan) error {
+			if !reflect.DeepEqual(launch, destinationLaunchPlan(expected.Destination)) {
+				return handoffSafetyError("destination launch plan changed at the execution boundary")
+			}
+			latest, err := handoff.Plan(ctx, record, options)
+			if latest.TempDir != "" {
+				defer func() { _ = os.RemoveAll(latest.TempDir) }()
+			}
+			if err != nil {
+				return err
+			}
+			if !equalHandoffPlans(expected, latest) {
+				return handoffSafetyError("source, environment, or structured handoff plan changed at the execution boundary")
+			}
+			allowed := currentPreflightWarnings(latest.Preflight, options.AllowWarnings)
+			authorization, err := preflight.Authorize(latest.Preflight, allowed)
+			if err != nil || !authorization.Allowed {
+				code := authorization.ExitCode
+				if code == 0 {
+					code = ExitSafety
+				}
+				if err == nil {
+					err = errors.New("environment authorization changed at the execution boundary")
+				}
+				return &handoff.PipelineError{Code: code, Err: err}
+			}
+			return nil
+		},
+	}, nil
+}
+
+func destinationLaunchPlan(plan handoff.DestinationPlan) sessionindex.LaunchPlan {
+	sessionRef := ""
+	if strings.TrimSpace(plan.SessionID) != "" {
+		sessionRef = sessionindex.CompositeReference(plan.Agent, plan.SessionID)
 	}
+	return sessionindex.LaunchPlan{
+		Agent: plan.Agent, SessionRef: sessionRef,
+		Operation: sessionindex.OperationHandoff, Executable: plan.Executable,
+		Args: append([]string(nil), plan.Args...), Dir: plan.Dir,
+	}
+}
+
+func equalHandoffPlans(left, right handoff.PlanResult) bool {
+	left.TempDir = ""
+	right.TempDir = ""
+	return reflect.DeepEqual(left, right)
+}
+
+func currentPreflightWarnings(report preflight.Report, allowed []string) []string {
+	warnings := make(map[string]struct{})
+	for _, id := range preflight.WarningIDs(report) {
+		warnings[id] = struct{}{}
+	}
+	var result []string
+	for _, id := range allowed {
+		if _, ok := warnings[id]; ok {
+			result = append(result, id)
+		}
+	}
+	return result
+}
+
+func handoffSafetyError(message string) error {
+	return &handoff.PipelineError{Code: ExitSafety, Err: errors.New(message)}
 }
 
 func handoffResolveError(err error) error {
@@ -285,6 +403,9 @@ func handoffResolveError(err error) error {
 }
 
 func handoffCLIError(err error) error {
+	if err == nil {
+		return nil
+	}
 	var pipelineError *handoff.PipelineError
 	if errors.As(err, &pipelineError) {
 		return NewExitError(pipelineError.Code, pipelineError.Error())
@@ -331,13 +452,25 @@ func writeHandoffPlan(cmd *cobra.Command, plan handoff.PlanResult, asJSON, showR
 	prefix := handoffHumanPrefix(plan.Destination.Agent)
 	PrintHuman(cmd.OutOrStdout(), "%s: handoff %s from %s:%s", prefix, plan.HandoffID, plan.Capsule.RawSource.Agent, plan.Capsule.RawSource.SessionID)
 	PrintHuman(cmd.OutOrStdout(), "%s: policy=%s projection=%d bytes estimated_tokens=%d", prefix, plan.Capsule.Projection.Policy, plan.EstimatedBytes, plan.EstimatedTokens)
+	PrintHuman(cmd.OutOrStdout(), "%s: workspace project=%s root=%s branch=%s dirty=%t", prefix, plan.Capsule.Workspace.ProjectID, plan.Capsule.Workspace.Root, plan.Capsule.Workspace.Branch, plan.Capsule.Workspace.Dirty)
 	PrintHuman(cmd.OutOrStdout(), "%s: command %s", prefix, quoteCommand(plan.Destination.Executable, plan.Destination.Args))
 	for _, path := range plan.PlannedFiles {
-		PrintHuman(cmd.OutOrStdout(), "%s: file %s", prefix, doctor.RedactPath(path))
+		PrintHuman(cmd.OutOrStdout(), "%s: file %s", prefix, path)
+	}
+	for _, component := range plan.Capsule.Fidelity.Components {
+		PrintHuman(cmd.OutOrStdout(), "%s: portability %s=%s count=%d bytes=%d", prefix, component.Name, component.Portability, component.Count, component.Bytes)
+	}
+	for _, missing := range plan.Capsule.Capabilities.Missing {
+		PrintHuman(cmd.OutOrStdout(), "%s: missing capability %s/%s impact=%s", prefix, missing.Kind, missing.Name, missing.Impact)
 	}
 	for _, warningID := range plan.WarningIDs {
 		PrintHuman(cmd.OutOrStdout(), "%s: warning %s", prefix, warningID)
 	}
+	redactionTotal := 0
+	for _, count := range plan.RedactionCounts {
+		redactionTotal += count
+	}
+	PrintHuman(cmd.OutOrStdout(), "%s: redactions=%d", prefix, redactionTotal)
 	if showRedactions {
 		categories := make([]string, 0, len(plan.RedactionCounts))
 		for category := range plan.RedactionCounts {
@@ -505,7 +638,10 @@ func newHandoffExportCmd() *cobra.Command {
 				}
 			}
 			if strings.TrimSpace(out) == "" {
-				_, err = cmd.OutOrStdout().Write(append(body, '\n'))
+				if len(body) == 0 || body[len(body)-1] != '\n' {
+					body = append(body, '\n')
+				}
+				_, err = cmd.OutOrStdout().Write(body)
 				return handoffCLIError(err)
 			}
 			if err := fsx.WriteFileAtomic(out, body, fsx.OwnerOnlyFilePerm); err != nil {
