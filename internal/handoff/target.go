@@ -122,7 +122,8 @@ func ValidateDestinationArgv(plan DestinationPlan, maxArgvBytes int) error {
 }
 
 // WritePlannedFiles validates argv against maxArgvBytes, then writes each
-// planned path from contents at 0600. On argv failure no files are written.
+// planned path from contents as an owner-only file (0600 on Unix, protected
+// DACL on Windows). On argv failure no files are written.
 func WritePlannedFiles(plan DestinationPlan, maxArgvBytes int, contents map[string][]byte) error {
 	if err := ValidateDestinationArgv(plan, maxArgvBytes); err != nil {
 		return err
@@ -132,7 +133,7 @@ func WritePlannedFiles(plan DestinationPlan, maxArgvBytes int, contents map[stri
 		if !ok {
 			return fmt.Errorf("handoff: missing content for planned file %q", f.Path)
 		}
-		if err := fsx.WriteFileAtomic(f.Path, body, fsx.OwnerOnlyFilePerm); err != nil {
+		if err := fsx.WritePrivateFile(f.Path, body); err != nil {
 			return fmt.Errorf("handoff: write planned file %q: %w", f.Path, err)
 		}
 	}

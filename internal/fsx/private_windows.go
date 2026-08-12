@@ -2,7 +2,11 @@
 
 package fsx
 
-import "golang.org/x/sys/windows"
+import (
+	"strings"
+
+	"golang.org/x/sys/windows"
+)
 
 // ProtectOwnerOnly installs a protected Windows DACL for the current user,
 // LocalSystem, and the built-in Administrators group. This does not rely on
@@ -43,6 +47,69 @@ func ProtectOwnerOnly(path string, directory bool) error {
 		acl,
 		nil,
 	)
+}
+
+// OwnerOnly reports whether path currently carries the owner-only protection
+// ProtectOwnerOnly installs, plus a human-readable description of what was
+// found. Windows cannot express 0600, so the property checked here is the
+// protected DACL: inheritance is blocked and every access-allowed entry names
+// the current user, LocalSystem, or the built-in Administrators group.
+func OwnerOnly(path string, directory bool) (bool, string, error) {
+	_ = directory // inheritance flags differ, the trustee set does not
+	descriptor, err := windows.GetNamedSecurityInfo(
+		path,
+		windows.SE_FILE_OBJECT,
+		windows.DACL_SECURITY_INFORMATION,
+	)
+	if err != nil {
+		return false, "", err
+	}
+	control, _, err := descriptor.Control()
+	if err != nil {
+		return false, "", err
+	}
+	if control&windows.SE_DACL_PRESENT == 0 {
+		return false, "no DACL is present", nil
+	}
+	if control&windows.SE_DACL_PROTECTED == 0 {
+		return false, "DACL still inherits entries from its parent", nil
+	}
+	dacl, _, err := descriptor.DACL()
+	if err != nil {
+		return false, "", err
+	}
+	if dacl == nil {
+		return false, "DACL is empty and therefore fully permissive", nil
+	}
+	allowed, err := ownerOnlyTrustees()
+	if err != nil {
+		return false, "", err
+	}
+	private, detail := ownerOnlyDACL(descriptor.String(), allowed)
+	return private, detail, nil
+}
+
+// ownerOnlyTrustees returns the SDDL spellings accepted in a private DACL:
+// the current user plus the two administrative principals Windows always
+// retains. Well-known SIDs may render as aliases (SY, BA) or raw SIDs.
+func ownerOnlyTrustees() (map[string]bool, error) {
+	user, err := windows.GetCurrentProcessToken().GetTokenUser()
+	if err != nil {
+		return nil, err
+	}
+	system, err := windows.CreateWellKnownSid(windows.WinLocalSystemSid)
+	if err != nil {
+		return nil, err
+	}
+	administrators, err := windows.CreateWellKnownSid(windows.WinBuiltinAdministratorsSid)
+	if err != nil {
+		return nil, err
+	}
+	allowed := map[string]bool{"SY": true, "BA": true}
+	for _, sid := range []*windows.SID{user.User.Sid, system, administrators} {
+		allowed[strings.ToUpper(sid.String())] = true
+	}
+	return allowed, nil
 }
 
 func ownerAccess(sid *windows.SID, trusteeType windows.TRUSTEE_TYPE, inheritance uint32) windows.EXPLICIT_ACCESS {
