@@ -2,8 +2,6 @@ package handoff
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -39,6 +37,10 @@ var ErrSafety = errors.New("handoff: safety")
 // SessionBusyFunc reports whether the source agent holds the session artifact.
 type SessionBusyFunc func(ctx context.Context, agent string, target processcheck.Target) (busy bool, scoped bool, err error)
 
+// ResolveSourceFunc refreshes and resolves the selected source record. Fresh
+// must describe the source scan that produced the returned record.
+type ResolveSourceFunc func(ctx context.Context, rec sessionindex.Record) (resolved sessionindex.Record, fresh bool, err error)
+
 // Options configures Plan and Execute. Callers inject fakes in unit tests;
 // production wires preflight, processcheck, and sessionindex.LaunchRunner.
 type Options struct {
@@ -48,6 +50,12 @@ type Options struct {
 	Policy Policy
 	// Verifier is required. Production uses preflight.DefaultService().
 	Verifier preflight.Verifier
+	// Reader overrides the registered source transcript reader. Tests use this
+	// to keep all reads inside synthetic temporary fixtures.
+	Reader transcript.Reader
+	// ResolveSource refreshes and resolves the source boundary before any read.
+	// WP-21b wires this to sessionindex.Index.RefreshAndResolve.
+	ResolveSource ResolveSourceFunc
 	// SessionBusy overrides processcheck.SessionBusy. Nil skips the busy check.
 	SessionBusy SessionBusyFunc
 	// LaunchRunner is required for Execute launches. Tests must pass a fake.
@@ -150,12 +158,28 @@ func Plan(ctx context.Context, rec sessionindex.Record, opts Options) (PlanResul
 	if err := ctx.Err(); err != nil {
 		return PlanResult{}, pipelineWrap(exitcode.Runtime, err)
 	}
+	if opts.ResolveSource != nil {
+		resolved, fresh, err := opts.ResolveSource(ctx, rec)
+		if err != nil {
+			return PlanResult{}, pipelineWrap(exitcode.Runtime, fmt.Errorf("handoff: resolve source: %w", err))
+		}
+		if !fresh {
+			return PlanResult{}, pipelineErrorf(exitcode.Compatibility, "%w: source session index is not fresh", ErrCompatibility)
+		}
+		rec = resolved
+	}
 	to := normalizeAgent(opts.ToAgent)
 	if to == "" {
 		return PlanResult{}, pipelineErrorf(exitcode.Usage, "%w: --to AGENT is required", ErrUsage)
 	}
+	if to == normalizeAgent(rec.Agent) {
+		return PlanResult{}, pipelineErrorf(exitcode.Usage, "%w: source and destination agents must differ", ErrUsage)
+	}
 	if opts.Verifier == nil {
 		return PlanResult{}, pipelineErrorf(exitcode.Runtime, "handoff: verifier is required")
+	}
+	if opts.Policy != "" && normalizePolicy(opts.Policy) != opts.Policy {
+		return PlanResult{}, pipelineErrorf(exitcode.Usage, "%w: unknown handoff policy %q", ErrUsage, opts.Policy)
 	}
 	policy := normalizePolicy(opts.Policy)
 
@@ -165,9 +189,13 @@ func Plan(ctx context.Context, rec sessionindex.Record, opts Options) (PlanResul
 		}
 	}
 
-	reader, ok := transcript.Get(normalizeAgent(rec.Agent))
-	if !ok {
-		return PlanResult{}, pipelineErrorf(exitcode.Compatibility, "%w: no transcript reader for source agent %q", ErrCompatibility, rec.Agent)
+	reader := opts.Reader
+	if reader == nil {
+		var ok bool
+		reader, ok = transcript.Get(normalizeAgent(rec.Agent))
+		if !ok {
+			return PlanResult{}, pipelineErrorf(exitcode.Compatibility, "%w: no transcript reader for source agent %q", ErrCompatibility, rec.Agent)
+		}
 	}
 
 	sourceMayAdvance := false
@@ -234,18 +262,18 @@ func Plan(ctx context.Context, rec sessionindex.Record, opts Options) (PlanResul
 	dstInv := discoverInventory(ctx, to, capOpts)
 	capDiff := DiffCapabilities(srcInv, dstInv, rec.Agent, to)
 
+	redactedEvents, redactions, redactionCounts, err := redactEvents(events, opts.NoRedact)
+	if err != nil {
+		return PlanResult{}, pipelineWrap(exitcode.Runtime, err)
+	}
 	task := DeriveCheckpoint(CheckpointInput{
-		Events:    events,
+		Events:    redactedEvents,
 		Workspace: report.Workspace,
 		Changed:   append([]string(nil), opts.ChangedFiles...),
 	})
 	ws.ChangedFiles = append([]string(nil), task.ChangedFiles.Items...)
 	ws.Tests = append([]string(nil), task.Tests.Items...)
 
-	redactedEvents, redactions, redactionCounts, err := redactEvents(events, opts.NoRedact)
-	if err != nil {
-		return PlanResult{}, pipelineWrap(exitcode.Runtime, err)
-	}
 	included, sidecar, fidelity := Apply(policy, redactedEvents)
 	if fidelity.Mode == "" {
 		fidelity.Mode = capsule.FidelityModeStructuredHandoff
@@ -283,7 +311,7 @@ func Plan(ctx context.Context, rec sessionindex.Record, opts Options) (PlanResul
 		Conversation: capsule.Conversation{Events: included},
 		Capabilities: capDiff,
 		Security: capsule.Security{
-			Redactions:                             redactions,
+			Redactions:                            redactions,
 			SourceInstructionsAreUntrustedHistory: true,
 		},
 		Fidelity: fidelity,
@@ -339,15 +367,20 @@ func Plan(ctx context.Context, rec sessionindex.Record, opts Options) (PlanResul
 
 	c.Projection.EstimatedBytes = int64(len(projectionMD))
 	c.Projection.EstimatedTokens = int64(EstimateTokens(projectionMD))
-	c.Projection.BootstrapSHA256 = sha256Hex(bootstrap)
 	c.Projection.MarkdownSHA256 = sha256Hex(projectionMD)
+
+	destPlan, _, err := planDestination(ctx, target, c, policy, opts, bootstrap)
+	if err != nil {
+		return PlanResult{}, err
+	}
+	c.Projection.BootstrapSHA256 = sha256Hex(destPlan.Bootstrap)
 
 	if err := capsule.Validate(c); err != nil {
 		return PlanResult{}, pipelineWrap(exitcode.Runtime, fmt.Errorf("handoff: capsule validate: %w", err))
 	}
 
-	destPlan, _, err := planDestination(ctx, target, c, policy, opts, bootstrap)
-	if err != nil {
+	warningIDs := mergeWarningIDs(preflight.WarningIDs(report), CapabilityWarningIDs(capDiff))
+	if err := validateWarningAcks(warningIDs, opts.AllowWarnings, false); err != nil {
 		return PlanResult{}, err
 	}
 
@@ -359,6 +392,12 @@ func Plan(ctx context.Context, rec sessionindex.Record, opts Options) (PlanResul
 	if err != nil {
 		return PlanResult{}, pipelineWrap(exitcode.Runtime, fmt.Errorf("handoff: temp dir: %w", err))
 	}
+	keepTemp := false
+	defer func() {
+		if !keepTemp {
+			_ = os.RemoveAll(tempDir)
+		}
+	}()
 	previewDir := filepath.Join(tempDir, id)
 	if err := os.MkdirAll(previewDir, 0o700); err != nil {
 		return PlanResult{}, pipelineWrap(exitcode.Runtime, err)
@@ -374,12 +413,8 @@ func Plan(ctx context.Context, rec sessionindex.Record, opts Options) (PlanResul
 		return PlanResult{}, pipelineWrap(exitcode.Runtime, err)
 	}
 
-	warningIDs := mergeWarningIDs(preflight.WarningIDs(report), CapabilityWarningIDs(capDiff))
-	if err := validateWarningAcks(warningIDs, opts.AllowWarnings, false); err != nil {
-		return PlanResult{}, err
-	}
-
 	planned := permanentPlannedFiles(opts.ReinstateHome, id, arts)
+	keepTemp = true
 	return PlanResult{
 		Capsule:               c,
 		Destination:           destPlan,
@@ -423,6 +458,9 @@ func Execute(ctx context.Context, rec sessionindex.Record, opts Options, launch 
 		}
 		return ExecuteResult{Plan: plan}, pipelineWrap(code, err)
 	}
+	if launch && opts.LaunchRunner == nil {
+		return ExecuteResult{Plan: plan}, pipelineErrorf(exitcode.Runtime, "handoff: LaunchRunner is required")
+	}
 
 	home := strings.TrimSpace(opts.ReinstateHome)
 	if home == "" {
@@ -455,9 +493,6 @@ func Execute(ctx context.Context, rec sessionindex.Record, opts Options, launch 
 	destState := VerifyUnresolved
 	launched := false
 	if launch {
-		if opts.LaunchRunner == nil {
-			return ExecuteResult{Plan: plan}, pipelineErrorf(exitcode.Runtime, "handoff: LaunchRunner is required")
-		}
 		launchStart := now
 		if err := target.Launch(ctx, plan.Destination, opts.LaunchRunner); err != nil {
 			return ExecuteResult{Plan: plan}, pipelineWrap(exitcode.Runtime, err)
@@ -595,24 +630,40 @@ func redactEvents(events []capsule.Event, noRedact bool) ([]capsule.Event, []cap
 	for i, e := range events {
 		cp := e
 		cp.Blocks = append([]capsule.Block(nil), e.Blocks...)
+		cp.Redactions = append([]capsule.Redaction(nil), e.Redactions...)
 		if noRedact {
 			out[i] = cp
 			continue
 		}
-		var eventRedactions []capsule.Redaction
-		for j, b := range cp.Blocks {
-			if b.Text == "" {
-				continue
-			}
-			text, matches := secretscan.Redact(b.Text)
-			cp.Blocks[j].Text = text
+		eventRedactions := append([]capsule.Redaction(nil), e.Redactions...)
+		redact := func(value string) string {
+			text, matches := secretscan.Redact(value)
 			for _, m := range matches {
 				cat := capsule.Category(m.Category)
 				eventRedactions = append(eventRedactions, capsule.Redaction{Category: cat, Digest: m.Digest})
 				counts[string(cat)]++
 			}
+			return text
 		}
-		cp.Redactions = append(append([]capsule.Redaction(nil), e.Redactions...), eventRedactions...)
+		cp.NativeType = redact(cp.NativeType)
+		cp.NativeName = redact(cp.NativeName)
+		cp.CallID = redact(cp.CallID)
+		cp.LinkedCallID = redact(cp.LinkedCallID)
+		cp.Reason = redact(cp.Reason)
+		for j := range cp.Blocks {
+			cp.Blocks[j].Text = redact(cp.Blocks[j].Text)
+			cp.Blocks[j].MIME = redact(cp.Blocks[j].MIME)
+			cp.Blocks[j].Ref = redact(cp.Blocks[j].Ref)
+			cp.Blocks[j].Path = redact(cp.Blocks[j].Path)
+			if cp.Blocks[j].Meta != nil {
+				meta := make(map[string]string, len(cp.Blocks[j].Meta))
+				for key, value := range cp.Blocks[j].Meta {
+					meta[redact(key)] = redact(value)
+				}
+				cp.Blocks[j].Meta = meta
+			}
+		}
+		cp.Redactions = eventRedactions
 		all = append(all, eventRedactions...)
 		out[i] = cp
 	}
@@ -764,11 +815,6 @@ func filterPreflightWarnings(allowed []string, report preflight.Report) []string
 		}
 	}
 	return out
-}
-
-func sha256Hex(body []byte) string {
-	sum := sha256.Sum256(body)
-	return hex.EncodeToString(sum[:])
 }
 
 func mustCanonical(c capsule.Capsule) []byte {
