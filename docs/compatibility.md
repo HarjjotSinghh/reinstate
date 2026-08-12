@@ -9,6 +9,11 @@ block stable.
 Candidate history (RC1–RC7) lived under `docs/testing/results/` and earlier
 CHANGELOG sections; those records do not rewrite this stable claim.
 
+Phase 4 is an in-progress `v0.4.0-rc.1` candidate. Its structured-handoff
+implementation is documented below, but it does not inherit the stable
+`v0.3.0` physical evidence. Tagged macOS arm64 and Windows amd64 acceptance is
+still required before the candidate can pass.
+
 Stable Reinstate `v0.2.0` implements **same-vendor encrypted session sync** and
 the Phase 2 local continuity surface for:
 
@@ -41,6 +46,30 @@ support will be reported separately per harness and per capability (MCP,
 skills/instructions, hooks/loops, plugins, marketplaces, safe settings). A
 supported session adapter will not imply configuration support. See
 [universal-configuration.md](universal-configuration.md).
+
+## Phase 4 structured-handoff candidate
+
+Handoff support is directional. A supported source reader does not imply a
+supported destination target, encrypted sync, or same-vendor native execution.
+
+| Source → destination | Claude Code | Codex CLI | Gemini CLI | OpenCode | Grok Build |
+| -------------------- | :---------: | :-------: | :--------: | :------: | :--------: |
+| **Claude Code** | same-vendor native resume | structured handoff | not in rc.1 | not in rc.1 | not planned |
+| **Codex CLI** | structured handoff | same-vendor native resume | not in rc.1 | not in rc.1 | not planned |
+| **Gemini CLI** | structured handoff | structured handoff | not a target (source-only) | not in rc.1 | not planned |
+| **OpenCode** | structured handoff | structured handoff | not in rc.1 | not a target (source-only) | not planned |
+| **Grok Build** | structured handoff | structured handoff | not in rc.1 | not in rc.1 | not a target (source-only) |
+
+Every cross-agent entry above creates a new destination session for the same
+task through Claude Code's or Codex's documented CLI. It does not reconstruct
+vendor history or write a vendor-internal session file. Gemini, OpenCode, and
+Grok are source-only in rc.1; attempts to use them as destinations fail closed.
+
+The handoff path parses the source locally without a source model call, records
+component-level fidelity, and stores its capsule and lineage only under the
+private `$REINSTATE_HOME/handoffs/` store. The store is hard-excluded from
+encrypted push/pull. Destination acknowledgement is a prompt-level contract;
+it is not an enforced protocol.
 
 ## Environments
 

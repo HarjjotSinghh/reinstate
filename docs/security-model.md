@@ -16,6 +16,10 @@ printed to the terminal. This document is the contract we design against.
 | Session reference becomes shell injection | Executable + argv + cwd launch plan; no shell command string |
 | Environment drift causes a wrong continuation | Local verified-resume report; exact warning consent; hard blockers fail closed |
 | Environment inspection leaks config/secrets | Name/state/digest-only observations; bounded safe diagnostics; no network or project execution |
+| Imported transcript injects destination instructions | Source authority excluded; imported history fenced and labeled inert |
+| Historical tool calls cause duplicate/destructive effects | Transcript tool calls are evidence only and are never executed |
+| Capsule artifacts broaden plaintext exposure | Redaction before write; owner-only local store; hard-excluded from sync |
+| Handoff corrupts a vendor session store | New destination session through documented CLI; no vendor-internal writes |
 | Overwriting good local history | Timestamped backups + conflict forks |
 | Weak passphrase | age scrypt recipient + long-passphrase guidance; user responsibility |
 | Compromised local machine | **Out of scope** (OS-level compromise) |
@@ -37,6 +41,12 @@ printed to the terminal. This document is the contract we design against.
 - Reinstate does **not** require Anthropic/OpenAI/Google account credentials
 - Remote backends never receive your passphrase or age identity in plaintext
   form beyond ciphertext + opaque object keys
+
+Cross-agent handoff adds a separate local trust boundary: Reinstate reads a
+frozen source transcript boundary, produces a private continuity capsule, and
+passes a bounded projection to a newly launched destination session. The
+source model is never called. The destination vendor remains responsible for
+its own execution, permissions, credentials, and network behavior.
 
 ## Encryption
 
@@ -157,6 +167,46 @@ stale selected-source metadata, missing workspace/executable, unverified
 agent version/layout, and verifier failure are blockers and cannot be
 acknowledged away.
 
+## Structured-handoff boundary (`v0.4.0-rc.1`)
+
+A structured handoff continues the same task in a new Claude Code or Codex
+session. Claude Code, Codex, Gemini CLI, OpenCode, and Grok Build are supported
+sources; Gemini, OpenCode, and Grok are source-only in rc.1.
+
+The boundary is fail-closed and local-first:
+
+1. Reinstate opens the source read-only and freezes the last complete record.
+   It never locks, rewrites, renames, truncates, or executes content from the
+   transcript.
+2. Bounded readers parse locally without a source model or network call.
+   Unknown layouts fail closed; unknown records remain opaque references rather
+   than guessed structure.
+3. Source system/developer messages stay audit-only and never enter the
+   destination projection as authority. Imported history is source-attributed,
+   fenced, and explicitly labeled data rather than instructions.
+4. Secret scanning and redaction run before any handoff artifact is written.
+   Credentials, auth stores, keychains, `.env`, and token stores remain outside
+   the read set. Grok-sourced handoffs force redaction and carry the documented
+   upload-behavior warning.
+5. The destination starts through its documented CLI in the verified workspace
+   and re-authorizes permissions, secrets, MCP logins, and network actions under
+   its own policy. Reinstate writes no vendor-internal session file and passes
+   no source permission grant or credential.
+
+The destination is prompted to restate the current goal, latest request,
+workspace truth, missing capabilities, uncertainty, and next action before it
+mutates anything. This is a prompt-level acknowledgement in rc.1. Reinstate
+records the user's confirmation but does not control or police the destination
+agent loop.
+
+### Local capsule store
+
+Handoff artifacts and append-only lineage live under
+`$REINSTATE_HOME/handoffs/`, never inside a repository. Directories are `0700`
+and files are `0600` on Unix; Windows uses the protected DACL. The store is
+local-only and hard-excluded from `push` and `pull` in rc.1. Deleting it removes
+capsules and lineage without modifying any vendor session.
+
 ## Future configuration reconciliation
 
 Applying MCP servers, skills, hooks/loops, plugins, marketplaces, and settings
@@ -182,10 +232,12 @@ Agents sometimes echo `.env` values or tokens into session logs. Reinstate:
 2. Limits the Phase 2 derived index to bounded user-authored prompts and known
    metadata, excluding assistant and tool-output fields
 3. Syncs only explicitly discovered Claude Code/Codex session artifacts in Phase 1
+4. Scans and redacts detected secrets before writing Phase 4 handoff artifacts
 
 **You remain responsible** for not pasting production secrets into agent chats.
-User-authored prompts can themselves contain secrets; the local index is not a
-redaction or DLP product.
+User-authored prompts can themselves contain secrets. The local index is not a
+redaction or DLP product, and handoff scanning is a defense-in-depth control,
+not a guarantee that every secret shape will be recognized.
 
 ## Restore safety
 
