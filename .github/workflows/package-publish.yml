@@ -72,7 +72,22 @@ jobs:
       - name: Download canonical release assets
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release download "$RELEASE_TAG" --dir release-assets
+        run: |
+          set -euo pipefail
+          # Bounded transport retry. Each attempt starts from a clean directory
+          # so a truncated asset can never survive into verification, and the
+          # next step still checks checksums and attestations before use.
+          for attempt in 1 2 3; do
+            rm -rf release-assets
+            if gh release download "$RELEASE_TAG" --dir release-assets; then
+              exit 0
+            fi
+            if test "$attempt" -eq 3; then
+              echo "release asset download failed after $attempt attempts" >&2
+              exit 1
+            fi
+            sleep "$((attempt * 5))"
+          done
 
       - name: Verify checksums and GitHub attestations
         env:
@@ -325,10 +340,31 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $url = 'https://github.com/microsoft/winget-create/releases/download/v1.12.13.0/wingetcreate.exe'
-          Invoke-WebRequest $url -OutFile wingetcreate.exe
-          $actual = (Get-FileHash wingetcreate.exe -Algorithm SHA256).Hash.ToLowerInvariant()
           $expected = '24042bd37915805615e6cf969ac57c6439124c3fe85823327f5f3fb24bd9ffea'
-          if ($actual -ne $expected) { throw "WinGetCreate checksum mismatch: $actual" }
+          # Retry transport failures only. The SHA256 gate runs on every
+          # downloaded copy, sits outside the catch, and throws immediately on a
+          # mismatch so a corrupted or substituted binary is never retried.
+          $verified = $false
+          for ($attempt = 1; $attempt -le 3; $attempt++) {
+            $downloadError = $null
+            try {
+              Remove-Item wingetcreate.exe -Force -ErrorAction SilentlyContinue
+              Invoke-WebRequest $url -OutFile wingetcreate.exe -UseBasicParsing -TimeoutSec 300
+            } catch {
+              $downloadError = $_
+            }
+            if ($null -ne $downloadError) {
+              if ($attempt -eq 3) { throw $downloadError }
+              Write-Host "WinGetCreate download attempt $attempt failed: $($downloadError.Exception.Message)"
+              Start-Sleep -Seconds (5 * $attempt)
+              continue
+            }
+            $actual = (Get-FileHash wingetcreate.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($actual -ne $expected) { throw "WinGetCreate checksum mismatch: $actual" }
+            $verified = $true
+            break
+          }
+          if (-not $verified) { throw 'WinGetCreate was never downloaded and verified' }
 
       - name: Submit manifest pull request
         shell: pwsh
