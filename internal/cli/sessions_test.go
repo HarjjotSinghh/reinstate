@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/HarjjotSinghh/reinstate/internal/preflight"
+	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
 	"github.com/HarjjotSinghh/reinstate/internal/workspace"
 )
@@ -333,6 +334,92 @@ func TestNativeDryRunLastAndRealLaunch(t *testing.T) {
 	if got := runner.plans[0]; got.Executable != "codex" ||
 		strings.Join(got.Args, "\x00") != "fork\x00codex-two" {
 		t.Fatalf("unexpected real plan: %+v", got)
+	}
+}
+
+func TestResumeWithProducesHandoffPlanAndNotice(t *testing.T) {
+	home, vendorHome, sources, _ := handoffCLIFixture(t)
+	runner := &recordingLaunchRunner{}
+
+	directOut, directErr, code := runHandoffCLI(t, home, vendorHome, sources, runner,
+		"handoff", "codex:source-session", "--to", "claude", "--dry-run", "--json")
+	if code != ExitOK {
+		t.Fatalf("direct handoff exit=%d stdout=%q stderr=%q", code, directOut, directErr)
+	}
+	aliasOut, aliasErr, code := runHandoffCLI(t, home, vendorHome, sources, runner,
+		"resume", "codex:source-session", "--with", "claude", "--dry-run", "--json")
+	if code != ExitOK {
+		t.Fatalf("resume --with exit=%d stdout=%q stderr=%q", code, aliasOut, aliasErr)
+	}
+	if !strings.Contains(aliasErr, "Structured handoff") || !strings.Contains(aliasErr, "not native resume") {
+		t.Fatalf("resume --with notice missing: %q", aliasErr)
+	}
+	if len(runner.plans) != 0 {
+		t.Fatalf("dry-run launched: %+v", runner.plans)
+	}
+
+	if directOut != aliasOut {
+		t.Fatalf("resume --with plan differs\ndirect: %s\nalias:  %s", directOut, aliasOut)
+	}
+}
+
+func TestResumeWithForkConflictIsUsageError(t *testing.T) {
+	home, vendorHome, sources, _ := handoffCLIFixture(t)
+	stdout, stderr, code := runHandoffCLI(t, home, vendorHome, sources, nil,
+		"resume", "codex:source-session", "--with", "claude", "--fork")
+	if code != ExitUsage || !strings.Contains(stderr, "mutually exclusive") {
+		t.Fatalf("resume --with --fork exit=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+}
+
+func TestResumeForkFlagUsesNativeFork(t *testing.T) {
+	workspace := t.TempDir()
+	runner := &recordingLaunchRunner{}
+	stdout, stderr, code := runLocalCLI(t, localTestSources(workspace), runner, "", false,
+		"resume", "claude:claude-one", "--fork")
+	if code != ExitOK || len(runner.plans) != 1 || runner.plans[0].Operation != sessionindex.OperationFork {
+		t.Fatalf("resume --fork exit=%d plans=%+v stdout=%q stderr=%q", code, runner.plans, stdout, stderr)
+	}
+}
+
+func TestPickerHandoffIsExplicitAndRoutesToPipeline(t *testing.T) {
+	home, vendorHome, sources, _ := handoffCLIFixture(t)
+	t.Setenv("REINSTATE_HOME", home)
+	t.Setenv("HOME", vendorHome)
+	t.Setenv("CLAUDE_CONFIG_DIR", "")
+	t.Setenv("CODEX_HOME", "")
+	runner := &recordingLaunchRunner{}
+	var stdout, stderr bytes.Buffer
+	code := Execute(Options{
+		Name: "rein", Stdout: &stdout, Stderr: &stderr,
+		Stdin: strings.NewReader("h 1\nclaude\n"), SessionSources: sources,
+		SessionLaunchRunner: runner, PreflightVerifier: readyPreflightVerifier{},
+		AgentProcessChecker: func(context.Context, string, processcheck.Target) (bool, bool, error) {
+			return false, true, nil
+		},
+		TerminalChecker: func(io.Reader, io.Writer) bool { return true },
+	})
+	if code != ExitOK {
+		t.Fatalf("picker handoff exit=%d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	if len(runner.plans) != 1 || runner.plans[0].Operation != sessionindex.OperationHandoff {
+		t.Fatalf("picker handoff launches=%+v", runner.plans)
+	}
+	if !strings.Contains(stdout.String(), "h NUMBER (hand off to another agent)") ||
+		!strings.Contains(stderr.String(), "not native resume") {
+		t.Fatalf("picker handoff surface missing stdout=%q stderr=%q", stdout.String(), stderr.String())
+	}
+}
+
+func TestPickerDefaultRemainsNativeResume(t *testing.T) {
+	workspace := t.TempDir()
+	runner := &recordingLaunchRunner{}
+	stdout, stderr, code := runLocalCLI(t, localTestSources(workspace), runner, "1\n", true)
+	if code != ExitOK || len(runner.plans) != 1 || runner.plans[0].Operation != sessionindex.OperationResume {
+		t.Fatalf("picker default exit=%d plans=%+v stdout=%q stderr=%q", code, runner.plans, stdout, stderr)
+	}
+	if strings.Contains(stderr, "Structured handoff") {
+		t.Fatalf("picker default entered handoff mode: %q", stderr)
 	}
 }
 
