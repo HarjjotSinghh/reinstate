@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/HarjjotSinghh/reinstate/internal/capsule"
 	"github.com/HarjjotSinghh/reinstate/internal/handoff"
 	"github.com/HarjjotSinghh/reinstate/internal/preflight"
 	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
@@ -96,6 +98,10 @@ func TestHandoffNoLaunchSpawnsNothingAndMatchesDryRun(t *testing.T) {
 		output.Destination.Args[0] != "--session-id" {
 		t.Fatalf("destination command = %+v", output.Destination)
 	}
+	wantLineage := filepath.Join(home, "handoffs", "lineage.jsonl")
+	if !containsString(output.PlannedFiles, wantLineage) {
+		t.Fatalf("planned files omit lineage append %q: %#v", wantLineage, output.PlannedFiles)
+	}
 	store, err := handoff.OpenStore(home)
 	if err != nil {
 		t.Fatal(err)
@@ -116,6 +122,49 @@ func TestHandoffNoLaunchSpawnsNothingAndMatchesDryRun(t *testing.T) {
 	}
 }
 
+func TestHandoffClaudeCollisionCheckRequiresFreshSource(t *testing.T) {
+	home, vendorHome, sources, _ := handoffCLIFixture(t)
+	sources[1] = staticSessionSource{name: sessionindex.AgentClaude, err: os.ErrPermission}
+	runner := &recordingLaunchRunner{}
+	stdout, stderr, code := runHandoffCLI(t, home, vendorHome, sources, runner,
+		"handoff", "codex:source-session", "--to", "claude")
+	if code != ExitRuntime {
+		t.Fatalf("exit=%d stdout=%s stderr=%s", code, stdout, stderr)
+	}
+	if len(runner.plans) != 0 {
+		t.Fatalf("failed Claude refresh spawned %d processes", len(runner.plans))
+	}
+}
+
+func TestHandoffCLIErrorMapsWrappedLaunchCauses(t *testing.T) {
+	tests := []struct {
+		name     string
+		code     int
+		cause    error
+		wantCode int
+	}{
+		{name: "non interactive", code: ExitRuntime, cause: sessionindex.ErrNonInteractiveLaunch, wantCode: ExitSafety},
+		{name: "boundary changed", code: ExitRuntime, cause: sessionindex.ErrLaunchBoundaryChanged, wantCode: ExitSafety},
+		{name: "unsupported action", code: ExitRuntime, cause: sessionindex.ErrNativeActionUnsupported, wantCode: ExitCompatibility},
+		{name: "executable absent", code: ExitRuntime, cause: sessionindex.ErrExecutableNotFound, wantCode: ExitCompatibility},
+		{name: "workspace absent", code: ExitRuntime, cause: sessionindex.ErrWorkspaceUnavailable, wantCode: ExitCompatibility},
+		{name: "explicit code preserved", code: ExitCompatibility, cause: sessionindex.ErrNonInteractiveLaunch, wantCode: ExitCompatibility},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := handoffCLIError(&handoff.PipelineError{Code: test.code, Err: fmt.Errorf("wrapped: %w", test.cause)})
+			exitError, ok := err.(*ExitError)
+			if !ok || exitError.Code != test.wantCode {
+				t.Fatalf("error=%T %+v want exit %d", err, err, test.wantCode)
+			}
+		})
+	}
+	direct := handoffCLIError(fmt.Errorf("direct: %w", sessionindex.ErrExecutableNotFound))
+	if exitError, ok := direct.(*ExitError); !ok || exitError.Code != ExitCompatibility {
+		t.Fatalf("direct mapped error=%T %+v", direct, direct)
+	}
+}
+
 func TestHandoffHumanOutputAlwaysStatesMode(t *testing.T) {
 	home, vendorHome, sources, _ := handoffCLIFixture(t)
 	stdout, stderr, code := runHandoffCLI(t, home, vendorHome, sources, &recordingLaunchRunner{},
@@ -130,6 +179,41 @@ func TestHandoffHumanOutputAlwaysStatesMode(t *testing.T) {
 	}
 	if !strings.Contains(stdout, ": command \"claude\"") {
 		t.Fatalf("exact command missing: %s", stdout)
+	}
+}
+
+func TestHandoffPlanPrintsGrokDestinationWarning(t *testing.T) {
+	const warning = "Grok conversations are uploaded by the destination CLI under its documented behavior."
+	plan := handoff.PlanResult{
+		HandoffID: "grok-warning",
+		Capsule: capsule.Capsule{
+			RawSource: capsule.RawSource{Agent: sessionindex.AgentGrok, SessionID: "synthetic"},
+			Security:  capsule.Security{DestinationWarning: warning, RedactionForced: true},
+		},
+		Destination: handoff.DestinationPlan{Agent: sessionindex.AgentCodex, Executable: "codex", Args: []string{"brief"}},
+	}
+
+	var human bytes.Buffer
+	cmd := &cobra.Command{}
+	cmd.SetOut(&human)
+	if err := writeHandoffPlan(cmd, plan, false, false); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(human.String(), "destination warning "+warning) {
+		t.Fatalf("human output omitted Grok destination warning: %s", human.String())
+	}
+
+	var machine bytes.Buffer
+	cmd.SetOut(&machine)
+	if err := writeHandoffPlan(cmd, plan, true, false); err != nil {
+		t.Fatal(err)
+	}
+	var output handoffPlanOutput
+	if err := json.Unmarshal(machine.Bytes(), &output); err != nil {
+		t.Fatal(err)
+	}
+	if output.Security.DestinationWarning != warning || !output.Security.RedactionForced {
+		t.Fatalf("machine security output=%+v", output.Security)
 	}
 }
 
@@ -372,4 +456,13 @@ func runHandoffCLI(t *testing.T, home, vendorHome string, sources []sessionindex
 		TerminalChecker: func(io.Reader, io.Writer) bool { return false },
 	})
 	return stdout.String(), stderr.String(), code
+}
+
+func containsString(values []string, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+	return false
 }

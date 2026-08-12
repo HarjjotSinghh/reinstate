@@ -46,6 +46,7 @@ type handoffPlanOutput struct {
 	Policy                 string                 `json:"policy"`
 	Workspace              capsule.Workspace      `json:"workspace"`
 	Capabilities           capsule.CapabilityDiff `json:"capabilities"`
+	Security               capsule.Security       `json:"security"`
 	Fidelity               capsule.Fidelity       `json:"fidelity"`
 	Parse                  transcript.ParseReport `json:"parse"`
 	PlannedFiles           []string               `json:"planned_files"`
@@ -259,10 +260,14 @@ func handoffResolver(index *sessionindex.Index) handoff.ResolveSourceFunc {
 
 func handoffClaudeSessionExists(index *sessionindex.Index) handoff.ClaudeSessionExists {
 	return func(ctx context.Context, sessionID string) (bool, error) {
-		if _, err := index.RefreshAgent(ctx, sessionindex.AgentClaude); err != nil {
+		refresh, err := index.RefreshAgent(ctx, sessionindex.AgentClaude)
+		if err != nil {
 			return false, err
 		}
-		_, err := index.Resolve(ctx, sessionindex.CompositeReference(sessionindex.AgentClaude, sessionID))
+		if !refresh.SourceFresh(sessionindex.AgentClaude) {
+			return false, errors.New("claude session source did not refresh successfully")
+		}
+		_, err = index.Resolve(ctx, sessionindex.CompositeReference(sessionindex.AgentClaude, sessionID))
 		switch {
 		case err == nil:
 			return true, nil
@@ -408,13 +413,31 @@ func handoffCLIError(err error) error {
 	}
 	var pipelineError *handoff.PipelineError
 	if errors.As(err, &pipelineError) {
-		return NewExitError(pipelineError.Code, pipelineError.Error())
+		code := pipelineError.Code
+		if code == ExitRuntime {
+			code = handoffCauseExitCode(err, code)
+		}
+		return NewExitError(code, pipelineError.Error())
 	}
 	var exitError *ExitError
 	if errors.As(err, &exitError) {
 		return exitError
 	}
-	return NewExitError(ExitRuntime, err.Error())
+	return NewExitError(handoffCauseExitCode(err, ExitRuntime), err.Error())
+}
+
+func handoffCauseExitCode(err error, fallback int) int {
+	switch {
+	case errors.Is(err, sessionindex.ErrNonInteractiveLaunch),
+		errors.Is(err, sessionindex.ErrLaunchBoundaryChanged):
+		return ExitSafety
+	case errors.Is(err, sessionindex.ErrNativeActionUnsupported),
+		errors.Is(err, sessionindex.ErrExecutableNotFound),
+		errors.Is(err, sessionindex.ErrWorkspaceUnavailable):
+		return ExitCompatibility
+	default:
+		return fallback
+	}
 }
 
 func writeHandoffPlan(cmd *cobra.Command, plan handoff.PlanResult, asJSON, showRedactions bool) error {
@@ -431,8 +454,8 @@ func writeHandoffPlan(cmd *cobra.Command, plan handoff.PlanResult, asJSON, showR
 			Executable: plan.Destination.Executable, Args: append([]string(nil), plan.Destination.Args...), CWD: plan.Destination.Dir,
 		},
 		Policy: plan.Capsule.Projection.Policy, Workspace: plan.Capsule.Workspace,
-		Capabilities: plan.Capsule.Capabilities, Fidelity: plan.Capsule.Fidelity,
-		Parse: plan.Parse, PlannedFiles: append([]string(nil), plan.PlannedFiles...),
+		Capabilities: plan.Capsule.Capabilities, Security: plan.Capsule.Security, Fidelity: plan.Capsule.Fidelity,
+		Parse: plan.Parse, PlannedFiles: handoffPlannedFiles(plan),
 		EstimatedBytes: plan.EstimatedBytes, EstimatedTokens: plan.EstimatedTokens,
 		WarningIDs: append([]string(nil), plan.WarningIDs...), Redactions: plan.RedactionCounts,
 		SourceMayHaveAdvanced: plan.SourceMayHaveAdvanced,
@@ -454,7 +477,7 @@ func writeHandoffPlan(cmd *cobra.Command, plan handoff.PlanResult, asJSON, showR
 	PrintHuman(cmd.OutOrStdout(), "%s: policy=%s projection=%d bytes estimated_tokens=%d", prefix, plan.Capsule.Projection.Policy, plan.EstimatedBytes, plan.EstimatedTokens)
 	PrintHuman(cmd.OutOrStdout(), "%s: workspace project=%s root=%s branch=%s dirty=%t", prefix, plan.Capsule.Workspace.ProjectID, plan.Capsule.Workspace.Root, plan.Capsule.Workspace.Branch, plan.Capsule.Workspace.Dirty)
 	PrintHuman(cmd.OutOrStdout(), "%s: command %s", prefix, quoteCommand(plan.Destination.Executable, plan.Destination.Args))
-	for _, path := range plan.PlannedFiles {
+	for _, path := range handoffPlannedFiles(plan) {
 		PrintHuman(cmd.OutOrStdout(), "%s: file %s", prefix, path)
 	}
 	for _, component := range plan.Capsule.Fidelity.Components {
@@ -465,6 +488,9 @@ func writeHandoffPlan(cmd *cobra.Command, plan handoff.PlanResult, asJSON, showR
 	}
 	for _, warningID := range plan.WarningIDs {
 		PrintHuman(cmd.OutOrStdout(), "%s: warning %s", prefix, warningID)
+	}
+	if warning := strings.TrimSpace(plan.Capsule.Security.DestinationWarning); warning != "" {
+		PrintHuman(cmd.OutOrStdout(), "%s: destination warning %s", prefix, warning)
 	}
 	redactionTotal := 0
 	for _, count := range plan.RedactionCounts {
@@ -482,6 +508,22 @@ func writeHandoffPlan(cmd *cobra.Command, plan handoff.PlanResult, asJSON, showR
 		}
 	}
 	return nil
+}
+
+func handoffPlannedFiles(plan handoff.PlanResult) []string {
+	files := append([]string(nil), plan.PlannedFiles...)
+	for _, path := range files {
+		if filepath.Base(path) == "lineage.jsonl" {
+			return files
+		}
+	}
+	for _, path := range files {
+		dir := filepath.Dir(path)
+		if filepath.Base(dir) == plan.HandoffID {
+			return append(files, filepath.Join(filepath.Dir(dir), "lineage.jsonl"))
+		}
+	}
+	return files
 }
 
 func handoffHumanPrefix(agent string) string {
