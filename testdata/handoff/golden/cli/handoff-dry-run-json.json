@@ -1,0 +1,90 @@
+{
+  "mode": "structured handoff",
+  "destination_session_mode": "new",
+  "handoff_id": "9b5e6bdf17a83fec60e4b9e5c73edace",
+  "lineage_root": "9b5e6bdf17a83fec60e4b9e5c73edace",
+  "source": {
+    "agent": "codex",
+    "session_id": "source-session"
+  },
+  "destination": {
+    "agent": "claude",
+    "session_id": "826576b6-1014-418e-9c9f-6a14f5600874",
+    "executable": "claude",
+    "args": [
+      "--session-id",
+      "826576b6-1014-418e-9c9f-6a14f5600874",
+      "structured handoff, not native resume\n\n## Goal\nContinue the controlled task\n\n## Latest user request\nContinue the controlled task\n\n## Workspace truth\nproject_id: controlled-project\nroot: ${REPO:controlled-project}\nbranch: -\nhead: -\ndirty: false\n\n## Changed files\n(none)\n\n## Test state\n(none)\n\n## Missing capabilities\n(none)\n\n## Redaction summary\n(none)\n\n## Projection\nRead the full briefing in ${REINSTATE_HOME}/handoffs/9b5e6bdf17a83fec60e4b9e5c73edace/projection.md\n\n## Acknowledgement required\n\nBefore any mutation, restate:\n1. current goal and latest user request\n2. critical constraints carried over\n3. current changed files and test state\n4. missing capabilities or uncertain evidence\n5. proposed next action\nThis is a prompt-level contract only; Reinstate cannot police the destination agent loop.\n"
+    ],
+    "cwd": "${WORKSPACE}"
+  },
+  "policy": "balanced",
+  "workspace": {
+    "project_id": "controlled-project",
+    "root": "${REPO:controlled-project}",
+    "dirty": false
+  },
+  "capabilities": {
+    "source": {
+      "agent": "codex",
+      "approval_modes": "omitted",
+      "attachments": "omitted",
+      "context_ceiling": "omitted",
+      "context_ceiling_reason": "no_vendor_published_harness_token_ceiling",
+      "instruction_count": 0,
+      "mcp_count": 0,
+      "multi_root": "omitted",
+      "skill_count": 0,
+      "tool_families": "omitted"
+    },
+    "destination": {
+      "agent": "claude",
+      "approval_modes": "omitted",
+      "attachments": true,
+      "context_ceiling": "omitted",
+      "context_ceiling_reason": "no_vendor_published_harness_token_ceiling",
+      "instruction_count": 0,
+      "mcp_count": 0,
+      "multi_root": "omitted",
+      "skill_count": 0,
+      "tool_families": "omitted"
+    }
+  },
+  "security": {
+    "source_instructions_are_untrusted_history": true
+  },
+  "fidelity": {
+    "overall": "exact",
+    "mode": "structured_handoff",
+    "components": [
+      {
+        "name": "user_messages",
+        "portability": "exact",
+        "count": 1,
+        "bytes": 28
+      }
+    ]
+  },
+  "parse": {
+    "Events": 1,
+    "ByKind": {
+      "message": 1
+    },
+    "UnknownRecords": 0,
+    "MalformedLines": 0,
+    "TruncatedBlocks": 0,
+    "Warnings": null
+  },
+  "planned_files": [
+    "${REINSTATE_HOME}/handoffs/9b5e6bdf17a83fec60e4b9e5c73edace/bootstrap.txt",
+    "${REINSTATE_HOME}/handoffs/9b5e6bdf17a83fec60e4b9e5c73edace/capsule.json",
+    "${REINSTATE_HOME}/handoffs/9b5e6bdf17a83fec60e4b9e5c73edace/fidelity.json",
+    "${REINSTATE_HOME}/handoffs/9b5e6bdf17a83fec60e4b9e5c73edace/projection.md",
+    "${REINSTATE_HOME}/handoffs/lineage.jsonl"
+  ],
+  "estimated_bytes": 901,
+  "estimated_tokens": 226,
+  "warning_ids": [],
+  "redactions": {},
+  "source_may_have_advanced": false
+}
