@@ -19,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dedup, filename-UUID session identity for forks, and R4
   `vendor_opaque_state` omission for reasoning / encrypted reasoning items.
   Synthetic fixtures under `testdata/handoff/codex/`.
+- OpenCode source-only transcript reader (`internal/transcript`): MessageV2
+  storage tier under `storage/message/` + `storage/part/`, with metadata
+  fallback via `opencode session list` when bodies are unavailable
+  (`source_bodies_unavailable`). Windows uses the documented XDG data root
+  (`%USERPROFILE%\.local\share\opencode`), not `%LOCALAPPDATA%`.
 - `internal/handoff.BindWorkspace` binds Phase 3 preflight workspace truth into
   a continuity-capsule workspace with `${REPO:<id>}` portable path tokens.
   Blocked preflight reports surface as `handoff.BlockedError` with the same
