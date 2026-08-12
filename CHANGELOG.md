@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dedup, filename-UUID session identity for forks, and R4
   `vendor_opaque_state` omission for reasoning / encrypted reasoning items.
   Synthetic fixtures under `testdata/handoff/codex/`.
+- `internal/handoff.BindWorkspace` binds Phase 3 preflight workspace truth into
+  a continuity-capsule workspace with `${REPO:<id>}` portable path tokens.
+  Blocked preflight reports surface as `handoff.BlockedError` with the same
+  exit codes Phase 3 uses; warning reports still require acknowledgement.
 - Gemini CLI source-only transcript reader (`internal/transcript/gemini.go`)
   for Phase 4 handoff capsules: legacy `messages[]` JSON and JSONL+`$set`,
   vendor-aligned `$rewindTo` replay (exclusive of the target id), and
