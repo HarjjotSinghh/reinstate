@@ -79,6 +79,19 @@ Per-line, on the top-level object or its nested `message`:
 `isMeta: true` records are harness-injected and must not be treated as a
 human-authored prompt.
 
+### Attachments (R8)
+
+Claude Code image blocks use the Anthropic Messages `image` shape. Two source
+forms appear in project JSONL:
+
+1. **Inline base64** — `source.type: "base64"` with `media_type` + `data`.
+   Reinstate does not re-embed the bytes; the event is `omitted` with reason
+   `attachment_unavailable`.
+2. **Path references** — a local file path on the image block or
+   `source` (`path` / `file` / `file_path`). When the file exists on disk, the
+   event is `referenced` (sha256 + mime + size only; no absolute path). When
+   the path is missing, it is `omitted` with `attachment_unavailable`.
+
 ---
 
 ## 2. OpenAI Codex CLI

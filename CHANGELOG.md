@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Claude Code transcript reader (`internal/transcript`) that snapshots complete
+  JSONL boundaries and maps user/assistant/tool/summary/attachment/unknown
+  records into canonical capsule events, with synthetic fixtures under
+  `testdata/handoff/claude/` and R8 attachment guidance in
+  `docs/session-storage-map.md`.
 - Phase 4 planning set for `v0.4.0` cross-agent handoff: the continuity-capsule
   design and ADR 0002, a user-facing handoff contract, a per-OS local session
   storage map for Claude Code, Codex, Gemini CLI, OpenCode, and Grok Build, the
