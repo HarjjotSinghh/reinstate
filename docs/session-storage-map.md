@@ -79,6 +79,14 @@ Per-line, on the top-level object or its nested `message`:
 `isMeta: true` records are harness-injected and must not be treated as a
 human-authored prompt.
 
+### Context-window ceiling (R7 — Omitted)
+
+No Claude Code **harness** token ceiling is published in the vendor docs
+Reinstate trusts. Model context sizes are not treated as a CLI constant.
+Capability-diff summaries emit `context_ceiling: omitted` with reason
+`no_vendor_published_harness_token_ceiling`. See
+[research/2026-08-12-phase-4-r7-context-ceilings.md](research/2026-08-12-phase-4-r7-context-ceilings.md).
+
 ### Attachments (R8)
 
 Claude Code image blocks use the Anthropic Messages `image` shape. Two source
@@ -112,6 +120,13 @@ forms appear in project JSONL:
 | Native fork | `codex fork <session-id>` |
 | Initial prompt | Positional argument: `codex "<prompt>"` |
 | Non-interactive | `codex exec …`, `codex exec --last` |
+
+### Context-window ceiling (R7 — Omitted)
+
+No Codex CLI **harness** token ceiling is published in the vendor docs
+Reinstate trusts. Capability-diff summaries omit it with the same R7 reason
+as Claude Code. See
+[research/2026-08-12-phase-4-r7-context-ceilings.md](research/2026-08-12-phase-4-r7-context-ceilings.md).
 
 ### Why the filename wins
 
@@ -332,3 +347,4 @@ Reinstate never treats one agent-state directory as shared between them.
 - [xAI Grok Build sessions](https://docs.x.ai/build/features/sessions) · [Grok Build changelog](https://x.ai/build/changelog) · [17-sessions.md (source)](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/17-sessions.md) · [`encode_cwd_dirname`](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-config/src/paths.rs)
 - [Grok Build CLI wire-level analysis (privacy)](https://gist.github.com/cereblab/dc9a40bc26120f4540e4e09b75ffb547)
 - Phase 4 R1–R3 research note: [research/2026-08-12-phase-4-r1-r2-r3.md](research/2026-08-12-phase-4-r1-r2-r3.md)
+- Phase 4 R7 context ceilings: [research/2026-08-12-phase-4-r7-context-ceilings.md](research/2026-08-12-phase-4-r7-context-ceilings.md)
