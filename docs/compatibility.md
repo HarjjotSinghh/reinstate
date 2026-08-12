@@ -169,14 +169,29 @@ fields to the currently configured portable tokens (`${HOME}` and
 `${WORK:<alias>}` primitive is not populated by Reinstate configuration or adapters.
 Prose and unknown fields are left unchanged.
 
-Continuity capsules hold no absolute paths at all. Transcript readers tokenize
-the structural paths they lift out of a transcript — tool-call inputs such as
-`file_path`, `workdir`, and argv entries, tool-result output, and attachment
-references — before any capsule is built. A path that belongs to no configured
-root cannot be rewritten for the destination device and usually embeds the
-operator's account name, so it becomes `${EXTERNAL:<digest>}/<name>`: a stable,
-non-reversible identity plus the file's base name. It is deliberately not
-resolvable on the destination. Message bodies stay untouched as prose.
+Continuity capsules hold no absolute path in any field that carries a path.
+Transcript readers tokenize the structural paths they lift out of a transcript —
+tool-call inputs such as `file_path`, `workdir`, and argv entries, tool-result
+output, and attachment references — before any capsule is built. A path that
+belongs to no configured root cannot be rewritten for the destination device and
+usually embeds the operator's account name, so it becomes
+`${EXTERNAL:<digest>}/<name>`: a stable, non-reversible identity plus the file's
+base name. It is deliberately not resolvable on the destination.
+
+Capsule canonicalization enforces that rule on the path-typed fields —
+`workspace.root`, `workspace.changed_files`, `task.changed_files`,
+`task.files_touched_per_transcript`, block `path`, `ref` and `meta` values, the
+sidecar references, and the path-typed keys inside tool arguments — and names
+the offending field when it refuses one. A reader that forgets to tokenize
+therefore fails loudly instead of leaking the operator's home directory to the
+destination.
+
+Message bodies stay untouched as prose, and prose is never judged as a path. A
+message that opens with a slash command (`/init`, `/compact`) or names
+`/etc/hosts` mid-sentence is carried exactly as the user wrote it: rewriting or
+refusing it would corrupt the record of what was actually said. Capsules are
+local-only in v0.4.0 and the destination is a local process, so a path a user
+typed into a sentence stays where the user put it.
 
 ## Security exclusions
 

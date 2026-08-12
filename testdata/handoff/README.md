@@ -8,10 +8,11 @@ secret-like patterns appear.
 
 ```text
 claude/{long-history,compaction,parallel-tools,subagents,attachments,
-        absolute-paths,partial-final-record,unknown-records,
+        absolute-paths,slash-commands,partial-final-record,unknown-records,
         os-roots/{macos,windows,wsl}}/
 codex/{long-history,forks,parallel-tools,reasoning-items,absolute-paths,
-       partial-final-record,unknown-records,os-roots/{macos,windows,wsl}}/
+       slash-commands,partial-final-record,unknown-records,
+       os-roots/{macos,windows,wsl}}/
 gemini/{rewind,legacy-json,jsonl}/
 opencode/{storage,metadata-only}/
 grok/{basic,compacted}/
@@ -33,6 +34,11 @@ Two rules exist because rc.1 shipped defects that the suite could not see:
   shape for both Claude and Codex so reader-boundary path tokenization stays
   covered. Keep those paths low-entropy — a temp-directory path is masked by
   secret redaction, which is another way to hide the defect.
+- **Messages carry slash commands and paths in prose.** Real sessions open with
+  `/init`, `/compact`, or a sentence naming an absolute path;
+  `slash-commands/` keeps that shape for both Claude and Codex so the capsule
+  never re-acquires the rc.1 defect where prose beginning with `/` was judged
+  as a filesystem path and aborted the handoff.
 
 ## Regenerable corpus
 

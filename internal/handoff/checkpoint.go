@@ -369,14 +369,11 @@ func collectStructuredFileValue(value any, files map[string]struct{}) {
 	}
 }
 
+// isFileField defers to the capsule so the keys whose values are lifted into
+// task.files_touched_per_transcript are exactly the keys the capsule validates
+// as paths inside tool arguments.
 func isFileField(key string) bool {
-	normalized := strings.NewReplacer("_", "", "-", "").Replace(strings.ToLower(key))
-	switch normalized {
-	case "path", "file", "filename", "filepath", "files", "paths", "targetpath", "sourcepath", "destinationpath":
-		return true
-	default:
-		return false
-	}
+	return capsule.IsPathFieldName(key)
 }
 
 func addFileRef(value string, files map[string]struct{}) {
