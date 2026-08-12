@@ -85,8 +85,8 @@ func (e *Engine) PushSession(ctx context.Context, item PushItem, dryRun bool) (s
 	if item.Agent == "" || item.SessionID == "" || item.LocalPath == "" {
 		return "", fmt.Errorf("agent, session id, and local path are required")
 	}
-	if isCredentialName(filepath.Base(item.LocalPath)) || containsCredentialPath(item.RelativePath) {
-		return "", fmt.Errorf("refusing to push credential file")
+	if isCredentialName(filepath.Base(item.LocalPath)) || containsHardExcludedPath(item.RelativePath) || containsHardExcludedPath(item.LocalPath) {
+		return "", fmt.Errorf("refusing to push hard-excluded path")
 	}
 
 	source, err := os.Open(item.LocalPath)
@@ -395,8 +395,8 @@ func (e *Engine) validateEnvelope(env schema.Envelope, item PullItem) error {
 	if file.Path == "" || filepath.IsAbs(clean) || clean == "." || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
 		return fmt.Errorf("unsafe snapshot path")
 	}
-	if containsCredentialPath(file.Path) {
-		return fmt.Errorf("snapshot path is excluded credential material")
+	if containsHardExcludedPath(file.Path) {
+		return fmt.Errorf("snapshot path is hard-excluded")
 	}
 	if file.Size < 0 || file.Size > e.maxPayloadSize() {
 		return fmt.Errorf("invalid snapshot payload size")
@@ -483,6 +483,20 @@ func isCredentialName(name string) bool {
 func containsCredentialPath(path string) bool {
 	for _, part := range strings.FieldsFunc(filepath.ToSlash(path), func(r rune) bool { return r == '/' }) {
 		if isCredentialName(part) {
+			return true
+		}
+	}
+	return false
+}
+
+// containsHardExcludedPath reports credential material and the local-only
+// handoffs/ store (never in push/pull scope for v0.4.0).
+func containsHardExcludedPath(path string) bool {
+	if containsCredentialPath(path) {
+		return true
+	}
+	for _, part := range strings.FieldsFunc(filepath.ToSlash(path), func(r rune) bool { return r == '/' }) {
+		if strings.EqualFold(part, "handoffs") {
 			return true
 		}
 	}
