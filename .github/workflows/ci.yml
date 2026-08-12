@@ -176,8 +176,35 @@ jobs:
           node-version: "24.4.1"
           package-manager-cache: false
 
+      # download-syft only fetches the Syft binary from GitHub releases and has
+      # no retry of its own, so a transient HTTP 000 fails the whole job. Repeat
+      # the same pinned action up to three times with a short backoff. Every
+      # failure of this step is a download failure, so nothing real is masked.
       - name: Install Syft
+        id: syft_attempt_1
+        continue-on-error: true
         uses: anchore/sbom-action/download-syft@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+
+      - name: Back off before the second Syft download attempt
+        if: steps.syft_attempt_1.outcome == 'failure'
+        run: sleep 5
+
+      - name: Install Syft (second attempt)
+        id: syft_attempt_2
+        if: steps.syft_attempt_1.outcome == 'failure'
+        continue-on-error: true
+        uses: anchore/sbom-action/download-syft@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+
+      - name: Back off before the final Syft download attempt
+        if: steps.syft_attempt_1.outcome == 'failure' && steps.syft_attempt_2.outcome == 'failure'
+        run: sleep 15
+
+      - name: Install Syft (final attempt)
+        if: steps.syft_attempt_1.outcome == 'failure' && steps.syft_attempt_2.outcome == 'failure'
+        uses: anchore/sbom-action/download-syft@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+
+      - name: Verify Syft is on PATH
+        run: syft version
 
       - name: Validate GoReleaser configuration
         uses: goreleaser/goreleaser-action@1a80836c5c9d9e5755a25cb59ec6f45a3b5f41a8 # v7.2.1
@@ -295,10 +322,31 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $url = 'https://github.com/microsoft/winget-create/releases/download/v1.12.13.0/wingetcreate.exe'
-          Invoke-WebRequest $url -OutFile wingetcreate.exe
-          $actual = (Get-FileHash wingetcreate.exe -Algorithm SHA256).Hash.ToLowerInvariant()
           $expected = '24042bd37915805615e6cf969ac57c6439124c3fe85823327f5f3fb24bd9ffea'
-          if ($actual -ne $expected) { throw "WinGetCreate checksum mismatch: $actual" }
+          # Retry transport failures only. The SHA256 gate runs on every
+          # downloaded copy, sits outside the catch, and throws immediately on a
+          # mismatch so a corrupted or substituted binary is never retried.
+          $verified = $false
+          for ($attempt = 1; $attempt -le 3; $attempt++) {
+            $downloadError = $null
+            try {
+              Remove-Item wingetcreate.exe -Force -ErrorAction SilentlyContinue
+              Invoke-WebRequest $url -OutFile wingetcreate.exe -UseBasicParsing -TimeoutSec 300
+            } catch {
+              $downloadError = $_
+            }
+            if ($null -ne $downloadError) {
+              if ($attempt -eq 3) { throw $downloadError }
+              Write-Host "WinGetCreate download attempt $attempt failed: $($downloadError.Exception.Message)"
+              Start-Sleep -Seconds (5 * $attempt)
+              continue
+            }
+            $actual = (Get-FileHash wingetcreate.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($actual -ne $expected) { throw "WinGetCreate checksum mismatch: $actual" }
+            $verified = $true
+            break
+          }
+          if (-not $verified) { throw 'WinGetCreate was never downloaded and verified' }
           $ErrorActionPreference = 'Continue'
           $validation = & ./wingetcreate.exe submit package-manager/winget --no-open --token $env:WINGET_VALIDATION_TOKEN 2>&1 | Out-String
           $submitExit = $LASTEXITCODE
