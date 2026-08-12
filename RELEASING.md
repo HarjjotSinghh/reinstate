@@ -125,6 +125,12 @@ native Windows x64. Gemini CLI, OpenCode, and Grok Build remain optional
 source-only rows and may be `NOT TESTED` only when genuinely absent; do not
 install them solely for acceptance.
 
+The candidate widens the fail-closed Claude Code range through `2.1.228` (was
+`2.1.227`) so both physical acceptance hosts run an in-range install; the Codex
+CLI range stays `0.133.0`–`0.147.0`. `2.1.228` is covered by the range but has
+no physical evidence yet — the `v0.4.0-rc.1` dual-platform run is what supplies
+it, exactly as `v0.3.0-rc.6` widened first and tested afterwards.
+
 `v0.4.0-rc.1` publication means ready for tagged-artifact acceptance. It is not
 evidence that the matrix passed, does not authorize stable `v0.4.0`, and does
 not change the current stable release from `v0.3.0`.

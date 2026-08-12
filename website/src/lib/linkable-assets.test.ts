@@ -98,9 +98,11 @@ describe('evidence-safe linkable assets', () => {
   });
 
   it('unifies current compatibility and tagged release evidence', async () => {
-    const [tracker, changelog] = await Promise.all([
+    const [tracker, changelog, claudeAdapter, compatibilityDoc] = await Promise.all([
       page('compatibility/agent-version-history.astro'),
       repositoryFile('CHANGELOG.md'),
+      repositoryFile('internal/adapter/claude/claude.go'),
+      repositoryFile('docs/compatibility.md'),
     ]);
 
     expect(agentVersionHistory.map(({ version }) => version)).toEqual(
@@ -138,13 +140,25 @@ describe('evidence-safe linkable assets', () => {
       agentVersionHistory.find(({ version }) => version === 'v0.1.0-rc.3')
         ?.rangeChange,
     ).toContain('Claude Code 2.1.219–2.1.220');
-    expect(
-      agentVersionHistory.find(({ version }) => version === 'v0.3.0')
-        ?.rangeChange,
-    ).toContain(
-      `${compatibility.agents[0].minimumTestedVersion}–${compatibility.agents[0].maximumTestedVersion}`,
+    // The published range can move ahead of the newest tag when a candidate
+    // widens it before acceptance, so it is pinned to the shipping adapter
+    // constants and the compatibility doc rather than to a released entry.
+    expect(claudeAdapter).toContain(
+      `minimumVerifiedClaudeVersion = "${compatibility.agents[0].minimumTestedVersion}"`,
+    );
+    expect(claudeAdapter).toContain(
+      `maximumVerifiedClaudeVersion = "${compatibility.agents[0].maximumTestedVersion}"`,
+    );
+    expect(compatibilityDoc).toContain(
+      `| Claude Code | \`${compatibility.agents[0].minimumTestedVersion}\`–\`${compatibility.agents[0].maximumTestedVersion}\` |`,
+    );
+    expect(compatibilityDoc).toContain(
+      `| OpenAI Codex CLI | \`${compatibility.agents[1].minimumTestedVersion}\`–\`${compatibility.agents[1].maximumTestedVersion}\` |`,
     );
     expect(changelog).toContain('Claude Code compatibility range through `2.1.227`');
+    expect(changelog).toContain(
+      `Claude Code compatibility range through \`${compatibility.agents[0].maximumTestedVersion}\``,
+    );
     expect(tracker).toContain('compatibility.agents.map');
     expect(tracker).toContain('No change documented');
     expect(tracker).toContain('source-level gate');
