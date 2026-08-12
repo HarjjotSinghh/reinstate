@@ -134,12 +134,17 @@ jobs:
         with:
           go-version: "1.25.12"
           cache: true
+      # Runs the same pinned golangci-lint release the Makefile uses, fetched
+      # through the Go module proxy instead of a GitHub release download.
+      # golangci-lint-action pulls its binary from GitHub releases, which failed
+      # repeatedly during the v0.4.0-rc.1 release window with transport errors
+      # ("Failed to run: Unexpected HTTP response: 503"). Those look nothing like
+      # lint findings but still fail the job, and a blind retry around a step that
+      # both downloads and lints would re-run genuine findings. The module proxy
+      # is already warmed by setup-go's cache, so this removes the flaky hop
+      # rather than retrying it, and CI now runs exactly what `make lint` runs.
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
-        with:
-          # This release is built with a toolchain new enough to lint Go 1.25.
-          version: v2.11.4
-          args: --timeout=5m
+        run: make lint
 
   security:
     name: Security
