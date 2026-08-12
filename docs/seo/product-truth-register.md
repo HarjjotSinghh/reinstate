@@ -2,8 +2,8 @@
 
 Last reviewed: 2026-08-12
 Canonical website source: `website/src/data/product.ts`
-Reviewed release: `v0.3.0` stable; `v0.4.0-rc.1` candidate prepared, not yet
-physically certified or released
+Reviewed release: `v0.4.0-rc.1` candidate (tagged for testing; tagged-artifact
+acceptance pending); stable remains `v0.3.0`
 
 This is the required output of the repository-local
 `reinstate-product-truth` workflow. It separates released facts from roadmap
@@ -29,7 +29,7 @@ marketing claim.
 | Paths | Recognized structural project roots are tokenized and expanded through a canonical project ID; arbitrary prose is not rewritten | `internal/pathmap`, adapter tests, configuration docs |
 | License | Apache-2.0 | `LICENSE`, `product.ts` |
 | Account requirement | The CLI does not require a Reinstate account | released architecture and `product.ts` |
-| Current release | `v0.3.0` stable · dual-platform verified resume | changelog, release history, compatibility data |
+| Current release | `v0.4.0-rc.1` candidate, acceptance pending; `v0.3.0` remains stable | changelog, release history, compatibility data |
 | Maintainer | Harjot Singh Rana | repository metadata and `product.ts` |
 
 ## Conflicting claims and resolution
@@ -48,7 +48,7 @@ marketing claim.
 
 - support for agents other than Claude Code and Codex as current Phase 1
   adapters;
-- stable `v0.3.0` support without a separate reviewed promotion and fresh
+- stable `v0.4.0` support without a separate reviewed promotion and fresh
   Apple Silicon macOS/native Windows tagged-artifact evidence;
 - stable support for Intel macOS, WSL2, or plain Linux without completed
   acceptance evidence;

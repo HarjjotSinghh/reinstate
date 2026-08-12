@@ -6,7 +6,7 @@ order: 7
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.3.0"
+version: "v0.4.0-rc.1"
 updatedAt: 2026-08-01
 tags: ["faq", "session-sync", "claude-code", "codex", "security"]
 targetQuery: "what is Reinstate"
@@ -27,8 +27,9 @@ implements encrypted, bring-your-own-storage sync for same-vendor Claude Code
 and Codex sessions. Phase 2 adds configless local indexing, literal search,
 metadata inspection, a TTY switcher, and same-vendor native resume/fork.
 Stable `v0.3.0` adds verified resume after dual-platform tagged-artifact
-acceptance PASS. Portable handoffs and cross-harness configuration remain
-later phases.
+acceptance PASS. Release candidate `v0.4.0-rc.1` adds explicit structured
+handoff into a new Claude Code or Codex session; its tagged-artifact acceptance
+is pending. Cross-harness configuration remains a later phase.
 
 See [What is Reinstate?](/about/reinstate) for current product facts, non-goals,
 roadmap boundaries, and maintainer information.
@@ -185,8 +186,10 @@ syncing after an agent upgrade.
 ## Production ready?
 
 `v0.3.0` is the current pre-1.0 stable release on Apple Silicon macOS and
-native Windows x64, with Phase 3 verified resume. Intel macOS, WSL2, and other
-POSIX packages are optional and unverified. See the
+native Windows x64, with Phase 3 verified resume. `v0.4.0-rc.1` adds structured
+handoff, but candidate acceptance is pending and it does not authorize stable
+`v0.4.0`. Intel macOS, WSL2, and other POSIX packages are optional and
+unverified. See the
 [roadmap](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md)
 and [changelog](https://github.com/HarjjotSinghh/reinstate/blob/main/CHANGELOG.md),
 use it with backups, and report bugs through GitHub Issues.

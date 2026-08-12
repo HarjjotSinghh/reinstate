@@ -11,9 +11,13 @@ resume: a privacy-safe environment report and launch gate for same-vendor
 Claude/Codex continuation. Dual-platform tagged-artifact acceptance passed on
 Apple Silicon macOS and native Windows x64.
 
-> **Release status:** the public installers pin stable `v0.3.0`.
-> Apple Silicon macOS and native Windows x64 tagged-artifact acceptance passed
-> (`stable_v0.3.0_authorized=true`). Intel macOS and Linux/WSL2 remain optional,
+Release candidate `v0.4.0-rc.1` adds Phase 4 structured handoff, which
+continues the same task in a new Claude Code or Codex session. Its
+tagged-artifact acceptance is pending, and it is not stable `v0.4.0`.
+
+> **Release status:** the public installers pin candidate `v0.4.0-rc.1`.
+> Apple Silicon macOS and native Windows x64 tagged-artifact acceptance is
+> pending. Stable remains `v0.3.0`; Intel macOS and Linux/WSL2 remain optional,
 > unsupported/unverified evidence tracked in [#97](https://github.com/HarjjotSinghh/reinstate/issues/97)
 > and [#98](https://github.com/HarjjotSinghh/reinstate/issues/98).
 
@@ -76,7 +80,7 @@ brew install HarjjotSinghh/tap/reinstate
 The tap formula tracks stable `v0.3.0`. Intel macOS and Linuxbrew remain
 optional and unverified for this release.
 
-### Install v0.3.0 on macOS, Linux, or WSL2
+### Install v0.4.0-rc.1 on macOS, Linux, or WSL2
 
 ```sh
 curl -fsSL https://reinstate.dev/install.sh | sh
@@ -86,7 +90,7 @@ The default installation directory is `~/.local/bin`. The bootstrap prints an
 absolute `rein init` command that works immediately and adds the directory to
 the appropriate shell startup file for new terminals.
 
-### Install v0.3.0 on native Windows PowerShell
+### Install v0.4.0-rc.1 on native Windows PowerShell
 
 ```powershell
 irm https://reinstate.dev/install.ps1 | iex
@@ -98,7 +102,7 @@ and the current PowerShell process.
 
 Both public bootstraps:
 
-1. pin `v0.3.0`;
+1. pin `v0.4.0-rc.1`;
 2. download the canonical installer from that exact signed Git tag;
 3. verify the canonical installer SHA-256;
 4. download only the matching GitHub Release asset and `checksums.txt`;
@@ -194,7 +198,7 @@ not a shell command string. Remove `--dry-run` to inherit the current terminal
 and launch the same vendor. Gemini and OpenCode remain read-only and refuse
 resume/fork.
 
-The `v0.3.0` candidate includes a deterministic `environment` report in
+Stable `v0.3.0` includes a deterministic `environment` report in
 `inspect` and native dry-run output. It checks the fresh selected source,
 workspace/repository, installed same-vendor agent, name-only capabilities, and
 recognized Node/Go runtime declarations. The verifier is local-only: it does

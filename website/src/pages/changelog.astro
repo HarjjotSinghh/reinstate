@@ -36,9 +36,9 @@ const answer =
     Current unreleased website work adds the SEO, answer-engine, AI-search, and social-preview
     foundation and introduces signed <code>website-vYYYY.MM.DD.N</code> deployment tags. A website
     tag can publish reviewed site changes from current <code>main</code> while the public CLI and
-    installer routes remain pinned to the separately signed <code>{product.currentRelease}</code> stable
+    installer routes remain pinned to the separately signed <code>{product.currentRelease}</code>
     release. It is not a new Reinstate version or evidence for any platform outside the documented
-    stable boundary.
+    release boundary.
   </p>
   <p>
     The repository's
@@ -50,18 +50,21 @@ const answer =
   <h2 id={releaseAnchor(product.currentRelease)}>
     {product.currentRelease} · {currentReleaseDate}
   </h2>
-  <h3>Verified resume</h3>
+  <h3>Structured cross-agent handoff</h3>
   <ul>
     <li>
-      <code>inspect</code>, dry-runs, direct launches, <code>last</code>, and picker selections
-      include deterministic, privacy-safe environment reports.
+      <code>rein handoff</code> and <code>rein resume --with</code> start a <em>new</em> Claude Code
+      or Codex session that continues the same task. This is not a resume of the source session.
     </li>
     <li>
-      Workspace/repository identity, same-vendor executable compatibility, capability names, and
-      recognized Node/Go runtimes are checked without running project scripts.
+      Claude Code, Codex CLI, Gemini CLI, OpenCode, and Grok Build can be handoff sources. Gemini
+      CLI, OpenCode, and Grok Build are source-only; Claude Code and Codex are the only
+      destinations.
     </li>
     <li>
-      Warnings require exact invocation-scoped acknowledgement; blockers remain non-overridable.
+      Each capsule component is labeled <code>exact</code>, <code>normalized</code>,
+      <code>summarized</code>, <code>referenced</code>, or <code>omitted</code>, so lossy transfer
+      stays visible rather than implied to be complete.
     </li>
   </ul>
   <h3>Continuity and privacy boundary</h3>
@@ -70,25 +73,31 @@ const answer =
       Native execution remains same-vendor; Reinstate does not translate transcripts across agents.
     </li>
     <li>
-      Environment verification remains local-only and excludes contents, commands, values,
-      credentials, raw URLs, and dirty filenames.
+      Handoff parses the source locally with no source model call, and never writes vendor-internal
+      session files.
     </li>
     <li>
-      Stable <code>{product.stableRelease}</code> local continuity and encrypted sync remain available.
+      Capsules stay owner-only under <code>$REINSTATE_HOME/handoffs/</code> and are hard-excluded
+      from sync.
+    </li>
+    <li>
+      Stable <code>{product.stableRelease}</code> verified resume, local continuity, and encrypted
+      sync remain available.
     </li>
   </ul>
   <h3>Acceptance boundary</h3>
   <ul>
     <li>
-      Dual-platform tagged-artifact acceptance PASS on candidate <code>v0.3.0-rc.7</code>
-      (Apple Silicon macOS and native Windows x64).
+      Dual-platform tagged-artifact acceptance on Apple Silicon macOS and native Windows x64 is
+      pending for this candidate.
     </li>
     <li>
       Intel macOS and Linux/WSL2 remain optional, unsupported/unverified evidence and do not block
-      this stable release.
+      this candidate.
     </li>
     <li>
-      Fresh dual-platform validation on the stable tag is the post-publish evidence gate.
+      Passing this candidate does not authorize stable <code>v0.4.0</code>; that requires a
+      separate reviewed promotion and fresh validation.
     </li>
   </ul>
   <p>

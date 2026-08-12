@@ -2,10 +2,11 @@
 
 Binary names: `rein` and `reinstate` (identical behavior).
 
-Public installers pin stable `v0.3.0`, including the Phase 1/2 surface
-and Phase 3 verified resume. Dual-platform tagged-artifact acceptance passed on
-Apple Silicon macOS and native Windows x64. Intel macOS and Linux/WSL2 remain
-optional and unverified.
+Public installers pin candidate `v0.4.0-rc.1`, including the Phase 1/2 surface,
+Phase 3 verified resume, and the Phase 4 structured-handoff surface. Its
+tagged-artifact acceptance is pending on Apple Silicon macOS and native Windows
+x64. Stable remains `v0.3.0`; Intel macOS and Linux/WSL2 remain optional and
+unverified.
 
 Stable `v0.3.0` includes the Phase 3 environment report and
 `--allow-environment-warning` flag. The command synopsis below additionally
@@ -110,7 +111,7 @@ delegate execution to the source vendor:
 | Gemini CLI | read-only | read-only |
 | OpenCode | read-only | read-only |
 
-Review the plan with `--dry-run --json`. `v0.3.0` also includes
+Review the plan with `--dry-run --json`. Stable `v0.3.0` also includes
 the verified-resume `environment` report described below. A real launch
 inherits the terminal, waits for the child, and propagates failure. JSON mode
 requires `--dry-run` for `resume`, `fork`, and `last`, so native child output
