@@ -14,7 +14,7 @@
       "integrationPath": "/integrations/claude-code",
       "status": "primary-release-target",
       "minimumTestedVersion": "2.1.219",
-      "maximumTestedVersion": "2.1.228",
+      "maximumTestedVersion": "2.1.229",
       "resumeMode": "Claude Code to Claude Code",
       "evidenceLevel": "source checks, deterministic synthetic fixtures, and dual-platform tagged-artifact acceptance",
       "lastTested": "2026-08-11",
