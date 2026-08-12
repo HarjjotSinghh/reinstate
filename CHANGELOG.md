@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Handoff projection renderer (`RenderBootstrap`, `RenderProjection`,
+  `RenderJSON`) with imported-history framing, delimiter escape, source
+  system/developer exclusion, and an 8 KiB bootstrap ceiling
+  (`internal/handoff/projection.go`; goldens under
+  `testdata/handoff/golden/projection/`).
 - Handoff context policies (`checkpoint` / `balanced` / `full`) with
   newest-first projection budgeting, visible truncation markers, deterministic
   token estimates (`ceil(utf8_bytes / 4)`), and sidecar references for every
