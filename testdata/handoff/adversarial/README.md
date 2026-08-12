@@ -1,3 +1,5 @@
 # Adversarial handoff fixtures
 
-Owned by WP-24. Placeholders only in WP-23 so the §10 tree is complete.
+Deterministic synthetic Claude JSONL fixtures for the Phase 4 security contract.
+Secret-shaped values are intentionally fake and JSON-escaped where needed so
+fixture scanning cannot mistake them for usable credentials.
