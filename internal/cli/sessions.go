@@ -97,7 +97,7 @@ func newSessionsCmd(options localCommandOptions) *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "emit machine-readable JSON")
-	cmd.Flags().StringVar(&agent, "agent", "all", "agent filter: claude|codex|gemini|opencode|all")
+	cmd.Flags().StringVar(&agent, "agent", "all", "agent filter: claude|codex|gemini|opencode|grok|all")
 	cmd.Flags().IntVar(&limit, "limit", sessionindex.DefaultLimit, "maximum sessions to return")
 	return cmd
 }
@@ -127,7 +127,7 @@ func newSearchCmd(options localCommandOptions) *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "emit machine-readable JSON")
-	cmd.Flags().StringVar(&filter.Agent, "agent", "all", "agent filter: claude|codex|gemini|opencode|all")
+	cmd.Flags().StringVar(&filter.Agent, "agent", "all", "agent filter: claude|codex|gemini|opencode|grok|all")
 	cmd.Flags().StringVar(&filter.Project, "project", "", "project or workspace fragment")
 	cmd.Flags().StringVar(&filter.Branch, "branch", "", "branch fragment")
 	cmd.Flags().StringVar(&filter.File, "file", "", "known file fragment")
@@ -259,6 +259,7 @@ func defaultLocalSources() []sessionindex.Source {
 		sessionindex.NewCodexSource(""),
 		sessionindex.NewGeminiSource(""),
 		sessionindex.NewOpenCodeSource(nil),
+		sessionindex.NewGrokSource(""),
 	}
 }
 
@@ -964,7 +965,8 @@ func validateLocalAgent(agent string, allowAll bool) error {
 	case sessionindex.AgentClaude,
 		sessionindex.AgentCodex,
 		sessionindex.AgentGemini,
-		sessionindex.AgentOpenCode:
+		sessionindex.AgentOpenCode,
+		sessionindex.AgentGrok:
 		return nil
 	case "all":
 		if allowAll {
@@ -973,7 +975,7 @@ func validateLocalAgent(agent string, allowAll bool) error {
 	}
 	return NewExitError(
 		ExitUsage,
-		"invalid agent; expected claude, codex, gemini, opencode, or all",
+		"invalid agent; expected claude, codex, gemini, opencode, grok, or all",
 	)
 }
 
