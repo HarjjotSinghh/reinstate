@@ -1,0 +1,2 @@
+{"type":"user","uuid":"os-win-u1","sessionId":"00000000-0000-4000-8000-00000000os02","cwd":"C:\\Users\\fixture-user\\code\\demo","timestamp":"2026-08-01T12:00:00Z","message":{"role":"user","content":"Synthetic Claude Windows OS-root fixture"}}
+{"type":"assistant","uuid":"os-win-a1","sessionId":"00000000-0000-4000-8000-00000000os02","timestamp":"2026-08-01T12:00:01Z","message":{"role":"assistant","content":[{"type":"text","text":"Synthetic Claude Windows OS-root reply"}]}}
