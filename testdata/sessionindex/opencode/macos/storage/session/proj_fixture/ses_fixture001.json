@@ -1,0 +1,12 @@
+{
+  "id": "ses_fixture001",
+  "slug": "fixture-session",
+  "projectID": "proj_fixture",
+  "directory": "/Users/fixture-user/code/demo",
+  "title": "Synthetic OpenCode macOS fixture",
+  "version": "1",
+  "time": {
+    "created": 1753869600000,
+    "updated": 1753869720000
+  }
+}

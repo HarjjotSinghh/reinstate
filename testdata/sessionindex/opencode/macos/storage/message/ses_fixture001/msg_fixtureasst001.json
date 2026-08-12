@@ -1,0 +1,28 @@
+{
+  "id": "msg_fixtureasst001",
+  "sessionID": "ses_fixture001",
+  "role": "assistant",
+  "time": {
+    "created": 1753869660000,
+    "completed": 1753869720000
+  },
+  "parentID": "msg_fixtureuser001",
+  "modelID": "claude-sonnet-4-20250514",
+  "providerID": "anthropic",
+  "mode": "build",
+  "agent": "build",
+  "path": {
+    "cwd": "/Users/fixture-user/code/demo",
+    "root": "/Users/fixture-user/code/demo"
+  },
+  "cost": 0,
+  "tokens": {
+    "input": 12,
+    "output": 8,
+    "reasoning": 0,
+    "cache": {
+      "read": 0,
+      "write": 0
+    }
+  }
+}

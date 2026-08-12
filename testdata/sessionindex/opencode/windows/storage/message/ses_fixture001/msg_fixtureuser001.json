@@ -1,0 +1,13 @@
+{
+  "id": "msg_fixtureuser001",
+  "sessionID": "ses_fixture001",
+  "role": "user",
+  "time": {
+    "created": 1753869600000
+  },
+  "agent": "build",
+  "model": {
+    "providerID": "anthropic",
+    "modelID": "claude-sonnet-4-20250514"
+  }
+}

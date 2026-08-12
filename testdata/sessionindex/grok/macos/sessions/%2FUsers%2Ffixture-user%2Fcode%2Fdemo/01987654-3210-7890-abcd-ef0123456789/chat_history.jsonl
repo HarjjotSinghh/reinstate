@@ -1,0 +1,4 @@
+{"type":"system","content":"Synthetic system preamble"}
+{"type":"user","content":[{"type":"text","text":"Compaction summary standing in for earlier turns"}],"synthetic_reason":"compaction_meta"}
+{"type":"user","content":[{"type":"text","text":"Post-compaction continuation prompt"}],"prompt_index":1}
+{"type":"assistant","content":"Post-compaction assistant reply","tool_calls":[]}
