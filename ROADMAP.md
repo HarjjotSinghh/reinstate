@@ -204,6 +204,11 @@ Automation: --allow-environment-warning <exact-check-id>
 a new destination session for the same task, with no source model call and no
 vendor-internal writes.
 
+*Included in release candidate `v0.4.0-rc.1`. Dual-platform tagged-artifact
+acceptance on Apple Silicon macOS and native Windows x64 is pending; this
+candidate does not authorize stable `v0.4.0`. Stable `v0.3.0` does not include
+structured handoff.*
+
 | Item | Status |
 | ---- | ------ |
 | Deterministic continuity capsule, checkpoint derivation, and fidelity report | ✅ |
@@ -211,8 +216,8 @@ vendor-internal writes.
 | Claude Code and Codex destination targets through documented vendor CLIs | ✅ |
 | Capability diff (what the destination agent cannot do) | ✅ |
 | Local-only private capsule store and append-only lineage | ✅ |
-| `rein handoff` / `rein resume --with <agent>` | 🚧 |
-| Adversarial, golden, determinism, performance, and documentation gates | 🚧 |
+| `rein handoff` / `rein resume --with <agent>` | ✅ |
+| Adversarial, golden, determinism, performance, and documentation gates | ✅ |
 | Tagged dual-platform `v0.4.0-rc.1` acceptance | 🚧 |
 
 Gemini CLI, OpenCode, and Grok Build are source-only in rc.1. Claude Code and

@@ -9,10 +9,13 @@ block stable.
 Candidate history (RC1–RC7) lived under `docs/testing/results/` and earlier
 CHANGELOG sections; those records do not rewrite this stable claim.
 
-Phase 4 is an in-progress `v0.4.0-rc.1` candidate. Its structured-handoff
+Release candidate `v0.4.0-rc.1` adds Phase 4 structured handoff on top of that
+stable surface, and the public installers now pin it. Its structured-handoff
 implementation is documented below, but it does not inherit the stable
 `v0.3.0` physical evidence. Tagged macOS arm64 and Windows amd64 acceptance is
-still required before the candidate can pass.
+still required before the candidate can pass, and passing RC1 will not
+authorize stable `v0.4.0`; that requires a separate reviewed promotion and
+fresh tagged-artifact validation.
 
 Stable Reinstate `v0.2.0` implements **same-vendor encrypted session sync** and
 the Phase 2 local continuity surface for:
@@ -104,8 +107,8 @@ The Phase 3 source compatibility policy keeps these inclusive agent version
 ranges until a later release widens them with fresh device evidence.
 Stable `v0.3.0` widened the fail-closed ranges so its primary-host installs
 (Claude Code through `2.1.227`, Codex CLI through `0.147.0`) were `SUPPORTED`
-after dual-platform tagged-artifact acceptance. The unreleased `v0.4.0-rc.1`
-candidate widens the Claude Code ceiling one patch further, through `2.1.228`,
+after dual-platform tagged-artifact acceptance. Candidate `v0.4.0-rc.1`
+widens the Claude Code ceiling one patch further, through `2.1.228`,
 so the Phase 4 acceptance hosts are not blocked by their installed agent;
 `2.1.228` is covered by the range but has not yet completed dual-platform
 tagged-artifact acceptance. Versions above the maxima remain `UNTESTED` until a

@@ -7,13 +7,13 @@ import {
 } from '../../scripts/check-cli-release.mjs';
 
 const checker = new URL('../../scripts/check-cli-release.mjs', import.meta.url);
-const TAG = 'v0.3.0';
+const TAG = 'v0.4.0-rc.1';
 
 function release(overrides: Record<string, unknown> = {}) {
   return {
     tagName: TAG,
     isDraft: false,
-    isPrerelease: false,
+    isPrerelease: true,
     publishedAt: '2026-07-27T09:14:04Z',
     assets: expectedCliReleaseAssets(TAG).map((name) => ({
       name,
@@ -103,26 +103,26 @@ describe('published GitHub CLI release contract', () => {
   });
 
   it('requires prerelease state to match the SemVer tag', () => {
-    // Stable tag: isPrerelease must be false.
-    expect(() =>
-      validateCliRelease(release({ isPrerelease: true }), TAG),
-    ).toThrow('isPrerelease must be false');
-
     // Prerelease tag: isPrerelease must be true.
-    const rcTag = 'v0.3.0-rc.7';
-    const rc = {
+    expect(() =>
+      validateCliRelease(release({ isPrerelease: false }), TAG),
+    ).toThrow('isPrerelease must be true');
+
+    // Stable tag: isPrerelease must be false.
+    const stableTag = 'v0.3.0';
+    const stable = {
       ...release(),
-      tagName: rcTag,
-      isPrerelease: true,
-      assets: expectedCliReleaseAssets(rcTag).map((name) => ({
+      tagName: stableTag,
+      isPrerelease: false,
+      assets: expectedCliReleaseAssets(stableTag).map((name) => ({
         name,
         state: 'uploaded',
       })),
     };
-    expect(validateCliRelease(rc, rcTag).tag).toBe(rcTag);
+    expect(validateCliRelease(stable, stableTag).tag).toBe(stableTag);
     expect(() =>
-      validateCliRelease({ ...rc, isPrerelease: false }, rcTag),
-    ).toThrow('isPrerelease must be true');
+      validateCliRelease({ ...stable, isPrerelease: true }, stableTag),
+    ).toThrow('isPrerelease must be false');
   });
 
   it('reports every missing required asset and rejects duplicate names', () => {

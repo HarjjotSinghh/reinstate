@@ -16,6 +16,14 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.4.0-rc.1': {
+    rangeChange:
+      'Widened the inclusive Claude Code range from 2.1.219–2.1.227 to 2.1.219–2.1.228. The Codex CLI range is unchanged at 0.133.0–0.147.0.',
+    compatibilityChange:
+      'First Phase 4 candidate: explicit structured handoff of the same task into a new Claude Code or Codex session. Gemini CLI, OpenCode, and Grok Build are handoff sources only. The 2.1.228 patch is source-tested only, and dual-platform tagged-artifact acceptance is pending; this candidate does not authorize stable v0.4.0.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.4.0-rc.1/internal/handoff/projection.go',
+  },
   'v0.3.0': {
     rangeChange:
       'Claude Code 2.1.219–2.1.227 and Codex CLI 0.133.0–0.147.0 unchanged from RC7.',

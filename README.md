@@ -18,11 +18,12 @@ Intel macOS and Linux/WSL2 downloads remain preview/unverified pending issues
 [#97](https://github.com/HarjjotSinghh/reinstate/issues/97) and
 [#98](https://github.com/HarjjotSinghh/reinstate/issues/98).
 
-The Phase 4 `v0.4.0-rc.1` candidate adds explicit structured handoffs into new
-Claude Code or Codex sessions. Claude Code, Codex CLI, Gemini CLI, OpenCode,
-and Grok Build can be sources; Gemini, OpenCode, and Grok are source-only in
-rc.1. Release-candidate support remains pending tagged dual-platform
-acceptance.
+Current release candidate `v0.4.0-rc.1` adds Phase 4 explicit structured
+handoffs, which continue the same task in a *new* Claude Code or Codex session.
+Claude Code, Codex CLI, Gemini CLI, OpenCode, and Grok Build can be sources;
+Gemini, OpenCode, and Grok are source-only in rc.1. Its dual-platform
+tagged-artifact acceptance on Apple Silicon macOS and native Windows x64 is
+pending; it is not stable `v0.4.0`, and stable remains `v0.3.0`.
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/HarjjotSinghh/reinstate)](https://goreportcard.com/report/github.com/HarjjotSinghh/reinstate)
@@ -193,10 +194,11 @@ not part of the current CLI. See
 
 ## Quick start
 
-> **Platform boundary:** the public installers pin stable `v0.3.0`.
-> Dual-platform acceptance passed on Apple Silicon macOS and native Windows
-> x64 for candidate `v0.3.0-rc.7`. Intel macOS and Linux/WSL2 remain optional
-> and unverified ([#97](https://github.com/HarjjotSinghh/reinstate/issues/97),
+> **Platform boundary:** the public installers pin candidate `v0.4.0-rc.1`.
+> Its tagged-artifact acceptance is pending on Apple Silicon macOS and native
+> Windows x64. Stable remains `v0.3.0`; Intel macOS and Linux/WSL2 remain
+> optional and unverified
+> ([#97](https://github.com/HarjjotSinghh/reinstate/issues/97),
 > [#98](https://github.com/HarjjotSinghh/reinstate/issues/98)).
 >
 > **CLI:** prefer short alias **`rein`**. Full name **`reinstate`** works the same.
@@ -259,9 +261,10 @@ brew install HarjjotSinghh/tap/reinstate
 The tap formula tracks stable `v0.3.0`. Intel macOS and Linuxbrew remain
 optional and unverified for this release.
 
-### Install stable v0.3.0
+### Install the v0.4.0-rc.1 candidate
 
-These public bootstrap routes also install stable `v0.3.0`.
+These public bootstrap routes install the candidate, not the stable Homebrew
+formula. RC1 tagged-artifact acceptance is pending.
 
 macOS, Linux, or WSL2:
 
@@ -275,7 +278,7 @@ Native Windows PowerShell:
 irm https://reinstate.dev/install.ps1 | iex
 ```
 
-Both bootstraps pin and verify `v0.3.0`, install without elevation, and
+Both bootstraps pin and verify `v0.4.0-rc.1`, install without elevation, and
 print the next command:
 
 ```bash
@@ -370,7 +373,7 @@ flowchart TB
 1. **Local read adapters** derive bounded metadata and user-prompt search text
 2. **Index** stores owner-only SQLite session rows and private prelaunch
    baselines; it never enters sync
-3. **Verified resume (current source)** observes the fresh workspace, agent,
+3. **Verified resume (stable `v0.3.0`)** observes the fresh workspace, agent,
    capabilities, and runtimes and applies exact warning/blocker policy
 4. **Executors** launch a supported session through its native vendor
 5. **Pathmap** rewrites known structural paths for optional cross-device sync

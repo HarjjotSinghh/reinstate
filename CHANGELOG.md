@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0-rc.1] - 2026-08-12
+
+First Phase 4 release candidate. It adds explicit structured handoff of the
+same task into a *new* Claude Code or Codex session on top of the stable
+`v0.3.0` verified-resume surface. This is not a cross-agent resume: nothing
+reconstructs the original session, and the projection is deliberately lossy and
+visible. Dual-platform tagged-artifact acceptance on Apple Silicon macOS and
+native Windows x64 is still pending; this candidate does not authorize stable
+`v0.4.0`, and stable remains `v0.3.0`.
+
 ### Added
 
 - `rein handoff` for explicit structured handoffs into a new Claude Code or
@@ -79,6 +89,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Align user-facing docs, setup prompts, and website release notices with
   stable `v0.3.0` dual-platform tagged-artifact acceptance PASS, and point
   Homebrew/Scoop install routes at the `0.3.0` formula and bucket manifests.
+- Widen the fail-closed Claude Code compatibility range through `2.1.228` (was
+  `2.1.227`) so both `v0.4.0-rc.1` physical acceptance hosts run an in-range
+  Claude Code install instead of exiting `5` on every Claude row. The Codex CLI
+  range is unchanged at `0.133.0`–`0.147.0`. As with `v0.3.0-rc.6`, the range
+  moves before the evidence: `2.1.228` is now covered by the fail-closed range
+  but has not completed dual-platform tagged-artifact acceptance, which the
+  `v0.4.0-rc.1` run supplies. Versions above `2.1.228` remain `UNTESTED`.
+
+### Fixed
+
+- Handoff artifacts written outside the store — destination planned files and
+  `handoff export --out` / `handoff --export` — are now owner-only on Windows.
+  They went through a plain `0600` write, which Windows ignores, leaving the
+  inherited DACL in place; they now use the same protected DACL as the rest of
+  `$REINSTATE_HOME/handoffs/`.
 
 ## [0.3.0] - 2026-08-11
 
@@ -97,24 +122,13 @@ again on the published stable tag (`stable_v0.3.0_authorized=true`).
 ### Fixed
 
 - Windows Ctrl+C at the environment-warning prompt returns safety exit `7`.
-- Handoff artifacts written outside the store — destination planned files and
-  `handoff export --out` / `handoff --export` — are now owner-only on Windows.
-  They went through a plain `0600` write, which Windows ignores, leaving the
-  inherited DACL in place; they now use the same protected DACL as the rest of
-  `$REINSTATE_HOME/handoffs/`.
 - Non-TTY native launch fails closed unless an explicit local-smoke override is set.
 - Capability probe incompleteness demoted from acknowledgement-forcing warnings
   where appropriate; cancelled probes remain blocking.
 
 ### Changed
 
-- Widen the fail-closed Claude Code compatibility range through `2.1.228` (was
-  `2.1.227`) so both `v0.4.0-rc.1` physical acceptance hosts run an in-range
-  Claude Code install instead of exiting `5` on every Claude row. The Codex CLI
-  range is unchanged at `0.133.0`–`0.147.0`. As with `v0.3.0-rc.6`, the range
-  moves before the evidence: `2.1.228` is now covered by the fail-closed range
-  but has not completed dual-platform tagged-artifact acceptance, which the
-  `v0.4.0-rc.1` run supplies. Versions above `2.1.228` remain `UNTESTED`.
+- Claude Code fail-closed range through `2.1.227`; Codex CLI through `0.147.0`.
 
 
 ## [0.3.0-rc.7] - 2026-08-11
@@ -726,7 +740,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.1...HEAD
+[0.4.0-rc.1]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0...v0.4.0-rc.1
 [0.3.0]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0-rc.7...v0.3.0
 [0.3.0-rc.7]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0-rc.6...v0.3.0-rc.7
 [0.3.0-rc.6]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0-rc.5...v0.3.0-rc.6

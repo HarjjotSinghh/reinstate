@@ -1,5 +1,11 @@
 export const releaseHistory = [
   {
+    version: 'v0.4.0-rc.1',
+    date: '2026-08-12',
+    summary:
+      'First Phase 4 candidate: explicit structured handoff of the same task into a new Claude Code or Codex session. Dual-platform tagged-artifact acceptance is pending.',
+  },
+  {
     version: 'v0.3.0',
     date: '2026-08-11',
     summary:
