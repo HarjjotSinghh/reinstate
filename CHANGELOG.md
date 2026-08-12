@@ -21,6 +21,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reported `UNTESTED` and `rein handoff claude:<id>` exited 5, while
   `rein inspect` called the same agent supported in the same invocation, and the
   Codex reader applied no version check at all.
+- A source agent whose version probe times out is no longer accepted as if it
+  had no version at all. The bounded `--version` probe reported "unknown" when
+  it merely ran out of time, and the reader contract answers "unknown" with
+  SUPPORTED — the branch that exists so a handoff still works when the source
+  agent is uninstalled. An installed, determinable, out-of-range agent was
+  therefore accepted silently whenever the machine was briefly busy, which real
+  agent CLIs can cause on their own since they are language runtimes that can
+  exceed a two-second budget. A timed-out probe is now measured once more, and
+  a measurement that still fails is reported as a failed measurement rather
+  than an absent one: installed-but-unread is UNTESTED, refused without
+  `--allow-untested`. An agent that is genuinely not installed still resolves
+  to SUPPORTED, unchanged.
 - A handoff now tells the destination which files actually changed. The
   workspace probe keeps the pathnames behind the counts it already computed,
   `BindWorkspace` rewrites each one into a `${REPO:<id>}/…` token, and the

@@ -22,6 +22,18 @@ import (
 const (
 	defaultTimeout   = 2 * time.Second
 	maxVersionOutput = 4 << 10
+	// retryTimeoutFactor widens the budget for a retried version probe.
+	//
+	// The first attempt stays deliberately short because the answer normally
+	// arrives in milliseconds and a hung agent should not stall a command. But
+	// agent CLIs are language runtimes, and on a saturated machine even a
+	// trivial one can miss a two-second budget twice in a row — measured, not
+	// assumed. Retrying with the same short budget would just reproduce the
+	// first failure, so the retry is patient instead. Worst case for a
+	// genuinely hung agent is one short wait plus one long one, still bounded,
+	// and an outer deadline (preflight passes its remaining budget) still caps
+	// both.
+	retryTimeoutFactor = 4
 )
 
 // Status is the current native-agent compatibility state.
@@ -169,8 +181,6 @@ func Inspect(ctx context.Context, agentName string, opts Options) Result {
 	if timeout <= 0 {
 		timeout = defaultTimeout
 	}
-	probeCtx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
 	runner := opts.Runner
 	if runner == nil {
 		runner = ExecRunner{MaxOutput: opts.MaxOutput, SearchPath: trustedSearchPath}
@@ -179,27 +189,31 @@ func Inspect(ctx context.Context, agentName string, opts Options) Result {
 	if captureIdentity == nil {
 		captureIdentity = fileidentity.CaptureExecutable
 	}
-	beforeIdentity, err := captureIdentity(probeCtx, resolved)
-	if err != nil || !beforeIdentity.IsLaunchable() {
+
+	attempt := versionProbe{
+		executable:      resolved,
+		runner:          runner,
+		captureIdentity: captureIdentity,
+	}
+	probe := attempt.run(ctx, timeout)
+	if probe.timedOut && ctx.Err() == nil {
+		// A probe that only ran out of time has measured nothing at all, and a
+		// caller gating on version must not be handed "no version" — which is
+		// indistinguishable from an uninstalled agent — because the machine was
+		// briefly busy. Measure once more, with room to actually finish.
+		//
+		// Only a timeout is retried. A non-zero exit is deterministic and would
+		// simply repeat, and an executable that changed underneath the probe
+		// must be reported rather than re-rolled until it looks stable.
+		probe = attempt.run(ctx, timeout*retryTimeoutFactor)
+	}
+	if probe.err != nil {
 		result.Status = StatusError
-		result.Message = "native agent executable identity is unavailable"
+		result.Message = probe.message
 		return result
 	}
-	output, err := runner.Version(probeCtx, resolved, "--version")
-	if err != nil {
-		result.Status = StatusError
-		result.Message = "native agent version probe failed"
-		return result
-	}
-	afterIdentity, err := captureIdentity(probeCtx, resolved)
-	if err != nil || !afterIdentity.IsLaunchable() ||
-		!fileidentity.SameExecutable(beforeIdentity, afterIdentity) {
-		result.Status = StatusError
-		result.Message = "native agent executable changed during version verification"
-		return result
-	}
-	result.ExecutableIdentity = afterIdentity
-	version, ok := definition.parseVersion(output)
+	result.ExecutableIdentity = probe.identity
+	version, ok := definition.parseVersion(probe.output)
 	if !ok {
 		result.Message = "native agent version is unrecognized"
 		return result
@@ -214,19 +228,105 @@ func Inspect(ctx context.Context, agentName string, opts Options) Result {
 	return result
 }
 
+// versionProbe is one bounded `--version` measurement: an executable-identity
+// capture on each side of the call, so an executable swapped underneath the
+// probe is detected rather than trusted. It carries its own deadline so it can
+// be repeated with a fresh budget.
+type versionProbe struct {
+	executable      string
+	runner          VersionRunner
+	captureIdentity func(context.Context, string) (fileidentity.Identity, error)
+}
+
+type versionProbeResult struct {
+	output   VersionOutput
+	identity fileidentity.Identity
+	timedOut bool
+	err      error
+	message  string
+}
+
+func (probe versionProbe) run(ctx context.Context, timeout time.Duration) versionProbeResult {
+	probeCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	fail := func(err error, message string) versionProbeResult {
+		return versionProbeResult{
+			// The deadline belongs to this probe, so probeCtx — not the
+			// caller's ctx — is what says the measurement ran out of time.
+			timedOut: errors.Is(probeCtx.Err(), context.DeadlineExceeded),
+			err:      err,
+			message:  message,
+		}
+	}
+
+	beforeIdentity, err := probe.captureIdentity(probeCtx, probe.executable)
+	if err != nil || !beforeIdentity.IsLaunchable() {
+		if err == nil {
+			err = errNotLaunchable
+		}
+		return fail(err, "native agent executable identity is unavailable")
+	}
+	output, err := probe.runner.Version(probeCtx, probe.executable, "--version")
+	if err != nil {
+		return fail(err, "native agent version probe failed")
+	}
+	afterIdentity, err := probe.captureIdentity(probeCtx, probe.executable)
+	if err != nil || !afterIdentity.IsLaunchable() ||
+		!fileidentity.SameExecutable(beforeIdentity, afterIdentity) {
+		if err == nil {
+			err = errExecutableChanged
+		}
+		return fail(err, "native agent executable changed during version verification")
+	}
+	return versionProbeResult{output: output, identity: afterIdentity}
+}
+
+var (
+	errNotLaunchable     = errors.New("agentcheck: native agent executable is not launchable")
+	errExecutableChanged = errors.New("agentcheck: native agent executable changed during version verification")
+)
+
+// VersionEvidence classifies how much is known about an installed agent's
+// version. The distinction matters to any caller that gates on version: two of
+// these three answers carry no version, but they do not mean the same thing.
+type VersionEvidence string
+
+const (
+	// VersionUnavailable means there is no version information to read: the
+	// agent is not installed, Reinstate has no definition for it, its session
+	// layout is unrecognized, or it answered `--version` with something that is
+	// not a version. This is absence of evidence, not evidence of
+	// incompatibility, and a read-only caller must not block on it.
+	VersionUnavailable VersionEvidence = "unavailable"
+	// VersionDetermined means the installed executable reported a version.
+	VersionDetermined VersionEvidence = "determined"
+	// VersionProbeFailed means the agent is installed and a version exists to
+	// read, but the bounded probe could not read it — it timed out even after a
+	// retry, failed to execute, or the executable changed underneath it. This
+	// is a failed measurement rather than an absent one: repeating it could
+	// well return a version outside the verified range. A caller gating on
+	// version must treat it as uncertain, never as a clean bill of health.
+	VersionProbeFailed VersionEvidence = "probe_failed"
+)
+
 // InstalledVersion returns the agent's self-reported version using exactly the
 // mechanism Inspect uses: trusted executable resolution, an identity check
 // around a bounded `--version` probe, and the vendor-specific parser.
 //
-// ok is false whenever the version cannot be determined — the agent is not
-// installed, its executable is not on a trusted PATH, the session layout under
-// opts.Root is unrecognized, or `--version` output does not parse. That result
-// means "unknown", never "incompatible": callers decide whether missing
-// information should block, and read-only callers must not.
-func InstalledVersion(ctx context.Context, agentName string, opts Options) (string, bool) {
+// The returned evidence separates "there is nothing to read" from "reading
+// failed". Collapsing those two into one "unknown" answer is what lets an
+// installed, out-of-range agent pass as unrecognized when its version probe
+// merely times out, so callers are given the distinction and must handle it.
+func InstalledVersion(ctx context.Context, agentName string, opts Options) (string, VersionEvidence) {
 	result := Inspect(ctx, agentName, opts)
-	version := strings.TrimSpace(result.Version)
-	return version, version != ""
+	if version := strings.TrimSpace(result.Version); version != "" {
+		return version, VersionDetermined
+	}
+	if result.Status == StatusError {
+		return "", VersionProbeFailed
+	}
+	return "", VersionUnavailable
 }
 
 // SupportedVersion reports whether version is inside the agent's verified range

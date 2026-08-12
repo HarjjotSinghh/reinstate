@@ -162,6 +162,77 @@ func TestProbeUsesInstalledAgentVersion(t *testing.T) {
 	}
 }
 
+// stallingAgentExecutable puts a <name> on PATH that never answers --version,
+// so the bounded probe genuinely misses its deadline instead of simulating it.
+//
+// `exec` replaces the shell with sleep, so the process the probe kills at its
+// deadline is the one actually stalling; a plain `sleep` would survive as a
+// grandchild holding the inherited pipes open and the probe would block far
+// past its budget. The absolute path matters too: a probe runs its child with a
+// sanitized PATH holding only the trusted search directory, so a bare `sleep`
+// would not be found, and the resulting `sleep: not found` on stderr would make
+// the version unparseable — a different branch of the contract entirely.
+func stallingAgentExecutable(t *testing.T, name string) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("no dependency-free absolute-path stall is available for a .cmd shim")
+	}
+	sleepBinary := ""
+	for _, candidate := range []string{"/bin/sleep", "/usr/bin/sleep"} {
+		if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
+			sleepBinary = candidate
+			break
+		}
+	}
+	if sleepBinary == "" {
+		t.Skip("no absolute sleep binary is available to stall the version probe")
+	}
+	dir := t.TempDir()
+	body := "#!/bin/sh\nexec " + sleepBinary + " 30\n"
+	if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir)
+}
+
+// TestProbeVersionTimeoutIsNotTreatedAsAnAbsentAgent is the regression guard
+// for a fail-open that only appeared when two independently correct changes
+// met.
+//
+// The version probe is bounded. When it merely ran out of time it reported "no
+// version", which is the same answer an uninstalled agent gives — and the
+// contract answers that with SUPPORTED, the branch that exists so a handoff
+// still works when the source agent is gone. An installed, determinable,
+// out-of-range agent was therefore accepted silently.
+//
+// Nothing in the gate changed to cause it. Load did: tests that fork Git
+// heavily began running in parallel with the CLI package under
+// `go test ./...`, and the two-second budget started expiring. A gate whose
+// answer depends on how busy the machine is was never sound; it had simply
+// never been pushed hard enough to show it. Real agent CLIs are language
+// runtimes that can exceed two seconds on a loaded laptop, so this was
+// reachable in production, not only in CI.
+//
+// The probe now retries a timed-out measurement once, and a measurement that
+// still fails is reported as a failure rather than as an absence.
+func TestProbeVersionTimeoutIsNotTreatedAsAnAbsentAgent(t *testing.T) {
+	stallingAgentExecutable(t, "claude")
+	_, session := claudeInstallLayout(t)
+
+	compat, err := (&ClaudeReader{}).Probe(context.Background(), sessionindex.Record{
+		Agent: "claude", ID: "00000000-0000-4000-8000-0000000000ab", SourcePath: session,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if compat != CompatibilityUntested {
+		t.Fatalf("probe whose version measurement failed = %q, want %q; "+
+			"an installed agent whose version could not be read is uncertain, "+
+			"not the uninstalled agent that SUPPORTED is meant for",
+			compat, CompatibilityUntested)
+	}
+}
+
 // TestProbeUnrecognizedLayoutIsUnsupported keeps layout authoritative for both
 // readers even when the installed version is inside the verified range.
 func TestProbeUnrecognizedLayoutIsUnsupported(t *testing.T) {
