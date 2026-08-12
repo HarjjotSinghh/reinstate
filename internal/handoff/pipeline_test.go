@@ -3,6 +3,7 @@ package handoff
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -22,7 +23,7 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/workspace"
 )
 
-const pipelineTestSecret = "AKIAABCDEFGHIJKLMNOP"
+var pipelineTestSecret = "AKIA" + strings.Repeat("A", 16)
 
 type pipelineReader struct {
 	events []capsule.Event
@@ -312,20 +313,73 @@ func TestPlanRequiresResolverAndBusyCheck(t *testing.T) {
 	assertPipelineCode(t, err, exitcode.Runtime)
 }
 
-func TestPlanPreservesAncestorLineageRoot(t *testing.T) {
+func TestPlanDerivesNewestAncestorLineageRoot(t *testing.T) {
 	rec, _, _, _, opts := pipelineFixture(t)
-	opts.ParentLineageRoot = "ancestor-handoff"
+	writePipelineLineage(t, opts.ReinstateHome,
+		LineageEntry{
+			HandoffID: "handoff-old", LineageRoot: "ancestor-old",
+			Destination: LineageEndpoint{Agent: rec.Agent, SessionID: rec.ID},
+		},
+		LineageEntry{
+			HandoffID: "handoff-new", LineageRoot: "ancestor-new",
+			Destination: LineageEndpoint{Agent: rec.Agent, SessionID: rec.ID},
+		},
+	)
 	plan, err := Plan(context.Background(), rec, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = os.RemoveAll(plan.TempDir) })
-	if plan.LineageRoot != opts.ParentLineageRoot || plan.Capsule.Identity.LineageRoot != opts.ParentLineageRoot {
+	if plan.LineageRoot != "ancestor-new" || plan.Capsule.Identity.LineageRoot != "ancestor-new" {
 		t.Fatalf("lineage root = %q / %q", plan.LineageRoot, plan.Capsule.Identity.LineageRoot)
 	}
 	computed, err := capsule.ComputeID(plan.Capsule)
 	if err != nil || computed != plan.HandoffID {
 		t.Fatalf("descendant content ID = %q, %v; want %q", computed, err, plan.HandoffID)
+	}
+}
+
+func TestPlanWithoutExistingLineageStartsSelfRooted(t *testing.T) {
+	rec, _, _, _, opts := pipelineFixture(t)
+	plan, err := Plan(context.Background(), rec, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(plan.TempDir) })
+	if plan.LineageRoot != plan.HandoffID || plan.Capsule.Identity.LineageRoot != plan.HandoffID {
+		t.Fatalf("new lineage root = %q / %q, handoff=%q", plan.LineageRoot, plan.Capsule.Identity.LineageRoot, plan.HandoffID)
+	}
+	if _, err := os.Stat(filepath.Join(opts.ReinstateHome, handoffsDirName)); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("Plan created handoff store during read-only lineage lookup: %v", err)
+	}
+}
+
+func TestPlanLineageLookupIgnoresMalformedAndPartialLines(t *testing.T) {
+	rec, _, _, _, opts := pipelineFixture(t)
+	writePipelineLineage(t, opts.ReinstateHome, LineageEntry{
+		HandoffID: "handoff-valid", LineageRoot: "ancestor-valid",
+		Destination: LineageEndpoint{Agent: rec.Agent, SessionID: rec.ID},
+	})
+	path := filepath.Join(opts.ReinstateHome, handoffsDirName, lineageFileName)
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.WriteString("not-json\n{\"handoff_id\":\"partial"); err != nil {
+		_ = f.Close()
+		t.Fatal(err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	plan, err := Plan(context.Background(), rec, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(plan.TempDir) })
+	if plan.LineageRoot != "ancestor-valid" {
+		t.Fatalf("lineage root = %q, want valid complete entry", plan.LineageRoot)
 	}
 }
 
@@ -501,6 +555,18 @@ func TestClaudePipelineDryRunAndExecuteHaveByteIdenticalArgv(t *testing.T) {
 	}
 }
 
+func TestResolveTargetClaudeRequiresCollisionCheck(t *testing.T) {
+	_, err := resolveTarget(Options{}, sessionindex.AgentClaude)
+	assertPipelineCode(t, err, exitcode.Runtime)
+
+	target, err := resolveTarget(Options{
+		SessionExists: func(context.Context, string) (bool, error) { return false, nil },
+	}, sessionindex.AgentClaude)
+	if err != nil || target == nil {
+		t.Fatalf("resolveTarget with collision check = %T, %v", target, err)
+	}
+}
+
 func pipelineFixture(t *testing.T) (sessionindex.Record, *pipelineReader, *pipelineVerifier, *pipelineTarget, Options) {
 	t.Helper()
 	root := t.TempDir()
@@ -571,5 +637,25 @@ func assertPipelineCode(t *testing.T, err error, want int) {
 	var pipelineErr *PipelineError
 	if !errors.As(err, &pipelineErr) || pipelineErr.Code != want {
 		t.Fatalf("error = %T %v, want PipelineError code %d", err, err, want)
+	}
+}
+
+func writePipelineLineage(t *testing.T, home string, entries ...LineageEntry) {
+	t.Helper()
+	dir := filepath.Join(home, handoffsDirName)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	var body bytes.Buffer
+	for _, entry := range entries {
+		line, err := json.Marshal(entry)
+		if err != nil {
+			t.Fatal(err)
+		}
+		body.Write(line)
+		body.WriteByte('\n')
+	}
+	if err := os.WriteFile(filepath.Join(dir, lineageFileName), body.Bytes(), 0o600); err != nil {
+		t.Fatal(err)
 	}
 }

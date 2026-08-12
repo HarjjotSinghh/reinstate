@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -56,15 +57,12 @@ type Options struct {
 	// ResolveSource refreshes and resolves the source boundary before any read.
 	// WP-21b wires this to sessionindex.Index.RefreshAndResolve.
 	ResolveSource ResolveSourceFunc
-	// SessionBusy overrides processcheck.SessionBusy. Nil skips the busy check.
+	// SessionBusy is required. Production wires processcheck.SessionBusy.
 	SessionBusy SessionBusyFunc
 	// LaunchRunner is required for Execute launches. Tests must pass a fake.
 	LaunchRunner sessionindex.LaunchRunner
 	// ReinstateHome is $REINSTATE_HOME (absolute). Required for Execute store writes.
 	ReinstateHome string
-	// ParentLineageRoot preserves an ancestor handoff root when handing back.
-	// Empty starts a new lineage rooted at the resulting capsule ID.
-	ParentLineageRoot string
 	// AllowActive takes a boundary while the source agent is running.
 	AllowActive bool
 	// AllowUntested proceeds on CompatibilityUntested source or destination.
@@ -82,7 +80,8 @@ type Options struct {
 	Capability capability.Options
 	// Target overrides the registered HandoffTarget (tests).
 	Target HandoffTarget
-	// SessionExists wires Claude UUID collision checks (production index).
+	// SessionExists wires Claude UUID collision checks and is required for the
+	// registered production Claude target.
 	SessionExists ClaudeSessionExists
 	// NewSessionID overrides Claude deterministic UUID generation in tests.
 	NewSessionID func() (string, error)
@@ -349,11 +348,9 @@ func Plan(ctx context.Context, rec sessionindex.Record, opts Options) (PlanResul
 
 	// Compute content ID before projection hashes (hashes depend on the id path).
 	c.Identity.ID = ""
-	c.Identity.LineageRoot = strings.TrimSpace(opts.ParentLineageRoot)
-	if c.Identity.LineageRoot != "" {
-		if err := validateHandoffID(c.Identity.LineageRoot); err != nil {
-			return PlanResult{}, pipelineWrap(exitcode.Usage, fmt.Errorf("handoff: parent lineage root: %w", err))
-		}
+	c.Identity.LineageRoot, err = sourceLineageRoot(opts.ReinstateHome, rec)
+	if err != nil {
+		return PlanResult{}, pipelineWrap(exitcode.Runtime, fmt.Errorf("handoff: read source lineage: %w", err))
 	}
 	c.Projection.BootstrapSHA256 = ""
 	c.Projection.MarkdownSHA256 = ""
@@ -516,6 +513,9 @@ func Execute(ctx context.Context, rec sessionindex.Record, opts Options, launch 
 	if launch {
 		launchStart := now
 		if err := target.Launch(ctx, plan.Destination, opts.LaunchRunner); err != nil {
+			// LaunchRunner cannot distinguish failure before spawn from a child
+			// failure after session creation. Record the attempt as unresolved,
+			// but keep Launched false rather than overclaiming a known spawn.
 			launchErr = err
 		} else {
 			launched = true
@@ -584,6 +584,9 @@ func resolveTarget(opts Options, to string) (HandoffTarget, error) {
 	}
 	switch t := base.(type) {
 	case *ClaudeTarget:
+		if opts.SessionExists == nil {
+			return nil, pipelineErrorf(exitcode.Runtime, "handoff: Claude destination session collision check is required")
+		}
 		cp := *t
 		cp.SessionExists = opts.SessionExists
 		cp.NewSessionID = opts.NewSessionID
@@ -851,6 +854,72 @@ func filterPreflightWarnings(allowed []string, report preflight.Report) []string
 		}
 	}
 	return out
+}
+
+const maxLineageLookupBytes int64 = 8 << 20
+
+// sourceLineageRoot finds the newest completed handoff whose destination is
+// the resolved source session. It performs one bounded, read-only tail read and
+// never creates the handoff store. Malformed and partial lines are ignored.
+func sourceLineageRoot(reinstateHome string, rec sessionindex.Record) (string, error) {
+	home := strings.TrimSpace(reinstateHome)
+	if home == "" || !filepath.IsAbs(home) {
+		return "", nil
+	}
+	path := filepath.Join(home, handoffsDirName, lineageFileName)
+	f, err := os.Open(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return "", nil
+		}
+		return "", err
+	}
+	defer func() { _ = f.Close() }()
+
+	info, err := f.Stat()
+	if err != nil {
+		return "", err
+	}
+	start := info.Size() - maxLineageLookupBytes
+	if start < 0 {
+		start = 0
+	}
+	if _, err := f.Seek(start, io.SeekStart); err != nil {
+		return "", err
+	}
+	body, err := io.ReadAll(io.LimitReader(f, maxLineageLookupBytes))
+	if err != nil {
+		return "", err
+	}
+	if start > 0 {
+		newline := strings.IndexByte(string(body), '\n')
+		if newline < 0 {
+			return "", nil
+		}
+		body = body[newline+1:]
+	}
+	lastNewline := strings.LastIndexByte(string(body), '\n')
+	if lastNewline < 0 {
+		return "", nil
+	}
+	body = body[:lastNewline]
+
+	root := ""
+	for _, line := range strings.Split(string(body), "\n") {
+		var entry LineageEntry
+		if json.Unmarshal([]byte(strings.TrimSpace(line)), &entry) != nil ||
+			entry.Destination.Agent != rec.Agent || entry.Destination.SessionID != rec.ID {
+			continue
+		}
+		candidate := strings.TrimSpace(entry.LineageRoot)
+		if candidate == "" {
+			candidate = strings.TrimSpace(entry.HandoffID)
+		}
+		if validateHandoffID(candidate) == nil {
+			root = candidate
+		}
+	}
+	return root, nil
 }
 
 func mustCanonical(c capsule.Capsule) []byte {
