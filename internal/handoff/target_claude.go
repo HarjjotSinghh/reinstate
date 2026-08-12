@@ -59,6 +59,13 @@ func init() {
 // Name returns the destination agent name.
 func (t *ClaudeTarget) Name() string { return claudeTargetName }
 
+func (t *ClaudeTarget) claudeSessionCollisionCheck() ClaudeSessionExists {
+	if t == nil {
+		return nil
+	}
+	return t.SessionExists
+}
+
 // Capabilities reports Claude Code destination support for pinned session IDs.
 func (t *ClaudeTarget) Capabilities() TargetCapabilities {
 	return TargetCapabilities{

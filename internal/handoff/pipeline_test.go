@@ -5,10 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -122,6 +124,17 @@ type pipelineRunner struct {
 	calls int
 	plan  sessionindex.LaunchPlan
 	err   error
+}
+
+type concurrentClaudeRunner struct {
+	calls  atomic.Int32
+	exists *atomic.Bool
+}
+
+func (r *concurrentClaudeRunner) Run(context.Context, sessionindex.LaunchPlan) error {
+	r.calls.Add(1)
+	r.exists.Store(true)
+	return nil
 }
 
 func (r *pipelineRunner) Run(_ context.Context, plan sessionindex.LaunchPlan) error {
@@ -318,11 +331,18 @@ func TestPlanDerivesNewestAncestorLineageRoot(t *testing.T) {
 	writePipelineLineage(t, opts.ReinstateHome,
 		LineageEntry{
 			HandoffID: "handoff-old", LineageRoot: "ancestor-old",
-			Destination: LineageEndpoint{Agent: rec.Agent, SessionID: rec.ID},
+			Destination: LineageEndpoint{Agent: rec.Agent, SessionID: rec.ID, State: VerifyResolved},
+			Launched:    true,
 		},
 		LineageEntry{
-			HandoffID: "handoff-new", LineageRoot: "ancestor-new",
-			Destination: LineageEndpoint{Agent: rec.Agent, SessionID: rec.ID},
+			HandoffID: "handoff-no-launch", LineageRoot: "ignored-no-launch",
+			Destination: LineageEndpoint{Agent: rec.Agent, SessionID: rec.ID, State: VerifyResolved},
+			Launched:    false,
+		},
+		LineageEntry{
+			HandoffID: "handoff-unresolved", LineageRoot: "ignored-unresolved",
+			Destination: LineageEndpoint{Agent: rec.Agent, SessionID: rec.ID, State: VerifyUnresolved},
+			Launched:    true,
 		},
 	)
 	plan, err := Plan(context.Background(), rec, opts)
@@ -330,7 +350,7 @@ func TestPlanDerivesNewestAncestorLineageRoot(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = os.RemoveAll(plan.TempDir) })
-	if plan.LineageRoot != "ancestor-new" || plan.Capsule.Identity.LineageRoot != "ancestor-new" {
+	if plan.LineageRoot != "ancestor-old" || plan.Capsule.Identity.LineageRoot != "ancestor-old" {
 		t.Fatalf("lineage root = %q / %q", plan.LineageRoot, plan.Capsule.Identity.LineageRoot)
 	}
 	computed, err := capsule.ComputeID(plan.Capsule)
@@ -358,7 +378,8 @@ func TestPlanLineageLookupIgnoresMalformedAndPartialLines(t *testing.T) {
 	rec, _, _, _, opts := pipelineFixture(t)
 	writePipelineLineage(t, opts.ReinstateHome, LineageEntry{
 		HandoffID: "handoff-valid", LineageRoot: "ancestor-valid",
-		Destination: LineageEndpoint{Agent: rec.Agent, SessionID: rec.ID},
+		Destination: LineageEndpoint{Agent: rec.Agent, SessionID: rec.ID, State: VerifyResolved},
+		Launched:    true,
 	})
 	path := filepath.Join(opts.ReinstateHome, handoffsDirName, lineageFileName)
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0o600)
@@ -445,7 +466,7 @@ func TestExecuteRecordsLineageWhenPostLaunchVerifyFails(t *testing.T) {
 }
 
 func TestExecuteRecordsLineageWhenLaunchReturnsError(t *testing.T) {
-	rec, _, _, _, opts := pipelineFixture(t)
+	rec, _, _, target, opts := pipelineFixture(t)
 	runner := &pipelineRunner{err: errors.New("child exit status 1")}
 	opts.LaunchRunner = runner
 
@@ -454,6 +475,9 @@ func TestExecuteRecordsLineageWhenLaunchReturnsError(t *testing.T) {
 	if result.Launched || result.DestinationState != VerifyUnresolved {
 		t.Fatalf("launch-error result = %+v", result)
 	}
+	if target.verified != 0 {
+		t.Fatalf("pre-spawn failure called Verify %d times", target.verified)
+	}
 	store, openErr := OpenStore(opts.ReinstateHome)
 	if openErr != nil {
 		t.Fatal(openErr)
@@ -461,6 +485,30 @@ func TestExecuteRecordsLineageWhenLaunchReturnsError(t *testing.T) {
 	entries, listErr := store.List(10)
 	if listErr != nil || len(entries) != 1 || entries[0].Launched || entries[0].Destination.State != VerifyUnresolved {
 		t.Fatalf("lineage after launch error = %+v, %v", entries, listErr)
+	}
+}
+
+func TestExecuteReconcilesAndRecordsTypedPostSpawnError(t *testing.T) {
+	rec, _, _, target, opts := pipelineFixture(t)
+	exitErr := errors.New("child exit status 17")
+	runner := &pipelineRunner{err: fmt.Errorf("%w: %w", sessionindex.ErrChildStarted, exitErr)}
+	opts.LaunchRunner = runner
+
+	result, err := Execute(context.Background(), rec, opts, true)
+	assertPipelineCode(t, err, exitcode.Runtime)
+	if !errors.Is(err, exitErr) {
+		t.Fatalf("returned error = %v, want original child exit", err)
+	}
+	if !result.Launched || result.DestinationState != VerifyResolved || target.verified != 1 {
+		t.Fatalf("post-spawn result=%+v verify calls=%d", result, target.verified)
+	}
+	store, openErr := OpenStore(opts.ReinstateHome)
+	if openErr != nil {
+		t.Fatal(openErr)
+	}
+	entries, listErr := store.List(10)
+	if listErr != nil || len(entries) != 1 || !entries[0].Launched || entries[0].Destination.State != VerifyResolved {
+		t.Fatalf("post-spawn lineage = %+v, %v", entries, listErr)
 	}
 }
 
@@ -533,13 +581,19 @@ func TestPlanDestinationArgvFallbackUsesAbsoluteProjectionPath(t *testing.T) {
 
 func TestClaudePipelineDryRunAndExecuteHaveByteIdenticalArgv(t *testing.T) {
 	rec, _, _, _, opts := pipelineFixture(t)
+	checks := 0
+	sessionExists := func(context.Context, string) (bool, error) {
+		checks++
+		return false, nil
+	}
 	target := &ClaudeTarget{
-		SessionExists: func(context.Context, string) (bool, error) { return false, nil },
+		SessionExists: sessionExists,
 		Bootstrap: func(c capsule.Capsule, _ Policy) ([]byte, error) {
 			return RenderBootstrap(c, permanentHandoffDir(opts.ReinstateHome, c.Identity.ID))
 		},
 	}
 	opts.Target = &pipelineClaudeTarget{ClaudeTarget: target}
+	opts.SessionExists = sessionExists
 	first, err := Plan(context.Background(), rec, opts)
 	if err != nil {
 		t.Fatal(err)
@@ -552,6 +606,94 @@ func TestClaudePipelineDryRunAndExecuteHaveByteIdenticalArgv(t *testing.T) {
 	if !reflect.DeepEqual(first.Destination.Args, executed.Plan.Destination.Args) ||
 		!bytes.Equal(first.Destination.Bootstrap, executed.Plan.Destination.Bootstrap) {
 		t.Fatalf("dry-run/execute plans differ: dry=%+v execute=%+v", first.Destination, executed.Plan.Destination)
+	}
+	if checks != 2 {
+		t.Fatalf("dry-run + no-launch collision checks = %d, want planning checks only", checks)
+	}
+}
+
+func TestExecuteClaudeFinalCollisionCheckPreventsLaunch(t *testing.T) {
+	rec, _, _, _, opts := pipelineFixture(t)
+	var checks atomic.Int32
+	sessionExists := func(context.Context, string) (bool, error) {
+		return checks.Add(1) > 1, nil
+	}
+	target := &ClaudeTarget{
+		ConfigDir:     t.TempDir(),
+		SessionExists: sessionExists,
+		Bootstrap: func(c capsule.Capsule, _ Policy) ([]byte, error) {
+			return RenderBootstrap(c, permanentHandoffDir(opts.ReinstateHome, c.Identity.ID))
+		},
+	}
+	runner := &pipelineRunner{}
+	opts.Target = &pipelineClaudeTarget{ClaudeTarget: target}
+	opts.SessionExists = sessionExists
+	opts.LaunchRunner = runner
+
+	result, err := Execute(context.Background(), rec, opts, true)
+	assertPipelineCode(t, err, exitcode.Safety)
+	if !errors.Is(err, ErrClaudeSessionIDCollision) || runner.calls != 0 || checks.Load() != 2 {
+		t.Fatalf("collision result: err=%v runner=%d checks=%d", err, runner.calls, checks.Load())
+	}
+	artifactDir := filepath.Join(opts.ReinstateHome, handoffsDirName, result.Plan.Capsule.Identity.ID)
+	if _, statErr := os.Stat(artifactDir); !errors.Is(statErr, os.ErrNotExist) {
+		t.Fatalf("collision persisted capsule artifacts: %v", statErr)
+	}
+}
+
+func TestConcurrentClaudeExecutionsCannotBothLaunch(t *testing.T) {
+	rec, _, _, _, opts := pipelineFixture(t)
+	var checks atomic.Int32
+	var exists atomic.Bool
+	initialReady := make(chan struct{})
+	sessionExists := func(context.Context, string) (bool, error) {
+		n := checks.Add(1)
+		if n <= 2 {
+			if n == 2 {
+				close(initialReady)
+			}
+			<-initialReady
+			return false, nil
+		}
+		return exists.Load(), nil
+	}
+	target := &ClaudeTarget{
+		ConfigDir:     t.TempDir(),
+		SessionExists: sessionExists,
+		Bootstrap: func(c capsule.Capsule, _ Policy) ([]byte, error) {
+			return RenderBootstrap(c, permanentHandoffDir(opts.ReinstateHome, c.Identity.ID))
+		},
+	}
+	runner := &concurrentClaudeRunner{exists: &exists}
+	opts.Target = &pipelineClaudeTarget{ClaudeTarget: target}
+	opts.SessionExists = sessionExists
+	opts.LaunchRunner = runner
+
+	type outcome struct {
+		result ExecuteResult
+		err    error
+	}
+	outcomes := make(chan outcome, 2)
+	for range 2 {
+		go func() {
+			result, err := Execute(context.Background(), rec, opts, true)
+			outcomes <- outcome{result: result, err: err}
+		}()
+	}
+	var succeeded, collided int
+	for range 2 {
+		out := <-outcomes
+		switch {
+		case out.err == nil && out.result.Launched:
+			succeeded++
+		case errors.Is(out.err, ErrClaudeSessionIDCollision):
+			collided++
+		default:
+			t.Fatalf("unexpected concurrent outcome: result=%+v err=%v", out.result, out.err)
+		}
+	}
+	if succeeded != 1 || collided != 1 || runner.calls.Load() != 1 {
+		t.Fatalf("concurrent outcomes: success=%d collision=%d launches=%d", succeeded, collided, runner.calls.Load())
 	}
 }
 

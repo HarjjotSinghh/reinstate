@@ -487,14 +487,37 @@ func Execute(ctx context.Context, rec sessionindex.Record, opts Options, launch 
 		return ExecuteResult{Plan: plan}, pipelineWrap(exitcode.Config, err)
 	}
 
-	id, err := store.Put(plan.Capsule, plan.Artifacts)
-	if err != nil {
-		return ExecuteResult{Plan: plan}, pipelineWrap(exitcode.Runtime, err)
-	}
-
 	target, err := resolveTarget(opts, normalizeAgent(opts.ToAgent))
 	if err != nil {
 		return ExecuteResult{Plan: plan}, err
+	}
+	if claudeTarget, ok := target.(interface {
+		claudeSessionCollisionCheck() ClaudeSessionExists
+	}); launch && ok {
+		sessionID := strings.TrimSpace(plan.Destination.SessionID)
+		collisionCheck := claudeTarget.claudeSessionCollisionCheck()
+		if sessionID == "" || collisionCheck == nil {
+			return ExecuteResult{Plan: plan}, pipelineErrorf(exitcode.Runtime, "handoff: Claude launch collision guard is incomplete")
+		}
+		lock, err := store.acquireLock(claudeSessionLockName(sessionID))
+		if err != nil {
+			return ExecuteResult{Plan: plan}, pipelineWrap(exitcode.Runtime, err)
+		}
+		defer func() { _ = lock.Close() }()
+		// The callback must refresh live session state. The lock serializes
+		// concurrent Reinstate executions using this deterministic session ID.
+		exists, err := collisionCheck(ctx, sessionID)
+		if err != nil {
+			return ExecuteResult{Plan: plan}, pipelineWrap(exitcode.Runtime, fmt.Errorf("handoff: final Claude collision check: %w", err))
+		}
+		if exists {
+			return ExecuteResult{Plan: plan}, pipelineWrap(exitcode.Safety, ErrClaudeSessionIDCollision)
+		}
+	}
+
+	id, err := store.Put(plan.Capsule, plan.Artifacts)
+	if err != nil {
+		return ExecuteResult{Plan: plan}, pipelineWrap(exitcode.Runtime, err)
 	}
 	if err := target.Materialize(ctx, plan.Destination); err != nil {
 		return ExecuteResult{Plan: plan}, pipelineWrap(exitcode.Runtime, err)
@@ -512,11 +535,11 @@ func Execute(ctx context.Context, rec sessionindex.Record, opts Options, launch 
 	var verifyErr error
 	if launch {
 		launchStart := now
-		if err := target.Launch(ctx, plan.Destination, opts.LaunchRunner); err != nil {
-			// LaunchRunner cannot distinguish failure before spawn from a child
-			// failure after session creation. Record the attempt as unresolved,
-			// but keep Launched false rather than overclaiming a known spawn.
-			launchErr = err
+		launchErr = target.Launch(ctx, plan.Destination, opts.LaunchRunner)
+		childStarted := launchErr == nil || errors.Is(launchErr, sessionindex.ErrChildStarted)
+		if !childStarted {
+			// An untyped launch error provides no proof of spawn. Record the
+			// attempt as unresolved and keep Launched false.
 		} else {
 			launched = true
 			verifiedID, state, err := target.Verify(ctx, plan.Destination, launchStart)
@@ -908,6 +931,7 @@ func sourceLineageRoot(reinstateHome string, rec sessionindex.Record) (string, e
 	for _, line := range strings.Split(string(body), "\n") {
 		var entry LineageEntry
 		if json.Unmarshal([]byte(strings.TrimSpace(line)), &entry) != nil ||
+			!entry.Launched || entry.Destination.State != VerifyResolved ||
 			entry.Destination.Agent != rec.Agent || entry.Destination.SessionID != rec.ID {
 			continue
 		}
@@ -920,6 +944,11 @@ func sourceLineageRoot(reinstateHome string, rec sessionindex.Record) (string, e
 		}
 	}
 	return root, nil
+}
+
+func claudeSessionLockName(sessionID string) string {
+	digest := sha256Hex([]byte(sessionID))
+	return ".claude-session-" + digest[:32] + ".lock"
 }
 
 func mustCanonical(c capsule.Capsule) []byte {
