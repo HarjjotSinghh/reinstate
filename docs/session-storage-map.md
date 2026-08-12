@@ -50,6 +50,24 @@ fixture under `testdata/`.
 | New session with pinned ID | `claude --session-id <uuid>` (UUID must be valid) |
 | Initial prompt | Positional argument: `claude "<prompt>"` |
 
+### `--session-id` collision policy (R5 — Unverified / fail closed)
+
+Vendor docs used by Reinstate confirm that `claude --session-id <uuid>` pins a
+new session ID, but **do not** state what happens when that UUID already exists
+on disk or in the local index (resume vs append vs refuse vs overwrite).
+
+Phase 4 therefore fails closed:
+
+1. Allocate UUID v4 with `crypto/rand`.
+2. Refuse any ID that collides with an **indexed** Claude session.
+3. Regenerate up to 8 times; if all collide, escalate
+   (`ErrClaudeSessionIDCollision`) and do not launch.
+4. Never assume silent overwrite. Reinstate still writes **no** files under
+   `~/.claude/projects` (ADR 0003).
+
+Research note:
+[research/2026-08-12-phase-4-r5-claude-session-id-collision.md](research/2026-08-12-phase-4-r5-claude-session-id-collision.md).
+
 ### Project key derivation
 
 The `<project-key>` directory name is derived from the **absolute project path

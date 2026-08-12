@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Claude Code handoff destination (`internal/handoff.ClaudeTarget`): ADR 0003
+  argv `claude --session-id <uuid-v4> "<bootstrap>"` in the verified workspace,
+  pinned-ID verification under this device's project key, and R5 fail-closed
+  collision refusal after bounded UUID regeneration (no vendor-internal writes).
+  `sessionindex.OperationHandoff` lets `ExecLaunchRunner` apply the same TTY and
+  identity guards to destination launches.
 - Handoff context policies (`checkpoint` / `balanced` / `full`) with
   newest-first projection budgeting, visible truncation markers, deterministic
   token estimates (`ceil(utf8_bytes / 4)`), and sidecar references for every
