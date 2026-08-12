@@ -1,0 +1,14 @@
+{"timestamp":"2026-08-01T10:00:00Z","type":"session_meta","payload":{"id":"00000000-0000-4000-8000-00000000aa01","cwd":"/Users/fixture-user/code/demo","git":{"branch":"fixture/main"}}}
+{"timestamp":"2026-08-01T10:00:01Z","type":"event_msg","payload":{"type":"user_message","message":"LONG-TURN-01 fix the flaky test"}}
+{"timestamp":"2026-08-01T10:00:01Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"ENVIRONMENT_DUMP_SHOULD_DROP"}]}}
+{"timestamp":"2026-08-01T10:00:02Z","type":"event_msg","payload":{"type":"agent_message","message":"LONG-ASSIST-01 reviewing the failing assertion"}}
+{"timestamp":"2026-08-01T10:00:02Z","type":"response_item","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"DUPLICATE_ASSIST_SHOULD_DROP"}]}}
+{"timestamp":"2026-08-01T10:00:03Z","type":"event_msg","payload":{"type":"user_message","message":"LONG-TURN-02 also check race detector"}}
+{"timestamp":"2026-08-01T10:00:03Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"ENVIRONMENT_DUMP_SHOULD_DROP_2"}]}}
+{"timestamp":"2026-08-01T10:00:04Z","type":"event_msg","payload":{"type":"agent_message","message":"LONG-ASSIST-02 race looks clean after the wait group fix"}}
+{"timestamp":"2026-08-01T10:00:05Z","type":"event_msg","payload":{"type":"user_message","message":"LONG-TURN-03 ship a regression fixture"}}
+{"timestamp":"2026-08-01T10:00:06Z","type":"event_msg","payload":{"type":"agent_message","message":"LONG-ASSIST-03 added a synthetic table-driven case"}}
+{"timestamp":"2026-08-01T10:00:07Z","type":"event_msg","payload":{"type":"user_message","message":"LONG-TURN-04 document the dedup rule"}}
+{"timestamp":"2026-08-01T10:00:08Z","type":"event_msg","payload":{"type":"agent_message","message":"LONG-ASSIST-04 prefer event_msg when both exist"}}
+{"timestamp":"2026-08-01T10:00:09Z","type":"event_msg","payload":{"type":"user_message","message":"LONG-TURN-05 done"}}
+{"timestamp":"2026-08-01T10:00:10Z","type":"event_msg","payload":{"type":"agent_message","message":"LONG-ASSIST-05 closing out"}}

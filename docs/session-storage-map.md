@@ -119,6 +119,23 @@ Two coexisting representations; readers must handle both and prefer the first:
 `payload.cwd`. Tool activity appears as typed response items with call IDs;
 reasoning items may be opaque or encrypted and are **never** translated.
 
+### Reasoning items (R4 — Documented)
+
+Codex rollouts may include Responses API `reasoning` items under
+`response_item`. Phase 4 classifies **all** of the following as
+`portability: omitted` with reason `vendor_opaque_state` and never copies
+payload bodies into capsule blocks:
+
+1. `{"type":"response_item","payload":{"type":"reasoning","encrypted_content":…}}`
+2. `{"type":"response_item","payload":{"type":"reasoning",…}}` (including
+   summary-only or empty-summary forms)
+3. Any other `response_item` payload that carries `encrypted_content` /
+   `encryptedContent`
+
+Visible assistant text remains on `event_msg`/`agent_message` (preferred) or
+`response_item`/`message`/`role=assistant` when no `event_msg` exists.
+Synthetic fixtures: `testdata/handoff/codex/reasoning-items/`.
+
 ---
 
 ## 3. Gemini CLI

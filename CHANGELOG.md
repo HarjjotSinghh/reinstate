@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Codex CLI transcript reader (`internal/transcript/codex.go`): maps rollout
+  JSONL into canonical capsule events with `event_msg`-over-`response_item`
+  dedup, filename-UUID session identity for forks, and R4
+  `vendor_opaque_state` omission for reasoning / encrypted reasoning items.
+  Synthetic fixtures under `testdata/handoff/codex/`.
 - Phase 4 planning set for `v0.4.0` cross-agent handoff: the continuity-capsule
   design and ADR 0002, a user-facing handoff contract, a per-OS local session
   storage map for Claude Code, Codex, Gemini CLI, OpenCode, and Grok Build, the
