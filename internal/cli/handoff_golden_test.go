@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -61,32 +62,73 @@ func TestHandoffExecutedOutputMatchesDryRunByteForByte(t *testing.T) {
 
 func normalizeHandoffGolden(t *testing.T, raw string, asJSON bool, replacements map[string]string) []byte {
 	t.Helper()
-	if asJSON {
-		for root, token := range replacements {
-			encoded, err := json.Marshal(filepath.Clean(root))
-			if err != nil {
-				t.Fatal(err)
+	return normalizeHandoffGoldenForOS(t, raw, asJSON, replacements, runtime.GOOS == "windows")
+}
+
+func normalizeHandoffGoldenForOS(t *testing.T, raw string, asJSON bool, replacements map[string]string, windows bool) []byte {
+	t.Helper()
+	type replacement struct{ from, to string }
+	var variants []replacement
+	seen := map[string]bool{}
+	for root, token := range replacements {
+		clean := filepath.Clean(root)
+		for _, variant := range []string{root, clean, filepath.ToSlash(clean), strings.ReplaceAll(clean, `\`, "/")} {
+			for _, candidate := range []string{variant, jsonQuoted(t, variant)} {
+				if candidate != "" && !seen[candidate] {
+					seen[candidate] = true
+					variants = append(variants, replacement{from: candidate, to: token})
+				}
 			}
-			raw = strings.ReplaceAll(raw, strings.Trim(string(encoded), `"`), token)
 		}
-		if runtime.GOOS == "windows" {
+	}
+	sort.Slice(variants, func(i, j int) bool { return len(variants[i].from) > len(variants[j].from) })
+	for _, variant := range variants {
+		raw = strings.ReplaceAll(raw, variant.from, variant.to)
+	}
+	if asJSON {
+		if windows {
 			raw = strings.ReplaceAll(raw, `\\`, "/")
 		}
 		return []byte(raw)
 	}
 	normalize := func(value string) string {
-		for root, token := range replacements {
-			value = strings.ReplaceAll(value, filepath.Clean(root), token)
-			value = strings.ReplaceAll(value, filepath.ToSlash(filepath.Clean(root)), token)
-		}
-		if runtime.GOOS == "windows" {
+		if windows {
 			value = strings.ReplaceAll(value, `\n`, "\x00newline\x00")
+			value = strings.ReplaceAll(value, `\\`, "/")
 			value = strings.ReplaceAll(value, `\`, "/")
 			value = strings.ReplaceAll(value, "\x00newline\x00", `\n`)
 		}
 		return value
 	}
 	return []byte(normalize(raw))
+}
+
+func jsonQuoted(t *testing.T, value string) string {
+	t.Helper()
+	encoded, err := json.Marshal(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return strings.Trim(string(encoded), `"`)
+}
+
+func TestNormalizeHandoffGoldenWindowsQuotedPaths(t *testing.T) {
+	raw := `command "claude" "Read C:\\Users\\fixture\\reinstate\\handoffs\\id\\projection.md\nnext"` + "\n" +
+		`file C:\Users\fixture\reinstate\handoffs\id\capsule.json cwd=C:\Users\fixture\workspace` + "\n"
+	got := string(normalizeHandoffGoldenForOS(t, raw, false, map[string]string{
+		`C:\Users\fixture\reinstate`: "${REINSTATE_HOME}",
+		`C:\Users\fixture\workspace`: "${WORKSPACE}",
+	}, true))
+	for _, want := range []string{"${REINSTATE_HOME}/handoffs/id/projection.md", "${WORKSPACE}", `projection.md\nnext`} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("normalized output omitted %q: %s", want, got)
+		}
+	}
+	for _, forbidden := range []string{`C:\`, "C:/", "${REINSTATE_HOME}//"} {
+		if strings.Contains(got, forbidden) {
+			t.Fatalf("normalized output contains %q: %s", forbidden, got)
+		}
+	}
 }
 
 func compareCLIGolden(t *testing.T, name string, got []byte) {
