@@ -2,7 +2,9 @@ package capsule
 
 import (
 	"bytes"
+	"encoding/json"
 	"math/rand"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -220,6 +222,92 @@ func TestCanonicalBytesRejectsAbsolutePath(t *testing.T) {
 				c.Task.ChangedFiles.Items = []string{"/home/me/repo/main.go"}
 			},
 		},
+		{
+			name: "task.files_touched_per_transcript",
+			edit: func(c *Capsule) {
+				c.Task.FilesTouchedPerTranscript.Items = []string{"/home/me/repo/main.go"}
+			},
+		},
+		{
+			name: "block.ref",
+			edit: func(c *Capsule) {
+				c.Conversation.Events[0].Blocks[0].Ref = "/var/folders/attachment.png"
+			},
+		},
+		{
+			name: "block.meta",
+			edit: func(c *Capsule) {
+				c.Conversation.Events[0].Blocks[0].Meta = map[string]string{
+					"name": "/Users/example/Desktop/shot.png",
+				}
+			},
+		},
+		{
+			name: "block.tool_input_path_field",
+			edit: func(c *Capsule) {
+				c.Conversation.Events[0].Blocks[0] = Block{
+					Type: BlockTypeToolInput,
+					Text: `{"file_path":"/Users/example/project/main.go"}`,
+				}
+			},
+		},
+		{
+			name: "block.tool_input_nested_paths_array",
+			edit: func(c *Capsule) {
+				c.Conversation.Events[0].Blocks[0] = Block{
+					Type: BlockTypeToolInput,
+					Text: `{"args":{"paths":["${REPO:x}/a.go","/etc/hosts"]}}`,
+				}
+			},
+		},
+		{
+			name: "block.tool_input_bare_value",
+			edit: func(c *Capsule) {
+				c.Conversation.Events[0].Blocks[0] = Block{
+					Type: BlockTypeToolInput,
+					Text: "/usr/local/bin/tool --run",
+				}
+			},
+		},
+		{
+			name: "block.tool_output",
+			edit: func(c *Capsule) {
+				c.Conversation.Events[0].Blocks[0] = Block{
+					Type: BlockTypeToolOutput,
+					Text: "/Users/example/project\nok",
+				}
+			},
+		},
+		{
+			name: "conversation.full_history_ref",
+			edit: func(c *Capsule) {
+				c.Conversation.FullHistoryRef = "/tmp/handoff/sidecar/events.jsonl"
+			},
+		},
+		{
+			name: "projection.sidecar_ref",
+			edit: func(c *Capsule) {
+				c.Projection.SidecarRef = "/tmp/handoff/sidecar/events.jsonl"
+			},
+		},
+		{
+			name: "workspace.tests",
+			edit: func(c *Capsule) {
+				c.Workspace.Tests = []string{"/usr/local/bin/pytest -q"}
+			},
+		},
+		{
+			name: "task.tests",
+			edit: func(c *Capsule) {
+				c.Task.Tests.Items = []string{"/usr/local/bin/pytest -q"}
+			},
+		},
+		{
+			name: "event.native_name",
+			edit: func(c *Capsule) {
+				c.Conversation.Events[0].NativeName = "/Users/example/bin/tool"
+			},
+		},
 	}
 
 	for _, tc := range cases {
@@ -231,6 +319,9 @@ func TestCanonicalBytesRejectsAbsolutePath(t *testing.T) {
 			_, err := CanonicalBytes(c)
 			if err == nil {
 				t.Fatal("CanonicalBytes succeeded; want absolute path error")
+			}
+			if !strings.Contains(err.Error(), "absolute filesystem path is not allowed in ") {
+				t.Fatalf("error does not name the offending field: %v", err)
 			}
 		})
 	}
@@ -245,6 +336,298 @@ func TestCanonicalBytesRejectsAbsolutePath(t *testing.T) {
 	}
 	if bytes.Contains(b, []byte("/Users/example")) {
 		t.Fatalf("private absolute path leaked into canonical bytes: %s", b)
+	}
+}
+
+// TestCanonicalBytesAcceptsProse pins the other half of the contract: free text
+// is not a path. A user who types a slash command, or names an absolute path in
+// a sentence, wrote prose — canonicalization must carry it verbatim rather than
+// abort the handoff, which is the v0.4.0-rc.1 defect this test guards.
+func TestCanonicalBytesAcceptsProse(t *testing.T) {
+	t.Parallel()
+
+	prose := []string{
+		"/init do the thing",
+		"/compact",
+		"/clear",
+		"look at /etc/hosts before you continue",
+		"/Users/example/project/main.go is the file I meant",
+		`C:\Users\example\project\main.go on the Windows box`,
+	}
+
+	// Each case stores the prose in one field and returns the exact string the
+	// capsule now holds, so the test can prove it survived byte for byte.
+	cases := []struct {
+		name string
+		edit func(*Capsule, string) string
+	}{
+		{"event.text_block", func(c *Capsule, s string) string {
+			c.Conversation.Events[0].Blocks[0].Text = s
+			return s
+		}},
+		{"task.goal", func(c *Capsule, s string) string { c.Task.Goal.Text = s; return s }},
+		{"task.latest_user_intent", func(c *Capsule, s string) string { c.Task.LatestUserIntent.Text = s; return s }},
+		{"task.recent_user_messages", func(c *Capsule, s string) string {
+			c.Task.RecentUserMessages.Items = []string{s}
+			return s
+		}},
+		{"task.next_action", func(c *Capsule, s string) string { c.Task.NextAction.Text = s; return s }},
+		{"task.open_questions", func(c *Capsule, s string) string {
+			c.Task.OpenQuestions.Items = []string{s}
+			return s
+		}},
+		{"task.constraints", func(c *Capsule, s string) string { c.Task.Constraints.Items = []string{s}; return s }},
+		{"task.decisions", func(c *Capsule, s string) string { c.Task.Decisions.Items = []string{s}; return s }},
+		{"task.rejected_approaches", func(c *Capsule, s string) string {
+			c.Task.RejectedApproaches.Items = []string{s}
+			return s
+		}},
+		{"security.destination_warning", func(c *Capsule, s string) string { c.Security.DestinationWarning = s; return s }},
+		{"tool_input.non_path_argument", func(c *Capsule, s string) string {
+			// A tool argument can be prose too: only path-typed keys are judged.
+			text := `{"prompt":` + quote(s) + `,"file_path":"${REPO:github.com/example/demo}/main.go"}`
+			c.Conversation.Events[0].Blocks[0] = Block{Type: BlockTypeToolInput, Text: text}
+			return text
+		}},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			for _, text := range prose {
+				c := sampleCapsule()
+				stored := tc.edit(&c, text)
+				got, err := CanonicalBytes(c)
+				if err != nil {
+					t.Fatalf("CanonicalBytes rejected prose %q: %v", text, err)
+				}
+				if !bytes.Contains(got, []byte(quoteInner(stored))) {
+					t.Fatalf("prose %q did not survive canonicalization: %s", text, got)
+				}
+				if err := Validate(c); err != nil {
+					t.Fatalf("Validate rejected prose %q: %v", text, err)
+				}
+			}
+		})
+	}
+}
+
+func quote(s string) string {
+	enc, err := json.Marshal(s)
+	if err != nil {
+		panic(err)
+	}
+	return string(enc)
+}
+
+// quoteInner is the JSON encoding of s without its surrounding quotes, which is
+// how the value appears inside canonical bytes.
+func quoteInner(s string) string {
+	enc := quote(s)
+	return enc[1 : len(enc)-1]
+}
+
+// TestPathClassificationCoversEverySerializedStringField fails when a
+// serialized string-bearing field of the capsule has no recorded
+// path-vs-prose classification.
+//
+// rejectAbsolutePathFields visits named fields instead of walking every decoded
+// string, which is what lets prose stay prose. The cost of that choice is that
+// a newly added field is not covered until someone classifies it, so this test
+// makes forgetting a build failure. When it fails: decide whether the new field
+// holds a filesystem path, add it to rejectAbsolutePathFields with p.path,
+// p.opaque, or a deliberate prose exemption, and record it below.
+func TestPathClassificationCoversEverySerializedStringField(t *testing.T) {
+	t.Parallel()
+
+	// classification records, for every serialized string leaf, whether
+	// rejectAbsolutePathFields checks it and why.
+	classification := map[string]string{
+		// Path-typed: must be a portable pathmap token.
+		"workspace.root":                            "path",
+		"workspace.changed_files[]":                 "path",
+		"task.changed_files.items[]":                "path",
+		"task.files_touched_per_transcript.items[]": "path",
+		"conversation.full_history_ref":             "path",
+		"projection.sidecar_ref":                    "path",
+		"conversation.events[].blocks[].path":       "path",
+		"conversation.events[].blocks[].ref":        "path",
+		"conversation.events[].blocks[].meta[]":     "path",
+
+		// Structural scalars: identifiers, digests, enums, vendor names, and
+		// derived evidence lines. None can legitimately be a path.
+		"schema":                                      "opaque",
+		"identity.id":                                 "opaque",
+		"identity.lineage_root":                       "opaque",
+		"identity.parent_session.agent":               "opaque",
+		"identity.parent_session.id":                  "opaque",
+		"identity.parent_session.artifact_sha256":     "opaque",
+		"identity.parent_session.adapter_version":     "opaque",
+		"raw_source.agent":                            "opaque",
+		"raw_source.session_id":                       "opaque",
+		"raw_source.artifact_sha256":                  "opaque",
+		"raw_source.adapter_version":                  "opaque",
+		"workspace.project_id":                        "opaque",
+		"workspace.branch":                            "opaque",
+		"workspace.head":                              "opaque",
+		"workspace.working_tree_digest":               "opaque",
+		"workspace.tests[]":                           "opaque",
+		"task.completed.items[]":                      "opaque",
+		"task.pending.items[]":                        "opaque",
+		"task.tests.items[]":                          "opaque",
+		"capabilities.source[]":                       "opaque",
+		"capabilities.destination[]":                  "opaque",
+		"capabilities.missing[].kind":                 "opaque",
+		"capabilities.missing[].name":                 "opaque",
+		"capabilities.missing[].impact":               "opaque",
+		"security.redactions[].category":              "opaque",
+		"security.redactions[].digest":                "opaque",
+		"fidelity.overall":                            "opaque",
+		"fidelity.mode":                               "opaque",
+		"fidelity.components[].name":                  "opaque",
+		"fidelity.components[].portability":           "opaque",
+		"fidelity.components[].reason":                "opaque",
+		"fidelity.unsupported[]":                      "opaque",
+		"projection.policy":                           "opaque",
+		"projection.included_event_ids[]":             "opaque",
+		"projection.bootstrap_sha256":                 "opaque",
+		"projection.markdown_sha256":                  "opaque",
+		"conversation.events[].id":                    "opaque",
+		"conversation.events[].actor":                 "opaque",
+		"conversation.events[].kind":                  "opaque",
+		"conversation.events[].native_type":           "opaque",
+		"conversation.events[].native_name":           "opaque",
+		"conversation.events[].call_id":               "opaque",
+		"conversation.events[].linked_call_id":        "opaque",
+		"conversation.events[].portability":           "opaque",
+		"conversation.events[].reason":                "opaque",
+		"conversation.events[].content_hash":          "opaque",
+		"conversation.events[].source.agent":          "opaque",
+		"conversation.events[].source.session_id":     "opaque",
+		"conversation.events[].source.record_key":     "opaque",
+		"conversation.events[].redactions[].category": "opaque",
+		"conversation.events[].redactions[].digest":   "opaque",
+		"conversation.events[].blocks[].type":         "opaque",
+		"conversation.events[].blocks[].mime":         "opaque",
+		"conversation.events[].blocks[].sha256":       "opaque",
+
+		// Prose: written by a person or a model. Never judged as a path. A
+		// block's text is prose only for text blocks; tool_input and json
+		// payloads are parsed and their path-typed keys are checked.
+		"task.goal.text":                      "prose",
+		"task.latest_user_intent.text":        "prose",
+		"task.next_action.text":               "prose",
+		"task.recent_user_messages.items[]":   "prose",
+		"task.constraints.items[]":            "prose",
+		"task.decisions.items[]":              "prose",
+		"task.rejected_approaches.items[]":    "prose",
+		"task.open_questions.items[]":         "prose",
+		"security.destination_warning":        "prose",
+		"conversation.events[].blocks[].text": "prose_or_tool_arguments",
+
+		// Portability metadata on task fields: constants from this package.
+		"task.goal.portability":                         "opaque",
+		"task.goal.reason":                              "opaque",
+		"task.goal.label":                               "opaque",
+		"task.latest_user_intent.portability":           "opaque",
+		"task.latest_user_intent.reason":                "opaque",
+		"task.latest_user_intent.label":                 "opaque",
+		"task.next_action.portability":                  "opaque",
+		"task.next_action.reason":                       "opaque",
+		"task.next_action.label":                        "opaque",
+		"task.recent_user_messages.portability":         "opaque",
+		"task.recent_user_messages.reason":              "opaque",
+		"task.recent_user_messages.label":               "opaque",
+		"task.constraints.portability":                  "opaque",
+		"task.constraints.reason":                       "opaque",
+		"task.constraints.label":                        "opaque",
+		"task.decisions.portability":                    "opaque",
+		"task.decisions.reason":                         "opaque",
+		"task.decisions.label":                          "opaque",
+		"task.rejected_approaches.portability":          "opaque",
+		"task.rejected_approaches.reason":               "opaque",
+		"task.rejected_approaches.label":                "opaque",
+		"task.completed.portability":                    "opaque",
+		"task.completed.reason":                         "opaque",
+		"task.completed.label":                          "opaque",
+		"task.pending.portability":                      "opaque",
+		"task.pending.reason":                           "opaque",
+		"task.pending.label":                            "opaque",
+		"task.changed_files.portability":                "opaque",
+		"task.changed_files.reason":                     "opaque",
+		"task.changed_files.label":                      "opaque",
+		"task.files_touched_per_transcript.portability": "opaque",
+		"task.files_touched_per_transcript.reason":      "opaque",
+		"task.files_touched_per_transcript.label":       "opaque",
+		"task.tests.portability":                        "opaque",
+		"task.tests.reason":                             "opaque",
+		"task.tests.label":                              "opaque",
+		"task.open_questions.portability":               "opaque",
+		"task.open_questions.reason":                    "opaque",
+		"task.open_questions.label":                     "opaque",
+	}
+
+	found := stringLeaves(reflect.TypeOf(Capsule{}), "")
+	for _, field := range found {
+		if _, ok := classification[field]; !ok {
+			t.Errorf("field %q has no path-vs-prose classification; classify it in "+
+				"rejectAbsolutePathFields and record it in this test", field)
+		}
+	}
+	seen := make(map[string]struct{}, len(found))
+	for _, field := range found {
+		seen[field] = struct{}{}
+	}
+	for field := range classification {
+		if _, ok := seen[field]; !ok {
+			t.Errorf("classification lists %q, which is no longer a serialized field", field)
+		}
+	}
+}
+
+// stringLeaves returns the dotted JSON paths of every serialized field that can
+// carry a string, including strings reachable through slices, maps, and `any`.
+func stringLeaves(t reflect.Type, prefix string) []string {
+	switch t.Kind() {
+	case reflect.String:
+		return []string{prefix}
+	case reflect.Interface:
+		// An `any` value (a capability summary entry) can carry a string.
+		return []string{prefix}
+	case reflect.Pointer:
+		return stringLeaves(t.Elem(), prefix)
+	case reflect.Slice, reflect.Array:
+		return stringLeaves(t.Elem(), prefix+"[]")
+	case reflect.Map:
+		return stringLeaves(t.Elem(), prefix+"[]")
+	case reflect.Struct:
+		if t == reflect.TypeOf(time.Time{}) {
+			return nil
+		}
+		out := make([]string, 0)
+		for i := 0; i < t.NumField(); i++ {
+			field := t.Field(i)
+			if !field.IsExported() {
+				continue
+			}
+			name, _, _ := strings.Cut(field.Tag.Get("json"), ",")
+			if name == "-" {
+				// Private by contract: never serialized, never checked.
+				continue
+			}
+			if name == "" {
+				name = field.Name
+			}
+			child := name
+			if prefix != "" {
+				child = prefix + "." + name
+			}
+			out = append(out, stringLeaves(field.Type, child)...)
+		}
+		return out
+	default:
+		return nil
 	}
 }
 

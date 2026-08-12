@@ -27,12 +27,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   stable, non-reversible `${EXTERNAL:<digest>}/<name>` token rather than an
   absolute path. Previously a Claude session that had read a file failed the
   handoff with `capsule: absolute filesystem path is not allowed`.
+- Capsule canonicalization no longer treats prose as a filesystem path. It now
+  checks the capsule's path-typed fields — workspace root, changed files,
+  transcript file references, block paths and refs, sidecar references, and the
+  path-typed keys inside tool arguments — instead of every string in the
+  document, and reports the offending field by name. Message bodies, derived
+  goals, and user intents are carried exactly as written. Previously any message
+  beginning with a slash command (`/init`, `/compact`, `/clear`) or any sentence
+  naming an absolute path aborted the handoff with
+  `capsule: absolute filesystem path is not allowed`. This matches the contract
+  `docs/compatibility.md` already states for path rewriting: known structural
+  fields are rewritten, prose is left unchanged.
 
 ### Changed
 
 - Claude handoff fixtures no longer contain a synthetic `version` file, and both
   Claude and Codex gained an `absolute-paths` fixture, so the suite exercises
   what a real installation looks like.
+- Claude and Codex gained a `slash-commands` fixture whose messages open with
+  `/init`, include `/compact`, and name absolute paths in prose, so the capsule
+  cannot silently re-acquire the rejection of ordinary conversation.
 
 ## [0.4.0-rc.1] - 2026-08-12
 
