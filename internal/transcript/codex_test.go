@@ -28,11 +28,11 @@ func TestCodexReaderDualRepresentationDedup(t *testing.T) {
 			assistants = append(assistants, text)
 		}
 	}
-	if len(users) != 5 {
-		t.Fatalf("user messages = %d, want 5 (one per turn); got %#v", len(users), users)
+	if len(users) != 200 {
+		t.Fatalf("user messages = %d, want 200 (one per turn); got %#v", len(users), users[:min(5, len(users))])
 	}
-	if len(assistants) != 5 {
-		t.Fatalf("assistant messages = %d, want 5; got %#v", len(assistants), assistants)
+	if len(assistants) != 200 {
+		t.Fatalf("assistant messages = %d, want 200; got %#v", len(assistants), assistants[:min(5, len(assistants))])
 	}
 	for _, forbidden := range []string{
 		"ENVIRONMENT_DUMP_SHOULD_DROP",

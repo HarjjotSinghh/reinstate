@@ -1,0 +1,3 @@
+{"timestamp":"2026-08-01T12:00:00Z","type":"session_meta","payload":{"id":"00000000-0000-4000-8000-00000000os11","cwd":"/Users/fixture-user/code/demo","git":{"branch":"fixture/macos"}}}
+{"timestamp":"2026-08-01T12:00:01Z","type":"event_msg","payload":{"type":"user_message","message":"Synthetic Codex macOS OS-root fixture"}}
+{"timestamp":"2026-08-01T12:00:02Z","type":"event_msg","payload":{"type":"agent_message","message":"Synthetic Codex macOS OS-root reply"}}
