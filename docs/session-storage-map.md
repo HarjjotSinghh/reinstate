@@ -139,6 +139,17 @@ forms appear in project JSONL:
 | Initial prompt | Positional argument: `codex "<prompt>"` |
 | Non-interactive | `codex exec …`, `codex exec --last` |
 
+### Initial-prompt argv ceiling (R6 — Documented / Unverified)
+
+Codex accepts a new-session prompt as `codex "<bootstrap>"` (**Documented**).
+No Codex-published Windows-specific argv byte ceiling was found in vendor docs
+Reinstate trusts (**Unverified**). Destination handoffs therefore enforce
+`TargetCapabilities.MaxArgvBytes`, defaulting to `DefaultMaxArgvBytes`
+(24 KiB) from the Phase 4 architecture plan — a Reinstate conservative budget,
+not a vendor constant. Over-budget plans fall back to a short bootstrap that
+references `projection.md` only. See
+[research/2026-08-12-phase-4-r6-codex-argv.md](research/2026-08-12-phase-4-r6-codex-argv.md).
+
 ### Context-window ceiling (R7 — Omitted)
 
 No Codex CLI **harness** token ceiling is published in the vendor docs

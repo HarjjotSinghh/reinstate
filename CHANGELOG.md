@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   collision refusal after bounded UUID regeneration (no vendor-internal writes).
   `sessionindex.OperationHandoff` lets `ExecLaunchRunner` apply the same TTY and
   identity guards to destination launches.
+- Codex CLI handoff destination (`internal/handoff/target_codex.go`): launches
+  `codex "<bootstrap>"` in the verified workspace, reconciles the
+  vendor-assigned session ID after launch (resolved / unresolved / ambiguous),
+  and falls back to a `projection.md`-only bootstrap when argv exceeds
+  `DefaultMaxArgvBytes` (R6). Never writes vendor-internal Codex files.
 - Handoff projection renderer (`RenderBootstrap`, `RenderProjection`,
   `RenderJSON`) with imported-history framing, delimiter escape, source
   system/developer exclusion, and an 8 KiB bootstrap ceiling
