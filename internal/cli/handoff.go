@@ -490,7 +490,7 @@ func writeHandoffPlan(cmd *cobra.Command, plan handoff.PlanResult, asJSON, showR
 		PrintHuman(cmd.OutOrStdout(), "%s: warning %s", prefix, warningID)
 	}
 	if warning := strings.TrimSpace(plan.Capsule.Security.DestinationWarning); warning != "" {
-		PrintHuman(cmd.OutOrStdout(), "%s: destination warning %s", prefix, warning)
+		PrintHuman(cmd.OutOrStdout(), "%s: destination warning %s", prefix, destinationWarningHuman(warning))
 	}
 	redactionTotal := 0
 	for _, count := range plan.RedactionCounts {
@@ -508,6 +508,13 @@ func writeHandoffPlan(cmd *cobra.Command, plan handoff.PlanResult, asJSON, showR
 		}
 	}
 	return nil
+}
+
+func destinationWarningHuman(warning string) string {
+	if warning == transcript.DestinationWarningGrok {
+		return "Grok Build has documented repository-content upload behavior, including Git history and unredacted .env material sent to xAI cloud storage; Reinstate forced capsule redaction for this source"
+	}
+	return warning
 }
 
 func handoffPlannedFiles(plan handoff.PlanResult) []string {

@@ -20,6 +20,7 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/preflight"
 	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
+	"github.com/HarjjotSinghh/reinstate/internal/transcript"
 )
 
 func TestHandoffCommandRegistersFullSurface(t *testing.T) {
@@ -183,12 +184,11 @@ func TestHandoffHumanOutputAlwaysStatesMode(t *testing.T) {
 }
 
 func TestHandoffPlanPrintsGrokDestinationWarning(t *testing.T) {
-	const warning = "Grok conversations are uploaded by the destination CLI under its documented behavior."
 	plan := handoff.PlanResult{
 		HandoffID: "grok-warning",
 		Capsule: capsule.Capsule{
 			RawSource: capsule.RawSource{Agent: sessionindex.AgentGrok, SessionID: "synthetic"},
-			Security:  capsule.Security{DestinationWarning: warning, RedactionForced: true},
+			Security:  capsule.Security{DestinationWarning: transcript.DestinationWarningGrok, RedactionForced: true},
 		},
 		Destination: handoff.DestinationPlan{Agent: sessionindex.AgentCodex, Executable: "codex", Args: []string{"brief"}},
 	}
@@ -199,8 +199,13 @@ func TestHandoffPlanPrintsGrokDestinationWarning(t *testing.T) {
 	if err := writeHandoffPlan(cmd, plan, false, false); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(human.String(), "destination warning "+warning) {
-		t.Fatalf("human output omitted Grok destination warning: %s", human.String())
+	for _, want := range []string{"destination warning Grok Build", "repository-content upload", "Git history", ".env", "xAI cloud storage", "forced capsule redaction"} {
+		if !strings.Contains(human.String(), want) {
+			t.Fatalf("human output omitted %q from Grok warning: %s", want, human.String())
+		}
+	}
+	if strings.Contains(human.String(), "destination warning "+transcript.DestinationWarningGrok) {
+		t.Fatalf("human output exposed machine warning ID instead of explicit prose: %s", human.String())
 	}
 
 	var machine bytes.Buffer
@@ -212,7 +217,7 @@ func TestHandoffPlanPrintsGrokDestinationWarning(t *testing.T) {
 	if err := json.Unmarshal(machine.Bytes(), &output); err != nil {
 		t.Fatal(err)
 	}
-	if output.Security.DestinationWarning != warning || !output.Security.RedactionForced {
+	if output.Security.DestinationWarning != transcript.DestinationWarningGrok || !output.Security.RedactionForced {
 		t.Fatalf("machine security output=%+v", output.Security)
 	}
 }
