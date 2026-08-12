@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Phase 4 planning set for `v0.4.0` cross-agent handoff: the continuity-capsule
+  design and ADR 0002, a user-facing handoff contract, a per-OS local session
+  storage map for Claude Code, Codex, Gemini CLI, OpenCode, and Grok Build, the
+  release-neutral acceptance matrix, ADR 0003 fixing `v0.4.0-rc.1` scope and
+  launch route, and the architecture plus 27-packet execution plan.
+  Documentation only; no behavior changes.
+
 ### Changed
 
 - Align user-facing docs, setup prompts, and website release notices with
