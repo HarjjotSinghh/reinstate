@@ -3,7 +3,9 @@
 package fsx
 
 import (
-	"strings"
+	"fmt"
+	"runtime"
+	"unsafe"
 
 	"golang.org/x/sys/windows"
 )
@@ -85,14 +87,14 @@ func OwnerOnly(path string, directory bool) (bool, string, error) {
 	if err != nil {
 		return false, "", err
 	}
-	private, detail := ownerOnlyDACL(descriptor.String(), allowed)
+	private, detail := ownerOnlyACEs(dacl, allowed)
+	runtime.KeepAlive(descriptor)
 	return private, detail, nil
 }
 
-// ownerOnlyTrustees returns the SDDL spellings accepted in a private DACL:
-// the current user plus the two administrative principals Windows always
-// retains. Well-known SIDs may render as aliases (SY, BA) or raw SIDs.
-func ownerOnlyTrustees() (map[string]bool, error) {
+// ownerOnlyTrustees returns the only principals a private DACL may name: the
+// current user plus the two administrative principals Windows always retains.
+func ownerOnlyTrustees() ([]*windows.SID, error) {
 	user, err := windows.GetCurrentProcessToken().GetTokenUser()
 	if err != nil {
 		return nil, err
@@ -105,11 +107,42 @@ func ownerOnlyTrustees() (map[string]bool, error) {
 	if err != nil {
 		return nil, err
 	}
-	allowed := map[string]bool{"SY": true, "BA": true}
-	for _, sid := range []*windows.SID{user.User.Sid, system, administrators} {
-		allowed[strings.ToUpper(sid.String())] = true
+	return []*windows.SID{user.User.Sid, system, administrators}, nil
+}
+
+// ownerOnlyACEs walks the DACL entries and requires every one of them to be a
+// plain allow entry for an accepted trustee. SIDs are compared directly rather
+// than through their SDDL spelling, whose well-known aliases vary with the
+// account the process runs as.
+func ownerOnlyACEs(dacl *windows.ACL, allowed []*windows.SID) (bool, string) {
+	if dacl.AceCount == 0 {
+		return false, "DACL has no entries and was not installed by ProtectOwnerOnly"
 	}
-	return allowed, nil
+	for index := uint32(0); index < uint32(dacl.AceCount); index++ {
+		var ace *windows.ACCESS_ALLOWED_ACE
+		if err := windows.GetAce(dacl, index, &ace); err != nil {
+			return false, fmt.Sprintf("read DACL entry %d: %v", index, err)
+		}
+		if ace.Header.AceType != windows.ACCESS_ALLOWED_ACE_TYPE {
+			return false, fmt.Sprintf("DACL entry %d has type %d and is not a plain allow entry", index, ace.Header.AceType)
+		}
+		// Valid single-expression uintptr arithmetic: the SID is stored inline
+		// at the end of the ACE, and the ACE points into descriptor's memory.
+		sid := (*windows.SID)(unsafe.Pointer(uintptr(unsafe.Pointer(ace)) + unsafe.Offsetof(ace.SidStart)))
+		if !sidInSet(allowed, sid) {
+			return false, fmt.Sprintf("DACL grants access to %s", sid)
+		}
+	}
+	return true, fmt.Sprintf("protected DACL with %d owner-only entries", dacl.AceCount)
+}
+
+func sidInSet(set []*windows.SID, sid *windows.SID) bool {
+	for _, candidate := range set {
+		if candidate.Equals(sid) {
+			return true
+		}
+	}
+	return false
 }
 
 func ownerAccess(sid *windows.SID, trusteeType windows.TRUSTEE_TYPE, inheritance uint32) windows.EXPLICIT_ACCESS {
