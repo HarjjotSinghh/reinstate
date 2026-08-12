@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Handoff context policies (`checkpoint` / `balanced` / `full`) with
+  newest-first projection budgeting, visible truncation markers, deterministic
+  token estimates (`ceil(utf8_bytes / 4)`), and sidecar references for every
+  excluded event (`internal/handoff` policy + estimate; `capsule.SidecarRef`).
 - Claude Code transcript reader (`internal/transcript`) that snapshots complete
   JSONL boundaries and maps user/assistant/tool/summary/attachment/unknown
   records into canonical capsule events, with synthetic fixtures under
