@@ -25,8 +25,8 @@ const (
 	warningGeminiSubagent      = "gemini_subagent_excluded"
 	warningMalformedGemini     = "malformed_gemini_record"
 
-	reasonToolCallNormalized   = "vendor_tool_call_normalized"
-	reasonToolResultNormalized = "vendor_tool_result_normalized"
+	reasonGeminiToolCallNormalized   = "vendor_tool_call_normalized"
+	reasonGeminiToolResultNormalized = "vendor_tool_result_normalized"
 )
 
 func init() {
@@ -524,7 +524,7 @@ func geminiToolCallEvent(
 		Blocks:      blocks,
 		CallID:      call.ID,
 		Portability: capsule.PortabilityNormalized,
-		Reason:      reasonToolCallNormalized,
+		Reason:      reasonGeminiToolCallNormalized,
 		ContentHash: geminiContentHash(capsule.ActorAssistant, capsule.KindToolCall, call.Name, blocks, call.ID, ""),
 		Source:      src,
 	}
@@ -559,7 +559,7 @@ func geminiToolResultEvent(
 		Blocks:       blocks,
 		LinkedCallID: call.ID,
 		Portability:  capsule.PortabilityNormalized,
-		Reason:       reasonToolResultNormalized,
+		Reason:       reasonGeminiToolResultNormalized,
 		ContentHash:  geminiContentHash(capsule.ActorTool, capsule.KindToolResult, call.Name, blocks, "", call.ID),
 		Source:       src,
 	}
