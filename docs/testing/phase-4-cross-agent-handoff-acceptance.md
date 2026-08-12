@@ -11,11 +11,18 @@ authority is [cross-agent-continuation.md](../cross-agent-continuation.md) and
 A candidate passes only when installed tagged artifacts produce truthful,
 privacy-safe handoffs that a destination agent can actually continue from.
 
-The first candidate is pinned to the signed tag `v0.4.0-rc.1`. Use the
-[v0.4.0-rc.1 dispatch](v0.4.0-rc.1-agent-verification-prompts.md) and the
+The current candidate is pinned to the signed tag `v0.4.0-rc.2`. Use the
+[v0.4.0-rc.2 dispatch](v0.4.0-rc.2-agent-verification-prompts.md) and the
 [Phase 4 report template](results/phase-4-report-template.md). Do not start
-physical testing from an integration commit, source build, draft release, or
-installer that still pins stable `v0.3.0`.
+physical testing from an integration commit, source build, draft release, or an
+installer that still pins stable `v0.3.0` or the superseded `v0.4.0-rc.1`.
+
+The first candidate, `v0.4.0-rc.1`, was published and **failed** this
+acceptance. Its six corrective fixes ship in `v0.4.0-rc.2`, and the rc.2
+dispatch carries an explicit `R1`–`R6` re-verification set so the rerun confirms
+them rather than rediscovering them. The
+[superseded v0.4.0-rc.1 dispatch](v0.4.0-rc.1-agent-verification-prompts.md)
+remains in the tree as the record of what that run was asked to do.
 
 ## Evidence policy
 
@@ -48,6 +55,10 @@ installer that still pins stable `v0.3.0`.
 - After the first index refresh, verify the session list contains **only**
   sessions the run itself created. Any unexpected session is an isolation
   failure: destroy the Reinstate home and restart, do not continue.
+- Record every installed agent version **before** the first product command and
+  again after the last row. Claude Code auto-updated mid-run during
+  `v0.4.0-rc.1` on both hosts; a version change invalidates every row collected
+  across it, and continuing silently is a process failure.
 - Create fresh controlled sessions for each agent. Do not reuse a Phase 2 or
   Phase 3 corpus, and do not reuse an earlier candidate's handoffs.
 - Never commit a transcript, full prompt, response, secret, credential, MCP
@@ -201,7 +212,11 @@ supported platforms is `PASS`. One `FAIL` on one platform fails the candidate.
 ## Candidate dispatches
 
 The current per-tag instructions are the
-[`v0.4.0-rc.1` dispatch](v0.4.0-rc.1-agent-verification-prompts.md). It fixes
-report branches, artifact and full-commit checks, corpus sizes, absolute
+[`v0.4.0-rc.2` dispatch](v0.4.0-rc.2-agent-verification-prompts.md). It fixes
+report branches, artifact and full-commit checks, the report-template
+substitutions for this tag, the pre-run agent-version record, the `R1`–`R6`
+re-verification of the `v0.4.0-rc.1` failures, corpus sizes, absolute
 performance ceilings, and final reconciliation rules before physical testing
-starts. Do not begin a run without the dispatch for the exact tested tag.
+starts. Do not begin a run without the dispatch for the exact tested tag; the
+[`v0.4.0-rc.1` dispatch](v0.4.0-rc.1-agent-verification-prompts.md) is superseded
+and is retained only as the record of that failed run.

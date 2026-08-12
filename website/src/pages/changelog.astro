@@ -16,7 +16,7 @@ const currentReleaseDate = new Intl.DateTimeFormat('en', {
 }).format(new Date(`${product.currentReleaseDate}T00:00:00Z`));
 const answer =
   `The latest published Reinstate tag is ${product.currentRelease}, dated ${currentReleaseDate}. ` +
-  `Stable ${product.currentRelease} adds verified resume on Apple Silicon macOS and native Windows x64 after dual-platform RC7 acceptance PASS.`;
+  `${product.currentRelease} is a release candidate that adds Phase 4 structured cross-agent handoff on top of stable ${product.stableRelease}; its dual-platform tagged-artifact acceptance is pending, and stable support remains ${product.stableRelease}.`;
 ---
 
 <PublicContentLayout
@@ -67,6 +67,34 @@ const answer =
       stays visible rather than implied to be complete.
     </li>
   </ul>
+  <h3>Fixes carried since v0.4.0-rc.1</h3>
+  <p>
+    <code>v0.4.0-rc.1</code> was published for testing and <strong>failed</strong> its physical
+    acceptance. This candidate carries the fixes for what that run found.
+  </p>
+  <ul>
+    <li>
+      A Claude-sourced handoff no longer requires a version file that real installations never
+      create. Source version now resolves through the same probe <code>rein inspect</code> uses, so
+      Claude-sourced handoffs stop exiting <code>5</code> on every real install.
+    </li>
+    <li>
+      Transcript readers tokenize the paths they emit, so a session that had read a file no longer
+      fails capsule validation.
+    </li>
+    <li>
+      <code>changed_files</code> is populated from the live working tree. Every earlier handoff told
+      the destination <code>Changed files: (none)</code>.
+    </li>
+    <li>
+      A version probe that times out is classified as a failed measurement rather than an absent
+      agent, so a determinable out-of-range agent is refused instead of silently accepted.
+    </li>
+    <li>
+      Capsule validation checks path-typed fields instead of every string, so a message beginning
+      with a slash command no longer aborts the handoff.
+    </li>
+  </ul>
   <h3>Continuity and privacy boundary</h3>
   <ul>
     <li>
@@ -89,7 +117,8 @@ const answer =
   <ul>
     <li>
       Dual-platform tagged-artifact acceptance on Apple Silicon macOS and native Windows x64 is
-      pending for this candidate.
+      pending for this candidate. The previous candidate, <code>v0.4.0-rc.1</code>, failed that
+      acceptance.
     </li>
     <li>
       Intel macOS and Linux/WSL2 remain optional, unsupported/unverified evidence and do not block

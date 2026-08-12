@@ -36,4 +36,4 @@ files and refuses to proceed if their pins differ.
 - Leave RC and stable tagging/publication to the authorized maintainer. Phase 4
   requires Apple Silicon macOS and native Windows x64 acceptance; Intel macOS
   and Linux/WSL2 are optional, unsupported/unverified evidence and do not block
-  RC1 or stable `v0.4.0`.
+  RC2 or stable `v0.4.0`.

@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0-rc.2] - 2026-08-13
+
+Second Phase 4 release candidate. `v0.4.0-rc.1` was published and its physical
+dual-platform acceptance **failed**; this candidate carries the fixes for what
+that run found. Claude Code was unusable as a handoff source on every real
+installation, reader-emitted absolute paths were rejected by capsule
+validation, `changed_files` was never populated so every destination was told
+the repository was clean, a version probe that timed out was accepted as if the
+agent were absent, and any message beginning with a slash aborted the handoff.
+
+Nothing about the Phase 4 surface itself changed: this is still explicit
+structured handoff of the same task into a *new* Claude Code or Codex session
+on top of the stable `v0.3.0` verified-resume surface, not a cross-agent
+resume, and the projection remains deliberately lossy and visible. Dual-platform
+tagged-artifact acceptance on Apple Silicon macOS and native Windows x64 is
+pending for this candidate; it does not authorize stable `v0.4.0`, and stable
+remains `v0.3.0`.
+
 ### Changed
 
 - Widen the fail-closed Claude Code compatibility range through `2.1.229` (was
@@ -16,6 +34,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   physical acceptance could start. `2.1.229` is covered by the range but has not
   completed dual-platform tagged-artifact acceptance; the Codex CLI range is
   unchanged at `0.133.0`-`0.147.0`.
+- Claude handoff fixtures no longer contain a synthetic `version` file, and both
+  Claude and Codex gained an `absolute-paths` fixture, so the suite exercises
+  what a real installation looks like.
+- Claude and Codex gained a `slash-commands` fixture whose messages open with
+  `/init`, include `/compact`, and name absolute paths in prose, so the capsule
+  cannot silently re-acquire the rejection of ordinary conversation.
+- The Phase 4 acceptance contract now requires all five vendor isolation
+  variables (`REINSTATE_HOME`, `CLAUDE_CONFIG_DIR`, `CODEX_HOME`,
+  `GEMINI_CLI_HOME`, `GROK_HOME`) and a check that the first index refresh
+  contains only run-created sessions. A `v0.4.0-rc.1` run omitted `GROK_HOME`
+  and indexed the operator's real `~/.grok` tree; the product was correct and
+  the runbook was not. OpenCode still has no override, so its rows are
+  `NOT TESTED` or explicitly recorded as un-isolated.
+- `docs/testing/v0.4.0-rc.2-agent-verification-prompts.md` is the acceptance
+  dispatch for this tag, and it records the `v0.4.0-rc.1` findings so the rerun
+  re-verifies them instead of rediscovering them.
 
 ### Fixed
 
@@ -75,15 +109,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `capsule: absolute filesystem path is not allowed`. This matches the contract
   `docs/compatibility.md` already states for path rewriting: known structural
   fields are rewritten, prose is left unchanged.
-
-### Changed
-
-- Claude handoff fixtures no longer contain a synthetic `version` file, and both
-  Claude and Codex gained an `absolute-paths` fixture, so the suite exercises
-  what a real installation looks like.
-- Claude and Codex gained a `slash-commands` fixture whose messages open with
-  `/init`, include `/compact`, and name absolute paths in prose, so the capsule
-  cannot silently re-acquire the rejection of ordinary conversation.
 
 ## [0.4.0-rc.1] - 2026-08-12
 
@@ -818,7 +843,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.1...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.2...HEAD
+[0.4.0-rc.2]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.1...v0.4.0-rc.2
 [0.4.0-rc.1]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0...v0.4.0-rc.1
 [0.3.0]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0-rc.7...v0.3.0
 [0.3.0-rc.7]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0-rc.6...v0.3.0-rc.7

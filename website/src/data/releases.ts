@@ -1,5 +1,11 @@
 export const releaseHistory = [
   {
+    version: 'v0.4.0-rc.2',
+    date: '2026-08-13',
+    summary:
+      'Second Phase 4 candidate after v0.4.0-rc.1 physical acceptance FAILED: Claude source version probing, path tokenization, live changed-file reporting, probe-timeout classification, and prose-vs-path capsule validation are fixed. Dual-platform tagged-artifact acceptance is pending.',
+  },
+  {
     version: 'v0.4.0-rc.1',
     date: '2026-08-12',
     summary:

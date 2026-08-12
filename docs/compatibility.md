@@ -9,12 +9,14 @@ block stable.
 Candidate history (RC1–RC7) lived under `docs/testing/results/` and earlier
 CHANGELOG sections; those records do not rewrite this stable claim.
 
-Release candidate `v0.4.0-rc.1` adds Phase 4 structured handoff on top of that
+Release candidate `v0.4.0-rc.2` adds Phase 4 structured handoff on top of that
 stable surface, and the public installers now pin it. Its structured-handoff
 implementation is documented below, but it does not inherit the stable
-`v0.3.0` physical evidence. Tagged macOS arm64 and Windows amd64 acceptance is
-still required before the candidate can pass, and passing RC1 will not
-authorize stable `v0.4.0`; that requires a separate reviewed promotion and
+`v0.3.0` physical evidence. The earlier `v0.4.0-rc.1` candidate was published
+and failed its physical acceptance; rc.2 carries the corrective fixes and
+inherits none of rc.1's evidence either. Tagged macOS arm64 and Windows amd64
+acceptance is still required before the candidate can pass, and passing RC2 will
+not authorize stable `v0.4.0`; that requires a separate reviewed promotion and
 fresh tagged-artifact validation.
 
 Stable Reinstate `v0.2.0` implements **same-vendor encrypted session sync** and
@@ -116,7 +118,7 @@ Neither `2.1.228` nor `2.1.229` has completed dual-platform tagged-artifact
 acceptance. Versions above the maxima remain `UNTESTED` until a
 later matrix expands them again:
 
-| Agent | Inclusive source-tested range (v0.4.0-rc.1) |
+| Agent | Inclusive source-tested range (v0.4.0-rc.2) |
 | ----- | ------------------- |
 | Claude Code | `2.1.219`–`2.1.229` |
 | OpenAI Codex CLI | `0.133.0`–`0.147.0` |
