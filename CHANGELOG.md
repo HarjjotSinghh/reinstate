@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Handoff source probing no longer depends on a `<agent-root>/version` file that
+  real Claude Code installations never create. Claude and Codex transcript
+  readers now share one documented contract: an unrecognized layout is
+  `UNSUPPORTED`, a determinable version outside the verified range is
+  `UNTESTED`, and a version that cannot be determined stays usable, so a handoff
+  still works when the source agent is closed, logged out, rate limited, or
+  uninstalled. Versions are resolved from the installed executable through
+  `internal/agentcheck`, the same mechanism `rein inspect` reports, instead of a
+  second source of truth. Previously every real Claude Code installation was
+  reported `UNTESTED` and `rein handoff claude:<id>` exited 5, while
+  `rein inspect` called the same agent supported in the same invocation, and the
+  Codex reader applied no version check at all.
+- Transcript readers now rewrite the paths they lift out of vendor tool calls,
+  tool results, and attachments into portable `${REPO:<id>}` / `${HOME}` tokens
+  before they reach a capsule. A path outside every configured root becomes a
+  stable, non-reversible `${EXTERNAL:<digest>}/<name>` token rather than an
+  absolute path. Previously a Claude session that had read a file failed the
+  handoff with `capsule: absolute filesystem path is not allowed`.
+
+### Changed
+
+- Claude handoff fixtures no longer contain a synthetic `version` file, and both
+  Claude and Codex gained an `absolute-paths` fixture, so the suite exercises
+  what a real installation looks like.
+
 ## [0.4.0-rc.1] - 2026-08-12
 
 First Phase 4 release candidate. It adds explicit structured handoff of the

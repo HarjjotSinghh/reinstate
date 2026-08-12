@@ -96,7 +96,7 @@ launches anything.
 | --------------- | :-------: | ----- |
 | Your messages | Yes | Verbatim, subject to redaction |
 | Visible assistant replies | Yes | Source-attributed |
-| Tool names, inputs, outputs | Yes | As **evidence**; never re-executed |
+| Tool names, inputs, outputs | Yes | As **evidence**; never re-executed. Paths become portable tokens |
 | Current changed files and branch state | Yes | Read live from Git, not from the transcript |
 | Attachments present on disk | Reference only | Hash, MIME type, size |
 | Vendor compaction summaries | Yes | Labeled as summaries |

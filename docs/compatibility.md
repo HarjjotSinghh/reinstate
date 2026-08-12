@@ -132,6 +132,29 @@ reports. Phase 1 has no unsafe compatibility override.
 is `UNTESTED` or `UNSUPPORTED`, because writes are blocked. An agent that is not
 installed remains an informational `NOT_INSTALLED` result.
 
+### Reading a source session vs. writing a vendor tree
+
+Handoff source probing and sync adapters answer the same question differently,
+on purpose:
+
+| | Sync adapters (`internal/adapter`) | Transcript readers (`internal/transcript`) |
+| --- | --- | --- |
+| Unrecognized layout | `UNSUPPORTED` | `UNSUPPORTED` |
+| Version outside the verified range | `UNTESTED` | `UNTESTED` |
+| Version cannot be determined | `UNTESTED` (fail closed) | `SUPPORTED`, layout only (fail open) |
+
+A sync restore writes into a vendor tree, so acting on an unknown layout can
+destroy session state and must fail closed. A structured handoff only reads a
+file that already exists, and it exists precisely when the agent is closed,
+logged out, rate limited, or uninstalled — the situations users reach for a
+handoff in. Absence of version information is not evidence of incompatibility
+there, so it does not block.
+
+Every transcript reader resolves the version from the installed executable
+through the same probe `rein inspect` reports; no reader reads a vendor version
+file. Gemini CLI, OpenCode, and Grok Build have no version probe and are always
+judged on layout alone, which is the same rule rather than an exception.
+
 Phase 2 local records carry per-session `can_resume` and `can_fork`
 capabilities. Claude/Codex native actions use the exact documented argv in the
 Phase 2 acceptance matrix and preflight the executable and recorded workspace;
@@ -145,6 +168,15 @@ fields to the currently configured portable tokens (`${HOME}` and
 `${REPO:<id>}`) so Windows ↔ macOS resume works. The lower-level mapper's
 `${WORK:<alias>}` primitive is not populated by Reinstate configuration or adapters.
 Prose and unknown fields are left unchanged.
+
+Continuity capsules hold no absolute paths at all. Transcript readers tokenize
+the structural paths they lift out of a transcript — tool-call inputs such as
+`file_path`, `workdir`, and argv entries, tool-result output, and attachment
+references — before any capsule is built. A path that belongs to no configured
+root cannot be rewritten for the destination device and usually embeds the
+operator's account name, so it becomes `${EXTERNAL:<digest>}/<name>`: a stable,
+non-reversible identity plus the file's base name. It is deliberately not
+resolvable on the destination. Message bodies stay untouched as prose.
 
 ## Security exclusions
 

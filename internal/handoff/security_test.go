@@ -430,7 +430,12 @@ func adversarialPipeline(t *testing.T, fixtureName string) (sessionindex.Record,
 	target := &securityTarget{}
 	opts := Options{
 		ToAgent: sessionindex.AgentCodex, Policy: PolicyBalanced,
-		Verifier: securityVerifier{report: report}, Reader: &transcript.ClaudeReader{}, Target: target,
+		Verifier: securityVerifier{report: report}, Target: target,
+		// Pin the source version so these tests never probe (or depend on) a
+		// contributor's installed Claude Code.
+		Reader: &transcript.ClaudeReader{ResolveVersion: func(context.Context, sessionindex.Record) (string, bool) {
+			return "2.1.220", true
+		}},
 		ReinstateHome: filepath.Join(t.TempDir(), "reinstate-home"),
 		AllowWarnings: []string{"handoff.capability.attachment.support"},
 		ResolveSource: func(_ context.Context, input sessionindex.Record) (sessionindex.Record, bool, error) {
