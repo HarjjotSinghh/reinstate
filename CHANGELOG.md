@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- OpenCode source-only transcript reader (`internal/transcript`): MessageV2
+  storage tier under `storage/message/` + `storage/part/`, with metadata
+  fallback via `opencode session list` when bodies are unavailable
+  (`source_bodies_unavailable`). Windows uses the documented XDG data root
+  (`%USERPROFILE%\.local\share\opencode`), not `%LOCALAPPDATA%`.
 - Phase 4 planning set for `v0.4.0` cross-agent handoff: the continuity-capsule
   design and ADR 0002, a user-facing handoff contract, a per-OS local session
   storage map for Claude Code, Codex, Gemini CLI, OpenCode, and Grok Build, the
