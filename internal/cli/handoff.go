@@ -165,6 +165,9 @@ func newHandoffCmd(options handoffCommandOptions) *cobra.Command {
 				}
 			} else {
 				if !noLaunch && pipelineOptions.LaunchRunner == nil {
+					if termErr := sessionindex.RequireInteractiveTerminal(cmd.InOrStdin(), cmd.OutOrStdout()); termErr != nil {
+						return handoffCLIError(termErr)
+					}
 					var authorizedPlan handoff.PlanResult
 					authorizedPlan, err = handoff.Plan(cmd.Context(), record, pipelineOptions)
 					if authorizedPlan.TempDir != "" {

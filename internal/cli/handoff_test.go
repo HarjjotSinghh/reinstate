@@ -215,13 +215,50 @@ func TestHandoffGrokNoRedactIsRefused(t *testing.T) {
 func TestHandoffNonTTYAllowWarningRefusesBeforeSpawn(t *testing.T) {
 	home, vendorHome, sources, _ := handoffCLIFixture(t)
 	t.Setenv("REINSTATE_ALLOW_NON_TTY_LAUNCH", "")
+	hanging := t.TempDir()
+	writeHangingHandoffShim(t, hanging, "claude")
+	t.Setenv("PATH", hanging+string(os.PathListSeparator)+os.Getenv("PATH"))
+	start := time.Now()
 	stdout, stderr, code := runHandoffCLI(t, home, vendorHome, sources, nil,
-		"handoff", "codex:source-session", "--to", "claude")
+		"handoff", "codex:source-session", "--to", "claude", "--allow-warning", "baseline.unavailable")
+	elapsed := time.Since(start)
 	if code != ExitSafety {
 		t.Fatalf("non-TTY launch exit=%d stdout=%s stderr=%s", code, stdout, stderr)
 	}
 	if !strings.Contains(strings.ToLower(stderr), "interactive terminal") {
 		t.Fatalf("non-TTY stderr=%s", stderr)
+	}
+	if elapsed > 2*time.Second {
+		t.Fatalf("non-TTY refuse took %s; must happen before LookPath/version delay", elapsed)
+	}
+}
+
+func writeHangingHandoffShim(t *testing.T, dir, name string) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		root := os.Getenv("SystemRoot")
+		if root == "" {
+			root = os.Getenv("SYSTEMROOT")
+		}
+		if root == "" {
+			t.Skip("SystemRoot is unset")
+		}
+		ping := filepath.Join(root, "System32", "ping.exe")
+		path := filepath.Join(dir, name+".cmd")
+		body := "@echo off\r\n\"" + ping + "\" -n 30 127.0.0.1 >nul\r\n"
+		if err := os.WriteFile(path, []byte(body), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		t.Setenv("PATHEXT", ".COM;.EXE;.BAT;.CMD")
+		return
+	}
+	sleepBinary := "/bin/sleep"
+	if _, err := os.Stat(sleepBinary); err != nil {
+		sleepBinary = "/usr/bin/sleep"
+	}
+	path := filepath.Join(dir, name)
+	if err := os.WriteFile(path, []byte("#!/bin/sh\n"+sleepBinary+" 30\n"), 0o700); err != nil {
+		t.Fatal(err)
 	}
 }
 

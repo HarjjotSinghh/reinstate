@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "reinstateVersion": "v0.4.0-rc.4",
+  "reinstateVersion": "v0.4.0-rc.5",
   "lastReviewed": "2026-08-13",
   "owner": {
     "name": "Harjot Singh Rana",
@@ -19,7 +19,7 @@
       "evidenceLevel": "source checks, deterministic synthetic fixtures, and dual-platform tagged-artifact acceptance",
       "lastTested": "2026-08-11",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-08-11-macos-phase3-V030.md",
-      "notes": "Versions outside the inclusive range, including prereleases, fail closed as untested. Stable v0.3.0 accepts Claude Code through 2.1.227 after dual-platform tagged-artifact acceptance PASS. Candidate v0.4.0-rc.1 widened the ceiling to 2.1.228 and failed its physical acceptance; candidate v0.4.0-rc.2 covers 2.1.229 because Claude Code auto-updated past the earlier ceiling mid-run and then failed physical acceptance. Candidate v0.4.0-rc.4 keeps that range. Everything above 2.1.227 is source-tested only, and v0.4.0-rc.4 dual-platform tagged-artifact acceptance is pending."
+      "notes": "Versions outside the inclusive range, including prereleases, fail closed as untested. Stable v0.3.0 accepts Claude Code through 2.1.227 after dual-platform tagged-artifact acceptance PASS. Candidate v0.4.0-rc.1 widened the ceiling to 2.1.228 and failed its physical acceptance; candidate v0.4.0-rc.2 covers 2.1.229 because Claude Code auto-updated past the earlier ceiling mid-run and then failed physical acceptance. Candidate v0.4.0-rc.5 keeps that range. Everything above 2.1.227 is source-tested only, and v0.4.0-rc.5 dual-platform tagged-artifact acceptance is pending."
     },
     {
       "id": "codex",
@@ -32,7 +32,7 @@
       "evidenceLevel": "source checks, deterministic synthetic fixtures, and dual-platform tagged-artifact acceptance",
       "lastTested": "2026-08-11",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-08-11-macos-phase3-V030.md",
-      "notes": "Stable v0.3.0 accepts Codex CLI through 0.147.0 after dual-platform tagged-artifact acceptance PASS; the range is unchanged in candidate v0.4.0-rc.4, whose tagged-artifact acceptance is pending. Versions outside the inclusive range, including prereleases, fail closed as untested."
+      "notes": "Stable v0.3.0 accepts Codex CLI through 0.147.0 after dual-platform tagged-artifact acceptance PASS; the range is unchanged in candidate v0.4.0-rc.5, whose tagged-artifact acceptance is pending. Versions outside the inclusive range, including prereleases, fail closed as untested."
     }
   ],
   "environments": [
@@ -44,7 +44,7 @@
       "status": "stable-verified",
       "lastTested": "2026-08-11",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-08-11-macos-phase3-V030.md",
-      "notes": "Stable v0.3.0 passed the complete 32-row Phase 3 tagged-artifact matrix here (fc4f015). This is historical stable evidence, not a claim that v0.4.0-rc.4 tagged-artifact acceptance has passed; v0.4.0-rc.1 and v0.4.0-rc.2 physical acceptance failed here and the rc.2 product fixes are what v0.4.0-rc.4 re-verifies."
+      "notes": "Stable v0.3.0 passed the complete 32-row Phase 3 tagged-artifact matrix here (fc4f015). This is historical stable evidence, not a claim that v0.4.0-rc.5 tagged-artifact acceptance has passed; v0.4.0-rc.1 through v0.4.0-rc.4 physical acceptance failed here and the rc.4 product fixes are what v0.4.0-rc.5 re-verifies."
     },
     {
       "id": "macos-amd64",
@@ -54,7 +54,7 @@
       "status": "preview-unverified",
       "lastTested": null,
       "source": "https://github.com/HarjjotSinghh/reinstate/issues/97",
-      "notes": "No completed physical Intel Mac result is claimed for stable v0.3.0 or candidate v0.4.0-rc.4; this optional environment does not block RC3."
+      "notes": "No completed physical Intel Mac result is claimed for stable v0.3.0 or candidate v0.4.0-rc.5; this optional environment does not block RC3."
     },
     {
       "id": "windows-11-amd64",
@@ -64,7 +64,7 @@
       "status": "stable-verified",
       "lastTested": "2026-08-11",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-08-11-windows-phase3-V030.md",
-      "notes": "Stable v0.3.0 passed the complete 32-row Phase 3 tagged-artifact matrix here (fc4f015). This is historical stable evidence, not a claim that v0.4.0-rc.4 tagged-artifact acceptance has passed; v0.4.0-rc.1 and v0.4.0-rc.2 physical acceptance failed here and the rc.2 product fixes are what v0.4.0-rc.4 re-verifies."
+      "notes": "Stable v0.3.0 passed the complete 32-row Phase 3 tagged-artifact matrix here (fc4f015). This is historical stable evidence, not a claim that v0.4.0-rc.5 tagged-artifact acceptance has passed; v0.4.0-rc.1 through v0.4.0-rc.4 physical acceptance failed here and the rc.4 product fixes are what v0.4.0-rc.5 re-verifies."
     },
     {
       "id": "windows-11-wsl2-amd64",
@@ -74,7 +74,7 @@
       "status": "preview-unverified",
       "lastTested": null,
       "source": "https://github.com/HarjjotSinghh/reinstate/issues/98",
-      "notes": "No completed WSL2 physical result is claimed for stable v0.3.0 or candidate v0.4.0-rc.4; this optional environment does not block RC3. WSL1 remains unsupported."
+      "notes": "No completed WSL2 physical result is claimed for stable v0.3.0 or candidate v0.4.0-rc.5; this optional environment does not block RC3. WSL1 remains unsupported."
     }
   ]
 }

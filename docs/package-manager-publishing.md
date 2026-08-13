@@ -41,7 +41,7 @@ supported install route.
 
 | Channel | Current state | Next gate |
 | --- | --- | --- |
-| GitHub release and native Linux files | Stable `v0.3.0` is public with a signed tag and 25 checksum- and attestation-verified assets. The public bootstraps now pin candidate `v0.4.0-rc.4`, whose tagged-artifact acceptance is pending (`v0.4.0-rc.1` was published and failed its acceptance) | Keep Intel macOS and Linux/WSL2 artifacts labeled preview until their deferred physical acceptance closes; package channels stay on stable `0.3.0` until a stable `v0.4.0` promotion |
+| GitHub release and native Linux files | Stable `v0.3.0` is public with a signed tag and 25 checksum- and attestation-verified assets. The public bootstraps now pin candidate `v0.4.0-rc.5`, whose tagged-artifact acceptance is pending (`v0.4.0-rc.1` was published and failed its acceptance) | Keep Intel macOS and Linux/WSL2 artifacts labeled preview until their deferred physical acceptance closes; package channels stay on stable `0.3.0` until a stable `v0.4.0` promotion |
 | npm | `@reinstate/cli@0.2.0-rc.3` remains the latest published npm line; stable `0.3.0` payloads were generated but not published (no npm auth / `PUBLISH_NPM` off) | Configure trusted publishers, enable `PUBLISH_NPM`, and publish `@reinstate/cli@0.3.0` plus platform packages with the `latest` tag |
 | JSR | Intentionally deferred because the maintainer's current account cannot create another scope; `PUBLISH_JSR` remains disabled | Obtain scope capacity or make an explicit namespace decision before enabling |
 | Homebrew | Stable `0.3.0` formula is live in `HarjjotSinghh/homebrew-tap`; Apple Silicon install and formula test passed for `v0.3.0` | Supported on Apple Silicon; keep Intel macOS and Linuxbrew unverified |

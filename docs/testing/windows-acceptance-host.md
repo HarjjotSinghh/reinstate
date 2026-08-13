@@ -20,6 +20,8 @@ candidates fail on product defects only.
 - **GoReleaser:** same major line CI uses for snapshots (`goreleaser` on `PATH`)
 - **Claude Code + Codex CLI:** installed for real same-vendor rows; versions
   recorded against `docs/compatibility.md`
+- **TTY for dest-ack:** Windows Terminal or `ssh -t` so destination launch sees
+  an interactive console. Autonomous SSH without a TTY cannot collect A1/A2/A5/A6.
 - **Optional only:** Gemini CLI, OpenCode — never install solely for optional
   evidence
 

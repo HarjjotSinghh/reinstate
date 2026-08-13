@@ -46,8 +46,44 @@ func TestStableVersionFromOutput(t *testing.T) {
 }
 
 func TestRunVersionCommandUnblocksGrandchildPipes(t *testing.T) {
+	dir := t.TempDir()
+	writeHangingVersionShim(t, dir, "claude")
+	t.Setenv("PATH", dir)
 	if runtime.GOOS == "windows" {
-		t.Skip("no dependency-free absolute-path stall is available for a .cmd shim")
+		t.Setenv("PATHEXT", ".COM;.EXE;.BAT;.CMD")
+	}
+
+	start := time.Now()
+	_, err := adapter.RunVersionCommand(context.Background(), "claude")
+	elapsed := time.Since(start)
+	if err == nil {
+		t.Fatal("hanging grandchild --version returned success")
+	}
+	if elapsed > 5*time.Second {
+		t.Fatalf("RunVersionCommand blocked %s on pipes held by a grandchild", elapsed)
+	}
+}
+
+func writeHangingVersionShim(t *testing.T, dir, name string) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		root := os.Getenv("SystemRoot")
+		if root == "" {
+			root = os.Getenv("SYSTEMROOT")
+		}
+		if root == "" {
+			t.Skip("SystemRoot is unset")
+		}
+		ping := filepath.Join(root, "System32", "ping.exe")
+		if _, err := os.Stat(ping); err != nil {
+			t.Skip("ping.exe is unavailable to stall the version probe")
+		}
+		path := filepath.Join(dir, name+".cmd")
+		body := "@echo off\r\n\"" + ping + "\" -n 30 127.0.0.1 >nul\r\n"
+		if err := os.WriteFile(path, []byte(body), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		return
 	}
 	sleepBinary := ""
 	for _, candidate := range []string{"/bin/sleep", "/usr/bin/sleep"} {
@@ -59,21 +95,9 @@ func TestRunVersionCommandUnblocksGrandchildPipes(t *testing.T) {
 	if sleepBinary == "" {
 		t.Skip("no absolute sleep binary is available to stall the version probe")
 	}
-	dir := t.TempDir()
-	name := filepath.Join(dir, "claude")
+	path := filepath.Join(dir, name)
 	body := "#!/bin/sh\n" + sleepBinary + " 30\n"
-	if err := os.WriteFile(name, []byte(body), 0o700); err != nil {
+	if err := os.WriteFile(path, []byte(body), 0o700); err != nil {
 		t.Fatal(err)
-	}
-	t.Setenv("PATH", dir)
-
-	start := time.Now()
-	_, err := adapter.RunVersionCommand(context.Background(), "claude")
-	elapsed := time.Since(start)
-	if err == nil {
-		t.Fatal("hanging grandchild --version returned success")
-	}
-	if elapsed > 5*time.Second {
-		t.Fatalf("RunVersionCommand blocked %s on pipes held by a grandchild", elapsed)
 	}
 }

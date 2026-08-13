@@ -251,6 +251,9 @@ func Plan(ctx context.Context, rec sessionindex.Record, opts Options) (PlanResul
 	}
 	events = transcript.LinkToolResults(events)
 
+	if local := remapForeignWorkspace(rec.Workspace, opts.WorkingDir); local != rec.Workspace {
+		rec.Workspace = local
+	}
 	ws, report, err := BindWorkspace(ctx, opts.Verifier, rec)
 	if err != nil {
 		var blocked *BlockedError

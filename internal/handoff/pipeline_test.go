@@ -870,6 +870,124 @@ func TestPlanFidelityReportIncludesOmittedTaskFields(t *testing.T) {
 	}
 }
 
+func TestPlanFidelityReportKeepsSummarizedClass(t *testing.T) {
+	rec, reader, _, _, opts := pipelineFixture(t)
+	reader.events = append(reader.events, capsule.Event{
+		ID: "summary-1", Order: 2, Actor: capsule.ActorHarness, Kind: capsule.KindSummary,
+		Blocks:      []capsule.Block{{Type: capsule.BlockTypeText, Text: "vendor summary of prior turns"}},
+		Portability: capsule.PortabilitySummarized, Reason: "vendor_compaction_summary",
+		ContentHash: "summary-hash",
+		Source:      capsule.SourcePointer{Agent: rec.Agent, SessionID: rec.ID, RecordKey: "summary-1", Index: 2},
+	})
+	opts.WorkingDir = rec.Workspace
+	plan, err := Plan(context.Background(), rec, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(plan.TempDir) })
+	var found bool
+	for _, component := range plan.Capsule.Fidelity.Components {
+		if component.Portability == capsule.PortabilitySummarized {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("fidelity components = %+v, want summarized", plan.Capsule.Fidelity.Components)
+	}
+}
+
+func TestPlanRemapsForeignOSWorkspaceOntoLocalGitRoot(t *testing.T) {
+	rec, _, verifier, _, opts := pipelineFixture(t)
+	local := t.TempDir()
+	initTestGitRepo(t, local)
+	foreign := `C:\Users\fixture-user\code\demo`
+	if runtime.GOOS == "windows" {
+		foreign = `/Users/fixture-user/code/demo`
+	}
+	rec.Workspace = foreign
+	opts.WorkingDir = local
+	capture := &capturingVerifier{report: verifier.report}
+	opts.Verifier = capture
+
+	plan, err := Plan(context.Background(), rec, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(plan.TempDir) })
+	if capture.workspace != local {
+		t.Fatalf("Verify workspace = %q, want remapped git root %q", capture.workspace, local)
+	}
+	if !strings.HasPrefix(plan.Capsule.Workspace.Root, "${REPO:") {
+		t.Fatalf("capsule root = %q, want ${REPO:…}", plan.Capsule.Workspace.Root)
+	}
+	if strings.Contains(plan.Capsule.Workspace.Root, `C:`) || strings.Contains(plan.Capsule.Workspace.Root, "/Users/fixture-user") {
+		t.Fatalf("capsule leaked source-device path: %q", plan.Capsule.Workspace.Root)
+	}
+}
+
+func TestPlanRemapsFixtureUserWorkspaceOntoLocalGitRoot(t *testing.T) {
+	rec, _, verifier, _, opts := pipelineFixture(t)
+	local := t.TempDir()
+	initTestGitRepo(t, local)
+	rec.Workspace = `/Users/fixture-user/code/demo`
+	opts.WorkingDir = local
+	capture := &capturingVerifier{report: verifier.report}
+	opts.Verifier = capture
+
+	plan, err := Plan(context.Background(), rec, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(plan.TempDir) })
+	if capture.workspace != local {
+		t.Fatalf("Verify workspace = %q, want remapped git root %q", capture.workspace, local)
+	}
+	if strings.Contains(plan.Capsule.Workspace.Root, "/Users/fixture-user") {
+		t.Fatalf("capsule leaked fixture path: %q", plan.Capsule.Workspace.Root)
+	}
+}
+
+func TestRemapForeignWorkspace(t *testing.T) {
+	t.Parallel()
+	local := t.TempDir()
+	if got := remapForeignWorkspace(`C:\Users\fixture-user\code\demo`, ""); got != `C:\Users\fixture-user\code\demo` {
+		t.Fatalf("empty cwd remapped to %q", got)
+	}
+	if runtime.GOOS == "windows" {
+		if !shouldRemapWorkspace(`/Users/fixture-user/code/demo`) {
+			t.Fatal("posix fixture path should remap on Windows")
+		}
+		if shouldRemapWorkspace(`C:\Users\harjot\code\demo`) {
+			t.Fatal("same-OS Windows path should not remap")
+		}
+		return
+	}
+	if !shouldRemapWorkspace(`C:\Users\fixture-user\code\demo`) {
+		t.Fatal("Windows os-roots path should remap on Unix")
+	}
+	if shouldRemapWorkspace(local) {
+		t.Fatal("same-OS local path should not remap")
+	}
+	if !shouldRemapWorkspace(`/Users/fixture-user/code/demo`) {
+		t.Fatal("synthetic fixture-user path should remap")
+	}
+}
+
+type capturingVerifier struct {
+	report    preflight.Report
+	workspace string
+}
+
+func (v *capturingVerifier) Verify(_ context.Context, input preflight.Input) (preflight.Report, error) {
+	v.workspace = input.Workspace
+	report := v.report
+	report.SessionRef = input.SessionRef
+	report.Workspace.Workspace.Path = input.Workspace
+	report.Workspace.Git.Root = input.Workspace
+	return report, nil
+}
+
 func initTestGitRepo(t *testing.T, dir string) {
 	t.Helper()
 	git, err := exec.LookPath("git")

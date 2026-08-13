@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0-rc.5] - 2026-08-13
+
+Fifth Phase 4 candidate. `v0.4.0-rc.4` was published and physical dual-platform
+acceptance FAILED. This candidate carries those product fixes. It does not
+authorize stable `v0.4.0`; stable remains `v0.3.0`. Adds
+`docs/testing/v0.4.0-rc.5-agent-verification-prompts.md`.
+
+### Fixed
+
+- Kill hanging Windows `--version` process trees (`taskkill /T`) so Detect and
+  native preflight return `UNTESTED` within the 25s budget instead of waiting
+  on grandchild-held pipes (R4).
+- Refuse non-TTY destination launch before `Plan` / `LookPath` / version
+  probes, not after a spawn-scale delay (F8).
+- Remap foreign-OS and synthetic `fixture-user` recorded workspaces onto the
+  operator git checkout so Windows os-roots dry-run on macOS (and the reverse)
+  emits `${REPO:…}` instead of exit 5 (C5, E5/E6).
+- Classify Codex `context_compacted` / `summary` records as `summarized` and
+  keep that class in `fidelity.json` (B6).
+
 ## [0.4.0-rc.4] - 2026-08-13
 
 Fourth Phase 4 candidate. `v0.4.0-rc.3` was published and physical dual-platform
@@ -896,7 +916,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.4...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.5...HEAD
+[0.4.0-rc.5]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.4...v0.4.0-rc.5
 [0.4.0-rc.4]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.3...v0.4.0-rc.4
 [0.4.0-rc.3]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.2...v0.4.0-rc.3
 [0.4.0-rc.2]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.1...v0.4.0-rc.2
