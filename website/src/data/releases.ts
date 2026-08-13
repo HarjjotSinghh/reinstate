@@ -1,9 +1,15 @@
 export const releaseHistory = [
   {
+    version: 'v0.4.0-rc.5',
+    date: '2026-08-13',
+    summary:
+      'Fifth Phase 4 candidate after v0.4.0-rc.4 physical dual-platform acceptance FAILED (Windows R4 hang 43s, F8 ~6s non-TTY delay, B6 summarized missing, C5 Windows os-roots exit 5). Carries those product fixes; tagged-artifact acceptance is pending.',
+  },
+  {
     version: 'v0.4.0-rc.4',
     date: '2026-08-13',
     summary:
-      'Fourth Phase 4 candidate after v0.4.0-rc.3 physical dual-platform acceptance FAILED (empty dest home UNTESTED blocking flagship A, hanging --version, Windows make verify, G3 list n=0, B6 missing summarized). Carries those product fixes; tagged-artifact acceptance is pending.',
+      'Fourth Phase 4 candidate after v0.4.0-rc.3 physical dual-platform acceptance FAILED (empty dest home UNTESTED blocking flagship A, hanging --version, Windows make verify, G3 list n=0, B6 missing summarized). Physical dual-platform acceptance FAILED.',
   },
   {
     version: 'v0.4.0-rc.3',

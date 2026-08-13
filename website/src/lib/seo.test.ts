@@ -16,7 +16,7 @@ describe('SEO product truth', () => {
     expect(product.licenseName).toBe('Apache-2.0');
     expect(product.requiresAccount).toBe(false);
     expect(product.releaseStatus).toBe(
-      'v0.4.0-rc.4 candidate · tagged-artifact acceptance pending',
+      'v0.4.0-rc.5 candidate · tagged-artifact acceptance pending',
     );
     expect(product.initialPublicReleaseDate).toBe('2026-07-25');
     expect(product.stableRelease).toBe('v0.3.0');

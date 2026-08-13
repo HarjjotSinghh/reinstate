@@ -155,19 +155,22 @@ destination launch still spawned, Grok-source busy-check exited with
 `unsupported agent "grok"`, and a timed-out version probe classified Runtime.
 RC2 does **not** authorize stable `v0.4.0`. Corrective product fixes landed in
 `v0.4.0-rc.3`. That candidate was published and physical dual-platform
-acceptance **FAILED**. Corrective product fixes for those rc.3 failures land in
-`v0.4.0-rc.4`.
+acceptance **FAILED**. Corrective product fixes for those rc.3 failures landed in
+`v0.4.0-rc.4`. That candidate was published and physical dual-platform
+acceptance **FAILED**. Corrective product fixes for those rc.4 failures land in
+`v0.4.0-rc.5`.
 
-### v0.4.0-rc.4 candidate gate
+### v0.4.0-rc.5 candidate gate
 
 The Phase 4 candidate uses the committed
-[`v0.4.0-rc.4` dispatch](docs/testing/v0.4.0-rc.4-agent-verification-prompts.md)
+[`v0.4.0-rc.5` dispatch](docs/testing/v0.4.0-rc.5-agent-verification-prompts.md)
 and [Phase 4 acceptance contract](docs/testing/phase-4-cross-agent-handoff-acceptance.md).
 Start its two independent device runs only after the signed tag is published,
 all release artifacts verify, and both live installer routes pin that exact
 candidate. Required Claude ↔ Codex structured handoff, fidelity, workspace,
 security, CLI, and performance rows must all pass on Apple Silicon macOS and
-native Windows x64, including RC1 R1–R6, the RC2 regression set, and the RC3 regression set. Gemini CLI,
+native Windows x64, including RC1 R1–R6, the RC2, RC3, and RC5 regression sets.
+Gemini CLI,
 OpenCode, and Grok Build remain optional source-only rows and may be
 `NOT TESTED` only when genuinely absent; do not install them solely for
 acceptance.
@@ -176,7 +179,7 @@ The fail-closed Claude Code range stays `2.1.219`–`2.1.229`; the Codex CLI ran
 stays `0.133.0`–`0.147.0`. Re-check both hosts' installed versions immediately
 before tagging. Claude Code auto-updates.
 
-`v0.4.0-rc.4` publication means ready for tagged-artifact acceptance. It is not
+`v0.4.0-rc.5` publication means ready for tagged-artifact acceptance. It is not
 evidence that the matrix passed, does not authorize stable `v0.4.0`, and does
 not change the current stable release from `v0.3.0`.
 

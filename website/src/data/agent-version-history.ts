@@ -16,11 +16,19 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.4.0-rc.5': {
+    rangeChange:
+      'Unchanged from v0.4.0-rc.4: inclusive Claude Code range 2.1.219–2.1.229. The Codex CLI range is unchanged at 0.133.0–0.147.0.',
+    compatibilityChange:
+      'Fifth Phase 4 candidate after v0.4.0-rc.4 physical dual-platform acceptance FAILED. This candidate kills hanging Windows --version process trees, refuses non-TTY destination launch before Plan, remaps foreign-OS and fixture-user workspaces onto the local git checkout, and classifies Codex compaction as summarized. Dual-platform tagged-artifact acceptance is pending; this candidate does not authorize stable v0.4.0.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.4.0-rc.5/internal/adapter/exec_windows.go',
+  },
   'v0.4.0-rc.4': {
     rangeChange:
       'Unchanged from v0.4.0-rc.3: inclusive Claude Code range 2.1.219–2.1.229. The Codex CLI range is unchanged at 0.133.0–0.147.0.',
     compatibilityChange:
-      'Fourth Phase 4 candidate after v0.4.0-rc.3 physical dual-platform acceptance FAILED. This candidate treats an explicit empty dest home as supported, bounds hanging --version probes including grandchild-held pipes, persists --no-launch without warning acks, keeps sidecared summarized fidelity, and fixes Windows passphrase-FD / isolation-env unit failures. Dual-platform tagged-artifact acceptance is pending; this candidate does not authorize stable v0.4.0.',
+      'Fourth Phase 4 candidate after v0.4.0-rc.3 physical dual-platform acceptance FAILED. This candidate treats an explicit empty dest home as supported, bounds hanging --version probes including grandchild-held pipes, persists --no-launch without warning acks, keeps sidecared summarized fidelity, and fixes Windows passphrase-FD / isolation-env unit failures. Physical dual-platform acceptance FAILED; this candidate does not authorize stable v0.4.0.',
     implementationSource:
       'https://github.com/HarjjotSinghh/reinstate/blob/v0.4.0-rc.4/internal/adapter/version.go',
   },

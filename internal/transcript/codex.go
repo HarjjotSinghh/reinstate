@@ -261,6 +261,19 @@ func codexMapEventMsg(src capsule.SourcePointer, payload map[string]any, raw []b
 		ev.Blocks, ev.Truncated = codexTextBlocks(text)
 		ev.ContentHash = contentDigest([]byte(text))
 		return ev, true, false
+	case "compaction", "context_compaction", "context_compacted", "summary":
+		text := firstNonEmpty(
+			codexEventMessageText(payload),
+			mapString(payload, "summary"),
+			mapString(payload, "message"),
+		)
+		ev.Actor = capsule.ActorHarness
+		ev.Kind = capsule.KindSummary
+		ev.Portability = capsule.PortabilitySummarized
+		ev.Reason = "vendor_compaction_summary"
+		ev.Blocks, ev.Truncated = codexTextBlocks(text)
+		ev.ContentHash = contentDigest([]byte(text))
+		return ev, true, false
 	default:
 		actor, kind, port, reason := ClassifyUnknown("event_msg/" + payloadType)
 		ev.Actor = actor
@@ -302,6 +315,20 @@ func codexMapResponseItem(paths PathContext, src capsule.SourcePointer, payload 
 			ev.Reason = reason
 			return ev, true, true
 		}
+
+	case "compaction", "context_compaction", "context_compacted", "summary":
+		text := firstNonEmpty(
+			codexExtractTextContent(payload["content"]),
+			mapString(payload, "summary"),
+			mapString(payload, "message"),
+		)
+		ev.Actor = capsule.ActorHarness
+		ev.Kind = capsule.KindSummary
+		ev.Portability = capsule.PortabilitySummarized
+		ev.Reason = "vendor_compaction_summary"
+		ev.Blocks, ev.Truncated = codexTextBlocks(text)
+		ev.ContentHash = contentDigest([]byte(text))
+		return ev, true, false
 
 	case "function_call", "custom_tool_call", "tool_call":
 		name := mapString(payload, "name")

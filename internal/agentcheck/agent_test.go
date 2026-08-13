@@ -619,24 +619,7 @@ func TestBoundedBufferCapsOutput(t *testing.T) {
 }
 
 func TestExecRunnerWaitDelayUnblocksGrandchildPipes(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("no dependency-free absolute-path stall is available for a .cmd shim")
-	}
-	sleepBinary := ""
-	for _, candidate := range []string{"/bin/sleep", "/usr/bin/sleep"} {
-		if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
-			sleepBinary = candidate
-			break
-		}
-	}
-	if sleepBinary == "" {
-		t.Skip("no absolute sleep binary is available to stall the version probe")
-	}
-	executable := filepath.Join(t.TempDir(), "claude")
-	body := "#!/bin/sh\n" + sleepBinary + " 30\n"
-	if err := os.WriteFile(executable, []byte(body), 0o700); err != nil {
-		t.Fatal(err)
-	}
+	executable := writeHangingVersionExecutable(t, t.TempDir(), "claude")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -649,4 +632,43 @@ func TestExecRunnerWaitDelayUnblocksGrandchildPipes(t *testing.T) {
 	if elapsed > 5*time.Second {
 		t.Fatalf("Version blocked %s on pipes held by a grandchild", elapsed)
 	}
+}
+
+func writeHangingVersionExecutable(t *testing.T, dir, name string) string {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		root := os.Getenv("SystemRoot")
+		if root == "" {
+			root = os.Getenv("SYSTEMROOT")
+		}
+		if root == "" {
+			t.Skip("SystemRoot is unset")
+		}
+		ping := filepath.Join(root, "System32", "ping.exe")
+		if _, err := os.Stat(ping); err != nil {
+			t.Skip("ping.exe is unavailable to stall the version probe")
+		}
+		path := filepath.Join(dir, name+".cmd")
+		body := "@echo off\r\n\"" + ping + "\" -n 30 127.0.0.1 >nul\r\n"
+		if err := os.WriteFile(path, []byte(body), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		return path
+	}
+	sleepBinary := ""
+	for _, candidate := range []string{"/bin/sleep", "/usr/bin/sleep"} {
+		if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
+			sleepBinary = candidate
+			break
+		}
+	}
+	if sleepBinary == "" {
+		t.Skip("no absolute sleep binary is available to stall the version probe")
+	}
+	path := filepath.Join(dir, name)
+	body := "#!/bin/sh\n" + sleepBinary + " 30\n"
+	if err := os.WriteFile(path, []byte(body), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	return path
 }

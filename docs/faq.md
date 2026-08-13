@@ -8,7 +8,7 @@ Stable Phase 2 adds universal local indexing, literal
 search, metadata inspection, and same-vendor resume/fork without cloud
 configuration. Stable `v0.3.0` also implements Phase 3 verified
 resume with dual-platform tagged-artifact acceptance PASS on Apple Silicon
-macOS and native Windows x64. Candidate `v0.4.0-rc.4` adds Phase 4 explicit
+macOS and native Windows x64. Candidate `v0.4.0-rc.5` adds Phase 4 explicit
 structured handoff, which continues the same task in a new Claude Code or Codex
 session; its tagged-artifact acceptance is pending and stable `v0.4.0` is not
 authorized. The earlier `v0.4.0-rc.1` candidate was published and failed that
@@ -46,14 +46,14 @@ rein inspect claude:SESSION_ID
 rein resume claude:SESSION_ID --dry-run
 ```
 
-Stable `v0.3.0` and candidate `v0.4.0-rc.4` use a private derived index at
+Stable `v0.3.0` and candidate `v0.4.0-rc.5` use a private derived index at
 `$REINSTATE_HOME/cache/session-index-v2.sqlite` (plus owner-only `.lock` and
 `.write.lock` coordination files). Stable `v0.2.0` uses the earlier v1 index
 and has no Phase 3 baselines; the paths are separate by design. Neither version
 needs a sync profile, storage credentials, an encryption passphrase, keyring
 access, or a network backend. Stable `v0.2.0` contains the Phase 1 sync surface
 and Phase 2 local continuity. The public installers now pin candidate
-`v0.4.0-rc.4`; its dual-platform tagged-artifact acceptance is pending and
+`v0.4.0-rc.5`; its dual-platform tagged-artifact acceptance is pending and
 stable remains `v0.3.0`. Intel macOS plus Linux/WSL2 remain optional and
 unverified.
 
@@ -188,7 +188,7 @@ reported explicitly rather than fabricated.
 Pre-1.0. Stable `v0.3.0` includes Phase 1 encrypted sync, Phase 2 local
 continuity, and Phase 3 verified resume. Apple Silicon macOS and native
 Windows x64 are physically verified; Intel macOS and Linux/WSL2 remain preview
-and unverified. Candidate `v0.4.0-rc.4` adds structured handoff, but its
+and unverified. Candidate `v0.4.0-rc.5` adds structured handoff, but its
 tagged-artifact acceptance is pending and it does not authorize stable
 `v0.4.0`. See [ROADMAP.md](../ROADMAP.md) and
 [CHANGELOG.md](../CHANGELOG.md). Use with backups; report bugs via GitHub Issues.

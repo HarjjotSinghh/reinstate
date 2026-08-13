@@ -259,6 +259,46 @@ func TestCodexReaderProbe(t *testing.T) {
 	}
 }
 
+func TestCodexReaderCompactionIsSummarized(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "rollout-compaction.jsonl")
+	body := strings.Join([]string{
+		`{"timestamp":"2026-08-01T12:00:00Z","type":"session_meta","payload":{"id":"00000000-0000-4000-8000-00000000cc01","cwd":"/Users/fixture-user/code/demo"}}`,
+		`{"timestamp":"2026-08-01T12:00:01Z","type":"event_msg","payload":{"type":"user_message","message":"continue the task"}}`,
+		`{"timestamp":"2026-08-01T12:00:02Z","type":"event_msg","payload":{"type":"context_compacted","message":"Prior turns compacted to a vendor summary"}}`,
+	}, "\n") + "\n"
+	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	reader := &CodexReader{}
+	boundary, err := reader.Snapshot(context.Background(), sessionindex.Record{
+		Agent: sessionindex.AgentCodex, SourcePath: path,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	events, _, err := reader.Parse(context.Background(), boundary)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var summaries int
+	for _, ev := range events {
+		if ev.Kind == capsule.KindSummary {
+			summaries++
+			if ev.Portability != capsule.PortabilitySummarized {
+				t.Fatalf("compaction portability = %q, want summarized", ev.Portability)
+			}
+			if !strings.Contains(eventText(ev), "vendor summary") {
+				t.Fatalf("compaction text = %q", eventText(ev))
+			}
+		}
+	}
+	if summaries != 1 {
+		t.Fatalf("summarized compaction events = %d, want 1", summaries)
+	}
+}
+
 func parseCodexFixture(t *testing.T, caseName string) ([]capsule.Event, ParseReport) {
 	t.Helper()
 	dir := filepath.Join("..", "..", "testdata", "handoff", "codex", caseName)

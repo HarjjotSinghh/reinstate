@@ -140,6 +140,46 @@ func portableChangedFiles(mapper pathmap.Mapper, git workspace.GitFingerprint) (
 	return out, omitted
 }
 
+func remapForeignWorkspace(recorded, workingDir string) string {
+	recorded = strings.TrimSpace(recorded)
+	workingDir = strings.TrimSpace(workingDir)
+	if recorded == "" || workingDir == "" || !shouldRemapWorkspace(recorded) {
+		return recorded
+	}
+	if root := gitRoot(workingDir); root != "" {
+		return root
+	}
+	abs, err := filepath.Abs(workingDir)
+	if err != nil {
+		return recorded
+	}
+	return abs
+}
+
+func shouldRemapWorkspace(recorded string) bool {
+	if isForeignOSPath(recorded) {
+		return true
+	}
+	slash := strings.ToLower(strings.ReplaceAll(recorded, "\\", "/"))
+	return strings.Contains(slash, "/fixture-user/") || strings.Contains(slash, "/synthetic-user/")
+}
+
+func isForeignOSPath(p string) bool {
+	p = strings.TrimSpace(p)
+	if p == "" {
+		return false
+	}
+	windowsPath := len(p) >= 3 && ((p[0] >= 'A' && p[0] <= 'Z') || (p[0] >= 'a' && p[0] <= 'z')) &&
+		p[1] == ':' && (p[2] == '\\' || p[2] == '/')
+	posixAbs := strings.HasPrefix(p, "/")
+	switch runtime.GOOS {
+	case "windows":
+		return posixAbs && !windowsPath
+	default:
+		return windowsPath
+	}
+}
+
 func refuseMismatchedRepository(cwd, sourceWorkspace string) error {
 	cwdRoot := gitRoot(cwd)
 	if cwdRoot == "" {

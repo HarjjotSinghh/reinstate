@@ -151,7 +151,7 @@ func (runner ExecLaunchRunner) Run(ctx context.Context, plan LaunchPlan) error {
 	if stderr == nil {
 		stderr = os.Stderr
 	}
-	if err := requireInteractiveTerminal(stdin, stdout); err != nil {
+	if err := RequireInteractiveTerminal(stdin, stdout); err != nil {
 		return err
 	}
 
@@ -231,7 +231,9 @@ func (runner ExecLaunchRunner) Run(ctx context.Context, plan LaunchPlan) error {
 	return nil
 }
 
-func requireInteractiveTerminal(stdin io.Reader, stdout io.Writer) error {
+// RequireInteractiveTerminal is the destination-launch TTY gate. Native launch
+// callers must invoke it before LookPath, Plan, or child spawn.
+func RequireInteractiveTerminal(stdin io.Reader, stdout io.Writer) error {
 	if allowNonInteractiveNativeLaunch() {
 		return nil
 	}
