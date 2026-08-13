@@ -38,7 +38,7 @@ Current stable remains `v0.3.0`. This report does not authorize `v0.4.0`.
 | Go version/toolchain | host default `go1.26.1`; `GOTOOLCHAIN=go1.25.12` → `go1.25.12 windows/amd64` |
 | Report branch | `test/v0.4.0-rc.2-windows-amd64-report` |
 | Device-report commit | `56baa02f0aa6fbdf3a44b8ada99bb65fe504dc94` |
-| Draft report PR | `PENDING` |
+| Draft report PR | `https://github.com/HarjjotSinghh/reinstate/pull/195` |
 
 Antivirus: Microsoft Defender enabled, real-time protection enabled (G1–G3).
 
