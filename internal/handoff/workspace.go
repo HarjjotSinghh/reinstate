@@ -146,14 +146,47 @@ func remapForeignWorkspace(recorded, workingDir string) string {
 	if recorded == "" || workingDir == "" || !shouldRemapWorkspace(recorded) {
 		return recorded
 	}
-	if root := gitRoot(workingDir); root != "" {
-		return root
+	root := gitRoot(workingDir)
+	if root == "" {
+		abs, err := filepath.Abs(workingDir)
+		if err != nil {
+			return recorded
+		}
+		root = abs
 	}
-	abs, err := filepath.Abs(workingDir)
-	if err != nil {
+	if !sameProjectLeaf(recorded, root) {
 		return recorded
 	}
-	return abs
+	return root
+}
+
+func refuseForeignWorkspaceOnDifferentRepository(cwd, recorded string) error {
+	if !shouldRemapWorkspace(recorded) {
+		return nil
+	}
+	root := gitRoot(cwd)
+	if root == "" || sameProjectLeaf(recorded, root) {
+		return nil
+	}
+	return pipelineErrorf(exitcode.Compatibility, "%w: working directory is a different repository than the source session", ErrCompatibility)
+}
+
+func sameProjectLeaf(recorded, localRoot string) bool {
+	a := projectLeaf(recorded)
+	b := projectLeaf(localRoot)
+	return a != "" && a == b
+}
+
+func projectLeaf(p string) string {
+	slash := strings.Trim(strings.ReplaceAll(strings.TrimSpace(p), "\\", "/"), "/")
+	if slash == "" {
+		return ""
+	}
+	i := strings.LastIndex(slash, "/")
+	if i < 0 {
+		return strings.ToLower(slash)
+	}
+	return strings.ToLower(slash[i+1:])
 }
 
 func shouldRemapWorkspace(recorded string) bool {
