@@ -25,7 +25,7 @@ resume, fork, export, or restore implementations.
 | OpenAI Codex CLI | Included in `v0.2.0` | Included in `v0.2.0` | Yes | Yes | Supported | Later |
 | Gemini CLI | Read-only in `v0.2.0` | No | Source-only | No | No | Later |
 | OpenCode | Read-only in `v0.2.0` | No | Source-only | No | No | Later |
-| Grok Build | Read-only in `v0.4.0-rc.3` | No | Source-only | No | No | Planned |
+| Grok Build | Read-only in `v0.4.0-rc.4` | No | Source-only | No | No | Planned |
 | Cursor | Exploring | No | No | No | No | Exploring |
 
 Phase 2 automated gates and the complete tagged-artifact matrix passed on Apple
@@ -112,7 +112,7 @@ after an authorized native child exits successfully.
 See [Verified resume](verified-resume.md) for launch decisions, exact warning
 acknowledgements, exit codes, and provenance.
 
-## Phase 4 structured-handoff contract (`v0.4.0-rc.3`)
+## Phase 4 structured-handoff contract (`v0.4.0-rc.4`)
 
 Handoff support is directional. Claude Code and Codex are both sources and
 targets. Gemini CLI, OpenCode, and Grok Build are source-only: their transcript

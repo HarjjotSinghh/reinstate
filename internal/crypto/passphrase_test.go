@@ -19,7 +19,7 @@ func TestReadPassphraseFromConfiguredFD(t *testing.T) {
 	if _, err := file.Seek(0, 0); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("REINSTATE_PASSPHRASE_FD", strconv.Itoa(int(file.Fd())))
+	t.Setenv("REINSTATE_PASSPHRASE_FD", strconv.FormatUint(uint64(file.Fd()), 10))
 	got, err := ReadPassphrase(bytes.NewReader(nil), &bytes.Buffer{})
 	if err != nil {
 		t.Fatal(err)

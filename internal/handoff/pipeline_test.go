@@ -606,14 +606,41 @@ func TestExecuteRequiresWarningsBeforeWritingStore(t *testing.T) {
 		Provenance: workspace.ProvenanceCurrentObservation, Message: "branch changed", ExitCode: exitcode.Safety,
 	}
 	opts.Verifier = verifier
+	opts.LaunchRunner = &pipelineRunner{}
 
-	result, err := Execute(context.Background(), rec, opts, false)
+	result, err := Execute(context.Background(), rec, opts, true)
 	assertPipelineCode(t, err, exitcode.Safety)
 	if result.Plan.TempDir == "" {
 		t.Fatal("Execute did not return its completed warning plan")
 	}
 	if _, statErr := os.Stat(filepath.Join(opts.ReinstateHome, handoffsDirName)); !errors.Is(statErr, os.ErrNotExist) {
 		t.Fatalf("unacknowledged warning wrote the store: %v", statErr)
+	}
+}
+
+func TestExecuteNoLaunchPersistsUnackedWarnings(t *testing.T) {
+	rec, _, verifier, _, opts := pipelineFixture(t)
+	verifier.report.Decision = preflight.DecisionConfirmationRequired
+	verifier.report.Checks[0] = preflight.Check{
+		ID: "git.branch", Status: preflight.StatusChanged, Severity: preflight.SeverityWarning,
+		Provenance: workspace.ProvenanceCurrentObservation, Message: "branch changed", ExitCode: exitcode.Safety,
+	}
+	opts.Verifier = verifier
+
+	result, err := Execute(context.Background(), rec, opts, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Launched || result.HandoffID == "" {
+		t.Fatalf("no-launch result = %+v", result)
+	}
+	store, err := OpenStore(opts.ReinstateHome)
+	if err != nil {
+		t.Fatal(err)
+	}
+	entries, err := store.List(10)
+	if err != nil || len(entries) != 1 || entries[0].HandoffID != result.HandoffID || entries[0].Launched {
+		t.Fatalf("lineage after unacked --no-launch = %+v, %v", entries, err)
 	}
 }
 

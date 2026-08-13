@@ -1,7 +1,12 @@
 package adapter_test
 
 import (
+	"context"
+	"os"
+	"path/filepath"
+	"runtime"
 	"testing"
+	"time"
 
 	"github.com/HarjjotSinghh/reinstate/internal/adapter"
 )
@@ -37,5 +42,38 @@ func TestStableVersionFromOutput(t *testing.T) {
 				t.Fatalf("StableVersionFromOutput(%q) = %q, want %q", test.output, got, test.want)
 			}
 		})
+	}
+}
+
+func TestRunVersionCommandUnblocksGrandchildPipes(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("no dependency-free absolute-path stall is available for a .cmd shim")
+	}
+	sleepBinary := ""
+	for _, candidate := range []string{"/bin/sleep", "/usr/bin/sleep"} {
+		if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
+			sleepBinary = candidate
+			break
+		}
+	}
+	if sleepBinary == "" {
+		t.Skip("no absolute sleep binary is available to stall the version probe")
+	}
+	dir := t.TempDir()
+	name := filepath.Join(dir, "claude")
+	body := "#!/bin/sh\n" + sleepBinary + " 30\n"
+	if err := os.WriteFile(name, []byte(body), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir)
+
+	start := time.Now()
+	_, err := adapter.RunVersionCommand(context.Background(), "claude")
+	elapsed := time.Since(start)
+	if err == nil {
+		t.Fatal("hanging grandchild --version returned success")
+	}
+	if elapsed > 5*time.Second {
+		t.Fatalf("RunVersionCommand blocked %s on pipes held by a grandchild", elapsed)
 	}
 }

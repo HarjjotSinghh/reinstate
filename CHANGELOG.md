@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0-rc.4] - 2026-08-13
+
+Fourth Phase 4 candidate. `v0.4.0-rc.3` was published and physical dual-platform
+acceptance FAILED. This candidate carries those product fixes. It does not
+authorize stable `v0.4.0`; stable remains `v0.3.0`. Adds
+`docs/testing/v0.4.0-rc.4-agent-verification-prompts.md`.
+
+### Fixed
+
+- Treat an explicit empty Claude or Codex home (`CLAUDE_CONFIG_DIR` /
+  `CODEX_HOME`, or an adapter `Root`) as layout-supported so a new destination
+  session can be planned (flagship A dest Plan).
+- Bound hanging vendor `--version` probes (including grandchild-held pipes) so
+  Detect and native preflight return `UNTESTED` within about two seconds (R4).
+- Parse `REINSTATE_PASSPHRASE_FD` as a 64-bit descriptor so Windows HANDLEs are
+  not truncated, and clear vendor isolation env in tests that plant under
+  `$HOME/.claude` (Windows `make verify`).
+- Persist `--no-launch` handoffs without requiring warning acknowledgements so
+  `rein handoff list` can see the rows (G3). Launch still requires acks.
+- Keep sidecared `summarized` / `KindSummary` events classified as summarized
+  in `fidelity.json` (B6).
+
 ## [0.4.0-rc.3] - 2026-08-13
 
 Third Phase 4 candidate. `v0.4.0-rc.2` was published and physical dual-platform
@@ -874,7 +896,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.3...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.4...HEAD
+[0.4.0-rc.4]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.3...v0.4.0-rc.4
 [0.4.0-rc.3]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.2...v0.4.0-rc.3
 [0.4.0-rc.2]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.1...v0.4.0-rc.2
 [0.4.0-rc.1]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0...v0.4.0-rc.1

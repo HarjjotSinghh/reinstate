@@ -11,19 +11,20 @@ authority is [cross-agent-continuation.md](../cross-agent-continuation.md) and
 A candidate passes only when installed tagged artifacts produce truthful,
 privacy-safe handoffs that a destination agent can actually continue from.
 
-The current candidate is pinned to the signed tag `v0.4.0-rc.3`. Use the
-[v0.4.0-rc.3 dispatch](v0.4.0-rc.3-agent-verification-prompts.md) and the
+The current candidate is pinned to the signed tag `v0.4.0-rc.4`. Use the
+[v0.4.0-rc.4 dispatch](v0.4.0-rc.4-agent-verification-prompts.md) and the
 [Phase 4 report template](results/phase-4-report-template.md). Do not start
 physical testing from an integration commit, source build, draft release, or an
-installer that still pins stable `v0.3.0`, `v0.4.0-rc.1`, or `v0.4.0-rc.2`.
+installer that still pins stable `v0.3.0`, `v0.4.0-rc.1`, `v0.4.0-rc.2`, or
+`v0.4.0-rc.3`.
 
-The first candidate, `v0.4.0-rc.1`, was published and **failed** this
-acceptance. The second candidate, `v0.4.0-rc.2`, was published and also
-**failed** physical dual-platform acceptance. `v0.4.0-rc.3` carries the rc.2
-product fixes (`c5d8924`). The rc.3 dispatch carries RC1 `R1`–`R6` and the RC2
-regression set so the rerun confirms them rather than rediscovering them. The
-superseded [v0.4.0-rc.1](v0.4.0-rc.1-agent-verification-prompts.md) and
-[v0.4.0-rc.2](v0.4.0-rc.2-agent-verification-prompts.md) dispatches remain in
+The first three candidates, `v0.4.0-rc.1`, `v0.4.0-rc.2`, and `v0.4.0-rc.3`,
+were published and **failed** this acceptance. `v0.4.0-rc.4` carries the rc.3
+product fixes. The rc.4 dispatch carries RC1 `R1`–`R6`, the RC2 regression set,
+and the RC3 regression set so the rerun confirms them rather than rediscovering
+them. The superseded [v0.4.0-rc.1](v0.4.0-rc.1-agent-verification-prompts.md),
+[v0.4.0-rc.2](v0.4.0-rc.2-agent-verification-prompts.md), and
+[v0.4.0-rc.3](v0.4.0-rc.3-agent-verification-prompts.md) dispatches remain in
 the tree as the record of what those runs were asked to do.
 
 ## Evidence policy
@@ -214,7 +215,7 @@ supported platforms is `PASS`. One `FAIL` on one platform fails the candidate.
 ## Candidate dispatches
 
 The current per-tag instructions are the
-[`v0.4.0-rc.3` dispatch](v0.4.0-rc.3-agent-verification-prompts.md). It fixes
+[`v0.4.0-rc.4` dispatch](v0.4.0-rc.4-agent-verification-prompts.md). It fixes
 report branches, artifact and full-commit checks, the report-template
 substitutions for this tag, the pre-run agent-version record, RC1 `R1`–`R6`
 re-verification, the RC2 regression set, corpus sizes, absolute performance

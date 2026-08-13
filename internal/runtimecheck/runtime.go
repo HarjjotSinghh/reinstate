@@ -364,6 +364,7 @@ func (r ExecRunner) Version(ctx context.Context, name string, args ...string) (s
 		return "", fmt.Errorf("%w: executable lookup", ErrProbeFailed)
 	}
 	command := exec.CommandContext(ctx, resolution.Executable, args...)
+	command.WaitDelay = 200 * time.Millisecond
 	command.Stdin = nil
 	command.Dir = neutralWorkingDirectory(resolution.Executable)
 	command.Env = replaceEnvironmentValue(
