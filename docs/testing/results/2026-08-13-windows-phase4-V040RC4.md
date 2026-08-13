@@ -36,8 +36,8 @@ acceptance.
 | Git version | `2.52.0.windows.1` |
 | Go version/toolchain | `go1.25.12 windows/amd64` via `GOTOOLCHAIN=go1.25.12` (host default go1.26.1 unused) |
 | Report branch | `test/v0.4.0-rc.4-windows-amd64-report` |
-| Device-report commit | `<filled after commit>` |
-| Draft report PR | `<filled after PR>` |
+| Device-report commit | `c7c8bfd7891297f53cee9c3fb309c5908304d60a` |
+| Draft report PR | `https://github.com/HarjjotSinghh/reinstate/pull/202` |
 
 Host identity: native Windows 11 x64, computer name HARJOTS-BEAST, user admin.
 Ordinary Microsoft Defender real-time protection was enabled. GNU Make 4.4.1
