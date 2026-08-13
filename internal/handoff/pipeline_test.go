@@ -899,7 +899,10 @@ func TestPlanFidelityReportKeepsSummarizedClass(t *testing.T) {
 
 func TestPlanRemapsForeignOSWorkspaceOntoLocalGitRoot(t *testing.T) {
 	rec, _, verifier, _, opts := pipelineFixture(t)
-	local := t.TempDir()
+	local := filepath.Join(t.TempDir(), "demo")
+	if err := os.MkdirAll(local, 0o700); err != nil {
+		t.Fatal(err)
+	}
 	initTestGitRepo(t, local)
 	foreign := `C:\Users\fixture-user\code\demo`
 	if runtime.GOOS == "windows" {
@@ -928,7 +931,10 @@ func TestPlanRemapsForeignOSWorkspaceOntoLocalGitRoot(t *testing.T) {
 
 func TestPlanRemapsFixtureUserWorkspaceOntoLocalGitRoot(t *testing.T) {
 	rec, _, verifier, _, opts := pipelineFixture(t)
-	local := t.TempDir()
+	local := filepath.Join(t.TempDir(), "demo")
+	if err := os.MkdirAll(local, 0o700); err != nil {
+		t.Fatal(err)
+	}
 	initTestGitRepo(t, local)
 	rec.Workspace = `/Users/fixture-user/code/demo`
 	opts.WorkingDir = local
@@ -945,6 +951,23 @@ func TestPlanRemapsFixtureUserWorkspaceOntoLocalGitRoot(t *testing.T) {
 	}
 	if strings.Contains(plan.Capsule.Workspace.Root, "/Users/fixture-user") {
 		t.Fatalf("capsule leaked fixture path: %q", plan.Capsule.Workspace.Root)
+	}
+}
+
+func TestPlanRefusesFixtureRemapOntoDifferentGitRepository(t *testing.T) {
+	rec, _, _, _, opts := pipelineFixture(t)
+	other := filepath.Join(t.TempDir(), "other")
+	if err := os.MkdirAll(other, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	initTestGitRepo(t, other)
+	rec.Workspace = `/Users/fixture-user/code/demo`
+	opts.WorkingDir = other
+
+	_, err := Plan(context.Background(), rec, opts)
+	assertPipelineCode(t, err, exitcode.Compatibility)
+	if !errors.Is(err, ErrCompatibility) || !strings.Contains(err.Error(), "different repository") {
+		t.Fatalf("wrong-repo after fixture remap = %v", err)
 	}
 }
 
@@ -971,6 +994,25 @@ func TestRemapForeignWorkspace(t *testing.T) {
 	}
 	if !shouldRemapWorkspace(`/Users/fixture-user/code/demo`) {
 		t.Fatal("synthetic fixture-user path should remap")
+	}
+	demo := filepath.Join(t.TempDir(), "demo")
+	if err := os.MkdirAll(demo, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	got := remapForeignWorkspace(`/Users/fixture-user/code/demo`, demo)
+	absDemo, err := filepath.Abs(demo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != absDemo && got != demo {
+		t.Fatalf("matching leaf remapped to %q, want %q", got, absDemo)
+	}
+	other := filepath.Join(t.TempDir(), "other")
+	if err := os.MkdirAll(other, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if got := remapForeignWorkspace(`/Users/fixture-user/code/demo`, other); got != `/Users/fixture-user/code/demo` {
+		t.Fatalf("different leaf remapped to %q", got)
 	}
 }
 

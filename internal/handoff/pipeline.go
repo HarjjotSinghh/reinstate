@@ -251,6 +251,11 @@ func Plan(ctx context.Context, rec sessionindex.Record, opts Options) (PlanResul
 	}
 	events = transcript.LinkToolResults(events)
 
+	if cwd := strings.TrimSpace(opts.WorkingDir); cwd != "" {
+		if err := refuseForeignWorkspaceOnDifferentRepository(cwd, rec.Workspace); err != nil {
+			return PlanResult{}, err
+		}
+	}
 	if local := remapForeignWorkspace(rec.Workspace, opts.WorkingDir); local != rec.Workspace {
 		rec.Workspace = local
 	}
