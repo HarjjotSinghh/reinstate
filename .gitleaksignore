@@ -2,3 +2,5 @@
 3db31ef15344175a0abd77810359002a3c60a104:docs/testing/results/2026-07-27-macos-phase1-rc5.md:generic-api-key:79
 # Public ED25519 tag-signature SHA256 recorded in the v0.4.0-rc.2 macOS report.
 841d75fd0cb863f8318510889a57b400bc8f73ff:docs/testing/results/2026-08-13-macos-phase4-V040RC2.md:generic-api-key:47
+# Public ED25519 tag-signature SHA256 recorded in the v0.4.0-rc.3 macOS report.
+c6c0997e571a13261f886aee1abf2f5c5f012639:docs/testing/results/2026-08-13-macos-phase4-V040RC3.md:generic-api-key:50
