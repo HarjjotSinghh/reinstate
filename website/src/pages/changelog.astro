@@ -67,6 +67,46 @@ const answer =
       stays visible rather than implied to be complete.
     </li>
   </ul>
+  <h3>Fixes carried since v0.4.0-rc.2</h3>
+  <p>
+    <code>v0.4.0-rc.2</code> was published for testing and <strong>failed</strong> its physical
+    dual-platform acceptance. This candidate carries the product fixes for what that run found.
+  </p>
+  <ul>
+    <li>
+      A structured handoff from a different Git repository than the source session is refused
+      (C4). Same-repo subdirectories remain allowed.
+    </li>
+    <li>
+      Destination launch without a real TTY fails closed with <code>ErrNonInteractiveLaunch</code>
+      / exit <code>7</code> before LookPath or child spawn (F8).
+    </li>
+    <li>
+      Grok, Gemini, and OpenCode are valid source agents for the busy check, so a Grok-sourced
+      dry-run no longer exits <code>1</code> with <code>unsupported agent "grok"</code>.
+    </li>
+    <li>
+      A timed-out version probe classifies as <code>UNTESTED</code> / Compatibility (exit
+      <code>5</code>), never Runtime or absent.
+    </li>
+    <li>
+      <code>--no-redact</code> is a known flag for Codex and Claude sources; Grok still refuses
+      it with exit <code>2</code>.
+    </li>
+    <li>
+      With vendor isolation variables set, <code>rein list</code> does not show operator-home
+      sessions.
+    </li>
+    <li>
+      Checkpoint policy sidecar/events contain references only, not verbatim conversation
+      bodies, and output includes <code>projection_events</code>.
+    </li>
+    <li>
+      Removing a destination MCP or skill the source still has produces Missing +
+      <code>handoff.capability.*</code> warning IDs; Execute without acknowledging those IDs
+      does not launch.
+    </li>
+  </ul>
   <h3>Fixes carried since v0.4.0-rc.1</h3>
   <p>
     <code>v0.4.0-rc.1</code> was published for testing and <strong>failed</strong> its physical
@@ -117,8 +157,8 @@ const answer =
   <ul>
     <li>
       Dual-platform tagged-artifact acceptance on Apple Silicon macOS and native Windows x64 is
-      pending for this candidate. The previous candidate, <code>v0.4.0-rc.1</code>, failed that
-      acceptance.
+      pending for this candidate. <code>v0.4.0-rc.1</code> and <code>v0.4.0-rc.2</code> were
+      published and failed that acceptance.
     </li>
     <li>
       Intel macOS and Linux/WSL2 remain optional, unsupported/unverified evidence and do not block

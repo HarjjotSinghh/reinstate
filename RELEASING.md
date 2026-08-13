@@ -149,7 +149,32 @@ window both hosts moved past the ceiling within a day (macOS `2.1.225` ->
 `2.1.228`, Windows `2.1.228` -> `2.1.229`). Re-check both hosts' installed
 versions immediately before tagging, not only when planning the candidate.
 
-`v0.4.0-rc.2` publication means ready for tagged-artifact acceptance. It is not
+`v0.4.0-rc.2` publication meant ready for tagged-artifact acceptance. The
+physical dual-platform run **FAILED**: wrong-repo cwd was not refused, non-TTY
+destination launch still spawned, Grok-source busy-check exited with
+`unsupported agent "grok"`, and a timed-out version probe classified Runtime.
+RC2 does **not** authorize stable `v0.4.0`. Corrective product fixes land in
+`v0.4.0-rc.3`.
+
+### v0.4.0-rc.3 candidate gate
+
+The Phase 4 candidate uses the committed
+[`v0.4.0-rc.3` dispatch](docs/testing/v0.4.0-rc.3-agent-verification-prompts.md)
+and [Phase 4 acceptance contract](docs/testing/phase-4-cross-agent-handoff-acceptance.md).
+Start its two independent device runs only after the signed tag is published,
+all release artifacts verify, and both live installer routes pin that exact
+candidate. Required Claude ↔ Codex structured handoff, fidelity, workspace,
+security, CLI, and performance rows must all pass on Apple Silicon macOS and
+native Windows x64, including RC1 R1–R6 and the RC2 regression set. Gemini CLI,
+OpenCode, and Grok Build remain optional source-only rows and may be
+`NOT TESTED` only when genuinely absent; do not install them solely for
+acceptance.
+
+The fail-closed Claude Code range stays `2.1.219`–`2.1.229`; the Codex CLI range
+stays `0.133.0`–`0.147.0`. Re-check both hosts' installed versions immediately
+before tagging. Claude Code auto-updates.
+
+`v0.4.0-rc.3` publication means ready for tagged-artifact acceptance. It is not
 evidence that the matrix passed, does not authorize stable `v0.4.0`, and does
 not change the current stable release from `v0.3.0`.
 
