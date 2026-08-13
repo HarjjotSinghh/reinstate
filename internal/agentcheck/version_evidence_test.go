@@ -95,7 +95,7 @@ func TestInspectRetriesOnlyTimedOutVersionProbes(t *testing.T) {
 		}
 		return VersionOutput{Stdout: "9.9.9 (Claude Code)\n"}, nil
 	})
-	_, opts := installedAgent(t, slowOnce, 20*time.Millisecond)
+	_, opts := installedAgent(t, slowOnce, 250*time.Millisecond)
 	version, evidence := InstalledVersion(context.Background(), "claude", opts)
 	if slowAttempts.Load() != 2 {
 		t.Fatalf("version probe attempts = %d, want 2", slowAttempts.Load())
