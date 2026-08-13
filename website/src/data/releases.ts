@@ -1,9 +1,15 @@
 export const releaseHistory = [
   {
+    version: 'v0.4.0-rc.6',
+    date: '2026-08-14',
+    summary:
+      'Sixth Phase 4 candidate after v0.4.0-rc.5 physical dual-platform acceptance FAILED (dest-ack/picker without a console; C4 remapped fixture/foreign workspaces onto any git cwd). Carries those product fixes; tagged-artifact acceptance is pending.',
+  },
+  {
     version: 'v0.4.0-rc.5',
     date: '2026-08-13',
     summary:
-      'Fifth Phase 4 candidate after v0.4.0-rc.4 physical dual-platform acceptance FAILED (Windows R4 hang 43s, F8 ~6s non-TTY delay, B6 summarized missing, C5 Windows os-roots exit 5). Carries those product fixes; tagged-artifact acceptance is pending.',
+      'Fifth Phase 4 candidate after v0.4.0-rc.4 physical dual-platform acceptance FAILED (Windows R4 hang 43s, F8 ~6s non-TTY delay, B6 summarized missing, C5 Windows os-roots exit 5). Physical dual-platform acceptance FAILED.',
   },
   {
     version: 'v0.4.0-rc.4',
