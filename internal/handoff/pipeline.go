@@ -481,18 +481,22 @@ func Execute(ctx context.Context, rec sessionindex.Record, opts Options, launch 
 		}
 	}()
 
-	if err := validateWarningAcks(plan.WarningIDs, opts.AllowWarnings, true); err != nil {
+	if launch {
+		if err := validateWarningAcks(plan.WarningIDs, opts.AllowWarnings, true); err != nil {
+			return ExecuteResult{Plan: plan}, err
+		}
+		if auth, err := preflight.Authorize(plan.Preflight, filterPreflightWarnings(opts.AllowWarnings, plan.Preflight)); err != nil || !auth.Allowed {
+			code := exitcode.Safety
+			if auth.ExitCode != 0 {
+				code = auth.ExitCode
+			}
+			if err == nil {
+				err = ErrWarningAck
+			}
+			return ExecuteResult{Plan: plan}, pipelineWrap(code, err)
+		}
+	} else if err := validateWarningAcks(plan.WarningIDs, opts.AllowWarnings, false); err != nil {
 		return ExecuteResult{Plan: plan}, err
-	}
-	if auth, err := preflight.Authorize(plan.Preflight, filterPreflightWarnings(opts.AllowWarnings, plan.Preflight)); err != nil || !auth.Allowed {
-		code := exitcode.Safety
-		if auth.ExitCode != 0 {
-			code = auth.ExitCode
-		}
-		if err == nil {
-			err = ErrWarningAck
-		}
-		return ExecuteResult{Plan: plan}, pipelineWrap(code, err)
 	}
 	if launch && opts.LaunchRunner == nil {
 		return ExecuteResult{Plan: plan}, pipelineErrorf(exitcode.Runtime, "handoff: LaunchRunner is required")

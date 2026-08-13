@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -88,13 +87,19 @@ func (a *Adapter) Detect(ctx context.Context) (adapter.Install, adapter.Compatib
 	}
 	projects := filepath.Join(root, "projects")
 	if st, err := os.Stat(projects); err != nil || !st.IsDir() {
-		return inst, adapter.CompatibilityUntested, nil
+		if !explicitRoot {
+			return inst, adapter.CompatibilityUntested, nil
+		}
+		if inst.Version == "unknown" {
+			inst.Version = "layout-projects-jsonl-v1"
+		}
+		return inst, adapter.CompatibilitySupported, nil
 	}
 	if inst.Version == "unknown" {
 		inst.Version = "layout-projects-jsonl-v1"
 	}
 	if !explicitRoot && !isSupportedVersion(inst.Version) {
-		output, versionErr := exec.CommandContext(ctx, "claude", "--version").Output()
+		output, versionErr := adapter.RunVersionCommand(ctx, "claude")
 		if versionErr != nil {
 			return inst, adapter.CompatibilityUntested, nil
 		}

@@ -84,6 +84,10 @@ func Apply(p Policy, events []capsule.Event) (included []capsule.Event, sidecar 
 			classified = append(classified, cloneEvent(e))
 			continue
 		}
+		if e.Portability == capsule.PortabilitySummarized || e.Kind == capsule.KindSummary {
+			classified = append(classified, cloneEvent(e))
+			continue
+		}
 		classified = append(classified, referencedCopy(e, ref.Reason))
 	}
 

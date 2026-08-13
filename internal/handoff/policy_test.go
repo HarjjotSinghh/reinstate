@@ -295,3 +295,29 @@ func TestApplyFidelityReportContainsAllPortabilityClasses(t *testing.T) {
 		}
 	}
 }
+
+func TestApplyCheckpointKeepsSummarizedFidelity(t *testing.T) {
+	t.Parallel()
+	events := []capsule.Event{
+		{
+			ID: "summarized", Kind: capsule.KindSummary, Actor: capsule.ActorAssistant,
+			Portability: capsule.PortabilitySummarized, Reason: "vendor_summary",
+			Blocks: []capsule.Block{{Text: "earlier work"}},
+		},
+		msgEvent("keep", 1, "hello"),
+	}
+	included, sidecar, report := Apply(PolicyCheckpoint, events)
+	if len(included) != 0 {
+		t.Fatalf("checkpoint included = %d, want 0", len(included))
+	}
+	if len(sidecar) != 2 {
+		t.Fatalf("sidecar = %d, want 2", len(sidecar))
+	}
+	seen := map[capsule.Portability]bool{}
+	for _, component := range report.Components {
+		seen[component.Portability] = true
+	}
+	if !seen[capsule.PortabilitySummarized] {
+		t.Fatalf("checkpoint fidelity dropped summarized: %+v", report.Components)
+	}
+}

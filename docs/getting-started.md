@@ -11,12 +11,12 @@ resume: a privacy-safe environment report and launch gate for same-vendor
 Claude/Codex continuation. Dual-platform tagged-artifact acceptance passed on
 Apple Silicon macOS and native Windows x64.
 
-Release candidate `v0.4.0-rc.3` adds Phase 4 structured handoff, which
+Release candidate `v0.4.0-rc.4` adds Phase 4 structured handoff, which
 continues the same task in a new Claude Code or Codex session. Its
 tagged-artifact acceptance is pending, and it is not stable `v0.4.0`. The
 earlier `v0.4.0-rc.1` candidate was published and failed that acceptance.
 
-> **Release status:** the public installers pin candidate `v0.4.0-rc.3`.
+> **Release status:** the public installers pin candidate `v0.4.0-rc.4`.
 > Apple Silicon macOS and native Windows x64 tagged-artifact acceptance is
 > pending. Stable remains `v0.3.0`; Intel macOS and Linux/WSL2 remain optional,
 > unsupported/unverified evidence tracked in [#97](https://github.com/HarjjotSinghh/reinstate/issues/97)
@@ -81,7 +81,7 @@ brew install HarjjotSinghh/tap/reinstate
 The tap formula tracks stable `v0.3.0`. Intel macOS and Linuxbrew remain
 optional and unverified for this release.
 
-### Install v0.4.0-rc.3 on macOS, Linux, or WSL2
+### Install v0.4.0-rc.4 on macOS, Linux, or WSL2
 
 ```sh
 curl -fsSL https://reinstate.dev/install.sh | sh
@@ -91,7 +91,7 @@ The default installation directory is `~/.local/bin`. The bootstrap prints an
 absolute `rein init` command that works immediately and adds the directory to
 the appropriate shell startup file for new terminals.
 
-### Install v0.4.0-rc.3 on native Windows PowerShell
+### Install v0.4.0-rc.4 on native Windows PowerShell
 
 ```powershell
 irm https://reinstate.dev/install.ps1 | iex
@@ -103,7 +103,7 @@ and the current PowerShell process.
 
 Both public bootstraps:
 
-1. pin `v0.4.0-rc.3`;
+1. pin `v0.4.0-rc.4`;
 2. download the canonical installer from that exact signed Git tag;
 3. verify the canonical installer SHA-256;
 4. download only the matching GitHub Release asset and `checksums.txt`;

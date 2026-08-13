@@ -29,6 +29,8 @@ func TestCLISyntheticSyncPath(t *testing.T) {
 	t.Setenv("REINSTATE_BACKEND", "memory")
 	t.Setenv("REINSTATE_S3_ACCESS_KEY_ID", "AKIA_TEST")
 	t.Setenv("REINSTATE_S3_SECRET_ACCESS_KEY", "SECRET_TEST")
+	t.Setenv("CLAUDE_CONFIG_DIR", "")
+	t.Setenv("CODEX_HOME", "")
 	_ = os.Unsetenv("REINSTATE_PASSPHRASE")
 
 	// plant a synthetic Claude session under a fake agent root via home layout
@@ -86,7 +88,7 @@ func TestCLISyntheticSyncPath(t *testing.T) {
 		if _, err := passphraseFile.Seek(0, 0); err != nil {
 			t.Fatal(err)
 		}
-		t.Setenv("REINSTATE_PASSPHRASE_FD", strconv.Itoa(int(passphraseFile.Fd())))
+		t.Setenv("REINSTATE_PASSPHRASE_FD", strconv.FormatUint(uint64(passphraseFile.Fd()), 10))
 		var out, errb bytes.Buffer
 		code = Execute(Options{
 			Name: "reinstate", Stdout: &out, Stderr: &errb, Args: args,

@@ -16,11 +16,19 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.4.0-rc.4': {
+    rangeChange:
+      'Unchanged from v0.4.0-rc.3: inclusive Claude Code range 2.1.219–2.1.229. The Codex CLI range is unchanged at 0.133.0–0.147.0.',
+    compatibilityChange:
+      'Fourth Phase 4 candidate after v0.4.0-rc.3 physical dual-platform acceptance FAILED. This candidate treats an explicit empty dest home as supported, bounds hanging --version probes including grandchild-held pipes, persists --no-launch without warning acks, keeps sidecared summarized fidelity, and fixes Windows passphrase-FD / isolation-env unit failures. Dual-platform tagged-artifact acceptance is pending; this candidate does not authorize stable v0.4.0.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.4.0-rc.4/internal/adapter/version.go',
+  },
   'v0.4.0-rc.3': {
     rangeChange:
       'Unchanged from v0.4.0-rc.2: inclusive Claude Code range 2.1.219–2.1.229. The Codex CLI range is unchanged at 0.133.0–0.147.0.',
     compatibilityChange:
-      'Third Phase 4 candidate after v0.4.0-rc.2 physical dual-platform acceptance FAILED. This candidate carries C4 (wrong-repo cwd refused), F8 (non-TTY fail-closed before spawn), Grok-source busy-check, R4 timed-out probe classified UNTESTED/Compatibility, plus remaining matrix product defects (--no-redact, list isolation, fidelity/projection_events, checkpoint sidecar refs, destination MCP/skill gaps). Dual-platform tagged-artifact acceptance is pending; this candidate does not authorize stable v0.4.0.',
+      'Third Phase 4 candidate after v0.4.0-rc.2 physical dual-platform acceptance FAILED. This candidate carries C4 (wrong-repo cwd refused), F8 (non-TTY fail-closed before spawn), Grok-source busy-check, R4 timed-out probe classified UNTESTED/Compatibility, plus remaining matrix product defects (--no-redact, list isolation, fidelity/projection_events, checkpoint sidecar refs, destination MCP/skill gaps). Physical dual-platform acceptance FAILED; this candidate does not authorize stable v0.4.0.',
     implementationSource:
       'https://github.com/HarjjotSinghh/reinstate/blob/v0.4.0-rc.3/internal/handoff/projection.go',
   },

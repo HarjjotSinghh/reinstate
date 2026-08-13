@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -77,11 +76,15 @@ func (a *Adapter) Detect(ctx context.Context) (adapter.Install, adapter.Compatib
 	}
 	sessions := filepath.Join(root, "sessions")
 	if st, err := os.Stat(sessions); err != nil || !st.IsDir() {
-		return inst, adapter.CompatibilityUntested, nil
+		if !explicitRoot {
+			return inst, adapter.CompatibilityUntested, nil
+		}
+		inst.Version = "layout-sessions-jsonl-v1"
+		return inst, adapter.CompatibilitySupported, nil
 	}
 	inst.Version = "layout-sessions-jsonl-v1"
 	if !explicitRoot {
-		output, versionErr := exec.CommandContext(ctx, "codex", "--version").Output()
+		output, versionErr := adapter.RunVersionCommand(ctx, "codex")
 		if versionErr != nil {
 			return inst, adapter.CompatibilityUntested, nil
 		}

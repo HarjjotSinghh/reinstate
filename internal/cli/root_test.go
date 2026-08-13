@@ -387,6 +387,8 @@ func TestDiffMissingManifestUsesAuthStorageExit(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("REINSTATE_HOME", home)
 	t.Setenv("REINSTATE_BACKEND", "memory")
+	t.Setenv("CLAUDE_CONFIG_DIR", "")
+	t.Setenv("CODEX_HOME", "")
 	userHome := t.TempDir()
 	t.Setenv("HOME", userHome)
 	t.Setenv("USERPROFILE", userHome)
@@ -431,7 +433,7 @@ func setTestPassphraseFD(t *testing.T) {
 	if _, err := passphraseFile.Seek(0, 0); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("REINSTATE_PASSPHRASE_FD", strconv.Itoa(int(passphraseFile.Fd())))
+	t.Setenv("REINSTATE_PASSPHRASE_FD", strconv.FormatUint(uint64(passphraseFile.Fd()), 10))
 }
 
 func TestConflictReadCommandsRequireConfig(t *testing.T) {

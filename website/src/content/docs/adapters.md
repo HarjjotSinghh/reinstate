@@ -6,7 +6,7 @@ order: 3
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.4.0-rc.3"
+version: "v0.4.0-rc.4"
 updatedAt: 2026-08-01
 tags: ["adapters", "claude-code", "codex", "same-vendor-resume"]
 targetQuery: "Reinstate supported coding agents"

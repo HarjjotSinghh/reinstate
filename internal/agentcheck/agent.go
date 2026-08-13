@@ -490,6 +490,7 @@ func (runner ExecRunner) Version(ctx context.Context, executable string, args ..
 		limit = maxVersionOutput
 	}
 	command := exec.CommandContext(ctx, executable, args...)
+	configureVersionCommand(command)
 	command.Stdin = nil
 	command.Dir = neutralWorkingDirectory(executable)
 	environment := sanitizedVersionEnvironment(os.Environ())

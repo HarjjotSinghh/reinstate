@@ -9,7 +9,7 @@ block stable.
 Candidate history (RC1–RC7) lived under `docs/testing/results/` and earlier
 CHANGELOG sections; those records do not rewrite this stable claim.
 
-Release candidate `v0.4.0-rc.3` adds Phase 4 structured handoff on top of that
+Release candidate `v0.4.0-rc.4` adds Phase 4 structured handoff on top of that
 stable surface, and the public installers now pin it. Its structured-handoff
 implementation is documented below, but it does not inherit the stable
 `v0.3.0` physical evidence. The earlier `v0.4.0-rc.1` candidate was published
@@ -113,12 +113,12 @@ after dual-platform tagged-artifact acceptance. The Phase 4 candidates widen the
 ceiling further, through `2.1.229`, so the acceptance hosts are not blocked by
 their installed agent. Claude Code auto-updates faster than a fail-closed
 ceiling can be revised: `v0.4.0-rc.1` widened to `2.1.228` and both hosts had
-already moved past it within a day, so `v0.4.0-rc.3` widens to `2.1.229`.
+already moved past it within a day, so `v0.4.0-rc.4` widens to `2.1.229`.
 Neither `2.1.228` nor `2.1.229` has completed dual-platform tagged-artifact
 acceptance. Versions above the maxima remain `UNTESTED` until a
 later matrix expands them again:
 
-| Agent | Inclusive source-tested range (v0.4.0-rc.3) |
+| Agent | Inclusive source-tested range (v0.4.0-rc.4) |
 | ----- | ------------------- |
 | Claude Code | `2.1.219`–`2.1.229` |
 | OpenAI Codex CLI | `0.133.0`–`0.147.0` |

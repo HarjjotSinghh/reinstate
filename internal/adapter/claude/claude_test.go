@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/HarjjotSinghh/reinstate/internal/adapter"
 )
@@ -471,15 +472,15 @@ func TestUntestedRefusesRestore(t *testing.T) {
 	}
 }
 
-func TestClaudeDetectEmptyRootIsUntested(t *testing.T) {
+func TestClaudeDetectExplicitEmptyRootIsSupported(t *testing.T) {
 	root := t.TempDir()
 	a := &Adapter{Root: root}
 	_, compat, err := a.Detect(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if compat != adapter.CompatibilityUntested {
-		t.Fatalf("empty/unknown Claude layout reported %s, want UNTESTED", compat)
+	if compat != adapter.CompatibilitySupported {
+		t.Fatalf("explicit empty Claude home reported %s, want SUPPORTED for a new destination session", compat)
 	}
 }
 
@@ -487,6 +488,8 @@ func TestClaudeDefaultRootUnknownVersionIsUntested(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
+	t.Setenv("CLAUDE_CONFIG_DIR", "")
+	t.Setenv("CODEX_HOME", "")
 	t.Setenv("PATH", "")
 	root := filepath.Join(home, ".claude")
 	if err := os.MkdirAll(filepath.Join(root, "projects"), 0o700); err != nil {
@@ -508,6 +511,8 @@ func TestClaudeDefaultRootSupportedVersionFileDoesNotRequireExecutable(t *testin
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
+	t.Setenv("CLAUDE_CONFIG_DIR", "")
+	t.Setenv("CODEX_HOME", "")
 	t.Setenv("PATH", "")
 	root := filepath.Join(home, ".claude")
 	if err := os.MkdirAll(filepath.Join(root, "projects"), 0o700); err != nil {
@@ -526,6 +531,51 @@ func TestClaudeDefaultRootSupportedVersionFileDoesNotRequireExecutable(t *testin
 	if install.Version != "2.1.220" {
 		t.Fatalf("detected version %q", install.Version)
 	}
+}
+
+func TestClaudeDetectHangingVersionIsUntestedWithinDeadline(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("no dependency-free absolute-path stall is available for a .cmd shim")
+	}
+	sleepBinary := hangingSleepBinary(t)
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	t.Setenv("CLAUDE_CONFIG_DIR", "")
+	t.Setenv("CODEX_HOME", "")
+	if err := os.MkdirAll(filepath.Join(home, ".claude", "projects"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	body := "#!/bin/sh\n" + sleepBinary + " 30\n"
+	if err := os.WriteFile(filepath.Join(dir, "claude"), []byte(body), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir)
+
+	start := time.Now()
+	_, compatibility, err := (&Adapter{}).Detect(context.Background())
+	elapsed := time.Since(start)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if compatibility != adapter.CompatibilityUntested {
+		t.Fatalf("hanging --version reported %s, want UNTESTED", compatibility)
+	}
+	if elapsed > 5*time.Second {
+		t.Fatalf("Detect blocked %s on a hanging grandchild --version", elapsed)
+	}
+}
+
+func hangingSleepBinary(t *testing.T) string {
+	t.Helper()
+	for _, candidate := range []string{"/bin/sleep", "/usr/bin/sleep"} {
+		if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
+			return candidate
+		}
+	}
+	t.Skip("no absolute sleep binary is available to stall the version probe")
+	return ""
 }
 
 func TestClaudeTransformLeavesPathLikeTranscriptContentUntouched(t *testing.T) {

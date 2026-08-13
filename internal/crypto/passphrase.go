@@ -19,8 +19,8 @@ const maxSecretInputBytes = 4096
 // environment values.
 func ReadPassphrase(input io.Reader, promptOut io.Writer) ([]byte, error) {
 	if rawFD := strings.TrimSpace(os.Getenv("REINSTATE_PASSPHRASE_FD")); rawFD != "" {
-		fd, err := strconv.Atoi(rawFD)
-		if err != nil || fd < 0 {
+		fd, err := strconv.ParseUint(rawFD, 10, 64)
+		if err != nil {
 			return nil, fmt.Errorf("REINSTATE_PASSPHRASE_FD must be a valid file descriptor")
 		}
 		file, err := duplicatePassphraseFD(uintptr(fd))

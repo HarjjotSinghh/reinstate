@@ -1,9 +1,27 @@
 package adapter
 
 import (
+	"context"
+	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 )
+
+const versionProbeTimeout = 2 * time.Second
+
+// RunVersionCommand runs `<name> --version` with a hard deadline so a hanging
+// vendor binary cannot stall Detect or handoff planning.
+func RunVersionCommand(ctx context.Context, name string) ([]byte, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	probeCtx, cancel := context.WithTimeout(ctx, versionProbeTimeout)
+	defer cancel()
+	command := exec.CommandContext(probeCtx, name, "--version")
+	configureVersionCommand(command)
+	return command.Output()
+}
 
 // StableVersionInRange reports whether version is a stable three-component
 // semantic version inside the inclusive tested range.

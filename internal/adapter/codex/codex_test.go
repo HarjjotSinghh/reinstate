@@ -286,15 +286,15 @@ func TestCodexRejectsUnsafeSnapshotPath(t *testing.T) {
 	}
 }
 
-func TestCodexDetectEmptyRootIsUntested(t *testing.T) {
+func TestCodexDetectExplicitEmptyRootIsSupported(t *testing.T) {
 	root := t.TempDir()
 	a := &Adapter{Root: root}
 	_, compat, err := a.Detect(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if compat != adapter.CompatibilityUntested {
-		t.Fatalf("empty/unknown Codex layout reported %s, want UNTESTED", compat)
+	if compat != adapter.CompatibilitySupported {
+		t.Fatalf("explicit empty Codex home reported %s, want SUPPORTED for a new destination session", compat)
 	}
 }
 
@@ -302,6 +302,8 @@ func TestCodexDefaultRootWithoutVerifiedBinaryIsUntested(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
+	t.Setenv("CODEX_HOME", "")
+	t.Setenv("CLAUDE_CONFIG_DIR", "")
 	t.Setenv("PATH", "")
 	if err := os.MkdirAll(filepath.Join(home, ".codex", "sessions"), 0o700); err != nil {
 		t.Fatal(err)
