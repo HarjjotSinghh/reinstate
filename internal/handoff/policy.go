@@ -80,6 +80,10 @@ func Apply(p Policy, events []capsule.Event) (included []capsule.Event, sidecar 
 		}
 		ref := sidecarRefFor(e)
 		sidecar = append(sidecar, ref)
+		if e.Portability == capsule.PortabilityOmitted {
+			classified = append(classified, cloneEvent(e))
+			continue
+		}
 		classified = append(classified, referencedCopy(e, ref.Reason))
 	}
 
@@ -198,5 +202,49 @@ func truncateEventTo(e capsule.Event, maxBytes int) capsule.Event {
 	if out.Reason == "" {
 		out.Reason = reasonProjectionTruncated
 	}
+	return out
+}
+
+func taskFidelityComponents(task capsule.Task) capsule.Components {
+	var out capsule.Components
+	addText := func(name string, field capsule.TextField) {
+		if field.Portability == "" {
+			return
+		}
+		out = append(out, capsule.Component{
+			Name: name, Portability: field.Portability, Reason: field.Reason,
+			Count: 1, Bytes: int64(len(field.Text)),
+		})
+	}
+	addList := func(name string, field capsule.ListField) {
+		if field.Portability == "" {
+			return
+		}
+		count := len(field.Items)
+		if count == 0 {
+			count = 1
+		}
+		bytes := 0
+		for _, item := range field.Items {
+			bytes += len(item)
+		}
+		out = append(out, capsule.Component{
+			Name: name, Portability: field.Portability, Reason: field.Reason,
+			Count: count, Bytes: int64(bytes),
+		})
+	}
+	addText("goal", task.Goal)
+	addText("latest_user_intent", task.LatestUserIntent)
+	addList("recent_user_messages", task.RecentUserMessages)
+	addList("constraints", task.Constraints)
+	addList("decisions", task.Decisions)
+	addList("rejected_approaches", task.RejectedApproaches)
+	addList("completed", task.Completed)
+	addList("pending", task.Pending)
+	addList("changed_files", task.ChangedFiles)
+	addList("files_touched_per_transcript", task.FilesTouchedPerTranscript)
+	addList("tests", task.Tests)
+	addText("next_action", task.NextAction)
+	addList("open_questions", task.OpenQuestions)
 	return out
 }

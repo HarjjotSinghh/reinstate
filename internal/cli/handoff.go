@@ -49,6 +49,7 @@ type handoffPlanOutput struct {
 	Security               capsule.Security       `json:"security"`
 	Fidelity               capsule.Fidelity       `json:"fidelity"`
 	Parse                  transcript.ParseReport `json:"parse"`
+	ProjectionEvents       int                    `json:"projection_events"`
 	PlannedFiles           []string               `json:"planned_files"`
 	EstimatedBytes         int64                  `json:"estimated_bytes"`
 	EstimatedTokens        int                    `json:"estimated_tokens"`
@@ -105,6 +106,7 @@ func newHandoffCmd(options handoffCommandOptions) *cobra.Command {
 		allowActive     bool
 		allowUntested   bool
 		showRedactions  bool
+		noRedact        bool
 	)
 	cmd := &cobra.Command{
 		Use:   "handoff [SESSION]",
@@ -147,8 +149,12 @@ func newHandoffCmd(options handoffCommandOptions) *cobra.Command {
 				AllowActive:   allowActive,
 				AllowUntested: allowUntested,
 				AllowWarnings: append([]string(nil), allowedWarnings...),
+				NoRedact:      noRedact,
 				Capability:    handoffCapabilityOptions(options.local.verifier),
 				SessionExists: handoffClaudeSessionExists(index),
+			}
+			if wd, wdErr := os.Getwd(); wdErr == nil {
+				pipelineOptions.WorkingDir = wd
 			}
 
 			var plan handoff.PlanResult
@@ -202,6 +208,7 @@ func newHandoffCmd(options handoffCommandOptions) *cobra.Command {
 	cmd.Flags().BoolVar(&allowActive, "allow-active", false, "freeze the last complete record while the source is active")
 	cmd.Flags().BoolVar(&allowUntested, "allow-untested", false, "proceed with an untested source or destination layout")
 	cmd.Flags().BoolVar(&showRedactions, "show-redactions", false, "show redaction categories and counts, never values")
+	cmd.Flags().BoolVar(&noRedact, "no-redact", false, "skip secret redaction; refused for Grok sources")
 	cmd.AddCommand(newHandoffListCmd(), newHandoffInspectCmd(), newHandoffExportCmd())
 	return cmd
 }
@@ -456,7 +463,8 @@ func writeHandoffPlan(cmd *cobra.Command, plan handoff.PlanResult, asJSON, showR
 		Policy: plan.Capsule.Projection.Policy, Workspace: plan.Capsule.Workspace,
 		Capabilities: plan.Capsule.Capabilities, Security: plan.Capsule.Security, Fidelity: plan.Capsule.Fidelity,
 		Parse: plan.Parse, PlannedFiles: handoffPlannedFiles(plan),
-		EstimatedBytes: plan.EstimatedBytes, EstimatedTokens: plan.EstimatedTokens,
+		ProjectionEvents: len(plan.Capsule.Conversation.Events),
+		EstimatedBytes:   plan.EstimatedBytes, EstimatedTokens: plan.EstimatedTokens,
 		WarningIDs: append([]string(nil), plan.WarningIDs...), Redactions: plan.RedactionCounts,
 		SourceMayHaveAdvanced: plan.SourceMayHaveAdvanced,
 	}
@@ -474,7 +482,7 @@ func writeHandoffPlan(cmd *cobra.Command, plan handoff.PlanResult, asJSON, showR
 	}
 	prefix := handoffHumanPrefix(plan.Destination.Agent)
 	PrintHuman(cmd.OutOrStdout(), "%s: handoff %s from %s:%s", prefix, plan.HandoffID, plan.Capsule.RawSource.Agent, plan.Capsule.RawSource.SessionID)
-	PrintHuman(cmd.OutOrStdout(), "%s: policy=%s projection=%d bytes estimated_tokens=%d", prefix, plan.Capsule.Projection.Policy, plan.EstimatedBytes, plan.EstimatedTokens)
+	PrintHuman(cmd.OutOrStdout(), "%s: policy=%s projection_events=%d projection=%d bytes estimated_tokens=%d", prefix, plan.Capsule.Projection.Policy, len(plan.Capsule.Conversation.Events), plan.EstimatedBytes, plan.EstimatedTokens)
 	PrintHuman(cmd.OutOrStdout(), "%s: workspace project=%s root=%s branch=%s dirty=%t", prefix, plan.Capsule.Workspace.ProjectID, plan.Capsule.Workspace.Root, plan.Capsule.Workspace.Branch, plan.Capsule.Workspace.Dirty)
 	PrintHuman(cmd.OutOrStdout(), "%s: command %s", prefix, quoteCommand(plan.Destination.Executable, plan.Destination.Args))
 	for _, path := range handoffPlannedFiles(plan) {

@@ -22,7 +22,7 @@ func TestPhase4CLIFlagsAreDocumented(t *testing.T) {
 		heading string
 		flags   []string
 	}{
-		"handoff":         {"### `rein handoff`", []string{"allow-active", "allow-untested", "allow-warning", "dry-run", "export", "from", "json", "last", "no-launch", "policy", "show-redactions", "to"}},
+		"handoff":         {"### `rein handoff`", []string{"allow-active", "allow-untested", "allow-warning", "dry-run", "export", "from", "json", "last", "no-launch", "no-redact", "policy", "show-redactions", "to"}},
 		"handoff list":    {"### `rein handoff list`", []string{"json", "limit"}},
 		"handoff inspect": {"### `rein handoff inspect`", []string{"acknowledged", "json", "not-acknowledged"}},
 		"handoff export":  {"### `rein handoff export`", []string{"format", "out"}},

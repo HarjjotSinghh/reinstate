@@ -411,6 +411,21 @@ func TestCustomClaudeHomeOverridesDefaultConfigRoot(t *testing.T) {
 	assertInventoryPrivate(t, got, root, secretSentinel)
 }
 
+func TestClaudeSettingsJSONMCPIsDiscovered(t *testing.T) {
+	root := t.TempDir()
+	home := filepath.Join(root, "home")
+	custom := filepath.Join(root, "custom-claude")
+	writeTestFile(t, filepath.Join(custom, "settings.json"), `{"mcpServers":{"settings-mcp":{"command":"`+secretSentinel+`"}}}`)
+	writeTestFile(t, filepath.Join(custom, "settings.local.json"), `{"mcpServers":{"local-settings-mcp":{"command":"`+secretSentinel+`"}}}`)
+
+	got := Discover(Options{GOOS: "darwin", UserHome: home, ClaudeHome: custom})
+	if !containsName(got.Items, AgentClaude, KindMCP, ScopeUser, "settings-mcp") ||
+		!containsName(got.Items, AgentClaude, KindMCP, ScopeUser, "local-settings-mcp") {
+		t.Fatalf("Claude settings.json MCP was not discovered: %+v", got.Items)
+	}
+	assertInventoryPrivate(t, got, root, secretSentinel)
+}
+
 func TestDiscoverContextCancellationIsTransactionalAndPrivate(t *testing.T) {
 	root := t.TempDir()
 	home := filepath.Join(root, "home")

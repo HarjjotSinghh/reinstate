@@ -77,6 +77,12 @@ rein resume claude:<session-id> --with codex
 | `--allow-active` | Take a boundary while the source agent is still running. |
 | `--allow-untested` | Proceed on an untested agent version. |
 | `--show-redactions` | Show redaction categories and counts. Never the values. |
+| `--no-redact` | Skip secret redaction. Refused with exit `2` when the source is Grok. |
+
+Running `rein handoff` from a different Git repository than the source session
+is refused with exit `5`. A launch without a real TTY fails closed before the
+destination process is created (exit `7`). A version probe that times out is
+classified `UNTESTED` (exit `5`), not treated as an absent agent.
 
 ### History policies
 

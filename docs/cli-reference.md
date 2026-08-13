@@ -47,6 +47,7 @@ rein handoff [AGENT:]SESSION_ID --to claude|codex
              [--policy checkpoint|balanced|full] [--dry-run|--no-launch]
              [--json] [--export PATH] [--allow-warning ID ...]
              [--allow-active] [--allow-untested] [--show-redactions]
+             [--no-redact]
 rein handoff --last [--from claude|codex|gemini|opencode|grok]
              --to claude|codex [handoff flags]
 rein handoff list [--json] [--limit N]
@@ -162,6 +163,7 @@ Code and Codex are destinations.
 | `--allow-active` | Freeze the last complete source record while its agent is active. |
 | `--allow-untested` | Proceed with an untested source or destination layout. |
 | `--show-redactions` | Show redaction categories and counts, never values. |
+| `--no-redact` | Skip secret redaction. Refused with exit `2` for Grok sources. |
 
 ### `rein handoff list`
 

@@ -174,7 +174,7 @@ func TestRunLaunchPropagatesCancellationRaisedByRunner(t *testing.T) {
 }
 
 func TestExecLaunchRunnerClassifiesPreflightFailures(t *testing.T) {
-	t.Parallel()
+	t.Setenv("REINSTATE_ALLOW_NON_TTY_LAUNCH", "1")
 	err := (ExecLaunchRunner{}).Run(context.Background(), LaunchPlan{
 		Agent: AgentCodex, Operation: OperationResume,
 		Executable: "reinstate-definitely-not-an-executable", Args: []string{"resume", "id"}, Dir: t.TempDir(),
@@ -226,6 +226,7 @@ func TestExecLaunchRunnerExitHelper(t *testing.T) {
 }
 
 func TestExecLaunchRunnerGuardRejectionPreventsChildCreation(t *testing.T) {
+	t.Setenv("REINSTATE_ALLOW_NON_TTY_LAUNCH", "1")
 	marker := filepath.Join(t.TempDir(), "child-created")
 	t.Setenv("REINSTATE_LAUNCH_GUARD_HELPER_MARKER", marker)
 	executable, err := filepath.Abs(os.Args[0])
@@ -250,6 +251,7 @@ func TestExecLaunchRunnerGuardRejectionPreventsChildCreation(t *testing.T) {
 }
 
 func TestExecLaunchRunnerPropagatesCancellationAtFinalGuard(t *testing.T) {
+	t.Setenv("REINSTATE_ALLOW_NON_TTY_LAUNCH", "1")
 	marker := filepath.Join(t.TempDir(), "child-created")
 	t.Setenv("REINSTATE_LAUNCH_GUARD_HELPER_MARKER", marker)
 	executable, err := filepath.Abs(os.Args[0])
@@ -277,11 +279,10 @@ func TestExecLaunchRunnerPropagatesCancellationAtFinalGuard(t *testing.T) {
 }
 
 func TestExecLaunchRunnerRejectsLaunchTargetReplacementAfterGuard(t *testing.T) {
-	t.Parallel()
+	t.Setenv("REINSTATE_ALLOW_NON_TTY_LAUNCH", "1")
 	for _, target := range []string{"executable", "workspace"} {
 		target := target
 		t.Run(target, func(t *testing.T) {
-			t.Parallel()
 			root := t.TempDir()
 			executable := filepath.Join(root, "agent")
 			if err := os.WriteFile(executable, []byte("original executable"), 0o700); err != nil {
@@ -329,7 +330,7 @@ func TestExecLaunchRunnerRejectsLaunchTargetReplacementAfterGuard(t *testing.T) 
 }
 
 func TestExecLaunchRunnerRejectsWorkspaceReplacedAfterAuthorization(t *testing.T) {
-	t.Parallel()
+	t.Setenv("REINSTATE_ALLOW_NON_TTY_LAUNCH", "1")
 	root := t.TempDir()
 	workspace := filepath.Join(root, "workspace")
 	if err := os.Mkdir(workspace, 0o700); err != nil {
@@ -372,6 +373,25 @@ func TestExecLaunchRunnerGuardHelper(t *testing.T) {
 	}
 	if err := os.WriteFile(marker, []byte("child ran"), 0o600); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestExecLaunchRunnerNonTTYRefusesBeforeLookPath(t *testing.T) {
+	t.Setenv("REINSTATE_ALLOW_NON_TTY_LAUNCH", "")
+	t.Setenv("PATH", t.TempDir())
+	stdin, writer, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = stdin.Close() }()
+	defer func() { _ = writer.Close() }()
+
+	err = (ExecLaunchRunner{Stdin: stdin}).Run(context.Background(), LaunchPlan{
+		Agent: AgentClaude, Operation: OperationHandoff,
+		Executable: "claude", Args: []string{"--session-id", "controlled"}, Dir: t.TempDir(),
+	})
+	if !errors.Is(err, ErrNonInteractiveLaunch) {
+		t.Fatalf("non-TTY error = %v, want %v before LookPath", err, ErrNonInteractiveLaunch)
 	}
 }
 

@@ -138,6 +138,23 @@ func (runner ExecLaunchRunner) Run(ctx context.Context, plan LaunchPlan) error {
 	if err := validateLaunchPlan(plan); err != nil {
 		return err
 	}
+
+	stdin := runner.Stdin
+	if stdin == nil {
+		stdin = os.Stdin
+	}
+	stdout := runner.Stdout
+	if stdout == nil {
+		stdout = os.Stdout
+	}
+	stderr := runner.Stderr
+	if stderr == nil {
+		stderr = os.Stderr
+	}
+	if err := requireInteractiveTerminal(stdin, stdout); err != nil {
+		return err
+	}
+
 	executable := strings.TrimSpace(runner.Executable)
 	if executable == "" {
 		var err error
@@ -197,27 +214,6 @@ func (runner ExecLaunchRunner) Run(ctx context.Context, plan LaunchPlan) error {
 		return fmt.Errorf("%w: recorded workspace changed after final guard", ErrLaunchBoundaryChanged)
 	}
 
-	stdin := runner.Stdin
-	if stdin == nil {
-		stdin = os.Stdin
-	}
-	stdout := runner.Stdout
-	if stdout == nil {
-		stdout = os.Stdout
-	}
-	stderr := runner.Stderr
-	if stderr == nil {
-		stderr = os.Stderr
-	}
-
-	// Production vendors require a real interactive terminal. Allow tests and
-	// deterministic local smoke stubs to opt out with REINSTATE_ALLOW_NON_TTY_LAUNCH=1.
-	if !allowNonInteractiveNativeLaunch() {
-		if file, ok := stdin.(*os.File); ok && !term.IsTerminal(int(file.Fd())) {
-			return fmt.Errorf("%w: re-run from a real TTY or use --dry-run for non-interactive inspection", ErrNonInteractiveLaunch)
-		}
-	}
-
 	command := exec.CommandContext(ctx, executable, plan.Args...)
 	command.Dir = plan.Dir
 	command.Stdin = stdin
@@ -231,6 +227,18 @@ func (runner ExecLaunchRunner) Run(ctx context.Context, plan LaunchPlan) error {
 	}
 	if err := ctx.Err(); err != nil {
 		return fmt.Errorf("%w: %s native %s completed after context error: %w", ErrChildStarted, plan.Agent, plan.Operation, err)
+	}
+	return nil
+}
+
+func requireInteractiveTerminal(stdin io.Reader, stdout io.Writer) error {
+	if allowNonInteractiveNativeLaunch() {
+		return nil
+	}
+	inFile, inOK := stdin.(*os.File)
+	outFile, outOK := stdout.(*os.File)
+	if !inOK || !outOK || !term.IsTerminal(int(inFile.Fd())) || !term.IsTerminal(int(outFile.Fd())) {
+		return fmt.Errorf("%w: re-run from a real TTY or use --dry-run for non-interactive inspection", ErrNonInteractiveLaunch)
 	}
 	return nil
 }

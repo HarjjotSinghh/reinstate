@@ -92,6 +92,10 @@ type Input struct {
 	Recorded    environment.RecordedEnvironment
 	Baseline    *environment.PrelaunchBaseline
 	SourceFresh bool
+	// ReadOnly is true when the caller will only read the workspace and source
+	// transcript (structured handoff). Native resume/fork leave it false so a
+	// missing executable still blocks launch.
+	ReadOnly bool
 }
 
 // Verifier is the single high-level boundary injected into CLI flows.

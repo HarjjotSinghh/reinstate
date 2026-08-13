@@ -250,3 +250,48 @@ func idsOf(events []capsule.Event) []string {
 	}
 	return out
 }
+
+func TestApplyFidelityReportContainsAllPortabilityClasses(t *testing.T) {
+	t.Parallel()
+	events := []capsule.Event{
+		{
+			ID: "already-ref", Kind: capsule.KindAttachment, Actor: capsule.ActorAssistant,
+			Portability: capsule.PortabilityReferenced, Reason: "on_disk",
+			Blocks: []capsule.Block{{Text: "blob"}},
+		},
+		{
+			ID: "omit", Kind: capsule.KindMessage, Actor: capsule.ActorHarness,
+			Portability: capsule.PortabilityOmitted, Reason: "hidden_reasoning",
+			Blocks: []capsule.Block{{Text: "secret"}},
+		},
+		{
+			ID: "exact", Kind: capsule.KindMessage, Actor: capsule.ActorUser,
+			Portability: capsule.PortabilityExact, Blocks: []capsule.Block{{Text: "hello"}},
+		},
+		{
+			ID: "normalized", Kind: capsule.KindMessage, Actor: capsule.ActorAssistant,
+			Portability: capsule.PortabilityNormalized, Blocks: []capsule.Block{{Text: "${REPO:x}/file.go"}},
+		},
+		{
+			ID: "summarized", Kind: capsule.KindSummary, Actor: capsule.ActorAssistant,
+			Portability: capsule.PortabilitySummarized, Reason: "vendor_summary",
+			Blocks: []capsule.Block{{Text: "earlier work"}},
+		},
+	}
+	_, sidecar, report := Apply(PolicyBalanced, events)
+	if len(sidecar) == 0 {
+		t.Fatal("expected overflow events to be referenced")
+	}
+	seen := map[capsule.Portability]bool{}
+	for _, component := range report.Components {
+		seen[component.Portability] = true
+	}
+	for _, want := range []capsule.Portability{
+		capsule.PortabilityExact, capsule.PortabilityNormalized, capsule.PortabilitySummarized,
+		capsule.PortabilityReferenced, capsule.PortabilityOmitted,
+	} {
+		if !seen[want] {
+			t.Errorf("fidelity missing %s: %+v", want, report.Components)
+		}
+	}
+}

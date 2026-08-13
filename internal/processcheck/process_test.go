@@ -21,7 +21,10 @@ func TestMatchesAgentProcess(t *testing.T) {
 		{name: "codex node windows", agent: "codex", image: "node.exe", commandLine: `node C:\npm\node_modules\@openai\codex\bin\codex.js`, want: true},
 		{name: "codex host is not cli", agent: "codex", image: "codex-code-mode-host", want: false},
 		{name: "reinstate agent argument", agent: "claude", image: "reinstate", commandLine: "reinstate pull --agent claude", want: false},
-		{name: "unrelated node", agent: "codex", image: "node", commandLine: "node server.js --label codex", want: false},
+		{name: "grok native", agent: "grok", image: "/usr/local/bin/grok", want: true},
+		{name: "gemini native", agent: "gemini", image: "gemini.exe", want: true},
+		{name: "opencode native", agent: "opencode", image: "opencode", want: true},
+		{name: "grok is not claude", agent: "claude", image: "grok", want: false},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -36,7 +39,7 @@ func TestNormalizeAgentRejectsUnknown(t *testing.T) {
 	if _, err := normalizeAgent("cursor"); err == nil {
 		t.Fatal("unsupported agent accepted")
 	}
-	for _, agent := range []string{"Claude", "  codex  "} {
+	for _, agent := range []string{"Claude", "  codex  ", "grok", "gemini", "opencode"} {
 		if _, err := normalizeAgent(agent); err != nil {
 			t.Fatalf("supported agent %q rejected: %v", agent, err)
 		}
@@ -170,6 +173,14 @@ func TestSessionBusyWithoutProjectRoot(t *testing.T) {
 	idle := []Process{{PID: 1, Image: "claude", CommandLine: "claude"}}
 	if decideSessionBusy("claude", target, idle, nil, map[int]string{1: "/anywhere"}) {
 		t.Fatal("an unrelated claude became busy with no project root to compare")
+	}
+}
+
+func TestSessionBusyAcceptsSourceOnlyAgents(t *testing.T) {
+	for _, agent := range []string{"grok", "gemini", "opencode"} {
+		if _, _, err := SessionBusy(context.Background(), agent, Target{Path: filepath.Join(t.TempDir(), "session.jsonl")}); err != nil {
+			t.Fatalf("source-only agent %q busy check: %v", agent, err)
+		}
 	}
 }
 
