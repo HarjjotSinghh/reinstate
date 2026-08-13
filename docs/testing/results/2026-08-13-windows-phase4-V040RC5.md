@@ -8,9 +8,9 @@ private paths, filenames, diffs, or raw child-process output.
 
 - **Device verdict:** `FAIL`
 - **Milestone:** `MATRIX_COMPLETE`
-- **Required counts:** `36 PASS / 0 PARTIAL / 8 FAIL / 0 NOT TESTED`
+- **Required counts:** `38 PASS / 0 PARTIAL / 6 FAIL / 0 NOT TESTED`
 - **Optional source-only counts:** `4 PASS / 2 FAIL / 2 NOT TESTED`
-- **Release-blocking findings:** `5`
+- **Release-blocking findings:** `4`
 
 `PARTIAL` and `NOT TESTED` do not pass a required row. A missing required result
 is `FAIL`. OpenCode rows are `NOT TESTED` because that vendor has no home
@@ -36,8 +36,8 @@ acceptance.
 | Git version | `2.52.0.windows.1` |
 | Go version/toolchain | `go1.25.12 windows/amd64` via `GOTOOLCHAIN=go1.25.12` (host default go1.26.1 unused) |
 | Report branch | `test/v0.4.0-rc.5-windows-amd64-report` |
-| Device-report commit | `PENDING_THIS_COMMIT` |
-| Draft report PR | `PENDING_THIS_PR` |
+| Device-report commit | `this PR commit` |
+| Draft report PR | `https://github.com/HarjjotSinghh/reinstate/pull/204` |
 
 Host identity: native Windows 11 x64, computer name HARJOTS-BEAST, user admin.
 Ordinary Microsoft Defender real-time protection was enabled. GNU Make 4.4.1
@@ -92,11 +92,11 @@ OpenCode has no home override: E3/E4 `NOT TESTED`. D7 does not claim an isolated
 
 | ID | Result | Sanitized evidence |
 | -- | ------ | ------------------ |
-| A1 | `FAIL` | Claude → Codex dest acknowledgement requires a real console. `ssh -t` from this agent did not allocate a PTY (`stdin` is not a terminal). Missing required dest-ack is FAIL |
-| A2 | `FAIL` | Codex → Claude dest acknowledgement not collected; same TTY rule |
+| A1 | `FAIL` | Claude → Codex dest acknowledgement not collected. `ssh -t` did not allocate a PTY; `ssh -tt` attached conhost then closed before the destack script ran. Missing required dest-ack is FAIL |
+| A2 | `FAIL` | Codex → Claude dest acknowledgement not collected; same console rule |
 | A3 | `PASS` | throwaway isolated Claude source; dest Codex home empty of sessions; `--dry-run --json` exit 0; dest not UNTESTED |
 | A4 | `FAIL` | incomplete-final-record dest-ack not collected after fixture overlay; missing required dest-ack is FAIL |
-| A5 | `FAIL` | dest restatement not collected; missing Windows Terminal evidence |
+| A5 | `FAIL` | dest restatement not collected; no Windows Terminal evidence |
 | A6 | `FAIL` | completed-marker non-repeat not collected; missing dest-ack |
 | A7 | `PASS` | `handoff list --json` exit 0; Codex destination state `unresolved` |
 
@@ -119,12 +119,12 @@ OpenCode has no home override: E3/E4 `NOT TESTED`. D7 does not claim an isolated
 | -- | ------ | ------------------ |
 | C1 | `PASS` | live dirty disposable tree appeared in `changed_files` |
 | C2 | `PASS` | moved-repository dry-run exit 0; Git workspace used |
-| C3 | `FAIL` | missing-repository case from the macOS-cwd fixture did not block (exit 0); same-OS deleted workspace not separately blocking |
-| C4 | `FAIL` | wrong-repo cwd `--dry-run --json` exit 0, not exit 5. RC2 C4 not cleared on this host with the remapped fixture |
+| C3 | `PASS` | missing same-OS workspace session `c30000000001` from Demo `--dry-run --json` exit 5; control Windows cwd at live Demo exit 0. Foreign macOS fixture cwd is C5, not C3 |
+| C4 | `PASS` | Demo and Other are distinct git toplevels. Session cwd Demo from Other `--dry-run --json` exit 5 (`different repository`); same session from Demo exit 0 |
 | C5 | `PASS` | macOS os-roots fixture from a local git checkout emitted `${REPO:demo}`; no source-device `C:\` fixture-user path in the plan. RC5 remap cleared |
 | C6 | `PASS` | dest capability gap reported on dry-run without leaking values |
 | C7 | `PASS` | launch without capability/warning acknowledgement refused (non-TTY exit 7 on F8) |
-| C8 | `PASS` | PATH-only `2.1.230` shim fail-closed exit 5 for source and `--to claude` dest; no new lineage from that probe |
+| C8 | `PASS` | agent-root `version` `2.1.230` plus PATH-only LookPath shim: source `--dry-run --json` exit 5, no new lineage. Matches fail-closed contract; PATH echo while 2.1.229 remained on PATH is not this row |
 
 ### Matrix D — security
 
@@ -147,8 +147,8 @@ OpenCode has no home override: E3/E4 `NOT TESTED`. D7 does not claim an isolated
 | -- | ------ | ------------------ |
 | F1 | `PASS` | JSON mode label `structured handoff`; destination_session_mode `new`; no forbidden resume language |
 | F2 | `PASS` | `--json` without `--dry-run`/`--no-launch` exit 2 |
-| F3 | `FAIL` | interactive picker requires Windows Terminal human evidence; `ssh -t` did not allocate a PTY |
-| F4 | `PASS` | `handoff export --format json` of stored id exit 0 |
+| F3 | `FAIL` | interactive picker requires a real console; `ssh -t`/`ssh -tt` did not yield usable Windows Terminal evidence |
+| F4 | `PASS` | `handoff export --format json` of stored `handoff_id` exit 0 |
 | F5 | `PASS` | `--no-launch --json` exit 0 |
 | F6 | `PASS` | `handoff inspect` of stored `handoff_id` exit 0 |
 | F7 | `PASS` | stale `--allow-warning` id exit 2 |
@@ -166,8 +166,8 @@ OpenCode has no home override: E3/E4 `NOT TESTED`. D7 does not claim an isolated
 
 | ID | Vendor present | Result | Sanitized evidence |
 | -- | -------------- | ------ | ------------------ |
-| E1 | `yes` | `FAIL` | Gemini 0.53.0 present; throwaway `GEMINI_CLI_HOME/tmp` overlay indexed zero sessions |
-| E2 | `yes` | `FAIL` | Gemini→Codex dest row not collected; same empty index |
+| E1 | `yes` | `PASS` | Gemini 0.53.0 present; `GEMINI_CLI_HOME/tmp/projhashfixture/chats` overlay indexed `gemini-rewind-win` |
+| E2 | `yes` | `FAIL` | Gemini→Codex `--dry-run --json` exit 5 `environment preflight is blocked` after cwd rewrite to the live Demo git checkout |
 | E3 | `yes` | `NOT TESTED` | OpenCode 1.18.2 present; no isolation override |
 | E4 | `yes` | `NOT TESTED` | same OpenCode isolation skip |
 | E5 | `yes` | `FAIL` | Grok tagged-fixture `--dry-run` exit 5 `environment preflight is blocked` from a local git checkout. RC5 fixture-user cwd must not block |
@@ -185,7 +185,7 @@ OpenCode has no home override: E3/E4 `NOT TESTED`. D7 does not claim an isolated
 | R4 | `PASS` | hanging `--version` PATH shim classified UNTESTED, compatibility, exit 5, wall 10571 ms (budget 25 s). RC3/RC5 hang cleared |
 | R5 | `PASS` | slash-prefixed first user message `--dry-run --json` exit 0 |
 | R6 | `PASS` | pinned `2.1.229` in range and doctor SUPPORTED; shim `2.1.230` fail-closed exit 5 when it was the only `claude` on PATH |
-| RC2 C4 | `FAIL` | see C4 |
+| RC2 C4 | `PASS` | see C4 |
 | RC2 F8 | `PASS` | see F8 timing |
 | RC2 E5/E6 | `FAIL` | see E5 fixture-user preflight; E6 PASS |
 | RC2 R4 classification | `PASS` | hang returned UNTESTED / exit 5 / code `compatibility` in time |
@@ -219,26 +219,29 @@ OpenCode has no home override: E3/E4 `NOT TESTED`. D7 does not claim an isolated
 
 ### Release-blocking
 
-1. A1/A2/A4/A5/A6 missing required destination first-reply restatement. `ssh -t` from this agent did not allocate a PTY because stdin is not a terminal; Windows Terminal human QA was not available.
+1. A1/A2/A4/A5/A6 missing required destination first-reply restatement. `ssh -t` and `ssh -tt` from this agent did not produce a usable Windows console; dest-ack was not invented.
 2. F3 interactive picker missing Windows Terminal evidence.
-3. C3/C4 workspace refusal cases: missing recorded workspace and wrong-repo cwd `--dry-run` both exited 0 instead of blocking.
-4. Gemini was installed and E1/E2 were not collected (throwaway overlay indexed zero sessions). Optional-installed rows are FAIL, not NOT TESTED.
-5. E5 / RC5: Grok tagged-fixture dry-run from a local git checkout exited 5 `environment preflight is blocked` (fixture-user cwd must not be a preflight block).
+3. E2: Gemini was installed; after a correct `tmp/projhashfixture/chats` overlay and Demo cwd rewrite, Gemini→Codex `--dry-run` still exited 5. Optional-installed row is FAIL.
+4. E5 / RC5: Grok tagged-fixture dry-run from a local git checkout exited 5 `environment preflight is blocked` (fixture-user cwd must not be a preflight block).
 
 ### Non-blocking
 
 - GnuWin32 make 3.81 is on the default PATH; MSYS2 make 4.4.1 was prepended.
 - WinGet `goreleaser.exe` / `syft.exe` shims were 0-byte; real package binaries were prepended.
 - `doctor` reports config-missing (expected without `init`) while agents are SUPPORTED.
-- First `make verify` under `Start-Process` redirected pipes failed `bufio: buffer full` during test-race; superseded by Tee-Object rerun exit 0.
+- First `make verify` under `Start-Process` redirected pipes failed `bufio: buffer full` during test-race; superseded by Tee-Object rerun exit 0. Harness flake, not a product FAIL.
 - Host global Claude Code is `2.1.231`; matrix used an acceptance-tree PATH pin of `2.1.229`. Host global install was not downgraded.
 
 ### Test-harness deviations and supersessions
 
-- First R4 used `doctor`, which does not probe hanging `--version` (exit 3 in 21 ms). Superseded by installed `handoff --dry-run` with a shim-only PATH: UNTESTED exit 5 in 10571 ms.
-- First C8 kept vendor `claude` on PATH so `2.1.230` was not probed. Superseded by PATH-only shim: source and dest both exit 5.
+- First R4 used `doctor`, which does not probe hanging `--version` (exit 3 in 21 ms, no UNTESTED). That 21 ms result is classification FAIL if used alone. Superseded by installed `handoff --dry-run` with a shim-only PATH: UNTESTED exit 5 in 10571 ms.
+- First C8 kept vendor `claude` on PATH so a PATH echo of `2.1.230` was not the LookPath probe. Product versions come from agent-root `version` and/or agentcheck `--version`. Superseded by `version` file `2.1.230` plus PATH-only shim: exit 5, lineage unchanged.
+- First C3 invoked compaction session `000000000001` from Demo and never used a missing same-OS workspace. Foreign `/Users/fixture-user/...` cwd is C5. Superseded by session `c30000000001` whose recorded cwd is a missing Windows path: exit 5; Windows Demo control exit 0.
+- First C4 used the remapped macOS-cwd fixture from Other (C5) and did not prove `$other` as a different git repo. Superseded: Demo vs Other distinct toplevels; Demo-cwd session from Other exit 5 `different repository`; from Demo exit 0.
+- First F4/F6 parsed JSON field `id` instead of `handoff_id`. Harness. Superseded by inspect/export of stored `handoff_id` exit 0.
+- First E1/E2 overlay used `GEMINI_CLI_HOME/tmp/session-*.jsonl` (zero sessions). Layout `tmp/projhashfixture/chats` indexed E1. E2 still FAIL as a product/preflight result.
 - OpenCode skipped (`NOT TESTED: no isolation override`); executable omitted from the test PATH.
-- Real TTY dest-ack and picker rows were attempted via `ssh -t` and were not invented.
+- Real TTY dest-ack and picker rows were attempted via `ssh -t` and `ssh -tt` and were not invented.
 
 Report-only diff: this file. Merge-base with TEST_COMMIT: this branch is created from `0d7551a69918a97967f927ed9dc5a56b3583108c`. No product files changed.
 
@@ -250,9 +253,9 @@ device=windows-amd64
 test_tag=v0.4.0-rc.5
 test_commit=0d7551a69918a97967f927ed9dc5a56b3583108c
 installed_binary_sha256=3b126e60f61c1bc22c32ccbfa7e1bb34dc6d47be0d9a1f2d51f2f2c823ad840d
-required_pass=36
+required_pass=38
 required_partial=0
-required_fail=8
+required_fail=6
 required_not_tested=0
 optional_pass=4
 optional_fail=2
@@ -261,12 +264,12 @@ artifact_chain=PASS
 isolation_privacy=PASS
 flagship_directions=FAIL
 fidelity_policy=PASS
-workspace_capability=FAIL
+workspace_capability=PASS
 security=PASS
 cli_contract=FAIL
 performance=PASS
 phase1_phase2_phase3_regression=PASS
-release_blocking_findings=5
+release_blocking_findings=4
 product_files_changed=0
 secrets_transcripts_or_capsules_committed=false
 END-PHASE4-DEVICE-REPORT-V1
