@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/HarjjotSinghh/reinstate/internal/capsule"
@@ -44,6 +46,7 @@ func BindWorkspace(ctx context.Context, v preflight.Verifier, rec sessionindex.R
 		AgentRoot:   sessionindex.AgentRoot(rec),
 		Recorded:    rec.RecordedEnvironment,
 		SourceFresh: true,
+		ReadOnly:    true,
 	})
 	if err != nil {
 		return capsule.Workspace{}, preflight.Report{}, err
@@ -135,4 +138,55 @@ func portableChangedFiles(mapper pathmap.Mapper, git workspace.GitFingerprint) (
 		out = append(out, token)
 	}
 	return out, omitted
+}
+
+func refuseMismatchedRepository(cwd, sourceWorkspace string) error {
+	cwdRoot := gitRoot(cwd)
+	if cwdRoot == "" {
+		return nil
+	}
+	sourceRoot := gitRoot(sourceWorkspace)
+	if sourceRoot == "" {
+		return nil
+	}
+	if sameFilePath(cwdRoot, sourceRoot) {
+		return nil
+	}
+	return pipelineErrorf(exitcode.Compatibility, "%w: working directory is a different repository than the source session", ErrCompatibility)
+}
+
+func gitRoot(path string) string {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return ""
+	}
+	dir, err := filepath.Abs(path)
+	if err != nil {
+		return ""
+	}
+	for {
+		if _, err := os.Stat(filepath.Join(dir, ".git")); err == nil {
+			return dir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return ""
+		}
+		dir = parent
+	}
+}
+
+func sameFilePath(a, b string) bool {
+	a = filepath.Clean(a)
+	b = filepath.Clean(b)
+	if resolved, err := filepath.EvalSymlinks(a); err == nil {
+		a = resolved
+	}
+	if resolved, err := filepath.EvalSymlinks(b); err == nil {
+		b = resolved
+	}
+	if runtime.GOOS == "windows" {
+		return strings.EqualFold(a, b)
+	}
+	return a == b
 }

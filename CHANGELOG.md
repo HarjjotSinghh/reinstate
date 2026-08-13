@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0-rc.3] - 2026-08-13
+
+Third Phase 4 candidate. `v0.4.0-rc.2` was published and physical dual-platform
+acceptance FAILED. This candidate carries those product fixes. It does not
+authorize stable `v0.4.0`; stable remains `v0.3.0`. Adds
+`docs/testing/v0.4.0-rc.3-agent-verification-prompts.md`.
+
+### Fixed
+
+- Refuse a structured handoff when the operator cwd is a different Git
+  repository than the source session (C4).
+- Fail closed on non-TTY destination launch before `LookPath` or child spawn
+  (F8).
+- Treat Grok, Gemini, and OpenCode as valid source agents for the busy check
+  so a Grok-sourced dry-run no longer exits `1` with `unsupported agent`.
+- Classify a timed-out source version probe as `UNTESTED` (exit `5`), not a
+  runtime error, and do not block a read-only handoff when the source
+  executable is off `PATH` but the layout is still readable.
+- Register `--no-redact` on `rein handoff` (still refused for Grok).
+- Honor `CLAUDE_CONFIG_DIR` and `CODEX_HOME` in `rein list` and adapter
+  detection.
+- Include omitted task fields in `fidelity.json`, keep omitted events omitted
+  in the fidelity report, and print `projection_events` so checkpoint policy
+  is inspectable.
+- Discover Claude MCP servers from `settings.json` / `settings.local.json`,
+  and require acknowledgement of destination MCP/skill gaps.
+- Checkpoint policy stores sidecar references only — no verbatim event bodies.
+- Validate website deployment tag calendar dates without Node so Windows `sh`
+  doctests see `invalid website deployment date`.
+- Promote `github.com/spf13/pflag` to a direct `go.mod` requirement.
+
 ## [0.4.0-rc.2] - 2026-08-13
 
 Second Phase 4 release candidate. `v0.4.0-rc.1` was published and its physical
@@ -843,7 +874,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.2...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.3...HEAD
+[0.4.0-rc.3]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.2...v0.4.0-rc.3
 [0.4.0-rc.2]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.1...v0.4.0-rc.2
 [0.4.0-rc.1]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0...v0.4.0-rc.1
 [0.3.0]: https://github.com/HarjjotSinghh/reinstate/compare/v0.3.0-rc.7...v0.3.0

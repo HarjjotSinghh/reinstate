@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -32,7 +33,7 @@ func TestHandoffCommandRegistersFullSurface(t *testing.T) {
 	}
 	for _, name := range []string{
 		"last", "from", "to", "policy", "dry-run", "json", "no-launch", "export",
-		"allow-warning", "allow-active", "allow-untested", "show-redactions",
+		"allow-warning", "allow-active", "allow-untested", "show-redactions", "no-redact",
 	} {
 		if cmd.Flags().Lookup(name) == nil {
 			t.Errorf("handoff flag --%s is not registered", name)
@@ -181,6 +182,134 @@ func TestHandoffHumanOutputAlwaysStatesMode(t *testing.T) {
 	}
 	if !strings.Contains(stdout, ": command \"claude\"") {
 		t.Fatalf("exact command missing: %s", stdout)
+	}
+}
+
+func TestHandoffNoRedactIsAKnownFlag(t *testing.T) {
+	home, vendorHome, sources, _ := handoffCLIFixture(t)
+	stdout, stderr, code := runHandoffCLI(t, home, vendorHome, sources, &recordingLaunchRunner{},
+		"handoff", "codex:source-session", "--to", "claude", "--dry-run", "--no-redact")
+	if strings.Contains(stderr, "unknown flag") {
+		t.Fatalf("--no-redact still unknown: stderr=%s", stderr)
+	}
+	if code != ExitOK {
+		t.Fatalf("codex --no-redact exit=%d stdout=%s stderr=%s", code, stdout, stderr)
+	}
+}
+
+func TestHandoffGrokNoRedactIsRefused(t *testing.T) {
+	home, vendorHome, sources, sessionDir := grokHandoffCLIFixture(t)
+	stdout, stderr, code := runHandoffCLI(t, home, vendorHome, sources, &recordingLaunchRunner{},
+		"handoff", "grok:01987654-basic-0000-0000-000000000001", "--to", "claude", "--dry-run", "--no-redact")
+	if strings.Contains(stderr, "unknown flag") {
+		t.Fatalf("--no-redact still unknown: stderr=%s", stderr)
+	}
+	if code != ExitUsage {
+		t.Fatalf("grok --no-redact exit=%d stdout=%s stderr=%s session=%s", code, stdout, stderr, sessionDir)
+	}
+	if !strings.Contains(strings.ToLower(stderr), "no-redact") && !strings.Contains(stderr, "Grok") {
+		t.Fatalf("grok --no-redact stderr=%s", stderr)
+	}
+}
+
+func TestHandoffNonTTYAllowWarningRefusesBeforeSpawn(t *testing.T) {
+	home, vendorHome, sources, _ := handoffCLIFixture(t)
+	t.Setenv("REINSTATE_ALLOW_NON_TTY_LAUNCH", "")
+	stdout, stderr, code := runHandoffCLI(t, home, vendorHome, sources, nil,
+		"handoff", "codex:source-session", "--to", "claude")
+	if code != ExitSafety {
+		t.Fatalf("non-TTY launch exit=%d stdout=%s stderr=%s", code, stdout, stderr)
+	}
+	if !strings.Contains(strings.ToLower(stderr), "interactive terminal") {
+		t.Fatalf("non-TTY stderr=%s", stderr)
+	}
+}
+
+func grokHandoffCLIFixture(t *testing.T) (string, string, []sessionindex.Source, string) {
+	t.Helper()
+	home := t.TempDir()
+	vendorHome := t.TempDir()
+	workspace := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(vendorHome, ".claude", "projects"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	fakeAgentBin(t, map[string]string{"claude": "2.1.227 (Claude Code)"})
+	sessionDir := filepath.Join(workspace, "grok-session")
+	if err := os.MkdirAll(sessionDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	summary := `{
+  "info": {"id": "01987654-basic-0000-0000-000000000001", "cwd": "` + filepath.ToSlash(workspace) + `"},
+  "session_summary": "Synthetic Grok CLI no-redact session",
+  "created_at": "2026-08-12T02:00:00Z",
+  "updated_at": "2026-08-12T02:05:00Z",
+  "num_messages": 1
+}`
+	if err := os.WriteFile(filepath.Join(sessionDir, "summary.json"), []byte(summary), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	history := `{"type":"user","content":[{"type":"text","text":"Grok CLI no-redact prompt"}],"prompt_index":0}` + "\n"
+	if err := os.WriteFile(filepath.Join(sessionDir, "chat_history.jsonl"), []byte(history), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Stat(sessionDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	record := sessionindex.Record{
+		ID: "01987654-basic-0000-0000-000000000001", Agent: sessionindex.AgentGrok,
+		Project: "controlled-project", Workspace: workspace, UpdatedAt: info.ModTime(),
+		SourcePath: sessionDir, SourceModTime: info.ModTime().UnixNano(),
+		SourceSize: info.Size(), SizeBytes: info.Size(),
+	}
+	sources := []sessionindex.Source{
+		staticSessionSource{name: sessionindex.AgentGrok, result: sessionindex.ScanResult{Records: []sessionindex.Record{record}}},
+		staticSessionSource{name: sessionindex.AgentClaude, result: sessionindex.ScanResult{}},
+		staticSessionSource{name: sessionindex.AgentCodex, result: sessionindex.ScanResult{}},
+	}
+	return home, vendorHome, sources, sessionDir
+}
+
+func TestHandoffRefusesWrongGitRepository(t *testing.T) {
+	home, vendorHome, sources, transcriptPath := handoffCLIFixture(t)
+	workspace := filepath.Dir(transcriptPath)
+	initCLIGitRepo(t, workspace)
+	other := t.TempDir()
+	initCLIGitRepo(t, other)
+	t.Setenv("REINSTATE_HOME", home)
+	setVendorHome(t, vendorHome)
+	t.Setenv("CLAUDE_CONFIG_DIR", "")
+	t.Setenv("CODEX_HOME", "")
+	t.Chdir(other)
+	var stdout, stderr bytes.Buffer
+	code := Execute(Options{
+		Name: "rein", Stdout: &stdout, Stderr: &stderr, Stdin: strings.NewReader(""),
+		Args:           []string{"handoff", "codex:source-session", "--to", "claude", "--dry-run"},
+		SessionSources: sources, SessionLaunchRunner: &recordingLaunchRunner{},
+		PreflightVerifier: readyPreflightVerifier{},
+		AgentProcessChecker: func(context.Context, string, processcheck.Target) (bool, bool, error) {
+			return false, true, nil
+		},
+		TerminalChecker: func(io.Reader, io.Writer) bool { return false },
+	})
+	if code != ExitCompatibility {
+		t.Fatalf("wrong-repo exit=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "different repository") {
+		t.Fatalf("wrong-repo stderr=%s", stderr.String())
+	}
+}
+
+func initCLIGitRepo(t *testing.T, dir string) {
+	t.Helper()
+	git, err := exec.LookPath("git")
+	if err != nil {
+		t.Skip("git unavailable")
+	}
+	command := exec.Command(git, "init", "--quiet", dir)
+	command.Env = append(os.Environ(), "GIT_CONFIG_NOSYSTEM=1")
+	if output, err := command.CombinedOutput(); err != nil {
+		t.Fatalf("git init %s: %v: %s", dir, err, output)
 	}
 }
 

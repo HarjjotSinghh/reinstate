@@ -144,7 +144,7 @@ func within(candidate, root string) bool {
 func normalizeAgent(agent string) (string, error) {
 	agent = strings.ToLower(strings.TrimSpace(agent))
 	switch agent {
-	case "claude", "codex":
+	case "claude", "codex", "gemini", "grok", "opencode":
 		return agent, nil
 	default:
 		return "", fmt.Errorf("unsupported agent %q", agent)
@@ -161,6 +161,18 @@ func matchesAgentProcess(agent, image, commandLine string) bool {
 		}
 	case "codex":
 		if name == "codex" || nativeVariant(name, "codex") {
+			return true
+		}
+	case "gemini":
+		if name == "gemini" || nativeVariant(name, "gemini") {
+			return true
+		}
+	case "grok":
+		if name == "grok" || nativeVariant(name, "grok") {
+			return true
+		}
+	case "opencode":
+		if name == "opencode" || nativeVariant(name, "opencode") {
 			return true
 		}
 	}

@@ -41,8 +41,12 @@ func defaultRegistry() *adapter.Registry {
 		}
 	}
 	r := adapter.NewRegistry()
-	_ = r.Register(&claude.Adapter{Home: userHome, Projects: projects})
-	_ = r.Register(&codex.Adapter{Home: userHome, Projects: projects})
+	_ = r.Register(&claude.Adapter{
+		Root: strings.TrimSpace(os.Getenv("CLAUDE_CONFIG_DIR")), Home: userHome, Projects: projects,
+	})
+	_ = r.Register(&codex.Adapter{
+		Root: strings.TrimSpace(os.Getenv("CODEX_HOME")), Home: userHome, Projects: projects,
+	})
 	return r
 }
 

@@ -133,6 +133,7 @@ func BenchmarkBoundedPromptAccumulator(b *testing.B) {
 // executable/workspace identity checks. No vendor or session source is read or
 // mutated.
 func BenchmarkExecLaunchRunnerImmediateChild(b *testing.B) {
+	b.Setenv("REINSTATE_ALLOW_NON_TTY_LAUNCH", "1")
 	executable, err := filepath.Abs(os.Args[0])
 	if err != nil {
 		b.Fatal(err)

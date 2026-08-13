@@ -2,7 +2,7 @@
 
 Binary names: `rein` and `reinstate` (identical behavior).
 
-Public installers pin candidate `v0.4.0-rc.2`, including the Phase 1/2 surface,
+Public installers pin candidate `v0.4.0-rc.3`, including the Phase 1/2 surface,
 Phase 3 verified resume, and the Phase 4 structured-handoff surface. Its
 tagged-artifact acceptance is pending on Apple Silicon macOS and native Windows
 x64. Stable remains `v0.3.0`; Intel macOS and Linux/WSL2 remain optional and
@@ -10,7 +10,7 @@ unverified.
 
 Stable `v0.3.0` includes the Phase 3 environment report and
 `--allow-environment-warning` flag. The command synopsis below additionally
-includes the `v0.4.0-rc.2` structured-handoff surface.
+includes the `v0.4.0-rc.3` structured-handoff surface.
 
 ## Exit codes
 
@@ -47,6 +47,7 @@ rein handoff [AGENT:]SESSION_ID --to claude|codex
              [--policy checkpoint|balanced|full] [--dry-run|--no-launch]
              [--json] [--export PATH] [--allow-warning ID ...]
              [--allow-active] [--allow-untested] [--show-redactions]
+             [--no-redact]
 rein handoff --last [--from claude|codex|gemini|opencode|grok]
              --to claude|codex [handoff flags]
 rein handoff list [--json] [--limit N]
@@ -135,7 +136,7 @@ On a non-TTY, bare `rein` exits promptly with usage code `2` and a
 `rein list` remains the Phase 1 compatibility command used by sync scripts.
 `rein sessions` is the canonical config-independent local listing command.
 
-## Phase 4 structured handoff (`v0.4.0-rc.2`)
+## Phase 4 structured handoff (`v0.4.0-rc.3`)
 
 A structured handoff continues the same task in a new Claude Code or Codex
 session. It is not native resume: Reinstate does not reconstruct vendor history,
@@ -162,6 +163,7 @@ Code and Codex are destinations.
 | `--allow-active` | Freeze the last complete source record while its agent is active. |
 | `--allow-untested` | Proceed with an untested source or destination layout. |
 | `--show-redactions` | Show redaction categories and counts, never values. |
+| `--no-redact` | Skip secret redaction. Refused with exit `2` for Grok sources. |
 
 ### `rein handoff list`
 

@@ -1,9 +1,15 @@
 export const releaseHistory = [
   {
+    version: 'v0.4.0-rc.3',
+    date: '2026-08-13',
+    summary:
+      'Third Phase 4 candidate after v0.4.0-rc.2 physical dual-platform acceptance FAILED (wrong-repo cwd, non-TTY spawn, Grok-source busy-check, timed-out probe classified Runtime). Carries those product fixes plus remaining matrix defects; tagged-artifact acceptance is pending.',
+  },
+  {
     version: 'v0.4.0-rc.2',
     date: '2026-08-13',
     summary:
-      'Second Phase 4 candidate after v0.4.0-rc.1 physical acceptance FAILED: Claude source version probing, path tokenization, live changed-file reporting, probe-timeout classification, and prose-vs-path capsule validation are fixed. Dual-platform tagged-artifact acceptance is pending.',
+      'Second Phase 4 candidate after v0.4.0-rc.1 physical acceptance FAILED: Claude source version probing, path tokenization, live changed-file reporting, probe-timeout classification, and prose-vs-path capsule validation are fixed. Physical dual-platform acceptance FAILED.',
   },
   {
     version: 'v0.4.0-rc.1',

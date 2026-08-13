@@ -109,7 +109,7 @@ func TestVerifyHonorsParentCancellationAndSharedDeadline(t *testing.T) {
 		if report.Decision != DecisionBlocked || report.BlockExitCode != exitcode.Runtime {
 			t.Fatalf("deadline report = %s/%d, checks=%+v", report.Decision, report.BlockExitCode, report.Checks)
 		}
-		if check := phase3FindCheck(report, "agent.version"); check.Status != StatusError || check.Severity != SeverityBlock {
+		if check := phase3FindCheck(report, "agent.version"); check.Status != StatusUnknown || check.Severity != SeverityBlock || check.ExitCode != exitcode.Compatibility {
 			t.Fatalf("agent deadline check = %+v", check)
 		}
 		if check := phase3FindCheckByActual(report, string(capability.DiagnosticCancelled)); check.Status != StatusError || check.Severity != SeverityBlock {

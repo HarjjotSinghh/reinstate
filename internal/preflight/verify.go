@@ -122,7 +122,7 @@ func Verify(ctx context.Context, input Input, options Options) (Report, error) {
 		})
 	}
 	report.Checks = append(report.Checks, translateWorkspaceChecks(workspaceVerification)...)
-	report.Checks = append(report.Checks, agentChecks(agentResult)...)
+	report.Checks = append(report.Checks, agentChecks(agentResult, input.ReadOnly)...)
 	report.Checks = append(report.Checks, capabilityChecks(input, capabilityInventory)...)
 	report.Checks = append(report.Checks, runtimeChecks(input, runtimeResults)...)
 	report.Checks = normalizeChecks(report.Checks)
@@ -222,11 +222,13 @@ func workspaceExitCode(check Check) int {
 	return exitcode.Safety
 }
 
-func agentChecks(result agentcheck.Result) []Check {
+func agentChecks(result agentcheck.Result, readOnly bool) []Check {
 	present := Check{ID: "agent.executable", Actual: result.ExecutablePresent,
 		Provenance: workspace.ProvenanceCurrentObservation}
 	if result.ExecutablePresent {
 		present.Status, present.Severity, present.Message = StatusPresent, SeverityInfo, "the native agent executable is available"
+	} else if readOnly && result.LayoutRecognized {
+		present.Status, present.Severity, present.Message = StatusMissing, SeverityInfo, "the native agent executable is unavailable; the session layout is still readable"
 	} else {
 		present.Status, present.Severity, present.Message = StatusMissing, SeverityBlock, "the native agent executable is unavailable"
 		present.Repair, present.ExitCode = "install the supported same-vendor executable before continuing", exitcode.Compatibility
@@ -241,14 +243,26 @@ func agentChecks(result agentcheck.Result) []Check {
 	}
 	version := Check{ID: "agent.version", Actual: result.Version,
 		Provenance: workspace.ProvenanceCurrentObservation}
-	if result.Status == agentcheck.StatusSupported {
+	switch {
+	case result.Status == agentcheck.StatusSupported:
 		version.Status, version.Severity, version.Message = StatusMatch, SeverityInfo, "the native agent version is in the verified range"
-	} else {
+	case readOnly && result.Status == agentcheck.StatusNotInstalled:
+		version.Status, version.Severity, version.Message = StatusUnknown, SeverityInfo, "the native agent version is not determinable; the session layout is still readable"
+	case readOnly && (result.Status == agentcheck.StatusError || result.Status == agentcheck.StatusUntested):
+		version.Status, version.Severity, version.Message = StatusUnknown, SeverityWarning, result.Message
+		if strings.TrimSpace(version.Message) == "" {
+			version.Message = "the native agent version probe did not complete"
+		}
+		version.Repair, version.ExitCode = "re-run with --allow-untested after confirming the source layout, or install a verified agent version", exitcode.Safety
+	case result.Status == agentcheck.StatusError:
+		version.Status, version.Severity, version.Message = StatusUnknown, SeverityBlock, result.Message
+		if strings.TrimSpace(version.Message) == "" {
+			version.Message = "the native agent version probe failed"
+		}
+		version.Repair, version.ExitCode = "retry after the version probe succeeds, or pass --allow-untested to proceed with an untested layout", exitcode.Compatibility
+	default:
 		version.Status, version.Severity, version.Message = StatusUnknown, SeverityBlock, result.Message
 		version.Repair, version.ExitCode = "install a native agent version verified by this Reinstate release", exitcode.Compatibility
-		if result.Status == agentcheck.StatusError {
-			version.Status, version.ExitCode = StatusError, exitcode.Runtime
-		}
 	}
 	return []Check{present, layout, version}
 }

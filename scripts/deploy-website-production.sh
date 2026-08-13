@@ -11,13 +11,41 @@ deployment_tag=$1
 printf '%s\n' "$deployment_tag" |
   grep -Eq '^website-v[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.[1-9][0-9]*$' ||
   usage
-node -e '
-  const expected = process.argv[1].slice(9, 19).replaceAll(".", "-");
-  const parsed = new Date(`${expected}T00:00:00Z`);
-  if (Number.isNaN(parsed.valueOf()) || parsed.toISOString().slice(0, 10) !== expected) {
-    throw new Error(`invalid website deployment date: ${expected}`);
-  }
-' "$deployment_tag"
+tag_body=${deployment_tag#website-v}
+year=${tag_body%%.*}
+month_rest=${tag_body#*.}
+month=${month_rest%%.*}
+day_rest=${month_rest#*.}
+day=${day_rest%%.*}
+invalid_website_date() {
+  echo "invalid website deployment date: ${year}-${month}-${day}" >&2
+  exit 1
+}
+case $month in
+  01|02|03|04|05|06|07|08|09|10|11|12) ;;
+  *) invalid_website_date ;;
+esac
+case $day in
+  0[1-9]|1[0-9]|2[0-9]|30|31) ;;
+  *) invalid_website_date ;;
+esac
+case $month in
+  04|06|09|11)
+    [ "$day" != "31" ] || invalid_website_date
+    ;;
+  02)
+    if [ "$day" = "30" ] || [ "$day" = "31" ]; then
+      invalid_website_date
+    fi
+    if [ "$day" = "29" ]; then
+      leap=0
+      if [ $((year % 4)) -eq 0 ] && { [ $((year % 100)) -ne 0 ] || [ $((year % 400)) -eq 0 ]; }; then
+        leap=1
+      fi
+      [ "$leap" -eq 1 ] || invalid_website_date
+    fi
+    ;;
+esac
 
 repo_directory=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$repo_directory"

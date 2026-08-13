@@ -7,8 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -16,6 +18,7 @@ import (
 
 	"github.com/HarjjotSinghh/reinstate/internal/adapter"
 	"github.com/HarjjotSinghh/reinstate/internal/agentcheck"
+	"github.com/HarjjotSinghh/reinstate/internal/capability"
 	"github.com/HarjjotSinghh/reinstate/internal/capsule"
 	"github.com/HarjjotSinghh/reinstate/internal/exitcode"
 	"github.com/HarjjotSinghh/reinstate/internal/preflight"
@@ -215,6 +218,89 @@ func TestPlanRedactsBeforeCheckpointAndIsDeterministic(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(first.TempDir, first.HandoffID, capsuleFileName)); err != nil {
 		t.Fatalf("preview capsule: %v", err)
 	}
+}
+
+func TestPlanCheckpointSidecarOmitsVerbatimBodies(t *testing.T) {
+	rec, _, _, _, opts := pipelineFixture(t)
+	opts.Policy = PolicyCheckpoint
+	plan, err := Plan(context.Background(), rec, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(plan.TempDir) })
+	if len(plan.Capsule.Conversation.Events) != 0 {
+		t.Fatalf("checkpoint included %d events", len(plan.Capsule.Conversation.Events))
+	}
+	if len(plan.Artifacts.SidecarEvents) == 0 {
+		t.Fatal("checkpoint sidecar refs were dropped")
+	}
+	for _, forbidden := range []string{"work remains", "continue with key", pipelineTestSecret, `"blocks"`} {
+		if bytes.Contains(plan.Artifacts.SidecarEvents, []byte(forbidden)) {
+			t.Fatalf("checkpoint sidecar retained verbatim %q: %s", forbidden, plan.Artifacts.SidecarEvents)
+		}
+	}
+	if !bytes.Contains(plan.Artifacts.SidecarEvents, []byte(`"event_id"`)) &&
+		!bytes.Contains(plan.Artifacts.SidecarEvents, []byte(`"EventID"`)) {
+		t.Fatalf("checkpoint sidecar missing refs: %s", plan.Artifacts.SidecarEvents)
+	}
+}
+
+func TestPlanReportsMissingDestinationMCPAndSkill(t *testing.T) {
+	rec, _, _, _, opts := pipelineFixture(t)
+	user := t.TempDir()
+	codexHome := filepath.Join(user, ".codex")
+	if err := os.MkdirAll(codexHome, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(codexHome, "config.toml"), []byte(`
+[mcp_servers.browser]
+command = "mcp-browser"
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	skill := filepath.Join(user, ".agents", "skills", "review")
+	if err := os.MkdirAll(skill, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(skill, "SKILL.md"), []byte("# review\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	opts.Capability = capability.Options{
+		GOOS:        runtime.GOOS,
+		UserHome:    user,
+		ClaudeHome:  filepath.Join(user, ".claude"),
+		CodexHome:   codexHome,
+		ProjectRoot: rec.Workspace,
+		WorkingDir:  rec.Workspace,
+	}
+
+	plan, err := Plan(context.Background(), rec, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(plan.TempDir) })
+
+	foundMCP, foundSkill := false, false
+	for _, missing := range plan.Capsule.Capabilities.Missing {
+		if missing.Kind == KindMCP && missing.Name == "browser" {
+			foundMCP = true
+		}
+		if missing.Kind == KindSkill && missing.Name == "review" {
+			foundSkill = true
+		}
+	}
+	if !foundMCP || !foundSkill {
+		t.Fatalf("Missing = %+v, want mcp browser and skill review", plan.Capsule.Capabilities.Missing)
+	}
+	ids := strings.Join(plan.WarningIDs, " ")
+	if !strings.Contains(ids, "handoff.capability.mcp.browser") ||
+		!strings.Contains(ids, "handoff.capability.skill.review") {
+		t.Fatalf("WarningIDs = %v", plan.WarningIDs)
+	}
+
+	opts.LaunchRunner = &pipelineRunner{}
+	_, err = Execute(context.Background(), rec, opts, true)
+	assertPipelineCode(t, err, exitcode.Safety)
 }
 
 func TestPlanActiveSourceSafety(t *testing.T) {
@@ -706,6 +792,67 @@ func TestResolveTargetClaudeRequiresCollisionCheck(t *testing.T) {
 	}, sessionindex.AgentClaude)
 	if err != nil || target == nil {
 		t.Fatalf("resolveTarget with collision check = %T, %v", target, err)
+	}
+}
+
+func TestPlanRefusesDifferentGitRepository(t *testing.T) {
+	rec, _, _, _, opts := pipelineFixture(t)
+	initTestGitRepo(t, rec.Workspace)
+	other := t.TempDir()
+	initTestGitRepo(t, other)
+	opts.WorkingDir = other
+
+	_, err := Plan(context.Background(), rec, opts)
+	assertPipelineCode(t, err, exitcode.Compatibility)
+	if !errors.Is(err, ErrCompatibility) || !strings.Contains(err.Error(), "different repository") {
+		t.Fatalf("wrong-repo error = %v", err)
+	}
+
+	opts.WorkingDir = filepath.Join(rec.Workspace, "src")
+	if err := os.MkdirAll(opts.WorkingDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	plan, err := Plan(context.Background(), rec, opts)
+	if err != nil {
+		t.Fatalf("same-repo subdirectory: %v", err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(plan.TempDir) })
+
+	opts.WorkingDir = t.TempDir()
+	plan, err = Plan(context.Background(), rec, opts)
+	if err != nil {
+		t.Fatalf("cwd outside any git repo: %v", err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(plan.TempDir) })
+}
+
+func TestPlanFidelityReportIncludesOmittedTaskFields(t *testing.T) {
+	rec, _, _, _, opts := pipelineFixture(t)
+	opts.WorkingDir = rec.Workspace
+	plan, err := Plan(context.Background(), rec, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(plan.TempDir) })
+	seen := map[capsule.Portability]bool{}
+	for _, component := range plan.Capsule.Fidelity.Components {
+		seen[component.Portability] = true
+	}
+	if !seen[capsule.PortabilityExact] || !seen[capsule.PortabilityOmitted] {
+		t.Fatalf("fidelity components = %+v, want exact and omitted", plan.Capsule.Fidelity.Components)
+	}
+}
+
+func initTestGitRepo(t *testing.T, dir string) {
+	t.Helper()
+	git, err := exec.LookPath("git")
+	if err != nil {
+		t.Skip("git unavailable")
+	}
+	command := exec.Command(git, "init", "--quiet", dir)
+	command.Env = append(os.Environ(), "GIT_CONFIG_NOSYSTEM=1", "GIT_AUTHOR_NAME=reinstate", "GIT_AUTHOR_EMAIL=reinstate@example.invalid")
+	if output, err := command.CombinedOutput(); err != nil {
+		t.Fatalf("git init %s: %v: %s", dir, err, output)
 	}
 }
 

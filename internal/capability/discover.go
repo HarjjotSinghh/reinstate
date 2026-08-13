@@ -107,6 +107,8 @@ func scanClaude(c *collector, opts Options) {
 			stateAnchor = opts.UserHome
 		}
 		scanClaudeStateMCP(c, stateAnchor, statePath, opts)
+		scanClaudeMCPFile(c, claudeAnchor, filepath.Join(opts.ClaudeHome, "settings.json"), ScopeUser, SourceClaudeMCPJSON)
+		scanClaudeMCPFile(c, claudeAnchor, filepath.Join(opts.ClaudeHome, "settings.local.json"), ScopeUser, SourceClaudeMCPJSON)
 	}
 
 	for _, dir := range projectDirectories(opts, c, AgentClaude) {

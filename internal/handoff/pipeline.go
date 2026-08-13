@@ -91,6 +91,10 @@ type Options struct {
 	Now func() time.Time
 	// MkdirTemp overrides os.MkdirTemp (tests).
 	MkdirTemp func(dir, pattern string) (string, error)
+	// WorkingDir is the operator process cwd. The CLI always sets it from
+	// os.Getwd(). When empty (unit tests), Plan skips the cwd check. A
+	// different git repository than the source session is refused.
+	WorkingDir string
 }
 
 // PlanResult is the dry-run-pure handoff plan. Plan never writes outside TempDir.
@@ -255,6 +259,11 @@ func Plan(ctx context.Context, rec sessionindex.Record, opts Options) (PlanResul
 		}
 		return PlanResult{Preflight: report}, pipelineWrap(exitcode.Runtime, err)
 	}
+	if cwd := strings.TrimSpace(opts.WorkingDir); cwd != "" {
+		if err := refuseMismatchedRepository(cwd, firstNonEmpty(ws.Path, rec.Workspace)); err != nil {
+			return PlanResult{Preflight: report}, err
+		}
+	}
 
 	target, err := resolveTarget(opts, to)
 	if err != nil {
@@ -296,6 +305,7 @@ func Plan(ctx context.Context, rec sessionindex.Record, opts Options) (PlanResul
 	ws.Tests = append([]string(nil), task.Tests.Items...)
 
 	included, sidecar, fidelity := Apply(policy, redactedEvents)
+	fidelity = capsule.AggregateFidelity(nil, append(append(capsule.Components(nil), fidelity.Components...), taskFidelityComponents(task)...))
 	if fidelity.Mode == "" {
 		fidelity.Mode = capsule.FidelityModeStructuredHandoff
 	}
@@ -386,7 +396,7 @@ func Plan(ctx context.Context, rec sessionindex.Record, opts Options) (PlanResul
 	if err != nil {
 		return PlanResult{}, pipelineWrap(exitcode.Runtime, err)
 	}
-	sidecarEvents, err := encodeSidecarEvents(redactedEvents, sidecar)
+	sidecarEvents, err := encodeSidecarEvents(redactedEvents, sidecar, policy != PolicyCheckpoint)
 	if err != nil {
 		return PlanResult{}, pipelineWrap(exitcode.Runtime, err)
 	}
@@ -742,15 +752,26 @@ func redactEvents(events []capsule.Event, noRedact bool) ([]capsule.Event, []cap
 	return out, all, counts, nil
 }
 
-func encodeSidecarEvents(all []capsule.Event, refs []capsule.SidecarRef) ([]byte, error) {
+func encodeSidecarEvents(all []capsule.Event, refs []capsule.SidecarRef, includeBodies bool) ([]byte, error) {
 	if len(refs) == 0 {
 		return nil, nil
+	}
+	var b strings.Builder
+	if !includeBodies {
+		for _, ref := range refs {
+			line, err := json.Marshal(ref)
+			if err != nil {
+				return nil, err
+			}
+			b.Write(line)
+			b.WriteByte('\n')
+		}
+		return []byte(b.String()), nil
 	}
 	byID := make(map[string]capsule.Event, len(all))
 	for _, e := range all {
 		byID[e.ID] = e
 	}
-	var b strings.Builder
 	for _, ref := range refs {
 		ev, ok := byID[ref.EventID]
 		if !ok {

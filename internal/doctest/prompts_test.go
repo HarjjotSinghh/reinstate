@@ -13,7 +13,7 @@ func TestEndUserPromptContracts(t *testing.T) {
 		body := read(t, path)
 		required := []string{
 			"Prompt version:** 9",
-			"v0.4.0-rc.2",
+			"v0.4.0-rc.3",
 			"https://reinstate.dev/install.sh",
 			"https://reinstate.dev/install.ps1",
 			"github.com/HarjjotSinghh/reinstate/releases/download/",

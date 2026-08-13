@@ -51,6 +51,12 @@ func (a *Adapter) Detect(ctx context.Context) (adapter.Install, adapter.Compatib
 	root := a.Root
 	explicitRoot := root != ""
 	if root == "" {
+		if configured := strings.TrimSpace(os.Getenv("CODEX_HOME")); configured != "" {
+			root = configured
+			explicitRoot = true
+		}
+	}
+	if root == "" {
 		home, err := os.UserHomeDir()
 		if err != nil {
 			return adapter.Install{}, adapter.CompatibilityNotInstalled, err

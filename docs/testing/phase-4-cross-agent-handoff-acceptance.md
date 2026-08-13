@@ -11,18 +11,20 @@ authority is [cross-agent-continuation.md](../cross-agent-continuation.md) and
 A candidate passes only when installed tagged artifacts produce truthful,
 privacy-safe handoffs that a destination agent can actually continue from.
 
-The current candidate is pinned to the signed tag `v0.4.0-rc.2`. Use the
-[v0.4.0-rc.2 dispatch](v0.4.0-rc.2-agent-verification-prompts.md) and the
+The current candidate is pinned to the signed tag `v0.4.0-rc.3`. Use the
+[v0.4.0-rc.3 dispatch](v0.4.0-rc.3-agent-verification-prompts.md) and the
 [Phase 4 report template](results/phase-4-report-template.md). Do not start
 physical testing from an integration commit, source build, draft release, or an
-installer that still pins stable `v0.3.0` or the superseded `v0.4.0-rc.1`.
+installer that still pins stable `v0.3.0`, `v0.4.0-rc.1`, or `v0.4.0-rc.2`.
 
 The first candidate, `v0.4.0-rc.1`, was published and **failed** this
-acceptance. Its six corrective fixes ship in `v0.4.0-rc.2`, and the rc.2
-dispatch carries an explicit `R1`–`R6` re-verification set so the rerun confirms
-them rather than rediscovering them. The
-[superseded v0.4.0-rc.1 dispatch](v0.4.0-rc.1-agent-verification-prompts.md)
-remains in the tree as the record of what that run was asked to do.
+acceptance. The second candidate, `v0.4.0-rc.2`, was published and also
+**failed** physical dual-platform acceptance. `v0.4.0-rc.3` carries the rc.2
+product fixes (`c5d8924`). The rc.3 dispatch carries RC1 `R1`–`R6` and the RC2
+regression set so the rerun confirms them rather than rediscovering them. The
+superseded [v0.4.0-rc.1](v0.4.0-rc.1-agent-verification-prompts.md) and
+[v0.4.0-rc.2](v0.4.0-rc.2-agent-verification-prompts.md) dispatches remain in
+the tree as the record of what those runs were asked to do.
 
 ## Evidence policy
 
@@ -212,11 +214,12 @@ supported platforms is `PASS`. One `FAIL` on one platform fails the candidate.
 ## Candidate dispatches
 
 The current per-tag instructions are the
-[`v0.4.0-rc.2` dispatch](v0.4.0-rc.2-agent-verification-prompts.md). It fixes
+[`v0.4.0-rc.3` dispatch](v0.4.0-rc.3-agent-verification-prompts.md). It fixes
 report branches, artifact and full-commit checks, the report-template
-substitutions for this tag, the pre-run agent-version record, the `R1`–`R6`
-re-verification of the `v0.4.0-rc.1` failures, corpus sizes, absolute
-performance ceilings, and final reconciliation rules before physical testing
-starts. Do not begin a run without the dispatch for the exact tested tag; the
-[`v0.4.0-rc.1` dispatch](v0.4.0-rc.1-agent-verification-prompts.md) is superseded
-and is retained only as the record of that failed run.
+substitutions for this tag, the pre-run agent-version record, RC1 `R1`–`R6`
+re-verification, the RC2 regression set, corpus sizes, absolute performance
+ceilings, and final reconciliation rules before physical testing starts. Do not
+begin a run without the dispatch for the exact tested tag. The superseded
+[`v0.4.0-rc.1`](v0.4.0-rc.1-agent-verification-prompts.md) and
+[`v0.4.0-rc.2`](v0.4.0-rc.2-agent-verification-prompts.md) dispatches are
+retained only as the record of those failed runs.

@@ -38,6 +38,7 @@ func TestNativeClaudeLaunchThroughWindowsCommandShim(t *testing.T) {
 	}
 
 	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("REINSTATE_ALLOW_NON_TTY_LAUNCH", "1")
 	t.Setenv("PATHEXT", ".COM;.EXE;.BAT;.CMD")
 	t.Setenv("REIN_TEST_STDIN", "REINSTATE-WINDOWS-CONTROLLED-INPUT")
 	t.Setenv("REIN_TEST_ARG1", "--resume")
