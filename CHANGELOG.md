@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0-rc.7] - 2026-08-15
+
+Seventh Phase 4 candidate. `v0.4.0-rc.6` was published and physical dual-platform
+acceptance FAILED. This candidate carries those product fixes. It does not
+authorize stable `v0.4.0`; stable remains `v0.3.0`. Adds
+`docs/testing/v0.4.0-rc.7-agent-verification-prompts.md`.
+
+### Fixed
+
+- Bound Windows process listing (`Get-CimInstance` / `tasklist`) to five seconds
+  with a hidden console, and treat a listing error as not-busy so Plan is not a
+  5-minute runtime abort (Windows busy-check cascade).
+- Fail closed when a read-only handoff can determine Claude `2.1.230` (or any
+  other out-of-range version): exit 5 / `UNTESTED` without `--allow-untested`
+  (C8, R6).
+- Skip leftover capability/runtime observers after a spent verifier deadline so
+  a hanging `--version` is Compatibility `UNTESTED`, not Runtime exit 1 (R4).
+- Hide and time-bound Windows `taskkill /T` when cancelling version-probe trees.
+- Do not block source-only Grok/Gemini/OpenCode read-only preflight on a missing
+  native verified-resume layout (E5/E6).
+
 ## [0.4.0-rc.6] - 2026-08-14
 
 Sixth Phase 4 candidate. `v0.4.0-rc.5` was published and physical dual-platform
@@ -931,7 +952,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.6...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.7...HEAD
+[0.4.0-rc.7]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.6...v0.4.0-rc.7
 [0.4.0-rc.6]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.5...v0.4.0-rc.6
 [0.4.0-rc.5]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.4...v0.4.0-rc.5
 [0.4.0-rc.4]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.3...v0.4.0-rc.4
