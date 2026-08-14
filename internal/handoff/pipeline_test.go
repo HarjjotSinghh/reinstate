@@ -323,6 +323,18 @@ func TestPlanActiveSourceSafety(t *testing.T) {
 	}
 }
 
+func TestPlanListingErrorDoesNotBlock(t *testing.T) {
+	rec, _, _, _, opts := pipelineFixture(t)
+	opts.SessionBusy = func(context.Context, string, processcheck.Target) (bool, bool, error) {
+		return false, false, errors.New("exit status 1")
+	}
+	plan, err := Plan(context.Background(), rec, opts)
+	if err != nil {
+		t.Fatalf("listing error blocked Plan: %v", err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(plan.TempDir) })
+}
+
 func TestPlanRefreshesAndResolvesSourceFirst(t *testing.T) {
 	rec, _, _, _, opts := pipelineFixture(t)
 	resolved := rec

@@ -224,7 +224,10 @@ func Plan(ctx context.Context, rec sessionindex.Record, opts Options) (PlanResul
 		ProjectRoot: rec.Workspace,
 	})
 	if err != nil {
-		return PlanResult{}, pipelineWrap(exitcode.Runtime, fmt.Errorf("handoff: session busy check: %w", err))
+		// A failed host process listing is not evidence the source is busy.
+		// Blocking Plan here turned a WMI/tasklist error into a 5-minute
+		// runtime failure that skipped every dry-run row on Windows.
+		busy = false
 	}
 	if busy && !opts.AllowActive {
 		return PlanResult{}, pipelineErrorf(exitcode.Safety, "%w: source session is active; close it or pass --allow-active", ErrSafety)
