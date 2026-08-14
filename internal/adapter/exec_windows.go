@@ -3,16 +3,21 @@
 package adapter
 
 import (
+	"context"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"syscall"
 	"time"
 )
 
+const createNoWindow = 0x08000000
+
 func configureVersionCommand(command *exec.Cmd) {
 	command.WaitDelay = 200 * time.Millisecond
+	command.SysProcAttr = &syscall.SysProcAttr{HideWindow: true, CreationFlags: createNoWindow}
 	command.Cancel = func() error {
 		if command.Process == nil {
 			return os.ErrProcessDone
@@ -31,7 +36,10 @@ func killWindowsProcessTree(pid int) {
 	if root != "" {
 		taskkill = filepath.Join(root, "System32", "taskkill.exe")
 	}
-	kill := exec.Command(taskkill, "/T", "/F", "/PID", strconv.Itoa(pid))
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	kill := exec.CommandContext(ctx, taskkill, "/T", "/F", "/PID", strconv.Itoa(pid))
+	kill.SysProcAttr = &syscall.SysProcAttr{HideWindow: true, CreationFlags: createNoWindow}
 	kill.Stdout = io.Discard
 	kill.Stderr = io.Discard
 	_ = kill.Run()

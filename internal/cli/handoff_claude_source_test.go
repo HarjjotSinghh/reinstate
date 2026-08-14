@@ -186,3 +186,30 @@ func TestHandoffFromClaudeInstallOutsideVerifiedRange(t *testing.T) {
 		t.Fatalf("--allow-untested exit=%d stdout=%s stderr=%s", code, stdout, stderr)
 	}
 }
+
+func TestHandoffFromClaudeInstallJustOutsideVerifiedRange(t *testing.T) {
+	home := t.TempDir()
+	vendorHome := t.TempDir()
+	workspace := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(vendorHome, ".codex", "sessions"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	fakeAgentBin(t, map[string]string{
+		"claude": "2.1.230 (Claude Code)",
+		"codex":  "codex-cli 0.147.0",
+	})
+	record := realisticClaudeInstall(t, vendorHome, workspace)
+	sources := []sessionindex.Source{
+		staticSessionSource{name: sessionindex.AgentClaude, result: sessionindex.ScanResult{Records: []sessionindex.Record{record}}},
+		staticSessionSource{name: sessionindex.AgentCodex, result: sessionindex.ScanResult{}},
+	}
+
+	stdout, stderr, code := runHandoffCLI(t, home, vendorHome, sources, nil,
+		"handoff", "claude:"+record.ID, "--to", "codex", "--dry-run", "--json")
+	if code != ExitCompatibility {
+		t.Fatalf("2.1.230 source exit=%d, want %d (stdout=%s stderr=%s)", code, ExitCompatibility, stdout, stderr)
+	}
+	if !strings.Contains(stderr, "UNTESTED") {
+		t.Fatalf("stderr did not name the compatibility state: %s", stderr)
+	}
+}

@@ -10,23 +10,37 @@ import (
 	"os/exec"
 	"strconv"
 	"syscall"
+	"time"
 	"unsafe"
+)
+
+const (
+	listProcessesTimeout = 5 * time.Second
+	createNoWindow       = 0x08000000
 )
 
 func listProcesses(ctx context.Context) ([]Process, error) {
 	const command = `Get-CimInstance Win32_Process | Select-Object ProcessId,Name,CommandLine | ConvertTo-Csv -NoTypeInformation`
-	output, err := exec.CommandContext(ctx, "powershell.exe", "-NoProfile", "-NonInteractive", "-Command", command).Output()
+	output, err := hiddenOutput(ctx, listProcessesTimeout, "powershell.exe", "-NoProfile", "-NonInteractive", "-Command", command)
 	if err == nil {
 		if procs, parseErr := parseProcessCSV(output, true); parseErr == nil {
 			return procs, nil
 		}
 	}
 
-	output, err = exec.CommandContext(ctx, "tasklist", "/FO", "CSV", "/NH").Output()
+	output, err = hiddenOutput(ctx, listProcessesTimeout, "tasklist", "/FO", "CSV", "/NH")
 	if err != nil {
 		return nil, err
 	}
 	return parseTasklistCSV(output)
+}
+
+func hiddenOutput(ctx context.Context, timeout time.Duration, name string, args ...string) ([]byte, error) {
+	runCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	cmd := exec.CommandContext(runCtx, name, args...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true, CreationFlags: createNoWindow}
+	return cmd.Output()
 }
 
 // parseProcessCSV reads ProcessId,Name,CommandLine records.

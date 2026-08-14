@@ -8,10 +8,15 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 )
 
+const listProcessesTimeout = 5 * time.Second
+
 func listProcesses(ctx context.Context) ([]Process, error) {
-	output, err := exec.CommandContext(ctx, "ps", "-axo", "pid=,comm=,args=").Output()
+	runCtx, cancel := context.WithTimeout(ctx, listProcessesTimeout)
+	defer cancel()
+	output, err := exec.CommandContext(runCtx, "ps", "-axo", "pid=,comm=,args=").Output()
 	if err != nil {
 		return nil, err
 	}

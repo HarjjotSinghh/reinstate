@@ -10,19 +10,51 @@ import (
 
 func TestAgentChecksTimedOutProbeIsUntestedCompatibility(t *testing.T) {
 	t.Parallel()
+	for _, readOnly := range []bool{false, true} {
+		checks := agentChecks(agentcheck.Result{
+			Status:            agentcheck.StatusError,
+			Message:           "version probe timed out",
+			LayoutRecognized:  true,
+			ExecutablePresent: true,
+			Version:           "",
+		}, readOnly)
+		version := findAgentCheck(t, checks, "agent.version")
+		if version.Status != StatusUnknown || version.Severity != SeverityBlock || version.ExitCode != exitcode.Compatibility {
+			t.Fatalf("readOnly=%t timed-out probe check = %+v, want unknown/block/compatibility", readOnly, version)
+		}
+		if !strings.Contains(version.Message, "timed out") {
+			t.Fatalf("timed-out probe message = %q", version.Message)
+		}
+	}
+}
+
+func TestAgentChecksReadOnlyDeterminedUntestedIsCompatibilityBlock(t *testing.T) {
+	t.Parallel()
 	checks := agentChecks(agentcheck.Result{
-		Status:            agentcheck.StatusError,
-		Message:           "version probe timed out",
+		Status:            agentcheck.StatusUntested,
+		Message:           "native agent version is outside the verified range",
 		LayoutRecognized:  true,
 		ExecutablePresent: true,
-		Version:           "",
-	}, false)
+		Version:           "2.1.230",
+	}, true)
 	version := findAgentCheck(t, checks, "agent.version")
 	if version.Status != StatusUnknown || version.Severity != SeverityBlock || version.ExitCode != exitcode.Compatibility {
-		t.Fatalf("timed-out probe check = %+v, want unknown/block/compatibility", version)
+		t.Fatalf("determined untested read-only check = %+v, want unknown/block/compatibility", version)
 	}
-	if !strings.Contains(version.Message, "timed out") {
-		t.Fatalf("timed-out probe message = %q", version.Message)
+}
+
+func TestAgentChecksReadOnlySourceOnlyAgentIsInformational(t *testing.T) {
+	t.Parallel()
+	checks := agentChecks(agentcheck.Result{
+		Status:  agentcheck.StatusUntested,
+		Message: "agent does not support native verified resume",
+		Agent:   "grok",
+	}, true)
+	for _, id := range []string{"agent.executable", "agent.layout", "agent.version"} {
+		check := findAgentCheck(t, checks, id)
+		if check.Severity != SeverityInfo {
+			t.Fatalf("%s = %+v, want informational for source-only read-only handoff", id, check)
+		}
 	}
 }
 

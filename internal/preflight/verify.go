@@ -67,32 +67,38 @@ func Verify(ctx context.Context, input Input, options Options) (Report, error) {
 	agentOptions.Timeout = remainingTimeout(verifyCtx, agentOptions.Timeout)
 	agentResult := agentcheck.Inspect(verifyCtx, input.Agent, agentOptions)
 
-	capabilityOptions := options.Capability
-	if input.Agent == "claude" && capabilityOptions.ClaudeHome == "" {
-		capabilityOptions.ClaudeHome = input.AgentRoot
-	}
-	if input.Agent == "codex" && capabilityOptions.CodexHome == "" {
-		capabilityOptions.CodexHome = input.AgentRoot
-	}
-	if capabilityOptions.ProjectRoot == "" {
-		capabilityOptions.ProjectRoot = workspaceVerification.Fingerprint.Git.Root
-		if capabilityOptions.ProjectRoot == "" {
-			capabilityOptions.ProjectRoot = input.Workspace
+	var capabilityInventory capability.Inventory
+	var runtimeResults []runtimecheck.Result
+	if verifyCtx.Err() == nil {
+		capabilityOptions := options.Capability
+		if input.Agent == "claude" && capabilityOptions.ClaudeHome == "" {
+			capabilityOptions.ClaudeHome = input.AgentRoot
 		}
-	}
-	if capabilityOptions.WorkingDir == "" {
-		capabilityOptions.WorkingDir = input.Workspace
-	}
-	capabilityInventory := capability.DiscoverAgentContext(verifyCtx, capability.Agent(input.Agent), capabilityOptions)
-	if err := ctx.Err(); err != nil {
-		return Report{}, err
-	}
-	capabilityInventory = filterCapabilities(capabilityInventory, input.Agent)
+		if input.Agent == "codex" && capabilityOptions.CodexHome == "" {
+			capabilityOptions.CodexHome = input.AgentRoot
+		}
+		if capabilityOptions.ProjectRoot == "" {
+			capabilityOptions.ProjectRoot = workspaceVerification.Fingerprint.Git.Root
+			if capabilityOptions.ProjectRoot == "" {
+				capabilityOptions.ProjectRoot = input.Workspace
+			}
+		}
+		if capabilityOptions.WorkingDir == "" {
+			capabilityOptions.WorkingDir = input.Workspace
+		}
+		capabilityInventory = capability.DiscoverAgentContext(verifyCtx, capability.Agent(input.Agent), capabilityOptions)
+		if err := ctx.Err(); err != nil {
+			return Report{}, err
+		}
+		capabilityInventory = filterCapabilities(capabilityInventory, input.Agent)
 
-	runtimeOptions := options.Runtime
-	runtimeOptions.Timeout = remainingTimeout(verifyCtx, runtimeOptions.Timeout)
-	runtimeResults := runtimecheck.Inspect(verifyCtx, input.Workspace, runtimeOptions)
-	if err := ctx.Err(); err != nil {
+		runtimeOptions := options.Runtime
+		runtimeOptions.Timeout = remainingTimeout(verifyCtx, runtimeOptions.Timeout)
+		runtimeResults = runtimecheck.Inspect(verifyCtx, input.Workspace, runtimeOptions)
+		if err := ctx.Err(); err != nil {
+			return Report{}, err
+		}
+	} else if err := ctx.Err(); err != nil {
 		return Report{}, err
 	}
 
@@ -227,7 +233,7 @@ func agentChecks(result agentcheck.Result, readOnly bool) []Check {
 		Provenance: workspace.ProvenanceCurrentObservation}
 	if result.ExecutablePresent {
 		present.Status, present.Severity, present.Message = StatusPresent, SeverityInfo, "the native agent executable is available"
-	} else if readOnly && result.LayoutRecognized {
+	} else if readOnly && (result.LayoutRecognized || sourceOnlyAgent(result)) {
 		present.Status, present.Severity, present.Message = StatusMissing, SeverityInfo, "the native agent executable is unavailable; the session layout is still readable"
 	} else {
 		present.Status, present.Severity, present.Message = StatusMissing, SeverityBlock, "the native agent executable is unavailable"
@@ -237,6 +243,8 @@ func agentChecks(result agentcheck.Result, readOnly bool) []Check {
 		Provenance: workspace.ProvenanceCurrentObservation}
 	if result.LayoutRecognized {
 		layout.Status, layout.Severity, layout.Message = StatusMatch, SeverityInfo, "the native agent session layout is recognized"
+	} else if readOnly && sourceOnlyAgent(result) {
+		layout.Status, layout.Severity, layout.Message = StatusUnknown, SeverityInfo, "source-only agents have no native verified-resume layout"
 	} else {
 		layout.Status, layout.Severity, layout.Message = StatusMissing, SeverityBlock, "the native agent session layout is unrecognized"
 		layout.Repair, layout.ExitCode = "restore a supported same-vendor session layout before continuing", exitcode.Compatibility
@@ -248,12 +256,8 @@ func agentChecks(result agentcheck.Result, readOnly bool) []Check {
 		version.Status, version.Severity, version.Message = StatusMatch, SeverityInfo, "the native agent version is in the verified range"
 	case readOnly && result.Status == agentcheck.StatusNotInstalled:
 		version.Status, version.Severity, version.Message = StatusUnknown, SeverityInfo, "the native agent version is not determinable; the session layout is still readable"
-	case readOnly && (result.Status == agentcheck.StatusError || result.Status == agentcheck.StatusUntested):
-		version.Status, version.Severity, version.Message = StatusUnknown, SeverityWarning, result.Message
-		if strings.TrimSpace(version.Message) == "" {
-			version.Message = "the native agent version probe did not complete"
-		}
-		version.Repair, version.ExitCode = "re-run with --allow-untested after confirming the source layout, or install a verified agent version", exitcode.Safety
+	case readOnly && sourceOnlyAgent(result):
+		version.Status, version.Severity, version.Message = StatusUnknown, SeverityInfo, "source-only agents have no native verified-resume version range"
 	case result.Status == agentcheck.StatusError:
 		version.Status, version.Severity, version.Message = StatusUnknown, SeverityBlock, result.Message
 		if strings.TrimSpace(version.Message) == "" {
@@ -265,6 +269,13 @@ func agentChecks(result agentcheck.Result, readOnly bool) []Check {
 		version.Repair, version.ExitCode = "install a native agent version verified by this Reinstate release", exitcode.Compatibility
 	}
 	return []Check{present, layout, version}
+}
+
+func sourceOnlyAgent(result agentcheck.Result) bool {
+	return result.Status == agentcheck.StatusUntested &&
+		!result.ExecutablePresent &&
+		!result.LayoutRecognized &&
+		strings.TrimSpace(result.Version) == ""
 }
 
 func filterCapabilities(inventory capability.Inventory, agent string) capability.Inventory {

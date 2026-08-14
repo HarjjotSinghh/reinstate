@@ -29,7 +29,7 @@ func AgentActive(ctx context.Context, agent string) (bool, error) {
 	}
 	procs, err := listProcesses(ctx)
 	if err != nil {
-		return false, err
+		return false, nil
 	}
 	for _, p := range procs {
 		if matchesAgentProcess(agent, p.Image, p.CommandLine) {
@@ -75,11 +75,11 @@ func SessionBusy(ctx context.Context, agent string, target Target) (busy bool, s
 
 	procs, err := listProcesses(ctx)
 	if err != nil {
-		return false, false, err
+		return false, false, nil
 	}
 	holders, _, err := sessionFileHolders(ctx, target.Path)
 	if err != nil {
-		return false, false, err
+		holders = nil
 	}
 	cwds := agentWorkingDirectories(ctx, agent, procs)
 	return decideSessionBusy(agent, target, procs, holders, cwds), true, nil

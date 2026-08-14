@@ -1,9 +1,15 @@
 export const releaseHistory = [
   {
+    version: 'v0.4.0-rc.7',
+    date: '2026-08-15',
+    summary:
+      'Seventh Phase 4 candidate after v0.4.0-rc.6 physical dual-platform acceptance FAILED (Windows WMI busy-check cascade; C8/R6 2.1.230 fail-open; R4 leftover Runtime). Carries those product fixes; tagged-artifact acceptance is pending.',
+  },
+  {
     version: 'v0.4.0-rc.6',
     date: '2026-08-14',
     summary:
-      'Sixth Phase 4 candidate after v0.4.0-rc.5 physical dual-platform acceptance FAILED (dest-ack/picker without a console; C4 remapped fixture/foreign workspaces onto any git cwd). Carries those product fixes; tagged-artifact acceptance is pending.',
+      'Sixth Phase 4 candidate after v0.4.0-rc.5 physical dual-platform acceptance FAILED (dest-ack/picker without a console; C4 remapped fixture/foreign workspaces onto any git cwd). Physical dual-platform acceptance FAILED: Windows Plan rows died on a ~305s WMI busy-check; macOS was 37 PASS / 7 FAIL.',
   },
   {
     version: 'v0.4.0-rc.5',
