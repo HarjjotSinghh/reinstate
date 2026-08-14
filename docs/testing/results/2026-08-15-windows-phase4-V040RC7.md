@@ -38,7 +38,7 @@ authorize stable `v0.4.0`.
 | Go version/toolchain | `go1.25.12 windows/amd64` via `GOTOOLCHAIN=go1.25.12` (host default go1.26.1 unused) |
 | Report branch | `test/v0.4.0-rc.7-windows-amd64-report` |
 | Device-report commit | `0538ebda42b57450def11e81bbfcc9fba16176de` |
-| Draft report PR | filled after `gh pr create --draft` |
+| Draft report PR | https://github.com/HarjjotSinghh/reinstate/pull/223 |
 
 ## 2. Signed artifact and installer chain
 
