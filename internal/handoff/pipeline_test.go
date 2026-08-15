@@ -684,6 +684,51 @@ func TestPlanCapsuleContentIDContract(t *testing.T) {
 	}
 }
 
+func TestArgvUnsafeForLaunchWindowsNewlines(t *testing.T) {
+	if argvUnsafeForLaunch("linux", []byte("a\nb")) {
+		t.Fatal("non-windows argv may contain newlines")
+	}
+	if !argvUnsafeForLaunch("windows", []byte("a\nb")) {
+		t.Fatal("windows argv must not contain LF")
+	}
+	if !argvUnsafeForLaunch("windows", []byte("a\rb")) {
+		t.Fatal("windows argv must not contain CR")
+	}
+	if argvUnsafeForLaunch("windows", []byte("one line")) {
+		t.Fatal("windows one-line argv is safe")
+	}
+}
+
+func TestPlanDestinationNewlineBootstrapUsesShortArgv(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Windows CreateProcess truncates argv at CR/LF")
+	}
+	target := &pipelineTarget{maxArgvBytes: 64 << 10}
+	home := filepath.Join(t.TempDir(), "reinstate-home")
+	c := capsule.Capsule{
+		Identity:  capsule.Identity{ID: "capsule-id"},
+		Workspace: capsule.Workspace{Path: t.TempDir()},
+	}
+	rendered := []byte("structured handoff, not native resume\n\n## Goal\nRC9 dest-ack")
+	plan, _, err := planDestination(
+		context.Background(), target, c, PolicyBalanced,
+		Options{ReinstateHome: home}, rendered,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if argvUnsafeForLaunch("windows", plan.Bootstrap) {
+		t.Fatalf("bootstrap still has newlines: %q", plan.Bootstrap)
+	}
+	want := filepath.Join(home, handoffsDirName, c.Identity.ID, projectionFile)
+	if !filepath.IsAbs(want) || !strings.Contains(string(plan.Bootstrap), want) {
+		t.Fatalf("fallback bootstrap = %q, want absolute projection path %q", plan.Bootstrap, want)
+	}
+	if len(plan.Args) != 1 || plan.Args[0] != string(plan.Bootstrap) {
+		t.Fatalf("argv = %#v", plan.Args)
+	}
+}
+
 func TestPlanDestinationArgvFallbackUsesAbsoluteProjectionPath(t *testing.T) {
 	target := &pipelineTarget{maxArgvBytes: 1024}
 	home := filepath.Join(t.TempDir(), "reinstate-home")

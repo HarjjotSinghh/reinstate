@@ -1,6 +1,7 @@
 package handoff
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -8,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -677,13 +679,15 @@ func planDestination(
 		plan.Bootstrap = append([]byte(nil), renderedBootstrap...)
 		plan = rewriteBootstrapArgs(plan, renderedBootstrap)
 		caps := target.Capabilities()
-		if err := ValidateDestinationArgv(plan, caps.MaxArgvBytes); err != nil {
-			// Codex-style short fallback when full bootstrap exceeds argv budget.
-			projectionPath := filepath.Join(permanentHandoffDir(opts.ReinstateHome, c.Identity.ID), projectionFile)
-			if !filepath.IsAbs(projectionPath) {
-				return DestinationPlan{}, fidelity, pipelineErrorf(exitcode.Config, "handoff: absolute reinstate home is required for argv fallback")
+		// Windows CreateProcess truncates an argv element at embedded CR/LF
+		// (rc.9 dest-ack: Codex only received the first bootstrap line). Fall
+		// back whenever the briefing contains newlines, not only when it
+		// exceeds MaxArgvBytes.
+		if err := ValidateDestinationArgv(plan, caps.MaxArgvBytes); err != nil || argvUnsafeForLaunch(runtime.GOOS, plan.Bootstrap) {
+			short, shortErr := shortProjectionArgv(opts.ReinstateHome, c.Identity.ID)
+			if shortErr != nil {
+				return DestinationPlan{}, fidelity, pipelineErrorf(exitcode.Config, "handoff: %s", shortErr.Error())
 			}
-			short := []byte("Reinstate structured handoff — not native resume. Read " + projectionPath + " and continue from that briefing only. Acknowledge before any mutation.")
 			plan.Bootstrap = short
 			plan = rewriteBootstrapArgs(plan, short)
 			if err := ValidateDestinationArgv(plan, caps.MaxArgvBytes); err != nil {
@@ -692,6 +696,21 @@ func planDestination(
 		}
 	}
 	return plan, fidelity, nil
+}
+
+func argvUnsafeForLaunch(goos string, bootstrap []byte) bool {
+	if goos != "windows" {
+		return false
+	}
+	return bytes.ContainsAny(bootstrap, "\r\n")
+}
+
+func shortProjectionArgv(reinstateHome, capsuleID string) ([]byte, error) {
+	projectionPath := filepath.Join(permanentHandoffDir(reinstateHome, capsuleID), projectionFile)
+	if !filepath.IsAbs(projectionPath) {
+		return nil, errors.New("absolute reinstate home is required for argv fallback")
+	}
+	return []byte("Reinstate structured handoff — not native resume. Read " + projectionPath + " and continue from that briefing only. Acknowledge before any mutation."), nil
 }
 
 func rewriteBootstrapArgs(plan DestinationPlan, bootstrap []byte) DestinationPlan {
