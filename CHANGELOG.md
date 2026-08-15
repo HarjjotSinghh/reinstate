@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0-rc.9] - 2026-08-15
+
+Ninth Phase 4 candidate. `v0.4.0-rc.8` was published and physical dual-platform
+acceptance FAILED (macOS 38/44, Windows 38/44). RC8 dry-run exit 0 and
+`layout_recognized=true` PASSED. This candidate maps a recognized off-PATH
+layout to inspect JSON `agent.status=supported` without claiming a verified
+version range, and still fail-closes destination launch when the executable is
+missing. Dest-ack remains harness (logged-in throwaway dest), not product. It
+does not authorize stable `v0.4.0`; stable remains `v0.3.0`. Adds
+`docs/testing/v0.4.0-rc.9-agent-verification-prompts.md`.
+
+### Fixed
+
+- Off-PATH `Inspect` with a recognized layout reports `status=supported`
+  (`executable_present=false`) instead of `not_installed`, so inspect JSON
+  matches layout-only `SUPPORTED` and dry-run exit `0` (R1). Destination launch
+  still blocks when the executable is missing.
+
 ## [0.4.0-rc.8] - 2026-08-15
 
 Eighth Phase 4 candidate. `v0.4.0-rc.7` was published and physical dual-platform
@@ -970,6 +988,7 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 ---
 
 [Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.8...HEAD
+[0.4.0-rc.9]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.8...v0.4.0-rc.9
 [0.4.0-rc.8]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.7...v0.4.0-rc.8
 [0.4.0-rc.7]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.6...v0.4.0-rc.7
 [0.4.0-rc.6]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.5...v0.4.0-rc.6

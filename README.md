@@ -18,7 +18,7 @@ Intel macOS and Linux/WSL2 downloads remain preview/unverified pending issues
 [#97](https://github.com/HarjjotSinghh/reinstate/issues/97) and
 [#98](https://github.com/HarjjotSinghh/reinstate/issues/98).
 
-Current release candidate `v0.4.0-rc.8` adds Phase 4 explicit structured
+Current release candidate `v0.4.0-rc.9` adds Phase 4 explicit structured
 handoffs, which continue the same task in a *new* Claude Code or Codex session.
 Claude Code, Codex CLI, Gemini CLI, OpenCode, and Grok Build can be sources;
 Gemini, OpenCode, and Grok are source-only. The previous candidates
@@ -137,7 +137,7 @@ sensitive artifacts. Reinstate instead provides
 
 ## Features
 
-Phase 4 candidate `v0.4.0-rc.8`:
+Phase 4 candidate `v0.4.0-rc.9`:
 
 - **Directional structured handoff** — Claude Code and Codex are destinations;
   Claude Code, Codex, Gemini, OpenCode, and Grok are sources
@@ -196,7 +196,7 @@ not part of the current CLI. See
 
 ## Quick start
 
-> **Platform boundary:** the public installers pin candidate `v0.4.0-rc.8`.
+> **Platform boundary:** the public installers pin candidate `v0.4.0-rc.9`.
 > Its tagged-artifact acceptance is pending on Apple Silicon macOS and native
 > Windows x64. Stable remains `v0.3.0`; Intel macOS and Linux/WSL2 remain
 > optional and unverified
@@ -263,7 +263,7 @@ brew install HarjjotSinghh/tap/reinstate
 The tap formula tracks stable `v0.3.0`. Intel macOS and Linuxbrew remain
 optional and unverified for this release.
 
-### Install the v0.4.0-rc.8 candidate
+### Install the v0.4.0-rc.9 candidate
 
 These public bootstrap routes install the candidate, not the stable Homebrew
 formula. RC2 tagged-artifact acceptance is pending.
@@ -280,7 +280,7 @@ Native Windows PowerShell:
 irm https://reinstate.dev/install.ps1 | iex
 ```
 
-Both bootstraps pin and verify `v0.4.0-rc.8`, install without elevation, and
+Both bootstraps pin and verify `v0.4.0-rc.9`, install without elevation, and
 print the next command:
 
 ```bash
@@ -336,7 +336,7 @@ Full walkthrough: **[docs/getting-started.md](docs/getting-started.md)**
 | [OpenCode](https://opencode.ai) | ✅ read-only | — | rc.2 source-only | — | — |
 | [Grok Build](https://x.ai) | rc.2 read-only | — | rc.2 source-only | — | — |
 
-The handoff columns describe the `v0.4.0-rc.8` candidate and remain subject to
+The handoff columns describe the `v0.4.0-rc.9` candidate and remain subject to
 tagged macOS arm64 and Windows amd64 acceptance. Native resume/fork and
 encrypted sync remain same-vendor capabilities.
 
@@ -491,7 +491,7 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 | **1** | Claude + Codex encrypted same-vendor session sync | ✅ |
 | **2** | Configless local index, search, native resume/fork | ✅ |
 | **3** | Verified resume (stable `v0.3.0`) | ✅ |
-| **4** | Structured cross-agent handoffs (`v0.4.0-rc.8` candidate) | 🚧 |
+| **4** | Structured cross-agent handoffs (`v0.4.0-rc.9` candidate) | 🚧 |
 | **5–7** | Universal config + automatic sync, thin Console/ACP client, teams | 📋 / 💭 |
 
 Full detail: **[ROADMAP.md](ROADMAP.md)**

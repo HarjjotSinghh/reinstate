@@ -13,7 +13,7 @@ func TestEndUserPromptContracts(t *testing.T) {
 		body := read(t, path)
 		required := []string{
 			"Prompt version:** 9",
-			"v0.4.0-rc.8",
+			"v0.4.0-rc.9",
 			"https://reinstate.dev/install.sh",
 			"https://reinstate.dev/install.ps1",
 			"github.com/HarjjotSinghh/reinstate/releases/download/",
@@ -77,6 +77,36 @@ func TestV040RC8AcceptancePromptContracts(t *testing.T) {
 	} {
 		if !strings.Contains(body, value) {
 			t.Errorf("v0.4.0-rc.8 acceptance prompts missing %q", value)
+		}
+	}
+}
+
+func TestV040RC9AcceptancePromptContracts(t *testing.T) {
+	body := read(t, "docs/testing/v0.4.0-rc.9-agent-verification-prompts.md")
+	for _, value := range []string{
+		"v0.4.0-rc.9",
+		"Why RC9 exists",
+		"V040RC9",
+		"PHASE4-RC9-FINAL-RECONCILIATION-V1",
+		"phase4_rc9_tagged_artifact_acceptance",
+		"test/v0.4.0-rc.9-macos-arm64-report",
+		"test/v0.4.0-rc.9-windows-amd64-report",
+		"Go 1.25.13",
+		"2.1.219",
+		"2.1.229",
+		"0.133.0",
+		"0.147.0",
+		"environment.agent.status",
+		"Do not weaken F8",
+		"resume claude:<uuid> --with codex --dry-run --json",
+		"resume grok:<id>",
+		"$env:GOTOOLCHAIN='go1.25.13'",
+		"current_stable=v0.3.0",
+		"stable_v0.4.0_authorized=false",
+		"Prove throwaway dest",
+	} {
+		if !strings.Contains(body, value) {
+			t.Errorf("v0.4.0-rc.9 acceptance prompts missing %q", value)
 		}
 	}
 }

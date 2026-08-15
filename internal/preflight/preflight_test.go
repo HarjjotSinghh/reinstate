@@ -90,16 +90,43 @@ func TestVerifyReadOnlyOffPATHSourceRecognizesLayout(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if report.Agent.Status != agentcheck.StatusNotInstalled || report.Agent.ExecutablePresent || !report.Agent.LayoutRecognized {
+	if report.Agent.Status != agentcheck.StatusSupported || report.Agent.ExecutablePresent || !report.Agent.LayoutRecognized {
 		t.Fatalf("off-PATH agent = %+v", report.Agent)
 	}
 	present := findCheck(t, report, "agent.executable")
 	if present.Severity != SeverityInfo {
 		t.Fatalf("agent.executable = %+v", present)
 	}
+	version := findCheck(t, report, "agent.version")
+	if version.Status != StatusUnknown || version.Severity != SeverityInfo {
+		t.Fatalf("agent.version = %+v", version)
+	}
 	if report.Decision == DecisionBlocked {
 		t.Fatalf("read-only off-PATH layout blocked: decision=%s executable=%+v layout=%+v",
 			report.Decision, present, findCheck(t, report, "agent.layout"))
+	}
+}
+
+func TestVerifyDestinationOffPATHSourceStillBlocks(t *testing.T) {
+	t.Parallel()
+	fixture := newFixture(t, "https://example.com/org/repo.git")
+	fixture.options.Agent.LookPath = func(string) (string, error) {
+		return "", errors.New("not on PATH")
+	}
+	input := Input{
+		SessionRef: "claude:controlled", Agent: "claude", Workspace: fixture.workspace,
+		SourceFresh: true, ReadOnly: false,
+	}
+	report, err := Verify(context.Background(), input, fixture.options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.Agent.Status != agentcheck.StatusSupported || report.Agent.ExecutablePresent || !report.Agent.LayoutRecognized {
+		t.Fatalf("off-PATH destination agent = %+v", report.Agent)
+	}
+	present := findCheck(t, report, "agent.executable")
+	if present.Severity != SeverityBlock || report.Decision != DecisionBlocked {
+		t.Fatalf("destination off-PATH = decision=%s executable=%+v", report.Decision, present)
 	}
 }
 

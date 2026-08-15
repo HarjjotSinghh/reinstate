@@ -148,10 +148,10 @@ func TestInspectMissingExecutableStillRecognizesLayout(t *testing.T) {
 		Runner:          runner,
 		CaptureIdentity: testExecutableIdentity,
 	})
-	if result.Status != StatusNotInstalled || result.ExecutablePresent || !result.LayoutRecognized {
+	if result.Status != StatusSupported || result.ExecutablePresent || !result.LayoutRecognized {
 		t.Fatalf("off-PATH layout result = %+v", result)
 	}
-	if result.Layout != "projects-jsonl" || !strings.Contains(result.Message, "executable") {
+	if result.Layout != "projects-jsonl" || result.Version != "" || !strings.Contains(result.Message, "not determinable") {
 		t.Fatalf("off-PATH layout message = %+v", result)
 	}
 	if runner.name != "" {

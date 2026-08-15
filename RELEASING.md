@@ -165,18 +165,22 @@ acceptance **FAILED**. Corrective product fixes for those rc.6 failures land in
 `v0.4.0-rc.7`. That candidate was published and physical dual-platform
 acceptance **FAILED**. Corrective product fixes for the remaining rc.7 product
 defect (R1 off-PATH layout scan) and the Go 1.25.13 toolchain pin land in
-`v0.4.0-rc.8`.
+`v0.4.0-rc.8`. That candidate was published and physical dual-platform
+acceptance **FAILED** (macOS 38/44, Windows 38/44). The remaining product
+defect is Windows off-PATH `inspect` JSON `agent.status=not_installed` despite
+`layout_recognized=true`; dest-ack A1–A7 stayed harness/uncollected. That
+inspect mapping lands in `v0.4.0-rc.9`.
 
-### v0.4.0-rc.8 candidate gate
+### v0.4.0-rc.9 candidate gate
 
 The Phase 4 candidate uses the committed
-[`v0.4.0-rc.8` dispatch](docs/testing/v0.4.0-rc.8-agent-verification-prompts.md)
+[`v0.4.0-rc.9` dispatch](docs/testing/v0.4.0-rc.9-agent-verification-prompts.md)
 and [Phase 4 acceptance contract](docs/testing/phase-4-cross-agent-handoff-acceptance.md).
 Start its two independent device runs only after the signed tag is published,
 all release artifacts verify, and both live installer routes pin that exact
 candidate. Required Claude ↔ Codex structured handoff, fidelity, workspace,
 security, CLI, and performance rows must all pass on Apple Silicon macOS and
-native Windows x64, including RC1 R1–R6, the RC2, RC3, RC5, RC6, RC7, and RC8 regression sets.
+native Windows x64, including RC1 R1–R6, the RC2, RC3, RC5, RC6, RC7, RC8, and RC9 regression sets.
 Gemini CLI,
 OpenCode, and Grok Build remain optional source-only rows and may be
 `NOT TESTED` only when genuinely absent; do not install them solely for
@@ -187,7 +191,7 @@ stays `0.133.0`–`0.147.0`. Re-check both hosts' installed versions immediately
 before tagging. Claude Code auto-updates. A PATH Claude of `2.1.230` must
 fail-closed (exit 5) without `--allow-untested`.
 
-`v0.4.0-rc.8` publication means ready for tagged-artifact acceptance. It is not
+`v0.4.0-rc.9` publication means ready for tagged-artifact acceptance. It is not
 evidence that the matrix passed, does not authorize stable `v0.4.0`, and does
 not change the current stable release from `v0.3.0`.
 
