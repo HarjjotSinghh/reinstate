@@ -199,17 +199,16 @@ Automation: --allow-environment-warning <exact-check-id>
 
 ## Phase 4 — Cross-agent handoff (portable checkpoints) 🚧
 
-**Gate:** tagged `v0.4.0-rc.8` artifacts complete Claude Code → Codex and Codex
+**Gate:** tagged `v0.4.0-rc.9` artifacts complete Claude Code → Codex and Codex
 → Claude structured handoffs on macOS arm64 and Windows amd64. Each path starts
 a new destination session for the same task, with no source model call and no
 vendor-internal writes.
 
-*Included in release candidate `v0.4.0-rc.8`. The earlier `v0.4.0-rc.1`
-through `v0.4.0-rc.5` candidates were published and failed physical
-acceptance; rc.6 carries the rc.5 product fixes. Dual-platform tagged-artifact
-acceptance on Apple Silicon macOS and native Windows x64 is pending for rc.6;
-this candidate does not authorize stable `v0.4.0`. Stable `v0.3.0` does not
-include structured handoff.*
+*Included in release candidate `v0.4.0-rc.9`. The earlier `v0.4.0-rc.1`
+through `v0.4.0-rc.8` candidates were published and failed physical
+acceptance. Dual-platform tagged-artifact acceptance on Apple Silicon macOS
+and native Windows x64 is pending for rc.9; this candidate does not authorize
+stable `v0.4.0`. Stable `v0.3.0` does not include structured handoff.*
 
 | Item | Status |
 | ---- | ------ |
@@ -220,7 +219,7 @@ include structured handoff.*
 | Local-only private capsule store and append-only lineage | ✅ |
 | `rein handoff` / `rein resume --with <agent>` | ✅ |
 | Adversarial, golden, determinism, performance, and documentation gates | ✅ |
-| Tagged dual-platform `v0.4.0-rc.8` acceptance | 🚧 |
+| Tagged dual-platform `v0.4.0-rc.9` acceptance | 🚧 |
 
 Gemini CLI, OpenCode, and Grok Build are source-only in rc.4. Claude Code and
 Codex are the only handoff targets. Capsules are hard-excluded from sync, and
@@ -233,7 +232,7 @@ Fidelity model:
 | ---- | ------- |
 | **Native resume** | Claude → Claude Code (highest fidelity) |
 | **Structured handoff** | A new destination session receives task state, selected history, evidence, and an explicit fidelity report |
-| **Reconstructed conversation** | Reserved and not shipped in `v0.4.0-rc.8` |
+| **Reconstructed conversation** | Reserved and not shipped in `v0.4.0-rc.9` |
 
 ---
 

@@ -5,7 +5,7 @@ export const prerender = true;
 
 const title = 'Reinstate Roadmap: From Encrypted Sync to Work Continuity';
 const description =
-  'Review stable v0.3.0 verified resume, the v0.4.0-rc.8 structured-handoff candidate, and which configuration features remain planned.';
+  'Review stable v0.3.0 verified resume, the v0.4.0-rc.9 structured-handoff candidate, and which configuration features remain planned.';
 ---
 
 <PublicContentLayout
@@ -13,7 +13,7 @@ const description =
   {description}
   path="/roadmap"
   eyebrow="Product roadmap"
-  answer="Stable v0.2.0 implements encrypted same-vendor sync and local continuity. Stable v0.3.0 adds verified resume, with dual-platform tagged-artifact acceptance PASS. Candidate v0.4.0-rc.8 adds explicit structured cross-agent handoff, and its tagged-artifact acceptance is pending after the previous release candidate failed that acceptance. Intel macOS and Linux/WSL2 remain optional and unverified. Universal non-secret configuration, a thin console, and team continuity remain later phases."
+  answer="Stable v0.2.0 implements encrypted same-vendor sync and local continuity. Stable v0.3.0 adds verified resume, with dual-platform tagged-artifact acceptance PASS. Candidate v0.4.0-rc.9 adds explicit structured cross-agent handoff, and its tagged-artifact acceptance is pending after the previous release candidate failed that acceptance. Intel macOS and Linux/WSL2 remain optional and unverified. Universal non-secret configuration, a thin console, and team continuity remain later phases."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'Roadmap', path: '/roadmap' },
@@ -33,7 +33,7 @@ const description =
       Stable <code>v0.3.0</code> supports encrypted same-vendor Claude Code and Codex session
       synchronization, configless local continuity, and Phase 3 verified resume. Apple Silicon
       macOS and native Windows x64 are verified stable platforms; Intel macOS and Linux/WSL2
-      remain preview and unverified. Candidate <code>v0.4.0-rc.8</code> adds Phase 4 structured
+      remain preview and unverified. Candidate <code>v0.4.0-rc.9</code> adds Phase 4 structured
       handoff; its dual-platform tagged-artifact acceptance is pending and it does not authorize
       stable <code>v0.4.0</code>. The previous release candidate was published and failed that
       acceptance; see the <a href="/changelog">changelog</a>.
@@ -81,7 +81,7 @@ const description =
           <td>Explicit portable checkpoints for cross-agent handoff</td>
           <td>Candidate</td>
           <td>
-            <code>v0.4.0-rc.8</code> published for testing; tagged-artifact acceptance pending
+            <code>v0.4.0-rc.9</code> published for testing; tagged-artifact acceptance pending
             after the previous candidate failed it. Lossy behavior and destination capability
             differences remain visible
           </td>
@@ -112,7 +112,7 @@ const description =
   <p>
     Native resume preserves a vendor's own session format: Claude Code resumes Claude Code, and
     Codex resumes Codex. A structured handoff is a different operation: candidate
-    <code>v0.4.0-rc.8</code> carries an explicit checkpoint—goal, decisions, rejected approaches,
+    <code>v0.4.0-rc.9</code> carries an explicit checkpoint—goal, decisions, rejected approaches,
     files, tests, and next action—so a <em>new</em> session in another agent can continue the same
     task. It is not a resume of the original session, and Reinstate will not market that lossy
     checkpoint as invisible transcript translation.

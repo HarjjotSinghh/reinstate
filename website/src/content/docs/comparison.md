@@ -6,7 +6,7 @@ order: 6
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.4.0-rc.8"
+version: "v0.4.0-rc.9"
 updatedAt: 2026-08-01
 tags: ["comparison", "session-sync", "developer-tools", "coding-agents"]
 targetQuery: "Reinstate alternatives"

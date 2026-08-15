@@ -180,6 +180,8 @@ func Inspect(ctx context.Context, agentName string, opts Options) Result {
 	}
 	result.LayoutRecognized = true
 	if executableMissing {
+		result.Status = StatusSupported
+		result.Message = "native agent version is not determinable; the session layout is still readable"
 		return result
 	}
 

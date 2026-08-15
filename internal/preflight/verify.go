@@ -252,8 +252,10 @@ func agentChecks(result agentcheck.Result, readOnly bool) []Check {
 	version := Check{ID: "agent.version", Actual: result.Version,
 		Provenance: workspace.ProvenanceCurrentObservation}
 	switch {
-	case result.Status == agentcheck.StatusSupported:
+	case result.Status == agentcheck.StatusSupported && strings.TrimSpace(result.Version) != "":
 		version.Status, version.Severity, version.Message = StatusMatch, SeverityInfo, "the native agent version is in the verified range"
+	case result.Status == agentcheck.StatusSupported:
+		version.Status, version.Severity, version.Message = StatusUnknown, SeverityInfo, "the native agent version is not determinable; the session layout is still readable"
 	case readOnly && result.Status == agentcheck.StatusNotInstalled:
 		version.Status, version.Severity, version.Message = StatusUnknown, SeverityInfo, "the native agent version is not determinable; the session layout is still readable"
 	case readOnly && sourceOnlyAgent(result):

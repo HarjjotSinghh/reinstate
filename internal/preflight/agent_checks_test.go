@@ -75,6 +75,39 @@ func TestAgentChecksReadOnlyMissingExecutableIsInformational(t *testing.T) {
 	}
 }
 
+func TestAgentChecksLayoutOnlySupportedDoesNotClaimVerifiedRange(t *testing.T) {
+	t.Parallel()
+	checks := agentChecks(agentcheck.Result{
+		Status:            agentcheck.StatusSupported,
+		LayoutRecognized:  true,
+		ExecutablePresent: false,
+	}, true)
+	version := findAgentCheck(t, checks, "agent.version")
+	if version.Status != StatusUnknown || version.Severity != SeverityInfo {
+		t.Fatalf("layout-only supported version = %+v", version)
+	}
+	if strings.Contains(version.Message, "verified range") {
+		t.Fatalf("layout-only supported claimed a verified range: %q", version.Message)
+	}
+	present := findAgentCheck(t, checks, "agent.executable")
+	if present.Severity != SeverityInfo {
+		t.Fatalf("layout-only supported executable = %+v", present)
+	}
+}
+
+func TestAgentChecksDestinationMissingExecutableStillBlocks(t *testing.T) {
+	t.Parallel()
+	checks := agentChecks(agentcheck.Result{
+		Status:            agentcheck.StatusSupported,
+		LayoutRecognized:  true,
+		ExecutablePresent: false,
+	}, false)
+	present := findAgentCheck(t, checks, "agent.executable")
+	if present.Status != StatusMissing || present.Severity != SeverityBlock || present.ExitCode != exitcode.Compatibility {
+		t.Fatalf("destination missing executable = %+v", present)
+	}
+}
+
 func findAgentCheck(t *testing.T, checks []Check, id string) Check {
 	t.Helper()
 	for _, check := range checks {

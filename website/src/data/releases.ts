@@ -1,9 +1,15 @@
 export const releaseHistory = [
   {
+    version: 'v0.4.0-rc.9',
+    date: '2026-08-15',
+    summary:
+      'Ninth Phase 4 candidate after v0.4.0-rc.8 physical dual-platform acceptance FAILED (macOS 38/44, Windows 38/44; Windows inspect JSON agent.status=not_installed despite layout_recognized=true). Tagged-artifact acceptance is pending.',
+  },
+  {
     version: 'v0.4.0-rc.8',
     date: '2026-08-15',
     summary:
-      'Eighth Phase 4 candidate after v0.4.0-rc.7 physical dual-platform acceptance FAILED (macOS 38/44, Windows 34/44; R1 off-PATH Inspect StatusNotInstalled before layout scan). Pins Go 1.25.13 for govulncheck. Tagged-artifact acceptance is pending.',
+      'Eighth Phase 4 candidate after v0.4.0-rc.7 physical dual-platform acceptance FAILED (macOS 38/44, Windows 34/44; R1 off-PATH Inspect StatusNotInstalled before layout scan). Pins Go 1.25.13 for govulncheck. Physical dual-platform acceptance FAILED: macOS 38/44, Windows 38/44; remaining product defect was Windows inspect JSON not_installed.',
   },
   {
     version: 'v0.4.0-rc.7',
