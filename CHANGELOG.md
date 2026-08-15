@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0-rc.10] - 2026-08-15
+
+Tenth Phase 4 candidate. `v0.4.0-rc.9` was published and physical dual-platform
+acceptance FAILED (macOS 38/44, Windows 38/44). Remaining product defect was
+Windows CreateProcess truncating multi-line dest argv (Codex dest-ack A5/A7).
+This candidate falls back to the one-line absolute `projection.md` pointer
+whenever the briefing contains CR/LF. Dest-ack remains harness (logged-in
+throwaway dest), not product. Does not authorize stable `v0.4.0`; stable remains
+`v0.3.0`. Adds `docs/testing/v0.4.0-rc.10-agent-verification-prompts.md`.
+
 ### Fixed
 
 - Destination argv never includes embedded CR/LF. Windows CreateProcess
@@ -995,7 +1005,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.8...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.10...HEAD
+[0.4.0-rc.10]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.9...v0.4.0-rc.10
 [0.4.0-rc.9]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.8...v0.4.0-rc.9
 [0.4.0-rc.8]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.7...v0.4.0-rc.8
 [0.4.0-rc.7]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.6...v0.4.0-rc.7

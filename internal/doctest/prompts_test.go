@@ -13,7 +13,7 @@ func TestEndUserPromptContracts(t *testing.T) {
 		body := read(t, path)
 		required := []string{
 			"Prompt version:** 9",
-			"v0.4.0-rc.9",
+			"v0.4.0-rc.10",
 			"https://reinstate.dev/install.sh",
 			"https://reinstate.dev/install.ps1",
 			"github.com/HarjjotSinghh/reinstate/releases/download/",
@@ -77,6 +77,37 @@ func TestV040RC8AcceptancePromptContracts(t *testing.T) {
 	} {
 		if !strings.Contains(body, value) {
 			t.Errorf("v0.4.0-rc.8 acceptance prompts missing %q", value)
+		}
+	}
+}
+
+func TestV040RC10AcceptancePromptContracts(t *testing.T) {
+	body := read(t, "docs/testing/v0.4.0-rc.10-agent-verification-prompts.md")
+	for _, value := range []string{
+		"v0.4.0-rc.10",
+		"Why RC10 exists",
+		"V040RC10",
+		"PHASE4-RC10-FINAL-RECONCILIATION-V1",
+		"phase4_rc10_tagged_artifact_acceptance",
+		"test/v0.4.0-rc.10-macos-arm64-report",
+		"test/v0.4.0-rc.10-windows-amd64-report",
+		"Go 1.25.13",
+		"2.1.219",
+		"2.1.229",
+		"0.133.0",
+		"0.147.0",
+		"projection.md",
+		"Do not weaken F8",
+		"05-destack.ps1",
+		"resume claude:<uuid> --with codex --dry-run --json",
+		"resume grok:<id>",
+		"$env:GOTOOLCHAIN='go1.25.13'",
+		"current_stable=v0.3.0",
+		"stable_v0.4.0_authorized=false",
+		"Prove throwaway dest",
+	} {
+		if !strings.Contains(body, value) {
+			t.Errorf("v0.4.0-rc.10 acceptance prompts missing %q", value)
 		}
 	}
 }
