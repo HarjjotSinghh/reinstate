@@ -125,10 +125,19 @@ func (t *ClaudeTarget) Plan(c capsule.Capsule, policy Policy) (DestinationPlan, 
 	return plan, fidelity, nil
 }
 
-// Materialize validates argv and writes only PlannedFile entries (none for the
-// Claude launch route — capsule/projection live under $REINSTATE_HOME/handoffs).
+// Materialize validates argv and, when a dest Claude home is explicit
+// (ConfigDir or CLAUDE_CONFIG_DIR), records hasTrustDialogAccepted for
+// plan.Dir so dest-ack is not blocked on "trust this folder". It never writes
+// default ~/.claude when those overrides are unset.
 func (t *ClaudeTarget) Materialize(_ context.Context, plan DestinationPlan) error {
-	return WritePlannedFiles(plan, t.Capabilities().MaxArgvBytes, nil)
+	if err := WritePlannedFiles(plan, t.Capabilities().MaxArgvBytes, nil); err != nil {
+		return err
+	}
+	root, err := t.claudeRoot()
+	if err != nil || root == "" {
+		return err
+	}
+	return acceptClaudeWorkspaceTrust(root, plan.Dir)
 }
 
 // Launch runs the destination via the injected LaunchRunner. Production passes

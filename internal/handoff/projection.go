@@ -246,15 +246,21 @@ func acknowledgementBlock() string {
 	return strings.Join([]string{
 		"## Acknowledgement required",
 		"",
-		"Before any mutation, restate:",
+		"Your first reply must restate these five bullets before any mutation. Do not start work until you have restated them.",
 		"1. current goal and latest user request",
 		"2. critical constraints carried over",
 		"3. current changed files and test state",
 		"4. missing capabilities or uncertain evidence",
 		"5. proposed next action",
-		"This is a prompt-level contract only; Reinstate cannot police the destination agent loop.",
 		"",
 	}, "\n")
+}
+
+// firstReplyAckOneLine is the CR/LF-free dest argv instruction. Windows
+// CreateProcess truncates argv at a newline, so the five bullets must fit in
+// the same one-line projection.md pointer used as the dest bootstrap.
+func firstReplyAckOneLine() string {
+	return "First reply must restate these five bullets before any mutation: (1) current goal and latest user request (2) critical constraints carried over (3) current changed files and test state (4) missing capabilities or uncertain evidence (5) proposed next action."
 }
 
 func writeSection(b *strings.Builder, title, body string) {

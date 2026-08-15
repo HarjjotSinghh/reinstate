@@ -14,7 +14,7 @@
     "args": [
       "--session-id",
       "9d1105f3-9018-4d9e-a200-d4e27ffca6a9",
-      "Reinstate structured handoff — not native resume. Read ${REINSTATE_HOME}/handoffs/35d62bdecacd1e28cfe515d888d73852/projection.md and continue from that briefing only. Acknowledge before any mutation."
+      "Reinstate structured handoff — not native resume. Read ${REINSTATE_HOME}/handoffs/35d62bdecacd1e28cfe515d888d73852/projection.md and continue from that briefing only. First reply must restate these five bullets before any mutation: (1) current goal and latest user request (2) critical constraints carried over (3) current changed files and test state (4) missing capabilities or uncertain evidence (5) proposed next action."
     ],
     "cwd": "${WORKSPACE}"
   },

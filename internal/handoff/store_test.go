@@ -194,6 +194,68 @@ func TestStoreRootNeverInsideModuleRepository(t *testing.T) {
 	}
 }
 
+func TestListRecoversArtifactDirWithoutLineage(t *testing.T) {
+	t.Parallel()
+	store, err := OpenStore(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	id, err := store.Put(testCapsule("aabbccddeeff00112233445566778899"), Artifacts{
+		ProjectionMD: []byte("# p\n"),
+		Bootstrap:    []byte("boot"),
+		FidelityJSON: []byte(`{"overall":"normalized","mode":"structured_handoff","components":[]}`),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	entries, err := store.List(10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 || entries[0].HandoffID != id || entries[0].Source.Agent != "claude" {
+		t.Fatalf("recovered list = %+v", entries)
+	}
+	if _, err := os.Stat(filepath.Join(store.Root(), lineageFileName)); !errors.Is(err, os.ErrNotExist) {
+		t.Fatal("dir recovery must not create lineage.jsonl")
+	}
+}
+
+func TestListKeepsRepeatedLineageRowsForSameHandoffID(t *testing.T) {
+	t.Parallel()
+	store, err := OpenStore(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	id, err := store.Put(testCapsule("aabbccddeeff00112233445566778899"), Artifacts{
+		ProjectionMD: []byte("# p\n"),
+		Bootstrap:    []byte("boot"),
+		FidelityJSON: []byte(`{"overall":"normalized","mode":"structured_handoff","components":[]}`),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 3; i++ {
+		if err := store.AppendLineage(LineageEntry{
+			HandoffID:   id,
+			LineageRoot: id,
+			CreatedAt:   time.Date(2026, 8, 12, 10, i, 0, 0, time.UTC),
+			Source:      LineageEndpoint{Agent: "claude", SessionID: "s1"},
+			Destination: LineageEndpoint{Agent: "codex", State: "resolved"},
+			Policy:      "balanced",
+			Launched:    true,
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	entries, err := store.List(10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 3 {
+		t.Fatalf("List = %d, want 3 lineage rows (no HandoffID dedupe)", len(entries))
+	}
+}
+
 func testCapsule(id string) capsule.Capsule {
 	return capsule.Capsule{
 		Schema: capsule.Schema,

@@ -78,7 +78,7 @@ func TestCodexTargetArgvFallbackAtCeiling(t *testing.T) {
 	workspace := t.TempDir()
 	// Force the full bootstrap over budget so Plan must use the short form.
 	// Short argv is ~146 bytes; full with long goal/intent is ~565.
-	target := NewCodexTarget(&CodexTarget{MaxArgvBytes: 200})
+	target := NewCodexTarget(&CodexTarget{MaxArgvBytes: 450})
 	capBody := testCodexCapsule(workspace, strings.Repeat("G", 200), strings.Repeat("I", 200))
 	plan, _, err := target.Plan(capBody, PolicyBalanced)
 	if err != nil {
@@ -89,7 +89,10 @@ func TestCodexTargetArgvFallbackAtCeiling(t *testing.T) {
 		t.Fatalf("fallback bootstrap = %q, want %q", plan.Bootstrap, wantShort)
 	}
 	if !strings.Contains(wantShort, "projection.md") {
-		t.Fatal("short bootstrap must reference projection.md only")
+		t.Fatal("short bootstrap must reference projection.md")
+	}
+	if !strings.Contains(wantShort, firstReplyAckOneLine()) {
+		t.Fatal("short bootstrap must include the five-bullet first-reply contract")
 	}
 	if err := ValidateDestinationArgv(plan, target.Capabilities().MaxArgvBytes); err != nil {
 		t.Fatalf("short bootstrap still over budget: %v", err)

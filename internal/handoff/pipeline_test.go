@@ -537,8 +537,11 @@ func TestExecutePersistsLaunchesVerifiesAndRecordsLineage(t *testing.T) {
 		t.Fatal("stored handoff differs from the executed plan")
 	}
 	entries, err := store.List(10)
-	if err != nil || len(entries) != 1 || entries[0].HandoffID != result.HandoffID {
-		t.Fatalf("lineage list = %+v, %v", entries, err)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !lineageHasOutcome(entries, result.HandoffID, true, VerifyResolved) {
+		t.Fatalf("lineage list = %+v", entries)
 	}
 }
 
@@ -558,7 +561,7 @@ func TestExecuteRecordsLineageWhenPostLaunchVerifyFails(t *testing.T) {
 		t.Fatal(openErr)
 	}
 	entries, listErr := store.List(10)
-	if listErr != nil || len(entries) != 1 || !entries[0].Launched || entries[0].Destination.State != VerifyUnresolved {
+	if listErr != nil || !lineageHasOutcome(entries, result.HandoffID, true, VerifyUnresolved) {
 		t.Fatalf("lineage after verify failure = %+v, %v", entries, listErr)
 	}
 }
@@ -581,7 +584,7 @@ func TestExecuteRecordsLineageWhenLaunchReturnsError(t *testing.T) {
 		t.Fatal(openErr)
 	}
 	entries, listErr := store.List(10)
-	if listErr != nil || len(entries) != 1 || entries[0].Launched || entries[0].Destination.State != VerifyUnresolved {
+	if listErr != nil || !lineageHasOutcome(entries, result.HandoffID, false, VerifyUnresolved) {
 		t.Fatalf("lineage after launch error = %+v, %v", entries, listErr)
 	}
 }
@@ -605,7 +608,7 @@ func TestExecuteReconcilesAndRecordsTypedPostSpawnError(t *testing.T) {
 		t.Fatal(openErr)
 	}
 	entries, listErr := store.List(10)
-	if listErr != nil || len(entries) != 1 || !entries[0].Launched || entries[0].Destination.State != VerifyResolved {
+	if listErr != nil || !lineageHasOutcome(entries, result.HandoffID, true, VerifyResolved) {
 		t.Fatalf("post-spawn lineage = %+v, %v", entries, listErr)
 	}
 }
@@ -724,6 +727,9 @@ func TestPlanDestinationNewlineBootstrapUsesShortArgv(t *testing.T) {
 	if !filepath.IsAbs(want) || !strings.Contains(string(plan.Bootstrap), want) {
 		t.Fatalf("fallback bootstrap = %q, want absolute projection path %q", plan.Bootstrap, want)
 	}
+	if !strings.Contains(string(plan.Bootstrap), firstReplyAckOneLine()) {
+		t.Fatalf("fallback bootstrap missing five-bullet ack: %q", plan.Bootstrap)
+	}
 	if len(plan.Args) == 0 || plan.Args[len(plan.Args)-1] != string(plan.Bootstrap) {
 		t.Fatalf("argv = %#v, bootstrap = %q", plan.Args, plan.Bootstrap)
 	}
@@ -751,6 +757,9 @@ func TestPlanDestinationArgvFallbackUsesAbsoluteProjectionPath(t *testing.T) {
 	want := filepath.Join(home, handoffsDirName, c.Identity.ID, projectionFile)
 	if !filepath.IsAbs(want) || !strings.Contains(string(plan.Bootstrap), want) {
 		t.Fatalf("fallback bootstrap = %q, want absolute projection path %q", plan.Bootstrap, want)
+	}
+	if !strings.Contains(string(plan.Bootstrap), firstReplyAckOneLine()) {
+		t.Fatalf("byte-budget fallback missing five-bullet ack: %q", plan.Bootstrap)
 	}
 }
 
@@ -1195,5 +1204,50 @@ func writePipelineLineage(t *testing.T, home string, entries ...LineageEntry) {
 	}
 	if err := os.WriteFile(filepath.Join(dir, lineageFileName), body.Bytes(), 0o600); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func lineageHasOutcome(entries []LineageEntry, id string, launched bool, state string) bool {
+	for _, e := range entries {
+		if e.HandoffID == id && e.Launched == launched && e.Destination.State == state {
+			return true
+		}
+	}
+	return false
+}
+
+type listDuringLaunchRunner struct {
+	home       string
+	n          int
+	hasLineage bool
+}
+
+func (r *listDuringLaunchRunner) Run(context.Context, sessionindex.LaunchPlan) error {
+	store, err := OpenStore(r.home)
+	if err != nil {
+		return err
+	}
+	entries, err := store.List(10)
+	if err != nil {
+		return err
+	}
+	r.n = len(entries)
+	_, statErr := os.Stat(filepath.Join(store.Root(), lineageFileName))
+	r.hasLineage = statErr == nil
+	return nil
+}
+
+func TestExecuteRecordsLineageBeforeLaunchReturns(t *testing.T) {
+	rec, _, _, _, opts := pipelineFixture(t)
+	runner := &listDuringLaunchRunner{home: opts.ReinstateHome}
+	opts.LaunchRunner = runner
+	if _, err := Execute(context.Background(), rec, opts, true); err != nil {
+		t.Fatal(err)
+	}
+	if runner.n < 1 {
+		t.Fatalf("lineage visible during launch = %d, want >= 1", runner.n)
+	}
+	if !runner.hasLineage {
+		t.Fatal("lineage.jsonl must exist before dest Launch returns")
 	}
 }

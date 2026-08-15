@@ -2,6 +2,7 @@ package handoff
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -235,24 +236,40 @@ func TestClaudeTargetLaunchNonTTYRefuses(t *testing.T) {
 	}
 }
 
-func TestClaudeTargetMaterializeNoVendorWrites(t *testing.T) {
+func TestClaudeTargetMaterializeWritesOnlyWorkspaceTrust(t *testing.T) {
 	t.Parallel()
 
 	config := t.TempDir()
+	workspace := t.TempDir()
 	target := &ClaudeTarget{ConfigDir: config}
 	plan := DestinationPlan{
 		Executable: "claude",
 		Args:       []string{"--session-id", "00000000-0000-4000-8000-000000000010", "x"},
-		Dir:        t.TempDir(),
+		Dir:        workspace,
 		SessionID:  "00000000-0000-4000-8000-000000000010",
 	}
 	if err := target.Materialize(context.Background(), plan); err != nil {
 		t.Fatalf("Materialize: %v", err)
 	}
-	if entries, err := os.ReadDir(config); err != nil {
+	entries, err := os.ReadDir(config)
+	if err != nil {
 		t.Fatal(err)
-	} else if len(entries) != 0 {
-		t.Fatalf("ConfigDir mutated: %v", entries)
+	}
+	if len(entries) != 1 || entries[0].Name() != claudeDestConfigName {
+		t.Fatalf("ConfigDir entries = %v, want only %s", entries, claudeDestConfigName)
+	}
+	raw, err := os.ReadFile(filepath.Join(config, claudeDestConfigName))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc map[string]any
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		t.Fatal(err)
+	}
+	projects, _ := doc["projects"].(map[string]any)
+	proj, _ := projects[workspace].(map[string]any)
+	if proj["hasTrustDialogAccepted"] != true {
+		t.Fatalf("workspace trust = %#v", proj)
 	}
 }
 

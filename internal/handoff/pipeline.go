@@ -568,6 +568,13 @@ func Execute(ctx context.Context, rec sessionindex.Record, opts Options, launch 
 	destID := plan.Destination.SessionID
 	destState := VerifyUnresolved
 	launched := false
+	entry := newLineageEntry(plan, opts, id, now, destID, destState, false)
+	// Persist lineage before dest Launch so a killed dest-ack still lists the
+	// handoff (rc.10 macOS A7: artifact dirs existed, lineage.jsonl did not).
+	if err := store.AppendLineage(entry); err != nil {
+		return ExecuteResult{Plan: plan}, pipelineWrap(exitcode.Runtime, err)
+	}
+
 	var launchErr error
 	var verifyErr error
 	if launch {
@@ -590,9 +597,34 @@ func Execute(ctx context.Context, rec sessionindex.Record, opts Options, launch 
 				destState = state
 			}
 		}
+		final := newLineageEntry(plan, opts, id, now, destID, destState, launched)
+		if !lineageOutcomeEqual(entry, final) {
+			if err := store.AppendLineage(final); err != nil {
+				return ExecuteResult{Plan: plan}, pipelineWrap(exitcode.Runtime, err)
+			}
+		}
+		entry = final
 	}
 
-	entry := LineageEntry{
+	result := ExecuteResult{
+		Plan:                 plan,
+		HandoffID:            id,
+		Launched:             launched,
+		DestinationSessionID: destID,
+		DestinationState:     destState,
+		Lineage:              entry,
+	}
+	if launchErr != nil {
+		return result, pipelineWrap(exitcode.Runtime, fmt.Errorf("handoff: destination launch failed; outcome unresolved: %w", launchErr))
+	}
+	if verifyErr != nil {
+		return result, pipelineWrap(exitcode.Runtime, fmt.Errorf("handoff: verify destination after launch: %w", verifyErr))
+	}
+	return result, nil
+}
+
+func newLineageEntry(plan PlanResult, opts Options, id string, now time.Time, destID, destState string, launched bool) LineageEntry {
+	return LineageEntry{
 		HandoffID:   id,
 		LineageRoot: plan.LineageRoot,
 		CreatedAt:   now,
@@ -613,25 +645,14 @@ func Execute(ctx context.Context, rec sessionindex.Record, opts Options, launch 
 		Launched:         launched,
 		Acknowledged:     nil,
 	}
-	if err := store.AppendLineage(entry); err != nil {
-		return ExecuteResult{Plan: plan}, pipelineWrap(exitcode.Runtime, err)
-	}
+}
 
-	result := ExecuteResult{
-		Plan:                 plan,
-		HandoffID:            id,
-		Launched:             launched,
-		DestinationSessionID: destID,
-		DestinationState:     destState,
-		Lineage:              entry,
-	}
-	if launchErr != nil {
-		return result, pipelineWrap(exitcode.Runtime, fmt.Errorf("handoff: destination launch failed; outcome unresolved: %w", launchErr))
-	}
-	if verifyErr != nil {
-		return result, pipelineWrap(exitcode.Runtime, fmt.Errorf("handoff: verify destination after launch: %w", verifyErr))
-	}
-	return result, nil
+func lineageOutcomeEqual(a, b LineageEntry) bool {
+	return a.HandoffID == b.HandoffID &&
+		a.Launched == b.Launched &&
+		a.Destination.Agent == b.Destination.Agent &&
+		a.Destination.SessionID == b.Destination.SessionID &&
+		a.Destination.State == b.Destination.State
 }
 
 func resolveTarget(opts Options, to string) (HandoffTarget, error) {
@@ -710,7 +731,7 @@ func shortProjectionArgv(reinstateHome, capsuleID string) ([]byte, error) {
 	if !filepath.IsAbs(projectionPath) {
 		return nil, errors.New("absolute reinstate home is required for argv fallback")
 	}
-	return []byte("Reinstate structured handoff — not native resume. Read " + projectionPath + " and continue from that briefing only. Acknowledge before any mutation."), nil
+	return []byte("Reinstate structured handoff — not native resume. Read " + projectionPath + " and continue from that briefing only. " + firstReplyAckOneLine()), nil
 }
 
 func rewriteBootstrapArgs(plan DestinationPlan, bootstrap []byte) DestinationPlan {

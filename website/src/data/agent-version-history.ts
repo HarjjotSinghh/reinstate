@@ -16,11 +16,19 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.4.0-rc.11': {
+    rangeChange:
+      'Unchanged from v0.4.0-rc.10: inclusive Claude Code range 2.1.219–2.1.229. The Codex CLI range is unchanged at 0.133.0–0.147.0.',
+    compatibilityChange:
+      'Eleventh Phase 4 candidate after v0.4.0-rc.10 physical dual-platform acceptance FAILED (macOS 41/44 A1/A3/A7, Windows 40/44 A1/A2/A3/A5). This candidate requires the five-bullet dest first-reply in bootstrap and Windows one-line argv, records lineage before dest Launch, recovers artifact dirs in handoff list, and Materializes dest-home workspace trust. Dual-platform tagged-artifact acceptance is pending; this candidate does not authorize stable v0.4.0.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.4.0-rc.11/internal/handoff/desttrust.go',
+  },
   'v0.4.0-rc.10': {
     rangeChange:
       'Unchanged from v0.4.0-rc.9: inclusive Claude Code range 2.1.219–2.1.229. The Codex CLI range is unchanged at 0.133.0–0.147.0.',
     compatibilityChange:
-      'Tenth Phase 4 candidate after v0.4.0-rc.9 physical dual-platform acceptance FAILED (macOS 38/44, Windows 38/44). This candidate falls back to a one-line absolute projection.md pointer whenever dest briefing contains CR/LF so Windows CreateProcess cannot truncate argv. Dual-platform tagged-artifact acceptance is pending; this candidate does not authorize stable v0.4.0.',
+      'Tenth Phase 4 candidate after v0.4.0-rc.9 physical dual-platform acceptance FAILED (macOS 38/44, Windows 38/44). This candidate falls back to a one-line absolute projection.md pointer whenever dest briefing contains CR/LF so Windows CreateProcess cannot truncate argv. Physical dual-platform acceptance FAILED (macOS 41/44 A1/A3/A7, Windows 40/44 A1/A2/A3/A5; remaining product defects dest first-reply, lineage-after-launch, dest folder-trust); this candidate does not authorize stable v0.4.0.',
     implementationSource:
       'https://github.com/HarjjotSinghh/reinstate/blob/v0.4.0-rc.10/internal/handoff/pipeline.go',
   },

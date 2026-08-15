@@ -35,10 +35,9 @@ Read the full briefing in handoffs/demo/projection.md
 
 ## Acknowledgement required
 
-Before any mutation, restate:
+Your first reply must restate these five bullets before any mutation. Do not start work until you have restated them.
 1. current goal and latest user request
 2. critical constraints carried over
 3. current changed files and test state
 4. missing capabilities or uncertain evidence
 5. proposed next action
-This is a prompt-level contract only; Reinstate cannot police the destination agent loop.

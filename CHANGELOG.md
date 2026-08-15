@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0-rc.11] - 2026-08-15
+
+Eleventh Phase 4 candidate. `v0.4.0-rc.10` was published and physical dual-platform
+acceptance FAILED (macOS 41/44 A1/A3/A7, Windows 40/44 A1/A2/A3/A5). Remaining
+product defects were dest first-reply missing the five acknowledgement bullets,
+lineage written after dest Launch (Mac A7 list empty), and dest TUI folder-trust
+hangs. This candidate requires the five-bullet first-reply in bootstrap and
+Windows one-line argv, records lineage before Launch, recovers artifact dirs in
+`handoff list`, and Materializes dest-home workspace trust. Dest-ack remains
+harness (logged-in throwaway dest), not product. Does not authorize stable
+`v0.4.0`; stable remains `v0.3.0`. Adds
+`docs/testing/v0.4.0-rc.11-agent-verification-prompts.md`.
+
+### Fixed
+
+- Dest first-reply contract is explicit: the bootstrap and the Windows one-line
+  `projection.md` argv both require the five acknowledgement bullets as the
+  destination's first reply, without the dest-facing "cannot police" hedge
+  (rc.10 A1/A3/A5).
+- `handoff list` recovers artifact directories when `lineage.jsonl` is missing,
+  and Execute records lineage before dest Launch so a killed dest-ack still
+  lists the handoff and Claude's pinned dest session (rc.10 macOS A7).
+- Dest Materialize records folder trust for the verified workspace in an
+  explicit dest home (`CLAUDE_CONFIG_DIR` / `CODEX_HOME`) so throwaway dest-ack
+  is not blocked on the TUI trust prompt (rc.10 Windows A2; Codex dest hang).
+  Codex `config.toml` project keys with backslashes are literal-quoted, and
+  Windows dest homes also get slash-style and lowercased aliases.
+
 ## [0.4.0-rc.10] - 2026-08-15
 
 Tenth Phase 4 candidate. `v0.4.0-rc.9` was published and physical dual-platform
@@ -1005,7 +1033,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.10...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.11...HEAD
+[0.4.0-rc.11]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.10...v0.4.0-rc.11
 [0.4.0-rc.10]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.9...v0.4.0-rc.10
 [0.4.0-rc.9]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.8...v0.4.0-rc.9
 [0.4.0-rc.8]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.7...v0.4.0-rc.8
