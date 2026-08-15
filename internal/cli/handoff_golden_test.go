@@ -131,8 +131,17 @@ func TestNormalizeHandoffGoldenWindowsQuotedPaths(t *testing.T) {
 	}
 }
 
+func cliGoldenName(name string) string {
+	if runtime.GOOS != "windows" {
+		return name
+	}
+	ext := filepath.Ext(name)
+	return strings.TrimSuffix(name, ext) + ".windows" + ext
+}
+
 func compareCLIGolden(t *testing.T, name string, got []byte) {
 	t.Helper()
+	name = cliGoldenName(name)
 	if bytes.Contains(got, []byte{'\r'}) || bytes.Contains(got, []byte("/Users/")) || bytes.Contains(got, []byte("/home/")) {
 		t.Fatalf("golden %s contains a non-portable newline or host path", name)
 	}

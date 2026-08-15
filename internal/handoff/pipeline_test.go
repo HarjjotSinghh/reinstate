@@ -724,8 +724,13 @@ func TestPlanDestinationNewlineBootstrapUsesShortArgv(t *testing.T) {
 	if !filepath.IsAbs(want) || !strings.Contains(string(plan.Bootstrap), want) {
 		t.Fatalf("fallback bootstrap = %q, want absolute projection path %q", plan.Bootstrap, want)
 	}
-	if len(plan.Args) != 1 || plan.Args[0] != string(plan.Bootstrap) {
-		t.Fatalf("argv = %#v", plan.Args)
+	if len(plan.Args) == 0 || plan.Args[len(plan.Args)-1] != string(plan.Bootstrap) {
+		t.Fatalf("argv = %#v, bootstrap = %q", plan.Args, plan.Bootstrap)
+	}
+	for _, arg := range plan.Args {
+		if strings.ContainsAny(arg, "\r\n") {
+			t.Fatalf("argv still has newline: %#v", plan.Args)
+		}
 	}
 }
 

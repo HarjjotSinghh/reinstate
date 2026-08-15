@@ -1,0 +1,23 @@
+Structured handoff — a new claude session, not native resume: handoff 35d62bdecacd1e28cfe515d888d73852 from codex:source-session
+Structured handoff — a new claude session, not native resume: policy=balanced projection_events=1 projection=901 bytes estimated_tokens=226
+Structured handoff — a new claude session, not native resume: workspace project=controlled-project root=${REPO:controlled-project} branch= dirty=false
+Structured handoff — a new claude session, not native resume: command "claude" "--session-id" "9d1105f3-9018-4d9e-a200-d4e27ffca6a9" "Reinstate structured handoff — not native resume. Read ${REINSTATE_HOME}/handoffs/35d62bdecacd1e28cfe515d888d73852/projection.md and continue from that briefing only. Acknowledge before any mutation."
+Structured handoff — a new claude session, not native resume: file ${REINSTATE_HOME}/handoffs/35d62bdecacd1e28cfe515d888d73852/bootstrap.txt
+Structured handoff — a new claude session, not native resume: file ${REINSTATE_HOME}/handoffs/35d62bdecacd1e28cfe515d888d73852/capsule.json
+Structured handoff — a new claude session, not native resume: file ${REINSTATE_HOME}/handoffs/35d62bdecacd1e28cfe515d888d73852/fidelity.json
+Structured handoff — a new claude session, not native resume: file ${REINSTATE_HOME}/handoffs/35d62bdecacd1e28cfe515d888d73852/projection.md
+Structured handoff — a new claude session, not native resume: file ${REINSTATE_HOME}/handoffs/lineage.jsonl
+Structured handoff — a new claude session, not native resume: portability changed_files=exact count=1 bytes=0
+Structured handoff — a new claude session, not native resume: portability completed=normalized count=1 bytes=0
+Structured handoff — a new claude session, not native resume: portability constraints=omitted count=1 bytes=0
+Structured handoff — a new claude session, not native resume: portability decisions=omitted count=1 bytes=0
+Structured handoff — a new claude session, not native resume: portability files_touched_per_transcript=referenced count=1 bytes=0
+Structured handoff — a new claude session, not native resume: portability goal=normalized count=1 bytes=28
+Structured handoff — a new claude session, not native resume: portability latest_user_intent=exact count=1 bytes=28
+Structured handoff — a new claude session, not native resume: portability next_action=normalized count=1 bytes=63
+Structured handoff — a new claude session, not native resume: portability pending=omitted count=1 bytes=0
+Structured handoff — a new claude session, not native resume: portability recent_user_messages=exact count=1 bytes=28
+Structured handoff — a new claude session, not native resume: portability rejected_approaches=omitted count=1 bytes=0
+Structured handoff — a new claude session, not native resume: portability tests=referenced count=1 bytes=0
+Structured handoff — a new claude session, not native resume: portability user_messages=exact count=1 bytes=28
+Structured handoff — a new claude session, not native resume: redactions=0
