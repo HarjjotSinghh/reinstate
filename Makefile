@@ -7,7 +7,7 @@ BINARY  := $(BIN_DIR)/reinstate
 ALIAS   := $(BIN_DIR)/rein
 CMD     := ./cmd/reinstate
 GO      ?= go
-GOTOOLCHAIN ?= go1.25.12
+GOTOOLCHAIN ?= go1.25.13
 GOENV   := GOTOOLCHAIN=$(GOTOOLCHAIN)
 FAST_PACKAGES := $(shell $(GOENV) $(GO) list -f '{{if and (ne .ImportPath "$(MODULE)/internal/doctest") (ne .ImportPath "$(MODULE)/internal/crypto")}}{{.ImportPath}}{{end}}' ./...)
 GOLANGCI_LINT_VERSION := v2.11.4

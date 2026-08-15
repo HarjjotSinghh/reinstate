@@ -22,7 +22,7 @@ How maintainers cut a **Reinstate** release.
 - [ ] Claude Code and Codex exact versions/layouts are recorded in compatibility docs
 - [ ] Wrong-passphrase, tamper, backup, rollback, conflict, and installer tests pass
 - [ ] Snapshot archives, source archive, checksums, and SBOMs were inspected
-- [ ] Builds and vulnerability scans use the pinned Go 1.25.12 toolchain
+- [ ] Builds and vulnerability scans use the pinned Go 1.25.13 toolchain
 
 ### Supported platform boundary
 
@@ -162,18 +162,21 @@ acceptance **FAILED**. Corrective product fixes for those rc.4 failures landed i
 acceptance **FAILED**. Corrective product fixes for those rc.5 failures land in
 `v0.4.0-rc.6`. That candidate was published and physical dual-platform
 acceptance **FAILED**. Corrective product fixes for those rc.6 failures land in
-`v0.4.0-rc.7`.
+`v0.4.0-rc.7`. That candidate was published and physical dual-platform
+acceptance **FAILED**. Corrective product fixes for the remaining rc.7 product
+defect (R1 off-PATH layout scan) and the Go 1.25.13 toolchain pin land in
+`v0.4.0-rc.8`.
 
-### v0.4.0-rc.7 candidate gate
+### v0.4.0-rc.8 candidate gate
 
 The Phase 4 candidate uses the committed
-[`v0.4.0-rc.7` dispatch](docs/testing/v0.4.0-rc.7-agent-verification-prompts.md)
+[`v0.4.0-rc.8` dispatch](docs/testing/v0.4.0-rc.8-agent-verification-prompts.md)
 and [Phase 4 acceptance contract](docs/testing/phase-4-cross-agent-handoff-acceptance.md).
 Start its two independent device runs only after the signed tag is published,
 all release artifacts verify, and both live installer routes pin that exact
 candidate. Required Claude ↔ Codex structured handoff, fidelity, workspace,
 security, CLI, and performance rows must all pass on Apple Silicon macOS and
-native Windows x64, including RC1 R1–R6, the RC2, RC3, RC5, RC6, and RC7 regression sets.
+native Windows x64, including RC1 R1–R6, the RC2, RC3, RC5, RC6, RC7, and RC8 regression sets.
 Gemini CLI,
 OpenCode, and Grok Build remain optional source-only rows and may be
 `NOT TESTED` only when genuinely absent; do not install them solely for
@@ -184,7 +187,7 @@ stays `0.133.0`–`0.147.0`. Re-check both hosts' installed versions immediately
 before tagging. Claude Code auto-updates. A PATH Claude of `2.1.230` must
 fail-closed (exit 5) without `--allow-untested`.
 
-`v0.4.0-rc.7` publication means ready for tagged-artifact acceptance. It is not
+`v0.4.0-rc.8` publication means ready for tagged-artifact acceptance. It is not
 evidence that the matrix passed, does not authorize stable `v0.4.0`, and does
 not change the current stable release from `v0.3.0`.
 
@@ -206,7 +209,7 @@ git add --all
 git commit -m "chore(release): vX.Y.Z"
 
 # Verify the exact clean release commit before pushing its PR branch.
-GOTOOLCHAIN=go1.25.12 go mod tidy -diff
+GOTOOLCHAIN=go1.25.13 go mod tidy -diff
 make verify
 make snapshot
 ./scripts/stage-release-assets.sh dist

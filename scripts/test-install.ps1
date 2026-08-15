@@ -12,7 +12,7 @@ if ($LASTEXITCODE -ne 0) {
 
 Set-Location $RepoDir
 if (-not $env:GOTOOLCHAIN) {
-    $env:GOTOOLCHAIN = "go1.25.12"
+    $env:GOTOOLCHAIN = "go1.25.13"
 }
 go test ./internal/doctest -run TestInstaller -count=1
 if ($LASTEXITCODE -ne 0) {

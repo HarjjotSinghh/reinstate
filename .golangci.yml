@@ -2,7 +2,7 @@ version: "2"
 
 run:
   timeout: 5m
-  # Language version for analysis; CI installs Go 1.25.12 for builds/govulncheck.
+  # Language version for analysis; CI installs Go 1.25.13 for builds/govulncheck.
   go: "1.25"
 
 linters:

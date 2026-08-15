@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Go 1.25.12 or newer
+- Go 1.25.13 or newer
 - Git
 - Make on macOS, Linux, or WSL2
 - PowerShell 7 is helpful when changing Windows scripts

@@ -10,7 +10,7 @@ and devices — with E2E encryption and BYO storage for multi-device sync.
 
 - **Author:** Harjot Singh Rana ([@HarjjotSinghh](https://github.com/HarjjotSinghh))
 - **License:** Apache-2.0
-- **Toolchain:** Go 1.25.12+ (1.24 is end-of-life and not a release target)
+- **Toolchain:** Go 1.25.13+ (1.24 is end-of-life and not a release target)
 - **Module:** `github.com/HarjjotSinghh/reinstate`
 
 ## Non-negotiables

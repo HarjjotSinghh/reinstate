@@ -16,11 +16,19 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.4.0-rc.8': {
+    rangeChange:
+      'Unchanged from v0.4.0-rc.7: inclusive Claude Code range 2.1.219–2.1.229. The Codex CLI range is unchanged at 0.133.0–0.147.0.',
+    compatibilityChange:
+      'Eighth Phase 4 candidate after v0.4.0-rc.7 physical dual-platform acceptance FAILED (macOS 38/44, Windows 34/44). This candidate scans recognized Claude layout on off-PATH Inspect instead of StatusNotInstalled (R1) and pins Go 1.25.13 for govulncheck. Dual-platform tagged-artifact acceptance is pending; this candidate does not authorize stable v0.4.0.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.4.0-rc.8/internal/agentcheck/agent.go',
+  },
   'v0.4.0-rc.7': {
     rangeChange:
       'Unchanged from v0.4.0-rc.6: inclusive Claude Code range 2.1.219–2.1.229. The Codex CLI range is unchanged at 0.133.0–0.147.0.',
     compatibilityChange:
-      'Seventh Phase 4 candidate after v0.4.0-rc.6 physical dual-platform acceptance FAILED. This candidate bounds Windows process listing, fails closed on determined out-of-range Claude (2.1.230) during read-only handoff, classifies hung --version as Compatibility UNTESTED instead of Runtime, and does not block source-only Grok preflight on missing native layout. Dual-platform tagged-artifact acceptance is pending; this candidate does not authorize stable v0.4.0.',
+      'Seventh Phase 4 candidate after v0.4.0-rc.6 physical dual-platform acceptance FAILED. This candidate bounds Windows process listing, fails closed on determined out-of-range Claude (2.1.230) during read-only handoff, classifies hung --version as Compatibility UNTESTED instead of Runtime, and does not block source-only Grok preflight on missing native layout. Physical dual-platform acceptance FAILED (macOS 38/44, Windows 34/44; remaining product defect R1 off-PATH Inspect); this candidate does not authorize stable v0.4.0.',
     implementationSource:
       'https://github.com/HarjjotSinghh/reinstate/blob/v0.4.0-rc.7/internal/processcheck/process_windows.go',
   },

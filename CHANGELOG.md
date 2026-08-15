@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0-rc.8] - 2026-08-15
+
+Eighth Phase 4 candidate. `v0.4.0-rc.7` was published and physical dual-platform
+acceptance FAILED (macOS 38/44, Windows 34/44). RC7 product rows (busy-check,
+C8/R6 2.1.230, R4 hang, E5/E6) PASSED. This candidate fixes R1 off-PATH layout
+scan and pins Go 1.25.13 for govulncheck. It does not authorize stable
+`v0.4.0`; stable remains `v0.3.0`. Adds
+`docs/testing/v0.4.0-rc.8-agent-verification-prompts.md`.
+
+### Fixed
+
+- Off-PATH `Inspect` still scans a recognized Claude layout instead of returning
+  `StatusNotInstalled` from a `LookPath` miss, so layout-only sources stay
+  `SUPPORTED` and dry-run handoff exits `0` rather than `5` (R1).
+- Pin the Go toolchain at `go1.25.13` so `govulncheck` is green against the
+  stdlib.
+
 ## [0.4.0-rc.7] - 2026-08-15
 
 Seventh Phase 4 candidate. `v0.4.0-rc.6` was published and physical dual-platform
@@ -952,7 +969,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.7...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.8...HEAD
+[0.4.0-rc.8]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.7...v0.4.0-rc.8
 [0.4.0-rc.7]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.6...v0.4.0-rc.7
 [0.4.0-rc.6]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.5...v0.4.0-rc.6
 [0.4.0-rc.5]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.4...v0.4.0-rc.5

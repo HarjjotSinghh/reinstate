@@ -13,7 +13,7 @@ func TestEndUserPromptContracts(t *testing.T) {
 		body := read(t, path)
 		required := []string{
 			"Prompt version:** 9",
-			"v0.4.0-rc.7",
+			"v0.4.0-rc.8",
 			"https://reinstate.dev/install.sh",
 			"https://reinstate.dev/install.ps1",
 			"github.com/HarjjotSinghh/reinstate/releases/download/",
@@ -48,6 +48,35 @@ func TestEndUserPromptContracts(t *testing.T) {
 			if strings.Contains(body, forbidden) {
 				t.Errorf("%s contains forbidden end-user instruction %q", path, forbidden)
 			}
+		}
+	}
+}
+
+func TestV040RC8AcceptancePromptContracts(t *testing.T) {
+	body := read(t, "docs/testing/v0.4.0-rc.8-agent-verification-prompts.md")
+	for _, value := range []string{
+		"v0.4.0-rc.8",
+		"Why RC8 exists",
+		"V040RC8",
+		"PHASE4-RC8-FINAL-RECONCILIATION-V1",
+		"phase4_rc8_tagged_artifact_acceptance",
+		"test/v0.4.0-rc.8-macos-arm64-report",
+		"test/v0.4.0-rc.8-windows-amd64-report",
+		"Go 1.25.13",
+		"2.1.219",
+		"2.1.229",
+		"0.133.0",
+		"0.147.0",
+		"StatusNotInstalled",
+		"Do not weaken F8",
+		"resume claude:<uuid> --with codex --dry-run --json",
+		"resume grok:<id>",
+		"$env:GOTOOLCHAIN='go1.25.13'",
+		"current_stable=v0.3.0",
+		"stable_v0.4.0_authorized=false",
+	} {
+		if !strings.Contains(body, value) {
+			t.Errorf("v0.4.0-rc.8 acceptance prompts missing %q", value)
 		}
 	}
 }
@@ -776,7 +805,7 @@ func TestReleaseRunbookStagesAndFreezesReleaseInputs(t *testing.T) {
 		"supported mandatory platforms",
 		"unsupported/unverified optional evidence",
 		"separate reviewed stable",
-		"GOTOOLCHAIN=go1.25.12 go mod tidy -diff",
+		"GOTOOLCHAIN=go1.25.13 go mod tidy -diff",
 		"./scripts/stage-release-assets.sh dist",
 		"./scripts/check-release-artifacts.sh dist",
 		"sh scripts/test-install.sh dist",
