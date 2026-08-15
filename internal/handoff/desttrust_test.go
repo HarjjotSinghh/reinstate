@@ -1,6 +1,7 @@
 package handoff
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"os"
@@ -123,7 +124,7 @@ func TestClaudeTargetMaterializeSkipsDefaultHome(t *testing.T) {
 		Dir:        t.TempDir(),
 		SessionID:  "00000000-0000-4000-8000-000000000011",
 	}
-	if err := target.Materialize(nil, plan); err != nil {
+	if err := target.Materialize(context.TODO(), plan); err != nil {
 		t.Fatalf("Materialize: %v", err)
 	}
 	for _, rel := range []string{claudeDestConfigName, filepath.Join(".claude", claudeDestConfigName)} {
@@ -144,7 +145,7 @@ func TestCodexTargetMaterializeSkipsDefaultHome(t *testing.T) {
 		Args:       []string{"prompt"},
 		Dir:        t.TempDir(),
 	}
-	if err := target.Materialize(nil, plan); err != nil {
+	if err := target.Materialize(context.TODO(), plan); err != nil {
 		t.Fatalf("Materialize: %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(home, ".codex", codexDestConfigName)); !errors.Is(err, os.ErrNotExist) {
@@ -162,7 +163,7 @@ func TestCodexTargetMaterializeTrustsExplicitRoot(t *testing.T) {
 		Args:       []string{"prompt"},
 		Dir:        workspace,
 	}
-	if err := target.Materialize(nil, plan); err != nil {
+	if err := target.Materialize(context.TODO(), plan); err != nil {
 		t.Fatalf("Materialize: %v", err)
 	}
 	raw, err := os.ReadFile(filepath.Join(root, codexDestConfigName))

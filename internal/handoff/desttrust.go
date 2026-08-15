@@ -14,6 +14,7 @@ import (
 	"unicode"
 
 	"github.com/BurntSushi/toml"
+
 	"github.com/HarjjotSinghh/reinstate/internal/fsx"
 )
 
@@ -212,7 +213,7 @@ func isBareTOMLKey(key string) bool {
 		return false
 	}
 	for _, r := range key {
-		if r > unicode.MaxASCII || !(unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' || r == '-') {
+		if r > unicode.MaxASCII || (!unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '_' && r != '-') {
 			return false
 		}
 	}
