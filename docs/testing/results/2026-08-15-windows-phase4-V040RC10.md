@@ -36,8 +36,8 @@ absent and was not installed solely for acceptance.
 | Git version | present |
 | Go version/toolchain | `go1.25.13` via `GOTOOLCHAIN` |
 | Report branch | `test/v0.4.0-rc.10-windows-amd64-report` |
-| Device-report commit | `PENDING_REPORT_COMMIT` |
-| Draft report PR | `PENDING_DRAFT_PR` |
+| Device-report commit | `4db8590433a82278d4c9e4917cd2f2835bab5d32` |
+| Draft report PR | https://github.com/HarjjotSinghh/reinstate/pull/233 |
 
 ## 2. Signed artifact and installer chain
 
