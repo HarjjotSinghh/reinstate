@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -54,8 +55,7 @@ func TestPlanListsLiveChangedFilesFromRealRepository(t *testing.T) {
 			plan.Capsule.Task.ChangedFiles.Portability)
 	}
 
-	bootstrap := string(plan.Destination.Bootstrap)
-	section := changedFilesSection(t, bootstrap)
+	section := changedFilesSection(t, destinationChangedFilesSource(t, plan))
 	for _, item := range want {
 		if !strings.Contains(section, "- "+item) {
 			t.Fatalf("bootstrap changed-files section missing %q:\n%s", item, section)
@@ -99,7 +99,7 @@ func TestPlanCleanRepositoryClaimsNoChangedFiles(t *testing.T) {
 	if plan.Capsule.Workspace.Dirty {
 		t.Fatal("clean tree bound as dirty")
 	}
-	if section := changedFilesSection(t, string(plan.Destination.Bootstrap)); !strings.Contains(section, "(none)") {
+	if section := changedFilesSection(t, destinationChangedFilesSource(t, plan)); !strings.Contains(section, "(none)") {
 		t.Fatalf("clean tree did not render (none):\n%s", section)
 	}
 }
@@ -123,7 +123,7 @@ func TestPlanReportsChangedFilesBeyondTheCap(t *testing.T) {
 		t.Fatalf("changed_files_omitted = %d, want %d",
 			plan.Capsule.Workspace.ChangedFilesOmitted, extra)
 	}
-	section := changedFilesSection(t, string(plan.Destination.Bootstrap))
+	section := changedFilesSection(t, destinationChangedFilesSource(t, plan))
 	if !strings.Contains(section, "not listed)") {
 		t.Fatalf("truncation was silent in the bootstrap:\n%s", section)
 	}
@@ -164,6 +164,21 @@ func planAgainstRepository(t *testing.T, repository string, changedOverride []st
 	}
 	t.Cleanup(func() { _ = os.RemoveAll(plan.TempDir) })
 	return plan
+}
+
+func destinationChangedFilesSource(t *testing.T, plan PlanResult) string {
+	t.Helper()
+	bootstrap := string(plan.Destination.Bootstrap)
+	if runtime.GOOS != "windows" {
+		return bootstrap
+	}
+	if argvUnsafeForLaunch("windows", plan.Destination.Bootstrap) {
+		t.Fatalf("windows dest argv still has newlines: %q", bootstrap)
+	}
+	if !strings.Contains(bootstrap, projectionFile) {
+		t.Fatalf("windows dest argv missing %s: %q", projectionFile, bootstrap)
+	}
+	return string(plan.Artifacts.ProjectionMD)
 }
 
 func changedFilesSection(t *testing.T, rendered string) string {

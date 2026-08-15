@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Destination argv never includes embedded CR/LF. Windows CreateProcess
+  truncated a multi-line Codex bootstrap at the first line, so dest-ack never
+  saw `projection.md` and Verify could not match the session. Fall back to the
+  one-line absolute `projection.md` pointer whenever the briefing contains
+  newlines, not only when it exceeds the argv byte budget.
+
 ## [0.4.0-rc.9] - 2026-08-15
 
 Ninth Phase 4 candidate. `v0.4.0-rc.8` was published and physical dual-platform
