@@ -31,8 +31,8 @@ Copy of the Phase 4 template with this dispatch's substitutions. Cumulative, san
 | Git version | `git version 2.52.0.windows.1` |
 | Go version/toolchain | `go1.25.13 windows/amd64` (`$env:GOTOOLCHAIN='go1.25.13'`) |
 | Report branch | `test/v0.4.0-rc.11-windows-amd64-report` |
-| Device-report commit | `<filled after commit>` |
-| Draft report PR | `<filled after PR>` |
+| Device-report commit | `f1ded2d235cf731a5d41f59404482d9f171813ab` (report-only tip follows) |
+| Draft report PR | `NOT CREATED` |
 
 Before first product command and after last row: Claude pin `2.1.229`, Codex `0.147.0`, Gemini `0.53.0`, OpenCode `1.18.2`, Grok `0.2.101`. **No mid-run version change.** `DISABLE_AUTOUPDATER=1` set. Host Claude `2.1.233` unused except C8/R6 fail-closed.
 
