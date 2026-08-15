@@ -37,8 +37,8 @@ authorize stable `v0.4.0`.
 | Git version | `2.52.0.windows.1` |
 | Go version/toolchain | `go1.25.13 windows/amd64` via `GOTOOLCHAIN=go1.25.13` (host default go1.26.1 unused) |
 | Report branch | `test/v0.4.0-rc.8-windows-amd64-report` |
-| Device-report commit | `<filled after commit>` |
-| Draft report PR | `<filled after PR>` |
+| Device-report commit | `7793c1c4f02375ca0c47657f8666cc3dcc6c52f3` |
+| Draft report PR | `NOT CREATED` |
 
 ## 2. Signed artifact and installer chain
 
