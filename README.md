@@ -7,55 +7,38 @@
 ### Find, verify, resume, and hand off coding-agent work
 
 **Reinstate is the open-source continuity layer for coding-agent work: search,
-resume, and hand off tasks across agents, projects, environments, and devices,
-with optional encrypted sync through your own S3-compatible storage.**
-
-Stable `v0.3.0` adds Phase 3 verified resume on top of the configless local
-session index, literal search, metadata inspection, numbered switcher, and
-same-vendor native resume/fork. Apple Silicon macOS and native Windows x64
-passed dual-platform tagged-artifact acceptance on candidate `v0.3.0-rc.7`.
-Intel macOS and Linux/WSL2 downloads remain preview/unverified pending issues
-[#97](https://github.com/HarjjotSinghh/reinstate/issues/97) and
-[#98](https://github.com/HarjjotSinghh/reinstate/issues/98).
-
-Current release candidate `v0.4.0-rc.10` adds Phase 4 explicit structured
-handoffs, which continue the same task in a *new* Claude Code or Codex session.
-Claude Code, Codex CLI, Gemini CLI, OpenCode, and Grok Build can be sources;
-Gemini, OpenCode, and Grok are source-only. The previous candidates
-`v0.4.0-rc.1` through `v0.4.0-rc.6` were published and failed
-physical acceptance; rc.7 carries those product fixes. Dual-platform
-tagged-artifact acceptance on Apple Silicon macOS and native Windows x64 is
-pending; it is not stable `v0.4.0`, and stable remains `v0.3.0`.
+resume, and hand off tasks across agents, projects, and devices, with optional
+encrypted sync through your own S3-compatible storage.**
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Go Report Card](https://goreportcard.com/badge/github.com/HarjjotSinghh/reinstate)](https://goreportcard.com/report/github.com/HarjjotSinghh/reinstate)
 [![Release](https://img.shields.io/github/v/release/HarjjotSinghh/reinstate?include_prereleases&sort=semver)](https://github.com/HarjjotSinghh/reinstate/releases)
 [![CI](https://img.shields.io/github/actions/workflow/status/HarjjotSinghh/reinstate/ci.yml?branch=main&label=CI)](https://github.com/HarjjotSinghh/reinstate/actions/workflows/ci.yml)
 [![Go](https://img.shields.io/github/go-mod/go-version/HarjjotSinghh/reinstate)](go.mod)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
-[![Security Policy](https://img.shields.io/badge/Security-policy-red.svg)](SECURITY.md)
 
-[![GitHub stars](https://img.shields.io/github/stars/HarjjotSinghh/reinstate?style=social)](https://github.com/HarjjotSinghh/reinstate/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/HarjjotSinghh/reinstate?style=social)](https://github.com/HarjjotSinghh/reinstate/network/members)
-[![GitHub watchers](https://img.shields.io/github/watchers/HarjjotSinghh/reinstate?style=social)](https://github.com/HarjjotSinghh/reinstate/watchers)
-[![GitHub issues](https://img.shields.io/github/issues/HarjjotSinghh/reinstate)](https://github.com/HarjjotSinghh/reinstate/issues)
-[![GitHub pull requests](https://img.shields.io/github/issues-pr/HarjjotSinghh/reinstate)](https://github.com/HarjjotSinghh/reinstate/pulls)
-[![GitHub contributors](https://img.shields.io/github/contributors/HarjjotSinghh/reinstate)](https://github.com/HarjjotSinghh/reinstate/graphs/contributors)
-[![GitHub last commit](https://img.shields.io/github/last-commit/HarjjotSinghh/reinstate)](https://github.com/HarjjotSinghh/reinstate/commits/main)
-[![GitHub commit activity](https://img.shields.io/github/commit-activity/m/HarjjotSinghh/reinstate)](https://github.com/HarjjotSinghh/reinstate/graphs/commit-activity)
-[![GitHub repo size](https://img.shields.io/github/repo-size/HarjjotSinghh/reinstate)](https://github.com/HarjjotSinghh/reinstate)
-[![Downloads](https://img.shields.io/github/downloads/HarjjotSinghh/reinstate/total)](https://github.com/HarjjotSinghh/reinstate/releases)
+```bash
+brew install HarjjotSinghh/tap/reinstate
+rein sessions
+```
+
+No config, no cloud, no API keys. Point it at a machine that already runs
+Claude Code or Codex and it indexes what's there.
+
+```text
+claude:7f3a2c1e-9b44-4d21-8c0a-11a0e4b8d201	acme/billing	main	Retry Stripe webhook signature
+codex:rollout-2026-08-14T18-22-03-00000000-0000-4000-8000-00000000a001	acme/billing	main	Windows path remap for resume
+```
+
+Verified on Apple Silicon macOS and native Windows x64. Linux/WSL2 and Intel
+macOS are preview. [Full release status ↓](#release-status)
 
 <p>
   <a href="#why-reinstate"><strong>Why</strong></a> ·
   <a href="#features"><strong>Features</strong></a> ·
   <a href="#quick-start"><strong>Quick start</strong></a> ·
+  <a href="#release-status"><strong>Release status</strong></a> ·
   <a href="#supported-agents"><strong>Agents</strong></a> ·
-  <a href="#how-it-works"><strong>How it works</strong></a> ·
-  <a href="#documentation"><strong>Docs</strong></a> ·
-  <a href="#roadmap"><strong>Roadmap</strong></a> ·
-  <a href="#contributing"><strong>Contributing</strong></a>
+  <a href="#documentation"><strong>Docs</strong></a>
 </p>
 
 <sub>Created & maintained by <a href="https://github.com/HarjjotSinghh"><strong>Harjot Singh Rana</strong></a> · <a href="https://harjot.co">harjot.co</a></sub>
@@ -71,9 +54,13 @@ projects, branches, and worktrees. Finding the right thread later becomes a
 memory problem. Switching agents can also mean re-explaining the task when the
 source agent is closed, logged out, or rate-limited.
 
-Then you open your **MacBook** on the couch.
+You've been deep in a session on your desktop all afternoon. Then you open
+your **MacBook** on the couch.
 
-Git has the code. The agent does **not** have the conversation — the rejected approaches, the files already read three times, the style constraints you established mid-thread. Vendor tools save sessions **locally**. Switching machines is context death.
+Git has the code. The agent does **not** have the conversation — the rejected
+approaches, the files already read three times, the style constraints you
+established mid-thread. Vendor tools save sessions **locally**. Switching
+machines is context death.
 
 ```mermaid
 flowchart LR
@@ -116,12 +103,11 @@ flowchart LR
 | --- | --- |
 | **Local recovery** | Configless local index/search/resume for Claude Code and Codex |
 | **Multi-agent** | Structured handoffs continue the same task in a new Claude Code or Codex session |
-| **Verified resume** | `v0.3.0` checks the workspace, agent, capabilities, and recognized runtimes before launch |
+| **Verified resume** | Checks the workspace, agent, capabilities, and recognized runtimes before launch |
 | **Offline-capable origin** | Works when the other machine is **off** (stored sync, not a live relay) |
 | **Path remapping** | Windows ↔ macOS project paths rewritten so `--resume` actually finds sessions |
 | **Zero-knowledge** | Client-side encryption; bring-your-own storage |
 | **Bounded previews** | Metadata and a short user-prompt preview, never a default transcript dump |
-| **Privacy-safe environment truth** | Capability names and state may be indexed; contents, commands, values, credentials, and raw URLs are excluded |
 | **Open source** | Apache-2.0 · auditable · patent grant · no vendor lock-in |
 
 Native vendor sync typically serves its own ecosystem. Unreviewed
@@ -137,192 +123,86 @@ sensitive artifacts. Reinstate instead provides
 
 ## Features
 
-Phase 4 candidate `v0.4.0-rc.10`:
+- **Find the thread** — `rein sessions` and literal search by prompt, file,
+  branch, project, or agent, with no `init` or cloud
+- **Inspect without dumping** — metadata and a short user-prompt preview; no
+  full-transcript mode
+- **Resume the same vendor** — `last`, `resume`, and `fork` launch Claude Code
+  or Codex after a verified environment report
+- **Hand off across agents** — continue the same task in a *new* Claude Code
+  or Codex session from Claude, Codex, Gemini CLI, OpenCode, or Grok
+- **Sync across devices** — encrypted push/pull through your own R2 or
+  S3-compatible bucket, with Windows ↔ macOS path remapping
+- **Stay safe by default** — credentials stay local, history is inert
+  evidence, and destination sessions start through the vendor CLI
+- **Use it on a TTY or in scripts** — bare `rein` opens the numbered
+  switcher; `rein sessions --json` is deterministic
 
-- **Directional structured handoff** — Claude Code and Codex are destinations;
-  Claude Code, Codex, Gemini, OpenCode, and Grok are sources
-- **No source model dependency** — parse and checkpoint locally while the
-  source CLI is closed, logged out, rate-limited, or offline
-- **Auditable fidelity** — each component is labeled `exact`, `normalized`,
-  `summarized`, `referenced`, or `omitted`, with reasons
-- **Destination capability diff** — report missing tools, MCP servers, skills,
-  instructions, attachments, and context before launch
-- **Private local capsules** — owner-only artifacts and append-only lineage
-  under `$REINSTATE_HOME/handoffs/`, hard-excluded from sync
-- **Safe destination launch** — start a new session through the vendor's
-  documented CLI; never write vendor-internal session files
-- **Prompt-level acknowledgement** — ask the destination to restate the task,
-  workspace truth, uncertainty, and next action before mutation
-
-Stable `v0.3.0`:
-
-- **Configless local index** — `rein sessions` works without `init` or cloud storage
-- **Literal search** — prompt, file, branch, project, agent, and session identity
-- **Metadata-first inspect** — bounded user-prompt preview; no full transcript mode
-- **Native continuation** — `last`, `resume`, and `fork` launch the source vendor
-- **Interactive switcher** — bare `rein` on a TTY; deterministic JSON for automation
-- **Read-only expansion** — Gemini CLI and OpenCode discovery without mutation
-- **Verified resume** — deterministic environment reports on `inspect`, native
-  dry-runs, direct launches, `last`, and picker selections
-- **Workspace truth** — offline repository identity, branch, HEAD, and
-  privacy-safe working-tree checks without fetching or printing filenames
-- **Agent and capability checks** — fail-closed Claude/Codex version and layout
-  verification plus bounded, name-only instruction, skill, and MCP inventory
-- **Runtime checks** — recognized Node and Go declarations inspected without
-  running project scripts
-- **Exact authorization** — warnings require terminal confirmation or every
-  invocation-scoped `--allow-environment-warning CHECK_ID`; blockers cannot be
-  overridden
-
-Also included from stable `v0.1.0`:
-
-- **Cross-device session sync** — continue the same Claude/Codex thread on another machine
-- **Multi-agent adapters** — same-vendor Claude Code and Codex session continuity
-- **End-to-end encryption** — [age](https://github.com/FiloSottile/age), passphrase-derived keys
-- **Bring-your-own storage** — Cloudflare R2, AWS S3, and S3-compatible storage
-- **OS-aware path remapping** — the hard problem treated as the product
-- **Safe by default** — credential denylist, atomic restore, conflict forks, local backups
-- **Simple sync CLI** — `rein init` · `push` · `pull` · `status` · `diff` · `conflicts`
-  (`rein` is the short alias; `reinstate` is the full command — same binary)
-
-Later, Reinstate will extend continuity beyond sessions: declare MCP servers,
-skills, hooks/loops, plugins, marketplaces, instruction files, and safe settings
-once, then preview and apply the correct native configuration across Claude
-Code, Codex, Grok, OpenCode, Gemini CLI, and multiple devices. This is planned,
-not part of the current CLI. See
-[Universal agent configuration](docs/universal-configuration.md).
+Handoff contract: **[docs/handoff.md](docs/handoff.md)**. Verified resume:
+**[docs/verified-resume.md](docs/verified-resume.md)**. Planned universal
+agent configuration:
+**[docs/universal-configuration.md](docs/universal-configuration.md)**.
 
 ---
 
 ## Quick start
 
-> **Platform boundary:** the public installers pin candidate `v0.4.0-rc.10`.
-> Its tagged-artifact acceptance is pending on Apple Silicon macOS and native
-> Windows x64. Stable remains `v0.3.0`; Intel macOS and Linux/WSL2 remain
-> optional and unverified
-> ([#97](https://github.com/HarjjotSinghh/reinstate/issues/97),
-> [#98](https://github.com/HarjjotSinghh/reinstate/issues/98)).
->
-> **CLI:** prefer short alias **`rein`**. Full name **`reinstate`** works the same.
+Prefer the short alias **`rein`**. Full name **`reinstate`** is the same binary.
 
-### Local continuity from the current source
+### Install
 
-From this repository, with Go 1.25.13 or newer:
-
-```bash
-make build
-export REINSTATE_HOME="$HOME/.reinstate-phase3-local"
-
-./bin/rein sessions
-./bin/rein search "stripe webhook retry" --agent claude
-./bin/rein inspect claude:SESSION_ID
-./bin/rein last --dry-run
-./bin/rein resume codex:SESSION_ID --dry-run
-./bin/rein fork claude:SESSION_ID --dry-run
-./bin/rein
-```
-
-On native Windows PowerShell, build `.\bin\rein.exe` with
-`go build -o .\bin\rein.exe .\cmd\reinstate`, set `$env:REINSTATE_HOME`, and
-use that executable for the same commands.
-
-These commands refresh a private derived index at
-`$REINSTATE_HOME/cache/session-index-v2.sqlite`. Its owner-only `.lock` and
-`.write.lock` files protect destructive repair and serialize writers/rebuilds across concurrent
-`rein`/`reinstate` processes. None is synced. These commands do not require
-`init`, storage credentials, a passphrase, or a network backend.
-
-Stable `v0.3.0` adds an `environment` report to `inspect` and native dry-runs.
-A first launch truthfully warns with `baseline.unavailable`; it never
-manufactures a historical match. Review the report, then either confirm on a
-TTY or acknowledge every current warning explicitly in automation:
-
-```bash
-./bin/rein resume claude:SESSION_ID \
-  --allow-environment-warning baseline.unavailable
-```
-
-Acknowledgements apply only to that invocation. Missing workspaces,
-unrecognized agent versions/layouts, known repository replacement, stale
-source metadata, and verifier failures remain non-overridable. A private
-`reinstate_prelaunch_observed` baseline is stored only after the authorized
-same-vendor child exits successfully. Native resume/fork remains same-vendor.
-
-Bare `rein` opens the numbered switcher only on a TTY. For scripts use
-`rein sessions --json`; a non-TTY bare invocation exits promptly with that
-hint.
-
-### Install stable v0.3.0 with Homebrew
-
-Apple Silicon macOS with Homebrew:
+Apple Silicon macOS (stable `v0.3.0`):
 
 ```bash
 brew install HarjjotSinghh/tap/reinstate
+rein sessions
 ```
 
-The tap formula tracks stable `v0.3.0`. Intel macOS and Linuxbrew remain
-optional and unverified for this release.
+Windows Package Manager (stable releases; can lag a fresh tag):
 
-### Install the v0.4.0-rc.10 candidate
+```powershell
+winget install HarjotSinghRana.Reinstate
+```
 
-These public bootstrap routes install the candidate, not the stable Homebrew
-formula. RC2 tagged-artifact acceptance is pending.
-
-macOS, Linux, or WSL2:
+Candidate `v0.4.0-rc.10` (adds structured handoffs):
 
 ```bash
 curl -fsSL https://reinstate.dev/install.sh | sh
 ```
 
-Native Windows PowerShell:
-
 ```powershell
 irm https://reinstate.dev/install.ps1 | iex
 ```
 
-Both bootstraps pin and verify `v0.4.0-rc.10`, install without elevation, and
-print the next command:
+Replacement prompts, confirm timeouts, lock files, and
+`--allow-environment-warning` live in
+**[docs/getting-started.md](docs/getting-started.md)**.
 
-```bash
-rein version --json
-rein init
-```
-
-Reinstate waits at most 30 seconds for replacement approval; set
-`REINSTATE_CONFIRM_TIMEOUT_SECONDS=1..300` to choose a shorter or longer bound.
-Shells without timed-read support refuse immediately and preserve the installed
-binary. For deliberate automation, review the version change first and set
-`REINSTATE_CONFIRM_REPLACE=1`.
-
-### Optional encrypted sync — Device A
+### Optional encrypted sync
 
 ```bash
 rein init --project github.com/acme/app=/absolute/path/to/app
-rein list --agent AGENT
 rein push --agent AGENT --session SESSION_ID --dry-run
 rein push --agent AGENT --session SESSION_ID
 ```
 
-Use the S3/R2 service endpoint as the endpoint and enter the bucket separately.
-Reinstate refuses to overwrite an initialized home by default. The explicit
-`--force` path backs up prior config and state together before replacement.
+On the second device, reuse the first profile UUID, map the same project ID to
+that machine's path, then `rein pull`. Full walkthrough:
+**[docs/getting-started.md](docs/getting-started.md)**.
 
-### Optional encrypted sync — Device B
+---
 
-```bash
-rein init --profile-id <DEVICE_A_PROFILE_ID> \
-  --project github.com/acme/app=/different/local/path
-rein status
-rein pull --agent AGENT --session SESSION_ID --dry-run
-rein pull --agent AGENT --session SESSION_ID
-# Then use the same vendor's native resume UI or command.
-```
+## Release status
 
-Reinstate verifies the encrypted remote manifest during additional-device `init`
-before saving local configuration. Require `status` to show the expected
-sessions after setup.
+| Channel | What it is | Platforms |
+| ------- | ---------- | --------- |
+| **Stable `v0.3.0`** | Local index, search, verified same-vendor resume, encrypted sync | Apple Silicon macOS and native Windows x64 passed tagged-artifact acceptance |
+| **Candidate `v0.4.0-rc.10`** | Adds Phase 4 structured handoffs into a new Claude Code or Codex session | Dual-platform tagged-artifact acceptance is **pending**; not stable `v0.4.0` |
+| **Preview** | Intel macOS and Linux/WSL2 | Unverified ([#97](https://github.com/HarjjotSinghh/reinstate/issues/97), [#98](https://github.com/HarjjotSinghh/reinstate/issues/98)) |
 
-Full walkthrough: **[docs/getting-started.md](docs/getting-started.md)**
+`v0.4.0-rc.1` through `v0.4.0-rc.9` were published and failed physical
+acceptance. `v0.4.0-rc.10` is the current candidate. Maintainer tagging
+checklist: **[RELEASING.md](RELEASING.md)**.
 
 ---
 
@@ -330,15 +210,15 @@ Full walkthrough: **[docs/getting-started.md](docs/getting-started.md)**
 
 | Agent | Local index | Native resume/fork | Handoff source | Handoff target | Encrypted sync |
 | ----- | :---------: | :----------------: | :------------: | :------------: | :------------: |
-| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | ✅ full | ✅ same-vendor | rc.2 | rc.2 | ✅ |
-| [OpenAI Codex CLI](https://github.com/openai/codex) | ✅ full | ✅ same-vendor | rc.2 | rc.2 | ✅ |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | ✅ read-only | — | rc.2 source-only | — | — |
-| [OpenCode](https://opencode.ai) | ✅ read-only | — | rc.2 source-only | — | — |
-| [Grok Build](https://x.ai) | rc.2 read-only | — | rc.2 source-only | — | — |
+| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | ✅ full | ✅ same-vendor | ✅ | ✅ | ✅ |
+| [OpenAI Codex CLI](https://github.com/openai/codex) | ✅ full | ✅ same-vendor | ✅ | ✅ | ✅ |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | ✅ read-only | — | ✅ source-only | — | — |
+| [OpenCode](https://opencode.ai) | ✅ read-only | — | ✅ source-only | — | — |
+| [Grok Build](https://x.ai) | ✅ read-only | — | ✅ source-only | — | — |
 
-The handoff columns describe the `v0.4.0-rc.10` candidate and remain subject to
-tagged macOS arm64 and Windows amd64 acceptance. Native resume/fork and
-encrypted sync remain same-vendor capabilities.
+Handoff columns describe candidate `v0.4.0-rc.10` and remain subject to tagged
+macOS arm64 and Windows amd64 acceptance. Native resume/fork and encrypted
+sync remain same-vendor capabilities.
 
 Details: **[docs/adapters.md](docs/adapters.md)**
 
@@ -375,8 +255,8 @@ flowchart TB
 1. **Local read adapters** derive bounded metadata and user-prompt search text
 2. **Index** stores owner-only SQLite session rows and private prelaunch
    baselines; it never enters sync
-3. **Verified resume (stable `v0.3.0`)** observes the fresh workspace, agent,
-   capabilities, and runtimes and applies exact warning/blocker policy
+3. **Verified resume** observes the fresh workspace, agent, capabilities, and
+   runtimes and applies exact warning/blocker policy
 4. **Executors** launch a supported session through its native vendor
 5. **Pathmap** rewrites known structural paths for optional cross-device sync
 6. **Crypto/sync** encrypt before upload and restore atomically with backups
@@ -387,7 +267,7 @@ capsule, and launches a new destination session through the destination
 vendor's documented CLI. Imported history is inert evidence; no source model
 call or vendor-internal write is part of this path.
 
-Deep dive: **[docs/architecture.md](docs/architecture.md)** · research diagram:
+Deep dive: **[docs/architecture.md](docs/architecture.md)**
 
 <p align="center">
   <img src="assets/05_architecture.svg" alt="Reinstate architecture" width="720" />
@@ -416,9 +296,9 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 | Doc | Description |
 | --- | ----------- |
 | **Website** | [reinstate.dev](https://reinstate.dev) — product, documentation, compatibility, and security |
-| [Getting started](docs/getting-started.md) | Configless local index plus optional encrypted sync |
-| [Verified resume](docs/verified-resume.md) | Phase 3 environment report, provenance, policy, and privacy contract |
-| [Cross-agent handoff](docs/handoff.md) | Phase 4 scope, fidelity, security, storage, and directional support |
+| [Getting started](docs/getting-started.md) | Install, local index, optional encrypted sync |
+| [Verified resume](docs/verified-resume.md) | Environment report, provenance, policy, and privacy contract |
+| [Cross-agent handoff](docs/handoff.md) | Phase 4 scope, fidelity, security, and directional support |
 | [Architecture](docs/architecture.md) | Pipeline, packages, design principles |
 | [Adapters](docs/adapters.md) | Per-agent layouts & support matrix |
 | [Universal configuration](docs/universal-configuration.md) | Planned MCP/skills/loops/plugins/settings portability |
@@ -429,57 +309,10 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 | [Roadmap](ROADMAP.md) | Phases & non-goals |
 | [Contributing](CONTRIBUTING.md) | Dev setup & PR process |
 | [Releasing](RELEASING.md) | Maintainer release checklist |
-| [Package-manager publishing](docs/package-manager-publishing.md) | Maintainer registry rollout and authentication guide |
+| [Package-manager publishing](docs/package-manager-publishing.md) | Maintainer registry rollout |
 | [Support](SUPPORT.md) | How to get help |
 | [Governance](GOVERNANCE.md) | Decision making |
 | [Changelog](CHANGELOG.md) | Release history |
-
----
-
-## Project activity
-
-### Star history
-
-<p align="center">
-  <a href="https://www.star-history.com/#HarjjotSinghh/reinstate&Date">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=HarjjotSinghh/reinstate&type=Date&theme=dark&legend=top-left" />
-      <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=HarjjotSinghh/reinstate&type=Date&legend=top-left" />
-      <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=HarjjotSinghh/reinstate&type=Date&legend=top-left" width="600" />
-    </picture>
-  </a>
-</p>
-
-<p align="center">
-  <a href="https://www.star-history.com/#HarjjotSinghh/reinstate&Date"><strong>↗ Open interactive star history</strong></a>
-  ·
-  <a href="https://github.com/HarjjotSinghh/reinstate/stargazers">Stargazers</a>
-</p>
-
-### Contributors
-
-<p align="center">
-  <a href="https://github.com/HarjjotSinghh/reinstate/graphs/contributors">
-    <img src="https://contrib.rocks/image?repo=HarjjotSinghh/reinstate&max=100&columns=20" alt="Contributors" />
-  </a>
-</p>
-
-### Category context
-
-<p align="center">
-  <img src="assets/03_traction.svg" alt="Category traction context" width="640" />
-</p>
-
-### Insights
-
-| Metric | Link |
-| ------ | ---- |
-| Pulse | [pulse](https://github.com/HarjjotSinghh/reinstate/pulse) |
-| Traffic | [graphs/traffic](https://github.com/HarjjotSinghh/reinstate/graphs/traffic) |
-| Commits | [graphs/commit-activity](https://github.com/HarjjotSinghh/reinstate/graphs/commit-activity) |
-| Code frequency | [graphs/code-frequency](https://github.com/HarjjotSinghh/reinstate/graphs/code-frequency) |
-| Network | [network](https://github.com/HarjjotSinghh/reinstate/network) |
-| Stars | [stargazers](https://github.com/HarjjotSinghh/reinstate/stargazers) · [star-history](https://www.star-history.com/#HarjjotSinghh/reinstate&Date) |
 
 ---
 
@@ -588,8 +421,6 @@ See [NOTICE](NOTICE) for third-party acknowledgements. Product names of third-pa
 <div align="center">
 
 **Work on desktop. Resume on laptop. Keep the context.**
-
-[![Star this repo](https://img.shields.io/github/stars/HarjjotSinghh/reinstate?style=for-the-badge&logo=github)](https://github.com/HarjjotSinghh/reinstate)
 
 <sub>Built with ☕ in New Delhi · Open source forever</sub>
 

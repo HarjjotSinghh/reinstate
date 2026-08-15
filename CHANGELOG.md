@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Rewrite the README above the fold: Homebrew-first install, five badges,
+  sample `rein sessions` output, and a dedicated Release status section
+  pinned to `v0.4.0-rc.10`. Drop the retired Go Report Card badge and the
+  Project activity section. Put Homebrew before `make build` in the
+  getting-started guide.
+
 ## [0.4.0-rc.10] - 2026-08-15
 
 Tenth Phase 4 candidate. `v0.4.0-rc.9` was published and physical dual-platform

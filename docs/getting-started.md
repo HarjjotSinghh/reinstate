@@ -14,7 +14,7 @@ Apple Silicon macOS and native Windows x64.
 Release candidate `v0.4.0-rc.10` adds Phase 4 structured handoff, which
 continues the same task in a new Claude Code or Codex session. Its
 tagged-artifact acceptance is pending, and it is not stable `v0.4.0`. The
-earlier `v0.4.0-rc.1` through `v0.4.0-rc.6` candidates were published and failed
+earlier `v0.4.0-rc.1` through `v0.4.0-rc.9` candidates were published and failed
 that acceptance.
 
 > **Release status:** the public installers pin candidate `v0.4.0-rc.10`.
@@ -44,34 +44,6 @@ a backend, and Reinstate never needs your Anthropic, OpenAI, Google, or OpenCode
 account credentials.
 
 ## Install
-
-### Build the current source
-
-From this checkout:
-
-```sh
-make build
-./bin/rein version --json
-```
-
-Both `./bin/rein` and `./bin/reinstate` are the same binary. Use an isolated
-absolute home when evaluating a source build:
-
-```sh
-export REINSTATE_HOME="$HOME/.reinstate-phase3-local"
-```
-
-Native Windows PowerShell:
-
-```powershell
-New-Item -ItemType Directory -Force .\bin | Out-Null
-go build -o .\bin\rein.exe .\cmd\reinstate
-$env:REINSTATE_HOME = Join-Path $HOME ".reinstate-phase3-local"
-.\bin\rein.exe version --json
-```
-
-Do not use a public installer as evidence for another commit. The installer
-proves only the exact signed release candidate it pins.
 
 ### Install v0.3.0 with Homebrew on Apple Silicon macOS
 
@@ -139,6 +111,34 @@ Invoke-WebRequest https://reinstate.dev/install.ps1 -OutFile $Installer
 Get-Content $Installer
 & ([ScriptBlock]::Create([IO.File]::ReadAllText($Installer)))
 ```
+
+### Build the current source
+
+From this checkout:
+
+```sh
+make build
+./bin/rein version --json
+```
+
+Both `./bin/rein` and `./bin/reinstate` are the same binary. Use an isolated
+absolute home when evaluating a source build:
+
+```sh
+export REINSTATE_HOME="$HOME/.reinstate-phase3-local"
+```
+
+Native Windows PowerShell:
+
+```powershell
+New-Item -ItemType Directory -Force .\bin | Out-Null
+go build -o .\bin\rein.exe .\cmd\reinstate
+$env:REINSTATE_HOME = Join-Path $HOME ".reinstate-phase3-local"
+.\bin\rein.exe version --json
+```
+
+Do not use a public installer as evidence for another commit. The installer
+proves only the exact signed release candidate it pins.
 
 ## Verify the binary
 
