@@ -6,7 +6,7 @@ order: 10
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.4.0-rc.9"
+version: "v0.4.0-rc.10"
 updatedAt: 2026-08-01
 tags: ["configuration", "project-mapping", "profile-id", "s3", "keyring"]
 targetQuery: "configure Reinstate session sync"

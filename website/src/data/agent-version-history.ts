@@ -16,11 +16,19 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.4.0-rc.10': {
+    rangeChange:
+      'Unchanged from v0.4.0-rc.9: inclusive Claude Code range 2.1.219–2.1.229. The Codex CLI range is unchanged at 0.133.0–0.147.0.',
+    compatibilityChange:
+      'Tenth Phase 4 candidate after v0.4.0-rc.9 physical dual-platform acceptance FAILED (macOS 38/44, Windows 38/44). This candidate falls back to a one-line absolute projection.md pointer whenever dest briefing contains CR/LF so Windows CreateProcess cannot truncate argv. Dual-platform tagged-artifact acceptance is pending; this candidate does not authorize stable v0.4.0.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.4.0-rc.10/internal/handoff/pipeline.go',
+  },
   'v0.4.0-rc.9': {
     rangeChange:
       'Unchanged from v0.4.0-rc.8: inclusive Claude Code range 2.1.219–2.1.229. The Codex CLI range is unchanged at 0.133.0–0.147.0.',
     compatibilityChange:
-      'Ninth Phase 4 candidate after v0.4.0-rc.8 physical dual-platform acceptance FAILED (macOS 38/44, Windows 38/44). This candidate maps a recognized off-PATH layout to inspect JSON status=supported without claiming a verified version range, and still fail-closes destination launch when the executable is missing. Dual-platform tagged-artifact acceptance is pending; this candidate does not authorize stable v0.4.0.',
+      'Ninth Phase 4 candidate after v0.4.0-rc.8 physical dual-platform acceptance FAILED (macOS 38/44, Windows 38/44). This candidate maps a recognized off-PATH layout to inspect JSON status=supported without claiming a verified version range, and still fail-closes destination launch when the executable is missing. Physical dual-platform acceptance FAILED (macOS 38/44, Windows 38/44; dest-ack A4 PASS, A1/A2/A3/A5/A6/A7 FAIL; remaining product defect Windows dest argv CR/LF truncation); this candidate does not authorize stable v0.4.0.',
     implementationSource:
       'https://github.com/HarjjotSinghh/reinstate/blob/v0.4.0-rc.9/internal/agentcheck/agent.go',
   },

@@ -6,7 +6,7 @@ order: 15
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.4.0-rc.9"
+version: "v0.4.0-rc.10"
 updatedAt: 2026-08-01
 tags: ["limitations", "stable-release", "compatibility", "same-vendor-resume", "roadmap"]
 targetQuery: "Reinstate limitations"

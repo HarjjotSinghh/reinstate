@@ -11,27 +11,27 @@ authority is [cross-agent-continuation.md](../cross-agent-continuation.md) and
 A candidate passes only when installed tagged artifacts produce truthful,
 privacy-safe handoffs that a destination agent can actually continue from.
 
-The current candidate is pinned to the signed tag `v0.4.0-rc.9`. Use the
-[v0.4.0-rc.9 dispatch](v0.4.0-rc.9-agent-verification-prompts.md) and the
+The current candidate is pinned to the signed tag `v0.4.0-rc.10`. Use the
+[v0.4.0-rc.10 dispatch](v0.4.0-rc.10-agent-verification-prompts.md) and the
 [Phase 4 report template](results/phase-4-report-template.md). Do not start
 physical testing from an integration commit, source build, draft release, or an
-installer that still pins stable `v0.3.0` or `v0.4.0-rc.1` through `v0.4.0-rc.8`.
+installer that still pins stable `v0.3.0` or `v0.4.0-rc.1` through `v0.4.0-rc.9`.
 
-The first eight candidates, `v0.4.0-rc.1` through `v0.4.0-rc.8`,
-were published and **failed** this acceptance. `v0.4.0-rc.9` maps a recognized
-off-PATH layout to inspect JSON `agent.status=supported` without claiming a
-verified version range, and still fail-closes destination launch when the
-executable is missing. The rc.9 dispatch carries RC1 `R1`–`R6`, the RC2, RC3,
-RC5, RC6, RC7, RC8, and RC9 regression sets so the rerun confirms them rather
-than rediscovering them. The superseded
+The first nine candidates, `v0.4.0-rc.1` through `v0.4.0-rc.9`,
+were published and **failed** this acceptance. `v0.4.0-rc.10` falls back to the
+one-line absolute `projection.md` pointer whenever dest briefing contains CR/LF,
+so Windows CreateProcess cannot truncate argv. The rc.10 dispatch carries RC1
+`R1`–`R6`, the RC2, RC3, RC5, RC6, RC7, RC8, RC9, and RC10 regression sets so
+the rerun confirms them rather than rediscovering them. The superseded
 [v0.4.0-rc.1](v0.4.0-rc.1-agent-verification-prompts.md),
 [v0.4.0-rc.2](v0.4.0-rc.2-agent-verification-prompts.md),
 [v0.4.0-rc.3](v0.4.0-rc.3-agent-verification-prompts.md),
 [v0.4.0-rc.4](v0.4.0-rc.4-agent-verification-prompts.md),
 [v0.4.0-rc.5](v0.4.0-rc.5-agent-verification-prompts.md),
 [v0.4.0-rc.6](v0.4.0-rc.6-agent-verification-prompts.md),
-[v0.4.0-rc.7](v0.4.0-rc.7-agent-verification-prompts.md), and
-[v0.4.0-rc.8](v0.4.0-rc.8-agent-verification-prompts.md) dispatches remain in
+[v0.4.0-rc.7](v0.4.0-rc.7-agent-verification-prompts.md),
+[v0.4.0-rc.8](v0.4.0-rc.8-agent-verification-prompts.md), and
+[v0.4.0-rc.9](v0.4.0-rc.9-agent-verification-prompts.md) dispatches remain in
 the tree as the record of what those runs were asked to do.
 
 ## Evidence policy
@@ -222,12 +222,12 @@ supported platforms is `PASS`. One `FAIL` on one platform fails the candidate.
 ## Candidate dispatches
 
 The current per-tag instructions are the
-[`v0.4.0-rc.9` dispatch](v0.4.0-rc.9-agent-verification-prompts.md). It fixes
+[`v0.4.0-rc.10` dispatch](v0.4.0-rc.10-agent-verification-prompts.md). It fixes
 report branches, artifact and full-commit checks, the report-template
 substitutions for this tag, the pre-run agent-version record, RC1 `R1`–`R6`
-re-verification, the RC2, RC3, RC5, RC6, RC7, RC8, and RC9 regression sets, corpus sizes, absolute performance
+re-verification, the RC2, RC3, RC5, RC6, RC7, RC8, RC9, and RC10 regression sets, corpus sizes, absolute performance
 ceilings, and final reconciliation rules before physical testing starts. Do not
 begin a run without the dispatch for the exact tested tag. The superseded
 [`v0.4.0-rc.1`](v0.4.0-rc.1-agent-verification-prompts.md) through
-[`v0.4.0-rc.8`](v0.4.0-rc.8-agent-verification-prompts.md) dispatches are
+[`v0.4.0-rc.9`](v0.4.0-rc.9-agent-verification-prompts.md) dispatches are
 retained only as the record of those failed runs.

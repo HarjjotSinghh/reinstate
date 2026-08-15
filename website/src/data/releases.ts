@@ -1,9 +1,15 @@
 export const releaseHistory = [
   {
+    version: 'v0.4.0-rc.10',
+    date: '2026-08-15',
+    summary:
+      'Tenth Phase 4 candidate after v0.4.0-rc.9 physical dual-platform acceptance FAILED (macOS 38/44, Windows 38/44; dest-ack A4 PASS, A1/A2/A3/A5/A6/A7 FAIL; Windows CreateProcess truncated multi-line dest argv). Tagged-artifact acceptance is pending.',
+  },
+  {
     version: 'v0.4.0-rc.9',
     date: '2026-08-15',
     summary:
-      'Ninth Phase 4 candidate after v0.4.0-rc.8 physical dual-platform acceptance FAILED (macOS 38/44, Windows 38/44; Windows inspect JSON agent.status=not_installed despite layout_recognized=true). Tagged-artifact acceptance is pending.',
+      'Ninth Phase 4 candidate after v0.4.0-rc.8 physical dual-platform acceptance FAILED (macOS 38/44, Windows 38/44; Windows inspect JSON agent.status=not_installed despite layout_recognized=true). Physical dual-platform acceptance FAILED: macOS 38/44, Windows 38/44; remaining product defect was Windows dest argv CR/LF truncation.',
   },
   {
     version: 'v0.4.0-rc.8',
