@@ -51,6 +51,12 @@ func TestRenderBootstrapGolden(t *testing.T) {
 	if !bytes.Contains(got, []byte("## Acknowledgement required")) {
 		t.Fatal("bootstrap missing acknowledgement requirement")
 	}
+	if bytes.Contains(got, []byte("cannot police")) {
+		t.Fatal("dest bootstrap must not weaken the acknowledgement contract")
+	}
+	if !bytes.Contains(got, []byte("Your first reply must restate these five bullets")) {
+		t.Fatal("bootstrap missing first-reply acknowledgement instruction")
+	}
 	compareGolden(t, "basic.bootstrap.txt", got)
 }
 

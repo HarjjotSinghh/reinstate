@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -268,6 +269,8 @@ func (s *Store) Get(handoffID string) (capsule.Capsule, Artifacts, error) {
 
 // List returns well-formed lineage entries, newest first. Partial trailing
 // lines are skipped. limit <= 0 uses the default; values above max are capped.
+// Artifact directories without a lineage.jsonl row are recovered so a dest-ack
+// kill after Put still lists the handoff.
 func (s *Store) List(limit int) ([]LineageEntry, error) {
 	if s == nil || s.root == "" {
 		return nil, errors.New("handoff store is nil")
@@ -279,6 +282,36 @@ func (s *Store) List(limit int) ([]LineageEntry, error) {
 		limit = maxListLimit
 	}
 
+	all, err := s.readLineageEntries()
+	if err != nil {
+		return nil, err
+	}
+	seen := make(map[string]struct{}, len(all))
+	for _, entry := range all {
+		seen[entry.HandoffID] = struct{}{}
+	}
+	recovered, err := s.recoverLineageFromDirs(seen)
+	if err != nil {
+		return nil, err
+	}
+
+	entries := all
+	if len(entries) > limit {
+		entries = entries[len(entries)-limit:]
+	}
+	for i, j := 0, len(entries)-1; i < j; i, j = i+1, j-1 {
+		entries[i], entries[j] = entries[j], entries[i]
+	}
+	if len(recovered) > 0 {
+		entries = append(recovered, entries...)
+		if len(entries) > limit {
+			entries = entries[:limit]
+		}
+	}
+	return entries, nil
+}
+
+func (s *Store) readLineageEntries() ([]LineageEntry, error) {
 	path := filepath.Join(s.root, lineageFileName)
 	f, err := os.Open(path)
 	if err != nil {
@@ -299,7 +332,6 @@ func (s *Store) List(limit int) ([]LineageEntry, error) {
 		}
 		var entry LineageEntry
 		if err := json.Unmarshal([]byte(line), &entry); err != nil {
-			// Skip corrupt or partially written lines; never rewrite the file.
 			continue
 		}
 		if strings.TrimSpace(entry.HandoffID) == "" {
@@ -307,17 +339,66 @@ func (s *Store) List(limit int) ([]LineageEntry, error) {
 		}
 		entries = append(entries, entry)
 	}
-	if err := scanner.Err(); err != nil {
+	return entries, scanner.Err()
+}
+
+func (s *Store) recoverLineageFromDirs(seen map[string]struct{}) ([]LineageEntry, error) {
+	dirents, err := os.ReadDir(s.root)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, nil
+		}
 		return nil, err
 	}
-
-	if len(entries) > limit {
-		entries = entries[len(entries)-limit:]
+	var recovered []LineageEntry
+	for _, ent := range dirents {
+		if !ent.IsDir() {
+			continue
+		}
+		id := ent.Name()
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		if err := validateHandoffID(id); err != nil {
+			continue
+		}
+		c, _, err := s.Get(id)
+		if err != nil {
+			continue
+		}
+		info, statErr := ent.Info()
+		created := time.Now().UTC().Truncate(time.Second)
+		if statErr == nil {
+			created = info.ModTime().UTC().Truncate(time.Second)
+		}
+		capsuleRaw, _ := os.ReadFile(filepath.Join(s.root, id, capsuleFileName))
+		recovered = append(recovered, LineageEntry{
+			HandoffID:   id,
+			LineageRoot: firstNonEmpty(c.Identity.LineageRoot, id),
+			CreatedAt:   created,
+			Source: LineageEndpoint{
+				Agent:          c.RawSource.Agent,
+				SessionID:      c.RawSource.SessionID,
+				ArtifactSHA256: c.RawSource.ArtifactSHA256,
+			},
+			Destination: LineageEndpoint{
+				State: VerifyUnresolved,
+			},
+			Policy:           string(c.Projection.Policy),
+			CapsuleSHA256:    sha256Hex(capsuleRaw),
+			ProjectionSHA256: c.Projection.MarkdownSHA256,
+			FidelityOverall:  string(c.Fidelity.Overall),
+			Launched:         false,
+			Acknowledged:     nil,
+		})
 	}
-	for i, j := 0, len(entries)-1; i < j; i, j = i+1, j-1 {
-		entries[i], entries[j] = entries[j], entries[i]
-	}
-	return entries, nil
+	sort.SliceStable(recovered, func(i, j int) bool {
+		if recovered[i].CreatedAt.Equal(recovered[j].CreatedAt) {
+			return recovered[i].HandoffID > recovered[j].HandoffID
+		}
+		return recovered[i].CreatedAt.After(recovered[j].CreatedAt)
+	})
+	return recovered, nil
 }
 
 // AppendLineage appends one JSON line to lineage.jsonl. The file is never rewritten.

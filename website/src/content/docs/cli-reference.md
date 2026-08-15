@@ -6,7 +6,7 @@ order: 14
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.4.0-rc.10"
+version: "v0.4.0-rc.11"
 updatedAt: 2026-08-01
 tags: ["cli", "command-reference", "session-sync", "troubleshooting", "rc6"]
 targetQuery: "Reinstate CLI commands"

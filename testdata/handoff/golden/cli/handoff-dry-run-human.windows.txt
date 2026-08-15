@@ -1,7 +1,7 @@
 Structured handoff — a new claude session, not native resume: handoff 35d62bdecacd1e28cfe515d888d73852 from codex:source-session
 Structured handoff — a new claude session, not native resume: policy=balanced projection_events=1 projection=901 bytes estimated_tokens=226
 Structured handoff — a new claude session, not native resume: workspace project=controlled-project root=${REPO:controlled-project} branch= dirty=false
-Structured handoff — a new claude session, not native resume: command "claude" "--session-id" "9d1105f3-9018-4d9e-a200-d4e27ffca6a9" "Reinstate structured handoff — not native resume. Read ${REINSTATE_HOME}/handoffs/35d62bdecacd1e28cfe515d888d73852/projection.md and continue from that briefing only. Acknowledge before any mutation."
+Structured handoff — a new claude session, not native resume: command "claude" "--session-id" "9d1105f3-9018-4d9e-a200-d4e27ffca6a9" "Reinstate structured handoff — not native resume. Read ${REINSTATE_HOME}/handoffs/35d62bdecacd1e28cfe515d888d73852/projection.md and continue from that briefing only. First reply must restate these five bullets before any mutation: (1) current goal and latest user request (2) critical constraints carried over (3) current changed files and test state (4) missing capabilities or uncertain evidence (5) proposed next action."
 Structured handoff — a new claude session, not native resume: file ${REINSTATE_HOME}/handoffs/35d62bdecacd1e28cfe515d888d73852/bootstrap.txt
 Structured handoff — a new claude session, not native resume: file ${REINSTATE_HOME}/handoffs/35d62bdecacd1e28cfe515d888d73852/capsule.json
 Structured handoff — a new claude session, not native resume: file ${REINSTATE_HOME}/handoffs/35d62bdecacd1e28cfe515d888d73852/fidelity.json

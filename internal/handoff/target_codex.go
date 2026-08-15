@@ -10,6 +10,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -24,7 +25,7 @@ const (
 	codexLaunchOperation      = "handoff"
 	codexProjectionFileName   = "projection.md"
 	codexShortBootstrapPrefix = "Reinstate structured handoff — not native resume. Read "
-	codexShortBootstrapSuffix = " and continue from that briefing only. Acknowledge before any mutation."
+	codexShortBootstrapSuffix = " and continue from that briefing only. "
 )
 
 func init() {
@@ -115,7 +116,7 @@ func (t *CodexTarget) Plan(c capsule.Capsule, p Policy) (DestinationPlan, capsul
 		SessionID:  "",
 		Bootstrap:  full,
 	}
-	if err := ValidateDestinationArgv(plan, caps.MaxArgvBytes); err != nil {
+	if err := ValidateDestinationArgv(plan, caps.MaxArgvBytes); err != nil || argvUnsafeForLaunch(runtime.GOOS, full) {
 		short := buildCodexBootstrap(c, true)
 		plan.Args = []string{string(short)}
 		plan.Bootstrap = short
@@ -126,11 +127,31 @@ func (t *CodexTarget) Plan(c capsule.Capsule, p Policy) (DestinationPlan, capsul
 	return plan, fidelity, nil
 }
 
-// Materialize validates argv budget. Codex destination materialization never
-// writes vendor-internal files; planned Files (if any) are written owner-only
-// outside the Codex tree via WritePlannedFiles.
+// Materialize validates argv and, when a dest Codex home is explicit
+// (Root or CODEX_HOME), records workspace trust for plan.Dir so dest-ack is
+// not blocked on the TUI directory-trust prompt. It never writes default
+// ~/.codex when those overrides are unset.
 func (t *CodexTarget) Materialize(_ context.Context, plan DestinationPlan) error {
-	return ValidateDestinationArgv(plan, t.Capabilities().MaxArgvBytes)
+	if err := ValidateDestinationArgv(plan, t.Capabilities().MaxArgvBytes); err != nil {
+		return err
+	}
+	root := t.destConfigRoot()
+	if root == "" {
+		return nil
+	}
+	return acceptCodexProjectTrust(root, plan.Dir)
+}
+
+func (t *CodexTarget) destConfigRoot() string {
+	if t != nil {
+		if root := strings.TrimSpace(t.Root); root != "" {
+			return filepath.Clean(root)
+		}
+	}
+	if configured := strings.TrimSpace(os.Getenv("CODEX_HOME")); configured != "" {
+		return filepath.Clean(configured)
+	}
+	return ""
 }
 
 // Launch runs the planned Codex argv through an injectable LaunchRunner.
@@ -218,7 +239,7 @@ func (t *CodexTarget) Verify(ctx context.Context, plan DestinationPlan, launchSt
 
 func buildCodexBootstrap(c capsule.Capsule, shortOnly bool) []byte {
 	projection := codexProjectionFileName
-	short := []byte(codexShortBootstrapPrefix + projection + codexShortBootstrapSuffix)
+	short := []byte(codexShortBootstrapPrefix + projection + codexShortBootstrapSuffix + firstReplyAckOneLine())
 	if shortOnly {
 		return short
 	}
@@ -237,7 +258,8 @@ func buildCodexBootstrap(c capsule.Capsule, shortOnly bool) []byte {
 	}
 	b.WriteString("Read ")
 	b.WriteString(projection)
-	b.WriteString(" for the full destination briefing. Acknowledge before any mutation.")
+	b.WriteString(" for the full destination briefing.\n")
+	b.WriteString(acknowledgementBlock())
 	full := []byte(b.String())
 	if len(full) > BootstrapMaxBytes {
 		full = append([]byte(nil), full[:BootstrapMaxBytes]...)

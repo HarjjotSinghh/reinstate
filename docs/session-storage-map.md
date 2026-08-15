@@ -323,7 +323,7 @@ storage. Phase 4 must therefore:
    and
 3. keep Grok out of the default target set until a target packet ships.
 
-For v0.4.0-rc.10, Grok is a **source only**: you may hand off *from* Grok, and
+For v0.4.0-rc.11, Grok is a **source only**: you may hand off *from* Grok, and
 Grok sessions appear in the local index. Grok is not a destination.
 
 ### Remaining omissions for a Grok reader
