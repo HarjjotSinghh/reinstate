@@ -40,7 +40,7 @@ and [`help wanted`](https://github.com/HarjjotSinghh/reinstate/labels/help%20wan
 
 ### Prerequisites
 
-- Go **1.25.12+** (the pinned toolchain is declared in `go.mod`)
+- Go **1.25.13+** (the pinned toolchain is declared in `go.mod`)
 - `make`
 
 ### Clone and build

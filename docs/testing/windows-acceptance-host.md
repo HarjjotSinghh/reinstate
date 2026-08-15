@@ -13,7 +13,7 @@ candidates fail on product defects only.
 - **OS:** Windows 11 native x64 (never WSL for the Windows column)
 - **Shell for the report:** 64-bit Windows PowerShell 5.1 or PowerShell 7+
 - **Git:** 2.x with SSH tag verification support
-- **Go:** toolchain `go1.25.12` via `GOTOOLCHAIN=go1.25.12`
+- **Go:** toolchain `go1.25.13` via `$env:GOTOOLCHAIN='go1.25.13'` (GnuWin32 `make` cannot apply Unix `GOTOOLCHAIN=` prefixes)
 - **C compiler for race:** MinGW-w64 or MSYS2 `gcc` on `PATH` so
   `CGO_ENABLED=1 go test -race` can link
 - **Make / sh:** MSYS2 or Git-for-Windows userland so `make verify` works
@@ -57,7 +57,7 @@ drive-scoped variable.
 Run in a fresh PowerShell process from the repository root:
 
 ```powershell
-$env:GOTOOLCHAIN = "go1.25.12"
+$env:GOTOOLCHAIN = "go1.25.13"
 Remove-Item Env:CGO_ENABLED -ErrorAction SilentlyContinue
 git fetch --tags
 

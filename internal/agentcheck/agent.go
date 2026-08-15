@@ -131,19 +131,20 @@ func Inspect(ctx context.Context, agentName string, opts Options) Result {
 			err = resolveErr
 		}
 	}
-	if err != nil || strings.TrimSpace(resolved) == "" {
+	executableMissing := err != nil || strings.TrimSpace(resolved) == ""
+	if executableMissing {
 		result.Status = StatusNotInstalled
 		result.Message = "native agent executable is unavailable"
-		return result
+	} else {
+		resolved, err = filepath.Abs(resolved)
+		if err != nil {
+			result.Status = StatusError
+			result.Message = "native agent executable path is unavailable"
+			return result
+		}
+		result.ExecutablePresent = true
+		result.ExecutablePath = resolved
 	}
-	resolved, err = filepath.Abs(resolved)
-	if err != nil {
-		result.Status = StatusError
-		result.Message = "native agent executable path is unavailable"
-		return result
-	}
-	result.ExecutablePresent = true
-	result.ExecutablePath = resolved
 
 	root := opts.Root
 	if root == "" {
@@ -172,10 +173,15 @@ func Inspect(ctx context.Context, agentName string, opts Options) Result {
 	}
 	result.Layout = definition.layout
 	if root == "" || !recognizedLayout(root, definition.marker) {
-		result.Message = "native agent session layout is unrecognized"
+		if !executableMissing {
+			result.Message = "native agent session layout is unrecognized"
+		}
 		return result
 	}
 	result.LayoutRecognized = true
+	if executableMissing {
+		return result
+	}
 
 	timeout := opts.Timeout
 	if timeout <= 0 {

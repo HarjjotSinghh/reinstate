@@ -76,6 +76,33 @@ func TestRemainingTimeoutPreservesParentDeadline(t *testing.T) {
 	}
 }
 
+func TestVerifyReadOnlyOffPATHSourceRecognizesLayout(t *testing.T) {
+	t.Parallel()
+	fixture := newFixture(t, "https://example.com/org/repo.git")
+	fixture.options.Agent.LookPath = func(string) (string, error) {
+		return "", errors.New("not on PATH")
+	}
+	input := Input{
+		SessionRef: "claude:controlled", Agent: "claude", Workspace: fixture.workspace,
+		SourceFresh: true, ReadOnly: true,
+	}
+	report, err := Verify(context.Background(), input, fixture.options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.Agent.Status != agentcheck.StatusNotInstalled || report.Agent.ExecutablePresent || !report.Agent.LayoutRecognized {
+		t.Fatalf("off-PATH agent = %+v", report.Agent)
+	}
+	present := findCheck(t, report, "agent.executable")
+	if present.Severity != SeverityInfo {
+		t.Fatalf("agent.executable = %+v", present)
+	}
+	if report.Decision == DecisionBlocked {
+		t.Fatalf("read-only off-PATH layout blocked: decision=%s executable=%+v layout=%+v",
+			report.Decision, present, findCheck(t, report, "agent.layout"))
+	}
+}
+
 func TestVerifyFirstObservationThenStableBaseline(t *testing.T) {
 	t.Parallel()
 	fixture := newFixture(t, syntheticCredentialRemote("user", "secret", "example.com/org/repo.git", "token=private#fragment"))

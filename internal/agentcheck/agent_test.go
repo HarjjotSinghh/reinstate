@@ -121,6 +121,9 @@ func TestInspectFailsClosed(t *testing.T) {
 			if result.Status != test.want || !strings.Contains(result.Message, test.message) {
 				t.Fatalf("result = %+v", result)
 			}
+			if test.lookErr != nil && (result.ExecutablePresent || result.LayoutRecognized || runner.name != "") {
+				t.Fatalf("missing executable still probed or claimed layout: %+v runner=%q", result, runner.name)
+			}
 			rendered := result.Message + result.Version + result.Layout
 			for _, secret := range []string{"secret path", "secret vendor response", "token-secret"} {
 				if strings.Contains(rendered, secret) {
@@ -128,6 +131,31 @@ func TestInspectFailsClosed(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestInspectMissingExecutableStillRecognizesLayout(t *testing.T) {
+	root := t.TempDir()
+	if err := os.Mkdir(filepath.Join(root, "projects"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	runner := &fakeRunner{output: VersionOutput{Stdout: "2.1.228 (Claude Code)"}}
+	result := Inspect(context.Background(), "claude", Options{
+		Root: root,
+		LookPath: func(string) (string, error) {
+			return "", errors.New("not on PATH")
+		},
+		Runner:          runner,
+		CaptureIdentity: testExecutableIdentity,
+	})
+	if result.Status != StatusNotInstalled || result.ExecutablePresent || !result.LayoutRecognized {
+		t.Fatalf("off-PATH layout result = %+v", result)
+	}
+	if result.Layout != "projects-jsonl" || !strings.Contains(result.Message, "executable") {
+		t.Fatalf("off-PATH layout message = %+v", result)
+	}
+	if runner.name != "" {
+		t.Fatalf("missing executable still ran --version: %q", runner.name)
 	}
 }
 

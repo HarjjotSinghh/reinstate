@@ -4,7 +4,7 @@ $RepoDir = Split-Path -Parent $PSScriptRoot
 Set-Location $RepoDir
 
 if (-not $env:GOTOOLCHAIN) {
-    $env:GOTOOLCHAIN = "go1.25.12"
+    $env:GOTOOLCHAIN = "go1.25.13"
 }
 
 go test ./internal/doctest -count=1

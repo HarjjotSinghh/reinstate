@@ -7,7 +7,7 @@ import {
 } from '../../scripts/check-cli-release.mjs';
 
 const checker = new URL('../../scripts/check-cli-release.mjs', import.meta.url);
-const TAG = 'v0.4.0-rc.7';
+const TAG = 'v0.4.0-rc.8';
 
 function release(overrides: Record<string, unknown> = {}) {
   return {

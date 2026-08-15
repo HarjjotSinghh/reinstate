@@ -43,7 +43,7 @@ absent and was not installed solely for acceptance.
 | Codex CLI version/state | `<version and source/destination state>` |
 | Gemini/OpenCode/Grok state | `<version or ABSENT for each>` |
 | Git version | `<version>` |
-| Go version/toolchain | `go1.25.12` |
+| Go version/toolchain | `go1.25.13` |
 | Report branch | `test/v0.4.0-rc.1-<platform>-report` |
 | Device-report commit | `<full commit containing the terminated device block>` |
 | Draft report PR | `<URL or NOT CREATED>` |
@@ -75,7 +75,7 @@ and never substitutes for the installed tagged artifact.
 | Gate | Result | Sanitized evidence |
 | ---- | ------ | ------------------ |
 | Clean tagged worktree and `go mod tidy -diff` | `PASS/FAIL` |  |
-| `make verify` with Go 1.25.12 | `PASS/FAIL` |  |
+| `make verify` with Go 1.25.13 | `PASS/FAIL` |  |
 | Complete `CGO_ENABLED=1 go test -race ./... -count=1` | `PASS/FAIL` |  |
 | Required cross-build, fuzz-smoke, snapshot, artifact, and installer gates | `PASS/FAIL` |  |
 | Phase 1, Phase 2, and Phase 3 regression | `PASS/FAIL` |  |
