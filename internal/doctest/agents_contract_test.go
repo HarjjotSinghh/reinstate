@@ -107,6 +107,7 @@ func TestTierTableMatchesCatalog(t *testing.T) {
 	if !ok {
 		t.Fatal("docs/agent-support-tiers.md is missing the Current/target tier table")
 	}
+	// name -> Current token. Empty string means the row exists with "—".
 	current := map[string]string{}
 	for _, row := range table.rows {
 		name := strings.TrimSpace(row[table.col["Agent"]])
@@ -116,21 +117,29 @@ func TestTierTableMatchesCatalog(t *testing.T) {
 		}
 		if tierToken.MatchString(token) {
 			current[name] = strings.ToUpper(token)
+			continue
 		}
+		current[name] = ""
 	}
 	for _, desc := range agents.All() {
 		got, ok := current[desc.DisplayName]
 		if !ok {
-			t.Errorf("docs/agent-support-tiers.md has no current-tier row for catalog agent %s (%q)", desc.Key, desc.DisplayName)
+			t.Errorf("docs/agent-support-tiers.md has no row for catalog agent %s (%q)", desc.Key, desc.DisplayName)
+			continue
+		}
+		// Coordinator-owned Current "—" is not a claimed tier. Compare only T0–T5.
+		if got == "" {
 			continue
 		}
 		if got != desc.Tier.String() {
 			t.Errorf("docs/agent-support-tiers.md %s current %s, catalog %s", desc.Key, got, desc.Tier)
 		}
 	}
-	// Planned roster rows use "—" and are coordinator-owned. A Current T0–T5
-	// claim without a catalog descriptor is documentation drift.
+	// A Current T0–T5 claim without a catalog descriptor is documentation drift.
 	for name, tier := range current {
+		if tier == "" {
+			continue
+		}
 		if _, ok := catalogByDisplayName(name); !ok {
 			t.Errorf("docs/agent-support-tiers.md claims %s at %s but that agent is not in the catalog", name, tier)
 		}
@@ -164,16 +173,24 @@ func TestT0ReasonsMatchDocs(t *testing.T) {
 
 func TestCLIReferenceListsCatalogKeys(t *testing.T) {
 	doc := read(t, "docs/cli-reference.md")
-	for _, desc := range agents.All() {
-		if !hasKeyToken(doc, desc.Key) {
-			t.Errorf("docs/cli-reference.md does not list catalog key %q", desc.Key)
-		}
-	}
-
+	// Each command lists the keys it accepts. T0 keys are not session filters
+	// and are not required in this file.
+	agent := commandKeySet(doc, "--agent")
 	from := commandKeySet(doc, "--from")
 	to := commandKeySet(doc, "--to")
 	with := commandKeySet(doc, "--with")
 
+	for _, desc := range agents.AtLeast(agents.TierDiscover) {
+		if !agent[desc.Key] && !from[desc.Key] {
+			t.Errorf("docs/cli-reference.md --agent/sessions filters omit T1+ key %q", desc.Key)
+		}
+	}
+	for key := range agent {
+		desc, ok := agents.Get(key)
+		if !ok || desc.Tier < agents.TierDiscover {
+			t.Errorf("docs/cli-reference.md --agent lists %q below T1", key)
+		}
+	}
 	for _, desc := range agents.AtLeast(agents.TierHandoffFrom) {
 		if !from[desc.Key] {
 			t.Errorf("docs/cli-reference.md --from omits T2+ key %q", desc.Key)
@@ -225,6 +242,13 @@ func TestOverClaimScannerExamples(t *testing.T) {
 	}
 	if hits := overClaims("- Mutation/sync for Gemini CLI and OpenCode in Phase 2", gemini); len(hits) != 0 {
 		t.Fatalf("unsupported-list bullet should pass, got %v", hits)
+	}
+	pi, ok := agents.Get("pi")
+	if !ok {
+		t.Fatal("pi missing from catalog")
+	}
+	if hits := overClaims("Native vendor sync typically serves its own ecosystem", pi); len(hits) != 0 {
+		t.Fatalf("Pi must not match typically, got %v", hits)
 	}
 }
 
@@ -381,10 +405,6 @@ func stripMarkdown(value string) string {
 	return strings.TrimSpace(value)
 }
 
-func hasKeyToken(doc, key string) bool {
-	return regexp.MustCompile(`(?i)(?:\b|[|_` + "`" + `])` + regexp.QuoteMeta(key) + `(?:\b|[|_` + "`" + `])`).MatchString(doc)
-}
-
 func commandKeySet(doc, flag string) map[string]bool {
 	out := map[string]bool{}
 	collect := func(raw string) {
@@ -511,11 +531,9 @@ func headerMinTier(header string) agents.Tier {
 }
 
 func agentMentioned(text string, desc agents.Descriptor) bool {
-	lower := strings.ToLower(text)
-	if strings.Contains(lower, strings.ToLower(desc.DisplayName)) {
-		return true
-	}
-	return regexp.MustCompile(`(?i)\b` + regexp.QuoteMeta(desc.Key) + `\b`).MatchString(text)
+	name := regexp.MustCompile(`(?i)\b` + regexp.QuoteMeta(desc.DisplayName) + `\b`)
+	key := regexp.MustCompile(`(?i)\b` + regexp.QuoteMeta(desc.Key) + `\b`)
+	return name.MatchString(text) || key.MatchString(text)
 }
 
 func compactSpace(value string) string {
