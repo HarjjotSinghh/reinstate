@@ -5,8 +5,8 @@ Copy of the Phase 4 template with this dispatch's substitutions. Cumulative, san
 ## Verdict
 
 - **Device verdict:** `FAIL`
-- **Milestone:** `MATRIX_COMPLETE`
-- **Required counts:** `40 PASS / 0 PARTIAL / 4 FAIL / 0 NOT TESTED`
+- **Milestone:** `SUPERSEDED`
+- **Required counts:** `43 PASS / 0 PARTIAL / 1 FAIL / 0 NOT TESTED`
 - **Optional source-only counts:** `6 PASS / 0 FAIL / 2 NOT TESTED`
 - **Release-blocking findings:** `1`
 
@@ -25,8 +25,8 @@ Copy of the Phase 4 template with this dispatch's substitutions. Cumulative, san
 | Tested full commit | `e05610bff7f4e8f36f7b4227a248dcccd4f7eb6b` |
 | Installed binary SHA-256 | `36245aaf7c61c9852f6c4a112b15d82fb2cf7415c4483ca58308cde880d45f29` |
 | Installed version JSON | `reinstate 0.4.0-rc.11 (e05610bff7f4e8f36f7b4227a248dcccd4f7eb6b 2026-08-15T11:58:51Z)` |
-| Claude Code version/state | pin `2.1.229` on isolated PATH for in-range dest; host PATH `2.1.233` (above ceiling) used only for R6/C8 fail-closed; dest **not logged in** (`LOGIN_OK` absent) |
-| Codex CLI version/state | `0.147.0` (in range); dest **not logged in** (`LOGIN_OK` absent) |
+| Claude Code version/state | pin `2.1.229` on isolated PATH for in-range dest; host PATH `2.1.233` (above ceiling) used only for R6/C8 fail-closed. Throwaway dest later `loggedIn=true` (`authMethod=claude.ai`). |
+| Codex CLI version/state | `0.147.0` (in range). Throwaway dest later logged in (ChatGPT). |
 | Gemini/OpenCode/Grok state | Gemini `0.53.0` present (isolated copy); OpenCode `1.18.2` present but no isolation override; Grok `0.2.101` present (isolated copy) |
 | Git version | `git version 2.52.0.windows.1` |
 | Go version/toolchain | `go1.25.13 windows/amd64` (`$env:GOTOOLCHAIN='go1.25.13'`) |
@@ -94,13 +94,13 @@ Use the exact IDs and pass conditions in `phase-4-cross-agent-handoff-acceptance
 
 | ID | Result | Sanitized evidence |
 | -- | ------ | ------------------ |
-| A1 | `FAIL` | TTY `GetConsoleMode=True` via `ssh -tt` + local PTY. Dry-run dest argv `n=1` one-line absolute `projection.md`, no CR/LF, mode `structured handoff`. Live Codex dest **not launched**: `LOGIN_OK` absent; isolated dest homes have no auth files. Missing required dest-ack is FAIL (HARNESS). Source Claude was not running. |
-| A2 | `FAIL` | TTY true. Dry-run dest argv `n=3` with `projection.md` present. Live Claude dest **not launched** (`LOGIN_OK` absent). Missing dest-ack is FAIL (HARNESS). |
-| A3 | `FAIL` | Live Claude→Codex from logged-out source not collected because dest-ack was blocked on dest login. Missing required live A3 is FAIL. |
+| A1 | `PASS` | Supersedes first-pass FAIL. Dest Codex logged in. `CREATE_NEW_CONSOLE` TTY. First-reply restated all five bullets (1066 bytes, 28s). Marker unchanged. |
+| A2 | `FAIL` | Supersedes first-pass “not launched”. Dest Claude **did launch** (`loggedIn=true`, dry-run structured handoff). Two live attempts (console + console retry) wrote **no new dest session jsonl** in 180s; first-reply 0/5; timeout 124. Not dest-login. |
+| A3 | `PASS` | Supersedes first-pass FAIL. Source session-file-only. Dest Codex first-reply restated all five bullets (784 bytes; a 121-byte prefix assistant did not count). Marker unchanged. |
 | A4 | `PASS` | tagged `partial-final-record` fixture; latest complete user intent survives |
-| A5 | `FAIL` | No live dest first-reply. Cannot prove five acknowledgement bullets (goal, latest request, changed files, test state, next action). Missing dest-ack is FAIL. |
-| A6 | `PASS` | harmless MARKER SHA-256 unchanged (no live dest rewrite) |
-| A7 | `PASS` | `rein handoff list --json` `len(handoffs)=4` (no `n` field); scored from stored lineage after `--no-launch` (lineage before launch / list dir recovery) |
+| A5 | `PASS` | Supersedes first-pass FAIL. Codex dest first-reply 5/5 on A1 and A3. Claude dest first-reply not collected (A2). |
+| A6 | `PASS` | harmless MARKER SHA-256 unchanged across dest-ack launches |
+| A7 | `PASS` | After live A1 dest-ack, `handoff list --json` keys `mode`/`handoffs`; `len(handoffs)=1`. Earlier `--no-launch` list was `len=4`. |
 
 ### Matrix B — fidelity and policy
 
@@ -197,7 +197,7 @@ Use the exact IDs and pass conditions in `phase-4-cross-agent-handoff-acceptance
 
 ### Release-blocking
 
-- Required dest-ack A1/A2/A3/A5 **FAIL** (HARNESS): throwaway dest Claude/Codex were not logged in (`LOGIN_OK` missing). Live five-bullet first-reply therefore not collected. Missing required dest-ack is FAIL. Dry-run argv and lineage-before-launch still PASS.
+- Required dest-ack **A2 FAIL**: throwaway dest Claude launched after login; no dest session file and 0/5 first-reply in 180s (timeout 124). A1/A3/A5 Codex dest first-reply 5/5. `DEST-LOGIN.ps1` initially printed “Login incomplete” because `codex login status` writes success on stderr.
 
 ### Non-blocking
 
@@ -207,7 +207,7 @@ Use the exact IDs and pass conditions in `phase-4-cross-agent-handoff-acceptance
 
 ### Test-harness deviations and supersessions
 
-- Live dest-ack used `ssh -tt` so remote `GetConsoleMode` was true. Did **not** use `05-destack.ps1`.
+- **2026-08-16 dest-ack supersession:** throwaway dest Claude/Codex logged in. A1/A3/A5 Codex dest first-reply 5/5. A2 Claude dest launched but wrote no session jsonl (timeout 124). Did not use `05-destack.ps1`. No dest argv `--dangerously-skip-permissions`.
 - A1.dryrun / A2.dryrun / RC10.argv remain PASS and are not superseded.
 - First-pass B2/B6/B7/B8/G2/E1/E2/R1 FAIL from un-uniquified fixture IDs / dest off-PATH; **superseded** after uniquify + Codex-kept R1 + Gemini sessionindex id. Final rows above are the collected results.
 - G2 first-pass harness scored PASS on exit 2 (session not found); **superseded** by uniquified G2 all exit 0, max 1981 ms.
@@ -229,9 +229,9 @@ Use the exact IDs and pass conditions in `phase-4-cross-agent-handoff-acceptance
 | RC8 R1 layout scan / C3 not demo / F2 no `--last` / F3 JSON usage / F7 exit 6 / E8 `resume grok:<id>` | `PASS` | |
 | RC9 inspect JSON `status=supported` | `PASS` | with R1 |
 | RC10 dest argv one-line `projection.md` | `PASS` | dry-run `n=1` |
-| RC11 five-bullet first-reply | `FAIL` | not collected (dest not logged in) |
-| RC11 lineage-before-launch / list recovery | `PASS` | A7 `len(handoffs)=4` |
-| RC11 dest-home workspace trust | `PASS` (setup) | isolated Codex `trust_level=trusted` literal-quoted keys; live dest-ack not exercised |
+| RC11 five-bullet first-reply | `PASS` (Codex dest) / `FAIL` (Claude dest) | A1 1066 B 5/5; A3 784 B 5/5; A2 0 jsonl |
+| RC11 lineage-before-launch / list recovery | `PASS` | live A7 `len(handoffs)=1`; earlier no-launch `len=4` |
+| RC11 dest-home workspace trust | `PASS` | isolated Codex `trust_level=trusted` literal-quoted keys; dest Claude folder trust seeded; live Claude dest still wrote no session |
 
 ## 9. Required terminated device block
 
@@ -243,9 +243,9 @@ device=windows-amd64
 test_tag=v0.4.0-rc.11
 test_commit=e05610bff7f4e8f36f7b4227a248dcccd4f7eb6b
 installed_binary_sha256=36245aaf7c61c9852f6c4a112b15d82fb2cf7415c4483ca58308cde880d45f29
-required_pass=40
+required_pass=43
 required_partial=0
-required_fail=4
+required_fail=1
 required_not_tested=0
 optional_pass=6
 optional_fail=0
