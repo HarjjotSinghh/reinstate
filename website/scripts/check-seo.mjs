@@ -30,6 +30,20 @@ const UNSUPPORTED_AGENTS = [
   ['Zed AI', /\bzed\s+ai\b/i],
 ];
 
+// T2 catalog agents may be named on their own integration route only.
+const T2_METADATA_ROUTES = new Map([
+  ['Gemini CLI', '/integrations/gemini'],
+  ['OpenCode', '/integrations/opencode'],
+]);
+
+function agentAllowedOnRoute(name, route) {
+  const allowed = T2_METADATA_ROUTES.get(name);
+  if (!allowed || typeof route !== 'string') {
+    return false;
+  }
+  return route === allowed || route.startsWith(`${allowed}/`);
+}
+
 const UNSUPPORTED_OPERATING_SYSTEMS = [
   ['Android', /\bandroid\b/i],
   ['ChromeOS', /\bchrome\s*os\b/i],
@@ -533,13 +547,16 @@ function collectJsonStrings(value, location = '$', output = []) {
   return output;
 }
 
-function inspectProductClaims(value, context, errors) {
+function inspectProductClaims(value, context, errors, route) {
   const strings = collectJsonStrings(value);
   const reported = new Set();
 
   for (const { location, value: text } of strings) {
     for (const [name, pattern] of UNSUPPORTED_AGENTS) {
       const key = `agent:${name}`;
+      if (agentAllowedOnRoute(name, route)) {
+        continue;
+      }
       if (pattern.test(text) && !reported.has(key)) {
         reported.add(key);
         addError(
@@ -570,9 +587,12 @@ function inspectProductClaims(value, context, errors) {
   }
 }
 
-function inspectMetadataClaims(values, context, errors) {
+function inspectMetadataClaims(values, context, errors, route) {
   const text = Object.values(values).filter(Boolean).join(' ');
   for (const [name, pattern] of UNSUPPORTED_AGENTS) {
+    if (agentAllowedOnRoute(name, route)) {
+      continue;
+    }
     if (pattern.test(text)) {
       addError(
         errors,
@@ -690,7 +710,7 @@ function inspectSchemaVisibility(
   }
 }
 
-function inspectJsonLd(html, context, errors) {
+function inspectJsonLd(html, context, errors, route) {
   const scriptPattern = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi;
   let scriptNumber = 0;
   const declaredIds = new Map();
@@ -732,7 +752,7 @@ function inspectJsonLd(html, context, errors) {
         );
       }
       inspectStructuredData(data, context, errors, declaredIds);
-      inspectProductClaims(data, context, errors);
+      inspectProductClaims(data, context, errors, route);
       inspectSchemaVisibility(
         data,
         visibleText,
@@ -910,7 +930,7 @@ function inspectContentImages(markup, context, errors) {
   }
 }
 
-function inspectPageMetadata(headMarkup, context, errors) {
+function inspectPageMetadata(headMarkup, context, errors, route) {
   const keywordTags = metaTagsBy(headMarkup, 'name', 'keywords');
   if (keywordTags.length > 0) {
     addError(
@@ -1005,6 +1025,7 @@ function inspectPageMetadata(headMarkup, context, errors) {
     { title, description, ...socialValues },
     context,
     errors,
+    route,
   );
 
   return {
@@ -1079,8 +1100,8 @@ function inspectHtml(html, context, route, errors) {
     );
   }
 
-  inspectJsonLd(html, context, errors);
-  const metadata = inspectPageMetadata(headMarkup, context, errors);
+  inspectJsonLd(html, context, errors, route);
+  const metadata = inspectPageMetadata(headMarkup, context, errors, route);
 
   if (noindex) {
     return { route, context, indexable: false, ...metadata };

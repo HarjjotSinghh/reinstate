@@ -1,10 +1,20 @@
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 import compatibility from '../data/compatibility.json';
 import { agentVersionHistory } from '../data/agent-version-history';
 import { staticOgPages } from '../data/og-pages';
 import { releaseHistory } from '../data/releases';
 import staticPageReviews from '../data/static-page-reviews.json';
+import {
+  compatibilityAgents,
+  findDocRowName,
+  overClaims,
+  parseCatalogDescriptors,
+  parseCompatibilityDocTiers,
+  repositoryCatalogDir,
+  repositoryCompatibilityDoc,
+  tierRank,
+} from './agent-catalog';
 
 const repositoryRoot = new URL('../../../', import.meta.url);
 const page = (path: string) =>
@@ -298,5 +308,88 @@ describe('evidence-safe linkable assets', () => {
     expect(launch).toMatch(
       /never real user, employer,\s+customer, or contributor transcripts/,
     );
+  });
+
+  it('agrees with the catalog and docs/compatibility.md on every agent tier', () => {
+    const catalog = parseCatalogDescriptors(repositoryCatalogDir());
+    const claimed = parseCompatibilityDocTiers(repositoryCompatibilityDoc());
+
+    expect(catalog.map(({ key }) => key).sort()).toEqual(
+      compatibilityAgents.map(({ key }) => key).sort(),
+    );
+    expect(catalog).toHaveLength(16);
+
+    for (const desc of catalog) {
+      const row = compatibilityAgents.find((agent) => agent.key === desc.key);
+      expect(row, desc.key).toBeDefined();
+      expect(row?.tier, desc.key).toBe(desc.tier);
+      expect(row?.storageFamily, desc.key).toBe(desc.family);
+      expect(row?.t0Reason, desc.key).toBe(desc.t0Reason);
+
+      const docName = findDocRowName(claimed, desc);
+      expect(docName, `${desc.key} docs row`).toBeTruthy();
+      expect(claimed.get(docName ?? ''), desc.key).toBe(desc.tier);
+    }
+
+    for (const [name, tier] of claimed) {
+      expect(
+        catalog.some((desc) => findDocRowName(new Map([[name, tier]]), desc)),
+        `docs extra row ${name}`,
+      ).toBe(true);
+    }
+  });
+
+  it('does not publish an integration page for T0 agents or omit one for T1+', async () => {
+    const integrationFiles = new Set(
+      (await readdir(new URL('../pages/integrations/', import.meta.url))).filter(
+        (name) => name.endsWith('.astro') && name !== 'index.astro',
+      ),
+    );
+
+    for (const agent of compatibilityAgents) {
+      const slug = agent.integrationPath?.replace('/integrations/', '');
+      if (tierRank(agent.tier) < 1) {
+        expect(agent.integrationPath, agent.key).toBeNull();
+        expect(integrationFiles.has(`${agent.id}.astro`), agent.id).toBe(false);
+        if (slug) {
+          expect(integrationFiles.has(`${slug}.astro`), slug).toBe(false);
+        }
+        continue;
+      }
+      expect(agent.integrationPath, agent.key).toMatch(/^\/integrations\/[a-z0-9-]+$/);
+      expect(integrationFiles.has(`${slug}.astro`), slug).toBe(true);
+    }
+  });
+
+  it('does not claim a capability above an agent tier on public surfaces', async () => {
+    const roots = [
+      new URL('../pages/compatibility.astro', import.meta.url),
+      new URL('../pages/compatibility/', import.meta.url),
+      new URL('../pages/integrations/', import.meta.url),
+      new URL('../pages/roadmap.astro', import.meta.url),
+    ];
+    const files: URL[] = [];
+    for (const root of roots) {
+      if (root.pathname.endsWith('/')) {
+        for (const name of await readdir(root)) {
+          if (name.endsWith('.astro')) {
+            files.push(new URL(name, root));
+          }
+        }
+      } else {
+        files.push(root);
+      }
+    }
+
+    const hits: string[] = [];
+    for (const path of files) {
+      const source = await readFile(path, 'utf8');
+      for (const agent of compatibilityAgents) {
+        for (const hit of overClaims(source, agent)) {
+          hits.push(`${path.pathname.split('/src/').at(-1)} ${agent.key}: ${hit}`);
+        }
+      }
+    }
+    expect(hits).toEqual([]);
   });
 });

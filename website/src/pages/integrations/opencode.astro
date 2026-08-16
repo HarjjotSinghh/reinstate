@@ -1,0 +1,91 @@
+---
+import PublicContentLayout from '../../layouts/PublicContentLayout.astro';
+
+export const prerender = true;
+
+const title = 'OpenCode as a T2 Handoff Source | Reinstate';
+const description =
+  'OpenCode is a T2 handoff source: Reinstate can read sessions through the vendor CLI query family and build a portable capsule. Native resume and encrypted sync are not supported.';
+---
+
+<PublicContentLayout
+  {title}
+  {description}
+  path="/integrations/opencode"
+  eyebrow="Integration · OpenCode · T2"
+  answer="OpenCode is T2: a handoff source and a read-only local index (F2 CLI query). Reinstate does not launch OpenCode as a native resume target and does not sync OpenCode sessions."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Integrations', path: '/integrations' },
+    { name: 'OpenCode', path: '/integrations/opencode' },
+  ]}
+  tags={['OpenCode', 'T2 handoff source', 'read-only']}
+>
+  <h2 id="support-at-a-glance">OpenCode support at a glance</h2>
+  <dl class="pc-facts">
+    <div>
+      <dt>Tier</dt>
+      <dd>T2 Handoff source</dd>
+    </div>
+    <div>
+      <dt>Storage family</dt>
+      <dd>F2 CLI query</dd>
+    </div>
+    <div>
+      <dt>Native resume (T3)</dt>
+      <dd>Not supported</dd>
+    </div>
+    <div>
+      <dt>Encrypted sync (T5)</dt>
+      <dd>Not supported</dd>
+    </div>
+  </dl>
+  <p>
+    T2 means <code>rein handoff --from opencode</code> can build a portable capsule.
+    OpenCode is not a T3 resume agent and not a T5 sync agent.
+  </p>
+
+  <h2 id="what-t2-includes">What T2 includes</h2>
+  <ul>
+    <li>T1 read-only discovery, search, and inspect of local OpenCode sessions.</li>
+    <li>T2 structured handoff from OpenCode into a new Claude Code or Codex session.</li>
+    <li>Fail-closed behavior on an unrecognized layout (exit code <code>5</code>).</li>
+  </ul>
+
+  <h2 id="what-t2-excludes">What T2 excludes</h2>
+  <ul>
+    <li>No <code>rein resume</code> / <code>rein fork</code> of an OpenCode session.</li>
+    <li>No <code>rein handoff --to opencode</code> destination.</li>
+    <li>No <code>rein push</code> / <code>rein pull</code> of OpenCode sessions.</li>
+    <li>No write into OpenCode’s session store.</li>
+  </ul>
+
+  <div class="pc-callout">
+    <p>Native resume is same-vendor, and OpenCode is not a T3 agent.</p>
+    <p>
+      A handoff starts a <em>new</em> Claude Code or Codex session. It does not reconstruct
+      OpenCode history or translate the vendor transcript.
+    </p>
+  </div>
+
+  <h2 id="evidence">Evidence</h2>
+  <p>
+    Committed fixtures live under <code>testdata/sessionindex/opencode</code> and
+    <code>testdata/handoff/opencode</code>. A Windows physical path exists; there is no
+    T3 resume report. See the
+    <a href="https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/opencode.md"
+      >OpenCode storage page</a
+    >
+    and the <a href="/compatibility">tier matrix</a>.
+  </p>
+
+  <section class="pc-related" aria-labelledby="related-heading">
+    <h2 id="related-heading">Related</h2>
+    <nav aria-label="Related pages">
+      <a href="/integrations">All integrations</a>
+      <a href="/compatibility">Compatibility matrix</a>
+      <a href="/docs/handoff">Structured handoff</a>
+      <a href="/docs/adapters">Adapter documentation</a>
+    </nav>
+  </section>
+</PublicContentLayout>

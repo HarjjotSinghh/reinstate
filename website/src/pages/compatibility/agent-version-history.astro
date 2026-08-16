@@ -50,7 +50,8 @@ const displayDate = (date: string) =>
       </thead>
       <tbody>
         {
-          compatibility.agents.map((agent) => (
+          compatibility.agents.map((agent) =>
+            agent.minimumTestedVersion && agent.maximumTestedVersion && agent.lastTested ? (
             <tr>
               <td><a href={agent.integrationPath}>{agent.name}</a></td>
               <td>
@@ -63,7 +64,8 @@ const displayDate = (date: string) =>
                 <a href={agent.source}>Immutable test source</a>
               </td>
             </tr>
-          ))
+            ) : null
+          )
         }
       </tbody>
     </table>

@@ -31,7 +31,7 @@ export const analyticsEventTargets: Readonly<
   install_command_copy: ['homepage-hero'],
   github_click: ['header', 'mobile-header', 'footer', 'homepage-hero', 'homepage-explore'],
   docs_getting_started: ['header', 'footer', 'homepage-hero'],
-  integration_view: ['claude-code', 'codex'],
+  integration_view: ['claude-code', 'codex', 'gemini', 'opencode', 'grok'],
   storage_guide_view: ['aws-s3', 'cloudflare-r2'],
   waitlist_submit: ['waitlist'],
   download_click: ['github-release-asset'],
@@ -179,6 +179,15 @@ export function analyticsPageEvent(pathname: string): AnalyticsEventMatch | null
   }
   if (path === '/integrations/codex') {
     return { event: 'integration_view', target: 'codex' };
+  }
+  if (path === '/integrations/gemini') {
+    return { event: 'integration_view', target: 'gemini' };
+  }
+  if (path === '/integrations/opencode') {
+    return { event: 'integration_view', target: 'opencode' };
+  }
+  if (path === '/integrations/grok') {
+    return { event: 'integration_view', target: 'grok' };
   }
   if (storageGuidePaths.has(path)) {
     return {

@@ -1,11 +1,15 @@
 ---
 import PublicContentLayout from '../../layouts/PublicContentLayout.astro';
+import AgentTierMatrix from '../../components/AgentTierMatrix.astro';
+import { integrationAgents } from '../../lib/agent-catalog';
 
 export const prerender = true;
 
-const title = 'Coding-Agent Integrations: Claude Code and Codex | Reinstate';
+const title = 'Coding-Agent Integrations by Support Tier | Reinstate';
 const description =
-  'See how Reinstate syncs encrypted Claude Code and Codex CLI sessions across macOS and Windows without translating vendor-native transcripts.';
+  'See Reinstate integrations at T1 and above: T5 encrypted sync for Claude Code and Codex CLI, plus T2 handoff sources. T0 catalog names stay on the matrix.';
+
+const integrations = integrationAgents();
 ---
 
 <PublicContentLayout
@@ -13,77 +17,92 @@ const description =
   {description}
   path="/integrations"
   eyebrow="Coding-agent integrations"
-  answer="Reinstate currently integrates with Claude Code and OpenAI Codex CLI for encrypted, same-vendor session sync across devices. It preserves each agent’s native session format: Claude Code sessions resume in Claude Code, and Codex sessions resume in Codex."
+  answer="Encrypted sync (T5) covers Claude Code and Codex CLI only, same-vendor. Gemini CLI, OpenCode, and Grok Build are T2 handoff sources. T0 catalog agents appear on the matrix with a reason; they do not have integration pages."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'Integrations', path: '/integrations' },
   ]}
   tags={['Claude Code', 'Codex CLI', 'coding-agent integrations', 'session sync']}
 >
-  <h2 id="available-integrations">Available integrations</h2>
+  <h2 id="available-integrations">Integrations at T1 and above</h2>
   <p>
-    Phase 1 stays deliberately narrow. Reinstate discovers selected local session artifacts,
-    rewrites known structural paths for portability, encrypts the result locally, and restores it
-    into the same vendor's native layout on another configured device.
+    An integration page exists only when the catalog tier is T1 or higher. T0 names
+    belong on the <a href="/compatibility">compatibility matrix</a>, not on a page that
+    implies a working adapter.
   </p>
 
   <div class="pc-grid">
-    <a class="pc-card" href="/integrations/claude-code">
-      <h3>Claude Code</h3>
-      <p>
-        Move supported Claude Code sessions between configured project roots while recomputing the
-        destination project directory key.
-      </p>
-      <span class="pc-link">Read Claude Code integration →</span>
-    </a>
-    <a class="pc-card" href="/integrations/codex">
-      <h3>OpenAI Codex CLI</h3>
-      <p>
-        Move supported Codex rollouts while preserving the native date-partitioned layout and
-        remapping the structural working directory.
-      </p>
-      <span class="pc-link">Read Codex integration →</span>
-    </a>
+    {
+      integrations.map((agent) => (
+        <a class="pc-card" href={agent.integrationPath}>
+          <h3>{agent.name}</h3>
+          <p>
+            {agent.tier} · {agent.resumeMode}
+          </p>
+          <span class="pc-link">Read {agent.name} integration →</span>
+        </a>
+      ))
+    }
   </div>
 
-  <h2 id="support-summary">What “supported” means</h2>
+  <h2 id="tier-matrix">Catalog tier matrix</h2>
+  <p>
+    Breadth is a matrix. Encrypted sync covers Claude Code and Codex CLI. The other
+    catalog rows are T2 handoff sources or T0 known names.
+  </p>
+  <AgentTierMatrix caption="Catalog agent support tiers for integrations" />
+
+  <h2 id="support-summary">What each published tier can do</h2>
   <div class="pc-table-wrap">
     <table class="pc-table">
       <thead>
         <tr>
           <th scope="col">Capability</th>
-          <th scope="col">Claude Code</th>
-          <th scope="col">Codex CLI</th>
+          <th scope="col">Claude Code (T5)</th>
+          <th scope="col">Codex CLI (T5)</th>
+          <th scope="col">Gemini / OpenCode / Grok (T2)</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td>Local session discovery</td>
-          <td>Phase 1</td>
-          <td>Phase 1</td>
+          <td>Local session discovery (T1)</td>
+          <td>Included</td>
+          <td>Included</td>
+          <td>Included, read-only</td>
         </tr>
         <tr>
-          <td>Encrypted push and pull</td>
-          <td>Same-vendor sessions</td>
-          <td>Same-vendor sessions</td>
+          <td>Handoff source (T2)</td>
+          <td>Included</td>
+          <td>Included</td>
+          <td>Included</td>
         </tr>
         <tr>
-          <td>macOS ↔ Windows path mapping</td>
-          <td>Configured projects</td>
-          <td>Configured projects</td>
+          <td>Same-vendor native resume (T3)</td>
+          <td>Included</td>
+          <td>Included</td>
+          <td>Not supported</td>
+        </tr>
+        <tr>
+          <td>Handoff destination (T4)</td>
+          <td>Included</td>
+          <td>Included</td>
+          <td>Not supported</td>
+        </tr>
+        <tr>
+          <td>Encrypted push and pull (T5)</td>
+          <td>Same-vendor sessions</td>
+          <td>Same-vendor sessions</td>
+          <td>Not supported</td>
         </tr>
         <tr>
           <td>Native cross-agent translation</td>
           <td>Not supported</td>
           <td>Not supported</td>
-        </tr>
-        <tr>
-          <td>Structured handoff (new session)</td>
-          <td>Source and destination</td>
-          <td>Source and destination</td>
+          <td>Not supported</td>
         </tr>
         <tr>
           <td>MCP, skills, plugins, or settings sync</td>
+          <td>Later roadmap</td>
           <td>Later roadmap</td>
           <td>Later roadmap</td>
         </tr>
@@ -97,7 +116,7 @@ const description =
     <a href="/compatibility/agent-version-history">agent-version history</a>.
   </p>
 
-  <h2 id="integration-flow">How an integration moves a session</h2>
+  <h2 id="integration-flow">How a T5 integration moves a session</h2>
   <ol class="pc-steps">
     <li>
       <strong>Discover.</strong> An adapter finds session artifacts in the agent's local,
@@ -131,16 +150,17 @@ const description =
     </p>
   </div>
 
-  <h2 id="not-yet-supported">Integrations not yet supported</h2>
+  <h2 id="not-yet-supported">T0 names are not integrations</h2>
   <p>
-    Gemini CLI, OpenCode, and Grok Build are handoff sources only in v0.4.0; they are not
-    session-sync destinations. Cursor is not a current integration. Future
-    support will be added per adapter and per capability; support for sessions will not
-    automatically imply support for configuration, plugins, or credentials.
+    Kimi Code CLI, Pi, Qwen Code, Cursor CLI, Cline, Roo Code, Aider, GitHub Copilot CLI,
+    Amp, OpenHands, and ZCode are T0. They appear in <code>rein doctor --agents</code> with a
+    machine-readable reason such as <code>layout_unverified</code>, <code>server_backed</code>,
+    or <code>desktop_only</code>. That is a complete result, not a preview of sync.
   </p>
   <p>
-    Reinstate is independent of Anthropic and OpenAI. Reading local vendor session files does not
-    imply a partnership, endorsement, or access to vendor accounts.
+    Reinstate is independent of Anthropic, OpenAI, Google, xAI, and the other vendors named
+    here. Reading local vendor session files does not imply a partnership, endorsement, or
+    access to vendor accounts.
   </p>
 
   <section class="pc-related" aria-labelledby="related-heading">
