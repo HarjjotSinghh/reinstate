@@ -1,0 +1,352 @@
+{
+  "schema": "AGENT-PROBE-V1",
+  "generated_at": "2026-08-16T11:46:08Z",
+  "platform": {
+    "os": "darwin",
+    "arch": "arm64",
+    "device_class": "macos"
+  },
+  "reinstate_version": "0.0.0-dev",
+  "agents": [
+    {
+      "key": "kimi",
+      "display_name": "Kimi Code CLI",
+      "declared_tier": "T0",
+      "root_env": "KIMI_CODE_HOME",
+      "root_env_set": false,
+      "candidate_roots": [
+        {
+          "relative_to": "home",
+          "suffix": ".kimi-code",
+          "exists": true,
+          "marker_present": true
+        },
+        {
+          "relative_to": "home",
+          "suffix": ".kimi",
+          "exists": false,
+          "marker_present": false
+        }
+      ],
+      "resolved_root": {
+        "relative_to": "home",
+        "suffix": ".kimi-code"
+      },
+      "executable_on_path": true,
+      "version_raw": "0.36.1",
+      "tree": [
+        {
+          "path": "cache",
+          "kind": "dir",
+          "children": 2
+        },
+        {
+          "path": "cache/client-configs",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "cache/client-configs/estimated_cache_duration.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 516
+        },
+        {
+          "path": "cache/query-store",
+          "kind": "dir",
+          "children": 18
+        },
+        {
+          "path": "cache/query-store/cluster.indexes.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 208
+        },
+        {
+          "path": "cache/query-store/cluster.meta.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 134
+        },
+        {
+          "path": "cache/query-store/shard-<n>",
+          "kind": "dir",
+          "children": 2
+        },
+        {
+          "path": "cache/query-store/shard-<n>/*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 9
+        },
+        {
+          "path": "cache/query-store/shard-<n>/db.indexes.json",
+          "kind": "file",
+          "count": 16,
+          "median_bytes": 114
+        },
+        {
+          "path": "cache/query-store/shard-<n>/db.wal",
+          "kind": "file",
+          "count": 16
+        },
+        {
+          "path": "cache/query-store/shard-<n>/generations",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "cache/query-store/shard-<n>/generations/g-<n>",
+          "kind": "dir",
+          "children": 5
+        },
+        {
+          "path": "cache/query-store/shard-<n>/generations/g-<n>/compound.index",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 16
+        },
+        {
+          "path": "cache/query-store/shard-<n>/generations/g-<n>/dt.index",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 105
+        },
+        {
+          "path": "cache/query-store/shard-<n>/generations/g-<n>/manifest.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 796
+        },
+        {
+          "path": "cache/query-store/shard-<n>/generations/g-<n>/secondary.index",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 77
+        },
+        {
+          "path": "cache/query-store/shard-<n>/generations/g-<n>/store",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 412
+        },
+        {
+          "path": "config.toml",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 5707
+        },
+        {
+          "path": "config.toml.bak",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 4593
+        },
+        {
+          "path": "device_id",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 36
+        },
+        {
+          "path": "logs",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "logs/kimi-code.log",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 218
+        },
+        {
+          "path": "migrations-effort.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 64
+        },
+        {
+          "path": "session_index.jsonl",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 225
+        },
+        {
+          "path": "sessions",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "sessions/wd_<user>_f6c3da451c-<n>",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "sessions/wd_<user>_f6c3da451c-<n>/session-<uuid-v4>",
+          "kind": "dir",
+          "children": 3
+        },
+        {
+          "path": "sessions/wd_<user>_f6c3da451c-<n>/session-<uuid-v4>/agents",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "sessions/wd_<user>_f6c3da451c-<n>/session-<uuid-v4>/agents/main",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "sessions/wd_<user>_f6c3da451c-<n>/session-<uuid-v4>/agents/main/wire.jsonl",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 106347
+        },
+        {
+          "path": "sessions/wd_<user>_f6c3da451c-<n>/session-<uuid-v4>/logs",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "sessions/wd_<user>_f6c3da451c-<n>/session-<uuid-v4>/logs/kimi-code.log",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 434
+        },
+        {
+          "path": "sessions/wd_<user>_f6c3da451c-<n>/session-<uuid-v4>/state.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 457
+        },
+        {
+          "path": "telemetry",
+          "kind": "dir"
+        },
+        {
+          "path": "tui.toml",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1000
+        },
+        {
+          "path": "updates",
+          "kind": "dir",
+          "children": 2
+        },
+        {
+          "path": "updates/latest.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 107
+        },
+        {
+          "path": "updates/rollout.log",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 451
+        },
+        {
+          "path": "user-history",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "user-history/*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 58
+        },
+        {
+          "path": "workspace-trust",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "workspace-trust/wd_<user>_f6c3da451c-<n>",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 57
+        },
+        {
+          "path": "workspaces.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 226
+        }
+      ],
+      "name_shapes": [
+        {
+          "path": "cache/query-store/*",
+          "shape": "shard-<n>",
+          "samples": 16
+        },
+        {
+          "path": "cache/query-store/shard-<n>/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "cache/query-store/shard-<n>/generations/*",
+          "shape": "g-<n>",
+          "samples": 1
+        },
+        {
+          "path": "sessions/*",
+          "shape": "wd_<user>_f6c3da451c-<n>",
+          "samples": 1
+        },
+        {
+          "path": "sessions/wd_<user>_f6c3da451c-<n>/*",
+          "shape": "session-<uuid-v4>",
+          "samples": 1
+        },
+        {
+          "path": "user-history/*",
+          "shape": "<32-hex>.jsonl",
+          "samples": 1
+        },
+        {
+          "path": "workspace-trust/*",
+          "shape": "wd_<user>_f6c3da451c-<n>",
+          "samples": 1
+        }
+      ],
+      "first_line_keys": {
+        "session_index.jsonl": [
+          "sessionDir",
+          "sessionId",
+          "workDir"
+        ],
+        "sessions/wd_<user>_f6c3da451c-<n>/session-<uuid-v4>/agents/main/wire.jsonl": [
+          "created_at",
+          "protocol_version",
+          "type"
+        ],
+        "sessions/wd_<user>_f6c3da451c-<n>/session-<uuid-v4>/state.json": [
+          "agents",
+          "archived",
+          "createdAt",
+          "custom",
+          "cwd",
+          "id",
+          "isCustomTitle",
+          "lastPrompt",
+          "lastTurnReason",
+          "title",
+          "titleKind",
+          "updatedAt",
+          "version"
+        ],
+        "user-history/*": [
+          "content"
+        ],
+        "workspaces.json": [
+          "deleted_workspace_ids",
+          "version",
+          "workspaces"
+        ]
+      }
+    }
+  ]
+}

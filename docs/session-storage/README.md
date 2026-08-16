@@ -39,6 +39,22 @@ Reinstate reads it. Support states live in
 | OpenHands | [openhands.md](openhands.md) | T0 | T0 |
 | ZCode | [zcode.md](zcode.md) | T0 | T0 |
 | MiniMax | [minimax.md](minimax.md) | T0 | T0 |
+| Antigravity CLI | [antigravity.md](antigravity.md) | T0 | T0 |
 
 Every row on every candidate page starts `Unverified`. Promotion requires a
 redacted device probe; see [../testing/agent-storage-probe.md](../testing/agent-storage-probe.md).
+
+## Committed device evidence
+
+A macOS probe on 2026-08-16 produced the first `AGENT-PROBE-V1` artifacts for
+this phase, under
+[../testing/results/agent-probes/](../testing/results/agent-probes/).
+
+| Agent | Artifact | What it settled |
+| ----- | -------- | --------------- |
+| Kimi Code CLI | `2026-08-16-macos-kimi.json` | Root is `~/.kimi-code`; `session_index.jsonl` exists; bucket is `wd_<slug>_<12-hex>` |
+| Qwen Code | `2026-08-16-macos-qwen.json` | Conversations are under `projects/<slug>/chats/`, not `tmp/`; marker corrected |
+| GitHub Copilot CLI | `2026-08-16-macos-copilot.json` | Substantial local `session-state/<uuid>/events.jsonl`; cache-versus-authoritative still open |
+
+**No tier moved.** One platform is not dual-platform evidence, and every
+promotion still needs a native Windows artifact.

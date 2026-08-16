@@ -35,7 +35,14 @@ func Gemini() agents.Descriptor {
 			Layout:      "tmp-chats-session-json",
 			SessionGlob: "tmp/*/chats/session-*.json*",
 			ProjectKey:  agents.ProjectKeyPathHash,
-			Excluded:    geminisrc.Excluded,
+			// Antigravity CLI installs into ~/.gemini/antigravity-cli and
+			// keeps an OAuth token there on Linux. It is a separate catalog
+			// agent, so this root must not be walked into it.
+			Excluded: append([]string{
+				"antigravity-cli",
+				"oauth_creds.json",
+				"google_accounts.json",
+			}, geminisrc.Excluded...),
 		},
 		Version: &agents.VersionSpec{
 			Args:  []string{"--version"},

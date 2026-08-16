@@ -38,6 +38,7 @@ The Phase 2 local capability matrix is:
 | Kimi Code CLI | Not implemented | Not implemented | Not applicable | T0 |
 | Pi | Not implemented | Not implemented | Dual-platform AGENT-PROBE-V1 not committed | T0 |
 | Qwen Code | Not implemented | Not implemented | Dual-platform probes not captured | T0 |
+| Antigravity CLI | Not implemented (`layout_unverified`) | Not implemented | No probe captured | T0 |
 | Cline | Not implemented | Not implemented | Dual-platform AGENT-PROBE-V1 not committed | T0 |
 | Aider | Not implemented | Not implemented | Dual-platform AGENT-PROBE-V1 not committed | T0 |
 | Roo Code | Not implemented | Not implemented | Dual-platform AGENT-PROBE-V1 not committed | T0 |

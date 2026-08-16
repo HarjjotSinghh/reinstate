@@ -23,15 +23,20 @@ func Qwen() agents.Descriptor {
 			Roots: func(home agents.HomeDir) []agents.Root {
 				return []agents.Root{{Path: home.Join(".qwen")}}
 			},
-			// Unverified, following the Gemini CLI fork hypothesis. A wrong
-			// marker leaves the root unresolved, which a probe reports as a
-			// candidate that exists without its marker; that is the safe
-			// direction to be wrong in.
-			Marker: "tmp",
+			// macOS probe 2026-08-16 (qwen 0.21.12): conversations are at
+			// projects/<slug>/chats/<slug>.json. The Gemini-fork hypothesis
+			// predicted tmp/, and tmp/<64-hex> does exist, but it is not the
+			// conversation store. Native Windows is still unprobed.
+			Marker: "projects",
 			Excluded: []string{
 				"settings.json",
 				".env",
 				"**/.env",
+				// Configuration, not sessions. Left in, a populated skills
+				// library is 176 directories of noise that crowds the actual
+				// evidence out of a probe artifact.
+				"skills",
+				"extension-store",
 			},
 		},
 		Process: agents.ProcessSpec{

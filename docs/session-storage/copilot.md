@@ -1,8 +1,9 @@
 # GitHub Copilot CLI
 
-**Confidence: Unverified** — catalog descriptor exists; no index source, no
-reader, no committed probe. Vendor documentation is recorded below; it is
-not a T1 gate.
+**Confidence: Layout documented on macOS, provenance unverified** — catalog
+descriptor exists; no index source, no reader. A macOS probe found substantial
+local session data, but the question that decides the tier is not "is there a
+file", it is "does the file survive a re-login", and that is still unanswered.
 **Current tier:** T0 (`layout_unverified`) · **Phase 5 target:** T1 if a
 later probe shows local `session-state/` is authoritative; otherwise T0 with
 reason `server_backed`
@@ -29,7 +30,40 @@ The retired product is a different binary surface: `gh copilot` from the
 replaced by GitHub Copilot CLI. Do not treat `gh copilot` as this catalog
 entry.
 
-## The question that decides the tier
+## Device evidence (2026-08-16, macOS arm64)
+
+Artifact:
+[`2026-08-16-macos-copilot.json`](../testing/results/agent-probes/2026-08-16-macos-copilot.json)
+
+| Check | Result |
+| ----- | ------ |
+| `copilot` on PATH | yes |
+| `copilot --version` | `GitHub Copilot CLI 1.0.80.` followed by an update-check line |
+| Resolved root | `~/.copilot` |
+| macOS AGENT-PROBE-V1 | captured |
+| native Windows AGENT-PROBE-V1 | absent |
+| Cache-clear / re-login observation | **not run** |
+
+```
+~/.copilot/
+  session-state/<uuid-v4>/
+    events.jsonl                    ~70 KB   keys: id, parentId, type, timestamp, data
+    checkpoints/index.md
+    rewind-file-snapshots/tracking.json      keys: schema, tracking
+  sidebar-sessions-state/<64-hex>.json
+  command-history-state.json
+  hooks/, ide/, installed-plugins/, servers/, logs/
+```
+
+The local store is real and substantial: a 70 KB event log with an explicit
+`id` / `parentId` chain, checkpoints, and file snapshots for rewind. A naive
+scanner would call this case 1 and promote the agent.
+
+That is exactly the trap this page was written to avoid. Rich local state is
+equally consistent with case 2 — a cache the CLI rebuilds from the account.
+The probe cannot tell the difference, because the difference is only visible
+across a cache clear and a re-login. Note also that `copilot --version` emits a
+trailing update-check line, so any version parser must take the first line.
 
 Three cases look identical to a naive scanner. A later probe (T-006) must
 distinguish them by observing the tree across a **cache-directory clear** and

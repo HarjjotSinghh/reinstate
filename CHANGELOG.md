@@ -62,9 +62,26 @@ for the candidate roster. No new agent is readable, resumable, or syncable yet.
   resolves when its marker is present. An explicit `RootEnv` or fixture root
   still bypasses the gate.
 
+- First committed `AGENT-PROBE-V1` device evidence, under
+  [docs/testing/results/agent-probes/](docs/testing/results/agent-probes/):
+  macOS artifacts for Kimi Code CLI, Qwen Code, and GitHub Copilot CLI. Kimi's
+  root ambiguity is resolved to `~/.kimi-code` and its `session_index.jsonl`
+  confirmed. **No tier moved**: one platform is not dual-platform evidence.
+- Antigravity CLI catalog descriptor at T0 (`layout_unverified`). Google
+  retired Gemini CLI's individual OAuth path on 2026-06-18 and named it the
+  destination, so it is where those users went. It nests inside Gemini CLI's
+  root at `~/.gemini/antigravity-cli`, and its documented conversation path is
+  named a cache.
 - `rein doctor --agents` gains `--agent-timeout`. The probe budget is now per
   agent (default 10s) rather than a single 3s budget for the whole run, and an
   agent that exceeds it is recorded with `timed_out` instead of failing the run.
+
+- Qwen Code's discovery marker corrected from `tmp` to `projects`. The probe
+  shows conversations at `projects/<slug>/chats/`, so the Gemini-fork
+  hypothesis was wrong about the store and about the project-key kind.
+- The Gemini CLI descriptor now excludes `antigravity-cli`, `oauth_creds.json`,
+  and `google_accounts.json` from its storage walk. Antigravity CLI installs
+  into the same root and keeps an OAuth token there on Linux.
 
 ### Fixed
 

@@ -1,18 +1,55 @@
 # Qwen Code (Alibaba)
 
-**Confidence: Unverified** — official product identified; no device probe;
-no Reinstate reader. Vendor documentation is not a tier promotion.
+**Confidence: Partly documented on macOS, Unverified on native Windows** —
+official product identified; one macOS probe with no signed-in session; no
+Reinstate reader.
 **Current tier:** T0 (`layout_unverified`) · **Phase 5 target:** T2
 
 Catalog key is `qwen`.
 
 ## Research outcome
 
-**T0, reason `layout_unverified`.** That is the completed result for T-022.
+**T0, reason `layout_unverified`.** Unchanged by the 2026-08-16 probe.
 
-The official product is identified. Dual-platform probes are required for T1+.
-This task has no native Windows device, so both probes cannot be committed.
+The probe located the conversation directory but could not observe a real
+conversation, because Qwen Code could not be signed in from India. A directory
+whose contents were never produced by a working session is not a layout.
 Do not invent a reader. Do not reuse the Gemini CLI reader.
+
+## Device evidence (2026-08-16, macOS arm64)
+
+Artifact:
+[`2026-08-16-macos-qwen.json`](../testing/results/agent-probes/2026-08-16-macos-qwen.json)
+
+| Check | Result |
+| ----- | ------ |
+| `qwen` on PATH | yes |
+| `qwen --version` | `0.21.12` — a bare semver line |
+| Resolved root | `~/.qwen` |
+| Signed-in session | **no** — sign-up unavailable in the tester's region |
+| macOS AGENT-PROBE-V1 | captured, but without a real conversation |
+| native Windows AGENT-PROBE-V1 | absent |
+
+```
+~/.qwen/
+  projects/<slug>/chats/<slug>.json      one file, provenance unknown
+  tmp/<64-hex>/logs.json
+  tmp/<64-hex>/scheduled_tasks.lock
+  extensions/extension-enablement.json
+  installation_id, output-language.md, tip_history.json, <slug>.md
+```
+
+This **corrects the descriptor's discovery marker from `tmp` to `projects`.**
+The Gemini-fork hypothesis predicted conversations under `tmp/<hash>/chats/`,
+and `tmp/<64-hex>` does exist — but it holds `logs.json` and
+`scheduled_tasks.lock`, not chats. Conversations live under
+`projects/<slug>/chats/<slug>.json`, and the project bucket is a **slug, not a
+hash**, which is the opposite of Gemini's `ProjectKeyPathHash`.
+
+The single file under `chats/` was not produced by a session the tester ran, so
+its record shape is not evidence. `skills/` and `extension-store/` are excluded
+in the descriptor: they are configuration, and a populated skills library buries
+the real tree in 176 directories of noise.
 
 ## Identity
 
@@ -52,6 +89,11 @@ A fork of the CLI surface is not a fork of the session recording service.
 Reusing `internal/transcript/gemini.go` without a probe would silently find
 nothing, or worse, index the wrong files. **Hypothesis rejected as a shipping
 basis.** Keep it as a later parser hint only after both probes confirm shape.
+
+The 2026-08-16 macOS probe settles this concretely: Qwen Code keeps
+conversations in `projects/<slug>/chats/`, while Gemini CLI keeps them in
+`tmp/<project-hash>/chats/`. Qwen's `tmp/<64-hex>` exists but holds logs and a
+task lock. Same fork ancestry, different store, different project-key kind.
 
 ## Claimed layout
 
@@ -111,13 +153,11 @@ If a later task ever reads `$QWEN_HOME` or `$QWEN_RUNTIME_DIR`, these go in
 A probe is **required** to leave T0. Vendor documentation alone is not
 enough. One-platform evidence is not enough.
 
-The descriptor's discovery marker is `tmp`, carried over from the Gemini-fork
-hypothesis and therefore itself unverified. It exists so that a bare `~/.qwen`
-does not resolve as an installation: on a machine with no Qwen Code at all, a
-skill installer had already created `~/.qwen/skills`, and an unmarked root
-reported that as an installed agent. If a probe shows `exists: true` with
-`marker_present: false` on a machine where Qwen Code *is* installed, the marker
-is wrong and item 1 above is what corrects it.
+The descriptor's discovery marker is `projects`, corrected from the
+hypothesised `tmp` by the 2026-08-16 macOS probe. A marker is mandatory
+because a bare `~/.qwen` is not evidence of an installation: before Qwen Code
+was installed, a skill installer had already created `~/.qwen/skills`, and an
+unmarked root reported that as an installed agent.
 
 ## Sources
 

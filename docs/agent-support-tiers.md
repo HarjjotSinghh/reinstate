@@ -186,6 +186,7 @@ failed task.
 | Claude Code | Anthropic | F1 | **T5** | T5 |
 | Codex CLI | OpenAI | F1 | **T5** | T5 |
 | Gemini CLI | Google | F1 | **T2** | T3 |
+| Antigravity CLI | Google | F1 (expected) | — | T0 (`layout_unverified`) |
 | OpenCode | anomalyco | F2 | **T2** | T2 |
 | Grok Build | xAI | F1 | **T2** | T2 |
 | Kimi Code CLI | Moonshot AI | F1 | — | T3 |
