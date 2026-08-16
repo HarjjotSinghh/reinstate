@@ -16,8 +16,8 @@ func init() { agents.MustRegister(Gemini()) }
 var geminiVersionPattern = regexp.MustCompile(`^((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))$`)
 
 // Gemini is the shipped Gemini CLI descriptor (T2).
-// NativeSpec and VersionSpec stay unset: T3 needs a maintainer-set
-// fail-closed range and dual-platform physical resume journeys.
+// VersionSpec records the maintainer pin (latest stable @google/gemini-cli).
+// NativeSpec stays unset: T3 still needs dual-platform physical resume.
 func Gemini() agents.Descriptor {
 	return agents.Descriptor{
 		Key:         sessionindex.AgentGemini,
@@ -36,6 +36,12 @@ func Gemini() agents.Descriptor {
 			SessionGlob: "tmp/*/chats/session-*.json*",
 			ProjectKey:  agents.ProjectKeyPathHash,
 			Excluded:    geminisrc.Excluded,
+		},
+		Version: &agents.VersionSpec{
+			Args:  []string{"--version"},
+			Parse: parseGeminiVersion,
+			Min:   "0.55.1",
+			Max:   "0.55.1",
 		},
 		Process: agents.ProcessSpec{
 			Images: []string{"gemini"},

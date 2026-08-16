@@ -20,7 +20,7 @@ func TestShippedAgentsRegisterAtDeclaredTiers(t *testing.T) {
 	}{
 		{sessionindex.AgentClaude, agents.TierSync, agents.FamilyHomeTree, "2.1.219", "2.1.229"},
 		{sessionindex.AgentCodex, agents.TierSync, agents.FamilyHomeTree, "0.133.0", "0.147.0"},
-		{sessionindex.AgentGemini, agents.TierHandoffFrom, agents.FamilyHomeTree, "", ""},
+		{sessionindex.AgentGemini, agents.TierHandoffFrom, agents.FamilyHomeTree, "0.55.1", "0.55.1"},
 		{sessionindex.AgentOpenCode, agents.TierHandoffFrom, agents.FamilyCLIQuery, "", ""},
 		{sessionindex.AgentGrok, agents.TierHandoffFrom, agents.FamilyHomeTree, "", ""},
 	}
@@ -42,8 +42,8 @@ func TestShippedAgentsRegisterAtDeclaredTiers(t *testing.T) {
 			if got.Version == nil || got.Version.Min != tt.min || got.Version.Max != tt.max {
 				t.Fatalf("%s version = %+v, want %s–%s", tt.key, got.Version, tt.min, tt.max)
 			}
-		} else if got.Version != nil || got.Native != nil {
-			t.Fatalf("%s T2 descriptor has native/version specs: %+v %+v", tt.key, got.Native, got.Version)
+		} else if got.Native != nil {
+			t.Fatalf("%s T2 descriptor must not set NativeSpec: %+v", tt.key, got.Native)
 		}
 		if got.NewIndexSource == nil || got.NewReader == nil {
 			t.Fatalf("%s missing T2 constructors", tt.key)

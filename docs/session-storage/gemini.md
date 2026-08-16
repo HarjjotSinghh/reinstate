@@ -14,6 +14,7 @@
 | Project scoping | `<project-hash>` is derived from the project root path |
 | Subagents | `kind: "subagent"` sessions are excluded |
 | Native resume | `gemini --resume` / `-r`; project-scoped |
+| Fail-closed version pin | `0.55.1`–`0.55.1` (latest stable `@google/gemini-cli` on 2026-08-16). Nightlies excluded. T3 still needs dual-platform physical resume. |
 
 ### `$rewindTo` (R3 — Documented)
 

@@ -1,8 +1,15 @@
 package catalog
 
-import "github.com/HarjjotSinghh/reinstate/internal/agents"
+import (
+	"regexp"
+
+	"github.com/HarjjotSinghh/reinstate/internal/agents"
+)
 
 func init() { agents.MustRegister(Pi()) }
+
+// Latest stable @mariozechner/pi-coding-agent as of 2026-08-16.
+var piVersionPattern = regexp.MustCompile(`^((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))$`)
 
 // Pi is the Pi coding agent descriptor. It stays at T0 until macOS and native
 // Windows AGENT-PROBE-V1 artifacts exist. Vendor docs describe an F1 JSONL
@@ -26,6 +33,12 @@ func Pi() agents.Descriptor {
 			SessionGlob: "sessions/**/*.jsonl",
 			ProjectKey:  agents.ProjectKeyPathSlug,
 			Excluded:    piExcluded,
+		},
+		Version: &agents.VersionSpec{
+			Args:  []string{"--version"},
+			Parse: parsePiVersion,
+			Min:   "0.73.1",
+			Max:   "0.73.1",
 		},
 		Process: agents.ProcessSpec{
 			Images: []string{"pi"},
@@ -54,4 +67,8 @@ var piExcluded = []string{
 	"themes",
 	"models-store.json",
 	"**/*.html",
+}
+
+func parsePiVersion(output agents.VersionOutput) (string, bool) {
+	return parseVersionLine(output, piVersionPattern)
 }

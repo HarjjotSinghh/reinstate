@@ -19,6 +19,7 @@ probes were not committed. T1 and above stay closed.
 | Distribution | Official, npm, MIT |
 | Storage family | F1 (home-dir tree) — see [Family](#family-f1-not-f2) |
 | Catalog key | `pi` |
+| Fail-closed version pin | `0.73.1`–`0.73.1` (latest `@mariozechner/pi-coding-agent` on 2026-08-16). Still T0 until dual-platform probes. |
 
 ## Family: F1, not F2
 

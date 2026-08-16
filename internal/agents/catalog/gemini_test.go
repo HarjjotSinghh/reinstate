@@ -38,7 +38,7 @@ func TestParseGeminiVersion(t *testing.T) {
 	}
 }
 
-func TestGeminiDescriptorStaysT2WithoutVersionRange(t *testing.T) {
+func TestGeminiDescriptorStaysT2WithLatestStableRange(t *testing.T) {
 	got := Gemini()
 	if got.Key != sessionindex.AgentGemini {
 		t.Fatalf("Key = %q", got.Key)
@@ -46,8 +46,11 @@ func TestGeminiDescriptorStaysT2WithoutVersionRange(t *testing.T) {
 	if got.Tier != agents.TierHandoffFrom {
 		t.Fatalf("Tier = %s, want T2", got.Tier)
 	}
-	if got.Native != nil || got.Version != nil {
-		t.Fatalf("T2 Gemini must not set Native/Version: %+v %+v", got.Native, got.Version)
+	if got.Native != nil {
+		t.Fatalf("T2 Gemini must not set NativeSpec: %+v", got.Native)
+	}
+	if got.Version == nil || got.Version.Min != "0.55.1" || got.Version.Max != "0.55.1" {
+		t.Fatalf("Version = %+v, want 0.55.1–0.55.1", got.Version)
 	}
 	if got.NewIndexSource == nil || got.NewReader == nil {
 		t.Fatal("missing T2 constructors")

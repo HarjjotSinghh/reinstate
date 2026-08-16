@@ -22,8 +22,11 @@ func TestPiStaysT0WithoutCapabilities(t *testing.T) {
 	if d.NewIndexSource != nil || d.NewReader != nil || d.NewTarget != nil || d.NewSyncAdapter != nil {
 		t.Fatal("T0 descriptor must not expose constructors")
 	}
-	if d.Native != nil || d.Version != nil {
-		t.Fatal("T0 descriptor must not claim native resume or a version range")
+	if d.Native != nil {
+		t.Fatal("T0 descriptor must not claim native resume")
+	}
+	if d.Version == nil || d.Version.Min != "0.73.1" || d.Version.Max != "0.73.1" {
+		t.Fatalf("Version = %+v, want 0.73.1–0.73.1", d.Version)
 	}
 }
 
