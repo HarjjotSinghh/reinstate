@@ -6,8 +6,8 @@ order: 10
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.4.0-rc.11"
-updatedAt: 2026-08-01
+version: "v0.4.0"
+updatedAt: 2026-08-16
 tags: ["configuration", "project-mapping", "profile-id", "s3", "keyring"]
 targetQuery: "configure Reinstate session sync"
 searchIntent: "how-to"
@@ -26,7 +26,7 @@ entry, and Reinstate home.
 
 ## Prerequisites
 
-- Reinstate `v0.2.0`, verified with `rein version --json`.
+- Reinstate `v0.4.0`, verified with `rein version --json`.
 - A private S3-compatible bucket, service endpoint, region, access-key ID, and
   secret access key.
 - One stable project ID and the repository's absolute path on this device.

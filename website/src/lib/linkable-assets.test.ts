@@ -39,7 +39,7 @@ describe('evidence-safe linkable assets', () => {
       expect(glossary, term).toContain(term);
     }
 
-    expect(glossary).toContain('Portable handoffs are not available in Reinstate');
+    expect(glossary).toContain('Portable handoffs are available in Reinstate as structured');
     expect(glossary).toContain('same-vendor');
     expect(glossary).not.toContain('cross-agent resume');
   });
@@ -108,8 +108,12 @@ describe('evidence-safe linkable assets', () => {
     expect(agentVersionHistory.map(({ version }) => version)).toEqual(
       releaseHistory.map(({ version }) => version),
     );
-    expect(agentVersionHistory).toHaveLength(32);
-    expect(new Set(agentVersionHistory.map(({ source }) => source)).size).toBe(32);
+    expect(agentVersionHistory).toHaveLength(33);
+    expect(new Set(agentVersionHistory.map(({ source }) => source)).size).toBe(33);
+    expect(
+      agentVersionHistory.find(({ version }) => version === 'v0.4.0')
+        ?.rangeChange,
+    ).toContain('Unchanged from v0.4.0-rc.11');
     expect(
       agentVersionHistory.find(({ version }) => version === 'v0.4.0-rc.11')
         ?.rangeChange,

@@ -10,22 +10,16 @@
 resume, and hand off tasks across agents, projects, environments, and devices,
 with optional encrypted sync through your own S3-compatible storage.**
 
-Stable `v0.3.0` adds Phase 3 verified resume on top of the configless local
-session index, literal search, metadata inspection, numbered switcher, and
-same-vendor native resume/fork. Apple Silicon macOS and native Windows x64
-passed dual-platform tagged-artifact acceptance on candidate `v0.3.0-rc.7`.
-Intel macOS and Linux/WSL2 downloads remain preview/unverified pending issues
+Stable `v0.4.0` adds Phase 4 explicit structured handoffs on top of the
+configless local session index, literal search, metadata inspection, numbered
+switcher, same-vendor native resume/fork, and Phase 3 verified resume. A
+structured handoff continues the same task in a *new* Claude Code or Codex
+session. Apple Silicon macOS and native Windows x64 passed dual-platform
+tagged-artifact acceptance on candidate `v0.4.0-rc.11` (44/44 on both
+devices). Intel macOS and Linux/WSL2 downloads remain preview/unverified
+pending issues
 [#97](https://github.com/HarjjotSinghh/reinstate/issues/97) and
 [#98](https://github.com/HarjjotSinghh/reinstate/issues/98).
-
-Current release candidate `v0.4.0-rc.11` adds Phase 4 explicit structured
-handoffs, which continue the same task in a *new* Claude Code or Codex session.
-Claude Code, Codex CLI, Gemini CLI, OpenCode, and Grok Build can be sources;
-Gemini, OpenCode, and Grok are source-only. The previous candidates
-`v0.4.0-rc.1` through `v0.4.0-rc.6` were published and failed
-physical acceptance; rc.7 carries those product fixes. Dual-platform
-tagged-artifact acceptance on Apple Silicon macOS and native Windows x64 is
-pending; it is not stable `v0.4.0`, and stable remains `v0.3.0`.
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/HarjjotSinghh/reinstate)](https://goreportcard.com/report/github.com/HarjjotSinghh/reinstate)
@@ -137,7 +131,7 @@ sensitive artifacts. Reinstate instead provides
 
 ## Features
 
-Phase 4 candidate `v0.4.0-rc.11`:
+Phase 4 stable `v0.4.0`:
 
 - **Directional structured handoff** — Claude Code and Codex are destinations;
   Claude Code, Codex, Gemini, OpenCode, and Grok are sources
@@ -154,7 +148,7 @@ Phase 4 candidate `v0.4.0-rc.11`:
 - **Prompt-level acknowledgement** — ask the destination to restate the task,
   workspace truth, uncertainty, and next action before mutation
 
-Stable `v0.3.0`:
+Also included from stable `v0.3.0`:
 
 - **Configless local index** — `rein sessions` works without `init` or cloud storage
 - **Literal search** — prompt, file, branch, project, agent, and session identity
@@ -196,9 +190,9 @@ not part of the current CLI. See
 
 ## Quick start
 
-> **Platform boundary:** the public installers pin candidate `v0.4.0-rc.11`.
-> Its tagged-artifact acceptance is pending on Apple Silicon macOS and native
-> Windows x64. Stable remains `v0.3.0`; Intel macOS and Linux/WSL2 remain
+> **Platform boundary:** the public installers pin stable `v0.4.0`.
+> Dual-platform tagged-artifact acceptance passed on Apple Silicon macOS and
+> native Windows x64. Intel macOS and Linux/WSL2 remain
 > optional and unverified
 > ([#97](https://github.com/HarjjotSinghh/reinstate/issues/97),
 > [#98](https://github.com/HarjjotSinghh/reinstate/issues/98)).
@@ -219,6 +213,7 @@ export REINSTATE_HOME="$HOME/.reinstate-phase3-local"
 ./bin/rein last --dry-run
 ./bin/rein resume codex:SESSION_ID --dry-run
 ./bin/rein fork claude:SESSION_ID --dry-run
+./bin/rein handoff claude:SESSION_ID --to codex --dry-run
 ./bin/rein
 ```
 
@@ -252,21 +247,7 @@ Bare `rein` opens the numbered switcher only on a TTY. For scripts use
 `rein sessions --json`; a non-TTY bare invocation exits promptly with that
 hint.
 
-### Install stable v0.3.0 with Homebrew
-
-Apple Silicon macOS with Homebrew:
-
-```bash
-brew install HarjjotSinghh/tap/reinstate
-```
-
-The tap formula tracks stable `v0.3.0`. Intel macOS and Linuxbrew remain
-optional and unverified for this release.
-
-### Install the v0.4.0-rc.11 candidate
-
-These public bootstrap routes install the candidate, not the stable Homebrew
-formula. RC2 tagged-artifact acceptance is pending.
+### Install stable v0.4.0
 
 macOS, Linux, or WSL2:
 
@@ -280,13 +261,23 @@ Native Windows PowerShell:
 irm https://reinstate.dev/install.ps1 | iex
 ```
 
-Both bootstraps pin and verify `v0.4.0-rc.11`, install without elevation, and
+Both bootstraps pin and verify `v0.4.0`, install without elevation, and
 print the next command:
 
 ```bash
 rein version --json
 rein init
 ```
+
+Apple Silicon macOS with Homebrew:
+
+```bash
+brew install HarjjotSinghh/tap/reinstate
+```
+
+The GitHub Release and `reinstate.dev` installers pin `v0.4.0`. The Homebrew
+tap may still list `v0.3.0` until the package-publish workflow promotes this
+stable tag. Intel macOS and Linuxbrew remain optional and unverified.
 
 Reinstate waits at most 30 seconds for replacement approval; set
 `REINSTATE_CONFIRM_TIMEOUT_SECONDS=1..300` to choose a shorter or longer bound.
@@ -330,15 +321,14 @@ Full walkthrough: **[docs/getting-started.md](docs/getting-started.md)**
 
 | Agent | Local index | Native resume/fork | Handoff source | Handoff target | Encrypted sync |
 | ----- | :---------: | :----------------: | :------------: | :------------: | :------------: |
-| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | ✅ full | ✅ same-vendor | rc.2 | rc.2 | ✅ |
-| [OpenAI Codex CLI](https://github.com/openai/codex) | ✅ full | ✅ same-vendor | rc.2 | rc.2 | ✅ |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | ✅ read-only | — | rc.2 source-only | — | — |
-| [OpenCode](https://opencode.ai) | ✅ read-only | — | rc.2 source-only | — | — |
-| [Grok Build](https://x.ai) | rc.2 read-only | — | rc.2 source-only | — | — |
+| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | ✅ full | ✅ same-vendor | ✅ | ✅ | ✅ |
+| [OpenAI Codex CLI](https://github.com/openai/codex) | ✅ full | ✅ same-vendor | ✅ | ✅ | ✅ |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | ✅ read-only | — | ✅ source-only | — | — |
+| [OpenCode](https://opencode.ai) | ✅ read-only | — | ✅ source-only | — | — |
+| [Grok Build](https://x.ai) | ✅ read-only | — | ✅ source-only | — | — |
 
-The handoff columns describe the `v0.4.0-rc.11` candidate and remain subject to
-tagged macOS arm64 and Windows amd64 acceptance. Native resume/fork and
-encrypted sync remain same-vendor capabilities.
+Structured handoff in stable `v0.4.0` starts a new destination session.
+Native resume/fork and encrypted sync remain same-vendor.
 
 Details: **[docs/adapters.md](docs/adapters.md)**
 
@@ -417,6 +407,7 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 | --- | ----------- |
 | **Website** | [reinstate.dev](https://reinstate.dev) — product, documentation, compatibility, and security |
 | [Getting started](docs/getting-started.md) | Configless local index plus optional encrypted sync |
+| [Features and commands](docs/features.md) | What shipped in v0.1.0 through v0.4.0 |
 | [Verified resume](docs/verified-resume.md) | Phase 3 environment report, provenance, policy, and privacy contract |
 | [Cross-agent handoff](docs/handoff.md) | Phase 4 scope, fidelity, security, storage, and directional support |
 | [Architecture](docs/architecture.md) | Pipeline, packages, design principles |
@@ -491,7 +482,7 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 | **1** | Claude + Codex encrypted same-vendor session sync | ✅ |
 | **2** | Configless local index, search, native resume/fork | ✅ |
 | **3** | Verified resume (stable `v0.3.0`) | ✅ |
-| **4** | Structured cross-agent handoffs (`v0.4.0-rc.11` candidate) | 🚧 |
+| **4** | Structured cross-agent handoffs (stable `v0.4.0`) | ✅ |
 | **5–7** | Universal config + automatic sync, thin Console/ACP client, teams | 📋 / 💭 |
 
 Full detail: **[ROADMAP.md](ROADMAP.md)**

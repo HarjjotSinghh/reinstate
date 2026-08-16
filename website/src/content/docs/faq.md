@@ -6,8 +6,8 @@ order: 7
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.4.0-rc.11"
-updatedAt: 2026-08-01
+version: "v0.4.0"
+updatedAt: 2026-08-16
 tags: ["faq", "session-sync", "claude-code", "codex", "security"]
 targetQuery: "what is Reinstate"
 searchIntent: "answer"
@@ -16,9 +16,10 @@ noindex: false
 ---
 
 Reinstate answers common continuity questions with one present-scope rule:
-supported Claude Code and Codex sessions resume in the same vendor, while
-cross-agent translation and broader continuity features remain later roadmap
-work.
+supported Claude Code and Codex sessions resume in the same vendor. Structured
+handoff continues the same task in a *new* Claude Code or Codex session.
+Cross-agent transcript translation and universal configuration remain later
+roadmap work.
 
 ## What is Reinstate?
 
@@ -27,9 +28,9 @@ implements encrypted, bring-your-own-storage sync for same-vendor Claude Code
 and Codex sessions. Phase 2 adds configless local indexing, literal search,
 metadata inspection, a TTY switcher, and same-vendor native resume/fork.
 Stable `v0.3.0` adds verified resume after dual-platform tagged-artifact
-acceptance PASS. Release candidate `v0.4.0-rc.11` adds explicit structured
-handoff into a new Claude Code or Codex session; its tagged-artifact acceptance
-is pending. Cross-harness configuration remains a later phase.
+acceptance PASS. Stable `v0.4.0` adds explicit structured handoff into a new
+Claude Code or Codex session. Cross-harness configuration remains a later
+phase.
 
 See [What is Reinstate?](/about/reinstate) for current product facts, non-goals,
 roadmap boundaries, and maintainer information.
@@ -97,8 +98,9 @@ restoring the session. See [installation and sync](/docs/getting-started).
 
 ## Will this resume a Claude session inside Codex?
 
-**Native resume:** no — same-vendor only. A later explicit portable handoff can
-carry a lossy task checkpoint without pretending to translate native history.
+**Native resume:** no — same-vendor only. Stable `v0.4.0` structured handoff
+starts a new destination session with a visible, lossy projection. It does not
+translate native history.
 
 ## Do I need two computers?
 
@@ -185,11 +187,10 @@ syncing after an agent upgrade.
 
 ## Production ready?
 
-`v0.3.0` is the current pre-1.0 stable release on Apple Silicon macOS and
-native Windows x64, with Phase 3 verified resume. `v0.4.0-rc.11` adds structured
-handoff, but candidate acceptance is pending and it does not authorize stable
-`v0.4.0`. Intel macOS, WSL2, and other POSIX packages are optional and
-unverified. See the
+`v0.4.0` is the current pre-1.0 stable release on Apple Silicon macOS and
+native Windows x64. It includes encrypted sync, local search, verified resume,
+and structured handoff. Intel macOS, WSL2, and other POSIX packages are
+optional and unverified. See the
 [roadmap](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md)
 and [changelog](https://github.com/HarjjotSinghh/reinstate/blob/main/CHANGELOG.md),
 use it with backups, and report bugs through GitHub Issues.

@@ -6,9 +6,9 @@ order: 14
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.4.0-rc.11"
-updatedAt: 2026-08-01
-tags: ["cli", "command-reference", "session-sync", "troubleshooting", "rc6"]
+version: "v0.4.0"
+updatedAt: 2026-08-16
+tags: ["cli", "command-reference", "session-sync", "troubleshooting", "handoff"]
 targetQuery: "Reinstate CLI commands"
 searchIntent: "navigational"
 draft: false
@@ -16,19 +16,20 @@ noindex: false
 ---
 
 The `rein` and `reinstate` names run the same binary. This reference covers
-every command shipped by Reinstate `v0.2.0`, including what it does, what
+every command shipped by Reinstate `v0.4.0`, including what it does, what
 success looks like, the flags it accepts, platform-specific behavior, common
 failures, and the available recovery path.
 
 > **Current scope:** Reinstate supports configless local discovery for Claude
 > Code, Codex, Gemini CLI, and OpenCode; native resume/fork remains same-vendor
-> and mutation-capable only for Claude Code and Codex. Cross-agent handoff, MCP
-> servers, skills, plugins, marketplaces, and universal configuration remain
-> roadmap work.
+> and mutation-capable only for Claude Code and Codex. Structured handoff
+> continues the same task in a *new* Claude Code or Codex session. MCP servers,
+> skills, plugins, marketplaces, and universal configuration remain roadmap
+> work.
 
 ## Prerequisites
 
-- Install and verify `v0.2.0` before relying on this syntax.
+- Install and verify `v0.4.0` before relying on this syntax.
 - Run `rein init` before commands that need configuration or remote storage.
 - Close the selected Claude Code or Codex process before a mutating pull or
   `conflicts resolve --keep-remote`.
@@ -95,7 +96,7 @@ rein version --json
 
 **Expected result:** human output contains the version string. JSON output
 contains `version`, `commit`, and `date`; the public Reinstate installer must report
-`0.2.0`.
+`0.4.0`.
 
 **Parameters:** `--json` selects machine-readable output. The command accepts
 no session, agent, storage, or path arguments.
@@ -563,11 +564,45 @@ prevents it from loading.
 output, remove only the exact completion line or file you added, then start a
 new shell.
 
+## Structured handoff
+
+### `rein handoff`
+
+**Purpose:** continue the same task in a **new** Claude Code or Codex session.
+This is not native resume.
+
+```sh
+rein handoff claude:SESSION_ID --to codex --dry-run --json
+rein handoff --last --from claude --to codex
+rein handoff list --json
+rein resume claude:SESSION_ID --with codex --dry-run
+```
+
+**Expected result:** `--dry-run --json` reports `mode` `structured handoff`. A
+live destination first-reply restates five acknowledgement bullets before
+mutation.
+
+**Parameters:** `--to claude|codex` is required. `--policy` is
+`checkpoint|balanced|full` (default `balanced`). Repeat `--allow-warning ID`
+for each current warning. `--json` requires `--dry-run` or `--no-launch`.
+
+**Platform differences:** dest launch needs a real TTY. Windows dest argv uses
+a one-line `projection.md` pointer when the briefing contains CR/LF.
+
+**Failure modes:** exit `5` for wrong repo or untested dest; exit `7` for
+unacknowledged warnings or non-TTY dest launch.
+
+**Undo or recovery:** `--dry-run` writes nothing durable. `--no-launch` stores
+local capsules only. Kill a dest TUI with the vendor quit command; do not
+reuse a dest session id that is already indexed.
+
+See [structured handoff](/docs/handoff) and [features](/docs/features).
+
 ## Expected evidence
 
 A complete same-vendor transfer record contains:
 
-- `rein version --json` showing `0.2.0`;
+- `rein version --json` showing `0.4.0`;
 - a passing or truthfully blocked `rein setup check --json` on each device;
 - the exact agent and `SESSION_ID` selected by `rein list`;
 - successful push and pull dry-runs before each mutation;
@@ -604,9 +639,10 @@ passphrases only through the documented private channels. Never weaken
 checksum, compatibility, active-process, conflict, or backup checks to obtain
 a green command.
 
-The current CLI performs same-vendor native resume. It does not translate a
-Claude Code transcript into Codex, mirror complete vendor configuration trees,
-sync credentials, operate agents, or provide a Reinstate-owned plugin runtime.
+The current CLI performs same-vendor native resume and explicit structured
+handoff into a new destination session. It does not reconstruct vendor history,
+mirror complete vendor configuration trees, sync credentials, operate agents,
+or provide a Reinstate-owned plugin runtime.
 
 ## Related pages
 
@@ -614,4 +650,5 @@ sync credentials, operate agents, or provide a Reinstate-owned plugin runtime.
 - [Configure profiles and project paths](/docs/configuration)
 - [Push one selected session](/docs/sync-a-session)
 - [Restore and resume one selected session](/docs/restore-a-session)
+- [Continue a task with structured handoff](/docs/handoff)
 - [Review current limitations](/docs/limitations)

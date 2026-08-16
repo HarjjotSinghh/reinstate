@@ -14,7 +14,7 @@ const description =
   {description}
   path="/about/reinstate"
   eyebrow="About Reinstate"
-  answer="Reinstate is an open-source continuity layer for coding-agent work. Stable v0.2.0 moves encrypted Claude Code and Codex sessions between configured devices and adds configless local search plus same-vendor native resume/fork. Stable v0.3.0 adds verified resume with dual-platform tagged-artifact acceptance PASS. Candidate v0.4.0-rc.11 adds explicit structured handoff into a new Claude Code or Codex session, with tagged-artifact acceptance pending after the previous release candidate failed it."
+  answer="Reinstate is an open-source continuity layer for coding-agent work. Stable v0.2.0 moves encrypted Claude Code and Codex sessions between configured devices and adds configless local search plus same-vendor native resume/fork. Stable v0.3.0 adds verified resume. Stable v0.4.0 adds explicit structured handoff into a new Claude Code or Codex session after dual-platform tagged-artifact acceptance PASS."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'About Reinstate', path: '/about/reinstate' },
@@ -47,11 +47,12 @@ const description =
     <li>Configless local indexing, literal search, bounded inspect, and a TTY switcher.</li>
     <li>Native same-vendor Claude Code/Codex resume and fork; read-only Gemini CLI/OpenCode discovery.</li>
     <li>Phase 3 verified-resume reports and gates for repository, agent, capability, and runtime state.</li>
+    <li>Phase 4 structured handoff into a new Claude Code or Codex session.</li>
   </ul>
   <div class="pc-callout">
-    <p>Stable and release-candidate evidence remain distinct.</p>
+    <p>Stable evidence stays platform-specific.</p>
     <p>
-      Stable v0.2.0 is physically verified on Apple Silicon macOS and native Windows x64. Intel
+      Stable v0.4.0 is physically verified on Apple Silicon macOS and native Windows x64. Intel
       macOS and Linux/WSL2 packages are preview and unverified rather than inferred support.
     </p>
   </div>
@@ -61,7 +62,7 @@ const description =
       <dt>Latest public source tag</dt>
       <dd>
         <a href={product.currentReleaseUrl}>{product.currentRelease}</a>
-        (pre-1.0 stable; dual-platform verified resume)
+        (pre-1.0 stable; dual-platform structured handoff)
       </dd>
     </div>
     <div>

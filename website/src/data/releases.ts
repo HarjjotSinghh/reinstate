@@ -1,9 +1,15 @@
 export const releaseHistory = [
   {
+    version: 'v0.4.0',
+    date: '2026-08-16',
+    summary:
+      'Phase 4 stable: explicit structured handoff into a new Claude Code or Codex session after dual-platform v0.4.0-rc.11 tagged-artifact acceptance PASS (macOS 44/44, Windows 44/44).',
+  },
+  {
     version: 'v0.4.0-rc.11',
     date: '2026-08-15',
     summary:
-      'Eleventh Phase 4 candidate after v0.4.0-rc.10 physical dual-platform acceptance FAILED (macOS 41/44 A1/A3/A7, Windows 40/44 A1/A2/A3/A5; dest first-reply, lineage-after-launch, dest folder-trust). Tagged-artifact acceptance is pending.',
+      'Eleventh Phase 4 candidate after v0.4.0-rc.10 physical dual-platform acceptance FAILED (macOS 41/44 A1/A3/A7, Windows 40/44 A1/A2/A3/A5; dest first-reply, lineage-after-launch, dest folder-trust). Dual-platform tagged-artifact acceptance later PASS (macOS 44/44, Windows 44/44); promoted to stable v0.4.0.',
   },
   {
     version: 'v0.4.0-rc.10',

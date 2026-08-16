@@ -6,8 +6,8 @@ order: 3
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.4.0-rc.11"
-updatedAt: 2026-08-01
+version: "v0.4.0"
+updatedAt: 2026-08-16
 tags: ["adapters", "claude-code", "codex", "same-vendor-resume"]
 targetQuery: "Reinstate supported coding agents"
 searchIntent: "agent-specific"
@@ -20,16 +20,16 @@ OpenCode sessions without translating sessions across agents. Claude Code and
 Codex additionally support encrypted export/restore and native same-vendor
 resume/fork; Gemini CLI and OpenCode remain read-only.
 
-## Current v0.2.0 scope
+## Current v0.4.0 scope
 
-| Adapter | Local index | Native resume/fork | Encrypted sync | Universal configuration |
-| ------- | ----------- | ------------------ | -------------- | ----------------------- |
-| Claude Code | Full | Same-vendor | Supported | Later |
-| OpenAI Codex CLI | Full | Same-vendor | Supported | Later |
-| Gemini CLI | Read-only | No | No | Later |
-| OpenCode | Read-only | No | No | Later |
+| Adapter | Local index | Native resume/fork | Encrypted sync | Structured handoff |
+| ------- | ----------- | ------------------ | -------------- | ------------------ |
+| Claude Code | Full | Same-vendor | Supported | Destination and source |
+| OpenAI Codex CLI | Full | Same-vendor | Supported | Destination and source |
+| Gemini CLI | Read-only | No | No | Source-only |
+| OpenCode | Read-only | No | No | Source-only |
 
-Stable `v0.2.0` passed the complete installed-artifact physical matrix on Apple
+Stable `v0.4.0` passed dual-platform tagged-artifact acceptance on Apple
 Silicon macOS and native Windows x64. Intel macOS and Linux/WSL2 packages are
 preview and unverified; check the
 [compatibility page](/compatibility) before relying on them.

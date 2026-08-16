@@ -60,8 +60,8 @@ func TestPhase4DirectionalCompatibilityIsDocumented(t *testing.T) {
 		"| **Claude Code** | same-vendor native resume | structured handoff |",
 		"| **Codex CLI** | structured handoff | same-vendor native resume |",
 		"| **Gemini CLI** | structured handoff | structured handoff | not a target (source-only) |",
-		"| **OpenCode** | structured handoff | structured handoff | not in rc.1 | not a target (source-only) |",
-		"| **Grok Build** | structured handoff | structured handoff | not in rc.1 | not in rc.1 | not a target (source-only) |",
+		"| **OpenCode** | structured handoff | structured handoff | not in v0.4.0 | not a target (source-only) |",
+		"| **Grok Build** | structured handoff | structured handoff | not in v0.4.0 | not in v0.4.0 | not a target (source-only) |",
 	} {
 		if !strings.Contains(doc, row) {
 			t.Errorf("docs/compatibility.md is missing directional row %q", row)

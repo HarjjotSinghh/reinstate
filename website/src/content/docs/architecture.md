@@ -6,8 +6,8 @@ order: 2
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.4.0-rc.11"
-updatedAt: 2026-08-01
+version: "v0.4.0"
+updatedAt: 2026-08-16
 tags: ["architecture", "session-sync", "encryption", "path-remapping", "s3"]
 targetQuery: "how Reinstate works"
 searchIntent: "evaluation"
@@ -76,7 +76,8 @@ vendor-native sessions without becoming a coding harness.
 2. **Zero-knowledge remote** — only ciphertext on object storage.
 3. **Native resume is same-vendor** — restore puts bytes where `claude --resume` /
    `codex resume` already know how to read them.
-4. **Cross-agent handoffs are explicit roadmap work** — never silently
+4. **Cross-agent handoffs are explicit** — never silently
+   translated. `rein handoff` starts a new destination session.
    translate native transcripts between vendors.
 5. **Fail-safe conflicts** — never overwrite; fork and surface.
 6. **Adapter isolation** — format churn in one agent cannot break others.

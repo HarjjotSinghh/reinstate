@@ -11,7 +11,11 @@ authority is [cross-agent-continuation.md](../cross-agent-continuation.md) and
 A candidate passes only when installed tagged artifacts produce truthful,
 privacy-safe handoffs that a destination agent can actually continue from.
 
-The current candidate is pinned to the signed tag `v0.4.0-rc.11`. Use the
+Stable `v0.4.0` was promoted after dual-platform tagged-artifact acceptance
+PASS on `v0.4.0-rc.11` (Apple Silicon macOS 44/44, native Windows x64 44/44).
+The candidate dispatch below remains the historical evidence protocol.
+
+The passing candidate was the signed tag `v0.4.0-rc.11`. Use the
 [v0.4.0-rc.11 dispatch](v0.4.0-rc.11-agent-verification-prompts.md) and the
 [Phase 4 report template](results/phase-4-report-template.md). Do not start
 physical testing from an integration commit, source build, draft release, or an

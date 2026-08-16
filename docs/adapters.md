@@ -19,20 +19,20 @@ resume, fork, export, or restore implementations.
 
 ## Capability matrix
 
-| Adapter | Local index | Native resume/fork | rc.1 handoff source | rc.1 handoff target | Encrypted sync | Universal config |
+| Adapter | Local index | Native resume/fork | v0.4.0 handoff source | v0.4.0 handoff target | Encrypted sync | Universal config |
 | ------- | ----------- | ------------------ | --------------------- | --------------------- | -------------- | ---------------- |
 | Claude Code | Included in `v0.2.0` | Included in `v0.2.0` | Yes | Yes | Supported | Later |
 | OpenAI Codex CLI | Included in `v0.2.0` | Included in `v0.2.0` | Yes | Yes | Supported | Later |
 | Gemini CLI | Read-only in `v0.2.0` | No | Source-only | No | No | Later |
 | OpenCode | Read-only in `v0.2.0` | No | Source-only | No | No | Later |
-| Grok Build | Read-only in `v0.4.0-rc.11` | No | Source-only | No | No | Planned |
+| Grok Build | Read-only in `v0.4.0` | No | Source-only | No | No | Planned |
 | Cursor | Exploring | No | No | No | No | Exploring |
 
 Phase 2 automated gates and the complete tagged-artifact matrix passed on Apple
 Silicon macOS and native Windows x64. Stable `v0.2.0` support is limited to
 those verified platforms; Intel macOS and Linux/WSL2 remain preview/unverified.
-The rc.1 handoff columns remain candidate scope until tagged Phase 4 acceptance
-passes on macOS arm64 and Windows amd64.
+The v0.4.0 handoff columns are stable after dual-platform tagged-artifact
+acceptance PASS on macOS arm64 and Windows amd64.
 
 ## Phase 2 local read contract
 
@@ -112,12 +112,12 @@ after an authorized native child exits successfully.
 See [Verified resume](verified-resume.md) for launch decisions, exact warning
 acknowledgements, exit codes, and provenance.
 
-## Phase 4 structured-handoff contract (`v0.4.0-rc.11`)
+## Phase 4 structured-handoff contract (`v0.4.0`)
 
 Handoff support is directional. Claude Code and Codex are both sources and
 targets. Gemini CLI, OpenCode, and Grok Build are source-only: their transcript
 readers can build a capsule, but Reinstate will not launch them as handoff
-destinations in rc.1.
+destinations in v0.4.0.
 
 A reader snapshots only complete source records, performs bounded local parsing,
 and preserves unknown or unavailable material through explicit fidelity states.

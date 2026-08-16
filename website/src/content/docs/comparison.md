@@ -6,8 +6,8 @@ order: 6
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.4.0-rc.11"
-updatedAt: 2026-08-01
+version: "v0.4.0"
+updatedAt: 2026-08-16
 tags: ["comparison", "session-sync", "developer-tools", "coding-agents"]
 targetQuery: "Reinstate alternatives"
 searchIntent: "comparison"
@@ -15,7 +15,7 @@ draft: false
 noindex: false
 ---
 
-Reinstate is a continuity layer for coding-agent work: stable `v0.2.0` indexes
+Reinstate is a continuity layer for coding-agent work: stable `v0.4.0` indexes
 local sessions without configuration and syncs same-vendor
 Claude Code and Codex sessions through encrypted, user-owned storage. It
 complements native agent features, full coding environments, session browsers,
@@ -47,7 +47,7 @@ and Git instead of replacing them.
 | Cross-OS project paths | Canonical project IDs and structural path remapping | Usually internal to the vendor workflow | Manual path and layout handling |
 | Credential handling | Known credential artifacts are hard-excluded | Vendor-defined | User-maintained exclusions |
 | Transfer model | Full immutable snapshots in Phase 1 | Vendor-defined | File-level |
-| Cross-agent handoff | Explicit portable checkpoints are roadmap work | Outside Reinstate's native-resume model | No transcript semantics |
+| Cross-agent handoff | Structured handoff into a new Claude or Codex session | Outside Reinstate's native-resume model | No transcript semantics |
 | MCP, skills, plugins, settings | Universal desired-state configuration is roadmap work | Vendor-local capabilities | Manual file selection |
 
 This table describes Reinstate's verified product scope, not a ranking
@@ -59,8 +59,9 @@ against their current documentation.
 Native session features stay inside their vendor's ecosystem. Reinstate's
 Phase 1 differentiator is neutral storage plus structural path remapping for
 same-vendor Claude Code and Codex sessions. Phase 2 adds a configless local
-index and same-vendor native launch plans. Environment verification,
-configuration reconciliation, and portable handoffs remain later work.
+index and same-vendor native launch plans. Phase 3 adds verified resume.
+Phase 4 adds explicit structured handoff. Universal configuration remains
+later work.
 
 Reinstate does not claim to natively resume a Claude transcript inside Codex.
 

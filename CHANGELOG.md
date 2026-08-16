@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-16
+
+Phase 4 stable release. Explicit structured handoff continues the same task in a
+*new* Claude Code or Codex session. Dual-platform tagged-artifact acceptance
+passed on candidate `v0.4.0-rc.11` (Apple Silicon macOS 44/44, native Windows
+x64 44/44). Native resume remains same-vendor. Gemini CLI, OpenCode, and Grok
+Build remain handoff sources only. Intel macOS and Linux/WSL2 remain optional
+and unverified.
+
+### Added
+
+- Ships the Phase 4 structured-handoff surface introduced across
+  `v0.4.0-rc.1`–`v0.4.0-rc.11`: `rein handoff`, `handoff list` / `inspect` /
+  `export`, `rein resume --with`, picker `h`, local `$REINSTATE_HOME/handoffs/`
+  artifacts, and source readers for Claude Code, Codex, Gemini CLI, OpenCode,
+  and Grok.
+
+### Fixed
+
+- Destination first-reply must restate the five acknowledgement bullets
+  (current goal and latest request, critical constraints, changed files and
+  test state, missing or uncertain evidence, proposed next action).
+- Execute records lineage before dest Launch; `handoff list` recovers artifact
+  directories if `lineage.jsonl` is missing.
+- Dest-home workspace trust is materialized for isolated `CLAUDE_CONFIG_DIR` /
+  `CODEX_HOME` so dest-ack is not blocked on the TUI trust prompt.
+
+### Changed
+
+- Public installers, compatibility data, and documentation pin stable `v0.4.0`.
+- Fail-closed Claude Code range through `2.1.229`; Codex CLI remains
+  `0.133.0`–`0.147.0`.
+
 ## [0.4.0-rc.11] - 2026-08-15
 
 Eleventh Phase 4 candidate. `v0.4.0-rc.10` was published and physical dual-platform
@@ -1033,7 +1066,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.11...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.11...v0.4.0
 [0.4.0-rc.11]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.10...v0.4.0-rc.11
 [0.4.0-rc.10]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.9...v0.4.0-rc.10
 [0.4.0-rc.9]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.8...v0.4.0-rc.9

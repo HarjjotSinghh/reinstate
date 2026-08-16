@@ -11,6 +11,7 @@ const documents = [
   'restore-a-session.md',
   'cli-reference.md',
   'limitations.md',
+  'handoff.md',
 ] as const;
 
 const requiredFrontmatter = [
@@ -97,7 +98,7 @@ describe('operational documentation contract', () => {
       .map((match) => match[1])
       .join('\n');
 
-    expect(commandBlocks).not.toMatch(/\brein (?:handoff|mcp|skill|plugin)\b/);
+    expect(commandBlocks).not.toMatch(/\brein (?:mcp|skill|plugin)\b/);
     expect(commandBlocks).not.toContain('REINSTATE_PASSPHRASE=');
     expect(sources.join('\n')).not.toContain('cross-agent resume');
   });

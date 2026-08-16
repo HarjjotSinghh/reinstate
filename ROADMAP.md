@@ -2,7 +2,7 @@
 
 > Status legend: ✅ done · 🚧 in progress · 📋 planned · 💭 exploring · ❌ won't do (for now)
 
-Last updated: **2026-08-12** · Maintainer: [Harjot Singh Rana](https://github.com/HarjjotSinghh)
+Last updated: **2026-08-16** · Maintainer: [Harjot Singh Rana](https://github.com/HarjjotSinghh)
 
 This roadmap is a living document. Priorities follow real activation signals —
 especially **successfully resumed tasks per active user** — and vendor format
@@ -197,18 +197,17 @@ Automation: --allow-environment-warning <exact-check-id>
 
 ---
 
-## Phase 4 — Cross-agent handoff (portable checkpoints) 🚧
+## Phase 4 — Cross-agent handoff (portable checkpoints) ✅
 
-**Gate:** tagged `v0.4.0-rc.11` artifacts complete Claude Code → Codex and Codex
+**Gate:** tagged `v0.4.0` artifacts complete Claude Code → Codex and Codex
 → Claude structured handoffs on macOS arm64 and Windows amd64. Each path starts
 a new destination session for the same task, with no source model call and no
 vendor-internal writes.
 
-*Included in release candidate `v0.4.0-rc.11`. The earlier `v0.4.0-rc.1`
-through `v0.4.0-rc.9` candidates were published and failed physical
-acceptance. Dual-platform tagged-artifact acceptance on Apple Silicon macOS
-and native Windows x64 is pending for rc.10; this candidate does not authorize
-stable `v0.4.0`. Stable `v0.3.0` does not include structured handoff.*
+*Shipped in stable `v0.4.0` after dual-platform tagged-artifact acceptance
+PASS on candidate `v0.4.0-rc.11` (Apple Silicon macOS 44/44, native Windows
+x64 44/44). The earlier `v0.4.0-rc.1` through `v0.4.0-rc.10` candidates were
+published and failed physical acceptance. Native resume remains same-vendor.*
 
 | Item | Status |
 | ---- | ------ |
@@ -219,9 +218,9 @@ stable `v0.4.0`. Stable `v0.3.0` does not include structured handoff.*
 | Local-only private capsule store and append-only lineage | ✅ |
 | `rein handoff` / `rein resume --with <agent>` | ✅ |
 | Adversarial, golden, determinism, performance, and documentation gates | ✅ |
-| Tagged dual-platform `v0.4.0-rc.11` acceptance | 🚧 |
+| Tagged dual-platform `v0.4.0` acceptance | ✅ |
 
-Gemini CLI, OpenCode, and Grok Build are source-only in rc.4. Claude Code and
+Gemini CLI, OpenCode, and Grok Build are source-only in `v0.4.0`. Claude Code and
 Codex are the only handoff targets. Capsules are hard-excluded from sync, and
 the destination acknowledgement is a prompt-level contract rather than an
 enforced agent protocol.
@@ -232,7 +231,7 @@ Fidelity model:
 | ---- | ------- |
 | **Native resume** | Claude → Claude Code (highest fidelity) |
 | **Structured handoff** | A new destination session receives task state, selected history, evidence, and an explicit fidelity report |
-| **Reconstructed conversation** | Reserved and not shipped in `v0.4.0-rc.11` |
+| **Reconstructed conversation** | Reserved and not shipped in `v0.4.0` |
 
 ---
 

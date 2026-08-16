@@ -1,13 +1,13 @@
 ---
 title: "Install the Reinstate CLI"
 navTitle: "Install the CLI"
-description: "Install the pinned Reinstate release candidate on macOS, native Windows, or WSL2, verify its checksum and version, and diagnose PATH failures."
+description: "Install the pinned Reinstate stable release on macOS, native Windows, or WSL2, verify its checksum and version, and diagnose PATH failures."
 order: 9
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.4.0-rc.11"
-updatedAt: 2026-08-04
+version: "v0.4.0"
+updatedAt: 2026-08-16
 tags: ["installation", "cli", "macos", "windows", "wsl2"]
 targetQuery: "install Reinstate CLI"
 searchIntent: "how-to"
@@ -16,13 +16,13 @@ noindex: false
 ---
 
 Install Reinstate with the official bootstrap for your operating system, then
-require `rein version --json` to report `v0.4.0-rc.11`. The bootstrap verifies
+require `rein version --json` to report `v0.4.0`. The bootstrap verifies
 the canonical tagged installer, release checksum, downloaded binary, and
 reported version before replacing an existing installation.
 
-> **Release status:** `v0.4.0-rc.11` is a pre-1.0 candidate whose tagged-artifact
-> acceptance is pending on Apple Silicon macOS and native Windows x64. Stable
-> remains `v0.3.0`; Intel macOS and Linux/WSL2 remain optional and unverified.
+> **Release status:** `v0.4.0` is the current pre-1.0 stable release after
+> dual-platform tagged-artifact acceptance PASS. Intel macOS and Linux/WSL2
+> remain optional and unverified.
 
 ## Prerequisites
 
@@ -42,7 +42,8 @@ later setup prompts, never the installer command or an agent chat.
 brew install HarjjotSinghh/tap/reinstate
 ```
 
-The tap formula tracks stable `v0.3.0`. Intel macOS and Linuxbrew
+The tap formula may lag until the package-publish workflow lists `0.4.0`.
+GitHub Releases are the source of truth. Intel macOS and Linuxbrew
 remain optional and unverified for this release; use the bootstrap below if
 you prefer the canonical installer path.
 
@@ -132,7 +133,7 @@ failures before synchronization.
 ## Expected evidence
 
 - Both binary names resolve without an absolute path and report the same
-  `0.2.0` version.
+  `0.4.0` version.
 - The binary architecture matches the current environment.
 - The installer reports successful checksum and release-version checks.
 - `rein setup check` runs as a read-only preflight and does not claim the

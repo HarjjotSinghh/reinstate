@@ -6,8 +6,8 @@ order: 15
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.4.0-rc.11"
-updatedAt: 2026-08-01
+version: "v0.4.0"
+updatedAt: 2026-08-16
 tags: ["limitations", "stable-release", "compatibility", "same-vendor-resume", "roadmap"]
 targetQuery: "Reinstate limitations"
 searchIntent: "evaluation"
@@ -15,16 +15,17 @@ draft: false
 noindex: false
 ---
 
-Reinstate `v0.2.0` is a pre-1.0 continuity layer with configless local
-session indexing and encrypted same-vendor Claude Code and Codex session sync.
+Reinstate `v0.4.0` is a pre-1.0 continuity layer with configless local
+session indexing, encrypted same-vendor Claude Code and Codex session sync,
+verified resume, and structured handoff into a new destination session.
 It is not a cross-agent translator, repository
 synchronizer, remote desktop, coding harness, or universal agent configuration
 system.
 
-> **Stable platform boundary:** exact `v0.2.0` installed artifacts passed the
-> complete physical matrix on Apple Silicon macOS and native Windows x64.
-> Intel macOS and Linux/WSL2 are preview and unverified. This page does not
-> convert installer availability into a stable platform claim.
+> **Stable platform boundary:** exact `v0.4.0` installed artifacts passed
+> dual-platform tagged-artifact acceptance on Apple Silicon macOS and native
+> Windows x64. Intel macOS and Linux/WSL2 are preview and unverified. This page
+> does not convert installer availability into a stable platform claim.
 
 ## Prerequisites
 
@@ -48,7 +49,7 @@ direction, not current CLI syntax or support.
 | Storage | User-owned S3-compatible object storage; R2 recommended |
 | Transfer model | Manual push/pull of full immutable snapshots |
 | Configuration | Reinstate session-sync config only |
-| Release status | Stable `v0.2.0` on verified platforms; pre-1.0 formats and interfaces may still change |
+| Release status | Stable `v0.4.0` on verified platforms; pre-1.0 formats and interfaces may still change |
 
 Versions outside the tested stable ranges, including prereleases, are
 `UNTESTED`. Recognizable untested sessions may be discovered read-only, but
@@ -59,9 +60,9 @@ unsafe compatibility override.
 
 Reinstate preserves each supported vendor's native representation. It does not
 make a Claude Code transcript natively resumable in Codex or a Codex rollout
-natively resumable in Claude Code. Explicit portable handoffs and experimental
-reconstructed conversations are later-phase work and will be labeled as
-lossy—not presented as native resume.
+natively resumable in Claude Code. Stable `v0.4.0` structured handoff starts a
+new destination session with a visible, lossy projection. Reconstructed
+conversations are not shipped.
 
 Reinstate also does not call vendor agent APIs, execute sessions, schedule
 agents, provide an editor or terminal, or replace Claude Code and Codex.

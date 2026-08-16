@@ -167,11 +167,11 @@ stale selected-source metadata, missing workspace/executable, unverified
 agent version/layout, and verifier failure are blockers and cannot be
 acknowledged away.
 
-## Structured-handoff boundary (`v0.4.0-rc.11`)
+## Structured-handoff boundary (`v0.4.0`)
 
 A structured handoff continues the same task in a new Claude Code or Codex
 session. Claude Code, Codex, Gemini CLI, OpenCode, and Grok Build are supported
-sources; Gemini, OpenCode, and Grok are source-only in rc.1.
+sources; Gemini, OpenCode, and Grok are source-only in v0.4.0.
 
 The boundary is fail-closed and local-first:
 
@@ -195,7 +195,7 @@ The boundary is fail-closed and local-first:
 
 The destination is prompted to restate the current goal, latest request,
 workspace truth, missing capabilities, uncertainty, and next action before it
-mutates anything. This is a prompt-level acknowledgement in rc.1. Reinstate
+mutates anything. This is a prompt-level acknowledgement in v0.4.0. Reinstate
 records the user's confirmation but does not control or police the destination
 agent loop.
 
@@ -204,7 +204,7 @@ agent loop.
 Handoff artifacts and append-only lineage live under
 `$REINSTATE_HOME/handoffs/`, never inside a repository. Directories are `0700`
 and files are `0600` on Unix; Windows uses the protected DACL. The store is
-local-only and hard-excluded from `push` and `pull` in rc.1. Deleting it removes
+local-only and hard-excluded from `push` and `pull` in v0.4.0. Deleting it removes
 capsules and lineage without modifying any vendor session.
 
 ## Future configuration reconciliation

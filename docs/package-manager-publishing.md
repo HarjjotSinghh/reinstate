@@ -35,13 +35,14 @@ the prepared package intentionally uses `@reinstate/cli`.
 
 ## Rollout status
 
-Status recorded on 2026-08-12 after promoting stable `v0.3.0`. This section is
+Status recorded on 2026-08-16 after promoting stable `v0.4.0`. This section is
 operational state, not a claim that every prepared channel is already a
-supported install route.
+supported install route. GitHub Releases remain the source of truth until
+Homebrew, Scoop, npm, and other registries list `0.4.0`.
 
 | Channel | Current state | Next gate |
 | --- | --- | --- |
-| GitHub release and native Linux files | Stable `v0.3.0` is public with a signed tag and 25 checksum- and attestation-verified assets. The public bootstraps now pin candidate `v0.4.0-rc.11`, whose tagged-artifact acceptance is pending (`v0.4.0-rc.1` was published and failed its acceptance) | Keep Intel macOS and Linux/WSL2 artifacts labeled preview until their deferred physical acceptance closes; package channels stay on stable `0.3.0` until a stable `v0.4.0` promotion |
+| GitHub release and native Linux files | Stable `v0.4.0` is the current GitHub Release pin. Package-manager channels may still list `0.3.0` until publish workflows promote this tag | Keep Intel macOS and Linux/WSL2 artifacts labeled preview; do not advertise Homebrew/Scoop/`npm` as `0.4.0` until those listings exist |
 | npm | `@reinstate/cli@0.2.0-rc.3` remains the latest published npm line; stable `0.3.0` payloads were generated but not published (no npm auth / `PUBLISH_NPM` off) | Configure trusted publishers, enable `PUBLISH_NPM`, and publish `@reinstate/cli@0.3.0` plus platform packages with the `latest` tag |
 | JSR | Intentionally deferred because the maintainer's current account cannot create another scope; `PUBLISH_JSR` remains disabled | Obtain scope capacity or make an explicit namespace decision before enabling |
 | Homebrew | Stable `0.3.0` formula is live in `HarjjotSinghh/homebrew-tap`; Apple Silicon install and formula test passed for `v0.3.0` | Supported on Apple Silicon; keep Intel macOS and Linuxbrew unverified |

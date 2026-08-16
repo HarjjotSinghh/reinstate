@@ -1,22 +1,13 @@
 # Compatibility
 
-Stable `v0.3.0` is the current Phase 3 release: verified resume for Claude Code
-and Codex on Apple Silicon macOS and native Windows x64, after dual-platform
-tagged-artifact acceptance PASS (`stable_v0.3.0_authorized=true`). Intel macOS
-and Linux/WSL2 remain optional, unsupported/unverified evidence and do not
-block stable.
+Stable `v0.4.0` is the current Phase 4 release: structured handoff plus
+verified resume for Claude Code and Codex on Apple Silicon macOS and native
+Windows x64, after dual-platform tagged-artifact acceptance PASS on candidate
+`v0.4.0-rc.11`. Intel macOS and Linux/WSL2 remain optional,
+unsupported/unverified evidence and do not block stable.
 
-Candidate history (RC1–RC7) lived under `docs/testing/results/` and earlier
+Candidate history (RC1–RC11) lived under `docs/testing/results/` and earlier
 CHANGELOG sections; those records do not rewrite this stable claim.
-
-Release candidate `v0.4.0-rc.11` adds Phase 4 structured handoff on top of that
-stable surface, and the public installers now pin it. Its structured-handoff
-implementation is documented below, but it does not inherit the stable
-`v0.3.0` physical evidence. The earlier `v0.4.0-rc.1` through `v0.4.0-rc.5`
-candidates were published and failed physical acceptance. Tagged macOS arm64
-and Windows amd64 acceptance is still required before the candidate can pass,
-and passing this RC will not authorize stable `v0.4.0`; that requires a
-separate reviewed promotion and fresh tagged-artifact validation.
 
 Stable Reinstate `v0.2.0` implements **same-vendor encrypted session sync** and
 the Phase 2 local continuity surface for:
@@ -58,16 +49,16 @@ supported destination target, encrypted sync, or same-vendor native execution.
 
 | Source → destination | Claude Code | Codex CLI | Gemini CLI | OpenCode | Grok Build |
 | -------------------- | :---------: | :-------: | :--------: | :------: | :--------: |
-| **Claude Code** | same-vendor native resume | structured handoff | not in rc.1 | not in rc.1 | not planned |
-| **Codex CLI** | structured handoff | same-vendor native resume | not in rc.1 | not in rc.1 | not planned |
-| **Gemini CLI** | structured handoff | structured handoff | not a target (source-only) | not in rc.1 | not planned |
-| **OpenCode** | structured handoff | structured handoff | not in rc.1 | not a target (source-only) | not planned |
-| **Grok Build** | structured handoff | structured handoff | not in rc.1 | not in rc.1 | not a target (source-only) |
+| **Claude Code** | same-vendor native resume | structured handoff | not in v0.4.0 | not in v0.4.0 | not planned |
+| **Codex CLI** | structured handoff | same-vendor native resume | not in v0.4.0 | not in v0.4.0 | not planned |
+| **Gemini CLI** | structured handoff | structured handoff | not a target (source-only) | not in v0.4.0 | not planned |
+| **OpenCode** | structured handoff | structured handoff | not in v0.4.0 | not a target (source-only) | not planned |
+| **Grok Build** | structured handoff | structured handoff | not in v0.4.0 | not in v0.4.0 | not a target (source-only) |
 
 Every cross-agent entry above creates a new destination session for the same
 task through Claude Code's or Codex's documented CLI. It does not reconstruct
 vendor history or write a vendor-internal session file. Gemini, OpenCode, and
-Grok are source-only in rc.1; attempts to use them as destinations fail closed.
+Grok are source-only in v0.4.0; attempts to use them as destinations fail closed.
 
 The handoff path parses the source locally without a source model call, records
 component-level fidelity, and stores its capsule and lineage only under the
@@ -112,12 +103,12 @@ after dual-platform tagged-artifact acceptance. The Phase 4 candidates widen the
 ceiling further, through `2.1.229`, so the acceptance hosts are not blocked by
 their installed agent. Claude Code auto-updates faster than a fail-closed
 ceiling can be revised: `v0.4.0-rc.1` widened to `2.1.228` and both hosts had
-already moved past it within a day, so `v0.4.0-rc.11` keeps `2.1.229`.
+already moved past it within a day, so `v0.4.0` keeps `2.1.229`.
 Neither `2.1.228` nor `2.1.229` has completed dual-platform tagged-artifact
 acceptance. Versions above the maxima remain `UNTESTED` until a
 later matrix expands them again:
 
-| Agent | Inclusive source-tested range (v0.4.0-rc.11) |
+| Agent | Inclusive source-tested range (v0.4.0) |
 | ----- | ------------------- |
 | Claude Code | `2.1.219`–`2.1.229` |
 | OpenAI Codex CLI | `0.133.0`–`0.147.0` |

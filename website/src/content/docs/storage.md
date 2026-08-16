@@ -6,8 +6,8 @@ order: 11
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.4.0-rc.11"
-updatedAt: 2026-08-01
+version: "v0.4.0"
+updatedAt: 2026-08-16
 tags: ["storage", "s3", "cloudflare-r2", "encryption", "least-privilege"]
 targetQuery: "Reinstate session storage configuration"
 searchIntent: "how-to"
@@ -15,7 +15,7 @@ draft: false
 noindex: false
 ---
 
-Reinstate `v0.2.0` stores encrypted manifests and immutable session
+Reinstate `v0.4.0` stores encrypted manifests and immutable session
 snapshots in a private S3-compatible bucket you control. Configure the service
 endpoint, region, bucket, and profile prefix separately; interactive
 `rein init` stores the access-key pair in the operating-system keyring, not in

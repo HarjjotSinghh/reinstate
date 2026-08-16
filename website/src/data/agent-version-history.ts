@@ -16,11 +16,19 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.4.0': {
+    rangeChange:
+      'Unchanged from v0.4.0-rc.11: inclusive Claude Code range 2.1.219–2.1.229. The Codex CLI range is unchanged at 0.133.0–0.147.0.',
+    compatibilityChange:
+      'Phase 4 stable after dual-platform tagged-artifact acceptance PASS on v0.4.0-rc.11 (Apple Silicon macOS 44/44, native Windows x64 44/44). Structured handoff continues the same task in a new Claude Code or Codex session. Native resume remains same-vendor. Gemini CLI, OpenCode, and Grok Build remain handoff sources only.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.4.0/docs/testing/results/2026-08-15-macos-phase4-V040RC11.md',
+  },
   'v0.4.0-rc.11': {
     rangeChange:
       'Unchanged from v0.4.0-rc.10: inclusive Claude Code range 2.1.219–2.1.229. The Codex CLI range is unchanged at 0.133.0–0.147.0.',
     compatibilityChange:
-      'Eleventh Phase 4 candidate after v0.4.0-rc.10 physical dual-platform acceptance FAILED (macOS 41/44 A1/A3/A7, Windows 40/44 A1/A2/A3/A5). This candidate requires the five-bullet dest first-reply in bootstrap and Windows one-line argv, records lineage before dest Launch, recovers artifact dirs in handoff list, and Materializes dest-home workspace trust. Dual-platform tagged-artifact acceptance is pending; this candidate does not authorize stable v0.4.0.',
+      'Eleventh Phase 4 candidate after v0.4.0-rc.10 physical dual-platform acceptance FAILED (macOS 41/44 A1/A3/A7, Windows 40/44 A1/A2/A3/A5). This candidate requires the five-bullet dest first-reply in bootstrap and Windows one-line argv, records lineage before dest Launch, recovers artifact dirs in handoff list, and Materializes dest-home workspace trust. Dual-platform tagged-artifact acceptance later PASS (macOS 44/44, Windows 44/44); promoted to stable v0.4.0.',
     implementationSource:
       'https://github.com/HarjjotSinghh/reinstate/blob/v0.4.0-rc.11/internal/handoff/desttrust.go',
   },
