@@ -11,6 +11,7 @@ Phase 5 planning only. No code, no behavior change, no new agent support.
 
 ### Added
 
+- `rein doctor --agents` inventory, `--agents --json` (`AGENT-PROBE-V1`), and `--agents --acceptance-matrix`.
 - [ADR 0004](docs/adr/0004-universal-agent-coverage.md): universal agent
   coverage, the T0–T5 support-tier ladder, and a single `internal/agents`
   catalog with one descriptor file per agent.

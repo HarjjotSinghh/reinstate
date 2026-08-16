@@ -30,7 +30,7 @@ includes the `v0.4.0` structured-handoff surface.
 ```text
 rein
 rein version [--json]
-rein doctor [--json] [--self-test]
+rein doctor [--json] [--self-test] [--agents] [--acceptance-matrix]
 rein setup check [--json]
 rein sessions [--agent claude|codex|gemini|opencode|all] [--json]
 rein search QUERY [QUERY...] [--agent ...] [--project FRAGMENT]
@@ -64,6 +64,14 @@ rein pull [--agent ...] [--session ...|--all] [--dry-run] [--json]
 rein conflicts list|show|resolve ...
 rein completion bash|zsh|fish|powershell
 ```
+
+### `rein doctor`
+
+`--json` emits machine-readable diagnostics. `--self-test` runs a synthetic
+encryption/storage check (in-memory; it does not prove remote storage).
+`--agents` lists every catalog agent and its support tier. `--agents --json`
+emits the redacted `AGENT-PROBE-V1` artifact. `--agents --acceptance-matrix`
+prints the generated Phase 5 acceptance row count and per-agent row list.
 
 ## Local commands
 
