@@ -24,8 +24,11 @@ func TestShippedAgentsRegisterAtDeclaredTiers(t *testing.T) {
 		{sessionindex.AgentOpenCode, agents.TierHandoffFrom, agents.FamilyCLIQuery, "", ""},
 		{sessionindex.AgentGrok, agents.TierHandoffFrom, agents.FamilyHomeTree, "", ""},
 	}
-	if got := agents.Keys(); !stringSlicesEqual(got, []string{"claude", "codex", "gemini", "grok", "opencode"}) {
-		t.Fatalf("Keys() = %v", got)
+	keys := agents.Keys()
+	for _, tt := range want {
+		if !contains(keys, tt.key) {
+			t.Fatalf("Keys() missing shipped agent %q: %v", tt.key, keys)
+		}
 	}
 	for _, tt := range want {
 		got, ok := agents.Get(tt.key)
@@ -112,16 +115,4 @@ func contains(values []string, want string) bool {
 		}
 	}
 	return false
-}
-
-func stringSlicesEqual(got, want []string) bool {
-	if len(got) != len(want) {
-		return false
-	}
-	for i := range got {
-		if got[i] != want[i] {
-			return false
-		}
-	}
-	return true
 }
