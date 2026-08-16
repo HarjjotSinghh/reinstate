@@ -5,7 +5,7 @@ export const prerender = true;
 
 const title = 'Reinstate Roadmap: From Encrypted Sync to Work Continuity';
 const description =
-  'Review stable v0.4.0 structured handoff, verified resume, and which configuration features remain planned.';
+  'Review stable v0.4.0 structured handoff, the Phase 5 catalog-tier line, and which configuration features remain planned.';
 ---
 
 <PublicContentLayout
@@ -13,7 +13,7 @@ const description =
   {description}
   path="/roadmap"
   eyebrow="Product roadmap"
-  answer="Stable v0.2.0 implements encrypted same-vendor sync and local continuity. Stable v0.3.0 adds verified resume. Stable v0.4.0 adds explicit structured cross-agent handoff after dual-platform tagged-artifact acceptance PASS. Intel macOS and Linux/WSL2 remain optional and unverified. Universal non-secret configuration, a thin console, and team continuity remain later phases."
+  answer="Stable v0.2.0 implements encrypted same-vendor sync and local continuity. Stable v0.3.0 adds verified resume. Stable v0.4.0 adds explicit structured cross-agent handoff after dual-platform tagged-artifact acceptance PASS. Phase 5 is universal agent coverage by support tier. Phase 6 is universal configuration. Phase 7 is Console. Phase 8 is team continuity."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'Roadmap', path: '/roadmap' },
@@ -35,7 +35,7 @@ const description =
       structured handoff. Apple Silicon macOS and native Windows x64 are verified stable
       platforms after dual-platform tagged-artifact acceptance PASS; Intel macOS and
       Linux/WSL2 remain preview and unverified. See the
-      <a href="/changelog">changelog</a>.
+      <a href="/changelog">changelog</a>. The v0.5.0 catalog line is not a published tag.
     </p>
   </div>
 
@@ -86,21 +86,69 @@ const description =
         </tr>
         <tr>
           <td>5</td>
+          <td>Universal agent coverage: one catalog, one support-tier ladder, honest T0</td>
+          <td>In progress</td>
+          <td>
+            v0.5.0 artifacts discover, search, and inspect additional agents only at the
+            committed tier. No new T4 destinations or T5 sync agents
+          </td>
+        </tr>
+        <tr>
+          <td>6</td>
           <td>Universal non-secret configuration and automatic cross-device reconciliation</td>
           <td>Planned</td>
           <td>Render native harness configuration without raw credential or config-tree mirroring</td>
         </tr>
         <tr>
-          <td>6</td>
+          <td>7</td>
           <td>Optional thin console for selecting and preparing work</td>
           <td>Exploring</td>
           <td>Agents continue to own execution; Reinstate remains the continuity client</td>
         </tr>
         <tr>
-          <td>7</td>
+          <td>8</td>
           <td>Team checkpoints, onboarding, provenance, and policy</td>
           <td>Exploring</td>
           <td>Individual continuity must first be proven safe and useful</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="phase-5">Phase 5 — Universal agent coverage</h2>
+  <p>
+    Phase 5 replaces five agents described in prose with one catalog and a six-rung tier
+    ladder. Public surfaces state the rung. Encrypted sync stays Claude Code and Codex CLI.
+    Native resume stays same-vendor.
+  </p>
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">Item</th>
+          <th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Catalog core and the five shipped agents at unchanged tiers</td>
+          <td>In progress</td>
+        </tr>
+        <tr>
+          <td>Wave A/B/C descriptors at T0 with a recorded reason</td>
+          <td>In progress</td>
+        </tr>
+        <tr>
+          <td>Gemini CLI promotion from T2 to T3</td>
+          <td>Stays T2</td>
+        </tr>
+        <tr>
+          <td>New T4 destinations or T5 sync agents</td>
+          <td>Out of scope</td>
+        </tr>
+        <tr>
+          <td>Phase 5 dual-platform tagged-artifact acceptance</td>
+          <td>Planned</td>
         </tr>
       </tbody>
     </table>
@@ -118,10 +166,10 @@ const description =
 
   <h2 id="configuration-direction">Universal configuration without unsafe mirroring</h2>
   <p>
-    The planned configuration layer will describe portable intent for MCP servers, skills,
-    instructions, hooks, plugins, marketplaces, and safe settings. Adapters will preview and
-    render each supported harness's native format. Raw API keys, OAuth tokens, cookies, vendor
-    credential stores, and unrelated native settings remain excluded.
+    Phase 6, not Phase 5, is the planned configuration layer. It will describe portable intent
+    for MCP servers, skills, instructions, hooks, plugins, marketplaces, and safe settings.
+    Adapters will preview and render each supported harness's native format. Raw API keys, OAuth
+    tokens, cookies, vendor credential stores, and unrelated native settings remain excluded.
   </p>
 
   <h2 id="non-goals">Near-term non-goals</h2>

@@ -1,0 +1,119 @@
+---
+import compatibility from '../data/compatibility.json';
+import {
+  FAMILY_LABELS,
+  T0_REASON_LABELS,
+  TIER_LABELS,
+  TIERS,
+  reachedTier,
+  type CompatibilityAgent,
+  type Tier,
+} from '../lib/agent-catalog';
+
+interface Props {
+  caption?: string;
+}
+
+const { caption } = Astro.props;
+const agents = compatibility.agents as CompatibilityAgent[];
+
+const cellLabel = (agent: CompatibilityAgent, column: Tier) => {
+  if (!reachedTier(agent.tier, column)) {
+    return '—';
+  }
+  if (agent.tier === column) {
+    return column === 'T0' && agent.t0Reason
+      ? T0_REASON_LABELS[agent.t0Reason] ?? agent.t0Reason
+      : 'Current';
+  }
+  return 'Yes';
+};
+---
+
+<div class="pc-table-wrap">
+  <table class="pc-table">
+    {caption && <caption class="sr-only">{caption}</caption>}
+    <thead>
+      <tr>
+        <th scope="col">Agent</th>
+        <th scope="col">Family</th>
+        {
+          TIERS.map((tier) => (
+            <th scope="col">
+              {tier}
+              <span class="tier-label">{TIER_LABELS[tier]}</span>
+            </th>
+          ))
+        }
+        <th scope="col">Evidence</th>
+      </tr>
+    </thead>
+    <tbody>
+      {
+        agents.map((agent) => (
+          <tr>
+            <th scope="row">
+              {agent.integrationPath ? (
+                <a href={agent.integrationPath}>{agent.name}</a>
+              ) : (
+                agent.name
+              )}
+              <span class="agent-tier">{agent.tier}</span>
+            </th>
+            <td>
+              <code>{agent.storageFamily}</code>
+              <span class="family-label">{FAMILY_LABELS[agent.storageFamily] ?? ''}</span>
+            </td>
+            {
+              TIERS.map((tier) => (
+                <td
+                  class:list={[
+                    reachedTier(agent.tier, tier) && 'tier-reached',
+                    agent.tier === tier && 'tier-current',
+                  ]}
+                >
+                  {cellLabel(agent, tier)}
+                </td>
+              ))
+            }
+            <td>
+              <a href={agent.source}>Evidence</a>
+            </td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .tier-label,
+  .family-label,
+  .agent-tier {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--ink-3, inherit);
+  }
+
+  .agent-tier {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.04em;
+  }
+
+  .tier-current {
+    font-weight: 650;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+</style>

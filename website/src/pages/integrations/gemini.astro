@@ -1,0 +1,92 @@
+---
+import PublicContentLayout from '../../layouts/PublicContentLayout.astro';
+
+export const prerender = true;
+
+const title = 'Gemini CLI as a T2 Handoff Source | Reinstate';
+const description =
+  'Gemini CLI is a T2 handoff source: Reinstate can read local sessions and build a portable capsule. Native resume and encrypted sync are not supported.';
+---
+
+<PublicContentLayout
+  {title}
+  {description}
+  path="/integrations/gemini"
+  eyebrow="Integration · Gemini CLI · T2"
+  answer="Gemini CLI is T2: a handoff source and a read-only local index. Reinstate does not launch Gemini, does not write Gemini session files, and does not sync Gemini sessions. T-050 left Gemini at T2."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Integrations', path: '/integrations' },
+    { name: 'Gemini CLI', path: '/integrations/gemini' },
+  ]}
+  tags={['Gemini CLI', 'T2 handoff source', 'read-only']}
+>
+  <h2 id="support-at-a-glance">Gemini CLI support at a glance</h2>
+  <dl class="pc-facts">
+    <div>
+      <dt>Tier</dt>
+      <dd>T2 Handoff source</dd>
+    </div>
+    <div>
+      <dt>Storage family</dt>
+      <dd>F1 home tree</dd>
+    </div>
+    <div>
+      <dt>Native resume (T3)</dt>
+      <dd>Not supported</dd>
+    </div>
+    <div>
+      <dt>Encrypted sync (T5)</dt>
+      <dd>Not supported</dd>
+    </div>
+  </dl>
+  <p>
+    T2 means <code>rein handoff --from gemini</code> can build a portable capsule from a
+    local Gemini CLI thread. T3 verified resume needs a fail-closed version range and
+    dual-platform physical resume journeys. Those are not committed, so Gemini stays T2.
+  </p>
+
+  <h2 id="what-t2-includes">What T2 includes</h2>
+  <ul>
+    <li>T1 read-only discovery, search, and inspect of local Gemini CLI sessions.</li>
+    <li>T2 structured handoff from Gemini CLI into a new Claude Code or Codex session.</li>
+    <li>Fail-closed behavior on an unrecognized layout (exit code <code>5</code>).</li>
+  </ul>
+
+  <h2 id="what-t2-excludes">What T2 excludes</h2>
+  <ul>
+    <li>No <code>rein resume</code> / <code>rein fork</code> of a Gemini session.</li>
+    <li>No <code>rein handoff --to gemini</code> destination.</li>
+    <li>No <code>rein push</code> / <code>rein pull</code> of Gemini sessions.</li>
+    <li>No write into Gemini’s session store.</li>
+  </ul>
+
+  <div class="pc-callout">
+    <p>Native resume is same-vendor, and Gemini is not a T3 agent.</p>
+    <p>
+      A handoff starts a <em>new</em> Claude Code or Codex session. It does not reconstruct
+      Gemini history or translate the vendor transcript.
+    </p>
+  </div>
+
+  <h2 id="evidence">Evidence</h2>
+  <p>
+    Committed fixtures live under <code>testdata/sessionindex/gemini</code> and
+    <code>testdata/handoff/gemini</code>. A Windows physical path exists; there is no
+    dual-platform T3 resume report. See the
+    <a href="https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/gemini.md"
+      >Gemini storage page</a
+    >
+    and the <a href="/compatibility">tier matrix</a>.
+  </p>
+
+  <section class="pc-related" aria-labelledby="related-heading">
+    <h2 id="related-heading">Related</h2>
+    <nav aria-label="Related pages">
+      <a href="/integrations">All integrations</a>
+      <a href="/compatibility">Compatibility matrix</a>
+      <a href="/docs/handoff">Structured handoff</a>
+      <a href="/docs/adapters">Adapter documentation</a>
+    </nav>
+  </section>
+</PublicContentLayout>

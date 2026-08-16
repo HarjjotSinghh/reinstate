@@ -38,6 +38,9 @@ describe('analytics event taxonomy', () => {
   it.each([
     ['/integrations/claude-code', 'integration_view', 'claude-code'],
     ['/integrations/codex/', 'integration_view', 'codex'],
+    ['/integrations/gemini', 'integration_view', 'gemini'],
+    ['/integrations/opencode/', 'integration_view', 'opencode'],
+    ['/integrations/grok', 'integration_view', 'grok'],
     [
       '/guides/use-s3-for-coding-agent-session-storage',
       'storage_guide_view',

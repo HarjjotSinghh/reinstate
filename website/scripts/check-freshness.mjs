@@ -180,7 +180,8 @@ export async function collectFreshnessRecords(root = DEFAULT_ROOT) {
         );
       } else if (
         entry.status !== 'release-gate-open' &&
-        entry.status !== 'preview-unverified'
+        entry.status !== 'preview-unverified' &&
+        entry.status !== 'known'
       ) {
         errors.push(
           `src/data/compatibility.json#${entry.id}: missing lastTested without an open or preview gate`,

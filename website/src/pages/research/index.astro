@@ -112,7 +112,9 @@ const description =
   </p>
   <ul>
     {
-      compatibility.agents.map((agent) => (
+      compatibility.agents
+        .filter((agent) => agent.minimumTestedVersion && agent.maximumTestedVersion)
+        .map((agent) => (
         <li>
           <strong>{agent.name}:</strong> <code>{agent.minimumTestedVersion}</code>–
           <code>{agent.maximumTestedVersion}</code>; <a href={agent.source}>test source</a>;
