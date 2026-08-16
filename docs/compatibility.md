@@ -23,14 +23,15 @@ the Phase 2 local continuity surface for:
 
 The Phase 2 local capability matrix is:
 
-| Agent | Local discovery/search/inspect | Native resume/fork | Physical Phase 2 evidence |
-| ----- | ------------------------------ | ------------------ | ------------------------- |
-| Claude Code | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64 |
-| OpenAI Codex CLI | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64 |
-| Gemini CLI | Read-only included | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac |
-| OpenCode | Read-only included | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac |
-| Cursor | Not implemented | Not implemented | Not applicable |
-| Grok Build | Not implemented | Not implemented | Not applicable |
+| Agent | Local discovery/search/inspect | Native resume/fork | Physical Phase 2 evidence | Tier |
+| ----- | ------------------------------ | ------------------ | ------------------------- | ---- |
+| Claude Code | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64 | T5 |
+| OpenAI Codex CLI | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64 | T5 |
+| Gemini CLI | Read-only included | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac | T2 |
+| OpenCode | Read-only included | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac | T2 |
+| Cursor | Not implemented | Not implemented | Not applicable | — |
+| Grok Build | Not implemented | Not implemented | Not applicable | T2 |
+<!-- T-010 insertion point: append one new agent row below this line. Do not add columns, re-sort, re-wrap, or edit other rows. -->
 
 Automated fixture/fake-runner evidence and physical evidence are reported
 separately. Stable support is limited to the two physically verified primary
@@ -41,6 +42,13 @@ support will be reported separately per harness and per capability (MCP,
 skills/instructions, hooks/loops, plugins, marketplaces, safe settings). A
 supported session adapter will not imply configuration support. See
 [universal-configuration.md](universal-configuration.md).
+
+## Support tiers
+
+"Supported" now means a published [support tier](agent-support-tiers.md),
+not a yes-or-no flag. The matrix above records the current tier for each
+shipped agent. T5 is encrypted same-vendor sync. T2 is a handoff source.
+Native resume stays same-vendor.
 
 ## Phase 4 structured-handoff candidate
 
