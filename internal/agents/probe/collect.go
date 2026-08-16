@@ -105,6 +105,9 @@ func probeAgent(ctx context.Context, env agents.Env, home agents.HomeDir, d agen
 	}
 
 	candidates, resolvedAbs, resolved := resolveCandidates(env, home, d)
+	if candidates == nil {
+		candidates = []CandidateRoot{}
+	}
 	rec.CandidateRoots = candidates
 	rec.ResolvedRoot = resolved
 
@@ -194,7 +197,7 @@ func resolveCandidates(env agents.Env, home agents.HomeDir, d agents.Descriptor)
 	if d.Storage.Roots != nil {
 		declared = d.Storage.Roots(home)
 	}
-	var candidates []CandidateRoot
+	candidates := []CandidateRoot{}
 	var resolvedAbs string
 	var resolved *RelativeRoot
 	osName := agents.CurrentOS()
