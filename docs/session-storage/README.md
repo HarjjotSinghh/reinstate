@@ -17,14 +17,11 @@ Reinstate reads it. Support states live in
 
 | Agent | Page | Tier |
 | ----- | ---- | ---- |
-| Claude Code | [../session-storage-map.md](../session-storage-map.md) section 1 | T5 |
-| Codex CLI | [../session-storage-map.md](../session-storage-map.md) section 2 | T5 |
-| Gemini CLI | [../session-storage-map.md](../session-storage-map.md) section 3 | T2 |
-| OpenCode | [../session-storage-map.md](../session-storage-map.md) section 4 | T2 |
-| Grok Build | [../session-storage-map.md](../session-storage-map.md) section 5 | T2 |
-
-These five migrate into this directory during Phase 5 platform work, unchanged
-in content. Until then the map remains their home.
+| Claude Code | [claude.md](claude.md) | T5 |
+| Codex CLI | [codex.md](codex.md) | T5 |
+| Gemini CLI | [gemini.md](gemini.md) | T2 |
+| OpenCode | [opencode.md](opencode.md) | T2 |
+| Grok Build | [grok.md](grok.md) | T2 |
 
 ## Phase 5 candidates
 
