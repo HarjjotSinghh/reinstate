@@ -22,18 +22,21 @@ type Platform struct {
 
 // Agent is one catalog agent's redacted storage observation.
 type Agent struct {
-	Key              string              `json:"key"`
-	DisplayName      string              `json:"display_name"`
-	DeclaredTier     string              `json:"declared_tier"`
-	RootEnv          string              `json:"root_env,omitempty"`
-	RootEnvSet       bool                `json:"root_env_set"`
-	CandidateRoots   []CandidateRoot     `json:"candidate_roots"`
-	ResolvedRoot     *RelativeRoot       `json:"resolved_root"`
-	ExecutableOnPath bool                `json:"executable_on_path"`
-	VersionRaw       string              `json:"version_raw,omitempty"`
-	Tree             []TreeNode          `json:"tree"`
-	NameShapes       []NameShape         `json:"name_shapes"`
-	FirstLineKeys    map[string][]string `json:"first_line_keys"`
+	Key              string          `json:"key"`
+	DisplayName      string          `json:"display_name"`
+	DeclaredTier     string          `json:"declared_tier"`
+	RootEnv          string          `json:"root_env,omitempty"`
+	RootEnvSet       bool            `json:"root_env_set"`
+	CandidateRoots   []CandidateRoot `json:"candidate_roots"`
+	ResolvedRoot     *RelativeRoot   `json:"resolved_root"`
+	ExecutableOnPath bool            `json:"executable_on_path"`
+	VersionRaw       string          `json:"version_raw,omitempty"`
+	// TimedOut marks an agent whose per-agent budget expired. Its other fields
+	// are partial, so a reader must not treat them as a negative finding.
+	TimedOut      bool                `json:"timed_out,omitempty"`
+	Tree          []TreeNode          `json:"tree"`
+	NameShapes    []NameShape         `json:"name_shapes"`
+	FirstLineKeys map[string][]string `json:"first_line_keys"`
 }
 
 // CandidateRoot is one declared storage root, never an absolute path.

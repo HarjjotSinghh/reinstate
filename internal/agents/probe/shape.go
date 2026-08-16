@@ -80,6 +80,30 @@ func normalizeStem(stem string) string {
 	return "<slug>"
 }
 
+// redactUser strips the operating-system account name from an already
+// normalized component. Vendors embed it in bucket directory names — Kimi Code
+// uses wd_<user>_<hash> — and the token-based normalizer preserves such a stem
+// verbatim because nothing about it looks like an identifier. Probe artifacts
+// are committed, so the account name is removed after normalization, which
+// keeps the informative structure around it.
+func redactUser(shape, user string) string {
+	if len(user) < 3 || shape == "" {
+		return shape
+	}
+	lowerUser := strings.ToLower(user)
+	var b strings.Builder
+	for {
+		idx := strings.Index(strings.ToLower(shape), lowerUser)
+		if idx < 0 {
+			b.WriteString(shape)
+			return b.String()
+		}
+		b.WriteString(shape[:idx])
+		b.WriteString("<user>")
+		shape = shape[idx+len(user):]
+	}
+}
+
 func isSlug(name string) bool {
 	lower := strings.ToLower(name)
 	if strings.Contains(lower, "%2f") || strings.Contains(lower, "%3a") ||

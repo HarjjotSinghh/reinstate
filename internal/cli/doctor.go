@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -19,6 +20,7 @@ func newDoctorCmd() *cobra.Command {
 	var selfTest bool
 	var agentsMode bool
 	var acceptanceMatrix bool
+	var agentTimeout time.Duration
 	cmd := &cobra.Command{
 		Use:   "doctor",
 		Short: "Run redacted diagnostics",
@@ -28,10 +30,10 @@ func newDoctorCmd() *cobra.Command {
 				return runDoctorAcceptanceMatrix(cmd, asJSON)
 			}
 			if agentsMode && asJSON {
-				return runDoctorAgentsJSON(cmd)
+				return runDoctorAgentsJSON(cmd, agentTimeout)
 			}
 			if agentsMode {
-				return runDoctorAgentsHuman(cmd)
+				return runDoctorAgentsHuman(cmd, agentTimeout)
 			}
 			home := os.Getenv("REINSTATE_HOME")
 			rep, err := doctor.Run(cmd.Context(), doctor.Options{
@@ -62,11 +64,12 @@ func newDoctorCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&selfTest, "self-test", false, "run synthetic encryption/storage self-test")
 	cmd.Flags().BoolVar(&agentsMode, "agents", false, "list catalog agents, tiers, and local inventory")
 	cmd.Flags().BoolVar(&acceptanceMatrix, "acceptance-matrix", false, "emit the generated Phase 5 acceptance row count")
+	cmd.Flags().DurationVar(&agentTimeout, "agent-timeout", 0, "per-agent probe budget for --agents (default 10s)")
 	return cmd
 }
 
-func runDoctorAgentsJSON(cmd *cobra.Command) error {
-	art, err := collectAgentProbe(cmd.Context())
+func runDoctorAgentsJSON(cmd *cobra.Command, timeout time.Duration) error {
+	art, err := collectAgentProbe(cmd.Context(), timeout)
 	if err != nil {
 		return err
 	}
@@ -76,8 +79,8 @@ func runDoctorAgentsJSON(cmd *cobra.Command) error {
 	return WriteJSON(cmd.OutOrStdout(), art)
 }
 
-func runDoctorAgentsHuman(cmd *cobra.Command) error {
-	art, err := collectAgentProbe(cmd.Context())
+func runDoctorAgentsHuman(cmd *cobra.Command, timeout time.Duration) error {
+	art, err := collectAgentProbe(cmd.Context(), timeout)
 	if err != nil {
 		return err
 	}
@@ -102,18 +105,21 @@ func runDoctorAgentsHuman(cmd *cobra.Command) error {
 				notes = "t0_reason=" + string(d.T0Reason)
 			}
 		}
+		if rec.TimedOut {
+			notes = strings.TrimSpace(notes + " timed_out")
+		}
 		PrintHuman(cmd.OutOrStdout(), "%s\t%s\t%s\t%s\t%s\t%s", rec.Key, rec.DeclaredTier, installed, root, sessions, notes)
 	}
 	return nil
 }
 
-func collectAgentProbe(ctx context.Context) (probe.Artifact, error) {
+func collectAgentProbe(ctx context.Context, perAgentTimeout time.Duration) (probe.Artifact, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		home = ""
 	}
 	env := agents.Env{Home: home, LookupEnv: os.Getenv}
-	return probe.Collect(ctx, env, agents.All(), probe.Options{})
+	return probe.Collect(ctx, env, agents.All(), probe.Options{Timeout: perAgentTimeout})
 }
 
 func sessionCounts(ctx context.Context) map[string]int {

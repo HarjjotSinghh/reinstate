@@ -62,8 +62,21 @@ for the candidate roster. No new agent is readable, resumable, or syncable yet.
   resolves when its marker is present. An explicit `RootEnv` or fixture root
   still bypasses the gate.
 
+- `rein doctor --agents` gains `--agent-timeout`. The probe budget is now per
+  agent (default 10s) rather than a single 3s budget for the whole run, and an
+  agent that exceeds it is recorded with `timed_out` instead of failing the run.
+
 ### Fixed
 
+- The probe emitted the operating-system account name inside normalized path
+  shapes. Kimi Code buckets a workspace as `wd_<user>_<hash>`, and nothing about
+  an account name looks like a UUID, hash, or slug, so the normalizer kept it
+  verbatim. It is now replaced with `<user>`, and both the probe and CLI leak
+  tests assert on it.
+- `rein doctor --agents` failed with `context deadline exceeded` and emitted
+  nothing once several agents were installed. The 3s budget covered the entire
+  run while each installed agent spawns a `--version` subprocess, so the
+  evidence tool broke on exactly the machines Phase 5 needs it on.
 - `rein doctor --agents` reported Qwen Code and OpenHands as installed on
   machines where neither was installed. Both descriptors declared a home root
   with no marker, so unrelated tooling that created `~/.qwen/skills` and

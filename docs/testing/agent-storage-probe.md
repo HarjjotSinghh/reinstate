@@ -90,11 +90,19 @@ The probe **must never** emit:
    relative to the resolved agent root, and roots are emitted as
    `{relative_to, suffix}` pairs;
 4. file or directory names that are not shape-normalized — a UUID becomes
-   `<uuid-v4>`, a hash becomes `<32-hex>`, a path slug becomes `<slug>`;
+   `<uuid-v4>`, a hash becomes `<32-hex>`, a path slug becomes `<slug>`, and
+   the operating-system account name becomes `<user>` wherever it appears
+   inside a name;
 5. repository names, branch names, or remote URLs;
 6. environment variable **values**, only whether each is set;
 7. anything from a path listed in the descriptor's `Excluded` set, including
    credential and cache subtrees.
+
+Rule 4 covers the account name because vendors put it inside bucket directory
+names: Kimi Code buckets a workspace as `wd_<user>_<hash>`. Nothing about an
+account name looks like a UUID, a hash, or a slug, so the normalizer preserves
+it verbatim unless it is removed explicitly. An absolute path is not the only
+way an identity reaches a committed artifact.
 
 The probe opens every file read-only, reads at most the first line of a
 sampled file, and never writes, renames, or locks anything under an agent
@@ -150,6 +158,18 @@ that is the probe's most valuable output.
 
 Rows the probe cannot reach stay `Unverified`, and the agent's tier is capped
 accordingly.
+
+### Budgets are per agent
+
+`--agent-timeout` bounds a single agent, not the whole run, and defaults to ten
+seconds. The probe spawns one `--version` subprocess per installed agent, so on
+the machine this phase targets — a dozen harnesses installed side by side — a
+single whole-run budget guarantees failure exactly where evidence matters most.
+
+An agent that exceeds its budget is recorded with `timed_out: true` and
+whatever was gathered before the deadline. Its partial fields are not a
+negative finding, and the surrounding agents are unaffected. Only the operator
+interrupting the command aborts the run.
 
 ### Why a candidate root can exist and still not resolve
 

@@ -61,7 +61,16 @@ func TestDoctorAgentsInstalledTracksExecutableNotPlantedDirectory(t *testing.T) 
 }
 
 func TestDoctorAgentsJSONIsProbeArtifact(t *testing.T) {
-	isolateHome(t)
+	home := isolateHome(t)
+	// A resolvable tree whose bucket embeds the account name, the shape Kimi
+	// Code uses. Without it this assertion would have nothing to redact.
+	bucket := filepath.Join(home, ".codex", "sessions", "wd_"+testAccountName+"_ab12cd34-17")
+	if err := os.MkdirAll(bucket, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(bucket, "rollout.jsonl"), []byte("{}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	out, errb, code := runCLI(t, "rein", "doctor", "--agents", "--json")
 	if code != ExitOK {
 		t.Fatalf("exit=%d stdout=%q stderr=%q", code, out, errb)
@@ -73,12 +82,16 @@ func TestDoctorAgentsJSONIsProbeArtifact(t *testing.T) {
 	if err := probe.Validate(art); err != nil {
 		t.Fatal(err)
 	}
-	home, _ := os.UserHomeDir()
-	if home != "" && strings.Contains(out, home) {
-		t.Fatalf("probe leaked home path %q", home)
+	if realHome, _ := os.UserHomeDir(); realHome != "" && strings.Contains(out, realHome) {
+		t.Fatalf("probe leaked home path %q", realHome)
 	}
 	if strings.Contains(out, "/Users/") || strings.Contains(out, `C:\Users\`) {
 		t.Fatalf("probe leaked absolute user path: %s", out)
+	}
+	// Vendors embed the account name in bucket directory names, so an absolute
+	// path is not the only way it reaches a committed artifact.
+	if strings.Contains(strings.ToLower(out), testAccountName) {
+		t.Fatalf("probe leaked the account name %q: %s", testAccountName, out)
 	}
 }
 
@@ -125,9 +138,16 @@ func TestAgentStorageProbeWrappersInvokeSameFlags(t *testing.T) {
 	}
 }
 
+// testAccountName stands in for the operating-system account name so leak
+// assertions have a distinctive token to search for.
+const testAccountName = "probetestuser"
+
 func isolateHome(t *testing.T) string {
 	t.Helper()
-	home := t.TempDir()
+	home := filepath.Join(t.TempDir(), testAccountName)
+	if err := os.MkdirAll(home, 0o755); err != nil {
+		t.Fatal(err)
+	}
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
 	t.Setenv("REINSTATE_HOME", filepath.Join(home, ".reinstate"))
