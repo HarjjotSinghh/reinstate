@@ -35,6 +35,7 @@ Phase 5 planning only. No code, no behavior change, no new agent support.
 - OpenHands catalog descriptor at T0 (`server_backed`); conversations stay on the Agent Server / Cloud backend.
 - GitHub Copilot CLI catalog entry at T0 (`layout_unverified`); `session-state/` stays unread until a cache-clear/re-login probe.
 - Kimi Code CLI catalog descriptor at T0 (`layout_unverified`): dual-platform probes unavailable (`kimi` not installed; no native Windows host).
+- Pi catalog descriptor at T0 (`layout_unverified`): F1 JSONL tree, no dual-platform probes, no T1+ claim.
 
 ### Changed
 
