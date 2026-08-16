@@ -111,6 +111,14 @@ If a later task ever reads `$QWEN_HOME` or `$QWEN_RUNTIME_DIR`, these go in
 A probe is **required** to leave T0. Vendor documentation alone is not
 enough. One-platform evidence is not enough.
 
+The descriptor's discovery marker is `tmp`, carried over from the Gemini-fork
+hypothesis and therefore itself unverified. It exists so that a bare `~/.qwen`
+does not resolve as an installation: on a machine with no Qwen Code at all, a
+skill installer had already created `~/.qwen/skills`, and an unmarked root
+reported that as an installed agent. If a probe shows `exists: true` with
+`marker_present: false` on a machine where Qwen Code *is* installed, the marker
+is wrong and item 1 above is what corrects it.
+
 ## Sources
 
 - [Qwen Code product page](https://qwen.ai/qwencode)

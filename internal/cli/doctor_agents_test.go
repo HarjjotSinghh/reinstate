@@ -32,6 +32,34 @@ func TestDoctorAgentsHumanListsCatalog(t *testing.T) {
 	}
 }
 
+// The inventory feeds the Phase 5 device reports, so "installed" must mean the
+// executable is on PATH. A directory another tool planted under the home
+// directory is not an installation and must not promote a row.
+func TestDoctorAgentsInstalledTracksExecutableNotPlantedDirectory(t *testing.T) {
+	home := isolateHome(t)
+	for _, dir := range []string{".qwen", ".openhands", ".claude", ".codex"} {
+		if err := os.MkdirAll(filepath.Join(home, dir, "skills"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	out, errb, code := runCLI(t, "rein", "doctor", "--agents")
+	if code != ExitOK {
+		t.Fatalf("exit=%d stdout=%q stderr=%q", code, out, errb)
+	}
+	if !strings.Contains(out, "key\ttier\tinstalled\troot\tsessions\tnotes") {
+		t.Fatalf("missing header: %q", out)
+	}
+	for _, line := range strings.Split(out, "\n") {
+		fields := strings.Split(line, "\t")
+		if len(fields) < 4 || fields[0] == "key" {
+			continue
+		}
+		if fields[2] != "no" || fields[3] != "no" {
+			t.Fatalf("planted directory reported as installed/root: %q", line)
+		}
+	}
+}
+
 func TestDoctorAgentsJSONIsProbeArtifact(t *testing.T) {
 	isolateHome(t)
 	out, errb, code := runCLI(t, "rein", "doctor", "--agents", "--json")
@@ -97,7 +125,7 @@ func TestAgentStorageProbeWrappersInvokeSameFlags(t *testing.T) {
 	}
 }
 
-func isolateHome(t *testing.T) {
+func isolateHome(t *testing.T) string {
 	t.Helper()
 	home := t.TempDir()
 	t.Setenv("HOME", home)
@@ -108,4 +136,5 @@ func isolateHome(t *testing.T) {
 	t.Setenv("GEMINI_CLI_HOME", "")
 	t.Setenv("GROK_HOME", "")
 	t.Setenv("PATH", filepath.Join(home, "bin"))
+	return home
 }

@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Phase 5 planning only. No code, no behavior change, no new agent support.
+Phase 5 in progress: the agent catalog, the storage probe, and honest T0 entries
+for the candidate roster. No new agent is readable, resumable, or syncable yet.
 
 ### Added
 
@@ -53,6 +54,23 @@ Phase 5 planning only. No code, no behavior change, no new agent support.
   continuity to Phase 8.
 - `docs/session-storage-map.md` gains an index of the per-agent pages. Sections
   1–5 are unchanged and still cover the five agents with shipped readers.
+- `rein doctor --agents` splits its `installed` column: `installed` now reports
+  only whether the executable is on `PATH`, and a new `root` column reports
+  whether a candidate root resolved.
+- Root discovery is marker-gated. `MustRegister` panics when a descriptor
+  declares `Storage.Roots` without a `Storage.Marker`, and a declared root only
+  resolves when its marker is present. An explicit `RootEnv` or fixture root
+  still bypasses the gate.
+
+### Fixed
+
+- `rein doctor --agents` reported Qwen Code and OpenHands as installed on
+  machines where neither was installed. Both descriptors declared a home root
+  with no marker, so unrelated tooling that created `~/.qwen/skills` and
+  `~/.openhands/skills` was enough to resolve the root, and the inventory
+  treated root presence as installation. The same record reported
+  `executable_on_path: false`. Since Phase 5 device reports are generated from
+  this inventory, the bug manufactured evidence for agents that were absent.
 
 ## [0.4.0] - 2026-08-16
 

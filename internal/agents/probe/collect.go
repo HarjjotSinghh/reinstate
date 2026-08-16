@@ -213,7 +213,9 @@ func resolveCandidates(env agents.Env, home agents.HomeDir, d agents.Descriptor)
 			Exists:        exists,
 			MarkerPresent: marker,
 		})
-		if resolved == nil && exists && (d.Storage.Marker == "" || marker) {
+		// Discovery is marker-gated. An explicit RootEnv or fixture root below
+		// is an instruction and is trusted; a home-directory guess is not.
+		if resolved == nil && exists && marker {
 			copyRel := rel
 			resolved = &copyRel
 			resolvedAbs = root.Path
@@ -251,7 +253,7 @@ func inspectRoot(path, marker string) (exists, markerPresent bool) {
 		return false, false
 	}
 	if strings.TrimSpace(marker) == "" {
-		return true, true
+		return true, false
 	}
 	_, err = os.Stat(filepath.Join(path, filepath.FromSlash(marker)))
 	return true, err == nil

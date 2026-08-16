@@ -151,6 +151,25 @@ that is the probe's most valuable output.
 Rows the probe cannot reach stay `Unverified`, and the agent's tier is capped
 accordingly.
 
+### Why a candidate root can exist and still not resolve
+
+Discovery is marker-gated: a declared root only becomes `resolved_root` when the
+descriptor's `Storage.Marker` is present inside it. A bare `~/.<agent>` directory
+is not evidence of an installation, because skill installers, dotfile managers,
+and other agents routinely plant one. Every descriptor that declares a root must
+declare a marker, and registration panics otherwise.
+
+So `exists: true` with `marker_present: false` is a meaningful result, not a
+failure: the directory is there but the layout the descriptor expects is not.
+Either the agent has never been run, or the declared marker is wrong — and the
+`tree` of a sibling probe from a machine where the agent *is* installed settles
+which.
+
+For the same reason the `installed` column of `rein doctor --agents` reports
+only whether the executable is on `PATH`. Root presence is the separate `root`
+column. An explicit `RootEnv` or fixture root bypasses the marker gate, because
+pointing the probe at a directory is an instruction rather than a guess.
+
 ---
 
 ## What the probe does not do

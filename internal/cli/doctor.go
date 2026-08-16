@@ -82,11 +82,15 @@ func runDoctorAgentsHuman(cmd *cobra.Command) error {
 		return err
 	}
 	counts := sessionCounts(cmd.Context())
-	PrintHuman(cmd.OutOrStdout(), "key\ttier\tinstalled\tsessions\tnotes")
+	PrintHuman(cmd.OutOrStdout(), "key\ttier\tinstalled\troot\tsessions\tnotes")
 	for _, rec := range art.Agents {
 		installed := "no"
-		if rec.ExecutableOnPath || rec.ResolvedRoot != nil {
+		if rec.ExecutableOnPath {
 			installed = "yes"
+		}
+		root := "no"
+		if rec.ResolvedRoot != nil {
+			root = "yes"
 		}
 		sessions := "-"
 		if n, ok := counts[rec.Key]; ok {
@@ -98,7 +102,7 @@ func runDoctorAgentsHuman(cmd *cobra.Command) error {
 				notes = "t0_reason=" + string(d.T0Reason)
 			}
 		}
-		PrintHuman(cmd.OutOrStdout(), "%s\t%s\t%s\t%s\t%s", rec.Key, rec.DeclaredTier, installed, sessions, notes)
+		PrintHuman(cmd.OutOrStdout(), "%s\t%s\t%s\t%s\t%s\t%s", rec.Key, rec.DeclaredTier, installed, root, sessions, notes)
 	}
 	return nil
 }

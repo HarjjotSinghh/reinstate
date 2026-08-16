@@ -247,6 +247,44 @@ func TestExcludedIsNotOpened(t *testing.T) {
 	}
 }
 
+// A bare ~/.<agent> directory is not evidence that the agent is installed.
+// Unrelated tooling plants such directories, so discovery stays marker-gated
+// and the candidate is reported as existing without its marker.
+func TestBareRootWithoutMarkerDoesNotResolve(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(home, ".planted-agent", "skills"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	art, err := Collect(context.Background(), agents.Env{
+		Home:      home,
+		LookupEnv: func(string) string { return "" },
+	}, []agents.Descriptor{syntheticDescriptor(home)}, Options{
+		LookPath: func(string) (string, error) { return "", os.ErrNotExist },
+		Now:      func() time.Time { return time.Date(2026, 8, 16, 0, 0, 0, 0, time.UTC) },
+		Version:  "0.5.0-dev",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := art.Agents[0]
+	if got.ResolvedRoot != nil {
+		t.Fatalf("resolved_root = %+v, want nil for a root missing its marker", got.ResolvedRoot)
+	}
+	if got.ExecutableOnPath {
+		t.Fatal("executable_on_path must stay false when the binary is absent")
+	}
+	if len(got.CandidateRoots) != 1 {
+		t.Fatalf("candidate_roots = %d, want 1", len(got.CandidateRoots))
+	}
+	if c := got.CandidateRoots[0]; !c.Exists || c.MarkerPresent {
+		t.Fatalf("candidate = %+v, want exists without marker", c)
+	}
+	if len(got.Tree) != 0 {
+		t.Fatalf("tree = %+v, want no walk of an unresolved root", got.Tree)
+	}
+}
+
 func syntheticDescriptor(home string) agents.Descriptor {
 	return agents.Descriptor{
 		Key:         "planted",

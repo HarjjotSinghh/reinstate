@@ -124,7 +124,7 @@ readable: `no_local_history`, `server_backed`, `desktop_only`,
 type StorageSpec struct {
     RootEnv     string                    // "KIMI_CODE_HOME"; empty when none
     Roots       func(home HomeDir) []Root // ordered candidates, first match wins
-    Marker      string                    // relative path that must exist for the root to count
+    Marker      string                    // relative path that must exist for the root to count; required whenever Roots is set
     Layout      string                    // stable layout id, e.g. "sessions-workdir-wire-jsonl"
     SessionGlob string                    // relative glob below the root
     ProjectKey  ProjectKeyKind            // how the vendor derives its project bucket
@@ -134,6 +134,15 @@ type StorageSpec struct {
 
 `Roots` returns per-OS candidates. Native Windows and WSL2 are separate devices
 with separate trees; a descriptor never assumes one is the other.
+
+`Marker` is required whenever `Roots` is set, and `MustRegister` panics without
+it. A root with no marker matches on the bare directory, which is not evidence
+of anything: skill installers and dotfile managers plant `~/.<agent>`
+directories for agents that were never installed, and an unmarked root reports
+those as installed. Pick the shallowest directory the agent itself creates. A
+marker that turns out to be wrong yields a false negative the probe makes
+visible as `exists: true, marker_present: false`, which is the safe direction
+for a discovery guess to fail in.
 
 `ProjectKeyKind` records the vendor's bucketing scheme — path slug, path hash,
 URL encoding, opaque ID, or none — so `internal/pathmap` recomputes the

@@ -96,6 +96,13 @@ npm / npx Agent Canvas does not document a bind-mount. Uninstall docs say
 persisted data is not removed with the package and name `~/.openhands` as
 the example directory to delete. That is not a layout.
 
+The descriptor's discovery marker is `conversations`, taken from the CLI row
+above and therefore also unverified. Its job is not to find sessions — this
+agent is T0 and has no reader — but to stop a bare `~/.openhands` from
+resolving at all. On a machine with no OpenHands installed, a skill installer
+had already created `~/.openhands/skills`, and an unmarked root reported that
+as a live persistence directory.
+
 ## Restart and upgrade
 
 | Event | Official claim | Session store? |

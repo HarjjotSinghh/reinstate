@@ -23,6 +23,11 @@ func Qwen() agents.Descriptor {
 			Roots: func(home agents.HomeDir) []agents.Root {
 				return []agents.Root{{Path: home.Join(".qwen")}}
 			},
+			// Unverified, following the Gemini CLI fork hypothesis. A wrong
+			// marker leaves the root unresolved, which a probe reports as a
+			// candidate that exists without its marker; that is the safe
+			// direction to be wrong in.
+			Marker: "tmp",
 			Excluded: []string{
 				"settings.json",
 				".env",
