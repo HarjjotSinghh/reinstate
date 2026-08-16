@@ -17,6 +17,24 @@ Reinstate separates per-agent capabilities:
 One capability never implies another. Read-only agents do not receive dummy
 resume, fork, export, or restore implementations.
 
+## Support tiers
+
+"Supported" is a published [tier](agent-support-tiers.md) (T0–T5), not a
+yes-or-no flag. Tiers are cumulative. New agents are declared in the
+[catalog SDK](adapters/agent-catalog-sdk.md).
+
+| Tier | Capability |
+| ---- | ---------- |
+| T0 | Named in `rein doctor --agents` with a reason it is not usable |
+| T1 | Local discovery, search, and inspect |
+| T2 | Handoff source |
+| T3 | Same-vendor verified resume |
+| T4 | Handoff destination |
+| T5 | Encrypted same-vendor sync |
+
+Claude Code and Codex CLI are T5. Gemini CLI, OpenCode, and Grok Build are T2.
+The capability matrix below remains the fail-closed per-surface record.
+
 ## Capability matrix
 
 | Adapter | Local index | Native resume/fork | v0.4.0 handoff source | v0.4.0 handoff target | Encrypted sync | Universal config |

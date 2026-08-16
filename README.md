@@ -319,13 +319,16 @@ Full walkthrough: **[docs/getting-started.md](docs/getting-started.md)**
 
 ## Supported agents
 
-| Agent | Local index | Native resume/fork | Handoff source | Handoff target | Encrypted sync |
-| ----- | :---------: | :----------------: | :------------: | :------------: | :------------: |
-| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | ✅ full | ✅ same-vendor | ✅ | ✅ | ✅ |
-| [OpenAI Codex CLI](https://github.com/openai/codex) | ✅ full | ✅ same-vendor | ✅ | ✅ | ✅ |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | ✅ read-only | — | ✅ source-only | — | — |
-| [OpenCode](https://opencode.ai) | ✅ read-only | — | ✅ source-only | — | — |
-| [Grok Build](https://x.ai) | ✅ read-only | — | ✅ source-only | — | — |
+Support is a published [tier](docs/agent-support-tiers.md) (T0–T5), not a
+yes-or-no list.
+
+| Agent | Tier | Local index | Native resume/fork | Handoff source | Handoff target | Encrypted sync |
+| ----- | :--: | :---------: | :----------------: | :------------: | :------------: | :------------: |
+| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | T5 | ✅ full | ✅ same-vendor | ✅ | ✅ | ✅ |
+| [OpenAI Codex CLI](https://github.com/openai/codex) | T5 | ✅ full | ✅ same-vendor | ✅ | ✅ | ✅ |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | T2 | ✅ read-only | — | ✅ source-only | — | — |
+| [OpenCode](https://opencode.ai) | T2 | ✅ read-only | — | ✅ source-only | — | — |
+| [Grok Build](https://x.ai) | T2 | ✅ read-only | — | ✅ source-only | — | — |
 
 Structured handoff in stable `v0.4.0` starts a new destination session.
 Native resume/fork and encrypted sync remain same-vendor.
