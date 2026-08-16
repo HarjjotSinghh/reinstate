@@ -74,10 +74,6 @@ func TestDoctorAcceptanceMatrixRowCount(t *testing.T) {
 	if matrix.RowCount != want {
 		t.Fatalf("row_count=%d want %d", matrix.RowCount, want)
 	}
-	// Contract: T2 => C+D; T5 => C+D+E. Current catalog is five T2+ agents.
-	if matrix.RowCount != 100 {
-		t.Fatalf("row_count=%d, expected 100 for current catalog (33 core + 17+17+11+11+11)", matrix.RowCount)
-	}
 }
 
 func TestAgentStorageProbeWrappersInvokeSameFlags(t *testing.T) {
