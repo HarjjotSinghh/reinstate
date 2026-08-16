@@ -25,6 +25,7 @@ from [zcode.z.ai](https://zcode.z.ai/en), not as a vendor terminal CLI.
 | npm `zcode-app-cli` | unaffiliated third-party extractor; **not a catalog agent** |
 | Storage family | F5 (desktop-only) |
 | Resume argv | none — Z.ai does not ship a terminal client |
+| Catalog descriptor | `internal/agents/catalog/zcode.go` — T0 `desktop_only`, F5, no `Storage.Layout` |
 
 ## Distribution policy
 
