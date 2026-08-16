@@ -1,14 +1,16 @@
 # GitHub Copilot CLI
 
-**Confidence: Unverified** — no Reinstate reader exists, and no committed
-probe. Vendor documentation is recorded below; it is not a T1 gate.
+**Confidence: Unverified** — catalog descriptor exists; no index source, no
+reader, no committed probe. Vendor documentation is recorded below; it is
+not a T1 gate.
 **Current tier:** T0 (`layout_unverified`) · **Phase 5 target:** T1 if a
 later probe shows local `session-state/` is authoritative; otherwise T0 with
 reason `server_backed`
 
-Catalog key remains `copilot`. This page is GitHub Copilot CLI only — not the
-retired `gh copilot` GitHub CLI extension, not VS Code / JetBrains Copilot
-chat, and not the Copilot SDK session API.
+Catalog key remains `copilot`. Descriptor:
+`internal/agents/catalog/copilot.go`. This page is GitHub Copilot CLI only —
+not the retired `gh copilot` GitHub CLI extension, not VS Code / JetBrains
+Copilot chat, and not the Copilot SDK session API.
 
 ## Identity
 
@@ -18,7 +20,7 @@ chat, and not the Copilot SDK session API.
 | Product | GitHub Copilot CLI |
 | Binary | `copilot` |
 | Distribution | Official: npm `@github/copilot`, WinGet `GitHub.Copilot`, Homebrew cask `copilot-cli`, install script, [github/copilot-cli releases](https://github.com/github/copilot-cli/releases/) |
-| Storage family | unknown (vendor describes a home-dir tree; family is not assigned without a probe) |
+| Storage family | F1 recorded from vendor docs (`FamilyHomeTree`); not a probe assignment |
 | Root override | `COPILOT_HOME` (vendor; `--config-dir` is documented as deprecated) |
 | Version command | `copilot version` |
 
