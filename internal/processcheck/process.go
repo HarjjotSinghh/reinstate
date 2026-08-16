@@ -141,38 +141,75 @@ func within(candidate, root string) bool {
 	return strings.HasPrefix(candidate, root+string(filepath.Separator))
 }
 
+// Spec is the catalog ProcessSpec used to recognize a running agent.
+type Spec struct {
+	Images      []string
+	NodeMarkers []string
+	Identify    []Identity
+}
+
+// Identity is one vendor self-identification environment pair.
+type Identity struct {
+	Name  string
+	Value string
+}
+
+// specs is installed by CLI init from the catalog. Nil means tests that do
+// not import the CLI should use testFallbackSpecs.
+var specs map[string]Spec
+
+// SetSpecs replaces the process-matcher table.
+func SetSpecs(next map[string]Spec) {
+	converted := make(map[string]Spec, len(next))
+	for name, spec := range next {
+		converted[strings.ToLower(strings.TrimSpace(name))] = spec
+	}
+	specs = converted
+}
+
+func currentSpecs() map[string]Spec {
+	if specs != nil {
+		return specs
+	}
+	return testFallbackSpecs()
+}
+
 func normalizeAgent(agent string) (string, error) {
 	agent = strings.ToLower(strings.TrimSpace(agent))
-	switch agent {
-	case "claude", "codex", "gemini", "grok", "opencode":
+	if _, ok := currentSpecs()[agent]; ok {
 		return agent, nil
-	default:
-		return "", fmt.Errorf("unsupported agent %q", agent)
 	}
+	return "", fmt.Errorf("unsupported agent %q", agent)
 }
 
 func matchesAgentProcess(agent, image, commandLine string) bool {
+	spec, ok := currentSpecs()[strings.ToLower(strings.TrimSpace(agent))]
+	if !ok {
+		return false
+	}
 	name := strings.ToLower(filepath.Base(strings.TrimSpace(image)))
 	name = strings.TrimSuffix(name, ".exe")
-	switch agent {
-	case "claude":
-		if name == "claude" || nativeVariant(name, "claude") {
+	normalized := strings.ToLower(strings.ReplaceAll(commandLine, "\\", "/"))
+
+	for _, identity := range spec.Identify {
+		if identity.Name == "" {
+			continue
+		}
+		token := strings.ToLower(identity.Name) + "="
+		if identity.Value != "" {
+			token += strings.ToLower(identity.Value)
+		}
+		if strings.Contains(normalized, token) {
 			return true
 		}
-	case "codex":
-		if name == "codex" || nativeVariant(name, "codex") {
-			return true
+	}
+
+	for _, imageName := range spec.Images {
+		imageName = strings.ToLower(strings.TrimSpace(imageName))
+		if imageName == "" {
+			continue
 		}
-	case "gemini":
-		if name == "gemini" || nativeVariant(name, "gemini") {
-			return true
-		}
-	case "grok":
-		if name == "grok" || nativeVariant(name, "grok") {
-			return true
-		}
-	case "opencode":
-		if name == "opencode" || nativeVariant(name, "opencode") {
+		if name == imageName || nativeVariant(name, imageName) {
 			return true
 		}
 	}
@@ -180,15 +217,28 @@ func matchesAgentProcess(agent, image, commandLine string) bool {
 	if name != "node" && name != "nodejs" {
 		return false
 	}
-	normalized := strings.ToLower(strings.ReplaceAll(commandLine, "\\", "/"))
-	switch agent {
-	case "claude":
-		return strings.Contains(normalized, "/@anthropic-ai/claude-code/") ||
-			strings.Contains(normalized, "/claude-code/cli.js")
-	case "codex":
-		return strings.Contains(normalized, "/@openai/codex/")
-	default:
-		return false
+	for _, marker := range spec.NodeMarkers {
+		marker = strings.ToLower(strings.ReplaceAll(marker, "\\", "/"))
+		if marker != "" && strings.Contains(normalized, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+func testFallbackSpecs() map[string]Spec {
+	return map[string]Spec{
+		"claude": {
+			Images:      []string{"claude"},
+			NodeMarkers: []string{"/@anthropic-ai/claude-code/", "/claude-code/cli.js"},
+		},
+		"codex": {
+			Images:      []string{"codex"},
+			NodeMarkers: []string{"/@openai/codex/"},
+		},
+		"gemini":   {Images: []string{"gemini"}},
+		"grok":     {Images: []string{"grok"}},
+		"opencode": {Images: []string{"opencode"}},
 	}
 }
 

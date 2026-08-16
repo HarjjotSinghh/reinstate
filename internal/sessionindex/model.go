@@ -21,6 +21,8 @@ const (
 	MaxLimit = 1000
 )
 
+// Agent keys are thin aliases of catalog keys so external references do not
+// break. sessionindex cannot import internal/agents (import cycle).
 const (
 	AgentClaude   = "claude"
 	AgentCodex    = "codex"

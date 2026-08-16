@@ -15,13 +15,23 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/HarjjotSinghh/reinstate/internal/agentcheck"
+	"github.com/HarjjotSinghh/reinstate/internal/agents"
+	_ "github.com/HarjjotSinghh/reinstate/internal/agents/catalog"
 	"github.com/HarjjotSinghh/reinstate/internal/config"
 	"github.com/HarjjotSinghh/reinstate/internal/doctor"
 	"github.com/HarjjotSinghh/reinstate/internal/environment"
 	"github.com/HarjjotSinghh/reinstate/internal/preflight"
+	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
 	"github.com/HarjjotSinghh/reinstate/internal/workspace"
 )
+
+func init() {
+	sessionindex.SetNativeLaunchLookup(catalogNativeLaunch)
+	agentcheck.SetDefinitions(catalogAgentDefinitions())
+	processcheck.SetSpecs(catalogProcessSpecs())
+}
 
 type localCommandOptions struct {
 	sources       []sessionindex.Source
@@ -97,7 +107,7 @@ func newSessionsCmd(options localCommandOptions) *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "emit machine-readable JSON")
-	cmd.Flags().StringVar(&agent, "agent", "all", "agent filter: claude|codex|gemini|opencode|grok|all")
+	cmd.Flags().StringVar(&agent, "agent", "all", "agent filter: "+agentFilterHelp(agents.TierDiscover, true))
 	cmd.Flags().IntVar(&limit, "limit", sessionindex.DefaultLimit, "maximum sessions to return")
 	return cmd
 }
@@ -127,7 +137,7 @@ func newSearchCmd(options localCommandOptions) *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "emit machine-readable JSON")
-	cmd.Flags().StringVar(&filter.Agent, "agent", "all", "agent filter: claude|codex|gemini|opencode|grok|all")
+	cmd.Flags().StringVar(&filter.Agent, "agent", "all", "agent filter: "+agentFilterHelp(agents.TierDiscover, true))
 	cmd.Flags().StringVar(&filter.Project, "project", "", "project or workspace fragment")
 	cmd.Flags().StringVar(&filter.Branch, "branch", "", "branch fragment")
 	cmd.Flags().StringVar(&filter.File, "file", "", "known file fragment")
@@ -196,7 +206,7 @@ func newLastCmd(options localCommandOptions) *cobra.Command {
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "emit machine-readable JSON")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "print the native launch plan without starting the agent")
-	cmd.Flags().StringVar(&filter.Agent, "agent", "all", "agent filter: claude|codex|all")
+	cmd.Flags().StringVar(&filter.Agent, "agent", "all", "agent filter: "+agentFilterHelp(agents.TierResume, true))
 	cmd.Flags().StringVar(&filter.Project, "project", "", "project or workspace fragment")
 	cmd.Flags().StringArrayVar(
 		&allowedWarnings,
@@ -258,7 +268,7 @@ func newNativeActionCmd(options localCommandOptions, operation string, allowHand
 	cmd.Flags().BoolVar(&asJSON, "json", false, "emit machine-readable JSON")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "print the native launch plan without starting the agent")
 	if allowHandoff {
-		cmd.Flags().StringVar(&withAgent, "with", "", "continue the same task through a structured handoff to claude|codex")
+		cmd.Flags().StringVar(&withAgent, "with", "", "continue the same task through a structured handoff to "+agentFilterHelp(agents.TierHandoffTo, false))
 		cmd.Flags().BoolVar(&fork, "fork", false, "fork through the native agent instead of resuming")
 	}
 	cmd.Flags().StringArrayVar(
@@ -297,13 +307,18 @@ func runHandoffAlias(cmd *cobra.Command, session, agent string, dryRun, asJSON b
 }
 
 func defaultLocalSources() []sessionindex.Source {
-	return []sessionindex.Source{
-		sessionindex.NewClaudeSource(""),
-		sessionindex.NewCodexSource(""),
-		sessionindex.NewGeminiSource(""),
-		sessionindex.NewOpenCodeSource(nil),
-		sessionindex.NewGrokSource(""),
+	var sources []sessionindex.Source
+	for _, descriptor := range agents.Capable(agents.CapabilityIndex) {
+		if descriptor.NewIndexSource == nil {
+			continue
+		}
+		source, err := descriptor.NewIndexSource(agents.Env{})
+		if err != nil || source == nil {
+			continue
+		}
+		sources = append(sources, source)
 	}
+	return sources
 }
 
 func openRefreshedLocalIndex(
@@ -784,7 +799,7 @@ func runSessionPicker(cmd *cobra.Command, options localCommandOptions) error {
 				PrintHuman(cmd.OutOrStdout(), "Invalid session number.")
 				continue
 			}
-			PrintHuman(cmd.OutOrStdout(), "Destination agent (claude or codex):")
+			PrintHuman(cmd.OutOrStdout(), "Destination agent (%s):", agentChoiceProse(agents.TierHandoffTo))
 			agent, ok, err := reader()
 			if err != nil {
 				return localRuntimeError("read picker input", err)
@@ -1021,34 +1036,139 @@ func writeLocalWarnings(writer io.Writer, warnings []sessionindex.Warning) {
 }
 
 func validateLocalAgent(agent string, allowAll bool) error {
-	switch strings.ToLower(strings.TrimSpace(agent)) {
-	case sessionindex.AgentClaude,
-		sessionindex.AgentCodex,
-		sessionindex.AgentGemini,
-		sessionindex.AgentOpenCode,
-		sessionindex.AgentGrok:
-		return nil
-	case "all":
-		if allowAll {
-			return nil
-		}
-	}
-	return NewExitError(
-		ExitUsage,
-		"invalid agent; expected claude, codex, gemini, opencode, grok, or all",
-	)
+	return validateCatalogAgent(agent, allowAll, agents.TierDiscover, "invalid agent; expected %s")
 }
 
 func validateNativeAgent(agent string, allowAll bool) error {
-	switch strings.ToLower(strings.TrimSpace(agent)) {
-	case sessionindex.AgentClaude, sessionindex.AgentCodex:
+	return validateCatalogAgent(agent, allowAll, agents.TierResume, "invalid native agent; expected %s")
+}
+
+func validateCatalogAgent(agent string, allowAll bool, min agents.Tier, message string) error {
+	agent = strings.ToLower(strings.TrimSpace(agent))
+	keys := catalogKeysAtLeast(min)
+	if agent == "all" && allowAll {
 		return nil
-	case "all":
-		if allowAll {
+	}
+	for _, key := range keys {
+		if agent == key {
 			return nil
 		}
 	}
-	return NewExitError(ExitUsage, "invalid native agent; expected claude, codex, or all")
+	return NewExitError(ExitUsage, fmt.Sprintf(message, agentChoiceProseWithAll(keys, allowAll)))
+}
+
+func catalogKeysAtLeast(min agents.Tier) []string {
+	descriptors := agents.AtLeast(min)
+	keys := make([]string, 0, len(descriptors))
+	for _, descriptor := range descriptors {
+		keys = append(keys, descriptor.Key)
+	}
+	return keys
+}
+
+func agentFilterHelp(min agents.Tier, includeAll bool) string {
+	keys := catalogKeysAtLeast(min)
+	if includeAll {
+		keys = append(keys, "all")
+	}
+	return strings.Join(keys, "|")
+}
+
+func agentChoiceProse(min agents.Tier) string {
+	return joinChoiceProse(catalogKeysAtLeast(min))
+}
+
+func agentChoiceProseWithAll(keys []string, includeAll bool) string {
+	if includeAll {
+		keys = append(append([]string{}, keys...), "all")
+	}
+	return joinChoiceProse(keys)
+}
+
+func joinChoiceProse(keys []string) string {
+	switch len(keys) {
+	case 0:
+		return ""
+	case 1:
+		return keys[0]
+	case 2:
+		return keys[0] + " or " + keys[1]
+	default:
+		return strings.Join(keys[:len(keys)-1], ", ") + ", or " + keys[len(keys)-1]
+	}
+}
+
+func catalogAgentDefinitions() map[string]agentcheck.Definition {
+	out := map[string]agentcheck.Definition{}
+	for _, descriptor := range agents.All() {
+		if descriptor.Native == nil || descriptor.Version == nil {
+			continue
+		}
+		desc := descriptor
+		out[desc.Key] = agentcheck.Definition{
+			Executable:      desc.Native.Executable,
+			Layout:          desc.Storage.Layout,
+			Marker:          desc.Storage.Marker,
+			RootEnvironment: desc.Storage.RootEnv,
+			Roots: func(home string) []string {
+				if desc.Storage.Roots == nil {
+					return nil
+				}
+				var roots []string
+				for _, root := range desc.Storage.Roots(agents.HomeDir(home)) {
+					if root.Matches(agents.CurrentOS()) {
+						roots = append(roots, root.Path)
+					}
+				}
+				return roots
+			},
+			Parse: func(output agentcheck.VersionOutput) (string, bool) {
+				if desc.Version.Parse == nil {
+					return "", false
+				}
+				return desc.Version.Parse(agents.VersionOutput{Stdout: output.Stdout, Stderr: output.Stderr})
+			},
+			Min: desc.Version.Min,
+			Max: desc.Version.Max,
+		}
+	}
+	return out
+}
+
+func catalogProcessSpecs() map[string]processcheck.Spec {
+	out := map[string]processcheck.Spec{}
+	for _, descriptor := range agents.All() {
+		identities := make([]processcheck.Identity, 0, len(descriptor.Process.Identify))
+		for _, identity := range descriptor.Process.Identify {
+			identities = append(identities, processcheck.Identity{Name: identity.Name, Value: identity.Value})
+		}
+		out[descriptor.Key] = processcheck.Spec{
+			Images:      append([]string(nil), descriptor.Process.Images...),
+			NodeMarkers: append([]string(nil), descriptor.Process.NodeMarkers...),
+			Identify:    identities,
+		}
+	}
+	return out
+}
+
+func catalogNativeLaunch(agent, operation, sessionID string) (string, []string, bool) {
+	descriptor, ok := agents.Get(strings.ToLower(strings.TrimSpace(agent)))
+	if !ok || descriptor.Native == nil {
+		return "", nil, false
+	}
+	var template []string
+	switch operation {
+	case sessionindex.OperationResume:
+		template = descriptor.Native.Resume
+	case sessionindex.OperationFork:
+		template = descriptor.Native.Fork
+	default:
+		return "", nil, false
+	}
+	if descriptor.Native.Executable == "" || len(template) == 0 {
+		return "", nil, false
+	}
+	return descriptor.Native.Executable, sessionindex.ApplyArgvTemplate(template, sessionID), true
 }
 
 func localResolveError(err error) error {
