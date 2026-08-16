@@ -34,6 +34,7 @@ Phase 5 planning only. No code, no behavior change, no new agent support.
 - ZCode catalog descriptor at T0 (`desktop_only`): official Z.ai desktop ADE only; npm `zcode-app-cli` is not a catalog agent.
 - OpenHands catalog descriptor at T0 (`server_backed`); conversations stay on the Agent Server / Cloud backend.
 - GitHub Copilot CLI catalog entry at T0 (`layout_unverified`); `session-state/` stays unread until a cache-clear/re-login probe.
+- Kimi Code CLI catalog descriptor at T0 (`layout_unverified`): dual-platform probes unavailable (`kimi` not installed; no native Windows host).
 
 ### Changed
 
