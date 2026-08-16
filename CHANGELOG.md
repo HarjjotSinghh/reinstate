@@ -40,6 +40,7 @@ Phase 5 planning only. No code, no behavior change, no new agent support.
 - Gemini CLI stays T2: `gemini --version` parser added; fail-closed range escalated (no maintainer, no dual-platform physical resume).
 - Cline catalog descriptor at T0 (`layout_unverified`): F3 expected; no dual-platform probes, no F3 scanner.
 - Aider catalog descriptor at T0 (`layout_unverified`, F4): official product identified; no dual-platform probes and no reader.
+- Cursor CLI catalog descriptor at T0 (`layout_unverified`): key is the terminal agent; editor agent is out of scope; no dual-platform probes and no reader.
 
 ### Changed
 
