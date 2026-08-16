@@ -13,8 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/HarjjotSinghh/reinstate/internal/adapter/claude"
-	"github.com/HarjjotSinghh/reinstate/internal/adapter/codex"
+	"github.com/HarjjotSinghh/reinstate/internal/adapter"
 	"github.com/HarjjotSinghh/reinstate/internal/executabletrust"
 	"github.com/HarjjotSinghh/reinstate/internal/fileidentity"
 )
@@ -96,7 +95,7 @@ type Options struct {
 func Inspect(ctx context.Context, agentName string, opts Options) Result {
 	agentName = strings.ToLower(strings.TrimSpace(agentName))
 	result := Result{Agent: agentName, Status: StatusUntested}
-	definition, ok := definitions[agentName]
+	definition, ok := lookupDefinition(agentName)
 	if !ok {
 		result.Message = "agent does not support native verified resume"
 		return result
@@ -340,11 +339,22 @@ func InstalledVersion(ctx context.Context, agentName string, opts Options) (stri
 // SupportedVersion reports whether version is inside the agent's verified range
 // as published in docs/compatibility.md. Unknown agents are never supported.
 func SupportedVersion(agentName, version string) bool {
-	definition, ok := definitions[strings.ToLower(strings.TrimSpace(agentName))]
+	definition, ok := lookupDefinition(strings.ToLower(strings.TrimSpace(agentName)))
 	if !ok {
 		return false
 	}
 	return definition.supported(strings.TrimSpace(version))
+}
+
+// Definition is the catalog-derived version/layout probe for one agent.
+type Definition struct {
+	Executable      string
+	Layout          string
+	Marker          string
+	RootEnvironment string
+	Roots           func(string) []string
+	Parse           func(VersionOutput) (string, bool)
+	Min, Max        string
 }
 
 type definition struct {
@@ -357,31 +367,72 @@ type definition struct {
 	supported       func(string) bool
 }
 
-// definitions stay local: agentcheck cannot import the catalog
-// (catalog → transcript → agentcheck, and catalog → handoff → preflight → agentcheck).
-var definitions = map[string]definition{
-	"claude": {
-		executable:      "claude",
-		layout:          "projects-jsonl",
-		marker:          "projects",
-		rootEnvironment: "CLAUDE_CONFIG_DIR",
-		roots: func(home string) []string {
-			return []string{filepath.Join(home, ".claude"), filepath.Join(home, ".config", "claude")}
+// definitions is installed by CLI init from the catalog. Nil means tests
+// that do not import the CLI should use testFallbackDefinitions.
+var definitions map[string]definition
+
+// SetDefinitions replaces the probe table. Production CLI installs catalog
+// descriptors that have Native and Version specs.
+func SetDefinitions(defs map[string]Definition) {
+	converted := make(map[string]definition, len(defs))
+	for name, spec := range defs {
+		converted[strings.ToLower(strings.TrimSpace(name))] = definitionFrom(spec)
+	}
+	definitions = converted
+}
+
+func lookupDefinition(name string) (definition, bool) {
+	table := definitions
+	if table == nil {
+		table = testFallbackDefinitions()
+	}
+	d, ok := table[name]
+	return d, ok
+}
+
+func definitionFrom(spec Definition) definition {
+	min, max := spec.Min, spec.Max
+	parse := spec.Parse
+	return definition{
+		executable:      spec.Executable,
+		layout:          spec.Layout,
+		marker:          spec.Marker,
+		rootEnvironment: spec.RootEnvironment,
+		roots:           spec.Roots,
+		parseVersion:    parse,
+		supported: func(version string) bool {
+			return adapter.StableVersionInRange(version, min, max)
 		},
-		parseVersion: parseClaudeVersion,
-		supported:    claude.SupportedVersion,
-	},
-	"codex": {
-		executable:      "codex",
-		layout:          "sessions-rollout-jsonl",
-		marker:          "sessions",
-		rootEnvironment: "CODEX_HOME",
-		roots: func(home string) []string {
-			return []string{filepath.Join(home, ".codex"), filepath.Join(home, ".config", "codex")}
-		},
-		parseVersion: parseCodexVersion,
-		supported:    codex.SupportedVersion,
-	},
+	}
+}
+
+func testFallbackDefinitions() map[string]definition {
+	return map[string]definition{
+		"claude": definitionFrom(Definition{
+			Executable:      "claude",
+			Layout:          "projects-jsonl",
+			Marker:          "projects",
+			RootEnvironment: "CLAUDE_CONFIG_DIR",
+			Roots: func(home string) []string {
+				return []string{filepath.Join(home, ".claude"), filepath.Join(home, ".config", "claude")}
+			},
+			Parse: parseClaudeVersion,
+			Min:   "2.1.219",
+			Max:   "2.1.229",
+		}),
+		"codex": definitionFrom(Definition{
+			Executable:      "codex",
+			Layout:          "sessions-rollout-jsonl",
+			Marker:          "sessions",
+			RootEnvironment: "CODEX_HOME",
+			Roots: func(home string) []string {
+				return []string{filepath.Join(home, ".codex"), filepath.Join(home, ".config", "codex")}
+			},
+			Parse: parseCodexVersion,
+			Min:   "0.133.0",
+			Max:   "0.147.0",
+		}),
+	}
 }
 
 var (

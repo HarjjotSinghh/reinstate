@@ -15,18 +15,22 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/HarjjotSinghh/reinstate/internal/agentcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/agents"
 	_ "github.com/HarjjotSinghh/reinstate/internal/agents/catalog"
 	"github.com/HarjjotSinghh/reinstate/internal/config"
 	"github.com/HarjjotSinghh/reinstate/internal/doctor"
 	"github.com/HarjjotSinghh/reinstate/internal/environment"
 	"github.com/HarjjotSinghh/reinstate/internal/preflight"
+	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
 	"github.com/HarjjotSinghh/reinstate/internal/workspace"
 )
 
 func init() {
 	sessionindex.SetNativeLaunchLookup(catalogNativeLaunch)
+	agentcheck.SetDefinitions(catalogAgentDefinitions())
+	processcheck.SetSpecs(catalogProcessSpecs())
 }
 
 type localCommandOptions struct {
@@ -1092,6 +1096,59 @@ func joinChoiceProse(keys []string) string {
 	default:
 		return strings.Join(keys[:len(keys)-1], ", ") + ", or " + keys[len(keys)-1]
 	}
+}
+
+func catalogAgentDefinitions() map[string]agentcheck.Definition {
+	out := map[string]agentcheck.Definition{}
+	for _, descriptor := range agents.All() {
+		if descriptor.Native == nil || descriptor.Version == nil {
+			continue
+		}
+		desc := descriptor
+		out[desc.Key] = agentcheck.Definition{
+			Executable:      desc.Native.Executable,
+			Layout:          desc.Storage.Layout,
+			Marker:          desc.Storage.Marker,
+			RootEnvironment: desc.Storage.RootEnv,
+			Roots: func(home string) []string {
+				if desc.Storage.Roots == nil {
+					return nil
+				}
+				var roots []string
+				for _, root := range desc.Storage.Roots(agents.HomeDir(home)) {
+					if root.Matches(agents.CurrentOS()) {
+						roots = append(roots, root.Path)
+					}
+				}
+				return roots
+			},
+			Parse: func(output agentcheck.VersionOutput) (string, bool) {
+				if desc.Version.Parse == nil {
+					return "", false
+				}
+				return desc.Version.Parse(agents.VersionOutput{Stdout: output.Stdout, Stderr: output.Stderr})
+			},
+			Min: desc.Version.Min,
+			Max: desc.Version.Max,
+		}
+	}
+	return out
+}
+
+func catalogProcessSpecs() map[string]processcheck.Spec {
+	out := map[string]processcheck.Spec{}
+	for _, descriptor := range agents.All() {
+		identities := make([]processcheck.Identity, 0, len(descriptor.Process.Identify))
+		for _, identity := range descriptor.Process.Identify {
+			identities = append(identities, processcheck.Identity{Name: identity.Name, Value: identity.Value})
+		}
+		out[descriptor.Key] = processcheck.Spec{
+			Images:      append([]string(nil), descriptor.Process.Images...),
+			NodeMarkers: append([]string(nil), descriptor.Process.NodeMarkers...),
+			Identify:    identities,
+		}
+	}
+	return out
 }
 
 func catalogNativeLaunch(agent, operation, sessionID string) (string, []string, bool) {
