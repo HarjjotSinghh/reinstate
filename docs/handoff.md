@@ -1,11 +1,11 @@
 # Cross-agent handoff
 
-Phase 4 `v0.4.0-rc.11` lets you continue the same task in a different coding
+Phase 4 `v0.4.0` lets you continue the same task in a different coding
 agent. You start in Claude Code, hit a usage limit, and hand the task to Codex
 without re-explaining the work or making another Claude API call. The reverse
 works too.
 
-This document is the implementation contract for `v0.4.0-rc.11`. It deliberately
+This document is the implementation contract for `v0.4.0`. It deliberately
 does not claim that a session is transferred. Design detail lives in
 [cross-agent-continuation.md](cross-agent-continuation.md); the delivery plan
 lives in [the Phase 4 plan](superpowers/plans/2026-08-12-phase-4-cross-agent-handoff-plan.md).
@@ -25,23 +25,23 @@ It continues **the same task in a new destination session**.
 
 Reinstate labels these separately in the CLI, in JSON, and in docs:
 
-| Mode | Destination | Fidelity | Status in `v0.4.0-rc.11` |
+| Mode | Destination | Fidelity | Status in `v0.4.0` |
 | ---- | ----------- | -------- | ------------------ |
 | **Native resume** | Same agent | Highest; vendor session semantics kept | Shipped since `v0.2.0` |
-| **Structured handoff** | Different agent | Task state + selected verbatim history + evidence | **`v0.4.0-rc.11`** |
-| **Reconstructed conversation** | Different agent | Visible history written into target-native storage | Not shipped in `v0.4.0-rc.11` |
+| **Structured handoff** | Different agent | Task state + selected verbatim history + evidence | **`v0.4.0`** |
+| **Reconstructed conversation** | Different agent | Visible history written into target-native storage | Not shipped in `v0.4.0` |
 
-## Supported directions in `v0.4.0-rc.11`
+## Supported directions in `v0.4.0`
 
 | Source → | Claude Code | Codex CLI | Gemini CLI | OpenCode | Grok Build |
 | -------- | :---------: | :-------: | :--------: | :------: | :--------: |
-| **Claude Code** | same-vendor native resume | **structured handoff** | not in rc.1 | not in rc.1 | not planned |
-| **Codex CLI** | **structured handoff** | same-vendor native resume | not in rc.1 | not in rc.1 | not planned |
-| **Gemini CLI** | **structured handoff** | **structured handoff** | not a target (source-only) | not in rc.1 | not planned |
-| **OpenCode** | **structured handoff** | **structured handoff** | not in rc.1 | not a target (source-only) | not planned |
-| **Grok Build** | **structured handoff** | **structured handoff** | not in rc.1 | not in rc.1 | not a target (source-only) |
+| **Claude Code** | same-vendor native resume | **structured handoff** | not in v0.4.0 | not in v0.4.0 | not planned |
+| **Codex CLI** | **structured handoff** | same-vendor native resume | not in v0.4.0 | not in v0.4.0 | not planned |
+| **Gemini CLI** | **structured handoff** | **structured handoff** | not a target (source-only) | not in v0.4.0 | not planned |
+| **OpenCode** | **structured handoff** | **structured handoff** | not in v0.4.0 | not a target (source-only) | not planned |
+| **Grok Build** | **structured handoff** | **structured handoff** | not in v0.4.0 | not in v0.4.0 | not a target (source-only) |
 
-Gemini CLI, OpenCode, and Grok Build are **source-only** in `v0.4.0-rc.11`: you can
+Gemini CLI, OpenCode, and Grok Build are **source-only** in `v0.4.0`: you can
 hand off *from* them, not *to* them. Support is directional and versioned — a
 supported session adapter never implies a supported handoff.
 
@@ -146,7 +146,7 @@ Reinstate does **not** deterministically invent a list of "decisions" or
 "rejected approaches". Those are reported as omitted, because guessing them from
 prose produces confident nonsense. Your verbatim recent messages carry that
 information honestly instead. A future optional summarizer may fill them in,
-but no source model call is part of the rc.1 critical path.
+but no source model call is part of the v0.4.0 critical path.
 
 ## Security
 
@@ -163,7 +163,7 @@ Imported history is untrusted data. Reinstate treats it that way:
 5. Credentials, auth stores, and keychains are never read.
 6. Capsules live outside your repository, owner-only (`0700` directories,
    `0600` files; a protected DACL on Windows), and are **not synced** in
-   `v0.4.0-rc.11`.
+   `v0.4.0`.
 7. The destination re-authorizes every permission, network action, secret
    lookup, and MCP login under its own policy.
 8. An unknown source or destination version fails closed with exit code `5`.
@@ -201,7 +201,7 @@ Before the destination changes anything, it is asked to restate:
 4. anything missing or uncertain;
 5. its proposed next action.
 
-Be clear about the limit: in `v0.4.0-rc.11` this is a **prompt-level contract**.
+Be clear about the limit: in `v0.4.0` this is a **prompt-level contract**.
 Reinstate prepares and verifies the briefing, but it does not run the
 destination's agent loop and cannot force it to comply. `rein handoff inspect
 <id>` lets you record whether the acknowledgement was correct, so the success

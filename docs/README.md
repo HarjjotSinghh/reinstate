@@ -22,7 +22,8 @@
 | [Architecture](architecture.md) | System design + continuity stack |
 | [Product strategy](product-strategy.md) | Positioning, ICP, layers, non-goals |
 | [Adapters](adapters.md) | Agent support matrix |
-| [Cross-agent handoff](handoff.md) | Planned Phase 4 product contract for continuing a task in another agent |
+| [Features and commands](features.md) | What shipped in v0.1.0 through v0.4.0 |
+| [Cross-agent handoff](handoff.md) | Phase 4 structured handoff: continue the same task in a new Claude Code or Codex session |
 | [Cross-agent continuation design](cross-agent-continuation.md) | Capsule, fidelity, pipeline, and security design |
 | [Local session storage map](session-storage-map.md) | Where each supported agent stores sessions, per OS, with confidence levels |
 | [Universal agent configuration](universal-configuration.md) | Planned cross-harness MCP/skills/loops/plugins/settings layer |

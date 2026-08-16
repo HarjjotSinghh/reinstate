@@ -14,9 +14,9 @@ describe('roadmap and primary-evidence pages', () => {
     expect(roadmap).toContain('Apple Silicon macOS');
     expect(roadmap).toContain('preview and unverified');
     expect(roadmap).toContain('v0.3.0');
-    expect(roadmap).toContain('v0.4.0-rc.11');
+    expect(roadmap).toContain('v0.4.0');
     expect(roadmap).toContain('tagged-artifact acceptance');
-    expect(roadmap.match(/<td>Candidate<\/td>/g)?.length).toBeGreaterThanOrEqual(1);
+    expect(roadmap.match(/<td>Stable<\/td>/g)?.length).toBeGreaterThanOrEqual(4);
     expect(roadmap.match(/<td>Planned<\/td>/g)?.length).toBeGreaterThanOrEqual(1);
     expect(roadmap.match(/<td>Exploring<\/td>/g)?.length).toBeGreaterThanOrEqual(2);
     expect(roadmap).toContain('Native resume and portable handoff stay distinct');

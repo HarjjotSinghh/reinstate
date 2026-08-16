@@ -16,7 +16,7 @@ const currentReleaseDate = new Intl.DateTimeFormat('en', {
 }).format(new Date(`${product.currentReleaseDate}T00:00:00Z`));
 const answer =
   `The latest published Reinstate tag is ${product.currentRelease}, dated ${currentReleaseDate}. ` +
-  `${product.currentRelease} is a release candidate that adds Phase 4 structured cross-agent handoff on top of stable ${product.stableRelease}; its dual-platform tagged-artifact acceptance is pending, and stable support remains ${product.stableRelease}.`;
+  `${product.currentRelease} is the current stable release. It adds Phase 4 structured cross-agent handoff on top of verified resume, local continuity, and encrypted sync after dual-platform tagged-artifact acceptance PASS.`;
 ---
 
 <PublicContentLayout
@@ -70,7 +70,7 @@ const answer =
   <h3>Fixes carried since v0.4.0-rc.2</h3>
   <p>
     <code>v0.4.0-rc.2</code> was published for testing and <strong>failed</strong> its physical
-    dual-platform acceptance. This candidate carries the product fixes for what that run found.
+    dual-platform acceptance. Stable <code>v0.4.0</code> carries the product fixes for what that run found.
   </p>
   <ul>
     <li>
@@ -110,7 +110,7 @@ const answer =
   <h3>Fixes carried since v0.4.0-rc.1</h3>
   <p>
     <code>v0.4.0-rc.1</code> was published for testing and <strong>failed</strong> its physical
-    acceptance. This candidate carries the fixes for what that run found.
+    acceptance. Stable <code>v0.4.0</code> carries the fixes for what that run found.
   </p>
   <ul>
     <li>
@@ -156,17 +156,18 @@ const answer =
   <h3>Acceptance boundary</h3>
   <ul>
     <li>
-      Dual-platform tagged-artifact acceptance on Apple Silicon macOS and native Windows x64 is
-      pending for this candidate. <code>v0.4.0-rc.1</code> and <code>v0.4.0-rc.2</code> were
-      published and failed that acceptance.
+      Dual-platform tagged-artifact acceptance on Apple Silicon macOS and native Windows x64
+      PASS. <code>v0.4.0-rc.1</code> through <code>v0.4.0-rc.10</code> were published and
+      failed that acceptance; <code>v0.4.0-rc.11</code> passed and was promoted to this stable
+      tag.
     </li>
     <li>
       Intel macOS and Linux/WSL2 remain optional, unsupported/unverified evidence and do not block
-      this candidate.
+      this stable release.
     </li>
     <li>
-      Passing this candidate does not authorize stable <code>v0.4.0</code>; that requires a
-      separate reviewed promotion and fresh validation.
+      Gemini CLI, OpenCode, and Grok Build remain handoff sources only. Native resume stays
+      same-vendor.
     </li>
   </ul>
   <p>

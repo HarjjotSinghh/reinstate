@@ -78,9 +78,14 @@ const description =
           <td>Not supported</td>
         </tr>
         <tr>
+          <td>Structured handoff (new session)</td>
+          <td>Source and destination</td>
+          <td>Source and destination</td>
+        </tr>
+        <tr>
           <td>MCP, skills, plugins, or settings sync</td>
-          <td>Planned after Phase 1</td>
-          <td>Planned after Phase 1</td>
+          <td>Later roadmap</td>
+          <td>Later roadmap</td>
         </tr>
       </tbody>
     </table>
@@ -121,14 +126,15 @@ const description =
     <p>Native resume is same-vendor only.</p>
     <p>
       Reinstate does not silently translate a Claude Code transcript into a Codex rollout or vice
-      versa. Explicit, portable cross-agent handoffs are planned for a later phase and will be
-      labeled as lossy checkpoints.
+      versa. Explicit structured handoff starts a <em>new</em> Claude Code or Codex session with a
+      visible, lossy checkpoint.
     </p>
   </div>
 
   <h2 id="not-yet-supported">Integrations not yet supported</h2>
   <p>
-    Gemini CLI, OpenCode, Cursor, and Grok Build are not Phase 1 session integrations. Future
+    Gemini CLI, OpenCode, and Grok Build are handoff sources only in v0.4.0; they are not
+    session-sync destinations. Cursor is not a current integration. Future
     support will be added per adapter and per capability; support for sessions will not
     automatically imply support for configuration, plugins, or credentials.
   </p>

@@ -214,9 +214,20 @@ stays `0.133.0`–`0.147.0`. Re-check both hosts' installed versions immediately
 before tagging. Claude Code auto-updates. A PATH Claude of `2.1.230` must
 fail-closed (exit 5) without `--allow-untested`.
 
-`v0.4.0-rc.11` publication means ready for tagged-artifact acceptance. It is not
-evidence that the matrix passed, does not authorize stable `v0.4.0`, and does
-not change the current stable release from `v0.3.0`.
+`v0.4.0-rc.11` publication meant ready for tagged-artifact acceptance. That
+acceptance later passed 44/44 on both mandatory platforms and authorized
+stable `v0.4.0`.
+
+### v0.4.0 stable evidence
+
+Dual-platform tagged-artifact acceptance PASS on candidate `v0.4.0-rc.11`:
+
+- Apple Silicon macOS 44/44 (`docs/testing/results/2026-08-15-macos-phase4-V040RC11.md`)
+- native Windows x64 44/44 (`docs/testing/results/2026-08-15-windows-phase4-V040RC11.md`)
+
+This authorizes the signed stable `v0.4.0` tag. Intel macOS and Linux/WSL2
+remain optional and unverified. Native resume remains same-vendor. Gemini CLI,
+OpenCode, and Grok Build remain handoff sources only.
 
 ## Steps
 

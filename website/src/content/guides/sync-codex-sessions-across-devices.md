@@ -59,7 +59,7 @@ This is **Codex to Codex** same-vendor continuity. Phase 1 does not turn a Codex
 rollout into a Claude Code transcript, and it does not silently reconstruct a
 session for another coding agent.
 
-The current public installer pins stable `v0.2.0`. Apple Silicon macOS and
+The current public installer pins stable `v0.4.0`. Apple Silicon macOS and
 native Windows x64 are physically verified; Intel macOS and Linux/WSL2 are
 preview and unverified. Confirm the platform and Codex CLI range on the
 [compatibility page](/compatibility) before transferring real work.
@@ -74,7 +74,7 @@ preview and unverified. Confirm the platform and Codex CLI range on the
   either mutating command.
 - Snapshots and manifests are encrypted locally; storage credentials stay in
   the OS keyring, and the passphrase is not stored.
-- `v0.2.0` is stable only on the documented verified platforms; this guide is
+- `v0.4.0` is stable only on the documented verified platforms; this guide is
   not acceptance evidence for any other environment.
 
 ## Before you begin
@@ -150,7 +150,7 @@ rein setup check
 ```
 
 **Expected result:** `rein version --json` returns a JSON object whose version
-is `v0.2.0` for the currently pinned installer. Before initialization,
+is `v0.4.0` for the currently pinned installer. Before initialization,
 `rein setup check` exits with code `3` and reports `config missing`. That one
 pre-init failure is expected; a platform, keyring, or Codex compatibility
 failure is a separate blocker that must be resolved.

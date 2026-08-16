@@ -2,15 +2,15 @@
 
 Binary names: `rein` and `reinstate` (identical behavior).
 
-Public installers pin candidate `v0.4.0-rc.11`, including the Phase 1/2 surface,
-Phase 3 verified resume, and the Phase 4 structured-handoff surface. Its
-tagged-artifact acceptance is pending on Apple Silicon macOS and native Windows
-x64. Stable remains `v0.3.0`; Intel macOS and Linux/WSL2 remain optional and
+Public installers pin stable `v0.4.0`, including the Phase 1/2 surface,
+Phase 3 verified resume, and the Phase 4 structured-handoff surface.
+Dual-platform tagged-artifact acceptance passed on Apple Silicon macOS and
+native Windows x64. Intel macOS and Linux/WSL2 remain optional and
 unverified.
 
 Stable `v0.3.0` includes the Phase 3 environment report and
 `--allow-environment-warning` flag. The command synopsis below additionally
-includes the `v0.4.0-rc.11` structured-handoff surface.
+includes the `v0.4.0` structured-handoff surface.
 
 ## Exit codes
 
@@ -136,13 +136,13 @@ On a non-TTY, bare `rein` exits promptly with usage code `2` and a
 `rein list` remains the Phase 1 compatibility command used by sync scripts.
 `rein sessions` is the canonical config-independent local listing command.
 
-## Phase 4 structured handoff (`v0.4.0-rc.11`)
+## Phase 4 structured handoff (`v0.4.0`)
 
 A structured handoff continues the same task in a new Claude Code or Codex
 session. It is not native resume: Reinstate does not reconstruct vendor history,
 write a vendor-internal session file, or claim that the destination is the same
 session. Source parsing and projection are local and require no source model
-call. Gemini CLI, OpenCode, and Grok Build are source-only in rc.1; only Claude
+call. Gemini CLI, OpenCode, and Grok Build are source-only in v0.4.0; only Claude
 Code and Codex are destinations.
 
 ### `rein handoff`
