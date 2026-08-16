@@ -31,6 +31,7 @@ Phase 5 planning only. No code, no behavior change, no new agent support.
   roster, work breakdown, file ownership, review gates, task cards, and the
   coordinator handover prompt.
 - Amp catalog descriptor at T0 (`server_backed`, F5). Session history is not readable locally.
+- ZCode catalog descriptor at T0 (`desktop_only`): official Z.ai desktop ADE only; npm `zcode-app-cli` is not a catalog agent.
 
 ### Changed
 

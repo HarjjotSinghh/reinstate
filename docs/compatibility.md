@@ -33,6 +33,7 @@ The Phase 2 local capability matrix is:
 | Grok Build | Not implemented | Not implemented | Not applicable | T2 |
 <!-- T-010 insertion point: append one new agent row below this line. Do not add columns, re-sort, re-wrap, or edit other rows. -->
 | Amp | Not readable locally (`server_backed`) | Not implemented | Not applicable | T0 |
+| ZCode | Not implemented (`desktop_only`) | Not implemented | Not applicable | T0 |
 
 Automated fixture/fake-runner evidence and physical evidence are reported
 separately. Stable support is limited to the two physically verified primary
