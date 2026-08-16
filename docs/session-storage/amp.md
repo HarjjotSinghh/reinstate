@@ -3,7 +3,7 @@
 **Confidence: Unverified** — official sources establish that threads are
 authoritative on Amp Server; no Reinstate reader exists, and no device probe
 has classified any local tree.
-**Current tier:** T0 (`layout_unverified`) · **Recommended later outcome:**
+**Current tier:** T0 (`server_backed`) · **Recommended later outcome:**
 T0 (`server_backed`). Do not promote to T1 on documentation alone.
 
 Catalog key remains `amp`.

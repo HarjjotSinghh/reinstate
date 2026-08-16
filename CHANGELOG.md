@@ -30,6 +30,7 @@ Phase 5 planning only. No code, no behavior change, no new agent support.
   [docs/planning/v0.5.0-universal-agents/](docs/planning/v0.5.0-universal-agents/):
   roster, work breakdown, file ownership, review gates, task cards, and the
   coordinator handover prompt.
+- Amp catalog descriptor at T0 (`server_backed`, F5). Session history is not readable locally.
 
 ### Changed
 
