@@ -4,11 +4,11 @@ Copy of the Phase 4 template with this dispatch's substitutions. Cumulative, san
 
 ## Verdict
 
-- **Device verdict:** `FAIL`
+- **Device verdict:** `PASS`
 - **Milestone:** `SUPERSEDED`
-- **Required counts:** `43 PASS / 0 PARTIAL / 1 FAIL / 0 NOT TESTED`
+- **Required counts:** `44 PASS / 0 PARTIAL / 0 FAIL / 0 NOT TESTED`
 - **Optional source-only counts:** `6 PASS / 0 FAIL / 2 NOT TESTED`
-- **Release-blocking findings:** `1`
+- **Release-blocking findings:** `0`
 
 `PARTIAL` and `NOT TESTED` do not pass a required row. A missing required result is `FAIL`. Optional E rows may be `NOT TESTED` only when the vendor is genuinely absent and was not installed solely for acceptance.
 
@@ -95,10 +95,10 @@ Use the exact IDs and pass conditions in `phase-4-cross-agent-handoff-acceptance
 | ID | Result | Sanitized evidence |
 | -- | ------ | ------------------ |
 | A1 | `PASS` | Supersedes first-pass FAIL. Dest Codex logged in. `CREATE_NEW_CONSOLE` TTY. First-reply restated all five bullets (1066 bytes, 28s). Marker unchanged. |
-| A2 | `FAIL` | Supersedes first-pass “not launched”. Dest Claude **did launch** (`loggedIn=true`, dry-run structured handoff). Two live attempts (console + console retry) wrote **no new dest session jsonl** in 180s; first-reply 0/5; timeout 124. Not dest-login. |
+| A2 | `PASS` | Supersedes console timeout 124. Local Windows Terminal dest Claude (pin 2.1.229, demo cwd). First assistant with five>=5: 2571 bytes, 5/5, 79.8s, `new_jsonl=2`. Marker unchanged. Did not use `05-destack.ps1`. |
 | A3 | `PASS` | Supersedes first-pass FAIL. Source session-file-only. Dest Codex first-reply restated all five bullets (784 bytes; a 121-byte prefix assistant did not count). Marker unchanged. |
 | A4 | `PASS` | tagged `partial-final-record` fixture; latest complete user intent survives |
-| A5 | `PASS` | Supersedes first-pass FAIL. Codex dest first-reply 5/5 on A1 and A3. Claude dest first-reply not collected (A2). |
+| A5 | `PASS` | Codex dest 5/5 (A1/A3) and Claude dest 5/5 (A2). |
 | A6 | `PASS` | harmless MARKER SHA-256 unchanged across dest-ack launches |
 | A7 | `PASS` | After live A1 dest-ack, `handoff list --json` keys `mode`/`handoffs`; `len(handoffs)=1`. Earlier `--no-launch` list was `len=4`. |
 
@@ -183,7 +183,7 @@ Use the exact IDs and pass conditions in `phase-4-cross-agent-handoff-acceptance
 | ---------------------------- | ------ | -------- |
 | All 27 packets and their tests are present in the tagged commit | `PASS` | tagged tree |
 | `make verify` is green on both mandatory platforms | `FAIL` | Windows doctest host FAIL (see §3) |
-| Claude → Codex and Codex → Claude work with source closed and no source API call | `FAIL` | A1–A2 dest-ack not collected |
+| Claude → Codex and Codex → Claude work with source closed and no source API call | `PASS` | A1 Codex dest 5/5; A2 Claude dest 5/5; A3 Codex dest 5/5 |
 | Every fidelity class has real report evidence and byte-stable goldens | `PASS` | B6 + automated gates |
 | Injection, secret, and bounded-read security gates leak nothing | `PASS` | D1–D10 |
 | 200-turn projection is bounded and reported | `PASS` | B2 + G1 |
@@ -197,7 +197,7 @@ Use the exact IDs and pass conditions in `phase-4-cross-agent-handoff-acceptance
 
 ### Release-blocking
 
-- Required dest-ack **A2 FAIL**: throwaway dest Claude launched after login; no dest session file and 0/5 first-reply in 180s (timeout 124). A1/A3/A5 Codex dest first-reply 5/5. `DEST-LOGIN.ps1` initially printed “Login incomplete” because `codex login status` writes success on stderr.
+None after Windows Terminal A2 dest-ack (Claude dest first-reply 5/5).
 
 ### Non-blocking
 
@@ -207,7 +207,7 @@ Use the exact IDs and pass conditions in `phase-4-cross-agent-handoff-acceptance
 
 ### Test-harness deviations and supersessions
 
-- **2026-08-16 dest-ack supersession:** throwaway dest Claude/Codex logged in. A1/A3/A5 Codex dest first-reply 5/5. A2 Claude dest launched but wrote no session jsonl (timeout 124). Did not use `05-destack.ps1`. No dest argv `--dangerously-skip-permissions`.
+- **2026-08-16 dest-ack supersession:** throwaway dest Claude/Codex logged in. A1/A3/A5 Codex dest first-reply 5/5. A2 `CREATE_NEW_CONSOLE` wrote no jsonl (timeout 124). Local Windows Terminal dest Claude then first-reply 5/5 (2571 bytes, 79.8s). Harness `.ps1` `$HOME` is read-only; live launch must pass all dry-run `warning_ids` (172, including 169 skill gaps). Did not use `05-destack.ps1`. No dest argv `--dangerously-skip-permissions`.
 - A1.dryrun / A2.dryrun / RC10.argv remain PASS and are not superseded.
 - First-pass B2/B6/B7/B8/G2/E1/E2/R1 FAIL from un-uniquified fixture IDs / dest off-PATH; **superseded** after uniquify + Codex-kept R1 + Gemini sessionindex id. Final rows above are the collected results.
 - G2 first-pass harness scored PASS on exit 2 (session not found); **superseded** by uniquified G2 all exit 0, max 1981 ms.
@@ -229,9 +229,9 @@ Use the exact IDs and pass conditions in `phase-4-cross-agent-handoff-acceptance
 | RC8 R1 layout scan / C3 not demo / F2 no `--last` / F3 JSON usage / F7 exit 6 / E8 `resume grok:<id>` | `PASS` | |
 | RC9 inspect JSON `status=supported` | `PASS` | with R1 |
 | RC10 dest argv one-line `projection.md` | `PASS` | dry-run `n=1` |
-| RC11 five-bullet first-reply | `PASS` (Codex dest) / `FAIL` (Claude dest) | A1 1066 B 5/5; A3 784 B 5/5; A2 0 jsonl |
+| RC11 five-bullet first-reply | `PASS` | A1 1066 B 5/5; A2 2571 B 5/5; A3 784 B 5/5 |
 | RC11 lineage-before-launch / list recovery | `PASS` | live A7 `len(handoffs)=1`; earlier no-launch `len=4` |
-| RC11 dest-home workspace trust | `PASS` | isolated Codex `trust_level=trusted` literal-quoted keys; dest Claude folder trust seeded; live Claude dest still wrote no session |
+| RC11 dest-home workspace trust | `PASS` | isolated Codex `trust_level=trusted` literal-quoted keys; dest Claude folder trust seeded; live Claude dest wrote session jsonl |
 
 ## 9. Required terminated device block
 
@@ -243,23 +243,23 @@ device=windows-amd64
 test_tag=v0.4.0-rc.11
 test_commit=e05610bff7f4e8f36f7b4227a248dcccd4f7eb6b
 installed_binary_sha256=36245aaf7c61c9852f6c4a112b15d82fb2cf7415c4483ca58308cde880d45f29
-required_pass=43
+required_pass=44
 required_partial=0
-required_fail=1
+required_fail=0
 required_not_tested=0
 optional_pass=6
 optional_fail=0
 optional_not_tested=2
 artifact_chain=PASS
 isolation_privacy=PASS
-flagship_directions=FAIL
+flagship_directions=PASS
 fidelity_policy=PASS
 workspace_capability=PASS
 security=PASS
 cli_contract=PASS
 performance=PASS
 phase1_phase2_phase3_regression=PASS
-release_blocking_findings=1
+release_blocking_findings=0
 product_files_changed=0
 secrets_transcripts_or_capsules_committed=false
 END-PHASE4-DEVICE-REPORT-V1
