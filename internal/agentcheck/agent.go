@@ -357,6 +357,8 @@ type definition struct {
 	supported       func(string) bool
 }
 
+// definitions stay local: agentcheck cannot import the catalog
+// (catalog → transcript → agentcheck, and catalog → handoff → preflight → agentcheck).
 var definitions = map[string]definition{
 	"claude": {
 		executable:      "claude",

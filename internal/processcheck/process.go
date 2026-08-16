@@ -141,6 +141,8 @@ func within(candidate, root string) bool {
 	return strings.HasPrefix(candidate, root+string(filepath.Separator))
 }
 
+// normalizeAgent cannot read the catalog: processcheck is imported by
+// handoff, and catalog constructors import handoff.
 func normalizeAgent(agent string) (string, error) {
 	agent = strings.ToLower(strings.TrimSpace(agent))
 	switch agent {

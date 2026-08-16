@@ -81,20 +81,53 @@ func PlanLaunch(record Record, operation string) (LaunchPlan, error) {
 		Operation:  operation,
 		Dir:        record.Workspace,
 	}
-	switch strings.ToLower(record.Agent) {
-	case AgentClaude:
-		plan.Executable = "claude"
-		plan.Args = []string{"--resume", record.ID}
-		if operation == OperationFork {
-			plan.Args = append(plan.Args, "--fork-session")
-		}
-	case AgentCodex:
-		plan.Executable = "codex"
-		plan.Args = []string{operation, record.ID}
-	default:
+	executable, args, ok := resolveNativeLaunch(record.Agent, operation, record.ID)
+	if !ok {
 		return LaunchPlan{}, unsupportedNativeAction(record, operation)
 	}
+	plan.Executable = executable
+	plan.Args = args
 	return plan, nil
+}
+
+// NativeLaunchLookup supplies catalog-derived argv. CLI registers this because
+// sessionindex cannot import internal/agents (Descriptor constructors cycle).
+type NativeLaunchLookup func(agent, operation, sessionID string) (executable string, args []string, ok bool)
+
+var nativeLaunchLookup NativeLaunchLookup
+
+// SetNativeLaunchLookup installs a catalog-backed argv resolver.
+func SetNativeLaunchLookup(lookup NativeLaunchLookup) {
+	nativeLaunchLookup = lookup
+}
+
+// ApplyArgvTemplate substitutes {{.SessionID}} in a NativeSpec argv template.
+func ApplyArgvTemplate(template []string, sessionID string) []string {
+	args := make([]string, len(template))
+	for i, part := range template {
+		args[i] = strings.ReplaceAll(part, "{{.SessionID}}", sessionID)
+	}
+	return args
+}
+
+func resolveNativeLaunch(agent, operation, sessionID string) (string, []string, bool) {
+	if nativeLaunchLookup != nil {
+		return nativeLaunchLookup(agent, operation, sessionID)
+	}
+	// Fallback matches catalog NativeSpec for the two T3+ shipped agents so
+	// sessionindex tests stay valid without importing the catalog.
+	switch strings.ToLower(strings.TrimSpace(agent)) {
+	case AgentClaude:
+		template := []string{"--resume", "{{.SessionID}}"}
+		if operation == OperationFork {
+			template = append(template, "--fork-session")
+		}
+		return "claude", ApplyArgvTemplate(template, sessionID), true
+	case AgentCodex:
+		return "codex", ApplyArgvTemplate([]string{operation, "{{.SessionID}}"}, sessionID), true
+	default:
+		return "", nil, false
+	}
 }
 
 func unsupportedNativeAction(record Record, operation string) error {

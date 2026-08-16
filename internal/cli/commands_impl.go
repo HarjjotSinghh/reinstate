@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"time"
 
@@ -15,8 +16,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/HarjjotSinghh/reinstate/internal/adapter"
-	"github.com/HarjjotSinghh/reinstate/internal/adapter/claude"
-	"github.com/HarjjotSinghh/reinstate/internal/adapter/codex"
+	"github.com/HarjjotSinghh/reinstate/internal/agents"
 	"github.com/HarjjotSinghh/reinstate/internal/backend"
 	"github.com/HarjjotSinghh/reinstate/internal/backend/memory"
 	"github.com/HarjjotSinghh/reinstate/internal/backend/s3"
@@ -41,13 +41,33 @@ func defaultRegistry() *adapter.Registry {
 		}
 	}
 	r := adapter.NewRegistry()
-	_ = r.Register(&claude.Adapter{
-		Root: strings.TrimSpace(os.Getenv("CLAUDE_CONFIG_DIR")), Home: userHome, Projects: projects,
-	})
-	_ = r.Register(&codex.Adapter{
-		Root: strings.TrimSpace(os.Getenv("CODEX_HOME")), Home: userHome, Projects: projects,
-	})
+	for _, descriptor := range agents.Capable(agents.CapabilitySync) {
+		if descriptor.NewSyncAdapter == nil {
+			continue
+		}
+		env := agents.Env{Home: userHome, LookupEnv: os.Getenv}
+		if descriptor.Storage.RootEnv != "" {
+			env.FixtureRoot = strings.TrimSpace(os.Getenv(descriptor.Storage.RootEnv))
+		}
+		instance, err := descriptor.NewSyncAdapter(env)
+		if err != nil || instance == nil {
+			continue
+		}
+		assignAdapterProjects(instance, projects)
+		_ = r.Register(instance)
+	}
 	return r
+}
+
+func assignAdapterProjects(instance adapter.Adapter, projects map[string]string) {
+	value := reflect.ValueOf(instance)
+	if value.Kind() != reflect.Pointer {
+		return
+	}
+	field := value.Elem().FieldByName("Projects")
+	if field.IsValid() && field.CanSet() {
+		field.Set(reflect.ValueOf(projects))
+	}
 }
 
 func newInitCmd() *cobra.Command {
@@ -337,7 +357,7 @@ func newListCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "emit machine-readable JSON")
-	cmd.Flags().StringVar(&agent, "agent", "all", "agent filter: claude|codex|all")
+	cmd.Flags().StringVar(&agent, "agent", "all", "agent filter: "+agentFilterHelp(agents.TierSync, true))
 	return cmd
 }
 

@@ -1,7 +1,12 @@
 // Package schema defines versioned Reinstate data contracts.
 package schema
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/HarjjotSinghh/reinstate/internal/agents"
+	_ "github.com/HarjjotSinghh/reinstate/internal/agents/catalog"
+)
 
 // ConfigSchemaVersion is the current config schema.
 const ConfigSchemaVersion = 1
@@ -121,10 +126,15 @@ func DefaultConfig(profileID, deviceID string) *Config {
 		},
 		Encryption: EncryptionConfig{Type: "age-scrypt"},
 		Restore:    RestoreConfig{ActiveAgentPolicy: DefaultActiveAgentPolicy},
-		Agents: map[string]AgentConfig{
-			"claude": {Enabled: true},
-			"codex":  {Enabled: true},
-		},
-		Projects: nil,
+		Agents:     defaultEnabledAgents(),
+		Projects:   nil,
 	}
+}
+
+func defaultEnabledAgents() map[string]AgentConfig {
+	enabled := map[string]AgentConfig{}
+	for _, descriptor := range agents.Capable(agents.CapabilitySync) {
+		enabled[descriptor.Key] = AgentConfig{Enabled: true}
+	}
+	return enabled
 }
