@@ -38,6 +38,7 @@ Phase 5 planning only. No code, no behavior change, no new agent support.
 - Pi catalog descriptor at T0 (`layout_unverified`): F1 JSONL tree, no dual-platform probes, no T1+ claim.
 - Qwen Code catalog entry at T0 (`layout_unverified`): official product identified; no dual-platform probes and no reader.
 - Gemini CLI stays T2: `gemini --version` parser added; fail-closed range escalated (no maintainer, no dual-platform physical resume).
+- Cline catalog descriptor at T0 (`layout_unverified`): F3 expected; no dual-platform probes, no F3 scanner.
 
 ### Changed
 
