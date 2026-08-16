@@ -38,6 +38,7 @@ The Phase 2 local capability matrix is:
 | GitHub Copilot CLI | Not implemented | Not implemented | Not applicable | T0 |
 | Kimi Code CLI | Not implemented | Not implemented | Not applicable | T0 |
 | Pi | Not implemented | Not implemented | Dual-platform AGENT-PROBE-V1 not committed | T0 |
+| Qwen Code | Not implemented | Not implemented | Dual-platform probes not captured | T0 |
 
 Automated fixture/fake-runner evidence and physical evidence are reported
 separately. Stable support is limited to the two physically verified primary
