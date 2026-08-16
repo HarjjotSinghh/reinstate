@@ -183,8 +183,8 @@ func buildAcceptanceMatrix() acceptanceMatrix {
 
 func agentMatrixRows(d agents.Descriptor) acceptanceAgentRows {
 	var rows []string
-	switch {
-	case d.Tier == agents.TierKnown:
+	switch d.Tier {
+	case agents.TierKnown:
 		rows = numbered("F", matrixFRows)
 	default:
 		if d.Tier >= agents.TierDiscover {
