@@ -5,7 +5,11 @@ reader exists; no redacted device probe. Vendor documentation is not a
 tier promotion.
 **Current tier:** T0 (`server_backed`) · **Phase 5 target:** T0
 
-Catalog key remains `openhands`. Descriptor:
+Catalog key remains `openhands`.
+
+**Maintainer 2026-08-16:** no network-backed Cloud / Agent Server source in
+`v0.5.0`. Stay T0 `server_backed`. CLI `~/.openhands` is server persistence,
+not a local session store. Revisit only with an ADR. Descriptor:
 `internal/agents/catalog/openhands.go`. No index source, reader, target, or
 sync adapter.
 

@@ -86,8 +86,8 @@
       "t0Reason": null,
       "integrationPath": "/integrations/gemini",
       "status": "handoff-source",
-      "minimumTestedVersion": null,
-      "maximumTestedVersion": null,
+      "minimumTestedVersion": "0.55.1",
+      "maximumTestedVersion": "0.55.1",
       "resumeMode": "Handoff source only (T2); no native resume",
       "evidenceLevel": "read-only fixtures and a Windows physical path; no dual-platform T3 resume journeys",
       "evidence": {
@@ -102,7 +102,7 @@
       },
       "lastTested": "2026-08-16",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/gemini.md",
-      "notes": "T2 handoff source. T-050 did not promote Gemini CLI to T3: no maintainer-set fail-closed version range and no dual-platform physical resume journeys. Encrypted sync is T5 and remains Claude Code and Codex CLI only."
+      "notes": "T2 handoff source. Fail-closed pin is latest stable @google/gemini-cli 0.55.1. T3 still needs dual-platform physical resume. Encrypted sync remains Claude Code and Codex CLI only."
     },
     {
       "id": "opencode",
@@ -423,6 +423,30 @@
       "lastTested": null,
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/zcode.md",
       "notes": "T0 Known (`desktop_only`). The npm zcode-app-cli package is not this catalog key. Not an integration."
+    },
+    {
+      "id": "minimax-code",
+      "key": "minimax-code",
+      "name": "MiniMax",
+      "vendor": "MiniMax",
+      "tier": "T0",
+      "storageFamily": "F5",
+      "t0Reason": "layout_unverified",
+      "integrationPath": null,
+      "status": "known",
+      "minimumTestedVersion": null,
+      "maximumTestedVersion": null,
+      "resumeMode": "Not usable (T0)",
+      "evidenceLevel": "catalog descriptor; official desktop harness, layout unverified",
+      "evidence": {
+        "storagePage": "docs/session-storage/minimax.md",
+        "fixtures": [],
+        "deviceReports": [],
+        "probeReports": []
+      },
+      "lastTested": null,
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/minimax.md",
+      "notes": "T0 Known (`layout_unverified`). Key is minimax-code, not minimax. Token Plan API keys are models in other harnesses. Not an integration."
     }
   ],
   "environments": [

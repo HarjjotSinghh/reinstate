@@ -41,6 +41,7 @@ The Phase 2 local capability matrix is:
 | Cline | Not implemented | Not implemented | Dual-platform AGENT-PROBE-V1 not committed | T0 |
 | Aider | Not implemented | Not implemented | Dual-platform AGENT-PROBE-V1 not committed | T0 |
 | Roo Code | Not implemented | Not implemented | Dual-platform AGENT-PROBE-V1 not committed | T0 |
+| MiniMax | Not implemented | Not implemented | Token Plan keys are models-in-other-harnesses; layout unverified | T0 |
 <!-- T-010 insertion point: append one new agent row immediately above this comment. Do not add columns, re-sort, re-wrap, or edit other rows. -->
 
 Automated fixture/fake-runner evidence and physical evidence are reported

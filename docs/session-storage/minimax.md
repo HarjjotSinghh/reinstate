@@ -38,19 +38,13 @@ later maintainer task chooses the key.
 
 ## Catalog key
 
-**None.** Do not ship `minimax`, `minimax-code`, or any other key from this
-page. Reasons a guess would be wrong later:
+**`minimax-code`.** Assigned 2026-08-16. Display name MiniMax Code. Do not
+use `minimax`: that name collides with Token Plan models, `mmx` (was
+`minimax`), Agent web, MaxClaw, and MaxHermes.
 
-1. The roster placeholder is `minimax`, but the identified product is MiniMax
-   Code. The vendor also ships MiniMax models, MiniMax CLI (`mmx`), MiniMax
-   Agent on the web, MaxClaw, and MaxHermes.
-2. The changelog's `minimax` CLI shortcut is a one-line mention, not a
-   documented session harness.
-3. MiniMax-AI/cli already uses the binary `mmx` (renamed from `minimax`) for
-   a different product.
-
-A wrong key cannot be renamed without breaking `agent:session` references,
-`rein doctor` output, and the compatibility matrix.
+A Token Plan `MINIMAX_API_KEY` / `sk-cp-*` in another harness (Claude Code,
+OpenCode, Codex, …) is **not** this catalog entry. Those sessions stay with
+the host harness. Reinstate never stores that key.
 
 ## What this is not
 

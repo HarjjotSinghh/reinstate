@@ -42,6 +42,9 @@ Phase 5 planning only. No code, no behavior change, no new agent support.
 - Aider catalog descriptor at T0 (`layout_unverified`, F4): official product identified; no dual-platform probes and no reader.
 - Cursor CLI catalog descriptor at T0 (`layout_unverified`): key is the terminal agent; editor agent is out of scope; no dual-platform probes and no reader.
 - Roo Code catalog descriptor at T0 (`layout_unverified`): F3 expected; no dual-platform probes, no F3 scanner.
+- MiniMax Code catalog key `minimax-code` at T0 (`layout_unverified`). Token Plan API keys are not this agent.
+- Gemini CLI fail-closed version pin `0.55.1` (latest stable `@google/gemini-cli`); still T2.
+- Pi fail-closed version pin `0.73.1` (latest `@mariozechner/pi-coding-agent`); still T0.
 
 ### Changed
 
