@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Phase 5 planning only. No code, no behavior change, no new agent support.
+
+### Added
+
+- [ADR 0004](docs/adr/0004-universal-agent-coverage.md): universal agent
+  coverage, the T0–T5 support-tier ladder, and a single `internal/agents`
+  catalog with one descriptor file per agent.
+- [Agent support tiers](docs/agent-support-tiers.md): what each tier lets a
+  user do and the evidence each tier requires.
+- [Agent catalog SDK](docs/adapters/agent-catalog-sdk.md): descriptor
+  specification, storage families F1–F5, shared scanners, and the conformance
+  suite that enforces a tier claim against committed evidence.
+- [Agent storage probe](docs/testing/agent-storage-probe.md): the
+  `AGENT-PROBE-V1` redacted evidence contract for `rein doctor --agents`.
+- Per-agent storage pages under [docs/session-storage/](docs/session-storage/)
+  for twelve Phase 5 candidates, every row `Unverified` pending a device probe.
+- [Phase 5 acceptance contract](docs/testing/phase-5-universal-agent-coverage-acceptance.md)
+  and the `PHASE5-DEVICE-REPORT-V1` template.
+- Execution plan under
+  [docs/planning/v0.5.0-universal-agents/](docs/planning/v0.5.0-universal-agents/):
+  roster, work breakdown, file ownership, review gates, task cards, and the
+  coordinator handover prompt.
+
+### Changed
+
+- `ROADMAP.md` renumbered: Phase 5 is now universal agent coverage, universal
+  configuration moves to Phase 6, Reinstate Console to Phase 7, and team
+  continuity to Phase 8.
+- `docs/session-storage-map.md` gains an index of the per-agent pages. Sections
+  1–5 are unchanged and still cover the five agents with shipped readers.
+
 ## [0.4.0] - 2026-08-16
 
 Phase 4 stable release. Explicit structured handoff continues the same task in a

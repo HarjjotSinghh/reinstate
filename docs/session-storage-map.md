@@ -28,6 +28,27 @@ An `Unverified` row may not be turned into a `SUPPORTED` compatibility state.
 It must first be confirmed on a physical device and captured as a synthetic
 fixture under `testdata/`.
 
+## Per-agent pages
+
+Sections 1 through 5 below cover the five agents with shipped readers. Every
+other agent has its own page under [session-storage/](session-storage/), so
+that parallel work on different agents never edits the same file:
+
+- [Index of per-agent pages](session-storage/README.md)
+- Phase 5 candidates: [Kimi Code CLI](session-storage/kimi.md) ·
+  [Pi](session-storage/pi.md) · [Qwen Code](session-storage/qwen.md) ·
+  [Cursor CLI](session-storage/cursor.md) ·
+  [GitHub Copilot CLI](session-storage/copilot.md) ·
+  [Aider](session-storage/aider.md) · [Cline](session-storage/cline.md) ·
+  [Roo Code](session-storage/roo.md) · [Amp](session-storage/amp.md) ·
+  [OpenHands](session-storage/openhands.md) · [ZCode](session-storage/zcode.md) ·
+  [MiniMax](session-storage/minimax.md)
+
+Confirming a candidate row requires a redacted device probe; the evidence
+contract is [testing/agent-storage-probe.md](testing/agent-storage-probe.md),
+and the capability ladder those rows feed is
+[agent-support-tiers.md](agent-support-tiers.md).
+
 ---
 
 ## 1. Claude Code
