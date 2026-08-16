@@ -45,6 +45,43 @@ func TestEmptyHomeProducesCompleteArtifact(t *testing.T) {
 	}
 }
 
+func TestT0DescriptorEmitsEmptyCandidateRoots(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	desc := agents.Descriptor{
+		Key:         "amp",
+		DisplayName: "Amp",
+		Vendor:      "Sourcegraph",
+		Tier:        agents.TierKnown,
+		Family:      agents.FamilyRemote,
+		T0Reason:    agents.T0LayoutUnverified,
+	}
+	art, err := Collect(context.Background(), agents.Env{
+		Home:      home,
+		LookupEnv: func(string) string { return "" },
+	}, []agents.Descriptor{desc}, Options{
+		LookPath: func(string) (string, error) { return "", os.ErrNotExist },
+		Now:      func() time.Time { return time.Date(2026, 8, 16, 0, 0, 0, 0, time.UTC) },
+		Version:  "0.5.0-dev",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := Validate(art); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := json.Marshal(art.Agents[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(raw), `"candidate_roots":[]`) {
+		t.Fatalf("candidate_roots not empty array: %s", raw)
+	}
+	if art.Agents[0].CandidateRoots == nil {
+		t.Fatal("candidate_roots is nil")
+	}
+}
+
 func TestPlantedSecretsNeverAppear(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
