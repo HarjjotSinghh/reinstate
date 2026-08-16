@@ -1,12 +1,12 @@
 # Pi coding agent (earendil-works)
 
-**Confidence: Unverified** — no Reinstate reader exists.
+**Confidence: Unverified** — no committed AGENT-PROBE-V1, no reader.
 **Current tier:** T0 (`layout_unverified`) · **Phase 5 target:** T3
 
-Pi is an open-source minimal terminal harness. It documents two separate
-directory overrides — one for configuration and one specifically for session
-storage — and it exports environment variables that identify itself to child
-processes, which makes process detection unusually reliable.
+Pi is an open-source terminal harness. Vendor documentation now describes a
+local JSONL session tree, but vendor documentation is not evidence. This
+executor had no native Windows host and no `pi` on PATH, so dual-platform
+probes were not committed. T1 and above stay closed.
 
 ## Identity
 
@@ -17,68 +17,105 @@ processes, which makes process detection unusually reliable.
 | Binary | `pi` |
 | Package | `@earendil-works/pi-coding-agent` |
 | Distribution | Official, npm, MIT |
-| Storage family | F1 (home-dir tree) |
+| Storage family | F1 (home-dir tree) — see [Family](#family-f1-not-f2) |
+| Catalog key | `pi` |
+
+## Family: F1, not F2
+
+Question 6 on this page was answered from vendor docs **before** any parser.
+
+| Surface | Session list? |
+| ------- | ------------- |
+| `pi -r` / `/resume` | Interactive TUI only |
+| `--mode json` | Event stream for one run, not a catalog |
+| `--mode rpc` | Current-session commands (`get_state`, `switch_session`, `get_entries`). No list command |
+| TypeScript SDK | `SessionManager.list` / `listAll` exist in-process. Not a CLI Reinstate can call |
+
+There is no supported machine-readable session list. Pi is F1. The SDK listing
+methods are not an F2 interface.
 
 ## Claimed layout
 
-Every row is **Unverified** until a probe confirms it.
+Every on-disk row stays **Unverified** until a probe confirms it. The values
+below are what the vendor currently publishes.
 
-| Aspect | Value |
-| ------ | ----- |
-| Config root override | `PI_CODING_AGENT_DIR` |
-| Config root default | `~/.pi/agent` |
-| Session storage override | `PI_CODING_AGENT_SESSION_DIR` |
-| Session storage default | not stated; presumed under the config root |
-| Session format | not stated |
-| Project scoping | not stated |
-| Resume most recent | `pi -c` |
-| Browse sessions | `pi -r` |
-| One-shot | `pi -p "<prompt>"` |
-| Event stream | `--mode json` |
-| Process integration | RPC over stdin/stdout |
-| Self-identification | sets `AI_AGENT=pi` and `PI_CODING_AGENT=true` for child processes |
+| Aspect | Vendor-published value | Probe status |
+| ------ | ---------------------- | ------------ |
+| Config root override | `PI_CODING_AGENT_DIR` | Unverified |
+| Config root default | `~/.pi/agent` | Unverified |
+| Session storage override | `PI_CODING_AGENT_SESSION_DIR` (overridden by `--session-dir`, then `sessionDir` in settings.json) | Unverified |
+| Session storage default | `~/.pi/agent/sessions/` (under the config root, not a sibling of it) | Unverified |
+| Session path | `sessions/--<cwd-with-slashes-as-hyphens>--/<timestamp>_<uuid>.jsonl` | Unverified |
+| Session format | JSONL; first line `type=session` header (`version`, `id`, `cwd`); later lines tree entries with `id` / `parentId` | Unverified |
+| Header versions | v1 linear (legacy), v2 tree, v3 `hookMessage` → `custom`; load migrates to v3 | Unverified |
+| Project scoping | Yes: one cwd-slug directory per working directory | Unverified |
+| Project key | Path slug (`/` → `-`, wrapped in `--…--`). Windows encoding unknown | Unverified |
+| HTML / JSONL export | `/export [file]`, `--export <in> [out]`, RPC `export_html` write to a caller path (RPC default `/tmp/session.html`), not into the session tree | Unverified |
+| Credentials | `~/.pi/agent/auth.json` (mode `0600`); OAuth after `/login` | Unverified |
+| Caches / packages | `models-store.json`, `npm/`, `git/` | Unverified |
+| Resume most recent | `pi -c` / `pi --continue` | Unverified |
+| Resume specific | `pi --session <path\|id>` | Unverified |
+| Fork | `pi --fork <path\|id>`; `/fork`, `/clone` in TUI | Unverified |
+| Browse sessions | `pi -r` (TUI) | Unverified |
+| Version flag | `pi -v` / `pi --version` | Unverified — output shape not captured |
+| Self-identification | CLI and RPC set `AI_AGENT=pi` and `PI_CODING_AGENT=true` for child processes | Documented; prefer over binary-name heuristics |
 
-The self-identification variables are worth calling out: they are an explicit
-vendor mechanism for attributing child processes to Pi, so
-`internal/processcheck` should prefer them over binary-name heuristics.
+`PI_CODING_AGENT_SESSION_DIR` being a separate override does **not** mean the
+default session root is outside `~/.pi/agent`. The published default is
+`~/.pi/agent/sessions/`. A T1 scanner must still honor the session-dir
+override without treating it as `<config>/sessions`.
 
-## What the probe must settle
+## What this task settled
 
-1. Where sessions actually land when neither override is set. The vendor
-   documents `PI_CODING_AGENT_SESSION_DIR` as a separate override, which
-   implies the default is not simply the config root.
-2. The on-disk session format: one file per session, a directory per session,
-   or an append-only log.
-3. Whether sessions are bucketed by project at all. `pi -c` continues the last
-   session, and `pi -r` browses sessions, but neither documents whether the
-   scope is global or per working directory. If it is global, the descriptor's
-   `ProjectKey` is `none` and workspace attribution must come from the record
-   body, which caps search quality until confirmed.
-4. Whether the documented HTML session export writes into the session tree. If
-   it does, exports are not sessions and must be excluded from discovery.
-5. `pi --version` output shape, for the T3 version probe.
-6. Whether the RPC or `--mode json` surfaces expose a session list. A
-   documented list command would make Pi an F2 agent instead of F1, which is
-   cheaper and more stable than parsing private files.
+1. **No F2 list API.** Do not spawn `pi --mode rpc` or `--mode json` to
+   enumerate sessions. Do not embed the Node SDK.
+2. **Default session directory** is published as `~/.pi/agent/sessions/`,
+   organized by working directory.
+3. **Sessions are project-scoped** by a cwd slug. `ProjectKey` is `path_slug`
+   if a reader is written. Do not invent a global bucket.
+4. **Process detection** should use `PI_CODING_AGENT=true` and `AI_AGENT=pi`
+   before the `pi` image name.
+5. **HTML exports** are caller-pathed. Exclude `**/*.html` from discovery
+   anyway so an export dropped into the tree is not a session.
+6. **`pi --version` output shape** was not captured. This host had no `pi` on
+   PATH.
 
-Question 6 should be answered before writing any file parser. Pi documents four
-machine-facing modes; using a supported interface is always preferred to
-reading private storage, the same reasoning that made OpenCode an F2 agent.
+## What remains blocked
+
+| Item | Why |
+| ---- | --- |
+| T1 | Dual-platform AGENT-PROBE-V1 required. This session had no native Windows device and no usable local `pi` install |
+| Windows path slug | Drive letters and `\` are unpublished |
+| Session-dir override on disk | `PI_CODING_AGENT_SESSION_DIR` vs `--session-dir` vs `settings.json` `sessionDir` not probed |
+| T3 version range | Pi publishes on roughly a daily cadence (npm `0.84.2` as of 2026-08-14; mise reports ~255 releases, ~1 day average). A narrow pin will rot in weeks. **Maintainer decision — do not guess a range** |
 
 ## Tier path
 
 | Tier | Blocker |
 | ---- | ------- |
-| T1 | Default session directory unknown; project scoping unknown |
-| T2 | Record format unknown |
-| T3 | Needs `pi --version` output shape and a fail-closed supported range. Pi releases very frequently, so the range policy needs an explicit maintenance note |
+| T1 | Needs committed macOS **and** native Windows probes against a real install with more than one session |
+| T2 | Record format unprobed; unknown-layout and truncation policy untested |
+| T3 | Needs a captured `pi --version` shape, dual-platform resume journeys, and a maintainer version-range policy |
 
-Pi's release cadence is a real T3 risk. A narrow pinned range will go stale
-within weeks. Decide the range policy with the maintainer before promoting.
+T4 and T5 are out of scope for `v0.5.0`.
+
+## Notes for a future reader
+
+- Header `type=session` is metadata, not a turn. Later lines are a tree, not a
+  linear log. Compaction and abandoned branches stay in the same file.
+- `custom` entries are extension state and are not LLM context.
+- `auth.json` is credentials. It is excluded before any read.
+- There is no transcript translation path. Cross-agent work stays an explicit
+  portable handoff.
 
 ## Sources
 
 - [pi.dev](https://pi.dev/)
 - [earendil-works/pi](https://github.com/earendil-works/pi)
 - [packages/coding-agent README](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/README.md)
+- [Session file format](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/session-format.md)
+- [RPC mode](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/rpc.md)
+- [Environment variables](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/environment-variables.md)
+- [Settings (sessionDir precedence)](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/settings.md)
+- [Providers (auth.json)](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/providers.md)
 - [npm @earendil-works/pi-coding-agent](https://www.npmjs.com/package/@earendil-works/pi-coding-agent)
