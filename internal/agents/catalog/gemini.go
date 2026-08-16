@@ -1,6 +1,8 @@
 package catalog
 
 import (
+	"regexp"
+
 	"github.com/HarjjotSinghh/reinstate/internal/agents"
 	geminisrc "github.com/HarjjotSinghh/reinstate/internal/agents/sources/gemini"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
@@ -9,7 +11,13 @@ import (
 
 func init() { agents.MustRegister(Gemini()) }
 
+// yargs .version(getVersion()) prints package.json version as one line.
+// Nightly/preview suffixes and the vendor fallback "unknown" fail closed.
+var geminiVersionPattern = regexp.MustCompile(`^((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))$`)
+
 // Gemini is the shipped Gemini CLI descriptor (T2).
+// NativeSpec and VersionSpec stay unset: T3 needs a maintainer-set
+// fail-closed range and dual-platform physical resume journeys.
 func Gemini() agents.Descriptor {
 	return agents.Descriptor{
 		Key:         sessionindex.AgentGemini,
@@ -44,4 +52,8 @@ func Gemini() agents.Descriptor {
 			return &transcript.GeminiReader{}, nil
 		},
 	}
+}
+
+func parseGeminiVersion(output agents.VersionOutput) (string, bool) {
+	return parseVersionLine(output, geminiVersionPattern)
 }
