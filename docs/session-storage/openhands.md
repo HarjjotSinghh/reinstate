@@ -5,7 +5,23 @@ reader exists; no redacted device probe. Vendor documentation is not a
 tier promotion.
 **Current tier:** T0 (`server_backed`) · **Phase 5 target:** T0
 
-Catalog key remains `openhands`.
+Catalog key remains `openhands`. Descriptor:
+`internal/agents/catalog/openhands.go`. No index source, reader, target, or
+sync adapter.
+
+## Catalog
+
+| Field | Value |
+| ----- | ----- |
+| Key | `openhands` |
+| Display name | OpenHands |
+| Vendor | All Hands AI |
+| Tier | T0 |
+| T0Reason | `server_backed` |
+| Family | F5 |
+| Constructors | none |
+| Host candidate (not indexed) | `$OH_PERSISTENCE_DIR` or `~/.openhands` |
+| Excluded before any read | `settings.json`, `agent_settings.json`, `mcp.json` |
 
 ## Identity
 
