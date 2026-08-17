@@ -110,6 +110,13 @@ export const staticOgPages: OgPage[] = [
       'Read-only Grok Build discovery and portable handoff. Native resume and encrypted sync are not supported.',
   },
   {
+    route: '/integrations/kimi',
+    kind: 'Integration',
+    title: 'Kimi Code CLI is a T2 handoff source',
+    description:
+      'Read-only Kimi Code CLI discovery and portable handoff. Native resume and encrypted sync are not supported.',
+  },
+  {
     route: '/compatibility',
     kind: 'Product facts',
     title: 'Reinstate compatibility',

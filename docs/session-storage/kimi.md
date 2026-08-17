@@ -1,13 +1,14 @@
 # Kimi Code CLI (Moonshot AI)
 
-**Confidence: Documented on macOS, Unverified on native Windows** — no
-Reinstate reader exists.
-**Current tier:** T0 (`layout_unverified`) · **Phase 5 target:** T3
+**Confidence: Documented on macOS and native Windows.** Dual-platform probes
+are committed. The `wire.jsonl` reader is T2.
+**Current tier:** T2 (handoff source) · **Phase 5 target:** T3
 
-A macOS probe on 2026-08-16 settled the root ambiguity and confirmed the
-layout, including the global session index. Kimi Code CLI is now the strongest
-T1 candidate in the roster. The tier does not move on one platform's evidence,
-so the descriptor stays at T0 until a native Windows probe exists.
+A macOS probe on 2026-08-16 settled the root ambiguity. A native Windows probe
+on 2026-08-17 promoted Kimi to T1. The T2 reader shipped against that known
+vocabulary: unknown records stay referenced with no payload body, and a
+truncated last line is dropped. Native resume stays refused until a device
+journey runs `kimi -r`.
 
 ## Identity
 
@@ -148,22 +149,21 @@ Items 1, 3, 4 and 7 are answered above for macOS. These remain open.
 Escalate if a future probe shows sessions stored somewhere neither mirror
 documents.
 
-## Policy already recorded (applies when a reader is written)
+## Policy already recorded
 
-The T0 descriptor lists claimed candidate roots and exclusions so
-`rein doctor --agents` can inventory them. It does **not** scan, parse, or
-resume.
+The T2 reader scans `agents/main/wire.jsonl`. It does **not** merge
+`context.jsonl`. Resume stays refused.
 
 - **Roots.** Ordered candidates: `~/.kimi-code` first (official), `~/.kimi`
   second (conflicting mirror). First existing root with a `sessions/` marker
-  wins. Both remain unverified.
+  wins.
 - **Override.** `KIMI_CODE_HOME` is the only `RootEnv`. `KIMI_SHARE_DIR` is
   not wired until a probe shows the running binary honors it.
 - **Index.** Prefer `session_index.jsonl` when present; walk `sessions/` as
-  the fallback for a missing or stale index. Not implemented at T0.
-- **Transcript.** Do not merge `wire.jsonl` and `context.jsonl`. Classify
-  request-trace records (tool schemas, request parameters, MCP listings) as
-  `omitted`. Do not interpret them.
+  the fallback for a missing or stale index.
+- **Transcript.** Known types are mapped below. Unknown types are referenced
+  with an opaque digest and never copied into event bodies. A truncated last
+  JSONL line is dropped (`Partial=true`).
 - **Subagents.** Exclude `agents/agent-*` and `subagents/` from the top-level
   session list.
 - **Credentials.** Exclude `credentials/` and `mcp-oauth/` before any read.
@@ -173,7 +173,7 @@ resume.
 | Tier | Blocker |
 | ---- | ------- |
 | T1 | **Reached 2026-08-17.** Both platform probes committed, source shipped, fixtures on both platforms |
-| T2 | `wire.jsonl` vocabulary is now known (below); still needs the unknown-record and truncation policy |
+| T2 | **Reached.** `wire.jsonl` reader ships unknown-record and truncation policy |
 | T3 | `kimi --version` prints a bare `0.36.1`, so a range is now expressible. Still needs a fail-closed supported range and physical `--continue` / `--session` on both platforms |
 
 T4 and T5 are out of scope for `v0.5.0` per
@@ -285,25 +285,23 @@ line went with it.
 platforms, subagent exclusion, determinism, wire-log authority, and six
 corruption cases.
 
-**Registered and live at T1 since 2026-08-17.** Kimi is the first agent
-promoted under the enforced dual-platform gate: `probePlatformGap` would have
-rejected the claim on the macOS artifact alone, and the Windows artifact is
-what satisfied it.
-
-`rein sessions --agent kimi` lists and searches these sessions. Resume and fork
-stay refused with `ReadOnlyReason`, because no device journey has run
-`kimi -r <id>` against a real session on either platform. That, plus a
-fail-closed version range, is what T3 needs.
+**Registered and live at T2.** `rein sessions --agent kimi` lists and searches
+these sessions. `rein handoff --from kimi` reads `agents/main/wire.jsonl` into
+a capsule. Unknown records are referenced; `profile.bind` system prompts are
+never copied. Resume and fork stay refused with `ReadOnlyReason`, because no
+device journey has run `kimi -r <id>` against a real session on either
+platform. That, plus a fail-closed version range, is what T3 needs.
 
 ## Notes for the reader implementation
 
 - Official docs describe `agents/main/wire.jsonl` as both the resume stream
   and a request trace that includes tool schemas, request parameters, and MCP
-  tool listings. That is a large surface of records Reinstate must classify as
-  `omitted` or `referenced` rather than parse.
+  tool listings. The shipped reader classifies those as `omitted` or
+  `referenced` rather than parsing them as conversation.
 - The vendor states the layout can change between releases and should be
-  treated as inspectable rather than guaranteed. That is an argument for a
-  strict layout gate, not a loose parser.
+  treated as inspectable rather than guaranteed. Probe fails closed on
+  `state.json` version other than `2` and on a wire protocol major other than
+  `1`.
 
 ## Sources
 

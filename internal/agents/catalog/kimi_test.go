@@ -15,22 +15,21 @@ func TestKimiConformance(t *testing.T) {
 	})
 }
 
-// Kimi is T1 and no further. It reached T1 on 2026-08-17 when a native Windows
-// probe joined the macOS one; everything above T1 needs evidence that does not
-// exist, and a device journey running `kimi -r` most of all.
-func TestKimiIsDiscoverOnly(t *testing.T) {
+// Kimi is T2: a handoff source. Resume stays refused until a device journey
+// runs `kimi -r` and a fail-closed version range exists.
+func TestKimiIsHandoffFrom(t *testing.T) {
 	d := Kimi()
-	if d.Tier != agents.TierDiscover {
-		t.Fatalf("tier = %s, want T1", d.Tier)
+	if d.Tier != agents.TierHandoffFrom {
+		t.Fatalf("tier = %s, want T2", d.Tier)
 	}
 	if d.T0Reason != "" {
 		t.Fatalf("T0Reason = %q, want empty above T0", d.T0Reason)
 	}
-	if d.NewIndexSource == nil {
-		t.Fatal("T1 requires an index source")
+	if d.NewIndexSource == nil || d.NewReader == nil {
+		t.Fatal("T2 requires an index source and a transcript reader")
 	}
-	if d.NewReader != nil || d.NewTarget != nil || d.NewSyncAdapter != nil {
-		t.Fatal("T1 descriptor must not ship reader, target, or sync constructors")
+	if d.NewTarget != nil || d.NewSyncAdapter != nil {
+		t.Fatal("T2 descriptor must not ship target or sync constructors")
 	}
 	if d.Native != nil || d.Version != nil {
 		t.Fatal("native resume and a version range are T3 claims; no device journey has run kimi -r")
@@ -50,8 +49,14 @@ func TestKimiCitesBothPlatformProbes(t *testing.T) {
 	if !macOS || !windows {
 		t.Fatalf("probe reports = %v, want one macOS and one native Windows", d.Evidence.ProbeReports)
 	}
-	if len(d.Evidence.Fixtures) != 2 {
-		t.Fatalf("fixtures = %v, want one per platform", d.Evidence.Fixtures)
+	var fixtureMacOS, fixtureWindows, handoff bool
+	for _, fixture := range d.Evidence.Fixtures {
+		fixtureMacOS = fixtureMacOS || strings.Contains(fixture, "/macos")
+		fixtureWindows = fixtureWindows || strings.Contains(fixture, "/windows")
+		handoff = handoff || strings.Contains(fixture, "testdata/handoff/kimi")
+	}
+	if !fixtureMacOS || !fixtureWindows || !handoff {
+		t.Fatalf("fixtures = %v, want macos, windows, and testdata/handoff/kimi", d.Evidence.Fixtures)
 	}
 }
 

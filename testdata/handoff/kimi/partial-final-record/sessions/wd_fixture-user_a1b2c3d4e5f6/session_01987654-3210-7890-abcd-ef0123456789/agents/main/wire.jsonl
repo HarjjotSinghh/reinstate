@@ -1,0 +1,9 @@
+{"type":"metadata","protocol_version":"1.5","created_at":"2026-08-16T09:00:00.000Z"}
+{"type":"permission.set_mode","time":"2026-08-16T09:00:00.100Z","mode":"ask"}
+{"type":"turn.prompt","time":"2026-08-16T09:00:01.000Z","origin":{"kind":"user"},"input":[{"type":"text","text":"Bound the retry budget in agentcheck"}]}
+{"type":"context.append_message","time":"2026-08-16T09:00:02.000Z","message":{"id":"msg-1","role":"assistant","origin":{"kind":"model"},"content":[{"type":"text","text":"Reading the current budget."},{"type":"tool_use","name":"read_file","input":{"path":"internal/agentcheck/agent.go"}}],"toolCalls":[{"name":"read_file","arguments":{"path":"internal/agentcheck/agent.go"}}]}}
+{"type":"llm.request","time":"2026-08-16T09:00:03.000Z","kind":"chat","model":"kimi-k2","messageCount":2,"turnStep":1}
+{"type":"context.append_message","time":"2026-08-16T09:00:09.000Z","message":{"id":"msg-2","role":"assistant","origin":{"kind":"model"},"content":[{"type":"text","text":"The first attempt allows two seconds."}],"toolCalls":[{"name":"edit_file","arguments":{"path":"internal/agentcheck/agent.go"}}]}}
+{"type":"usage.record","time":"2026-08-16T09:00:09.500Z","model":"kimi-k2","usageScope":"turn","usage":{"input":1200,"output":340}}
+{"type":"turn.ended","time":"2026-08-16T09:12:30.000Z","reason":"completed","turnId":"turn-1","durationMs":749000}
+{"type":"turn.prom

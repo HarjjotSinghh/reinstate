@@ -32,7 +32,8 @@ yes-or-no flag. Tiers are cumulative. New agents are declared in the
 | T4 | Handoff destination |
 | T5 | Encrypted same-vendor sync |
 
-Claude Code and Codex CLI are T5. Gemini CLI, OpenCode, and Grok Build are T2.
+Claude Code and Codex CLI are T5. Gemini CLI, OpenCode, Grok Build, and Kimi
+Code CLI are T2.
 The capability matrix below remains the fail-closed per-surface record.
 
 ## Capability matrix
@@ -44,6 +45,7 @@ The capability matrix below remains the fail-closed per-surface record.
 | Gemini CLI | Read-only in `v0.2.0` | No | Source-only | No | No | Later |
 | OpenCode | Read-only in `v0.2.0` | No | Source-only | No | No | Later |
 | Grok Build | Read-only in `v0.4.0` | No | Source-only | No | No | Planned |
+| Kimi Code CLI | Read-only in `v0.5.0` | No | Source-only | No | No | Later |
 | Cursor | Exploring | No | No | No | No | Exploring |
 
 Phase 2 automated gates and the complete tagged-artifact matrix passed on Apple
@@ -133,9 +135,9 @@ acknowledgements, exit codes, and provenance.
 ## Phase 4 structured-handoff contract (`v0.4.0`)
 
 Handoff support is directional. Claude Code and Codex are both sources and
-targets. Gemini CLI, OpenCode, and Grok Build are source-only: their transcript
-readers can build a capsule, but Reinstate will not launch them as handoff
-destinations in v0.4.0.
+targets. Gemini CLI, OpenCode, Grok Build, and Kimi Code CLI are source-only:
+their transcript readers can build a capsule, but Reinstate will not launch
+them as handoff destinations.
 
 A reader snapshots only complete source records, performs bounded local parsing,
 and preserves unknown or unavailable material through explicit fidelity states.

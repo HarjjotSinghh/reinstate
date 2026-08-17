@@ -7,20 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Phase 5 in progress. **Kimi Code CLI is the first new agent to reach T1**:
-its sessions are indexed and searchable, read-only. Every other candidate is
-still T0.
+Phase 5 in progress. **Kimi Code CLI is the first new agent to reach T2**:
+`rein handoff --from kimi` produces a capsule. Native resume stays refused.
 
-### Kimi Code CLI at T1
+### Kimi Code CLI at T2
 
-Promoted on 2026-08-17, when a native Windows probe joined the macOS one from
-the day before. The Windows device carried five sessions across three projects,
-which settled what a single-session macOS run could not: `state.json` has an
-identical thirteen-key shape on both platforms, and `session_index.jsonl`
-enumerated exactly the five session directories on disk.
+The `wire.jsonl` reader maps the vocabulary observed on both platform probes.
+Unknown record types are referenced with an opaque digest and never copied
+into event bodies. A truncated last JSONL line is dropped. `profile.bind`
+system prompts stay out of the capsule.
 
-`rein sessions --agent kimi` lists and searches them. Resume and fork stay
-refused: no device journey has run `kimi -r <id>` against a real session.
+Resume and fork stay refused: no device journey has run `kimi -r <id>` against
+a real session.
+
+T1 (2026-08-17) remains the indexing floor: dual-platform probes, identical
+`state.json` shape, and `session_index.jsonl` enumerating the sessions on disk.
 
 ### Added
 
@@ -47,7 +48,7 @@ refused: no device journey has run `kimi -r <id>` against a real session.
 - ZCode catalog descriptor at T0 (`desktop_only`): official Z.ai desktop ADE only; npm `zcode-app-cli` is not a catalog agent.
 - OpenHands catalog descriptor at T0 (`server_backed`); conversations stay on the Agent Server / Cloud backend.
 - GitHub Copilot CLI catalog entry at T0 (`layout_unverified`); `session-state/` stays unread until a cache-clear/re-login probe.
-- Kimi Code CLI catalog descriptor at T0 (`layout_unverified`): dual-platform probes unavailable (`kimi` not installed; no native Windows host).
+- Kimi Code CLI catalog descriptor at T2: `rein handoff --from kimi` reads `agents/main/wire.jsonl`. Resume stays refused.
 - Pi catalog descriptor at T0 (`layout_unverified`): F1 JSONL tree, no dual-platform probes, no T1+ claim.
 - Qwen Code catalog entry at T0 (`layout_unverified`): official product identified; no dual-platform probes and no reader.
 - Gemini CLI stays T2: `gemini --version` parser added; fail-closed range escalated (no maintainer, no dual-platform physical resume).

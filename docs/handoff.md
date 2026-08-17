@@ -40,10 +40,11 @@ Reinstate labels these separately in the CLI, in JSON, and in docs:
 | **Gemini CLI** | **structured handoff** | **structured handoff** | not a target (source-only) | not in v0.4.0 | not planned |
 | **OpenCode** | **structured handoff** | **structured handoff** | not in v0.4.0 | not a target (source-only) | not planned |
 | **Grok Build** | **structured handoff** | **structured handoff** | not in v0.4.0 | not in v0.4.0 | not a target (source-only) |
+| **Kimi Code CLI** | **structured handoff** | **structured handoff** | not in v0.4.0 | not in v0.4.0 | not planned |
 
-Gemini CLI, OpenCode, and Grok Build are **source-only** in `v0.4.0`: you can
-hand off *from* them, not *to* them. Support is directional and versioned — a
-supported session adapter never implies a supported handoff.
+Gemini CLI, OpenCode, Grok Build, and Kimi Code CLI are **source-only** in
+`v0.5.0`: you can hand off *from* them, not *to* them. Support is directional
+and versioned — a supported session adapter never implies a supported handoff.
 
 ## Commands
 

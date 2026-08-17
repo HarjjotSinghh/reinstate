@@ -165,24 +165,31 @@
       "key": "kimi",
       "name": "Kimi Code CLI",
       "vendor": "Moonshot AI",
-      "tier": "T0",
+      "tier": "T2",
       "storageFamily": "F1",
-      "t0Reason": "layout_unverified",
-      "integrationPath": null,
-      "status": "known",
+      "t0Reason": null,
+      "integrationPath": "/integrations/kimi",
+      "status": "handoff-source",
       "minimumTestedVersion": null,
       "maximumTestedVersion": null,
-      "resumeMode": "Not usable (T0)",
-      "evidenceLevel": "catalog descriptor only; dual-platform AGENT-PROBE-V1 not committed",
+      "resumeMode": "Handoff source only (T2); no native resume",
+      "evidenceLevel": "dual-platform AGENT-PROBE-V1 plus deterministic wire.jsonl fixtures; no T3 version probe",
       "evidence": {
         "storagePage": "docs/session-storage/kimi.md",
-        "fixtures": [],
+        "fixtures": [
+          "testdata/sessionindex/kimi/macos",
+          "testdata/sessionindex/kimi/windows",
+          "testdata/handoff/kimi"
+        ],
         "deviceReports": [],
-        "probeReports": []
+        "probeReports": [
+          "docs/testing/results/agent-probes/2026-08-16-macos-kimi.json",
+          "docs/testing/results/agent-probes/2026-08-17-windows-kimi.json"
+        ]
       },
-      "lastTested": null,
+      "lastTested": "2026-08-17",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/kimi.md",
-      "notes": "T0 Known. Dual-platform AGENT-PROBE-V1 not committed. Not an integration."
+      "notes": "T2 handoff source. Not a handoff destination and not a synced agent. Native resume is refused until a device journey runs kimi -r."
     },
     {
       "id": "pi",

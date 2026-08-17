@@ -21,7 +21,7 @@ marketing claim.
 | Current agents | Claude Code and Codex CLI | adapter registry, compatibility data, setup checks |
 | Native-resume boundary | Claude Code → Claude Code and Codex → Codex only | adapter implementation, docs, protected claim tests |
 | Cross-agent behavior | `v0.4.0` provides explicit structured handoff into a new Claude Code or Codex session; it does not translate or transfer a native session | handoff contract, ADR 0003, CLI/doctest contracts |
-| Handoff source scope | Claude Code, Codex CLI, Gemini CLI, OpenCode, and Grok Build can be sources; Gemini, OpenCode, and Grok are source-only in `v0.4.0` | directional compatibility matrix, reader tests |
+| Handoff source scope | Claude Code, Codex CLI, Gemini CLI, OpenCode, Grok Build, and Kimi Code CLI can be sources; Gemini, OpenCode, Grok, and Kimi are source-only | directional compatibility matrix, reader tests |
 | Current OS targets | Apple Silicon macOS and native Windows x64 are mandatory RC/stable targets; Intel macOS and Linux/WSL2 are optional and unsupported/unverified | release runbook, compatibility data, limitations |
 | Encryption | Supported session snapshots and manifests are encrypted locally before upload using the current age envelope implementation | `internal/crypto`, sync engine, threat model |
 | Storage | User-owned Amazon S3, Cloudflare R2, or compatible S3 storage | backend/config implementation and storage docs |
