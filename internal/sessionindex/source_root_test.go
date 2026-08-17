@@ -16,6 +16,7 @@ func TestAgentRootMatchesIndexedCustomLayouts(t *testing.T) {
 	}{
 		{AgentClaude, filepath.Join(base, "custom-claude", "projects", "encoded-project", "session.jsonl"), filepath.Join(base, "custom-claude")},
 		{AgentCodex, filepath.Join(base, "custom-codex", "sessions", "2026", "08", "05", "rollout.jsonl"), filepath.Join(base, "custom-codex")},
+		{AgentPi, filepath.Join(base, "custom-pi", "sessions", "demo", "demo-01987654-3210-7890-abcd-ef0123456789.jsonl"), filepath.Join(base, "custom-pi")},
 	}
 	for _, test := range tests {
 		test := test

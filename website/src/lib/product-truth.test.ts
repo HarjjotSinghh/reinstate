@@ -110,9 +110,9 @@ describe('central product-truth drift guard', () => {
     ).toEqual(['gemini', 'grok', 'opencode']);
     expect(compatibilityAgents.filter((agent) => agent.tier === 'T3')).toEqual([]);
     expect(
-      compatibilityAgents.filter((agent) => agent.tier === 'T1').map((agent) => agent.key),
-    ).toEqual(['kimi']);
-    expect(compatibilityAgents.filter((agent) => agent.tier === 'T0')).toHaveLength(12);
+      compatibilityAgents.filter((agent) => agent.tier === 'T1').map((agent) => agent.key).sort(),
+    ).toEqual(['kimi', 'pi']);
+    expect(compatibilityAgents.filter((agent) => agent.tier === 'T0')).toHaveLength(11);
   });
 
   it('keeps the doctor self-test distinct from real remote-storage evidence', async () => {

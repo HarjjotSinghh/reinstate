@@ -190,7 +190,7 @@ failed task.
 | OpenCode | anomalyco | F2 | **T2** | T2 |
 | Grok Build | xAI | F1 | **T2** | T2 |
 | Kimi Code CLI | Moonshot AI | F1 | **T1** | T3 |
-| Pi | earendil-works | F1 | — | T3 |
+| Pi | earendil-works | F1 | **T1** | T3 |
 | Qwen Code | Alibaba | F1 | — | T2 |
 | Cursor CLI | Anysphere | F3 (expected) | — | T1 |
 | GitHub Copilot CLI | GitHub | unknown | — | T1 |

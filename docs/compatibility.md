@@ -36,7 +36,7 @@ The Phase 2 local capability matrix is:
 | OpenHands | Not implemented | Not implemented | Not applicable | T0 |
 | GitHub Copilot CLI | Not implemented | Not implemented | Rename-aside: old session ID did not return; no reader | T0 |
 | Kimi Code CLI | Indexed (read-only) | Not implemented | Dual-platform probes committed; no device journey for resume | T1 |
-| Pi | Not implemented | Not implemented | Dual-platform JSONL sessions committed; no reader | T0 |
+| Pi | Indexed (read-only) | Not implemented | Dual-platform probes committed; header-only index; no device journey for resume | T1 |
 | Qwen Code | Not implemented | Not implemented | Dual-platform JSONL chats committed; no reader | T0 |
 | Antigravity CLI | Not implemented (`layout_unverified`) | Not implemented | No probe captured | T0 |
 | Cline | Not implemented | Not implemented | Dual-platform AGENT-PROBE-V1 not committed | T0 |

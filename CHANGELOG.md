@@ -7,9 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Phase 5 in progress. **Kimi Code CLI is the first new agent to reach T1**:
-its sessions are indexed and searchable, read-only. Every other candidate is
-still T0.
+Phase 5 in progress. Additional T1 agents: **Kimi Code CLI** and **Pi**.
+Four more T1 agents are required for the v0.5.0 gate. Candidates without a
+reader stay T0.
+
+### Pi at T1
+
+Promoted on 2026-08-17 after macOS and native Windows probes agreed on
+`sessions/<slug>/<slug>-<uuid-v4>.jsonl` and first-line keys
+`cwd, id, timestamp, type, version`.
+
+`rein sessions --agent pi` lists those files from the `type=session` header.
+Later JSONL tree lines are not counted as messages. Resume and fork stay
+refused: no device journey has run `pi --session` against a real file.
 
 ### Kimi Code CLI at T1
 
