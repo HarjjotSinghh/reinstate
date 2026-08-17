@@ -32,7 +32,7 @@ rein
 rein version [--json]
 rein doctor [--json] [--self-test] [--agents] [--acceptance-matrix]
 rein setup check [--json]
-rein sessions [--agent claude|codex|gemini|opencode|grok|kimi|all] [--json]
+rein sessions [--agent claude|codex|gemini|opencode|grok|kimi|pi|all] [--json]
 rein search QUERY [QUERY...] [--agent ...] [--project FRAGMENT]
             [--branch FRAGMENT] [--file FRAGMENT] [--limit N] [--json]
 rein inspect AGENT:SESSION_ID [--json]

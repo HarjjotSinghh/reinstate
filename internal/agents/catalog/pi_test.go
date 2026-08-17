@@ -1,6 +1,7 @@
 package catalog
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/HarjjotSinghh/reinstate/internal/agents"
@@ -8,25 +9,48 @@ import (
 )
 
 func TestPiConformance(t *testing.T) {
-	conformance.Run(t, Pi(), conformance.Fixtures{})
+	conformance.Run(t, Pi(), conformance.Fixtures{
+		Root: "testdata/sessionindex/pi",
+		OS:   []string{"macos", "windows"},
+	})
 }
 
-func TestPiStaysT0WithoutCapabilities(t *testing.T) {
+// Pi is T1 and no further. Dual-platform probes exist; everything above T1
+// needs a transcript reader and a device journey running `pi --session`.
+func TestPiIsDiscoverOnly(t *testing.T) {
 	d := Pi()
-	if d.Key != "pi" || d.Tier != agents.TierKnown || d.T0Reason != agents.T0LayoutUnverified {
-		t.Fatalf("pi identity = %s %s %s", d.Key, d.Tier, d.T0Reason)
+	if d.Tier != agents.TierDiscover {
+		t.Fatalf("tier = %s, want T1", d.Tier)
 	}
-	if d.Family != agents.FamilyHomeTree {
-		t.Fatalf("family = %s, want F1 (no CLI session list)", d.Family)
+	if d.T0Reason != "" {
+		t.Fatalf("T0Reason = %q, want empty above T0", d.T0Reason)
 	}
-	if d.NewIndexSource != nil || d.NewReader != nil || d.NewTarget != nil || d.NewSyncAdapter != nil {
-		t.Fatal("T0 descriptor must not expose constructors")
+	if d.NewIndexSource == nil {
+		t.Fatal("T1 requires an index source")
+	}
+	if d.NewReader != nil || d.NewTarget != nil || d.NewSyncAdapter != nil {
+		t.Fatal("T1 descriptor must not ship reader, target, or sync constructors")
 	}
 	if d.Native != nil {
-		t.Fatal("T0 descriptor must not claim native resume")
+		t.Fatal("native resume is a T3 claim; no device journey has run pi --session")
 	}
 	if d.Version == nil || d.Version.Min != "0.73.1" || d.Version.Max != "0.73.1" {
-		t.Fatalf("Version = %+v, want 0.73.1–0.73.1", d.Version)
+		t.Fatalf("Version = %+v, want the existing 0.73.1 fail-closed pin", d.Version)
+	}
+}
+
+func TestPiCitesBothPlatformProbes(t *testing.T) {
+	d := Pi()
+	var macOS, windows bool
+	for _, report := range d.Evidence.ProbeReports {
+		macOS = macOS || strings.Contains(report, "-macos-")
+		windows = windows || strings.Contains(report, "-windows-")
+	}
+	if !macOS || !windows {
+		t.Fatalf("probe reports = %v, want one macOS and one native Windows", d.Evidence.ProbeReports)
+	}
+	if len(d.Evidence.Fixtures) != 2 {
+		t.Fatalf("fixtures = %v, want one per platform", d.Evidence.Fixtures)
 	}
 }
 
@@ -46,7 +70,7 @@ func TestPiProcessPrefersVendorIdentity(t *testing.T) {
 
 func TestPiExcludesCredentialsAndExports(t *testing.T) {
 	d := Pi()
-	want := []string{"auth.json", "**/auth.json", "npm", "git", "**/*.html"}
+	want := []string{"auth.json", "**/auth.json", "npm", "git", "skills", "**/*.html"}
 	for _, name := range want {
 		if !contains(d.Storage.Excluded, name) {
 			t.Fatalf("excluded = %v, missing %s", d.Storage.Excluded, name)

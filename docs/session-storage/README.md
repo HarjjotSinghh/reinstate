@@ -28,7 +28,7 @@ Reinstate reads it. Support states live in
 | Agent | Page | Current | Target |
 | ----- | ---- | ------- | ------ |
 | Kimi Code CLI | [kimi.md](kimi.md) | **T1** | T3 |
-| Pi | [pi.md](pi.md) | T0 | T3 |
+| Pi | [pi.md](pi.md) | **T1** | T3 |
 | Qwen Code | [qwen.md](qwen.md) | T0 | T2 |
 | Cursor CLI | [cursor.md](cursor.md) | T0 | T1 |
 | GitHub Copilot CLI | [copilot.md](copilot.md) | T0 | T1 |
@@ -60,10 +60,10 @@ this phase, under
 | Qwen Code | `2026-08-17-macos-qwen.json` | Real JSONL conversation; keys match Windows; `<uuid-v4>-runtime.json` sidecars |
 | Cursor CLI | `2026-08-17-windows-cursor.json` | `~/.cursor/chats/<32-hex>/<uuid-v4>/store.db` plus `meta.json`; editor `projects/` excluded |
 | Cursor CLI | `2026-08-17-macos-cursor.json` | Same chats shape as Windows |
-| Pi | `2026-08-17-macos-pi.json` | `~/.pi/agent/sessions/<slug>/<slug>-<uuid-v4>.jsonl`; first-line keys `cwd, id, timestamp, type, version` |
+| Pi | `2026-08-17-macos-pi.json` | **Promoted Pi to T1.** `~/.pi/agent/sessions/<slug>/<slug>-<uuid-v4>.jsonl`; first-line keys `cwd, id, timestamp, type, version` |
 | Pi | `2026-08-17-windows-pi.json` | Same shape and keys as macOS |
 | GitHub Copilot CLI | `2026-08-17-windows-copilot-cache-clear.json` | Old session ID absent from fresh tree after rename-aside |
 | GitHub Copilot CLI | `2026-08-16-macos-copilot.json` | Substantial local `session-state/<uuid>/events.jsonl`; cache-versus-authoritative still open |
 
-**No tier moved.** One platform is not dual-platform evidence, and every
-promotion still needs a native Windows artifact.
+Kimi Code CLI and Pi are T1. Other candidates on this page stay T0 until a
+reader exists.

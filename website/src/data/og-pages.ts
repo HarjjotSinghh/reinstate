@@ -117,6 +117,13 @@ export const staticOgPages: OgPage[] = [
       'Read-only Kimi Code CLI discovery, search, and inspect. Native resume, handoff, and encrypted sync are not supported.',
   },
   {
+    route: '/integrations/pi',
+    kind: 'Integration',
+    title: 'Pi is a T1 discover agent',
+    description:
+      'Read-only Pi discovery, search, and inspect. Native resume, handoff, and encrypted sync are not supported.',
+  },
+  {
     route: '/compatibility',
     kind: 'Product facts',
     title: 'Reinstate compatibility',
