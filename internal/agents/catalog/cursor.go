@@ -7,8 +7,12 @@ func init() { agents.MustRegister(Cursor()) }
 // Cursor is the Cursor CLI descriptor (T0, layout_unverified).
 //
 // Catalog key `cursor` is the terminal agent only. The in-editor agent is a
-// different product and is not this key. Dual-platform probes are absent, so
-// there is no index source and no reader.
+// different product and is not this key.
+//
+// A 2026-08-17 macOS CLI session created ~/.cursor/chats. That directory is
+// the marker; ~/.cursor is the candidate root; projects/ stays excluded so
+// the editor agent's agent-transcripts are never filed under this key.
+// Native Windows is still unprobed, so there is no index source and no reader.
 func Cursor() agents.Descriptor {
 	return agents.Descriptor{
 		Key:         "cursor",
@@ -19,15 +23,27 @@ func Cursor() agents.Descriptor {
 		Family:      agents.FamilyEmbeddedDB,
 		T0Reason:    agents.T0LayoutUnverified,
 		Storage: agents.StorageSpec{
-			// Roots stay unset deliberately. A 2026-08-16 macOS observation
-			// found ~/.cursor/projects/<path-slug>/agent-transcripts holding
-			// the *editor* agent's conversations while the CLI's documented
-			// ~/.cursor/chats did not exist. Declaring ~/.cursor here would
-			// resolve on the editor's tree and file another product's
-			// sessions under this key. CURSOR_CONFIG_DIR relocates
-			// cli-config.json, not a confirmed session store.
+			Roots: func(home agents.HomeDir) []agents.Root {
+				return []agents.Root{{Path: home.Join(".cursor")}}
+			},
+			Marker:     "chats",
 			ProjectKey: agents.ProjectKeyNone,
 			Excluded: []string{
+				"projects",
+				"extensions",
+				"plugins",
+				"agents",
+				"ai-tracking",
+				"plans",
+				"skills",
+				"skills-cursor",
+				"rules",
+				"sandbox-policies",
+				"ide_state.json",
+				"argv.json",
+				"hooks.json",
+				"hooks.json.bak",
+				"statsig-cache.json",
 				"cli-config.json",
 				"mcp.json",
 				"**/mcp.json",
@@ -42,6 +58,9 @@ func Cursor() agents.Descriptor {
 		},
 		Evidence: agents.Evidence{
 			StoragePage: "docs/session-storage/cursor.md",
+			ProbeReports: []string{
+				"docs/testing/results/agent-probes/2026-08-17-macos-cursor.json",
+			},
 		},
 	}
 }

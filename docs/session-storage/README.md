@@ -57,6 +57,7 @@ this phase, under
 | GitHub Copilot CLI | `2026-08-17-windows-copilot.json` | SQLite appears: `session-store.db` plus a per-session `session.db`, absent from the macOS artifact |
 | Qwen Code | `2026-08-16-macos-qwen.json` | Conversations are under `projects/<slug>/chats/`, not `tmp/`; marker corrected |
 | GitHub Copilot CLI | `2026-08-16-macos-copilot.json` | Substantial local `session-state/<uuid>/events.jsonl`; cache-versus-authoritative still open |
+| Cursor CLI | `2026-08-17-macos-cursor.json` | One CLI session created `~/.cursor/chats/<32-hex>/<uuid-v4>/{meta.json,store.db}`; editor `projects/` stays excluded |
 
 **No tier moved.** One platform is not dual-platform evidence, and every
 promotion still needs a native Windows artifact.
