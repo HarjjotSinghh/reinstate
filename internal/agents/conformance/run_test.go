@@ -22,7 +22,11 @@ func TestIsolationFSRejectsWritesAndOutsideRoot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := fsys.Open("ok.jsonl"); err != nil {
+	file, err := fsys.Open("ok.jsonl")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := file.Close(); err != nil {
 		t.Fatal(err)
 	}
 	if len(fsys.Opens()) != 1 {
