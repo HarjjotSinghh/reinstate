@@ -109,9 +109,13 @@ refused: no device journey has run `kimi -r <id>` against a real session.
   A 2026-08-17 Windows probe drowned in the desktop IDE's Chrome profile and
   never reached `tmp/*/chats`. Those trees are not Gemini CLI sessions.
 - Grok Build excludes install and cache trees (`bundled`, `marketplace-cache`,
-  `bin`, `downloads`, `docs`) plus `auth.json`. The same Windows probe never
-  reached `sessions/` because the walk spent its budget on bundled binaries
-  and cloned marketplace git trees.
+  `bin`, `downloads`, `docs`) plus `auth.json`. A 2026-08-17 Windows re-probe
+  then reached `sessions/` (32 sessions) and is committed as
+  [`2026-08-17-windows-grok.json`](docs/testing/results/agent-probes/2026-08-17-windows-grok.json).
+- Qwen Code native Windows re-probe committed as
+  [`2026-08-17-windows-qwen.json`](docs/testing/results/agent-probes/2026-08-17-windows-qwen.json):
+  two `projects/*/chats/<uuid-v4>.jsonl` sessions after excluding `updates/`.
+  Still T0: macOS has no real conversation, and the file shapes disagree.
 
 ### Fixed
 

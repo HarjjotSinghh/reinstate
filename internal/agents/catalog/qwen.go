@@ -6,9 +6,10 @@ func init() { agents.MustRegister(Qwen()) }
 
 // Qwen is the Qwen Code descriptor.
 //
-// Official product is identified. Session-file layout is not verified on
-// macOS and native Windows, so the shipped tier is T0 (layout_unverified).
-// There is no index source and no transcript reader.
+// Official product is identified. Dual-platform probes exist, but they
+// disagree on conversation file shape (macOS stub JSON vs Windows JSONL),
+// so the shipped tier stays T0 (layout_unverified). There is no index
+// source and no transcript reader.
 func Qwen() agents.Descriptor {
 	return agents.Descriptor{
 		Key:         "qwen",
@@ -24,9 +25,10 @@ func Qwen() agents.Descriptor {
 				return []agents.Root{{Path: home.Join(".qwen")}}
 			},
 			// macOS probe 2026-08-16 (qwen 0.21.12): conversations are at
-			// projects/<slug>/chats/<slug>.json. The Gemini-fork hypothesis
-			// predicted tmp/, and tmp/<64-hex> does exist, but it is not the
-			// conversation store. Native Windows is still unprobed.
+			// projects/<slug>/chats/<slug>.json. Native Windows 2026-08-17
+			// (qwen 0.21.13): projects/<slug>/chats/<uuid-v4>.jsonl. The
+			// Gemini-fork hypothesis predicted tmp/, and tmp/<64-hex> does
+			// exist, but it is not the conversation store.
 			Marker: "projects",
 			Excluded: []string{
 				"settings.json",

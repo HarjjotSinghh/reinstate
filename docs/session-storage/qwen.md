@@ -1,8 +1,8 @@
 # Qwen Code (Alibaba)
 
-**Confidence: Partly documented on macOS, Unverified on native Windows** —
-official product identified; one macOS probe with no signed-in session; no
-Reinstate reader.
+**Confidence: Partly documented on macOS, documented on native Windows** —
+official product identified; macOS probe has no real conversation; Windows
+probe has two JSONL sessions; no Reinstate reader.
 **Current tier:** T0 (`layout_unverified`) · **Phase 5 target:** T2
 
 Catalog key is `qwen`.
@@ -28,7 +28,7 @@ Artifact:
 | Resolved root | `~/.qwen` |
 | Signed-in session | **no** — sign-up unavailable in the tester's region |
 | macOS AGENT-PROBE-V1 | captured, but without a real conversation |
-| native Windows AGENT-PROBE-V1 | absent |
+| native Windows AGENT-PROBE-V1 | [`2026-08-17-windows-qwen.json`](../testing/results/agent-probes/2026-08-17-windows-qwen.json) |
 
 ```
 ~/.qwen/
@@ -51,17 +51,16 @@ its record shape is not evidence. `skills/` and `extension-store/` are excluded
 in the descriptor: they are configuration, and a populated skills library buries
 the real tree in 176 directories of noise.
 
-## Device observation (2026-08-17, native Windows amd64)
+## Device evidence (2026-08-17, native Windows amd64)
 
-Not committed as an artifact. The self-updater unpacks a full npm tree under
-`updates/`, and it consumed the probe's entire file budget: 289 chunk files, 61
-font files, a 4 MB C header. The two real conversations were nearly crowded
-out. `updates` is now in the descriptor's `Excluded` set, and a re-probe will
-produce something worth committing. A second dump the same day
-(`2026-08-17T09:20:08Z`) still listed `updates/**/node_modules` because
-`C:\probe\rein.exe` was the old `0.0.0-dev` binary from before that exclusion.
+Artifact:
+[`2026-08-17-windows-qwen.json`](../testing/results/agent-probes/2026-08-17-windows-qwen.json)
 
-What the run showed anyway, and it contradicts the macOS reading:
+An earlier dump the same day drowned in `updates/**/node_modules` (the
+self-updater's npm tree). `updates` is excluded; this artifact is the re-probe
+that reached the conversations.
+
+The conversation layout contradicts the macOS reading:
 
 | Aspect | macOS (2026-08-16) | Windows (2026-08-17) |
 | ------ | ------------------ | -------------------- |
@@ -95,8 +94,9 @@ Also worth recording: `usage_record.jsonl` exists with
 tools, totalLatencyMs, version` — a per-session usage ledger that could supply
 message counts and file references without parsing a transcript at all.
 
-**Tier unchanged at T0.** A polluted artifact is not evidence, no macOS probe
-has observed a real conversation, and there is no reader.
+**Tier unchanged at T0.** The Windows artifact is a real conversation store,
+but macOS has only a stub JSON with no messages, the two platforms disagree
+on file shape, and there is no reader. Do not reuse the Claude reader.
 
 ## Identity
 
