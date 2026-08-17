@@ -29,7 +29,13 @@ const (
 	AgentGemini   = "gemini"
 	AgentOpenCode = "opencode"
 	AgentGrok     = "grok"
+	AgentKimi     = "kimi"
 )
+
+// KimiReadOnlyReason is the source-only contract for Kimi Code CLI. Native
+// resume argv is documented by the vendor but has never been run on a device,
+// so nothing here may launch it.
+const KimiReadOnlyReason = "Kimi Code CLI sessions are read-only until a device journey verifies native resume"
 
 var (
 	// ErrNotFound means a session reference did not resolve.

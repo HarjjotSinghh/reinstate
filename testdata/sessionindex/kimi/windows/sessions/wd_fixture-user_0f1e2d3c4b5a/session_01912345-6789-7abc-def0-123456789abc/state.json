@@ -1,0 +1,19 @@
+{
+  "id": "session_01912345-6789-7abc-def0-123456789abc",
+  "title": "Remap a Windows workspace",
+  "titleKind": "replaceable",
+  "isCustomTitle": false,
+  "cwd": "C:\\Users\\fixture-user\\code\\demo",
+  "createdAt": "2026-08-16T11:00:00.000Z",
+  "updatedAt": "2026-08-16T11:04:00.000Z",
+  "lastPrompt": "Remap a Windows workspace",
+  "lastTurnReason": "completed",
+  "agents": {
+    "main": {
+      "homedir": "C:\\Users\\fixture-user\\.kimi-code\\sessions\\wd_fixture-user_0f1e2d3c4b5a\\session_01912345-6789-7abc-def0-123456789abc"
+    }
+  },
+  "archived": false,
+  "custom": {},
+  "version": 2
+}

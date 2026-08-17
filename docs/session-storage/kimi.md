@@ -167,12 +167,69 @@ resume.
 
 | Tier | Blocker |
 | ---- | ------- |
-| T1 | macOS satisfied. Needs a native Windows `AGENT-PROBE-V1`, and a macOS re-probe across at least two projects to show the index holds |
-| T2 | `wire.jsonl` record vocabulary still unknown; needs the unknown-record and truncation policy |
+| T1 | **Code complete, evidence incomplete.** `internal/agents/sources/kimi` is written and tested against both fixture platforms. The only remaining blocker is a native Windows `AGENT-PROBE-V1`; a macOS re-probe across two projects should land with it |
+| T2 | `wire.jsonl` vocabulary is now known (below); still needs the unknown-record and truncation policy |
 | T3 | `kimi --version` prints a bare `0.36.1`, so a range is now expressible. Still needs a fail-closed supported range and physical `--continue` / `--session` on both platforms |
 
 T4 and T5 are out of scope for `v0.5.0` per
 [ADR 0004](../adr/0004-universal-agent-coverage.md).
+
+## Record shapes, read from the device
+
+These come from the same macOS session as the probe artifact, read field by
+field rather than through the shape normalizer. They are what
+`internal/agents/sources/kimi` parses.
+
+| Aspect | Value |
+| ------ | ----- |
+| Session directory | `session_<uuid-v4>` — an **underscore**. The probe artifact shows `session-<uuid-v4>` only because the normalizer trims `-_` around a token |
+| Project bucket | `wd_<account-name>_<12-hex>`, confirmed |
+| `state.json` `version` | `2` (integer). This is the layout gate: any other value fails closed |
+| `state.json` `id` | `session_<uuid-v4>`, matching the directory |
+| `state.json` `agents.main.homedir` | an **absolute path** to the session directory, so `internal/pathmap` must rewrite it before any cross-device use |
+| `wire.jsonl` first record | `{"type":"metadata","protocol_version":"1.5","created_at":…}` |
+
+Observed `wire.jsonl` record types: `metadata`, `profile.bind`,
+`permission.set_mode`, `plugin.session_start`, `llm.tools_snapshot`,
+`llm.request`, `turn.prompt`, `context.append_message`,
+`context.append_loop_event`, `usage.record`, `turn.ended`.
+
+Two carry indexable content:
+
+- `turn.prompt` — `origin: {kind: "user"}` and `input: [{type: "text", text}]`.
+- `context.append_message` — `message: {id, role, origin, content, toolCalls}`.
+
+This is one short session, so the list is a floor and not a vocabulary. A T2
+reader must still classify unknown records rather than assume this is all of
+them.
+
+## Why the index source ignores `session_index.jsonl`
+
+The vendor writes a global index at the root, and it would be the cheaper
+discovery path: one file enumerates every session across every project, with no
+deep walk. The shipped source walks `sessions/**/state.json` anyway.
+
+The reason is staleness. Nothing observed so far shows what happens to that
+index when a session directory is deleted by hand, and an index that outlives
+its sessions makes `rein list` offer threads that cannot be opened — a worse
+failure than a slower scan, because the user cannot tell it is wrong. Detecting
+staleness would require the walk the index was meant to avoid. It becomes an
+optimisation once a probe covers several projects and a hand-deleted session.
+
+## Implementation status
+
+`internal/agents/sources/kimi` exists, with synthetic fixtures under
+`testdata/sessionindex/kimi/{macos,windows}` and tests covering both fixture
+platforms, subagent exclusion, determinism, wire-log authority, and six
+corruption cases.
+
+**It is not registered on the descriptor.** The catalog stays T0, so the
+conformance suite would reject a `NewIndexSource` above the declared tier.
+Promotion is a three-line descriptor change — set `Tier`, drop `T0Reason`, wire
+`NewIndexSource` — plus the `Evidence.ProbeReports` and `Evidence.Fixtures`
+paths, and it is gated on one thing: a native Windows `AGENT-PROBE-V1`. That
+requirement is now enforced in code by `probePlatformGap`, not only documented
+here.
 
 ## Notes for the reader implementation
 

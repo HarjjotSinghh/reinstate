@@ -129,3 +129,38 @@ func TestCheckStructureT0Reason(t *testing.T) {
 		t.Fatal("T1 with T0Reason passed")
 	}
 }
+
+// A single-platform probe used to satisfy the T1 evidence check even though
+// docs/agent-support-tiers.md requires macOS and native Windows.
+func TestProbePlatformGap(t *testing.T) {
+	tests := []struct {
+		name    string
+		reports []string
+		want    string
+	}{
+		{"none", nil, "macos and windows"},
+		{"macos only", []string{"docs/testing/results/agent-probes/2026-08-16-macos-kimi.json"}, "windows"},
+		{"windows only", []string{"docs/testing/results/agent-probes/2026-08-16-windows-kimi.json"}, "macos"},
+		{
+			name: "both",
+			reports: []string{
+				"docs/testing/results/agent-probes/2026-08-16-macos-kimi.json",
+				"docs/testing/results/agent-probes/2026-08-20-windows-kimi.json",
+			},
+			want: "",
+		},
+		{
+			name: "wsl does not substitute for native windows",
+			reports: []string{
+				"docs/testing/results/agent-probes/2026-08-16-macos-kimi.json",
+				"docs/testing/results/agent-probes/2026-08-16-wsl-kimi.json",
+			},
+			want: "windows",
+		},
+	}
+	for _, tt := range tests {
+		if got := probePlatformGap(tt.reports); got != tt.want {
+			t.Errorf("%s: probePlatformGap = %q, want %q", tt.name, got, tt.want)
+		}
+	}
+}

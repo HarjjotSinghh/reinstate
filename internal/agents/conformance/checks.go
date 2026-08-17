@@ -92,6 +92,8 @@ func checkEvidence(d agents.Descriptor, repo string) error {
 	if d.Tier >= agents.TierDiscover {
 		if len(d.Evidence.ProbeReports) == 0 {
 			missing = append(missing, "ProbeReports")
+		} else if gap := probePlatformGap(d.Evidence.ProbeReports); gap != "" {
+			missing = append(missing, "ProbeReports on "+gap)
 		}
 		if len(d.Evidence.Fixtures) == 0 {
 			missing = append(missing, "Fixtures")
@@ -119,6 +121,41 @@ func checkEvidence(d agents.Descriptor, repo string) error {
 		return fmt.Errorf("missing required evidence: %s", strings.Join(missing, ", "))
 	}
 	return nil
+}
+
+// probePlatformGap names the platforms a T1 claim still lacks, or "" when both
+// are present.
+//
+// docs/agent-support-tiers.md has always required a probe from macOS *and*
+// native Windows at T1, but the check only counted reports, so a single macOS
+// artifact satisfied it. That is the one place the ladder must not be an
+// honour system: layouts diverge across platforms precisely where a scanner
+// gets them wrong, and a swarm promoting agents in parallel will take whatever
+// the code allows.
+//
+// Probe reports are named <date>-<macos|windows|wsl>-<agent>.json. WSL2 is a
+// separate device with a separate tree and never substitutes for native
+// Windows.
+func probePlatformGap(reports []string) string {
+	var macOS, windows bool
+	for _, report := range reports {
+		name := strings.ToLower(filepath.Base(report))
+		switch {
+		case strings.Contains(name, "-macos-"):
+			macOS = true
+		case strings.Contains(name, "-windows-"):
+			windows = true
+		}
+	}
+	switch {
+	case !macOS && !windows:
+		return "macos and windows"
+	case !macOS:
+		return "macos"
+	case !windows:
+		return "windows"
+	}
+	return ""
 }
 
 func exists(repo, rel string) bool {

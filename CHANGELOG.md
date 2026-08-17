@@ -75,6 +75,17 @@ for the candidate roster. No new agent is readable, resumable, or syncable yet.
 - `rein doctor --agents` gains `--agent-timeout`. The probe budget is now per
   agent (default 10s) rather than a single 3s budget for the whole run, and an
   agent that exceeds it is recorded with `timed_out` instead of failing the run.
+- `internal/agents/sources/kimi`, an F1 index source for Kimi Code CLI, with
+  synthetic fixtures under `testdata/sessionindex/kimi/{macos,windows}`. It
+  fails closed on an unknown `state.json` schema version or `wire.jsonl`
+  protocol major, excludes subagent trees, and takes the append-only wire log
+  as the session's size and mtime authority. **Not registered on the
+  descriptor**: Kimi stays T0 until a native Windows probe exists, so the
+  source ships tested but unwired.
+- The conformance suite enforces the dual-platform probe requirement at T1 and
+  above. `docs/agent-support-tiers.md` has always required a macOS **and** a
+  native Windows artifact, but the check only counted reports, so one macOS
+  file satisfied it. WSL does not substitute for native Windows.
 
 - Qwen Code's discovery marker corrected from `tmp` to `projects`. The probe
   shows conversations at `projects/<slug>/chats/`, so the Gemini-fork
