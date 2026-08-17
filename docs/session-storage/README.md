@@ -56,6 +56,9 @@ this phase, under
 | Kimi Code CLI | `2026-08-17-windows-kimi.json` | **Promoted Kimi to T1.** Five sessions across three projects; identical `state.json` shape to macOS; index enumerated exactly the sessions on disk |
 | GitHub Copilot CLI | `2026-08-17-windows-copilot.json` | SQLite appears: `session-store.db` plus a per-session `session.db`, absent from the macOS artifact |
 | Qwen Code | `2026-08-16-macos-qwen.json` | Conversations are under `projects/<slug>/chats/`, not `tmp/`; marker corrected |
+| Qwen Code | `2026-08-17-windows-qwen.json` | Two real JSONL sessions; first-line keys `cwd, message, parentUuid, provenance, sessionId, timestamp, type, uuid, version` |
+| Qwen Code | `2026-08-17-macos-qwen.json` | Real JSONL conversation; keys match Windows; `<uuid-v4>-runtime.json` sidecars |
+| Pi | `2026-08-17-macos-pi.json` | `~/.pi/agent/sessions/<slug>/<slug>-<uuid-v4>.jsonl`; first-line keys `cwd, id, timestamp, type, version` |
 | GitHub Copilot CLI | `2026-08-16-macos-copilot.json` | Substantial local `session-state/<uuid>/events.jsonl`; cache-versus-authoritative still open |
 
 **No tier moved.** One platform is not dual-platform evidence, and every

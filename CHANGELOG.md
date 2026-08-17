@@ -118,10 +118,23 @@ refused: no device journey has run `kimi -r <id>` against a real session.
 - Qwen Code native Windows re-probe committed as
   [`2026-08-17-windows-qwen.json`](docs/testing/results/agent-probes/2026-08-17-windows-qwen.json):
   two `projects/*/chats/<uuid-v4>.jsonl` sessions after excluding `updates/`.
-  Still T0: macOS has no real conversation, and the file shapes disagree.
+- Qwen Code macOS re-probe committed as
+  [`2026-08-17-macos-qwen.json`](docs/testing/results/agent-probes/2026-08-17-macos-qwen.json):
+  a real JSONL conversation whose first-line keys match Windows, plus
+  `<uuid-v4>-runtime.json` sidecars. Still T0: no reader. Do not reuse the
+  Claude reader.
+
+- Pi macOS AGENT-PROBE-V1 committed as
+  [`2026-08-17-macos-pi.json`](docs/testing/results/agent-probes/2026-08-17-macos-pi.json):
+  `~/.pi/agent/sessions/<slug>/<slug>-<uuid-v4>.jsonl`, first-line keys
+  `cwd, id, timestamp, type, version`. Still T0: no native Windows probe.
 
 ### Fixed
 
+- The probe kept UUID filenames that had an extra suffix (`<uuid>.runtime.json`)
+  and hyphenated project files, because the UUID matcher ignored a match at
+  the start of the stem and `reSafeName` accepted `[A-Za-z0-9._-]`. Those
+  now collapse to `<uuid-v4>-runtime.json` and `<slug>.ext`.
 - `TestIsolationFSRejectsWritesAndOutsideRoot` left a file handle open, so
   Windows CI failed during `TempDir` cleanup even though the assertions passed.
 - The probe emitted repository names. Kimi Code buckets a workspace as

@@ -1,20 +1,19 @@
 # Qwen Code (Alibaba)
 
-**Confidence: Partly documented on macOS, documented on native Windows** —
-official product identified; macOS probe has no real conversation; Windows
-probe has two JSONL sessions; no Reinstate reader.
+**Confidence: Documented on macOS and native Windows** —
+official product identified; both platforms have a real JSONL conversation
+with matching first-line keys; no Reinstate reader.
 **Current tier:** T0 (`layout_unverified`) · **Phase 5 target:** T2
 
 Catalog key is `qwen`.
 
 ## Research outcome
 
-**T0, reason `layout_unverified`.** Unchanged by the 2026-08-16 probe.
+**T0, reason `layout_unverified`.** Unchanged by the 2026-08-17 macOS re-probe.
 
-The probe located the conversation directory but could not observe a real
-conversation, because Qwen Code could not be signed in from India. A directory
-whose contents were never produced by a working session is not a layout.
-Do not invent a reader. Do not reuse the Gemini CLI reader.
+A real conversation now exists on macOS and Windows, and the JSONL first-line
+keys match. That is not a reader. Do not invent one. Do not reuse the Claude
+reader.
 
 ## Device evidence (2026-08-16, macOS arm64)
 
@@ -94,9 +93,35 @@ Also worth recording: `usage_record.jsonl` exists with
 tools, totalLatencyMs, version` — a per-session usage ledger that could supply
 message counts and file references without parsing a transcript at all.
 
-**Tier unchanged at T0.** The Windows artifact is a real conversation store,
-but macOS has only a stub JSON with no messages, the two platforms disagree
-on file shape, and there is no reader. Do not reuse the Claude reader.
+**Tier unchanged at T0.** Dual-platform JSONL conversations exist, but there
+is no index source and no reader. macOS also writes `<uuid-v4>-runtime.json`
+sidecars that the Windows artifact did not record. Do not reuse the Claude
+reader.
+
+## Device evidence (2026-08-17, macOS arm64)
+
+Artifact:
+[`2026-08-17-macos-qwen.json`](../testing/results/agent-probes/2026-08-17-macos-qwen.json)
+
+A signed-in session completed on this host (`qwen` 0.21.13). The conversation
+file is JSONL. First-line keys match Windows:
+
+```
+cwd, message, parentUuid, provenance, sessionId, timestamp, type, uuid, version
+```
+
+The probe collapsed three files under `projects/*/chats/*`. `name_shapes`
+kept `<uuid-v4>-runtime.json` (one shape per glob); the JSONL schema is in
+`first_line_keys`. Sidecars are not the conversation store.
+
+| Check | Result |
+| ----- | ------ |
+| `qwen` on PATH | yes |
+| `qwen --version` | `0.21.13` |
+| Resolved root | `~/.qwen` |
+| Signed-in session | **yes** — one real JSONL conversation |
+| macOS AGENT-PROBE-V1 | this artifact |
+| native Windows AGENT-PROBE-V1 | [`2026-08-17-windows-qwen.json`](../testing/results/agent-probes/2026-08-17-windows-qwen.json) |
 
 ## Identity
 

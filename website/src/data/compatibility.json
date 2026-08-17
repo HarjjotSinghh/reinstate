@@ -203,16 +203,18 @@
       "minimumTestedVersion": null,
       "maximumTestedVersion": null,
       "resumeMode": "Not usable (T0)",
-      "evidenceLevel": "catalog descriptor only; dual-platform AGENT-PROBE-V1 not committed",
+      "evidenceLevel": "macOS AGENT-PROBE-V1 committed; native Windows not committed",
       "evidence": {
         "storagePage": "docs/session-storage/pi.md",
         "fixtures": [],
         "deviceReports": [],
-        "probeReports": []
+        "probeReports": [
+          "docs/testing/results/agent-probes/2026-08-17-macos-pi.json"
+        ]
       },
-      "lastTested": null,
+      "lastTested": "2026-08-17",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/pi.md",
-      "notes": "T0 Known. Dual-platform AGENT-PROBE-V1 not committed. Not an integration."
+      "notes": "T0 Known. macOS probe committed; native Windows missing. Not an integration."
     },
     {
       "id": "qwen",
@@ -227,16 +229,20 @@
       "minimumTestedVersion": null,
       "maximumTestedVersion": null,
       "resumeMode": "Not usable (T0)",
-      "evidenceLevel": "catalog descriptor only; dual-platform probes not captured",
+      "evidenceLevel": "dual-platform AGENT-PROBE-V1; JSONL keys match; no reader",
       "evidence": {
         "storagePage": "docs/session-storage/qwen.md",
         "fixtures": [],
         "deviceReports": [],
-        "probeReports": []
+        "probeReports": [
+          "docs/testing/results/agent-probes/2026-08-16-macos-qwen.json",
+          "docs/testing/results/agent-probes/2026-08-17-windows-qwen.json",
+          "docs/testing/results/agent-probes/2026-08-17-macos-qwen.json"
+        ]
       },
-      "lastTested": null,
+      "lastTested": "2026-08-17",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/qwen.md",
-      "notes": "T0 Known. Dual-platform probes not captured. Not an integration."
+      "notes": "T0 Known. Dual-platform JSONL conversations committed. No reader. Not an integration."
     },
     {
       "id": "cursor",

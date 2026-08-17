@@ -1,0 +1,251 @@
+{
+  "schema": "AGENT-PROBE-V1",
+  "generated_at": "2026-08-17T11:34:48Z",
+  "platform": {
+    "os": "darwin",
+    "arch": "arm64",
+    "device_class": "macos"
+  },
+  "reinstate_version": "v0.4.0-36-g7806a34-dirty",
+  "agents": [
+    {
+      "key": "qwen",
+      "display_name": "Qwen Code",
+      "declared_tier": "T0",
+      "root_env": "QWEN_HOME",
+      "root_env_set": false,
+      "candidate_roots": [
+        {
+          "relative_to": "home",
+          "suffix": ".qwen",
+          "exists": true,
+          "marker_present": true
+        }
+      ],
+      "resolved_root": {
+        "relative_to": "home",
+        "suffix": ".qwen"
+      },
+      "executable_on_path": true,
+      "version_raw": "0.21.13",
+      "tree": [
+        {
+          "path": "*",
+          "kind": "file",
+          "count": 2,
+          "median_bytes": 841
+        },
+        {
+          "path": "extensions",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "extensions/*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2
+        },
+        {
+          "path": "installation_id",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 36
+        },
+        {
+          "path": "memories",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "memories/*",
+          "kind": "file",
+          "count": 1
+        },
+        {
+          "path": "projects",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "projects/*",
+          "kind": "dir",
+          "children": 4,
+          "sample_count": 1
+        },
+        {
+          "path": "projects/*/*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 125
+        },
+        {
+          "path": "projects/*/chats",
+          "kind": "dir",
+          "children": 3,
+          "sample_count": 1
+        },
+        {
+          "path": "projects/*/chats/*",
+          "kind": "file",
+          "count": 3,
+          "median_bytes": 238
+        },
+        {
+          "path": "projects/*/memory",
+          "kind": "dir",
+          "children": 1,
+          "sample_count": 1
+        },
+        {
+          "path": "projects/*/memory/*",
+          "kind": "file",
+          "count": 1
+        },
+        {
+          "path": "projects/*/meta.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 105
+        },
+        {
+          "path": "tip_history.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 433
+        },
+        {
+          "path": "tmp",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "tmp/*",
+          "kind": "dir",
+          "children": 2,
+          "sample_count": 1
+        },
+        {
+          "path": "tmp/*/logs.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 518
+        },
+        {
+          "path": "tmp/*/scheduled_tasks.lock",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 83
+        },
+        {
+          "path": "usage",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "usage/token-usage-2026-<n>.jsonl",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 790
+        },
+        {
+          "path": "usage_record.jsonl",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 673
+        }
+      ],
+      "name_shapes": [
+        {
+          "path": "*",
+          "shape": "<slug>.md",
+          "samples": 2
+        },
+        {
+          "path": "extensions/*",
+          "shape": "<slug>.json",
+          "samples": 1
+        },
+        {
+          "path": "memories/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "projects/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "projects/*/*",
+          "shape": "<slug>.json",
+          "samples": 1
+        },
+        {
+          "path": "projects/*/chats/*",
+          "shape": "<uuid-v4>-runtime.json",
+          "samples": 3
+        },
+        {
+          "path": "projects/*/memory/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "tmp/*",
+          "shape": "<64-hex>",
+          "samples": 1
+        },
+        {
+          "path": "usage/*",
+          "shape": "token-usage-2026-<n>.jsonl",
+          "samples": 1
+        }
+      ],
+      "first_line_keys": {
+        "extensions/*": [],
+        "projects/*/chats/*": [
+          "cwd",
+          "message",
+          "parentUuid",
+          "provenance",
+          "sessionId",
+          "timestamp",
+          "type",
+          "uuid",
+          "version"
+        ],
+        "usage/token-usage-2026-<n>.jsonl": [
+          "apiDurationMs",
+          "authType",
+          "cachedTokens",
+          "id",
+          "inputTokens",
+          "localDate",
+          "localMonth",
+          "model",
+          "outputTokens",
+          "schemaVersion",
+          "sessionId",
+          "source",
+          "thoughtsTokens",
+          "timestamp",
+          "totalTokens"
+        ],
+        "usage_record.jsonl": [
+          "durationMs",
+          "files",
+          "models",
+          "project",
+          "sessionId",
+          "skills",
+          "startTime",
+          "timestamp",
+          "tools",
+          "totalLatencyMs",
+          "version"
+        ]
+      }
+    }
+  ]
+}
