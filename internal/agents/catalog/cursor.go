@@ -19,9 +19,13 @@ func Cursor() agents.Descriptor {
 		Family:      agents.FamilyEmbeddedDB,
 		T0Reason:    agents.T0LayoutUnverified,
 		Storage: agents.StorageSpec{
-			// CURSOR_CONFIG_DIR relocates cli-config.json, not a confirmed
-			// session store. Roots stay unset so doctor does not walk a
-			// real ~/.cursor tree.
+			// Roots stay unset deliberately. A 2026-08-16 macOS observation
+			// found ~/.cursor/projects/<path-slug>/agent-transcripts holding
+			// the *editor* agent's conversations while the CLI's documented
+			// ~/.cursor/chats did not exist. Declaring ~/.cursor here would
+			// resolve on the editor's tree and file another product's
+			// sessions under this key. CURSOR_CONFIG_DIR relocates
+			// cli-config.json, not a confirmed session store.
 			ProjectKey: agents.ProjectKeyNone,
 			Excluded: []string{
 				"cli-config.json",

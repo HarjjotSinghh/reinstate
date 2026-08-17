@@ -74,10 +74,45 @@ func normalizeStem(stem string) string {
 	if m := reTrailing.FindStringSubmatch(stem); len(m) == 3 && len(m[2]) >= 2 {
 		return m[1] + "-<n>"
 	}
+	if looksLikeEncodedPath(stem) {
+		return "<path-slug>"
+	}
 	if reSafeName.MatchString(stem) && !looksIdentifying(stem) {
 		return stem
 	}
 	return "<slug>"
+}
+
+// filesystemRoots are the first path component of an absolute path on a
+// supported platform, plus single letters for Windows drives.
+var filesystemRoots = map[string]bool{
+	"users": true, "home": true, "var": true, "private": true, "tmp": true,
+	"mnt": true, "opt": true, "srv": true, "media": true, "root": true,
+	"volumes": true, "documents": true,
+}
+
+// looksLikeEncodedPath reports whether a component is an absolute path with
+// its separators rewritten, the scheme Cursor uses for project buckets:
+// /Users/<user>/Documents/Projects/demo becomes
+// Users-<user>-Documents-Projects-demo.
+//
+// Such a component is an absolute path and a repository name wearing a
+// disguise, and the token normalizer would otherwise pass it through intact
+// because every character in it is unremarkable. Detection anchors on the
+// first segment being a filesystem root rather than on counting segments,
+// which keeps vendor bucket prefixes like Kimi's wd_<user>_<hash> readable.
+func looksLikeEncodedPath(stem string) bool {
+	fields := strings.FieldsFunc(stem, func(r rune) bool { return r == '-' || r == '_' })
+	if len(fields) < 3 {
+		return false
+	}
+	head := strings.ToLower(fields[0])
+	if filesystemRoots[head] {
+		return true
+	}
+	// A Windows drive letter, as in C-Users-<user>-src.
+	return len(head) == 1 && head[0] >= 'a' && head[0] <= 'z' &&
+		strings.EqualFold(fields[1], "users")
 }
 
 // redactUser strips the operating-system account name from an already

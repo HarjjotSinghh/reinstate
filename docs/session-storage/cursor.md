@@ -34,6 +34,36 @@ A forum reply states the two stores are separate (CLI under `~/.cursor/chats`,
 editor under `~/.cursor/projects/<project>/agent-transcripts/`). That is not
 a Reinstate probe and does not promote a row.
 
+## Device observation (2026-08-16, macOS arm64)
+
+`cursor-agent` version `2026.08.11-e8db854` was installed on the probe machine
+but **no CLI session was run**, so this is an observation, not an
+`AGENT-PROBE-V1` artifact, and it promotes nothing.
+
+| Path | Observed |
+| ---- | -------- |
+| `~/.cursor/chats` | **absent** |
+| `~/.cursor/projects/<path-slug>/agent-transcripts/<uuid>/<uuid>.jsonl` | present, 11 project buckets |
+| `~/.local/share/cursor-agent/versions/<version>/` | present — the binary, not data |
+| `~/.cursor/cli-config.json` | present |
+
+The forum's split is corroborated. The editor agent's transcripts are exactly
+where it said, and the CLI's `chats/` directory does not exist — consistent
+with a CLI that was installed but never run. Absence after zero sessions is
+not evidence of absence.
+
+**This is why `Storage.Roots` stays unset for key `cursor`.** Declaring
+`~/.cursor` would resolve on the editor agent's tree and attribute the editor
+product's conversations to the CLI key, which is the same failure the Gemini
+CLI descriptor now avoids by excluding `antigravity-cli`. Two products sharing
+one home directory must not be collapsed into one catalog row for the
+convenience of making the probe report something.
+
+The unblocking step is therefore not a descriptor change. It is running one
+real `cursor-agent` session and re-probing: if `~/.cursor/chats` then exists,
+it becomes the root with `chats` as its marker, and the editor's `projects/`
+tree goes in `Excluded`.
+
 ## Why T0 is `layout_unverified`
 
 T-030 cannot produce the evidence T1 requires.

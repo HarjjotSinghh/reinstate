@@ -85,6 +85,12 @@ for the candidate roster. No new agent is readable, resumable, or syncable yet.
 
 ### Fixed
 
+- The probe would have emitted encoded absolute paths verbatim. Cursor buckets
+  projects as `Users-<user>-Documents-Projects-<repo>`, which the token
+  normalizer passed through intact because every character in it is
+  unremarkable, carrying the home path and repository name into the artifact.
+  Such components now collapse to `<path-slug>`. Found while evaluating Cursor
+  roots, before any Cursor tree was walked.
 - The probe emitted the operating-system account name inside normalized path
   shapes. Kimi Code buckets a workspace as `wd_<user>_<hash>`, and nothing about
   an account name looks like a UUID, hash, or slug, so the normalizer kept it

@@ -213,6 +213,17 @@ func TestShapeNormalization(t *testing.T) {
 		{"session-001", "session-<n>"},
 		{"sessions", "sessions"},
 		{"state.json", "state.json"},
+		// Cursor buckets projects as an absolute path with separators
+		// rewritten. Every character is unremarkable, so without an explicit
+		// rule the normalizer passes the home path and the repository name
+		// through intact.
+		{"Users-alice-Documents-Projects-demo", "<path-slug>"},
+		{"var-folders-jv-85d89wh91t5132jys95scwc00000gn-T", "<path-slug>"},
+		{"tmp-reinstate-argv-fix", "<path-slug>"},
+		{"C-Users-alice-src-demo", "<path-slug>"},
+		// A vendor prefix that merely contains segments is not a path.
+		{"empty-window", "empty-window"},
+		{"wd_alice_abcdef", "wd_alice_abcdef"},
 	}
 	for _, tt := range tests {
 		if got := normalizeComponent(tt.in); got != tt.want {

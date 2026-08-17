@@ -104,6 +104,15 @@ account name looks like a UUID, a hash, or a slug, so the normalizer preserves
 it verbatim unless it is removed explicitly. An absolute path is not the only
 way an identity reaches a committed artifact.
 
+For the same reason a component that is an absolute path with its separators
+rewritten collapses to `<path-slug>`. Cursor buckets a project as
+`Users-<user>-Documents-Projects-demo`; every character in that is
+unremarkable, so it would otherwise pass through intact and carry both the home
+path and the repository name with it. Detection anchors on the first segment
+being a filesystem root — `Users`, `home`, `var`, `tmp`, a Windows drive letter
+— rather than on counting segments, so vendor prefixes like `wd_` stay
+readable.
+
 The probe opens every file read-only, reads at most the first line of a
 sampled file, and never writes, renames, or locks anything under an agent
 root.
