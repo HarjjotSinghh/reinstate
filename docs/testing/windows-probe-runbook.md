@@ -18,16 +18,32 @@ tree we would want to measure later.
 
 Nothing in this runbook needs administrator rights.
 
-## 1. Get the probe binary across (2 min)
+## 1. Download the probe binary (2 min)
 
-A prebuilt `rein.exe` is at `dist/rein.exe` in this repository, cross-compiled
-from the current branch. Copy it to the Windows machine by USB, cloud drive, or
-`scp` and put it somewhere simple such as `C:\probe\rein.exe`.
+Paste this into PowerShell on the Windows machine. Nothing needs to be copied
+across by hand.
 
-It must be **this** build. The stable `v0.4.0` binary predates the per-agent
-timeout, the account-name redaction, and the marker-gated root discovery: it
-will time out on a machine with several agents installed, and if it does emit
-anything it will put your Windows account name in the file.
+```powershell
+New-Item -ItemType Directory -Force -Path C:\probe | Out-Null
+Invoke-WebRequest -Uri https://github.com/HarjjotSinghh/reinstate/releases/download/probe-win-2026-08-17/rein.exe -OutFile C:\probe\rein.exe
+
+# Must print True. If it prints False, stop and re-download.
+(Get-FileHash C:\probe\rein.exe -Algorithm SHA256).Hash -eq '771A4F5C19FE518F8561A1085F0A46F9550154979F78AA589690BCA7CCF920FA'
+
+C:\probe\rein.exe version
+```
+
+The binary is unsigned, so SmartScreen may warn on first run.
+
+It must be **this** build, from the
+[`probe-win-2026-08-17`](https://github.com/HarjjotSinghh/reinstate/releases/tag/probe-win-2026-08-17)
+prerelease. The stable `v0.4.0` binary predates the per-agent timeout, the
+account-name redaction, and the marker-gated root discovery: it will time out
+on a machine with several agents installed, and if it does emit anything it
+will put your Windows account name in the file.
+
+Delete that prerelease once the artifact is captured; it is scaffolding, not a
+product release.
 
 Alternatively, with Go 1.25+ installed on Windows:
 
