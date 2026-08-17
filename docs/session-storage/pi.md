@@ -21,7 +21,7 @@ in favor of `@earendil-works/pi-coding-agent`; the fail-closed pin remains
 | Distribution | Official, npm, MIT |
 | Storage family | F1 (home-dir tree) — see [Family](#family-f1-not-f2) |
 | Catalog key | `pi` |
-| Fail-closed version pin | `0.73.1`–`0.73.1`. Still T0 until a native Windows probe. |
+| Fail-closed version pin | `0.73.1`–`0.73.1`. Still T0: no reader. |
 
 ## Device evidence (2026-08-17, macOS arm64)
 
@@ -39,6 +39,14 @@ Artifact:
 First-line keys on the session file: `cwd, id, timestamp, type, version`.
 That matches the published `type=session` header. The probe did not capture
 `version_raw`; the same terminal printed `0.73.1` for `pi --version`.
+
+## Device evidence (2026-08-17, native Windows amd64)
+
+Artifact:
+[`2026-08-17-windows-pi.json`](../testing/results/agent-probes/2026-08-17-windows-pi.json)
+
+Same pin `0.73.1`, same tree and first-line keys as macOS after a real
+`pi -p` session. Path slugs collapsed to `<slug>`. Still T0: no reader.
 
 ## Family: F1, not F2
 
@@ -104,7 +112,7 @@ override without treating it as `<config>/sessions`.
 
 | Item | Why |
 | ---- | --- |
-| T1 | Native Windows AGENT-PROBE-V1 still required |
+| T1 | Dual-platform probes committed; no reader |
 | Windows path slug | Drive letters and `\` are unpublished |
 | Session-dir override on disk | `PI_CODING_AGENT_SESSION_DIR` vs `--session-dir` vs `settings.json` `sessionDir` not probed |
 | T3 version range | Pi publishes on roughly a daily cadence (npm `0.84.2` as of 2026-08-14; mise reports ~255 releases, ~1 day average). A narrow pin will rot in weeks. **Maintainer decision — do not guess a range** |
@@ -113,7 +121,7 @@ override without treating it as `<config>/sessions`.
 
 | Tier | Blocker |
 | ---- | ------- |
-| T1 | Needs a native Windows probe against a real install |
+| T1 | Needs an index source; dual-platform probes exist |
 | T2 | Record format beyond the header line unparsed; unknown-layout and truncation policy untested |
 | T3 | Needs a captured `pi --version` probe shape, dual-platform resume journeys, and a maintainer version-range policy |
 

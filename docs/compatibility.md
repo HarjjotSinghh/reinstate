@@ -29,14 +29,14 @@ The Phase 2 local capability matrix is:
 | OpenAI Codex CLI | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64 | T5 |
 | Gemini CLI | Read-only included | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac | T2 |
 | OpenCode | Read-only included | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac | T2 |
-| Cursor CLI | Not implemented (`layout_unverified`) | Not implemented | Dual-platform AGENT-PROBE-V1 not committed | T0 |
+| Cursor CLI | Not implemented | Not implemented | Dual-platform `chats/<32-hex>/<uuid-v4>/store.db` committed; no reader | T0 |
 | Grok Build | Not implemented | Not implemented | Not applicable | T2 |
 | Amp | Not readable locally (`server_backed`) | Not implemented | Not applicable | T0 |
 | ZCode | Not implemented (`desktop_only`) | Not implemented | Not applicable | T0 |
 | OpenHands | Not implemented | Not implemented | Not applicable | T0 |
-| GitHub Copilot CLI | Not implemented | Not implemented | Not applicable | T0 |
+| GitHub Copilot CLI | Not implemented | Not implemented | Rename-aside: old session ID did not return; no reader | T0 |
 | Kimi Code CLI | Indexed (read-only) | Not implemented | Dual-platform probes committed; no device journey for resume | T1 |
-| Pi | Not implemented | Not implemented | macOS AGENT-PROBE-V1 committed; native Windows missing | T0 |
+| Pi | Not implemented | Not implemented | Dual-platform JSONL sessions committed; no reader | T0 |
 | Qwen Code | Not implemented | Not implemented | Dual-platform JSONL chats committed; no reader | T0 |
 | Antigravity CLI | Not implemented (`layout_unverified`) | Not implemented | No probe captured | T0 |
 | Cline | Not implemented | Not implemented | Dual-platform AGENT-PROBE-V1 not committed | T0 |

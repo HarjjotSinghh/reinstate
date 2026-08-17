@@ -11,8 +11,8 @@ func init() { agents.MustRegister(Pi()) }
 // Latest stable @mariozechner/pi-coding-agent as of 2026-08-16.
 var piVersionPattern = regexp.MustCompile(`^((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))$`)
 
-// Pi is the Pi coding agent descriptor. macOS AGENT-PROBE-V1 exists
-// (2026-08-17). It stays at T0 until a native Windows artifact exists.
+// Pi is the Pi coding agent descriptor. Dual-platform AGENT-PROBE-V1 exists
+// (2026-08-17 macOS and native Windows). It stays at T0 until a reader exists.
 // Vendor docs describe an F1 JSONL tree; they are not a tier promotion.
 func Pi() agents.Descriptor {
 	return agents.Descriptor{

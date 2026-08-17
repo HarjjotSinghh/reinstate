@@ -49,6 +49,7 @@ func Gemini() agents.Descriptor {
 				"antigravity-cli",
 				"config",
 				"history",
+				"skills",
 				"oauth_creds.json",
 				"google_accounts.json",
 			}, geminisrc.Excluded...),

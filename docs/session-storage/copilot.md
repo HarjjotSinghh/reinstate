@@ -1,12 +1,10 @@
 # GitHub Copilot CLI
 
-**Confidence: Layout documented on macOS, provenance unverified** — catalog
-descriptor exists; no index source, no reader. A macOS probe found substantial
-local session data, but the question that decides the tier is not "is there a
-file", it is "does the file survive a re-login", and that is still unanswered.
-**Current tier:** T0 (`layout_unverified`) · **Phase 5 target:** T1 if a
-later probe shows local `session-state/` is authoritative; otherwise T0 with
-reason `server_backed`
+**Confidence: Layout documented on macOS and native Windows** — catalog
+descriptor exists; no index source, no reader. A rename-aside probe showed
+an old session ID did not return in the fresh tree.
+**Current tier:** T0 (`layout_unverified`) · **Phase 5 target:** T1 once a
+reader exists. The rename-aside probe did not restore the old session ID.
 
 Catalog key remains `copilot`. Descriptor:
 `internal/agents/catalog/copilot.go`. This page is GitHub Copilot CLI only —
@@ -94,56 +92,18 @@ migration, or the file may be created lazily on Windows only. A macOS re-probe
 on the same version answers it cheaply, and until then the family assignment
 stays as documented, with this contradiction recorded against it.
 
-## The cache question is still open
+**The cache question is answered for one ID.** On 2026-08-17 the live
+`~/.copilot` tree was renamed aside and a new CLI session was started. The
+previous `session-state/<uuid-v4>` directory was **absent** from the fresh
+tree and **present** in the renamed copy. GitHub did not recreate that ID.
+That is local files, not a rebuild-from-account of the same session. Still
+T0: no reader. Do not index yet.
 
-That is exactly the trap this page was written to avoid. Rich local state is
-equally consistent with case 2 — a cache the CLI rebuilds from the account.
-The probe cannot tell the difference, because the difference is only visible
-across a cache clear and a re-login. Note also that `copilot --version` emits a
-trailing update-check line, so any version parser must take the first line.
+Artifact:
+[`2026-08-17-windows-copilot-cache-clear.json`](../testing/results/agent-probes/2026-08-17-windows-copilot-cache-clear.json)
 
-Three cases look identical to a naive scanner. A later probe (T-006) must
-distinguish them by observing the tree across a **cache-directory clear** and
-a **re-login**. Vendor documentation is not that observation.
-
-1. **Local authoritative history** — files or a database on disk that survive
-   a reinstall and a re-login. T1 is reachable.
-2. **Local cache of server state** — files that exist but are rebuilt from
-   the GitHub account and disappear when the cache clears. Not indexable.
-   T0.
-3. **Nothing local.** T0, reason `server_backed`.
-
-Official docs currently **describe case 1 with an extra account copy**, not
-case 3. They also describe a **separate** cache directory that is not the
-session tree. That is a strong signal, not a tier promotion.
-
-Vendor statements that frame the three cases (still Unverified):
-
-- Every CLI session is recorded on the machine. By default it is **also**
-  synced to the GitHub account.
-- Resume of an interactive CLI session is documented as reading
-  `~/.copilot/session-state/`.
-- Sync can be turned off (`"remoteExport": false`, `--no-remote-export`).
-  Copilot Enterprise / Business can leave sessions local-only when the
-  "Store local sessions in the Cloud" policy is off.
-- `session-store.db` is a rebuildable SQLite index (`/chronicle reindex`).
-  Reindexing also syncs to the account. Treat this file as an index, not
-  as the store, until a probe says otherwise.
-- Platform cache (`~/Library/Caches/copilot`, `%LOCALAPPDATA%/copilot`,
-  `$XDG_CACHE_HOME/copilot` or `~/.cache/copilot`; override
-  `COPILOT_CACHE_HOME`) is documented as marketplace / auto-update
-  ephemera. It is **not** documented as session history. Clearing it is
-  the cache-clear half of the probe.
-- The session picker has local and remote tabs. `--connect` opens a remote
-  session. Cloud-agent work can be brought into the local CLI. Remote-only
-  rows are not a local store.
-
-**Recommended later-tier:** stay at T0 `layout_unverified` until T-006.
-If `session-state/` survives re-login and a cache-directory clear, and is
-not rewritten from the account, promote toward **T1**. If those files
-vanish, are empty after logout, or are recreated from GitHub.com, ship
-**T0 `server_backed`**. Do not index `session-store.db` or the platform
-cache on the strength of directory names.
+`copilot --version` still emits a trailing update-check line; any version
+parser must take the first line.
 
 ## Claimed layout
 

@@ -58,7 +58,11 @@ this phase, under
 | Qwen Code | `2026-08-16-macos-qwen.json` | Conversations are under `projects/<slug>/chats/`, not `tmp/`; marker corrected |
 | Qwen Code | `2026-08-17-windows-qwen.json` | Two real JSONL sessions; first-line keys `cwd, message, parentUuid, provenance, sessionId, timestamp, type, uuid, version` |
 | Qwen Code | `2026-08-17-macos-qwen.json` | Real JSONL conversation; keys match Windows; `<uuid-v4>-runtime.json` sidecars |
+| Cursor CLI | `2026-08-17-windows-cursor.json` | `~/.cursor/chats/<32-hex>/<uuid-v4>/store.db` plus `meta.json`; editor `projects/` excluded |
+| Cursor CLI | `2026-08-17-macos-cursor.json` | Same chats shape as Windows |
 | Pi | `2026-08-17-macos-pi.json` | `~/.pi/agent/sessions/<slug>/<slug>-<uuid-v4>.jsonl`; first-line keys `cwd, id, timestamp, type, version` |
+| Pi | `2026-08-17-windows-pi.json` | Same shape and keys as macOS |
+| GitHub Copilot CLI | `2026-08-17-windows-copilot-cache-clear.json` | Old session ID absent from fresh tree after rename-aside |
 | GitHub Copilot CLI | `2026-08-16-macos-copilot.json` | Substantial local `session-state/<uuid>/events.jsonl`; cache-versus-authoritative still open |
 
 **No tier moved.** One platform is not dual-platform evidence, and every

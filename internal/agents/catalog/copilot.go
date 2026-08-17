@@ -5,9 +5,9 @@ import "github.com/HarjjotSinghh/reinstate/internal/agents"
 func init() { agents.MustRegister(Copilot()) }
 
 // Copilot is the GitHub Copilot CLI descriptor (T0).
-// Vendor docs describe ~/.copilot/session-state/, but no cache-clear or
-// re-login probe has classified that tree as local-authoritative vs a
-// rebuildable account cache, so the layout stays unverified.
+// Vendor docs describe ~/.copilot/session-state/. A 2026-08-17 rename-aside
+// probe showed an old session ID did not reappear in a fresh tree. The layout
+// is local files; T0 stays until a reader exists.
 func Copilot() agents.Descriptor {
 	return agents.Descriptor{
 		Key:         "copilot",

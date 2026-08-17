@@ -57,6 +57,7 @@ var Excluded = []string{
 	"logs",
 	"updates",
 	"telemetry",
+	"skills",
 }
 
 // Source discovers Kimi Code CLI sessions through hometree.
