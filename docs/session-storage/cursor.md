@@ -1,9 +1,9 @@
 # Cursor CLI
 
-**Confidence: Unverified** — catalog descriptor exists; no index source, no
-reader, no committed probe. Vendor documentation is recorded below; it is
-not a T1 gate.
-**Current tier:** T0 (`layout_unverified`) · **Phase 5 target:** T1
+**Confidence: CLI chats documented on macOS and native Windows** — SQLite
+`store.db` plus `meta.json` under `~/.cursor/chats/<32-hex>/<uuid-v4>/`.
+Editor `projects/` is excluded. No reader. **Current tier:** T0
+(`layout_unverified`) · **Phase 5 target:** T1
 
 Catalog key `cursor` is **Cursor CLI**, the terminal agent. Descriptor:
 `internal/agents/catalog/cursor.go`. This page is not the in-editor Cursor
@@ -59,10 +59,28 @@ CLI descriptor now avoids by excluding `antigravity-cli`. Two products sharing
 one home directory must not be collapsed into one catalog row for the
 convenience of making the probe report something.
 
-The unblocking step is therefore not a descriptor change. It is running one
-real `cursor-agent` session and re-probing: if `~/.cursor/chats` then exists,
-it becomes the root with `chats` as its marker, and the editor's `projects/`
-tree goes in `Excluded`.
+The unblocking step is done. `Storage.Roots` is `~/.cursor` with marker
+`chats`. `projects/` (editor transcripts) and the rest of the editor/skills
+tree are excluded.
+
+## Device evidence (2026-08-17, native Windows amd64 and macOS arm64)
+
+Artifacts:
+
+- [`2026-08-17-windows-cursor.json`](../testing/results/agent-probes/2026-08-17-windows-cursor.json)
+- [`2026-08-17-macos-cursor.json`](../testing/results/agent-probes/2026-08-17-macos-cursor.json)
+
+One `cursor-agent` CLI session on Windows created `~/.cursor/chats`. macOS
+already had the same tree. Shape on both:
+
+```
+~/.cursor/chats/<32-hex>/<uuid-v4>/
+  meta.json     keys: createdAtMs, cwd, hasConversation, schemaVersion, updatedAtMs
+  store.db      SQLite (F3)
+```
+
+`cursor-agent --version` is `2026.08.11-e8db854` on both. Still T0: no
+reader. Do not walk `projects/agent-transcripts`.
 
 ## Why T0 is `layout_unverified`
 
@@ -74,8 +92,8 @@ T-030 cannot produce the evidence T1 requires.
 | `cursor-agent` on PATH | not installed |
 | Official `agent` on PATH | this host's `agent` is Grok's binary (`~/.grok/bin/agent`), not Cursor CLI |
 | `rein doctor --agents --json` | not captured: the vendor CLI is absent and has not been used |
-| macOS AGENT-PROBE-V1 | **absent** |
-| native Windows AGENT-PROBE-V1 | **absent** (no native Windows host) |
+| macOS AGENT-PROBE-V1 | [`2026-08-17-macos-cursor.json`](../testing/results/agent-probes/2026-08-17-macos-cursor.json) |
+| native Windows AGENT-PROBE-V1 | [`2026-08-17-windows-cursor.json`](../testing/results/agent-probes/2026-08-17-windows-cursor.json) |
 | Real `~/.cursor` tree | **not listed** (no real transcripts) |
 
 T1 is forbidden without both a macOS probe and a native Windows probe. The

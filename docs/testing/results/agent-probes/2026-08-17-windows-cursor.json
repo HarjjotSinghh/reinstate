@@ -1,0 +1,101 @@
+{
+  "schema": "AGENT-PROBE-V1",
+  "generated_at": "2026-08-17T11:57:19Z",
+  "platform": {
+    "os": "windows",
+    "arch": "amd64",
+    "device_class": "windows"
+  },
+  "reinstate_version": "0.0.0-dev",
+  "agents": [
+    {
+      "key": "cursor",
+      "display_name": "Cursor CLI",
+      "declared_tier": "T0",
+      "root_env_set": false,
+      "candidate_roots": [
+        {
+          "relative_to": "home",
+          "suffix": ".cursor",
+          "exists": true,
+          "marker_present": true
+        }
+      ],
+      "resolved_root": {
+        "relative_to": "home",
+        "suffix": ".cursor"
+      },
+      "executable_on_path": true,
+      "version_raw": "2026.08.11-e8db854",
+      "tree": [
+        {
+          "path": "*",
+          "kind": "file",
+          "count": 3,
+          "median_bytes": 1959
+        },
+        {
+          "path": "chats",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "chats/*",
+          "kind": "dir",
+          "children": 1,
+          "sample_count": 1
+        },
+        {
+          "path": "chats/*/*",
+          "kind": "dir",
+          "children": 2,
+          "sample_count": 1
+        },
+        {
+          "path": "chats/*/*/meta.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 140
+        },
+        {
+          "path": "chats/*/*/store.db",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 86016
+        },
+        {
+          "path": "mcp.json.bak-20260716-<n>",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2170
+        }
+      ],
+      "name_shapes": [
+        {
+          "path": "*",
+          "shape": "<slug>",
+          "samples": 4
+        },
+        {
+          "path": "chats/*",
+          "shape": "<32-hex>",
+          "samples": 1
+        },
+        {
+          "path": "chats/*/*",
+          "shape": "<uuid-v4>",
+          "samples": 1
+        }
+      ],
+      "first_line_keys": {
+        "chats/*/*/meta.json": [
+          "createdAtMs",
+          "cwd",
+          "hasConversation",
+          "schemaVersion",
+          "updatedAtMs"
+        ]
+      }
+    }
+  ]
+}

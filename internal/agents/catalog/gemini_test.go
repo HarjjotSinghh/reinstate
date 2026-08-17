@@ -68,6 +68,7 @@ func TestGeminiExcludesAntigravityProductTrees(t *testing.T) {
 		"antigravity-cli",
 		"config",
 		"history",
+		"skills",
 		"oauth_creds.json",
 		"google_accounts.json",
 		"subagents",

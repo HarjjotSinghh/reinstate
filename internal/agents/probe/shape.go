@@ -58,12 +58,19 @@ func normalizeStem(stem string) string {
 	if reUUID.MatchString(stem) {
 		return "<uuid-v4>"
 	}
-	if loc := reUUIDSub.FindStringIndex(stem); loc != nil && loc[0] > 0 {
+	if loc := reUUIDSub.FindStringIndex(stem); loc != nil {
 		prefix := strings.TrimRight(stem[:loc[0]], "-_")
-		if prefix == "" {
+		rest := strings.Trim(stem[loc[1]:], "-_.")
+		switch {
+		case prefix == "" && rest == "":
 			return "<uuid-v4>"
+		case prefix == "":
+			return "<uuid-v4>-" + normalizeStem(rest)
+		case rest == "":
+			return normalizeStem(prefix) + "-<uuid-v4>"
+		default:
+			return normalizeStem(prefix) + "-<uuid-v4>-" + normalizeStem(rest)
 		}
-		return normalizeStem(prefix) + "-<uuid-v4>"
 	}
 	if reHex32.MatchString(stem) {
 		return "<32-hex>"
@@ -91,6 +98,12 @@ func normalizeStem(stem string) string {
 	}
 	if looksLikeEncodedPath(stem) {
 		return "<path-slug>"
+	}
+	// Hyphenated leftovers are project or workspace names, not vendor
+	// constants. reSafeName accepts [A-Za-z0-9._-], which would otherwise
+	// keep those filenames verbatim in a committed artifact.
+	if strings.Contains(stem, "-") {
+		return "<slug>"
 	}
 	if reSafeName.MatchString(stem) && !looksIdentifying(stem) {
 		return stem

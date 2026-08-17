@@ -203,16 +203,19 @@
       "minimumTestedVersion": null,
       "maximumTestedVersion": null,
       "resumeMode": "Not usable (T0)",
-      "evidenceLevel": "catalog descriptor only; dual-platform AGENT-PROBE-V1 not committed",
+      "evidenceLevel": "dual-platform AGENT-PROBE-V1; no reader",
       "evidence": {
         "storagePage": "docs/session-storage/pi.md",
         "fixtures": [],
         "deviceReports": [],
-        "probeReports": []
+        "probeReports": [
+          "docs/testing/results/agent-probes/2026-08-17-macos-pi.json",
+          "docs/testing/results/agent-probes/2026-08-17-windows-pi.json"
+        ]
       },
-      "lastTested": null,
+      "lastTested": "2026-08-17",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/pi.md",
-      "notes": "T0 Known. Dual-platform AGENT-PROBE-V1 not committed. Not an integration."
+      "notes": "T0 Known. Dual-platform probes committed; no reader. Not an integration."
     },
     {
       "id": "qwen",
@@ -227,16 +230,20 @@
       "minimumTestedVersion": null,
       "maximumTestedVersion": null,
       "resumeMode": "Not usable (T0)",
-      "evidenceLevel": "catalog descriptor only; dual-platform probes not captured",
+      "evidenceLevel": "dual-platform AGENT-PROBE-V1; JSONL keys match; no reader",
       "evidence": {
         "storagePage": "docs/session-storage/qwen.md",
         "fixtures": [],
         "deviceReports": [],
-        "probeReports": []
+        "probeReports": [
+          "docs/testing/results/agent-probes/2026-08-16-macos-qwen.json",
+          "docs/testing/results/agent-probes/2026-08-17-windows-qwen.json",
+          "docs/testing/results/agent-probes/2026-08-17-macos-qwen.json"
+        ]
       },
-      "lastTested": null,
+      "lastTested": "2026-08-17",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/qwen.md",
-      "notes": "T0 Known. Dual-platform probes not captured. Not an integration."
+      "notes": "T0 Known. Dual-platform JSONL conversations committed. No reader. Not an integration."
     },
     {
       "id": "cursor",
@@ -251,16 +258,19 @@
       "minimumTestedVersion": null,
       "maximumTestedVersion": null,
       "resumeMode": "Not usable (T0)",
-      "evidenceLevel": "catalog descriptor only; dual-platform AGENT-PROBE-V1 not committed",
+      "evidenceLevel": "dual-platform AGENT-PROBE-V1; chats/store.db; no reader",
       "evidence": {
         "storagePage": "docs/session-storage/cursor.md",
         "fixtures": [],
         "deviceReports": [],
-        "probeReports": []
+        "probeReports": [
+          "docs/testing/results/agent-probes/2026-08-17-macos-cursor.json",
+          "docs/testing/results/agent-probes/2026-08-17-windows-cursor.json"
+        ]
       },
-      "lastTested": null,
+      "lastTested": "2026-08-17",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/cursor.md",
-      "notes": "T0 Known (`layout_unverified`). Catalog key is the terminal agent only. Not an integration."
+      "notes": "T0 Known. CLI chats are SQLite under ~/.cursor/chats. Editor projects/ excluded. Not an integration."
     },
     {
       "id": "cline",
@@ -347,16 +357,20 @@
       "minimumTestedVersion": null,
       "maximumTestedVersion": null,
       "resumeMode": "Not usable (T0)",
-      "evidenceLevel": "catalog descriptor only; cache vs authoritative store not classified",
+      "evidenceLevel": "dual-platform probes; rename-aside old ID did not return; no reader",
       "evidence": {
         "storagePage": "docs/session-storage/copilot.md",
         "fixtures": [],
         "deviceReports": [],
-        "probeReports": []
+        "probeReports": [
+          "docs/testing/results/agent-probes/2026-08-16-macos-copilot.json",
+          "docs/testing/results/agent-probes/2026-08-17-windows-copilot.json",
+          "docs/testing/results/agent-probes/2026-08-17-windows-copilot-cache-clear.json"
+        ]
       },
-      "lastTested": null,
+      "lastTested": "2026-08-17",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/copilot.md",
-      "notes": "T0 Known. Dual-platform AGENT-PROBE-V1 not committed. Not an integration."
+      "notes": "T0 Known. Rename-aside: old session ID did not return. No reader. Not an integration."
     },
     {
       "id": "amp",

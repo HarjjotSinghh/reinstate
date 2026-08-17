@@ -31,8 +31,16 @@ func TestCursorStaysT0LayoutUnverified(t *testing.T) {
 	if d.Native != nil || d.Version != nil {
 		t.Fatal("T0 descriptor must not claim native resume or a version range")
 	}
-	if d.Storage.Roots != nil || d.Storage.Layout != "" || d.Storage.SessionGlob != "" {
-		t.Fatalf("T0 must not claim an unverified layout: %+v", d.Storage)
+	if d.Storage.Roots == nil || d.Storage.Marker != "chats" {
+		t.Fatalf("CLI root must be marker-gated on chats: %+v", d.Storage)
+	}
+	if d.Storage.Layout != "" || d.Storage.SessionGlob != "" {
+		t.Fatalf("T0 must not claim an unverified session glob: %+v", d.Storage)
+	}
+	for _, want := range []string{"projects", "extensions", "plugins", "skills", "skills-cursor", "plans"} {
+		if !contains(d.Storage.Excluded, want) {
+			t.Fatalf("excluded = %v, missing %q", d.Storage.Excluded, want)
+		}
 	}
 	if len(d.Evidence.ProbeReports) != 0 || len(d.Evidence.Fixtures) != 0 || len(d.Evidence.DeviceReports) != 0 {
 		t.Fatal("T0 descriptor must not cite probes, fixtures, or device reports")

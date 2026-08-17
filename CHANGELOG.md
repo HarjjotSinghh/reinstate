@@ -118,10 +118,39 @@ refused: no device journey has run `kimi -r <id>` against a real session.
 - Qwen Code native Windows re-probe committed as
   [`2026-08-17-windows-qwen.json`](docs/testing/results/agent-probes/2026-08-17-windows-qwen.json):
   two `projects/*/chats/<uuid-v4>.jsonl` sessions after excluding `updates/`.
-  Still T0: macOS has no real conversation, and the file shapes disagree.
+- Qwen Code macOS re-probe committed as
+  [`2026-08-17-macos-qwen.json`](docs/testing/results/agent-probes/2026-08-17-macos-qwen.json):
+  a real JSONL conversation whose first-line keys match Windows, plus
+  `<uuid-v4>-runtime.json` sidecars. Still T0: no reader. Do not reuse the
+  Claude reader.
+
+- Pi macOS AGENT-PROBE-V1 committed as
+  [`2026-08-17-macos-pi.json`](docs/testing/results/agent-probes/2026-08-17-macos-pi.json):
+  `~/.pi/agent/sessions/<slug>/<slug>-<uuid-v4>.jsonl`, first-line keys
+- Pi native Windows AGENT-PROBE-V1 committed as
+  [`2026-08-17-windows-pi.json`](docs/testing/results/agent-probes/2026-08-17-windows-pi.json):
+  same `sessions/<slug>/<slug>-<uuid-v4>.jsonl` shape as macOS. Still T0: no
+  reader.
+- Cursor CLI dual-platform chats committed
+  ([`2026-08-17-macos-cursor.json`](docs/testing/results/agent-probes/2026-08-17-macos-cursor.json),
+  [`2026-08-17-windows-cursor.json`](docs/testing/results/agent-probes/2026-08-17-windows-cursor.json)):
+  `chats/<32-hex>/<uuid-v4>/{meta.json,store.db}`. Editor `projects/` is
+  excluded. Still T0: no reader.
+- GitHub Copilot CLI rename-aside probe committed as
+  [`2026-08-17-windows-copilot-cache-clear.json`](docs/testing/results/agent-probes/2026-08-17-windows-copilot-cache-clear.json):
+  the old session ID did not reappear in the fresh tree. Still T0: no reader.
 
 ### Fixed
 
+- The probe kept UUID filenames that had an extra suffix (`<uuid>.runtime.json`)
+  and hyphenated project files, because the UUID matcher ignored a match at
+  the start of the stem and `reSafeName` accepted `[A-Za-z0-9._-]`. Those
+  now collapse to `<uuid-v4>-runtime.json` and `<slug>.ext`.
+- Cursor CLI's probe walked editor `projects/`, `extensions/`, `plugins/`,
+  and `skills-cursor/` unless those trees are excluded. The descriptor now
+  marker-gates on `chats/` and excludes the rest.
+- Gemini CLI and Kimi Code now exclude top-level `skills/` so personal skill
+  names do not enter a probe artifact.
 - `TestIsolationFSRejectsWritesAndOutsideRoot` left a file handle open, so
   Windows CI failed during `TempDir` cleanup even though the assertions passed.
 - The probe emitted repository names. Kimi Code buckets a workspace as

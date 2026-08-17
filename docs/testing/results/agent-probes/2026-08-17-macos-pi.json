@@ -1,0 +1,89 @@
+{
+  "schema": "AGENT-PROBE-V1",
+  "generated_at": "2026-08-17T11:34:48Z",
+  "platform": {
+    "os": "darwin",
+    "arch": "arm64",
+    "device_class": "macos"
+  },
+  "reinstate_version": "v0.4.0-36-g7806a34-dirty",
+  "agents": [
+    {
+      "key": "pi",
+      "display_name": "Pi",
+      "declared_tier": "T0",
+      "root_env": "PI_CODING_AGENT_DIR",
+      "root_env_set": false,
+      "candidate_roots": [
+        {
+          "relative_to": "home",
+          "suffix": ".pi/agent",
+          "exists": true,
+          "marker_present": true
+        }
+      ],
+      "resolved_root": {
+        "relative_to": "home",
+        "suffix": ".pi/agent"
+      },
+      "executable_on_path": true,
+      "tree": [
+        {
+          "path": "*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 68
+        },
+        {
+          "path": "sessions",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "sessions/*",
+          "kind": "dir",
+          "children": 1,
+          "sample_count": 1
+        },
+        {
+          "path": "sessions/*/*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1189
+        },
+        {
+          "path": "settings.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 145
+        }
+      ],
+      "name_shapes": [
+        {
+          "path": "*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "sessions/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "sessions/*/*",
+          "shape": "<slug>-<uuid-v4>.jsonl",
+          "samples": 1
+        }
+      ],
+      "first_line_keys": {
+        "sessions/*/*": [
+          "cwd",
+          "id",
+          "timestamp",
+          "type",
+          "version"
+        ]
+      }
+    }
+  ]
+}

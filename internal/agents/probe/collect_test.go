@@ -222,7 +222,9 @@ func TestShapeNormalization(t *testing.T) {
 		{"tmp-reinstate-argv-fix", "<path-slug>"},
 		{"C-Users-alice-src-demo", "<path-slug>"},
 		// A vendor prefix that merely contains segments is not a path.
-		{"empty-window", "empty-window"},
+		{"empty-window", "<slug>"},
+		{"project-notes.json", "<slug>.json"},
+		{"01987654-3210-7890-abcd-ef0123456789.runtime.json", "<uuid-v4>-runtime.json"},
 		// Kimi Code's workspace bucket. The stem is the basename of the
 		// working directory, so it is a repository name, and a native Windows
 		// probe emitted wd_portfolio-25_6d65015f0cb0 before this rule existed.
