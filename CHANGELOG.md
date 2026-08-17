@@ -53,7 +53,7 @@ refused: no device journey has run `kimi -r <id>` against a real session.
 - Gemini CLI stays T2: `gemini --version` parser added; fail-closed range escalated (no maintainer, no dual-platform physical resume).
 - Cline catalog descriptor at T0 (`layout_unverified`): F3 expected; no dual-platform probes, no F3 scanner.
 - Aider catalog descriptor at T0 (`layout_unverified`, F4): official product identified; no dual-platform probes and no reader.
-- Cursor CLI catalog descriptor at T0 (`layout_unverified`): key is the terminal agent; editor agent is out of scope; no dual-platform probes and no reader.
+- Cursor CLI catalog descriptor at T0 (`layout_unverified`): macOS probe found `~/.cursor/chats` after one CLI session; editor `projects/` excluded; native Windows still missing.
 - Roo Code catalog descriptor at T0 (`layout_unverified`): F3 expected; no dual-platform probes, no F3 scanner.
 - MiniMax Code catalog key `minimax-code` at T0 (`layout_unverified`). Token Plan API keys are not this agent.
 - Gemini CLI fail-closed version pin `0.55.1` (latest stable `@google/gemini-cli`); still T2.

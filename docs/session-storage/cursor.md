@@ -1,8 +1,8 @@
 # Cursor CLI
 
-**Confidence: Unverified** — catalog descriptor exists; no index source, no
-reader, no committed probe. Vendor documentation is recorded below; it is
-not a T1 gate.
+**Confidence: Documented on macOS, Unverified on native Windows.** One CLI
+session created `~/.cursor/chats`. There is still no index source and no
+reader.
 **Current tier:** T0 (`layout_unverified`) · **Phase 5 target:** T1
 
 Catalog key `cursor` is **Cursor CLI**, the terminal agent. Descriptor:
@@ -21,7 +21,7 @@ The key is decided here, before any probe.
 | Official current binary | `agent` ([overview](https://cursor.com/docs/cli/overview), [installation](https://cursor.com/docs/cli/installation)) |
 | Specific / historical binary | `cursor-agent` (forum and older write-ups) |
 | Distribution | Official install script (macOS/Linux/WSL and native Windows PowerShell) |
-| Storage family | F3 expected; F2 blocked until `agent ls` is shown to be machine-readable |
+| Storage family | F3 (SQLite `store.db` under `~/.cursor/chats`) |
 
 Cursor is two products:
 
@@ -36,51 +36,44 @@ a Reinstate probe and does not promote a row.
 
 ## Device observation (2026-08-16, macOS arm64)
 
-`cursor-agent` version `2026.08.11-e8db854` was installed on the probe machine
-but **no CLI session was run**, so this is an observation, not an
-`AGENT-PROBE-V1` artifact, and it promotes nothing.
+`cursor-agent` version `2026.08.11-e8db854` was installed but **no CLI session
+was run**. `~/.cursor/chats` was absent. Editor transcripts were present under
+`~/.cursor/projects/<path-slug>/agent-transcripts/`. Roots stayed unset so the
+CLI key would not inherit the editor store.
 
-| Path | Observed |
-| ---- | -------- |
-| `~/.cursor/chats` | **absent** |
-| `~/.cursor/projects/<path-slug>/agent-transcripts/<uuid>/<uuid>.jsonl` | present, 11 project buckets |
-| `~/.local/share/cursor-agent/versions/<version>/` | present — the binary, not data |
-| `~/.cursor/cli-config.json` | present |
+## Device evidence (2026-08-17, macOS arm64)
 
-The forum's split is corroborated. The editor agent's transcripts are exactly
-where it said, and the CLI's `chats/` directory does not exist — consistent
-with a CLI that was installed but never run. Absence after zero sessions is
-not evidence of absence.
+Artifact:
+[`2026-08-17-macos-cursor.json`](../testing/results/agent-probes/2026-08-17-macos-cursor.json)
 
-**This is why `Storage.Roots` stays unset for key `cursor`.** Declaring
-`~/.cursor` would resolve on the editor agent's tree and attribute the editor
-product's conversations to the CLI key, which is the same failure the Gemini
-CLI descriptor now avoids by excluding `antigravity-cli`. Two products sharing
-one home directory must not be collapsed into one catalog row for the
-convenience of making the probe report something.
+One real `cursor-agent --print --mode ask` session created the CLI store.
+`projects/` stays excluded.
 
-The unblocking step is therefore not a descriptor change. It is running one
-real `cursor-agent` session and re-probing: if `~/.cursor/chats` then exists,
-it becomes the root with `chats` as its marker, and the editor's `projects/`
-tree goes in `Excluded`.
+| Check | Result |
+| ----- | ------ |
+| `cursor-agent` on PATH | yes |
+| `cursor-agent --version` | `2026.08.11-e8db854` |
+| Resolved root | `~/.cursor` |
+| Marker | `chats` present |
+| `~/.cursor/chats` | **present** after one CLI session |
+| Session bucket | `chats/<32-hex>/` |
+| Session dir | `chats/<32-hex>/<uuid-v4>/` |
+| Sidecar | `meta.json` keys `createdAtMs`, `cwd`, `hasConversation`, `schemaVersion`, `updatedAtMs`; `schemaVersion` is `1` |
+| Conversation body | `store.db` (SQLite; tables `blobs(id, data)`, `meta(key, value)`). Do not open blob payloads |
+| Editor store | still under `projects/*/agent-transcripts/`; not this key |
+
+**This is why `Storage.Roots` is now `~/.cursor` with marker `chats`.** The
+editor's `projects/` tree is excluded, along with plugins, skills, and other
+non-session siblings so a probe is not drowned in `node_modules`.
+
+T1 still needs a native Windows `AGENT-PROBE-V1` that shows the same chats
+layout. No index source and no reader until then.
 
 ## Why T0 is `layout_unverified`
 
-T-030 cannot produce the evidence T1 requires.
-
-| Check | Result |
-| ------ | ------ |
-| Official product | identified: Cursor CLI, vendor Anysphere |
-| `cursor-agent` on PATH | not installed |
-| Official `agent` on PATH | this host's `agent` is Grok's binary (`~/.grok/bin/agent`), not Cursor CLI |
-| `rein doctor --agents --json` | not captured: the vendor CLI is absent and has not been used |
-| macOS AGENT-PROBE-V1 | **absent** |
-| native Windows AGENT-PROBE-V1 | **absent** (no native Windows host) |
-| Real `~/.cursor` tree | **not listed** (no real transcripts) |
-
 T1 is forbidden without both a macOS probe and a native Windows probe. The
-descriptor therefore stays at T0 with `t0_reason=layout_unverified`. That is
-the complete T-030 result. Do not invent a reader.
+descriptor therefore stays at T0 with `t0_reason=layout_unverified`. Do not
+invent a reader.
 
 `unidentified_product` is the wrong reason: the official CLI is identified.
 `desktop_only` is the wrong reason: a terminal CLI exists. `server_backed`
@@ -101,9 +94,8 @@ the command is a supported, machine-readable list API.
 | `--output-format` | Documented only with `--print` (`text`, `json`, `stream-json`). Not documented on `ls`. |
 
 There is no verified machine-readable session list. Cursor stays F3
-expected (local SQLite / editor-adjacent storage is the working hypothesis)
-until a probe shows either JSON `ls` output (then F2, prefer that over
-reading private files) or a confirmed on-disk layout.
+(SQLite `store.db` under `chats/`) until a Windows probe confirms the same
+layout or `agent ls --output-format json` appears.
 
 ## Claimed layout
 
@@ -120,14 +112,14 @@ forum notes, not from a device. Do not treat them as reader input.
 | MCP (user) | `~/.cursor/mcp.json` | Unverified |
 | MCP (project) | `<project>/.cursor/mcp.json` | Unverified |
 | CLI worktrees | `~/.cursor/worktrees/<reponame>/<name>` | Unverified (edits, not chats) |
-| Session files | **not documented** | Unverified |
-| Schema version marker | **not documented** | Unverified |
+| Session files | `~/.cursor/chats/<32-hex>/<uuid-v4>/{meta.json,store.db}` | Documented on macOS 2026-08-17 |
+| Schema version marker | `meta.json` `schemaVersion` `1` | Documented on macOS 2026-08-17 |
 
 Unofficial (forum; not a promotion):
 
 | Aspect | Claim | Confidence |
 | ------ | ----- | ---------- |
-| CLI chats | `~/.cursor/chats` (reported SQLite) | Unverified |
+| CLI chats | `~/.cursor/chats` (SQLite `store.db` + `meta.json`) | Documented on macOS; Windows unverified |
 | Editor chats | `~/.cursor/projects/<project>/agent-transcripts/` and/or workspace `state.vscdb` | Unverified |
 | Shared store? | Staff reply: CLI and IDE do **not** share a session store | Unverified |
 
@@ -168,21 +160,12 @@ Do not open these if a reader is ever written.
 
 ## What a later probe must settle
 
-1. Confirm the binary on `PATH` is Cursor CLI (`cursor-agent` or a
-   distinguishable `agent`), on macOS **and** native Windows. Capture
-   `agent --version`. Do not treat an unrelated `agent` as this product.
-2. Whether `agent ls` can emit a machine-readable list (then F2) or is
-   interactive-only (stay off private files if a public list exists).
-3. The session location on both OSes, and whether it is a database or
-   plain files. If a database: schema version marker, table that carries
-   turns, read-only/immutable open, fail closed on unknown schema.
-4. Whether CLI and editor stores are actually separate on both OSes.
-5. Whether the workspace path is recorded per session.
-6. Whether reading while the editor or CLI is running is safe.
-7. Put `cli-config.json`, `mcp.json`, and any discovered auth file in
-   `Excluded` before any read.
-
-Do not inspect a developer's real `~/.cursor` tree while filling this page.
+1. Native Windows: same `chats/<32-hex>/<uuid-v4>/{meta.json,store.db}` layout
+   after one CLI session. That is the T1 gate.
+2. Whether `agent ls` can emit a machine-readable list (then F2).
+3. Fail-closed behavior on `schemaVersion` other than `1`.
+4. Whether reading `store.db` while the CLI is running is safe (WAL present).
+5. Keep `projects/`, `plugins/`, `skills/`, and `mcp.json` excluded.
 
 ## Sources
 

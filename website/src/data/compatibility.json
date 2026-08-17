@@ -245,16 +245,18 @@
       "minimumTestedVersion": null,
       "maximumTestedVersion": null,
       "resumeMode": "Not usable (T0)",
-      "evidenceLevel": "catalog descriptor only; dual-platform AGENT-PROBE-V1 not committed",
+      "evidenceLevel": "macOS AGENT-PROBE-V1 after one CLI session; native Windows still missing",
       "evidence": {
         "storagePage": "docs/session-storage/cursor.md",
         "fixtures": [],
         "deviceReports": [],
-        "probeReports": []
+        "probeReports": [
+          "docs/testing/results/agent-probes/2026-08-17-macos-cursor.json"
+        ]
       },
-      "lastTested": null,
+      "lastTested": "2026-08-17",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/cursor.md",
-      "notes": "T0 Known (`layout_unverified`). Catalog key is the terminal agent only. Not an integration."
+      "notes": "T0 Known (`layout_unverified`). CLI chats live under ~/.cursor/chats; editor projects/ is excluded. Not an integration."
     },
     {
       "id": "cline",
