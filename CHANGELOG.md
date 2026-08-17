@@ -122,6 +122,8 @@ refused: no device journey has run `kimi -r <id>` against a real session.
 
 ### Fixed
 
+- `TestIsolationFSRejectsWritesAndOutsideRoot` left a file handle open, so
+  Windows CI failed during `TempDir` cleanup even though the assertions passed.
 - The probe emitted repository names. Kimi Code buckets a workspace as
   `wd_<name>_<12-hex>`, where the name is the **basename of the working
   directory**, and the whole component passed through the normalizer intact.
