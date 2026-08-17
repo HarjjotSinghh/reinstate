@@ -101,15 +101,24 @@ descriptor at T0 with a correct reason and a completed storage page.
 | `openhands` | OpenHands | T0 | T-042 | Whether any host-side artifact survives a container restart |
 | `zcode` | ZCode | T0 | T-043 | Whether the Z.ai desktop application writes a local session tree |
 | `minimax` | MiniMax | T0 | T-044 | Which product is meant, and whether it is a harness or only a model |
+| `antigravity` | Antigravity CLI | T0 | T-045 | Whether `cache/last_conversations.json` is a session store or, as its name says, a cache |
 
 Pages: [copilot](../../session-storage/copilot.md) ·
 [amp](../../session-storage/amp.md) ·
 [openhands](../../session-storage/openhands.md) ·
 [zcode](../../session-storage/zcode.md) ·
-[minimax](../../session-storage/minimax.md)
+[minimax](../../session-storage/minimax.md) ·
+[antigravity](../../session-storage/antigravity.md)
 
 Wave C notes:
 
+- **Antigravity CLI was added mid-phase.** Google retired the individual OAuth
+  path for Gemini CLI on 2026-06-18 and named Antigravity CLI the destination,
+  so a roster that covers Gemini CLI but not its successor has a hole where
+  users will be. It installs into `~/.gemini/antigravity-cli/`, inside the root
+  the shipped Gemini descriptor owns, so the Gemini descriptor now excludes
+  that subtree. T-045 must capture Gemini CLI evidence **before** installing
+  Antigravity, because the installer copies the existing Gemini setup across.
 - **The cache trap.** A local cache of server-held state looks identical to a
   local authoritative store. Distinguishing them requires observing the tree
   across a cache clear or re-login, which T-040 and T-041 must actually do

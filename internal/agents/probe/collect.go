@@ -26,10 +26,15 @@ const (
 	maxLineBytes    = 8 << 10
 	maxTreeRows     = 64
 	maxVersionBytes = 4 << 10
-	defaultTimeout  = 3 * time.Second
+	defaultTimeout  = 10 * time.Second
 )
 
 // Options bounds one probe run and injects test fakes.
+//
+// Timeout is the budget for a single agent, not for the whole run. A probe on
+// a machine with a dozen agents installed spawns a dozen `--version`
+// subprocesses, and one slow harness must not be able to discard everything
+// the probe already learned about the others.
 type Options struct {
 	LookPath   func(string) (string, error)
 	RunVersion func(ctx context.Context, name string, args []string) (string, error)
@@ -59,9 +64,6 @@ func Collect(ctx context.Context, env agents.Env, descriptors []agents.Descripto
 	if opts.Version != "" {
 		ver = opts.Version
 	}
-	runCtx, cancel := context.WithTimeout(ctx, opts.Timeout)
-	defer cancel()
-
 	home, err := env.HomeDir()
 	if err != nil {
 		return Artifact{}, err
@@ -74,12 +76,24 @@ func Collect(ctx context.Context, env agents.Env, descriptors []agents.Descripto
 		Agents:           make([]Agent, 0, len(descriptors)),
 	}
 	for _, d := range descriptors {
-		if err := runCtx.Err(); err != nil {
+		// Only the caller giving up aborts the run. A per-agent deadline is
+		// recorded on that agent's record and the walk continues.
+		if err := ctx.Err(); err != nil {
 			return Artifact{}, err
 		}
-		out.Agents = append(out.Agents, probeAgent(runCtx, env, home, d, opts))
+		out.Agents = append(out.Agents, probeOneAgent(ctx, env, home, d, opts))
 	}
 	return out, nil
+}
+
+func probeOneAgent(ctx context.Context, env agents.Env, home agents.HomeDir, d agents.Descriptor, opts Options) Agent {
+	agentCtx, cancel := context.WithTimeout(ctx, opts.Timeout)
+	defer cancel()
+	rec := probeAgent(agentCtx, env, home, d, opts)
+	if agentCtx.Err() != nil && ctx.Err() == nil {
+		rec.TimedOut = true
+	}
+	return rec
 }
 
 func currentPlatform() Platform {
@@ -124,7 +138,7 @@ func probeAgent(ctx context.Context, env agents.Env, home agents.HomeDir, d agen
 	}
 
 	if resolvedAbs != "" {
-		tree, shapes, keys := walkRoot(ctx, resolvedAbs, d.Storage.Excluded, opts)
+		tree, shapes, keys := walkRoot(ctx, resolvedAbs, accountName(home), d.Storage.Excluded, opts)
 		rec.Tree = tree
 		rec.NameShapes = shapes
 		rec.FirstLineKeys = keys
@@ -213,7 +227,9 @@ func resolveCandidates(env agents.Env, home agents.HomeDir, d agents.Descriptor)
 			Exists:        exists,
 			MarkerPresent: marker,
 		})
-		if resolved == nil && exists && (d.Storage.Marker == "" || marker) {
+		// Discovery is marker-gated. An explicit RootEnv or fixture root below
+		// is an instruction and is trusted; a home-directory guess is not.
+		if resolved == nil && exists && marker {
 			copyRel := rel
 			resolved = &copyRel
 			resolvedAbs = root.Path
@@ -251,7 +267,7 @@ func inspectRoot(path, marker string) (exists, markerPresent bool) {
 		return false, false
 	}
 	if strings.TrimSpace(marker) == "" {
-		return true, true
+		return true, false
 	}
 	_, err = os.Stat(filepath.Join(path, filepath.FromSlash(marker)))
 	return true, err == nil
@@ -275,7 +291,17 @@ func looksLikePath(value string) bool {
 	return len(fields) > 0 && filepath.IsAbs(fields[0])
 }
 
-func walkRoot(ctx context.Context, root string, excluded []string, opts Options) ([]TreeNode, []NameShape, map[string][]string) {
+// accountName is the operating-system account name, taken from the home
+// directory's last component on every supported platform.
+func accountName(home agents.HomeDir) string {
+	base := strings.TrimSpace(filepath.Base(filepath.Clean(home.String())))
+	if base == "." || base == string(filepath.Separator) {
+		return ""
+	}
+	return base
+}
+
+func walkRoot(ctx context.Context, root, user string, excluded []string, opts Options) ([]TreeNode, []NameShape, map[string][]string) {
 	type dirAgg struct {
 		children []int
 		samples  int
@@ -321,7 +347,7 @@ func walkRoot(ctx context.Context, root string, excluded []string, opts Options)
 		components := splitSlash(filepath.ToSlash(rel))
 		normalized := make([]string, len(components))
 		for i, c := range components {
-			normalized[i] = normalizeComponent(c)
+			normalized[i] = redactUser(normalizeComponent(c), user)
 		}
 		tp := treePath(normalized)
 		if entry.IsDir() {

@@ -25,6 +25,10 @@ func OpenHands() agents.Descriptor {
 			Roots: func(home agents.HomeDir) []agents.Root {
 				return []agents.Root{{Path: home.Join(".openhands")}}
 			},
+			// Unverified, from the documented CLI conversation path. The marker
+			// keeps a bare ~/.openhands created by other tooling from resolving
+			// as a server persistence directory.
+			Marker:     "conversations",
 			ProjectKey: agents.ProjectKeyNone,
 			Excluded: []string{
 				"settings.json",

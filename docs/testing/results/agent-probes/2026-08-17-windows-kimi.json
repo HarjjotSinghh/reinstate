@@ -1,0 +1,540 @@
+{
+  "schema": "AGENT-PROBE-V1",
+  "generated_at": "2026-08-17T07:47:35Z",
+  "platform": {
+    "os": "windows",
+    "arch": "amd64",
+    "device_class": "windows"
+  },
+  "reinstate_version": "0.0.0-dev",
+  "agents": [
+    {
+      "key": "kimi",
+      "display_name": "Kimi Code CLI",
+      "declared_tier": "T0",
+      "root_env": "KIMI_CODE_HOME",
+      "root_env_set": false,
+      "candidate_roots": [
+        {
+          "relative_to": "home",
+          "suffix": ".kimi-code",
+          "exists": true,
+          "marker_present": true
+        },
+        {
+          "relative_to": "home",
+          "suffix": ".kimi",
+          "exists": true,
+          "marker_present": false
+        }
+      ],
+      "resolved_root": {
+        "relative_to": "home",
+        "suffix": ".kimi-code"
+      },
+      "executable_on_path": true,
+      "version_raw": "0.36.1",
+      "tree": [
+        {
+          "path": "*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 923
+        },
+        {
+          "path": "bin",
+          "kind": "dir",
+          "children": 5
+        },
+        {
+          "path": "bin/fd.exe",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 4060672
+        },
+        {
+          "path": "bin/fd_extract_15952_1785706507141_27nt8t-<n>",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "bin/fd_extract_15952_1785706507141_27nt8t-<n>/fd-v10.4.2-x86_64-pc-windows-msvc.zip",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 408674
+        },
+        {
+          "path": "bin/kimi.exe",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 133023744
+        },
+        {
+          "path": "bin/kimi.exe.bak",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 129455104
+        },
+        {
+          "path": "bin/rg.exe",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 4265472
+        },
+        {
+          "path": "cache",
+          "kind": "dir",
+          "children": 2
+        },
+        {
+          "path": "cache/client-configs",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "cache/client-configs/estimated_cache_duration.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 516
+        },
+        {
+          "path": "cache/query-store",
+          "kind": "dir",
+          "children": 18
+        },
+        {
+          "path": "cache/query-store/cluster.indexes.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 208
+        },
+        {
+          "path": "cache/query-store/cluster.meta.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 134
+        },
+        {
+          "path": "cache/query-store/shard-<n>",
+          "kind": "dir",
+          "children": 2
+        },
+        {
+          "path": "cache/query-store/shard-<n>/*",
+          "kind": "file",
+          "count": 4,
+          "median_bytes": 9
+        },
+        {
+          "path": "cache/query-store/shard-<n>/db.indexes.json",
+          "kind": "file",
+          "count": 16,
+          "median_bytes": 114
+        },
+        {
+          "path": "cache/query-store/shard-<n>/db.wal",
+          "kind": "file",
+          "count": 16
+        },
+        {
+          "path": "cache/query-store/shard-<n>/generations",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "cache/query-store/shard-<n>/generations/g-<n>",
+          "kind": "dir",
+          "children": 5
+        },
+        {
+          "path": "cache/query-store/shard-<n>/generations/g-<n>/compound.index",
+          "kind": "file",
+          "count": 4,
+          "median_bytes": 16
+        },
+        {
+          "path": "cache/query-store/shard-<n>/generations/g-<n>/dt.index",
+          "kind": "file",
+          "count": 4,
+          "median_bytes": 105
+        },
+        {
+          "path": "cache/query-store/shard-<n>/generations/g-<n>/manifest.json",
+          "kind": "file",
+          "count": 4,
+          "median_bytes": 806
+        },
+        {
+          "path": "cache/query-store/shard-<n>/generations/g-<n>/secondary.index",
+          "kind": "file",
+          "count": 4,
+          "median_bytes": 77
+        },
+        {
+          "path": "cache/query-store/shard-<n>/generations/g-<n>/store",
+          "kind": "file",
+          "count": 4,
+          "median_bytes": 417
+        },
+        {
+          "path": "config.toml",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 7654
+        },
+        {
+          "path": "config.toml.bak",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 4174
+        },
+        {
+          "path": "device_id",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 36
+        },
+        {
+          "path": "logs",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "logs/kimi-code.log",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 6573
+        },
+        {
+          "path": "migration-errors.log",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 66
+        },
+        {
+          "path": "migration-report.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1676
+        },
+        {
+          "path": "migrations-effort.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 64
+        },
+        {
+          "path": "search-index",
+          "kind": "dir",
+          "children": 4
+        },
+        {
+          "path": "search-index/*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 9
+        },
+        {
+          "path": "search-index/db.textindexes.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 88
+        },
+        {
+          "path": "search-index/db.wal",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 138348
+        },
+        {
+          "path": "search-index/generations",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "search-index/generations/g-<n>",
+          "kind": "dir",
+          "children": 11
+        },
+        {
+          "path": "search-index/generations/g-<n>/compound.index",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 16
+        },
+        {
+          "path": "search-index/generations/g-<n>/dt.index",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 16
+        },
+        {
+          "path": "search-index/generations/g-<n>/manifest.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1256
+        },
+        {
+          "path": "search-index/generations/g-<n>/secondary.index",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 16
+        },
+        {
+          "path": "search-index/generations/g-<n>/store",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 135124
+        },
+        {
+          "path": "search-index/generations/g-<n>/text-body.dictionary",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 62596
+        },
+        {
+          "path": "search-index/generations/g-<n>/text-body.docs",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 10307
+        },
+        {
+          "path": "search-index/generations/g-<n>/text-body.postings",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 69323
+        },
+        {
+          "path": "search-index/generations/g-<n>/text-tri.dictionary",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 204455
+        },
+        {
+          "path": "search-index/generations/g-<n>/text-tri.docs",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 10307
+        },
+        {
+          "path": "search-index/generations/g-<n>/text-tri.postings",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 282042
+        },
+        {
+          "path": "session_index.jsonl",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1114
+        },
+        {
+          "path": "sessions",
+          "kind": "dir",
+          "children": 3
+        },
+        {
+          "path": "sessions/wd_<project>_<12-hex>",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "sessions/wd_<project>_<12-hex>/session-<uuid-v4>",
+          "kind": "dir",
+          "children": 3
+        },
+        {
+          "path": "sessions/wd_<project>_<12-hex>/session-<uuid-v4>/agents",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "sessions/wd_<project>_<12-hex>/session-<uuid-v4>/agents/agent-0",
+          "kind": "dir",
+          "children": 2
+        },
+        {
+          "path": "sessions/wd_<project>_<12-hex>/session-<uuid-v4>/agents/agent-0/tasks",
+          "kind": "dir",
+          "children": 2
+        },
+        {
+          "path": "sessions/wd_<project>_<12-hex>/session-<uuid-v4>/agents/agent-0/tasks/bash-o6j92dbi",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "sessions/wd_<project>_<12-hex>/session-<uuid-v4>/agents/agent-0/tasks/bash-o6j92dbi.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 604
+        },
+        {
+          "path": "sessions/wd_<project>_<12-hex>/session-<uuid-v4>/agents/agent-0/tasks/bash-o6j92dbi/output.log",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 4513
+        },
+        {
+          "path": "sessions/wd_<project>_<12-hex>/session-<uuid-v4>/agents/agent-0/wire.jsonl",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 272503
+        },
+        {
+          "path": "sessions/wd_<project>_<12-hex>/session-<uuid-v4>/agents/agent-1",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "sessions/wd_<project>_<12-hex>/session-<uuid-v4>/agents/agent-1/wire.jsonl",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 314871
+        },
+        {
+          "path": "sessions/wd_<project>_<12-hex>/session-<uuid-v4>/agents/agent-2",
+          "kind": "dir",
+          "children": 1
+        }
+      ],
+      "name_shapes": [
+        {
+          "path": "*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "bin/*",
+          "shape": "fd_extract_15952_1785706507141_27nt8t-<n>",
+          "samples": 1
+        },
+        {
+          "path": "cache/query-store/*",
+          "shape": "shard-<n>",
+          "samples": 16
+        },
+        {
+          "path": "cache/query-store/shard-<n>/*",
+          "shape": "<slug>",
+          "samples": 4
+        },
+        {
+          "path": "cache/query-store/shard-<n>/generations/*",
+          "shape": "g-<n>",
+          "samples": 4
+        },
+        {
+          "path": "search-index/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "search-index/generations/*",
+          "shape": "g-<n>",
+          "samples": 1
+        },
+        {
+          "path": "sessions/*",
+          "shape": "wd_<project>_<12-hex>",
+          "samples": 3
+        },
+        {
+          "path": "sessions/wd_<project>_<12-hex>/*",
+          "shape": "session-<uuid-v4>",
+          "samples": 5
+        },
+        {
+          "path": "sessions/wd_<project>_<12-hex>/session-<uuid-v4>/agents/main/blobs/*",
+          "shape": "<64-hex>",
+          "samples": 50
+        },
+        {
+          "path": "user-history/*",
+          "shape": "<32-hex>.jsonl",
+          "samples": 3
+        },
+        {
+          "path": "workspace-trust/*",
+          "shape": "wd_<project>_<12-hex>",
+          "samples": 2
+        }
+      ],
+      "first_line_keys": {
+        "session_index.jsonl": [
+          "sessionDir",
+          "sessionId",
+          "workDir"
+        ],
+        "sessions/wd_<project>_<12-hex>/session-<uuid-v4>/agents/agent-0/wire.jsonl": [
+          "created_at",
+          "protocol_version",
+          "type"
+        ],
+        "sessions/wd_<project>_<12-hex>/session-<uuid-v4>/agents/agent-1/wire.jsonl": [
+          "created_at",
+          "protocol_version",
+          "type"
+        ],
+        "sessions/wd_<project>_<12-hex>/session-<uuid-v4>/agents/agent-2/wire.jsonl": [
+          "created_at",
+          "protocol_version",
+          "type"
+        ],
+        "sessions/wd_<project>_<12-hex>/session-<uuid-v4>/agents/agent-3/wire.jsonl": [
+          "created_at",
+          "protocol_version",
+          "type"
+        ],
+        "sessions/wd_<project>_<12-hex>/session-<uuid-v4>/agents/agent-4/wire.jsonl": [
+          "created_at",
+          "protocol_version",
+          "type"
+        ],
+        "sessions/wd_<project>_<12-hex>/session-<uuid-v4>/agents/agent-5/wire.jsonl": [
+          "created_at",
+          "protocol_version",
+          "type"
+        ],
+        "sessions/wd_<project>_<12-hex>/session-<uuid-v4>/agents/agent-6/wire.jsonl": [
+          "created_at",
+          "protocol_version",
+          "type"
+        ],
+        "sessions/wd_<project>_<12-hex>/session-<uuid-v4>/agents/agent-7/wire.jsonl": [
+          "created_at",
+          "protocol_version",
+          "type"
+        ],
+        "sessions/wd_<project>_<12-hex>/session-<uuid-v4>/agents/main/wire.jsonl": [
+          "created_at",
+          "protocol_version",
+          "type"
+        ],
+        "sessions/wd_<project>_<12-hex>/session-<uuid-v4>/state.json": [
+          "agents",
+          "archived",
+          "createdAt",
+          "custom",
+          "cwd",
+          "id",
+          "isCustomTitle",
+          "lastPrompt",
+          "lastTurnReason",
+          "title",
+          "titleKind",
+          "updatedAt",
+          "version"
+        ],
+        "user-history/*": [
+          "content"
+        ],
+        "workspaces.json": [
+          "deleted_workspace_ids",
+          "version",
+          "workspaces"
+        ]
+      }
+    }
+  ]
+}

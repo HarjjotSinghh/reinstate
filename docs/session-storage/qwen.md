@@ -1,18 +1,100 @@
 # Qwen Code (Alibaba)
 
-**Confidence: Unverified** — official product identified; no device probe;
-no Reinstate reader. Vendor documentation is not a tier promotion.
+**Confidence: Partly documented on macOS, Unverified on native Windows** —
+official product identified; one macOS probe with no signed-in session; no
+Reinstate reader.
 **Current tier:** T0 (`layout_unverified`) · **Phase 5 target:** T2
 
 Catalog key is `qwen`.
 
 ## Research outcome
 
-**T0, reason `layout_unverified`.** That is the completed result for T-022.
+**T0, reason `layout_unverified`.** Unchanged by the 2026-08-16 probe.
 
-The official product is identified. Dual-platform probes are required for T1+.
-This task has no native Windows device, so both probes cannot be committed.
+The probe located the conversation directory but could not observe a real
+conversation, because Qwen Code could not be signed in from India. A directory
+whose contents were never produced by a working session is not a layout.
 Do not invent a reader. Do not reuse the Gemini CLI reader.
+
+## Device evidence (2026-08-16, macOS arm64)
+
+Artifact:
+[`2026-08-16-macos-qwen.json`](../testing/results/agent-probes/2026-08-16-macos-qwen.json)
+
+| Check | Result |
+| ----- | ------ |
+| `qwen` on PATH | yes |
+| `qwen --version` | `0.21.12` — a bare semver line |
+| Resolved root | `~/.qwen` |
+| Signed-in session | **no** — sign-up unavailable in the tester's region |
+| macOS AGENT-PROBE-V1 | captured, but without a real conversation |
+| native Windows AGENT-PROBE-V1 | absent |
+
+```
+~/.qwen/
+  projects/<slug>/chats/<slug>.json      one file, provenance unknown
+  tmp/<64-hex>/logs.json
+  tmp/<64-hex>/scheduled_tasks.lock
+  extensions/extension-enablement.json
+  installation_id, output-language.md, tip_history.json, <slug>.md
+```
+
+This **corrects the descriptor's discovery marker from `tmp` to `projects`.**
+The Gemini-fork hypothesis predicted conversations under `tmp/<hash>/chats/`,
+and `tmp/<64-hex>` does exist — but it holds `logs.json` and
+`scheduled_tasks.lock`, not chats. Conversations live under
+`projects/<slug>/chats/<slug>.json`, and the project bucket is a **slug, not a
+hash**, which is the opposite of Gemini's `ProjectKeyPathHash`.
+
+The single file under `chats/` was not produced by a session the tester ran, so
+its record shape is not evidence. `skills/` and `extension-store/` are excluded
+in the descriptor: they are configuration, and a populated skills library buries
+the real tree in 176 directories of noise.
+
+## Device observation (2026-08-17, native Windows amd64)
+
+Not committed as an artifact. The self-updater unpacks a full npm tree under
+`updates/`, and it consumed the probe's entire file budget: 289 chunk files, 61
+font files, a 4 MB C header. The two real conversations were nearly crowded
+out. `updates` is now in the descriptor's `Excluded` set, and a re-probe will
+produce something worth committing.
+
+What the run showed anyway, and it contradicts the macOS reading:
+
+| Aspect | macOS (2026-08-16) | Windows (2026-08-17) |
+| ------ | ------------------ | -------------------- |
+| Conversation path | `projects/<slug>/chats/<slug>.json` | `projects/<slug>/chats/<uuid-v4>.jsonl` |
+| Count | 1 file, provenance unknown | 2 files, from real sessions |
+| `qwen --version` | `0.21.12` | `0.21.13` — it self-updated past the pinned install |
+
+The macOS file was **not** produced by a session the tester ran, which is why
+that page recorded its shape as unverified. It was right to. The real format is
+**JSONL, one file per session, named by UUID** — not a single JSON document.
+
+The record shape is the interesting part:
+
+```
+cwd, message, parentUuid, provenance, sessionId, timestamp, type, uuid, version
+```
+
+That is Claude Code's transcript schema, near enough to be worth saying out
+loud: a `uuid` / `parentUuid` chain, a `sessionId`, a `cwd`, a `message`, and a
+`type`. The Gemini-fork hypothesis was rejected on storage-location grounds
+already; this suggests the conversation format was taken from somewhere else
+again. `provenance` is a field Claude Code does not have.
+
+**This does not make Qwen readable by the Claude reader.** Same-shaped keys are
+not the same format, and a reader that assumes otherwise will mis-parse
+silently. It is a strong hint for whoever writes the Qwen reader, and nothing
+more.
+
+Also worth recording: `usage_record.jsonl` exists with
+`durationMs, files, models, project, sessionId, skills, startTime, timestamp,
+tools, totalLatencyMs, version` — a per-session usage ledger that could supply
+message counts and file references without parsing a transcript at all.
+
+**Tier unchanged at T0.** A polluted artifact is not evidence, no macOS probe
+has observed a real conversation, and there is no reader.
 
 ## Identity
 
@@ -52,6 +134,11 @@ A fork of the CLI surface is not a fork of the session recording service.
 Reusing `internal/transcript/gemini.go` without a probe would silently find
 nothing, or worse, index the wrong files. **Hypothesis rejected as a shipping
 basis.** Keep it as a later parser hint only after both probes confirm shape.
+
+The 2026-08-16 macOS probe settles this concretely: Qwen Code keeps
+conversations in `projects/<slug>/chats/`, while Gemini CLI keeps them in
+`tmp/<project-hash>/chats/`. Qwen's `tmp/<64-hex>` exists but holds logs and a
+task lock. Same fork ancestry, different store, different project-key kind.
 
 ## Claimed layout
 
@@ -110,6 +197,12 @@ If a later task ever reads `$QWEN_HOME` or `$QWEN_RUNTIME_DIR`, these go in
 
 A probe is **required** to leave T0. Vendor documentation alone is not
 enough. One-platform evidence is not enough.
+
+The descriptor's discovery marker is `projects`, corrected from the
+hypothesised `tmp` by the 2026-08-16 macOS probe. A marker is mandatory
+because a bare `~/.qwen` is not evidence of an installation: before Qwen Code
+was installed, a skill installer had already created `~/.qwen/skills`, and an
+unmarked root reported that as an installed agent.
 
 ## Sources
 

@@ -27,6 +27,12 @@ func MustRegister(d Descriptor) {
 	} else if d.T0Reason != "" {
 		panic(fmt.Sprintf("agents: %s: T0Reason %q is only valid at T0", d.Key, d.T0Reason))
 	}
+	// A root without a marker resolves on the bare directory, so unrelated
+	// tooling that creates ~/.<agent> makes the probe report an agent that is
+	// not installed.
+	if d.Storage.Roots != nil && strings.TrimSpace(d.Storage.Marker) == "" {
+		panic(fmt.Sprintf("agents: %s: Storage.Marker required when Storage.Roots is declared", d.Key))
+	}
 	if above := d.constructorsAboveTier(); len(above) > 0 {
 		panic(fmt.Sprintf(
 			"agents: %s: capability constructor %s above declared tier %s",

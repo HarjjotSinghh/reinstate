@@ -16,6 +16,34 @@
 | Native resume | `gemini --resume` / `-r`; project-scoped |
 | Fail-closed version pin | `0.55.1`–`0.55.1` (latest stable `@google/gemini-cli` on 2026-08-16). Nightlies excluded. T3 still needs dual-platform physical resume. |
 
+### Individual OAuth shutdown (2026-06-18) — does not change the tier
+
+Google stopped serving Gemini CLI requests for Gemini Code Assist for
+individuals, Google AI Pro, and Google AI Ultra on 2026-06-18. Signing in with
+a Google account now fails with:
+
+```
+This client is no longer supported for Gemini Code Assist for individuals.
+To continue using Gemini, please migrate to the Antigravity suite of products.
+```
+
+**T2 stands.** Reinstate reads session files off disk and never authenticates,
+so nothing in the read path depends on the retired flow. The binary is still
+Apache-2.0 and maintained, and two auth paths still work: a Gemini API key via
+`GEMINI_API_KEY`, and Gemini Code Assist Standard or Enterprise licences, which
+the deprecation explicitly leaves unchanged.
+
+Two practical consequences:
+
+- Producing new Gemini CLI evidence on a personal machine requires
+  `GEMINI_API_KEY` from AI Studio. A Google-account sign-in will not create
+  sessions to probe.
+- The migration destination is [Antigravity CLI](antigravity.md), which
+  installs into `~/.gemini/antigravity-cli/` and copies an existing Gemini CLI
+  setup across at install time. **Capture Gemini CLI probe evidence before
+  installing it**, and note that the Gemini descriptor now excludes that
+  subtree so the two agents do not read each other's files.
+
 ### `$rewindTo` (R3 — Documented)
 
 On-disk JSONL is **append-only**: prior message lines stay in the file; a

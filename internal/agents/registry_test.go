@@ -73,6 +73,17 @@ func TestMustRegisterPanics(t *testing.T) {
 		{name: "empty key", desc: Descriptor{Tier: TierKnown, T0Reason: T0DesktopOnly}, want: "empty catalog key"},
 		{name: "whitespace key", desc: Descriptor{Key: "  ", Tier: TierKnown, T0Reason: T0DesktopOnly}, want: "empty catalog key"},
 		{
+			name: "roots without marker",
+			desc: func() Descriptor {
+				d := testDescriptor("unmarked", TierKnown, T0LayoutUnverified)
+				d.Storage.Roots = func(home HomeDir) []Root {
+					return []Root{{Path: home.Join(".unmarked")}}
+				}
+				return d
+			}(),
+			want: "Storage.Marker required",
+		},
+		{
 			name: "duplicate key",
 			desc: testDescriptor("dup", TierKnown, T0ServerBacked),
 			want: `duplicate catalog key "dup"`,

@@ -90,11 +90,28 @@ The probe **must never** emit:
    relative to the resolved agent root, and roots are emitted as
    `{relative_to, suffix}` pairs;
 4. file or directory names that are not shape-normalized — a UUID becomes
-   `<uuid-v4>`, a hash becomes `<32-hex>`, a path slug becomes `<slug>`;
+   `<uuid-v4>`, a hash becomes `<32-hex>`, a path slug becomes `<slug>`, and
+   the operating-system account name becomes `<user>` wherever it appears
+   inside a name;
 5. repository names, branch names, or remote URLs;
 6. environment variable **values**, only whether each is set;
 7. anything from a path listed in the descriptor's `Excluded` set, including
    credential and cache subtrees.
+
+Rule 4 covers the account name because vendors put it inside bucket directory
+names: Kimi Code buckets a workspace as `wd_<user>_<hash>`. Nothing about an
+account name looks like a UUID, a hash, or a slug, so the normalizer preserves
+it verbatim unless it is removed explicitly. An absolute path is not the only
+way an identity reaches a committed artifact.
+
+For the same reason a component that is an absolute path with its separators
+rewritten collapses to `<path-slug>`. Cursor buckets a project as
+`Users-<user>-Documents-Projects-demo`; every character in that is
+unremarkable, so it would otherwise pass through intact and carry both the home
+path and the repository name with it. Detection anchors on the first segment
+being a filesystem root — `Users`, `home`, `var`, `tmp`, a Windows drive letter
+— rather than on counting segments, so vendor prefixes like `wd_` stay
+readable.
 
 The probe opens every file read-only, reads at most the first line of a
 sampled file, and never writes, renames, or locks anything under an agent
@@ -150,6 +167,37 @@ that is the probe's most valuable output.
 
 Rows the probe cannot reach stay `Unverified`, and the agent's tier is capped
 accordingly.
+
+### Budgets are per agent
+
+`--agent-timeout` bounds a single agent, not the whole run, and defaults to ten
+seconds. The probe spawns one `--version` subprocess per installed agent, so on
+the machine this phase targets — a dozen harnesses installed side by side — a
+single whole-run budget guarantees failure exactly where evidence matters most.
+
+An agent that exceeds its budget is recorded with `timed_out: true` and
+whatever was gathered before the deadline. Its partial fields are not a
+negative finding, and the surrounding agents are unaffected. Only the operator
+interrupting the command aborts the run.
+
+### Why a candidate root can exist and still not resolve
+
+Discovery is marker-gated: a declared root only becomes `resolved_root` when the
+descriptor's `Storage.Marker` is present inside it. A bare `~/.<agent>` directory
+is not evidence of an installation, because skill installers, dotfile managers,
+and other agents routinely plant one. Every descriptor that declares a root must
+declare a marker, and registration panics otherwise.
+
+So `exists: true` with `marker_present: false` is a meaningful result, not a
+failure: the directory is there but the layout the descriptor expects is not.
+Either the agent has never been run, or the declared marker is wrong — and the
+`tree` of a sibling probe from a machine where the agent *is* installed settles
+which.
+
+For the same reason the `installed` column of `rein doctor --agents` reports
+only whether the executable is on `PATH`. Root presence is the separate `root`
+column. An explicit `RootEnv` or fixture root bypasses the marker gate, because
+pointing the probe at a directory is an instruction rather than a guess.
 
 ---
 

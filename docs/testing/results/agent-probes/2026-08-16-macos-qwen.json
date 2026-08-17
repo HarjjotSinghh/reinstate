@@ -1,0 +1,141 @@
+{
+  "schema": "AGENT-PROBE-V1",
+  "generated_at": "2026-08-16T11:46:08Z",
+  "platform": {
+    "os": "darwin",
+    "arch": "arm64",
+    "device_class": "macos"
+  },
+  "reinstate_version": "0.0.0-dev",
+  "agents": [
+    {
+      "key": "qwen",
+      "display_name": "Qwen Code",
+      "declared_tier": "T0",
+      "root_env": "QWEN_HOME",
+      "root_env_set": false,
+      "candidate_roots": [
+        {
+          "relative_to": "home",
+          "suffix": ".qwen",
+          "exists": true,
+          "marker_present": true
+        }
+      ],
+      "resolved_root": {
+        "relative_to": "home",
+        "suffix": ".qwen"
+      },
+      "executable_on_path": true,
+      "version_raw": "0.21.12",
+      "tree": [
+        {
+          "path": "*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 792
+        },
+        {
+          "path": "extensions",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "extensions/extension-enablement.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2
+        },
+        {
+          "path": "installation_id",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 36
+        },
+        {
+          "path": "output-language.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 841
+        },
+        {
+          "path": "projects",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "projects/*",
+          "kind": "dir",
+          "children": 1,
+          "sample_count": 1
+        },
+        {
+          "path": "projects/*/chats",
+          "kind": "dir",
+          "children": 1,
+          "sample_count": 1
+        },
+        {
+          "path": "projects/*/chats/*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 238
+        },
+        {
+          "path": "tip_history.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 335
+        },
+        {
+          "path": "tmp",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "tmp/*",
+          "kind": "dir",
+          "children": 2,
+          "sample_count": 1
+        },
+        {
+          "path": "tmp/*/logs.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2
+        },
+        {
+          "path": "tmp/*/scheduled_tasks.lock",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 84
+        }
+      ],
+      "name_shapes": [
+        {
+          "path": "*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "projects/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "projects/*/chats/*",
+          "shape": "<slug>.json",
+          "samples": 1
+        },
+        {
+          "path": "tmp/*",
+          "shape": "<64-hex>",
+          "samples": 1
+        }
+      ],
+      "first_line_keys": {
+        "extensions/extension-enablement.json": []
+      }
+    }
+  ]
+}

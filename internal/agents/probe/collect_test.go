@@ -213,6 +213,27 @@ func TestShapeNormalization(t *testing.T) {
 		{"session-001", "session-<n>"},
 		{"sessions", "sessions"},
 		{"state.json", "state.json"},
+		// Cursor buckets projects as an absolute path with separators
+		// rewritten. Every character is unremarkable, so without an explicit
+		// rule the normalizer passes the home path and the repository name
+		// through intact.
+		{"Users-alice-Documents-Projects-demo", "<path-slug>"},
+		{"var-folders-jv-85d89wh91t5132jys95scwc00000gn-T", "<path-slug>"},
+		{"tmp-reinstate-argv-fix", "<path-slug>"},
+		{"C-Users-alice-src-demo", "<path-slug>"},
+		// A vendor prefix that merely contains segments is not a path.
+		{"empty-window", "empty-window"},
+		// Kimi Code's workspace bucket. The stem is the basename of the
+		// working directory, so it is a repository name, and a native Windows
+		// probe emitted wd_portfolio-25_6d65015f0cb0 before this rule existed.
+		{"wd_portfolio-25_6d65015f0cb0", "wd_<project>_<12-hex>"},
+		{"wd_probe-one_87e15ce98f3b", "wd_<project>_<12-hex>"},
+		// The macOS bucket only looked like a username because that session
+		// ran in the home directory, whose basename is the account name.
+		{"wd_harjjotsinghh_f6c3da451c53", "wd_<project>_<12-hex>"},
+		{"wd_my_project_abcdef1234567890", "wd_<project>_<16-hex>"},
+		// Too short a tail to be a content hash.
+		{"wd_alice_abcdef", "wd_alice_abcdef"},
 	}
 	for _, tt := range tests {
 		if got := normalizeComponent(tt.in); got != tt.want {
@@ -244,6 +265,138 @@ func TestExcludedIsNotOpened(t *testing.T) {
 	raw, _ := json.Marshal(art)
 	if strings.Contains(string(raw), "nope") || strings.Contains(string(raw), "token") && strings.Contains(string(raw), "nope") {
 		t.Fatalf("excluded file leaked: %s", raw)
+	}
+}
+
+// A bare ~/.<agent> directory is not evidence that the agent is installed.
+// Unrelated tooling plants such directories, so discovery stays marker-gated
+// and the candidate is reported as existing without its marker.
+func TestBareRootWithoutMarkerDoesNotResolve(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(home, ".planted-agent", "skills"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	art, err := Collect(context.Background(), agents.Env{
+		Home:      home,
+		LookupEnv: func(string) string { return "" },
+	}, []agents.Descriptor{syntheticDescriptor(home)}, Options{
+		LookPath: func(string) (string, error) { return "", os.ErrNotExist },
+		Now:      func() time.Time { return time.Date(2026, 8, 16, 0, 0, 0, 0, time.UTC) },
+		Version:  "0.5.0-dev",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := art.Agents[0]
+	if got.ResolvedRoot != nil {
+		t.Fatalf("resolved_root = %+v, want nil for a root missing its marker", got.ResolvedRoot)
+	}
+	if got.ExecutableOnPath {
+		t.Fatal("executable_on_path must stay false when the binary is absent")
+	}
+	if len(got.CandidateRoots) != 1 {
+		t.Fatalf("candidate_roots = %d, want 1", len(got.CandidateRoots))
+	}
+	if c := got.CandidateRoots[0]; !c.Exists || c.MarkerPresent {
+		t.Fatalf("candidate = %+v, want exists without marker", c)
+	}
+	if len(got.Tree) != 0 {
+		t.Fatalf("tree = %+v, want no walk of an unresolved root", got.Tree)
+	}
+}
+
+// Kimi Code buckets sessions as wd_<user>_<hash>, and nothing about an
+// account name looks like an identifier to the token normalizer, so it used to
+// survive into a committed artifact verbatim.
+func TestAccountNameIsRedactedFromShapes(t *testing.T) {
+	t.Parallel()
+	home := filepath.Join(t.TempDir(), "arjunmehta")
+	bucket := filepath.Join(home, ".planted-agent", "projects", "wd_arjunmehta_ab12cd34-17")
+	if err := os.MkdirAll(bucket, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(bucket, "session.jsonl"), []byte(`{"n":1}`+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	art, err := Collect(context.Background(), agents.Env{
+		Home:      home,
+		LookupEnv: func(string) string { return "" },
+	}, []agents.Descriptor{syntheticDescriptor(home)}, Options{
+		LookPath: func(string) (string, error) { return "", os.ErrNotExist },
+		Now:      func() time.Time { return time.Date(2026, 8, 16, 0, 0, 0, 0, time.UTC) },
+		Version:  "0.5.0-dev",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	blob, err := json.Marshal(art)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(strings.ToLower(string(blob)), "arjunmehta") {
+		t.Fatalf("artifact leaked the account name: %s", blob)
+	}
+	shapes := art.Agents[0].NameShapes
+	if len(shapes) != 1 || shapes[0].Shape != "wd_<user>_ab12cd34-<n>" {
+		t.Fatalf("redaction dropped the surrounding structure: %+v", shapes)
+	}
+}
+
+// The budget is per agent. A machine with a dozen agents installed spawns a
+// dozen --version subprocesses, and one slow harness must not discard the
+// evidence already gathered for the others.
+func TestSlowAgentDoesNotDiscardTheRun(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	slow := syntheticDescriptor(home)
+	slow.Key = "slow"
+	slow.Process = agents.ProcessSpec{Images: []string{"slow-agent"}}
+	fast := syntheticDescriptor(home)
+	fast.Key = "fast"
+	fast.Process = agents.ProcessSpec{Images: []string{"fast-agent"}}
+
+	art, err := Collect(context.Background(), agents.Env{
+		Home:      home,
+		LookupEnv: func(string) string { return "" },
+	}, []agents.Descriptor{slow, fast}, Options{
+		LookPath: func(name string) (string, error) { return "/usr/local/bin/" + name, nil },
+		RunVersion: func(ctx context.Context, name string, args []string) (string, error) {
+			if name != "slow-agent" {
+				return "9.9.9", nil
+			}
+			select {
+			case <-ctx.Done():
+				return "", ctx.Err()
+			case <-time.After(2 * time.Second):
+				return "9.9.9", nil
+			}
+		},
+		Timeout: 80 * time.Millisecond,
+		Now:     func() time.Time { return time.Date(2026, 8, 16, 0, 0, 0, 0, time.UTC) },
+		Version: "0.5.0-dev",
+	})
+	if err != nil {
+		t.Fatalf("a slow agent must not fail the run: %v", err)
+	}
+	if err := Validate(art); err != nil {
+		t.Fatal(err)
+	}
+	if len(art.Agents) != 2 {
+		t.Fatalf("agents = %d, want both recorded", len(art.Agents))
+	}
+	byKey := map[string]Agent{}
+	for _, rec := range art.Agents {
+		byKey[rec.Key] = rec
+	}
+	if !byKey["slow"].TimedOut {
+		t.Fatal("slow: want timed_out so a reader does not treat partial fields as a finding")
+	}
+	if byKey["fast"].TimedOut || byKey["fast"].VersionRaw != "9.9.9" {
+		t.Fatalf("fast: a neighbour's deadline must not affect it: %+v", byKey["fast"])
+	}
+	if !byKey["slow"].ExecutableOnPath {
+		t.Fatal("slow: evidence gathered before the deadline must survive")
 	}
 }
 
