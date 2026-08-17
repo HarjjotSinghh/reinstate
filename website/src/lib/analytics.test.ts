@@ -42,6 +42,7 @@ describe('analytics event taxonomy', () => {
     ['/integrations/opencode/', 'integration_view', 'opencode'],
     ['/integrations/grok', 'integration_view', 'grok'],
     ['/integrations/kimi', 'integration_view', 'kimi'],
+    ['/integrations/pi', 'integration_view', 'pi'],
     [
       '/guides/use-s3-for-coding-agent-session-storage',
       'storage_guide_view',

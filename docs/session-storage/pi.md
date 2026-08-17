@@ -1,14 +1,15 @@
 # Pi coding agent (earendil-works)
 
-**Confidence: Documented on macOS; native Windows unprobed** —
-one macOS AGENT-PROBE-V1 after a real `pi -p` session; no reader.
-**Current tier:** T0 (`layout_unverified`) · **Phase 5 target:** T3
+**Confidence: Documented on macOS and native Windows** — dual-platform
+AGENT-PROBE-V1 after real `pi -p` sessions; T1 header-only index.
+**Current tier:** T1 (Discover) · **Phase 5 target:** T3
 
-Pi is an open-source terminal harness. A macOS AGENT-PROBE-V1 exists after a
-real `pi -p` session. Native Windows is still missing, so T1 and above stay
-closed. npm currently warns that `@mariozechner/pi-coding-agent` is deprecated
-in favor of `@earendil-works/pi-coding-agent`; the fail-closed pin remains
-`0.73.1`.
+Pi is an open-source terminal harness. Dual-platform probes agree on
+`sessions/<slug>/<slug>-<uuid-v4>.jsonl` and first-line keys
+`cwd, id, timestamp, type, version`. `rein sessions --agent pi` lists those
+files from the type=session header. Resume and fork stay refused. npm currently
+warns that `@mariozechner/pi-coding-agent` is deprecated in favor of
+`@earendil-works/pi-coding-agent`; the fail-closed pin remains `0.73.1`.
 
 ## Identity
 
@@ -21,7 +22,7 @@ in favor of `@earendil-works/pi-coding-agent`; the fail-closed pin remains
 | Distribution | Official, npm, MIT |
 | Storage family | F1 (home-dir tree) — see [Family](#family-f1-not-f2) |
 | Catalog key | `pi` |
-| Fail-closed version pin | `0.73.1`–`0.73.1`. Still T0: no reader. |
+| Fail-closed version pin | `0.73.1`–`0.73.1`. T1, not T3: no native resume journey. |
 
 ## Device evidence (2026-08-17, macOS arm64)
 
@@ -46,7 +47,7 @@ Artifact:
 [`2026-08-17-windows-pi.json`](../testing/results/agent-probes/2026-08-17-windows-pi.json)
 
 Same pin `0.73.1`, same tree and first-line keys as macOS after a real
-`pi -p` session. Path slugs collapsed to `<slug>`. Still T0: no reader.
+`pi -p` session. Path slugs collapsed to `<slug>`.
 
 ## Family: F1, not F2
 
@@ -64,65 +65,59 @@ methods are not an F2 interface.
 
 ## Claimed layout
 
-Every on-disk row stays **Unverified** until a probe confirms it. The values
-below are what the vendor currently publishes.
-
 | Aspect | Vendor-published value | Probe status |
 | ------ | ---------------------- | ------------ |
-| Config root override | `PI_CODING_AGENT_DIR` | Unverified |
-| Config root default | `~/.pi/agent` | **macOS:** resolved |
-| Session storage override | `PI_CODING_AGENT_SESSION_DIR` (overridden by `--session-dir`, then `sessionDir` in settings.json) | Unverified |
-| Session storage default | `~/.pi/agent/sessions/` (under the config root, not a sibling of it) | **macOS:** present |
-| Session path | `sessions/--<cwd-with-slashes-as-hyphens>--/<timestamp>_<uuid>.jsonl` | **macOS:** `sessions/<slug>/<slug>-<uuid-v4>.jsonl` |
-| Session format | JSONL; first line `type=session` header (`version`, `id`, `cwd`); later lines tree entries with `id` / `parentId` | **macOS first line:** `cwd, id, timestamp, type, version` |
-| Header versions | v1 linear (legacy), v2 tree, v3 `hookMessage` → `custom`; load migrates to v3 | Unverified |
-| Project scoping | Yes: one cwd-slug directory per working directory | **macOS:** one slug directory |
-| Project key | Path slug (`/` → `-`, wrapped in `--…--`). Windows encoding unknown | **macOS:** collapsed to `<slug>`; Windows unknown |
-| HTML / JSONL export | `/export [file]`, `--export <in> [out]`, RPC `export_html` write to a caller path (RPC default `/tmp/session.html`), not into the session tree | Unverified |
-| Credentials | `~/.pi/agent/auth.json` (mode `0600`); OAuth after `/login` | Unverified |
-| Caches / packages | `models-store.json`, `npm/`, `git/` | Unverified |
+| Config root override | `PI_CODING_AGENT_DIR` | Unverified as a live override; default root resolved |
+| Config root default | `~/.pi/agent` | **macOS and Windows:** resolved |
+| Session storage override | `PI_CODING_AGENT_SESSION_DIR` (overridden by `--session-dir`, then `sessionDir` in settings.json) | Unverified; T1 does not honor it |
+| Session storage default | `~/.pi/agent/sessions/` (under the config root, not a sibling of it) | **macOS and Windows:** present |
+| Session path | `sessions/--<cwd-with-slashes-as-hyphens>--/<timestamp>_<uuid>.jsonl` | **Both:** `sessions/<slug>/<slug>-<uuid-v4>.jsonl` |
+| Session format | JSONL; first line `type=session` header (`version`, `id`, `cwd`); later lines tree entries with `id` / `parentId` | **Both first line:** `cwd, id, timestamp, type, version` |
+| Header versions | v1 linear (legacy), v2 tree, v3 `hookMessage` → `custom`; load migrates to v3 | Unverified numeric value; T1 requires `type=session` and `id` |
+| Project scoping | Yes: one cwd-slug directory per working directory | **Both:** one slug directory |
+| Project key | Path slug (`/` → `-`, wrapped in `--…--`). Windows encoding unknown | **Both:** collapsed to `<slug>` |
+| HTML / JSONL export | `/export [file]`, `--export <in> [out]`, RPC `export_html` write to a caller path (RPC default `/tmp/session.html`), not into the session tree | Unverified; `**/*.html` excluded |
+| Credentials | `~/.pi/agent/auth.json` (mode `0600`); OAuth after `/login` | Unverified; `auth.json` excluded |
+| Caches / packages | `models-store.json`, `npm/`, `git/` | Unverified; excluded |
 | Resume most recent | `pi -c` / `pi --continue` | Unverified |
-| Resume specific | `pi --session <path\|id>` | Unverified |
-| Fork | `pi --fork <path\|id>`; `/fork`, `/clone` in TUI | Unverified |
+| Resume specific | `pi --session <path\|id>` | Unverified; T1 refuses |
+| Fork | `pi --fork <path\|id>`; `/fork`, `/clone` in TUI | Unverified; T1 refuses |
 | Browse sessions | `pi -r` (TUI) | Unverified |
 | Version flag | `pi -v` / `pi --version` | Terminal `0.73.1`; probe `version_raw` empty |
 | Self-identification | CLI and RPC set `AI_AGENT=pi` and `PI_CODING_AGENT=true` for child processes | Documented; prefer over binary-name heuristics |
 
 `PI_CODING_AGENT_SESSION_DIR` being a separate override does **not** mean the
 default session root is outside `~/.pi/agent`. The published default is
-`~/.pi/agent/sessions/`. A T1 scanner must still honor the session-dir
-override without treating it as `<config>/sessions`.
+`~/.pi/agent/sessions/`. T1 indexes that default tree only.
 
 ## What this task settled
 
 1. **No F2 list API.** Do not spawn `pi --mode rpc` or `--mode json` to
    enumerate sessions. Do not embed the Node SDK.
-2. **Default session directory** is published as `~/.pi/agent/sessions/`,
-   organized by working directory.
-3. **Sessions are project-scoped** by a cwd slug. `ProjectKey` is `path_slug`
-   if a reader is written. Do not invent a global bucket.
+2. **Default session directory** is `~/.pi/agent/sessions/`, organized by
+   working directory, on both probed platforms.
+3. **Sessions are project-scoped** by a cwd slug. `ProjectKey` is `path_slug`.
 4. **Process detection** should use `PI_CODING_AGENT=true` and `AI_AGENT=pi`
    before the `pi` image name.
 5. **HTML exports** are caller-pathed. Exclude `**/*.html` from discovery
    anyway so an export dropped into the tree is not a session.
-6. **`pi --version`** printed `0.73.1` in the terminal; the probe left
-   `version_raw` empty. Capture the parser input on the next run.
+6. **T1 index** reads the first complete `type=session` line. `MessageCount`
+   is 0. Unknown type, missing id, and unrecognized files fail closed.
 
 ## What remains blocked
 
 | Item | Why |
 | ---- | --- |
-| T1 | Dual-platform probes committed; no reader |
-| Windows path slug | Drive letters and `\` are unpublished |
+| T2 | Later JSONL lines unparsed; do not invent a message schema |
 | Session-dir override on disk | `PI_CODING_AGENT_SESSION_DIR` vs `--session-dir` vs `settings.json` `sessionDir` not probed |
-| T3 version range | Pi publishes on roughly a daily cadence (npm `0.84.2` as of 2026-08-14; mise reports ~255 releases, ~1 day average). A narrow pin will rot in weeks. **Maintainer decision — do not guess a range** |
+| T3 version range | Pi publishes on roughly a daily cadence. The 0.73.1 pin is fail-closed, not a tested resume range. **Maintainer decision — do not guess a range** |
 
 ## Tier path
 
 | Tier | Blocker |
 | ---- | ------- |
-| T1 | Needs an index source; dual-platform probes exist |
-| T2 | Record format beyond the header line unparsed; unknown-layout and truncation policy untested |
+| T1 | Shipped: header-only index, dual-platform probes and fixtures |
+| T2 | Record format beyond the header line unparsed |
 | T3 | Needs a captured `pi --version` probe shape, dual-platform resume journeys, and a maintainer version-range policy |
 
 T4 and T5 are out of scope for `v0.5.0`.
