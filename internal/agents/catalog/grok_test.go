@@ -21,8 +21,10 @@ func TestGrokExcludesInstallNoise(t *testing.T) {
 		"bin",
 		"downloads",
 		"docs",
+		"skills",
 		"auth.json",
 		"auth.json.lock",
+		"mcp_credentials.json",
 		"subagents",
 	} {
 		if !contains(d.Storage.Excluded, want) {

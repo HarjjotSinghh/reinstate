@@ -37,8 +37,10 @@ func Grok() agents.Descriptor {
 				"bin",
 				"downloads",
 				"docs",
+				"skills",
 				"auth.json",
 				"auth.json.lock",
+				"mcp_credentials.json",
 			}, groksrc.Excluded...),
 		},
 		Process: agents.ProcessSpec{

@@ -40,11 +40,15 @@ func Gemini() agents.Descriptor {
 			// antigravity-browser-profile/ belong to the desktop IDE: a
 			// 2026-08-17 Windows probe spent its file budget on the Chrome
 			// profile (IndexedDB hosts, extension IDs) and never reached
-			// tmp/*/chats. Gemini CLI sessions stay under tmp/.
+			// tmp/*/chats. config/ (skills) and history/ drowned the
+			// follow-up probe and leaked project folder names; sessions
+			// stay under tmp/.
 			Excluded: append([]string{
 				"antigravity",
 				"antigravity-browser-profile",
 				"antigravity-cli",
+				"config",
+				"history",
 				"oauth_creds.json",
 				"google_accounts.json",
 			}, geminisrc.Excluded...),

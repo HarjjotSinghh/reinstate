@@ -108,10 +108,13 @@ refused: no device journey has run `kimi -r <id>` against a real session.
 - Gemini CLI also excludes `antigravity` and `antigravity-browser-profile`.
   A 2026-08-17 Windows probe drowned in the desktop IDE's Chrome profile and
   never reached `tmp/*/chats`. Those trees are not Gemini CLI sessions.
+- Gemini CLI also excludes `config` and `history` so a Windows probe can reach
+  `tmp/*/chats` instead of drowning in skills and leaking project folder names.
 - Grok Build excludes install and cache trees (`bundled`, `marketplace-cache`,
   `bin`, `downloads`, `docs`) plus `auth.json`. A 2026-08-17 Windows re-probe
   then reached `sessions/` (32 sessions) and is committed as
   [`2026-08-17-windows-grok.json`](docs/testing/results/agent-probes/2026-08-17-windows-grok.json).
+- Grok Build also excludes `skills` and `mcp_credentials.json`.
 - Qwen Code native Windows re-probe committed as
   [`2026-08-17-windows-qwen.json`](docs/testing/results/agent-probes/2026-08-17-windows-qwen.json):
   two `projects/*/chats/<uuid-v4>.jsonl` sessions after excluding `updates/`.

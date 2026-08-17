@@ -271,7 +271,7 @@ function field(source: string, name: string): string | null {
 }
 
 function resolveCatalogKey(raw: string): string | null {
-  if (/^"[a-z][a-z0-9_]*"$/.test(raw) || /^[a-z][a-z0-9_]*$/.test(raw)) {
+  if (/^"[a-z][a-z0-9_-]*"$/.test(raw) || /^[a-z][a-z0-9_-]*$/.test(raw)) {
     return raw.replace(/"/g, '');
   }
   const constName = raw.replace(/^sessionindex\./, '');
