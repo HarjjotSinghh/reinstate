@@ -105,6 +105,13 @@ refused: no device journey has run `kimi -r <id>` against a real session.
 - The Gemini CLI descriptor now excludes `antigravity-cli`, `oauth_creds.json`,
   and `google_accounts.json` from its storage walk. Antigravity CLI installs
   into the same root and keeps an OAuth token there on Linux.
+- Gemini CLI also excludes `antigravity` and `antigravity-browser-profile`.
+  A 2026-08-17 Windows probe drowned in the desktop IDE's Chrome profile and
+  never reached `tmp/*/chats`. Those trees are not Gemini CLI sessions.
+- Grok Build excludes install and cache trees (`bundled`, `marketplace-cache`,
+  `bin`, `downloads`, `docs`) plus `auth.json`. The same Windows probe never
+  reached `sessions/` because the walk spent its budget on bundled binaries
+  and cloned marketplace git trees.
 
 ### Fixed
 

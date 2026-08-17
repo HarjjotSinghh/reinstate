@@ -57,3 +57,12 @@ Grok sessions appear in the local index. Grok is not a destination.
 
 Synthetic fixtures: `testdata/sessionindex/grok/{macos,windows}/`.
 Research note: [research/2026-08-12-phase-4-r1-r2-r3.md](../research/2026-08-12-phase-4-r1-r2-r3.md).
+
+### Device observation (2026-08-17, native Windows amd64)
+
+Not committed as an artifact. `grok` 0.2.101 was on `PATH` and `%USERPROFILE%\.grok`
+resolved, but the probe never reached `sessions/`. The walk spent its budget on
+`bundled/` (installer payload, including 137 MB `bin/*.exe`) and
+`marketplace-cache/` (cloned plugin git trees). Those directories, plus
+`downloads/`, `docs/`, and `auth.json`, are now excluded. Re-probe with a binary
+that includes those exclusions before treating Windows as a native artifact.

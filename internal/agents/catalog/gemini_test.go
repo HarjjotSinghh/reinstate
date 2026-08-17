@@ -59,3 +59,19 @@ func TestGeminiDescriptorStaysT2WithLatestStableRange(t *testing.T) {
 		t.Fatal("constructors above T2")
 	}
 }
+
+func TestGeminiExcludesAntigravityProductTrees(t *testing.T) {
+	d := Gemini()
+	for _, want := range []string{
+		"antigravity",
+		"antigravity-browser-profile",
+		"antigravity-cli",
+		"oauth_creds.json",
+		"google_accounts.json",
+		"subagents",
+	} {
+		if !contains(d.Storage.Excluded, want) {
+			t.Fatalf("excluded = %v, missing %q", d.Storage.Excluded, want)
+		}
+	}
+}

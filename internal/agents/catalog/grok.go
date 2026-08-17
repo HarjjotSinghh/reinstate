@@ -27,7 +27,19 @@ func Grok() agents.Descriptor {
 			Layout:      "sessions-summary-json",
 			SessionGlob: "sessions/**/summary.json",
 			ProjectKey:  agents.ProjectKeyURLEncoding,
-			Excluded:    groksrc.Excluded,
+			// A 2026-08-17 Windows probe never reached sessions/: bundled/
+			// (137 MB binaries, skills, personas) and marketplace-cache/
+			// (cloned plugin git trees) consumed the walk. Those are the
+			// install, not the session store. auth.json is a credential.
+			Excluded: append([]string{
+				"bundled",
+				"marketplace-cache",
+				"bin",
+				"downloads",
+				"docs",
+				"auth.json",
+				"auth.json.lock",
+			}, groksrc.Excluded...),
 		},
 		Process: agents.ProcessSpec{
 			Images: []string{"grok"},

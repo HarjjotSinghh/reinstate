@@ -18,46 +18,41 @@ tree we would want to measure later.
 
 Nothing in this runbook needs administrator rights.
 
-## 1. Download the probe binary (2 min)
+## 1. Copy a current probe binary (2 min)
 
-Paste this into PowerShell on the Windows machine. Nothing needs to be copied
-across by hand.
+The `probe-win-2026-08-17` prerelease is gone. `v0.4.0` is too old: it predates
+per-agent timeouts, account-name redaction, marker-gated roots, and the
+Gemini/Grok/Qwen exclusions that keep a populated home tree from drowning the
+walk.
+
+Build from `fix/probe-drowning-exclusions` until it merges, then from
+`feat/universal-agent-coverage`, on a machine with Go 1.25+:
+
+```bash
+GOOS=windows GOARCH=amd64 go build -o /tmp/rein.exe ./cmd/reinstate
+```
+
+Copy that file to `C:\probe\rein.exe` on the Windows host. A local build
+reports `0.0.0-dev`; that string is expected. The check is the tree, not the
+version: Gemini must not list `antigravity-browser-profile`, Grok must reach
+`sessions/`, Qwen must not list `updates/**/node_modules`.
+
+Confirm it runs:
 
 ```powershell
 New-Item -ItemType Directory -Force -Path C:\probe | Out-Null
-Invoke-WebRequest -Uri https://github.com/HarjjotSinghh/reinstate/releases/download/probe-win-2026-08-17/rein.exe -OutFile C:\probe\rein.exe
-
-# Must print True. If it prints False, stop and re-download.
-(Get-FileHash C:\probe\rein.exe -Algorithm SHA256).Hash -eq '771A4F5C19FE518F8561A1085F0A46F9550154979F78AA589690BCA7CCF920FA'
-
 C:\probe\rein.exe version
 ```
 
 The binary is unsigned, so SmartScreen may warn on first run.
-
-It must be **this** build, from the
-[`probe-win-2026-08-17`](https://github.com/HarjjotSinghh/reinstate/releases/tag/probe-win-2026-08-17)
-prerelease. The stable `v0.4.0` binary predates the per-agent timeout, the
-account-name redaction, and the marker-gated root discovery: it will time out
-on a machine with several agents installed, and if it does emit anything it
-will put your Windows account name in the file.
-
-Delete that prerelease once the artifact is captured; it is scaffolding, not a
-product release.
 
 Alternatively, with Go 1.25+ installed on Windows:
 
 ```powershell
 git clone https://github.com/HarjjotSinghh/reinstate
 cd reinstate
-git checkout fix/agent-probe-installed-signal
-go build -o rein.exe ./cmd/reinstate
-```
-
-Confirm it runs:
-
-```powershell
-C:\probe\rein.exe version
+git checkout fix/probe-drowning-exclusions
+go build -o C:\probe\rein.exe ./cmd/reinstate
 ```
 
 ## 2. Install the agents (10 min)
@@ -140,9 +135,28 @@ Select-String -Path C:\probe\windows-probe.json -Pattern $env:USERNAME
 Select-String -Path C:\probe\windows-probe.json -SimpleMatch 'C:\Users'
 ```
 
-Both should return nothing. If either matches, **do not send the file** — send
-the matching line only, with your username edited out, and the redaction gets
-fixed before anything is committed.
+Both should return nothing. Then inspect `name_shapes` for recognizable
+project, host, or site names (anything that is not a `<slug>`, `<uuid-v4>`, or
+`<n>` token). A 2026-08-17 Gemini dump passed the username checks and still
+leaked repo and IndexedDB host names that way.
+
+If either username check matches, or `name_shapes` carries a real name, **do
+not send that agent's blob**. Send the matching line only, with the name
+edited out.
+
+When splitting the dump, keep only the agents this round is for, typically:
+
+```powershell
+$j = Get-Content C:\probe\windows-probe.json -Raw | ConvertFrom-Json
+$keep = 'gemini','grok','copilot','qwen','cursor'
+[pscustomobject]@{
+  schema = $j.schema
+  generated_at = $j.generated_at
+  platform = $j.platform
+  reinstate_version = $j.reinstate_version
+  agents = @($j.agents | Where-Object { $keep -contains $_.key })
+} | ConvertTo-Json -Depth 20 -Compress
+```
 
 ## 6. Send it back
 

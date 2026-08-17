@@ -23,3 +23,10 @@ func TestQwenIsIdentifiedT0(t *testing.T) {
 		t.Fatal("T0 qwen must not claim native resume or a version range")
 	}
 }
+
+func TestQwenExcludesUpdaterTree(t *testing.T) {
+	d := Qwen()
+	if !contains(d.Storage.Excluded, "updates") {
+		t.Fatalf("excluded = %v, missing updates (npm self-updater drowned the Windows probe)", d.Storage.Excluded)
+	}
+}

@@ -57,7 +57,9 @@ Not committed as an artifact. The self-updater unpacks a full npm tree under
 `updates/`, and it consumed the probe's entire file budget: 289 chunk files, 61
 font files, a 4 MB C header. The two real conversations were nearly crowded
 out. `updates` is now in the descriptor's `Excluded` set, and a re-probe will
-produce something worth committing.
+produce something worth committing. A second dump the same day
+(`2026-08-17T09:20:08Z`) still listed `updates/**/node_modules` because
+`C:\probe\rein.exe` was the old `0.0.0-dev` binary from before that exclusion.
 
 What the run showed anyway, and it contradicts the macOS reading:
 
