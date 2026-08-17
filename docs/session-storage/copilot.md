@@ -59,6 +59,43 @@ The local store is real and substantial: a 70 KB event log with an explicit
 `id` / `parentId` chain, checkpoints, and file snapshots for rewind. A naive
 scanner would call this case 1 and promote the agent.
 
+## Device evidence (2026-08-17, native Windows amd64)
+
+Artifact:
+[`2026-08-17-windows-copilot.json`](../testing/results/agent-probes/2026-08-17-windows-copilot.json)
+
+Same CLI version, `1.0.80`, and the tree is **not** the same shape. SQLite
+appears:
+
+```
+~\.copilot\
+  session-store.db           4 KB      + -shm 32 KB, -wal 463 KB
+  session-state\<uuid-v4>\
+    session.db               12 KB
+    events.jsonl             85 KB     keys: id, parentId, timestamp, type, data
+    workspace.yaml           420 B
+    checkpoints\index.md
+    rewind-file-snapshots\tracking.json
+    files\, research\
+```
+
+Neither `session-store.db` nor the per-session `session.db` appeared in the
+macOS artifact, and a 463 KB write-ahead log means the database is being
+written, not carried along as a stub.
+
+**This unsettles the storage family.** The descriptor records `FamilyHomeTree`
+from vendor documentation, but an agent with a root-level SQLite store plus a
+per-session database is at least partly F3, and a reader that walks JSONL while
+ignoring the database may be reading a partial or superseded view. Which of the
+two is authoritative is now an open question on top of the one below.
+
+Do not resolve it by guessing. The macOS artifact may simply predate a
+migration, or the file may be created lazily on Windows only. A macOS re-probe
+on the same version answers it cheaply, and until then the family assignment
+stays as documented, with this contradiction recorded against it.
+
+## The cache question is still open
+
 That is exactly the trap this page was written to avoid. Rich local state is
 equally consistent with case 2 — a cache the CLI rebuilds from the account.
 The probe cannot tell the difference, because the difference is only visible

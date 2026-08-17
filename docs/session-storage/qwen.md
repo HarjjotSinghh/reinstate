@@ -51,6 +51,51 @@ its record shape is not evidence. `skills/` and `extension-store/` are excluded
 in the descriptor: they are configuration, and a populated skills library buries
 the real tree in 176 directories of noise.
 
+## Device observation (2026-08-17, native Windows amd64)
+
+Not committed as an artifact. The self-updater unpacks a full npm tree under
+`updates/`, and it consumed the probe's entire file budget: 289 chunk files, 61
+font files, a 4 MB C header. The two real conversations were nearly crowded
+out. `updates` is now in the descriptor's `Excluded` set, and a re-probe will
+produce something worth committing.
+
+What the run showed anyway, and it contradicts the macOS reading:
+
+| Aspect | macOS (2026-08-16) | Windows (2026-08-17) |
+| ------ | ------------------ | -------------------- |
+| Conversation path | `projects/<slug>/chats/<slug>.json` | `projects/<slug>/chats/<uuid-v4>.jsonl` |
+| Count | 1 file, provenance unknown | 2 files, from real sessions |
+| `qwen --version` | `0.21.12` | `0.21.13` — it self-updated past the pinned install |
+
+The macOS file was **not** produced by a session the tester ran, which is why
+that page recorded its shape as unverified. It was right to. The real format is
+**JSONL, one file per session, named by UUID** — not a single JSON document.
+
+The record shape is the interesting part:
+
+```
+cwd, message, parentUuid, provenance, sessionId, timestamp, type, uuid, version
+```
+
+That is Claude Code's transcript schema, near enough to be worth saying out
+loud: a `uuid` / `parentUuid` chain, a `sessionId`, a `cwd`, a `message`, and a
+`type`. The Gemini-fork hypothesis was rejected on storage-location grounds
+already; this suggests the conversation format was taken from somewhere else
+again. `provenance` is a field Claude Code does not have.
+
+**This does not make Qwen readable by the Claude reader.** Same-shaped keys are
+not the same format, and a reader that assumes otherwise will mis-parse
+silently. It is a strong hint for whoever writes the Qwen reader, and nothing
+more.
+
+Also worth recording: `usage_record.jsonl` exists with
+`durationMs, files, models, project, sessionId, skills, startTime, timestamp,
+tools, totalLatencyMs, version` — a per-session usage ledger that could supply
+message counts and file references without parsing a transcript at all.
+
+**Tier unchanged at T0.** A polluted artifact is not evidence, no macOS probe
+has observed a real conversation, and there is no reader.
+
 ## Identity
 
 | Aspect | Value | Source |

@@ -7,8 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Phase 5 in progress: the agent catalog, the storage probe, and honest T0 entries
-for the candidate roster. No new agent is readable, resumable, or syncable yet.
+Phase 5 in progress. **Kimi Code CLI is the first new agent to reach T1**:
+its sessions are indexed and searchable, read-only. Every other candidate is
+still T0.
+
+### Kimi Code CLI at T1
+
+Promoted on 2026-08-17, when a native Windows probe joined the macOS one from
+the day before. The Windows device carried five sessions across three projects,
+which settled what a single-session macOS run could not: `state.json` has an
+identical thirteen-key shape on both platforms, and `session_index.jsonl`
+enumerated exactly the five session directories on disk.
+
+`rein sessions --agent kimi` lists and searches them. Resume and fork stay
+refused: no device journey has run `kimi -r <id>` against a real session.
 
 ### Added
 
@@ -96,6 +108,14 @@ for the candidate roster. No new agent is readable, resumable, or syncable yet.
 
 ### Fixed
 
+- The probe emitted repository names. Kimi Code buckets a workspace as
+  `wd_<name>_<12-hex>`, where the name is the **basename of the working
+  directory**, and the whole component passed through the normalizer intact.
+  The earlier macOS artifact was redacted only by accident, because that
+  session ran in the home directory, whose basename is the account name — which
+  is also why the shape was first misread as carrying a username. A native
+  Windows probe produced `wd_portfolio-25_6d65015f0cb0` and exposed it. Such
+  components now collapse to `wd_<project>_<12-hex>`.
 - The probe would have emitted encoded absolute paths verbatim. Cursor buckets
   projects as `Users-<user>-Documents-Projects-<repo>`, which the token
   normalizer passed through intact because every character in it is

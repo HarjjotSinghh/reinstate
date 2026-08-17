@@ -223,6 +223,16 @@ func TestShapeNormalization(t *testing.T) {
 		{"C-Users-alice-src-demo", "<path-slug>"},
 		// A vendor prefix that merely contains segments is not a path.
 		{"empty-window", "empty-window"},
+		// Kimi Code's workspace bucket. The stem is the basename of the
+		// working directory, so it is a repository name, and a native Windows
+		// probe emitted wd_portfolio-25_6d65015f0cb0 before this rule existed.
+		{"wd_portfolio-25_6d65015f0cb0", "wd_<project>_<12-hex>"},
+		{"wd_probe-one_87e15ce98f3b", "wd_<project>_<12-hex>"},
+		// The macOS bucket only looked like a username because that session
+		// ran in the home directory, whose basename is the account name.
+		{"wd_harjjotsinghh_f6c3da451c53", "wd_<project>_<12-hex>"},
+		{"wd_my_project_abcdef1234567890", "wd_<project>_<16-hex>"},
+		// Too short a tail to be a content hash.
 		{"wd_alice_abcdef", "wd_alice_abcdef"},
 	}
 	for _, tt := range tests {

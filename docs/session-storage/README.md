@@ -27,7 +27,7 @@ Reinstate reads it. Support states live in
 
 | Agent | Page | Current | Target |
 | ----- | ---- | ------- | ------ |
-| Kimi Code CLI | [kimi.md](kimi.md) | T0 | T3 |
+| Kimi Code CLI | [kimi.md](kimi.md) | **T1** | T3 |
 | Pi | [pi.md](pi.md) | T0 | T3 |
 | Qwen Code | [qwen.md](qwen.md) | T0 | T2 |
 | Cursor CLI | [cursor.md](cursor.md) | T0 | T1 |
@@ -52,7 +52,9 @@ this phase, under
 
 | Agent | Artifact | What it settled |
 | ----- | -------- | --------------- |
-| Kimi Code CLI | `2026-08-16-macos-kimi.json` | Root is `~/.kimi-code`; `session_index.jsonl` exists; bucket is `wd_<slug>_<12-hex>` |
+| Kimi Code CLI | `2026-08-16-macos-kimi.json` | Root is `~/.kimi-code`; `session_index.jsonl` exists; bucket is `wd_<project>_<12-hex>` |
+| Kimi Code CLI | `2026-08-17-windows-kimi.json` | **Promoted Kimi to T1.** Five sessions across three projects; identical `state.json` shape to macOS; index enumerated exactly the sessions on disk |
+| GitHub Copilot CLI | `2026-08-17-windows-copilot.json` | SQLite appears: `session-store.db` plus a per-session `session.db`, absent from the macOS artifact |
 | Qwen Code | `2026-08-16-macos-qwen.json` | Conversations are under `projects/<slug>/chats/`, not `tmp/`; marker corrected |
 | GitHub Copilot CLI | `2026-08-16-macos-copilot.json` | Substantial local `session-state/<uuid>/events.jsonl`; cache-versus-authoritative still open |
 

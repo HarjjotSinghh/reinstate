@@ -1,6 +1,7 @@
 package probe
 
 import (
+	"fmt"
 	"path"
 	"regexp"
 	"strings"
@@ -17,6 +18,17 @@ var (
 	reTrailing = regexp.MustCompile(`^([A-Za-z][A-Za-z0-9._-]*?)[-_]?([0-9]+)$`)
 	reDigits   = regexp.MustCompile(`^[0-9]+$`)
 	reSafeName = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9._-]*$`)
+	// reWorkspaceBucket matches a short prefix, a free-form stem, and a
+	// content hash: Kimi Code's wd_<workspace>_<12-hex>. The stem is the
+	// basename of the working directory, so it is a repository name.
+	//
+	// A native Windows probe produced wd_portfolio-25_6d65015f0cb0 and this
+	// rule is why that no longer reaches an artifact. The earlier macOS probe
+	// produced wd_<account>_<hex> and was redacted only by accident, because
+	// that session happened to run in the home directory, whose basename is
+	// the account name — which is also why the shape was first misread as
+	// carrying a username.
+	reWorkspaceBucket = regexp.MustCompile(`(?i)^([a-z][a-z0-9]{0,7})_(.+)_([0-9a-f]{8,64})$`)
 )
 
 // normalizeComponent collapses identifying names to a token.
@@ -64,6 +76,9 @@ func normalizeStem(stem string) string {
 	}
 	if m := rePrefHex.FindStringSubmatch(stem); len(m) == 3 {
 		return m[1] + "_<32-hex>"
+	}
+	if m := reWorkspaceBucket.FindStringSubmatch(stem); len(m) == 4 {
+		return fmt.Sprintf("%s_<project>_<%d-hex>", m[1], len(m[3]))
 	}
 	if isSlug(stem) {
 		return "<slug>"

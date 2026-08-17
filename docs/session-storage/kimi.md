@@ -62,6 +62,11 @@ What this settles:
    file enumerates every session, so the scanner should prefer it and keep the
    directory walk only as a fallback for a stale or missing index.
 3. **The project bucket is `wd_<slug>_<12-hex>`**, not the MD5 Mirror B claims.
+   <br>**Corrected 2026-08-17:** the slug is the **basename of the working
+   directory**, not the account name. This macOS session ran in the home
+   directory, whose basename is the account name, so the two were
+   indistinguishable until the Windows probe produced `wd_portfolio-25_…`. See
+   the Windows section below.
    The slug is the account name, which is why the probe redacts it to `<user>`.
    `internal/pathmap` must recompute this on a destination device.
 4. **`state.json` carries everything the index needs** — `title`, `cwd`,
@@ -167,12 +172,63 @@ resume.
 
 | Tier | Blocker |
 | ---- | ------- |
-| T1 | **Code complete, evidence incomplete.** `internal/agents/sources/kimi` is written and tested against both fixture platforms. The only remaining blocker is a native Windows `AGENT-PROBE-V1`; a macOS re-probe across two projects should land with it |
+| T1 | **Reached 2026-08-17.** Both platform probes committed, source shipped, fixtures on both platforms |
 | T2 | `wire.jsonl` vocabulary is now known (below); still needs the unknown-record and truncation policy |
 | T3 | `kimi --version` prints a bare `0.36.1`, so a range is now expressible. Still needs a fail-closed supported range and physical `--continue` / `--session` on both platforms |
 
 T4 and T5 are out of scope for `v0.5.0` per
 [ADR 0004](../adr/0004-universal-agent-coverage.md).
+
+## Device evidence (2026-08-17, native Windows amd64)
+
+Artifact:
+[`2026-08-17-windows-kimi.json`](../testing/results/agent-probes/2026-08-17-windows-kimi.json)
+
+**This is the probe that promoted Kimi to T1.** Five sessions across three
+project buckets, against macOS's single session in one — so it answered more
+than the platform question.
+
+| Check | Result |
+| ----- | ------ |
+| `kimi` on PATH | yes |
+| `kimi --version` | `0.36.1`, identical shape to macOS |
+| Resolved root | `~/.kimi-code` |
+| `~/.kimi` | **exists**, without the `sessions` marker |
+| Sessions observed | 5, across 3 project buckets |
+| `session_index.jsonl` lines | 5 |
+| Session directories on disk | 5 |
+| Physical `kimi -r <id>` | **not run** |
+
+What it settled:
+
+1. **`session_index.jsonl` is consistent.** Five lines, five session
+   directories, three projects. The index does enumerate every session across
+   every project, which is what the macOS single-session run could not show.
+   The shipped source still walks the tree — see the section below — but the
+   index is now a credible future optimisation rather than an unknown.
+2. **`state.json` is identical across platforms**, all thirteen keys. This is
+   the cross-platform stability the T1 claim rests on: one parser, two
+   operating systems, no divergence.
+3. **The bucket slug is the workspace basename**, not the account name.
+   `wd_portfolio-25_6d65015f0cb0` alongside two scratch projects made this
+   unambiguous, and it corrects the macOS reading above.
+4. **`~/.kimi` is a legacy root.** It exists here without a marker, beside a
+   `migration-report.json` and `migration-errors.log` in `~/.kimi-code`. The
+   mirror conflict was two vendor documents describing different sides of a
+   migration. Marker-gating resolved it without a special case.
+5. **Subagents are plural and real**: `agents/agent-0` through `agents/agent-7`
+   on one session, one of them holding `tasks/bash-<id>/output.log`. Excluding
+   `agents` from the session walk is load-bearing, not defensive.
+6. **`agents/main/blobs/<64-hex>`** appears, 50 samples — a content-addressed
+   store not seen on macOS. Unread, and out of scope until T2.
+
+Windows-only observations that matter later, not now:
+
+- The data root contains **binaries**: `bin/kimi.exe` at 133 MB, plus a
+  `kimi.exe.bak`, `fd.exe`, and `rg.exe`. Any future sync adapter must exclude
+  `bin/` — 260 MB of executables is not session state.
+- `search-index/` sits at the root in addition to `cache/query-store/`. Both
+  are derived data and neither is a session.
 
 ## Record shapes, read from the device
 
@@ -209,12 +265,18 @@ The vendor writes a global index at the root, and it would be the cheaper
 discovery path: one file enumerates every session across every project, with no
 deep walk. The shipped source walks `sessions/**/state.json` anyway.
 
-The reason is staleness. Nothing observed so far shows what happens to that
-index when a session directory is deleted by hand, and an index that outlives
-its sessions makes `rein list` offer threads that cannot be opened — a worse
-failure than a slower scan, because the user cannot tell it is wrong. Detecting
-staleness would require the walk the index was meant to avoid. It becomes an
-optimisation once a probe covers several projects and a hand-deleted session.
+The reason is staleness, and the Windows probe narrowed it without closing it.
+Five index lines matched five session directories across three projects, so the
+index is not merely a cache of the last thing written — it does enumerate
+everything. What no probe has shown is what happens when a session directory is
+removed **by hand**, which is the case that matters: an index outliving its
+sessions makes `rein sessions` offer threads that cannot be opened, and the
+user cannot tell it is wrong.
+
+Detecting that would require the walk the index was meant to avoid, so the walk
+stays authoritative. The switch is cheap to make later and needs one
+observation: delete a session directory, re-read the index, see whether the
+line went with it.
 
 ## Implementation status
 
@@ -223,13 +285,15 @@ optimisation once a probe covers several projects and a hand-deleted session.
 platforms, subagent exclusion, determinism, wire-log authority, and six
 corruption cases.
 
-**It is not registered on the descriptor.** The catalog stays T0, so the
-conformance suite would reject a `NewIndexSource` above the declared tier.
-Promotion is a three-line descriptor change — set `Tier`, drop `T0Reason`, wire
-`NewIndexSource` — plus the `Evidence.ProbeReports` and `Evidence.Fixtures`
-paths, and it is gated on one thing: a native Windows `AGENT-PROBE-V1`. That
-requirement is now enforced in code by `probePlatformGap`, not only documented
-here.
+**Registered and live at T1 since 2026-08-17.** Kimi is the first agent
+promoted under the enforced dual-platform gate: `probePlatformGap` would have
+rejected the claim on the macOS artifact alone, and the Windows artifact is
+what satisfied it.
+
+`rein sessions --agent kimi` lists and searches these sessions. Resume and fork
+stay refused with `ReadOnlyReason`, because no device journey has run
+`kimi -r <id>` against a real session on either platform. That, plus a
+fail-closed version range, is what T3 needs.
 
 ## Notes for the reader implementation
 
