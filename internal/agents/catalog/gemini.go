@@ -35,11 +35,20 @@ func Gemini() agents.Descriptor {
 			Layout:      "tmp-chats-session-json",
 			SessionGlob: "tmp/*/chats/session-*.json*",
 			ProjectKey:  agents.ProjectKeyPathHash,
-			// Antigravity CLI installs into ~/.gemini/antigravity-cli and
-			// keeps an OAuth token there on Linux. It is a separate catalog
-			// agent, so this root must not be walked into it.
+			// Three Antigravity products share ~/.gemini. antigravity-cli is
+			// a separate catalog agent. antigravity/ and
+			// antigravity-browser-profile/ belong to the desktop IDE: a
+			// 2026-08-17 Windows probe spent its file budget on the Chrome
+			// profile (IndexedDB hosts, extension IDs) and never reached
+			// tmp/*/chats. config/ (skills) and history/ drowned the
+			// follow-up probe and leaked project folder names; sessions
+			// stay under tmp/.
 			Excluded: append([]string{
+				"antigravity",
+				"antigravity-browser-profile",
 				"antigravity-cli",
+				"config",
+				"history",
 				"oauth_creds.json",
 				"google_accounts.json",
 			}, geminisrc.Excluded...),

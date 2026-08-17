@@ -34,6 +34,13 @@ Antigravity CLI is **not** the Antigravity desktop IDE. The two share an
 account and some configuration but install and run independently. This page
 and the descriptor cover the CLI only.
 
+A 2026-08-17 Windows Gemini probe observed sibling trees
+`~/.gemini/antigravity/` and `~/.gemini/antigravity-browser-profile/` on a
+machine that also had the desktop IDE. Those are **not** this catalog agent's
+root. Gemini CLI now excludes them so a probe can reach `tmp/*/chats`. Do not
+widen this descriptor to those paths without a dedicated Antigravity IDE
+probe.
+
 ## The collision that matters
 
 Antigravity CLI does not create its own home root. Vendor documentation places

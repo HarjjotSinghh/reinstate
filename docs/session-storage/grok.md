@@ -57,3 +57,18 @@ Grok sessions appear in the local index. Grok is not a destination.
 
 Synthetic fixtures: `testdata/sessionindex/grok/{macos,windows}/`.
 Research note: [research/2026-08-12-phase-4-r1-r2-r3.md](../research/2026-08-12-phase-4-r1-r2-r3.md).
+
+### Device evidence (2026-08-17, native Windows amd64)
+
+Artifact:
+[`2026-08-17-windows-grok.json`](../testing/results/agent-probes/2026-08-17-windows-grok.json)
+
+`grok` 0.2.101. After excluding `bundled/`, `marketplace-cache/`, `bin/`,
+`downloads/`, `docs/`, and `auth.json`, the walk reached `sessions/`: 32
+session directories, `summary.json`, `chat_history.jsonl` (`content`,`type`),
+`updates.jsonl` (`method`,`params`,`timestamp`), and `events.jsonl`. That
+matches the shipped T2 reader. The first dump the same day never left the
+installer trees and is not committed.
+
+The tree still lists `mcp_credentials.json` (filename only). Exclude it on
+the next catalog pass; do not open it.

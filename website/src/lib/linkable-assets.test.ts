@@ -317,7 +317,7 @@ describe('evidence-safe linkable assets', () => {
     expect(catalog.map(({ key }) => key).sort()).toEqual(
       compatibilityAgents.map(({ key }) => key).sort(),
     );
-    expect(catalog).toHaveLength(17);
+    expect(catalog).toHaveLength(18);
 
     for (const desc of catalog) {
       const row = compatibilityAgents.find((agent) => agent.key === desc.key);

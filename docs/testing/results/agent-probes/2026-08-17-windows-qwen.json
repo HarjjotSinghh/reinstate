@@ -1,0 +1,160 @@
+{
+  "schema": "AGENT-PROBE-V1",
+  "generated_at": "2026-08-17T09:46:27Z",
+  "platform": {
+    "os": "windows",
+    "arch": "amd64",
+    "device_class": "windows"
+  },
+  "reinstate_version": "0.0.0-dev",
+  "agents": [
+    {
+      "key": "qwen",
+      "display_name": "Qwen Code",
+      "declared_tier": "T0",
+      "root_env": "QWEN_HOME",
+      "root_env_set": false,
+      "candidate_roots": [
+        {
+          "relative_to": "home",
+          "suffix": ".qwen",
+          "exists": true,
+          "marker_present": true
+        }
+      ],
+      "resolved_root": {
+        "relative_to": "home",
+        "suffix": ".qwen"
+      },
+      "executable_on_path": true,
+      "version_raw": "0.21.13",
+      "tree": [
+        {
+          "path": "extensions",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "extensions/extension-enablement.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2
+        },
+        {
+          "path": "installation_id",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 36
+        },
+        {
+          "path": "output-language.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 841
+        },
+        {
+          "path": "projects",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "projects/*",
+          "kind": "dir",
+          "children": 1,
+          "sample_count": 1
+        },
+        {
+          "path": "projects/*/chats",
+          "kind": "dir",
+          "children": 2,
+          "sample_count": 1
+        },
+        {
+          "path": "projects/*/chats/*",
+          "kind": "file",
+          "count": 2,
+          "median_bytes": 1937
+        },
+        {
+          "path": "tip_history.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 433
+        },
+        {
+          "path": "tmp",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "tmp/*",
+          "kind": "dir",
+          "children": 2,
+          "sample_count": 1
+        },
+        {
+          "path": "tmp/*/logs.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 173
+        },
+        {
+          "path": "tmp/*/scheduled_tasks.lock",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 84
+        },
+        {
+          "path": "usage_record.jsonl",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 531
+        }
+      ],
+      "name_shapes": [
+        {
+          "path": "projects/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "projects/*/chats/*",
+          "shape": "<uuid-v4>.jsonl",
+          "samples": 2
+        },
+        {
+          "path": "tmp/*",
+          "shape": "<64-hex>",
+          "samples": 1
+        }
+      ],
+      "first_line_keys": {
+        "extensions/extension-enablement.json": [],
+        "projects/*/chats/*": [
+          "cwd",
+          "message",
+          "parentUuid",
+          "provenance",
+          "sessionId",
+          "timestamp",
+          "type",
+          "uuid",
+          "version"
+        ],
+        "usage_record.jsonl": [
+          "durationMs",
+          "files",
+          "models",
+          "project",
+          "sessionId",
+          "skills",
+          "startTime",
+          "timestamp",
+          "tools",
+          "totalLatencyMs",
+          "version"
+        ]
+      }
+    }
+  ]
+}

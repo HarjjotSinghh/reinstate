@@ -165,24 +165,30 @@
       "key": "kimi",
       "name": "Kimi Code CLI",
       "vendor": "Moonshot AI",
-      "tier": "T0",
+      "tier": "T1",
       "storageFamily": "F1",
-      "t0Reason": "layout_unverified",
-      "integrationPath": null,
+      "t0Reason": null,
+      "integrationPath": "/integrations/kimi",
       "status": "known",
       "minimumTestedVersion": null,
       "maximumTestedVersion": null,
-      "resumeMode": "Not usable (T0)",
-      "evidenceLevel": "catalog descriptor only; dual-platform AGENT-PROBE-V1 not committed",
+      "resumeMode": "Not usable (T1 discover only)",
+      "evidenceLevel": "dual-platform AGENT-PROBE-V1; F1 index source; no T3 device journey",
       "evidence": {
         "storagePage": "docs/session-storage/kimi.md",
-        "fixtures": [],
+        "fixtures": [
+          "testdata/sessionindex/kimi/macos",
+          "testdata/sessionindex/kimi/windows"
+        ],
         "deviceReports": [],
-        "probeReports": []
+        "probeReports": [
+          "docs/testing/results/agent-probes/2026-08-16-macos-kimi.json",
+          "docs/testing/results/agent-probes/2026-08-17-windows-kimi.json"
+        ]
       },
-      "lastTested": null,
+      "lastTested": "2026-08-17",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/kimi.md",
-      "notes": "T0 Known. Dual-platform AGENT-PROBE-V1 not committed. Not an integration."
+      "notes": "T1 Discover. Sessions are indexed and searchable; resume and fork stay refused. Not a handoff destination and not a synced agent."
     },
     {
       "id": "pi",
@@ -447,6 +453,30 @@
       "lastTested": null,
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/minimax.md",
       "notes": "T0 Known (`layout_unverified`). Key is minimax-code, not minimax. Token Plan API keys are models in other harnesses. Not an integration."
+    },
+    {
+      "id": "antigravity",
+      "key": "antigravity",
+      "name": "Antigravity CLI",
+      "vendor": "Google",
+      "tier": "T0",
+      "storageFamily": "F1",
+      "t0Reason": "layout_unverified",
+      "integrationPath": null,
+      "status": "known",
+      "minimumTestedVersion": null,
+      "maximumTestedVersion": null,
+      "resumeMode": "Not usable (T0)",
+      "evidenceLevel": "catalog descriptor; nests under ~/.gemini/antigravity-cli; no probe",
+      "evidence": {
+        "storagePage": "docs/session-storage/antigravity.md",
+        "fixtures": [],
+        "deviceReports": [],
+        "probeReports": []
+      },
+      "lastTested": null,
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/antigravity.md",
+      "notes": "T0 Known (`layout_unverified`). Separate from Gemini CLI and from the Antigravity desktop IDE. Not an integration."
     }
   ],
   "environments": [

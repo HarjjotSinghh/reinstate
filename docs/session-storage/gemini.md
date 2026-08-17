@@ -44,6 +44,19 @@ Two practical consequences:
   installing it**, and note that the Gemini descriptor now excludes that
   subtree so the two agents do not read each other's files.
 
+The desktop IDE also writes `antigravity/` and `antigravity-browser-profile/`
+next to Gemini CLI under `~/.gemini`. A 2026-08-17 native Windows probe
+(`gemini` 0.53.0) spent its file budget on that Chrome profile — IndexedDB
+hosts, extension IDs, component caches — and the real chats
+(`tmp/*/chats/session-*.jsonl`, keys `kind, lastUpdated, projectHash,
+sessionId, startTime`) barely appeared. Those two directories are now
+excluded. They are **not** the Antigravity CLI catalog agent, whose root is
+only `antigravity-cli/`. The blob from that run is not committed: `name_shapes`
+carried recognizable project and host names.
+
+The Windows binary on that machine was `0.53.0`, below the fail-closed pin
+`0.55.1`. T2 still reads the on-disk layout; T3 stays blocked.
+
 ### `$rewindTo` (R3 — Documented)
 
 On-disk JSONL is **append-only**: prior message lines stay in the file; a
