@@ -7,9 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Phase 5 in progress. **Kimi Code CLI is the first new agent to reach T1**:
-its sessions are indexed and searchable, read-only. Every other candidate is
-still T0.
+T0-heavy Phase 5 catalog RC. Ships the agent catalog and
+`rein doctor --agents` (including `--json` / `--acceptance-matrix`). **No new
+handoff destinations and no new synced agents** — Claude Code and Codex CLI
+remain the only T4/T5 surfaces. Gemini CLI, OpenCode, and Grok Build stay T2
+handoff sources. **Kimi Code CLI is T1** (index and search only; resume and
+fork stay refused). Every other new catalog agent is T0 with a recorded reason.
 
 ### Kimi Code CLI at T1
 
