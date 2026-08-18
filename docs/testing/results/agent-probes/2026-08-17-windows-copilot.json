@@ -1,0 +1,197 @@
+{
+  "schema": "AGENT-PROBE-V1",
+  "generated_at": "2026-08-17T07:47:35Z",
+  "platform": {
+    "os": "windows",
+    "arch": "amd64",
+    "device_class": "windows"
+  },
+  "reinstate_version": "0.0.0-dev",
+  "agents": [
+    {
+      "key": "copilot",
+      "display_name": "GitHub Copilot CLI",
+      "declared_tier": "T0",
+      "root_env": "COPILOT_HOME",
+      "root_env_set": false,
+      "candidate_roots": [
+        {
+          "relative_to": "home",
+          "suffix": ".copilot",
+          "exists": true,
+          "marker_present": true
+        }
+      ],
+      "resolved_root": {
+        "relative_to": "home",
+        "suffix": ".copilot"
+      },
+      "executable_on_path": true,
+      "version_raw": "GitHub Copilot CLI 1.0.80.\nRun 'copilot update' to check for updates.",
+      "tree": [
+        {
+          "path": "command-history-state.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 113
+        },
+        {
+          "path": "hooks",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "hooks/orca.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 12257
+        },
+        {
+          "path": "ide",
+          "kind": "dir"
+        },
+        {
+          "path": "installed-plugins",
+          "kind": "dir"
+        },
+        {
+          "path": "logs",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "logs/process-1786952187337-<n>.log",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 8201
+        },
+        {
+          "path": "servers",
+          "kind": "dir"
+        },
+        {
+          "path": "session-state",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "session-state/*",
+          "kind": "dir",
+          "children": 7,
+          "sample_count": 1
+        },
+        {
+          "path": "session-state/*/checkpoints",
+          "kind": "dir",
+          "children": 1,
+          "sample_count": 1
+        },
+        {
+          "path": "session-state/*/checkpoints/index.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 172
+        },
+        {
+          "path": "session-state/*/events.jsonl",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 85494
+        },
+        {
+          "path": "session-state/*/files",
+          "kind": "dir",
+          "sample_count": 1
+        },
+        {
+          "path": "session-state/*/research",
+          "kind": "dir",
+          "sample_count": 1
+        },
+        {
+          "path": "session-state/*/rewind-file-snapshots",
+          "kind": "dir",
+          "children": 1,
+          "sample_count": 1
+        },
+        {
+          "path": "session-state/*/rewind-file-snapshots/tracking.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 29
+        },
+        {
+          "path": "session-state/*/session.db",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 12288
+        },
+        {
+          "path": "session-state/*/workspace.yaml",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 420
+        },
+        {
+          "path": "session-store.db",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 4096
+        },
+        {
+          "path": "session-store.db-shm",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 32768
+        },
+        {
+          "path": "session-store.db-wal",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 473832
+        },
+        {
+          "path": "sidebar-sessions-state",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "sidebar-sessions-state/*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 137
+        }
+      ],
+      "name_shapes": [
+        {
+          "path": "logs/*",
+          "shape": "process-1786952187337-<n>.log",
+          "samples": 1
+        },
+        {
+          "path": "session-state/*",
+          "shape": "<uuid-v4>",
+          "samples": 1
+        },
+        {
+          "path": "sidebar-sessions-state/*",
+          "shape": "<64-hex>.json",
+          "samples": 1
+        }
+      ],
+      "first_line_keys": {
+        "session-state/*/events.jsonl": [
+          "data",
+          "id",
+          "parentId",
+          "timestamp",
+          "type"
+        ],
+        "session-state/*/rewind-file-snapshots/tracking.json": [
+          "schema",
+          "tracking"
+        ]
+      }
+    }
+  ]
+}

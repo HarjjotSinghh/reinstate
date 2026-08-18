@@ -235,17 +235,69 @@ Fidelity model:
 
 ---
 
-## Phase 5 — Universal configuration + automatic cross-device sync 📋
+## Phase 5 — Universal agent coverage 📋
+
+One index across every supported coding agent, instead of five agents with five
+different levels of support described in prose.
+
+**Gate:** tagged `v0.5.0` artifacts discover, search, and inspect sessions from
+at least six additional agents on macOS arm64 and Windows amd64, with every
+agent's claimed capability tier backed by committed device evidence, and with
+no existing capability regressed.
+
+Support becomes a **tier**, not a boolean. Each rung has its own evidence gate,
+and public surfaces state the rung rather than a bare "supported".
+
+| Tier | Capability |
+| ---- | ---------- |
+| T0 | Named, with a machine-readable reason it is not usable |
+| T1 | Discovery: `rein sessions`, `rein search`, `rein inspect` |
+| T2 | Handoff source: `rein handoff --from <agent>` |
+| T3 | Verified same-vendor resume and fork |
+| T4 | Handoff destination |
+| T5 | Encrypted sync |
+
+| Item | Status |
+| ---- | ------ |
+| `internal/agents` catalog: one descriptor file per agent | 📋 |
+| Existing five agents migrated onto the catalog with no behavior change | 📋 |
+| Shared scanners for home-tree, CLI-query, embedded-DB, and per-repository storage | 📋 |
+| Conformance suite that enforces the tier claim against committed evidence | 📋 |
+| `rein doctor --agents` redacted storage probe and wrapper scripts | 📋 |
+| Kimi Code CLI, Pi, and Qwen Code | 📋 |
+| Cursor CLI, Cline, Roo Code, and Aider | 📋 |
+| GitHub Copilot CLI, Amp, OpenHands, ZCode, and MiniMax researched to an honest tier | 📋 |
+| Gemini CLI promoted from T2 to T3 | 📋 |
+| Phase 5 dual-platform tagged-artifact acceptance | 📋 |
+
+Deliberately **out of scope** for this phase: no new handoff destinations, no
+new synced agents, and no configuration support. Claude Code and Codex CLI
+remain the only agents that `push`, `pull`, and `--to` cover.
+
+An agent whose evidence shows its history is server-held ships at T0 with that
+reason recorded. Telling a user why an agent cannot be indexed is a feature.
+
+Design and contracts:
+[ADR 0004](docs/adr/0004-universal-agent-coverage.md),
+[agent support tiers](docs/agent-support-tiers.md),
+[agent catalog SDK](docs/adapters/agent-catalog-sdk.md),
+[Phase 5 acceptance](docs/testing/phase-5-universal-agent-coverage-acceptance.md).
+
+---
+
+## Phase 6 — Universal configuration + automatic cross-device sync 📋
 
 Original multi-device superpower, now extended from sessions to the safe,
-portable parts of an AI development environment.
+portable parts of an AI development environment. It follows Phase 5 because
+rendering declared configuration into a harness requires a catalog of harnesses
+to render into.
 
 **Gate:** define an MCP server such as Mobbin once, preview and apply the
 correct native configuration to at least Claude Code, Codex, Grok, and
 OpenCode, then reproduce the non-secret desired state on a second device.
 Unsupported mappings and missing authentication must be explicit.
 
-### 5A. Universal agent configuration
+### 6A. Universal agent configuration
 
 | Item | Status |
 | ---- | ------ |
@@ -268,7 +320,7 @@ normalize portable intent and let adapters render each harness's native format;
 it will not copy Claude Code JSON wholesale into Codex or silently discard
 unsupported fields.
 
-### 5B. Authentication coordination
+### 6B. Authentication coordination
 
 | Item | Status |
 | ---- | ------ |
@@ -282,7 +334,7 @@ The goal is **configure once, authenticate as few times as safely possible**.
 Raw API keys, OAuth tokens, cookies, and vendor credential stores remain
 excluded from sync.
 
-### 5C. Cloud continuity
+### 6C. Cloud continuity
 
 | Item | Status |
 | ---- | ------ |
@@ -300,7 +352,7 @@ Detailed design direction:
 
 ---
 
-## Phase 6 — Reinstate Console (thin client, not a harness) 💭
+## Phase 7 — Reinstate Console (thin client, not a harness) 💭
 
 Optional UI that **selects and prepares** sessions; agents still **execute**.
 
@@ -317,7 +369,7 @@ Claude Code / Codex / Gemini / OpenCode own the agent loop.
 
 ---
 
-## Phase 7 — Team continuity 💭
+## Phase 8 — Team continuity 💭
 
 | Item | Status |
 | ---- | ------ |

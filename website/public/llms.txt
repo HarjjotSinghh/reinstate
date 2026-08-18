@@ -23,8 +23,11 @@
 
 ## Integrations
 
-- [Claude Code](https://reinstate.dev/integrations/claude-code): Same-vendor Claude Code session sync
-- [Codex](https://reinstate.dev/integrations/codex): Same-vendor Codex session sync
+- [Claude Code](https://reinstate.dev/integrations/claude-code): T5 same-vendor Claude Code session sync
+- [Codex](https://reinstate.dev/integrations/codex): T5 same-vendor Codex session sync
+- [Gemini CLI](https://reinstate.dev/integrations/gemini): T2 handoff source; no native resume or sync
+- [OpenCode](https://reinstate.dev/integrations/opencode): T2 handoff source; no native resume or sync
+- [Grok Build](https://reinstate.dev/integrations/grok): T2 handoff source; no native resume or sync
 
 ## Guides
 

@@ -17,6 +17,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/HarjjotSinghh/reinstate/internal/agents"
 	"github.com/HarjjotSinghh/reinstate/internal/capability"
 	"github.com/HarjjotSinghh/reinstate/internal/capsule"
 	"github.com/HarjjotSinghh/reinstate/internal/config"
@@ -203,7 +204,7 @@ func newHandoffCmd(options handoffCommandOptions) *cobra.Command {
 	}
 	cmd.Flags().BoolVar(&last, "last", false, "resolve the newest matching source session")
 	cmd.Flags().StringVar(&from, "from", "", "restrict --last to one source agent")
-	cmd.Flags().StringVar(&to, "to", "", "destination agent: claude|codex")
+	cmd.Flags().StringVar(&to, "to", "", "destination agent: "+agentFilterHelp(agents.TierHandoffTo, false))
 	cmd.Flags().StringVar(&policy, "policy", string(handoff.PolicyBalanced), "projection policy: checkpoint|balanced|full")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "preview without durable writes or launch")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "emit machine-readable JSON")

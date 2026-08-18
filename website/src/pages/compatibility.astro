@@ -1,18 +1,22 @@
 ---
 import PublicContentLayout from '../layouts/PublicContentLayout.astro';
+import AgentTierMatrix from '../components/AgentTierMatrix.astro';
 import compatibility from '../data/compatibility.json';
+import { versionedAgents } from '../lib/agent-catalog';
 
 export const prerender = true;
 
 const title = 'Reinstate Compatibility: Agents, Versions, and Operating Systems';
 const description =
-  'Check Reinstate compatibility for Claude Code, Codex CLI, macOS, native Windows, WSL2, tested version ranges, path mapping, and unsupported setups.';
+  'Check Reinstate compatibility tiers for catalog agents, Claude Code and Codex version ranges, macOS, native Windows, WSL2, path mapping, and unsupported setups.';
 
 const label = (value: string) =>
   value
     .split('-')
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
+
+const ranged = versionedAgents();
 ---
 
 <PublicContentLayout
@@ -20,20 +24,39 @@ const label = (value: string) =>
   {description}
   path="/compatibility"
   eyebrow="Compatibility"
-  answer="Stable v0.2.0 supports same-vendor session sync and native local continuation for tested Claude Code and Codex CLI versions, plus read-only Gemini CLI and OpenCode indexing. Apple Silicon macOS and native Windows x64 are verified; Intel macOS and Linux/WSL2 are preview and unverified."
+  answer="The catalog names sixteen coding agents. Encrypted sync (T5) covers Claude Code and Codex CLI. Gemini CLI, OpenCode, and Grok Build are T2 handoff sources. Eleven more agents are T0: named, with a reason they are not usable. Native resume stays same-vendor."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'Compatibility', path: '/compatibility' },
   ]}
   tags={['compatibility matrix', 'Claude Code versions', 'Codex versions', 'macOS', 'Windows']}
 >
-  <h2 id="agent-version-matrix">Agent and version matrix</h2>
+  <h2 id="support-tiers">Support is a tier, not a yes-or-no flag</h2>
+  <p>
+    T5 is encrypted same-vendor sync. T2 is a handoff source. T0 is a named agent that
+    <code>rein doctor --agents</code> can explain. A T0 row is not an integration.
+    Native resume stays same-vendor. Cross-agent work is an explicit portable handoff
+    into a new Claude Code or Codex session.
+  </p>
+  <AgentTierMatrix caption="Catalog agent support tiers T0 through T5" />
+  <p>
+    Machine-readable status was last reviewed on
+    {' '}<time datetime={compatibility.lastReviewed}>{compatibility.lastReviewed}</time>.
+    The same records are available as <a href="/compatibility.json">machine-readable JSON</a>.
+    Fixture evidence is pinned to commit
+    <a href={`https://github.com/HarjjotSinghh/reinstate/commit/${compatibility.fixtureCommit}`}
+      ><code>{compatibility.fixtureCommit.slice(0, 12)}</code></a
+    >. T0 rows have no last-tested date: the evidence is the descriptor and storage page,
+    not a probe.
+  </p>
+
+  <h2 id="agent-version-matrix">Tested version ranges (T5)</h2>
   <div class="pc-table-wrap">
     <table class="pc-table">
       <thead>
         <tr>
           <th scope="col">Agent</th>
-          <th scope="col">Phase 1 session status</th>
+          <th scope="col">Tier</th>
           <th scope="col">Tested stable range</th>
           <th scope="col">Resume mode</th>
           <th scope="col">Last tested</th>
@@ -41,10 +64,10 @@ const label = (value: string) =>
       </thead>
       <tbody>
         {
-          compatibility.agents.map((agent) => (
+          ranged.map((agent) => (
             <tr>
               <td><a href={agent.integrationPath}>{agent.name}</a></td>
-              <td>{label(agent.status)}</td>
+              <td>{agent.tier}</td>
               <td>
                 <code>{agent.minimumTestedVersion}</code>–<code>{agent.maximumTestedVersion}</code>
               </td>
@@ -57,40 +80,17 @@ const label = (value: string) =>
             </tr>
           ))
         }
-        <tr>
-          <td>Gemini CLI</td>
-          <td>Phase 2 read-only local index</td>
-          <td>None</td>
-          <td>Read-only; no native action</td>
-          <td>Windows physical path passed</td>
-        </tr>
-        <tr>
-          <td>OpenCode</td>
-          <td>Phase 2 read-only local index</td>
-          <td>None</td>
-          <td>Read-only; no native action</td>
-          <td>Windows physical path passed</td>
-        </tr>
-        <tr>
-          <td>Cursor, Grok Build</td>
-          <td>Not implemented</td>
-          <td>None</td>
-          <td>Not supported</td>
-          <td>Not tested</td>
-        </tr>
       </tbody>
     </table>
   </div>
   <p>
-    These ranges represent current source compatibility evidence on macOS arm64 and deterministic
-    synthetic fixtures at commit <a
-      href={`https://github.com/HarjjotSinghh/reinstate/commit/${compatibility.fixtureCommit}`}
-      ><code>{compatibility.fixtureCommit.slice(0, 12)}</code></a
-    >. They are not a claim that every platform row has passed physical-device certification.
-    Prereleases and versions outside each inclusive range are <code>UNTESTED</code>. The same
-    reviewed records are available as <a href="/compatibility.json">machine-readable JSON</a>.
-    The <a href="/compatibility/agent-version-history">agent-version change tracker</a> records
+    These ranges are the current source compatibility evidence for T5 encrypted sync on
+    macOS arm64 and deterministic synthetic fixtures. They are not a claim that every
+    platform row has passed physical-device certification. Prereleases and versions
+    outside each inclusive range are <code>UNTESTED</code>. The
+    <a href="/compatibility/agent-version-history">agent-version change tracker</a> records
     when the inclusive ranges and fail-closed behavior changed across releases.
+    No catalog agent was promoted to T3 in the v0.5.0 line; Gemini CLI stays T2.
   </p>
 
   <h2 id="environment-matrix">Operating-system matrix</h2>
@@ -130,11 +130,6 @@ const label = (value: string) =>
       </tbody>
     </table>
   </div>
-  <p>
-    Machine-readable status was last reviewed on
-    {' '}<time datetime={compatibility.lastReviewed}>{compatibility.lastReviewed}</time>. Open gates
-    use an explicit <code>null</code> last-tested value rather than a guessed freshness date.
-  </p>
 
   <h2 id="states">What the compatibility states mean</h2>
   <dl class="pc-facts">
@@ -158,7 +153,7 @@ const label = (value: string) =>
   <p>
     <code>rein setup check</code> returns compatibility exit code <code>5</code> when an installed
     adapter is <code>UNTESTED</code> or <code>UNSUPPORTED</code>. Phase 1 has no unsafe
-    compatibility override.
+    compatibility override. Unknown layout is exit code <code>5</code>, never a best-effort parse.
   </p>
 
   <h2 id="cross-platform-paths">How cross-platform path compatibility works</h2>
@@ -177,14 +172,15 @@ const label = (value: string) =>
     </p>
   </div>
 
-  <h2 id="unsupported">Explicitly unsupported in Phase 1</h2>
+  <h2 id="unsupported">Explicitly unsupported</h2>
   <ul>
     <li>WSL1.</li>
     <li>Treating native Windows and WSL as one Reinstate device.</li>
     <li>Automatically sharing one agent-state directory between Windows and WSL.</li>
     <li>Exporting or restoring an untested agent layout.</li>
-    <li>Agents other than Claude Code and Codex CLI.</li>
-    <li>Silent translation between Claude Code and Codex native transcripts.</li>
+    <li>Encrypted sync for any agent other than Claude Code and Codex CLI (T5 only).</li>
+    <li>Native resume for T2 handoff sources or T0 catalog names.</li>
+    <li>Silent translation between vendor-native transcripts.</li>
     <li>Syncing vendor credentials, raw secrets, MCP settings, skills, or plugins.</li>
   </ul>
 

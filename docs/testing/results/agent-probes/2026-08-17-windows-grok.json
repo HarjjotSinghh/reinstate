@@ -1,0 +1,533 @@
+{
+  "schema": "AGENT-PROBE-V1",
+  "generated_at": "2026-08-17T09:46:27Z",
+  "platform": {
+    "os": "windows",
+    "arch": "amd64",
+    "device_class": "windows"
+  },
+  "reinstate_version": "0.0.0-dev",
+  "agents": [
+    {
+      "key": "grok",
+      "display_name": "Grok Build",
+      "declared_tier": "T2",
+      "root_env": "GROK_HOME",
+      "root_env_set": false,
+      "candidate_roots": [
+        {
+          "relative_to": "home",
+          "suffix": ".grok",
+          "exists": true,
+          "marker_present": true
+        }
+      ],
+      "resolved_root": {
+        "relative_to": "home",
+        "suffix": ".grok"
+      },
+      "executable_on_path": true,
+      "version_raw": "grok 0.2.101 (5bc4b5dfad) [stable]",
+      "tree": [
+        {
+          "path": "*",
+          "kind": "file",
+          "count": 6,
+          "median_bytes": 1959
+        },
+        {
+          "path": "active_sessions.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2
+        },
+        {
+          "path": "active_sessions.lock",
+          "kind": "file",
+          "count": 1
+        },
+        {
+          "path": "agent_id",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 36
+        },
+        {
+          "path": "completions",
+          "kind": "dir",
+          "children": 3
+        },
+        {
+          "path": "completions/bash",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "completions/bash/grok.bash",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 231243
+        },
+        {
+          "path": "completions/powershell",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "completions/powershell/grok.ps1",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 129722
+        },
+        {
+          "path": "completions/zsh",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "completions/zsh/*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 129840
+        },
+        {
+          "path": "config.toml",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1296
+        },
+        {
+          "path": "config.toml.bak-20260716-<n>",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 347
+        },
+        {
+          "path": "hooks",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "hooks/orca-status.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 7822
+        },
+        {
+          "path": "installed-plugins",
+          "kind": "dir"
+        },
+        {
+          "path": "logs",
+          "kind": "dir",
+          "children": 2
+        },
+        {
+          "path": "logs/mcp",
+          "kind": "dir",
+          "children": 15
+        },
+        {
+          "path": "logs/mcp/*",
+          "kind": "file",
+          "count": 1
+        },
+        {
+          "path": "logs/mcp/ai-elements.stderr.log",
+          "kind": "file",
+          "count": 1
+        },
+        {
+          "path": "logs/mcp/chrome-devtools.stderr.log",
+          "kind": "file",
+          "count": 1
+        },
+        {
+          "path": "logs/mcp/context-mode.stderr.log",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 356
+        },
+        {
+          "path": "logs/mcp/context7.stderr.log",
+          "kind": "file",
+          "count": 1
+        },
+        {
+          "path": "logs/mcp/fetch.stderr.log",
+          "kind": "file",
+          "count": 1
+        },
+        {
+          "path": "logs/mcp/git.stderr.log",
+          "kind": "file",
+          "count": 1
+        },
+        {
+          "path": "logs/mcp/magic.stderr.log",
+          "kind": "file",
+          "count": 1
+        },
+        {
+          "path": "logs/mcp/magicui.stderr.log",
+          "kind": "file",
+          "count": 1
+        },
+        {
+          "path": "logs/mcp/obsidian.stderr.log",
+          "kind": "file",
+          "count": 1
+        },
+        {
+          "path": "logs/mcp/openai-gpt-image.stderr.log",
+          "kind": "file",
+          "count": 1
+        },
+        {
+          "path": "logs/mcp/playwright.stderr.log",
+          "kind": "file",
+          "count": 1
+        },
+        {
+          "path": "logs/mcp/serena.stderr.log",
+          "kind": "file",
+          "count": 1
+        },
+        {
+          "path": "logs/mcp/shadcn.stderr.log",
+          "kind": "file",
+          "count": 1
+        },
+        {
+          "path": "logs/mcp/time.stderr.log",
+          "kind": "file",
+          "count": 1
+        },
+        {
+          "path": "logs/unified.jsonl",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2831419
+        },
+        {
+          "path": "managed_config.lock",
+          "kind": "file",
+          "count": 1
+        },
+        {
+          "path": "mcp_credentials.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1845
+        },
+        {
+          "path": "models_cache.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 3573
+        },
+        {
+          "path": "sessions",
+          "kind": "dir",
+          "children": 3
+        },
+        {
+          "path": "sessions/*",
+          "kind": "dir",
+          "children": 30,
+          "sample_count": 2
+        },
+        {
+          "path": "sessions/*/*",
+          "kind": "dir",
+          "children": 6,
+          "sample_count": 32
+        },
+        {
+          "path": "sessions/*/*/announcement_state.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2254
+        },
+        {
+          "path": "sessions/*/*/assets",
+          "kind": "dir",
+          "children": 3,
+          "sample_count": 1
+        },
+        {
+          "path": "sessions/*/*/assets/image-<uuid-v4>.png",
+          "kind": "file",
+          "count": 3,
+          "median_bytes": 97347
+        },
+        {
+          "path": "sessions/*/*/chat_history.jsonl",
+          "kind": "file",
+          "count": 31,
+          "median_bytes": 73836
+        },
+        {
+          "path": "sessions/*/*/events.jsonl",
+          "kind": "file",
+          "count": 31,
+          "median_bytes": 1266
+        },
+        {
+          "path": "sessions/*/*/hunk_records.jsonl",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 44494
+        },
+        {
+          "path": "sessions/*/*/images",
+          "kind": "dir",
+          "children": 4,
+          "sample_count": 1
+        },
+        {
+          "path": "sessions/*/*/images/image-<uuid-v4>.png",
+          "kind": "file",
+          "count": 4,
+          "median_bytes": 97347
+        },
+        {
+          "path": "sessions/*/*/prompt_context.json",
+          "kind": "file",
+          "count": 31,
+          "median_bytes": 12000
+        },
+        {
+          "path": "sessions/*/*/recap_requests",
+          "kind": "dir",
+          "children": 271,
+          "sample_count": 1
+        },
+        {
+          "path": "sessions/*/*/recap_requests/*",
+          "kind": "file",
+          "count": 271,
+          "median_bytes": 2249767
+        },
+        {
+          "path": "sessions/*/*/resources_state.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 4416
+        },
+        {
+          "path": "sessions/*/*/rewind_points.jsonl",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 597014
+        },
+        {
+          "path": "sessions/*/*/signals.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1554
+        },
+        {
+          "path": "sessions/*/*/summary.json",
+          "kind": "file",
+          "count": 32,
+          "median_bytes": 492
+        },
+        {
+          "path": "sessions/*/*/summary.json.lock",
+          "kind": "file",
+          "count": 32
+        },
+        {
+          "path": "sessions/*/*/system_prompt.txt",
+          "kind": "file",
+          "count": 31,
+          "median_bytes": 5447
+        },
+        {
+          "path": "sessions/*/*/terminal",
+          "kind": "dir",
+          "children": 268,
+          "sample_count": 1
+        },
+        {
+          "path": "sessions/*/*/terminal/call-<uuid-v4>.log",
+          "kind": "file",
+          "count": 263,
+          "median_bytes": 132
+        },
+        {
+          "path": "sessions/*/*/terminal/monitor-call-<uuid-v4>.log",
+          "kind": "file",
+          "count": 5,
+          "median_bytes": 1605
+        },
+        {
+          "path": "sessions/*/*/updates.jsonl",
+          "kind": "file",
+          "count": 7,
+          "median_bytes": 395
+        },
+        {
+          "path": "sessions/*/prompt_history.jsonl",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 4795
+        },
+        {
+          "path": "sessions/session_search.sqlite",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 532480
+        },
+        {
+          "path": "skills",
+          "kind": "dir",
+          "children": 153
+        }
+      ],
+      "name_shapes": [
+        {
+          "path": "*",
+          "shape": "<slug>.lock",
+          "samples": 7
+        },
+        {
+          "path": "completions/zsh/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "logs/mcp/*",
+          "shape": "<slug>.log",
+          "samples": 1
+        },
+        {
+          "path": "sessions/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "sessions/*/*",
+          "shape": "<uuid-v4>",
+          "samples": 32
+        },
+        {
+          "path": "sessions/*/*/assets/*",
+          "shape": "image-<uuid-v4>.png",
+          "samples": 3
+        },
+        {
+          "path": "sessions/*/*/images/*",
+          "shape": "image-<uuid-v4>.png",
+          "samples": 4
+        },
+        {
+          "path": "sessions/*/*/recap_requests/*",
+          "shape": "<uuid-v4>.json",
+          "samples": 271
+        },
+        {
+          "path": "sessions/*/*/terminal/*",
+          "shape": "call-<uuid-v4>.log",
+          "samples": 268
+        },
+        {
+          "path": "skills/docx/scripts/*",
+          "shape": "<slug>.py",
+          "samples": 1
+        },
+        {
+          "path": "skills/docx/scripts/office/helpers/*",
+          "shape": "<slug>.py",
+          "samples": 1
+        },
+        {
+          "path": "skills/docx/scripts/office/schemas/*",
+          "shape": "ISO-IEC29500-4-<n>",
+          "samples": 1
+        },
+        {
+          "path": "skills/docx/scripts/office/schemas/microsoft/*",
+          "shape": "wml-<n>.xsd",
+          "samples": 7
+        },
+        {
+          "path": "skills/docx/scripts/office/validators/*",
+          "shape": "<slug>.py",
+          "samples": 1
+        },
+        {
+          "path": "skills/pptx/scripts/*",
+          "shape": "<slug>.py",
+          "samples": 1
+        },
+        {
+          "path": "skills/pptx/scripts/office/helpers/*",
+          "shape": "<slug>.py",
+          "samples": 1
+        },
+        {
+          "path": "skills/pptx/scripts/office/schemas/*",
+          "shape": "ISO-IEC29500-4-<n>",
+          "samples": 1
+        },
+        {
+          "path": "skills/pptx/scripts/office/schemas/microsoft/*",
+          "shape": "wml-<n>.xsd",
+          "samples": 7
+        },
+        {
+          "path": "skills/pptx/scripts/office/validators/*",
+          "shape": "<slug>.py",
+          "samples": 1
+        },
+        {
+          "path": "skills/xlsx/scripts/office/helpers/*",
+          "shape": "<slug>.py",
+          "samples": 1
+        },
+        {
+          "path": "skills/xlsx/scripts/office/schemas/*",
+          "shape": "ISO-IEC29500-4-<n>",
+          "samples": 1
+        },
+        {
+          "path": "skills/xlsx/scripts/office/schemas/microsoft/*",
+          "shape": "wml-<n>.xsd",
+          "samples": 7
+        },
+        {
+          "path": "skills/xlsx/scripts/office/validators/*",
+          "shape": "<slug>.py",
+          "samples": 1
+        }
+      ],
+      "first_line_keys": {
+        "logs/unified.jsonl": [
+          "ctx",
+          "lvl",
+          "msg",
+          "pid",
+          "src",
+          "ts"
+        ],
+        "sessions/*/*/chat_history.jsonl": [
+          "content",
+          "type"
+        ],
+        "sessions/*/*/events.jsonl": [
+          "disabled",
+          "servers",
+          "ts",
+          "type"
+        ],
+        "sessions/*/*/updates.jsonl": [
+          "method",
+          "params",
+          "timestamp"
+        ]
+      }
+    }
+  ]
+}

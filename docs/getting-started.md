@@ -136,9 +136,13 @@ Get-Content $Installer
 
 ```sh
 rein version --json
+rein doctor --agents
 rein sessions --json
 rein setup check
 ```
+
+`rein doctor --agents` lists each catalog agent Reinstate knows, its support
+tier, and why an agent is missing or unusable on this machine.
 
 `rein sessions --json` is configless and should refresh the local derived
 index. Before `init`, `setup check` should identify only that the sync config

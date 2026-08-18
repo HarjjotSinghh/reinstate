@@ -1,7 +1,9 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { extname } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import compatibility from '../data/compatibility.json';
 import { product } from '../data/product';
+import { compatibilityAgents } from './agent-catalog';
 import { homepageSchema } from './schema';
 
 const sourceRoot = new URL('../', import.meta.url);
@@ -93,6 +95,24 @@ describe('central product-truth drift guard', () => {
     }
 
     expect(stale).toEqual([]);
+  });
+
+  it('keeps the v0.5.0 catalog line from claiming an unpublished tag or extra T5 agents', () => {
+    expect(product.currentRelease).toBe('v0.4.0');
+    expect(product.stableRelease).toBe('v0.4.0');
+    expect(compatibility.reinstateVersion).toBe('v0.4.0');
+    expect(compatibility.catalogLine).toBe('v0.5.0');
+    expect(compatibilityAgents.filter((agent) => agent.tier === 'T5').map((agent) => agent.key)).toEqual(
+      ['claude', 'codex'],
+    );
+    expect(
+      compatibilityAgents.filter((agent) => agent.tier === 'T2').map((agent) => agent.key).sort(),
+    ).toEqual(['gemini', 'grok', 'opencode']);
+    expect(compatibilityAgents.filter((agent) => agent.tier === 'T3')).toEqual([]);
+    expect(
+      compatibilityAgents.filter((agent) => agent.tier === 'T1').map((agent) => agent.key),
+    ).toEqual(['kimi']);
+    expect(compatibilityAgents.filter((agent) => agent.tier === 'T0')).toHaveLength(12);
   });
 
   it('keeps the doctor self-test distinct from real remote-storage evidence', async () => {

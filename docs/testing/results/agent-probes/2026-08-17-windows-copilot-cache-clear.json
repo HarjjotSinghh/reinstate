@@ -1,0 +1,165 @@
+{
+  "schema": "AGENT-PROBE-V1",
+  "generated_at": "2026-08-17T11:57:19Z",
+  "platform": {
+    "os": "windows",
+    "arch": "amd64",
+    "device_class": "windows"
+  },
+  "reinstate_version": "0.0.0-dev",
+  "agents": [
+    {
+      "key": "copilot",
+      "display_name": "GitHub Copilot CLI",
+      "declared_tier": "T0",
+      "root_env": "COPILOT_HOME",
+      "root_env_set": false,
+      "candidate_roots": [
+        {
+          "relative_to": "home",
+          "suffix": ".copilot",
+          "exists": true,
+          "marker_present": true
+        }
+      ],
+      "resolved_root": {
+        "relative_to": "home",
+        "suffix": ".copilot"
+      },
+      "executable_on_path": true,
+      "version_raw": "GitHub Copilot CLI 1.0.80.\nRun 'copilot update' to check for updates.",
+      "tree": [
+        {
+          "path": "*",
+          "kind": "dir",
+          "children": 1,
+          "sample_count": 3
+        },
+        {
+          "path": "*",
+          "kind": "file",
+          "count": 4,
+          "median_bytes": 32768
+        },
+        {
+          "path": "*/*",
+          "kind": "dir",
+          "children": 7,
+          "sample_count": 1
+        },
+        {
+          "path": "*/*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 137
+        },
+        {
+          "path": "*/*/*",
+          "kind": "dir",
+          "children": 1,
+          "sample_count": 1
+        },
+        {
+          "path": "*/*/*/tracking.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 29
+        },
+        {
+          "path": "*/*/checkpoints",
+          "kind": "dir",
+          "children": 1,
+          "sample_count": 1
+        },
+        {
+          "path": "*/*/checkpoints/index.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 172
+        },
+        {
+          "path": "*/*/events.jsonl",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 141466
+        },
+        {
+          "path": "*/*/files",
+          "kind": "dir",
+          "sample_count": 1
+        },
+        {
+          "path": "*/*/research",
+          "kind": "dir",
+          "sample_count": 1
+        },
+        {
+          "path": "*/*/session.db",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 12288
+        },
+        {
+          "path": "*/*/workspace.yaml",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 418
+        },
+        {
+          "path": "ide",
+          "kind": "dir"
+        },
+        {
+          "path": "logs",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "logs/process-1786966900098-<n>.log",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 13331
+        },
+        {
+          "path": "servers",
+          "kind": "dir"
+        }
+      ],
+      "name_shapes": [
+        {
+          "path": "*",
+          "shape": "<slug>.json",
+          "samples": 7
+        },
+        {
+          "path": "*/*",
+          "shape": "<uuid-v4>",
+          "samples": 2
+        },
+        {
+          "path": "*/*/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "logs/*",
+          "shape": "process-1786966900098-<n>.log",
+          "samples": 1
+        }
+      ],
+      "first_line_keys": {
+        "*/*/*/tracking.json": [
+          "schema",
+          "tracking"
+        ],
+        "*/*/events.jsonl": [
+          "data",
+          "id",
+          "parentId",
+          "timestamp",
+          "type"
+        ]
+      }
+    }
+  ]
+}

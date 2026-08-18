@@ -72,7 +72,7 @@ export const staticOgPages: OgPage[] = [
     kind: 'Integrations',
     title: 'Coding-agent integrations',
     description:
-      'Review Reinstate support for same-vendor Claude Code and Codex session sync.',
+      'T5 encrypted sync for Claude Code and Codex CLI, T2 handoff sources, and T0 names on the matrix only.',
   },
   {
     route: '/integrations/claude-code',
@@ -87,6 +87,34 @@ export const staticOgPages: OgPage[] = [
     title: 'Sync Codex sessions across devices',
     description:
       'Move an encrypted Codex session between supported macOS and Windows environments.',
+  },
+  {
+    route: '/integrations/gemini',
+    kind: 'Integration',
+    title: 'Gemini CLI is a T2 handoff source',
+    description:
+      'Read-only Gemini CLI discovery and portable handoff. Native resume and encrypted sync are not supported.',
+  },
+  {
+    route: '/integrations/opencode',
+    kind: 'Integration',
+    title: 'OpenCode is a T2 handoff source',
+    description:
+      'Read-only OpenCode discovery and portable handoff. Native resume and encrypted sync are not supported.',
+  },
+  {
+    route: '/integrations/grok',
+    kind: 'Integration',
+    title: 'Grok Build is a T2 handoff source',
+    description:
+      'Read-only Grok Build discovery and portable handoff. Native resume and encrypted sync are not supported.',
+  },
+  {
+    route: '/integrations/kimi',
+    kind: 'Integration',
+    title: 'Kimi Code CLI is a T1 discover agent',
+    description:
+      'Read-only Kimi Code CLI discovery, search, and inspect. Native resume, handoff, and encrypted sync are not supported.',
   },
   {
     route: '/compatibility',

@@ -7,6 +7,186 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+T0-heavy Phase 5 catalog RC. Ships the agent catalog and
+`rein doctor --agents` (including `--json` / `--acceptance-matrix`). **No new
+handoff destinations and no new synced agents** — Claude Code and Codex CLI
+remain the only T4/T5 surfaces. Gemini CLI, OpenCode, and Grok Build stay T2
+handoff sources. **Kimi Code CLI is T1** (index and search only; resume and
+fork stay refused). Every other new catalog agent is T0 with a recorded reason.
+
+### Kimi Code CLI at T1
+
+Promoted on 2026-08-17, when a native Windows probe joined the macOS one from
+the day before. The Windows device carried five sessions across three projects,
+which settled what a single-session macOS run could not: `state.json` has an
+identical thirteen-key shape on both platforms, and `session_index.jsonl`
+enumerated exactly the five session directories on disk.
+
+`rein sessions --agent kimi` lists and searches them. Resume and fork stay
+refused: no device journey has run `kimi -r <id>` against a real session.
+
+### Added
+
+- `rein doctor --agents` inventory, `--agents --json` (`AGENT-PROBE-V1`), and `--agents --acceptance-matrix`.
+- [ADR 0004](docs/adr/0004-universal-agent-coverage.md): universal agent
+  coverage, the T0–T5 support-tier ladder, and a single `internal/agents`
+  catalog with one descriptor file per agent.
+- [Agent support tiers](docs/agent-support-tiers.md): what each tier lets a
+  user do and the evidence each tier requires.
+- [Agent catalog SDK](docs/adapters/agent-catalog-sdk.md): descriptor
+  specification, storage families F1–F5, shared scanners, and the conformance
+  suite that enforces a tier claim against committed evidence.
+- [Agent storage probe](docs/testing/agent-storage-probe.md): the
+  `AGENT-PROBE-V1` redacted evidence contract for `rein doctor --agents`.
+- Per-agent storage pages under [docs/session-storage/](docs/session-storage/)
+  for twelve Phase 5 candidates, every row `Unverified` pending a device probe.
+- [Phase 5 acceptance contract](docs/testing/phase-5-universal-agent-coverage-acceptance.md)
+  and the `PHASE5-DEVICE-REPORT-V1` template.
+- Execution plan under
+  [docs/planning/v0.5.0-universal-agents/](docs/planning/v0.5.0-universal-agents/):
+  roster, work breakdown, file ownership, review gates, task cards, and the
+  coordinator handover prompt.
+- Amp catalog descriptor at T0 (`server_backed`, F5). Session history is not readable locally.
+- ZCode catalog descriptor at T0 (`desktop_only`): official Z.ai desktop ADE only; npm `zcode-app-cli` is not a catalog agent.
+- OpenHands catalog descriptor at T0 (`server_backed`); conversations stay on the Agent Server / Cloud backend.
+- GitHub Copilot CLI catalog entry at T0 (`layout_unverified`); `session-state/` stays unread until a cache-clear/re-login probe.
+- Kimi Code CLI catalog descriptor at T0 (`layout_unverified`): dual-platform probes unavailable (`kimi` not installed; no native Windows host).
+- Pi catalog descriptor at T0 (`layout_unverified`): F1 JSONL tree, no dual-platform probes, no T1+ claim.
+- Qwen Code catalog entry at T0 (`layout_unverified`): official product identified; no dual-platform probes and no reader.
+- Gemini CLI stays T2: `gemini --version` parser added; fail-closed range escalated (no maintainer, no dual-platform physical resume).
+- Cline catalog descriptor at T0 (`layout_unverified`): F3 expected; no dual-platform probes, no F3 scanner.
+- Aider catalog descriptor at T0 (`layout_unverified`, F4): official product identified; no dual-platform probes and no reader.
+- Cursor CLI catalog descriptor at T0 (`layout_unverified`): key is the terminal agent; editor agent is out of scope; no dual-platform probes and no reader.
+- Roo Code catalog descriptor at T0 (`layout_unverified`): F3 expected; no dual-platform probes, no F3 scanner.
+- MiniMax Code catalog key `minimax-code` at T0 (`layout_unverified`). Token Plan API keys are not this agent.
+- Gemini CLI fail-closed version pin `0.55.1` (latest stable `@google/gemini-cli`); still T2.
+- Pi fail-closed version pin `0.73.1` (latest `@mariozechner/pi-coding-agent`); still T0.
+
+### Changed
+
+- `ROADMAP.md` renumbered: Phase 5 is now universal agent coverage, universal
+  configuration moves to Phase 6, Reinstate Console to Phase 7, and team
+  continuity to Phase 8.
+- `docs/session-storage-map.md` gains an index of the per-agent pages. Sections
+  1–5 are unchanged and still cover the five agents with shipped readers.
+- `rein doctor --agents` splits its `installed` column: `installed` now reports
+  only whether the executable is on `PATH`, and a new `root` column reports
+  whether a candidate root resolved.
+- Root discovery is marker-gated. `MustRegister` panics when a descriptor
+  declares `Storage.Roots` without a `Storage.Marker`, and a declared root only
+  resolves when its marker is present. An explicit `RootEnv` or fixture root
+  still bypasses the gate.
+
+- First committed `AGENT-PROBE-V1` device evidence, under
+  [docs/testing/results/agent-probes/](docs/testing/results/agent-probes/):
+  macOS artifacts for Kimi Code CLI, Qwen Code, and GitHub Copilot CLI. Kimi's
+  root ambiguity is resolved to `~/.kimi-code` and its `session_index.jsonl`
+  confirmed. **No tier moved**: one platform is not dual-platform evidence.
+- Antigravity CLI catalog descriptor at T0 (`layout_unverified`). Google
+  retired Gemini CLI's individual OAuth path on 2026-06-18 and named it the
+  destination, so it is where those users went. It nests inside Gemini CLI's
+  root at `~/.gemini/antigravity-cli`, and its documented conversation path is
+  named a cache.
+- `rein doctor --agents` gains `--agent-timeout`. The probe budget is now per
+  agent (default 10s) rather than a single 3s budget for the whole run, and an
+  agent that exceeds it is recorded with `timed_out` instead of failing the run.
+- `internal/agents/sources/kimi`, an F1 index source for Kimi Code CLI, with
+  synthetic fixtures under `testdata/sessionindex/kimi/{macos,windows}`. It
+  fails closed on an unknown `state.json` schema version or `wire.jsonl`
+  protocol major, excludes subagent trees, and takes the append-only wire log
+  as the session's size and mtime authority. **Not registered on the
+  descriptor**: Kimi stays T0 until a native Windows probe exists, so the
+  source ships tested but unwired.
+- The conformance suite enforces the dual-platform probe requirement at T1 and
+  above. `docs/agent-support-tiers.md` has always required a macOS **and** a
+  native Windows artifact, but the check only counted reports, so one macOS
+  file satisfied it. WSL does not substitute for native Windows.
+
+- Qwen Code's discovery marker corrected from `tmp` to `projects`. The probe
+  shows conversations at `projects/<slug>/chats/`, so the Gemini-fork
+  hypothesis was wrong about the store and about the project-key kind.
+- The Gemini CLI descriptor now excludes `antigravity-cli`, `oauth_creds.json`,
+  and `google_accounts.json` from its storage walk. Antigravity CLI installs
+  into the same root and keeps an OAuth token there on Linux.
+- Gemini CLI also excludes `antigravity` and `antigravity-browser-profile`.
+  A 2026-08-17 Windows probe drowned in the desktop IDE's Chrome profile and
+  never reached `tmp/*/chats`. Those trees are not Gemini CLI sessions.
+- Gemini CLI also excludes `config` and `history` so a Windows probe can reach
+  `tmp/*/chats` instead of drowning in skills and leaking project folder names.
+- Grok Build excludes install and cache trees (`bundled`, `marketplace-cache`,
+  `bin`, `downloads`, `docs`) plus `auth.json`. A 2026-08-17 Windows re-probe
+  then reached `sessions/` (32 sessions) and is committed as
+  [`2026-08-17-windows-grok.json`](docs/testing/results/agent-probes/2026-08-17-windows-grok.json).
+- Grok Build also excludes `skills` and `mcp_credentials.json`.
+- Qwen Code native Windows re-probe committed as
+  [`2026-08-17-windows-qwen.json`](docs/testing/results/agent-probes/2026-08-17-windows-qwen.json):
+  two `projects/*/chats/<uuid-v4>.jsonl` sessions after excluding `updates/`.
+- Qwen Code macOS re-probe committed as
+  [`2026-08-17-macos-qwen.json`](docs/testing/results/agent-probes/2026-08-17-macos-qwen.json):
+  a real JSONL conversation whose first-line keys match Windows, plus
+  `<uuid-v4>-runtime.json` sidecars. Still T0: no reader. Do not reuse the
+  Claude reader.
+
+- Pi macOS AGENT-PROBE-V1 committed as
+  [`2026-08-17-macos-pi.json`](docs/testing/results/agent-probes/2026-08-17-macos-pi.json):
+  `~/.pi/agent/sessions/<slug>/<slug>-<uuid-v4>.jsonl`, first-line keys
+- Pi native Windows AGENT-PROBE-V1 committed as
+  [`2026-08-17-windows-pi.json`](docs/testing/results/agent-probes/2026-08-17-windows-pi.json):
+  same `sessions/<slug>/<slug>-<uuid-v4>.jsonl` shape as macOS. Still T0: no
+  reader.
+- Cursor CLI dual-platform chats committed
+  ([`2026-08-17-macos-cursor.json`](docs/testing/results/agent-probes/2026-08-17-macos-cursor.json),
+  [`2026-08-17-windows-cursor.json`](docs/testing/results/agent-probes/2026-08-17-windows-cursor.json)):
+  `chats/<32-hex>/<uuid-v4>/{meta.json,store.db}`. Editor `projects/` is
+  excluded. Still T0: no reader.
+- GitHub Copilot CLI rename-aside probe committed as
+  [`2026-08-17-windows-copilot-cache-clear.json`](docs/testing/results/agent-probes/2026-08-17-windows-copilot-cache-clear.json):
+  the old session ID did not reappear in the fresh tree. Still T0: no reader.
+
+### Fixed
+
+- The probe kept UUID filenames that had an extra suffix (`<uuid>.runtime.json`)
+  and hyphenated project files, because the UUID matcher ignored a match at
+  the start of the stem and `reSafeName` accepted `[A-Za-z0-9._-]`. Those
+  now collapse to `<uuid-v4>-runtime.json` and `<slug>.ext`.
+- Cursor CLI's probe walked editor `projects/`, `extensions/`, `plugins/`,
+  and `skills-cursor/` unless those trees are excluded. The descriptor now
+  marker-gates on `chats/` and excludes the rest.
+- Gemini CLI and Kimi Code now exclude top-level `skills/` so personal skill
+  names do not enter a probe artifact.
+- `TestIsolationFSRejectsWritesAndOutsideRoot` left a file handle open, so
+  Windows CI failed during `TempDir` cleanup even though the assertions passed.
+- The probe emitted repository names. Kimi Code buckets a workspace as
+  `wd_<name>_<12-hex>`, where the name is the **basename of the working
+  directory**, and the whole component passed through the normalizer intact.
+  The earlier macOS artifact was redacted only by accident, because that
+  session ran in the home directory, whose basename is the account name — which
+  is also why the shape was first misread as carrying a username. A native
+  Windows probe produced `wd_portfolio-25_6d65015f0cb0` and exposed it. Such
+  components now collapse to `wd_<project>_<12-hex>`.
+- The probe would have emitted encoded absolute paths verbatim. Cursor buckets
+  projects as `Users-<user>-Documents-Projects-<repo>`, which the token
+  normalizer passed through intact because every character in it is
+  unremarkable, carrying the home path and repository name into the artifact.
+  Such components now collapse to `<path-slug>`. Found while evaluating Cursor
+  roots, before any Cursor tree was walked.
+- The probe emitted the operating-system account name inside normalized path
+  shapes. Kimi Code buckets a workspace as `wd_<user>_<hash>`, and nothing about
+  an account name looks like a UUID, hash, or slug, so the normalizer kept it
+  verbatim. It is now replaced with `<user>`, and both the probe and CLI leak
+  tests assert on it.
+- `rein doctor --agents` failed with `context deadline exceeded` and emitted
+  nothing once several agents were installed. The 3s budget covered the entire
+  run while each installed agent spawns a `--version` subprocess, so the
+  evidence tool broke on exactly the machines Phase 5 needs it on.
+- `rein doctor --agents` reported Qwen Code and OpenHands as installed on
+  machines where neither was installed. Both descriptors declared a home root
+  with no marker, so unrelated tooling that created `~/.qwen/skills` and
+  `~/.openhands/skills` was enough to resolve the root, and the inventory
+  treated root presence as installation. The same record reported
+  `executable_on_path: false`. Since Phase 5 device reports are generated from
+  this inventory, the bug manufactured evidence for agents that were absent.
+
 ## [0.4.0] - 2026-08-16
 
 Phase 4 stable release. Explicit structured handoff continues the same task in a

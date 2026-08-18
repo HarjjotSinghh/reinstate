@@ -23,14 +23,27 @@ the Phase 2 local continuity surface for:
 
 The Phase 2 local capability matrix is:
 
-| Agent | Local discovery/search/inspect | Native resume/fork | Physical Phase 2 evidence |
-| ----- | ------------------------------ | ------------------ | ------------------------- |
-| Claude Code | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64 |
-| OpenAI Codex CLI | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64 |
-| Gemini CLI | Read-only included | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac |
-| OpenCode | Read-only included | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac |
-| Cursor | Not implemented | Not implemented | Not applicable |
-| Grok Build | Not implemented | Not implemented | Not applicable |
+| Agent | Local discovery/search/inspect | Native resume/fork | Physical Phase 2 evidence | Tier |
+| ----- | ------------------------------ | ------------------ | ------------------------- | ---- |
+| Claude Code | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64 | T5 |
+| OpenAI Codex CLI | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64 | T5 |
+| Gemini CLI | Read-only included | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac | T2 |
+| OpenCode | Read-only included | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac | T2 |
+| Cursor CLI | Not implemented | Not implemented | Dual-platform `chats/<32-hex>/<uuid-v4>/store.db` committed; no reader | T0 |
+| Grok Build | Not implemented | Not implemented | Not applicable | T2 |
+| Amp | Not readable locally (`server_backed`) | Not implemented | Not applicable | T0 |
+| ZCode | Not implemented (`desktop_only`) | Not implemented | Not applicable | T0 |
+| OpenHands | Not implemented | Not implemented | Not applicable | T0 |
+| GitHub Copilot CLI | Not implemented | Not implemented | Rename-aside: old session ID did not return; no reader | T0 |
+| Kimi Code CLI | Indexed (read-only) | Not implemented | Dual-platform probes committed; no device journey for resume | T1 |
+| Pi | Not implemented | Not implemented | Dual-platform JSONL sessions committed; no reader | T0 |
+| Qwen Code | Not implemented | Not implemented | Dual-platform JSONL chats committed; no reader | T0 |
+| Antigravity CLI | Not implemented (`layout_unverified`) | Not implemented | No probe captured | T0 |
+| Cline | Not implemented | Not implemented | Dual-platform AGENT-PROBE-V1 not committed | T0 |
+| Aider | Not implemented | Not implemented | Dual-platform AGENT-PROBE-V1 not committed | T0 |
+| Roo Code | Not implemented | Not implemented | Dual-platform AGENT-PROBE-V1 not committed | T0 |
+| MiniMax | Not implemented | Not implemented | Token Plan keys are models-in-other-harnesses; layout unverified | T0 |
+<!-- T-010 insertion point: append one new agent row immediately above this comment. Do not add columns, re-sort, re-wrap, or edit other rows. -->
 
 Automated fixture/fake-runner evidence and physical evidence are reported
 separately. Stable support is limited to the two physically verified primary
@@ -41,6 +54,13 @@ support will be reported separately per harness and per capability (MCP,
 skills/instructions, hooks/loops, plugins, marketplaces, safe settings). A
 supported session adapter will not imply configuration support. See
 [universal-configuration.md](universal-configuration.md).
+
+## Support tiers
+
+"Supported" now means a published [support tier](agent-support-tiers.md),
+not a yes-or-no flag. The matrix above records the current tier for each
+shipped agent. T5 is encrypted same-vendor sync. T2 is a handoff source.
+Native resume stays same-vendor.
 
 ## Phase 4 structured-handoff candidate
 

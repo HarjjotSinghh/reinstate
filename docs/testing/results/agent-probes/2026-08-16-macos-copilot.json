@@ -1,0 +1,350 @@
+{
+  "schema": "AGENT-PROBE-V1",
+  "generated_at": "2026-08-16T11:46:08Z",
+  "platform": {
+    "os": "darwin",
+    "arch": "arm64",
+    "device_class": "macos"
+  },
+  "reinstate_version": "0.0.0-dev",
+  "agents": [
+    {
+      "key": "copilot",
+      "display_name": "GitHub Copilot CLI",
+      "declared_tier": "T0",
+      "root_env": "COPILOT_HOME",
+      "root_env_set": false,
+      "candidate_roots": [
+        {
+          "relative_to": "home",
+          "suffix": ".copilot",
+          "exists": true,
+          "marker_present": true
+        }
+      ],
+      "resolved_root": {
+        "relative_to": "home",
+        "suffix": ".copilot"
+      },
+      "executable_on_path": true,
+      "version_raw": "GitHub Copilot CLI 1.0.80.\nRun 'copilot update' to check for updates.",
+      "tree": [
+        {
+          "path": "command-history-state.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 39
+        },
+        {
+          "path": "copilot-instructions.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 792
+        },
+        {
+          "path": "hooks",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "hooks/orca.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 6033
+        },
+        {
+          "path": "ide",
+          "kind": "dir"
+        },
+        {
+          "path": "installed-plugins",
+          "kind": "dir"
+        },
+        {
+          "path": "logs",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "logs/process-1786880014257-<n>.log",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 7551
+        },
+        {
+          "path": "servers",
+          "kind": "dir"
+        },
+        {
+          "path": "session-state",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "session-state/*",
+          "kind": "dir",
+          "children": 7,
+          "sample_count": 1
+        },
+        {
+          "path": "session-state/*/checkpoints",
+          "kind": "dir",
+          "children": 1,
+          "sample_count": 1
+        },
+        {
+          "path": "session-state/*/checkpoints/index.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 172
+        },
+        {
+          "path": "session-state/*/events.jsonl",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 70716
+        },
+        {
+          "path": "session-state/*/files",
+          "kind": "dir",
+          "sample_count": 1
+        },
+        {
+          "path": "session-state/*/research",
+          "kind": "dir",
+          "sample_count": 1
+        },
+        {
+          "path": "session-state/*/rewind-file-snapshots",
+          "kind": "dir",
+          "children": 1,
+          "sample_count": 1
+        },
+        {
+          "path": "session-state/*/rewind-file-snapshots/tracking.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 29
+        },
+        {
+          "path": "session-state/*/session.db",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 12288
+        },
+        {
+          "path": "session-state/*/workspace.yaml",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 409
+        },
+        {
+          "path": "session-store.db",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 4096
+        },
+        {
+          "path": "session-store.db-shm",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 32768
+        },
+        {
+          "path": "session-store.db-wal",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 473832
+        },
+        {
+          "path": "sidebar-sessions-state",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "sidebar-sessions-state/*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 124
+        },
+        {
+          "path": "skills",
+          "kind": "dir",
+          "children": 20
+        },
+        {
+          "path": "skills/embedded-captions",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 38
+        },
+        {
+          "path": "skills/faceless-explainer",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 39
+        },
+        {
+          "path": "skills/figma",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 26
+        },
+        {
+          "path": "skills/general-video",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 34
+        },
+        {
+          "path": "skills/hyperframes",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 32
+        },
+        {
+          "path": "skills/hyperframes-animation",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 42
+        },
+        {
+          "path": "skills/hyperframes-cli",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 36
+        },
+        {
+          "path": "skills/hyperframes-core",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 37
+        },
+        {
+          "path": "skills/hyperframes-creative",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 41
+        },
+        {
+          "path": "skills/hyperframes-keyframes",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 42
+        },
+        {
+          "path": "skills/hyperframes-registry",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 41
+        },
+        {
+          "path": "skills/i-have-adhd",
+          "kind": "dir",
+          "children": 2
+        },
+        {
+          "path": "skills/i-have-adhd/SKILL.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 6848
+        },
+        {
+          "path": "skills/i-have-adhd/agents",
+          "kind": "dir",
+          "children": 2
+        },
+        {
+          "path": "skills/i-have-adhd/agents/gemini.toml",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1933
+        },
+        {
+          "path": "skills/i-have-adhd/agents/openai.yaml",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 238
+        },
+        {
+          "path": "skills/media-use",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 30
+        },
+        {
+          "path": "skills/motion-graphics",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 36
+        },
+        {
+          "path": "skills/music-to-video",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 35
+        },
+        {
+          "path": "skills/pr-to-video",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 32
+        },
+        {
+          "path": "skills/product-launch-video",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 41
+        },
+        {
+          "path": "skills/remotion-to-hyperframes",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 44
+        },
+        {
+          "path": "skills/slideshow",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 30
+        },
+        {
+          "path": "skills/talking-head-recut",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 39
+        }
+      ],
+      "name_shapes": [
+        {
+          "path": "logs/*",
+          "shape": "process-1786880014257-<n>.log",
+          "samples": 1
+        },
+        {
+          "path": "session-state/*",
+          "shape": "<uuid-v4>",
+          "samples": 1
+        },
+        {
+          "path": "sidebar-sessions-state/*",
+          "shape": "<64-hex>.json",
+          "samples": 1
+        }
+      ],
+      "first_line_keys": {
+        "session-state/*/events.jsonl": [
+          "data",
+          "id",
+          "parentId",
+          "timestamp",
+          "type"
+        ],
+        "session-state/*/rewind-file-snapshots/tracking.json": [
+          "schema",
+          "tracking"
+        ]
+      }
+    }
+  ]
+}
