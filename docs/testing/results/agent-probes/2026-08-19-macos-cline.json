@@ -1,0 +1,146 @@
+{
+  "schema": "AGENT-PROBE-V1",
+  "generated_at": "2026-08-19T06:52:21Z",
+  "platform": {
+    "os": "darwin",
+    "arch": "arm64",
+    "device_class": "macos"
+  },
+  "reinstate_version": "v0.4.0-45-g52d8034-dirty",
+  "agents": [
+    {
+      "key": "cline",
+      "display_name": "Cline",
+      "declared_tier": "T0",
+      "root_env": "CLINE_DATA_DIR",
+      "root_env_set": false,
+      "candidate_roots": [
+        {
+          "relative_to": "home",
+          "suffix": ".cline/data",
+          "exists": true,
+          "marker_present": true
+        }
+      ],
+      "resolved_root": {
+        "relative_to": "home",
+        "suffix": ".cline/data"
+      },
+      "executable_on_path": true,
+      "version_raw": "3.0.55",
+      "tree": [
+        {
+          "path": "db",
+          "kind": "dir",
+          "children": 12
+        },
+        {
+          "path": "db/connectors.db",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 20480
+        },
+        {
+          "path": "db/connectors.db-shm",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 32768
+        },
+        {
+          "path": "db/connectors.db-wal",
+          "kind": "file",
+          "count": 1
+        },
+        {
+          "path": "db/cron.db",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 4096
+        },
+        {
+          "path": "db/cron.db-shm",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 32768
+        },
+        {
+          "path": "db/cron.db-wal",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 185432
+        },
+        {
+          "path": "db/sessions.db",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 4096
+        },
+        {
+          "path": "db/sessions.db-shm",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 32768
+        },
+        {
+          "path": "db/sessions.db-wal",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 86552
+        },
+        {
+          "path": "db/teams.db",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 4096
+        },
+        {
+          "path": "db/teams.db-shm",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 32768
+        },
+        {
+          "path": "db/teams.db-wal",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 103032
+        },
+        {
+          "path": "sessions",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "sessions/*",
+          "kind": "dir",
+          "children": 2,
+          "sample_count": 1
+        },
+        {
+          "path": "sessions/*/*",
+          "kind": "file",
+          "count": 2,
+          "median_bytes": 5141
+        },
+        {
+          "path": "settings",
+          "kind": "dir",
+          "children": 1
+        }
+      ],
+      "name_shapes": [
+        {
+          "path": "sessions/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "sessions/*/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        }
+      ],
+      "first_line_keys": {}
+    }
+  ]
+}

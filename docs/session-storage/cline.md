@@ -1,16 +1,13 @@
 # Cline
 
-**Confidence: Documented** for identity and official distribution;
-**Unverified** for every session-file path and host root.
+**Confidence: Documented on macOS; Unverified on native Windows.**
 **Current tier:** T0 (`layout_unverified`) · **Phase 5 target:** T1
 
 Catalog key is `cline`. Descriptor: `internal/agents/catalog/cline.go`.
 
-T-031 targeted T1. Dual-platform AGENT-PROBE-V1 artifacts are required
-for T1. This executor has no native Windows host and no Cline install on
-the macOS host (`cline` not on PATH; no `saoudrizwan.claude-dev` name
-under VS Code `globalStorage`; no `~/.cline`). No probe JSON is
-committed. There is no F3 scanner and no reader.
+A 2026-08-19 macOS probe after `cline` 3.0.55 wrote a real session under
+`~/.cline/data/sessions`. Native Windows is still missing, so T1 stays
+closed. There is no index source and no reader.
 
 ## Identity
 
@@ -30,17 +27,32 @@ root across IDE, CLI, and SDK. That is not two products. A later probe
 that finds a *separate* authoritative tree under an editor host must
 attribute the host, not invent a second key.
 
+## Device evidence (2026-08-19, macOS arm64)
+
+Artifact:
+[`2026-08-19-macos-cline.json`](../testing/results/agent-probes/2026-08-19-macos-cline.json)
+
+`cline` 3.0.55 on PATH. A one-shot prompt (unauthorized; no account)
+still created a session directory. Resolved root `~/.cline/data`.
+
+```
+~/.cline/data/
+  sessions/<slug>/<slug>.json
+  sessions/<slug>/<slug>.messages.json
+  db/sessions.db   (+ shm/wal)
+  settings/providers.json   excluded
+```
+
+Pretty-printed JSON: the probe's first-line sampler recorded no keys
+(`{` is not a JSON object). A key-only inspection of the session file
+saw `cwd`, `session_id`, `workspace_root`, `prompt`, `started_at`,
+`status`, `messages_path`. `cline history --json` listed that session.
+That is an F2 candidate, not a shipped read API. Native Windows is
+absent, so the row stays T0.
+
 ## Why T0 is `layout_unverified`
 
-The product, extension id, CLI binary, and official docs are settled.
-What is not settled is the live conversation layout on macOS and native
-Windows: which root is authoritative, which file is turns versus UI
-state, whether the workspace path is recorded, and whether `cline
-history` is a machine-readable list.
-
-That is `layout_unverified`. Vendor documentation is not a tier
-promotion. One-platform evidence would not be enough even if this host
-had Cline installed.
+macOS now has a live tree. Native Windows does not. T1 requires both.
 
 ## Claimed layout (all Unverified)
 
