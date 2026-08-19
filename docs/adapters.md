@@ -44,7 +44,10 @@ The capability matrix below remains the fail-closed per-surface record.
 | Gemini CLI | Read-only in `v0.2.0` | No | Source-only | No | No | Later |
 | OpenCode | Read-only in `v0.2.0` | No | Source-only | No | No | Later |
 | Grok Build | Read-only in `v0.4.0` | No | Source-only | No | No | Planned |
-| Cursor | Exploring | No | No | No | No | Exploring |
+| Kimi Code CLI | Read-only (T1) | No | No | No | No | Later |
+| Qwen Code | Read-only (T1) | No | No | No | No | Later |
+| Pi | Read-only (T1) | No | No | No | No | Later |
+| Cursor CLI | Read-only (T1) | No | No | No | No | Exploring |
 
 Phase 2 automated gates and the complete tagged-artifact matrix passed on Apple
 Silicon macOS and native Windows x64. Stable `v0.2.0` support is limited to

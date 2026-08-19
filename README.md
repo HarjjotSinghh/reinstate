@@ -329,6 +329,10 @@ yes-or-no list.
 | [Gemini CLI](https://github.com/google-gemini/gemini-cli) | T2 | ✅ read-only | — | ✅ source-only | — | — |
 | [OpenCode](https://opencode.ai) | T2 | ✅ read-only | — | ✅ source-only | — | — |
 | [Grok Build](https://x.ai) | T2 | ✅ read-only | — | ✅ source-only | — | — |
+| [Kimi Code CLI](https://www.kimi.com/code) | T1 | ✅ read-only | — | — | — | — |
+| [Qwen Code](https://qwenlm.github.io/qwen-code-docs/) | T1 | ✅ read-only | — | — | — | — |
+| [Pi](https://pi.dev/) | T1 | ✅ read-only | — | — | — | — |
+| [Cursor CLI](https://cursor.com/docs/cli/overview) | T1 | read-only | — | — | — | — |
 
 Structured handoff in stable `v0.4.0` starts a new destination session.
 Native resume/fork and encrypted sync remain same-vendor.

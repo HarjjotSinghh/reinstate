@@ -111,8 +111,8 @@ describe('central product-truth drift guard', () => {
     expect(compatibilityAgents.filter((agent) => agent.tier === 'T3')).toEqual([]);
     expect(
       compatibilityAgents.filter((agent) => agent.tier === 'T1').map((agent) => agent.key),
-    ).toEqual(['kimi']);
-    expect(compatibilityAgents.filter((agent) => agent.tier === 'T0')).toHaveLength(12);
+    ).toEqual(['kimi', 'pi', 'qwen', 'cursor']);
+    expect(compatibilityAgents.filter((agent) => agent.tier === 'T0')).toHaveLength(9);
   });
 
   it('keeps the doctor self-test distinct from real remote-storage evidence', async () => {

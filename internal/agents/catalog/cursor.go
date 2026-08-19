@@ -1,59 +1,38 @@
 package catalog
 
-import "github.com/HarjjotSinghh/reinstate/internal/agents"
+import (
+	"github.com/HarjjotSinghh/reinstate/internal/agents"
+	cursorsrc "github.com/HarjjotSinghh/reinstate/internal/agents/sources/cursor"
+)
 
 func init() { agents.MustRegister(Cursor()) }
 
-// Cursor is the Cursor CLI descriptor (T0, layout_unverified).
+// Cursor is the Cursor CLI descriptor (T1, discover).
 //
 // Catalog key `cursor` is the terminal agent only. The in-editor agent is a
-// different product and is not this key. A 2026-08-17 native Windows session
-// created ~/.cursor/chats; that directory is the marker. ~/.cursor/projects
-// is the editor agent's tree and stays excluded. macOS still has no CLI
-// session, so there is no dual-platform probe and no reader.
+// different product and is not this key. Dual-platform probes on 2026-08-17
+// show CLI sessions as ~/.cursor/chats/<32-hex>/<uuid-v4>/meta.json. The
+// editor tree under projects/ stays excluded. store.db exists beside
+// meta.json and is not parsed.
+//
+// T1 only. Sessions are indexed and searchable; resume and fork stay refused.
 func Cursor() agents.Descriptor {
 	return agents.Descriptor{
 		Key:         "cursor",
 		DisplayName: "Cursor CLI",
 		Vendor:      "Anysphere",
 		DocsURL:     "https://cursor.com/docs/cli/overview",
-		Tier:        agents.TierKnown,
-		Family:      agents.FamilyEmbeddedDB,
-		T0Reason:    agents.T0LayoutUnverified,
+		Tier:        agents.TierDiscover,
+		Family:      agents.FamilyHomeTree,
 		Storage: agents.StorageSpec{
 			Roots: func(home agents.HomeDir) []agents.Root {
 				return []agents.Root{{Path: home.Join(".cursor")}}
 			},
-			// chats/ appears only after a CLI session. Without this marker
-			// the root would resolve on a machine that only uses the editor.
-			Marker:     "chats",
-			ProjectKey: agents.ProjectKeyNone,
-			// chats/ is the CLI session store. Every other sibling under
-			// ~/.cursor belongs to the editor, extensions, or user skills.
-			// A 2026-08-17 macOS walk without these exclusions emitted a
-			// plan filename and drowned in skills/.
-			Excluded: []string{
-				"projects",
-				"extensions",
-				"plugins",
-				"skills",
-				"skills-cursor",
-				"plans",
-				"agents",
-				"rules",
-				"ai-tracking",
-				"sandbox-policies",
-				"worktrees",
-				"cli-config.json",
-				"mcp.json",
-				"**/mcp.json",
-				"ide_state.json",
-				"argv.json",
-				"hooks.json",
-				"hooks.json.bak",
-				"agent-cli-state.json",
-				"statsig-cache.json",
-			},
+			Marker:      "chats",
+			SessionGlob: cursorsrc.SessionGlob,
+			Layout:      "chats-hex-uuid-meta-json",
+			ProjectKey:  agents.ProjectKeyNone,
+			Excluded:    cursorsrc.Excluded,
 		},
 		Process: agents.ProcessSpec{
 			// Official docs name the binary `agent`. That basename collides
@@ -61,8 +40,17 @@ func Cursor() agents.Descriptor {
 			// `cursor-agent` name until a probe can tell them apart.
 			Images: []string{"cursor-agent"},
 		},
+		NewIndexSource: cursorsrc.New,
 		Evidence: agents.Evidence{
 			StoragePage: "docs/session-storage/cursor.md",
+			ProbeReports: []string{
+				"docs/testing/results/agent-probes/2026-08-17-macos-cursor.json",
+				"docs/testing/results/agent-probes/2026-08-17-windows-cursor.json",
+			},
+			Fixtures: []string{
+				"testdata/sessionindex/cursor/macos",
+				"testdata/sessionindex/cursor/windows",
+			},
 		},
 	}
 }

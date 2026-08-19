@@ -7,12 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-T0-heavy Phase 5 catalog RC. Ships the agent catalog and
-`rein doctor --agents` (including `--json` / `--acceptance-matrix`). **No new
-handoff destinations and no new synced agents** — Claude Code and Codex CLI
-remain the only T4/T5 surfaces. Gemini CLI, OpenCode, and Grok Build stay T2
-handoff sources. **Kimi Code CLI is T1** (index and search only; resume and
-fork stay refused). Every other new catalog agent is T0 with a recorded reason.
+T0-heavy Phase 5 catalog RC plus a follow-on T1 promotion. Ships the agent
+catalog and `rein doctor --agents` (including `--json` / `--acceptance-matrix`).
+**No new handoff destinations and no new synced agents** — Claude Code and
+Codex CLI remain the only T4/T5 surfaces. Gemini CLI, OpenCode, and Grok
+Build stay T2 handoff sources. **Kimi Code CLI, Qwen Code, Pi, and Cursor
+CLI are T1** (index and search only; resume and fork stay refused). Every
+other new catalog agent is T0 with a recorded reason.
+
+### Qwen Code, Pi, and Cursor CLI at T1
+
+Promoted on 2026-08-19 from committed dual-platform AGENT-PROBE-V1 artifacts
+and synthetic macos/windows fixtures. Each agent has an F1 hometree index
+source. `rein sessions --agent qwen|pi|cursor` lists and searches them.
+Resume and fork stay refused: no device journey has verified native resume.
+
+- Qwen Code: `~/.qwen/projects/<slug>/chats/<uuid-v4>.jsonl`. Runtime
+  sidecars (`*-runtime.json`) are not conversations. The Claude reader is
+  not reused.
+- Pi: `~/.pi/agent/sessions/<slug>/*.jsonl`. Fail-closed version pin stays
+  `0.73.1`.
+- Cursor CLI: `~/.cursor/chats/<32-hex>/<uuid-v4>/meta.json`. Editor
+  `projects/` stays excluded. `store.db` is not parsed.
 
 ### Kimi Code CLI at T1
 
@@ -27,6 +43,7 @@ refused: no device journey has run `kimi -r <id>` against a real session.
 
 ### Added
 
+- F1 index sources for Qwen Code, Pi, and Cursor CLI (`internal/agents/sources/{qwen,pi,cursor}`) with dual-platform synthetic fixtures.
 - `rein doctor --agents` inventory, `--agents --json` (`AGENT-PROBE-V1`), and `--agents --acceptance-matrix`.
 - [ADR 0004](docs/adr/0004-universal-agent-coverage.md): universal agent
   coverage, the T0–T5 support-tier ladder, and a single `internal/agents`

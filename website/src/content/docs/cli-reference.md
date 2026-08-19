@@ -191,7 +191,7 @@ rein sessions --agent claude --json
 
 **Expected result:** each row has a composite `agent:native-id` reference,
 timestamp, capability flags, and bounded metadata. Use `--agent
-claude|codex|gemini|opencode|all`; scripts should use `--json`.
+claude|codex|gemini|opencode|grok|kimi|qwen|pi|cursor|all`; scripts should use `--json`.
 
 ### `rein search`
 

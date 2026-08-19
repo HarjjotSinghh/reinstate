@@ -38,7 +38,10 @@ preview and unverified; check the
 
 | Adapter | Status |
 | ------- | ------ |
-| Cursor | Exploring |
+| Cursor CLI | T1 Discover (read-only) |
+| Qwen Code | T1 Discover (read-only) |
+| Pi | T1 Discover (read-only) |
+| Kimi Code CLI | T1 Discover (read-only) |
 | Grok Build | Exploring |
 
 Configuration support is capability-specific and planned separately. Session

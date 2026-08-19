@@ -1,6 +1,7 @@
 package catalog
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/HarjjotSinghh/reinstate/internal/agents"
@@ -8,10 +9,13 @@ import (
 )
 
 func TestCursorConformance(t *testing.T) {
-	conformance.Run(t, Cursor(), conformance.Fixtures{})
+	conformance.Run(t, Cursor(), conformance.Fixtures{
+		Root: "testdata/sessionindex/cursor",
+		OS:   []string{"macos", "windows"},
+	})
 }
 
-func TestCursorStaysT0LayoutUnverified(t *testing.T) {
+func TestCursorIsDiscoverOnly(t *testing.T) {
 	d := Cursor()
 	if d.Key != "cursor" {
 		t.Fatalf("key = %q", d.Key)
@@ -19,36 +23,51 @@ func TestCursorStaysT0LayoutUnverified(t *testing.T) {
 	if d.DisplayName != "Cursor CLI" {
 		t.Fatalf("DisplayName = %q", d.DisplayName)
 	}
-	if d.Tier != agents.TierKnown || d.T0Reason != agents.T0LayoutUnverified {
-		t.Fatalf("tier/reason = %s/%s", d.Tier, d.T0Reason)
+	if d.Tier != agents.TierDiscover {
+		t.Fatalf("tier = %s, want T1", d.Tier)
 	}
-	if d.Family != agents.FamilyEmbeddedDB {
-		t.Fatalf("family = %s, want F3 until ls is proven machine-readable", d.Family)
+	if d.T0Reason != "" {
+		t.Fatalf("T0Reason = %q, want empty above T0", d.T0Reason)
 	}
-	if d.NewIndexSource != nil || d.NewReader != nil || d.NewTarget != nil || d.NewSyncAdapter != nil {
-		t.Fatal("T0 descriptor must not grow a capability constructor")
+	if d.Family != agents.FamilyHomeTree {
+		t.Fatalf("family = %s, want F1 (meta.json via hometree)", d.Family)
+	}
+	if d.NewIndexSource == nil {
+		t.Fatal("T1 requires an index source")
+	}
+	if d.NewReader != nil || d.NewTarget != nil || d.NewSyncAdapter != nil {
+		t.Fatal("T1 descriptor must not ship reader, target, or sync constructors")
 	}
 	if d.Native != nil || d.Version != nil {
-		t.Fatal("T0 descriptor must not claim native resume or a version range")
+		t.Fatal("native resume and a version range are T3 claims")
 	}
 	if d.Storage.Roots == nil || d.Storage.Marker != "chats" {
 		t.Fatalf("CLI root must be marker-gated on chats: %+v", d.Storage)
 	}
-	if d.Storage.Layout != "" || d.Storage.SessionGlob != "" {
-		t.Fatalf("T0 must not claim an unverified session glob: %+v", d.Storage)
+	if d.Storage.SessionGlob == "" {
+		t.Fatal("T1 must declare the meta.json glob")
 	}
 	for _, want := range []string{"projects", "extensions", "plugins", "skills", "skills-cursor", "plans"} {
 		if !contains(d.Storage.Excluded, want) {
 			t.Fatalf("excluded = %v, missing %q", d.Storage.Excluded, want)
 		}
 	}
-	if len(d.Evidence.ProbeReports) != 0 || len(d.Evidence.Fixtures) != 0 || len(d.Evidence.DeviceReports) != 0 {
-		t.Fatal("T0 descriptor must not cite probes, fixtures, or device reports")
-	}
-	if d.Evidence.StoragePage != "docs/session-storage/cursor.md" {
-		t.Fatalf("StoragePage = %q", d.Evidence.StoragePage)
-	}
 	if len(d.Process.Images) != 1 || d.Process.Images[0] != "cursor-agent" {
 		t.Fatalf("Images = %v, want only cursor-agent", d.Process.Images)
+	}
+}
+
+func TestCursorCitesBothPlatformProbes(t *testing.T) {
+	d := Cursor()
+	var macOS, windows bool
+	for _, report := range d.Evidence.ProbeReports {
+		macOS = macOS || strings.Contains(report, "-macos-")
+		windows = windows || strings.Contains(report, "-windows-")
+	}
+	if !macOS || !windows {
+		t.Fatalf("probe reports = %v, want one macOS and one native Windows", d.Evidence.ProbeReports)
+	}
+	if len(d.Evidence.Fixtures) != 2 {
+		t.Fatalf("fixtures = %v, want one per platform", d.Evidence.Fixtures)
 	}
 }

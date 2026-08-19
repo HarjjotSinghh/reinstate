@@ -1,6 +1,7 @@
 package catalog
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/HarjjotSinghh/reinstate/internal/agents"
@@ -8,19 +9,43 @@ import (
 )
 
 func TestQwenConformance(t *testing.T) {
-	conformance.Run(t, Qwen(), conformance.Fixtures{})
+	conformance.Run(t, Qwen(), conformance.Fixtures{
+		Root: "testdata/sessionindex/qwen",
+		OS:   []string{"macos", "windows"},
+	})
 }
 
-func TestQwenIsIdentifiedT0(t *testing.T) {
+func TestQwenIsDiscoverOnly(t *testing.T) {
 	d := Qwen()
-	if d.Key != "qwen" || d.Tier != agents.TierKnown || d.T0Reason != agents.T0LayoutUnverified {
-		t.Fatalf("qwen identity = %s %s %s", d.Key, d.Tier, d.T0Reason)
+	if d.Tier != agents.TierDiscover {
+		t.Fatalf("tier = %s, want T1", d.Tier)
 	}
-	if d.NewIndexSource != nil || d.NewReader != nil || d.NewTarget != nil || d.NewSyncAdapter != nil {
-		t.Fatal("T0 qwen must not expose constructors")
+	if d.T0Reason != "" {
+		t.Fatalf("T0Reason = %q, want empty above T0", d.T0Reason)
+	}
+	if d.NewIndexSource == nil {
+		t.Fatal("T1 requires an index source")
+	}
+	if d.NewReader != nil || d.NewTarget != nil || d.NewSyncAdapter != nil {
+		t.Fatal("T1 descriptor must not ship reader, target, or sync constructors")
 	}
 	if d.Native != nil || d.Version != nil {
-		t.Fatal("T0 qwen must not claim native resume or a version range")
+		t.Fatal("native resume and a version range are T3 claims")
+	}
+}
+
+func TestQwenCitesBothPlatformProbes(t *testing.T) {
+	d := Qwen()
+	var macOS, windows bool
+	for _, report := range d.Evidence.ProbeReports {
+		macOS = macOS || strings.Contains(report, "-macos-")
+		windows = windows || strings.Contains(report, "-windows-")
+	}
+	if !macOS || !windows {
+		t.Fatalf("probe reports = %v, want one macOS and one native Windows", d.Evidence.ProbeReports)
+	}
+	if len(d.Evidence.Fixtures) != 2 {
+		t.Fatalf("fixtures = %v, want one per platform", d.Evidence.Fixtures)
 	}
 }
 

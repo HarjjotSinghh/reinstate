@@ -2,8 +2,8 @@
 
 **Confidence: Documented on macOS and native Windows** —
 official product identified; both platforms have a real JSONL conversation
-with matching first-line keys; no Reinstate reader.
-**Current tier:** T0 (`layout_unverified`) · **Phase 5 target:** T2
+with matching first-line keys; T1 index source shipped.
+**Current tier:** T1 (discover) · **Phase 5 target:** T2
 
 Catalog key is `qwen`.
 
@@ -93,10 +93,10 @@ Also worth recording: `usage_record.jsonl` exists with
 tools, totalLatencyMs, version` — a per-session usage ledger that could supply
 message counts and file references without parsing a transcript at all.
 
-**Tier unchanged at T0.** Dual-platform JSONL conversations exist, but there
-is no index source and no reader. macOS also writes `<uuid-v4>-runtime.json`
-sidecars that the Windows artifact did not record. Do not reuse the Claude
-reader.
+**Promoted to T1 on 2026-08-19.** Dual-platform JSONL conversations exist and
+an F1 index source now walks `projects/**/chats/*.jsonl`. macOS also writes
+`<uuid-v4>-runtime.json` sidecars that are not conversations. Resume and
+fork stay refused. Do not reuse the Claude reader.
 
 ## Device evidence (2026-08-17, macOS arm64)
 

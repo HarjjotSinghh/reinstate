@@ -30,12 +30,24 @@ const (
 	AgentOpenCode = "opencode"
 	AgentGrok     = "grok"
 	AgentKimi     = "kimi"
+	AgentQwen     = "qwen"
+	AgentPi       = "pi"
+	AgentCursor   = "cursor"
 )
 
 // KimiReadOnlyReason is the source-only contract for Kimi Code CLI. Native
 // resume argv is documented by the vendor but has never been run on a device,
 // so nothing here may launch it.
 const KimiReadOnlyReason = "Kimi Code CLI sessions are read-only until a device journey verifies native resume"
+
+// QwenReadOnlyReason is the T1 contract for Qwen Code.
+const QwenReadOnlyReason = "Qwen Code sessions are read-only until a device journey verifies native resume"
+
+// PiReadOnlyReason is the T1 contract for Pi.
+const PiReadOnlyReason = "Pi sessions are read-only until a device journey verifies native resume"
+
+// CursorReadOnlyReason is the T1 contract for Cursor CLI.
+const CursorReadOnlyReason = "Cursor CLI sessions are read-only until a device journey verifies native resume"
 
 var (
 	// ErrNotFound means a session reference did not resolve.
