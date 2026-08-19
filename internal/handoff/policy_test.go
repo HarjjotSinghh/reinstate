@@ -251,6 +251,98 @@ func idsOf(events []capsule.Event) []string {
 	return out
 }
 
+func TestApplyPullsMatchingToolCallWhenResultFitsBudget(t *testing.T) {
+	t.Parallel()
+
+	// Newest-first: a result that nearly fills the budget excludes its older
+	// call. Pairing must pull the call back in so Validate accepts the capsule.
+	call := toolCallEvent("call-ev", 0, "call-abc", strings.Repeat("c", 200))
+	result := toolResultEvent("result-ev", 1, "call-abc", strings.Repeat("r", DefaultProjectionBudgetBytes-5))
+	events := []capsule.Event{call, result}
+
+	included, sidecar, _ := Apply(PolicyBalanced, events)
+	assertPartition(t, events, included, sidecar)
+	assertToolResultsPaired(t, included)
+	if len(included) != 2 {
+		t.Fatalf("included = %d, want call+result", len(included))
+	}
+	if included[0].ID != "call-ev" || included[1].ID != "result-ev" {
+		t.Fatalf("included ids = %v, want call-ev,result-ev", idsOf(included))
+	}
+}
+
+func TestApplyOmitsToolResultWhenCallIsAbsentFromSource(t *testing.T) {
+	t.Parallel()
+
+	orphan := toolResultEvent("orphan-ev", 0, "call-missing", "output")
+	msg := msgEvent("msg-ev", 1, "hello")
+	events := []capsule.Event{orphan, msg}
+
+	included, sidecar, _ := Apply(PolicyBalanced, events)
+	assertPartition(t, events, included, sidecar)
+	assertToolResultsPaired(t, included)
+	if len(included) != 1 || included[0].ID != "msg-ev" {
+		t.Fatalf("included = %v, want msg-ev only", idsOf(included))
+	}
+	if len(sidecar) != 1 || sidecar[0].EventID != "orphan-ev" {
+		t.Fatalf("sidecar = %+v, want orphan-ev", sidecar)
+	}
+	if sidecar[0].Reason != reasonUnmatchedToolResult {
+		t.Fatalf("sidecar reason = %q, want %q", sidecar[0].Reason, reasonUnmatchedToolResult)
+	}
+}
+
+func toolCallEvent(id string, order int, callID, args string) capsule.Event {
+	return capsule.Event{
+		ID:          id,
+		Order:       order,
+		Actor:       capsule.ActorAssistant,
+		Kind:        capsule.KindToolCall,
+		CallID:      callID,
+		Portability: capsule.PortabilityNormalized,
+		Reason:      "normalized_tool_call",
+		Blocks:      []capsule.Block{{Type: capsule.BlockTypeToolInput, Text: args, Size: int64(len(args))}},
+		ContentHash: id,
+		Source:      capsule.SourcePointer{Agent: "codex", SessionID: "s", Index: order},
+	}
+}
+
+func toolResultEvent(id string, order int, linked, output string) capsule.Event {
+	return capsule.Event{
+		ID:           id,
+		Order:        order,
+		Actor:        capsule.ActorTool,
+		Kind:         capsule.KindToolResult,
+		LinkedCallID: linked,
+		Portability:  capsule.PortabilityNormalized,
+		Reason:       "normalized_tool_result",
+		Blocks:       []capsule.Block{{Type: capsule.BlockTypeToolOutput, Text: output, Size: int64(len(output))}},
+		ContentHash:  id,
+		Source:       capsule.SourcePointer{Agent: "codex", SessionID: "s", Index: order},
+	}
+}
+
+func assertToolResultsPaired(t *testing.T, events []capsule.Event) {
+	t.Helper()
+	calls := make(map[string]struct{})
+	for _, e := range events {
+		if e.Kind == capsule.KindToolCall && e.CallID != "" {
+			calls[e.CallID] = struct{}{}
+		}
+	}
+	for _, e := range events {
+		if e.Kind != capsule.KindToolResult {
+			continue
+		}
+		if e.LinkedCallID == "" {
+			t.Fatalf("included tool_result %q has empty linked_call_id", e.ID)
+		}
+		if _, ok := calls[e.LinkedCallID]; !ok {
+			t.Fatalf("included tool_result %q linked_call_id %q has no matching tool_call", e.ID, e.LinkedCallID)
+		}
+	}
+}
+
 func TestApplyFidelityReportContainsAllPortabilityClasses(t *testing.T) {
 	t.Parallel()
 	events := []capsule.Event{
