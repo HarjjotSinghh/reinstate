@@ -285,26 +285,30 @@
       "key": "cline",
       "name": "Cline",
       "vendor": "Cline",
-      "tier": "T0",
-      "storageFamily": "F3",
-      "t0Reason": "layout_unverified",
-      "integrationPath": null,
+      "tier": "T1",
+      "storageFamily": "F1",
+      "t0Reason": null,
+      "integrationPath": "/integrations/cline",
       "status": "known",
       "minimumTestedVersion": null,
       "maximumTestedVersion": null,
-      "resumeMode": "Not usable (T0)",
-      "evidenceLevel": "macOS AGENT-PROBE-V1; native Windows missing; no reader",
+      "resumeMode": "Not usable (T1 discover only)",
+      "evidenceLevel": "dual-platform AGENT-PROBE-V1; F1 index source via session JSON; SQLite unread; no T3 device journey",
       "evidence": {
         "storagePage": "docs/session-storage/cline.md",
-        "fixtures": [],
+        "fixtures": [
+          "testdata/sessionindex/cline/macos",
+          "testdata/sessionindex/cline/windows"
+        ],
         "deviceReports": [],
         "probeReports": [
-          "docs/testing/results/agent-probes/2026-08-19-macos-cline.json"
+          "docs/testing/results/agent-probes/2026-08-19-macos-cline.json",
+          "docs/testing/results/agent-probes/2026-08-19-windows-cline.json"
         ]
       },
       "lastTested": "2026-08-19",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/cline.md",
-      "notes": "T0 Known. macOS probe committed; native Windows missing. Not an integration."
+      "notes": "T1 Discover. Sessions are indexed from session JSON; resume and fork stay refused. Not a handoff destination and not a synced agent."
     },
     {
       "id": "roo",
@@ -343,18 +347,19 @@
       "minimumTestedVersion": null,
       "maximumTestedVersion": null,
       "resumeMode": "Not usable (T0)",
-      "evidenceLevel": "macOS AGENT-PROBE-V1 (PATH + version); F4 no home root; native Windows missing",
+      "evidenceLevel": "dual-platform AGENT-PROBE-V1 (PATH + version); F4 no home root; no reader",
       "evidence": {
         "storagePage": "docs/session-storage/aider.md",
         "fixtures": [],
         "deviceReports": [],
         "probeReports": [
-          "docs/testing/results/agent-probes/2026-08-19-macos-aider.json"
+          "docs/testing/results/agent-probes/2026-08-19-macos-aider.json",
+          "docs/testing/results/agent-probes/2026-08-19-windows-aider.json"
         ]
       },
       "lastTested": "2026-08-19",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/aider.md",
-      "notes": "T0 Known. macOS probe committed; native Windows missing. Not an integration."
+      "notes": "T0 Known. Dual-platform PATH probes committed; F4 has no home root. Not an integration."
     },
     {
       "id": "copilot",

@@ -31,6 +31,7 @@ func Aider() agents.Descriptor {
 			StoragePage: "docs/session-storage/aider.md",
 			ProbeReports: []string{
 				"docs/testing/results/agent-probes/2026-08-19-macos-aider.json",
+				"docs/testing/results/agent-probes/2026-08-19-windows-aider.json",
 			},
 		},
 	}

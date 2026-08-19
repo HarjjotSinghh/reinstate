@@ -36,6 +36,7 @@ const T2_METADATA_ROUTES = new Map([
   ['OpenCode', '/integrations/opencode'],
   ['Cursor', '/integrations/cursor'],
   ['GitHub Copilot', '/integrations/copilot'],
+  ['Cline', '/integrations/cline'],
 ]);
 
 function agentAllowedOnRoute(name, route) {

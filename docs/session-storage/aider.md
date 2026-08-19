@@ -43,8 +43,14 @@ Artifact:
 | Home root | none (F4). Probe `candidate_roots` is empty by design |
 | Known-project files after a failed one-shot | `.aider.chat.history.md`, `.aider.input.history` in the repo cwd |
 
-T1 is still forbidden: no native Windows probe, and no index source.
-The home directory was not walked.
+## Device evidence (2026-08-19, native Windows amd64)
+
+Artifact:
+[`2026-08-19-windows-aider.json`](../testing/results/agent-probes/2026-08-19-windows-aider.json)
+
+`aider` 0.86.2 on PATH (Python 3.12). Same F4 files in the known project
+(`.aider.chat.history.md`, `.aider.input.history`). No home root.
+T1 is still forbidden: no index source. The home directory was not walked.
 
 ## Why F4, and why Roots stays empty
 

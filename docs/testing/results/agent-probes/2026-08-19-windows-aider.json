@@ -1,0 +1,25 @@
+{
+  "schema": "AGENT-PROBE-V1",
+  "generated_at": "2026-08-19T07:12:42Z",
+  "platform": {
+    "os": "windows",
+    "arch": "amd64",
+    "device_class": "windows"
+  },
+  "reinstate_version": "dev-winprobe",
+  "agents": [
+    {
+      "key": "aider",
+      "display_name": "Aider",
+      "declared_tier": "T0",
+      "root_env_set": false,
+      "candidate_roots": [],
+      "resolved_root": null,
+      "executable_on_path": true,
+      "version_raw": "aider 0.86.2",
+      "tree": [],
+      "name_shapes": [],
+      "first_line_keys": {}
+    }
+  ]
+}

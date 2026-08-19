@@ -39,8 +39,8 @@ The Phase 2 local capability matrix is:
 | Pi | Indexed (read-only) | Not implemented | Dual-platform probes committed; no device journey for resume | T1 |
 | Qwen Code | Indexed (read-only) | Not implemented | Dual-platform probes committed; no device journey for resume | T1 |
 | Antigravity CLI | Not implemented (`layout_unverified`) | Not implemented | No probe captured | T0 |
-| Cline | Not implemented | Not implemented | macOS AGENT-PROBE-V1 committed; native Windows missing | T0 |
-| Aider | Not implemented | Not implemented | macOS AGENT-PROBE-V1 committed; native Windows missing | T0 |
+| Cline | Indexed (read-only) | Not implemented | Dual-platform probes committed; indexed from session JSON; no device journey for resume | T1 |
+| Aider | Not implemented | Not implemented | macOS + Windows PATH probes committed; F4 no home root; no reader | T0 |
 | Roo Code | Not implemented | Not implemented | Dual-platform AGENT-PROBE-V1 not committed | T0 |
 | MiniMax | Not implemented | Not implemented | Token Plan keys are models-in-other-harnesses; layout unverified | T0 |
 <!-- T-010 insertion point: append one new agent row immediately above this comment. Do not add columns, re-sort, re-wrap, or edit other rows. -->
