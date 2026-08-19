@@ -16,6 +16,14 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.5.0-rc.1': {
+    rangeChange:
+      'Unchanged from v0.4.0: inclusive Claude Code range 2.1.219–2.1.229. The Codex CLI range is unchanged at 0.133.0–0.147.0.',
+    compatibilityChange:
+      'First Phase 5 candidate. Six T1 discover agents and three T2 handoff sources. Claude Code and Codex remain the only T3–T5 surfaces. Dual-platform tagged-artifact acceptance pending; this candidate does not authorize stable v0.5.0.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.5.0-rc.1/docs/testing/v0.5.0-rc.1-agent-verification-prompts.md',
+  },
   'v0.4.0': {
     rangeChange:
       'Unchanged from v0.4.0-rc.11: inclusive Claude Code range 2.1.219–2.1.229. The Codex CLI range is unchanged at 0.133.0–0.147.0.',
