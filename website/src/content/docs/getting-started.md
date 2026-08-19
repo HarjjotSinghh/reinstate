@@ -6,7 +6,7 @@ order: 1
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.4.0"
+version: "v0.5.0-rc.1"
 updatedAt: 2026-08-16
 tags: ["installation", "session-sync", "claude-code", "codex", "s3"]
 targetQuery: "how to sync coding-agent sessions across devices"
@@ -19,9 +19,9 @@ Reinstate finds and continues local coding-agent sessions without setup, and
 optionally synchronizes same-vendor Claude Code and Codex CLI sessions across
 machines through client-side-encrypted, user-owned S3-compatible storage.
 
-> **Release status:** the public installers pin stable `v0.4.0`. Dual-platform
-> tagged-artifact acceptance passed on Apple Silicon macOS and native Windows
-> x64. Intel macOS and Linux/WSL2 are optional and unverified.
+> **Release status:** the public installers pin candidate `v0.5.0-rc.1`.
+> Dual-platform tagged-artifact acceptance is pending. Stable remains `v0.4.0`.
+> Intel macOS and Linux/WSL2 are optional and unverified.
 
 ## Prerequisites
 

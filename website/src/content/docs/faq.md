@@ -6,7 +6,7 @@ order: 7
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.4.0"
+version: "v0.5.0-rc.1"
 updatedAt: 2026-08-16
 tags: ["faq", "session-sync", "claude-code", "codex", "security"]
 targetQuery: "what is Reinstate"
@@ -189,8 +189,9 @@ syncing after an agent upgrade.
 
 `v0.4.0` is the current pre-1.0 stable release on Apple Silicon macOS and
 native Windows x64. It includes encrypted sync, local search, verified resume,
-and structured handoff. Intel macOS, WSL2, and other POSIX packages are
-optional and unverified. See the
+and structured handoff. Public installers currently pin candidate `v0.5.0-rc.1`
+pending dual-platform tagged-artifact acceptance. Intel macOS, WSL2, and other
+POSIX packages are optional and unverified. See the
 [roadmap](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md)
 and [changelog](https://github.com/HarjjotSinghh/reinstate/blob/main/CHANGELOG.md),
 use it with backups, and report bugs through GitHub Issues.

@@ -2,11 +2,11 @@
 
 Binary names: `rein` and `reinstate` (identical behavior).
 
-Public installers pin stable `v0.4.0`, including the Phase 1/2 surface,
-Phase 3 verified resume, and the Phase 4 structured-handoff surface.
-Dual-platform tagged-artifact acceptance passed on Apple Silicon macOS and
-native Windows x64. Intel macOS and Linux/WSL2 remain optional and
-unverified.
+Public installers pin candidate `v0.5.0-rc.1`, including the Phase 1/2 surface,
+Phase 3 verified resume, the Phase 4 structured-handoff surface, and the
+Phase 5 catalog/T1 index surface. Dual-platform tagged-artifact acceptance is
+pending. Stable remains `v0.4.0`. Intel macOS and Linux/WSL2 remain optional
+and unverified.
 
 Stable `v0.3.0` includes the Phase 3 environment report and
 `--allow-environment-warning` flag. The command synopsis below additionally

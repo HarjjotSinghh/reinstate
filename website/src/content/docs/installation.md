@@ -6,7 +6,7 @@ order: 9
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.4.0"
+version: "v0.5.0-rc.1"
 updatedAt: 2026-08-16
 tags: ["installation", "cli", "macos", "windows", "wsl2"]
 targetQuery: "install Reinstate CLI"
@@ -16,13 +16,13 @@ noindex: false
 ---
 
 Install Reinstate with the official bootstrap for your operating system, then
-require `rein version --json` to report `v0.4.0`. The bootstrap verifies
+require `rein version --json` to report `v0.5.0-rc.1`. The bootstrap verifies
 the canonical tagged installer, release checksum, downloaded binary, and
 reported version before replacing an existing installation.
 
-> **Release status:** `v0.4.0` is the current pre-1.0 stable release after
-> dual-platform tagged-artifact acceptance PASS. Intel macOS and Linux/WSL2
-> remain optional and unverified.
+> **Release status:** `v0.5.0-rc.1` is a pre-1.0 candidate whose tagged-artifact
+> acceptance is pending on Apple Silicon macOS and native Windows x64. Stable
+> remains `v0.4.0`; Intel macOS and Linux/WSL2 remain optional and unverified.
 
 ## Prerequisites
 

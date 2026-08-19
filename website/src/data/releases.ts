@@ -1,5 +1,11 @@
 export const releaseHistory = [
   {
+    version: 'v0.5.0-rc.1',
+    date: '2026-08-19',
+    summary:
+      'First Phase 5 candidate: agent catalog, doctor --agents, six T1 discover agents, three T2 handoff sources. Dual-platform tagged-artifact acceptance pending. Does not authorize stable v0.5.0. Current stable remains v0.4.0.',
+  },
+  {
     version: 'v0.4.0',
     date: '2026-08-16',
     summary:
