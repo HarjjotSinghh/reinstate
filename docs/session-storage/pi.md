@@ -1,14 +1,14 @@
 # Pi coding agent (earendil-works)
 
-**Confidence: Documented on macOS; native Windows unprobed** —
-one macOS AGENT-PROBE-V1 after a real `pi -p` session; no reader.
-**Current tier:** T0 (`layout_unverified`) · **Phase 5 target:** T3
+**Confidence: Documented on macOS and native Windows** —
+dual-platform AGENT-PROBE-V1 after real `pi -p` sessions; T1 index source shipped.
+**Current tier:** T1 (discover) · **Phase 5 target:** T3
 
-Pi is an open-source terminal harness. A macOS AGENT-PROBE-V1 exists after a
-real `pi -p` session. Native Windows is still missing, so T1 and above stay
-closed. npm currently warns that `@mariozechner/pi-coding-agent` is deprecated
-in favor of `@earendil-works/pi-coding-agent`; the fail-closed pin remains
-`0.73.1`.
+Pi is an open-source terminal harness. Dual-platform AGENT-PROBE-V1 exists
+after real `pi -p` sessions. npm currently warns that
+`@mariozechner/pi-coding-agent` is deprecated in favor of
+`@earendil-works/pi-coding-agent`; the fail-closed pin remains `0.73.1`.
+Resume and fork stay refused.
 
 ## Identity
 
@@ -21,7 +21,7 @@ in favor of `@earendil-works/pi-coding-agent`; the fail-closed pin remains
 | Distribution | Official, npm, MIT |
 | Storage family | F1 (home-dir tree) — see [Family](#family-f1-not-f2) |
 | Catalog key | `pi` |
-| Fail-closed version pin | `0.73.1`–`0.73.1`. Still T0: no reader. |
+| Fail-closed version pin | `0.73.1`–`0.73.1`. T1: identity pin, not a resume claim. |
 
 ## Device evidence (2026-08-17, macOS arm64)
 
@@ -46,7 +46,8 @@ Artifact:
 [`2026-08-17-windows-pi.json`](../testing/results/agent-probes/2026-08-17-windows-pi.json)
 
 Same pin `0.73.1`, same tree and first-line keys as macOS after a real
-`pi -p` session. Path slugs collapsed to `<slug>`. Still T0: no reader.
+`pi -p` session. Path slugs collapsed to `<slug>`. Promoted to T1 on
+2026-08-19; resume and fork stay refused.
 
 ## Family: F1, not F2
 

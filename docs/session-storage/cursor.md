@@ -1,9 +1,9 @@
 # Cursor CLI
 
-**Confidence: CLI chats documented on macOS and native Windows** — SQLite
-`store.db` plus `meta.json` under `~/.cursor/chats/<32-hex>/<uuid-v4>/`.
-Editor `projects/` is excluded. No reader. **Current tier:** T0
-(`layout_unverified`) · **Phase 5 target:** T1
+**Confidence: CLI chats documented on macOS and native Windows** —
+`meta.json` under `~/.cursor/chats/<32-hex>/<uuid-v4>/`. Editor `projects/`
+is excluded. T1 index source reads `meta.json` only; `store.db` is not
+parsed. **Current tier:** T1 (discover) · **Phase 5 target:** T2
 
 Catalog key `cursor` is **Cursor CLI**, the terminal agent. Descriptor:
 `internal/agents/catalog/cursor.go`. This page is not the in-editor Cursor
@@ -79,8 +79,9 @@ already had the same tree. Shape on both:
   store.db      SQLite (F3)
 ```
 
-`cursor-agent --version` is `2026.08.11-e8db854` on both. Still T0: no
-reader. Do not walk `projects/agent-transcripts`.
+`cursor-agent --version` is `2026.08.11-e8db854` on both. Promoted to T1
+on 2026-08-19 from `meta.json`. `store.db` is not parsed. Do not walk
+`projects/agent-transcripts`. Resume and fork stay refused.
 
 ## Why T0 is `layout_unverified`
 
@@ -96,9 +97,9 @@ T-030 cannot produce the evidence T1 requires.
 | native Windows AGENT-PROBE-V1 | [`2026-08-17-windows-cursor.json`](../testing/results/agent-probes/2026-08-17-windows-cursor.json) |
 | Real `~/.cursor` tree | **not listed** (no real transcripts) |
 
-T1 is forbidden without both a macOS probe and a native Windows probe. The
-descriptor therefore stays at T0 with `t0_reason=layout_unverified`. That is
-the complete T-030 result. Do not invent a reader.
+T1 required both a macOS probe and a native Windows probe. Those artifacts
+now exist; the descriptor moved to T1 on 2026-08-19 by indexing `meta.json`.
+Do not invent a `store.db` reader from this page.
 
 `unidentified_product` is the wrong reason: the official CLI is identified.
 `desktop_only` is the wrong reason: a terminal CLI exists. `server_backed`

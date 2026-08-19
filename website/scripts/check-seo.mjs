@@ -30,10 +30,11 @@ const UNSUPPORTED_AGENTS = [
   ['Zed AI', /\bzed\s+ai\b/i],
 ];
 
-// T2 catalog agents may be named on their own integration route only.
+// Catalog agents on this denylist may be named on their own integration route only.
 const T2_METADATA_ROUTES = new Map([
   ['Gemini CLI', '/integrations/gemini'],
   ['OpenCode', '/integrations/opencode'],
+  ['Cursor', '/integrations/cursor'],
 ]);
 
 function agentAllowedOnRoute(name, route) {

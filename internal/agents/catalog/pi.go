@@ -4,6 +4,7 @@ import (
 	"regexp"
 
 	"github.com/HarjjotSinghh/reinstate/internal/agents"
+	pisrc "github.com/HarjjotSinghh/reinstate/internal/agents/sources/pi"
 )
 
 func init() { agents.MustRegister(Pi()) }
@@ -11,18 +12,22 @@ func init() { agents.MustRegister(Pi()) }
 // Latest stable @mariozechner/pi-coding-agent as of 2026-08-16.
 var piVersionPattern = regexp.MustCompile(`^((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))$`)
 
-// Pi is the Pi coding agent descriptor. Dual-platform AGENT-PROBE-V1 exists
-// (2026-08-17 macOS and native Windows). It stays at T0 until a reader exists.
-// Vendor docs describe an F1 JSONL tree; they are not a tier promotion.
+// Pi is the Pi coding agent descriptor (T1, discover).
+//
+// Promoted on 2026-08-19 from dual-platform AGENT-PROBE-V1. Both platforms
+// write JSONL under ~/.pi/agent/sessions/<slug>/<slug>-<uuid-v4>.jsonl with
+// matching first-line keys. The fail-closed version pin stays 0.73.1; that
+// is identity, not a T3 resume claim.
+//
+// T1 only. Sessions are indexed and searchable; resume and fork stay refused.
 func Pi() agents.Descriptor {
 	return agents.Descriptor{
 		Key:         "pi",
 		DisplayName: "Pi",
 		Vendor:      "earendil-works",
 		DocsURL:     "https://pi.dev/",
-		Tier:        agents.TierKnown,
+		Tier:        agents.TierDiscover,
 		Family:      agents.FamilyHomeTree,
-		T0Reason:    agents.T0LayoutUnverified,
 		Storage: agents.StorageSpec{
 			RootEnv: "PI_CODING_AGENT_DIR",
 			Roots: func(home agents.HomeDir) []agents.Root {
@@ -30,9 +35,9 @@ func Pi() agents.Descriptor {
 			},
 			Marker:      "sessions",
 			Layout:      "sessions-cwd-slug-jsonl",
-			SessionGlob: "sessions/**/*.jsonl",
+			SessionGlob: pisrc.SessionGlob,
 			ProjectKey:  agents.ProjectKeyPathSlug,
-			Excluded:    piExcluded,
+			Excluded:    pisrc.Excluded,
 		},
 		Version: &agents.VersionSpec{
 			Args:  []string{"--version"},
@@ -47,26 +52,19 @@ func Pi() agents.Descriptor {
 				{Name: "AI_AGENT", Value: "pi"},
 			},
 		},
+		NewIndexSource: pisrc.New,
 		Evidence: agents.Evidence{
 			StoragePage: "docs/session-storage/pi.md",
+			ProbeReports: []string{
+				"docs/testing/results/agent-probes/2026-08-17-macos-pi.json",
+				"docs/testing/results/agent-probes/2026-08-17-windows-pi.json",
+			},
+			Fixtures: []string{
+				"testdata/sessionindex/pi/macos",
+				"testdata/sessionindex/pi/windows",
+			},
 		},
 	}
-}
-
-// piExcluded keeps credentials, caches, packages, and HTML exports out of
-// any future walk. PI_CODING_AGENT_SESSION_DIR is a separate override; it is
-// not RootEnv because the default session tree lives under the config root.
-var piExcluded = []string{
-	"auth.json",
-	"**/auth.json",
-	"npm",
-	"git",
-	"extensions",
-	"skills",
-	"prompts",
-	"themes",
-	"models-store.json",
-	"**/*.html",
 }
 
 func parsePiVersion(output agents.VersionOutput) (string, bool) {
