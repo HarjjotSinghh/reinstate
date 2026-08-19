@@ -34,8 +34,8 @@ func TestAiderStaysT0LayoutUnverified(t *testing.T) {
 	if d.Storage.ProjectKey != agents.ProjectKeyNone {
 		t.Fatalf("ProjectKey = %q, want none (one file per repo)", d.Storage.ProjectKey)
 	}
-	if len(d.Evidence.ProbeReports) != 1 {
-		t.Fatalf("ProbeReports = %v, want the macOS artifact only", d.Evidence.ProbeReports)
+	if len(d.Evidence.ProbeReports) != 2 {
+		t.Fatalf("ProbeReports = %v, want macOS and Windows PATH artifacts", d.Evidence.ProbeReports)
 	}
 	if len(d.Evidence.Fixtures) != 0 || len(d.Evidence.DeviceReports) != 0 {
 		t.Fatal("T0 F4 descriptor must not cite fixtures or device reports")

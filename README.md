@@ -334,6 +334,7 @@ yes-or-no list.
 | [Pi](https://pi.dev/) | T1 | ✅ read-only | — | — | — | — |
 | [Cursor CLI](https://cursor.com/docs/cli/overview) | T1 | read-only | — | — | — | — |
 | [GitHub Copilot CLI](https://docs.github.com/en/copilot/concepts/agents/copilot-cli/about-copilot-cli) | T1 | read-only | — | — | — | — |
+| [Cline](https://docs.cline.bot/) | T1 | ✅ read-only | — | — | — | — |
 
 Structured handoff in stable `v0.4.0` starts a new destination session.
 Native resume/fork and encrypted sync remain same-vendor.

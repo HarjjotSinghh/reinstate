@@ -1,7 +1,9 @@
 # Cline
 
-**Confidence: Documented on macOS; Unverified on native Windows.**
-**Current tier:** T0 (`layout_unverified`) · **Phase 5 target:** T1
+**Confidence: Documented on macOS and native Windows.** T1 index source
+reads `sessions/<slug>/<slug>.json`. **Current tier:** T1 (discover) ·
+**Phase 5 target:** T2. Resume and fork stay refused. `db/sessions.db`
+and `*.messages.json` are not parsed.
 
 Catalog key is `cline`. Descriptor: `internal/agents/catalog/cline.go`.
 
@@ -47,12 +49,20 @@ Pretty-printed JSON: the probe's first-line sampler recorded no keys
 (`{` is not a JSON object). A key-only inspection of the session file
 saw `cwd`, `session_id`, `workspace_root`, `prompt`, `started_at`,
 `status`, `messages_path`. `cline history --json` listed that session.
-That is an F2 candidate, not a shipped read API. Native Windows is
-absent, so the row stays T0.
+That is an F2 candidate, not a shipped read API.
 
-## Why T0 is `layout_unverified`
+## Device evidence (2026-08-19, native Windows amd64)
 
-macOS now has a live tree. Native Windows does not. T1 requires both.
+Artifact:
+[`2026-08-19-windows-cline.json`](../testing/results/agent-probes/2026-08-19-windows-cline.json)
+
+Same `cline` 3.0.55, same tree under `%USERPROFILE%\.cline\data`, same
+session JSON files, same `cline history --json` list. Promoted to T1
+on 2026-08-19. Resume and fork stay refused.
+
+## Why the row was T0
+
+Before the Windows probe, only macOS had a live tree. T1 requires both.
 
 ## Claimed layout (all Unverified)
 

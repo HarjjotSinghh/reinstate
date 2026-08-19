@@ -12,8 +12,20 @@ catalog and `rein doctor --agents` (including `--json` / `--acceptance-matrix`).
 **No new handoff destinations and no new synced agents** — Claude Code and
 Codex CLI remain the only T4/T5 surfaces. Gemini CLI, OpenCode, and Grok
 Build stay T2 handoff sources. **Kimi Code CLI, Qwen Code, Pi, Cursor CLI,
-and GitHub Copilot CLI are T1** (index and search only; resume and fork
-stay refused). Every other new catalog agent is T0 with a recorded reason.
+GitHub Copilot CLI, and Cline are T1** (index and search only; resume and
+fork stay refused). Every other new catalog agent is T0 with a recorded reason.
+
+### Cline at T1
+
+Promoted on 2026-08-19 when a native Windows probe joined the macOS one.
+Both platforms write `~/.cline/data/sessions/<slug>/<slug>.json` after
+`cline` 3.0.55. `rein sessions --agent cline` lists and searches them.
+Resume and fork stay refused. `db/sessions.db` and `*.messages.json` are
+not parsed. `cline history --json` listed the session on both platforms
+and stays an F2 candidate, not a shipped read API.
+
+Aider gained a macOS probe and a Windows install-path probe; it stays T0
+(F4, no home root, no index source).
 
 ### Cline and Aider macOS probes
 
@@ -63,7 +75,7 @@ refused: no device journey has run `kimi -r <id>` against a real session.
 
 ### Added
 
-- F1 index sources for Qwen Code, Pi, Cursor CLI, and GitHub Copilot CLI (`internal/agents/sources/{qwen,pi,cursor,copilot}`) with dual-platform synthetic fixtures.
+- F1 index sources for Qwen Code, Pi, Cursor CLI, GitHub Copilot CLI, and Cline (`internal/agents/sources/{qwen,pi,cursor,copilot,cline}`) with dual-platform synthetic fixtures.
 - `rein doctor --agents` inventory, `--agents --json` (`AGENT-PROBE-V1`), and `--agents --acceptance-matrix`.
 - [ADR 0004](docs/adr/0004-universal-agent-coverage.md): universal agent
   coverage, the T0–T5 support-tier ladder, and a single `internal/agents`

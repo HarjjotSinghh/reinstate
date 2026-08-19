@@ -34,6 +34,7 @@ const (
 	AgentPi       = "pi"
 	AgentCursor   = "cursor"
 	AgentCopilot  = "copilot"
+	AgentCline    = "cline"
 )
 
 // KimiReadOnlyReason is the source-only contract for Kimi Code CLI. Native
@@ -52,6 +53,9 @@ const CursorReadOnlyReason = "Cursor CLI sessions are read-only until a device j
 
 // CopilotReadOnlyReason is the T1 contract for GitHub Copilot CLI.
 const CopilotReadOnlyReason = "GitHub Copilot CLI sessions are read-only until a device journey verifies native resume"
+
+// ClineReadOnlyReason is the T1 contract for Cline.
+const ClineReadOnlyReason = "Cline sessions are read-only until a device journey verifies native resume"
 
 var (
 	// ErrNotFound means a session reference did not resolve.

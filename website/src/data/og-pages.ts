@@ -145,6 +145,13 @@ export const staticOgPages: OgPage[] = [
       'Read-only GitHub Copilot CLI discovery, search, and inspect. Native resume, handoff, and encrypted sync are not supported.',
   },
   {
+    route: '/integrations/cline',
+    kind: 'Integration',
+    title: 'Cline is a T1 discover agent',
+    description:
+      'Read-only Cline discovery, search, and inspect. Native resume, handoff, and encrypted sync are not supported.',
+  },
+  {
     route: '/compatibility',
     kind: 'Product facts',
     title: 'Reinstate compatibility',
