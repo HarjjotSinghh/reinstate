@@ -1,9 +1,9 @@
 # Reinstate product-truth register
 
-Last reviewed: 2026-08-16
+Last reviewed: 2026-08-19
 Canonical website source: `website/src/data/product.ts`
-Reviewed release: `v0.4.0` stable after dual-platform tagged-artifact
-acceptance PASS on `v0.4.0-rc.11`
+Reviewed release: `v0.5.0-rc.1` candidate; public installers pin this tag.
+Stable remains `v0.4.0`. Dual-platform tagged-artifact acceptance is pending.
 
 This is the required output of the repository-local
 `reinstate-product-truth` workflow. It separates released facts from roadmap
@@ -29,7 +29,7 @@ marketing claim.
 | Paths | Recognized structural project roots are tokenized and expanded through a canonical project ID; arbitrary prose is not rewritten | `internal/pathmap`, adapter tests, configuration docs |
 | License | Apache-2.0 | `LICENSE`, `product.ts` |
 | Account requirement | The CLI does not require a Reinstate account | released architecture and `product.ts` |
-| Current release | `v0.4.0` stable after dual-platform tagged-artifact acceptance PASS | changelog, release history, compatibility data |
+| Current release | `v0.5.0-rc.1` candidate (stable remains `v0.4.0`; dual-platform tagged-artifact acceptance pending) | changelog, release history, compatibility data |
 | Maintainer | Harjot Singh Rana | repository metadata and `product.ts` |
 
 ## Conflicting claims and resolution
