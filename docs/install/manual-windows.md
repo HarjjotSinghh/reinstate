@@ -1,5 +1,13 @@
 # Manual installation — native Windows
 
+Prefer WinGet unless you need a specific version or an audited manual path:
+
+```powershell
+winget install HarjjotSinghRana.Reinstate
+```
+
+The rest of this page covers the manual, checksum-verified path.
+
 Use PowerShell. Replace `<VERSION>` with an exact tag and
 `<VERSION_NO_V>` with the version without `v`.
 

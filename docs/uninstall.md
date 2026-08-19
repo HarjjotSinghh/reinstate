@@ -6,6 +6,12 @@ Remove only the binary or symlink you installed:
 - Windows: `%LOCALAPPDATA%\Programs\Reinstate\bin\reinstate.exe` and
   `%LOCALAPPDATA%\Programs\Reinstate\bin\rein.exe`
 
+If you installed through WinGet, remove it with the package manager instead:
+
+```powershell
+winget uninstall HarjjotSinghRana.Reinstate
+```
+
 Reinstate data is intentionally separate:
 
 - macOS/Linux/WSL: `~/.reinstate`

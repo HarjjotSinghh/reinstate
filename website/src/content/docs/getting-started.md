@@ -33,6 +33,18 @@ Native Windows PowerShell:
 irm https://reinstate.dev/install.ps1 | iex
 ```
 
+Windows Package Manager (WinGet):
+
+```powershell
+winget install HarjjotSinghRana.Reinstate
+```
+
+WinGet installs the published Windows archive as a portable package, registers
+both `rein` and `reinstate`, and needs no elevation. Use
+`winget upgrade HarjjotSinghRana.Reinstate` to update. The manifest tracks
+published stable releases and can lag a new tag while the community repository
+validates the submission; use the PowerShell bootstrap for an exact version.
+
 Both bootstraps pin `v0.1.0-rc.5`, verify the exact tagged canonical installer,
 verify the downloaded release binary, install without elevation, configure a
 user-local PATH, and print the next command. They do not launch interactive

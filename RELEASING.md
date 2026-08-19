@@ -63,7 +63,33 @@ Before publishing the draft:
 4. Confirm archive contents include binary, license, notice, README, and changelog.
 5. Mark prerelease tags as pre-release; publish stable only after every release gate.
 
-### 4. Announce (optional)
+### 4. Submit the WinGet manifest (stable releases only)
+
+Every stable version needs its own pull request against
+[microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs); WinGet has no
+auto-following of GitHub Releases. Skip prereleases.
+
+```powershell
+wingetcreate update HarjjotSinghRana.Reinstate `
+  --version <VERSION_NO_V> `
+  --urls https://github.com/HarjjotSinghh/reinstate/releases/download/v<VERSION_NO_V>/reinstate_<VERSION_NO_V>_windows_amd64.zip `
+  --submit
+```
+
+Notes:
+
+- `InstallerType: zip` with `NestedInstallerType: portable` is correct and
+  intentional; the archive carries `rein.exe` and `reinstate.exe`. Automated
+  reviewers sometimes question the extension. Confirm and move on.
+- The Microsoft CLA bot requires one comment on the first PR from an account:
+  `@microsoft-github-policy-service agree`.
+- The PR description checklist is a template and does not gate merge. The
+  gating labels are `Azure-Pipeline-Passed`, `Validation-Completed`, and
+  `Moderator-Approved`.
+- Only publish a version to WinGet after the GitHub Release is published and
+  the assets are final. Manifests are immutable once merged.
+
+### 5. Announce (optional)
 
 - GitHub Discussions "Show and tell" / announcements
 - X/Twitter [@HarjjotSinghh](https://x.com/HarjjotSinghh)

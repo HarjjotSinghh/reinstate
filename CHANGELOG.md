@@ -7,8 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Document Windows Package Manager (WinGet) as a supported installation method
+  (`winget install HarjjotSinghRana.Reinstate`) in the README, getting-started
+  guide, manual Windows page, website docs, and uninstall page.
+- Add a release step for submitting each stable version's WinGet manifest to
+  microsoft/winget-pkgs.
+
 ### Changed
 
+- Rewrite the README above the fold: brew-first install, five badges, sample
+  `rein sessions` output, and a dedicated Release status section pinned to
+  `v0.4.0-rc.10`. Move installer timeouts, lock files, and
+  `--allow-environment-warning` into the getting-started guide. Remove the
+  retired Go Report Card badge and the Project activity section.
 - Promote cross-agent continuation to a core Phase 4 capability, with Claude
   Code ↔ Codex quota/outage rollover as the first acceptance path and Gemini
   CLI/OpenCode following.

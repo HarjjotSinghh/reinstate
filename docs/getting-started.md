@@ -1,32 +1,44 @@
 # Getting Started
 
-Reinstate synchronizes Claude Code and Codex CLI sessions across your machines
-through client-side encrypted, user-owned object storage.
+Reinstate finds, searches, resumes, and hands off local coding-agent sessions
+without configuration. Optional encrypted sync then moves Claude Code and Codex
+CLI sessions across machines through user-owned object storage.
 
-> **Cross-agent status:** this release does not open a Claude Code session
-> inside Codex or vice versa. That quota-switch workflow is a core Phase 4
-> feature built as an explicit continuity-capsule handoff into a new linked
-> destination session. See
-> [cross-agent continuation](cross-agent-continuation.md).
-
-> **Release status:** the public installers currently pin
-> `v0.1.0-rc.5`. It is a release candidate until the native Mac/Windows
-> [Phase 1 acceptance runbook](testing/phase-1-mac-windows-acceptance.md) passes.
+> **Release status:** Homebrew and WinGet track stable `v0.3.0`. Public
+> bootstraps pin candidate `v0.4.0-rc.10`, which adds structured handoffs.
+> Dual-platform tagged-artifact acceptance for the candidate is pending. Intel
+> macOS and Linux/WSL2 remain preview
+> ([#97](https://github.com/HarjjotSinghh/reinstate/issues/97),
+> [#98](https://github.com/HarjjotSinghh/reinstate/issues/98)).
 
 ## Prerequisites
 
+For local index, search, and resume:
+
 - macOS, native 64-bit Windows, Linux, or WSL2
 - Claude Code and/or Codex CLI
+
+For optional encrypted multi-device sync, also provide:
+
 - an S3-compatible bucket you control
 - the endpoint, bucket name, access-key ID, and secret access key
 - one long encryption passphrase that you can enter privately on every device
 
-Cloudflare R2 is the recommended Phase 1 backend. Reinstate does not need your
-Anthropic or OpenAI account credentials.
+Cloudflare R2 is the recommended sync backend. Local indexing does not need a
+backend, and Reinstate never needs your Anthropic or OpenAI account credentials.
 
 ## Install
 
-### macOS, Linux, or WSL2
+### Homebrew on Apple Silicon macOS (stable `v0.3.0`)
+
+```sh
+brew install HarjjotSinghh/tap/reinstate
+```
+
+The tap formula tracks stable `v0.3.0`. Intel macOS and Linuxbrew remain
+preview for this release.
+
+### Candidate `v0.4.0-rc.10` on macOS, Linux, or WSL2
 
 ```sh
 curl -fsSL https://reinstate.dev/install.sh | sh
@@ -36,7 +48,7 @@ The default installation directory is `~/.local/bin`. The bootstrap prints an
 absolute `rein init` command that works immediately and adds the directory to
 the appropriate shell startup file for new terminals.
 
-### Native Windows PowerShell
+### Candidate `v0.4.0-rc.10` on native Windows PowerShell
 
 ```powershell
 irm https://reinstate.dev/install.ps1 | iex
@@ -46,16 +58,35 @@ The default installation directory is
 `%LOCALAPPDATA%\Programs\Reinstate\bin`. The bootstrap adds it to the user PATH
 and the current PowerShell process.
 
+### Windows Package Manager (WinGet)
+
+```powershell
+winget install HarjjotSinghRana.Reinstate
+```
+
+WinGet installs the published Windows archive as a portable package and
+registers both `rein` and `reinstate` command aliases. It does not require
+elevation. Upgrade and removal use the same package identifier:
+
+```powershell
+winget upgrade HarjjotSinghRana.Reinstate
+winget uninstall HarjjotSinghRana.Reinstate
+```
+
+The WinGet manifest tracks published stable releases and can lag a new tag by a
+day or two while the community repository validates the submission. Use the
+PowerShell bootstrap when you need an exact version immediately.
+
 Both public bootstraps:
 
-1. pin `v0.1.0-rc.5`;
+1. pin `v0.4.0-rc.10`;
 2. download the canonical installer from that exact signed Git tag;
 3. verify the canonical installer SHA-256;
 4. download only the matching GitHub Release asset and `checksums.txt`;
 5. verify the binary checksum and reported version; and
 6. preserve an existing different version until you approve replacement.
 
-The RC5 POSIX installer bounds replacement prompts to 30 seconds.
+The POSIX installer bounds replacement prompts to 30 seconds.
 `REINSTATE_CONFIRM_TIMEOUT_SECONDS` may be set to an
 integer from 1 through 300. It refuses immediately when the active shell cannot
 perform a timed TTY read. Timeout, unsupported-shell, and invalid-value paths
@@ -88,12 +119,44 @@ Get-Content $Installer
 
 ```sh
 rein version --json
+rein sessions --json
 rein setup check
 ```
 
-Before `init`, `setup check` should identify only that the Reinstate config is
-missing. Platform, keyring, or installed-agent compatibility failures need to
-be resolved before synchronization.
+`rein sessions --json` is configless and refreshes the local derived index.
+Before `init`, `setup check` should identify only that the sync config is
+missing. That is expected for local-only use.
+
+## Use the local index
+
+No S3/R2 values, credentials, passphrase, or `config.toml` are required:
+
+```sh
+rein sessions
+rein search "stripe webhook retry"
+rein inspect claude:SESSION_ID
+rein last --dry-run
+rein resume claude:SESSION_ID --dry-run
+```
+
+The derived index lives at `$REINSTATE_HOME/cache/session-index-v2.sqlite`,
+with owner-only sibling `.lock` and `.write.lock` files. None enters encrypted
+sync.
+
+A first launch may warn with `baseline.unavailable`. Review the report, then
+confirm on a TTY or acknowledge every current warning in automation:
+
+```sh
+rein resume claude:SESSION_ID \
+  --allow-environment-warning baseline.unavailable
+```
+
+Acknowledgements apply only to that invocation. Missing workspaces,
+unrecognized agent versions, known repository replacement, and verifier
+failures cannot be bypassed.
+
+On a TTY, bare `rein` opens the numbered switcher. For scripts, use
+`rein sessions --json`.
 
 ## Configure the first device
 
