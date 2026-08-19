@@ -1,0 +1,2 @@
+{"data":{"content":"Map the Windows dest argv","cwd":"C:\\Users\\fixture-user\\code\\demo"},"id":"evt-win-1","parentId":null,"timestamp":"2026-08-17T11:00:00.000Z","type":"user"}
+{"data":{"content":"Checking pathmap."},"id":"evt-win-2","parentId":"evt-win-1","timestamp":"2026-08-17T11:00:03.000Z","type":"assistant"}

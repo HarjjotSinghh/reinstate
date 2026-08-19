@@ -11,9 +11,18 @@ T0-heavy Phase 5 catalog RC plus a follow-on T1 promotion. Ships the agent
 catalog and `rein doctor --agents` (including `--json` / `--acceptance-matrix`).
 **No new handoff destinations and no new synced agents** — Claude Code and
 Codex CLI remain the only T4/T5 surfaces. Gemini CLI, OpenCode, and Grok
-Build stay T2 handoff sources. **Kimi Code CLI, Qwen Code, Pi, and Cursor
-CLI are T1** (index and search only; resume and fork stay refused). Every
-other new catalog agent is T0 with a recorded reason.
+Build stay T2 handoff sources. **Kimi Code CLI, Qwen Code, Pi, Cursor CLI,
+and GitHub Copilot CLI are T1** (index and search only; resume and fork
+stay refused). Every other new catalog agent is T0 with a recorded reason.
+
+### GitHub Copilot CLI at T1
+
+Promoted on 2026-08-19 from committed dual-platform AGENT-PROBE-V1 artifacts.
+`rein sessions --agent copilot` lists and searches
+`~/.copilot/session-state/<uuid>/events.jsonl`. Resume and fork stay
+refused. Windows `session-store.db` / `session.db` are not parsed. A
+rename-aside probe showed an old session ID did not return, so this is a
+local file tree.
 
 ### Qwen Code, Pi, and Cursor CLI at T1
 
@@ -43,7 +52,7 @@ refused: no device journey has run `kimi -r <id>` against a real session.
 
 ### Added
 
-- F1 index sources for Qwen Code, Pi, and Cursor CLI (`internal/agents/sources/{qwen,pi,cursor}`) with dual-platform synthetic fixtures.
+- F1 index sources for Qwen Code, Pi, Cursor CLI, and GitHub Copilot CLI (`internal/agents/sources/{qwen,pi,cursor,copilot}`) with dual-platform synthetic fixtures.
 - `rein doctor --agents` inventory, `--agents --json` (`AGENT-PROBE-V1`), and `--agents --acceptance-matrix`.
 - [ADR 0004](docs/adr/0004-universal-agent-coverage.md): universal agent
   coverage, the T0–T5 support-tier ladder, and a single `internal/agents`

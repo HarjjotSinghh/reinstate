@@ -35,6 +35,7 @@ const T2_METADATA_ROUTES = new Map([
   ['Gemini CLI', '/integrations/gemini'],
   ['OpenCode', '/integrations/opencode'],
   ['Cursor', '/integrations/cursor'],
+  ['GitHub Copilot', '/integrations/copilot'],
 ]);
 
 function agentAllowedOnRoute(name, route) {

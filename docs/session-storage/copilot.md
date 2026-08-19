@@ -1,10 +1,10 @@
 # GitHub Copilot CLI
 
-**Confidence: Layout documented on macOS and native Windows** — catalog
-descriptor exists; no index source, no reader. A rename-aside probe showed
-an old session ID did not return in the fresh tree.
-**Current tier:** T0 (`layout_unverified`) · **Phase 5 target:** T1 once a
-reader exists. The rename-aside probe did not restore the old session ID.
+**Confidence: Layout documented on macOS and native Windows** — T1 index
+source reads `session-state/<uuid>/events.jsonl`. A rename-aside probe
+showed an old session ID did not return in the fresh tree.
+**Current tier:** T1 (discover) · **Phase 5 target:** T2. Resume and fork
+stay refused. `session-store.db` / `session.db` are not parsed.
 
 Catalog key remains `copilot`. Descriptor:
 `internal/agents/catalog/copilot.go`. This page is GitHub Copilot CLI only —
@@ -96,8 +96,9 @@ stays as documented, with this contradiction recorded against it.
 `~/.copilot` tree was renamed aside and a new CLI session was started. The
 previous `session-state/<uuid-v4>` directory was **absent** from the fresh
 tree and **present** in the renamed copy. GitHub did not recreate that ID.
-That is local files, not a rebuild-from-account of the same session. Still
-T0: no reader. Do not index yet.
+That is local files, not a rebuild-from-account of the same session.
+Promoted to T1 on 2026-08-19 by indexing `events.jsonl`. Do not parse
+`session.db` or `session-store.db`. Resume and fork stay refused.
 
 Artifact:
 [`2026-08-17-windows-copilot-cache-clear.json`](../testing/results/agent-probes/2026-08-17-windows-copilot-cache-clear.json)

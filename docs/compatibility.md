@@ -34,7 +34,7 @@ The Phase 2 local capability matrix is:
 | Amp | Not readable locally (`server_backed`) | Not implemented | Not applicable | T0 |
 | ZCode | Not implemented (`desktop_only`) | Not implemented | Not applicable | T0 |
 | OpenHands | Not implemented | Not implemented | Not applicable | T0 |
-| GitHub Copilot CLI | Not implemented | Not implemented | Rename-aside: old session ID did not return; no reader | T0 |
+| GitHub Copilot CLI | Indexed (read-only) | Not implemented | Dual-platform probes committed; indexed from `events.jsonl`; no device journey for resume | T1 |
 | Kimi Code CLI | Indexed (read-only) | Not implemented | Dual-platform probes committed; no device journey for resume | T1 |
 | Pi | Indexed (read-only) | Not implemented | Dual-platform probes committed; no device journey for resume | T1 |
 | Qwen Code | Indexed (read-only) | Not implemented | Dual-platform probes committed; no device journey for resume | T1 |
