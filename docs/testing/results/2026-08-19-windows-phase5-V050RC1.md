@@ -36,7 +36,7 @@ handoff-destination surfaces.
 | Git version | n/a on device PATH this run |
 | Go version/toolchain | not required on device; tagged tests ran on macOS worktree |
 | Report branch | `test/v0.5.0-rc.1-windows-amd64-report` |
-| Device-report commit | `d4922520d5c4255a3929894a5c1afc87bce68a55` |
+| Device-report commit | `ab8a605433b9d671f9dfb1b72b8a7a5abe8313940d5c4255a3929894a5c1afc87bce68a55` |
 | Draft report PR | `<filled after open>` |
 
 Throwaway install dir under `%LOCALAPPDATA%\ReinstateV050RC1Throwaway\bin`.
