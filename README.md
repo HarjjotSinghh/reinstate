@@ -190,7 +190,7 @@ not part of the current CLI. See
 
 ## Quick start
 
-> **Platform boundary:** the public installers pin candidate `v0.5.0-rc.1`.
+> **Platform boundary:** the public installers pin candidate `v0.5.0-rc.2`.
 > Dual-platform tagged-artifact acceptance is pending on Apple Silicon macOS
 > and native Windows x64. Stable remains `v0.4.0`. Intel macOS and Linux/WSL2
 > remain optional and unverified
@@ -247,7 +247,7 @@ Bare `rein` opens the numbered switcher only on a TTY. For scripts use
 `rein sessions --json`; a non-TTY bare invocation exits promptly with that
 hint.
 
-### Install the v0.5.0-rc.1 candidate
+### Install the v0.5.0-rc.2 candidate
 
 macOS, Linux, or WSL2:
 
@@ -261,7 +261,7 @@ Native Windows PowerShell:
 irm https://reinstate.dev/install.ps1 | iex
 ```
 
-Both bootstraps pin and verify `v0.5.0-rc.1`, install without elevation, and
+Both bootstraps pin and verify `v0.5.0-rc.2`, install without elevation, and
 print the next command:
 
 ```bash
@@ -275,7 +275,7 @@ Apple Silicon macOS with Homebrew:
 brew install HarjjotSinghh/tap/reinstate
 ```
 
-The GitHub Release and `reinstate.dev` installers pin `v0.5.0-rc.1`. The Homebrew
+The GitHub Release and `reinstate.dev` installers pin `v0.5.0-rc.2`. The Homebrew
 tap may still list `v0.4.0` until a later stable tag is published. Intel macOS
 and Linuxbrew remain optional and unverified.
 

@@ -1,9 +1,15 @@
 export const releaseHistory = [
   {
+    version: 'v0.5.0-rc.2',
+    date: '2026-08-19',
+    summary:
+      'Second Phase 5 candidate after v0.5.0-rc.1 dual-platform tagged-artifact acceptance FAILED. Projection now pairs tool_result with its tool_call so Codex handoff dry-run capsules validate. Does not authorize stable v0.5.0. Current stable remains v0.4.0.',
+  },
+  {
     version: 'v0.5.0-rc.1',
     date: '2026-08-19',
     summary:
-      'First Phase 5 candidate: agent catalog, doctor --agents, six T1 discover agents, three T2 handoff sources. Dual-platform tagged-artifact acceptance pending. Does not authorize stable v0.5.0. Current stable remains v0.4.0.',
+      'First Phase 5 candidate: agent catalog, doctor --agents, six T1 discover agents, three T2 handoff sources. Dual-platform tagged-artifact acceptance FAILED (macOS 88/150, Windows 93/150). Does not authorize stable v0.5.0. Current stable remains v0.4.0.',
   },
   {
     version: 'v0.4.0',

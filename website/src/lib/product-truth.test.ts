@@ -98,9 +98,9 @@ describe('central product-truth drift guard', () => {
   });
 
   it('keeps the v0.5.0 catalog line from claiming an unpublished tag or extra T5 agents', () => {
-    expect(product.currentRelease).toBe('v0.5.0-rc.1');
+    expect(product.currentRelease).toBe('v0.5.0-rc.2');
     expect(product.stableRelease).toBe('v0.4.0');
-    expect(compatibility.reinstateVersion).toBe('v0.5.0-rc.1');
+    expect(compatibility.reinstateVersion).toBe('v0.5.0-rc.2');
     expect(compatibility.catalogLine).toBe('v0.5.0');
     expect(compatibilityAgents.filter((agent) => agent.tier === 'T5').map((agent) => agent.key)).toEqual(
       ['claude', 'codex'],
