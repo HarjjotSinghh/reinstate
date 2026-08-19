@@ -193,13 +193,14 @@ func readConversation(path string) (conversation, error) {
 		if text == "" {
 			text = sources.ExtractTextContent(item["content"])
 		}
-		if kind == "user" || kind == "human" {
+		switch kind {
+		case "user", "human":
 			out.messages++
 			out.prompts.Add(text)
 			if out.firstPrompt == "" {
 				out.firstPrompt = sessionindex.SafePreview(text)
 			}
-		} else if kind == "assistant" || kind == "ai" {
+		case "assistant", "ai":
 			out.messages++
 		}
 		collectFiles(item, fileSet)

@@ -185,13 +185,14 @@ func readConversation(path string) (conversation, error) {
 		if text == "" {
 			text = sources.FirstString(item, "text")
 		}
-		if kind == "user" || kind == "human" || kind == "message" {
+		switch kind {
+		case "user", "human", "message":
 			out.messages++
 			out.prompts.Add(text)
 			if out.firstPrompt == "" && text != "" {
 				out.firstPrompt = sessionindex.SafePreview(text)
 			}
-		} else if kind == "assistant" || kind == "ai" {
+		case "assistant", "ai":
 			out.messages++
 		}
 		return nil
