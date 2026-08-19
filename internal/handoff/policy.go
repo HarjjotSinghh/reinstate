@@ -31,6 +31,7 @@ const (
 	reasonProjectionTruncated = "projection_truncated"
 	reasonAlreadyReferenced   = "already_referenced"
 	reasonOmittedNotProjected = "omitted_not_projected"
+	reasonUnmatchedToolResult = "unmatched_tool_result"
 )
 
 // Apply selects included events under p and produces sidecar references for the
@@ -68,6 +69,8 @@ func Apply(p Policy, events []capsule.Event) (included []capsule.Event, sidecar 
 		}
 	}
 
+	unmatched := completeToolPairs(events, chosen)
+
 	included = make([]capsule.Event, 0, len(chosen))
 	classified := make([]capsule.Event, 0, len(events))
 	sidecar = make([]capsule.SidecarRef, 0, len(events)-len(chosen))
@@ -79,6 +82,9 @@ func Apply(p Policy, events []capsule.Event) (included []capsule.Event, sidecar 
 			continue
 		}
 		ref := sidecarRefFor(e)
+		if _, drop := unmatched[e.ID]; drop {
+			ref.Reason = reasonUnmatchedToolResult
+		}
 		sidecar = append(sidecar, ref)
 		if e.Portability == capsule.PortabilityOmitted {
 			classified = append(classified, cloneEvent(e))
@@ -122,6 +128,42 @@ func projectionEligible(e capsule.Event) bool {
 	default:
 		return true
 	}
+}
+
+// completeToolPairs keeps every included tool_result paired with its tool_call.
+// A result whose call exists in the source but missed the byte budget is pulled
+// in. A result with no matching call in the source is dropped from the
+// projection (caller sidecars it as unmatched_tool_result) so capsule.Validate
+// does not reject the handoff. Returns the event IDs dropped as unmatched.
+func completeToolPairs(events []capsule.Event, chosen map[int]capsule.Event) map[string]struct{} {
+	unmatched := make(map[string]struct{})
+	callAt := make(map[string]int, len(events))
+	for i, e := range events {
+		if e.Kind == capsule.KindToolCall && e.CallID != "" {
+			callAt[e.CallID] = i
+		}
+	}
+	for i, ev := range chosen {
+		if ev.Kind != capsule.KindToolResult {
+			continue
+		}
+		if ev.LinkedCallID == "" {
+			unmatched[ev.ID] = struct{}{}
+			delete(chosen, i)
+			continue
+		}
+		j, ok := callAt[ev.LinkedCallID]
+		if !ok {
+			unmatched[ev.ID] = struct{}{}
+			delete(chosen, i)
+			continue
+		}
+		if _, have := chosen[j]; have {
+			continue
+		}
+		chosen[j] = cloneEvent(events[j])
+	}
+	return unmatched
 }
 
 func sidecarRefFor(e capsule.Event) capsule.SidecarRef {

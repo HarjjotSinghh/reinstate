@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Structured-handoff projection now keeps a `tool_call` with its `tool_result`
+  when the call would otherwise fall outside the balanced byte budget, and
+  omits a result whose call is absent from the source (reason
+  `unmatched_tool_result`). This unblocks Codex `handoff --dry-run` capsules
+  that `capsule.Validate` previously rejected as unpaired `tool_result`
+  events (`v0.5.0-rc.1` macOS D1).
+
 ## [0.5.0-rc.1] - 2026-08-19
 
 First Phase 5 candidate. Ships the agent catalog and `rein doctor --agents`
