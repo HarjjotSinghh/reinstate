@@ -7,13 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-T0-heavy Phase 5 catalog RC plus a follow-on T1 promotion. Ships the agent
-catalog and `rein doctor --agents` (including `--json` / `--acceptance-matrix`).
-**No new handoff destinations and no new synced agents** — Claude Code and
-Codex CLI remain the only T4/T5 surfaces. Gemini CLI, OpenCode, and Grok
-Build stay T2 handoff sources. **Kimi Code CLI, Qwen Code, Pi, Cursor CLI,
-GitHub Copilot CLI, and Cline are T1** (index and search only; resume and
-fork stay refused). Every other new catalog agent is T0 with a recorded reason.
+## [0.5.0-rc.1] - 2026-08-19
+
+First Phase 5 candidate. Ships the agent catalog and `rein doctor --agents`
+(including `--json` / `--acceptance-matrix`). **No new handoff destinations
+and no new synced agents** — Claude Code and Codex CLI remain the only T4/T5
+surfaces. Gemini CLI, OpenCode, and Grok Build stay T2 handoff sources.
+**Six new T1 agents:** Kimi Code CLI, Qwen Code, Pi, Cursor CLI, GitHub
+Copilot CLI, and Cline (index and search only; resume and fork stay refused).
+Every other new catalog agent is T0 with a recorded reason. Generated
+acceptance matrix: **150 required rows**. Current stable remains `v0.4.0`.
+This candidate does not authorize stable `v0.5.0`.
 
 ### Cline at T1
 
@@ -1295,7 +1299,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.5.0-rc.1...HEAD
+[0.5.0-rc.1]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0...v0.5.0-rc.1
 [0.4.0]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.11...v0.4.0
 [0.4.0-rc.11]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.10...v0.4.0-rc.11
 [0.4.0-rc.10]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.9...v0.4.0-rc.10
