@@ -6,10 +6,10 @@ func init() { agents.MustRegister(Aider()) }
 
 // Aider is the Aider descriptor.
 //
-// Official product is identified. Vendor docs describe F4 per-repository
-// Markdown history, but dual-platform probes are absent, so the shipped tier
-// is T0 (layout_unverified). There is no index source and no transcript
-// reader. Roots stays nil so doctor --agents does not walk $HOME.
+// Official product is identified. A 2026-08-19 macOS probe saw aider 0.86.2
+// on PATH. Vendor docs describe F4 per-repository Markdown history. Native
+// Windows is still missing, so the shipped tier stays T0. Roots stays nil
+// so doctor --agents does not walk $HOME.
 func Aider() agents.Descriptor {
 	return agents.Descriptor{
 		Key:         "aider",
@@ -29,6 +29,9 @@ func Aider() agents.Descriptor {
 		},
 		Evidence: agents.Evidence{
 			StoragePage: "docs/session-storage/aider.md",
+			ProbeReports: []string{
+				"docs/testing/results/agent-probes/2026-08-19-macos-aider.json",
+			},
 		},
 	}
 }

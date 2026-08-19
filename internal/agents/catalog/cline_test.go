@@ -25,10 +25,13 @@ func TestClineStaysT0WithoutDualProbes(t *testing.T) {
 	if d.Native != nil || d.Version != nil {
 		t.Fatal("T0 descriptor must not claim native resume or a version range")
 	}
-	if d.Storage.Roots != nil {
-		t.Fatal("T0 cline must not declare unverified candidate roots")
+	if d.Storage.Roots == nil || d.Storage.Marker != "sessions" {
+		t.Fatal("macOS probe named ~/.cline/data with marker sessions")
 	}
-	if len(d.Evidence.ProbeReports) != 0 || len(d.Evidence.Fixtures) != 0 || len(d.Evidence.DeviceReports) != 0 {
-		t.Fatal("T0 descriptor must not cite probes, fixtures, or device reports")
+	if len(d.Evidence.ProbeReports) != 1 {
+		t.Fatalf("ProbeReports = %v, want the macOS artifact only", d.Evidence.ProbeReports)
+	}
+	if len(d.Evidence.Fixtures) != 0 || len(d.Evidence.DeviceReports) != 0 {
+		t.Fatal("T0 descriptor must not cite fixtures or device reports")
 	}
 }

@@ -293,16 +293,18 @@
       "minimumTestedVersion": null,
       "maximumTestedVersion": null,
       "resumeMode": "Not usable (T0)",
-      "evidenceLevel": "catalog descriptor only; dual-platform AGENT-PROBE-V1 not committed",
+      "evidenceLevel": "macOS AGENT-PROBE-V1; native Windows missing; no reader",
       "evidence": {
         "storagePage": "docs/session-storage/cline.md",
         "fixtures": [],
         "deviceReports": [],
-        "probeReports": []
+        "probeReports": [
+          "docs/testing/results/agent-probes/2026-08-19-macos-cline.json"
+        ]
       },
-      "lastTested": null,
+      "lastTested": "2026-08-19",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/cline.md",
-      "notes": "T0 Known. Dual-platform AGENT-PROBE-V1 not committed. Not an integration."
+      "notes": "T0 Known. macOS probe committed; native Windows missing. Not an integration."
     },
     {
       "id": "roo",
@@ -341,16 +343,18 @@
       "minimumTestedVersion": null,
       "maximumTestedVersion": null,
       "resumeMode": "Not usable (T0)",
-      "evidenceLevel": "catalog descriptor only; dual-platform AGENT-PROBE-V1 not committed",
+      "evidenceLevel": "macOS AGENT-PROBE-V1 (PATH + version); F4 no home root; native Windows missing",
       "evidence": {
         "storagePage": "docs/session-storage/aider.md",
         "fixtures": [],
         "deviceReports": [],
-        "probeReports": []
+        "probeReports": [
+          "docs/testing/results/agent-probes/2026-08-19-macos-aider.json"
+        ]
       },
-      "lastTested": null,
+      "lastTested": "2026-08-19",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/aider.md",
-      "notes": "T0 Known. Dual-platform AGENT-PROBE-V1 not committed. Not an integration."
+      "notes": "T0 Known. macOS probe committed; native Windows missing. Not an integration."
     },
     {
       "id": "copilot",

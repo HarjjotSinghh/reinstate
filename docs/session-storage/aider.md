@@ -1,8 +1,8 @@
 # Aider
 
-**Confidence: Unverified** — official product identified; no device probe;
-no Reinstate reader. Vendor documentation is not a tier promotion.
-**Current tier:** T0 (`layout_unverified`) · **Phase 5 target:** T1
+**Confidence: Binary documented on macOS; Unverified on native Windows.**
+No home-root tree. **Current tier:** T0 (`layout_unverified`) · **Phase 5
+target:** T1
 
 Catalog key is `aider`. Aider is the roster's only F4 agent: published
 history files live **inside the repository**, not under a home root.
@@ -30,20 +30,21 @@ walk the filesystem looking for `.aider.*`. Do not promote T2.
 | Distribution | Official, open source | FAQ |
 | Storage family | F4 (per-repository files) expected | Options "History Files"; unverified on disk |
 
-## Executor finding (2026-08-16)
+## Device evidence (2026-08-19, macOS arm64)
 
-T-033 could not produce the evidence T1 requires.
+Artifact:
+[`2026-08-19-macos-aider.json`](../testing/results/agent-probes/2026-08-19-macos-aider.json)
 
 | Check | Result |
 | ----- | ------ |
-| `aider` on PATH | not installed |
-| macOS AGENT-PROBE-V1 | **absent** |
-| native Windows AGENT-PROBE-V1 | **absent** (no native Windows host) |
-| Known-project discovery | not run — no T1 scanner |
-| Filesystem hunt for `.aider.*` | **not done** (forbidden) |
+| `aider` on PATH | yes — Homebrew `aider` 0.86.2 |
+| macOS AGENT-PROBE-V1 | this artifact (executable + version only) |
+| native Windows AGENT-PROBE-V1 | **absent** |
+| Home root | none (F4). Probe `candidate_roots` is empty by design |
+| Known-project files after a failed one-shot | `.aider.chat.history.md`, `.aider.input.history` in the repo cwd |
 
-T1 is forbidden without both a macOS probe and a native Windows probe. The
-descriptor stays at T0.
+T1 is still forbidden: no native Windows probe, and no index source.
+The home directory was not walked.
 
 ## Why F4, and why Roots stays empty
 

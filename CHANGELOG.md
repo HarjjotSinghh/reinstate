@@ -15,6 +15,17 @@ Build stay T2 handoff sources. **Kimi Code CLI, Qwen Code, Pi, Cursor CLI,
 and GitHub Copilot CLI are T1** (index and search only; resume and fork
 stay refused). Every other new catalog agent is T0 with a recorded reason.
 
+### Cline and Aider macOS probes
+
+2026-08-19 macOS `AGENT-PROBE-V1` committed for Cline (`cline` 3.0.55) and
+Aider (`aider` 0.86.2). Both stay **T0**: native Windows is still missing.
+
+- Cline: live root `~/.cline/data`, marker `sessions`. `cline history --json`
+  listed the session. Pretty-printed session JSON has no first-line keys
+  in the probe. No index source.
+- Aider: binary on PATH; F4 files stay inside the known project
+  (`.aider.chat.history.md`). No home root.
+
 ### GitHub Copilot CLI at T1
 
 Promoted on 2026-08-19 from committed dual-platform AGENT-PROBE-V1 artifacts.

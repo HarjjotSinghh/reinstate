@@ -6,9 +6,9 @@ func init() { agents.MustRegister(Cline()) }
 
 // Cline is the official Cline product descriptor (T0).
 //
-// The product is identified (editor extension + CLI). Dual-platform probes
-// are absent, so the shipped tier is T0 (layout_unverified). There is no
-// index source, no F3 scanner, and no transcript reader.
+// A 2026-08-19 macOS probe named ~/.cline/data/sessions after cline 3.0.55.
+// Native Windows is still missing, so the shipped tier stays T0. There is
+// no index source and no reader.
 func Cline() agents.Descriptor {
 	return agents.Descriptor{
 		Key:         "cline",
@@ -19,13 +19,23 @@ func Cline() agents.Descriptor {
 		Family:      agents.FamilyEmbeddedDB,
 		T0Reason:    agents.T0LayoutUnverified,
 		Storage: agents.StorageSpec{
-			// Official docs name CLINE_DATA_DIR as the ~/.cline/data/ override.
-			// Roots stay empty until a dual-platform probe names the live store.
-			RootEnv:    "CLINE_DATA_DIR",
-			ProjectKey: agents.ProjectKeyNone,
+			// 2026-08-19 macOS probe: live store is ~/.cline/data, override
+			// CLINE_DATA_DIR / --data-dir. Native Windows is still missing,
+			// so this stays T0.
+			RootEnv: "CLINE_DATA_DIR",
+			Roots: func(home agents.HomeDir) []agents.Root {
+				return []agents.Root{{Path: home.Join(".cline", "data")}}
+			},
+			Marker:      "sessions",
+			SessionGlob: "sessions/*/*.json",
+			Layout:      "sessions-id-json-plus-sqlite-index",
+			ProjectKey:  agents.ProjectKeyNone,
 			Excluded: []string{
-				"data/settings/providers.json",
+				"settings/providers.json",
 				"**/providers.json",
+				"locks",
+				"logs",
+				"cache",
 			},
 		},
 		Process: agents.ProcessSpec{
@@ -34,6 +44,9 @@ func Cline() agents.Descriptor {
 		},
 		Evidence: agents.Evidence{
 			StoragePage: "docs/session-storage/cline.md",
+			ProbeReports: []string{
+				"docs/testing/results/agent-probes/2026-08-19-macos-cline.json",
+			},
 		},
 	}
 }
