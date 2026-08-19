@@ -229,6 +229,22 @@ This authorizes the signed stable `v0.4.0` tag. Intel macOS and Linux/WSL2
 remain optional and unverified. Native resume remains same-vendor. Gemini CLI,
 OpenCode, and Grok Build remain handoff sources only.
 
+### v0.5.0-rc.1 candidate gate
+
+The first Phase 5 candidate. Catalog refactor landed. Probe shipped. Six new
+T1 agents (Kimi, Qwen, Pi, Cursor CLI, Copilot, Cline) and three T2 handoff
+sources (Gemini, OpenCode, Grok). Claude Code and Codex stay the only T4/T5
+surfaces. Gemini is **not** promoted to T3. Generated matrix:
+`rein doctor --agents --acceptance-matrix` reports **150** required rows.
+
+Dispatch:
+[`v0.5.0-rc.1`](docs/testing/v0.5.0-rc.1-agent-verification-prompts.md).
+Contract:
+[Phase 5 acceptance](docs/testing/phase-5-universal-agent-coverage-acceptance.md).
+
+Publication means ready for tagged-artifact acceptance. It does **not**
+authorize stable `v0.5.0`. Current stable remains `v0.4.0`.
+
 ## Steps
 
 ### 1. Prepare the release commit
