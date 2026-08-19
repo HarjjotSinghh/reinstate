@@ -7,9 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0-rc.2] - 2026-08-19
+
+Second Phase 5 candidate after `v0.5.0-rc.1` dual-platform tagged-artifact
+acceptance FAILED (macOS 88/150, Windows 93/150). Structured-handoff
+projection now pairs `tool_result` with its `tool_call` so Codex
+`handoff --dry-run` capsules validate. Claude Code and Codex CLI remain
+the only T4/T5 surfaces. Current stable remains `v0.4.0`. This candidate
+does not authorize stable `v0.5.0`.
+
 ### Fixed
 
-- Structured-handoff projection now keeps a `tool_call` with its `tool_result`
+- Structured-handoff projection keeps a `tool_call` with its `tool_result`
   when the call would otherwise fall outside the balanced byte budget, and
   omits a result whose call is absent from the source (reason
   `unmatched_tool_result`). This unblocks Codex `handoff --dry-run` capsules
@@ -1308,7 +1317,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.5.0-rc.1...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.5.0-rc.2...HEAD
+[0.5.0-rc.2]: https://github.com/HarjjotSinghh/reinstate/compare/v0.5.0-rc.1...v0.5.0-rc.2
 [0.5.0-rc.1]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0...v0.5.0-rc.1
 [0.4.0]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.11...v0.4.0
 [0.4.0-rc.11]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0-rc.10...v0.4.0-rc.11
