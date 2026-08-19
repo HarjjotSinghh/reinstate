@@ -48,6 +48,7 @@ The capability matrix below remains the fail-closed per-surface record.
 | Qwen Code | Read-only (T1) | No | No | No | No | Later |
 | Pi | Read-only (T1) | No | No | No | No | Later |
 | Cursor CLI | Read-only (T1) | No | No | No | No | Exploring |
+| GitHub Copilot CLI | Read-only (T1) | No | No | No | No | Later |
 
 Phase 2 automated gates and the complete tagged-artifact matrix passed on Apple
 Silicon macOS and native Windows x64. Stable `v0.2.0` support is limited to

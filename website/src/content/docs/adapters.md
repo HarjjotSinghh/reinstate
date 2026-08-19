@@ -39,6 +39,7 @@ preview and unverified; check the
 | Adapter | Status |
 | ------- | ------ |
 | Cursor CLI | T1 Discover (read-only) |
+| GitHub Copilot CLI | T1 Discover (read-only) |
 | Qwen Code | T1 Discover (read-only) |
 | Pi | T1 Discover (read-only) |
 | Kimi Code CLI | T1 Discover (read-only) |

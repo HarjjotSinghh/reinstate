@@ -1,0 +1,2 @@
+{"data":{"content":"List the retry budget","cwd":"/Users/fixture-user/code/demo"},"id":"evt-macos-1","parentId":null,"timestamp":"2026-08-17T10:00:00.000Z","type":"user"}
+{"data":{"content":"Opening agentcheck."},"id":"evt-macos-2","parentId":"evt-macos-1","timestamp":"2026-08-17T10:00:02.000Z","type":"assistant"}
