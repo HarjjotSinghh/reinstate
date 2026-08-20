@@ -1,5 +1,11 @@
 export const releaseHistory = [
   {
+    version: 'v0.5.0-rc.3',
+    date: '2026-08-20',
+    summary:
+      'Third Phase 5 candidate. Restores Kimi, Copilot, and OpenCode session discovery after those vendor CLIs changed their on-disk formats, so per-agent project truth is correct again on both platforms. Does not authorize stable v0.5.0. Current stable remains v0.4.0.',
+  },
+  {
     version: 'v0.5.0-rc.2',
     date: '2026-08-19',
     summary:
