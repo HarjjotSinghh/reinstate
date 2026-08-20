@@ -6,7 +6,7 @@ order: 8
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.5.0-rc.2"
+version: "v0.5.0-rc.3"
 updatedAt: 2026-08-16
 tags:
   ["troubleshooting", "session-sync", "path-remapping", "passphrase", "codex"]

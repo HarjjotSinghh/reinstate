@@ -16,6 +16,14 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.5.0-rc.3': {
+    rangeChange:
+      'Unchanged from v0.5.0-rc.2: inclusive Claude Code range 2.1.219-2.1.229. The Codex CLI range is unchanged at 0.133.0-0.147.0.',
+    compatibilityChange:
+      'Third Phase 5 candidate. Restores Kimi, Copilot, and OpenCode session discovery after those vendor CLIs changed their on-disk formats. Claude Code and Codex remain the only T3-T5 surfaces. This candidate does not authorize stable v0.5.0.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.5.0-rc.3/docs/testing/v0.5.0-rc.3-agent-verification-prompts.md',
+  },
   'v0.5.0-rc.2': {
     rangeChange:
       'Unchanged from v0.5.0-rc.1: inclusive Claude Code range 2.1.219–2.1.229. The Codex CLI range is unchanged at 0.133.0–0.147.0.',
