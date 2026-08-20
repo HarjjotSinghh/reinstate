@@ -16,9 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   name was ever exposed, never the contents. macOS did not show it because
   OpenCode was off the default `PATH` there, so its root never resolved
   (`v0.5.0-rc.4` Windows B5).
-
-### Fixed
-
+- The Windows agent-storage probe wrapper emits the artifact it documents.
+  `scripts/testing/agent-storage-probe.ps1` built its argument list inline as
+  `@('doctor','--agents','--json') + $args`, which PowerShell passes to the
+  binary as the array, a literal `+`, and `$args` separately. The wrapper
+  therefore always exited with a usage error and produced nothing, so the
+  documented Windows probe route never worked (`v0.5.0-rc.4` Windows B8).
 - Structured handoff from a Grok source works again. Every Grok session in a
   real repository failed `capsule validate`, so the T2 handoff was unusable.
   Three causes: the reader never applied the path backstop that Claude Code and
@@ -36,18 +39,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A transcript-claimed path outside the workspace is omitted with the reason
   `path_outside_workspace` rather than emitted as an absolute path, matching
   how live changed files were already handled.
-
-### Fixed
-
 - Gemini sessions report the project and workspace they belong to. A chat that
   records only `projectHash` surfaced that bare 64-character digest as its
   project name and carried no workspace, so Matrix C1 could not see distinct
   projects and C2 had nothing to compare. The hash is the SHA-256 of the
   absolute project path and `projects.json` lists those paths, so the two are
   now joined (`v0.5.0-rc.4` macOS C1/C2).
-
-### Fixed
-
 - `rein doctor --agents` honours an agent's documented root environment
   variable. The override was read and reported through `root_env_set`, then
   ignored whenever the real home root existed, so a tester who pointed
@@ -82,7 +79,6 @@ an agent-filtered query scanned every vendor source, and shell completion
 offered no agent keys. Claude Code and Codex CLI remain the only T4/T5
 surfaces. Current stable remains `v0.4.0`. This candidate does not authorize
 stable `v0.5.0`.
-
 
 ### Fixed
 
@@ -838,7 +834,6 @@ again on the published stable tag (`stable_v0.3.0_authorized=true`).
 ### Changed
 
 - Claude Code fail-closed range through `2.1.227`; Codex CLI through `0.147.0`.
-
 
 ## [0.3.0-rc.7] - 2026-08-11
 
