@@ -25,6 +25,7 @@ func OpenCode() agents.Descriptor {
 			Marker:     "storage",
 			Layout:     "cli-session-list-json",
 			ProjectKey: agents.ProjectKeyOpaqueID,
+			Excluded:   opencodesrc.Excluded,
 		},
 		Process: agents.ProcessSpec{
 			Images: []string{"opencode"},
