@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -149,5 +150,48 @@ func TestInspectDoesNotRetryAfterCallerCancellation(t *testing.T) {
 	}
 	if attempts.Load() != 1 {
 		t.Fatalf("attempts after caller cancellation = %d, want 1", attempts.Load())
+	}
+}
+
+// TestOutOfRangeVersionNamesTheRange covers Matrix E4, which requires that a
+// version below the supported minimum and one above the maximum both refuse
+// while naming the range. The refusal used to say only that the version was
+// "outside the verified range", which leaves the user nothing to act on.
+func TestOutOfRangeVersionNamesTheRange(t *testing.T) {
+	t.Parallel()
+	for _, version := range []string{"2.0.0", "9.9.9"} {
+		t.Run(version, func(t *testing.T) {
+			t.Parallel()
+			runner := versionRunnerFunc(func(context.Context, string, ...string) (VersionOutput, error) {
+				return VersionOutput{Stdout: version + " (Claude Code)\n"}, nil
+			})
+			_, opts := installedAgent(t, runner, time.Second)
+			result := Inspect(context.Background(), "claude", opts)
+			if result.Status == StatusSupported {
+				t.Fatalf("version %s was accepted; it is outside the verified range", version)
+			}
+			for _, want := range []string{version, "2.1.219", "2.1.229"} {
+				if !strings.Contains(result.Message, want) {
+					t.Fatalf("message %q does not name %q", result.Message, want)
+				}
+			}
+		})
+	}
+}
+
+// TestVersionRangeRendersOpenBounds keeps an absent bound explicit rather than
+// silently missing from a refusal.
+func TestVersionRangeRendersOpenBounds(t *testing.T) {
+	t.Parallel()
+	tests := []struct{ min, max, want string }{
+		{"1.0.0", "2.0.0", "1.0.0 to 2.0.0 inclusive"},
+		{"1.0.0", "", "1.0.0 and newer"},
+		{"", "2.0.0", "up to and including 2.0.0"},
+		{"", "", "(no verified range is declared)"},
+	}
+	for _, tt := range tests {
+		if got := renderVersionRange(tt.min, tt.max); got != tt.want {
+			t.Fatalf("renderVersionRange(%q, %q) = %q, want %q", tt.min, tt.max, got, tt.want)
+		}
 	}
 }
