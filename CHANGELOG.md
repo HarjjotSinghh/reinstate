@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Structured handoff from a Grok source works again. Every Grok session in a
+  real repository failed `capsule validate`, so the T2 handoff was unusable.
+  Three causes: the reader never applied the path backstop that Claude Code and
+  Codex readers apply, so vendor paths reached the capsule verbatim;
+  transcript-claimed file paths were copied into
+  `task.files_touched_per_transcript` without being made portable; and
+  `task.recent_user_messages` was never bounded, although the adjacent
+  latest-intent field was. All 16 in-repository Grok sessions on the test
+  device now project cleanly (`v0.5.0-rc.4` macOS D1-D5).
+- The block path backstop rewrites paths inside a tool payload carried as JSON
+  text. It applied the single-value rule, which cannot see a path sitting on a
+  field inside the document, while the capsule validator walks the decoded
+  structure and rejected what the backstop had left untouched. This also
+  hardens the Claude Code and Codex readers.
+- A transcript-claimed path outside the workspace is omitted with the reason
+  `path_outside_workspace` rather than emitted as an absolute path, matching
+  how live changed files were already handled.
+
+### Fixed
+
 - Gemini sessions report the project and workspace they belong to. A chat that
   records only `projectHash` surfaced that bare 64-character digest as its
   project name and carried no workspace, so Matrix C1 could not see distinct

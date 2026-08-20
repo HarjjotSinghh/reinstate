@@ -67,6 +67,38 @@ func BindWorkspace(ctx context.Context, v preflight.Verifier, rec sessionindex.R
 	return bound, report, nil
 }
 
+// workspaceRootAndProject resolves the absolute workspace root and canonical
+// project id the capsule is anchored to, using the same fallback order as
+// bindCapsuleWorkspace.
+func workspaceRootAndProject(report preflight.Report, rec sessionindex.Record) (string, string) {
+	abs := strings.TrimSpace(report.Workspace.Git.Root)
+	if abs == "" {
+		abs = strings.TrimSpace(report.Workspace.Workspace.Path)
+	}
+	if abs == "" {
+		abs = strings.TrimSpace(rec.Workspace)
+	}
+	if abs == "" {
+		return "", ""
+	}
+	projectID := strings.TrimSpace(rec.Project)
+	if projectID == "" {
+		projectID = project.OpaqueID(abs)
+	}
+	return abs, projectID
+}
+
+// WorkspaceMapper builds the portable path mapper for a source session. Every
+// path a capsule carries has to pass through it, because a capsule may not
+// contain an absolute filesystem path.
+func WorkspaceMapper(report preflight.Report, rec sessionindex.Record) pathmap.Mapper {
+	abs, projectID := workspaceRootAndProject(report, rec)
+	if abs == "" || projectID == "" {
+		return pathmap.Mapper{}
+	}
+	return pathmap.Mapper{Projects: map[string]string{projectID: abs}}
+}
+
 func bindCapsuleWorkspace(report preflight.Report, rec sessionindex.Record) (capsule.Workspace, error) {
 	abs := strings.TrimSpace(report.Workspace.Git.Root)
 	if abs == "" {
