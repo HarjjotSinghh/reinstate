@@ -58,6 +58,11 @@ func Claude() agents.Descriptor {
 			NodeMarkers: []string{"/@anthropic-ai/claude-code/", "/claude-code/cli.js"},
 		},
 		Evidence: agents.Evidence{
+			StoragePage: "docs/session-storage/claude.md",
+			ProbeReports: []string{
+				"docs/testing/results/agent-probes/2026-08-21-macos-claude.json",
+				"docs/testing/results/agent-probes/2026-08-21-windows-claude.json",
+			},
 			Fixtures: []string{
 				"testdata/sessionindex/claude/macos",
 				"testdata/sessionindex/claude/windows",

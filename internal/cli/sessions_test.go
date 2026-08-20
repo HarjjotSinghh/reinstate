@@ -626,14 +626,15 @@ func TestRunContextPropagatesCancellation(t *testing.T) {
 	}
 }
 
-// TestT0RefusesNativeActionOnTier covers Matrix A7 for T0. A T0 agent has no
-// index source, so resolution failed as an unavailable source and reported
-// exit 1. T1/T2 agents already refuse with exit 5 carrying their record's own
-// read-only reason, which this guard must not preempt.
-func TestT0RefusesNativeActionOnTier(t *testing.T) {
+// TestBelowResumeTierRefusesOnTier covers Matrix A7: resume and fork accept
+// exactly the T3+ keys and refuse every other catalog key with exit 5 and a
+// reason, whether or not the session exists. A T0 agent reported exit 1 from an
+// unavailable source, and a T1/T2 agent reported exit 2 for an unknown id. A
+// resolved record still refuses with its own read-only reason.
+func TestBelowResumeTierRefusesOnTier(t *testing.T) {
 	for _, operation := range []string{"resume", "fork"} {
 		for _, descriptor := range agents.All() {
-			if descriptor.Tier > agents.TierKnown {
+			if descriptor.Tier >= agents.TierResume {
 				continue
 			}
 			key := descriptor.Key

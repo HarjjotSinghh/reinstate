@@ -56,6 +56,11 @@ func Codex() agents.Descriptor {
 			NodeMarkers: []string{"/@openai/codex/"},
 		},
 		Evidence: agents.Evidence{
+			StoragePage: "docs/session-storage/codex.md",
+			ProbeReports: []string{
+				"docs/testing/results/agent-probes/2026-08-21-macos-codex.json",
+				"docs/testing/results/agent-probes/2026-08-21-windows-codex.json",
+			},
 			Fixtures: []string{
 				"testdata/sessionindex/codex/forks",
 				"testdata/adapters/codex/macos",

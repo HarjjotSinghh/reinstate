@@ -64,6 +64,11 @@ func Gemini() agents.Descriptor {
 			Images: []string{"gemini"},
 		},
 		Evidence: agents.Evidence{
+			StoragePage: "docs/session-storage/gemini.md",
+			ProbeReports: []string{
+				"docs/testing/results/agent-probes/2026-08-21-macos-gemini.json",
+				"docs/testing/results/agent-probes/2026-08-21-windows-gemini.json",
+			},
 			Fixtures: []string{
 				"testdata/sessionindex/gemini/macos",
 				"testdata/sessionindex/gemini/windows",

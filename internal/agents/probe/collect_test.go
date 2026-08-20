@@ -470,3 +470,56 @@ func TestProbeOrderingIsTotal(t *testing.T) {
 		t.Fatal("name shapes sharing a path are order-ambiguous")
 	}
 }
+
+// TestRootEnvOutranksHomeCandidate covers the documented precedence: an
+// explicit RootEnv is an instruction, a home-directory hit is a guess. The env
+// branch required resolved == nil, so whenever the real home root existed the
+// override was read, reported through root_env_set, and then ignored — a
+// tester pointing the variable at a sanitized root still had their home tree
+// walked and reported. A resolved but empty root must also keep its empty
+// collections present, or the artifact fails AGENT-PROBE-V1 validation.
+func TestRootEnvOutranksHomeCandidate(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	planted := filepath.Join(home, ".planted-agent", "projects", "demo")
+	if err := os.MkdirAll(planted, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(planted, "a.jsonl"), []byte("{\"k\":1}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	override := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(override, "projects"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	art, err := Collect(context.Background(), agents.Env{
+		Home: home,
+		LookupEnv: func(name string) string {
+			if name == "PLANTED_HOME" {
+				return override
+			}
+			return ""
+		},
+	}, []agents.Descriptor{syntheticDescriptor(home)}, Options{
+		LookPath: func(string) (string, error) { return "", os.ErrNotExist },
+		Now:      func() time.Time { return time.Date(2026, 8, 21, 0, 0, 0, 0, time.UTC) },
+		Version:  "0.5.0-dev",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := Validate(art); err != nil {
+		t.Fatalf("empty override root produced an invalid artifact: %v", err)
+	}
+	got := art.Agents[0]
+	if got.ResolvedRoot == nil || got.ResolvedRoot.RelativeTo != "env" {
+		t.Fatalf("resolved_root = %+v, want the env override to outrank the home candidate", got.ResolvedRoot)
+	}
+	if len(got.Tree) != 1 {
+		t.Fatalf("tree = %d entries, want only the empty override marker directory", len(got.Tree))
+	}
+	if got.NameShapes == nil || got.FirstLineKeys == nil || got.CandidateRoots == nil {
+		t.Fatal("a resolved but empty root must still emit present, empty collections")
+	}
+}

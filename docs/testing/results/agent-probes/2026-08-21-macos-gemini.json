@@ -1,0 +1,148 @@
+{
+  "schema": "AGENT-PROBE-V1",
+  "generated_at": "2026-08-20T19:00:00Z",
+  "platform": {
+    "os": "darwin",
+    "arch": "arm64",
+    "device_class": "macos"
+  },
+  "reinstate_version": "0.0.0-dev",
+  "agents": [
+    {
+      "key": "gemini",
+      "display_name": "Gemini CLI",
+      "declared_tier": "T2",
+      "root_env": "GEMINI_CLI_HOME",
+      "root_env_set": false,
+      "candidate_roots": [
+        {
+          "relative_to": "home",
+          "suffix": ".gemini",
+          "exists": true,
+          "marker_present": true
+        }
+      ],
+      "resolved_root": {
+        "relative_to": "home",
+        "suffix": ".gemini"
+      },
+      "executable_on_path": true,
+      "version_raw": "0.55.1",
+      "tree": [
+        {
+          "path": "*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 792
+        },
+        {
+          "path": "installation_id",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 36
+        },
+        {
+          "path": "projects.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 146
+        },
+        {
+          "path": "settings.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2983
+        },
+        {
+          "path": "settings.json.bak",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2903
+        },
+        {
+          "path": "state.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 77
+        },
+        {
+          "path": "tmp",
+          "kind": "dir",
+          "children": 2
+        },
+        {
+          "path": "tmp/*",
+          "kind": "dir",
+          "children": 4,
+          "sample_count": 2
+        },
+        {
+          "path": "tmp/*/*",
+          "kind": "file",
+          "count": 2,
+          "median_bytes": 57
+        },
+        {
+          "path": "tmp/*/chats",
+          "kind": "dir",
+          "children": 1,
+          "sample_count": 2
+        },
+        {
+          "path": "tmp/*/chats/*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1145
+        },
+        {
+          "path": "tmp/*/logs",
+          "kind": "dir",
+          "sample_count": 2
+        },
+        {
+          "path": "tmp/*/logs.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2
+        },
+        {
+          "path": "trustedFolders.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 44
+        }
+      ],
+      "name_shapes": [
+        {
+          "path": "*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "tmp/*",
+          "shape": "<user>",
+          "samples": 2
+        },
+        {
+          "path": "tmp/*/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "tmp/*/chats/*",
+          "shape": "<slug>.jsonl",
+          "samples": 1
+        }
+      ],
+      "first_line_keys": {
+        "tmp/*/chats/*": [
+          "kind",
+          "lastUpdated",
+          "projectHash",
+          "sessionId",
+          "startTime"
+        ]
+      }
+    }
+  ]
+}

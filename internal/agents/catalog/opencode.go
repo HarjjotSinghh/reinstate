@@ -30,6 +30,11 @@ func OpenCode() agents.Descriptor {
 			Images: []string{"opencode"},
 		},
 		Evidence: agents.Evidence{
+			StoragePage: "docs/session-storage/opencode.md",
+			ProbeReports: []string{
+				"docs/testing/results/agent-probes/2026-08-21-macos-opencode.json",
+				"docs/testing/results/agent-probes/2026-08-21-windows-opencode.json",
+			},
 			Fixtures: []string{
 				"testdata/sessionindex/opencode/macos",
 				"testdata/sessionindex/opencode/windows",

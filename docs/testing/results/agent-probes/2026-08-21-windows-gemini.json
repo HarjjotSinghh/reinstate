@@ -1,0 +1,527 @@
+{
+  "schema": "AGENT-PROBE-V1",
+  "generated_at": "2026-08-20T18:52:22Z",
+  "platform": {
+    "os": "windows",
+    "arch": "amd64",
+    "device_class": "windows"
+  },
+  "reinstate_version": "0.5.0-rc.4",
+  "agents": [
+    {
+      "key": "gemini",
+      "display_name": "Gemini CLI",
+      "declared_tier": "T2",
+      "root_env": "GEMINI_CLI_HOME",
+      "root_env_set": false,
+      "candidate_roots": [
+        {
+          "relative_to": "home",
+          "suffix": ".gemini",
+          "exists": true,
+          "marker_present": true
+        }
+      ],
+      "resolved_root": {
+        "relative_to": "home",
+        "suffix": ".gemini"
+      },
+      "executable_on_path": true,
+      "version_raw": "0.53.0",
+      "tree": [
+        {
+          "path": "*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1959
+        },
+        {
+          "path": "commands",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "commands/*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 4415
+        },
+        {
+          "path": "installation_id",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 36
+        },
+        {
+          "path": "projects.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 932
+        },
+        {
+          "path": "settings.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 5034
+        },
+        {
+          "path": "settings.json.bak",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 5033
+        },
+        {
+          "path": "settings.json.bak-20260716-<n>",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 284
+        },
+        {
+          "path": "settings.json.orig",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 120
+        },
+        {
+          "path": "state.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 53
+        },
+        {
+          "path": "tmp",
+          "kind": "dir",
+          "children": 21
+        },
+        {
+          "path": "tmp/*",
+          "kind": "dir",
+          "children": 2,
+          "sample_count": 16
+        },
+        {
+          "path": "tmp/*/*",
+          "kind": "file",
+          "count": 6,
+          "median_bytes": 72
+        },
+        {
+          "path": "tmp/*/chats",
+          "kind": "dir",
+          "children": 1,
+          "sample_count": 13
+        },
+        {
+          "path": "tmp/*/chats/*",
+          "kind": "file",
+          "count": 8,
+          "median_bytes": 881841
+        },
+        {
+          "path": "tmp/*/chats/session-2025-11-25T12-40-83c-<n>.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 163483
+        },
+        {
+          "path": "tmp/*/chats/session-2025-12-06T03-37-<n>.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 704197
+        },
+        {
+          "path": "tmp/*/chats/session-2025-12-06T10-43-e582d-<n>.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 159976
+        },
+        {
+          "path": "tmp/*/chats/session-2026-01-25T21-35-a5677d-<n>.json",
+          "kind": "file",
+          "count": 1
+        },
+        {
+          "path": "tmp/*/chats/session-2026-01-25T22-30-dcc27b-<n>.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 7808470
+        },
+        {
+          "path": "tmp/*/chats/session-2026-02-01T21-46-3661b-<n>.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1443646
+        },
+        {
+          "path": "tmp/*/chats/session-2026-02-13T23-35-dfeda-<n>.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1048080
+        },
+        {
+          "path": "tmp/*/chats/session-2026-02-15T02-10-eb-<n>.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 170894
+        },
+        {
+          "path": "tmp/*/chats/session-2026-08-02T20-24-<n>.jsonl",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 5267
+        },
+        {
+          "path": "tmp/*/chats/session-2026-08-08T01-56-144f4a-<n>.jsonl",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 8244
+        },
+        {
+          "path": "tmp/*/logs",
+          "kind": "dir",
+          "sample_count": 3
+        },
+        {
+          "path": "tmp/*/logs.json",
+          "kind": "file",
+          "count": 10,
+          "median_bytes": 2854
+        },
+        {
+          "path": "tmp/bin",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "tmp/bin/rg.exe",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 4667904
+        },
+        {
+          "path": "tmp/main",
+          "kind": "dir",
+          "children": 3
+        },
+        {
+          "path": "tmp/main/*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 29
+        },
+        {
+          "path": "tmp/main/chats",
+          "kind": "dir"
+        },
+        {
+          "path": "tmp/main/logs.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2
+        },
+        {
+          "path": "tmp/reinstate",
+          "kind": "dir",
+          "children": 4
+        },
+        {
+          "path": "tmp/reinstate/*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 21
+        },
+        {
+          "path": "tmp/reinstate/chats",
+          "kind": "dir",
+          "children": 5
+        },
+        {
+          "path": "tmp/reinstate/chats/*",
+          "kind": "file",
+          "count": 3,
+          "median_bytes": 8958
+        },
+        {
+          "path": "tmp/reinstate/chats/session-2026-07-31T12-49-7d3dcd-<n>.jsonl",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 9238
+        },
+        {
+          "path": "tmp/reinstate/chats/session-2026-07-31T12-52-2faacb-<n>.jsonl",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 8637
+        },
+        {
+          "path": "tmp/reinstate/logs",
+          "kind": "dir"
+        },
+        {
+          "path": "tmp/reinstate/logs.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1039
+        },
+        {
+          "path": "tmp/revampnow",
+          "kind": "dir",
+          "children": 5
+        },
+        {
+          "path": "tmp/revampnow/*",
+          "kind": "dir",
+          "children": 2,
+          "sample_count": 2
+        },
+        {
+          "path": "tmp/revampnow/*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 22
+        },
+        {
+          "path": "tmp/revampnow/*/plans",
+          "kind": "dir",
+          "children": 1,
+          "sample_count": 1
+        },
+        {
+          "path": "tmp/revampnow/*/plans/*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 4357
+        },
+        {
+          "path": "tmp/revampnow/*/session-<uuid-v4>",
+          "kind": "dir",
+          "children": 62,
+          "sample_count": 2
+        },
+        {
+          "path": "tmp/revampnow/*/session-<uuid-v4>/glob_glob_1776200537655_0_b3iwj.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 666
+        },
+        {
+          "path": "tmp/revampnow/*/session-<uuid-v4>/glob_glob_1776200537740_1_eun2yr.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 539
+        },
+        {
+          "path": "tmp/revampnow/*/session-<uuid-v4>/glob_glob_1776200580407_0_7anbcr.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2388
+        },
+        {
+          "path": "tmp/revampnow/*/session-<uuid-v4>/glob_glob_1776200580461_1_ppcdc.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 6464
+        },
+        {
+          "path": "tmp/revampnow/*/session-<uuid-v4>/grep_search_grep_search_1776200851484_0_x1wmyi.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 20099
+        },
+        {
+          "path": "tmp/revampnow/*/session-<uuid-v4>/grep_search_grep_search_1776200921311_0_16t2gg.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 10926
+        },
+        {
+          "path": "tmp/revampnow/*/session-<uuid-v4>/list_directory_list_directory_1776200472373_0_3ww0vq.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 172
+        },
+        {
+          "path": "tmp/revampnow/*/session-<uuid-v4>/list_directory_list_directory_1776200493327_0_g800c4.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 299
+        },
+        {
+          "path": "tmp/revampnow/*/session-<uuid-v4>/list_directory_list_directory_1776200493362_1_tshrmf.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 461
+        },
+        {
+          "path": "tmp/revampnow/*/session-<uuid-v4>/list_directory_list_directory_1776200493424_2_aw68e.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 182
+        },
+        {
+          "path": "tmp/revampnow/*/session-<uuid-v4>/list_directory_list_directory_1776200515838_0_o8pje.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 101
+        },
+        {
+          "path": "tmp/revampnow/*/session-<uuid-v4>/list_directory_list_directory_1776200515900_1_kz66cs.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 504
+        },
+        {
+          "path": "tmp/revampnow/*/session-<uuid-v4>/list_directory_list_directory_1776200522784_0_mnkxw.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 304
+        },
+        {
+          "path": "tmp/revampnow/*/session-<uuid-v4>/list_directory_list_directory_1776203062553_0_bhs-<n>.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 299
+        },
+        {
+          "path": "tmp/revampnow/*/session-<uuid-v4>/list_directory_list_directory_1776203062553_0_j88pwu.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 299
+        },
+        {
+          "path": "tmp/revampnow/*/session-<uuid-v4>/list_directory_list_directory_1776203203008_0_2kdl7m.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 101
+        },
+        {
+          "path": "tmp/revampnow/*/session-<uuid-v4>/list_directory_list_directory_1776203203008_0_p8x86i.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 101
+        }
+      ],
+      "name_shapes": [
+        {
+          "path": "*",
+          "shape": "<slug>.md",
+          "samples": 2
+        },
+        {
+          "path": "commands/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "tmp/*",
+          "shape": "<64-hex>",
+          "samples": 16
+        },
+        {
+          "path": "tmp/*/*",
+          "shape": "<slug>",
+          "samples": 6
+        },
+        {
+          "path": "tmp/*/chats/*",
+          "shape": "<slug>.json",
+          "samples": 18
+        },
+        {
+          "path": "tmp/main/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "tmp/reinstate/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "tmp/reinstate/chats/*",
+          "shape": "session-2026-07-31T12-49-7d3dcd-<n>.jsonl",
+          "samples": 5
+        },
+        {
+          "path": "tmp/revampnow/*",
+          "shape": "<slug>",
+          "samples": 3
+        },
+        {
+          "path": "tmp/revampnow/*/*",
+          "shape": "session-<uuid-v4>",
+          "samples": 2
+        },
+        {
+          "path": "tmp/revampnow/*/plans/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "tmp/revampnow/*/session-<uuid-v4>/*",
+          "shape": "list_directory_list_directory_1776203062553_0_bhs-<n>.txt",
+          "samples": 5
+        },
+        {
+          "path": "tmp/revampnow/chats/*",
+          "shape": "<uuid-v4>",
+          "samples": 4
+        },
+        {
+          "path": "tmp/shipper/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "tmp/shipper/chats/*",
+          "shape": "session-2026-02-01T21-46-3661b-<n>.json",
+          "samples": 2
+        }
+      ],
+      "first_line_keys": {
+        "tmp/*/chats/*": [
+          "kind",
+          "lastUpdated",
+          "projectHash",
+          "sessionId",
+          "startTime"
+        ],
+        "tmp/*/chats/session-2026-08-02T20-24-<n>.jsonl": [
+          "kind",
+          "lastUpdated",
+          "projectHash",
+          "sessionId",
+          "startTime"
+        ],
+        "tmp/*/chats/session-2026-08-08T01-56-144f4a-<n>.jsonl": [
+          "kind",
+          "lastUpdated",
+          "projectHash",
+          "sessionId",
+          "startTime"
+        ],
+        "tmp/reinstate/chats/*": [
+          "kind",
+          "lastUpdated",
+          "projectHash",
+          "sessionId",
+          "startTime"
+        ],
+        "tmp/reinstate/chats/session-2026-07-31T12-49-7d3dcd-<n>.jsonl": [
+          "kind",
+          "lastUpdated",
+          "projectHash",
+          "sessionId",
+          "startTime"
+        ],
+        "tmp/reinstate/chats/session-2026-07-31T12-52-2faacb-<n>.jsonl": [
+          "kind",
+          "lastUpdated",
+          "projectHash",
+          "sessionId",
+          "startTime"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "schema": "AGENT-PROBE-V1",
+  "generated_at": "2026-08-20T19:00:00Z",
+  "platform": {
+    "os": "darwin",
+    "arch": "arm64",
+    "device_class": "macos"
+  },
+  "reinstate_version": "0.0.0-dev",
+  "agents": [
+    {
+      "key": "opencode",
+      "display_name": "OpenCode",
+      "declared_tier": "T2",
+      "root_env_set": false,
+      "candidate_roots": [
+        {
+          "relative_to": "home",
+          "suffix": ".local/share/opencode",
+          "exists": true,
+          "marker_present": false
+        }
+      ],
+      "resolved_root": null,
+      "executable_on_path": true,
+      "version_raw": "1.18.13",
+      "tree": [],
+      "name_shapes": [],
+      "first_line_keys": {}
+    }
+  ]
+}

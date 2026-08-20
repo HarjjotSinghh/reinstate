@@ -47,6 +47,11 @@ func Grok() agents.Descriptor {
 			Images: []string{"grok"},
 		},
 		Evidence: agents.Evidence{
+			StoragePage: "docs/session-storage/grok.md",
+			ProbeReports: []string{
+				"docs/testing/results/agent-probes/2026-08-21-macos-grok.json",
+				"docs/testing/results/agent-probes/2026-08-17-windows-grok.json",
+			},
 			Fixtures: []string{
 				"testdata/sessionindex/grok/macos",
 				"testdata/sessionindex/grok/windows",

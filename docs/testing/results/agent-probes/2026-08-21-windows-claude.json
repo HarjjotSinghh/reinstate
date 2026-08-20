@@ -1,0 +1,1648 @@
+{
+  "schema": "AGENT-PROBE-V1",
+  "generated_at": "2026-08-20T18:52:22Z",
+  "platform": {
+    "os": "windows",
+    "arch": "amd64",
+    "device_class": "windows"
+  },
+  "reinstate_version": "0.5.0-rc.4",
+  "agents": [
+    {
+      "key": "claude",
+      "display_name": "Claude Code",
+      "declared_tier": "T5",
+      "root_env": "CLAUDE_CONFIG_DIR",
+      "root_env_set": false,
+      "candidate_roots": [
+        {
+          "relative_to": "home",
+          "suffix": ".claude",
+          "exists": true,
+          "marker_present": true
+        },
+        {
+          "relative_to": "home",
+          "suffix": ".config/claude",
+          "exists": false,
+          "marker_present": false
+        }
+      ],
+      "resolved_root": {
+        "relative_to": "home",
+        "suffix": ".claude"
+      },
+      "executable_on_path": true,
+      "version_raw": "2.1.233 (Claude Code)",
+      "tree": [
+        {
+          "path": "*",
+          "kind": "dir",
+          "children": 4,
+          "sample_count": 5
+        },
+        {
+          "path": "*",
+          "kind": "file",
+          "count": 4,
+          "median_bytes": 165
+        },
+        {
+          "path": "*/*",
+          "kind": "dir",
+          "sample_count": 12
+        },
+        {
+          "path": "*/*",
+          "kind": "file",
+          "count": 10,
+          "median_bytes": 15031
+        },
+        {
+          "path": "*/*/*",
+          "kind": "file",
+          "count": 66,
+          "median_bytes": 7544
+        },
+        {
+          "path": "*/a6c0c14ecfd1a21b.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 3862
+        },
+        {
+          "path": "*/afc18f9c-<n>.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 29896
+        },
+        {
+          "path": "*/b7729d61e4d-<n>.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1042
+        },
+        {
+          "path": "*/dc03c07129b8ceff.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2803
+        },
+        {
+          "path": "*/references",
+          "kind": "dir",
+          "children": 9,
+          "sample_count": 1
+        },
+        {
+          "path": "*/references/*",
+          "kind": "file",
+          "count": 6,
+          "median_bytes": 4421
+        },
+        {
+          "path": "*/references/checkpoints.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 39172
+        },
+        {
+          "path": "*/references/questioning.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 5035
+        },
+        {
+          "path": "*/references/tdd.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 7682
+        },
+        {
+          "path": "*/sessions",
+          "kind": "dir",
+          "sample_count": 1
+        },
+        {
+          "path": "*/templates",
+          "kind": "dir",
+          "children": 21,
+          "sample_count": 1
+        },
+        {
+          "path": "*/templates/*",
+          "kind": "dir",
+          "children": 5,
+          "sample_count": 1
+        },
+        {
+          "path": "*/templates/*",
+          "kind": "file",
+          "count": 7,
+          "median_bytes": 2803
+        },
+        {
+          "path": "*/templates/*/*",
+          "kind": "file",
+          "count": 4,
+          "median_bytes": 5511
+        },
+        {
+          "path": "*/templates/*/STACK.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 3092
+        },
+        {
+          "path": "*/templates/DEBUG.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 4372
+        },
+        {
+          "path": "*/templates/UAT.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 6182
+        },
+        {
+          "path": "*/templates/codebase",
+          "kind": "dir",
+          "children": 7,
+          "sample_count": 1
+        },
+        {
+          "path": "*/templates/codebase/architecture.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 7268
+        },
+        {
+          "path": "*/templates/codebase/concerns.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 11269
+        },
+        {
+          "path": "*/templates/codebase/conventions.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 8832
+        },
+        {
+          "path": "*/templates/codebase/integrations.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 8664
+        },
+        {
+          "path": "*/templates/codebase/stack.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 4466
+        },
+        {
+          "path": "*/templates/codebase/structure.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 8002
+        },
+        {
+          "path": "*/templates/codebase/testing.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 10993
+        },
+        {
+          "path": "*/templates/config.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 762
+        },
+        {
+          "path": "*/templates/context.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 7170
+        },
+        {
+          "path": "*/templates/discovery.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 4077
+        },
+        {
+          "path": "*/templates/milestone.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 3057
+        },
+        {
+          "path": "*/templates/project.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 4948
+        },
+        {
+          "path": "*/templates/requirements.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 6071
+        },
+        {
+          "path": "*/templates/research.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 15662
+        },
+        {
+          "path": "*/templates/roadmap.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 5611
+        },
+        {
+          "path": "*/templates/state.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 4548
+        },
+        {
+          "path": "*/templates/summary.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 7706
+        },
+        {
+          "path": "*/workflows",
+          "kind": "dir",
+          "children": 12,
+          "sample_count": 1
+        },
+        {
+          "path": "*/workflows/*",
+          "kind": "file",
+          "count": 11,
+          "median_bytes": 13425
+        },
+        {
+          "path": "*/workflows/transition.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 12268
+        },
+        {
+          "path": "RTK.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 964
+        },
+        {
+          "path": "agents",
+          "kind": "dir",
+          "children": 11
+        },
+        {
+          "path": "agents/*",
+          "kind": "file",
+          "count": 11,
+          "median_bytes": 19858
+        },
+        {
+          "path": "backups",
+          "kind": "dir",
+          "children": 5
+        },
+        {
+          "path": "backups/*",
+          "kind": "file",
+          "count": 5,
+          "median_bytes": 109140
+        },
+        {
+          "path": "commands",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "commands/gsd",
+          "kind": "dir",
+          "children": 27
+        },
+        {
+          "path": "commands/gsd/*",
+          "kind": "file",
+          "count": 21,
+          "median_bytes": 5640
+        },
+        {
+          "path": "commands/gsd/debug.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 3790
+        },
+        {
+          "path": "commands/gsd/help.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 14107
+        },
+        {
+          "path": "commands/gsd/progress.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 8239
+        },
+        {
+          "path": "commands/gsd/quick.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 7088
+        },
+        {
+          "path": "commands/gsd/settings.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 3807
+        },
+        {
+          "path": "commands/gsd/update.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 4254
+        },
+        {
+          "path": "debug",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "debug/latest",
+          "kind": "file",
+          "count": 1
+        },
+        {
+          "path": "history.jsonl",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 493871
+        },
+        {
+          "path": "hooks",
+          "kind": "dir",
+          "children": 2
+        },
+        {
+          "path": "hooks/*",
+          "kind": "file",
+          "count": 2,
+          "median_bytes": 2907
+        },
+        {
+          "path": "ide",
+          "kind": "dir"
+        },
+        {
+          "path": "plugins",
+          "kind": "dir",
+          "children": 8
+        }
+      ],
+      "name_shapes": [
+        {
+          "path": "*",
+          "shape": "<slug>",
+          "samples": 9
+        },
+        {
+          "path": "*/*",
+          "shape": "<slug>.log",
+          "samples": 24
+        },
+        {
+          "path": "*/*/*",
+          "shape": "<slug>",
+          "samples": 66
+        },
+        {
+          "path": "*/references/*",
+          "shape": "<slug>.md",
+          "samples": 6
+        },
+        {
+          "path": "*/templates/*",
+          "shape": "<slug>.md",
+          "samples": 8
+        },
+        {
+          "path": "*/templates/*/*",
+          "shape": "<slug>.md",
+          "samples": 4
+        },
+        {
+          "path": "*/workflows/*",
+          "shape": "<slug>.md",
+          "samples": 11
+        },
+        {
+          "path": "agents/*",
+          "shape": "<slug>.md",
+          "samples": 11
+        },
+        {
+          "path": "backups/*",
+          "shape": "<slug>",
+          "samples": 5
+        },
+        {
+          "path": "commands/gsd/*",
+          "shape": "<slug>.md",
+          "samples": 21
+        },
+        {
+          "path": "hooks/*",
+          "shape": "<slug>.js",
+          "samples": 2
+        },
+        {
+          "path": "plugins/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "plugins/data/*",
+          "shape": "<slug>",
+          "samples": 12
+        },
+        {
+          "path": "plugins/marketplaces/*",
+          "shape": "<slug>",
+          "samples": 3
+        },
+        {
+          "path": "plugins/marketplaces/*/*",
+          "shape": "<slug>",
+          "samples": 64
+        },
+        {
+          "path": "plugins/marketplaces/*/*/*",
+          "shape": "<slug>.md",
+          "samples": 25
+        },
+        {
+          "path": "plugins/marketplaces/*/*/*/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/*/agents/*",
+          "shape": "<slug>.toml",
+          "samples": 29
+        },
+        {
+          "path": "plugins/marketplaces/*/*/commands/*",
+          "shape": "<slug>.md",
+          "samples": 25
+        },
+        {
+          "path": "plugins/marketplaces/*/*/docs/*",
+          "shape": "<slug>.md",
+          "samples": 3
+        },
+        {
+          "path": "plugins/marketplaces/*/*/extensions/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/*/homunculus/instincts/inherited/*",
+          "shape": "<slug>.yaml",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/*/hooks/*",
+          "shape": "<slug>.sample",
+          "samples": 51
+        },
+        {
+          "path": "plugins/marketplaces/*/*/instructions/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/*/objects/pack/*",
+          "shape": "pack-<40-hex>.idx",
+          "samples": 6
+        },
+        {
+          "path": "plugins/marketplaces/*/*/plugins/*",
+          "shape": "<slug>.ts",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/*/plugins/lib/*",
+          "shape": "<slug>.ts",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/*/prompts/agents/*",
+          "shape": "<slug>.txt",
+          "samples": 22
+        },
+        {
+          "path": "plugins/marketplaces/*/*/research/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/*/rules/*",
+          "shape": "<slug>.md",
+          "samples": 40
+        },
+        {
+          "path": "plugins/marketplaces/*/*/scripts/*",
+          "shape": "<slug>.sh",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/*/skills/*",
+          "shape": "<slug>",
+          "samples": 63
+        },
+        {
+          "path": "plugins/marketplaces/*/*/skills/*/*",
+          "shape": "<slug>.md",
+          "samples": 5
+        },
+        {
+          "path": "plugins/marketplaces/*/*/skills/*/references/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/*/steering/*",
+          "shape": "<slug>.md",
+          "samples": 12
+        },
+        {
+          "path": "plugins/marketplaces/*/*/team/*",
+          "shape": "<slug>.json",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/*/tools/*",
+          "shape": "<slug>.ts",
+          "samples": 7
+        },
+        {
+          "path": "plugins/marketplaces/*/*/workflows/*",
+          "shape": "<slug>.yml",
+          "samples": 7
+        },
+        {
+          "path": "plugins/marketplaces/*/agents/*",
+          "shape": "<slug>.md",
+          "samples": 46
+        },
+        {
+          "path": "plugins/marketplaces/*/assets/images/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/assets/images/guides/*",
+          "shape": "<slug>.png",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/assets/images/longform/*",
+          "shape": "<slug>.png",
+          "samples": 10
+        },
+        {
+          "path": "plugins/marketplaces/*/assets/images/security/*",
+          "shape": "<slug>.png",
+          "samples": 7
+        },
+        {
+          "path": "plugins/marketplaces/*/assets/images/shortform/*",
+          "shape": "<slug>.png",
+          "samples": 12
+        },
+        {
+          "path": "plugins/marketplaces/*/commands/*",
+          "shape": "<slug>.md",
+          "samples": 59
+        },
+        {
+          "path": "plugins/marketplaces/*/configs/*",
+          "shape": "<slug>",
+          "samples": 7
+        },
+        {
+          "path": "plugins/marketplaces/*/configs/*/*",
+          "shape": "<slug>.md",
+          "samples": 7
+        },
+        {
+          "path": "plugins/marketplaces/*/configs/*/rules/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/configs/*/skills/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/configs/antigravity/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/configs/codex/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/configs/cursor/*",
+          "shape": "<slug>.mdc",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/configs/kilo/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/configs/omp/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/configs/openclaw/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/configs/opencode/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/configs/pi/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/configs/zed/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/*",
+          "shape": "<slug>.md",
+          "samples": 31
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/*/*",
+          "shape": "<slug>.md",
+          "samples": 25
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/*/agents/*",
+          "shape": "<slug>.md",
+          "samples": 67
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/*/commands/*",
+          "shape": "<slug>.md",
+          "samples": 93
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/*/examples/*",
+          "shape": "<slug>.md",
+          "samples": 21
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/*/hooks/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/*/plugins/*",
+          "shape": "<slug>.md",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/*/rules/*",
+          "shape": "<slug>.md",
+          "samples": 10
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/*/rules/common/*",
+          "shape": "<slug>.md",
+          "samples": 3
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/*/rules/cpp/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/*/rules/csharp/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/*/rules/golang/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/*/rules/java/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/*/rules/kotlin/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/*/rules/perl/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/*/rules/php/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/*/rules/python/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/*/rules/rust/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/*/rules/swift/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/*/rules/typescript/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/*/skills/*",
+          "shape": "<slug>.md",
+          "samples": 177
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/*/skills/*/*",
+          "shape": "<slug>.md",
+          "samples": 6
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/*/skills/videodb/reference/*",
+          "shape": "<slug>.md",
+          "samples": 4
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/adapters/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/adr/*",
+          "shape": "<slug>.md",
+          "samples": 4
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/business/*",
+          "shape": "<slug>.md",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/examples/*",
+          "shape": "<slug>.md",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/releases/*",
+          "shape": "<slug>.0",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/releases/*/*",
+          "shape": "<slug>.md",
+          "samples": 9
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/tr/*",
+          "shape": "<slug>.md",
+          "samples": 14
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/tr/agents/*",
+          "shape": "<slug>.md",
+          "samples": 26
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/tr/commands/*",
+          "shape": "<slug>.md",
+          "samples": 19
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/tr/examples/*",
+          "shape": "<slug>.md",
+          "samples": 3
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/tr/rules/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/tr/rules/common/*",
+          "shape": "<slug>.md",
+          "samples": 3
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/tr/rules/golang/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/tr/rules/python/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/tr/rules/typescript/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/docs/tr/skills/*",
+          "shape": "<slug>",
+          "samples": 34
+        },
+        {
+          "path": "plugins/marketplaces/*/ecc2/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/examples/*",
+          "shape": "<slug>.md",
+          "samples": 8
+        },
+        {
+          "path": "plugins/marketplaces/*/examples/*/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/*/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/asana/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/asana/commands/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/context7/*",
+          "shape": "<slug>",
+          "samples": 3
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/discord/*",
+          "shape": "<slug>",
+          "samples": 6
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/fakechat/*",
+          "shape": "<slug>",
+          "samples": 5
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/firebase/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/github/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/gitlab/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/greptile/*",
+          "shape": "<slug>",
+          "samples": 3
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/imessage/*",
+          "shape": "<slug>",
+          "samples": 6
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/linear/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/playwright/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/serena/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/telegram/*",
+          "shape": "<slug>",
+          "samples": 6
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/terraform/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/hooks/*",
+          "shape": "<slug>",
+          "samples": 23
+        },
+        {
+          "path": "plugins/marketplaces/*/hooks/core/*",
+          "shape": "<slug>.mjs",
+          "samples": 4
+        },
+        {
+          "path": "plugins/marketplaces/*/hooks/formatters/*",
+          "shape": "<slug>.mjs",
+          "samples": 3
+        },
+        {
+          "path": "plugins/marketplaces/*/manifests/*",
+          "shape": "<slug>.json",
+          "samples": 3
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*",
+          "shape": "<slug>",
+          "samples": 37
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/*",
+          "shape": "<slug>",
+          "samples": 100
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/*/*",
+          "shape": "<slug>.sh",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/agents/*",
+          "shape": "<slug>.md",
+          "samples": 28
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/assets/*",
+          "shape": "<slug>.jpg",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/commands/*",
+          "shape": "<slug>.md",
+          "samples": 22
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/hooks/*",
+          "shape": "<slug>.sh",
+          "samples": 3
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/scripts/*",
+          "shape": "<slug>.sh",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/skills/*",
+          "shape": "<slug>",
+          "samples": 22
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/skills/*/*",
+          "shape": "<slug>.txt",
+          "samples": 6
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/skills/*/examples/*",
+          "shape": "<slug>.md",
+          "samples": 16
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/skills/*/jobs/*",
+          "shape": "<slug>.md",
+          "samples": 3
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/skills/*/references/*",
+          "shape": "<slug>.md",
+          "samples": 37
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/skills/*/scripts/*",
+          "shape": "<slug>.sh",
+          "samples": 8
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/skills/*/specs/*",
+          "shape": "<slug>.md",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/workflows/*",
+          "shape": "<slug>.js",
+          "samples": 6
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/hookify/*",
+          "shape": "<slug>",
+          "samples": 4
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/hookify/agents/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/hookify/core/*",
+          "shape": "<slug>.py",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/hookify/examples/*",
+          "shape": "<slug>.md",
+          "samples": 4
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/hookify/hooks/*",
+          "shape": "<slug>.py",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/hookify/matchers/*",
+          "shape": "<slug>.py",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/hookify/skills/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/hookify/utils/*",
+          "shape": "<slug>.py",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/playground/*",
+          "shape": "<slug>",
+          "samples": 3
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/playground/skills/playground/templates/*",
+          "shape": "<slug>.md",
+          "samples": 6
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/receipts/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/receipts/assets/*",
+          "shape": "<slug>.mjs",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/receipts/skills/receipts/scripts/*",
+          "shape": "<slug>.mjs",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/research/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/rules/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/rules/common/*",
+          "shape": "<slug>.md",
+          "samples": 4
+        },
+        {
+          "path": "plugins/marketplaces/*/rules/cpp/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/rules/csharp/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/rules/dart/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/rules/golang/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/rules/java/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/rules/kotlin/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/rules/perl/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/rules/php/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/rules/python/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/rules/rust/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/rules/swift/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/rules/typescript/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/rules/web/*",
+          "shape": "<slug>.md",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/rules/zh/*",
+          "shape": "<slug>.md",
+          "samples": 5
+        },
+        {
+          "path": "plugins/marketplaces/*/schemas/*",
+          "shape": "<slug>.json",
+          "samples": 7
+        },
+        {
+          "path": "plugins/marketplaces/*/scripts/*",
+          "shape": "<slug>.mjs",
+          "samples": 28
+        },
+        {
+          "path": "plugins/marketplaces/*/scripts/*/*",
+          "shape": "<slug>.mjs",
+          "samples": 4
+        },
+        {
+          "path": "plugins/marketplaces/*/scripts/*/fixtures/*",
+          "shape": "<slug>.txt",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/scripts/ci/*",
+          "shape": "<slug>.js",
+          "samples": 9
+        },
+        {
+          "path": "plugins/marketplaces/*/scripts/codex/*",
+          "shape": "<slug>.sh",
+          "samples": 4
+        },
+        {
+          "path": "plugins/marketplaces/*/scripts/hooks/*",
+          "shape": "<slug>.js",
+          "samples": 36
+        },
+        {
+          "path": "plugins/marketplaces/*/scripts/lib/*",
+          "shape": "<slug>.mjs",
+          "samples": 26
+        },
+        {
+          "path": "plugins/marketplaces/*/scripts/lib/*/*",
+          "shape": "<slug>.js",
+          "samples": 10
+        },
+        {
+          "path": "plugins/marketplaces/*/skills/*",
+          "shape": "<slug>.ignore",
+          "samples": 48
+        },
+        {
+          "path": "plugins/marketplaces/*/skills/*/*",
+          "shape": "<slug>.sh",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/skills/*/agents/*",
+          "shape": "<slug>.sh",
+          "samples": 3
+        },
+        {
+          "path": "plugins/marketplaces/*/skills/*/references/*",
+          "shape": "<slug>.md",
+          "samples": 5
+        },
+        {
+          "path": "plugins/marketplaces/*/skills/*/scripts/*",
+          "shape": "<slug>.sh",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/skills/ck/hooks/*",
+          "shape": "<slug>.mjs",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/src/*",
+          "shape": "<slug>.ts",
+          "samples": 4
+        },
+        {
+          "path": "plugins/marketplaces/*/src/adapters/*",
+          "shape": "<slug>",
+          "samples": 10
+        },
+        {
+          "path": "plugins/marketplaces/*/src/adapters/openclaw/*",
+          "shape": "<slug>.ts",
+          "samples": 3
+        },
+        {
+          "path": "plugins/marketplaces/*/src/adapters/pi/*",
+          "shape": "<slug>.ts",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/src/search/*",
+          "shape": "<slug>.ts",
+          "samples": 3
+        },
+        {
+          "path": "plugins/marketplaces/*/src/session/*",
+          "shape": "<slug>.ts",
+          "samples": 6
+        },
+        {
+          "path": "plugins/marketplaces/*/src/util/*",
+          "shape": "<slug>.ts",
+          "samples": 5
+        },
+        {
+          "path": "plugins/marketplaces/*/tests/*",
+          "shape": "benchmark-results-v-<n>.json",
+          "samples": 21
+        },
+        {
+          "path": "plugins/marketplaces/*/tests/adapters/*",
+          "shape": "<slug>.ts",
+          "samples": 37
+        },
+        {
+          "path": "plugins/marketplaces/*/tests/analytics/*",
+          "shape": "<slug>.ts",
+          "samples": 3
+        },
+        {
+          "path": "plugins/marketplaces/*/tests/cli/*",
+          "shape": "<slug>.ts",
+          "samples": 5
+        },
+        {
+          "path": "plugins/marketplaces/*/tests/codex/*",
+          "shape": "<slug>.ts",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/tests/core/*",
+          "shape": "<slug>.gitkeep",
+          "samples": 10
+        },
+        {
+          "path": "plugins/marketplaces/*/tests/executor/*",
+          "shape": "<slug>.ts",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/tests/fixtures/*",
+          "shape": "<slug>.json",
+          "samples": 21
+        },
+        {
+          "path": "plugins/marketplaces/*/tests/fixtures/cursor/*",
+          "shape": "<slug>.json",
+          "samples": 4
+        },
+        {
+          "path": "plugins/marketplaces/*/tests/hooks/*",
+          "shape": "<slug>.ts",
+          "samples": 31
+        },
+        {
+          "path": "plugins/marketplaces/*/tests/integration/*",
+          "shape": "<slug>.ts",
+          "samples": 4
+        },
+        {
+          "path": "plugins/marketplaces/*/tests/plugins/*",
+          "shape": "<slug>.ts",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/tests/scripts/*",
+          "shape": "<slug>.ts",
+          "samples": 6
+        },
+        {
+          "path": "plugins/marketplaces/*/tests/security/*",
+          "shape": "<slug>.ts",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/tests/session/*",
+          "shape": "<slug>.gitkeep",
+          "samples": 49
+        },
+        {
+          "path": "plugins/marketplaces/*/tests/shared/*",
+          "shape": "<slug>.gitkeep",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/tests/util/*",
+          "shape": "<slug>.ts",
+          "samples": 20
+        },
+        {
+          "path": "plugins/marketplaces/*/web/*",
+          "shape": "<slug>.png",
+          "samples": 11
+        },
+        {
+          "path": "plugins/marketplaces/*/web/og/*",
+          "shape": "<slug>",
+          "samples": 7
+        },
+        {
+          "path": "plugins/marketplaces/caveman/*",
+          "shape": "<slug>",
+          "samples": 18
+        },
+        {
+          "path": "plugins/marketplaces/caveman/*/*",
+          "shape": "<slug>",
+          "samples": 3
+        },
+        {
+          "path": "plugins/marketplaces/caveman/*/hooks/*",
+          "shape": "<slug>.sample",
+          "samples": 13
+        },
+        {
+          "path": "plugins/marketplaces/caveman/*/objects/pack/*",
+          "shape": "pack-<40-hex>.idx",
+          "samples": 3
+        },
+        {
+          "path": "plugins/marketplaces/caveman/*/workflows/*",
+          "shape": "<slug>.yml",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/caveman/agents/*",
+          "shape": "<slug>.md",
+          "samples": 3
+        },
+        {
+          "path": "plugins/marketplaces/caveman/benchmarks/results/*",
+          "shape": "<slug>.gitkeep",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/caveman/bin/lib/*",
+          "shape": "<slug>.js",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/caveman/commands/*",
+          "shape": "<slug>.md",
+          "samples": 8
+        },
+        {
+          "path": "plugins/marketplaces/caveman/docs/*",
+          "shape": "<slug>",
+          "samples": 3
+        },
+        {
+          "path": "plugins/marketplaces/caveman/docs/assets/*",
+          "shape": "<slug>.svg",
+          "samples": 5
+        },
+        {
+          "path": "plugins/marketplaces/caveman/evals/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/caveman/plugins/caveman/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/caveman/plugins/caveman/agents/*",
+          "shape": "<slug>.md",
+          "samples": 3
+        },
+        {
+          "path": "plugins/marketplaces/caveman/plugins/caveman/assets/*",
+          "shape": "<slug>.svg",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/caveman/plugins/caveman/skills/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/caveman/plugins/caveman/skills/*/scripts/*",
+          "shape": "<slug>.py",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/caveman/plugins/caveman/skills/caveman/assets/*",
+          "shape": "<slug>.svg",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/caveman/skills/*",
+          "shape": "<slug>",
+          "samples": 5
+        },
+        {
+          "path": "plugins/marketplaces/caveman/skills/*/*",
+          "shape": "<slug>.md",
+          "samples": 6
+        },
+        {
+          "path": "plugins/marketplaces/caveman/skills/*/scripts/*",
+          "shape": "<slug>.py",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/caveman/skills/cavecrew/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/caveman/skills/caveman/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/caveman/src/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/caveman/src/*/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/caveman/src/*/*/*",
+          "shape": "<slug>.md",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/caveman/src/hooks/*",
+          "shape": "<slug>.md",
+          "samples": 8
+        },
+        {
+          "path": "plugins/marketplaces/caveman/src/plugins/opencode/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/caveman/src/plugins/opencode/commands/*",
+          "shape": "<slug>.md",
+          "samples": 5
+        },
+        {
+          "path": "plugins/marketplaces/caveman/src/rules/*",
+          "shape": "<slug>.md",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/caveman/src/tools/*",
+          "shape": "<slug>.js",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/caveman/tests/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/caveman/tests/*/*",
+          "shape": "<slug>.md",
+          "samples": 10
+        },
+        {
+          "path": "plugins/marketplaces/caveman/tests/installer/*",
+          "shape": "<slug>.mjs",
+          "samples": 3
+        }
+      ],
+      "first_line_keys": {
+        "*": [
+          "error_code",
+          "outcome",
+          "path",
+          "status",
+          "timestamp",
+          "version_from",
+          "version_to"
+        ],
+        "history.jsonl": [
+          "display",
+          "pastedContents",
+          "project",
+          "sessionId",
+          "timestamp"
+        ],
+        "plugins/marketplaces/*/tests/fixtures/*": [
+          "leafUuid",
+          "summary",
+          "type"
+        ]
+      }
+    }
+  ]
+}
