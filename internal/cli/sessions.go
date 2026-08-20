@@ -250,6 +250,13 @@ func newNativeActionCmd(options localCommandOptions, operation string, allowHand
 			if asJSON && !dryRun {
 				return NewExitError(ExitUsage, "--json requires --dry-run for native agent launches")
 			}
+			// Refuse below-T3 agents on tier, before resolution. A T0 agent has
+			// no index source at all, so resolution failed as an unavailable
+			// source and reported exit 1, while T1/T2 agents with a real record
+			// already refused with exit 5. Matrix A7 requires one answer.
+			if err := refuseBelowResumeTier(args[0], action); err != nil {
+				return err
+			}
 			index, err := openLocalIndex(options)
 			if err != nil {
 				return err
@@ -1169,6 +1176,44 @@ func catalogNativeLaunch(agent, operation, sessionID string) (string, []string, 
 		return "", nil, false
 	}
 	return descriptor.Native.Executable, sessionindex.ApplyArgvTemplate(template, sessionID), true
+}
+
+// refuseBelowResumeTier rejects a native resume or fork for a catalog agent
+// below TierResume with the compatibility exit code and a stated reason,
+// independent of whether the referenced session happens to exist.
+func refuseBelowResumeTier(reference, operation string) error {
+	agent, _, qualified := sessionindex.ParseCompositeReference(reference)
+	if !qualified {
+		return nil
+	}
+	key := strings.ToLower(strings.TrimSpace(agent))
+	for _, descriptor := range agents.All() {
+		if descriptor.Key != key {
+			continue
+		}
+		// Only T0 is refused here. A T1+ agent has an index source, so
+		// resolution reaches a real record and reports that record's own
+		// read-only reason, which is more specific than anything this guard
+		// could say. A T0 agent has no source at all, so without this the
+		// failure surfaced as an unavailable source with exit 1.
+		if descriptor.Tier > agents.TierKnown {
+			return nil
+		}
+		reason := fmt.Sprintf(
+			"%s is tier %s; native %s is unsupported",
+			descriptor.DisplayName, descriptor.Tier, operation,
+		)
+		if descriptor.T0Reason != "" {
+			reason = fmt.Sprintf(
+				"%s is tier %s (%s); native %s is unsupported",
+				descriptor.DisplayName, descriptor.Tier, descriptor.T0Reason, operation,
+			)
+		}
+		return NewExitError(ExitCompatibility, fmt.Sprintf(
+			"%s: %s", sessionindex.ErrNativeActionUnsupported, reason,
+		))
+	}
+	return nil
 }
 
 func localResolveError(err error) error {

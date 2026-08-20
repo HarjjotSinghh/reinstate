@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/HarjjotSinghh/reinstate/internal/agents"
 	"github.com/HarjjotSinghh/reinstate/internal/preflight"
 	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
@@ -620,5 +621,36 @@ func TestRunContextPropagatesCancellation(t *testing.T) {
 			stdout.String(),
 			stderr.String(),
 		)
+	}
+}
+
+// TestT0RefusesNativeActionOnTier covers Matrix A7 for T0. A T0 agent has no
+// index source, so resolution failed as an unavailable source and reported
+// exit 1. T1/T2 agents already refuse with exit 5 carrying their record's own
+// read-only reason, which this guard must not preempt.
+func TestT0RefusesNativeActionOnTier(t *testing.T) {
+	for _, operation := range []string{"resume", "fork"} {
+		for _, descriptor := range agents.All() {
+			if descriptor.Tier > agents.TierKnown {
+				continue
+			}
+			key := descriptor.Key
+			t.Run(operation+"/"+key, func(t *testing.T) {
+				stdout, stderr, code := runLocalCLI(
+					t, nil, nil, "", false,
+					operation, key+":does-not-exist",
+				)
+				if code != ExitCompatibility {
+					t.Fatalf("%s %s exit=%d, want %d; stdout=%q stderr=%q",
+						operation, key, code, ExitCompatibility, stdout, stderr)
+				}
+				if !strings.Contains(stderr, "unsupported") {
+					t.Fatalf("%s %s stderr=%q, want an unsupported reason", operation, key, stderr)
+				}
+				if !strings.Contains(stderr, string(descriptor.Tier.String())) {
+					t.Fatalf("%s %s stderr=%q, want the declared tier named", operation, key, stderr)
+				}
+			})
+		}
 	}
 }

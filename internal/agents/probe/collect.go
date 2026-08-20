@@ -419,7 +419,11 @@ func walkRoot(ctx context.Context, root, user string, excluded []string, opts Op
 		}
 		tree = append(tree, node)
 	}
-	sort.Slice(tree, func(i, j int) bool { return tree[i].Path < tree[j].Path })
+	// Path alone is not a total order: a dir node and a file node can normalize
+	// to the same path, and sort.Slice is not stable, so their relative order
+	// varied per run. That made the probe non-reproducible and, because the
+	// slice is truncated to maxTreeRows below, changed which rows survived.
+	sort.Slice(tree, func(i, j int) bool { return treeNodeLess(tree[i], tree[j]) })
 	if len(tree) > maxTreeRows {
 		tree = tree[:maxTreeRows]
 	}
@@ -428,7 +432,7 @@ func walkRoot(ctx context.Context, root, user string, excluded []string, opts Op
 	for path, agg := range shapes {
 		named = append(named, NameShape{Path: path, Shape: agg.shape, Samples: agg.n})
 	}
-	sort.Slice(named, func(i, j int) bool { return named[i].Path < named[j].Path })
+	sort.Slice(named, func(i, j int) bool { return nameShapeLess(named[i], named[j]) })
 
 	if keys == nil {
 		keys = map[string][]string{}
@@ -490,4 +494,37 @@ func medianInt64(values []int64) int64 {
 	cp := append([]int64(nil), values...)
 	sort.Slice(cp, func(i, j int) bool { return cp[i] < cp[j] })
 	return cp[len(cp)/2]
+}
+
+// treeNodeLess is a total order over TreeNode. Every field participates so
+// that two nodes compare equal only when they are identical, keeping
+// AGENT-PROBE-V1 output byte-reproducible across runs.
+func treeNodeLess(a, b TreeNode) bool {
+	if a.Path != b.Path {
+		return a.Path < b.Path
+	}
+	if a.Kind != b.Kind {
+		return a.Kind < b.Kind
+	}
+	if a.Children != b.Children {
+		return a.Children < b.Children
+	}
+	if a.Count != b.Count {
+		return a.Count < b.Count
+	}
+	if a.MedianBytes != b.MedianBytes {
+		return a.MedianBytes < b.MedianBytes
+	}
+	return a.SampleCount < b.SampleCount
+}
+
+// nameShapeLess is a total order over NameShape, for the same reason.
+func nameShapeLess(a, b NameShape) bool {
+	if a.Path != b.Path {
+		return a.Path < b.Path
+	}
+	if a.Shape != b.Shape {
+		return a.Shape < b.Shape
+	}
+	return a.Samples < b.Samples
 }

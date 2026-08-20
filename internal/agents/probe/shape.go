@@ -9,15 +9,19 @@ import (
 )
 
 var (
-	reUUID     = regexp.MustCompile(`(?i)^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
-	reUUIDSub  = regexp.MustCompile(`(?i)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
-	reHex32    = regexp.MustCompile(`(?i)^[0-9a-f]{32}$`)
-	reHex40    = regexp.MustCompile(`(?i)^[0-9a-f]{40}$`)
-	reHex64    = regexp.MustCompile(`(?i)^[0-9a-f]{64}$`)
-	rePrefHex  = regexp.MustCompile(`(?i)^([a-z][a-z0-9_]*)_([0-9a-f]{32})$`)
-	reTrailing = regexp.MustCompile(`^([A-Za-z][A-Za-z0-9._-]*?)[-_]?([0-9]+)$`)
-	reDigits   = regexp.MustCompile(`^[0-9]+$`)
-	reSafeName = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9._-]*$`)
+	reUUID    = regexp.MustCompile(`(?i)^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
+	reUUIDSub = regexp.MustCompile(`(?i)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
+	reHex32   = regexp.MustCompile(`(?i)^[0-9a-f]{32}$`)
+	reHex40   = regexp.MustCompile(`(?i)^[0-9a-f]{40}$`)
+	reHex64   = regexp.MustCompile(`(?i)^[0-9a-f]{64}$`)
+	rePrefHex = regexp.MustCompile(`(?i)^([a-z][a-z0-9_]*)_([0-9a-f]{32})$`)
+	// A vendor prefix joined to a long content hash, e.g. Git's
+	// pack-<40-hex>.idx under a marketplace checkout. Without this the
+	// trailing-digits rule split the hash and left most of it verbatim.
+	reLongHexTail = regexp.MustCompile(`(?i)^([a-z][a-z0-9_.]*)[-_]([0-9a-f]{32,})$`)
+	reTrailing    = regexp.MustCompile(`^([A-Za-z][A-Za-z0-9._-]*?)[-_]?([0-9]+)$`)
+	reDigits      = regexp.MustCompile(`^[0-9]+$`)
+	reSafeName    = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9._-]*$`)
 	// reWorkspaceBucket matches a short prefix, a free-form stem, and a
 	// content hash: Kimi Code's wd_<workspace>_<12-hex>. The stem is the
 	// basename of the working directory, so it is a repository name.
@@ -83,6 +87,9 @@ func normalizeStem(stem string) string {
 	}
 	if m := rePrefHex.FindStringSubmatch(stem); len(m) == 3 {
 		return m[1] + "_<32-hex>"
+	}
+	if m := reLongHexTail.FindStringSubmatch(stem); len(m) == 3 {
+		return fmt.Sprintf("%s-<%d-hex>", m[1], len(m[2]))
 	}
 	if m := reWorkspaceBucket.FindStringSubmatch(stem); len(m) == 4 {
 		return fmt.Sprintf("%s_<project>_<%d-hex>", m[1], len(m[3]))
