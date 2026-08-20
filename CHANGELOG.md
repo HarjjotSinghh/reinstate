@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- An agent-filtered query scans only that agent's source. `rein sessions`,
+  `rein search`, and `rein last` refreshed every vendor source before applying
+  `--agent`, so asking about one agent cost as much as a full refresh and one
+  slow source delayed a request that never concerned it. `--agent kimi` went
+  from 6.20s to 0.88s cold and 0.02s warm on a 400-session index; an
+  unfiltered refresh is unchanged (`v0.5.0-rc.3` macOS H4/H5).
+- Shell completion offers the agent keys each flag accepts. No completion
+  function was registered, so `--agent`, `--to`, and `--from` completed to
+  nothing. Each now offers exactly its own tier's keys: `sessions`/`search`
+  T1+, `last` T3+, `handoff --to` T4+, `handoff --from` T2+
+  (`v0.5.0-rc.3` macOS H6).
+
+### Fixed
+
 - `rein doctor --agents` output is reproducible again. A dir node and a file
   node can normalize to the same path, and the probe ordered the tree by path
   alone with a non-stable sort, so their order varied per run. Because the
