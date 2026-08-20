@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0-rc.4] - 2026-08-20
+
+Fourth Phase 5 candidate. Physical `v0.5.0-rc.3` acceptance on macOS arm64
+exercised the core matrix against the tagged artifact and found five defects:
+the agent probe was not reproducible between runs, raw content hashes reached
+probe output, `resume` and `fork` reported the wrong exit code for a T0 agent,
+an agent-filtered query scanned every vendor source, and shell completion
+offered no agent keys. Claude Code and Codex CLI remain the only T4/T5
+surfaces. Current stable remains `v0.4.0`. This candidate does not authorize
+stable `v0.5.0`.
+
+
 ### Fixed
 
 - An agent-filtered query scans only that agent's source. `rein sessions`,
@@ -1372,7 +1384,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.5.0-rc.3...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.5.0-rc.4...HEAD
+[0.5.0-rc.4]: https://github.com/HarjjotSinghh/reinstate/compare/v0.5.0-rc.3...v0.5.0-rc.4
 [0.5.0-rc.3]: https://github.com/HarjjotSinghh/reinstate/compare/v0.5.0-rc.2...v0.5.0-rc.3
 [0.5.0-rc.2]: https://github.com/HarjjotSinghh/reinstate/compare/v0.5.0-rc.1...v0.5.0-rc.2
 [0.5.0-rc.1]: https://github.com/HarjjotSinghh/reinstate/compare/v0.4.0...v0.5.0-rc.1

@@ -6,7 +6,7 @@ order: 12
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.5.0-rc.3"
+version: "v0.5.0-rc.4"
 updatedAt: 2026-08-16
 tags: ["push", "session-sync", "claude-code", "codex", "dry-run"]
 targetQuery: "push a coding agent session with Reinstate"

@@ -6,7 +6,7 @@ order: 13
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.5.0-rc.3"
+version: "v0.5.0-rc.4"
 updatedAt: 2026-08-16
 tags: ["pull", "restore", "native-resume", "backup", "conflicts"]
 targetQuery: "restore a coding agent session with Reinstate"

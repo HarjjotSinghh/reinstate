@@ -1,5 +1,11 @@
 export const releaseHistory = [
   {
+    version: 'v0.5.0-rc.4',
+    date: '2026-08-20',
+    summary:
+      'Fourth Phase 5 candidate. Physical rc.3 acceptance found the agent probe was not reproducible between runs, raw content hashes reached probe output, resume reported the wrong exit code for a T0 agent, an agent-filtered query scanned every source, and completion offered no agent keys. Does not authorize stable v0.5.0. Current stable remains v0.4.0.',
+  },
+  {
     version: 'v0.5.0-rc.3',
     date: '2026-08-20',
     summary:

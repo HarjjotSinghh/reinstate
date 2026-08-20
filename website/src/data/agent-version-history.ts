@@ -16,6 +16,14 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.5.0-rc.4': {
+    rangeChange:
+      'Unchanged from v0.5.0-rc.3: inclusive Claude Code range 2.1.219-2.1.229. The Codex CLI range is unchanged at 0.133.0-0.147.0.',
+    compatibilityChange:
+      'Fourth Phase 5 candidate. Makes the agent probe reproducible, normalizes raw content hashes out of probe output, refuses native actions on a T0 agent with the compatibility exit code, narrows an agent-filtered refresh to that agent, and completes agent keys per flag. Claude Code and Codex remain the only T3-T5 surfaces. This candidate does not authorize stable v0.5.0.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.5.0-rc.4/docs/testing/v0.5.0-rc.4-agent-verification-prompts.md',
+  },
   'v0.5.0-rc.3': {
     rangeChange:
       'Unchanged from v0.5.0-rc.2: inclusive Claude Code range 2.1.219-2.1.229. The Codex CLI range is unchanged at 0.133.0-0.147.0.',
