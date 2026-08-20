@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `rein doctor --agents` output is reproducible again. A dir node and a file
+  node can normalize to the same path, and the probe ordered the tree by path
+  alone with a non-stable sort, so their order varied per run. Because the
+  tree is truncated to a row ceiling after that sort, the instability changed
+  which rows shipped, not just their order. Tree and name-shape ordering are
+  now total (`v0.5.0-rc.3` macOS A8/B8).
+- Long content hashes joined to a vendor prefix are normalized instead of being
+  emitted verbatim. Git object names under a marketplace checkout surfaced as
+  `pack-<40 raw hex>.idx` in probe output (`v0.5.0-rc.3` macOS B4).
+- `rein resume` and `rein fork` refuse a T0 agent with exit `5` and its declared
+  tier reason. A T0 agent has no index source, so the attempt previously failed
+  during resolution as an unavailable source and exited `1`, while T1 and T2
+  agents already refused with exit `5`. T1+ refusals keep reporting the record's
+  own read-only reason (`v0.5.0-rc.3` macOS A7/F2).
+
 ## [0.5.0-rc.3] - 2026-08-20
 
 Third Phase 5 candidate. Physical `v0.5.0-rc.2` acceptance on macOS arm64 and

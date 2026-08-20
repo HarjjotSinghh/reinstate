@@ -236,6 +236,10 @@ func TestShapeNormalization(t *testing.T) {
 		{"wd_my_project_abcdef1234567890", "wd_<project>_<16-hex>"},
 		// Too short a tail to be a content hash.
 		{"wd_alice_abcdef", "wd_alice_abcdef"},
+		// Git object names under a marketplace checkout. The trailing-digits
+		// rule used to split the hash and leave most of it verbatim.
+		{"pack-8c7ffa580563b675b1fd27a53df219b761e4d0a1", "pack-<40-hex>"},
+		{"pack-8c7ffa580563b675b1fd27a53df219b761e4d0a1.idx", "pack-<40-hex>.idx"},
 	}
 	for _, tt := range tests {
 		if got := normalizeComponent(tt.in); got != tt.want {
@@ -431,4 +435,38 @@ func itoa(n int) string {
 		n /= 10
 	}
 	return string(digits)
+}
+
+// TestProbeOrderingIsTotal covers AGENT-PROBE-V1 reproducibility. A dir node
+// and a file node can normalize to the same path, so ordering by path alone
+// left their order to sort.Slice, which is not stable. The tree is truncated
+// to maxTreeRows afterwards, so the instability changed which rows shipped.
+func TestProbeOrderingIsTotal(t *testing.T) {
+	t.Parallel()
+	nodes := []TreeNode{
+		{Path: "*/*", Kind: "file", Count: 2},
+		{Path: "*", Kind: "file", Count: 1},
+		{Path: "*/*", Kind: "dir", Children: 3},
+		{Path: "*", Kind: "dir", Children: 4},
+	}
+	for i := range nodes {
+		for j := range nodes {
+			if i == j {
+				if treeNodeLess(nodes[i], nodes[j]) {
+					t.Fatalf("node %d compares less than itself", i)
+				}
+				continue
+			}
+			if treeNodeLess(nodes[i], nodes[j]) == treeNodeLess(nodes[j], nodes[i]) {
+				t.Fatalf("nodes %d and %d are order-ambiguous: %+v vs %+v", i, j, nodes[i], nodes[j])
+			}
+		}
+	}
+	shapes := []NameShape{
+		{Path: "*", Shape: "b", Samples: 1},
+		{Path: "*", Shape: "a", Samples: 1},
+	}
+	if nameShapeLess(shapes[0], shapes[1]) == nameShapeLess(shapes[1], shapes[0]) {
+		t.Fatal("name shapes sharing a path are order-ambiguous")
+	}
 }
