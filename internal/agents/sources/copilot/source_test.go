@@ -105,3 +105,94 @@ func TestSQLiteSidecarIsNotIndexed(t *testing.T) {
 		t.Fatalf("records = %+v", result.Records)
 	}
 }
+
+// writeCopilotSession lays out one session-state directory. events carries the
+// raw JSONL lines so a test can withhold the cwd that older builds emitted.
+func writeCopilotSession(t *testing.T, root, id, events, manifest string) {
+	t.Helper()
+	dir := filepath.Join(root, "session-state", id)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "events.jsonl"), []byte(events), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if manifest != "" {
+		if err := os.WriteFile(filepath.Join(dir, "workspace.yaml"), []byte(manifest), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+// TestWorkspaceManifestFallback covers Copilot CLI 1.0.80, which stopped
+// emitting cwd inside events.jsonl. Without the sibling workspace.yaml the
+// session indexes with project "unknown" and no workspace, so Matrix C1 can
+// never see two distinct projects.
+func TestWorkspaceManifestFallback(t *testing.T) {
+	t.Parallel()
+	const prompt = `{"data":{"content":"hello"},"id":"evt-1","parentId":null,` +
+		`"timestamp":"2026-08-17T10:00:00.000Z","type":"user"}` + "\n"
+	tests := []struct {
+		name          string
+		events        string
+		manifest      string
+		wantProject   string
+		wantWorkspace string
+		wantBranch    string
+	}{
+		{
+			name:          "manifest supplies cwd and branch",
+			events:        prompt,
+			manifest:      "id: s1\ncwd: /Users/fixture-user/code/demo\ngit_root: /Users/fixture-user/code/demo\nbranch: main\n",
+			wantProject:   "demo",
+			wantWorkspace: "/Users/fixture-user/code/demo",
+			wantBranch:    "main",
+		},
+		{
+			name:          "git_root used when cwd absent",
+			events:        prompt,
+			manifest:      "id: s1\ngit_root: /Users/fixture-user/code/other\nbranch: dev\n",
+			wantProject:   "other",
+			wantWorkspace: "/Users/fixture-user/code/other",
+			wantBranch:    "dev",
+		},
+		{
+			name: "event cwd still wins",
+			events: `{"data":{"content":"hello","cwd":"/Users/fixture-user/code/fromevent"},` +
+				`"id":"evt-1","parentId":null,"timestamp":"2026-08-17T10:00:00.000Z","type":"user"}` + "\n",
+			manifest:      "id: s1\ncwd: /Users/fixture-user/code/demo\nbranch: main\n",
+			wantProject:   "fromevent",
+			wantWorkspace: "/Users/fixture-user/code/fromevent",
+			wantBranch:    "main",
+		},
+		{
+			name:          "no manifest degrades to unknown",
+			events:        prompt,
+			manifest:      "",
+			wantProject:   "unknown",
+			wantWorkspace: "",
+			wantBranch:    "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			root := t.TempDir()
+			writeCopilotSession(t, root, "4374b22c-165a-43a0-983b-344dbd503b03", tt.events, tt.manifest)
+			result := scan(t, root)
+			if len(result.Records) != 1 {
+				t.Fatalf("records = %d, want 1", len(result.Records))
+			}
+			got := result.Records[0]
+			if got.Project != tt.wantProject {
+				t.Fatalf("Project = %q, want %q", got.Project, tt.wantProject)
+			}
+			if got.Workspace != tt.wantWorkspace {
+				t.Fatalf("Workspace = %q, want %q", got.Workspace, tt.wantWorkspace)
+			}
+			if got.Branch != tt.wantBranch {
+				t.Fatalf("Branch = %q, want %q", got.Branch, tt.wantBranch)
+			}
+		})
+	}
+}

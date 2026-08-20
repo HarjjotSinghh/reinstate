@@ -126,8 +126,8 @@ type state struct {
 	ID         string `json:"id"`
 	Title      string `json:"title"`
 	CWD        string `json:"cwd"`
-	CreatedAt  string `json:"createdAt"`
-	UpdatedAt  string `json:"updatedAt"`
+	CreatedAt  any    `json:"createdAt"`
+	UpdatedAt  any    `json:"updatedAt"`
 	LastPrompt string `json:"lastPrompt"`
 	Archived   bool   `json:"archived"`
 	Version    *int   `json:"version"`
@@ -313,16 +313,13 @@ func readWire(path string) (wireContent, error) {
 	return out, nil
 }
 
-func parseTime(value string) time.Time {
-	value = strings.TrimSpace(value)
-	if value == "" {
+// parseTime accepts both state.json timestamp encodings. Kimi Code 0.36.1
+// writes createdAt/updatedAt as epoch milliseconds; earlier builds wrote
+// RFC 3339 strings. sources.ParseTimestamp normalizes both to unix seconds.
+func parseTime(value any) time.Time {
+	seconds := sources.ParseTimestamp(value)
+	if seconds == 0 {
 		return time.Time{}
 	}
-	if parsed, err := time.Parse(time.RFC3339Nano, value); err == nil {
-		return parsed.UTC()
-	}
-	if parsed, err := time.Parse(time.RFC3339, value); err == nil {
-		return parsed.UTC()
-	}
-	return time.Time{}
+	return time.Unix(seconds, 0).UTC()
 }

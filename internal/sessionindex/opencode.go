@@ -188,14 +188,20 @@ func openCodeRecord(values map[string]any) (Record, bool) {
 	title := firstString(values, "title", "name", "summary")
 	workspace := firstString(values, "directory", "cwd", "workspace", "workingDirectory")
 	branch := firstString(values, "branch", "gitBranch")
-	project := firstString(values, "project", "projectID", "projectId", "project_id")
+	// OpenCode reports projectId as an opaque 40-hex digest. Every other
+	// source names a project after its directory, and Matrix C2 compares the
+	// project against what the agent shows, so prefer a human name and keep
+	// the vendor digest as the last resort. Kept identical to the catalog
+	// source in internal/agents/sources/opencode.
+	project := ""
 	if mapped, ok := values["project"].(map[string]any); ok {
-		if value := firstString(mapped, "name", "id"); value != "" {
-			project = value
-		}
+		project = firstString(mapped, "name")
 	}
 	if project == "" && workspace != "" {
 		project = portableBase(workspace)
+	}
+	if project == "" {
+		project = firstString(values, "project", "projectID", "projectId", "project_id")
 	}
 	if project == "" {
 		project = "unknown"
