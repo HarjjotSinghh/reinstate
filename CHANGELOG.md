@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A refusal for an unsupported native agent version names the verified range.
+  It said only that the version was "outside the verified range", which leaves
+  a user nothing to act on. It now reads, for example, `native agent version
+  2.1.238 is outside the verified range 2.1.219 to 2.1.229 inclusive`. An open
+  bound is stated rather than omitted (`v0.5.0-rc.4` macOS and Windows E4).
+
 - OpenCode credential and cache paths are excluded from `rein doctor --agents`.
   The OpenCode data root keeps `auth.json` beside its session store and the
   descriptor declared no exclusion set at all, so the credential file's name

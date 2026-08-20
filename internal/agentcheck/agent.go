@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -227,12 +228,36 @@ func Inspect(ctx context.Context, agentName string, opts Options) Result {
 	}
 	result.Version = version
 	if !definition.supported(version) {
-		result.Message = "native agent version is outside the verified range"
+		// Naming the range is the difference between a refusal a user can act
+		// on and one they cannot: without it there is nothing to tell them
+		// which version to install.
+		result.Message = fmt.Sprintf(
+			"native agent version %s is outside the verified range %s",
+			version, definition.versionRange,
+		)
 		return result
 	}
 	result.Status = StatusSupported
 	result.Message = "native agent executable, version, and session layout are supported"
 	return result
+}
+
+// renderVersionRange renders the inclusive verified range for a message. An
+// open end is stated as such rather than omitted, so a bound is never silently
+// absent.
+func renderVersionRange(min, max string) string {
+	minimum := strings.TrimSpace(min)
+	maximum := strings.TrimSpace(max)
+	switch {
+	case minimum == "" && maximum == "":
+		return "(no verified range is declared)"
+	case minimum == "":
+		return "up to and including " + maximum
+	case maximum == "":
+		return minimum + " and newer"
+	default:
+		return minimum + " to " + maximum + " inclusive"
+	}
 }
 
 // versionProbe is one bounded `--version` measurement: an executable-identity
@@ -365,6 +390,10 @@ type definition struct {
 	roots           func(string) []string
 	parseVersion    func(VersionOutput) (string, bool)
 	supported       func(string) bool
+	// versionRange is the inclusive verified range, rendered for a refusal
+	// message. Without it a refusal could not tell the user which version to
+	// install.
+	versionRange string
 }
 
 // definitions is installed by CLI init from the catalog. Nil means tests
@@ -403,6 +432,7 @@ func definitionFrom(spec Definition) definition {
 		supported: func(version string) bool {
 			return adapter.StableVersionInRange(version, min, max)
 		},
+		versionRange: renderVersionRange(min, max),
 	}
 }
 
