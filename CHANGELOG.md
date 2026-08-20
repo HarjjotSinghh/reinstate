@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Gemini sessions report the project and workspace they belong to. A chat that
+  records only `projectHash` surfaced that bare 64-character digest as its
+  project name and carried no workspace, so Matrix C1 could not see distinct
+  projects and C2 had nothing to compare. The hash is the SHA-256 of the
+  absolute project path and `projects.json` lists those paths, so the two are
+  now joined (`v0.5.0-rc.4` macOS C1/C2).
+
+### Fixed
+
 - `rein doctor --agents` honours an agent's documented root environment
   variable. The override was read and reported through `root_env_set`, then
   ignored whenever the real home root existed, so a tester who pointed

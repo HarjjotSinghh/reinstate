@@ -3,6 +3,8 @@ package gemini
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -29,6 +31,10 @@ var errSubagent = errors.New(errSubagentText)
 // Excluded skips Gemini subagent trees.
 var Excluded = []string{"subagents"}
 
+// maxProjectsBytes bounds the projects.json read. The file is a flat path
+// index; anything larger is not it.
+const maxProjectsBytes = 4 << 20
+
 // Source discovers Gemini CLI chat records through hometree.
 type Source struct {
 	env agents.Env
@@ -52,6 +58,7 @@ func (s *Source) Scan(ctx context.Context) (sessionindex.ScanResult, error) {
 		return sessionindex.ScanResult{}, nil
 	}
 	tmpRoot := filepath.Join(root, "tmp")
+	workspaces := projectWorkspaces(root)
 	var result sessionindex.ScanResult
 	for _, file := range files {
 		if err := ctx.Err(); err != nil {
@@ -60,7 +67,7 @@ func (s *Source) Scan(ctx context.Context) (sessionindex.ScanResult, error) {
 		if !geminiSessionFile(file.Path) {
 			continue
 		}
-		record, warnings, parseErr := parseSession(file.Path, tmpRoot)
+		record, warnings, parseErr := parseSession(file.Path, tmpRoot, workspaces)
 		if errors.Is(parseErr, errSubagent) {
 			continue
 		}
@@ -120,7 +127,7 @@ type state struct {
 	messages    []message
 }
 
-func parseSession(path, tmpRoot string) (sessionindex.Record, []sessionindex.Warning, error) {
+func parseSession(path, tmpRoot string, workspaces map[string]string) (sessionindex.Record, []sessionindex.Warning, error) {
 	info, err := os.Stat(path)
 	if err != nil {
 		return sessionindex.Record{}, nil, err
@@ -162,6 +169,15 @@ func parseSession(path, tmpRoot string) (sessionindex.Record, []sessionindex.War
 	}
 	if st.latest == 0 {
 		st.latest = info.ModTime().Unix()
+	}
+	// A chat record often carries only projectHash. Gemini derives that hash
+	// from the absolute project path, and projects.json lists those paths, so
+	// the workspace is recoverable instead of surfacing a bare digest as the
+	// project name.
+	if st.workspace == "" && st.projectHash != "" {
+		if resolved, ok := workspaces[strings.ToLower(st.projectHash)]; ok {
+			st.workspace = resolved
+		}
 	}
 	project := st.projectHash
 	if st.workspace != "" {
@@ -314,6 +330,37 @@ func collectGeminiArgs(value any, files map[string]struct{}) {
 	// Reuse the same structured-file walk as the original source by wrapping
 	// args in a synthetic event so CollectToolFiles sees them as input.
 	sources.CollectToolFiles(map[string]any{"input": value}, files)
+}
+
+// projectWorkspaces maps a Gemini project hash to the absolute path it was
+// derived from. Gemini records the hash on each chat but keeps the paths in
+// projects.json, so the two are joined here. A missing or malformed file
+// yields no mappings rather than an error: this only enriches a record.
+func projectWorkspaces(root string) map[string]string {
+	path := filepath.Join(root, "projects.json")
+	info, err := os.Stat(path)
+	if err != nil || !info.Mode().IsRegular() || info.Size() > maxProjectsBytes {
+		return nil
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	var doc struct {
+		Projects map[string]json.RawMessage `json:"projects"`
+	}
+	if err := json.Unmarshal(data, &doc); err != nil || len(doc.Projects) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(doc.Projects))
+	for workspace := range doc.Projects {
+		if strings.TrimSpace(workspace) == "" {
+			continue
+		}
+		sum := sha256.Sum256([]byte(workspace))
+		out[hex.EncodeToString(sum[:])] = workspace
+	}
+	return out
 }
 
 func projectHash(path, tmpRoot string) string {
