@@ -47,6 +47,7 @@ const { id = 'waitlist-form', compact = false } = Astro.props;
           ok?: boolean;
           error?: string;
           message?: string;
+          status?: 'created' | 'existing';
         };
 
         if (!res.ok || !data.ok) {
@@ -55,6 +56,10 @@ const { id = 'waitlist-form', compact = false } = Astro.props;
           return;
         }
 
+        window.posthog?.capture('waitlist_joined', {
+          form_id: form.id,
+          waitlist_status: data.status ?? 'unknown',
+        });
         status.textContent = data.message ?? 'You are on the list.';
         status.classList.add('is-ok');
         emailInput.value = '';
