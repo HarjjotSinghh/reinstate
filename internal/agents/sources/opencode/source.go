@@ -114,14 +114,19 @@ func recordFrom(values map[string]any) (sessionindex.Record, bool) {
 	title := sources.FirstString(values, "title", "name", "summary")
 	workspace := sources.FirstString(values, "directory", "cwd", "workspace", "workingDirectory")
 	branch := sources.FirstString(values, "branch", "gitBranch")
-	project := sources.FirstString(values, "project", "projectID", "projectId", "project_id")
+	// OpenCode reports projectId as an opaque 40-hex digest. Every other
+	// source names a project after its directory, and Matrix C2 compares the
+	// project against what the agent shows, so prefer a human name and keep
+	// the vendor digest as the last resort.
+	project := ""
 	if mapped, ok := values["project"].(map[string]any); ok {
-		if value := sources.FirstString(mapped, "name", "id"); value != "" {
-			project = value
-		}
+		project = sources.FirstString(mapped, "name")
 	}
 	if project == "" && workspace != "" {
 		project = sources.PortableBase(workspace)
+	}
+	if project == "" {
+		project = sources.FirstString(values, "project", "projectID", "projectId", "project_id")
 	}
 	if project == "" {
 		project = "unknown"

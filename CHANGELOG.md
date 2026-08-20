@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Kimi sessions are indexed again. Kimi Code 0.36.1 writes `createdAt` and
+  `updatedAt` in `state.json` as epoch milliseconds; the reader declared both
+  as strings, so every session failed to decode and was dropped with a
+  `session_read_failed` warning. Both encodings are now accepted
+  (`v0.5.0-rc.2` macOS C1).
+- Copilot sessions report their project and branch again. Copilot CLI 1.0.80
+  stopped emitting `cwd` inside `events.jsonl`, which left every session at
+  project `unknown` with no workspace. The sibling `workspace.yaml` is now
+  read as a bounded fallback for `cwd`, `git_root`, and `branch`
+  (`v0.5.0-rc.2` macOS C1/C2).
+- OpenCode sessions are named after their directory instead of the opaque
+  40-hex `projectId` digest the CLI reports, matching every other source and
+  what the agent itself shows (`v0.5.0-rc.2` macOS C2).
+
 ## [0.5.0-rc.2] - 2026-08-19
 
 Second Phase 5 candidate after `v0.5.0-rc.1` dual-platform tagged-artifact

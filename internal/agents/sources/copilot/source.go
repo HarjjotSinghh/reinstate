@@ -14,6 +14,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -26,6 +27,10 @@ import (
 
 // SessionGlob matches one Copilot CLI event log. SQLite sidecars do not match.
 const SessionGlob = "session-state/**/events.jsonl"
+
+// maxWorkspaceManifestBytes bounds the sibling workspace.yaml read. The file
+// Copilot writes is a few hundred bytes; anything larger is not the manifest.
+const maxWorkspaceManifestBytes = 64 << 10
 
 var requiredKeys = []string{"data", "id", "parentId", "timestamp", "type"}
 
@@ -113,7 +118,17 @@ func parseSession(file hometree.File) (sessionindex.Record, error) {
 	if id == "" {
 		return sessionindex.Record{}, fmt.Errorf("copilot session has no id")
 	}
+	// Copilot CLI 1.0.80 stopped emitting cwd inside events.jsonl. The
+	// sibling workspace.yaml still records it, so fall back to that manifest
+	// before giving up on workspace truth.
+	manifest := readWorkspaceManifest(filepath.Dir(file.Path))
 	workspace := parsed.cwd
+	if workspace == "" {
+		workspace = manifest.cwd
+	}
+	if workspace == "" {
+		workspace = manifest.gitRoot
+	}
 	project := "unknown"
 	if workspace != "" {
 		project = sources.PortableBase(workspace)
@@ -133,6 +148,7 @@ func parseSession(file hometree.File) (sessionindex.Record, error) {
 		Title:          sessionindex.SafePreview(title),
 		Project:        project,
 		Workspace:      workspace,
+		Branch:         manifest.branch,
 		UpdatedAt:      updated,
 		SizeBytes:      file.Size,
 		MessageCount:   parsed.messages,
@@ -147,6 +163,54 @@ func parseSession(file hometree.File) (sessionindex.Record, error) {
 			id, title, project, workspace, parsed.prompts.String(),
 		),
 	}, nil
+}
+
+// workspaceManifest is the flat workspace.yaml Copilot writes beside
+// events.jsonl. Only the scalar keys this source needs are read; the file is
+// never executed and unknown keys are ignored.
+type workspaceManifest struct {
+	cwd     string
+	gitRoot string
+	branch  string
+}
+
+// readWorkspaceManifest reads the bounded flat "key: value" manifest. A
+// missing, oversized, or malformed file yields a zero manifest, never an
+// error: workspace truth is a best-effort enrichment, not a gate.
+func readWorkspaceManifest(sessionDir string) workspaceManifest {
+	path := filepath.Join(sessionDir, "workspace.yaml")
+	info, err := os.Stat(path)
+	if err != nil || !info.Mode().IsRegular() || info.Size() > maxWorkspaceManifestBytes {
+		return workspaceManifest{}
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return workspaceManifest{}
+	}
+	var manifest workspaceManifest
+	for _, line := range strings.Split(string(data), "\n") {
+		if strings.HasPrefix(line, " ") || strings.HasPrefix(line, "\t") || strings.HasPrefix(line, "-") {
+			continue // nested or list content is out of scope
+		}
+		key, value, found := strings.Cut(line, ":")
+		if !found {
+			continue
+		}
+		value = strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(value), "\r"))
+		value = strings.Trim(value, "'\"")
+		if value == "" {
+			continue
+		}
+		switch strings.TrimSpace(key) {
+		case "cwd":
+			manifest.cwd = value
+		case "git_root":
+			manifest.gitRoot = value
+		case "branch":
+			manifest.branch = value
+		}
+	}
+	return manifest
 }
 
 type conversation struct {

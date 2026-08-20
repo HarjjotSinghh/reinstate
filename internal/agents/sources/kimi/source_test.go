@@ -295,3 +295,62 @@ func writeJSON(t *testing.T, path string, value map[string]any) {
 		t.Fatal(err)
 	}
 }
+
+// TestStateTimestampEncodings covers both encodings state.json has carried.
+// Kimi Code 0.36.1 writes createdAt/updatedAt as epoch milliseconds; earlier
+// builds wrote RFC 3339 strings. A number must not drop the session.
+func TestStateTimestampEncodings(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name      string
+		createdAt any
+		updatedAt any
+		wantUnix  int64
+	}{
+		{
+			name:      "rfc3339 strings",
+			createdAt: "2026-08-16T08:00:00.000Z",
+			updatedAt: "2026-08-16T09:00:00.000Z",
+			wantUnix:  1786870800,
+		},
+		{
+			name:      "epoch milliseconds",
+			createdAt: 1786867200000,
+			updatedAt: 1786870800000,
+			wantUnix:  1786870800,
+		},
+		{
+			name:      "epoch milliseconds, created only",
+			createdAt: 1786870800000,
+			updatedAt: nil,
+			wantUnix:  1786870800,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			root := t.TempDir()
+			dir := sessionDir(t, root, "session_01987654-3210-7890-abcd-ef0123456789")
+			state := map[string]any{
+				"id":        "session_01987654-3210-7890-abcd-ef0123456789",
+				"cwd":       "/Users/fixture-user/code/demo",
+				"version":   2,
+				"createdAt": tt.createdAt,
+			}
+			if tt.updatedAt != nil {
+				state["updatedAt"] = tt.updatedAt
+			}
+			writeJSON(t, filepath.Join(dir, "state.json"), state)
+			result := scan(t, root)
+			if len(result.Records) != 1 {
+				t.Fatalf("records = %d, want 1 (session dropped by timestamp decoding)", len(result.Records))
+			}
+			if got := result.Records[0].UpdatedAt.Unix(); got != tt.wantUnix {
+				t.Fatalf("UpdatedAt = %d, want %d", got, tt.wantUnix)
+			}
+			if got := result.Records[0].Project; got != "demo" {
+				t.Fatalf("Project = %q, want %q", got, "demo")
+			}
+		})
+	}
+}
