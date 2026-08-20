@@ -106,6 +106,16 @@ func decodeSessions(output []byte) ([]map[string]any, error) {
 	}
 }
 
+// Excluded is the OpenCode credential and cache set. The data root holds
+// auth.json beside the session store, and the probe walks that root, so
+// without this the credential file's name reached committed probe artifacts.
+var Excluded = []string{
+	"**/auth.json",
+	"**/.env",
+	"**/cache/**",
+	"**/log/**",
+}
+
 func recordFrom(values map[string]any) (sessionindex.Record, bool) {
 	id := sources.FirstString(values, "id", "sessionID", "sessionId", "session_id")
 	if id == "" {

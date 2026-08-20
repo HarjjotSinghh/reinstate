@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- OpenCode credential and cache paths are excluded from `rein doctor --agents`.
+  The OpenCode data root keeps `auth.json` beside its session store and the
+  descriptor declared no exclusion set at all, so the credential file's name
+  appeared in probe output, which is committed as release evidence. Only the
+  name was ever exposed, never the contents. macOS did not show it because
+  OpenCode was off the default `PATH` there, so its root never resolved
+  (`v0.5.0-rc.4` Windows B5).
+
+### Fixed
+
 - Structured handoff from a Grok source works again. Every Grok session in a
   real repository failed `capsule validate`, so the T2 handoff was unusable.
   Three causes: the reader never applied the path backstop that Claude Code and

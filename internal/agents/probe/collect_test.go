@@ -523,3 +523,47 @@ func TestRootEnvOutranksHomeCandidate(t *testing.T) {
 		t.Fatal("a resolved but empty root must still emit present, empty collections")
 	}
 }
+
+// TestCredentialFileIsExcludedFromTree covers Matrix B5 for a data root that
+// keeps a credential beside its session store, which is OpenCode's layout. The
+// probe walks the resolved root, so without an exclusion the credential file's
+// name reached the artifact. Only the name was ever at risk, never the
+// contents, but the row forbids the path appearing at all.
+func TestCredentialFileIsExcludedFromTree(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	root := filepath.Join(home, ".planted-agent")
+	if err := os.MkdirAll(filepath.Join(root, "projects", "demo"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "auth.json"), []byte(`{"note":"fixture credential body, deliberately low entropy"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "projects", "demo", "a.jsonl"), []byte("{\"k\":1}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	desc := syntheticDescriptor(home)
+	desc.Storage.Excluded = append(append([]string(nil), desc.Storage.Excluded...), "**/auth.json")
+
+	art, err := Collect(context.Background(), agents.Env{
+		Home:      home,
+		LookupEnv: func(string) string { return "" },
+	}, []agents.Descriptor{desc}, Options{
+		LookPath: func(string) (string, error) { return "", os.ErrNotExist },
+		Now:      func() time.Time { return time.Date(2026, 8, 21, 0, 0, 0, 0, time.UTC) },
+		Version:  "0.5.0-dev",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	blob, err := json.Marshal(art)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(blob), "auth.json") {
+		t.Fatal("an excluded credential file name reached the probe artifact")
+	}
+	if strings.Contains(string(blob), "fixture credential body") {
+		t.Fatal("credential contents reached the probe artifact")
+	}
+}
