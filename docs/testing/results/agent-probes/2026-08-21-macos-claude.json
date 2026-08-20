@@ -1,0 +1,938 @@
+{
+  "schema": "AGENT-PROBE-V1",
+  "generated_at": "2026-08-20T19:00:00Z",
+  "platform": {
+    "os": "darwin",
+    "arch": "arm64",
+    "device_class": "macos"
+  },
+  "reinstate_version": "0.0.0-dev",
+  "agents": [
+    {
+      "key": "claude",
+      "display_name": "Claude Code",
+      "declared_tier": "T5",
+      "root_env": "CLAUDE_CONFIG_DIR",
+      "root_env_set": false,
+      "candidate_roots": [
+        {
+          "relative_to": "home",
+          "suffix": ".claude",
+          "exists": true,
+          "marker_present": true
+        },
+        {
+          "relative_to": "home",
+          "suffix": ".config/claude",
+          "exists": false,
+          "marker_present": false
+        }
+      ],
+      "resolved_root": {
+        "relative_to": "home",
+        "suffix": ".claude"
+      },
+      "executable_on_path": true,
+      "version_raw": "2.1.228 (Claude Code)",
+      "tree": [
+        {
+          "path": "*",
+          "kind": "dir",
+          "children": 72,
+          "sample_count": 4
+        },
+        {
+          "path": "*",
+          "kind": "file",
+          "count": 4,
+          "median_bytes": 161
+        },
+        {
+          "path": "*/*",
+          "kind": "dir",
+          "sample_count": 667
+        },
+        {
+          "path": "*/*",
+          "kind": "file",
+          "count": 62,
+          "median_bytes": 3347
+        },
+        {
+          "path": "*/*/*",
+          "kind": "file",
+          "count": 236,
+          "median_bytes": 4959
+        },
+        {
+          "path": "*/a5ff607e6fab559a.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 90319
+        },
+        {
+          "path": "*/b1190f07d-<n>.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1614
+        },
+        {
+          "path": "*/b119f513ccf990e6.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1735
+        },
+        {
+          "path": "*/ba6ed0e74f-<n>.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 13137
+        },
+        {
+          "path": "*/bd71248cdccf691f.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 5165
+        },
+        {
+          "path": "*/be02509fb5686c-<n>.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 5270
+        },
+        {
+          "path": "*/c5d6e456eab-<n>.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 11453
+        },
+        {
+          "path": "*/c6edaf33ece3e11a.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 3091
+        },
+        {
+          "path": "*/c79ced02066b89ce.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1687
+        },
+        {
+          "path": "*/c9a0982a3eb0559c.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 5854
+        },
+        {
+          "path": "*/cce6b576d-<n>.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1164
+        },
+        {
+          "path": "*/d046cb4962a-<n>.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2321
+        },
+        {
+          "path": "*/d4d736db2243150d.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2003
+        },
+        {
+          "path": "*/d703c0cb154afb-<n>.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2773
+        },
+        {
+          "path": "*/e0a79ef6695d98fb.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 5938
+        },
+        {
+          "path": "*/e158c5148b1a-<n>.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 6155
+        },
+        {
+          "path": "*/ef4ba9f423bf85fe.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 94536
+        },
+        {
+          "path": "*/f083483f2b58c-<n>.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1548
+        },
+        {
+          "path": "*/f1c1c4c19d7e38df.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 9649
+        },
+        {
+          "path": "*/f346ef6004c-<n>.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 5188
+        },
+        {
+          "path": "*/fd70490cb6c377d7.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2539
+        },
+        {
+          "path": "*/fda762847d6bb-<n>.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1467
+        },
+        {
+          "path": "backups",
+          "kind": "dir",
+          "children": 5
+        },
+        {
+          "path": "backups/*",
+          "kind": "file",
+          "count": 5,
+          "median_bytes": 82328
+        },
+        {
+          "path": "daemon",
+          "kind": "dir",
+          "children": 3
+        },
+        {
+          "path": "daemon.log",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1814
+        },
+        {
+          "path": "daemon/control.key",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 32
+        },
+        {
+          "path": "daemon/dispatch",
+          "kind": "dir"
+        },
+        {
+          "path": "daemon/roster.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 89
+        },
+        {
+          "path": "downloads",
+          "kind": "dir"
+        },
+        {
+          "path": "history.jsonl",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 130315
+        },
+        {
+          "path": "jobs",
+          "kind": "dir",
+          "children": 2
+        },
+        {
+          "path": "jobs/fdfa471c",
+          "kind": "dir",
+          "children": 3
+        },
+        {
+          "path": "jobs/fdfa471c/state.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2722
+        },
+        {
+          "path": "jobs/fdfa471c/timeline.jsonl",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 7265
+        },
+        {
+          "path": "jobs/fdfa471c/tmp",
+          "kind": "dir"
+        },
+        {
+          "path": "jobs/pins.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2
+        },
+        {
+          "path": "plugins",
+          "kind": "dir",
+          "children": 6
+        },
+        {
+          "path": "plugins/*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 24
+        },
+        {
+          "path": "plugins/data",
+          "kind": "dir",
+          "children": 4
+        },
+        {
+          "path": "plugins/data/*",
+          "kind": "dir",
+          "sample_count": 4
+        },
+        {
+          "path": "plugins/installed_plugins.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 829
+        },
+        {
+          "path": "plugins/known_marketplaces.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 526
+        },
+        {
+          "path": "plugins/marketplaces",
+          "kind": "dir",
+          "children": 2
+        },
+        {
+          "path": "plugins/marketplaces/*",
+          "kind": "dir",
+          "children": 23,
+          "sample_count": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/*",
+          "kind": "dir",
+          "children": 1,
+          "sample_count": 7
+        },
+        {
+          "path": "plugins/marketplaces/*/*",
+          "kind": "file",
+          "count": 11,
+          "median_bytes": 314
+        },
+        {
+          "path": "plugins/marketplaces/*/*/*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 112
+        },
+        {
+          "path": "plugins/marketplaces/*/*/HEAD",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 21
+        },
+        {
+          "path": "plugins/marketplaces/*/*/config",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 337
+        },
+        {
+          "path": "plugins/marketplaces/*/*/description",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 73
+        },
+        {
+          "path": "plugins/marketplaces/*/*/hooks",
+          "kind": "dir",
+          "children": 14,
+          "sample_count": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/*/hooks/*",
+          "kind": "file",
+          "count": 13,
+          "median_bytes": 1492
+        },
+        {
+          "path": "plugins/marketplaces/*/*/hooks/update.sample",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 3650
+        },
+        {
+          "path": "plugins/marketplaces/*/*/index",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 4844
+        },
+        {
+          "path": "plugins/marketplaces/*/*/info",
+          "kind": "dir",
+          "children": 1,
+          "sample_count": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/*/info/exclude",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 240
+        },
+        {
+          "path": "plugins/marketplaces/*/*/install",
+          "kind": "dir",
+          "children": 5,
+          "sample_count": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/*/install/*",
+          "kind": "file",
+          "count": 5,
+          "median_bytes": 22188
+        }
+      ],
+      "name_shapes": [
+        {
+          "path": "*",
+          "shape": "<slug>",
+          "samples": 9
+        },
+        {
+          "path": "*/*",
+          "shape": "<uuid-v4>",
+          "samples": 740
+        },
+        {
+          "path": "*/*/*",
+          "shape": "<slug>",
+          "samples": 236
+        },
+        {
+          "path": "backups/*",
+          "shape": "<slug>",
+          "samples": 5
+        },
+        {
+          "path": "plugins/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "plugins/data/*",
+          "shape": "<slug>",
+          "samples": 4
+        },
+        {
+          "path": "plugins/marketplaces/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/*",
+          "shape": "<slug>",
+          "samples": 18
+        },
+        {
+          "path": "plugins/marketplaces/*/*/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/*/hooks/*",
+          "shape": "<slug>.sample",
+          "samples": 13
+        },
+        {
+          "path": "plugins/marketplaces/*/*/install/*",
+          "shape": "<slug>.md",
+          "samples": 5
+        },
+        {
+          "path": "plugins/marketplaces/*/*/objects/pack/*",
+          "shape": "pack-<40-hex>.idx",
+          "samples": 3
+        },
+        {
+          "path": "plugins/marketplaces/*/*/readme/*",
+          "shape": "<slug>.md",
+          "samples": 5
+        },
+        {
+          "path": "plugins/marketplaces/*/*/skills/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/*/workflows/*",
+          "shape": "<slug>.yml",
+          "samples": 3
+        },
+        {
+          "path": "plugins/marketplaces/*/evals/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/extensions/*",
+          "shape": "<slug>.ts",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/*/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/asana/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/context7/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/discord/*",
+          "shape": "<slug>",
+          "samples": 6
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/fakechat/*",
+          "shape": "<slug>",
+          "samples": 5
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/firebase/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/github/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/gitlab/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/greptile/*",
+          "shape": "<slug>",
+          "samples": 3
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/imessage/*",
+          "shape": "<slug>",
+          "samples": 6
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/linear/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/playwright/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/serena/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/telegram/*",
+          "shape": "<slug>",
+          "samples": 6
+        },
+        {
+          "path": "plugins/marketplaces/*/external_plugins/terraform/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/hooks/*",
+          "shape": "<slug>.mjs",
+          "samples": 3
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*",
+          "shape": "<slug>",
+          "samples": 36
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/*",
+          "shape": "<slug>",
+          "samples": 100
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/*/*",
+          "shape": "<slug>.sh",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/agents/*",
+          "shape": "<slug>.md",
+          "samples": 28
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/assets/*",
+          "shape": "<slug>.jpg",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/commands/*",
+          "shape": "<slug>.md",
+          "samples": 22
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/hooks/*",
+          "shape": "<slug>.sh",
+          "samples": 3
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/scripts/*",
+          "shape": "<slug>.sh",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/skills/*",
+          "shape": "<slug>",
+          "samples": 22
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/skills/*/*",
+          "shape": "<slug>.txt",
+          "samples": 6
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/skills/*/examples/*",
+          "shape": "<slug>.md",
+          "samples": 16
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/skills/*/jobs/*",
+          "shape": "<slug>.md",
+          "samples": 3
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/skills/*/references/*",
+          "shape": "<slug>.md",
+          "samples": 37
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/skills/*/scripts/*",
+          "shape": "<slug>.sh",
+          "samples": 8
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/skills/*/specs/*",
+          "shape": "<slug>.md",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/*/workflows/*",
+          "shape": "<slug>.js",
+          "samples": 6
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/hookify/*",
+          "shape": "<slug>",
+          "samples": 4
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/hookify/agents/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/hookify/core/*",
+          "shape": "<slug>.py",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/hookify/examples/*",
+          "shape": "<slug>.md",
+          "samples": 4
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/hookify/hooks/*",
+          "shape": "<slug>.py",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/hookify/matchers/*",
+          "shape": "<slug>.py",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/hookify/skills/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/hookify/utils/*",
+          "shape": "<slug>.py",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/playground/*",
+          "shape": "<slug>",
+          "samples": 3
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/playground/skills/playground/templates/*",
+          "shape": "<slug>.md",
+          "samples": 6
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/receipts/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/receipts/assets/*",
+          "shape": "<slug>.mjs",
+          "samples": 2
+        },
+        {
+          "path": "plugins/marketplaces/*/plugins/receipts/skills/receipts/scripts/*",
+          "shape": "<slug>.mjs",
+          "samples": 1
+        },
+        {
+          "path": "plugins/marketplaces/*/skills/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "projects/*",
+          "shape": "<slug>",
+          "samples": 26
+        },
+        {
+          "path": "projects/*/*",
+          "shape": "<uuid-v4>.jsonl",
+          "samples": 105
+        },
+        {
+          "path": "projects/*/*/*",
+          "shape": "<slug>",
+          "samples": 6
+        },
+        {
+          "path": "projects/*/*/*/*",
+          "shape": "b2m24ix-<n>.txt",
+          "samples": 2
+        },
+        {
+          "path": "projects/*/memory/*",
+          "shape": "<slug>.md",
+          "samples": 23
+        },
+        {
+          "path": "sessions/*",
+          "shape": "<slug>.key",
+          "samples": 11
+        },
+        {
+          "path": "skills/*",
+          "shape": "<slug>",
+          "samples": 46
+        },
+        {
+          "path": "skills/*/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "skills/*/audio/assets/sfx/*",
+          "shape": "<slug>.md",
+          "samples": 10
+        },
+        {
+          "path": "skills/*/audio/references/*",
+          "shape": "<slug>.md",
+          "samples": 2
+        },
+        {
+          "path": "skills/*/audio/references/captions/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "skills/*/audio/scripts/*",
+          "shape": "<slug>.mjs",
+          "samples": 3
+        },
+        {
+          "path": "skills/*/luts/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "skills/*/references/*",
+          "shape": "<slug>.md",
+          "samples": 26
+        },
+        {
+          "path": "skills/*/scripts/*",
+          "shape": "<slug>.mjs",
+          "samples": 2
+        },
+        {
+          "path": "skills/*/scripts/lib/*",
+          "shape": "<slug>.mjs",
+          "samples": 47
+        },
+        {
+          "path": "skills/impeccable/reference/*",
+          "shape": "<slug>.md",
+          "samples": 3
+        },
+        {
+          "path": "skills/impeccable/reference/degraded/*",
+          "shape": "<slug>.md",
+          "samples": 3
+        },
+        {
+          "path": "skills/impeccable/scripts/*",
+          "shape": "<slug>.json",
+          "samples": 30
+        },
+        {
+          "path": "skills/impeccable/scripts/detector/*",
+          "shape": "<slug>.mjs",
+          "samples": 3
+        },
+        {
+          "path": "skills/impeccable/scripts/detector/engines/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "skills/impeccable/scripts/detector/engines/*/*",
+          "shape": "<slug>.mjs",
+          "samples": 2
+        },
+        {
+          "path": "skills/impeccable/scripts/detector/engines/browser/*",
+          "shape": "<slug>.mjs",
+          "samples": 1
+        },
+        {
+          "path": "skills/impeccable/scripts/detector/engines/regex/*",
+          "shape": "<slug>.mjs",
+          "samples": 1
+        },
+        {
+          "path": "skills/impeccable/scripts/detector/engines/visual/*",
+          "shape": "<slug>.mjs",
+          "samples": 1
+        },
+        {
+          "path": "skills/impeccable/scripts/detector/node/*",
+          "shape": "<slug>.mjs",
+          "samples": 1
+        },
+        {
+          "path": "skills/impeccable/scripts/detector/shared/*",
+          "shape": "<slug>.mjs",
+          "samples": 1
+        },
+        {
+          "path": "skills/impeccable/scripts/lib/*",
+          "shape": "<slug>.mjs",
+          "samples": 15
+        },
+        {
+          "path": "skills/impeccable/scripts/live/*",
+          "shape": "<slug>.mjs",
+          "samples": 18
+        },
+        {
+          "path": "skills/impeccable/scripts/live/frameworks/*",
+          "shape": "<slug>.mjs",
+          "samples": 6
+        },
+        {
+          "path": "skills/noyap/references/*",
+          "shape": "<slug>.md",
+          "samples": 3
+        },
+        {
+          "path": "tasks/*",
+          "shape": "<uuid-v4>",
+          "samples": 16
+        },
+        {
+          "path": "tasks/*/*",
+          "shape": "<slug>.lock",
+          "samples": 68
+        },
+        {
+          "path": "telemetry/*",
+          "shape": "<slug>-<uuid-v4>-<uuid-v4>.json",
+          "samples": 4
+        }
+      ],
+      "first_line_keys": {
+        "*": [
+          "error_code",
+          "outcome",
+          "path",
+          "status",
+          "timestamp",
+          "version_from",
+          "version_to"
+        ],
+        "history.jsonl": [
+          "display",
+          "pastedContents",
+          "project",
+          "sessionId",
+          "timestamp"
+        ],
+        "jobs/fdfa471c/timeline.jsonl": [
+          "at",
+          "detail",
+          "state",
+          "text"
+        ],
+        "plugins/marketplaces/*/evals/cases.jsonl": [
+          "category",
+          "criteria",
+          "id",
+          "prompt",
+          "risk"
+        ],
+        "projects/*/*": [
+          "mode",
+          "sessionId",
+          "type"
+        ]
+      }
+    }
+  ]
+}

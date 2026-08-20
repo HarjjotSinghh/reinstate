@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `rein doctor --agents` honours an agent's documented root environment
+  variable. The override was read and reported through `root_env_set`, then
+  ignored whenever the real home root existed, so a tester who pointed
+  `KIMI_CODE_HOME` or `COPILOT_HOME` at a sanitized root still had their home
+  tree walked and written into a committed probe artifact. `rein sessions`
+  already honoured it (`v0.5.0-rc.4` macOS B7).
+- A resolved but empty agent root produces a valid `AGENT-PROBE-V1` document.
+  The walk's nil results replaced the initialized empty collections, so the
+  artifact failed its own validation (`v0.5.0-rc.4` macOS B7).
+- `rein resume` and `rein fork` refuse every catalog key below T3 with exit `5`
+  and a reason, whether or not the session exists. A T0 key reported exit `1`
+  from an unavailable source and a T1/T2 key reported exit `2` for an unknown
+  id. A resolved record still refuses with its own read-only reason
+  (`v0.5.0-rc.4` macOS A7).
+
+### Changed
+
+- Claude Code, Codex, Gemini, OpenCode, and Grok descriptors declare their
+  storage page and dual-platform probe reports. The conformance suite collected
+  evidence failures and logged them as escalations instead of failing, so every
+  one of those agents shipped without required evidence and a descriptor naming
+  a nonexistent path went unnoticed. Evidence now fails the suite like every
+  other check (`v0.5.0-rc.4` macOS A5/A9).
+
 ## [0.5.0-rc.4] - 2026-08-20
 
 Fourth Phase 5 candidate. Physical `v0.5.0-rc.3` acceptance on macOS arm64

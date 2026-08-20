@@ -1,0 +1,511 @@
+{
+  "schema": "AGENT-PROBE-V1",
+  "generated_at": "2026-08-20T19:00:00Z",
+  "platform": {
+    "os": "darwin",
+    "arch": "arm64",
+    "device_class": "macos"
+  },
+  "reinstate_version": "0.0.0-dev",
+  "agents": [
+    {
+      "key": "grok",
+      "display_name": "Grok Build",
+      "declared_tier": "T2",
+      "root_env": "GROK_HOME",
+      "root_env_set": false,
+      "candidate_roots": [
+        {
+          "relative_to": "home",
+          "suffix": ".grok",
+          "exists": true,
+          "marker_present": true
+        }
+      ],
+      "resolved_root": {
+        "relative_to": "home",
+        "suffix": ".grok"
+      },
+      "executable_on_path": true,
+      "version_raw": "grok 1.0.5 (5115b46bc909) [stable]",
+      "tree": [
+        {
+          "path": "*",
+          "kind": "file",
+          "count": 7,
+          "median_bytes": 1657
+        },
+        {
+          "path": "active_sessions.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 398
+        },
+        {
+          "path": "active_sessions.lock",
+          "kind": "file",
+          "count": 1
+        },
+        {
+          "path": "agent_id",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 36
+        },
+        {
+          "path": "completions",
+          "kind": "dir",
+          "children": 2
+        },
+        {
+          "path": "completions/bash",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "completions/bash/grok.bash",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 227306
+        },
+        {
+          "path": "completions/zsh",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "completions/zsh/*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 129439
+        },
+        {
+          "path": "config.toml",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 502
+        },
+        {
+          "path": "hooks",
+          "kind": "dir",
+          "children": 4
+        },
+        {
+          "path": "hooks/*",
+          "kind": "file",
+          "count": 3,
+          "median_bytes": 4375
+        },
+        {
+          "path": "hooks/impeccable.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 930
+        },
+        {
+          "path": "logs",
+          "kind": "dir",
+          "children": 2
+        },
+        {
+          "path": "logs/mcp",
+          "kind": "dir",
+          "children": 1
+        },
+        {
+          "path": "logs/mcp/*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 48
+        },
+        {
+          "path": "logs/unified.jsonl",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 3304545
+        },
+        {
+          "path": "managed_config.lock",
+          "kind": "file",
+          "count": 1
+        },
+        {
+          "path": "memtrace",
+          "kind": "dir",
+          "children": 23
+        },
+        {
+          "path": "memtrace/*",
+          "kind": "file",
+          "count": 23,
+          "median_bytes": 67330
+        },
+        {
+          "path": "models_cache.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 4472
+        },
+        {
+          "path": "relocations",
+          "kind": "dir",
+          "children": 194
+        },
+        {
+          "path": "relocations/*",
+          "kind": "file",
+          "count": 194
+        },
+        {
+          "path": "sessions",
+          "kind": "dir",
+          "children": 35
+        },
+        {
+          "path": "sessions/*",
+          "kind": "dir",
+          "children": 2,
+          "sample_count": 32
+        },
+        {
+          "path": "sessions/*/*",
+          "kind": "dir",
+          "children": 8,
+          "sample_count": 183
+        },
+        {
+          "path": "sessions/*/*/announcement_state.json",
+          "kind": "file",
+          "count": 60,
+          "median_bytes": 1642
+        },
+        {
+          "path": "sessions/*/*/assets",
+          "kind": "dir",
+          "children": 2,
+          "sample_count": 7
+        },
+        {
+          "path": "sessions/*/*/assets/image-<uuid-v4>.jpg",
+          "kind": "file",
+          "count": 44,
+          "median_bytes": 216266
+        },
+        {
+          "path": "sessions/*/*/assets/image-<uuid-v4>.png",
+          "kind": "file",
+          "count": 116,
+          "median_bytes": 52189
+        },
+        {
+          "path": "sessions/*/*/chat_history.jsonl",
+          "kind": "file",
+          "count": 182,
+          "median_bytes": 28616
+        },
+        {
+          "path": "sessions/*/*/chat_history.jsonl.lock",
+          "kind": "file",
+          "count": 61
+        },
+        {
+          "path": "sessions/*/*/compaction",
+          "kind": "dir",
+          "children": 3,
+          "sample_count": 2
+        },
+        {
+          "path": "sessions/*/*/compaction/INDEX.md",
+          "kind": "file",
+          "count": 2,
+          "median_bytes": 336
+        },
+        {
+          "path": "sessions/*/*/compaction/segment-<n>.md",
+          "kind": "file",
+          "count": 3,
+          "median_bytes": 523776
+        },
+        {
+          "path": "sessions/*/*/compaction_checkpoints",
+          "kind": "dir",
+          "children": 2,
+          "sample_count": 2
+        },
+        {
+          "path": "sessions/*/*/compaction_checkpoints/*",
+          "kind": "file",
+          "count": 3,
+          "median_bytes": 34591
+        },
+        {
+          "path": "sessions/*/*/compaction_requests",
+          "kind": "dir",
+          "children": 2,
+          "sample_count": 2
+        },
+        {
+          "path": "sessions/*/*/compaction_requests/*",
+          "kind": "file",
+          "count": 3,
+          "median_bytes": 6708524
+        },
+        {
+          "path": "sessions/*/*/events.jsonl",
+          "kind": "file",
+          "count": 182
+        },
+        {
+          "path": "sessions/*/*/hunk_records.jsonl",
+          "kind": "file",
+          "count": 8,
+          "median_bytes": 104779
+        },
+        {
+          "path": "sessions/*/*/images",
+          "kind": "dir",
+          "children": 21,
+          "sample_count": 5
+        },
+        {
+          "path": "sessions/*/*/images/image-<uuid-v4>.png",
+          "kind": "file",
+          "count": 158,
+          "median_bytes": 102683
+        },
+        {
+          "path": "sessions/*/*/last_recap_main_turn",
+          "kind": "file",
+          "count": 6,
+          "median_bytes": 2
+        },
+        {
+          "path": "sessions/*/*/plan.json",
+          "kind": "file",
+          "count": 2,
+          "median_bytes": 17
+        },
+        {
+          "path": "sessions/*/*/plan_mode.json",
+          "kind": "file",
+          "count": 2,
+          "median_bytes": 151
+        },
+        {
+          "path": "sessions/*/*/prompt_context.json",
+          "kind": "file",
+          "count": 182,
+          "median_bytes": 1343
+        },
+        {
+          "path": "sessions/*/*/prompts",
+          "kind": "dir",
+          "children": 1,
+          "sample_count": 3
+        },
+        {
+          "path": "sessions/*/*/prompts/prompt_0.txt",
+          "kind": "file",
+          "count": 3,
+          "median_bytes": 304953
+        },
+        {
+          "path": "sessions/*/*/recap_requests",
+          "kind": "dir",
+          "children": 4,
+          "sample_count": 8
+        },
+        {
+          "path": "sessions/*/*/recap_requests/*",
+          "kind": "file",
+          "count": 41,
+          "median_bytes": 1666119
+        },
+        {
+          "path": "sessions/*/*/resources_state.json",
+          "kind": "file",
+          "count": 60,
+          "median_bytes": 2286
+        },
+        {
+          "path": "sessions/*/*/rewind_points.jsonl",
+          "kind": "file",
+          "count": 61,
+          "median_bytes": 37583
+        },
+        {
+          "path": "sessions/*/*/rewind_points.jsonl.lock",
+          "kind": "file",
+          "count": 61
+        },
+        {
+          "path": "sessions/*/*/signals.json",
+          "kind": "file",
+          "count": 61,
+          "median_bytes": 1628
+        },
+        {
+          "path": "sessions/*/*/summary.json",
+          "kind": "file",
+          "count": 183,
+          "median_bytes": 544
+        },
+        {
+          "path": "sessions/*/*/summary.json.lock",
+          "kind": "file",
+          "count": 183
+        },
+        {
+          "path": "sessions/*/*/system_prompt.txt",
+          "kind": "file",
+          "count": 182,
+          "median_bytes": 4156
+        },
+        {
+          "path": "sessions/*/*/terminal",
+          "kind": "dir",
+          "children": 12,
+          "sample_count": 60
+        },
+        {
+          "path": "sessions/*/*/terminal/*",
+          "kind": "file",
+          "count": 4,
+          "median_bytes": 37
+        },
+        {
+          "path": "sessions/*/*/terminal/call-<uuid-v4>-<n>.log",
+          "kind": "file",
+          "count": 1298,
+          "median_bytes": 751
+        },
+        {
+          "path": "sessions/*/*/title_refresh_idx",
+          "kind": "file",
+          "count": 4,
+          "median_bytes": 1
+        },
+        {
+          "path": "sessions/*/*/updates.jsonl",
+          "kind": "file",
+          "count": 181,
+          "median_bytes": 579
+        },
+        {
+          "path": "sessions/*/*/updates.jsonl.lock",
+          "kind": "file",
+          "count": 181
+        }
+      ],
+      "name_shapes": [
+        {
+          "path": "*",
+          "shape": "<slug>.lock",
+          "samples": 7
+        },
+        {
+          "path": "completions/zsh/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "hooks/*",
+          "shape": "<slug>.json",
+          "samples": 3
+        },
+        {
+          "path": "logs/mcp/*",
+          "shape": "<slug>.log",
+          "samples": 1
+        },
+        {
+          "path": "memtrace/*",
+          "shape": "<slug>.jsonl",
+          "samples": 23
+        },
+        {
+          "path": "relocations/*",
+          "shape": "<uuid-v4>.lock",
+          "samples": 194
+        },
+        {
+          "path": "sessions/*",
+          "shape": "<slug>",
+          "samples": 32
+        },
+        {
+          "path": "sessions/*/*",
+          "shape": "<uuid-v4>",
+          "samples": 183
+        },
+        {
+          "path": "sessions/*/*/assets/*",
+          "shape": "image-<uuid-v4>.jpg",
+          "samples": 160
+        },
+        {
+          "path": "sessions/*/*/compaction/*",
+          "shape": "segment-<n>.md",
+          "samples": 3
+        },
+        {
+          "path": "sessions/*/*/compaction_checkpoints/*",
+          "shape": "<uuid-v4>.json",
+          "samples": 3
+        },
+        {
+          "path": "sessions/*/*/compaction_requests/*",
+          "shape": "<uuid-v4>.json",
+          "samples": 3
+        },
+        {
+          "path": "sessions/*/*/images/*",
+          "shape": "image-<uuid-v4>.png",
+          "samples": 158
+        },
+        {
+          "path": "sessions/*/*/recap_requests/*",
+          "shape": "<uuid-v4>.json",
+          "samples": 41
+        },
+        {
+          "path": "sessions/*/*/terminal/*",
+          "shape": "call-<uuid-v4>-<n>.log",
+          "samples": 1302
+        },
+        {
+          "path": "sessions/*/*/web_fetch/*",
+          "shape": "<slug>",
+          "samples": 8
+        }
+      ],
+      "first_line_keys": {
+        "logs/unified.jsonl": [
+          "ctx",
+          "lvl",
+          "msg",
+          "pid",
+          "sid",
+          "src",
+          "ts",
+          "ver"
+        ],
+        "memtrace/*": [
+          "kind",
+          "pid",
+          "ts_ms",
+          "version"
+        ],
+        "sessions/*/*/chat_history.jsonl": [
+          "content",
+          "type"
+        ],
+        "sessions/*/*/updates.jsonl": [
+          "method",
+          "params",
+          "timestamp"
+        ]
+      }
+    }
+  ]
+}

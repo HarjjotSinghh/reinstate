@@ -139,9 +139,18 @@ func probeAgent(ctx context.Context, env agents.Env, home agents.HomeDir, d agen
 
 	if resolvedAbs != "" {
 		tree, shapes, keys := walkRoot(ctx, resolvedAbs, accountName(home), d.Storage.Excluded, opts)
-		rec.Tree = tree
-		rec.NameShapes = shapes
-		rec.FirstLineKeys = keys
+		// A resolved but empty root walks to nothing. Assigning the nil results
+		// straight through dropped the initialized empty slices and produced an
+		// artifact that failed AGENT-PROBE-V1 validation.
+		if tree != nil {
+			rec.Tree = tree
+		}
+		if shapes != nil {
+			rec.NameShapes = shapes
+		}
+		if keys != nil {
+			rec.FirstLineKeys = keys
+		}
 	}
 	return rec
 }
@@ -242,7 +251,11 @@ func resolveCandidates(env agents.Env, home agents.HomeDir, d agents.Descriptor)
 		if rel.RelativeTo != "home" {
 			rel = RelativeRoot{RelativeTo: "env", Suffix: ""}
 		}
-		if resolved == nil && exists && (d.Storage.Marker == "" || marker) {
+		// An explicit RootEnv outranks a home-directory guess, the same way
+		// FixtureRoot does below. Requiring resolved == nil here meant that a
+		// tester who pointed the variable at a sanitized root still had their
+		// real home tree walked and reported.
+		if exists && (d.Storage.Marker == "" || marker) {
 			resolved = &rel
 			resolvedAbs = envPath
 		}

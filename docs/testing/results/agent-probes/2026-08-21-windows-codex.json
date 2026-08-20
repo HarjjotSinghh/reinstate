@@ -1,0 +1,2033 @@
+{
+  "schema": "AGENT-PROBE-V1",
+  "generated_at": "2026-08-20T18:52:22Z",
+  "platform": {
+    "os": "windows",
+    "arch": "amd64",
+    "device_class": "windows"
+  },
+  "reinstate_version": "0.5.0-rc.4",
+  "agents": [
+    {
+      "key": "codex",
+      "display_name": "Codex CLI",
+      "declared_tier": "T5",
+      "root_env": "CODEX_HOME",
+      "root_env_set": false,
+      "candidate_roots": [
+        {
+          "relative_to": "home",
+          "suffix": ".codex",
+          "exists": true,
+          "marker_present": true
+        },
+        {
+          "relative_to": "home",
+          "suffix": ".config/codex",
+          "exists": false,
+          "marker_present": false
+        }
+      ],
+      "resolved_root": {
+        "relative_to": "home",
+        "suffix": ".codex"
+      },
+      "executable_on_path": true,
+      "version_raw": "codex-cli 0.147.0",
+      "tree": [
+        {
+          "path": "*",
+          "kind": "dir",
+          "children": 6,
+          "sample_count": 4
+        },
+        {
+          "path": "*",
+          "kind": "file",
+          "count": 4,
+          "median_bytes": 123025
+        },
+        {
+          "path": "*/*",
+          "kind": "dir",
+          "children": 1,
+          "sample_count": 2
+        },
+        {
+          "path": "*/*",
+          "kind": "file",
+          "count": 2,
+          "median_bytes": 1271088
+        },
+        {
+          "path": "*/*/*",
+          "kind": "dir",
+          "children": 3,
+          "sample_count": 1
+        },
+        {
+          "path": "*/*/*/*",
+          "kind": "dir",
+          "children": 1,
+          "sample_count": 1
+        },
+        {
+          "path": "*/*/*/*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 560
+        },
+        {
+          "path": "*/*/*/*/plugins",
+          "kind": "dir",
+          "children": 1,
+          "sample_count": 1
+        },
+        {
+          "path": "*/*/*/*/plugins/marketplace.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1703
+        },
+        {
+          "path": "*/*/*/plugins",
+          "kind": "dir",
+          "children": 6,
+          "sample_count": 1
+        },
+        {
+          "path": "*/*/*/plugins/*",
+          "kind": "dir",
+          "children": 4,
+          "sample_count": 1
+        },
+        {
+          "path": "*/*/*/plugins/*/*",
+          "kind": "dir",
+          "children": 1,
+          "sample_count": 1
+        },
+        {
+          "path": "*/*/*/plugins/*/*/plugin.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1730
+        },
+        {
+          "path": "*/*/*/plugins/*/assets",
+          "kind": "dir",
+          "children": 1,
+          "sample_count": 1
+        },
+        {
+          "path": "*/*/*/plugins/*/assets/*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 923463
+        },
+        {
+          "path": "*/*/*/plugins/*/docs",
+          "kind": "dir",
+          "children": 3,
+          "sample_count": 1
+        },
+        {
+          "path": "*/*/*/plugins/*/docs/api.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 8028
+        },
+        {
+          "path": "*/*/*/plugins/*/docs/confirmations.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 4635
+        },
+        {
+          "path": "*/*/*/plugins/*/docs/guidance.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 13907
+        },
+        {
+          "path": "*/*/*/plugins/*/skills",
+          "kind": "dir",
+          "children": 1,
+          "sample_count": 1
+        },
+        {
+          "path": "*/*/*/plugins/*/skills/*",
+          "kind": "dir",
+          "children": 1,
+          "sample_count": 1
+        },
+        {
+          "path": "*/*/*/plugins/*/skills/*/SKILL.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1433
+        },
+        {
+          "path": "*/*/*/plugins/browser",
+          "kind": "dir",
+          "children": 5,
+          "sample_count": 1
+        },
+        {
+          "path": "*/*/*/plugins/browser/*",
+          "kind": "dir",
+          "children": 1,
+          "sample_count": 1
+        },
+        {
+          "path": "*/*/*/plugins/browser/*/plugin.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2193
+        },
+        {
+          "path": "*/*/*/plugins/browser/assets",
+          "kind": "dir",
+          "children": 4,
+          "sample_count": 1
+        },
+        {
+          "path": "*/*/*/plugins/browser/assets/*",
+          "kind": "file",
+          "count": 3,
+          "median_bytes": 4450
+        },
+        {
+          "path": "*/*/*/plugins/browser/assets/browser.png",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 9692
+        },
+        {
+          "path": "*/*/*/plugins/browser/docs",
+          "kind": "dir",
+          "children": 24,
+          "sample_count": 1
+        },
+        {
+          "path": "*/*/*/plugins/browser/docs/*",
+          "kind": "file",
+          "count": 17,
+          "median_bytes": 978
+        },
+        {
+          "path": "*/*/*/plugins/browser/docs/api.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 54052
+        },
+        {
+          "path": "*/*/*/plugins/browser/docs/capabilities",
+          "kind": "dir",
+          "children": 2,
+          "sample_count": 1
+        },
+        {
+          "path": "*/*/*/plugins/browser/docs/capabilities/browser",
+          "kind": "dir",
+          "children": 2,
+          "sample_count": 1
+        },
+        {
+          "path": "*/*/*/plugins/browser/docs/capabilities/browser/viewport.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1014
+        },
+        {
+          "path": "*/*/*/plugins/browser/docs/capabilities/browser/visibility.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 888
+        },
+        {
+          "path": "*/*/*/plugins/browser/docs/capabilities/tab",
+          "kind": "dir",
+          "children": 4,
+          "sample_count": 1
+        },
+        {
+          "path": "*/*/*/plugins/browser/docs/capabilities/tab/botDetection.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2713
+        },
+        {
+          "path": "*/*/*/plugins/browser/docs/capabilities/tab/browserAuth.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 24911
+        },
+        {
+          "path": "*/*/*/plugins/browser/docs/capabilities/tab/cdp.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2232
+        },
+        {
+          "path": "*/*/*/plugins/browser/docs/capabilities/tab/pageAssets.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1870
+        },
+        {
+          "path": "*/*/*/plugins/browser/docs/confirmations.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 5521
+        },
+        {
+          "path": "*/*/*/plugins/browser/docs/documents.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 3345
+        },
+        {
+          "path": "*/*/*/plugins/browser/docs/screenshots.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 521
+        },
+        {
+          "path": "*/*/*/plugins/browser/docs/visibility.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 607
+        },
+        {
+          "path": "*/*/*/plugins/browser/docs/webmcp.md",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 396
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts",
+          "kind": "dir",
+          "children": 10,
+          "sample_count": 1
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/*",
+          "kind": "file",
+          "count": 9,
+          "median_bytes": 12032
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules",
+          "kind": "dir",
+          "children": 10,
+          "sample_count": 1
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*",
+          "kind": "dir",
+          "children": 7,
+          "sample_count": 9
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 182
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/*",
+          "kind": "file",
+          "count": 35,
+          "median_bytes": 2485
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/bin.js",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2094
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/binding.cc",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 70236
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/binding.gyp",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1826
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/binding.js",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 54
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/deps",
+          "kind": "dir",
+          "children": 2,
+          "sample_count": 1
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/deps/leveldb",
+          "kind": "dir",
+          "children": 4,
+          "sample_count": 1
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/deps/leveldb/*",
+          "kind": "dir",
+          "children": 10,
+          "sample_count": 2
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/deps/leveldb/*/*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1484
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/deps/leveldb/*/Makefile",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 15903
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/deps/leveldb/*/atomic_pointer_win.h",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1274
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/deps/leveldb/*/build_detect_platform",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 8482
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/deps/leveldb/*/db",
+          "kind": "dir",
+          "children": 45,
+          "sample_count": 1
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/deps/leveldb/*/db/autocompact_test.cc",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 3373
+        }
+      ],
+      "name_shapes": [
+        {
+          "path": "*",
+          "shape": "<slug>.json",
+          "samples": 8
+        },
+        {
+          "path": "*/*",
+          "shape": "sandbox.2026-07-<n>.log",
+          "samples": 21
+        },
+        {
+          "path": "*/*/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "*/*/*/*",
+          "shape": "<slug>.agents",
+          "samples": 2
+        },
+        {
+          "path": "*/*/*/plugins/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/*/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/*/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/*/skills/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/browser/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/browser/assets/*",
+          "shape": "<slug>.png",
+          "samples": 3
+        },
+        {
+          "path": "*/*/*/plugins/browser/docs/*",
+          "shape": "<slug>.md",
+          "samples": 17
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/*",
+          "shape": "<slug>.mjs",
+          "samples": 9
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*",
+          "shape": "<slug>",
+          "samples": 10
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/*",
+          "shape": "<slug>.md",
+          "samples": 35
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/deps/leveldb/*",
+          "shape": "<slug>.20",
+          "samples": 2
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/deps/leveldb/*/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/deps/leveldb/patches/*",
+          "shape": "<slug>.patch",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/deps/snappy/*",
+          "shape": "win-<n>",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/deps/snappy/freebsd/*",
+          "shape": "<slug>.h",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/deps/snappy/linux/*",
+          "shape": "<slug>.h",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/deps/snappy/mac/*",
+          "shape": "<slug>.h",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/deps/snappy/openbsd/*",
+          "shape": "<slug>.h",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/deps/snappy/snappy/*",
+          "shape": "<slug>",
+          "samples": 11
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/deps/snappy/solaris/*",
+          "shape": "<slug>.h",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/deps/snappy/win-<n>/*",
+          "shape": "<slug>.h",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/lib/*",
+          "shape": "<slug>.js",
+          "samples": 11
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/prebuilds/*",
+          "shape": "<slug>",
+          "samples": 8
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/prebuilds/*/*",
+          "shape": "<slug>.node",
+          "samples": 4
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/prebuilds/android-arm-<n>/*",
+          "shape": "<slug>.node",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/prebuilds/linux-arm-<n>/*",
+          "shape": "<slug>.node",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/prebuilds/linux-x-<n>/*",
+          "shape": "<slug>.node",
+          "samples": 2
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/prebuilds/win32-ia-<n>/*",
+          "shape": "<slug>.node",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/prebuilds/win32-x-<n>/*",
+          "shape": "<slug>.node",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/test/*",
+          "shape": "<slug>.js",
+          "samples": 31
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/test/self/*",
+          "shape": "<slug>.js",
+          "samples": 11
+        },
+        {
+          "path": "*/*/*/plugins/browser/scripts/node_modules/*/types/*",
+          "shape": "<slug>.ts",
+          "samples": 5
+        },
+        {
+          "path": "*/*/*/plugins/browser/skills/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/chrome/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "*/*/*/plugins/chrome/*/windows/*",
+          "shape": "x-<n>",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/chrome/*/windows/x-<n>/*",
+          "shape": "<slug>.exe",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/chrome/assets/*",
+          "shape": "<slug>.png",
+          "samples": 3
+        },
+        {
+          "path": "*/*/*/plugins/chrome/docs/*",
+          "shape": "<slug>.md",
+          "samples": 17
+        },
+        {
+          "path": "*/*/*/plugins/chrome/scripts/*",
+          "shape": "<slug>.mjs",
+          "samples": 9
+        },
+        {
+          "path": "*/*/*/plugins/chrome/scripts/node_modules/*",
+          "shape": "<slug>",
+          "samples": 10
+        },
+        {
+          "path": "*/*/*/plugins/chrome/scripts/node_modules/*/*",
+          "shape": "<slug>.md",
+          "samples": 35
+        },
+        {
+          "path": "*/*/*/plugins/chrome/scripts/node_modules/*/deps/leveldb/*",
+          "shape": "<slug>.20",
+          "samples": 2
+        },
+        {
+          "path": "*/*/*/plugins/chrome/scripts/node_modules/*/deps/leveldb/*/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "*/*/*/plugins/chrome/scripts/node_modules/*/deps/leveldb/patches/*",
+          "shape": "<slug>.patch",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/chrome/scripts/node_modules/*/deps/snappy/*",
+          "shape": "win-<n>",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/chrome/scripts/node_modules/*/deps/snappy/freebsd/*",
+          "shape": "<slug>.h",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/chrome/scripts/node_modules/*/deps/snappy/linux/*",
+          "shape": "<slug>.h",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/chrome/scripts/node_modules/*/deps/snappy/mac/*",
+          "shape": "<slug>.h",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/chrome/scripts/node_modules/*/deps/snappy/openbsd/*",
+          "shape": "<slug>.h",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/chrome/scripts/node_modules/*/deps/snappy/snappy/*",
+          "shape": "<slug>",
+          "samples": 11
+        },
+        {
+          "path": "*/*/*/plugins/chrome/scripts/node_modules/*/deps/snappy/solaris/*",
+          "shape": "<slug>.h",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/chrome/scripts/node_modules/*/deps/snappy/win-<n>/*",
+          "shape": "<slug>.h",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/chrome/scripts/node_modules/*/lib/*",
+          "shape": "<slug>.js",
+          "samples": 11
+        },
+        {
+          "path": "*/*/*/plugins/chrome/scripts/node_modules/*/prebuilds/*",
+          "shape": "<slug>",
+          "samples": 8
+        },
+        {
+          "path": "*/*/*/plugins/chrome/scripts/node_modules/*/prebuilds/*/*",
+          "shape": "<slug>.node",
+          "samples": 4
+        },
+        {
+          "path": "*/*/*/plugins/chrome/scripts/node_modules/*/prebuilds/android-arm-<n>/*",
+          "shape": "<slug>.node",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/chrome/scripts/node_modules/*/prebuilds/linux-arm-<n>/*",
+          "shape": "<slug>.node",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/chrome/scripts/node_modules/*/prebuilds/linux-x-<n>/*",
+          "shape": "<slug>.node",
+          "samples": 2
+        },
+        {
+          "path": "*/*/*/plugins/chrome/scripts/node_modules/*/prebuilds/win32-ia-<n>/*",
+          "shape": "<slug>.node",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/chrome/scripts/node_modules/*/prebuilds/win32-x-<n>/*",
+          "shape": "<slug>.node",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/chrome/scripts/node_modules/*/test/*",
+          "shape": "<slug>.js",
+          "samples": 31
+        },
+        {
+          "path": "*/*/*/plugins/chrome/scripts/node_modules/*/test/self/*",
+          "shape": "<slug>.js",
+          "samples": 11
+        },
+        {
+          "path": "*/*/*/plugins/chrome/scripts/node_modules/*/types/*",
+          "shape": "<slug>.ts",
+          "samples": 5
+        },
+        {
+          "path": "*/*/*/plugins/chrome/skills/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/latex/*",
+          "shape": "<slug>",
+          "samples": 4
+        },
+        {
+          "path": "*/*/*/plugins/latex/assets/*",
+          "shape": "<slug>.svg",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/latex/scripts/*",
+          "shape": "<slug>.mjs",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/latex/skills/*",
+          "shape": "<slug>",
+          "samples": 3
+        },
+        {
+          "path": "*/*/*/plugins/sites/*",
+          "shape": "<slug>.json",
+          "samples": 5
+        },
+        {
+          "path": "*/*/*/plugins/sites/scripts/*",
+          "shape": "<slug>.sh",
+          "samples": 2
+        },
+        {
+          "path": "*/*/*/plugins/sites/skills/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "*/*/*/plugins/sites/skills/*/references/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/sites/skills/*/scripts/*",
+          "shape": "<slug>.sh",
+          "samples": 2
+        },
+        {
+          "path": "*/*/*/plugins/sites/skills/*/templates/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/sites/skills/*/templates/*/*",
+          "shape": "<slug>",
+          "samples": 5
+        },
+        {
+          "path": "*/*/*/plugins/sites/skills/*/templates/*/app/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "*/*/*/plugins/sites/skills/*/templates/*/build/*",
+          "shape": "<slug>.ts",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/sites/skills/*/templates/*/drizzle/meta/*",
+          "shape": "<slug>.json",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/sites/skills/*/templates/*/tests/*",
+          "shape": "<slug>.mjs",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/visualize/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "*/*/*/plugins/visualize/assets/*",
+          "shape": "<slug>.svg",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/*",
+          "shape": "<slug>.agents",
+          "samples": 4
+        },
+        {
+          "path": "*/plugins/*/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/*/hooks/*",
+          "shape": "<slug>.sample",
+          "samples": 13
+        },
+        {
+          "path": "*/plugins/*/objects/pack/*",
+          "shape": "pack-<40-hex>.idx",
+          "samples": 3
+        },
+        {
+          "path": "*/plugins/*/refs/codex/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/*/skills/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/*/skills/*/references/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/*",
+          "shape": "<slug>",
+          "samples": 29
+        },
+        {
+          "path": "*/plugins/plugins/*/*",
+          "shape": "<slug>.json",
+          "samples": 52
+        },
+        {
+          "path": "*/plugins/plugins/*/assets/*",
+          "shape": "<slug>.png",
+          "samples": 22
+        },
+        {
+          "path": "*/plugins/plugins/*/assets/templates/*",
+          "shape": "<slug>.md",
+          "samples": 20
+        },
+        {
+          "path": "*/plugins/plugins/*/commands/*",
+          "shape": "<slug>.md",
+          "samples": 3
+        },
+        {
+          "path": "*/plugins/plugins/*/examples/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/*/examples/*/*",
+          "shape": "<slug>.json",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/*/mcp/*",
+          "shape": "<slug>.br",
+          "samples": 3
+        },
+        {
+          "path": "*/plugins/plugins/*/preflight/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/*/references/*",
+          "shape": "<slug>",
+          "samples": 26
+        },
+        {
+          "path": "*/plugins/plugins/*/references/*/*",
+          "shape": "<slug>.md",
+          "samples": 4
+        },
+        {
+          "path": "*/plugins/plugins/*/references/foundations/*",
+          "shape": "<slug>.md",
+          "samples": 17
+        },
+        {
+          "path": "*/plugins/plugins/*/schemas/*",
+          "shape": "<slug>.json",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/*/skills/*",
+          "shape": "<slug>",
+          "samples": 104
+        },
+        {
+          "path": "*/plugins/plugins/*/skills/*/*",
+          "shape": "<slug>.md",
+          "samples": 5
+        },
+        {
+          "path": "*/plugins/plugins/*/skills/*/*/references/*",
+          "shape": "<slug>.md",
+          "samples": 6
+        },
+        {
+          "path": "*/plugins/plugins/*/skills/*/assets/*",
+          "shape": "<slug>.png",
+          "samples": 13
+        },
+        {
+          "path": "*/plugins/plugins/*/skills/*/examples/*",
+          "shape": "<slug>.example",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/*/skills/*/references/*",
+          "shape": "<slug>.md",
+          "samples": 243
+        },
+        {
+          "path": "*/plugins/plugins/*/skills/*/references/slides/*",
+          "shape": "<slug>.md",
+          "samples": 4
+        },
+        {
+          "path": "*/plugins/plugins/*/skills/*/rules/*",
+          "shape": "<slug>.md",
+          "samples": 67
+        },
+        {
+          "path": "*/plugins/plugins/*/skills/*/scripts/*",
+          "shape": "<slug>.py",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/*/skills/*/scripts/lib/*",
+          "shape": "<slug>.mjs",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/*/skills/*/templates/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/*/skills/jobs/scripts/*",
+          "shape": "<slug>.py",
+          "samples": 3
+        },
+        {
+          "path": "*/plugins/plugins/*/skills/transformers.js/references/*",
+          "shape": "<slug>.md",
+          "samples": 5
+        },
+        {
+          "path": "*/plugins/plugins/*/skills/validation/references/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/actively/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/aiera/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/aiera/assets/*",
+          "shape": "<slug>.svg",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/airtable/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/airtable/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/airtable/skills/*",
+          "shape": "<slug>",
+          "samples": 3
+        },
+        {
+          "path": "*/plugins/plugins/alation/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/alpaca/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/alpaca/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/amplitude/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/amplitude/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/apollo/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/apollo/assets/*",
+          "shape": "<slug>.svg",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/asana/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/attio/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/base-<n>/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/base-<n>/assets/*",
+          "shape": "<slug>.png",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/base-<n>/skills/*",
+          "shape": "<slug>",
+          "samples": 3
+        },
+        {
+          "path": "*/plugins/plugins/base-<n>/skills/*/references/*",
+          "shape": "<slug>.md",
+          "samples": 30
+        },
+        {
+          "path": "*/plugins/plugins/binance/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/binance/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/biorender/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/biorender/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/box/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/box/assets/*",
+          "shape": "<slug>.png",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/box/skills/box/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/box/skills/box/examples/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/box/skills/box/references/*",
+          "shape": "<slug>.md",
+          "samples": 6
+        },
+        {
+          "path": "*/plugins/plugins/brand-<n>/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/brand-<n>/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/brex/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/brex/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/brighthire/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/calendly/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/calendly/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/canva/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/canva/assets/*",
+          "shape": "<slug>.png",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/canva/skills/*",
+          "shape": "<slug>",
+          "samples": 3
+        },
+        {
+          "path": "*/plugins/plugins/canva/skills/*/assets/*",
+          "shape": "<slug>.svg",
+          "samples": 3
+        },
+        {
+          "path": "*/plugins/plugins/channel-<n>/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/channel-<n>/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/circleback/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/circleback/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/circleci/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/circleci/assets/*",
+          "shape": "<slug>.svg",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/circleci/skills/builds/references/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/circleci/skills/chunk/references/*",
+          "shape": "<slug>.md",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/circleci/skills/config/references/*",
+          "shape": "<slug>.md",
+          "samples": 3
+        },
+        {
+          "path": "*/plugins/plugins/clay/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/clay/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/clickup/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/close/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/close/assets/*",
+          "shape": "<slug>.svg",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/*",
+          "shape": "<slug>",
+          "samples": 3
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/assets/*",
+          "shape": "<slug>.svg",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/commands/*",
+          "shape": "<slug>.md",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/*",
+          "shape": "<slug>",
+          "samples": 7
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/*/*",
+          "shape": "<slug>.txt",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/*/assets/*",
+          "shape": "<slug>.svg",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/*/references/*",
+          "shape": "<slug>.md",
+          "samples": 6
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/*",
+          "shape": "<slug>.txt",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/assets/*",
+          "shape": "<slug>.svg",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/*",
+          "shape": "<slug>",
+          "samples": 29
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/*/*",
+          "shape": "<slug>.md",
+          "samples": 31
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/api/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/bindings/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/c3/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/containers/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/d1/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/ddos/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/hyperdrive/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/images/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/kv/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/miniflare/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/observability/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/pages/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/pipelines/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/pulumi/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/queues/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/r2/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/realtimekit/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/sandbox/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/snippets/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/spectrum/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/stream/*",
+          "shape": "<slug>.md",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/terraform/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/tunnel/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/turn/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/turnstile/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/vectorize/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/waf/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/workerd/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/workers/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/workflows/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/wrangler/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/cloudflare/references/zaraz/*",
+          "shape": "<slug>.md",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/wrangler/*",
+          "shape": "<slug>.txt",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudflare/skills/wrangler/assets/*",
+          "shape": "<slug>.svg",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cloudinary/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/cloudinary/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/coderabbit/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/coderabbit/assets/*",
+          "shape": "<slug>.png",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/coderabbit/skills/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cogedim/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/cogedim/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/conductor/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/convex/*",
+          "shape": "<slug>.json",
+          "samples": 3
+        },
+        {
+          "path": "*/plugins/plugins/coveo/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/coveo/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/cube/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/cube/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/daloopa/*",
+          "shape": "<slug>.json",
+          "samples": 5
+        },
+        {
+          "path": "*/plugins/plugins/daloopa/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/daloopa/skills/*",
+          "shape": "<slug>",
+          "samples": 16
+        },
+        {
+          "path": "*/plugins/plugins/daloopa/skills/*/references/*",
+          "shape": "<slug>.md",
+          "samples": 3
+        },
+        {
+          "path": "*/plugins/plugins/datadog/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/datadog/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/datasite/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/datasite/assets/*",
+          "shape": "<slug>.svg",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/datasite/skills/*",
+          "shape": "<slug>",
+          "samples": 8
+        },
+        {
+          "path": "*/plugins/plugins/deepnote/*",
+          "shape": "<slug>.json",
+          "samples": 3
+        },
+        {
+          "path": "*/plugins/plugins/deepnote/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/deepnote/skills/*",
+          "shape": "<slug>",
+          "samples": 4
+        },
+        {
+          "path": "*/plugins/plugins/deepnote/skills/deepnote/references/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/demandbase/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/demandbase/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/digitalocean/*",
+          "shape": "<slug>.json",
+          "samples": 3
+        },
+        {
+          "path": "*/plugins/plugins/digitalocean/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/digitalocean/skills/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/docket/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/docket/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/docusign/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/docusign/assets/*",
+          "shape": "<slug>.svg",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/dovetail/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/dovetail/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/egnyte/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/expo/*",
+          "shape": "<slug>",
+          "samples": 3
+        },
+        {
+          "path": "*/plugins/plugins/expo/commands/*",
+          "shape": "<slug>.md",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/expo/skills/*",
+          "shape": "<slug>",
+          "samples": 13
+        },
+        {
+          "path": "*/plugins/plugins/expo/skills/*/references/*",
+          "shape": "<slug>.md",
+          "samples": 21
+        },
+        {
+          "path": "*/plugins/plugins/factset/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/factset/assets/*",
+          "shape": "<slug>.svg",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/fal/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/figma/*",
+          "shape": "<slug>.json",
+          "samples": 5
+        },
+        {
+          "path": "*/plugins/plugins/figma/agents/*",
+          "shape": "<slug>.md",
+          "samples": 4
+        },
+        {
+          "path": "*/plugins/plugins/figma/assets/*",
+          "shape": "<slug>.png",
+          "samples": 5
+        },
+        {
+          "path": "*/plugins/plugins/figma/commands/*",
+          "shape": "<slug>.md",
+          "samples": 4
+        },
+        {
+          "path": "*/plugins/plugins/figma/skills/*",
+          "shape": "<slug>",
+          "samples": 12
+        },
+        {
+          "path": "*/plugins/plugins/figma/skills/*/references/*",
+          "shape": "<slug>.md",
+          "samples": 48
+        },
+        {
+          "path": "*/plugins/plugins/figma/skills/*/references/*/*",
+          "shape": "<slug>.md",
+          "samples": 8
+        },
+        {
+          "path": "*/plugins/plugins/figma/ui/*",
+          "shape": "<slug>.html",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/finn/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/finn/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/fireflies/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/fireflies/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/fyxer/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/fyxer/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/github/*",
+          "shape": "<slug>.json",
+          "samples": 4
+        },
+        {
+          "path": "*/plugins/plugins/github/assets/*",
+          "shape": "<slug>.svg",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/github/skills/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/github/skills/*/*",
+          "shape": "<slug>.txt",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/github/skills/*/assets/*",
+          "shape": "<slug>.svg",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/github/skills/github/assets/*",
+          "shape": "<slug>.svg",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/github/skills/yeet/*",
+          "shape": "<slug>.txt",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/github/skills/yeet/assets/*",
+          "shape": "<slug>.svg",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/glean/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/gmail/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/gmail/assets/*",
+          "shape": "<slug>.svg",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/gmail/skills/*",
+          "shape": "<slug>",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/gmail/skills/*/assets/*",
+          "shape": "<slug>.svg",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/gmail/skills/gmail/assets/*",
+          "shape": "<slug>.svg",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/gmail/skills/gmail/references/*",
+          "shape": "<slug>.md",
+          "samples": 6
+        },
+        {
+          "path": "*/plugins/plugins/govtribe/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/granola/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/happenstance/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/happenstance/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/hebbia/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/hex/*",
+          "shape": "<slug>.json",
+          "samples": 3
+        },
+        {
+          "path": "*/plugins/plugins/heygen/*",
+          "shape": "<slug>.json",
+          "samples": 3
+        },
+        {
+          "path": "*/plugins/plugins/heygen/assets/*",
+          "shape": "<slug>.svg",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/heygen/skills/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/heygen/skills/*/references/*",
+          "shape": "<slug>.md",
+          "samples": 10
+        },
+        {
+          "path": "*/plugins/plugins/highlevel/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/highlevel/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/hostinger/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/hostinger/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/hubspot/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/hubspot/skills/*",
+          "shape": "<slug>",
+          "samples": 3
+        },
+        {
+          "path": "*/plugins/plugins/hyperframes/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/hyperframes/skills/*",
+          "shape": "<slug>",
+          "samples": 3
+        },
+        {
+          "path": "*/plugins/plugins/hyperframes/skills/*/examples/*",
+          "shape": "<slug>.md",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/hyperframes/skills/*/references/*",
+          "shape": "<slug>.md",
+          "samples": 11
+        },
+        {
+          "path": "*/plugins/plugins/hyperframes/skills/gsap/scripts/*",
+          "shape": "<slug>.py",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/hyperframes/skills/hyperframes/*",
+          "shape": "<slug>.md",
+          "samples": 3
+        },
+        {
+          "path": "*/plugins/plugins/hyperframes/skills/hyperframes/palettes/*",
+          "shape": "<slug>.md",
+          "samples": 8
+        },
+        {
+          "path": "*/plugins/plugins/hyperframes/skills/hyperframes/references/*",
+          "shape": "<slug>.md",
+          "samples": 5
+        },
+        {
+          "path": "*/plugins/plugins/hyperframes/skills/hyperframes/references/transitions/*",
+          "shape": "<slug>.md",
+          "samples": 13
+        },
+        {
+          "path": "*/plugins/plugins/hyperframes/skills/hyperframes/scripts/*",
+          "shape": "<slug>.mjs",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/intercom/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/intercom/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        },
+        {
+          "path": "*/plugins/plugins/jam/*",
+          "shape": "<slug>.json",
+          "samples": 2
+        },
+        {
+          "path": "*/plugins/plugins/jam/assets/*",
+          "shape": "<slug>.png",
+          "samples": 1
+        }
+      ],
+      "first_line_keys": {}
+    }
+  ]
+}

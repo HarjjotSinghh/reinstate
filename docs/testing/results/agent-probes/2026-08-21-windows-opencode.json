@@ -1,0 +1,2882 @@
+{
+  "schema": "AGENT-PROBE-V1",
+  "generated_at": "2026-08-20T18:52:22Z",
+  "platform": {
+    "os": "windows",
+    "arch": "amd64",
+    "device_class": "windows"
+  },
+  "reinstate_version": "0.5.0-rc.4",
+  "agents": [
+    {
+      "key": "opencode",
+      "display_name": "OpenCode",
+      "declared_tier": "T2",
+      "root_env_set": false,
+      "candidate_roots": [
+        {
+          "relative_to": "home",
+          "suffix": ".local/share/opencode",
+          "exists": true,
+          "marker_present": true
+        }
+      ],
+      "resolved_root": {
+        "relative_to": "home",
+        "suffix": ".local/share/opencode"
+      },
+      "executable_on_path": true,
+      "version_raw": "1.18.2",
+      "tree": [
+        {
+          "path": "auth.json",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2498
+        },
+        {
+          "path": "bin",
+          "kind": "dir",
+          "children": 5
+        },
+        {
+          "path": "bin/bun.lock",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 606
+        },
+        {
+          "path": "bin/node_modules",
+          "kind": "dir",
+          "children": 2
+        },
+        {
+          "path": "bin/node_modules/*",
+          "kind": "dir",
+          "children": 4,
+          "sample_count": 1
+        },
+        {
+          "path": "bin/node_modules/*/*",
+          "kind": "file",
+          "count": 2,
+          "median_bytes": 15872
+        },
+        {
+          "path": "bin/node_modules/*/pyright.bunx",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 56
+        },
+        {
+          "path": "bin/node_modules/*/pyright.exe",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 15872
+        },
+        {
+          "path": "bin/node_modules/pyright",
+          "kind": "dir",
+          "children": 6
+        },
+        {
+          "path": "bin/node_modules/pyright/*",
+          "kind": "file",
+          "count": 2,
+          "median_bytes": 2778
+        },
+        {
+          "path": "bin/node_modules/pyright/dist",
+          "kind": "dir",
+          "children": 10
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*",
+          "kind": "dir",
+          "children": 5,
+          "sample_count": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*",
+          "kind": "file",
+          "count": 4,
+          "median_bytes": 2043672
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/*",
+          "kind": "file",
+          "count": 2,
+          "median_bytes": 12657
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/commit.txt",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 41
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib",
+          "kind": "dir",
+          "children": 284,
+          "sample_count": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/*",
+          "kind": "dir",
+          "children": 6,
+          "sample_count": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/*",
+          "kind": "file",
+          "count": 60,
+          "median_bytes": 2345
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/*/*",
+          "kind": "file",
+          "count": 2,
+          "median_bytes": 13211
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/*/dbapi.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1636
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/*/importlib.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 727
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/*/wsgi.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1637
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/*/xml.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 499
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/abc.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2122
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/aifc.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2986
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/annotationlib.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 5435
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/antigravity.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 123
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/argparse.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 31770
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/array.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 4675
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/ast.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 77826
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asynchat.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 787
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio",
+          "kind": "dir",
+          "children": 34,
+          "sample_count": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/*",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 44530
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/base_events.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 19731
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/base_futures.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 609
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/base_subprocess.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2680
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/base_tasks.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 404
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/constants.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 556
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/coroutines.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2296
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/events.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 25540
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/exceptions.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1163
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/format_helpers.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1353
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/futures.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 721
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/graph.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1194
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/locks.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 3514
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/log.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 39
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/mixins.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 215
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/proactor_events.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2598
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/protocols.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1927
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/queues.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1918
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/runners.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1369
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/selector_events.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 315
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/sslproto.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 6489
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/staggered.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 341
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/streams.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 6007
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/subprocess.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 9295
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/taskgroups.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 858
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/tasks.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 17095
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/threads.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 330
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/timeouts.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 717
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/tools.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 1489
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/transports.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 2390
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/trsock.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 6096
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/unix_events.pyi",
+          "kind": "file",
+          "count": 1,
+          "median_bytes": 11341
+        }
+      ],
+      "name_shapes": [
+        {
+          "path": "bin/node_modules/*",
+          "shape": "<slug>.bin",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/*/*",
+          "shape": "<slug>.bunx",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/*",
+          "shape": "<slug>.txt",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*",
+          "shape": "<slug>.js",
+          "samples": 5
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/*",
+          "shape": "<slug>",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/*",
+          "shape": "<slug>",
+          "samples": 62
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/*/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/asyncio/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/collections/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/compression/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/compression/*/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/compression/zstd/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/concurrent/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/concurrent/futures/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/concurrent/interpreters/*",
+          "shape": "<slug>.pyi",
+          "samples": 3
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/ctypes/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/ctypes/macholib/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/curses/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/dbm/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/distutils/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/distutils/command/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/email/*",
+          "shape": "<slug>.pyi",
+          "samples": 3
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/email/mime/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/encodings/*",
+          "shape": "<slug>.pyi",
+          "samples": 60
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/ensurepip/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/html/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/http/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/importlib/*",
+          "shape": "<slug>.pyi",
+          "samples": 4
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/importlib/metadata/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/importlib/resources/*",
+          "shape": "<slug>.pyi",
+          "samples": 3
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/json/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/lib2to3/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/lib2to3/fixes/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/lib2to3/pgen2/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/logging/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/msilib/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/multiprocessing/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/multiprocessing/dummy/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/os/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/pathlib/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/pydoc_data/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/pyexpat/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/sqlite3/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/string/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/sys/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/tkinter/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/unittest/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/urllib/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/venv/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/wsgiref/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/xml/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/xml/dom/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/xml/etree/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/xml/parsers/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/xml/parsers/expat/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/xml/sax/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/xmlrpc/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/zipfile/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/zipfile/*/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stdlib/zoneinfo/*",
+          "shape": "<slug>.pyi",
+          "samples": 3
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*",
+          "shape": "<slug>",
+          "samples": 32
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/*",
+          "shape": "<slug>.toml",
+          "samples": 32
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/antlr4/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/antlr4/atn/*",
+          "shape": "<slug>.pyi",
+          "samples": 3
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/antlr4/dfa/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/antlr4/error/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/antlr4/tree/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/antlr4/xpath/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/auth0/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/auth0/authentication/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/auth0/management/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/core/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/core/emitters/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/core/exceptions/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/core/models/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/core/plugins/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/core/sampling/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/core/sampling/local/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/core/streaming/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/core/utils/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/ext/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/ext/aiobotocore/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/ext/aiohttp/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/ext/botocore/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/ext/bottle/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/ext/django/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/ext/flask/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/ext/flask_sqlalchemy/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/ext/httplib/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/ext/httpx/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/ext/mysql/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/ext/pg-<n>/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/ext/psycopg/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/ext/psycopg2/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/ext/pymongo/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/ext/pymysql/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/ext/pynamodb/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/ext/requests/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/ext/sqlalchemy/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/ext/sqlalchemy/util/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/ext/sqlalchemy_core/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/aws_xray_sdk/ext/sqlite3/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/click_log/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/click_shell/*",
+          "shape": "<slug>.pyi",
+          "samples": 3
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/click_spinner/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/click_web/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/click_web/resources/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/consolemenu/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/consolemenu/format/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/consolemenu/items/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/consolemenu/validators/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/django_filters/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/django_filters/rest_framework/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/dockerfile_parse/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/flake8_simplify/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/flake8_simplify/rules/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/flask_cors/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/flask_migrate/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/flask_socketio/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/google/cloud/ndb/*",
+          "shape": "<slug>.pyi",
+          "samples": 8
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/grpc_channelz/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/grpc_channelz/v1/*",
+          "shape": "<slug>.pyi",
+          "samples": 3
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/grpc_health/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/grpc_health/v1/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/grpc_reflection/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/grpc_reflection/v1alpha/*",
+          "shape": "<slug>.pyi",
+          "samples": 3
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/grpc_status/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/import_export/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/import_export/formats/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/import_export/templatetags/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/jack/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/management/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/management/commands/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/pyautogui/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/pymysql/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/pymysql/constants/*",
+          "shape": "<slug>.pyi",
+          "samples": 5
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/*/yaml/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Authlib/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Authlib/authlib/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Authlib/authlib/common/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Authlib/authlib/integrations/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Authlib/authlib/integrations/base_client/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Authlib/authlib/integrations/django_client/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Authlib/authlib/integrations/django_oauth1/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Authlib/authlib/integrations/django_oauth2/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Authlib/authlib/integrations/flask_client/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Authlib/authlib/integrations/flask_oauth1/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Authlib/authlib/integrations/flask_oauth2/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Authlib/authlib/integrations/httpx_client/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Authlib/authlib/integrations/requests_client/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Authlib/authlib/integrations/sqla_oauth2/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Authlib/authlib/integrations/starlette_client/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Authlib/authlib/jose/*",
+          "shape": "<slug>.pyi",
+          "samples": 7
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Authlib/authlib/jose/drafts/*",
+          "shape": "<slug>.pyi",
+          "samples": 4
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Authlib/authlib/jose/rfc-<n>/*",
+          "shape": "<slug>.pyi",
+          "samples": 7
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Authlib/authlib/oauth1/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Authlib/authlib/oauth1/rfc-<n>/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Authlib/authlib/oauth2/*",
+          "shape": "<slug>.pyi",
+          "samples": 16
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Authlib/authlib/oauth2/rfc-<n>/*",
+          "shape": "<slug>.pyi",
+          "samples": 15
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Authlib/authlib/oauth2/rfc-<n>/grants/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Authlib/authlib/oidc/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Authlib/authlib/oidc/core/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Authlib/authlib/oidc/core/grants/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Authlib/authlib/oidc/discovery/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Authlib/authlib/oidc/registration/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Deprecated/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Deprecated/deprecated/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Jetson.GPIO/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Jetson.GPIO/Jetson/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Jetson.GPIO/Jetson/GPIO/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Markdown/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Markdown/markdown/*",
+          "shape": "<slug>.pyi",
+          "samples": 3
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Markdown/markdown/extensions/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/PyMeeus/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/PyMeeus/pymeeus/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/PyScreeze/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/PyScreeze/pyscreeze/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/PySocks/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Pygments/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Pygments/pygments/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Pygments/pygments/filters/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Pygments/pygments/formatters/*",
+          "shape": "<slug>.pyi",
+          "samples": 3
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Pygments/pygments/lexers/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Pygments/pygments/styles/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/RPi.GPIO/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/RPi.GPIO/RPi/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/RPi.GPIO/RPi/GPIO/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Send2Trash/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/Send2Trash/send2trash/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/TgCrypto/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/TgCrypto/tgcrypto/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/WTForms/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/WTForms/wtforms/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/WTForms/wtforms/csrf/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/WTForms/wtforms/fields/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/WTForms/wtforms/widgets/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/WebOb/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/WebOb/webob/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/aiofiles/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/aiofiles/aiofiles/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/aiofiles/aiofiles/tempfile/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/aiofiles/aiofiles/threadpool/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/assertpy/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/assertpy/assertpy/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/atheris/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/atheris/atheris/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/binaryornot/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/binaryornot/binaryornot/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/bleach/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/bleach/bleach/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/boltons/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/boltons/boltons/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/braintree/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/braintree/braintree/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/braintree/braintree/dispute_details/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/braintree/braintree/exceptions/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/braintree/braintree/exceptions/http/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/braintree/braintree/graphql/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/braintree/braintree/graphql/enums/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/braintree/braintree/graphql/inputs/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/braintree/braintree/graphql/types/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/braintree/braintree/graphql/unions/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/braintree/braintree/merchant_account/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/braintree/braintree/test/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/braintree/braintree/util/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/cachetools/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/cachetools/cachetools/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/capturer/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/cffi/*",
+          "shape": "<slug>.toml",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/cffi/cffi/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/channels/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/channels/channels/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/channels/channels/generic/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/channels/channels/management/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/channels/channels/management/commands/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/channels/channels/security/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/channels/channels/testing/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/chevron/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/chevron/chevron/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/colorama/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/colorama/colorama/*",
+          "shape": "<slug>.pyi",
+          "samples": 3
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/colorful/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/colorful/colorful/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/convertdate/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/convertdate/convertdate/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/convertdate/convertdate/data/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/croniter/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/croniter/croniter/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/dateparser/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/dateparser/dateparser/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/dateparser/dateparser/calendars/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/dateparser/dateparser/custom_language_detection/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/dateparser/dateparser/data/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/dateparser/dateparser/languages/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/dateparser/dateparser/search/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/dateparser/dateparser/utils/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/dateparser/dateparser_data/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/decorator/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/defusedxml/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/defusedxml/defusedxml/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/dirhash/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/dirhash/dirhash/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/docker/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/docker/docker/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/docker/docker/api/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/docker/docker/context/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/docker/docker/credentials/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/docker/docker/models/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/docker/docker/transport/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/docker/docker/types/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/docker/docker/utils/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/docutils/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/docutils/docutils/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/docutils/docutils/languages/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/docutils/docutils/parsers/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/docutils/docutils/parsers/rst/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/docutils/docutils/parsers/rst/directives/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/docutils/docutils/parsers/rst/languages/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/docutils/docutils/readers/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/docutils/docutils/transforms/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/docutils/docutils/utils/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/docutils/docutils/utils/math/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/docutils/docutils/writers/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/docutils/docutils/writers/html4css1/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/docutils/docutils/writers/html5_polyglot/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/docutils/docutils/writers/latex2e/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/docutils/docutils/writers/odf_odt/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/docutils/docutils/writers/pep_html/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/docutils/docutils/writers/s5_html/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/docutils/docutils/writers/xetex/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/editdistance/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/editdistance/editdistance/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/entrypoints/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/et_xmlfile/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/et_xmlfile/et_xmlfile/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/fanstatic/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/fanstatic/fanstatic/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/first/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/flake8/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/flake8/flake8/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/flake8/flake8/api/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/flake8/flake8/formatting/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/flake8/flake8/main/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/flake8/flake8/options/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/flake8/flake8/plugins/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/fpdf2/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/fpdf2/fpdf/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/gdb/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/gdb/gdb/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/gdb/gdb/dap/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/geopandas/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/geopandas/geopandas/*",
+          "shape": "<slug>.pyi",
+          "samples": 4
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/geopandas/geopandas/io/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/geopandas/geopandas/tools/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/gevent/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/gevent/gevent/*",
+          "shape": "<slug>.pyi",
+          "samples": 15
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/gevent/gevent/*/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/gevent/gevent/libev/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/gevent/gevent/libuv/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/gevent/gevent/monkey/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/gevent/gevent/resolver/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/greenlet/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/greenlet/greenlet/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/grpcio/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/grpcio/grpc/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/grpcio/grpc/aio/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/gunicorn/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/gunicorn/gunicorn/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/gunicorn/gunicorn/app/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/gunicorn/gunicorn/http/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/gunicorn/gunicorn/instrument/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/gunicorn/gunicorn/workers/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/hdbcli/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/hdbcli/hdbcli/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/hnswlib/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/html5lib/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/html5lib/html5lib/*",
+          "shape": "<slug>.pyi",
+          "samples": 6
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/html5lib/html5lib/*/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/html5lib/html5lib/filters/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/html5lib/html5lib/treeadapters/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/html5lib/html5lib/treebuilders/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/html5lib/html5lib/treewalkers/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/httplib2/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/httplib2/httplib2/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/hvac/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/hvac/hvac/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/hvac/hvac/api/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/hvac/hvac/api/auth_methods/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/hvac/hvac/api/secrets_engines/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/hvac/hvac/api/system_backend/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/hvac/hvac/constants/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/hvac/hvac/v1/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/icalendar/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/icalendar/icalendar/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/icalendar/icalendar/timezone/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/inifile/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/jmespath/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/jmespath/jmespath/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/jsonnet/*",
+          "shape": "<slug>.toml",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/jsonschema/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/jsonschema/jsonschema/*",
+          "shape": "<slug>.pyi",
+          "samples": 7
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/jwcrypto/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/jwcrypto/jwcrypto/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/keyboard/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/keyboard/keyboard/*",
+          "shape": "<slug>.pyi",
+          "samples": 5
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/ldap3/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/ldap3/ldap3/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/ldap3/ldap3/abstract/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/ldap3/ldap3/core/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/ldap3/ldap3/extend/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/ldap3/ldap3/extend/microsoft/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/ldap3/ldap3/extend/novell/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/ldap3/ldap3/extend/standard/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/ldap3/ldap3/operation/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/ldap3/ldap3/protocol/*",
+          "shape": "<slug>.pyi",
+          "samples": 7
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/ldap3/ldap3/protocol/formatters/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/ldap3/ldap3/protocol/sasl/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/ldap3/ldap3/protocol/schemas/*",
+          "shape": "<slug>.pyi",
+          "samples": 5
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/ldap3/ldap3/strategy/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/ldap3/ldap3/utils/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/libsass/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/libsass/sassutils/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/lunardate/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/lupa/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/lupa/lupa/*",
+          "shape": "<slug>.pyi",
+          "samples": 7
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/lzstring/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/lzstring/lzstring/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/m3u8/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/m3u8/m3u8/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/mock/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/mock/mock/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/mysqlclient/*",
+          "shape": "<slug>.toml",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/mysqlclient/*/*",
+          "shape": "<slug>.pyi",
+          "samples": 3
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/mysqlclient/*/constants/*",
+          "shape": "<slug>.pyi",
+          "samples": 3
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/nanoid/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/nanoid/nanoid/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/nanoleafapi/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/nanoleafapi/nanoleafapi/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/netaddr/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/netaddr/netaddr/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/netaddr/netaddr/contrib/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/netaddr/netaddr/eui/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/netaddr/netaddr/ip/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/netaddr/netaddr/strategy/*",
+          "shape": "<slug>.pyi",
+          "samples": 3
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/netifaces/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/networkx/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/networkx/networkx/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/networkx/networkx/algorithms/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/networkx/networkx/algorithms/approximation/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/networkx/networkx/algorithms/assortativity/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/networkx/networkx/algorithms/bipartite/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/networkx/networkx/algorithms/centrality/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/networkx/networkx/algorithms/coloring/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/networkx/networkx/algorithms/community/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/networkx/networkx/algorithms/components/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/networkx/networkx/algorithms/connectivity/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/networkx/networkx/algorithms/flow/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/networkx/networkx/algorithms/isomorphism/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/networkx/networkx/algorithms/link_analysis/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/networkx/networkx/algorithms/minors/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/networkx/networkx/algorithms/operators/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/networkx/networkx/algorithms/shortest_paths/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/networkx/networkx/algorithms/traversal/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/networkx/networkx/algorithms/tree/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/networkx/networkx/classes/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/networkx/networkx/drawing/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/networkx/networkx/generators/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/networkx/networkx/linalg/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/networkx/networkx/readwrite/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/networkx/networkx/readwrite/json_graph/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/networkx/networkx/utils/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/oauthlib/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/oauthlib/oauthlib/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/oauthlib/oauthlib/oauth1/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/oauthlib/oauthlib/oauth1/rfc-<n>/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/oauthlib/oauthlib/oauth1/rfc-<n>/endpoints/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/oauthlib/oauthlib/oauth2/*",
+          "shape": "<slug>.pyi",
+          "samples": 3
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/oauthlib/oauthlib/oauth2/rfc-<n>/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/oauthlib/oauthlib/oauth2/rfc-<n>/clients/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/oauthlib/oauthlib/oauth2/rfc-<n>/endpoints/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/oauthlib/oauthlib/oauth2/rfc-<n>/grant_types/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/oauthlib/oauthlib/openid/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/oauthlib/oauthlib/openid/connect/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/oauthlib/oauthlib/openid/connect/core/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/oauthlib/oauthlib/openid/connect/core/endpoints/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/oauthlib/oauthlib/openid/connect/core/grant_types/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/objgraph/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/olefile/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/olefile/olefile/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/openpyxl/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/openpyxl/openpyxl/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/openpyxl/openpyxl/cell/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/openpyxl/openpyxl/chart/*",
+          "shape": "<slug>.pyi",
+          "samples": 3
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/openpyxl/openpyxl/chartsheet/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/openpyxl/openpyxl/comments/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/openpyxl/openpyxl/compat/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/openpyxl/openpyxl/descriptors/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/openpyxl/openpyxl/drawing/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/openpyxl/openpyxl/formatting/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/openpyxl/openpyxl/formula/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/openpyxl/openpyxl/packaging/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/openpyxl/openpyxl/pivot/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/openpyxl/openpyxl/reader/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/openpyxl/openpyxl/styles/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/openpyxl/openpyxl/utils/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/openpyxl/openpyxl/workbook/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/openpyxl/openpyxl/workbook/external_link/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/openpyxl/openpyxl/worksheet/*",
+          "shape": "<slug>.pyi",
+          "samples": 5
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/openpyxl/openpyxl/writer/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/openpyxl/openpyxl/xml/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/opentracing/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/opentracing/opentracing/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/opentracing/opentracing/ext/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/opentracing/opentracing/harness/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/opentracing/opentracing/mocktracer/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/opentracing/opentracing/scope_managers/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/paramiko/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/paramiko/paramiko/*",
+          "shape": "<slug>.pyi",
+          "samples": 5
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/parsimonious/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/parsimonious/parsimonious/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/passlib/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/passlib/passlib/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/passlib/passlib/crypto/*",
+          "shape": "<slug>.pyi",
+          "samples": 3
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/passlib/passlib/crypto/*/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/passlib/passlib/crypto/scrypt/*",
+          "shape": "<slug>.pyi",
+          "samples": 4
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/passlib/passlib/ext/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/passlib/passlib/ext/django/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/passlib/passlib/handlers/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/passlib/passlib/utils/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/passlib/passlib/utils/compat/*",
+          "shape": "<slug>.pyi",
+          "samples": 2
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/passpy/*",
+          "shape": "<slug>.toml",
+          "samples": 1
+        },
+        {
+          "path": "bin/node_modules/pyright/dist/*/stubs/passpy/passpy/*",
+          "shape": "<slug>.pyi",
+          "samples": 1
+        }
+      ],
+      "first_line_keys": {}
+    }
+  ]
+}
