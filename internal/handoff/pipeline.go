@@ -311,6 +311,7 @@ func Plan(ctx context.Context, rec sessionindex.Record, opts Options) (PlanResul
 	task := DeriveCheckpoint(CheckpointInput{
 		Events:           redactedEvents,
 		Workspace:        report.Workspace,
+		Mapper:           WorkspaceMapper(report, rec),
 		Changed:          append([]string(nil), changedFiles...),
 		ChangedTruncated: ws.ChangedFilesOmitted > 0,
 	})

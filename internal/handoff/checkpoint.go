@@ -2,11 +2,13 @@ package handoff
 
 import (
 	"encoding/json"
+	"path/filepath"
 	"sort"
 	"strings"
 	"unicode/utf8"
 
 	"github.com/HarjjotSinghh/reinstate/internal/capsule"
+	"github.com/HarjjotSinghh/reinstate/internal/pathmap"
 	"github.com/HarjjotSinghh/reinstate/internal/workspace"
 )
 
@@ -16,6 +18,10 @@ type CheckpointInput struct {
 	Events    []capsule.Event
 	Workspace workspace.Fingerprint
 	Changed   []string // live git porcelain, NOT transcript claims
+	// Mapper rewrites transcript-claimed paths into portable tokens. A capsule
+	// may not carry an absolute filesystem path, so anything this cannot
+	// tokenize is dropped and the field records why.
+	Mapper pathmap.Mapper
 	// ChangedTruncated reports that Changed is a bounded prefix of the real
 	// list. A truncated list cannot contradict a transcript claim, so it
 	// suppresses the evidence-conflict marking below.
@@ -31,6 +37,7 @@ const (
 	reasonRequiresOptionalSummarizer     = "requires_optional_summarizer"
 	reasonInterruptedNotReplayed         = "interrupted_not_replayed"
 	reasonEvidenceConflictsWithWorkspace = "evidence_conflicts_with_workspace"
+	reasonPathOutsideWorkspace           = "path_outside_workspace"
 
 	truncationMarker = "\n[truncated]"
 
@@ -85,6 +92,7 @@ func DeriveCheckpoint(in CheckpointInput) capsule.Task {
 	calls, resultsByCall := indexToolPairs(in.Events)
 	completed, pending := classifyToolEvidence(calls, resultsByCall)
 	touched, conflict := filesTouchedFromTranscript(calls, in.Changed, changedFilesAreComplete(in))
+	touched, touchedOmitted := portableTranscriptPaths(in.Mapper, touched)
 	tests := deriveTests(calls, resultsByCall)
 
 	changed := append([]string(nil), in.Changed...)
@@ -100,7 +108,7 @@ func DeriveCheckpoint(in CheckpointInput) capsule.Task {
 			Portability: capsule.PortabilityExact,
 		},
 		RecentUserMessages: capsule.ListField{
-			Items:       recent,
+			Items:       boundEach(recent, capsule.MaxTaskFieldRunes),
 			Portability: capsule.PortabilityExact,
 		},
 		Constraints: capsule.ListField{
@@ -145,6 +153,8 @@ func DeriveCheckpoint(in CheckpointInput) capsule.Task {
 	}
 	if conflict {
 		task.FilesTouchedPerTranscript.Reason = reasonEvidenceConflictsWithWorkspace
+	} else if touchedOmitted > 0 {
+		task.FilesTouchedPerTranscript.Reason = reasonPathOutsideWorkspace
 	}
 	return task
 }
@@ -291,6 +301,49 @@ func changedFilesAreComplete(in CheckpointInput) bool {
 	tree := git.WorkingTree
 	return tree.State != workspace.WorkingTreeUnavailable &&
 		!tree.Uncertain && !tree.CountsTruncated && tree.ChangedOmitted == 0
+}
+
+// portableTranscriptPaths rewrites transcript-claimed paths into portable
+// tokens and drops what cannot be expressed without an absolute path, matching
+// portableChangedFiles. A path a transcript touched outside the workspace has
+// no portable form, and emitting it raw made the whole capsule fail validation.
+func portableTranscriptPaths(mapper pathmap.Mapper, paths []string) ([]string, int) {
+	if len(paths) == 0 {
+		return paths, 0
+	}
+	out := make([]string, 0, len(paths))
+	seen := make(map[string]struct{}, len(paths))
+	omitted := 0
+	for _, path := range paths {
+		token := path
+		if filepath.IsAbs(path) {
+			token = mapper.NormalizePortable(path)
+		}
+		if token == "" || capsule.AbsolutePathForbidden(token) {
+			omitted++
+			continue
+		}
+		if _, duplicate := seen[token]; duplicate {
+			continue
+		}
+		seen[token] = struct{}{}
+		out = append(out, token)
+	}
+	return out, omitted
+}
+
+// boundEach applies the per-field rune ceiling to every item in a list field.
+// Only the singular latest-intent field was bounded, so a long prompt in the
+// recent-messages list failed capsule validation.
+func boundEach(items []string, limit int) []string {
+	if len(items) == 0 {
+		return items
+	}
+	out := make([]string, 0, len(items))
+	for _, item := range items {
+		out = append(out, boundRunes(item, limit))
+	}
+	return out
 }
 
 func filesTouchedFromTranscript(

@@ -112,7 +112,11 @@ func (r *GrokReader) Snapshot(_ context.Context, record sessionindex.Record) (Bo
 	if id == "" {
 		id = filepath.Base(sessionDir)
 	}
-	return SnapshotJSONL(path, sessionindex.AgentGrok, id, MaxJSONLineBytes)
+	boundary, err := SnapshotJSONL(path, sessionindex.AgentGrok, id, MaxJSONLineBytes)
+	if err != nil {
+		return Boundary{}, err
+	}
+	return boundary.WithPathContext(PathContextFor(record)), nil
 }
 
 func (r *GrokReader) Parse(ctx context.Context, boundary Boundary) ([]capsule.Event, ParseReport, error) {
@@ -174,6 +178,17 @@ func (r *GrokReader) Parse(ctx context.Context, boundary Boundary) ([]capsule.Ev
 	}
 
 	events = LinkToolResults(events)
+	for i := range events {
+		// Backstop for the path contract in paths.go: no structural value
+		// leaves the reader as an absolute path. Without this a Grok block
+		// carrying a vendor path in its text failed capsule validation and
+		// made the whole handoff unusable.
+		if boundary.paths.TokenizeBlocks(events[i].Blocks) {
+			events[i].ContentHash = hashGrokContent(
+				events[i].NativeType, events[i].NativeName, events[i].Blocks,
+			)
+		}
+	}
 	report.Events = len(events)
 	return events, report, ctx.Err()
 }

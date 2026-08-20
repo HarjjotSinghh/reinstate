@@ -159,8 +159,16 @@ func (p PathContext) TokenizeBlocks(blocks []capsule.Block) bool {
 	for i := range blocks {
 		blocks[i].Ref = rewrite(blocks[i].Ref)
 		blocks[i].Path = rewrite(blocks[i].Path)
-		if blocks[i].Type == capsule.BlockTypeToolInput || blocks[i].Type == capsule.BlockTypeToolOutput {
-			blocks[i].Text = rewrite(blocks[i].Text)
+		if blocks[i].Type == capsule.BlockTypeToolInput ||
+			blocks[i].Type == capsule.BlockTypeToolOutput ||
+			blocks[i].Type == capsule.BlockTypeJSON {
+			// Tool payloads are usually a JSON document carried as text, so a
+			// path sits on a field inside it. The single-value rule cannot see
+			// those, and the capsule validator walks the decoded structure, so
+			// it rejected what this backstop had left untouched.
+			rewritten := p.TokenizeJSONText(blocks[i].Text)
+			changed = changed || rewritten != blocks[i].Text
+			blocks[i].Text = rewritten
 		}
 		for key, value := range blocks[i].Meta {
 			blocks[i].Meta[key] = rewrite(value)
