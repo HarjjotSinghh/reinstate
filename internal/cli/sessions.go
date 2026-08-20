@@ -91,7 +91,7 @@ func newSessionsCmd(options localCommandOptions) *cobra.Command {
 			if err := validateLocalAgent(agent, true); err != nil {
 				return err
 			}
-			index, refresh, err := openRefreshedLocalIndex(cmd, options)
+			index, refresh, err := openRefreshedLocalIndex(cmd, options, agent)
 			if err != nil {
 				return err
 			}
@@ -108,6 +108,7 @@ func newSessionsCmd(options localCommandOptions) *cobra.Command {
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "emit machine-readable JSON")
 	cmd.Flags().StringVar(&agent, "agent", "all", "agent filter: "+agentFilterHelp(agents.TierDiscover, true))
+	registerAgentCompletion(cmd, "agent", agents.TierDiscover, true)
 	cmd.Flags().IntVar(&limit, "limit", sessionindex.DefaultLimit, "maximum sessions to return")
 	return cmd
 }
@@ -124,7 +125,7 @@ func newSearchCmd(options localCommandOptions) *cobra.Command {
 				return err
 			}
 			filter.Query = strings.Join(args, " ")
-			index, refresh, err := openRefreshedLocalIndex(cmd, options)
+			index, refresh, err := openRefreshedLocalIndex(cmd, options, filter.Agent)
 			if err != nil {
 				return err
 			}
@@ -138,6 +139,7 @@ func newSearchCmd(options localCommandOptions) *cobra.Command {
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "emit machine-readable JSON")
 	cmd.Flags().StringVar(&filter.Agent, "agent", "all", "agent filter: "+agentFilterHelp(agents.TierDiscover, true))
+	registerAgentCompletion(cmd, "agent", agents.TierDiscover, true)
 	cmd.Flags().StringVar(&filter.Project, "project", "", "project or workspace fragment")
 	cmd.Flags().StringVar(&filter.Branch, "branch", "", "branch fragment")
 	cmd.Flags().StringVar(&filter.File, "file", "", "known file fragment")
@@ -189,7 +191,7 @@ func newLastCmd(options localCommandOptions) *cobra.Command {
 				return NewExitError(ExitUsage, "--json requires --dry-run for native agent launches")
 			}
 			filter.ResumableOnly = true
-			index, refresh, err := openRefreshedLocalIndex(cmd, options)
+			index, refresh, err := openRefreshedLocalIndex(cmd, options, filter.Agent)
 			if err != nil {
 				return err
 			}
@@ -207,6 +209,7 @@ func newLastCmd(options localCommandOptions) *cobra.Command {
 	cmd.Flags().BoolVar(&asJSON, "json", false, "emit machine-readable JSON")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "print the native launch plan without starting the agent")
 	cmd.Flags().StringVar(&filter.Agent, "agent", "all", "agent filter: "+agentFilterHelp(agents.TierResume, true))
+	registerAgentCompletion(cmd, "agent", agents.TierResume, true)
 	cmd.Flags().StringVar(&filter.Project, "project", "", "project or workspace fragment")
 	cmd.Flags().StringArrayVar(
 		&allowedWarnings,
@@ -328,15 +331,25 @@ func defaultLocalSources() []sessionindex.Source {
 	return sources
 }
 
+// openRefreshedLocalIndex refreshes only the selected agent's source when the
+// caller narrowed the request. Scanning every vendor to answer a question about
+// one of them made a single-agent query cost the same as a full refresh, and
+// let one slow source delay a request that never concerned it.
 func openRefreshedLocalIndex(
 	cmd *cobra.Command,
 	options localCommandOptions,
+	agent string,
 ) (*sessionindex.Index, sessionindex.RefreshResult, error) {
 	index, err := openLocalIndex(options)
 	if err != nil {
 		return nil, sessionindex.RefreshResult{}, err
 	}
-	refresh, err := index.Refresh(cmd.Context())
+	var refresh sessionindex.RefreshResult
+	if selected := strings.ToLower(strings.TrimSpace(agent)); selected != "" && selected != "all" {
+		refresh, err = index.RefreshAgent(cmd.Context(), selected)
+	} else {
+		refresh, err = index.Refresh(cmd.Context())
+	}
 	if err != nil {
 		_ = index.Close()
 		return nil, refresh, localRuntimeError("refresh local session index", err)
@@ -732,7 +745,7 @@ func runSessionPicker(cmd *cobra.Command, options localCommandOptions) error {
 			"interactive session picker requires a terminal; use `rein sessions --json`",
 		)
 	}
-	index, _, err := openRefreshedLocalIndex(cmd, options)
+	index, _, err := openRefreshedLocalIndex(cmd, options, "")
 	if err != nil {
 		return err
 	}
@@ -1062,6 +1075,22 @@ func validateCatalogAgent(agent string, allowAll bool, min agents.Tier, message 
 		}
 	}
 	return NewExitError(ExitUsage, fmt.Sprintf(message, agentChoiceProseWithAll(keys, allowAll)))
+}
+
+// registerAgentCompletion offers exactly the catalog keys a flag accepts, so
+// shell completion agrees with the flag's own validation instead of leaving
+// the user to guess. Matrix H6 requires the correct keys per command.
+func registerAgentCompletion(cmd *cobra.Command, flag string, min agents.Tier, allowAll bool) {
+	_ = cmd.RegisterFlagCompletionFunc(
+		flag,
+		func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
+			keys := catalogKeysAtLeast(min)
+			if allowAll {
+				keys = append([]string{"all"}, keys...)
+			}
+			return keys, cobra.ShellCompDirectiveNoFileComp
+		},
+	)
 }
 
 func catalogKeysAtLeast(min agents.Tier) []string {

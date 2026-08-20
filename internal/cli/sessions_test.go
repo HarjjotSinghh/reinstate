@@ -8,7 +8,9 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -652,5 +654,109 @@ func TestT0RefusesNativeActionOnTier(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+// countingSessionSource records how many times a source was scanned.
+type countingSessionSource struct {
+	name   string
+	result sessionindex.ScanResult
+	scans  *int32
+}
+
+func (source countingSessionSource) Name() string { return source.name }
+
+func (source countingSessionSource) Scan(context.Context) (sessionindex.ScanResult, error) {
+	atomic.AddInt32(source.scans, 1)
+	return source.result, nil
+}
+
+// TestAgentFilterNarrowsTheRefresh covers Matrix H4/H5. Answering a question
+// about one agent used to scan every vendor source, so a single-agent query
+// cost as much as a full refresh and one slow source delayed a request that
+// never concerned it.
+func TestAgentFilterNarrowsTheRefresh(t *testing.T) {
+	workspace := t.TempDir()
+	record := func(agent, id string) sessionindex.Record {
+		return sessionindex.Record{
+			ID: id, Agent: agent, Project: "p", Workspace: workspace,
+			UpdatedAt: time.Now().UTC(), ReadOnlyReason: "read only by design",
+			SourcePath:    filepath.Join(workspace, agent+".json"),
+			SourceModTime: 1, SourceSize: 1,
+		}
+	}
+	var kimiScans, codexScans int32
+	sources := []sessionindex.Source{
+		countingSessionSource{
+			name:   sessionindex.AgentKimi,
+			result: sessionindex.ScanResult{Records: []sessionindex.Record{record(sessionindex.AgentKimi, "k1")}},
+			scans:  &kimiScans,
+		},
+		countingSessionSource{
+			name:   sessionindex.AgentCodex,
+			result: sessionindex.ScanResult{Records: []sessionindex.Record{record(sessionindex.AgentCodex, "c1")}},
+			scans:  &codexScans,
+		},
+	}
+
+	_, _, code := runLocalCLI(t, sources, nil, "", false, "sessions", "--agent", "kimi")
+	if code != 0 {
+		t.Fatalf("sessions --agent kimi exit=%d", code)
+	}
+	if got := atomic.LoadInt32(&kimiScans); got != 1 {
+		t.Fatalf("kimi scans = %d, want 1", got)
+	}
+	if got := atomic.LoadInt32(&codexScans); got != 0 {
+		t.Fatalf("codex was scanned %d times for an --agent kimi query, want 0", got)
+	}
+
+	atomic.StoreInt32(&kimiScans, 0)
+	atomic.StoreInt32(&codexScans, 0)
+	if _, _, code = runLocalCLI(t, sources, nil, "", false, "sessions"); code != 0 {
+		t.Fatalf("unfiltered sessions exit=%d", code)
+	}
+	if atomic.LoadInt32(&kimiScans) != 1 || atomic.LoadInt32(&codexScans) != 1 {
+		t.Fatalf("unfiltered refresh scanned kimi=%d codex=%d, want 1 each",
+			kimiScans, codexScans)
+	}
+}
+
+// TestAgentCompletionMatchesFlagTier covers Matrix H6: completion must offer
+// exactly the keys each flag accepts. No completion function was registered at
+// all, so every agent-valued flag completed to nothing.
+func TestAgentCompletionMatchesFlagTier(t *testing.T) {
+	tests := []struct {
+		args    []string
+		min     agents.Tier
+		wantAll bool
+	}{
+		{[]string{"__complete", "sessions", "--agent", ""}, agents.TierDiscover, true},
+		{[]string{"__complete", "search", "--agent", ""}, agents.TierDiscover, true},
+		{[]string{"__complete", "last", "--agent", ""}, agents.TierResume, true},
+		{[]string{"__complete", "handoff", "--to", ""}, agents.TierHandoffTo, false},
+		{[]string{"__complete", "handoff", "--from", ""}, agents.TierHandoffFrom, false},
+	}
+	for _, tt := range tests {
+		t.Run(strings.Join(tt.args[1:3], " "), func(t *testing.T) {
+			stdout, _, code := runLocalCLI(t, nil, nil, "", false, tt.args...)
+			if code != 0 {
+				t.Fatalf("completion exit=%d", code)
+			}
+			var got []string
+			for _, line := range strings.Split(stdout, "\n") {
+				line = strings.TrimSpace(line)
+				if line == "" || strings.HasPrefix(line, ":") {
+					continue
+				}
+				got = append(got, line)
+			}
+			want := catalogKeysAtLeast(tt.min)
+			if tt.wantAll {
+				want = append([]string{"all"}, want...)
+			}
+			if !reflect.DeepEqual(got, want) {
+				t.Fatalf("completion = %v, want %v", got, want)
+			}
+		})
 	}
 }
