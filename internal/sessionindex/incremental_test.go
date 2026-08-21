@@ -164,7 +164,7 @@ func TestFailedScanDoesNotRecordFingerprint(t *testing.T) {
 	ctx := context.Background()
 	src := newFingerprintSource(AgentClaude, "digest-a",
 		testRecord(AgentClaude, "one", time.Unix(1, 0), "/one", 1))
-	src.fakeSource.err = errors.New("transient read failure")
+	src.err = errors.New("transient read failure") // fakeSource.err: the scan fails
 	index, store := openIndex(t, src)
 
 	if _, err := index.Refresh(ctx); err != nil {
@@ -179,7 +179,7 @@ func TestFailedScanDoesNotRecordFingerprint(t *testing.T) {
 	}
 
 	// Recovery: the next refresh scans again and now succeeds.
-	src.fakeSource.err = nil
+	src.err = nil
 	result, err := index.Refresh(ctx)
 	if err != nil {
 		t.Fatal(err)
