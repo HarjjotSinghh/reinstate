@@ -88,23 +88,39 @@ func TestInstalledVersionSeparatesFailedProbeFromAbsentVersion(t *testing.T) {
 func TestInspectRetriesOnlyTimedOutVersionProbes(t *testing.T) {
 	t.Parallel()
 
+	// The first attempt receives probeBudget and must time out; the retry
+	// receives retryTimeoutFactor times that and answers. Keying the fake
+	// runner to the budget it is handed, rather than to how many times it has
+	// been called, is what keeps this deterministic: a probe attempt spends its
+	// budget capturing the executable identity before the runner is reached, so
+	// on a loaded machine the first attempt can time out without ever calling
+	// the runner. The retry is then the runner's first call, and a call-count
+	// assertion reads that correct recovery as a failure.
+	const probeBudget = 250 * time.Millisecond
+	// Comfortably above the first attempt's budget and below the retry's, so
+	// neither classification depends on how loaded the machine is.
+	const slowThreshold = probeBudget * retryTimeoutFactor / 2
+
 	var slowAttempts atomic.Int32
 	slowOnce := versionRunnerFunc(func(ctx context.Context, _ string, _ ...string) (VersionOutput, error) {
-		if slowAttempts.Add(1) == 1 {
+		slowAttempts.Add(1)
+		if deadline, ok := ctx.Deadline(); ok && time.Until(deadline) <= slowThreshold {
 			<-ctx.Done()
 			return VersionOutput{}, ctx.Err()
 		}
 		return VersionOutput{Stdout: "9.9.9 (Claude Code)\n"}, nil
 	})
-	_, opts := installedAgent(t, slowOnce, 250*time.Millisecond)
+	_, opts := installedAgent(t, slowOnce, probeBudget)
 	version, evidence := InstalledVersion(context.Background(), "claude", opts)
-	if slowAttempts.Load() != 2 {
-		t.Fatalf("version probe attempts = %d, want 2", slowAttempts.Load())
-	}
-	// The retry recovered the real answer, and it is out of range — exactly the
-	// value the fail-open path used to discard.
+	// Recovering the version is itself the proof that the timed-out probe was
+	// retried: the first attempt's budget can only ever time out, so without a
+	// retry there is no version to report.
 	if version != "9.9.9" || evidence != VersionDetermined {
-		t.Fatalf("retried probe = (%q, %q)", version, evidence)
+		t.Fatalf("retried probe = (%q, %q) after %d runner calls; want the retry to recover 9.9.9",
+			version, evidence, slowAttempts.Load())
+	}
+	if slowAttempts.Load() == 0 {
+		t.Fatal("the runner was never reached, so nothing about retrying was measured")
 	}
 	if SupportedVersion("claude", version) {
 		t.Fatalf("fixture version %q is inside the verified range; pick one outside it", version)

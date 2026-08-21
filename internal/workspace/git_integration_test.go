@@ -15,6 +15,19 @@ import (
 	"time"
 )
 
+// integrationProbeOptions gives a real-git probe room to finish.
+//
+// DefaultProbeTimeout is 2s and is shared by every Git sub-probe in one call.
+// That bound is right for the product — a probe must not stall a command — but
+// it makes these tests a measurement of machine speed rather than behaviour: on
+// a loaded CI runner the shared budget expires mid-probe, a sub-probe reports
+// "the bounded Git probe timed out", and fields like RepositoryIDSource are
+// simply never populated. The assertions then fail for a reason that has
+// nothing to do with the code under test.
+func integrationProbeOptions() ProbeOptions {
+	return ProbeOptions{Timeout: 60 * time.Second}
+}
+
 func TestProbeRealRepositoryAndWorkingTreePrivacy(t *testing.T) {
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git is unavailable")
@@ -25,7 +38,7 @@ func TestProbeRealRepositoryAndWorkingTreePrivacy(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	clean, err := Probe(context.Background(), nested, ProbeOptions{})
+	clean, err := Probe(context.Background(), nested, integrationProbeOptions())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,7 +53,7 @@ func TestProbeRealRepositoryAndWorkingTreePrivacy(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(repository, privateName), []byte("controlled"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	dirty, err := Probe(context.Background(), repository, ProbeOptions{})
+	dirty, err := Probe(context.Background(), repository, integrationProbeOptions())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -180,7 +193,7 @@ func TestProbeCanonicalizesSymlinkedWorkspace(t *testing.T) {
 	if err := os.Symlink(repository, link); err != nil {
 		t.Skipf("symlink unavailable: %v", err)
 	}
-	result, err := Probe(context.Background(), link, ProbeOptions{})
+	result, err := Probe(context.Background(), link, integrationProbeOptions())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -231,7 +244,7 @@ func TestProbeRepositoryIdentityDoesNotFollowLocalIncludes(t *testing.T) {
 		t.Fatal(err)
 	}
 	runTestGit(t, repository, "config", "--add", "include.path", externalConfig)
-	result, err := Probe(context.Background(), repository, ProbeOptions{})
+	result, err := Probe(context.Background(), repository, integrationProbeOptions())
 	if err != nil {
 		t.Fatal(err)
 	}
