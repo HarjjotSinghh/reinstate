@@ -337,8 +337,8 @@ yes-or-no list.
 | [Kimi Code CLI](https://www.kimi.com/code) | T1 | ✅ read-only | — | — | — | — |
 | [Qwen Code](https://qwenlm.github.io/qwen-code-docs/) | T1 | ✅ read-only | — | — | — | — |
 | [Pi](https://pi.dev/) | T1 | ✅ read-only | — | — | — | — |
-| [Cursor CLI](https://cursor.com/docs/cli/overview) | T1 | read-only | — | — | — | — |
-| [GitHub Copilot CLI](https://docs.github.com/en/copilot/concepts/agents/copilot-cli/about-copilot-cli) | T1 | read-only | — | — | — | — |
+| [Cursor CLI](https://cursor.com/docs/cli/overview) | T1 | ✅ read-only | — | — | — | — |
+| [GitHub Copilot CLI](https://docs.github.com/en/copilot/concepts/agents/copilot-cli/about-copilot-cli) | T1 | ✅ read-only | — | — | — | — |
 | [Cline](https://docs.cline.bot/) | T1 | ✅ read-only | — | — | — | — |
 
 This table is candidate `v0.5.0-rc.4`, which indexes all 11 agents above.
