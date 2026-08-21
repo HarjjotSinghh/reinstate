@@ -9,6 +9,8 @@ package hometree
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -16,6 +18,7 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -288,4 +291,41 @@ func matchGlobParts(pattern, name []string) bool {
 		name = name[1:]
 	}
 	return len(name) == 0
+}
+
+// Fingerprint summarises everything Discover would return without opening a
+// single file: the resolved root plus each matched file's path, modification
+// time and size. Two refreshes that produce the same fingerprint cannot have
+// produced different records, so the caller can skip parsing entirely.
+//
+// The second return reports whether a fingerprint is meaningful at all. A
+// source whose root does not resolve has nothing to compare, and must be
+// scanned rather than assumed unchanged.
+func Fingerprint(ctx context.Context, cfg Config) (string, bool, error) {
+	root, files, err := Discover(ctx, cfg)
+	if err != nil {
+		return "", false, err
+	}
+	if root == "" {
+		return "", false, nil
+	}
+	sorted := make([]File, len(files))
+	copy(sorted, files)
+	sort.Slice(sorted, func(i, j int) bool { return sorted[i].Path < sorted[j].Path })
+
+	sum := sha256.New()
+	_, _ = sum.Write([]byte(root))
+	_, _ = sum.Write([]byte{0})
+	for _, file := range sorted {
+		if err := ctx.Err(); err != nil {
+			return "", false, err
+		}
+		_, _ = sum.Write([]byte(file.Path))
+		_, _ = sum.Write([]byte{0})
+		_, _ = sum.Write([]byte(strconv.FormatInt(file.ModTime.UnixNano(), 10)))
+		_, _ = sum.Write([]byte{0})
+		_, _ = sum.Write([]byte(strconv.FormatInt(file.Size, 10)))
+		_, _ = sum.Write([]byte{0})
+	}
+	return hex.EncodeToString(sum.Sum(nil)), true, nil
 }
