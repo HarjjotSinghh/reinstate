@@ -25,6 +25,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The vendor version probe now runs alongside the other preflight observations
+  instead of after them. Every observer shares one wall clock, but the workspace
+  probe runs first and shells out to Git, so in sequence the version probe was
+  left with whatever time that had not already spent. On a loaded host it was
+  routinely given a fraction of its stated budget, timed out, and reported an
+  installed agent as unmeasurable — and to a caller gating on version, "no
+  version" is indistinguishable from "no agent", so that became a refusal the
+  user could do nothing about. The shared deadline still bounds the probe; only
+  its starting point moved.
+
 - OpenCode now declares the root environment variable its reader already
   honours. OpenCode reads `$XDG_DATA_HOME/opencode`, so the variable names the
   parent of the root rather than the root itself, and the agent descriptor had

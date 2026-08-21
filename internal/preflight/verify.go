@@ -50,6 +50,11 @@ func Verify(ctx context.Context, input Input, options Options) (Report, error) {
 	verifyCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
+	// Independent of every other observation, so it runs alongside them and
+	// costs nothing on a host that answers promptly. Starting it here rather
+	// than in sequence is what gives its retry room; see startAgentProbe.
+	awaitAgent := startAgentProbe(verifyCtx, input, options)
+
 	// Started before the sequential probes so its cost overlaps theirs. Verify
 	// returns early on several paths, so the probe context is released by defer
 	// rather than by whoever happens to read the result.
@@ -64,15 +69,7 @@ func Verify(ctx context.Context, input Input, options Options) (Report, error) {
 		return Report{}, err
 	}
 
-	agentOptions := options.Agent
-	if agentOptions.Root == "" {
-		agentOptions.Root = input.AgentRoot
-	}
-	if agentOptions.Workspace == "" {
-		agentOptions.Workspace = input.Workspace
-	}
-	agentOptions.Timeout = remainingTimeout(verifyCtx, agentOptions.Timeout)
-	agentResult := agentcheck.Inspect(verifyCtx, input.Agent, agentOptions)
+	agentResult := awaitAgent()
 
 	var capabilityInventory capability.Inventory
 	var runtimeResults []runtimecheck.Result
@@ -740,4 +737,47 @@ func startActiveSessionProbe(
 		}
 		return check, true
 	}, cancel
+}
+
+// startAgentProbe runs the vendor version probe alongside the other
+// observations instead of after them.
+//
+// remainingTimeout gives each observer its own limit, but every observer shares
+// one wall clock: the verifier's context. Run in sequence, the version probe
+// received its full nominal limit and whatever time the workspace probe had
+// left, whichever expired first — and the workspace probe runs first and shells
+// out to Git. On a loaded host the version probe was routinely left with a
+// fraction of its stated budget, timed out, and reported an installed agent as
+// unmeasurable. "No version" is indistinguishable from "no agent" to a caller
+// gating on it, so that became a refusal the user could do nothing about.
+//
+// The probe shares nothing with the workspace, capability and runtime
+// observations, so starting it with them costs nothing on a host that answers
+// promptly and gives it the whole window on one that does not. Measured on a
+// quiet host these binaries answer in tens of milliseconds, but one takes
+// ~650 ms before any load at all, so the margin was thinner than it looked.
+//
+// The window still binds. The verifier's own context is passed through rather
+// than nested inside a second deadline, both because a nested deadline expires
+// fractionally earlier and lets a later observer outlive an earlier one, and
+// because awaiting the result where the sequential call stood keeps a probe
+// that exhausts the window suppressing capability and runtime discovery. That
+// ordering is what makes the report name the version probe as the cause instead
+// of burying it under a cancelled capability scan.
+func startAgentProbe(
+	verifyCtx context.Context, input Input, options Options,
+) func() agentcheck.Result {
+	agentOptions := options.Agent
+	if agentOptions.Root == "" {
+		agentOptions.Root = input.AgentRoot
+	}
+	if agentOptions.Workspace == "" {
+		agentOptions.Workspace = input.Workspace
+	}
+	agentOptions.Timeout = remainingTimeout(verifyCtx, agentOptions.Timeout)
+
+	done := make(chan agentcheck.Result, 1)
+	go func() { done <- agentcheck.Inspect(verifyCtx, input.Agent, agentOptions) }()
+
+	return func() agentcheck.Result { return <-done }
 }

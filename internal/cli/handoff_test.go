@@ -624,10 +624,32 @@ func setVendorHome(t *testing.T, vendorHome string) {
 
 func runHandoffCLI(t *testing.T, home, vendorHome string, sources []sessionindex.Source, runner sessionindex.LaunchRunner, args ...string) (string, string, int) {
 	t.Helper()
+	return runHandoffCLIWithVendorRoots(t, home, vendorHome, "", "", sources, runner, args...)
+}
+
+// runHandoffCLIWithVendorRoots names the vendor roots explicitly.
+//
+// Left empty, adapter detection falls back to running `<agent> --version` as a
+// child process, and a test that needs that probe to succeed is really asking
+// to win a scheduling race: under a saturated `go test ./...` even a two-line
+// shell script does not always start within the probe's two-second bound, and
+// the run is then correctly reported as UNTESTED. Naming a root that carries
+// the expected layout is how a real installation is recognised without a
+// subprocess, so a test whose subject is the handoff itself should say so
+// rather than depend on ambient machine load.
+//
+// Tests that deliberately exercise the version probe — the out-of-range ones —
+// must keep passing empty roots, and are unaffected by a timeout because a
+// probe that cannot measure is UNTESTED, which is what they already expect.
+func runHandoffCLIWithVendorRoots(
+	t *testing.T, home, vendorHome, claudeRoot, codexRoot string,
+	sources []sessionindex.Source, runner sessionindex.LaunchRunner, args ...string,
+) (string, string, int) {
+	t.Helper()
 	t.Setenv("REINSTATE_HOME", home)
 	setVendorHome(t, vendorHome)
-	t.Setenv("CLAUDE_CONFIG_DIR", "")
-	t.Setenv("CODEX_HOME", "")
+	t.Setenv("CLAUDE_CONFIG_DIR", claudeRoot)
+	t.Setenv("CODEX_HOME", codexRoot)
 	var stdout, stderr bytes.Buffer
 	code := Execute(Options{
 		Name: "rein", Stdout: &stdout, Stderr: &stderr, Stdin: strings.NewReader(""), Args: args,
