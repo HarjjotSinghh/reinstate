@@ -437,7 +437,7 @@ func TestLocalMarkdownLinksResolve(t *testing.T) {
 		if filepath.Ext(path) != ".md" {
 			return nil
 		}
-		bodyBytes, err := os.ReadFile(path)
+		bodyBytes, err := readPossiblySymlinkedFile(path)
 		if err != nil {
 			return err
 		}
@@ -473,6 +473,36 @@ func TestLocalMarkdownLinksResolve(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+// readPossiblySymlinkedFile reads a file, resolving a symlink by hand when the
+// platform refuses to traverse it. Windows rejects a relative symlink on a
+// non-system volume with "the path cannot be traversed because it contains an
+// untrusted mount point", which would otherwise abort the whole walk on a
+// checkout living on a second drive. Reading the target directly avoids the
+// reparse point while keeping the link's own directory as the base for
+// resolving what it references, so every platform checks the same thing.
+func readPossiblySymlinkedFile(path string) ([]byte, error) {
+	body, err := os.ReadFile(path)
+	if err == nil {
+		return body, nil
+	}
+	info, lstatErr := os.Lstat(path)
+	if lstatErr != nil || info.Mode()&os.ModeSymlink == 0 {
+		return nil, err
+	}
+	target, linkErr := os.Readlink(path)
+	if linkErr != nil {
+		return nil, err
+	}
+	if !filepath.IsAbs(target) {
+		target = filepath.Join(filepath.Dir(path), target)
+	}
+	body, targetErr := os.ReadFile(target)
+	if targetErr != nil {
+		return nil, err
+	}
+	return body, nil
 }
 
 func markdownOutsideFences(body string) string {
