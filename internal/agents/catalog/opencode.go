@@ -9,7 +9,7 @@ import (
 
 func init() { agents.MustRegister(OpenCode()) }
 
-// OpenCode is the shipped OpenCode descriptor (T2, F2).
+// OpenCode is the shipped OpenCode descriptor (T2, F3).
 func OpenCode() agents.Descriptor {
 	return agents.Descriptor{
 		Key:         sessionindex.AgentOpenCode,
@@ -17,13 +17,13 @@ func OpenCode() agents.Descriptor {
 		Vendor:      "anomalyco",
 		DocsURL:     "https://opencode.ai",
 		Tier:        agents.TierHandoffFrom,
-		Family:      agents.FamilyCLIQuery,
+		Family:      agents.FamilyEmbeddedDB,
 		Storage: agents.StorageSpec{
 			Roots: func(home agents.HomeDir) []agents.Root {
 				return []agents.Root{{Path: home.Join(".local", "share", "opencode")}}
 			},
-			Marker:     "storage",
-			Layout:     "cli-session-list-json",
+			Marker:     opencodesrc.DatabaseName,
+			Layout:     "embedded-sqlite-session-store",
 			ProjectKey: agents.ProjectKeyOpaqueID,
 			Excluded:   opencodesrc.Excluded,
 		},
@@ -42,7 +42,7 @@ func OpenCode() agents.Descriptor {
 				"testdata/handoff/opencode",
 			},
 		},
-		NewIndexSource: opencodesrc.New,
+		NewIndexSource: opencodesrc.NewSQLite,
 		NewReader: func(env agents.Env) (transcript.Reader, error) {
 			reader := transcript.NewOpenCodeReader(nil)
 			reader.DataRoot = env.FixtureRoot

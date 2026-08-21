@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- OpenCode sessions are read from its embedded SQLite store instead of by
+  running `opencode session list`. The vendor CLI answers only for the
+  directory it runs in, so a scan could never observe a second project, and
+  invoking it opened OpenCode's database and left write-ahead log and shared
+  memory files under the agent root. The store is opened read-only and
+  immutable, so no lock is taken and no sidecar is created. Only the `session`,
+  `project` and `message` tables are read; the `credential` and `account`
+  tables in the same database are never opened (`v0.5.0-rc.4` A10, C1, C6).
+
 ### Fixed
 
 - A refusal for an unsupported native agent version names the verified range.
