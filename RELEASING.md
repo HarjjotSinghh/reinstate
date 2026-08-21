@@ -281,6 +281,41 @@ Contract:
 Publication means ready for tagged-artifact acceptance. It does **not**
 authorize stable `v0.5.0`. Current stable remains `v0.4.0`.
 
+### v0.5.0-rc.6 candidate gate
+
+The sixth Phase 5 candidate. Physical `v0.5.0-rc.5` tagged-artifact acceptance
+ran the full matrix on both platforms and **failed**: macOS 149/150,
+Windows 150/150. One required row failed, **B4** on macOS, so `v0.5.0-rc.5`
+did not authorize stable `v0.5.0`.
+
+B4: the agent probe carried a raw 38-character Git object hash into its
+artifact. OpenCode keeps a Git object store under each snapshot, and Git stores
+an object as a two-character directory plus a thirty-eight character file. The
+shape normalizer recognised only exactly 32, 40 and 64 characters, so a
+38-character stem matched nothing and reached the artifact verbatim. Those names
+are content hashes of the operator's own repository. This candidate collapses
+any hex run long enough to identify content; the established tokens are
+unchanged so committed artifacts do not churn.
+
+Everything else passed on both platforms, including the upgrade path the
+previous candidate existed to fix: an index built by the previous release and
+then opened by the tagged binary re-read what the old reader could not resolve
+(0 to 3 resolved workspaces on macOS, 0 to 10 on Windows) without losing a row,
+and the previous release could still reopen it. All four E1/E2 journeys ran
+against the installed tagged binary on both platforms.
+
+Physical acceptance also found more harness defects than product defects, two of
+them false passes. The `v0.5.0-rc.6` dispatch records them so a later run does
+not repeat them.
+
+Dispatch:
+[`v0.5.0-rc.6`](docs/testing/v0.5.0-rc.6-agent-verification-prompts.md).
+Contract:
+[Phase 5 acceptance](docs/testing/phase-5-universal-agent-coverage-acceptance.md).
+
+Publication means ready for tagged-artifact acceptance. It does **not**
+authorize stable `v0.5.0`. Current stable remains `v0.4.0`.
+
 ## Steps
 
 ### 1. Prepare the release commit

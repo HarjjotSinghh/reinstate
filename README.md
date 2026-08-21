@@ -7,7 +7,7 @@
 ### Find, verify, resume, and hand off coding-agent work
 
 **Your agents lose context every time you switch. Reinstate carries it
-across.** Indexes 11 agents in `v0.5.0-rc.5`, 5 in stable `v0.4.0`. Full
+across.** Indexes 11 agents in `v0.5.0-rc.6`, 5 in stable `v0.4.0`. Full
 continuity on 2 — Claude Code and Codex.
 
 Reinstate is the open-source continuity layer for coding-agent work: search,
@@ -20,7 +20,7 @@ switcher, same-vendor native resume/fork, and Phase 3 verified resume. A
 structured handoff continues the same task in a *new* Claude Code or Codex
 session. Apple Silicon macOS and native Windows x64 passed dual-platform
 tagged-artifact acceptance on candidate `v0.4.0-rc.11` (44/44 on both
-devices); the public installers pin `v0.5.0-rc.5`, whose acceptance is still
+devices); the public installers pin `v0.5.0-rc.6`, whose acceptance is still
 pending. Intel macOS and Linux/WSL2 downloads remain preview/unverified
 pending issues
 [#97](https://github.com/HarjjotSinghh/reinstate/issues/97) and
@@ -195,7 +195,7 @@ not part of the current CLI. See
 
 ## Quick start
 
-> **Platform boundary:** the public installers pin candidate `v0.5.0-rc.5`.
+> **Platform boundary:** the public installers pin candidate `v0.5.0-rc.6`.
 > Dual-platform tagged-artifact acceptance is pending on Apple Silicon macOS
 > and native Windows x64. Stable remains `v0.4.0`. Intel macOS and Linux/WSL2
 > remain optional and unverified
@@ -252,7 +252,7 @@ Bare `rein` opens the numbered switcher only on a TTY. For scripts use
 `rein sessions --json`; a non-TTY bare invocation exits promptly with that
 hint.
 
-### Install the v0.5.0-rc.5 candidate
+### Install the v0.5.0-rc.6 candidate
 
 macOS, Linux, or WSL2:
 
@@ -266,7 +266,7 @@ Native Windows PowerShell:
 irm https://reinstate.dev/install.ps1 | iex
 ```
 
-Both bootstraps pin and verify `v0.5.0-rc.5`, install without elevation, and
+Both bootstraps pin and verify `v0.5.0-rc.6`, install without elevation, and
 print the next command:
 
 ```bash
@@ -280,7 +280,7 @@ Apple Silicon macOS with Homebrew:
 brew install HarjjotSinghh/tap/reinstate
 ```
 
-The GitHub Release and `reinstate.dev` installers pin `v0.5.0-rc.5`. The Homebrew
+The GitHub Release and `reinstate.dev` installers pin `v0.5.0-rc.6`. The Homebrew
 tap may still list `v0.4.0` until a later stable tag is published. Intel macOS
 and Linuxbrew remain optional and unverified.
 
@@ -341,7 +341,7 @@ yes-or-no list.
 | [GitHub Copilot CLI](https://docs.github.com/en/copilot/concepts/agents/copilot-cli/about-copilot-cli) | T1 | ✅ read-only | — | — | — | — |
 | [Cline](https://docs.cline.bot/) | T1 | ✅ read-only | — | — | — | — |
 
-This table is candidate `v0.5.0-rc.5`, which indexes all 11 agents above.
+This table is candidate `v0.5.0-rc.6`, which indexes all 11 agents above.
 Stable `v0.4.0` indexes 5 — Claude Code, Codex CLI, Gemini CLI, Grok Build,
 and OpenCode; the other six arrive in `v0.5.0`.
 

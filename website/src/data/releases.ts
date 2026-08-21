@@ -1,5 +1,11 @@
 export const releaseHistory = [
   {
+    version: 'v0.5.0-rc.6',
+    date: '2026-08-21',
+    summary:
+      'Sixth Phase 5 candidate. Physical v0.5.0-rc.5 tagged-artifact acceptance failed one required row: the agent probe carried a raw 38-character Git object hash into its artifact, because the shape normalizer recognised only exactly 32, 40 and 64 characters and OpenCode keeps a Git object store under each snapshot. Those names are content hashes of the repository being worked in. Any hex run long enough to identify content is now collapsed. Does not authorize stable v0.5.0. Current stable remains v0.4.0.',
+  },
+  {
     version: 'v0.5.0-rc.5',
     date: '2026-08-21',
     summary:
