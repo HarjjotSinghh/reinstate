@@ -331,14 +331,15 @@ yes-or-no list.
 | [OpenCode](https://opencode.ai) | T2 | ✅ read-only | — | ✅ source-only | — | — |
 | [Grok Build](https://x.ai) | T2 | ✅ read-only | — | ✅ source-only | — | — |
 | [Kimi Code CLI](https://www.kimi.com/code) | T1 | ✅ read-only | — | — | — | — |
-| [Qwen Code](https://qwenlm.github.io/qwen-code-docs/) | — | — | — | — | — | — |
-| [Pi](https://pi.dev/) | — | — | — | — | — | — |
-| [Cursor CLI](https://cursor.com/docs/cli/overview) | — | — | — | — | — | — |
-| [GitHub Copilot CLI](https://docs.github.com/en/copilot/concepts/agents/copilot-cli/about-copilot-cli) | — | — | — | — | — | — |
-| [Cline](https://docs.cline.bot/) | — | — | — | — | — | — |
+| [Qwen Code](https://qwenlm.github.io/qwen-code-docs/) | T1 | ✅ read-only | — | — | — | — |
+| [Pi](https://pi.dev/) | T1 | ✅ read-only | — | — | — | — |
+| [Cursor CLI](https://cursor.com/docs/cli/overview) | T1 | read-only | — | — | — | — |
+| [GitHub Copilot CLI](https://docs.github.com/en/copilot/concepts/agents/copilot-cli/about-copilot-cli) | T1 | read-only | — | — | — | — |
+| [Cline](https://docs.cline.bot/) | T1 | ✅ read-only | — | — | — | — |
 
-Tier is what stable `v0.4.0` ships. A `—` row is a `v0.5.0` target, not a
-shipped tier — see [current and target tiers](docs/agent-support-tiers.md#current-and-target-tiers).
+This table is candidate `v0.5.0-rc.4`, which indexes all 11 agents above.
+Stable `v0.4.0` indexes 5 — Claude Code, Codex CLI, Gemini CLI, Grok Build,
+and OpenCode; the other six arrive in `v0.5.0`.
 
 Structured handoff in stable `v0.4.0` starts a new destination session.
 Native resume/fork and encrypted sync remain same-vendor.

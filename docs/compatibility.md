@@ -30,7 +30,7 @@ The Phase 2 local capability matrix is:
 | Gemini CLI | Read-only included | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac | T2 |
 | OpenCode | Read-only included | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac | T2 |
 | Cursor CLI | Indexed (read-only) | Not implemented | Dual-platform probes committed; indexed from `meta.json`; no device journey for resume | T1 |
-| Grok Build | Not implemented | Not implemented | Not applicable | T2 |
+| Grok Build | Read-only included | Not supported in Phase 2 | Dual-platform probes committed (`2026-08-17-windows-grok.json`, `2026-08-21-macos-grok.json`) | T2 |
 | Amp | Not readable locally (`server_backed`) | Not implemented | Not applicable | T0 |
 | ZCode | Not implemented (`desktop_only`) | Not implemented | Not applicable | T0 |
 | OpenHands | Not implemented | Not implemented | Not applicable | T0 |

@@ -176,10 +176,12 @@ agents.
 
 ## Current and target tiers
 
-Current tier is what stable `v0.4.0` ships. Target is the `v0.5.0` aim, which
-is an aim and not a commitment: an agent whose probe finds no readable local
-history stays where it is, and that outcome is a successful result, not a
-failed task.
+Current tier is what candidate `v0.5.0-rc.4` ships, sourced to the agent
+catalog in code (`internal/agents/catalog`), not to this table. Stable
+`v0.4.0` predates that package and indexes 5 agents: Claude Code, Codex CLI,
+Gemini CLI, Grok Build, OpenCode. Target is the `v0.5.0` aim, which is an aim
+and not a commitment: an agent whose probe finds no readable local history
+stays where it is, and that outcome is a successful result, not a failed task.
 
 | Agent | Vendor | Storage family | Current | `v0.5.0` target |
 | ----- | ------ | -------------- | ------- | --------------- |
@@ -190,12 +192,12 @@ failed task.
 | OpenCode | anomalyco | F2 | **T2** | T2 |
 | Grok Build | xAI | F1 | **T2** | T2 |
 | Kimi Code CLI | Moonshot AI | F1 | **T1** | T3 |
-| Pi | earendil-works | F1 | — | T3 |
-| Qwen Code | Alibaba | F1 | — | T2 |
-| Cursor CLI | Anysphere | F3 (expected) | — | T1 |
-| GitHub Copilot CLI | GitHub | unknown | — | T1 |
+| Pi | earendil-works | F1 | **T1** | T3 |
+| Qwen Code | Alibaba | F1 | **T1** | T2 |
+| Cursor CLI | Anysphere | F3 (expected) | **T1** | T1 |
+| GitHub Copilot CLI | GitHub | unknown | **T1** | T1 |
 | Aider | Aider community | F4 | — | T1 |
-| Cline | Cline | F3 | — | T1 |
+| Cline | Cline | F3 | **T1** | T1 |
 | Roo Code | Roo | F3 | — | T1 |
 | Amp | Sourcegraph | unknown | — | T1 or T0 |
 | OpenHands | All Hands AI | F5 (expected) | — | T0 |
