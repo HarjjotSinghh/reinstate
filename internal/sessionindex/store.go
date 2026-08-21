@@ -913,6 +913,11 @@ CREATE TABLE IF NOT EXISTS prelaunch_baselines (
 	source_session_ref TEXT NOT NULL,
 	capabilities_json TEXT NOT NULL,
 	runtimes_json TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS source_state (
+	source TEXT PRIMARY KEY NOT NULL,
+	fingerprint TEXT NOT NULL,
+	observed_at INTEGER NOT NULL
 );`
 
 func openDatabase(path string) (*sql.DB, error) {
@@ -1167,4 +1172,39 @@ func timeFromDatabase(value int64) time.Time {
 		return time.Time{}
 	}
 	return time.Unix(0, value).UTC()
+}
+
+// SourceFingerprint returns the fingerprint recorded the last time this source
+// was scanned, or "" when the source has never been scanned.
+func (s *Store) SourceFingerprint(ctx context.Context, source string) (string, error) {
+	var fingerprint string
+	err := s.db.QueryRowContext(ctx,
+		`SELECT fingerprint FROM source_state WHERE source = ?`, source).Scan(&fingerprint)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	return fingerprint, nil
+}
+
+// SetSourceFingerprint records the fingerprint that produced the rows now
+// stored for this source. It is written only after a scan has been persisted,
+// so a failed scan can never mark a source as up to date.
+func (s *Store) SetSourceFingerprint(ctx context.Context, source, fingerprint string, observedAt int64) error {
+	_, err := s.db.ExecContext(ctx,
+		`INSERT INTO source_state (source, fingerprint, observed_at) VALUES (?, ?, ?)
+		 ON CONFLICT(source) DO UPDATE SET fingerprint = excluded.fingerprint,
+		                                   observed_at = excluded.observed_at`,
+		source, fingerprint, observedAt)
+	return err
+}
+
+// CountSource reports how many rows this source currently has stored.
+func (s *Store) CountSource(ctx context.Context, source string) (int, error) {
+	var count int
+	err := s.db.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM sessions WHERE source = ?`, source).Scan(&count)
+	return count, err
 }

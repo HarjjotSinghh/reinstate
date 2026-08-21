@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- A refresh that finds nothing changed no longer re-parses every session. Each
+  home-tree source now summarises itself first — every discovered path, its
+  modification time and its size — and the digest is compared with the one
+  stored from the last successful scan. An identical digest skips parsing for
+  that source entirely. On a real macOS tree a warm `rein sessions` refresh
+  went from 10.60s to 0.82s, a 92% reduction, where before it saved 1-4%. The
+  digest is written only after a scan succeeds, so a failed scan can never
+  mark a source as up to date, and a source that cannot summarise itself is
+  always scanned (`v0.5.0-rc.4` H4).
+
 ### Fixed
 
 - Structured handoff from an OpenCode source carries the conversation again.

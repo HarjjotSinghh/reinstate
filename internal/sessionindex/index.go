@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 )
 
 // Source discovers and parses one agent's complete local read surface.
@@ -137,6 +138,13 @@ func (i *Index) RefreshAgent(ctx context.Context, agent string) (RefreshResult, 
 	return i.refresh(ctx, agent)
 }
 
+// Fingerprinter is an optional Source capability: a cheap summary of
+// everything the source would read, computed without opening any file. A
+// source that cannot produce one is always scanned.
+type Fingerprinter interface {
+	Fingerprint(context.Context) (digest string, usable bool, err error)
+}
+
 func (i *Index) refresh(ctx context.Context, selected string) (RefreshResult, error) {
 	var result RefreshResult
 	if i == nil || i.store == nil {
@@ -151,6 +159,33 @@ func (i *Index) refresh(ctx context.Context, selected string) (RefreshResult, er
 			continue
 		}
 		status := SourceRefresh{Name: name}
+
+		// A source that can summarise itself without opening any file lets an
+		// unchanged refresh skip parsing entirely. The fingerprint covers every
+		// path, modification time and size the scan would read, so an identical
+		// one cannot hide a changed record.
+		var pendingFingerprint string
+		if fp, ok := source.(Fingerprinter); ok {
+			digest, usable, fpErr := fp.Fingerprint(ctx)
+			if fpErr != nil {
+				if ctxErr := ctx.Err(); ctxErr != nil {
+					return result, ctxErr
+				}
+			} else if usable && digest != "" {
+				stored, storeErr := i.store.SourceFingerprint(ctx, name)
+				if storeErr == nil && stored == digest {
+					count, countErr := i.store.CountSource(ctx, name)
+					if countErr == nil {
+						status.Records = count
+						status.Unchanged = count
+						result.Sources = append(result.Sources, status)
+						continue
+					}
+				}
+				pendingFingerprint = digest
+			}
+		}
+
 		scan, err := source.Scan(ctx)
 		if err != nil {
 			if ctxErr := ctx.Err(); ctxErr != nil {
@@ -177,6 +212,13 @@ func (i *Index) refresh(ctx context.Context, selected string) (RefreshResult, er
 		status.Upserted = replaced.Upserted
 		status.Unchanged = replaced.Unchanged
 		status.Deleted = replaced.Deleted
+		// Recorded only after the rows are persisted, so a failed scan can
+		// never mark a source as up to date.
+		if pendingFingerprint != "" {
+			if err := i.store.SetSourceFingerprint(ctx, name, pendingFingerprint, time.Now().UTC().UnixNano()); err != nil {
+				return result, fmt.Errorf("record %s source fingerprint: %w", name, err)
+			}
+		}
 		result.Sources = append(result.Sources, status)
 		for _, warning := range scan.Warnings {
 			if warning.Agent == "" {

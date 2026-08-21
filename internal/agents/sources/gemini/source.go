@@ -87,6 +87,12 @@ func (s *Source) Scan(ctx context.Context) (sessionindex.ScanResult, error) {
 	return result, nil
 }
 
+// Fingerprint summarises the source without opening any file, so an
+// unchanged refresh can skip parsing entirely.
+func (s *Source) Fingerprint(ctx context.Context) (string, bool, error) {
+	return hometree.Fingerprint(ctx, s.config())
+}
+
 func (s *Source) config() hometree.Config {
 	cfg := hometree.Config{
 		Explicit:    s.env.FixtureRoot,

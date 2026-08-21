@@ -2,11 +2,14 @@ package opencode
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -67,6 +70,30 @@ func DatabasePath(env agents.Env) (string, error) {
 // the reader from creating -wal and -shm files beside the vendor's database.
 func readOnlyDSN(path string) string {
 	return "file:" + url.PathEscape(filepath.ToSlash(path)) + "?mode=ro&immutable=1&_pragma=query_only(1)"
+}
+
+// Fingerprint summarises the store by its path, modification time and size,
+// without opening it. An unchanged store cannot yield different records, so an
+// unchanged refresh skips the query entirely.
+func (s *SQLiteSource) Fingerprint(ctx context.Context) (string, bool, error) {
+	if err := ctx.Err(); err != nil {
+		return "", false, err
+	}
+	path, err := DatabasePath(s.env)
+	if err != nil || strings.TrimSpace(path) == "" {
+		return "", false, nil
+	}
+	info, err := os.Stat(path)
+	if err != nil || !info.Mode().IsRegular() {
+		return "", false, nil
+	}
+	sum := sha256.New()
+	_, _ = sum.Write([]byte(path))
+	_, _ = sum.Write([]byte{0})
+	_, _ = sum.Write([]byte(strconv.FormatInt(info.ModTime().UnixNano(), 10)))
+	_, _ = sum.Write([]byte{0})
+	_, _ = sum.Write([]byte(strconv.FormatInt(info.Size(), 10)))
+	return hex.EncodeToString(sum.Sum(nil)), true, nil
 }
 
 // Scan reads every session the store knows about, across every project.
