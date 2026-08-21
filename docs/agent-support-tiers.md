@@ -176,7 +176,7 @@ agents.
 
 ## Current and target tiers
 
-Current tier is what candidate `v0.5.0-rc.4` ships, sourced to the agent
+Current tier is what candidate `v0.5.0-rc.5` ships, sourced to the agent
 catalog in code (`internal/agents/catalog`), not to this table. Stable
 `v0.4.0` predates that package and indexes 5 agents: Claude Code, Codex CLI,
 Gemini CLI, Grok Build, OpenCode. Target is the `v0.5.0` aim, which is an aim

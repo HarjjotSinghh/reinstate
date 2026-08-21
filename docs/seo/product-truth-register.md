@@ -2,7 +2,7 @@
 
 Last reviewed: 2026-08-19
 Canonical website source: `website/src/data/product.ts`
-Reviewed release: `v0.5.0-rc.4` candidate; public installers pin this tag.
+Reviewed release: `v0.5.0-rc.5` candidate; public installers pin this tag.
 Stable remains `v0.4.0`. Dual-platform tagged-artifact acceptance is pending.
 
 This is the required output of the repository-local
@@ -29,7 +29,7 @@ marketing claim.
 | Paths | Recognized structural project roots are tokenized and expanded through a canonical project ID; arbitrary prose is not rewritten | `internal/pathmap`, adapter tests, configuration docs |
 | License | Apache-2.0 | `LICENSE`, `product.ts` |
 | Account requirement | The CLI does not require a Reinstate account | released architecture and `product.ts` |
-| Current release | `v0.5.0-rc.4` candidate (stable remains `v0.4.0`; dual-platform tagged-artifact acceptance pending) | changelog, release history, compatibility data |
+| Current release | `v0.5.0-rc.5` candidate (stable remains `v0.4.0`; dual-platform tagged-artifact acceptance pending) | changelog, release history, compatibility data |
 | Maintainer | Harjot Singh Rana | repository metadata and `product.ts` |
 
 ## Conflicting claims and resolution

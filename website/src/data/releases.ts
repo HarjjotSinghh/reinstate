@@ -1,5 +1,11 @@
 export const releaseHistory = [
   {
+    version: 'v0.5.0-rc.5',
+    date: '2026-08-21',
+    summary:
+      'Fifth Phase 5 candidate. Carries eight fixes found by physical dual-platform acceptance: an index that never re-read a source after Reinstate itself changed, so every reader fix stayed invisible; Gemini project paths recorded in a different case than they are hashed in; an agent root override that was ignored when it named a missing path; incremental refresh; and Windows portability of the documentation tests. Raises the verified ranges to Claude Code 2.1.238 and Codex CLI 0.149.0 on dual-platform physical resume evidence. Does not authorize stable v0.5.0. Current stable remains v0.4.0.',
+  },
+  {
     version: 'v0.5.0-rc.4',
     date: '2026-08-20',
     summary:

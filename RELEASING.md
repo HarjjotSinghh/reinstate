@@ -245,6 +245,42 @@ Contract:
 Publication means ready for tagged-artifact acceptance. It does **not**
 authorize stable `v0.5.0`. Current stable remains `v0.4.0`.
 
+### v0.5.0-rc.5 candidate gate
+
+The fifth Phase 5 candidate. Physical `v0.5.0-rc.4` acceptance found one defect
+that made every other reader fix unreachable: an index never re-read a source
+after Reinstate itself changed. Both layers of change detection asked only
+whether a file had moved, so an upgrade left an existing index frozen and a
+reader fix reached nobody until the user's agent happened to write a new
+session. On the Windows host an index built before the Gemini workspace fix
+served 24 sessions with no workspace indefinitely; it heals on the first run of
+this candidate. Note the row-level half of that predates `v0.5.0`: it shipped
+in `v0.4.0`.
+
+This candidate also carries Gemini project-path recovery on case-insensitive
+filesystems, an agent root override that is honoured when it names a missing
+path rather than silently walking the home tree, Cursor CLI's verified root
+variable, incremental refresh, and Windows portability of the documentation
+tests on a non-system drive.
+
+Both verified vendor ranges move on dual-platform physical resume evidence —
+Claude Code through `2.1.238` and Codex CLI through `0.149.0`. On each platform
+a session was created with the new version, indexed, resumed through the launch
+plan Reinstate produced, and the resumed session returned a token that existed
+only in the original session's history.
+
+Pre-tag dual-platform matrix state on the candidate commit, run with the
+harnesses rather than the tagged artifact: 150/150 on macOS and 150/150 on
+Windows. That is not tagged-artifact acceptance and does not substitute for it.
+
+Dispatch:
+[`v0.5.0-rc.5`](docs/testing/v0.5.0-rc.5-agent-verification-prompts.md).
+Contract:
+[Phase 5 acceptance](docs/testing/phase-5-universal-agent-coverage-acceptance.md).
+
+Publication means ready for tagged-artifact acceptance. It does **not**
+authorize stable `v0.5.0`. Current stable remains `v0.4.0`.
+
 ## Steps
 
 ### 1. Prepare the release commit
