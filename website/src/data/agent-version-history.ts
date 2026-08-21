@@ -16,6 +16,14 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.5.0-rc.5': {
+    rangeChange:
+      'Raises both inclusive ranges on dual-platform physical evidence: Claude Code to 2.1.219-2.1.238 and Codex CLI to 0.133.0-0.149.0. On macOS and on Windows a session created with the new version was indexed by Reinstate, resumed through the launch plan Reinstate produced, and returned a token that existed only in the original session history.',
+    compatibilityChange:
+      'Fifth Phase 5 candidate. Fixes an index that never re-read a source after Reinstate itself changed, so a reader fix reached nobody who already had an index. Also recovers Gemini project paths on case-insensitive filesystems, makes an agent root override authoritative when it names a missing path, and skips parsing an unchanged source. Claude Code and Codex remain the only T3-T5 surfaces. This candidate does not authorize stable v0.5.0.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.5.0-rc.5/docs/testing/v0.5.0-rc.5-agent-verification-prompts.md',
+  },
   'v0.5.0-rc.4': {
     rangeChange:
       'Raises both inclusive ranges on dual-platform physical evidence: Claude Code to 2.1.219-2.1.238 and Codex CLI to 0.133.0-0.149.0. On macOS and on Windows a session created with the new version was indexed by Reinstate, resumed through the launch plan Reinstate produced, and returned a token that existed only in the original session history.',
