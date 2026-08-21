@@ -122,8 +122,8 @@ jobs:
           test -s dist/client/install.ps1
           cmp public/install.sh dist/client/install.sh
           cmp public/install.ps1 dist/client/install.ps1
-          grep -F 'v0.5.0-rc.6' dist/client/install.sh
-          grep -F 'v0.5.0-rc.6' dist/client/install.ps1
+          grep -F 'v0.5.0' dist/client/install.sh
+          grep -F 'v0.5.0' dist/client/install.ps1
 
   lint:
     name: Lint

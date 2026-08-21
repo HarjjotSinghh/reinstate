@@ -2,7 +2,7 @@
 
 Last reviewed: 2026-08-19
 Canonical website source: `website/src/data/product.ts`
-Reviewed release: `v0.5.0-rc.6` candidate; public installers pin this tag.
+Reviewed release: `v0.5.0` candidate; public installers pin this tag.
 Stable remains `v0.4.0`. Dual-platform tagged-artifact acceptance is pending.
 
 This is the required output of the repository-local
@@ -29,7 +29,7 @@ marketing claim.
 | Paths | Recognized structural project roots are tokenized and expanded through a canonical project ID; arbitrary prose is not rewritten | `internal/pathmap`, adapter tests, configuration docs |
 | License | Apache-2.0 | `LICENSE`, `product.ts` |
 | Account requirement | The CLI does not require a Reinstate account | released architecture and `product.ts` |
-| Current release | `v0.5.0-rc.6` candidate (stable remains `v0.4.0`; dual-platform tagged-artifact acceptance pending) | changelog, release history, compatibility data |
+| Current release | `v0.5.0` candidate (stable remains `v0.4.0`; dual-platform tagged-artifact acceptance pending) | changelog, release history, compatibility data |
 | Maintainer | Harjot Singh Rana | repository metadata and `product.ts` |
 
 ## Conflicting claims and resolution
@@ -39,7 +39,7 @@ marketing claim.
 | Live GitHub About description | “Sync and resume coding-agent work across every device” is broader than verified OS/acceptance scope | Unsupported as written | Owner-operated update remains required; exact replacement is in `launch-distribution.md`. |
 | Live GitHub topics/social preview | Topics are incomplete and the generic social image does not match the canonical entity/brand packet | Stale external entity metadata | Reviewed topics and reproducible 1280×640 image are prepared; application remains an external repository-settings action. |
 | Candidate surfaces | Phase 4 structured handoff is stable in `v0.4.0` | Verified | Docs must not describe handoff as pending candidate work. |
-| Roadmap surfaces | Universal configuration and team continuity can be mistaken for current features | Planned | Current pages separate stable `v0.4.0` from later roadmap work. |
+| Roadmap surfaces | Universal configuration and team continuity can be mistaken for current features | Planned | Current pages separate stable `v0.5.0` from later roadmap work. |
 | OS language | Availability of a Linux binary can be mistaken for certified Phase 1 Linux agent resume | Ambiguous without qualification | Published install and guide copy says plain Linux is not a certified Phase 1 agent-resume target. |
 | `rein doctor --self-test` | “Synthetic storage test” could be read as a probe of configured remote storage | Ambiguous | CLI reference now states that the self-test uses in-memory sync and local files; real storage evidence comes from `init`, `status`, or scoped sync operations. |
 | Structured data | A schema type or claim could exceed visible current content | Unsupported if unmatched | Generated-build CI now requires visible parity for page/article names, FAQ questions, HowTo steps, breadcrumbs, and dates. |
@@ -48,7 +48,7 @@ marketing claim.
 
 - support for agents other than Claude Code and Codex as current Phase 1
   adapters;
-- stable `v0.4.0` support without a separate reviewed promotion and fresh
+- stable `v0.5.0` support without a separate reviewed promotion and fresh
   Apple Silicon macOS/native Windows tagged-artifact evidence;
 - stable support for Intel macOS, WSL2, or plain Linux without completed
   acceptance evidence;

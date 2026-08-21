@@ -235,7 +235,7 @@ Fidelity model:
 
 ---
 
-## Phase 5 — Universal agent coverage 📋
+## Phase 5 — Universal agent coverage ✅
 
 One index across every supported coding agent, instead of five agents with five
 different levels of support described in prose.
@@ -247,6 +247,14 @@ no existing capability regressed.
 
 Support becomes a **tier**, not a boolean. Each rung has its own evidence gate,
 and public surfaces state the rung rather than a bare "supported".
+
+*Shipped in stable `v0.5.0` after dual-platform tagged-artifact acceptance
+PASS on candidate `v0.5.0-rc.6` (Apple Silicon macOS and native Windows x64,
+150/150 on both). The earlier `v0.5.0-rc.1` through `v0.5.0-rc.5` candidates
+were published and failed physical acceptance. Gemini CLI was **not** promoted
+to T3: it remains a T2 handoff source, so that row is carried forward. Claude
+Code and Codex CLI remain the only agents that `push`, `pull`, and `--to`
+cover.*
 
 | Tier | Capability |
 | ---- | ---------- |
@@ -262,13 +270,13 @@ and public surfaces state the rung rather than a bare "supported".
 | `internal/agents` catalog: one descriptor file per agent | 📋 |
 | Existing five agents migrated onto the catalog with no behavior change | 📋 |
 | Shared scanners for home-tree, CLI-query, embedded-DB, and per-repository storage | 📋 |
-| Conformance suite that enforces the tier claim against committed evidence | 📋 |
-| `rein doctor --agents` redacted storage probe and wrapper scripts | 📋 |
-| Kimi Code CLI, Pi, and Qwen Code | 📋 |
-| Cursor CLI, Cline, Roo Code, and Aider | 📋 |
-| GitHub Copilot CLI, Amp, OpenHands, ZCode, and MiniMax researched to an honest tier | 📋 |
-| Gemini CLI promoted from T2 to T3 | 📋 |
-| Phase 5 dual-platform tagged-artifact acceptance | 📋 |
+| Conformance suite that enforces the tier claim against committed evidence | ✅ |
+| `rein doctor --agents` redacted storage probe and wrapper scripts | ✅ |
+| Kimi Code CLI, Pi, and Qwen Code | ✅ |
+| Cursor CLI, Cline, Roo Code, and Aider | ✅ Cursor CLI and Cline at T1; Roo Code and Aider at T0 with the reason recorded |
+| GitHub Copilot CLI, Amp, OpenHands, ZCode, and MiniMax researched to an honest tier | ✅ Copilot CLI at T1; the rest at T0 with the reason recorded |
+| Gemini CLI promoted from T2 to T3 | ❌ not promoted; remains a T2 handoff source |
+| Phase 5 dual-platform tagged-artifact acceptance | ✅ PASS on `v0.5.0-rc.6` |
 
 Deliberately **out of scope** for this phase: no new handoff destinations, no
 new synced agents, and no configuration support. Claude Code and Codex CLI

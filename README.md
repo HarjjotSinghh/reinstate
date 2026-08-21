@@ -7,20 +7,21 @@
 ### Find, verify, resume, and hand off coding-agent work
 
 **Your agents lose context every time you switch. Reinstate carries it
-across.** Indexes 11 agents in `v0.5.0-rc.6`, 5 in stable `v0.4.0`. Full
+across.** Indexes 11 agents in stable `v0.5.0`. Full
 continuity on 2 — Claude Code and Codex.
 
 Reinstate is the open-source continuity layer for coding-agent work: search,
 resume, and hand off tasks across agents, projects, environments, and devices,
 with optional encrypted sync through your own S3-compatible storage.
 
-Stable `v0.4.0` adds Phase 4 explicit structured handoffs on top of the
-configless local session index, literal search, metadata inspection, numbered
-switcher, same-vendor native resume/fork, and Phase 3 verified resume. A
-structured handoff continues the same task in a *new* Claude Code or Codex
-session. Apple Silicon macOS and native Windows x64 passed dual-platform
-tagged-artifact acceptance on candidate `v0.4.0-rc.11` (44/44 on both
-devices); the public installers pin `v0.5.0-rc.6`, whose acceptance is still
+Stable `v0.5.0` adds universal agent coverage on top of the Phase 4 structured
+handoff: an agent catalog with an explicit tier per agent, `rein doctor
+--agents` with a redacted storage probe, session discovery for eleven agents,
+and structured handoff from five. A structured handoff continues the same task
+in a *new* Claude Code or Codex session. Apple Silicon macOS and native Windows
+x64 passed dual-platform tagged-artifact acceptance on candidate `v0.5.0-rc.6`
+(150/150 on both
+devices); the public installers pin `v0.5.0`, whose acceptance is still
 pending. Intel macOS and Linux/WSL2 downloads remain preview/unverified
 pending issues
 [#97](https://github.com/HarjjotSinghh/reinstate/issues/97) and
@@ -136,7 +137,7 @@ sensitive artifacts. Reinstate instead provides
 
 ## Features
 
-Phase 4 stable `v0.4.0`:
+Phase 5 stable `v0.5.0`:
 
 - **Directional structured handoff** — Claude Code and Codex are destinations;
   Claude Code, Codex, Gemini, OpenCode, and Grok are sources
@@ -195,9 +196,9 @@ not part of the current CLI. See
 
 ## Quick start
 
-> **Platform boundary:** the public installers pin candidate `v0.5.0-rc.6`.
-> Dual-platform tagged-artifact acceptance is pending on Apple Silicon macOS
-> and native Windows x64. Stable remains `v0.4.0`. Intel macOS and Linux/WSL2
+> **Platform boundary:** the public installers pin stable `v0.5.0`, which
+> passed dual-platform tagged-artifact acceptance on Apple Silicon macOS and
+> native Windows x64. Intel macOS and Linux/WSL2
 > remain optional and unverified
 > ([#97](https://github.com/HarjjotSinghh/reinstate/issues/97),
 > [#98](https://github.com/HarjjotSinghh/reinstate/issues/98)).
@@ -252,7 +253,7 @@ Bare `rein` opens the numbered switcher only on a TTY. For scripts use
 `rein sessions --json`; a non-TTY bare invocation exits promptly with that
 hint.
 
-### Install the v0.5.0-rc.6 candidate
+### Install the v0.5.0 candidate
 
 macOS, Linux, or WSL2:
 
@@ -266,7 +267,7 @@ Native Windows PowerShell:
 irm https://reinstate.dev/install.ps1 | iex
 ```
 
-Both bootstraps pin and verify `v0.5.0-rc.6`, install without elevation, and
+Both bootstraps pin and verify `v0.5.0`, install without elevation, and
 print the next command:
 
 ```bash
@@ -280,8 +281,8 @@ Apple Silicon macOS with Homebrew:
 brew install HarjjotSinghh/tap/reinstate
 ```
 
-The GitHub Release and `reinstate.dev` installers pin `v0.5.0-rc.6`. The Homebrew
-tap may still list `v0.4.0` until a later stable tag is published. Intel macOS
+The GitHub Release and `reinstate.dev` installers pin `v0.5.0`. The Homebrew
+tap may still list an earlier release until its formula is updated. Intel macOS
 and Linuxbrew remain optional and unverified.
 
 Reinstate waits at most 30 seconds for replacement approval; set
@@ -341,11 +342,11 @@ yes-or-no list.
 | [GitHub Copilot CLI](https://docs.github.com/en/copilot/concepts/agents/copilot-cli/about-copilot-cli) | T1 | ✅ read-only | — | — | — | — |
 | [Cline](https://docs.cline.bot/) | T1 | ✅ read-only | — | — | — | — |
 
-This table is candidate `v0.5.0-rc.6`, which indexes all 11 agents above.
-Stable `v0.4.0` indexes 5 — Claude Code, Codex CLI, Gemini CLI, Grok Build,
-and OpenCode; the other six arrive in `v0.5.0`.
+This table is stable `v0.5.0`, which indexes all 11 agents above.
+Stable `v0.4.0` indexed 5 — Claude Code, Codex CLI, Gemini CLI, Grok Build,
+and OpenCode.
 
-Structured handoff in stable `v0.4.0` starts a new destination session.
+Structured handoff in stable `v0.5.0` starts a new destination session.
 Native resume/fork and encrypted sync remain same-vendor.
 
 Details: **[docs/adapters.md](docs/adapters.md)**
@@ -425,7 +426,7 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 | --- | ----------- |
 | **Website** | [reinstate.dev](https://reinstate.dev) — product, documentation, compatibility, and security |
 | [Getting started](docs/getting-started.md) | Configless local index plus optional encrypted sync |
-| [Features and commands](docs/features.md) | What shipped in v0.1.0 through v0.4.0 |
+| [Features and commands](docs/features.md) | What shipped in v0.1.0 through v0.5.0 |
 | [Verified resume](docs/verified-resume.md) | Phase 3 environment report, provenance, policy, and privacy contract |
 | [Cross-agent handoff](docs/handoff.md) | Phase 4 scope, fidelity, security, storage, and directional support |
 | [Architecture](docs/architecture.md) | Pipeline, packages, design principles |
@@ -501,7 +502,8 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 | **2** | Configless local index, search, native resume/fork | ✅ |
 | **3** | Verified resume (stable `v0.3.0`) | ✅ |
 | **4** | Structured cross-agent handoffs (stable `v0.4.0`) | ✅ |
-| **5–7** | Universal config + automatic sync, thin Console/ACP client, teams | 📋 / 💭 |
+| **5** | Universal agent coverage (stable `v0.5.0`) | ✅ |
+| **6–7** | Universal config + automatic sync, thin Console/ACP client, teams | 📋 / 💭 |
 
 Full detail: **[ROADMAP.md](ROADMAP.md)**
 

@@ -58,7 +58,7 @@ project layout.
 This is **Claude Code to Claude Code** continuity. Reinstate Phase 1 does not
 translate a Claude transcript into Codex or any other agent format.
 
-The current public installer pins stable `v0.4.0`. Apple Silicon macOS and
+The current public installer pins stable `v0.5.0`. Apple Silicon macOS and
 native Windows x64 are physically verified; Intel macOS and Linux/WSL2 are
 preview and unverified. Check the [compatibility page](/compatibility) before
 using another platform or a newer Claude Code version.
