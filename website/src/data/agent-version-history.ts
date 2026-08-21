@@ -16,6 +16,14 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.5.0-rc.6': {
+    rangeChange:
+      'Unchanged from v0.5.0-rc.5: inclusive Claude Code range 2.1.219-2.1.238 and Codex CLI range 0.133.0-0.149.0.',
+    compatibilityChange:
+      'Sixth Phase 5 candidate. Carries the single defect physical v0.5.0-rc.5 acceptance found: the agent probe emitted a raw 38-character Git object hash, because the shape normaliser recognised only exactly 32, 40 and 64 characters while OpenCode keeps a Git object store under each snapshot. A committed probe artifact must not carry a content hash of the operator own repository. Claude Code and Codex remain the only T3-T5 surfaces. This candidate does not authorize stable v0.5.0.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.5.0-rc.6/docs/testing/v0.5.0-rc.6-agent-verification-prompts.md',
+  },
   'v0.5.0-rc.5': {
     rangeChange:
       'Raises both inclusive ranges on dual-platform physical evidence: Claude Code to 2.1.219-2.1.238 and Codex CLI to 0.133.0-0.149.0. On macOS and on Windows a session created with the new version was indexed by Reinstate, resumed through the launch plan Reinstate produced, and returned a token that existed only in the original session history.',
