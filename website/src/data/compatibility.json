@@ -20,7 +20,7 @@
       "integrationPath": "/integrations/claude-code",
       "status": "primary-release-target",
       "minimumTestedVersion": "2.1.219",
-      "maximumTestedVersion": "2.1.229",
+      "maximumTestedVersion": "2.1.238",
       "resumeMode": "Claude Code to Claude Code (T5 encrypted sync; T3 same-vendor resume)",
       "evidenceLevel": "source checks, deterministic synthetic fixtures, and dual-platform tagged-artifact acceptance",
       "evidence": {
@@ -42,7 +42,7 @@
       },
       "lastTested": "2026-08-16",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-08-15-macos-phase4-V040RC11.md",
-      "notes": "Versions outside the inclusive range, including prereleases, fail closed as untested. Stable v0.4.0 accepts Claude Code 2.1.219–2.1.229 after dual-platform tagged-artifact acceptance PASS on v0.4.0-rc.11 (macOS 44/44, Windows 44/44)."
+      "notes": "Versions outside the inclusive range, including prereleases, fail closed as untested. v0.5.0 accepts Claude Code 2.1.219–2.1.238. The ceiling moved to 2.1.238 on dual-platform physical evidence: on macOS and on Windows a session created with 2.1.238 was indexed, resumed through the launch plan Reinstate produced, and returned a token that existed only in the original session's history."
     },
     {
       "id": "codex",

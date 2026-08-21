@@ -195,7 +195,7 @@ func TestHandoffFromClaudeInstallJustOutsideVerifiedRange(t *testing.T) {
 		t.Fatal(err)
 	}
 	fakeAgentBin(t, map[string]string{
-		"claude": "2.1.230 (Claude Code)",
+		"claude": "2.1.239 (Claude Code)",
 		"codex":  "codex-cli 0.147.0",
 	})
 	record := realisticClaudeInstall(t, vendorHome, workspace)
@@ -207,7 +207,7 @@ func TestHandoffFromClaudeInstallJustOutsideVerifiedRange(t *testing.T) {
 	stdout, stderr, code := runHandoffCLI(t, home, vendorHome, sources, nil,
 		"handoff", "claude:"+record.ID, "--to", "codex", "--dry-run", "--json")
 	if code != ExitCompatibility {
-		t.Fatalf("2.1.230 source exit=%d, want %d (stdout=%s stderr=%s)", code, ExitCompatibility, stdout, stderr)
+		t.Fatalf("2.1.239 source exit=%d, want %d (stdout=%s stderr=%s)", code, ExitCompatibility, stdout, stderr)
 	}
 	if !strings.Contains(stderr, "UNTESTED") {
 		t.Fatalf("stderr did not name the compatibility state: %s", stderr)

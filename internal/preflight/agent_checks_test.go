@@ -35,7 +35,7 @@ func TestAgentChecksReadOnlyDeterminedUntestedIsCompatibilityBlock(t *testing.T)
 		Message:           "native agent version is outside the verified range",
 		LayoutRecognized:  true,
 		ExecutablePresent: true,
-		Version:           "2.1.230",
+		Version:           "2.1.239",
 	}, true)
 	version := findAgentCheck(t, checks, "agent.version")
 	if version.Status != StatusUnknown || version.Severity != SeverityBlock || version.ExitCode != exitcode.Compatibility {

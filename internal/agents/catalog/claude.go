@@ -51,7 +51,7 @@ func Claude() agents.Descriptor {
 			Args:  []string{"--version"},
 			Parse: parseClaudeVersion,
 			Min:   "2.1.219",
-			Max:   "2.1.229",
+			Max:   "2.1.238",
 		},
 		Process: agents.ProcessSpec{
 			Images:      []string{"claude"},

@@ -10,6 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Widen the fail-closed Claude Code compatibility range through `2.1.238` (was
+  `2.1.229`). Both acceptance hosts had auto-updated past the old ceiling and
+  were refused on resume and handoff, as would every user on a current install.
+  The new ceiling rests on dual-platform physical evidence rather than a version
+  bump: on macOS and on Windows a session was created with Claude Code
+  `2.1.238`, indexed by Reinstate, and resumed through the launch plan Reinstate
+  produced; the resumed session returned a token that existed only in the
+  original session's history, which a restarted session cannot answer.
+
 - The verified Codex CLI range now reaches `0.149.0`. `0.147.0` was the
   ceiling, so both acceptance hosts — which had auto-updated past it — were
   refused with `native agent version 0.149.0 is outside the verified range`.
