@@ -14,6 +14,16 @@ var (
 	reHex32   = regexp.MustCompile(`(?i)^[0-9a-f]{32}$`)
 	reHex40   = regexp.MustCompile(`(?i)^[0-9a-f]{40}$`)
 	reHex64   = regexp.MustCompile(`(?i)^[0-9a-f]{64}$`)
+	// A bare content hash of any length. Git stores an object as a two
+	// character directory plus a thirty-eight character file, so an object
+	// store under an agent root — OpenCode keeps one per snapshot — produced a
+	// 38 character stem that matched none of the fixed-length rules above and
+	// reached the artifact verbatim. Those names are content hashes of the
+	// operator's own repository, which is exactly what a committed probe must
+	// not carry. Collapse any hex run long enough to identify content rather
+	// than only the three lengths that happened to be seen first. The
+	// threshold matches what the acceptance row itself looks for.
+	reHexAny  = regexp.MustCompile(`(?i)^[0-9a-f]{12,}$`)
 	rePrefHex = regexp.MustCompile(`(?i)^([a-z][a-z0-9_]*)_([0-9a-f]{32})$`)
 	// A vendor prefix joined to a long content hash, e.g. Git's
 	// pack-<40-hex>.idx under a marketplace checkout. Without this the
@@ -84,6 +94,11 @@ func normalizeStem(stem string) string {
 	}
 	if reHex64.MatchString(stem) {
 		return "<64-hex>"
+	}
+	// After the fixed lengths, so those keep their established tokens and a
+	// committed artifact does not churn.
+	if reHexAny.MatchString(stem) {
+		return fmt.Sprintf("<%d-hex>", len(stem))
 	}
 	if m := rePrefHex.FindStringSubmatch(stem); len(m) == 3 {
 		return m[1] + "_<32-hex>"
