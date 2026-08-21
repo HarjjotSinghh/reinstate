@@ -2,11 +2,18 @@ package sessionindex
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"os"
 	"sort"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/HarjjotSinghh/reinstate/internal/version"
 )
 
 // Source discovers and parses one agent's complete local read surface.
@@ -60,6 +67,10 @@ func (r RefreshResult) SourceFresh(name string) bool {
 type Index struct {
 	store   *Store
 	sources []Source
+	// readerID identifies the build that reads the sources. It is held per
+	// index rather than read from a global so that a test can stand in for a
+	// different build without disturbing anything running alongside it.
+	readerID string
 }
 
 // NewIndex constructs an index over an already-open store.
@@ -87,7 +98,7 @@ func NewIndex(store *Store, sources ...Source) (*Index, error) {
 		}
 		seen[name] = struct{}{}
 	}
-	return &Index{store: store, sources: ordered}, nil
+	return &Index{store: store, sources: ordered, readerID: readerIdentity()}, nil
 }
 
 // OpenIndex opens the default private store and constructs an index.
@@ -138,6 +149,52 @@ func (i *Index) RefreshAgent(ctx context.Context, agent string) (RefreshResult, 
 	return i.refresh(ctx, agent)
 }
 
+// readerIdentity identifies the code that produced a stored row.
+//
+// A source fingerprint answers "have these files changed"; it cannot answer
+// "would this build read them the same way". The same bytes parse into
+// different records whenever a reader is fixed, so a stored fingerprint is
+// only meaningful for the build that wrote it. Without this, upgrading
+// Reinstate left every existing index frozen: a reader fix stayed invisible
+// until the user's agent happened to write a new session.
+//
+// The release version distinguishes shipped builds and the executable's own
+// size and modification time distinguish local ones, so any change to the
+// binary invalidates what it previously stored.
+var readerIdentity = sync.OnceValue(func() string {
+	parts := []string{version.Version}
+	if executable, err := os.Executable(); err == nil {
+		if info, err := os.Stat(executable); err == nil {
+			parts = append(parts,
+				strconv.FormatInt(info.Size(), 10),
+				strconv.FormatInt(info.ModTime().UnixNano(), 10))
+		}
+	}
+	sum := sha256.Sum256([]byte(strings.Join(parts, "\x00")))
+	return hex.EncodeToString(sum[:])[:16]
+})
+
+// qualifyFingerprint binds a source digest to the reader that produced it.
+func (i *Index) qualifyFingerprint(digest string) string {
+	return i.identity() + ":" + digest
+}
+
+func (i *Index) identity() string {
+	if i.readerID != "" {
+		return i.readerID
+	}
+	return readerIdentity()
+}
+
+// readerOf returns the reader identity a stored fingerprint was written by.
+func readerOf(stored string) string {
+	identity, _, found := strings.Cut(stored, ":")
+	if !found {
+		return ""
+	}
+	return identity
+}
+
 // Fingerprinter is an optional Source capability: a cheap summary of
 // everything the source would read, computed without opening any file. A
 // source that cannot produce one is always scanned.
@@ -160,6 +217,16 @@ func (i *Index) refresh(ctx context.Context, selected string) (RefreshResult, er
 		}
 		status := SourceRefresh{Name: name}
 
+		// Everything below turns on one question: were these rows written by
+		// this build? A fingerprint answers "have the files changed"; it never
+		// answers "would this build read them the same way". So the reader
+		// identity is recorded alongside it, and when it differs every row is
+		// rewritten even though nothing on disk moved. Without that an upgrade
+		// leaves the index frozen and a reader fix reaches nobody until their
+		// agent happens to write a new session.
+		storedFingerprint, storedErr := i.store.SourceFingerprint(ctx, name)
+		readerChanged := storedErr != nil || readerOf(storedFingerprint) != i.identity()
+
 		// A source that can summarise itself without opening any file lets an
 		// unchanged refresh skip parsing entirely. The fingerprint covers every
 		// path, modification time and size the scan would read, so an identical
@@ -172,8 +239,8 @@ func (i *Index) refresh(ctx context.Context, selected string) (RefreshResult, er
 					return result, ctxErr
 				}
 			} else if usable && digest != "" {
-				stored, storeErr := i.store.SourceFingerprint(ctx, name)
-				if storeErr == nil && stored == digest {
+				digest = i.qualifyFingerprint(digest)
+				if storedErr == nil && storedFingerprint == digest {
 					count, countErr := i.store.CountSource(ctx, name)
 					if countErr == nil {
 						status.Records = count
@@ -184,6 +251,11 @@ func (i *Index) refresh(ctx context.Context, selected string) (RefreshResult, er
 				}
 				pendingFingerprint = digest
 			}
+		}
+		if pendingFingerprint == "" {
+			// No usable digest: record the reader alone, so the next run can
+			// still tell whether this build wrote these rows.
+			pendingFingerprint = i.qualifyFingerprint("")
 		}
 
 		scan, err := source.Scan(ctx)
@@ -205,7 +277,11 @@ func (i *Index) refresh(ctx context.Context, selected string) (RefreshResult, er
 		scan.Records, coalesceWarnings = CoalesceRecords(scan.Records)
 		scan.Warnings = append(scan.Warnings, coalesceWarnings...)
 		status.Records = len(scan.Records)
-		replaced, err := i.store.ReplaceSource(ctx, name, scan.Records)
+		var replaceOptions []ReplaceOption
+		if readerChanged {
+			replaceOptions = append(replaceOptions, RewriteEveryRow())
+		}
+		replaced, err := i.store.ReplaceSource(ctx, name, scan.Records, replaceOptions...)
 		if err != nil {
 			return result, fmt.Errorf("refresh %s session index: %w", name, err)
 		}

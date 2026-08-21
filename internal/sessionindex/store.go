@@ -235,11 +235,37 @@ func (s *Store) Rebuild(ctx context.Context) error {
 // ReplaceSource atomically upserts a complete successful scan and deletes
 // records that disappeared from that source. Callers must not invoke it after a
 // failed scan.
+// ReplaceOption adjusts how a source's rows are replaced.
+type ReplaceOption func(*replaceOptions)
+
+type replaceOptions struct{ rewriteEveryRow bool }
+
+// RewriteEveryRow disables the per-record shortcut that leaves a row alone when
+// its source file has not moved.
+//
+// That shortcut compares only the source path, modification time and size, so
+// it answers "has this file changed" — never "would this build read it the same
+// way". When Reinstate's own readers change, the same untouched file parses
+// into a different record, and without this the stored row survives the
+// upgrade unchanged. A released build indexed Gemini sessions with no
+// workspace; the reader was fixed; every existing index kept serving the old
+// rows because the files on disk had not moved.
+func RewriteEveryRow() ReplaceOption {
+	return func(o *replaceOptions) { o.rewriteEveryRow = true }
+}
+
 func (s *Store) ReplaceSource(
 	ctx context.Context,
 	source string,
 	records []Record,
+	options ...ReplaceOption,
 ) (ReplaceResult, error) {
+	var settings replaceOptions
+	for _, option := range options {
+		if option != nil {
+			option(&settings)
+		}
+	}
 	var result ReplaceResult
 	source = strings.ToLower(SafeText(strings.TrimSpace(source), 64))
 	if source == "" {
@@ -317,7 +343,7 @@ func (s *Store) ReplaceSource(
 
 	for _, record := range normalized {
 		previous, exists := existing[record.Key]
-		if exists &&
+		if exists && !settings.rewriteEveryRow &&
 			previous.path == record.SourcePath &&
 			previous.modTime == record.SourceModTime &&
 			previous.size == record.SourceSize {
