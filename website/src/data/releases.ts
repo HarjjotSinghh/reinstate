@@ -1,5 +1,11 @@
 export const releaseHistory = [
   {
+    version: 'v0.5.0',
+    date: '2026-08-21',
+    summary:
+      'Stable Phase 5 release. Universal agent coverage: a catalog of 18 agents, rein doctor --agents with a redacted AGENT-PROBE-V1 artifact, six T1 discover agents, three T2 handoff sources, and Claude Code and Codex as the only native resume and sync surfaces. Authorized by dual-platform tagged-artifact acceptance on v0.5.0-rc.6: Apple Silicon macOS PASS and native Windows x64 PASS across the full 150-row matrix.',
+  },
+  {
     version: 'v0.5.0-rc.6',
     date: '2026-08-21',
     summary:

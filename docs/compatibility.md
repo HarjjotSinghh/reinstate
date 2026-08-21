@@ -1,9 +1,9 @@
 # Compatibility
 
-Stable `v0.4.0` is the current Phase 4 release: structured handoff plus
-verified resume for Claude Code and Codex on Apple Silicon macOS and native
-Windows x64, after dual-platform tagged-artifact acceptance PASS on candidate
-`v0.4.0-rc.11`. Intel macOS and Linux/WSL2 remain optional,
+Stable `v0.5.0` is the current Phase 5 release: universal agent coverage on top
+of structured handoff and verified resume for Claude Code and Codex, on Apple
+Silicon macOS and native Windows x64, after dual-platform tagged-artifact
+acceptance PASS on candidate `v0.5.0-rc.6`. Intel macOS and Linux/WSL2 remain optional,
 unsupported/unverified evidence and do not block stable.
 
 Candidate history (RC1–RC11) lived under `docs/testing/results/` and earlier

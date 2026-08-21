@@ -7,9 +7,11 @@ bring-your-own-storage sync for same-vendor Claude Code and Codex sessions.
 Stable Phase 2 adds universal local indexing, literal
 search, metadata inspection, and same-vendor resume/fork without cloud
 configuration. Stable `v0.3.0` added Phase 3 verified resume. Stable `v0.4.0`
-adds Phase 4 explicit structured handoff, which continues the same task in a
-new Claude Code or Codex session, after dual-platform tagged-artifact
-acceptance PASS. A later universal configuration layer will reconcile supported MCP servers,
+added Phase 4 explicit structured handoff, which continues the same task in a
+new Claude Code or Codex session. Stable `v0.5.0` adds Phase 5 universal agent
+coverage: a catalog of eighteen agents, session discovery for eleven, and
+structured handoff from five, after dual-platform tagged-artifact acceptance
+PASS. A later universal configuration layer will reconcile supported MCP servers,
 skills, hooks/loops, plugins, marketplaces, and safe settings across harnesses
 and devices.
 
@@ -43,14 +45,14 @@ rein inspect claude:SESSION_ID
 rein resume claude:SESSION_ID --dry-run
 ```
 
-Stable `v0.4.0` uses a private derived index at
+Stable `v0.5.0` uses a private derived index at
 `$REINSTATE_HOME/cache/session-index-v2.sqlite` (plus owner-only `.lock` and
 `.write.lock` coordination files). Stable `v0.2.0` uses the earlier v1 index
 and has no Phase 3 baselines; the paths are separate by design. Neither version
 needs a sync profile, storage credentials, an encryption passphrase, keyring
 access, or a network backend. Stable `v0.2.0` contains the Phase 1 sync surface
 and Phase 2 local continuity. The public installers pin candidate
-`v0.5.0-rc.6`. Stable remains `v0.4.0`. Intel macOS plus Linux/WSL2 remain
+`v0.5.0`. Stable remains `v0.4.0`. Intel macOS plus Linux/WSL2 remain
 optional and unverified.
 
 ## Why not just use git?
@@ -181,8 +183,9 @@ reported explicitly rather than fabricated.
 
 ## Production ready?
 
-Pre-1.0. Stable `v0.4.0` includes Phase 1 encrypted sync, Phase 2 local
-continuity, Phase 3 verified resume, and Phase 4 structured handoff. Apple
+Pre-1.0. Stable `v0.5.0` includes Phase 1 encrypted sync, Phase 2 local
+continuity, Phase 3 verified resume, Phase 4 structured handoff, and Phase 5
+universal agent coverage. Apple
 Silicon macOS and native Windows x64 are physically verified; Intel macOS and
 Linux/WSL2 remain preview and unverified. See [ROADMAP.md](../ROADMAP.md) and
 [CHANGELOG.md](../CHANGELOG.md). Use with backups; report bugs via GitHub Issues.

@@ -316,6 +316,37 @@ Contract:
 Publication means ready for tagged-artifact acceptance. It does **not**
 authorize stable `v0.5.0`. Current stable remains `v0.4.0`.
 
+### v0.5.0 stable evidence
+
+Dual-platform tagged-artifact acceptance PASS on candidate `v0.5.0-rc.6`:
+
+- Apple Silicon macOS 150/150
+  (`docs/testing/results/2026-08-21-macos-phase5-V050RC6.md`)
+- native Windows x64 150/150
+  (`docs/testing/results/2026-08-21-windows-phase5-V050RC6.md`)
+
+This authorizes the signed stable `v0.5.0` tag. Intel macOS and Linux/WSL2
+remain optional and unverified. Native resume and encrypted sync remain
+same-vendor and remain limited to Claude Code and Codex CLI. Gemini CLI,
+OpenCode, and Grok Build remain handoff sources only; Gemini was **not**
+promoted to T3.
+
+Two dispositions are carried into this release rather than resolved by it, and
+both are recorded in the device reports:
+
+- **E5** — active-session detection is implemented and exercised on the handoff
+  and restore paths; `rein resume` applies no such guard.
+- **B4 on Windows** — the row passes there without exercising the fix, because
+  that host's OpenCode object stores hold only packed objects and OpenCode
+  declares no root environment variable to redirect the probe with. The
+  end-to-end evidence is on macOS; the Windows evidence is the unit tests that
+  cover the same code path in CI.
+
+Five candidates were published and failed physical acceptance before this one:
+`v0.5.0-rc.1` through `v0.5.0-rc.5`. The defect that `v0.5.0-rc.5` acceptance
+found — an agent probe carrying a raw Git object hash — is why `v0.5.0-rc.6`
+exists.
+
 ## Steps
 
 ### 1. Prepare the release commit

@@ -16,6 +16,14 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.5.0': {
+    rangeChange:
+      'Inclusive Claude Code range 2.1.219-2.1.238 and Codex CLI range 0.133.0-0.149.0, each raised on dual-platform physical resume evidence during the Phase 5 candidates.',
+    compatibilityChange:
+      'Stable Phase 5 release. Universal agent coverage across a catalog of 18 agents, with Claude Code and Codex remaining the only native resume and sync surfaces. Authorized by dual-platform tagged-artifact acceptance on v0.5.0-rc.6.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.5.0/docs/testing/v0.5.0-rc.6-agent-verification-prompts.md',
+  },
   'v0.5.0-rc.6': {
     rangeChange:
       'Unchanged from v0.5.0-rc.5: inclusive Claude Code range 2.1.219-2.1.238 and Codex CLI range 0.133.0-0.149.0.',

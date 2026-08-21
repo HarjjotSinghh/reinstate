@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-21
+
+Universal agent coverage. Reinstate now knows about a catalog of eighteen
+coding agents and reads sessions from eleven of them. A structured handoff
+projects from five sources and starts a **new** destination session. Same-vendor
+native resume, fork, and encrypted sync remain limited to Claude Code and Codex
+CLI. Authorized by dual-platform
+tagged-artifact acceptance on `v0.5.0-rc.6`: Apple Silicon macOS `PASS` and
+native Windows x64 `PASS`, each across the full 150-row matrix
+(`docs/testing/results/2026-08-21-macos-phase5-V050RC6.md`,
+`docs/testing/results/2026-08-21-windows-phase5-V050RC6.md`).
+
+### Added
+
+- An agent catalog under `internal/agents` with an explicit tier per agent, and
+  a conformance suite that holds each descriptor's capabilities to its declared
+  tier — so a tier is a statement about what the code actually does.
+- `rein doctor --agents`, which emits a redacted `AGENT-PROBE-V1` artifact
+  describing where each agent stores sessions, and `--acceptance-matrix`, which
+  generates the required rows for a release from the catalog itself.
+- Session discovery for six T1 agents — Kimi Code, Qwen Code, Pi, Cursor CLI,
+  GitHub Copilot CLI, and Cline — and three T2 handoff sources: Gemini CLI,
+  OpenCode, and Grok Build.
+
+### Changed
+
+- OpenCode sessions are read from its embedded SQLite store rather than by
+  running the vendor CLI, which could only ever answer for the directory it ran
+  in and left write-ahead log files under the agent root.
+- An unchanged refresh no longer re-parses every session: each source
+  summarises itself from directory metadata first. A warm refresh dropped from
+  roughly ten seconds to under one on both acceptance hosts.
+- The verified vendor ranges reach Claude Code `2.1.238` and Codex CLI
+  `0.149.0`, each raised only after a session created with that version was
+  resumed through Reinstate's own launch plan on both platforms.
+
+### Fixed
+
+- Upgrading Reinstate re-reads sessions whose files have not changed. Both
+  layers of change detection asked only whether a file had moved, so an
+  existing index stayed frozen across an upgrade and a reader fix reached
+  nobody until the user's agent happened to write a new session. Half of this
+  shipped in `v0.4.0`.
+- The agent probe no longer carries a raw content hash into its artifact when
+  the hash is not exactly 32, 40, or 64 characters — a Git object store under
+  an agent root produced 38-character names that reached the artifact verbatim.
+- An agent root environment variable is honoured even when it names a path that
+  does not exist, instead of silently falling back to walking the home tree.
+- Gemini sessions resolve their project on a case-insensitive filesystem, where
+  the CLI records a lower-cased path but hashes the real on-disk case.
+
+Every candidate from `v0.5.0-rc.1` to `v0.5.0-rc.6` is recorded below with the
+acceptance evidence that produced it.
+
 ## [0.5.0-rc.6] - 2026-08-21
 
 ### Fixed

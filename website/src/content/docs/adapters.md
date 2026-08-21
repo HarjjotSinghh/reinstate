@@ -6,7 +6,7 @@ order: 3
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.5.0-rc.6"
+version: "v0.5.0"
 updatedAt: 2026-08-16
 tags: ["adapters", "claude-code", "codex", "same-vendor-resume"]
 targetQuery: "Reinstate supported coding agents"
@@ -29,7 +29,7 @@ resume/fork; Gemini CLI and OpenCode remain read-only.
 | Gemini CLI | Read-only | No | No | Source-only |
 | OpenCode | Read-only | No | No | Source-only |
 
-Stable `v0.4.0` passed dual-platform tagged-artifact acceptance on Apple
+Stable `v0.5.0` passed dual-platform tagged-artifact acceptance on Apple
 Silicon macOS and native Windows x64. Intel macOS and Linux/WSL2 packages are
 preview and unverified; check the
 [compatibility page](/compatibility) before relying on them.

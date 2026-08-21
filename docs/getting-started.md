@@ -1,16 +1,17 @@
 # Getting Started
 
-Reinstate is the continuity layer for coding-agent work. Stable `v0.4.0`
+Reinstate is the continuity layer for coding-agent work. Stable `v0.5.0`
 finds, searches, inspects, resumes, and forks local sessions without
-configuration or cloud access; adds verified resume; and continues the same
-task in a *new* Claude Code or Codex session via structured handoff. It also
+configuration or cloud access; adds verified resume; continues the same
+task in a *new* Claude Code or Codex session via structured handoff; and reads
+sessions from eleven agents across a catalog of eighteen. It also
 synchronizes Claude Code and Codex CLI sessions across machines through
 client-side-encrypted, user-owned object storage.
 
 Dual-platform tagged-artifact acceptance passed on candidate `v0.4.0-rc.11`
 (Apple Silicon macOS 44/44, native Windows x64 44/44).
 
-> **Release status:** the public installers pin candidate `v0.5.0-rc.6`.
+> **Release status:** the public installers pin candidate `v0.5.0`.
 > Dual-platform tagged-artifact acceptance is pending. Stable remains `v0.4.0`.
 > Intel macOS and Linux/WSL2 remain optional,
 > unsupported/unverified evidence tracked in [#97](https://github.com/HarjjotSinghh/reinstate/issues/97)
