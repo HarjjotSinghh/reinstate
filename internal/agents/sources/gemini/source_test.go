@@ -120,6 +120,21 @@ func TestProjectHashResolvesToWorkspace(t *testing.T) {
 	}
 }
 
+// geminiTestRoot returns a temporary directory in the spelling the filesystem
+// actually holds. On Windows a temp path can contain an 8.3 short name
+// (RUNNER~1) and on macOS it can sit behind /var, so the raw string is not the
+// canonical one. These tests hash paths, so they must start from the canonical
+// spelling or the expected digest is computed from a path that does not exist
+// under that name.
+func geminiTestRoot(t *testing.T) string {
+	t.Helper()
+	root, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return root
+}
+
 // writeGeminiChat lays out tmp/<dir>/chats/session-1.jsonl carrying only a
 // projectHash, which is all current Gemini records on a chat.
 func writeGeminiChat(t *testing.T, root, dir, hash string) {
@@ -168,7 +183,7 @@ func scanOne(t *testing.T, root string) sessionindex.Record {
 // project name.
 func TestProjectRootMarkerResolvesWorkspace(t *testing.T) {
 	t.Parallel()
-	root := t.TempDir()
+	root := geminiTestRoot(t)
 	workspace := filepath.Join(root, "code", "demo")
 	if err := os.MkdirAll(workspace, 0o755); err != nil {
 		t.Fatal(err)
@@ -203,7 +218,7 @@ func TestProjectRootMarkerResolvesWorkspace(t *testing.T) {
 // digest for a project.
 func TestProjectHashResolvesFromDifferentlyCasedSpelling(t *testing.T) {
 	t.Parallel()
-	root := t.TempDir()
+	root := geminiTestRoot(t)
 	workspace := filepath.Join(root, "Code", "Demo")
 	if err := os.MkdirAll(workspace, 0o755); err != nil {
 		t.Fatal(err)
