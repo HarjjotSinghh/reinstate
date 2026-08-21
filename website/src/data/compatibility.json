@@ -110,7 +110,7 @@
       "name": "OpenCode",
       "vendor": "anomalyco",
       "tier": "T2",
-      "storageFamily": "F2",
+      "storageFamily": "F3",
       "t0Reason": null,
       "integrationPath": "/integrations/opencode",
       "status": "handoff-source",
