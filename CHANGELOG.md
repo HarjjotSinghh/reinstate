@@ -21,6 +21,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Gemini sessions on Windows resolve their project again instead of showing a
+  bare 64-character digest. A chat records only `projectHash`, the sha256 of
+  the absolute project path, so the path has to be recovered to name the
+  project. Gemini records that path lower-cased — in `projects.json` and in the
+  `.project_root` marker it now writes beside each session directory — but
+  hashes the path in its real on-disk case, so the digest never matched on a
+  case-insensitive filesystem. The recorded spelling is now case-corrected
+  against the filesystem before hashing, and `.project_root` is read as a
+  second source so the join no longer depends on `projects.json` alone. On the
+  Windows acceptance host this took Gemini from 0 resolved workspaces to 10
+  sessions across 5 distinct projects (`v0.5.0-rc.4` Windows C1-C3, C6, D4).
+
+### Fixed
+
 - Structured handoff from an OpenCode source carries the conversation again.
   The reader looked for a filesystem `message/<id>` tree that current OpenCode
   no longer writes, so every session fell back to a metadata-only boundary and

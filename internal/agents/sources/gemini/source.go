@@ -338,11 +338,128 @@ func collectGeminiArgs(value any, files map[string]struct{}) {
 	sources.CollectToolFiles(map[string]any{"input": value}, files)
 }
 
+// maxProjectRootBytes bounds a .project_root read. The file holds one
+// absolute path and nothing else.
+const maxProjectRootBytes = 64 << 10
+
+// maxProjectRootDirs bounds how many session directories are consulted for a
+// .project_root, so a pathological tree cannot turn a scan into a walk.
+const maxProjectRootDirs = 4096
+
 // projectWorkspaces maps a Gemini project hash to the absolute path it was
-// derived from. Gemini records the hash on each chat but keeps the paths in
-// projects.json, so the two are joined here. A missing or malformed file
-// yields no mappings rather than an error: this only enriches a record.
+// derived from. Gemini records only the hash on each chat and keeps the paths
+// elsewhere, so the two are joined here. A missing or malformed file yields no
+// mappings rather than an error: this only enriches a record.
+//
+// Two sources are consulted. projects.json is the flat index Gemini has always
+// kept. Current Gemini also writes tmp/<name>/.project_root beside the chats
+// themselves, which is authoritative for that directory and survives a pruned
+// projects.json.
 func projectWorkspaces(root string) map[string]string {
+	out := make(map[string]string)
+	// One directory listing serves every workspace that shares a parent.
+	listing := make(map[string][]string)
+	add := func(workspace string) {
+		workspace = strings.TrimSpace(workspace)
+		if workspace == "" {
+			return
+		}
+		register(out, workspace)
+		// Gemini hashes the path as the process saw it. On a case-insensitive
+		// filesystem it records a lower-cased path in projects.json and
+		// .project_root but hashes the real on-disk case, so the verbatim
+		// digest never matches. Both corrections are registered alongside the
+		// verbatim spelling, so a path that needs none is unaffected.
+		if resolved, err := filepath.EvalSymlinks(workspace); err == nil && resolved != workspace {
+			register(out, resolved)
+		}
+		if cased, ok := trueCasePath(workspace, listing); ok && cased != workspace {
+			register(out, cased)
+		}
+	}
+	for _, workspace := range declaredProjects(root) {
+		add(workspace)
+	}
+	for _, workspace := range recordedProjectRoots(root) {
+		add(workspace)
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+// maxPathComponents bounds the case walk so a pathological path cannot turn
+// one lookup into an unbounded number of directory reads.
+const maxPathComponents = 64
+
+// trueCasePath rewrites a path into the spelling the filesystem actually
+// holds, one component at a time. On a case-insensitive filesystem a path that
+// exists may be spelled differently from how it is stored, and Gemini hashes
+// the stored spelling. Reports false when any component cannot be resolved,
+// which includes every case-sensitive filesystem where the question does not
+// arise.
+func trueCasePath(path string, listing map[string][]string) (string, bool) {
+	if !filepath.IsAbs(path) {
+		return "", false
+	}
+	volume := filepath.VolumeName(path)
+	rest := strings.TrimPrefix(path, volume)
+	parts := make([]string, 0, 8)
+	for _, part := range strings.Split(filepath.ToSlash(rest), "/") {
+		if part != "" {
+			parts = append(parts, part)
+		}
+	}
+	if len(parts) == 0 || len(parts) > maxPathComponents {
+		return "", false
+	}
+	// A drive letter is part of what Gemini hashes, and it is recorded in
+	// upper case by every Windows API that reports a real path.
+	current := strings.ToUpper(volume) + string(filepath.Separator)
+	for _, part := range parts {
+		names, cached := listing[current]
+		if !cached {
+			entries, err := os.ReadDir(current)
+			if err != nil {
+				return "", false
+			}
+			names = make([]string, 0, len(entries))
+			for _, entry := range entries {
+				names = append(names, entry.Name())
+			}
+			listing[current] = names
+		}
+		match := ""
+		for _, name := range names {
+			if name == part {
+				match = name
+				break
+			}
+			if match == "" && strings.EqualFold(name, part) {
+				match = name
+			}
+		}
+		if match == "" {
+			return "", false
+		}
+		current = filepath.Join(current, match)
+	}
+	return current, true
+}
+
+// register indexes one workspace under its Gemini project hash. The first
+// spelling seen wins, so a verbatim match is never displaced by a derived one.
+func register(out map[string]string, workspace string) {
+	sum := sha256.Sum256([]byte(workspace))
+	key := hex.EncodeToString(sum[:])
+	if _, exists := out[key]; !exists {
+		out[key] = workspace
+	}
+}
+
+// declaredProjects reads the flat path index Gemini keeps at the root.
+func declaredProjects(root string) []string {
 	path := filepath.Join(root, "projects.json")
 	info, err := os.Stat(path)
 	if err != nil || !info.Mode().IsRegular() || info.Size() > maxProjectsBytes {
@@ -355,16 +472,41 @@ func projectWorkspaces(root string) map[string]string {
 	var doc struct {
 		Projects map[string]json.RawMessage `json:"projects"`
 	}
-	if err := json.Unmarshal(data, &doc); err != nil || len(doc.Projects) == 0 {
+	if err := json.Unmarshal(data, &doc); err != nil {
 		return nil
 	}
-	out := make(map[string]string, len(doc.Projects))
+	out := make([]string, 0, len(doc.Projects))
 	for workspace := range doc.Projects {
-		if strings.TrimSpace(workspace) == "" {
+		out = append(out, workspace)
+	}
+	return out
+}
+
+// recordedProjectRoots reads tmp/<name>/.project_root, which current Gemini
+// writes beside each session directory.
+func recordedProjectRoots(root string) []string {
+	entries, err := os.ReadDir(filepath.Join(root, "tmp"))
+	if err != nil {
+		return nil
+	}
+	out := make([]string, 0, len(entries))
+	for index, entry := range entries {
+		if index >= maxProjectRootDirs {
+			break
+		}
+		if !entry.IsDir() {
 			continue
 		}
-		sum := sha256.Sum256([]byte(workspace))
-		out[hex.EncodeToString(sum[:])] = workspace
+		marker := filepath.Join(root, "tmp", entry.Name(), ".project_root")
+		info, err := os.Stat(marker)
+		if err != nil || !info.Mode().IsRegular() || info.Size() > maxProjectRootBytes {
+			continue
+		}
+		data, err := os.ReadFile(marker)
+		if err != nil {
+			continue
+		}
+		out = append(out, strings.TrimSpace(string(data)))
 	}
 	return out
 }
