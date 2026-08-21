@@ -125,13 +125,20 @@ their installed agent. Claude Code auto-updates faster than a fail-closed
 ceiling can be revised: `v0.4.0-rc.1` widened to `2.1.228` and both hosts had
 already moved past it within a day, so `v0.4.0` keeps `2.1.229`.
 Neither `2.1.228` nor `2.1.229` has completed dual-platform tagged-artifact
-acceptance. Versions above the maxima remain `UNTESTED` until a
-later matrix expands them again:
+acceptance. `v0.5.0` widens the Codex CLI ceiling to `0.149.0` on dual-platform
+physical evidence: on both macOS and Windows a session was created with Codex
+`0.149.0`, indexed by Reinstate, and resumed through the launch plan Reinstate
+itself produced, and the resumed session returned a token that existed only in
+the original session's history. The Claude Code ceiling is unchanged at
+`2.1.229`: `2.1.238` passed the same journey on Windows but the macOS half has
+not been completed, and this project widens a ceiling only on dual-platform
+evidence. Versions above the maxima remain `UNTESTED` until a later matrix
+expands them again:
 
-| Agent | Inclusive source-tested range (v0.4.0) |
+| Agent | Inclusive source-tested range (v0.5.0) |
 | ----- | ------------------- |
 | Claude Code | `2.1.219`–`2.1.229` |
-| OpenAI Codex CLI | `0.133.0`–`0.147.0` |
+| OpenAI Codex CLI | `0.133.0`–`0.149.0` |
 
 Stable `v0.2.0` still documents the older Phase 2 physical ceiling (Claude
 `2.1.219`–`2.1.220`, Codex through `0.146.0`). Destination-device Claude
