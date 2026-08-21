@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Structured handoff from an OpenCode source carries the conversation again.
+  The reader looked for a filesystem `message/<id>` tree that current OpenCode
+  no longer writes, so every session fell back to a metadata-only boundary and
+  the capsule omitted the conversation with `source_bodies_unavailable`. It now
+  snapshots and replays the embedded store, reusing the same event builder the
+  filesystem layout uses. The store is opened read-only and immutable, so the
+  snapshot writes nothing under the agent root (`v0.5.0-rc.4` D1-D4).
+
 ### Changed
 
 - OpenCode sessions are read from its embedded SQLite store instead of by
