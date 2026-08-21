@@ -6,7 +6,7 @@ order: 16
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.5.0"
+version: "v0.5.1"
 updatedAt: 2026-08-16
 tags: ["handoff", "claude-code", "codex", "cli"]
 targetQuery: "Reinstate structured handoff"
@@ -15,7 +15,7 @@ draft: false
 noindex: false
 ---
 
-Stable `v0.5.0` lets you continue the same task in a **new** Claude Code or
+Stable `v0.5.1` lets you continue the same task in a **new** Claude Code or
 Codex session. This is not native resume, not a transferred session, and not a
 lossless copy of the source transcript.
 
@@ -66,7 +66,7 @@ and [getting started](/docs/getting-started).
 
 ## Prerequisites
 
-- Stable `v0.5.0` installed (`rein version --json`)
+- Stable `v0.5.1` installed (`rein version --json`)
 - Apple Silicon macOS or native Windows x64 for certified dest-ack
 - A logged-in destination Claude Code or Codex CLI in the fail-closed range
 - The source session on this device; dest launch needs a real TTY

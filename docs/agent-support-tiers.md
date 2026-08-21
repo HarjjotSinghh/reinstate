@@ -146,7 +146,7 @@ agent, seeded with a bootstrap prompt pointing at an inspectable capsule.
 5. Bidirectional device journeys against every existing destination.
 6. No vendor-internal writes, per [ADR 0003](adr/0003-phase-4-rc1-scope-and-launch-route.md).
 
-**Not expanding in `v0.5.0`.** Claude Code and Codex CLI remain the only
+**Not expanding in `v0.5.1`.** Claude Code and Codex CLI remain the only
 destinations.
 
 ### T5 — Encrypted sync
@@ -169,21 +169,21 @@ plus:
 6. A cross-device physical journey: push on one OS, pull on the other, resume
    natively, in a Phase 5 device report.
 
-**Not expanding in `v0.5.0`.** Claude Code and Codex CLI remain the only synced
+**Not expanding in `v0.5.1`.** Claude Code and Codex CLI remain the only synced
 agents.
 
 ---
 
 ## Current and target tiers
 
-Current tier is what candidate `v0.5.0` ships, sourced to the agent
+Current tier is what candidate `v0.5.1` ships, sourced to the agent
 catalog in code (`internal/agents/catalog`), not to this table. Stable
 `v0.4.0` predates that package and indexes 5 agents: Claude Code, Codex CLI,
-Gemini CLI, Grok Build, OpenCode. Target is the `v0.5.0` aim, which is an aim
+Gemini CLI, Grok Build, OpenCode. Target is the `v0.5.1` aim, which is an aim
 and not a commitment: an agent whose probe finds no readable local history
 stays where it is, and that outcome is a successful result, not a failed task.
 
-| Agent | Vendor | Storage family | Current | `v0.5.0` target |
+| Agent | Vendor | Storage family | Current | `v0.5.1` target |
 | ----- | ------ | -------------- | ------- | --------------- |
 | Claude Code | Anthropic | F1 | **T5** | T5 |
 | Codex CLI | OpenAI | F1 | **T5** | T5 |

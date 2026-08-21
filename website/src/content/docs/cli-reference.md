@@ -6,7 +6,7 @@ order: 14
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.5.0"
+version: "v0.5.1"
 updatedAt: 2026-08-16
 tags: ["cli", "command-reference", "session-sync", "troubleshooting", "handoff"]
 targetQuery: "Reinstate CLI commands"

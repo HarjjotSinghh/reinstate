@@ -109,7 +109,7 @@ Native control surface, vendor documentation only:
 
 ## Expected outcome
 
-**T0 for `v0.5.0`.** The `v0.5.0` target in
+**T0 for `v0.5.1`.** The `v0.5.1` target in
 [docs/agent-support-tiers.md](../agent-support-tiers.md) is T0, not T1. This
 entry exists so the catalog knows the agent, so `rein doctor --agents` can
 inventory it, and so the Gemini CLI exclusion has a documented reason — not

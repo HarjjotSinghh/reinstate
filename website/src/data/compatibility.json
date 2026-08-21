@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "reinstateVersion": "v0.5.0",
-  "catalogLine": "v0.5.0",
+  "reinstateVersion": "v0.5.1",
+  "catalogLine": "v0.5.1",
   "lastReviewed": "2026-08-16",
   "owner": {
     "name": "Harjot Singh Rana",
@@ -42,7 +42,7 @@
       },
       "lastTested": "2026-08-16",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-08-15-macos-phase4-V040RC11.md",
-      "notes": "Versions outside the inclusive range, including prereleases, fail closed as untested. v0.5.0 accepts Claude Code 2.1.219–2.1.238. The ceiling moved to 2.1.238 on dual-platform physical evidence: on macOS and on Windows a session created with 2.1.238 was indexed, resumed through the launch plan Reinstate produced, and returned a token that existed only in the original session's history."
+      "notes": "Versions outside the inclusive range, including prereleases, fail closed as untested. v0.5.1 accepts Claude Code 2.1.219–2.1.238. The ceiling moved to 2.1.238 on dual-platform physical evidence: on macOS and on Windows a session created with 2.1.238 was indexed, resumed through the launch plan Reinstate produced, and returned a token that existed only in the original session's history."
     },
     {
       "id": "codex",
@@ -74,7 +74,7 @@
       },
       "lastTested": "2026-08-16",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-08-15-macos-phase4-V040RC11.md",
-      "notes": "v0.5.0 accepts Codex CLI 0.133.0–0.149.0. The ceiling moved to 0.149.0 on dual-platform physical evidence: on macOS and on Windows a session created with 0.149.0 was indexed, resumed through the launch plan Reinstate produced, and returned a token that existed only in the original session's history. Versions outside the inclusive range, including prereleases, fail closed as untested."
+      "notes": "v0.5.1 accepts Codex CLI 0.133.0–0.149.0. The ceiling moved to 0.149.0 on dual-platform physical evidence: on macOS and on Windows a session created with 0.149.0 was indexed, resumed through the launch plan Reinstate produced, and returned a token that existed only in the original session's history. Versions outside the inclusive range, including prereleases, fail closed as untested."
     },
     {
       "id": "gemini",

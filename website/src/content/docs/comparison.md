@@ -6,7 +6,7 @@ order: 6
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.5.0"
+version: "v0.5.1"
 updatedAt: 2026-08-16
 tags: ["comparison", "session-sync", "developer-tools", "coding-agents"]
 targetQuery: "Reinstate alternatives"
@@ -15,7 +15,7 @@ draft: false
 noindex: false
 ---
 
-Reinstate is a continuity layer for coding-agent work: stable `v0.5.0` indexes
+Reinstate is a continuity layer for coding-agent work: stable `v0.5.1` indexes
 local sessions from eleven agents without configuration and syncs same-vendor
 Claude Code and Codex sessions through encrypted, user-owned storage. It
 complements native agent features, full coding environments, session browsers,

@@ -3,7 +3,7 @@
 **Tier vocabulary:** [../../agent-support-tiers.md](../../agent-support-tiers.md) ·
 **Evidence contract:** [../../testing/agent-storage-probe.md](../../testing/agent-storage-probe.md)
 
-One row per agent in scope for `v0.5.0`, with the owning task, the target tier,
+One row per agent in scope for `v0.5.1`, with the owning task, the target tier,
 and the specific thing that is currently unknown. Every candidate agent starts
 at T0 with every storage row `Unverified`.
 
@@ -150,7 +150,7 @@ breadth at the bottom, and a real promotion at the top.
 
 ---
 
-## Not in scope for `v0.5.0`
+## Not in scope for `v0.5.1`
 
 - **No new T4 destinations.** Claude Code and Codex CLI remain the only handoff
   targets.
@@ -165,7 +165,7 @@ breadth at the bottom, and a real promotion at the top.
 
 ## Release gate
 
-`v0.5.0` ships when:
+`v0.5.1` ships when:
 
 1. the catalog refactor has landed with the five shipped agents at unchanged
    tiers;

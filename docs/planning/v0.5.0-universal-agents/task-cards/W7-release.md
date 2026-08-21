@@ -12,7 +12,7 @@ Matrix: [../../../testing/phase-5-universal-agent-coverage-acceptance.md](../../
 
 **Owns:** `CHANGELOG.md`, version pins, `CITATION.cff`
 
-1. Convert the `[Unreleased]` entries into a `v0.5.0` section, grouped by tier
+1. Convert the `[Unreleased]` entries into a `v0.5.1` section, grouped by tier
    change rather than by file.
 2. Confirm the tier census in the shipped catalog matches
    `docs/compatibility.md` and the website data.
@@ -73,9 +73,9 @@ device-report commits.
    platform and not the other ships at the lower tier. It does not ship higher
    with a footnote.
 3. Confirm zero release-blocking findings.
-4. Complete the reconciliation block and record whether stable `v0.5.0` is
+4. Complete the reconciliation block and record whether stable `v0.5.1` is
    authorized.
-5. On authorization: signed `v0.5.0` tag, GitHub release, then the signed
+5. On authorization: signed `v0.5.1` tag, GitHub release, then the signed
    website tag and deploy.
 6. Update `ROADMAP.md` to mark Phase 5 closed, with the candidate and the two
    report paths cited, in the style Phases 3 and 4 use.

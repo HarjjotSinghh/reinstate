@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted for planning. Implementation planned for `v0.5.0` (Phase 5).
+Accepted for planning. Implementation planned for `v0.5.1` (Phase 5).
 Extends [ADR 0003](0003-phase-4-rc1-scope-and-launch-route.md), which fixed the
 Phase 4 scope at five source readers and two destinations. This ADR decides how
 Reinstate scales past those five agents without turning "universal" into a
@@ -138,9 +138,9 @@ the cross-OS summary. Each agent's detail moves to
 parallel execution it is the single worst merge conflict in the repository.
 Splitting it costs one indirection and removes the conflict entirely.
 
-### 5. `v0.5.0` scope: breadth at T1 and T2, no new destinations, no new sync
+### 5. `v0.5.1` scope: breadth at T1 and T2, no new destinations, no new sync
 
-The `v0.5.0` release gate is:
+The `v0.5.1` release gate is:
 
 1. the catalog refactor lands with the existing five agents at unchanged tiers,
    proven by the existing test suite passing without modification of assertions
@@ -149,7 +149,7 @@ The `v0.5.0` release gate is:
 3. at least six new agents reach **T1** with dual-platform fixtures; and
 4. at least three new agents reach **T2**.
 
-**T4 and T5 do not expand in `v0.5.0`.** Claude Code and Codex CLI remain the
+**T4 and T5 do not expand in `v0.5.1`.** Claude Code and Codex CLI remain the
 only handoff destinations and the only synced agents.
 
 T3 is per-agent and evidence-driven. Kimi Code CLI and Pi are the primary
@@ -234,7 +234,7 @@ docs claim resume.
 
 ### Ship a plugin system so third parties add agents at runtime
 
-Rejected for `v0.5.0`. A runtime plugin surface means executing third-party
+Rejected for `v0.5.1`. A runtime plugin surface means executing third-party
 code that reads session stores, which contradicts the security model and
 non-negotiable 5. In-tree descriptors with a conformance suite deliver the same
 extensibility for contributors without a new trust boundary.
@@ -252,7 +252,7 @@ Rejected. The Kimi mirrors disagree with each other today. Documentation is
 sufficient to write an `Unverified` row and to schedule a probe; it is never
 sufficient to ship a reader.
 
-### Promote several agents to handoff destinations in `v0.5.0`
+### Promote several agents to handoff destinations in `v0.5.1`
 
 Rejected, for the reason ADR 0003 gave and for one more: destination support
 requires a bootstrap contract and a capability diff per agent, and the physical

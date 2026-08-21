@@ -126,7 +126,7 @@ override without treating it as `<config>/sessions`.
 | T2 | Record format beyond the header line unparsed; unknown-layout and truncation policy untested |
 | T3 | Needs a captured `pi --version` probe shape, dual-platform resume journeys, and a maintainer version-range policy |
 
-T4 and T5 are out of scope for `v0.5.0`.
+T4 and T5 are out of scope for `v0.5.1`.
 
 ## Notes for a future reader
 

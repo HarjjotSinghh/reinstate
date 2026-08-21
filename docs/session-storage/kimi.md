@@ -176,7 +176,7 @@ resume.
 | T2 | `wire.jsonl` vocabulary is now known (below); still needs the unknown-record and truncation policy |
 | T3 | `kimi --version` prints a bare `0.36.1`, so a range is now expressible. Still needs a fail-closed supported range and physical `--continue` / `--session` on both platforms |
 
-T4 and T5 are out of scope for `v0.5.0` per
+T4 and T5 are out of scope for `v0.5.1` per
 [ADR 0004](../adr/0004-universal-agent-coverage.md).
 
 ## Device evidence (2026-08-17, native Windows amd64)

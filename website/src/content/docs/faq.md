@@ -6,7 +6,7 @@ order: 7
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.5.0"
+version: "v0.5.1"
 updatedAt: 2026-08-16
 tags: ["faq", "session-sync", "claude-code", "codex", "security"]
 targetQuery: "what is Reinstate"
@@ -29,7 +29,7 @@ and Codex sessions. Phase 2 adds configless local indexing, literal search,
 metadata inspection, a TTY switcher, and same-vendor native resume/fork.
 Stable `v0.3.0` adds verified resume after dual-platform tagged-artifact
 acceptance PASS. Stable `v0.4.0` added explicit structured handoff into a new
-Claude Code or Codex session. Stable `v0.5.0` adds universal agent coverage:
+Claude Code or Codex session. Stable `v0.5.1` adds universal agent coverage:
 a catalog of eighteen agents, session discovery for eleven, and structured
 handoff from five. Cross-harness configuration remains a later phase.
 
@@ -99,7 +99,7 @@ restoring the session. See [installation and sync](/docs/getting-started).
 
 ## Will this resume a Claude session inside Codex?
 
-**Native resume:** no — same-vendor only. Stable `v0.5.0` structured handoff
+**Native resume:** no — same-vendor only. Stable `v0.5.1` structured handoff
 starts a new destination session with a visible, lossy projection. It does not
 translate native history.
 
@@ -190,7 +190,7 @@ syncing after an agent upgrade.
 
 `v0.4.0` is the current pre-1.0 stable release on Apple Silicon macOS and
 native Windows x64. It includes encrypted sync, local search, verified resume,
-and structured handoff. Public installers currently pin candidate `v0.5.0`
+and structured handoff. Public installers currently pin candidate `v0.5.1`
 pending dual-platform tagged-artifact acceptance. Intel macOS, WSL2, and other
 POSIX packages are optional and unverified. See the
 [roadmap](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md)
