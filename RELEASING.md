@@ -332,7 +332,8 @@ OpenCode, and Grok Build remain handoff sources only; Gemini was **not**
 promoted to T3.
 
 Two dispositions are carried into this release rather than resolved by it, and
-both are recorded in the device reports:
+both are recorded in the device reports. Both are fixed after `v0.5.1`; the
+records below describe `v0.5.0` and are left as they were written.
 
 - **E5** — active-session detection is implemented and exercised on the handoff
   and restore paths; `rein resume` applies no such guard.

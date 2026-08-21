@@ -19,6 +19,10 @@ func OpenCode() agents.Descriptor {
 		Tier:        agents.TierHandoffFrom,
 		Family:      agents.FamilyEmbeddedDB,
 		Storage: agents.StorageSpec{
+			// OpenCode reads $XDG_DATA_HOME/opencode, so the variable names the
+			// parent and the remaining segment is appended.
+			RootEnv:       "XDG_DATA_HOME",
+			RootEnvSuffix: "opencode",
 			Roots: func(home agents.HomeDir) []agents.Root {
 				return []agents.Root{{Path: home.Join(".local", "share", "opencode")}}
 			},

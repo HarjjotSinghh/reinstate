@@ -13,6 +13,7 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/agentcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/capability"
 	"github.com/HarjjotSinghh/reinstate/internal/environment"
+	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/runtimecheck"
 	"github.com/HarjjotSinghh/reinstate/internal/workspace"
 )
@@ -96,6 +97,13 @@ type Input struct {
 	// transcript (structured handoff). Native resume/fork leave it false so a
 	// missing executable still blocks launch.
 	ReadOnly bool
+	// SessionID, SessionPath and ProjectRoot scope the liveness check to this
+	// one session. Without them the check can only answer the host-wide
+	// question "is this agent running at all", which is true whenever the
+	// operator has any window open and is not evidence about this session.
+	SessionID   string
+	SessionPath string
+	ProjectRoot string
 }
 
 // Verifier is the single high-level boundary injected into CLI flows.
@@ -135,13 +143,17 @@ func DefaultService() Service {
 	if value := strings.TrimSpace(os.Getenv("CODEX_HOME")); value != "" {
 		opts.CodexHome = value
 	}
-	return Service{Options: Options{Capability: opts}}
+	return Service{Options: Options{Capability: opts, SessionBusy: processcheck.SessionBusy}}
 }
 
 // Verify implements Verifier.
 func (service Service) Verify(ctx context.Context, input Input) (Report, error) {
 	return Verify(ctx, input, service.Options)
 }
+
+// SessionBusyFunc reports whether a running instance of agent is using the
+// selected session. It is the same boundary the restore and handoff paths use.
+type SessionBusyFunc func(ctx context.Context, agent string, target processcheck.Target) (busy bool, scoped bool, err error)
 
 // Options makes every external boundary injectable. Capability options are
 // explicit paths and never serialize through Report.
@@ -151,6 +163,16 @@ type Options struct {
 	Agent      agentcheck.Options
 	Capability capability.Options
 	Runtime    runtimecheck.Options
+	// SessionBusy is optional. A nil func omits the liveness check entirely
+	// rather than reporting a session as free, because "not checked" and
+	// "checked and free" are different claims and only one of them is safe to
+	// make on evidence that was never gathered.
+	SessionBusy SessionBusyFunc
+	// SessionBusyTimeout bounds the liveness probe on its own budget. The probe
+	// shells out to process and open-file listings, which are far slower than
+	// the rest of preflight, and it must never consume the budget the launch
+	// blocking checks depend on.
+	SessionBusyTimeout time.Duration
 }
 
 // Authorization is the deterministic result of applying invocation-scoped

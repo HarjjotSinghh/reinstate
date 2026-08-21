@@ -109,13 +109,20 @@ const (
 
 // StorageSpec describes how to find an agent's local session artifacts.
 type StorageSpec struct {
-	RootEnv     string                    // "KIMI_CODE_HOME"; empty when none
-	Roots       func(home HomeDir) []Root // ordered candidates, first match wins
-	Marker      string                    // relative path that must exist for the root to count
-	Layout      string                    // stable layout id, e.g. "sessions-workdir-wire-jsonl"
-	SessionGlob string                    // relative glob below the root
-	ProjectKey  ProjectKeyKind            // how the vendor derives its project bucket
-	Excluded    []string                  // subtrees never read (credentials, caches, subagents)
+	RootEnv string // "KIMI_CODE_HOME"; empty when none
+	// RootEnvSuffix is appended to RootEnv's value to reach the root, for a
+	// vendor whose variable names a parent directory rather than the root
+	// itself. OpenCode reads $XDG_DATA_HOME/opencode, so the variable alone is
+	// one directory short. Without this such an agent can declare no RootEnv at
+	// all, which leaves an operator unable to point the probe at a sanitized
+	// root — the one thing RootEnv exists for.
+	RootEnvSuffix string
+	Roots         func(home HomeDir) []Root // ordered candidates, first match wins
+	Marker        string                    // relative path that must exist for the root to count
+	Layout        string                    // stable layout id, e.g. "sessions-workdir-wire-jsonl"
+	SessionGlob   string                    // relative glob below the root
+	ProjectKey    ProjectKeyKind            // how the vendor derives its project bucket
+	Excluded      []string                  // subtrees never read (credentials, caches, subagents)
 }
 
 // HomeDir is a resolved user-home path used to expand per-OS root candidates.
