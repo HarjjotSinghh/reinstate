@@ -16,7 +16,8 @@ switcher, same-vendor native resume/fork, and Phase 3 verified resume. A
 structured handoff continues the same task in a *new* Claude Code or Codex
 session. Apple Silicon macOS and native Windows x64 passed dual-platform
 tagged-artifact acceptance on candidate `v0.4.0-rc.11` (44/44 on both
-devices). Intel macOS and Linux/WSL2 downloads remain preview/unverified
+devices); the public installers pin `v0.5.0-rc.4`, whose acceptance is still
+pending. Intel macOS and Linux/WSL2 downloads remain preview/unverified
 pending issues
 [#97](https://github.com/HarjjotSinghh/reinstate/issues/97) and
 [#98](https://github.com/HarjjotSinghh/reinstate/issues/98).
@@ -330,11 +331,14 @@ yes-or-no list.
 | [OpenCode](https://opencode.ai) | T2 | ✅ read-only | — | ✅ source-only | — | — |
 | [Grok Build](https://x.ai) | T2 | ✅ read-only | — | ✅ source-only | — | — |
 | [Kimi Code CLI](https://www.kimi.com/code) | T1 | ✅ read-only | — | — | — | — |
-| [Qwen Code](https://qwenlm.github.io/qwen-code-docs/) | T1 | ✅ read-only | — | — | — | — |
-| [Pi](https://pi.dev/) | T1 | ✅ read-only | — | — | — | — |
-| [Cursor CLI](https://cursor.com/docs/cli/overview) | T1 | read-only | — | — | — | — |
-| [GitHub Copilot CLI](https://docs.github.com/en/copilot/concepts/agents/copilot-cli/about-copilot-cli) | T1 | read-only | — | — | — | — |
-| [Cline](https://docs.cline.bot/) | T1 | ✅ read-only | — | — | — | — |
+| [Qwen Code](https://qwenlm.github.io/qwen-code-docs/) | — | — | — | — | — | — |
+| [Pi](https://pi.dev/) | — | — | — | — | — | — |
+| [Cursor CLI](https://cursor.com/docs/cli/overview) | — | — | — | — | — | — |
+| [GitHub Copilot CLI](https://docs.github.com/en/copilot/concepts/agents/copilot-cli/about-copilot-cli) | — | — | — | — | — | — |
+| [Cline](https://docs.cline.bot/) | — | — | — | — | — | — |
+
+Tier is what stable `v0.4.0` ships. A `—` row is a `v0.5.0` target, not a
+shipped tier — see [current and target tiers](docs/agent-support-tiers.md#current-and-target-tiers).
 
 Structured handoff in stable `v0.4.0` starts a new destination session.
 Native resume/fork and encrypted sync remain same-vendor.

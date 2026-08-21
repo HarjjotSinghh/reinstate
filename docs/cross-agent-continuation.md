@@ -1,6 +1,6 @@
-# Cross-agent continuation (roadmap)
+# Cross-agent continuation
 
-**Status:** accepted core product direction; planned for Phase 4
+**Status:** Phase 4 structured handoff shipped in stable `v0.4.0`
 **Last researched:** 2026-08-05
 **Complements:** [ROADMAP.md](../ROADMAP.md),
 [product-strategy.md](product-strategy.md), [architecture.md](architecture.md),
@@ -8,15 +8,17 @@
 
 ## Direct answer
 
-Cross-agent continuation is a **core Reinstate capability**, but it is **not in
-the current Phase 1 CLI**.
+Cross-agent continuation is a **core Reinstate capability**, and explicit
+structured handoff **ships in stable `v0.4.0`** (`rein handoff`).
 
-Phase 1 restores a native session only into the same harness: Claude Code to
-Claude Code, or Codex to Codex. Phase 4 will let a developer whose Claude Code
-quota expires continue the same **task** in Codex, and vice versa, without
-re-explaining the work from zero. Gemini CLI and OpenCode follow; Grok Build,
-Orca, Cursor, Copilot CLI, and other harnesses require adapter evidence before
-they receive a committed support level.
+Native resume stays same-vendor: Claude Code to Claude Code, or Codex to Codex.
+Structured handoff is the cross-agent path — a developer whose Claude Code quota
+expires continues the same **task** in Codex, and vice versa, without
+re-explaining the work from zero. Handoff starts a *new* destination session; it
+is not a native resume. Claude Code and Codex CLI are the only handoff
+destinations. Gemini CLI, OpenCode, and Grok Build are handoff sources only.
+Other harnesses require adapter evidence before they receive a committed
+support level.
 
 The honest product promise is:
 
