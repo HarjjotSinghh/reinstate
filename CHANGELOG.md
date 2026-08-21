@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
 ### Changed
 
 - The verified Codex CLI range now reaches `0.149.0`. `0.147.0` was the
@@ -18,6 +19,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Reinstate produced; the resumed session returned a token that existed only in
   the original session's history. The Claude Code ceiling stays at `2.1.229`
   until the same journey is completed on both platforms.
+
+- A refresh that finds nothing changed no longer re-parses every session. Each
+  home-tree source now summarises itself first — every discovered path, its
+  modification time and its size — and the digest is compared with the one
+  stored from the last successful scan. An identical digest skips parsing for
+  that source entirely. On a real macOS tree a warm `rein sessions` refresh
+  went from 10.60s to 0.82s, a 92% reduction, where before it saved 1-4%. The
+  digest is written only after a scan succeeds, so a failed scan can never
+  mark a source as up to date, and a source that cannot summarise itself is
+  always scanned (`v0.5.0-rc.4` H4).
+
+- OpenCode sessions are read from its embedded SQLite store instead of by
+  running `opencode session list`. The vendor CLI answers only for the
+  directory it runs in, so a scan could never observe a second project, and
+  invoking it opened OpenCode's database and left write-ahead log and shared
+  memory files under the agent root. The store is opened read-only and
+  immutable, so no lock is taken and no sidecar is created. Only the `session`,
+  `project` and `message` tables are read; the `credential` and `account`
+  tables in the same database are never opened (`v0.5.0-rc.4` A10, C1, C6).
+
+- Claude Code, Codex, Gemini, OpenCode, and Grok descriptors declare their
+  storage page and dual-platform probe reports. The conformance suite collected
+  evidence failures and logged them as escalations instead of failing, so every
+  one of those agents shipped without required evidence and a descriptor naming
+  a nonexistent path went unnoticed. Evidence now fails the suite like every
+  other check (`v0.5.0-rc.4` macOS A5/A9).
 
 ### Fixed
 
@@ -34,8 +61,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   heals to 10 resolved workspaces on the first run of the new build. An
   unchanged refresh stays fast — 0.36s against a 10.16s cold refresh
   (`v0.5.0-rc.4` Windows C1-C2, H4).
-
-### Fixed
 
 - Cursor CLI declares its root environment variable, so its sessions can be
   read from a relocated root like every other home-tree agent. `CURSOR_CONFIG_DIR`
@@ -55,20 +80,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   unconditionally; when the named root is unusable the agent is reported absent
   (`v0.5.0-rc.4` macOS B7).
 
-### Changed
-
-- A refresh that finds nothing changed no longer re-parses every session. Each
-  home-tree source now summarises itself first — every discovered path, its
-  modification time and its size — and the digest is compared with the one
-  stored from the last successful scan. An identical digest skips parsing for
-  that source entirely. On a real macOS tree a warm `rein sessions` refresh
-  went from 10.60s to 0.82s, a 92% reduction, where before it saved 1-4%. The
-  digest is written only after a scan succeeds, so a failed scan can never
-  mark a source as up to date, and a source that cannot summarise itself is
-  always scanned (`v0.5.0-rc.4` H4).
-
-### Fixed
-
 - Gemini sessions on Windows resolve their project again instead of showing a
   bare 64-character digest. A chat records only `projectHash`, the sha256 of
   the absolute project path, so the path has to be recovered to name the
@@ -81,8 +92,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Windows acceptance host this took Gemini from 0 resolved workspaces to 10
   sessions across 5 distinct projects (`v0.5.0-rc.4` Windows C1-C3, C6, D4).
 
-### Fixed
-
 - Structured handoff from an OpenCode source carries the conversation again.
   The reader looked for a filesystem `message/<id>` tree that current OpenCode
   no longer writes, so every session fell back to a metadata-only boundary and
@@ -90,19 +99,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   snapshots and replays the embedded store, reusing the same event builder the
   filesystem layout uses. The store is opened read-only and immutable, so the
   snapshot writes nothing under the agent root (`v0.5.0-rc.4` D1-D4).
-
-### Changed
-
-- OpenCode sessions are read from its embedded SQLite store instead of by
-  running `opencode session list`. The vendor CLI answers only for the
-  directory it runs in, so a scan could never observe a second project, and
-  invoking it opened OpenCode's database and left write-ahead log and shared
-  memory files under the agent root. The store is opened read-only and
-  immutable, so no lock is taken and no sidecar is created. Only the `session`,
-  `project` and `message` tables are read; the `credential` and `account`
-  tables in the same database are never opened (`v0.5.0-rc.4` A10, C1, C6).
-
-### Fixed
 
 - A refusal for an unsupported native agent version names the verified range.
   It said only that the version was "outside the verified range", which leaves
@@ -117,12 +113,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   name was ever exposed, never the contents. macOS did not show it because
   OpenCode was off the default `PATH` there, so its root never resolved
   (`v0.5.0-rc.4` Windows B5).
+
 - The Windows agent-storage probe wrapper emits the artifact it documents.
   `scripts/testing/agent-storage-probe.ps1` built its argument list inline as
   `@('doctor','--agents','--json') + $args`, which PowerShell passes to the
   binary as the array, a literal `+`, and `$args` separately. The wrapper
   therefore always exited with a usage error and produced nothing, so the
   documented Windows probe route never worked (`v0.5.0-rc.4` Windows B8).
+
 - Structured handoff from a Grok source works again. Every Grok session in a
   real repository failed `capsule validate`, so the T2 handoff was unusable.
   Three causes: the reader never applied the path backstop that Claude Code and
@@ -132,43 +130,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `task.recent_user_messages` was never bounded, although the adjacent
   latest-intent field was. All 16 in-repository Grok sessions on the test
   device now project cleanly (`v0.5.0-rc.4` macOS D1-D5).
+
 - The block path backstop rewrites paths inside a tool payload carried as JSON
   text. It applied the single-value rule, which cannot see a path sitting on a
   field inside the document, while the capsule validator walks the decoded
   structure and rejected what the backstop had left untouched. This also
   hardens the Claude Code and Codex readers.
+
 - A transcript-claimed path outside the workspace is omitted with the reason
   `path_outside_workspace` rather than emitted as an absolute path, matching
   how live changed files were already handled.
+
 - Gemini sessions report the project and workspace they belong to. A chat that
   records only `projectHash` surfaced that bare 64-character digest as its
   project name and carried no workspace, so Matrix C1 could not see distinct
   projects and C2 had nothing to compare. The hash is the SHA-256 of the
   absolute project path and `projects.json` lists those paths, so the two are
   now joined (`v0.5.0-rc.4` macOS C1/C2).
+
 - `rein doctor --agents` honours an agent's documented root environment
   variable. The override was read and reported through `root_env_set`, then
   ignored whenever the real home root existed, so a tester who pointed
   `KIMI_CODE_HOME` or `COPILOT_HOME` at a sanitized root still had their home
   tree walked and written into a committed probe artifact. `rein sessions`
   already honoured it (`v0.5.0-rc.4` macOS B7).
+
 - A resolved but empty agent root produces a valid `AGENT-PROBE-V1` document.
   The walk's nil results replaced the initialized empty collections, so the
   artifact failed its own validation (`v0.5.0-rc.4` macOS B7).
+
 - `rein resume` and `rein fork` refuse every catalog key below T3 with exit `5`
   and a reason, whether or not the session exists. A T0 key reported exit `1`
   from an unavailable source and a T1/T2 key reported exit `2` for an unknown
   id. A resolved record still refuses with its own read-only reason
   (`v0.5.0-rc.4` macOS A7).
-
-### Changed
-
-- Claude Code, Codex, Gemini, OpenCode, and Grok descriptors declare their
-  storage page and dual-platform probe reports. The conformance suite collected
-  evidence failures and logged them as escalations instead of failing, so every
-  one of those agents shipped without required evidence and a descriptor naming
-  a nonexistent path went unnoticed. Evidence now fails the suite like every
-  other check (`v0.5.0-rc.4` macOS A5/A9).
 
 ## [0.5.0-rc.4] - 2026-08-20
 
