@@ -72,9 +72,9 @@ grown outside its shape:
 | Path | Why |
 | ---- | --- |
 | `internal/crypto/` | No agent below T5 has any reason to |
-| `internal/sync/` | No new synced agents in `v0.5.0` |
+| `internal/sync/` | No new synced agents in `v0.5.1` |
 | `internal/capsule/` | Capsule format changes are a separate, reviewed decision |
-| `internal/handoff/target_*.go` | No new destinations in `v0.5.0` |
+| `internal/handoff/target_*.go` | No new destinations in `v0.5.1` |
 | `internal/exitcode/` | No new exit codes in this phase |
 | `.github/workflows/` | CI changes are coordinator work |
 | `website/**` | Website is W6, after code |

@@ -1,6 +1,6 @@
-# Features and commands (v0.1.0–v0.5.0)
+# Features and commands (v0.1.0–v0.5.1)
 
-Stable `v0.5.0` is the current release. It includes every shipped surface from
+Stable `v0.5.1` is the current release. It includes every shipped surface from
 Phase 1 through Phase 5. This page is the command map. Details live in
 [CLI reference](cli-reference.md), [getting started](getting-started.md), and
 [handoff](handoff.md).

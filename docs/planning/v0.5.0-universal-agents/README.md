@@ -1,4 +1,4 @@
-# Phase 5 — universal agent coverage (`v0.5.0`)
+# Phase 5 — universal agent coverage (`v0.5.1`)
 
 Planning and execution documents for expanding Reinstate from five coding
 agents to a catalog of many, with a capability tier for each and committed
@@ -20,7 +20,7 @@ evidence behind every tier.
 | [file-ownership.md](file-ownership.md) | Who may edit what. Read before your first commit |
 | [review-gates.md](review-gates.md) | What the coordinator checks before merging |
 | [task-cards/](task-cards/) | The tasks themselves |
-| [Phase 5 acceptance](../../testing/phase-5-universal-agent-coverage-acceptance.md) | What stable `v0.5.0` must prove |
+| [Phase 5 acceptance](../../testing/phase-5-universal-agent-coverage-acceptance.md) | What stable `v0.5.1` must prove |
 | [Storage probe](../../testing/agent-storage-probe.md) | How evidence is captured without leaking anything |
 
 ---
@@ -53,7 +53,7 @@ Break any of these and the work is wrong regardless of whether it compiles.
 4. At least three new agents at T2.
 5. Every agent in the roster has a storage page and a descriptor, including
    those that correctly land at T0.
-6. Dual-platform Phase 5 acceptance passes and stable `v0.5.0` is authorized.
+6. Dual-platform Phase 5 acceptance passes and stable `v0.5.1` is authorized.
 
 Criteria 3 and 4 are counts of **evidence**, not of effort. If probes come back
 worse than hoped, the release scope shrinks. The tiers do not inflate.

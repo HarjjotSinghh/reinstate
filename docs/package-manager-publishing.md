@@ -42,7 +42,7 @@ Homebrew, Scoop, npm, and other registries list `0.4.0`.
 
 | Channel | Current state | Next gate |
 | --- | --- | --- |
-| GitHub release and native Linux files | Stable `v0.5.0` is the current GitHub Release pin. Package-manager channels may still list `0.3.0` until publish workflows promote this tag | Keep Intel macOS and Linux/WSL2 artifacts labeled preview; do not advertise Homebrew/Scoop/`npm` as `0.4.0` until those listings exist |
+| GitHub release and native Linux files | Stable `v0.5.1` is the current GitHub Release pin. Package-manager channels may still list `0.3.0` until publish workflows promote this tag | Keep Intel macOS and Linux/WSL2 artifacts labeled preview; do not advertise Homebrew/Scoop/`npm` as `0.4.0` until those listings exist |
 | npm | `@reinstate/cli@0.2.0-rc.3` remains the latest published npm line; stable `0.3.0` payloads were generated but not published (no npm auth / `PUBLISH_NPM` off) | Configure trusted publishers, enable `PUBLISH_NPM`, and publish `@reinstate/cli@0.3.0` plus platform packages with the `latest` tag |
 | JSR | Intentionally deferred because the maintainer's current account cannot create another scope; `PUBLISH_JSR` remains disabled | Obtain scope capacity or make an explicit namespace decision before enabling |
 | Homebrew | Stable `0.3.0` formula is live in `HarjjotSinghh/homebrew-tap`; Apple Silicon install and formula test passed for `v0.3.0` | Supported on Apple Silicon; keep Intel macOS and Linuxbrew unverified |

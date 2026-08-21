@@ -1,5 +1,11 @@
 export const releaseHistory = [
   {
+    version: 'v0.5.1',
+    date: '2026-08-21',
+    summary:
+      'Patch release. Updates the pure-Go SQLite driver behind the session index and the OpenCode embedded store from 1.55.0 to 1.56.0. No product code changed. The storage rows were re-run on both platforms against the new driver rather than assumed inert: no write-ahead or shared-memory sidecar is created under an agent root, and an index written by the previous driver is read by this one and back again without losing a row.',
+  },
+  {
     version: 'v0.5.0',
     date: '2026-08-21',
     summary:

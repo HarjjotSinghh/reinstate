@@ -8,7 +8,7 @@ T0 (`server_backed`). Do not promote to T1 on documentation alone.
 
 Catalog key remains `amp`.
 
-**Maintainer 2026-08-16:** no network-backed source in `v0.5.0`. Stay T0
+**Maintainer 2026-08-16:** no network-backed source in `v0.5.1`. Stay T0
 `server_backed`. A reader that calls ampcode.com / `amp threads list` would
 be the catalog's first online source (auth, timeouts, offline behavior, and
 the Enterprise API can `DELETE` threads). Revisit only with an ADR.

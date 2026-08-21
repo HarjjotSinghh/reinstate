@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-08-21
+
+### Changed
+
+- Update the pure-Go SQLite driver from `1.55.0` to `1.56.0`. That driver backs
+  the local session index and the read-only view of OpenCode's embedded store,
+  so a patch bump is not assumed inert: the storage rows were re-run on both
+  platforms against it. Reading an agent's embedded store still creates no
+  write-ahead or shared-memory sidecar under that agent's root, an index
+  written by the previous driver is read by this one and back again without
+  losing a row, and a `v0.4.0`-built index still upgrades in place. No product
+  code changed.
+
 ## [0.5.0] - 2026-08-21
 
 Universal agent coverage. Reinstate now knows about a catalog of eighteen

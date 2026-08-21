@@ -240,7 +240,7 @@ Fidelity model:
 One index across every supported coding agent, instead of five agents with five
 different levels of support described in prose.
 
-**Gate:** tagged `v0.5.0` artifacts discover, search, and inspect sessions from
+**Gate:** tagged `v0.5.1` artifacts discover, search, and inspect sessions from
 at least six additional agents on macOS arm64 and Windows amd64, with every
 agent's claimed capability tier backed by committed device evidence, and with
 no existing capability regressed.
@@ -248,7 +248,7 @@ no existing capability regressed.
 Support becomes a **tier**, not a boolean. Each rung has its own evidence gate,
 and public surfaces state the rung rather than a bare "supported".
 
-*Shipped in stable `v0.5.0` after dual-platform tagged-artifact acceptance
+*Shipped in stable `v0.5.1` after dual-platform tagged-artifact acceptance
 PASS on candidate `v0.5.0-rc.6` (Apple Silicon macOS and native Windows x64,
 150/150 on both). The earlier `v0.5.0-rc.1` through `v0.5.0-rc.5` candidates
 were published and failed physical acceptance. Gemini CLI was **not** promoted

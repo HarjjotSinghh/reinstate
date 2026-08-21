@@ -71,7 +71,7 @@ Those tests are correct. Do not weaken them to fit a headline.
 1. Extend `linkable-assets.test.ts` to assert the catalog, `compatibility.json`,
    and `docs/compatibility.md` agree on every agent's tier.
 2. Add an assertion that no page claims a capability above an agent's tier.
-3. Update `product-truth.test.ts` for the `v0.5.0` release line.
+3. Update `product-truth.test.ts` for the `v0.5.1` release line.
 4. Run the full suite: `npm --prefix website test`.
 5. Read every changed page's copy by eye. Mechanical tests catch absolutes;
    they do not catch a sentence that is technically true and misleading.

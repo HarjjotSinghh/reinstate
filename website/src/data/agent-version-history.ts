@@ -16,6 +16,14 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.5.1': {
+    rangeChange:
+      'Unchanged from v0.5.0: inclusive Claude Code range 2.1.219-2.1.238 and Codex CLI range 0.133.0-0.149.0.',
+    compatibilityChange:
+      'Patch release. Updates the pure-Go SQLite driver behind the session index and the OpenCode embedded store. No product code changed, and no agent tier moved.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.5.1/docs/testing/v0.5.0-rc.6-agent-verification-prompts.md',
+  },
   'v0.5.0': {
     rangeChange:
       'Inclusive Claude Code range 2.1.219-2.1.238 and Codex CLI range 0.133.0-0.149.0, each raised on dual-platform physical resume evidence during the Phase 5 candidates.',

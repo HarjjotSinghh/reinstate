@@ -6,7 +6,7 @@ order: 15
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.5.0"
+version: "v0.5.1"
 updatedAt: 2026-08-16
 tags: ["limitations", "stable-release", "compatibility", "same-vendor-resume", "roadmap"]
 targetQuery: "Reinstate limitations"
@@ -49,7 +49,7 @@ direction, not current CLI syntax or support.
 | Storage | User-owned S3-compatible object storage; R2 recommended |
 | Transfer model | Manual push/pull of full immutable snapshots |
 | Configuration | Reinstate session-sync config only |
-| Release status | Stable `v0.5.0` on verified platforms; pre-1.0 formats and interfaces may still change |
+| Release status | Stable `v0.5.1` on verified platforms; pre-1.0 formats and interfaces may still change |
 
 Versions outside the tested stable ranges, including prereleases, are
 `UNTESTED`. Recognizable untested sessions may be discovered read-only, but
@@ -60,7 +60,7 @@ unsafe compatibility override.
 
 Reinstate preserves each supported vendor's native representation. It does not
 make a Claude Code transcript natively resumable in Codex or a Codex rollout
-natively resumable in Claude Code. Stable `v0.5.0` structured handoff starts a
+natively resumable in Claude Code. Stable `v0.5.1` structured handoff starts a
 new destination session with a visible, lossy projection. Reconstructed
 conversations are not shipped.
 

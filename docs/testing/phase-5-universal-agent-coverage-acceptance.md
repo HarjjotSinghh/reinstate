@@ -1,10 +1,10 @@
 # Phase 5 universal agent coverage acceptance
 
-**Status:** contract for `v0.5.0` · **Decided by:**
+**Status:** contract for `v0.5.1` · **Decided by:**
 [ADR 0004](../adr/0004-universal-agent-coverage.md) · **Tier vocabulary:**
 [../agent-support-tiers.md](../agent-support-tiers.md)
 
-Stable `v0.5.0` is authorized only by a dual-platform tagged-artifact run of
+Stable `v0.5.1` is authorized only by a dual-platform tagged-artifact run of
 this matrix on Apple Silicon macOS and native Windows x64, recorded in two
 device reports from
 [results/phase-5-report-template.md](results/phase-5-report-template.md).
@@ -233,7 +233,7 @@ device-report commits.
 
 Dispatch a candidate only after the live installers pin its exact tag. Both
 platforms then run this matrix against the installed tagged artifact. Stable
-`v0.5.0` is authorized when both reports are `PASS` with zero release-blocking
+`v0.5.1` is authorized when both reports are `PASS` with zero release-blocking
 findings, and when every tier claimed in the shipped catalog is backed by rows
 that passed on both platforms.
 

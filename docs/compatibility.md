@@ -1,6 +1,6 @@
 # Compatibility
 
-Stable `v0.5.0` is the current Phase 5 release: universal agent coverage on top
+Stable `v0.5.1` is the current Phase 5 release: universal agent coverage on top
 of structured handoff and verified resume for Claude Code and Codex, on Apple
 Silicon macOS and native Windows x64, after dual-platform tagged-artifact
 acceptance PASS on candidate `v0.5.0-rc.6`. Intel macOS and Linux/WSL2 remain optional,
@@ -125,7 +125,7 @@ their installed agent. Claude Code auto-updates faster than a fail-closed
 ceiling can be revised: `v0.4.0-rc.1` widened to `2.1.228` and both hosts had
 already moved past it within a day, so `v0.4.0` keeps `2.1.229`.
 Neither `2.1.228` nor `2.1.229` has completed dual-platform tagged-artifact
-acceptance. `v0.5.0` widens both ceilings on dual-platform physical evidence — Claude Code
+acceptance. `v0.5.1` widens both ceilings on dual-platform physical evidence — Claude Code
 to `2.1.238` and Codex CLI to `0.149.0`. On each platform a session was created
 with the new version, indexed by Reinstate, and resumed through the launch plan
 Reinstate itself produced; the resumed session returned a token that existed
@@ -133,7 +133,7 @@ only in the original session's history, which a restarted session cannot
 answer. Versions above the maxima remain `UNTESTED` until a later matrix
 expands them again:
 
-| Agent | Inclusive source-tested range (v0.5.0) |
+| Agent | Inclusive source-tested range (v0.5.1) |
 | ----- | ------------------- |
 | Claude Code | `2.1.219`–`2.1.238` |
 | OpenAI Codex CLI | `0.133.0`–`0.149.0` |

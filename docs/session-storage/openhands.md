@@ -8,7 +8,7 @@ tier promotion.
 Catalog key remains `openhands`.
 
 **Maintainer 2026-08-16:** no network-backed Cloud / Agent Server source in
-`v0.5.0`. Stay T0 `server_backed`. CLI `~/.openhands` is server persistence,
+`v0.5.1`. Stay T0 `server_backed`. CLI `~/.openhands` is server persistence,
 not a local session store. Revisit only with an ADR. Descriptor:
 `internal/agents/catalog/openhands.go`. No index source, reader, target, or
 sync adapter.
