@@ -6,9 +6,13 @@
 
 ### Find, verify, resume, and hand off coding-agent work
 
-**Reinstate is the open-source continuity layer for coding-agent work: search,
+**Your agents lose context every time you switch. Reinstate carries it
+across.** Indexes 11 agents in `v0.5.0-rc.4`, 5 in stable `v0.4.0`. Full
+continuity on 2 — Claude Code and Codex.
+
+Reinstate is the open-source continuity layer for coding-agent work: search,
 resume, and hand off tasks across agents, projects, environments, and devices,
-with optional encrypted sync through your own S3-compatible storage.**
+with optional encrypted sync through your own S3-compatible storage.
 
 Stable `v0.4.0` adds Phase 4 explicit structured handoffs on top of the
 configless local session index, literal search, metadata inspection, numbered
