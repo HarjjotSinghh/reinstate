@@ -97,10 +97,31 @@ func TestReleaseAndSupportClaims(t *testing.T) {
 		}
 	}
 
-	for _, path := range []string{"docs/compatibility.md", "docs/adapters.md", "README.md", "SUPPORT.md"} {
-		if regexp.MustCompile(`(?i)cursor.*✅`).MatchString(read(t, path)) {
-			t.Errorf("%s claims implemented Cursor support", path)
+	// Cursor ships at T1: its sessions are indexed and searchable while resume
+	// and fork stay refused. A "read-only" index claim is therefore truthful,
+	// and what must stay guarded is any capability above that tier. Pin the
+	// rows rather than banning every checkmark next to the name.
+	cursorClaims := []struct {
+		doc  string
+		body string
+		re   *regexp.Regexp
+	}{
+		{"README.md", readme, regexp.MustCompile(
+			`(?m)^\| \[Cursor CLI\][^\n]*\| T1 \| ✅ read-only \| — \| — \| — \| — \|`)},
+		{"docs/adapters.md", adapters, regexp.MustCompile(
+			`(?m)^\| Cursor CLI \| Read-only \(T1\) \| No \| No \| No \| No \|`)},
+	}
+	for _, claim := range cursorClaims {
+		if !claim.re.MatchString(claim.body) {
+			t.Errorf("%s must keep Cursor read-only at T1 with no resume, handoff or sync claim: %s",
+				claim.doc, claim.re.String())
 		}
+	}
+	if !strings.Contains(compatibility, "| Cursor | Not in Phase 1 |") {
+		t.Error("docs/compatibility.md must retain the Cursor Phase 1 exclusion")
+	}
+	if regexp.MustCompile(`(?i)cursor.*✅`).MatchString(read(t, "SUPPORT.md")) {
+		t.Error("SUPPORT.md claims implemented Cursor support")
 	}
 
 	// Required authority docs exist.
