@@ -25,6 +25,11 @@ func Cursor() agents.Descriptor {
 		Tier:        agents.TierDiscover,
 		Family:      agents.FamilyHomeTree,
 		Storage: agents.StorageSpec{
+			// Verified 2026-08-21 on macOS with Cursor CLI 2026.08.11: setting
+			// CURSOR_CONFIG_DIR relocates the whole root, chats included. A
+			// session created under the override was written to the relocated
+			// chats directory and the real ~/.cursor was left untouched.
+			RootEnv: "CURSOR_CONFIG_DIR",
 			Roots: func(home agents.HomeDir) []agents.Root {
 				return []agents.Root{{Path: home.Join(".cursor")}}
 			},

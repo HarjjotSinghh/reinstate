@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Cursor CLI declares its root environment variable, so its sessions can be
+  read from a relocated root like every other home-tree agent. `CURSOR_CONFIG_DIR`
+  was recorded as unverified; it is now verified to relocate the whole root,
+  `chats/` included — a session created under the override was written there
+  and the real `~/.cursor` was untouched (macOS, Cursor CLI `2026.08.11`).
+  Without this, Cursor was the one indexed agent that could not be pointed at a
+  sanitized tree (`v0.5.0-rc.4` macOS C6).
+
+- An agent root environment variable is honoured even when it names a path that
+  does not exist. `rein doctor --agents` reported `root_env_set` and then fell
+  back to walking the home tree whenever the named root was missing or lacked
+  its marker, so a tester who pointed `KIMI_CODE_HOME` or `COPILOT_HOME` at a
+  sanitized root that had not been created yet still had their real tree walked
+  and written into a committed probe artifact — the exact outcome setting the
+  variable is meant to prevent. The override now replaces the home guess
+  unconditionally; when the named root is unusable the agent is reported absent
+  (`v0.5.0-rc.4` macOS B7).
+
 ### Changed
 
 - A refresh that finds nothing changed no longer re-parses every session. Each
