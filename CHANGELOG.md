@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `rein doctor --agents` no longer carries a raw content hash into a probe
+  artifact when the hash is not exactly 32, 40, or 64 characters long. Git
+  stores an object as a two-character directory plus a thirty-eight character
+  file, and OpenCode keeps a Git object store under each snapshot, so a real
+  agent root produced 38-character names that matched none of the fixed-length
+  rules and reached the artifact verbatim. Those names are content hashes of
+  the operator's own repository, which is exactly what a committed probe must
+  not carry. Any hex run long enough to identify content is now collapsed to
+  `<N-hex>`; the established `<32-hex>`, `<40-hex>` and `<64-hex>` tokens are
+  unchanged so committed artifacts do not churn. Found by physical
+  `v0.5.0-rc.5` acceptance on macOS (B4).
+
 ## [0.5.0-rc.5] - 2026-08-21
 
 
