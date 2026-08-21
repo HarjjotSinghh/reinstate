@@ -109,8 +109,12 @@ func TestPlantedSecretsNeverAppear(t *testing.T) {
 	art, err := Collect(context.Background(), agents.Env{
 		Home: home,
 		LookupEnv: func(key string) string {
+			// The override names the planted root itself, so the walk this
+			// test depends on still happens. Pointing it at a path that does
+			// not exist would now resolve nothing, and every redaction
+			// assertion below would pass vacuously.
 			if key == "PLANTED_HOME" {
-				return "/Users/alice/.planted-agent"
+				return root
 			}
 			return ""
 		},
@@ -566,4 +570,85 @@ func TestCredentialFileIsExcludedFromTree(t *testing.T) {
 	if strings.Contains(string(blob), "fixture credential body") {
 		t.Fatal("credential contents reached the probe artifact")
 	}
+}
+
+// TestRootEnvOverrideIsAbsolute covers what setting an agent's root
+// environment variable means. It is an instruction, not a hint: whatever it
+// names is the root, and if that path is unusable the agent is absent. The
+// probe must never quietly fall back to the home tree, because the reason an
+// operator sets the variable is to keep their real tree out of a committed
+// artifact — and a variable pointing at a sanitized root that does not exist
+// yet is exactly when the fallback would do the damage.
+func TestRootEnvOverrideIsAbsolute(t *testing.T) {
+	t.Parallel()
+
+	collect := func(t *testing.T, home, override string) Agent {
+		t.Helper()
+		art, err := Collect(context.Background(), agents.Env{
+			Home: home,
+			LookupEnv: func(key string) string {
+				if key == "PLANTED_HOME" {
+					return override
+				}
+				return ""
+			},
+		}, []agents.Descriptor{syntheticDescriptor(home)}, Options{
+			LookPath: func(string) (string, error) { return "", os.ErrNotExist },
+			Now:      func() time.Time { return time.Date(2026, 8, 21, 0, 0, 0, 0, time.UTC) },
+			Version:  "0.5.0-dev",
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := Validate(art); err != nil {
+			t.Fatal(err)
+		}
+		return art.Agents[0]
+	}
+
+	// A home root that would resolve on its own, so a fallback is possible.
+	home := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(home, ".planted-agent", "projects"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("absent override does not fall back to the home tree", func(t *testing.T) {
+		rec := collect(t, home, filepath.Join(t.TempDir(), "not-created-yet"))
+		if rec.ResolvedRoot != nil {
+			t.Fatalf("resolved_root = %+v, want nil: the home tree was walked despite an explicit override",
+				rec.ResolvedRoot)
+		}
+		if !rec.RootEnvSet {
+			t.Error("root_env_set should report that the override was present")
+		}
+	})
+
+	t.Run("override naming a root without the marker does not fall back", func(t *testing.T) {
+		unmarked := t.TempDir() // exists, but has no "projects" marker
+		rec := collect(t, home, unmarked)
+		if rec.ResolvedRoot != nil {
+			t.Fatalf("resolved_root = %+v, want nil", rec.ResolvedRoot)
+		}
+	})
+
+	t.Run("override naming a usable root resolves to it", func(t *testing.T) {
+		sanitized := t.TempDir()
+		if err := os.MkdirAll(filepath.Join(sanitized, "projects"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		rec := collect(t, home, sanitized)
+		if rec.ResolvedRoot == nil {
+			t.Fatal("resolved_root is nil for a usable override")
+		}
+		if rec.ResolvedRoot.RelativeTo != "env" {
+			t.Fatalf("resolved_root = %+v, want an env-relative root", rec.ResolvedRoot)
+		}
+	})
+
+	t.Run("no override still resolves the home root", func(t *testing.T) {
+		rec := collect(t, home, "")
+		if rec.ResolvedRoot == nil || rec.ResolvedRoot.RelativeTo != "home" {
+			t.Fatalf("resolved_root = %+v, want the home root when nothing overrides it", rec.ResolvedRoot)
+		}
+	})
 }

@@ -251,10 +251,15 @@ func resolveCandidates(env agents.Env, home agents.HomeDir, d agents.Descriptor)
 		if rel.RelativeTo != "home" {
 			rel = RelativeRoot{RelativeTo: "env", Suffix: ""}
 		}
-		// An explicit RootEnv outranks a home-directory guess, the same way
-		// FixtureRoot does below. Requiring resolved == nil here meant that a
-		// tester who pointed the variable at a sanitized root still had their
-		// real home tree walked and reported.
+		// An explicit RootEnv is an instruction, not a hint: it replaces a
+		// home-directory guess whether or not it resolves. Letting the guess
+		// survive when the named path is missing or unmarked meant a tester
+		// who pointed the variable at a sanitized or not-yet-created root
+		// still had their real home tree walked and written into a committed
+		// probe artifact — the exact outcome setting the variable is meant to
+		// prevent. When the named root is unusable the agent is reported
+		// absent, which is the honest answer.
+		resolved, resolvedAbs = nil, ""
 		if exists && (d.Storage.Marker == "" || marker) {
 			resolved = &rel
 			resolvedAbs = envPath

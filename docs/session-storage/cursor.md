@@ -131,7 +131,7 @@ forum notes, not from a device. Do not treat them as reader input.
 
 | Aspect | Vendor-documented value | Confidence |
 | ------ | ---------------------- | ---------- |
-| Config override | `$CURSOR_CONFIG_DIR` relocates the CLI config directory | Unverified |
+| Config override | `$CURSOR_CONFIG_DIR` relocates the whole root, `chats/` included | Verified (macOS, CLI `2026.08.11`, 2026-08-21) |
 | Config default (Unix) | `~/.cursor/cli-config.json` | Unverified |
 | Config default (Windows) | `%USERPROFILE%\.cursor\cli-config.json` | Unverified |
 | Linux XDG config | `$XDG_CONFIG_HOME/cursor/cli-config.json` | Unverified |
