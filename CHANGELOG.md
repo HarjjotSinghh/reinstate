@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Upgrading Reinstate now re-reads sessions whose files have not changed, so a
+  reader fix reaches an existing index instead of waiting for the agent to
+  write something new. Both layers of change detection asked only whether a
+  file had moved: `ReplaceSource` left a row alone when its path, modification
+  time and size matched, and an unchanged source fingerprint skipped the scan
+  outright. Neither could answer whether *this build* would read the same bytes
+  the same way, and the answer differs every time a reader is fixed. The reader
+  is now recorded alongside the fingerprint, and when it changes every row is
+  rewritten. Observed on the Windows acceptance host: an index built before the
+  Gemini workspace fix served 24 sessions with no workspace indefinitely, and
+  heals to 10 resolved workspaces on the first run of the new build. An
+  unchanged refresh stays fast — 0.36s against a 10.16s cold refresh
+  (`v0.5.0-rc.4` Windows C1-C2, H4).
+
+### Fixed
+
 - Cursor CLI declares its root environment variable, so its sessions can be
   read from a relocated root like every other home-tree agent. `CURSOR_CONFIG_DIR`
   was recorded as unverified; it is now verified to relocate the whole root,
