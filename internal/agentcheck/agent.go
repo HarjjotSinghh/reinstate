@@ -448,7 +448,7 @@ func testFallbackDefinitions() map[string]definition {
 			},
 			Parse: parseClaudeVersion,
 			Min:   "2.1.219",
-			Max:   "2.1.229",
+			Max:   "2.1.238",
 		}),
 		"codex": definitionFrom(Definition{
 			Executable:      "codex",

@@ -170,7 +170,7 @@ func TestOutOfRangeVersionNamesTheRange(t *testing.T) {
 			if result.Status == StatusSupported {
 				t.Fatalf("version %s was accepted; it is outside the verified range", version)
 			}
-			for _, want := range []string{version, "2.1.219", "2.1.229"} {
+			for _, want := range []string{version, "2.1.219", "2.1.238"} {
 				if !strings.Contains(result.Message, want) {
 					t.Fatalf("message %q does not name %q", result.Message, want)
 				}
