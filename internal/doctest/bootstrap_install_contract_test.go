@@ -129,6 +129,12 @@ func TestProductionDeploymentVerifiesBeforePromotion(t *testing.T) {
 }
 
 func TestProductionDeploymentRejectsInvalidWebsiteTagDate(t *testing.T) {
+	// The deployment script is POSIX shell. A host without one cannot exercise
+	// the contract at all, and running it anyway reports "executable not found"
+	// as though the script had accepted the invalid date.
+	if _, err := exec.LookPath("sh"); err != nil {
+		t.Skip("no POSIX shell on this host; deployment script contract not exercisable")
+	}
 	command := exec.Command(
 		"sh",
 		filepath.Join(repoRoot(t), "scripts", "deploy-website-production.sh"),
