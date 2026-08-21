@@ -100,6 +100,12 @@ func (r *OpenCodeReader) Snapshot(ctx context.Context, record sessionindex.Recor
 			return r.snapshotStorage(record.ID, storageRoot, messageDir)
 		}
 	}
+	// Current OpenCode keeps messages in its embedded store rather than the
+	// filesystem tree above, so a session that has no message directory is
+	// normally still fully readable.
+	if boundary, ok := r.snapshotDatabase(record.ID); ok {
+		return boundary, nil
+	}
 	// Fail closed on unrecognized / missing message bodies → metadata boundary.
 	_ = ctx
 	return Boundary{
@@ -128,6 +134,23 @@ func (r *OpenCodeReader) Parse(_ context.Context, b Boundary) ([]capsule.Event, 
 	}
 	if b.Path() == "" {
 		return nil, report, errors.New("transcript: opencode boundary path is empty")
+	}
+	if isOpenCodeDatabaseBoundary(b) {
+		events, err := r.parseDatabaseMessages(b)
+		if err != nil {
+			return nil, report, err
+		}
+		report.Events = len(events)
+		for _, ev := range events {
+			report.ByKind[ev.Kind]++
+			if ev.Kind == capsule.KindUnknown {
+				report.UnknownRecords++
+			}
+			if ev.Truncated {
+				report.TruncatedBlocks++
+			}
+		}
+		return events, report, nil
 	}
 	events, err := r.parseStorageMessages(b)
 	if err != nil {
