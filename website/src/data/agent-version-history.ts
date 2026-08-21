@@ -18,7 +18,7 @@ const evidenceByVersion: Record<
 > = {
   'v0.5.0-rc.4': {
     rangeChange:
-      'Unchanged from v0.5.0-rc.3: inclusive Claude Code range 2.1.219-2.1.229. The Codex CLI range is unchanged at 0.133.0-0.147.0.',
+      'Raises the inclusive Codex CLI range to 0.133.0-0.149.0 on dual-platform physical evidence: on macOS and on Windows a session created with Codex 0.149.0 was indexed by Reinstate, resumed through the launch plan Reinstate produced, and returned a token that existed only in the original session history. The Claude Code range is unchanged at 2.1.219-2.1.229; 2.1.238 passed the same journey on Windows but the macOS half is outstanding, and a ceiling moves only on dual-platform evidence.',
     compatibilityChange:
       'Fourth Phase 5 candidate. Makes the agent probe reproducible, normalizes raw content hashes out of probe output, refuses native actions on a T0 agent with the compatibility exit code, narrows an agent-filtered refresh to that agent, and completes agent keys per flag. Claude Code and Codex remain the only T3-T5 surfaces. This candidate does not authorize stable v0.5.0.',
     implementationSource:

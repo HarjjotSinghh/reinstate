@@ -24,7 +24,7 @@ const maxJSONLRecordBytes = 16 << 20
 
 const (
 	minimumVerifiedCodexVersion = "0.133.0"
-	maximumVerifiedCodexVersion = "0.147.0"
+	maximumVerifiedCodexVersion = "0.149.0"
 )
 
 // Adapter implements adapter.Adapter for Codex.

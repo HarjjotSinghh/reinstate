@@ -97,7 +97,7 @@ Claude Code and Codex only. The destination first reply restates five
 acknowledgement bullets. Capsules stay local and are excluded from sync.
 
 Fail-closed ranges: Claude Code `2.1.219`–`2.1.229`, Codex CLI
-`0.133.0`–`0.147.0`. Dual-platform tagged-artifact acceptance passed on Apple
+`0.133.0`–`0.149.0`. Dual-platform tagged-artifact acceptance passed on Apple
 Silicon macOS and native Windows x64 (44/44 on both devices).
 
 ## Not in v0.4.0

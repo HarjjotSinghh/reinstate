@@ -49,7 +49,7 @@ func Codex() agents.Descriptor {
 			Args:  []string{"--version"},
 			Parse: parseCodexVersion,
 			Min:   "0.133.0",
-			Max:   "0.147.0",
+			Max:   "0.149.0",
 		},
 		Process: agents.ProcessSpec{
 			Images:      []string{"codex"},

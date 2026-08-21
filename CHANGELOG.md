@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The verified Codex CLI range now reaches `0.149.0`. `0.147.0` was the
+  ceiling, so both acceptance hosts — which had auto-updated past it — were
+  refused with `native agent version 0.149.0 is outside the verified range`.
+  The new ceiling rests on dual-platform physical evidence rather than a
+  version bump: on macOS and on Windows a session was created with Codex
+  `0.149.0`, indexed by Reinstate, and resumed through the launch plan
+  Reinstate produced; the resumed session returned a token that existed only in
+  the original session's history. The Claude Code ceiling stays at `2.1.229`
+  until the same journey is completed on both platforms.
+
 ### Fixed
 
 - Cursor CLI declares its root environment variable, so its sessions can be

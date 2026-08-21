@@ -460,7 +460,7 @@ func testFallbackDefinitions() map[string]definition {
 			},
 			Parse: parseCodexVersion,
 			Min:   "0.133.0",
-			Max:   "0.147.0",
+			Max:   "0.149.0",
 		}),
 	}
 }
