@@ -14,6 +14,7 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/capability"
 	"github.com/HarjjotSinghh/reinstate/internal/environment"
 	"github.com/HarjjotSinghh/reinstate/internal/exitcode"
+	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/runtimecheck"
 	"github.com/HarjjotSinghh/reinstate/internal/workspace"
 )
@@ -48,6 +49,12 @@ func Verify(ctx context.Context, input Input, options Options) (Report, error) {
 	}
 	verifyCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
+
+	// Started before the sequential probes so its cost overlaps theirs. Verify
+	// returns early on several paths, so the probe context is released by defer
+	// rather than by whoever happens to read the result.
+	awaitActiveSession, releaseActiveSession := startActiveSessionProbe(ctx, input, options)
+	defer releaseActiveSession()
 
 	expected := workspaceExpectation(input)
 	workspaceOptions := options.Workspace
@@ -129,6 +136,9 @@ func Verify(ctx context.Context, input Input, options Options) (Report, error) {
 	}
 	report.Checks = append(report.Checks, translateWorkspaceChecks(workspaceVerification)...)
 	report.Checks = append(report.Checks, agentChecks(agentResult, input.ReadOnly)...)
+	if active, ok := awaitActiveSession(); ok {
+		report.Checks = append(report.Checks, active)
+	}
 	report.Checks = append(report.Checks, capabilityChecks(input, capabilityInventory)...)
 	report.Checks = append(report.Checks, runtimeChecks(input, runtimeResults)...)
 	report.Checks = normalizeChecks(report.Checks)
@@ -630,4 +640,104 @@ func remainingTimeout(_ context.Context, requested time.Duration) time.Duration 
 		return requested
 	}
 	return DefaultVerifierTimeout
+}
+
+// DefaultSessionBusyTimeout bounds the liveness probe. Process and open-file
+// listings are shelled out to the host and are an order of magnitude slower
+// than the rest of preflight, so the probe is budgeted separately.
+const DefaultSessionBusyTimeout = 3 * time.Second
+
+// activeSessionCheck answers whether the operator is already working in the
+// session about to be resumed.
+//
+// Resume hands the session to the vendor CLI, which owns every write to its own
+// store. Reinstate therefore has no basis to refuse outright, and a second
+// window on the same session is a legitimate thing to want. What it does have
+// is the observation, and an operator who resumes a session they already have
+// open generally did not mean to. So this warns: the launch proceeds after an
+// interactive confirmation, or after an explicit
+// --allow-environment-warning agent.active, and refuses only when neither is
+// available. That is the same acknowledgement path every other resume warning
+// already uses, rather than a second, differently-spelled refusal flag.
+//
+// A structured handoff never reaches this. It only reads the source transcript,
+// and the handoff pipeline already enforces its own --allow-active boundary
+// against the same signal; running both would make one operator decision
+// require two unrelated acknowledgements.
+// It runs concurrently with the rest of preflight and returns a function that
+// waits for it. The probe shells out to process and open-file listings, which
+// share nothing with the workspace, version, capability and runtime probes, so
+// running it in sequence with them would add its full cost to every resume for
+// no ordering benefit. Overlapped, it is hidden behind work already being done.
+func startActiveSessionProbe(
+	ctx context.Context, input Input, options Options,
+) (await func() (Check, bool), release func()) {
+	none := func() (Check, bool) { return Check{}, false }
+	if input.ReadOnly || options.SessionBusy == nil {
+		return none, func() {}
+	}
+	if strings.TrimSpace(input.SessionID) == "" && strings.TrimSpace(input.SessionPath) == "" {
+		// Unscoped, the probe can only report that the agent is running
+		// somewhere. Reporting that as "this session is in use" would warn on
+		// every resume for anyone with a window open.
+		return none, func() {}
+	}
+
+	timeout := options.SessionBusyTimeout
+	if timeout <= 0 {
+		timeout = DefaultSessionBusyTimeout
+	}
+	type outcome struct {
+		busy     bool
+		scoped   bool
+		err      error
+		deadline bool
+	}
+	done := make(chan outcome, 1)
+	probeCtx, cancel := context.WithTimeout(ctx, timeout)
+	go func() {
+		busy, scoped, err := options.SessionBusy(probeCtx, input.Agent, processcheck.Target{
+			SessionID:   input.SessionID,
+			Path:        input.SessionPath,
+			ProjectRoot: input.ProjectRoot,
+		})
+		done <- outcome{busy: busy, scoped: scoped, err: err, deadline: probeCtx.Err() != nil}
+	}()
+
+	return func() (Check, bool) {
+		result := <-done
+		busy, scoped, err := result.busy, result.scoped, result.err
+		switch {
+		case err != nil || result.deadline:
+			// A host that cannot enumerate its own processes still gets to
+			// resume. Resume overwrites nothing, so an unanswerable question is
+			// reported rather than escalated into an acknowledgement the
+			// operator has no way to act on.
+			return Check{
+				ID: "agent.active", Status: StatusUnknown, Severity: SeverityInfo,
+				Provenance: workspace.ProvenanceUnavailable,
+				Message:    "this host could not determine whether " + input.Agent + " is using this session",
+			}, true
+		case !busy:
+			return Check{
+				ID: "agent.active", Status: StatusMatch, Severity: SeverityInfo,
+				Actual: false, Provenance: workspace.ProvenanceCurrentObservation,
+				Message: "no running " + input.Agent + " instance is using this session",
+			}, true
+		}
+
+		check := Check{
+			ID: "agent.active", Status: StatusPresent, Severity: SeverityWarning,
+			Actual: true, Provenance: workspace.ProvenanceCurrentObservation,
+			Repair:   "close that session, or acknowledge with --allow-environment-warning agent.active",
+			ExitCode: exitcode.Safety,
+		}
+		if scoped {
+			check.Message = "a running " + input.Agent + " instance is already using this session"
+		} else {
+			check.Message = input.Agent +
+				" appears to be running and this host cannot tell which session it is using"
+		}
+		return check, true
+	}, cancel
 }

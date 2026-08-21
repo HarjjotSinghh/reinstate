@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `rein resume` and `rein fork` now report whether the session being resumed is
+  already open in the agent that owns it. A detected live session is an
+  environment warning, `agent.active`, so it prompts on a terminal and requires
+  `--allow-environment-warning agent.active` in automation, exactly like every
+  other resume warning. It is a warning rather than a refusal because the vendor
+  CLI owns every write to its own store, so Reinstate has no basis to refuse
+  outright — but an operator who resumes a session they already have open
+  generally did not mean to. A host that cannot enumerate its own processes
+  reports that it could not tell, and still resumes; it is never told the
+  session is free on evidence that was not gathered. The probe runs concurrently
+  with the rest of preflight, so it does not add its cost to the launch path.
+  A structured handoff is unaffected: it only reads the source, and already
+  enforces its own `--allow-active` boundary against the same signal.
+
+### Fixed
+
+- OpenCode now declares the root environment variable its reader already
+  honours. OpenCode reads `$XDG_DATA_HOME/opencode`, so the variable names the
+  parent of the root rather than the root itself, and the agent descriptor had
+  no way to express that — so it declared nothing. The consequence was not
+  cosmetic: OpenCode was the one indexed agent an operator could not redirect,
+  so a probe aimed at a prepared root read their real tree anyway, silently.
+  `StorageSpec` gained `RootEnvSuffix` for this shape, and the catalog is now
+  pinned to the reader's own resolution so the two cannot drift apart again.
+
 ## [0.5.1] - 2026-08-21
 
 ### Changed

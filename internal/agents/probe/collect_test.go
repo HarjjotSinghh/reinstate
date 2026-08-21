@@ -652,3 +652,87 @@ func TestRootEnvOverrideIsAbsolute(t *testing.T) {
 		}
 	})
 }
+
+// TestRootEnvSuffixReachesTheRoot covers a vendor whose root variable names a
+// parent rather than the root itself. OpenCode reads $XDG_DATA_HOME/opencode,
+// so the variable alone is one directory short of the marker.
+//
+// Before the suffix existed such an agent could declare no RootEnv at all,
+// which is worse than it sounds: an operator had no way to point the probe at a
+// sanitized root, so the probe read their real tree no matter what they set.
+// That also silently defeats any audit that redirects the agent to a prepared
+// root — the redirect is ignored and the row passes against the wrong tree.
+func TestRootEnvSuffixReachesTheRoot(t *testing.T) {
+	t.Parallel()
+
+	descriptor := func() agents.Descriptor {
+		d := syntheticDescriptor("")
+		d.Storage.RootEnvSuffix = "planted"
+		return d
+	}
+	collect := func(t *testing.T, home, override string) Agent {
+		t.Helper()
+		art, err := Collect(context.Background(), agents.Env{
+			Home: home,
+			LookupEnv: func(key string) string {
+				if key == "PLANTED_HOME" {
+					return override
+				}
+				return ""
+			},
+		}, []agents.Descriptor{descriptor()}, Options{
+			LookPath: func(string) (string, error) { return "", os.ErrNotExist },
+			Now:      func() time.Time { return time.Date(2026, 8, 22, 0, 0, 0, 0, time.UTC) },
+			Version:  "0.5.0-dev",
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := Validate(art); err != nil {
+			t.Fatal(err)
+		}
+		return art.Agents[0]
+	}
+
+	// A home root that resolves on its own, so a failure to apply the suffix
+	// would be visible as a fallback rather than as an empty result.
+	home := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(home, ".planted-agent", "projects"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("parent plus suffix resolves", func(t *testing.T) {
+		parent := t.TempDir()
+		if err := os.MkdirAll(filepath.Join(parent, "planted", "projects"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		rec := collect(t, home, parent)
+		if rec.ResolvedRoot == nil {
+			t.Fatal("resolved_root = nil: the suffix was not applied to the override")
+		}
+		if !rec.RootEnvSet {
+			t.Error("root_env_set should report that the override was present")
+		}
+	})
+
+	t.Run("parent alone is not the root", func(t *testing.T) {
+		// The marker sits directly under the parent, which is what the probe
+		// would have found had it ignored the suffix. It must not resolve.
+		parent := t.TempDir()
+		if err := os.MkdirAll(filepath.Join(parent, "projects"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		rec := collect(t, home, parent)
+		if rec.ResolvedRoot != nil {
+			t.Fatalf("resolved_root = %+v, want nil: the suffix was skipped", rec.ResolvedRoot)
+		}
+	})
+
+	t.Run("override still outranks the home tree", func(t *testing.T) {
+		rec := collect(t, home, filepath.Join(t.TempDir(), "not-created-yet"))
+		if rec.ResolvedRoot != nil {
+			t.Fatalf("resolved_root = %+v, want nil: the home tree was walked despite an override",
+				rec.ResolvedRoot)
+		}
+	})
+}

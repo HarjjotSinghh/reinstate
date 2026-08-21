@@ -566,6 +566,9 @@ func verifyLocalRecord(
 		Recorded:    record.RecordedEnvironment,
 		Baseline:    baselinePointer,
 		SourceFresh: sourceFresh,
+		SessionID:   record.ID,
+		SessionPath: record.SourcePath,
+		ProjectRoot: record.Workspace,
 	})
 	if err != nil {
 		return preflight.Report{}, localRuntimeError("verify native environment", err)

@@ -246,6 +246,12 @@ func resolveCandidates(env agents.Env, home agents.HomeDir, d agents.Descriptor)
 	}
 
 	if envPath := strings.TrimSpace(env.Lookup(d.Storage.RootEnv)); d.Storage.RootEnv != "" && envPath != "" {
+		// A vendor whose variable names the parent of its root needs the
+		// remaining segment appended, or the probe inspects one directory too
+		// high and finds no marker.
+		if suffix := strings.TrimSpace(d.Storage.RootEnvSuffix); suffix != "" {
+			envPath = filepath.Join(envPath, filepath.FromSlash(suffix))
+		}
 		exists, marker := inspectRoot(envPath, d.Storage.Marker)
 		rel := relativize(home.String(), envPath)
 		if rel.RelativeTo != "home" {

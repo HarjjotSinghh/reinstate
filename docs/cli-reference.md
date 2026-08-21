@@ -283,6 +283,15 @@ A real terminal prompt accepts exactly `yes` or `no`; empty input and `no`
 decline. EOF also declines. Decline/refusal returns safety exit `7` without a
 vendor launch.
 
+Resuming a session that the owning agent already has open warns with
+`agent.active`. Reinstate does not refuse it: the vendor CLI owns every write to
+its own store, and a second window on one session is a legitimate thing to want.
+The warning exists because it is more often an accident. A host that cannot
+enumerate its own processes reports that it could not tell and still resumes,
+rather than claiming the session is free on evidence it never gathered. A
+structured handoff does not raise this warning; it enforces its own
+`--allow-active` boundary against the same signal.
+
 The first preflight for an existing session warns with
 `baseline.unavailable`; inspection never turns the current workspace into
 historical truth. After an authorized native child exits successfully,
