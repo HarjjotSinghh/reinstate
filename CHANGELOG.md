@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `kimi-cli` store. A real session therefore indexed **no** tool-touched files
   at all. The committed fixtures encoded the same shape the reader expected, so
   the tests agreed with the reader while neither agreed with the vendor.
+
 ||||||| parent of 3b95e84 (fix(opencode): index sessions still in the vendor's write-ahead log)
 ||||||| parent of 1b194ed (fix(opencode): index sessions still in the vendor's write-ahead log)
 ### Fixed
@@ -56,6 +57,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   written since the last checkpoint changes only that file, so the fingerprint
   was unchanged and an incremental refresh skipped the scan that would have
   found it — the session stayed invisible however well the reader worked.
+||||||| parent of c6973e3 (fix(website): link documentation on main, not a retired branch)
+||||||| parent of 71d2a7a (fix(website): link documentation on main, not a retired branch)
+||||||| parent of c4743cf (fix(website): link documentation on main, not a retired branch)
+### Fixed
+
+- Published pages no longer link documentation on a retired integration branch.
+  Sixteen entries in the compatibility data and nine integration pages pointed
+  at `feat/universal-agent-coverage`, which is behind `main` and is not the
+  default branch, so public evidence links named a branch rather than the
+  documentation as it stands. They now point at `main`, and a test asserts every
+  link into this repository names `main` or a released tag and resolves to a
+  path that exists. The existing link checker could not have caught this: it
+  audits the built pages but skips any link whose origin is not the site's own.
 
 ### Added
 

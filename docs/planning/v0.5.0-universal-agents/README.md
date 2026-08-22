@@ -4,7 +4,12 @@ Planning and execution documents for expanding Reinstate from five coding
 agents to a catalog of many, with a capability tier for each and committed
 evidence behind every tier.
 
-**Integration branch:** `feat/universal-agent-coverage`
+**Integration branch:** `feat/universal-agent-coverage` — **retired.** This
+milestone shipped in `v0.5.0` and `v0.5.1`, and `main` is ahead of that branch.
+The documents below still name it because that is how the work was organised at
+the time; they are a record, not instructions to follow today. Branch from
+`main`. PR #274 was still targeting this branch days after the milestone
+shipped, which is exactly the mistake this note exists to prevent.
 
 ---
 
