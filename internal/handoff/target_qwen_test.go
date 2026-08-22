@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -319,12 +320,29 @@ func TestQwenTargetVerifyFailsClosedWithoutARoot(t *testing.T) {
 
 func TestQwenProjectKeyMatchesTheVendorRule(t *testing.T) {
 	t.Parallel()
+	// The key lowercases on Windows, because Windows paths are case-insensitive
+	// and the vendor's own bucket is lowercased there. A workspace is always a
+	// path on the running host, so a POSIX path never reaches this function on
+	// Windows — but a table that hard-codes the POSIX answer asserts the host's
+	// behaviour rather than the rule, and fails on Windows CI for a case that
+	// cannot occur.
+	//
+	// The expectation therefore applies the same host rule the function
+	// documents. What is pinned on every platform is the sanitisation itself:
+	// every byte outside [A-Za-z0-9] becomes '-', and a trailing separator is
+	// cleaned away first.
+	expect := func(posix string) string {
+		if runtime.GOOS == "windows" {
+			return strings.ToLower(posix)
+		}
+		return posix
+	}
 	tests := []struct {
 		name, path, want string
 	}{
-		{"posix path", "/Users/fixture-user/code/demo", "-Users-fixture-user-code-demo"},
-		{"trailing slash is cleaned", "/Users/fixture-user/code/demo/", "-Users-fixture-user-code-demo"},
-		{"dots and digits", "/tmp/a.b/c9", "-tmp-a-b-c9"},
+		{"posix path", "/Users/fixture-user/code/demo", expect("-Users-fixture-user-code-demo")},
+		{"trailing slash is cleaned", "/Users/fixture-user/code/demo/", expect("-Users-fixture-user-code-demo")},
+		{"dots and digits", "/tmp/a.b/c9", expect("-tmp-a-b-c9")},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -334,6 +352,22 @@ func TestQwenProjectKeyMatchesTheVendorRule(t *testing.T) {
 				t.Fatalf("QwenProjectKey(%q) = %q, want %q", tt.path, got, tt.want)
 			}
 		})
+	}
+}
+
+// TestQwenProjectKeyLowercasesOnlyOnWindows pins the host rule itself, so the
+// table above cannot quietly agree with a function that stopped applying it.
+func TestQwenProjectKeyLowercasesOnlyOnWindows(t *testing.T) {
+	t.Parallel()
+	got := QwenProjectKey("/Users/Fixture/Code")
+	if runtime.GOOS == "windows" {
+		if got != strings.ToLower(got) {
+			t.Fatalf("QwenProjectKey = %q; Windows buckets are lowercased", got)
+		}
+		return
+	}
+	if got != "-Users-Fixture-Code" {
+		t.Fatalf("QwenProjectKey = %q; case is preserved off Windows", got)
 	}
 }
 
