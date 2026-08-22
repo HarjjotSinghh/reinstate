@@ -73,3 +73,7 @@ website/artifacts/production-discovery/*-production.json
 # isolated work; they are scratch space, not source, and they are large.
 /.worktrees/
 /.claude/worktrees/
+
+# Banner concept renders. scripts/generate_readme_banner_concepts.py writes
+# these; the winning concept ships as assets/banner.svg instead.
+/assets/banner-concepts/
