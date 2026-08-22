@@ -381,3 +381,40 @@ func TestQwenTargetMaterializeWritesNothingUnderTheQwenHome(t *testing.T) {
 		t.Fatalf("Materialize wrote into the Qwen home: %v", names)
 	}
 }
+
+// TestQwenPlanDoesNotRefuseAMultiLineBriefing pins the fix for a defect that
+// only native Windows could show.
+//
+// Windows CreateProcess truncates an argv element at an embedded CR/LF, which
+// is real: rc.9 caught Codex receiving only the first line of its briefing.
+// planDestination already handles it for every destination by falling back to
+// the short file-backed projection.
+//
+// QwenTarget.Plan used to refuse outright instead, and planDestination returns
+// on a Plan error before that fallback can run. A briefing is multi-line by
+// construction, so every Qwen handoff failed on native Windows — `handoff:
+// Qwen bootstrap is not safe to pass as argv on this platform` — while the same
+// code passed on macOS, where the guard is inert.
+func TestQwenPlanDoesNotRefuseAMultiLineBriefing(t *testing.T) {
+	t.Parallel()
+	workspace := t.TempDir()
+	target := &QwenTarget{
+		Root:        t.TempDir(),
+		ForceCompat: adapter.CompatibilitySupported,
+		Bootstrap: func(capsule.Capsule, Policy) ([]byte, error) {
+			return []byte("Reinstate structured handoff - not native resume.\nRead the briefing at <path>.\n"), nil
+		},
+	}
+	plan, _, err := target.Plan(qwenTestCapsule(workspace), PolicyBalanced)
+	if err != nil {
+		t.Fatalf("Plan refused a multi-line briefing: %v", err)
+	}
+	if plan.SessionID == "" {
+		t.Fatal("Plan produced no pinned session id")
+	}
+	// Plan may still carry the newlines; the fallback that removes them lives in
+	// planDestination. What must not happen is a refusal before it can run.
+	if plan.Executable != qwenExecutable {
+		t.Fatalf("executable = %q, want %q", plan.Executable, qwenExecutable)
+	}
+}

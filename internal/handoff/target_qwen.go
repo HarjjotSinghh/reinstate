@@ -170,9 +170,15 @@ func (t *QwenTarget) Plan(c capsule.Capsule, policy Policy) (DestinationPlan, ca
 	if err := ValidateDestinationArgv(plan, t.Capabilities().MaxArgvBytes); err != nil {
 		return DestinationPlan{}, fidelity, err
 	}
-	if argvUnsafeForLaunch(runtime.GOOS, bootstrap) {
-		return DestinationPlan{}, fidelity, errors.New("handoff: Qwen bootstrap is not safe to pass as argv on this platform")
-	}
+	// Deliberately no argv-newline refusal here. Windows CreateProcess truncates
+	// an argv element at an embedded CR/LF, which is real — rc.9 caught Codex
+	// receiving only the first line of its briefing — but planDestination
+	// already handles it for every destination by falling back to the short
+	// file-backed projection. Refusing here returned an error from Plan, and
+	// planDestination returns on a Plan error before that fallback can run, so
+	// the guard turned a handled case into a hard failure: a briefing is
+	// multi-line by construction, so *every* Qwen handoff failed on native
+	// Windows while passing on macOS.
 	return plan, fidelity, nil
 }
 

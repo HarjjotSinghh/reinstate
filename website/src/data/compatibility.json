@@ -250,7 +250,8 @@
         "deviceReports": [
           "docs/testing/results/2026-08-22-macos-qwen-t3.md",
           "docs/testing/results/2026-08-22-windows-qwen-t3.md",
-          "docs/testing/results/2026-08-22-macos-qwen-t4.md"
+          "docs/testing/results/2026-08-22-macos-qwen-t4.md",
+          "docs/testing/results/2026-08-22-windows-qwen-t4.md"
         ],
         "probeReports": [
           "docs/testing/results/agent-probes/2026-08-17-macos-qwen.json",

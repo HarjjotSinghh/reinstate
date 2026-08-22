@@ -135,6 +135,7 @@ func Qwen() agents.Descriptor {
 				"docs/testing/results/2026-08-22-macos-qwen-t3.md",
 				"docs/testing/results/2026-08-22-windows-qwen-t3.md",
 				"docs/testing/results/2026-08-22-macos-qwen-t4.md",
+				"docs/testing/results/2026-08-22-windows-qwen-t4.md",
 			},
 		},
 		NewIndexSource: qwensrc.New,
