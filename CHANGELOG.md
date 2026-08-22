@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
 ### Changed
 
 - The agent conformance suite now requires a T3+ tier claim to name a device
@@ -17,6 +18,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a newly promoted agent was simply absent from the check. WSL2 is a separate
   device and does not satisfy native Windows. No shipped descriptor changes;
   this only constrains what a future promotion may claim.
+||||||| parent of e308717 (fix(kimi): index the shape Kimi Code CLI actually writes)
+### Fixed
+
+- Kimi Code CLI sessions from a current install are indexed with the files their
+  tool calls touched, and with their assistant turns counted. At wire protocol
+  `1.5` the assistant's whole side of a turn arrives as
+  `context.append_loop_event` — `content.part`, `tool.call`, `tool.result` — and
+  the index source read only the role `"assistant"` `context.append_message`
+  that the vendor writes solely for sessions migrated from the legacy
+  `kimi-cli` store. A real session therefore indexed **no** tool-touched files
+  at all. The committed fixtures encoded the same shape the reader expected, so
+  the tests agreed with the reader while neither agreed with the vendor.
 
 ### Added
 
