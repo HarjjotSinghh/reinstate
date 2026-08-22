@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"errors"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -16,9 +15,13 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/agents"
 	"github.com/HarjjotSinghh/reinstate/internal/agents/sources"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
+	"github.com/HarjjotSinghh/reinstate/internal/vendorsqlite"
 
 	_ "modernc.org/sqlite"
 )
+
+// walSuffix is the write-ahead log SQLite keeps beside a journalled database.
+const walSuffix = "-wal"
 
 // DatabaseName is the OpenCode session store inside the data root.
 const DatabaseName = "opencode.db"
@@ -34,10 +37,14 @@ const maxSessions = 10000
 // project, and running it opened the vendor's database and left WAL and shared
 // memory files behind under the agent root — a scan must not write there.
 //
-// The database is opened read-only and immutable, which is what keeps that
-// promise: SQLite then neither takes a lock nor creates a sidecar. The cost is
-// that records still sitting in an un-checkpointed write-ahead log are not
-// visible, which is the right trade for a read-only continuity tool.
+// The store is opened through vendorsqlite, which keeps that promise without
+// paying for it in coverage. OpenCode journals in write-ahead mode and does not
+// checkpoint on exit, so the sessions a user has just worked in sit in a -wal
+// sidecar — often the entire store on a new install. An immutable in-place
+// handle ignores that file by definition and reported those sessions as absent
+// until unrelated vendor activity happened to cross SQLite's checkpoint
+// threshold. Reading a private copy of the database and its log sees them, and
+// still writes nothing under the agent root.
 //
 // Only the session, project and session_message tables are read. The same
 // database also holds credential and account tables, and those are never
@@ -66,12 +73,6 @@ func DatabasePath(env agents.Env) (string, error) {
 	return filepath.Join(root, DatabaseName), nil
 }
 
-// readOnlyDSN builds an immutable read-only DSN. immutable=1 is what prevents
-// the reader from creating -wal and -shm files beside the vendor's database.
-func readOnlyDSN(path string) string {
-	return "file:" + url.PathEscape(filepath.ToSlash(path)) + "?mode=ro&immutable=1&_pragma=query_only(1)"
-}
-
 // Fingerprint summarises the store by its path, modification time and size,
 // without opening it. An unchanged store cannot yield different records, so an
 // unchanged refresh skips the query entirely.
@@ -93,6 +94,17 @@ func (s *SQLiteSource) Fingerprint(ctx context.Context) (string, bool, error) {
 	_, _ = sum.Write([]byte(strconv.FormatInt(info.ModTime().UnixNano(), 10)))
 	_, _ = sum.Write([]byte{0})
 	_, _ = sum.Write([]byte(strconv.FormatInt(info.Size(), 10)))
+	// The write-ahead log is part of the store's state, so it is part of the
+	// store's identity. A session written since the last checkpoint changes only
+	// the log, leaving the main file's size and timestamp untouched — summarising
+	// the main file alone reports "unchanged" and the refresh skips a scan that
+	// would have found it.
+	if walInfo, walErr := os.Stat(path + walSuffix); walErr == nil {
+		_, _ = sum.Write([]byte{0})
+		_, _ = sum.Write([]byte(strconv.FormatInt(walInfo.ModTime().UnixNano(), 10)))
+		_, _ = sum.Write([]byte{0})
+		_, _ = sum.Write([]byte(strconv.FormatInt(walInfo.Size(), 10)))
+	}
 	return hex.EncodeToString(sum.Sum(nil)), true, nil
 }
 
@@ -110,11 +122,23 @@ func (s *SQLiteSource) Scan(ctx context.Context) (sessionindex.ScanResult, error
 		return result, nil
 	}
 
-	db, err := sql.Open("sqlite", readOnlyDSN(path))
+	handle, err := vendorsqlite.Open(path)
 	if err != nil {
 		return result, warnOnly(&result, path, err)
 	}
-	defer func() { _ = db.Close() }()
+	defer func() { _ = handle.Close() }()
+	db := handle.DB
+	if handle.Incomplete {
+		// A short list presented as the whole store is worse than a short list
+		// the operator knows is short.
+		result.Warnings = append(result.Warnings, sessionindex.Warning{
+			Agent:  sessionindex.AgentOpenCode,
+			Source: path,
+			Code:   "session_store_busy",
+			Message: "OpenCode was writing to its store while it was read; sessions created " +
+				"since it last checkpointed are missing from this listing",
+		})
+	}
 
 	// OpenCode has carried messages in more than one table across schema
 	// versions, so the count comes from whichever ones this store actually has
