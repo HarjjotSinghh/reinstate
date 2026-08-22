@@ -61,11 +61,11 @@ func TestScanFixtures(t *testing.T) {
 			if record.Workspace != tt.wantWorkspace || record.Project != tt.wantProject {
 				t.Fatalf("workspace/project = %q / %q", record.Workspace, record.Project)
 			}
-			if record.CanResume || record.CanFork {
-				t.Fatal("T1 must refuse resume and fork")
+			if !record.CanResume || !record.CanFork {
+				t.Fatal("T3 offers native resume and fork")
 			}
-			if record.ReadOnlyReason != sessionindex.QwenReadOnlyReason {
-				t.Fatalf("read_only_reason = %q", record.ReadOnlyReason)
+			if record.ReadOnlyReason != "" {
+				t.Fatalf("read_only_reason = %q, want empty at T3", record.ReadOnlyReason)
 			}
 			// A non-empty preview is not enough. Qwen carries its message body
 			// in Gemini's parts[] shape, and reading it as Claude's content

@@ -136,23 +136,29 @@ func parseSession(file hometree.File) (sessionindex.Record, error) {
 		updated = file.ModTime.UTC()
 	}
 	return sessionindex.Record{
-		Key:            sessionindex.CompositeReference(sessionindex.AgentQwen, id),
-		ID:             id,
-		Agent:          sessionindex.AgentQwen,
-		Title:          sessionindex.SafePreview(title),
-		Project:        project,
-		Workspace:      workspace,
-		UpdatedAt:      updated,
-		SizeBytes:      file.Size,
-		MessageCount:   parsed.messages,
-		PromptPreview:  sessionindex.SafePreview(parsed.firstPrompt),
-		Files:          parsed.files,
-		CanResume:      false,
-		CanFork:        false,
-		ReadOnlyReason: sessionindex.QwenReadOnlyReason,
-		SourcePath:     file.Path,
-		SourceModTime:  file.ModTime.UnixNano(),
-		SourceSize:     file.Size,
+		Key:           sessionindex.CompositeReference(sessionindex.AgentQwen, id),
+		ID:            id,
+		Agent:         sessionindex.AgentQwen,
+		Title:         sessionindex.SafePreview(title),
+		Project:       project,
+		Workspace:     workspace,
+		UpdatedAt:     updated,
+		SizeBytes:     file.Size,
+		MessageCount:  parsed.messages,
+		PromptPreview: sessionindex.SafePreview(parsed.firstPrompt),
+		Files:         parsed.files,
+		// T3: `qwen --resume <id>` and `--resume <id> --fork-session` are the
+		// vendor's own commands against the vendor's own store, and the launch
+		// path is still gated by the descriptor's version range and by
+		// preflight. Chat recording can be turned off (general.chatRecording,
+		// or --chat-recording=false), and the vendor's help says --continue and
+		// --resume stop working when it is; a session that was never recorded
+		// simply never appears in this index, so there is nothing to offer.
+		CanResume:     true,
+		CanFork:       true,
+		SourcePath:    file.Path,
+		SourceModTime: file.ModTime.UnixNano(),
+		SourceSize:    file.Size,
 		SearchText: sessionindex.BuildSearchText(
 			id, title, project, workspace, parsed.prompts.String(), strings.Join(parsed.files, " "),
 		),

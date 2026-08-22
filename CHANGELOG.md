@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `rein resume qwen:<id>` and `rein fork qwen:<id>` launch Qwen Code's own CLI
+  against its own session (T3). The descriptor now carries the measured launch
+  argv (`--resume <id>`, `--resume <id> --fork-session`, `--continue`), a
+  fail-closed version range, and the process shape that lets the `agent.active`
+  liveness check see a running Qwen. The version range spans two versions
+  because Qwen self-updates into its own home directory and then runs the
+  updated copy, so one machine answers `--version` differently depending on
+  which root is in scope. **macOS evidence only** — the native Windows journey
+  the tier requires has not been run.
 - Qwen Code is now a handoff **source** (T2): `rein handoff --from qwen` reads a
   Qwen session and builds a portable capsule that seeds a **new** session in the
   destination agent. Native resume for Qwen stays refused, and Qwen is not a

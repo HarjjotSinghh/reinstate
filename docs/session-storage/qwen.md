@@ -2,8 +2,9 @@
 
 **Confidence: Documented on macOS and native Windows** —
 official product identified; both platforms have a real JSONL conversation
-with matching first-line keys; T1 index source and T2 transcript reader shipped.
-**Current tier:** T2 (handoff source) · **Phase 5 target:** T2
+with matching first-line keys; T1 index source and T2 transcript reader shipped;
+macOS T3 resume journey recorded, native Windows journey outstanding.
+**Current tier:** T3 (verified resume) · **Phase 5 target:** T2 (exceeded)
 
 Catalog key is `qwen`.
 
@@ -201,13 +202,27 @@ sessions are **not indexed today**.
 | Distribution | Official standalone installer (Alibaba OSS) and official npm | [Overview](https://qwenlm.github.io/qwen-code-docs/en/users/overview/), [Uninstall](https://qwenlm.github.io/qwen-code-docs/en/users/support/Uninstall/) |
 | Storage family | F1 expected (home tree) | `QWEN_HOME` default `~/.qwen`; unverified as a session store |
 
-## Why T0 is `layout_unverified`, not `unidentified_product`
+## Why T0 was `layout_unverified` (historical)
 
-The product, binary, repository, and official docs are settled. What is not
-settled is the on-disk conversation layout: file names, record shape, rewind
-encoding, and whether `QWEN_RUNTIME_DIR` is the authoritative store. That is
-`layout_unverified`. A later dual-platform probe can promote rows; it cannot
-be skipped.
+At T0 the product, binary, repository, and official docs were settled; the
+on-disk conversation layout was not. That was `layout_unverified`. The
+2026-08-17 probes and the 2026-08-22 measurement above settled it.
+
+## The managed self-updater moves the version underfoot
+
+Qwen installs its own updates into `<QWEN_HOME>/updates/npm/<id>/versions/<v>/`
+and then execs that copy. Consequences worth knowing before trusting a version
+number:
+
+- `qwen --version` answers differently on one machine depending on which root
+  is in scope — 0.21.12 from the bundled npm install, 0.21.13 from the managed
+  update in the default root, both observed on the same host within a minute.
+  The descriptor's range spans both for that reason.
+- Reinstate's version probe strips vendor root variables from the child
+  environment by design, so the version it reads is not necessarily the version
+  the launch runs. During the 2026-08-22 journey the probe read 0.21.13 (in
+  range) while the launched process ran 0.21.15 out of the redirected root's
+  `updates/npm` tree.
 
 ## Gemini-fork hypothesis
 
@@ -252,19 +267,30 @@ treat these as a support claim.
 | Session file format | **not documented** | `/status paths` claims to print current session file and log paths |
 | Export | `/export html`, `/export md`, `/export json`, `/export jsonl` | Export is not the live store |
 
-## Native control surface (documented, unverified)
+## Native control surface (measured 2026-08-22, macOS)
 
-| Aspect | Official claim |
-| ------ | -------------- |
-| Resume most recent | `--continue` (blocked when `general.chatRecording` is false) |
-| Resume picker / named | `--resume` (same) |
-| In-session resume | `/resume` or `/continue` |
-| Rewind turns | `/rewind` (alias `/rollback`) |
-| Fork conversation | `/branch` |
-| Child-process identity | `QWEN_CODE=1` on `!` shell children |
+Exercised against a throwaway `QWEN_HOME` with `qwen` 0.21.12/0.21.13. Full
+journey: [`2026-08-22-macos-qwen-t3.md`](../testing/results/2026-08-22-macos-qwen-t3.md).
 
-These argv strings are not a T3 `NativeSpec`. T3 also needs a version probe
-and dual-platform physical resume journeys.
+| Aspect | Argv | Status |
+| ------ | ---- | ------ |
+| Resume by id | `qwen --resume <id>` | **verified on macOS** — prior turns replayed; unknown id exits 1 |
+| Resume by id, attached | `qwen --resume=<id>` | verified, equivalent |
+| Resume most recent | `qwen --continue` | verified |
+| Fork | `qwen --resume <id> --fork-session` | verified — writes a new `chats/<uuid>.jsonl` with `forkedFrom` |
+| New session at a chosen id | `qwen --session-id <uuid>` | verified — refuses an id that already exists, rejects a non-UUID |
+| Initial prompt | `-p <text>` (non-interactive), `-i <text>` (interactive) | verified |
+| Session listing | `qwen sessions list --json` | verified |
+| In-session | `/resume`, `/continue`, `/rewind` (alias `/rollback`), `/branch` | documented, not exercised |
+| Child-process identity | `QWEN_CODE=1` on `!` shell children | documented, not exercised |
+
+`general.chatRecording` (or `--chat-recording=false`) disables recording, and
+the vendor's own help says `--continue` and `--resume` stop working when it is
+off. A session that was never recorded never appears in the index either, so
+there is nothing to offer resume for.
+
+**The T3 claim is still one platform short.** A native Windows journey has not
+been run.
 
 ## Secrets in the same tree
 

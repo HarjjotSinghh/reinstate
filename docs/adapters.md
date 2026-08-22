@@ -32,8 +32,9 @@ yes-or-no flag. Tiers are cumulative. New agents are declared in the
 | T4 | Handoff destination |
 | T5 | Encrypted same-vendor sync |
 
-Claude Code and Codex CLI are T5. Gemini CLI, OpenCode, Grok Build, and Qwen
-Code are T2.
+Claude Code and Codex CLI are T5. Qwen Code is T3 on macOS evidence, with the
+native Windows journey still outstanding. Gemini CLI, OpenCode, and Grok Build
+are T2.
 The capability matrix below remains the fail-closed per-surface record.
 
 ## Capability matrix
@@ -46,7 +47,7 @@ The capability matrix below remains the fail-closed per-surface record.
 | OpenCode | Read-only in `v0.2.0` | No | Source-only | No | No | Later |
 | Grok Build | Read-only in `v0.4.0` | No | Source-only | No | No | Planned |
 | Kimi Code CLI | Read-only (T1) | No | No | No | No | Later |
-| Qwen Code | Read-only (T2) | No | Source-only | No | No | Later |
+| Qwen Code | Read-only (T3) | Yes | Source-only | No | No | Later |
 | Pi | Read-only (T1) | No | No | No | No | Later |
 | Cursor CLI | Read-only (T1) | No | No | No | No | Exploring |
 | GitHub Copilot CLI | Read-only (T1) | No | No | No | No | Later |

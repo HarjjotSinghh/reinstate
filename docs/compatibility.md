@@ -37,7 +37,7 @@ The Phase 2 local capability matrix is:
 | GitHub Copilot CLI | Indexed (read-only) | Not implemented | Dual-platform probes committed; indexed from `events.jsonl`; no device journey for resume | T1 |
 | Kimi Code CLI | Indexed (read-only) | Not implemented | Dual-platform probes committed; no device journey for resume | T1 |
 | Pi | Indexed (read-only) | Not implemented | Dual-platform probes committed; no device journey for resume | T1 |
-| Qwen Code | Read-only included | Not supported in Phase 2 | Dual-platform probes committed; reader lands 2026-08-22; no device journey for resume | T2 |
+| Qwen Code | Read-only included | Same-vendor native resume and fork | Dual-platform probes committed; macOS T3 journey committed; **native Windows journey outstanding** | T3 |
 | Antigravity CLI | Not implemented (`layout_unverified`) | Not implemented | No probe captured | T0 |
 | Cline | Indexed (read-only) | Not implemented | Dual-platform probes committed; indexed from session JSON; no device journey for resume | T1 |
 | Aider | Not implemented | Not implemented | macOS + Windows PATH probes committed; F4 no home root; no reader | T0 |
