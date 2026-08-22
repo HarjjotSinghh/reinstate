@@ -102,7 +102,11 @@ func TestHandoffFromRealisticClaudeInstall(t *testing.T) {
 		staticSessionSource{name: sessionindex.AgentCodex, result: sessionindex.ScanResult{}},
 	}
 
-	stdout, stderr, code := runHandoffCLI(t, home, vendorHome, sources, nil,
+	// Both roots are named, so detection recognises the planted layouts instead
+	// of racing a child process for a version string this test does not assert.
+	stdout, stderr, code := runHandoffCLIWithVendorRoots(t, home, vendorHome,
+		filepath.Join(vendorHome, ".claude"), filepath.Join(vendorHome, ".codex"),
+		sources, nil,
 		"handoff", "claude:"+record.ID, "--to", "codex", "--dry-run", "--json")
 	if code != ExitOK {
 		t.Fatalf("exit=%d stdout=%s stderr=%s", code, stdout, stderr)
@@ -144,7 +148,11 @@ func TestHandoffFromClaudeInstallWithoutExecutable(t *testing.T) {
 		staticSessionSource{name: sessionindex.AgentCodex, result: sessionindex.ScanResult{}},
 	}
 
-	stdout, stderr, code := runHandoffCLI(t, home, vendorHome, sources, nil,
+	// Both roots are named, so detection recognises the planted layouts instead
+	// of racing a child process for a version string this test does not assert.
+	stdout, stderr, code := runHandoffCLIWithVendorRoots(t, home, vendorHome,
+		filepath.Join(vendorHome, ".claude"), filepath.Join(vendorHome, ".codex"),
+		sources, nil,
 		"handoff", "claude:"+record.ID, "--to", "codex", "--dry-run", "--json")
 	if code != ExitOK {
 		t.Fatalf("uninstalled source agent blocked the handoff: exit=%d stdout=%s stderr=%s", code, stdout, stderr)

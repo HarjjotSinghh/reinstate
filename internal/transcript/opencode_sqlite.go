@@ -7,12 +7,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/HarjjotSinghh/reinstate/internal/capsule"
+	"github.com/HarjjotSinghh/reinstate/internal/vendorsqlite"
 
 	_ "modernc.org/sqlite"
 )
@@ -38,12 +38,6 @@ func (r *OpenCodeReader) databasePath() string {
 		return ""
 	}
 	return filepath.Join(data, openCodeDatabaseName)
-}
-
-// openCodeReadOnlyDSN opens the store without taking a lock or creating a
-// write-ahead log beside it. A snapshot must not write under an agent root.
-func openCodeReadOnlyDSN(path string) string {
-	return "file:" + url.PathEscape(filepath.ToSlash(path)) + "?mode=ro&immutable=1&_pragma=query_only(1)"
 }
 
 // snapshotDatabase freezes the whole embedded store as the boundary.
@@ -81,11 +75,12 @@ func (r *OpenCodeReader) snapshotDatabase(sessionID string) (Boundary, bool) {
 }
 
 func (r *OpenCodeReader) databaseHasSession(path, sessionID string) bool {
-	db, err := sql.Open("sqlite", openCodeReadOnlyDSN(path))
+	handle, err := vendorsqlite.Open(path)
 	if err != nil {
 		return false
 	}
-	defer func() { _ = db.Close() }()
+	defer func() { _ = handle.Close() }()
+	db := handle.DB
 	var count int
 	if err := db.QueryRow(`SELECT COUNT(*) FROM session WHERE id = ?`, sessionID).Scan(&count); err != nil {
 		return false
@@ -115,11 +110,12 @@ func isOpenCodeDatabaseBoundary(b Boundary) bool {
 // the same event builder the filesystem layout uses so both produce identical
 // capsule events.
 func (r *OpenCodeReader) parseDatabaseMessages(b Boundary) ([]capsule.Event, error) {
-	db, err := sql.Open("sqlite", openCodeReadOnlyDSN(b.Path()))
+	handle, err := vendorsqlite.Open(b.Path())
 	if err != nil {
 		return nil, fmt.Errorf("transcript: open opencode store: %w", err)
 	}
-	defer func() { _ = db.Close() }()
+	defer func() { _ = handle.Close() }()
+	db := handle.DB
 
 	rows, err := db.Query(
 		`SELECT id, data FROM message WHERE session_id = ? ORDER BY id LIMIT ?`,

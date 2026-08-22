@@ -99,8 +99,12 @@ func checkEvidence(d agents.Descriptor, repo string) error {
 			missing = append(missing, "Fixtures")
 		}
 	}
-	if d.Tier >= agents.TierResume && len(d.Evidence.DeviceReports) == 0 {
-		missing = append(missing, "DeviceReports")
+	if d.Tier >= agents.TierResume {
+		if len(d.Evidence.DeviceReports) == 0 {
+			missing = append(missing, "DeviceReports")
+		} else if gap := devicePlatformGap(d.Evidence.DeviceReports); gap != "" {
+			missing = append(missing, "DeviceReports on "+gap)
+		}
 	}
 	for _, path := range d.Evidence.ProbeReports {
 		if !exists(repo, path) {
@@ -137,9 +141,46 @@ func checkEvidence(d agents.Descriptor, repo string) error {
 // separate device with a separate tree and never substitutes for native
 // Windows.
 func probePlatformGap(reports []string) string {
+	return platformGap(reports)
+}
+
+// devicePlatformGap names the platforms a T3+ device-journey claim still lacks.
+//
+// docs/agent-support-tiers.md requires a physical device journey on macOS *and*
+// native Windows before T3, and the project's non-negotiables say a tier is
+// never claimed on one platform's evidence. checkEvidence enforced neither: it
+// asserted only that DeviceReports was non-empty and that each named file
+// existed, so a verified-resume or handoff-destination claim could rest on a
+// single macOS journey and still pass.
+//
+// That is the same hole probePlatformGap was written to close one rung lower,
+// and it matters more here, not less. T1 discovery misreads a layout; T3 hands
+// a live session to a vendor binary and T4 writes a new one. Those are exactly
+// the places platforms diverge — argv quoting, path separators, process
+// identity — and none of it is visible from one device.
+//
+// Device reports are named <date>-<macos|windows|wsl>-<...>.md. WSL2 is a
+// separate device with a separate tree and never substitutes for native
+// Windows.
+func devicePlatformGap(reports []string) string {
+	return platformGap(reports)
+}
+
+// platformGap is the single implementation behind both callers. Two copies of
+// this rule would be free to drift, and the drift would stay invisible until
+// something was promoted on one platform's evidence — which is the failure this
+// file exists to prevent.
+func platformGap(reports []string) string {
 	var macOS, windows bool
 	for _, report := range reports {
 		name := strings.ToLower(filepath.Base(report))
+		if strings.Contains(name, "-wsl-") {
+			// Checked before the platform tokens rather than left to fall
+			// through them: a WSL report is a report about a third device, and
+			// a name that happens to carry another token as well must not be
+			// read as evidence from a device it did not come from.
+			continue
+		}
 		switch {
 		case strings.Contains(name, "-macos-"):
 			macOS = true

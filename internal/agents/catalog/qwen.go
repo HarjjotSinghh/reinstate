@@ -118,6 +118,7 @@ func Qwen() agents.Descriptor {
 			},
 			DeviceReports: []string{
 				"docs/testing/results/2026-08-22-macos-qwen-t3.md",
+				"docs/testing/results/2026-08-22-windows-qwen-t3.md",
 			},
 		},
 		NewIndexSource: qwensrc.New,

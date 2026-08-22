@@ -49,6 +49,7 @@ rein handoff [AGENT:]SESSION_ID --to claude|codex
              [--allow-active] [--allow-untested] [--show-redactions]
              [--no-redact]
 rein handoff --last [--from claude|codex|gemini|opencode|grok|qwen]
+rein handoff --last [--from claude|codex|gemini|opencode|grok|kimi]
              --to claude|codex [handoff flags]
 rein handoff list [--json] [--limit N]
 rein handoff inspect HANDOFF_ID [--json]
@@ -150,8 +151,8 @@ A structured handoff continues the same task in a new Claude Code or Codex
 session. It is not native resume: Reinstate does not reconstruct vendor history,
 write a vendor-internal session file, or claim that the destination is the same
 session. Source parsing and projection are local and require no source model
-call. Gemini CLI, OpenCode, and Grok Build are source-only in v0.4.0; only Claude
-Code and Codex are destinations.
+call. Gemini CLI, OpenCode, Grok Build, and Kimi Code CLI are source-only;
+only Claude Code and Codex are destinations.
 
 ### `rein handoff`
 

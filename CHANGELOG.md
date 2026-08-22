@@ -7,6 +7,70 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+### Changed
+
+- The agent conformance suite now requires a T3+ tier claim to name a device
+  report from macOS **and** native Windows, and it applies the evidence rules to
+  every registered agent rather than to a hand-maintained list of five. Both
+  gaps let a verified-resume or handoff-destination claim rest on one platform:
+  the first because only probe reports were platform-checked, the second because
+  a newly promoted agent was simply absent from the check. WSL2 is a separate
+  device and does not satisfy native Windows. No shipped descriptor changes;
+  this only constrains what a future promotion may claim.
+
+||||||| parent of e308717 (fix(kimi): index the shape Kimi Code CLI actually writes)
+### Fixed
+
+- Kimi Code CLI sessions from a current install are indexed with the files their
+  tool calls touched, and with their assistant turns counted. At wire protocol
+  `1.5` the assistant's whole side of a turn arrives as
+  `context.append_loop_event` — `content.part`, `tool.call`, `tool.result` — and
+  the index source read only the role `"assistant"` `context.append_message`
+  that the vendor writes solely for sessions migrated from the legacy
+  `kimi-cli` store. A real session therefore indexed **no** tool-touched files
+  at all. The committed fixtures encoded the same shape the reader expected, so
+  the tests agreed with the reader while neither agreed with the vendor.
+
+||||||| parent of 3b95e84 (fix(opencode): index sessions still in the vendor's write-ahead log)
+||||||| parent of 1b194ed (fix(opencode): index sessions still in the vendor's write-ahead log)
+### Fixed
+
+- OpenCode sessions written since the vendor last checkpointed are now indexed,
+  searchable and resumable. OpenCode journals in SQLite write-ahead mode and
+  does not checkpoint on exit, so the sessions a user has just worked in sit in
+  a `-wal` sidecar — on a new install, the entire store. Reinstate opened that
+  database with `immutable=1`, which is what stops it creating `-wal`/`-shm`
+  files under the agent's root and is also, by definition, what makes SQLite
+  ignore the log. Measured against OpenCode `1.18.21`: `opencode.db` held 4096
+  bytes and no `session` table while 543872 bytes sat in `opencode.db-wal`, and
+  `rein sessions --agent opencode` listed one of two real sessions. The store is
+  now read through a private copy of the database and its log, so the log's
+  contents are visible and nothing is written beside the vendor's database. A
+  store with no log is still read in place with no copy. If the vendor is
+  writing faster than the copy can be taken, the listing falls back to the
+  in-place read and says it is incomplete rather than presenting a short list as
+  the whole store. This affected the shipped T1 index and T2 handoff source, not
+  only newer work.
+
+- The OpenCode source fingerprint now covers the write-ahead log. A session
+  written since the last checkpoint changes only that file, so the fingerprint
+  was unchanged and an incremental refresh skipped the scan that would have
+  found it — the session stayed invisible however well the reader worked.
+||||||| parent of c6973e3 (fix(website): link documentation on main, not a retired branch)
+||||||| parent of 71d2a7a (fix(website): link documentation on main, not a retired branch)
+||||||| parent of c4743cf (fix(website): link documentation on main, not a retired branch)
+### Fixed
+
+- Published pages no longer link documentation on a retired integration branch.
+  Sixteen entries in the compatibility data and nine integration pages pointed
+  at `feat/universal-agent-coverage`, which is behind `main` and is not the
+  default branch, so public evidence links named a branch rather than the
+  documentation as it stands. They now point at `main`, and a test asserts every
+  link into this repository names `main` or a released tag and resolves to a
+  path that exists. The existing link checker could not have caught this: it
+  audits the built pages but skips any link whose origin is not the site's own.
+
 ### Added
 
 - `rein resume qwen:<id>` and `rein fork qwen:<id>` launch Qwen Code's own CLI
@@ -28,6 +92,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `parentUuid` chain rather than by writing a marker — so the live conversation
   is the chain walked back from the last record, and records left on the dead
   branch are excluded and reported rather than replayed.
+- **Kimi Code CLI is now T2, a handoff source.** `rein handoff --from kimi`
+  reads `agents/main/wire.jsonl` and builds a portable capsule. A handoff
+  starts a *new* Claude Code or Codex session; it never reconstructs Kimi
+  history and it is not a cross-agent resume. Assistant text, tool calls, and
+  tool results are read from the `context.append_loop_event` records the CLI
+  writes today (`content.part`, `tool.call`, `tool.result`), and the older
+  `context.append_message` shape is still read so sessions migrated from the
+  legacy `kimi-cli` store keep working. `profile.bind` system prompts stay out
+  of the capsule, unknown record types are referenced with an opaque digest and
+  never copied into an event body, and a truncated last JSONL line is dropped.
+  The reader fails closed on an unrecognized `state.json` schema version or
+  `wire.jsonl` protocol major. Records that rewrite context history
+  (`context.clear`, `context.undo`, `context.apply_compaction`) are reported as
+  a parse warning rather than silently replayed. Native resume and fork stay
+  refused: no device journey has run `kimi -r <id>` against a real session.
 - `rein resume` and `rein fork` now report whether the session being resumed is
   already open in the agent that owns it. A detected live session is an
   environment warning, `agent.active`, so it prompts on a terminal and requires
@@ -52,6 +131,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Fixtures now match what the vendor actually writes, tool arguments are read as
   file references, and a `type:"user"` record with `provenance:"system"` — a
   cron prompt or a notification — can no longer become a session's title.
+- The vendor version probe now runs alongside the other preflight observations
+  instead of after them. Every observer shares one wall clock, but the workspace
+  probe runs first and shells out to Git, so in sequence the version probe was
+  left with whatever time that had not already spent. On a loaded host it was
+  routinely given a fraction of its stated budget, timed out, and reported an
+  installed agent as unmeasurable — and to a caller gating on version, "no
+  version" is indistinguishable from "no agent", so that became a refusal the
+  user could do nothing about. The shared deadline still bounds the probe; only
+  its starting point moved.
 - OpenCode now declares the root environment variable its reader already
   honours. OpenCode reads `$XDG_DATA_HOME/opencode`, so the variable names the
   parent of the root rather than the root itself, and the agent descriptor had
