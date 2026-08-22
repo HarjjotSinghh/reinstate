@@ -109,15 +109,15 @@
       "key": "opencode",
       "name": "OpenCode",
       "vendor": "anomalyco",
-      "tier": "T2",
+      "tier": "T3",
       "storageFamily": "F3",
       "t0Reason": null,
       "integrationPath": "/integrations/opencode",
-      "status": "handoff-source",
-      "minimumTestedVersion": null,
-      "maximumTestedVersion": null,
-      "resumeMode": "Handoff source only (T2); no native resume",
-      "evidenceLevel": "read-only fixtures and a Windows physical path; no T3 resume argv",
+      "status": "verified-resume",
+      "minimumTestedVersion": "1.18.21",
+      "maximumTestedVersion": "1.18.21",
+      "resumeMode": "Native resume and fork (T3): opencode --session <id>, plus --fork",
+      "evidenceLevel": "macOS physical resume journey; native Windows journey pending",
       "evidence": {
         "storagePage": "docs/session-storage/opencode.md",
         "fixtures": [
@@ -125,12 +125,18 @@
           "testdata/sessionindex/opencode/windows",
           "testdata/handoff/opencode"
         ],
-        "deviceReports": [],
-        "probeReports": []
+        "deviceReports": [
+          "docs/testing/results/2026-08-22-macos-opencode-t3-journey.md",
+          "docs/testing/results/2026-08-22-windows-opencode-t3.md"
+        ],
+        "probeReports": [
+          "docs/testing/results/agent-probes/2026-08-21-macos-opencode.json",
+          "docs/testing/results/agent-probes/2026-08-21-windows-opencode.json"
+        ]
       },
-      "lastTested": "2026-08-16",
+      "lastTested": "2026-08-22",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/opencode.md",
-      "notes": "T2 handoff source (F2 CLI query). Not a handoff destination and not a synced agent."
+      "notes": "T3 verified resume over an embedded SQLite session store (F3). The verified version range holds the single build physically measured on macOS. Not a handoff destination and not a synced agent."
     },
     {
       "id": "grok",

@@ -32,9 +32,9 @@ yes-or-no flag. Tiers are cumulative. New agents are declared in the
 | T4 | Handoff destination |
 | T5 | Encrypted same-vendor sync |
 
-Claude Code and Codex CLI are T5. Qwen Code is T3 on macOS evidence, with the
-native Windows journey still outstanding. Gemini CLI, OpenCode, and Grok Build
+Claude Code and Codex CLI are T5. OpenCode is T3. Gemini CLI and Grok Build
 are T2.
+Claude Code and Codex CLI are T5. Qwen Code is T3 on macOS evidence, with the
 Claude Code and Codex CLI are T5. Gemini CLI, OpenCode, Grok Build, and Kimi
 The capability matrix below remains the fail-closed per-surface record.
 
@@ -45,7 +45,7 @@ The capability matrix below remains the fail-closed per-surface record.
 | Claude Code | Included in `v0.2.0` | Included in `v0.2.0` | Yes | Yes | Supported | Later |
 | OpenAI Codex CLI | Included in `v0.2.0` | Included in `v0.2.0` | Yes | Yes | Supported | Later |
 | Gemini CLI | Read-only in `v0.2.0` | No | Source-only | No | No | Later |
-| OpenCode | Read-only in `v0.2.0` | No | Source-only | No | No | Later |
+| OpenCode | Read-only in `v0.2.0` | Yes (T3) | Source-only | No | No | Later |
 | Grok Build | Read-only in `v0.4.0` | No | Source-only | No | No | Planned |
 | Kimi Code CLI | Read-only (T1) | No | Source-only | No | No | Later |
 | Qwen Code | Read-only (T3) | Yes | Source-only | No | No | Later |
@@ -93,10 +93,15 @@ before export or restore.
 | ----- | ------ | ---- |
 | Claude Code | `claude --resume ID` | `claude --resume ID --fork-session` |
 | Codex | `codex resume ID` | `codex fork ID` |
+| OpenCode | `opencode --session ID` | `opencode --session ID --fork` |
+
+OpenCode has no `resume` or `fork` verb: continuation is an option on its
+default command, and `--fork` is a modifier on `--session` or `--continue`. A
+bare positional would be read as a project path, not a session id.
 
 Plans store executable, argv, and recorded cwd separately. They never construct
-a shell command string. Gemini/OpenCode resume or fork fails with compatibility
-exit `5`.
+a shell command string. Gemini resume or fork fails with compatibility exit `5`,
+as does an OpenCode session the vendor recorded without a working directory.
 
 ## Phase 3 environment-observer contract (`v0.3.0`)
 
@@ -110,7 +115,7 @@ not cross-vendor translation.
 | Claude Code | Workspace, executable/version/layout, instruction/skill/MCP names, and recognized runtimes |
 | OpenAI Codex CLI | Workspace, executable/version/layout, instruction/skill/MCP names, and recognized runtimes |
 | Gemini CLI | No native launch; read-only refusal occurs before preflight |
-| OpenCode | No native launch; read-only refusal occurs before preflight |
+| OpenCode | Workspace, executable/version/layout, and liveness of a running OpenCode on the same session |
 
 The verifier treats these capabilities independently:
 

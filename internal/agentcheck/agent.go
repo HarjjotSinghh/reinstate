@@ -152,7 +152,7 @@ func Inspect(ctx context.Context, agentName string, opts Options) Result {
 		if getenv == nil {
 			getenv = os.Getenv
 		}
-		root = getenv(definition.rootEnvironment)
+		root = definition.rootFromEnvironment(getenv)
 	}
 	if root == "" {
 		home := opts.Home
@@ -373,23 +373,32 @@ func SupportedVersion(agentName, version string) bool {
 
 // Definition is the catalog-derived version/layout probe for one agent.
 type Definition struct {
-	Executable      string
-	Layout          string
-	Marker          string
+	Executable string
+	Layout     string
+	Marker     string
+	// RootEnvironment names the environment variable that overrides the
+	// agent's storage root.
 	RootEnvironment string
-	Roots           func(string) []string
-	Parse           func(VersionOutput) (string, bool)
-	Min, Max        string
+	// RootEnvironmentSuffix is appended to RootEnvironment's value to reach the
+	// root, for a vendor whose variable names a parent directory rather than
+	// the root itself. OpenCode reads $XDG_DATA_HOME/opencode, so the variable
+	// alone is one directory short and the marker would be looked for beside
+	// the store instead of inside it.
+	RootEnvironmentSuffix string
+	Roots                 func(string) []string
+	Parse                 func(VersionOutput) (string, bool)
+	Min, Max              string
 }
 
 type definition struct {
-	executable      string
-	layout          string
-	marker          string
-	rootEnvironment string
-	roots           func(string) []string
-	parseVersion    func(VersionOutput) (string, bool)
-	supported       func(string) bool
+	executable            string
+	layout                string
+	marker                string
+	rootEnvironment       string
+	rootEnvironmentSuffix string
+	roots                 func(string) []string
+	parseVersion          func(VersionOutput) (string, bool)
+	supported             func(string) bool
 	// versionRange is the inclusive verified range, rendered for a refusal
 	// message. Without it a refusal could not tell the user which version to
 	// install.
@@ -410,6 +419,25 @@ func SetDefinitions(defs map[string]Definition) {
 	definitions = converted
 }
 
+// rootFromEnvironment resolves the storage root from the agent's declared root
+// variable, appending the declared suffix when the variable names the parent
+// rather than the root itself. An unset variable yields "" so the caller falls
+// back to the per-OS root candidates.
+func (d definition) rootFromEnvironment(getenv func(string) string) string {
+	if strings.TrimSpace(d.rootEnvironment) == "" {
+		return ""
+	}
+	value := strings.TrimSpace(getenv(d.rootEnvironment))
+	if value == "" {
+		return ""
+	}
+	suffix := strings.TrimSpace(d.rootEnvironmentSuffix)
+	if suffix == "" {
+		return value
+	}
+	return filepath.Join(value, filepath.FromSlash(suffix))
+}
+
 func lookupDefinition(name string) (definition, bool) {
 	table := definitions
 	if table == nil {
@@ -423,12 +451,13 @@ func definitionFrom(spec Definition) definition {
 	min, max := spec.Min, spec.Max
 	parse := spec.Parse
 	return definition{
-		executable:      spec.Executable,
-		layout:          spec.Layout,
-		marker:          spec.Marker,
-		rootEnvironment: spec.RootEnvironment,
-		roots:           spec.Roots,
-		parseVersion:    parse,
+		executable:            spec.Executable,
+		layout:                spec.Layout,
+		marker:                spec.Marker,
+		rootEnvironment:       spec.RootEnvironment,
+		rootEnvironmentSuffix: spec.RootEnvironmentSuffix,
+		roots:                 spec.Roots,
+		parseVersion:          parse,
 		supported: func(version string) bool {
 			return adapter.StableVersionInRange(version, min, max)
 		},
@@ -515,10 +544,30 @@ func layoutCandidateExists(path string) bool {
 	return err == nil
 }
 
+// markerKindStable reports whether two stats describe the same kind of marker,
+// where "kind" is only ever a real directory or a real regular file.
+//
+// An agent whose sessions live in a tree declares a directory marker; an agent
+// whose sessions live in one embedded database declares that file. Requiring a
+// directory would report every embedded-store agent's layout as unrecognized
+// even when the store is sitting right there, which is a refusal to resume a
+// session the index can already read. Anything that is neither — a symlink, a
+// device, a socket — is still rejected, so the widening is exactly one kind.
+func markerKindStable(before, after os.FileInfo) bool {
+	switch {
+	case before.IsDir():
+		return after.IsDir()
+	case before.Mode().IsRegular():
+		return after.Mode().IsRegular()
+	default:
+		return false
+	}
+}
+
 // recognizedLayout opens the marker relative to an os.Root and compares the
-// object before, during, and after opening. The marker and the root itself must
-// be real directories, never symlinks. This fails closed if either path is
-// replaced while it is being inspected.
+// object before, during, and after opening. The root must be a real directory
+// and the marker a real directory or a real regular file, never a symlink.
+// This fails closed if either path is replaced while it is being inspected.
 func recognizedLayout(root, marker string) bool {
 	rootAbs, err := filepath.Abs(root)
 	if err != nil {
@@ -545,7 +594,10 @@ func recognizedLayout(root, marker string) bool {
 	}
 
 	markerBefore, err := rootHandle.Lstat(marker)
-	if err != nil || !markerBefore.IsDir() || markerBefore.Mode()&os.ModeSymlink != 0 {
+	if err != nil || markerBefore.Mode()&os.ModeSymlink != 0 {
+		return false
+	}
+	if !markerBefore.IsDir() && !markerBefore.Mode().IsRegular() {
 		return false
 	}
 	openedMarker, err := rootHandle.Open(marker)
@@ -554,7 +606,9 @@ func recognizedLayout(root, marker string) bool {
 	}
 	openedMarkerInfo, statErr := openedMarker.Stat()
 	closeErr = openedMarker.Close()
-	if statErr != nil || closeErr != nil || !openedMarkerInfo.IsDir() || !os.SameFile(markerBefore, openedMarkerInfo) {
+	if statErr != nil || closeErr != nil ||
+		!markerKindStable(markerBefore, openedMarkerInfo) ||
+		!os.SameFile(markerBefore, openedMarkerInfo) {
 		return false
 	}
 	markerAfter, err := rootHandle.Lstat(marker)

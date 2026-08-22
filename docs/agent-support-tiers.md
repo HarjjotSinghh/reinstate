@@ -189,7 +189,7 @@ stays where it is, and that outcome is a successful result, not a failed task.
 | Codex CLI | OpenAI | F1 | **T5** | T5 |
 | Gemini CLI | Google | F1 | **T2** | T3 |
 | Antigravity CLI | Google | F1 (expected) | — | T0 (`layout_unverified`) |
-| OpenCode | anomalyco | F2 | **T2** | T2 |
+| OpenCode | anomalyco | F3 | **T3** | T3 |
 | Grok Build | xAI | F1 | **T2** | T2 |
 | Kimi Code CLI | Moonshot AI | F1 | **T2** | T3 |
 | Pi | earendil-works | F1 | **T1** | T3 |
@@ -218,8 +218,8 @@ the descriptor.
 | Family | Shape | Agents | Cost |
 | ------ | ----- | ------ | ---- |
 | **F1** | JSON/JSONL tree under a home root | Claude, Codex, Gemini, Grok, Kimi, Pi, Qwen | Small: declare roots and record shapes against the shared scanner |
-| **F2** | Vendor CLI query | OpenCode | Medium: bounded subprocess, plus a separate reader for bodies |
-| **F3** | SQLite or editor extension storage | Cursor, Cline, Roo | Medium: read-only, schema-versioned, fails closed on unknown schema |
+| **F2** | Vendor CLI query | none currently | Medium: bounded subprocess, plus a separate reader for bodies |
+| **F3** | SQLite or editor extension storage | OpenCode, Cursor, Cline, Roo | Medium: read-only, schema-versioned, fails closed on unknown schema |
 | **F4** | Per-repository files in the project | Aider | Medium: project-scoped discovery instead of a home-root walk |
 | **F5** | Server-backed or desktop-only | OpenHands, ZCode, possibly Amp | T0 unless a probe finds a local artifact |
 

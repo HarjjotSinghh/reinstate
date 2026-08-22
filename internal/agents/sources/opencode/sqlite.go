@@ -272,6 +272,17 @@ func recordFromRow(
 		safeTitle = id
 	}
 
+	// OpenCode continues a session by id — `opencode --session <id>`, plus
+	// `--fork` for a branch — and it starts that session in a working
+	// directory. A row whose directory the vendor never recorded has nowhere to
+	// be launched, so it stays read-only with that stated as the reason rather
+	// than being offered and then refused at the launch boundary.
+	resumable := workspace != ""
+	reason := ""
+	if !resumable {
+		reason = readOnlyReasonNoWorkspace
+	}
+
 	return sessionindex.Record{
 		Key:            sessionindex.CompositeReference(sessionindex.AgentOpenCode, id),
 		ID:             id,
@@ -281,9 +292,9 @@ func recordFromRow(
 		Workspace:      workspace,
 		UpdatedAt:      unixMillisOrSeconds(stamp),
 		MessageCount:   messages,
-		CanResume:      false,
-		CanFork:        false,
-		ReadOnlyReason: readOnlyReason,
+		CanResume:      resumable,
+		CanFork:        resumable,
+		ReadOnlyReason: reason,
 		SourcePath:     path,
 		SourceModTime:  modTime,
 		SourceSize:     size,

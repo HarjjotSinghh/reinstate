@@ -1145,10 +1145,11 @@ func catalogAgentDefinitions() map[string]agentcheck.Definition {
 		}
 		desc := descriptor
 		out[desc.Key] = agentcheck.Definition{
-			Executable:      desc.Native.Executable,
-			Layout:          desc.Storage.Layout,
-			Marker:          desc.Storage.Marker,
-			RootEnvironment: desc.Storage.RootEnv,
+			Executable:            desc.Native.Executable,
+			Layout:                desc.Storage.Layout,
+			Marker:                desc.Storage.Marker,
+			RootEnvironment:       desc.Storage.RootEnv,
+			RootEnvironmentSuffix: desc.Storage.RootEnvSuffix,
 			Roots: func(home string) []string {
 				if desc.Storage.Roots == nil {
 					return nil

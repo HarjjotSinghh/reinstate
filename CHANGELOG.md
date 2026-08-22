@@ -73,6 +73,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **OpenCode reached T3 (verified resume).** `rein resume opencode:<id>` and
+  `rein fork` now launch OpenCode's own CLI against OpenCode's own session,
+  after the same executable, version, layout, workspace and liveness checks
+  every other T3 agent gets. OpenCode spells continuation as options rather than
+  verbs — `--session <id>`, with `--fork` as a modifier — so the argv is not
+  shaped like Codex's, and a session the vendor recorded without a working
+  directory stays read-only with that stated as the reason. The verified version
+  range is the single build physically measured on macOS, and widens only when
+  another build is measured on a device. Reinstate still never writes into the
+  OpenCode store: the index opens it read-only and immutable, and creates no
+  `-wal` or `-shm` beside it. macOS device journey recorded; native Windows is
+  pending and this tier is not complete without it.
+
+  One consequence is user-visible beyond resume: OpenCode now has a version
+  probe, so `rein handoff --from opencode` judges the installed build against
+  the verified range instead of on layout alone. A build outside that range is
+  `UNTESTED` and proceeds with `--allow-untested`. Because the range currently
+  holds one measured build, most installs will see that until more builds are
+  measured on a device.
 - `rein resume qwen:<id>` and `rein fork qwen:<id>` launch Qwen Code's own CLI
   against its own session (T3). The descriptor now carries the measured launch
   argv (`--resume <id>`, `--resume <id> --fork-session`, `--continue`), a
@@ -123,6 +142,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The `agent.active` liveness check could not see an agent Reinstate launched
+  itself. macOS `ps` fixes the width of its `comm` column when other columns are
+  requested alongside it, so a process started by absolute path — which is
+  exactly how a verified resume starts one — is reported with the first sixteen
+  characters of that path as its image, and matched no agent at all. The check
+  therefore answered "no running instance is using this session" for a session
+  that was open at that moment, for every agent, not one. Process matching now
+  also considers `argv[0]`, which survives the truncation.
+- The version and layout probe ignored an agent's declared root-variable suffix.
+  `StorageSpec.RootEnvSuffix` was honoured by the storage probe but not by
+  `agentcheck`, so with `XDG_DATA_HOME` set, OpenCode's marker was looked for one
+  directory above its store — the single case that variable exists to serve.
+- The layout probe required the storage marker to be a directory, so an agent
+  whose sessions live in one embedded database reported its layout as
+  unrecognized with the store sitting right there, and resume was refused.
+  A real regular file is now an accepted marker; symlinks and every other file
+  kind are still rejected.
 - Qwen Code sessions were indexed with an empty title, an empty prompt preview,
   and search text that matched nothing the operator had typed. The index source
   read the message body as Claude Code's `message.content[]` block array, and

@@ -119,7 +119,7 @@ delegate execution to the source vendor:
 | Claude Code | `claude --resume ID` | `claude --resume ID --fork-session` |
 | Codex | `codex resume ID` | `codex fork ID` |
 | Gemini CLI | read-only | read-only |
-| OpenCode | read-only | read-only |
+| OpenCode | `opencode --session ID` | `opencode --session ID --fork` |
 
 Review the plan with `--dry-run --json`. Stable `v0.3.0` also includes
 the verified-resume `environment` report described below. A real launch

@@ -15,7 +15,15 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/transcript"
 )
 
+// readOnlyReason belongs to the CLI-query source below, which is not the
+// shipped OpenCode index — the descriptor uses the embedded-store source. It is
+// held byte-identical to internal/sessionindex/opencode.go by a parity test.
 const readOnlyReason = "OpenCode sessions are read-only in Phase 2"
+
+// readOnlyReasonNoWorkspace covers a store row whose working directory the
+// vendor never recorded. OpenCode is launched into a directory, so such a row
+// has no place to be resumed.
+const readOnlyReasonNoWorkspace = "OpenCode session has no recorded working directory"
 
 // Source lists OpenCode sessions through the documented JSON CLI.
 type Source struct {
