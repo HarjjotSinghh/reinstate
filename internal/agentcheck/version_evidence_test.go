@@ -9,6 +9,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/HarjjotSinghh/reinstate/internal/fileidentity"
 )
 
 // installedAgent builds a layout-recognized agent root with a resolvable
@@ -147,25 +149,45 @@ func TestInspectRetriesOnlyTimedOutVersionProbes(t *testing.T) {
 func TestInspectDoesNotRetryAfterCallerCancellation(t *testing.T) {
 	t.Parallel()
 
-	var attempts atomic.Int32
+	// Cancellation is triggered from inside the probe rather than by a timer.
+	// A sleeping goroutine only *usually* cancels after the probe has started:
+	// on a loaded runner the cancel can land first, no attempt is ever made,
+	// and the test fails claiming no retry happened when in fact nothing ran.
+	// Cancelling on entry makes the ordering a fact — the first attempt has
+	// provably begun — so the assertion is about the retry and nothing else.
+	var attempts, captures atomic.Int32
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	hang := versionRunnerFunc(func(ctx context.Context, _ string, _ ...string) (VersionOutput, error) {
 		attempts.Add(1)
+		cancel()
 		<-ctx.Done()
 		return VersionOutput{}, ctx.Err()
 	})
 	_, opts := installedAgent(t, hang, time.Minute)
-	ctx, cancel := context.WithCancel(context.Background())
-	go func() {
-		time.Sleep(20 * time.Millisecond)
-		cancel()
-	}()
+	// Count identity captures, not just runner calls. A retry begins by
+	// re-capturing the executable's identity and, with the context already
+	// cancelled, fails there before reaching the runner — so counting runner
+	// calls alone cannot tell a retry that was never started from one that was
+	// started and gave up early.
+	inner := opts.CaptureIdentity
+	if inner == nil {
+		inner = fileidentity.CaptureExecutable
+	}
+	opts.CaptureIdentity = func(ctx context.Context, path string) (fileidentity.Identity, error) {
+		captures.Add(1)
+		return inner(ctx, path)
+	}
 	result := Inspect(ctx, "claude", opts)
-	cancel()
 	if result.Status != StatusError {
 		t.Fatalf("cancelled probe status = %q, want %q", result.Status, StatusError)
 	}
 	if attempts.Load() != 1 {
 		t.Fatalf("attempts after caller cancellation = %d, want 1", attempts.Load())
+	}
+	if got := captures.Load(); got != 1 {
+		t.Fatalf("identity captures = %d, want 1; a second capture means a retry was started "+
+			"after the caller cancelled", got)
 	}
 }
 
