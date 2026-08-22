@@ -25,8 +25,9 @@ per-agent timeouts, account-name redaction, marker-gated roots, and the
 Gemini/Grok/Qwen exclusions that keep a populated home tree from drowning the
 walk.
 
-Build from `fix/probe-drowning-exclusions` until it merges, then from
-`feat/universal-agent-coverage`, on a machine with Go 1.25+:
+Build from `main`, on a machine with Go 1.25+. Both branches this step used
+to name — `fix/probe-drowning-exclusions` and `feat/universal-agent-coverage` —
+are behind `main` now that `v0.5.1` has shipped, and the first no longer exists:
 
 ```bash
 GOOS=windows GOARCH=amd64 go build -o /tmp/rein.exe ./cmd/reinstate
