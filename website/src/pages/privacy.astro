@@ -68,7 +68,7 @@ const schema = [
 
       <h2 id="analytics">Optional site analytics</h2>
       <p>
-        No analytics script is emitted unless both Plausible configuration values are present at
+        No analytics script is emitted unless both PostHog configuration values are present at
         build time. When enabled, the site can record page views and events from a fixed, reviewed
         taxonomy: command copies, getting-started entry, integration and storage-guide views,
         security-document views, repository and release-download clicks, RSS subscriptions,
@@ -78,9 +78,15 @@ const schema = [
         Event properties contain only a controlled event name, the current path without its query
         string, and a controlled placement label. Reinstate's event code does not send form values,
         email addresses, coding-agent content, source code, repository names, bucket names,
-        credentials, passphrases, or link query parameters. The deployed Plausible service can
+        credentials, passphrases, or link query parameters. The deployed PostHog service can
         still process ordinary request information according to its configuration and privacy
         policy.
+      </p>
+      <p>
+        Automatic element capture, session recording, and surveys are switched off. Anonymous
+        visitors are not given a stored person profile. Analytics state is kept in browser local
+        storage rather than cookies, and requests are served from the first-party
+        <code>/ingest</code> path on this domain rather than a third-party analytics hostname.
       </p>
 
       <h2 id="logs">Infrastructure logs</h2>
