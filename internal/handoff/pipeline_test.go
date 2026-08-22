@@ -1251,3 +1251,78 @@ func TestExecuteRecordsLineageBeforeLaunchReturns(t *testing.T) {
 		t.Fatal("lineage.jsonl must exist before dest Launch returns")
 	}
 }
+
+// TestRewriteBootstrapArgsKeepsDestinationFlags is the regression for a launch
+// defect a physical journey caught: the pipeline re-renders the briefing after
+// the target has planned, and it used to rebuild argv from a per-agent switch
+// whose default was a single positional element. That is Codex's shape. For any
+// destination that passes its prompt behind a flag it discarded both the flag
+// and the pinned session id, so the launch created a session Verify could never
+// resolve.
+func TestRewriteBootstrapArgsKeepsDestinationFlags(t *testing.T) {
+	t.Parallel()
+	rendered := []byte("RENDERED_BRIEFING")
+	tests := []struct {
+		name string
+		plan DestinationPlan
+		want []string
+	}{
+		{
+			name: "qwen keeps the pinned id and the prompt flag",
+			plan: DestinationPlan{
+				Agent:     "qwen",
+				SessionID: "c94d7e0a-596e-481a-b4d4-f5518222b968",
+				Args: []string{
+					"--session-id", "c94d7e0a-596e-481a-b4d4-f5518222b968",
+					"--prompt-interactive", "PLANNED_BOOTSTRAP",
+				},
+				Bootstrap: []byte("PLANNED_BOOTSTRAP"),
+			},
+			want: []string{
+				"--session-id", "c94d7e0a-596e-481a-b4d4-f5518222b968",
+				"--prompt-interactive", "RENDERED_BRIEFING",
+			},
+		},
+		{
+			name: "claude keeps the pinned id",
+			plan: DestinationPlan{
+				Agent:     "claude",
+				SessionID: "11111111-2222-4333-8444-555555555555",
+				Args:      []string{"--session-id", "11111111-2222-4333-8444-555555555555", "PLANNED_BOOTSTRAP"},
+				Bootstrap: []byte("PLANNED_BOOTSTRAP"),
+			},
+			want: []string{"--session-id", "11111111-2222-4333-8444-555555555555", "RENDERED_BRIEFING"},
+		},
+		{
+			name: "codex stays positional",
+			plan: DestinationPlan{
+				Agent:     "codex",
+				Args:      []string{"PLANNED_BOOTSTRAP"},
+				Bootstrap: []byte("PLANNED_BOOTSTRAP"),
+			},
+			want: []string{"RENDERED_BRIEFING"},
+		},
+		{
+			name: "qwen falls back to the documented shape when no element carried the bootstrap",
+			plan: DestinationPlan{
+				Agent:     "qwen",
+				SessionID: "c94d7e0a-596e-481a-b4d4-f5518222b968",
+				Args:      []string{"--session-id", "c94d7e0a-596e-481a-b4d4-f5518222b968"},
+			},
+			want: []string{
+				"--session-id", "c94d7e0a-596e-481a-b4d4-f5518222b968",
+				"--prompt-interactive", "RENDERED_BRIEFING",
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := rewriteBootstrapArgs(tt.plan, rendered)
+			if !reflect.DeepEqual(got.Args, tt.want) {
+				t.Fatalf("args = %v, want %v", got.Args, tt.want)
+			}
+		})
+	}
+}

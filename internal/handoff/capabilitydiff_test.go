@@ -159,3 +159,53 @@ func TestWarningID(t *testing.T) {
 		t.Fatalf("WarningID = %q", got)
 	}
 }
+
+// TestDiffCapabilitiesDoesNotAssertGapsAtAnUnenumeratedDestination is the rule
+// that "absent from the destination inventory" only means the destination lacks
+// it when the destination was actually enumerated. Capability discovery covers
+// Claude Code and Codex; anything else arrives with an empty inventory, and
+// calling every source capability degraded there asserts a gap nobody looked
+// for.
+func TestDiffCapabilitiesDoesNotAssertGapsAtAnUnenumeratedDestination(t *testing.T) {
+	t.Parallel()
+
+	source := capability.Inventory{Items: []capability.Item{
+		{Agent: capability.AgentClaude, Kind: capability.KindMCP, Name: "browser", Scope: capability.ScopeUser, State: capability.StateDeclared},
+		{Agent: capability.AgentClaude, Kind: capability.KindSkill, Name: "review", Scope: capability.ScopeUser, State: capability.StateDeclared},
+	}}
+
+	enumerated := DiffCapabilities(source, capability.Inventory{}, "claude", "codex")
+	for _, m := range enumerated.Missing {
+		if m.Kind != KindMCP && m.Kind != KindSkill {
+			continue
+		}
+		if m.Impact != ImpactDegraded {
+			t.Fatalf("codex is enumerated, so %s/%s should be degraded, got %s", m.Kind, m.Name, m.Impact)
+		}
+	}
+
+	unenumerated := DiffCapabilities(source, capability.Inventory{}, "claude", "qwen")
+	seen := 0
+	for _, m := range unenumerated.Missing {
+		if m.Kind != KindMCP && m.Kind != KindSkill {
+			continue
+		}
+		seen++
+		if m.Impact != ImpactInformational {
+			t.Fatalf("qwen is never enumerated, so %s/%s must be informational, got %s", m.Kind, m.Name, m.Impact)
+		}
+	}
+	if seen != 2 {
+		t.Fatalf("expected both source capabilities to be reported, saw %d", seen)
+	}
+}
+
+func TestCapabilityDiscoverySupportedMatchesDiscoverInventory(t *testing.T) {
+	t.Parallel()
+	tests := map[string]bool{"claude": true, "codex": true, "qwen": false, "gemini": false, "": false}
+	for agent, want := range tests {
+		if got := capabilityDiscoverySupported(agent); got != want {
+			t.Fatalf("capabilityDiscoverySupported(%q) = %t, want %t", agent, got, want)
+		}
+	}
+}

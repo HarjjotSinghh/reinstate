@@ -99,6 +99,10 @@ type Options struct {
 	// SessionExists wires Claude UUID collision checks and is required for the
 	// registered production Claude target.
 	SessionExists ClaudeSessionExists
+	// QwenSessionExists wires the Qwen pre-launch collision check. Unlike the
+	// Claude one it is optional: Qwen refuses a duplicate --session-id itself,
+	// so this only moves the refusal earlier, before a process is spawned.
+	QwenSessionExists QwenSessionExists
 	// NewSessionID overrides Claude deterministic UUID generation in tests.
 	NewSessionID func() (string, error)
 	// Now overrides time.Now for lineage timestamps (tests).
@@ -697,6 +701,13 @@ func resolveTarget(opts Options, to string) (HandoffTarget, error) {
 			cp.ForceCompat = opts.ForceDestinationCompat
 		}
 		return &cp, nil
+	case *QwenTarget:
+		cp := *t
+		cp.SessionExists = opts.QwenSessionExists
+		cp.Bootstrap = func(c capsule.Capsule, _ Policy) ([]byte, error) {
+			return RenderBootstrap(c, permanentHandoffDir(opts.ReinstateHome, c.Identity.ID))
+		}
+		return &cp, nil
 	default:
 		return base, nil
 	}
@@ -716,8 +727,10 @@ func planDestination(
 		return DestinationPlan{}, capsule.Fidelity{}, pipelineWrap(exitcode.Runtime, err)
 	}
 	if len(renderedBootstrap) > 0 {
-		plan.Bootstrap = append([]byte(nil), renderedBootstrap...)
+		// Rewrite argv before replacing plan.Bootstrap: the previous value is
+		// how the rewrite finds which element carried the prompt.
 		plan = rewriteBootstrapArgs(plan, renderedBootstrap)
+		plan.Bootstrap = append([]byte(nil), renderedBootstrap...)
 		caps := target.Capabilities()
 		// Windows CreateProcess truncates an argv element at embedded CR/LF
 		// (rc.9 dest-ack: Codex only received the first bootstrap line). Fall
@@ -728,8 +741,8 @@ func planDestination(
 			if shortErr != nil {
 				return DestinationPlan{}, fidelity, pipelineErrorf(exitcode.Config, "handoff: %s", shortErr.Error())
 			}
-			plan.Bootstrap = short
 			plan = rewriteBootstrapArgs(plan, short)
+			plan.Bootstrap = short
 			if err := ValidateDestinationArgv(plan, caps.MaxArgvBytes); err != nil {
 				return DestinationPlan{}, fidelity, pipelineWrap(exitcode.Runtime, err)
 			}
@@ -753,8 +766,29 @@ func shortProjectionArgv(reinstateHome, capsuleID string) ([]byte, error) {
 	return []byte("Reinstate structured handoff — not native resume. Read " + projectionPath + " and continue from that briefing only. " + firstReplyAckOneLine()), nil
 }
 
+// rewriteBootstrapArgs swaps the rendered briefing into the argv element that
+// already carried the target's own bootstrap, leaving everything else the
+// target planned — a pinned --session-id, a prompt flag — untouched.
+//
+// This used to be a per-agent switch whose default collapsed argv to a single
+// positional element. That is Codex's shape. Any destination that passes its
+// prompt behind a flag lost both the flag and the pinned session id, so the
+// launch would create an unpinned session that Verify could never resolve.
+// Locating the element instead of rebuilding argv means the next destination
+// does not have to remember to add a case here.
 func rewriteBootstrapArgs(plan DestinationPlan, bootstrap []byte) DestinationPlan {
 	text := string(bootstrap)
+	if previous := string(plan.Bootstrap); previous != "" {
+		args := append([]string(nil), plan.Args...)
+		for i, arg := range args {
+			if arg == previous {
+				args[i] = text
+				plan.Args = args
+				return plan
+			}
+		}
+	}
+	// No element carried the bootstrap: fall back to the documented shapes.
 	switch normalizeAgent(plan.Agent) {
 	case "claude":
 		sid := strings.TrimSpace(plan.SessionID)
@@ -762,6 +796,12 @@ func rewriteBootstrapArgs(plan DestinationPlan, bootstrap []byte) DestinationPla
 			sid = plan.Args[1]
 		}
 		plan.Args = []string{"--session-id", sid, text}
+	case qwenTargetName:
+		sid := strings.TrimSpace(plan.SessionID)
+		if sid == "" && len(plan.Args) >= 2 && plan.Args[0] == qwenSessionIDFlag {
+			sid = plan.Args[1]
+		}
+		plan.Args = []string{qwenSessionIDFlag, sid, qwenInitialPrompt, text}
 	default:
 		plan.Args = []string{text}
 	}

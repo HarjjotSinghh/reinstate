@@ -193,7 +193,7 @@ stays where it is, and that outcome is a successful result, not a failed task.
 | Grok Build | xAI | F1 | **T2** | T2 |
 | Kimi Code CLI | Moonshot AI | F1 | **T2** | T3 |
 | Pi | earendil-works | F1 | **T1** | T3 |
-| Qwen Code | Alibaba | F1 | **T3** | T2 |
+| Qwen Code | Alibaba | F1 | **T4** | T2 |
 | Cursor CLI | Anysphere | F3 (expected) | **T1** | T1 |
 | GitHub Copilot CLI | GitHub | unknown | **T1** | T1 |
 | Aider | Aider community | F4 | — | T1 |
