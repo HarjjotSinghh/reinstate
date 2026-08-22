@@ -109,15 +109,15 @@
       "key": "opencode",
       "name": "OpenCode",
       "vendor": "anomalyco",
-      "tier": "T3",
+      "tier": "T4",
       "storageFamily": "F3",
       "t0Reason": null,
       "integrationPath": "/integrations/opencode",
-      "status": "verified-resume",
+      "status": "handoff-destination",
       "minimumTestedVersion": "1.18.21",
       "maximumTestedVersion": "1.18.21",
-      "resumeMode": "Native resume and fork (T3): opencode --session <id>, plus --fork",
-      "evidenceLevel": "macOS physical resume journey; native Windows journey pending",
+      "resumeMode": "Native resume and fork (T3): opencode --session <id>, plus --fork. Handoff destination (T4): opencode --prompt starts a new session.",
+      "evidenceLevel": "macOS resume and handoff-destination journeys; native Windows journeys pending",
       "evidence": {
         "storagePage": "docs/session-storage/opencode.md",
         "fixtures": [
@@ -126,7 +126,8 @@
           "testdata/handoff/opencode"
         ],
         "deviceReports": [
-          "docs/testing/results/2026-08-22-macos-opencode-t3-journey.md"
+          "docs/testing/results/2026-08-22-macos-opencode-t3-journey.md",
+          "docs/testing/results/2026-08-22-macos-opencode-t4-journey.md"
         ],
         "probeReports": [
           "docs/testing/results/agent-probes/2026-08-21-macos-opencode.json",
@@ -135,7 +136,7 @@
       },
       "lastTested": "2026-08-22",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/opencode.md",
-      "notes": "T3 verified resume over an embedded SQLite session store (F3). The verified version range holds the single build physically measured on macOS. Not a handoff destination and not a synced agent."
+      "notes": "T4 handoff destination over an embedded SQLite session store (F3). A handoff starts a new OpenCode session and is never a cross-agent resume. OpenCode assigns the session id, and because it journals in a write-ahead log that Reinstate's read-only immutable handle cannot read, the new session's id is usually recorded as unresolved. Not a synced agent."
     },
     {
       "id": "grok",
