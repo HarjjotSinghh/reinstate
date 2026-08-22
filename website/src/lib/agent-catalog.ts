@@ -250,6 +250,18 @@ function capabilityClaim(sentence: string, agent: CompatibilityAgent): string | 
   if (rank >= 2 && !/\b(resume|sync|push|pull)\b|handoff to/i.test(sentence)) {
     return null;
   }
+  // Mirror internal/doctest/agents_contract_test.go: the scanner relaxes as the
+  // ladder rises. A T3 agent may be described as resuming, and a T4 agent as a
+  // handoff destination; only sync/push/pull stay reserved for T5. Without
+  // these two rungs the guard treats every tier above T2 as if it were T2, so
+  // an agent that reaches T3 cannot be documented accurately anywhere on the
+  // site.
+  if (rank >= 3 && !/handoff to/i.test(sentence) && !/\b(sync|push|pull)\b/i.test(sentence)) {
+    return null;
+  }
+  if (rank >= 4 && !/\b(sync|push|pull)\b/i.test(sentence)) {
+    return null;
+  }
   if (!OVER_CLAIM_AFFIRM.test(sentence) && !/\|/.test(sentence)) {
     return null;
   }
