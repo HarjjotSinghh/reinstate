@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a newly promoted agent was simply absent from the check. WSL2 is a separate
   device and does not satisfy native Windows. No shipped descriptor changes;
   this only constrains what a future promotion may claim.
+
 ||||||| parent of e308717 (fix(kimi): index the shape Kimi Code CLI actually writes)
 ### Fixed
 
@@ -30,6 +31,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `kimi-cli` store. A real session therefore indexed **no** tool-touched files
   at all. The committed fixtures encoded the same shape the reader expected, so
   the tests agreed with the reader while neither agreed with the vendor.
+||||||| parent of 3b95e84 (fix(opencode): index sessions still in the vendor's write-ahead log)
+||||||| parent of 1b194ed (fix(opencode): index sessions still in the vendor's write-ahead log)
+### Fixed
+
+- OpenCode sessions written since the vendor last checkpointed are now indexed,
+  searchable and resumable. OpenCode journals in SQLite write-ahead mode and
+  does not checkpoint on exit, so the sessions a user has just worked in sit in
+  a `-wal` sidecar — on a new install, the entire store. Reinstate opened that
+  database with `immutable=1`, which is what stops it creating `-wal`/`-shm`
+  files under the agent's root and is also, by definition, what makes SQLite
+  ignore the log. Measured against OpenCode `1.18.21`: `opencode.db` held 4096
+  bytes and no `session` table while 543872 bytes sat in `opencode.db-wal`, and
+  `rein sessions --agent opencode` listed one of two real sessions. The store is
+  now read through a private copy of the database and its log, so the log's
+  contents are visible and nothing is written beside the vendor's database. A
+  store with no log is still read in place with no copy. If the vendor is
+  writing faster than the copy can be taken, the listing falls back to the
+  in-place read and says it is incomplete rather than presenting a short list as
+  the whole store. This affected the shipped T1 index and T2 handoff source, not
+  only newer work.
+
+- The OpenCode source fingerprint now covers the write-ahead log. A session
+  written since the last checkpoint changes only that file, so the fingerprint
+  was unchanged and an incremental refresh skipped the scan that would have
+  found it — the session stayed invisible however well the reader worked.
 
 ### Added
 
