@@ -1,0 +1,20 @@
+{"type":"metadata","protocol_version":"1.5","created_at":1786870800000}
+{"type":"profile.bind","time":1786870800200,"profileName":"kimi","modelAlias":"kimi-k2","systemPrompt":"NEVER_COPY_THIS_SYSTEM_PROMPT","activeToolNames":["Read","Edit"],"agentsMdPaths":[],"disallowedTools":[],"environmentDisclosure":"workspace","thinkingEffort":"medium"}
+{"type":"permission.set_mode","time":1786870800300,"mode":"ask"}
+{"type":"turn.prompt","time":1786870801000,"origin":{"kind":"user"},"input":[{"type":"text","text":"Bound the retry budget in agentcheck"}]}
+{"type":"context.append_message","time":1786870801100,"message":{"id":"msg_fixture_user_1","role":"user","origin":{"kind":"user"},"content":[{"type":"text","text":"Bound the retry budget in agentcheck"}],"toolCalls":[]}}
+{"type":"context.append_message","time":1786870801200,"message":{"role":"user","origin":{"kind":"injection","variant":"permission_mode"},"content":[{"type":"text","text":"<system-reminder>NEVER_COPY_THIS_INJECTION</system-reminder>"}],"toolCalls":[]}}
+{"type":"plugin.session_start","time":1786870801300,"content":[]}
+{"type":"llm.tools_snapshot","time":1786870801400,"hash":"toolshash","tools":["Read","Edit"]}
+{"type":"context.append_loop_event","time":1786870802000,"event":{"type":"step.begin","uuid":"step-1","turnId":"0","step":1}}
+{"type":"llm.request","time":1786870802100,"kind":"chat","model":"kimi-k2","modelAlias":"kimi-k2","provider":"kimi","messageCount":2,"turnStep":1}
+{"type":"context.append_loop_event","time":1786870803000,"event":{"type":"content.part","uuid":"part-1","turnId":"0","step":1,"stepUuid":"step-1","part":{"type":"text","text":"Reading the current budget."}}}
+{"type":"context.append_loop_event","time":1786870803500,"event":{"type":"content.part","uuid":"part-thinking","turnId":"0","step":1,"stepUuid":"step-1","part":{"type":"thinking","thinking":"NEVER_COPY_THIS_THINKING"}}}
+{"type":"context.append_loop_event","time":1786870804000,"event":{"type":"tool.call","uuid":"call-1","turnId":"0","step":1,"stepUuid":"step-1","toolCallId":"call_fixture_1","name":"Read","args":{"path":"/Users/fixture-user/code/demo/internal/agentcheck/agent.go"}}}
+{"type":"context.append_loop_event","time":1786870805000,"event":{"type":"tool.result","parentUuid":"call-1","toolCallId":"call_fixture_1","result":{"output":"1\tretryBudget = 2 * time.Second","note":"<system>1 line read</system>"}}}
+{"type":"context.append_loop_event","time":1786870806000,"event":{"type":"step.end","uuid":"step-1","turnId":"0","step":1,"finishReason":"tool_use","usage":{"inputOther":1200,"output":340}}}
+{"type":"usage.record","time":1786870806100,"model":"kimi-k2","usageScope":"turn","usage":{"inputOther":1200,"output":340}}
+{"type":"context.append_loop_event","time":1786870807000,"event":{"type":"step.begin","uuid":"step-2","turnId":"0","step":2}}
+{"type":"context.append_loop_event","time":1786870808000,"event":{"type":"content.part","uuid":"part-2","turnId":"0","step":2,"stepUuid":"step-2","part":{"type":"text","text":"The first attempt allows two seconds."}}}
+{"type":"context.append_loop_event","time":1786870809000,"event":{"type":"step.end","uuid":"step-2","turnId":"0","step":2,"finishReason":"end_turn","usage":{"inputOther":1400,"output":90}}}
+{"type":"turn.ended","time":1786871550000,"reason":"completed","turnId":0,"durationMs":749000}

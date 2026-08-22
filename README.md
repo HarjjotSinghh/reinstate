@@ -335,8 +335,8 @@ yes-or-no list.
 | [Gemini CLI](https://github.com/google-gemini/gemini-cli) | T2 | ✅ read-only | — | ✅ source-only | — | — |
 | [OpenCode](https://opencode.ai) | T3 | ✅ read-only | ✅ same-vendor | ✅ source-only | — | — |
 | [Grok Build](https://x.ai) | T2 | ✅ read-only | — | ✅ source-only | — | — |
-| [Kimi Code CLI](https://www.kimi.com/code) | T1 | ✅ read-only | — | — | — | — |
-| [Qwen Code](https://qwenlm.github.io/qwen-code-docs/) | T1 | ✅ read-only | — | — | — | — |
+| [Kimi Code CLI](https://www.kimi.com/code) | T2 | ✅ read-only | — | ✅ source-only | — | — |
+| [Qwen Code](https://qwenlm.github.io/qwen-code-docs/) | T3 | ✅ read-only | ✅ same-vendor | ✅ source-only | — | — |
 | [Pi](https://pi.dev/) | T1 | ✅ read-only | — | — | — | — |
 | [Cursor CLI](https://cursor.com/docs/cli/overview) | T1 | ✅ read-only | — | — | — | — |
 | [GitHub Copilot CLI](https://docs.github.com/en/copilot/concepts/agents/copilot-cli/about-copilot-cli) | T1 | ✅ read-only | — | — | — | — |

@@ -55,6 +55,8 @@ const SESSIONINDEX_KEYS: Record<string, string> = {
   AgentGemini: 'gemini',
   AgentOpenCode: 'opencode',
   AgentGrok: 'grok',
+  AgentKimi: 'kimi',
+  AgentQwen: 'qwen',
 };
 
 const T0_FROM_GO: Record<string, string> = {

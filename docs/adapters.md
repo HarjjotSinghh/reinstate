@@ -34,6 +34,8 @@ yes-or-no flag. Tiers are cumulative. New agents are declared in the
 
 Claude Code and Codex CLI are T5. OpenCode is T3. Gemini CLI and Grok Build
 are T2.
+Claude Code and Codex CLI are T5. Qwen Code is T3 on macOS evidence, with the
+Claude Code and Codex CLI are T5. Gemini CLI, OpenCode, Grok Build, and Kimi
 The capability matrix below remains the fail-closed per-surface record.
 
 ## Capability matrix
@@ -45,8 +47,8 @@ The capability matrix below remains the fail-closed per-surface record.
 | Gemini CLI | Read-only in `v0.2.0` | No | Source-only | No | No | Later |
 | OpenCode | Read-only in `v0.2.0` | Yes (T3) | Source-only | No | No | Later |
 | Grok Build | Read-only in `v0.4.0` | No | Source-only | No | No | Planned |
-| Kimi Code CLI | Read-only (T1) | No | No | No | No | Later |
-| Qwen Code | Read-only (T1) | No | No | No | No | Later |
+| Kimi Code CLI | Read-only (T1) | No | Source-only | No | No | Later |
+| Qwen Code | Read-only (T3) | Yes | Source-only | No | No | Later |
 | Pi | Read-only (T1) | No | No | No | No | Later |
 | Cursor CLI | Read-only (T1) | No | No | No | No | Exploring |
 | GitHub Copilot CLI | Read-only (T1) | No | No | No | No | Later |
@@ -144,9 +146,10 @@ acknowledgements, exit codes, and provenance.
 ## Phase 4 structured-handoff contract (`v0.4.0`)
 
 Handoff support is directional. Claude Code and Codex are both sources and
-targets. Gemini CLI, OpenCode, and Grok Build are source-only: their transcript
-readers can build a capsule, but Reinstate will not launch them as handoff
-destinations in v0.4.0.
+targets. Gemini CLI, OpenCode, Grok Build, and Qwen Code are source-only: their
+transcript readers can build a capsule, but Reinstate will not launch them as
+handoff destinations.
+targets. Gemini CLI, OpenCode, Grok Build, and Kimi Code CLI are source-only:
 
 A reader snapshots only complete source records, performs bounded local parsing,
 and preserves unknown or unavailable material through explicit fidelity states.

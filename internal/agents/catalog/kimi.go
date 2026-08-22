@@ -3,28 +3,33 @@ package catalog
 import (
 	"github.com/HarjjotSinghh/reinstate/internal/agents"
 	kimisrc "github.com/HarjjotSinghh/reinstate/internal/agents/sources/kimi"
+	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
+	"github.com/HarjjotSinghh/reinstate/internal/transcript"
 )
 
 func init() { agents.MustRegister(Kimi()) }
 
-// Kimi is the Kimi Code CLI descriptor (T1, discover).
+// Kimi is the Kimi Code CLI descriptor (T2, handoff source).
 //
-// Promoted on 2026-08-17 by a native Windows probe that joined the macOS one
-// from the day before. The Windows device carried five sessions across three
-// projects, which is what settled the two questions a single-session macOS run
-// could not: state.json carries an identical thirteen-key shape on both
-// platforms, and session_index.jsonl enumerated exactly the five sessions
-// present on disk.
+// Promoted to T1 on 2026-08-17 by a native Windows probe that joined the macOS
+// one from the day before. Promoted to T2 when the wire.jsonl reader shipped:
+// unknown records stay referenced with no payload body, and a truncated last
+// line is dropped.
 //
-// T1 only. Sessions are indexed and searchable; resume and fork stay refused,
-// because no device journey has run kimi -r against a real session.
+// The layout string below stays accurate as of Kimi Code CLI 0.36.1, verified
+// on macOS on 2026-08-22 by driving the real binary against a throwaway root.
+// The record vocabulary inside wire.jsonl did not match the reader's first
+// draft; see docs/session-storage/kimi.md.
+//
+// Resume and fork stay refused. No device journey has run kimi -r against a
+// real session, and there is no fail-closed version range.
 func Kimi() agents.Descriptor {
 	return agents.Descriptor{
-		Key:         "kimi",
+		Key:         sessionindex.AgentKimi,
 		DisplayName: "Kimi Code CLI",
 		Vendor:      "Moonshot AI",
 		DocsURL:     "https://www.kimi.com/code/docs/en/kimi-code-cli/guides/sessions.html",
-		Tier:        agents.TierDiscover,
+		Tier:        agents.TierHandoffFrom,
 		Family:      agents.FamilyHomeTree,
 		Storage: agents.StorageSpec{
 			RootEnv: "KIMI_CODE_HOME",
@@ -50,6 +55,9 @@ func Kimi() agents.Descriptor {
 			Images: []string{"kimi"},
 		},
 		NewIndexSource: kimisrc.New,
+		NewReader: func(agents.Env) (transcript.Reader, error) {
+			return transcript.NewKimiReader(), nil
+		},
 		Evidence: agents.Evidence{
 			StoragePage: "docs/session-storage/kimi.md",
 			ProbeReports: []string{
@@ -59,6 +67,7 @@ func Kimi() agents.Descriptor {
 			Fixtures: []string{
 				"testdata/sessionindex/kimi/macos",
 				"testdata/sessionindex/kimi/windows",
+				"testdata/handoff/kimi",
 			},
 		},
 	}

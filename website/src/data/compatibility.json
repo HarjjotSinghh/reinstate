@@ -101,7 +101,7 @@
         "probeReports": []
       },
       "lastTested": "2026-08-16",
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/gemini.md",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/gemini.md",
       "notes": "T2 handoff source. Fail-closed pin is latest stable @google/gemini-cli 0.55.1. T3 still needs dual-platform physical resume. Encrypted sync remains Claude Code and Codex CLI only."
     },
     {
@@ -126,7 +126,8 @@
           "testdata/handoff/opencode"
         ],
         "deviceReports": [
-          "docs/testing/results/2026-08-22-macos-opencode-t3-journey.md"
+          "docs/testing/results/2026-08-22-macos-opencode-t3-journey.md",
+          "docs/testing/results/2026-08-22-windows-opencode-t3.md"
         ],
         "probeReports": [
           "docs/testing/results/agent-probes/2026-08-21-macos-opencode.json",
@@ -134,7 +135,7 @@
         ]
       },
       "lastTested": "2026-08-22",
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/opencode.md",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/opencode.md",
       "notes": "T3 verified resume over an embedded SQLite session store (F3). The verified version range holds the single build physically measured on macOS. Not a handoff destination and not a synced agent."
     },
     {
@@ -162,7 +163,7 @@
         "probeReports": []
       },
       "lastTested": "2026-08-16",
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/grok.md",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/grok.md",
       "notes": "T2 handoff source. Not a handoff destination and not a synced agent."
     },
     {
@@ -170,20 +171,21 @@
       "key": "kimi",
       "name": "Kimi Code CLI",
       "vendor": "Moonshot AI",
-      "tier": "T1",
+      "tier": "T2",
       "storageFamily": "F1",
       "t0Reason": null,
       "integrationPath": "/integrations/kimi",
-      "status": "known",
+      "status": "handoff-source",
       "minimumTestedVersion": null,
       "maximumTestedVersion": null,
-      "resumeMode": "Not usable (T1 discover only)",
-      "evidenceLevel": "dual-platform AGENT-PROBE-V1; F1 index source; no T3 device journey",
+      "resumeMode": "Handoff source only (T2); no native resume",
+      "evidenceLevel": "dual-platform AGENT-PROBE-V1 plus deterministic wire.jsonl fixtures; no T3 version probe",
       "evidence": {
         "storagePage": "docs/session-storage/kimi.md",
         "fixtures": [
           "testdata/sessionindex/kimi/macos",
-          "testdata/sessionindex/kimi/windows"
+          "testdata/sessionindex/kimi/windows",
+          "testdata/handoff/kimi"
         ],
         "deviceReports": [],
         "probeReports": [
@@ -191,9 +193,9 @@
           "docs/testing/results/agent-probes/2026-08-17-windows-kimi.json"
         ]
       },
-      "lastTested": "2026-08-17",
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/kimi.md",
-      "notes": "T1 Discover. Sessions are indexed and searchable; resume and fork stay refused. Not a handoff destination and not a synced agent."
+      "lastTested": "2026-08-22",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/kimi.md",
+      "notes": "T2 handoff source. Not a handoff destination and not a synced agent. Native resume is refused until a device journey runs kimi -r."
     },
     {
       "id": "pi",
@@ -222,7 +224,7 @@
         ]
       },
       "lastTested": "2026-08-17",
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/pi.md",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/pi.md",
       "notes": "T1 Discover. Sessions are indexed and searchable; resume and fork stay refused. Not a handoff destination and not a synced agent."
     },
     {
@@ -230,30 +232,33 @@
       "key": "qwen",
       "name": "Qwen Code",
       "vendor": "Alibaba",
-      "tier": "T1",
+      "tier": "T3",
       "storageFamily": "F1",
       "t0Reason": null,
       "integrationPath": "/integrations/qwen",
-      "status": "known",
-      "minimumTestedVersion": null,
-      "maximumTestedVersion": null,
-      "resumeMode": "Not usable (T1 discover only)",
-      "evidenceLevel": "dual-platform AGENT-PROBE-V1; F1 index source; no T3 device journey",
+      "status": "supported",
+      "minimumTestedVersion": "0.21.12",
+      "maximumTestedVersion": "0.21.13",
+      "resumeMode": "Qwen Code to Qwen Code (T3 same-vendor native resume and fork)",
+      "evidenceLevel": "dual-platform AGENT-PROBE-V1; F1 index source; T2 reader; dual-platform T3 device journey",
       "evidence": {
         "storagePage": "docs/session-storage/qwen.md",
         "fixtures": [
           "testdata/sessionindex/qwen/macos",
           "testdata/sessionindex/qwen/windows"
         ],
-        "deviceReports": [],
+        "deviceReports": [
+          "docs/testing/results/2026-08-22-macos-qwen-t3.md",
+          "docs/testing/results/2026-08-22-windows-qwen-t3.md"
+        ],
         "probeReports": [
           "docs/testing/results/agent-probes/2026-08-17-macos-qwen.json",
           "docs/testing/results/agent-probes/2026-08-17-windows-qwen.json"
         ]
       },
-      "lastTested": "2026-08-17",
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/qwen.md",
-      "notes": "T1 Discover. Sessions are indexed and searchable; resume and fork stay refused. Not a handoff destination and not a synced agent."
+      "lastTested": "2026-08-22",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/qwen.md",
+      "notes": "T3 verified same-vendor resume and fork, and a T2 handoff source. Not a handoff destination and not a synced agent. Versions outside the inclusive 0.21.12-0.21.13 range fail closed as untested. The rung rests on a device journey on macOS and on native Windows: on each platform a session created by the vendor was indexed, resumed through the launch plan Reinstate produced, and the model request after the resume carried a token that existed only in the first turn."
     },
     {
       "id": "cursor",
@@ -282,7 +287,7 @@
         ]
       },
       "lastTested": "2026-08-17",
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/cursor.md",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/cursor.md",
       "notes": "T1 Discover. Sessions are indexed from CLI meta.json; resume and fork stay refused. Editor projects/ is not this key. Not a handoff destination and not a synced agent."
     },
     {
@@ -312,7 +317,7 @@
         ]
       },
       "lastTested": "2026-08-19",
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/cline.md",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/cline.md",
       "notes": "T1 Discover. Sessions are indexed from session JSON; resume and fork stay refused. Not a handoff destination and not a synced agent."
     },
     {
@@ -336,7 +341,7 @@
         "probeReports": []
       },
       "lastTested": null,
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/roo.md",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/roo.md",
       "notes": "T0 Known. Dual-platform AGENT-PROBE-V1 not committed. Not an integration."
     },
     {
@@ -363,7 +368,7 @@
         ]
       },
       "lastTested": "2026-08-19",
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/aider.md",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/aider.md",
       "notes": "T0 Known. Dual-platform PATH probes committed; F4 has no home root. Not an integration."
     },
     {
@@ -394,7 +399,7 @@
         ]
       },
       "lastTested": "2026-08-17",
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/copilot.md",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/copilot.md",
       "notes": "T1 Discover. Sessions are indexed from events.jsonl; resume and fork stay refused. session.db is not parsed. Not a handoff destination and not a synced agent."
     },
     {
@@ -418,7 +423,7 @@
         "probeReports": []
       },
       "lastTested": null,
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/amp.md",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/amp.md",
       "notes": "T0 Known (`server_backed`). Not readable locally. Not an integration."
     },
     {
@@ -442,7 +447,7 @@
         "probeReports": []
       },
       "lastTested": null,
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/openhands.md",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/openhands.md",
       "notes": "T0 Known (`server_backed`). Not an integration."
     },
     {
@@ -466,7 +471,7 @@
         "probeReports": []
       },
       "lastTested": null,
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/zcode.md",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/zcode.md",
       "notes": "T0 Known (`desktop_only`). The npm zcode-app-cli package is not this catalog key. Not an integration."
     },
     {
@@ -490,7 +495,7 @@
         "probeReports": []
       },
       "lastTested": null,
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/minimax.md",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/minimax.md",
       "notes": "T0 Known (`layout_unverified`). Key is minimax-code, not minimax. Token Plan API keys are models in other harnesses. Not an integration."
     },
     {
@@ -514,7 +519,7 @@
         "probeReports": []
       },
       "lastTested": null,
-      "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/antigravity.md",
+      "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/antigravity.md",
       "notes": "T0 Known (`layout_unverified`). Separate from Gemini CLI and from the Antigravity desktop IDE. Not an integration."
     }
   ],

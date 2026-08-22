@@ -79,3 +79,44 @@ rather than guessing a SQL schema.
 
 Synthetic fixtures: `testdata/sessionindex/opencode/{macos,windows}/`.
 Research note: [research/2026-08-12-phase-4-r1-r2-r3.md](../research/2026-08-12-phase-4-r1-r2-r3.md).
+
+## Write-ahead journalling in the embedded store (measured, 2026-08-22)
+
+OpenCode `1.18.21` keeps its sessions in an embedded SQLite database and
+journals in write-ahead mode. It does **not** checkpoint on exit — measured
+after quitting the TUI through its own UI and, separately, after `SIGINT`.
+
+Immediately after a session was created in a throwaway root:
+
+| File | Size |
+| ---- | ---- |
+| `opencode.db` | 4096 bytes, no `session` table at all |
+| `opencode.db-wal` | 543872 bytes |
+
+Everything the user had just done was in the log. Recent commits stay there
+until SQLite's automatic checkpoint threshold — 1000 pages, roughly 4 MB of
+writes — is crossed by later vendor activity, which on a lightly used install
+can be a long time.
+
+This matters because the obvious way to read a vendor store safely is the wrong
+one here. Opening with `immutable=1` promises SQLite the file cannot change,
+which is what stops it taking a lock or creating `-wal`/`-shm` sidecars under
+the agent's root — and, as a direct consequence, makes it ignore the log. A
+reader built that way reports the sessions the user most recently worked in as
+absent, and on a new install reports the store as empty.
+
+Reinstate therefore reads through `internal/vendorsqlite`, which copies the
+database and its log into a private directory and opens the copy. Nothing is
+written beside the vendor's database, and the log's contents are visible. A
+store with no log is still read in place, immutable, with no copy at all.
+
+Copying a live log is safe in a specific, bounded way. SQLite checksums every
+frame and stops recovery at the first invalid one, so a copy taken while the
+vendor is writing degrades to the last complete commit rather than to a corrupt
+database. Truncating a copied log at nine points from 100% down to 0% left
+`PRAGMA integrity_check` reporting `ok` every time, with the visible session
+count falling monotonically. The one hazard that is not self-correcting is a
+checkpoint landing between the two files being copied, so the database is
+stat-ed before and after and a change retries; exhausting the retries falls back
+to the in-place read and reports the listing as incomplete rather than
+presenting a short list as the whole store.

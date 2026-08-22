@@ -78,6 +78,7 @@ func OpenCode() agents.Descriptor {
 			},
 			DeviceReports: []string{
 				"docs/testing/results/2026-08-22-macos-opencode-t3-journey.md",
+				"docs/testing/results/2026-08-22-windows-opencode-t3.md",
 			},
 		},
 		NewIndexSource: opencodesrc.NewSQLite,

@@ -17,7 +17,7 @@ const integrations = integrationAgents();
   {description}
   path="/integrations"
   eyebrow="Coding-agent integrations"
-  answer="Encrypted sync (T5) covers Claude Code and Codex CLI only, same-vendor. Gemini CLI, OpenCode, and Grok Build are T2 handoff sources. T0 catalog agents appear on the matrix with a reason; they do not have integration pages."
+  answer="Encrypted sync (T5) covers Claude Code and Codex CLI only, same-vendor. Gemini CLI, OpenCode, Grok Build, and Kimi Code CLI are T2 handoff sources. T0 catalog agents appear on the matrix with a reason; they do not have integration pages."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'Integrations', path: '/integrations' },
@@ -60,7 +60,7 @@ const integrations = integrationAgents();
           <th scope="col">Capability</th>
           <th scope="col">Claude Code (T5)</th>
           <th scope="col">Codex CLI (T5)</th>
-          <th scope="col">Gemini / OpenCode / Grok (T2)</th>
+          <th scope="col">Gemini / OpenCode / Grok / Kimi (T2)</th>
         </tr>
       </thead>
       <tbody>
@@ -152,7 +152,7 @@ const integrations = integrationAgents();
 
   <h2 id="not-yet-supported">T0 names are not integrations</h2>
   <p>
-    Kimi Code CLI, Pi, Qwen Code, Cursor CLI, Cline, Roo Code, Aider, GitHub Copilot CLI,
+    Pi, Qwen Code, Cursor CLI, Cline, Roo Code, Aider, GitHub Copilot CLI,
     Amp, OpenHands, and ZCode are T0. They appear in <code>rein doctor --agents</code> with a
     machine-readable reason such as <code>layout_unverified</code>, <code>server_backed</code>,
     or <code>desktop_only</code>. That is a complete result, not a preview of sync.

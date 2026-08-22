@@ -309,6 +309,8 @@ func readWire(path string) (wireContent, error) {
 					}
 				}
 			}
+		case "context.append_loop_event":
+			collectLoopEvent(item, &out, fileSet)
 		}
 		return nil
 	})
@@ -317,6 +319,36 @@ func readWire(path string) (wireContent, error) {
 	}
 	out.files = sources.NormalizedFileMap(fileSet)
 	return out, nil
+}
+
+// collectLoopEvent reads the assistant's side of a turn.
+//
+// At wire protocol 1.5 an assistant message is not a record. It is a group of
+// loop events: step.begin opens one, content.part appends to it, tool.call and
+// tool.result carry the tool round-trip, and step.end settles it. Only a
+// session migrated from the legacy kimi-cli store writes the assistant as a
+// role "assistant" context.append_message, and the case above covers that.
+//
+// Reading only that legacy shape meant a session from a current install was
+// indexed with no tool-touched files at all and with every assistant turn
+// uncounted. The fixtures encoded the legacy shape too, so the tests agreed
+// with the reader and neither one agreed with the vendor.
+func collectLoopEvent(item map[string]any, out *wireContent, files map[string]struct{}) {
+	event, ok := item["event"].(map[string]any)
+	if !ok {
+		return
+	}
+	switch sources.FirstString(event, "type") {
+	case "step.begin":
+		// One begun step is one assistant message, which is what the legacy
+		// shape counted per record. A step that never settles still happened.
+		out.messages++
+	case "tool.call":
+		// The shared collector recognises "input" and "arguments"; a loop event
+		// names the same thing "args". Handing it the key the collector already
+		// understands keeps one definition of what a file field looks like.
+		sources.CollectToolFiles(map[string]any{"arguments": event["args"]}, files)
+	}
 }
 
 // parseTime accepts both state.json timestamp encodings. Kimi Code 0.36.1
