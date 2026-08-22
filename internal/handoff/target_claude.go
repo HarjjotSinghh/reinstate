@@ -48,6 +48,11 @@ type ClaudeTarget struct {
 	// Bootstrap builds the argv prompt. Nil uses a bounded stub; WP-18 replaces
 	// this with RenderBootstrap when wired by the CLI.
 	Bootstrap func(capsule.Capsule, Policy) ([]byte, error)
+	// ForceCompat overrides adapter detection (tests only), matching the field
+	// CodexTarget already carries. Detection otherwise runs `claude --version`
+	// as a child process, which a test asserting nothing about versions should
+	// not have to win a scheduling race against.
+	ForceCompat adapter.Compatibility
 }
 
 func init() {
@@ -81,7 +86,7 @@ func (t *ClaudeTarget) Capabilities() TargetCapabilities {
 // Compatible probes Claude Code install state without reading a real home
 // directory when ConfigDir is set.
 func (t *ClaudeTarget) Compatible(ctx context.Context) (adapter.Compatibility, error) {
-	a := &claude.Adapter{Root: strings.TrimSpace(t.ConfigDir)}
+	a := &claude.Adapter{Root: strings.TrimSpace(t.ConfigDir), ForceCompat: t.ForceCompat}
 	_, compat, err := a.Detect(ctx)
 	return compat, err
 }

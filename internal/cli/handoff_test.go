@@ -16,6 +16,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/HarjjotSinghh/reinstate/internal/adapter"
 	"github.com/HarjjotSinghh/reinstate/internal/capsule"
 	"github.com/HarjjotSinghh/reinstate/internal/fsx"
 	"github.com/HarjjotSinghh/reinstate/internal/handoff"
@@ -466,7 +467,11 @@ func TestHandoffPipelineExitCodes(t *testing.T) {
 	})
 
 	t.Run("compatibility", func(t *testing.T) {
-		_, _, code := runHandoffCLI(t, home, t.TempDir(), sources, &recordingLaunchRunner{},
+		// Real detection, on purpose: this subtest asserts what detection
+		// concludes. It is deterministic because an empty vendor home resolves
+		// to no Claude root at all, which short-circuits to NotInstalled
+		// without ever spawning a version probe.
+		_, _, code := runHandoffCLIProbingDestination(t, home, t.TempDir(), sources, &recordingLaunchRunner{},
 			"handoff", "codex:source-session", "--to", "claude", "--dry-run")
 		if code != ExitCompatibility {
 			t.Fatalf("exit=%d want %d", code, ExitCompatibility)
@@ -624,7 +629,58 @@ func setVendorHome(t *testing.T, vendorHome string) {
 
 func runHandoffCLI(t *testing.T, home, vendorHome string, sources []sessionindex.Source, runner sessionindex.LaunchRunner, args ...string) (string, string, int) {
 	t.Helper()
-	return runHandoffCLIWithVendorRoots(t, home, vendorHome, "", "", sources, runner, args...)
+	// Pin the destination's compatibility answer. Detection otherwise runs
+	// `<agent> --version` as a child process under a two-second bound, and
+	// under a saturated `go test ./...` that child does not reliably start in
+	// time — measured, a two-line shell script killed at 2.0009s. Detection
+	// then correctly reports UNTESTED, and tests that assert nothing about
+	// versions fail for a reason they never meant to measure.
+	//
+	// Tests whose subject *is* compatibility opt out with
+	// runHandoffCLIProbingDestination and keep the real probe.
+	return runHandoffCLIWith(t, handoffCLIRun{
+		home: home, vendorHome: vendorHome, sources: sources, runner: runner,
+		destinationCompat: adapter.CompatibilitySupported,
+	}, args...)
+}
+
+// runHandoffCLIProbingDestination keeps the real destination probe, for tests
+// that assert what detection concludes rather than what the handoff plans.
+func runHandoffCLIProbingDestination(t *testing.T, home, vendorHome string, sources []sessionindex.Source, runner sessionindex.LaunchRunner, args ...string) (string, string, int) {
+	t.Helper()
+	return runHandoffCLIWith(t, handoffCLIRun{
+		home: home, vendorHome: vendorHome, sources: sources, runner: runner,
+	}, args...)
+}
+
+type handoffCLIRun struct {
+	home              string
+	vendorHome        string
+	claudeRoot        string
+	codexRoot         string
+	sources           []sessionindex.Source
+	runner            sessionindex.LaunchRunner
+	destinationCompat adapter.Compatibility
+}
+
+func runHandoffCLIWith(t *testing.T, run handoffCLIRun, args ...string) (string, string, int) {
+	t.Helper()
+	t.Setenv("REINSTATE_HOME", run.home)
+	setVendorHome(t, run.vendorHome)
+	t.Setenv("CLAUDE_CONFIG_DIR", run.claudeRoot)
+	t.Setenv("CODEX_HOME", run.codexRoot)
+	var stdout, stderr bytes.Buffer
+	code := Execute(Options{
+		Name: "rein", Stdout: &stdout, Stderr: &stderr, Stdin: strings.NewReader(""), Args: args,
+		SessionSources: run.sources, SessionLaunchRunner: run.runner,
+		PreflightVerifier:        readyPreflightVerifier{},
+		HandoffDestinationCompat: run.destinationCompat,
+		AgentProcessChecker: func(context.Context, string, processcheck.Target) (bool, bool, error) {
+			return false, true, nil
+		},
+		TerminalChecker: func(io.Reader, io.Writer) bool { return false },
+	})
+	return stdout.String(), stderr.String(), code
 }
 
 // runHandoffCLIWithVendorRoots names the vendor roots explicitly.
@@ -646,20 +702,10 @@ func runHandoffCLIWithVendorRoots(
 	sources []sessionindex.Source, runner sessionindex.LaunchRunner, args ...string,
 ) (string, string, int) {
 	t.Helper()
-	t.Setenv("REINSTATE_HOME", home)
-	setVendorHome(t, vendorHome)
-	t.Setenv("CLAUDE_CONFIG_DIR", claudeRoot)
-	t.Setenv("CODEX_HOME", codexRoot)
-	var stdout, stderr bytes.Buffer
-	code := Execute(Options{
-		Name: "rein", Stdout: &stdout, Stderr: &stderr, Stdin: strings.NewReader(""), Args: args,
-		SessionSources: sources, SessionLaunchRunner: runner, PreflightVerifier: readyPreflightVerifier{},
-		AgentProcessChecker: func(context.Context, string, processcheck.Target) (bool, bool, error) {
-			return false, true, nil
-		},
-		TerminalChecker: func(io.Reader, io.Writer) bool { return false },
-	})
-	return stdout.String(), stderr.String(), code
+	return runHandoffCLIWith(t, handoffCLIRun{
+		home: home, vendorHome: vendorHome, claudeRoot: claudeRoot, codexRoot: codexRoot,
+		sources: sources, runner: runner,
+	}, args...)
 }
 
 func containsString(values []string, want string) bool {
@@ -669,4 +715,47 @@ func containsString(values []string, want string) bool {
 		}
 	}
 	return false
+}
+
+// TestPinnedDestinationConsultsNoVendorBinary proves the seam removes the child
+// process rather than merely making it faster.
+//
+// The flake it exists for is a spawn race: adapter detection runs
+// `<agent> --version` under a hard two-second bound, and under a saturated
+// `go test ./...` even a two-line shell script does not reliably start in time
+// — measured, killed at 2.0009s. Detection then correctly reports UNTESTED and
+// a test asserting nothing about versions fails.
+//
+// A timing assertion could not settle that; it would only be quiet on a quiet
+// machine. This removes the binary from PATH entirely. If detection still
+// consulted it, the handoff would refuse with a compatibility exit, so a
+// successful plan is proof that nothing was spawned.
+func TestPinnedDestinationConsultsNoVendorBinary(t *testing.T) {
+	home, vendorHome, sources, _ := handoffCLIFixture(t)
+	// An empty PATH: no claude, no codex, nothing to probe.
+	t.Setenv("PATH", t.TempDir())
+
+	stdout, stderr, code := runHandoffCLI(t, home, vendorHome, sources, &recordingLaunchRunner{},
+		"handoff", "codex:source-session", "--to", "claude", "--dry-run", "--json")
+	if code != ExitOK {
+		t.Fatalf("pinned destination still depended on a vendor binary: exit=%d stdout=%s stderr=%s",
+			code, stdout, stderr)
+	}
+	if !strings.Contains(stdout, "\"destination\"") {
+		t.Fatalf("plan did not reach the destination stage: %s", stdout)
+	}
+}
+
+// TestProbingDestinationStillDependsOnDetection is the negative control. Without
+// the pin, the same call with no vendor binary on PATH must refuse — otherwise
+// the test above would pass for a reason unrelated to the seam.
+func TestProbingDestinationStillDependsOnDetection(t *testing.T) {
+	home, vendorHome, sources, _ := handoffCLIFixture(t)
+	t.Setenv("PATH", t.TempDir())
+
+	_, _, code := runHandoffCLIProbingDestination(t, home, vendorHome, sources, &recordingLaunchRunner{},
+		"handoff", "codex:source-session", "--to", "claude", "--dry-run", "--json")
+	if code == ExitOK {
+		t.Fatal("detection succeeded with no vendor binary on PATH; the pinned test proves nothing")
+	}
 }
