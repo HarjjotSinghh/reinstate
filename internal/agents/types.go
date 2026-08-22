@@ -3,6 +3,7 @@ package agents
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 
@@ -186,6 +187,34 @@ type NativeSpec struct {
 	NewSession    []string // T4 only
 	InitialPrompt PromptMode
 	MaxArgvBytes  int // 0 uses DefaultMaxArgvBytes
+	// SessionIDPattern is an anchored regular expression every session ID must
+	// match before it is substituted into an argv template. Empty means the
+	// vendor imposes no shape and any indexed ID may be passed.
+	//
+	// It exists because some vendors accept more than an ID in the same
+	// position. Grok Build's `--resume [<SESSION_ID_OR_TITLE>]` falls back to
+	// title matching for any value that is not UUID-shaped, and two sessions in
+	// one directory can share a title, so a non-UUID value would silently
+	// address a different session than the one Reinstate resolved. Declaring
+	// the shape makes that unrepresentable rather than merely unlikely.
+	SessionIDPattern string
+}
+
+// SessionIDAllowed reports whether sessionID may be substituted into this
+// vendor's argv templates. A nil spec or an empty pattern allows any non-empty
+// ID; an invalid pattern fails closed.
+func (n *NativeSpec) SessionIDAllowed(sessionID string) bool {
+	if strings.TrimSpace(sessionID) == "" {
+		return false
+	}
+	if n == nil || strings.TrimSpace(n.SessionIDPattern) == "" {
+		return true
+	}
+	pattern, err := regexp.Compile(n.SessionIDPattern)
+	if err != nil {
+		return false
+	}
+	return pattern.MatchString(sessionID)
 }
 
 // PromptMode is how a destination accepts an initial prompt.

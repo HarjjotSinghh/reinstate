@@ -36,7 +36,7 @@ rein sessions [--agent claude|codex|gemini|opencode|grok|kimi|qwen|pi|cursor|cop
 rein search QUERY [QUERY...] [--agent ...] [--project FRAGMENT]
             [--branch FRAGMENT] [--file FRAGMENT] [--limit N] [--json]
 rein inspect AGENT:SESSION_ID [--json]
-rein last [--agent claude|codex|all] [--project FRAGMENT] [--dry-run] [--json]
+rein last [--agent claude|codex|grok|all] [--project FRAGMENT] [--dry-run] [--json]
           [--allow-environment-warning CHECK_ID ...]
 rein resume AGENT:SESSION_ID [--dry-run] [--json] [--fork]
             [--with claude|codex]
