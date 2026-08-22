@@ -1,0 +1,107 @@
+<template>
+  <style>
+    @font-face{font-family:"Questrial";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/Questrial-Regular.woff2") format("woff2");}
+    @font-face{font-family:"Geist";font-weight:100 900;font-style:normal;font-display:block;src:url("assets/fonts/Geist-Variable.woff2") format("woff2");}
+    @font-face{font-family:"Geist Mono Variable";font-weight:100 900;font-style:normal;font-display:block;src:url("assets/fonts/GeistMono-Variable.woff2") format("woff2");}
+
+    #root { position: absolute; inset: 0; overflow: hidden; font-family: "Geist", sans-serif; }
+    .f08-ground { position: absolute; inset: 0; background: #1C1F1A; }
+    .f08-lockup {
+      position: absolute; left: 0; right: 0; top: 214px;
+      display: flex; align-items: center; justify-content: center; gap: 30px;
+    }
+    .f08-mark { width: 116px; height: 116px; display: block; border-radius: 26px; }
+    .f08-word {
+      font-family: "Questrial", sans-serif; font-size: 96px; line-height: 1;
+      letter-spacing: -0.026em; color: #F4F5EE; white-space: nowrap;
+    }
+    .f08-install {
+      position: absolute; left: 0; right: 0; top: 428px;
+      display: flex; justify-content: center;
+    }
+    .f08-chip {
+      display: inline-flex; align-items: center; gap: 20px;
+      font-family: "Geist Mono Variable", monospace;
+      font-size: 38px; font-weight: 500; color: #F4F5EE;
+      background: #232520; border: 1px solid #ACED37;
+      border-radius: 12px; padding: 24px 38px;
+    }
+    .f08-chip .dollar { color: #ACED37; font-weight: 650; }
+    .f08-domain {
+      position: absolute; left: 0; right: 0; top: 592px;
+      text-align: center;
+    }
+    .f08-domain span {
+      position: relative; display: inline-block;
+      font-family: "Questrial", sans-serif;
+      font-size: 74px; letter-spacing: -0.02em; color: #F4F5EE;
+    }
+    .f08-underline {
+      position: absolute; left: 0; bottom: -12px; height: 4px; width: 100%;
+      background: #ACED37; transform-origin: left center;
+    }
+    .f08-meta {
+      position: absolute; left: 0; right: 0; top: 716px;
+      text-align: center;
+      font-family: "Geist Mono Variable", monospace;
+      font-size: 27px; font-weight: 500; letter-spacing: 0.1em; color: #9AA49C;
+    }
+    .f08-meta b { color: #F4F5EE; font-weight: 600; }
+  </style>
+
+  <div id="root" data-composition-id="08-cta" data-width="1920" data-height="1080">
+    <div class="clip f08-ground" data-start="0" data-duration="4.2" data-track-index="0" id="f08-ground"></div>
+
+    <div class="clip f08-lockup" data-start="0" data-duration="4.2" data-track-index="1" id="f08-lockup">
+      <img class="f08-mark" src="assets/favicon.svg" alt="" />
+      <div class="f08-word">Reinstate</div>
+    </div>
+
+    <div class="clip f08-install" data-start="0" data-duration="4.2" data-track-index="2" id="f08-install">
+      <div class="f08-chip">
+        <span class="dollar">$</span><span>curl -fsSL https://reinstate.dev/install.sh | sh</span>
+      </div>
+    </div>
+
+    <div class="clip f08-domain" data-start="0" data-duration="4.2" data-track-index="3" id="f08-domain">
+      <span>reinstate.dev<i class="f08-underline" id="f08-ul"></i></span>
+    </div>
+
+    <div class="clip f08-meta" data-start="0" data-duration="4.2" data-track-index="4" id="f08-meta">
+      <b>Apache-2.0</b> &#183; one Go binary &#183; your bucket, your keys
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+
+      gsap.set("#f08-install", { opacity: 0, scale: 0.86 });
+      gsap.set("#f08-domain", { opacity: 0, y: 20 });
+      gsap.set("#f08-meta", { opacity: 0, y: 16 });
+      gsap.set("#f08-ul", { scaleX: 0 });
+
+      // Scene 1 — the lockup returns on one hard impact.
+      tl.fromTo("#f08-lockup",
+        { opacity: 0, scale: 0.8 },
+        { opacity: 1, scale: 1, duration: 0.46, ease: "back.out(2.1)" }, 0.03);
+
+      // Scene 2 — the mark condenses upward as the command scales up into its
+      // place: one element transforming, not a swap.
+      tl.to("#f08-lockup", { y: -78, scale: 0.82, duration: 0.5, ease: "power3.inOut" }, 0.62);
+      tl.fromTo("#f08-install",
+        { opacity: 0, scale: 0.86 },
+        { opacity: 1, scale: 1, duration: 0.46, ease: "power3.out" }, 0.68);
+
+      // Scene 3 — where to go, and what it costs you.
+      tl.fromTo("#f08-domain", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.34, ease: "power3.out" }, 1.28);
+      tl.fromTo("#f08-meta", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.34, ease: "power3.out" }, 1.58);
+
+      // Scene 4 — fully held. The underline is the last motion in the video.
+      tl.fromTo("#f08-ul", { scaleX: 0 }, { scaleX: 1, duration: 0.9, ease: "power3.inOut" }, 2.02);
+
+      window.__timelines["08-cta"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,203 @@
+{
+  "tts_provider": null,
+  "voice_id": null,
+  "bgm": {
+    "path": "assets/bgm/track.mp3",
+    "volume": 0.9,
+    "query": "driving minimal electronic — confident, building, terminal-demo energy; no vocals",
+    "mode": "retrieve",
+    "duration_s": 17
+  },
+  "bgm_pending": false,
+  "bgm_provider": "heygen",
+  "bgm_pid": null,
+  "bgm_log": null,
+  "bgm_mode": "retrieve",
+  "bgm_target_duration_s": null,
+  "bgm_seed_duration_s": null,
+  "bgm_loop_count": null,
+  "voices": [],
+  "sfx": [
+    {
+      "id": "01",
+      "name": "keystroke-cluster",
+      "file": "assets/sfx/keystroke-cluster.mp3",
+      "source": "heygen",
+      "offset_s": 0,
+      "duration_s": 44.382,
+      "volume": 0.35
+    },
+    {
+      "id": "01",
+      "name": "error-thud",
+      "file": "assets/sfx/error-thud.mp3",
+      "source": "heygen",
+      "offset_s": 0,
+      "duration_s": 0.864,
+      "volume": 0.35
+    },
+    {
+      "id": "02",
+      "name": "impact-soft ×2",
+      "file": "assets/sfx/impact-soft-2.mp3",
+      "source": "heygen",
+      "offset_s": 0,
+      "duration_s": 2.758,
+      "volume": 0.35
+    },
+    {
+      "id": "02",
+      "name": "riser-short",
+      "file": "assets/sfx/riser-short.mp3",
+      "source": "heygen",
+      "offset_s": 0,
+      "duration_s": 4.97,
+      "volume": 0.35
+    },
+    {
+      "id": "03",
+      "name": "impact-hard",
+      "file": "assets/sfx/impact-hard.mp3",
+      "source": "heygen",
+      "offset_s": 0,
+      "duration_s": 3.349,
+      "volume": 0.35
+    },
+    {
+      "id": "03",
+      "name": "whoosh-short",
+      "file": "assets/sfx/whoosh-short.mp3",
+      "source": "heygen",
+      "offset_s": 0,
+      "duration_s": 1.285,
+      "volume": 0.35
+    },
+    {
+      "id": "04",
+      "name": "keystroke-cluster ×2",
+      "file": "assets/sfx/keystroke-cluster-2.mp3",
+      "source": "heygen",
+      "offset_s": 0,
+      "duration_s": 1.46,
+      "volume": 0.35
+    },
+    {
+      "id": "04",
+      "name": "row-tick ×4",
+      "file": "assets/sfx/row-tick-4.mp3",
+      "source": "heygen",
+      "offset_s": 0,
+      "duration_s": 0.768,
+      "volume": 0.35
+    },
+    {
+      "id": "04",
+      "name": "ui-confirm",
+      "file": "assets/sfx/ui-confirm.mp3",
+      "source": "heygen",
+      "offset_s": 0,
+      "duration_s": 0.576,
+      "volume": 0.35
+    },
+    {
+      "id": "05",
+      "name": "whoosh-transfer",
+      "file": "assets/sfx/whoosh-transfer.mp3",
+      "source": "heygen",
+      "offset_s": 0,
+      "duration_s": 1.285,
+      "volume": 0.35
+    },
+    {
+      "id": "05",
+      "name": "lock-seal",
+      "file": "assets/sfx/lock-seal.mp3",
+      "source": "heygen",
+      "offset_s": 0,
+      "duration_s": 1.008,
+      "volume": 0.35
+    },
+    {
+      "id": "05",
+      "name": "ui-confirm",
+      "file": "assets/sfx/ui-confirm.mp3",
+      "source": "heygen",
+      "offset_s": 0,
+      "duration_s": 0.576,
+      "volume": 0.35
+    },
+    {
+      "id": "05",
+      "name": "impact-soft",
+      "file": "assets/sfx/impact-soft.mp3",
+      "source": "heygen",
+      "offset_s": 0,
+      "duration_s": 2.758,
+      "volume": 0.35
+    },
+    {
+      "id": "06",
+      "name": "check-tick ×3",
+      "file": "assets/sfx/check-tick-3.mp3",
+      "source": "heygen",
+      "offset_s": 0,
+      "duration_s": 7.778,
+      "volume": 0.35
+    },
+    {
+      "id": "06",
+      "name": "ui-confirm",
+      "file": "assets/sfx/ui-confirm.mp3",
+      "source": "heygen",
+      "offset_s": 0,
+      "duration_s": 0.576,
+      "volume": 0.35
+    },
+    {
+      "id": "06",
+      "name": "type-stream",
+      "file": "assets/sfx/type-stream.mp3",
+      "source": "heygen",
+      "offset_s": 0,
+      "duration_s": 1.79,
+      "volume": 0.35
+    },
+    {
+      "id": "07",
+      "name": "whoosh-short ×3",
+      "file": "assets/sfx/whoosh-short-3.mp3",
+      "source": "heygen",
+      "offset_s": 0,
+      "duration_s": 1.285,
+      "volume": 0.35
+    },
+    {
+      "id": "07",
+      "name": "impact-soft",
+      "file": "assets/sfx/impact-soft.mp3",
+      "source": "heygen",
+      "offset_s": 0,
+      "duration_s": 2.758,
+      "volume": 0.35
+    },
+    {
+      "id": "08",
+      "name": "impact-hard",
+      "file": "assets/sfx/impact-hard.mp3",
+      "source": "heygen",
+      "offset_s": 0,
+      "duration_s": 3.349,
+      "volume": 0.35
+    },
+    {
+      "id": "08",
+      "name": "ui-confirm",
+      "file": "assets/sfx/ui-confirm.mp3",
+      "source": "heygen",
+      "offset_s": 0,
+      "duration_s": 0.576,
+      "volume": 0.35
+    }
+  ],
+  "total_duration_s": 0
+}

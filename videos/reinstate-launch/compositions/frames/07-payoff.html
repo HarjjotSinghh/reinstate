@@ -1,0 +1,119 @@
+<template>
+  <style>
+    @font-face{font-family:"Questrial";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/Questrial-Regular.woff2") format("woff2");}
+    @font-face{font-family:"Geist";font-weight:100 900;font-style:normal;font-display:block;src:url("assets/fonts/Geist-Variable.woff2") format("woff2");}
+    @font-face{font-family:"Geist Mono Variable";font-weight:100 900;font-style:normal;font-display:block;src:url("assets/fonts/GeistMono-Variable.woff2") format("woff2");}
+
+    #root { position: absolute; inset: 0; overflow: hidden; font-family: "Geist", sans-serif; }
+    .f07-ground { position: absolute; inset: 0; background: #1C1F1A; }
+    .f07-kicker {
+      position: absolute; left: 150px; top: 156px;
+      display: flex; align-items: center; gap: 16px;
+      font-family: "Geist Mono Variable", monospace;
+      font-size: 26px; font-weight: 550; letter-spacing: 0.16em;
+      text-transform: uppercase; color: #ACED37;
+    }
+    .f07-spike { width: 15px; height: 15px; display: inline-block; background: #ACED37; border-radius: 2px; rotate: 45deg; }
+    .f07-row {
+      position: absolute; left: 150px; top: 264px;
+      width: 1620px; display: flex; gap: 34px;
+    }
+    .f07-card {
+      flex: 1; height: 356px;
+      background: #232520; border: 1px solid rgba(244,245,238,0.16);
+      border-radius: 16px; padding: 42px 40px;
+      display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .f07-num {
+      font-family: "Geist Mono Variable", monospace;
+      font-size: 22px; font-weight: 600; letter-spacing: 0.18em; color: #ACED37;
+    }
+    .f07-title {
+      font-family: "Questrial", sans-serif;
+      font-size: 82px; line-height: 1; letter-spacing: -0.02em; color: #F4F5EE;
+    }
+    .f07-sub {
+      font-family: "Geist Mono Variable", monospace;
+      font-size: 25px; line-height: 1.4; color: #9AA49C;
+    }
+    .f07-foot {
+      position: absolute; left: 150px; top: 690px; width: 1620px;
+      display: flex; align-items: center; gap: 22px;
+      font-family: "Geist Mono Variable", monospace;
+      font-size: 34px; font-weight: 550; color: #F4F5EE;
+    }
+    .f07-sep { color: #ACED37; }
+    .f07-note {
+      font-size: 25px; font-weight: 400; color: #9AA49C; margin-left: 26px;
+    }
+    .f07-rule {
+      position: absolute; left: 150px; top: 774px; width: 1620px; height: 2px; overflow: hidden;
+    }
+    .f07-rule i {
+      display: block; width: 100%; height: 100%;
+      background: #F4F5EE; opacity: 0.24; transform-origin: left center;
+    }
+  </style>
+
+  <div id="root" data-composition-id="07-payoff" data-width="1920" data-height="1080">
+    <div class="clip f07-ground" data-start="0" data-duration="4" data-track-index="0" id="f07-ground"></div>
+
+    <div class="clip f07-kicker" data-start="0" data-duration="4" data-track-index="1" id="f07-kicker">
+      <i class="f07-spike"></i><span>What you get</span>
+    </div>
+
+    <div class="clip f07-row" data-start="0" data-duration="4" data-track-index="2" id="f07-row">
+      <div class="f07-card f07-c">
+        <div class="f07-num">01</div>
+        <div class="f07-title">Search</div>
+        <div class="f07-sub">every session,<br />indexed locally</div>
+      </div>
+      <div class="f07-card f07-c">
+        <div class="f07-num">02</div>
+        <div class="f07-title">Resume</div>
+        <div class="f07-sub">verified,<br />same-vendor</div>
+      </div>
+      <div class="f07-card f07-c">
+        <div class="f07-num">03</div>
+        <div class="f07-title">Hand off</div>
+        <div class="f07-sub">explicit and<br />portable</div>
+      </div>
+    </div>
+
+    <div class="clip f07-foot" data-start="0" data-duration="4" data-track-index="3" id="f07-foot">
+      <span>Claude Code</span><span class="f07-sep">&#183;</span><span>Codex</span>
+      <span class="f07-note">same-vendor native resume</span>
+    </div>
+
+    <div class="clip f07-rule" data-start="0" data-duration="4" data-track-index="4" id="f07-rule">
+      <i id="f07-rule-fill"></i>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+
+      gsap.set(".f07-c", { opacity: 0, y: 90 });
+      gsap.set("#f07-foot", { opacity: 0, y: 18 });
+
+      // Scene 1 — the ground flip is the cut; only the kicker is on the paper.
+      tl.fromTo("#f07-kicker", { opacity: 0, x: -18 }, { opacity: 1, x: 0, duration: 0.26, ease: "power3.out" }, 0.03);
+
+      // Scene 2 — three cards assemble into a locked row, one per beat.
+      tl.fromTo(".f07-c",
+        { opacity: 0, y: 90 },
+        { opacity: 1, y: 0, duration: 0.4, ease: "power3.out", stagger: 0.32 },
+        0.38);
+
+      // Scene 3 — the agents this actually supports today.
+      tl.fromTo("#f07-foot", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.32, ease: "power3.out" }, 1.72);
+
+      // Scene 4 — the rule draws and the frame goes still.
+      tl.fromTo("#f07-rule-fill", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: "power3.inOut" }, 2.42);
+
+      window.__timelines["07-payoff"] = tl;
+    })();
+  </script>
+</template>

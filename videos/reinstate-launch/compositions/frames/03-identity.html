@@ -1,0 +1,129 @@
+<template>
+  <style>
+    @font-face{font-family:"Questrial";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/Questrial-Regular.woff2") format("woff2");}
+    @font-face{font-family:"Geist";font-weight:100 900;font-style:normal;font-display:block;src:url("assets/fonts/Geist-Variable.woff2") format("woff2");}
+    @font-face{font-family:"Geist Mono Variable";font-weight:100 900;font-style:normal;font-display:block;src:url("assets/fonts/GeistMono-Variable.woff2") format("woff2");}
+
+    #root {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      font-family: "Geist", sans-serif;
+    }
+    .f03-ground {
+      position: absolute;
+      inset: 0;
+      background: #1C1F1A;
+    }
+    .f03-lockup {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 396px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 38px;
+    }
+    .f03-mark {
+      width: 168px;
+      height: 168px;
+      display: block;
+      border-radius: 37px;
+    }
+    .f03-word {
+      font-family: "Questrial", sans-serif;
+      font-size: 132px;
+      line-height: 1;
+      letter-spacing: -0.026em;
+      color: #F4F5EE;
+      white-space: nowrap;
+    }
+    .f03-tag {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 664px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 26px;
+      font-family: "Geist Mono Variable", monospace;
+      font-size: 34px;
+      font-weight: 550;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #C9D2C9;
+    }
+    .f03-tag .f03-hot { color: #ACED37; }
+  </style>
+
+  <div id="root" data-composition-id="03-identity" data-width="1920" data-height="1080">
+    <div class="clip f03-ground" data-start="0" data-duration="2.3" data-track-index="0" id="f03-ground"></div>
+
+    <div class="clip f03-lockup" data-start="0" data-duration="2.3" data-track-index="1" id="f03-lockup">
+      <div id="f03-shift" style="display:flex;align-items:center;gap:38px;">
+        <img class="f03-mark" id="f03-mark" src="assets/favicon.svg" alt="" />
+        <div class="f03-word" id="f03-word">Reinstate</div>
+      </div>
+    </div>
+
+    <div class="clip f03-tag" data-start="0" data-duration="2.3" data-track-index="2" id="f03-tag">
+      <span class="f03-tw">Capture.</span>
+      <span class="f03-tw">Encrypt.</span>
+      <span class="f03-tw f03-hot">Reinstate.</span>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+
+      // Scene 1 — the mark arrives alone with overshoot. Half the wordmark's
+      // width is pre-offset onto the shift wrapper so the mark reads as centered
+      // before the wordmark exists.
+      gsap.set("#f03-word", { opacity: 0 });
+
+      tl.fromTo(
+        "#f03-shift",
+        { x: 103 },
+        { x: 103, duration: 0.01, ease: "none" },
+        0
+      );
+
+      tl.fromTo(
+        "#f03-mark",
+        { scale: 0.68, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.46, ease: "back.out(2.2)" },
+        0.03
+      );
+
+      // Scene 2 — the wordmark rises out from behind the mark and the pair
+      // recenters as one unit.
+      tl.fromTo(
+        "#f03-word",
+        { opacity: 0, x: -56, yPercent: 26 },
+        { opacity: 1, x: 0, yPercent: 0, duration: 0.4, ease: "power3.out" },
+        0.46
+      );
+      tl.to("#f03-shift", { x: 0, duration: 0.4, ease: "power3.inOut" }, 0.46);
+
+      // Scene 3 — the product line reveals word-by-word, each on its own beat.
+      tl.fromTo(
+        ".f03-tw",
+        { opacity: 0, y: 20 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.28,
+          ease: "power3.out",
+          stagger: 0.14
+        },
+        1.0
+      );
+
+      window.__timelines["03-identity"] = tl;
+    })();
+  </script>
+</template>
