@@ -49,9 +49,16 @@ import (
 // writing blind into an unknown layout can destroy session state. Reading never
 // can.
 //
-// Agents with no agentcheck definition (Gemini, OpenCode, Grok) can never
-// resolve a version and are therefore always judged on layout alone. That is
-// the same rule, not an exception.
+// Agents with no agentcheck definition (Gemini, Grok) can never resolve a
+// version and are therefore always judged on layout alone. That is the same
+// rule, not an exception.
+//
+// The corollary bites when an agent gains a definition: OpenCode did, at T3,
+// and a handoff from an OpenCode build outside the verified range is now
+// UNTESTED where it was previously judged on layout alone. That is the contract
+// working, not a regression in it — but the verified range starts at a single
+// physically measured build, so it will report UNTESTED for most installs until
+// more builds are measured on a device.
 
 // VersionResolver reports the installed source-agent version for a record,
 // together with how much the resolution actually established. The evidence is

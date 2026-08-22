@@ -1,23 +1,61 @@
 # OpenCode
 
-**Confidence: Verified (list path)** — `internal/sessionindex/opencode.go` uses
-the supported `opencode session list --format json` command and deliberately
-does not read private storage.
-**Documented** for on-disk `storage/message/` layout and Windows root (R1,
-2026-08-12).
+**Confidence: Verified (embedded store)** — the shipped index is
+`internal/agents/sources/opencode/sqlite.go`, which reads the embedded SQLite
+store read-only and immutable. The vendor CLI is not invoked to list sessions:
+`opencode session list` answers only for the directory it runs in, and running
+it opened the store read-write and left `-wal` and `-shm` files under the agent
+root.
+**Documented** for the historical on-disk `storage/message/` layout and the
+Windows root (R1, 2026-08-12).
 
 | Aspect | Value |
 | ------ | ----- |
-| Supported read API | `opencode session list --format json` |
-| Storage root (Linux/macOS) | `~/.local/share/opencode` (`storage/` underneath) |
+| Storage family | F3, embedded SQLite session store |
+| Layout id | `embedded-sqlite-session-store` |
+| Marker | `opencode.db` — a regular file, not a directory |
+| Storage root (Linux/macOS) | `~/.local/share/opencode` |
 | Storage root (Windows) | `%USERPROFILE%\.local\share\opencode` (same XDG layout; **not** `%LOCALAPPDATA%`) |
-| Env override | `XDG_DATA_HOME` (when set) |
-| Session index | `storage/session/<project-id>/<session-id>.json` |
-| Messages | `storage/message/<session-id>/<message-id>.json` (`msg…` ids) |
-| Message parts | `storage/part/<message-id>/<part-id>.json` (`prt…` ids; body text lives here) |
-| Session diffs | `storage/session_diff/…` |
+| Env override | `XDG_DATA_HOME`, which names the **parent**; the root is `$XDG_DATA_HOME/opencode` |
+| Tables read | `session`, `project`, and whichever of `message` / `session_message` exists |
+| Tables never opened | `credential`, `account`, `control_account`, `account_state` |
+| Project key | opaque 40-hex vendor id; never used as a display name |
 | Session ID shape | `ses_…` |
-| Resume | `opencode run "<prompt>" --session <id>` / `--continue` (`-c`) |
+
+## Verified resume (T3)
+
+Argv below is quoted from `opencode --help` as printed by the installed binary,
+measured on macOS from OpenCode `1.18.21`:
+
+```text
+  -c, --continue      continue the last session
+  -s, --session       session id to continue
+      --fork          fork the session when continuing (use with --continue or --session)
+```
+
+OpenCode has **no `resume` or `fork` verb**. Continuation is an option on the
+default command, and `--fork` is a modifier on `--session` or `--continue`. The
+default command's only positional is a project path, so an argv shaped like
+another vendor's `<verb> <id>` would silently start a new session in a directory
+named after the session id.
+
+| Action | Argv |
+| ------ | ---- |
+| Resume | `opencode --session <id>` |
+| Fork | `opencode --session <id> --fork` |
+| Continue newest | `opencode --continue` |
+
+`opencode --version` prints a bare `MAJOR.MINOR.PATCH` on stdout with an empty
+stderr, and answers unchanged under the sanitized probe environment. The
+verified range is the single build physically measured, and widens only when
+another build is measured on a device.
+
+A session row the vendor recorded without a working directory stays read-only:
+OpenCode is launched into a directory, so such a row has nowhere to go.
+
+Device journey:
+[../testing/results/2026-08-22-macos-opencode-t3-journey.md](../testing/results/2026-08-22-macos-opencode-t3-journey.md)
+(macOS only; native Windows pending).
 
 ### Message record schema (R1 — Documented)
 

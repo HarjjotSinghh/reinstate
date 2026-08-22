@@ -28,7 +28,7 @@ The Phase 2 local capability matrix is:
 | Claude Code | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64 | T5 |
 | OpenAI Codex CLI | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64 | T5 |
 | Gemini CLI | Read-only included | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac | T2 |
-| OpenCode | Read-only included | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac | T2 |
+| OpenCode | Read-only included | Same-vendor included | macOS resume journey recorded (`2026-08-22-macos-opencode-t3-journey.md`); native Windows journey not yet run | T3 |
 | Cursor CLI | Indexed (read-only) | Not implemented | Dual-platform probes committed; indexed from `meta.json`; no device journey for resume | T1 |
 | Grok Build | Read-only included | Not supported in Phase 2 | Dual-platform probes committed (`2026-08-17-windows-grok.json`, `2026-08-21-macos-grok.json`) | T2 |
 | Amp | Not readable locally (`server_backed`) | Not implemented | Not applicable | T0 |
@@ -171,14 +171,17 @@ there, so it does not block.
 
 Every transcript reader resolves the version from the installed executable
 through the same probe `rein inspect` reports; no reader reads a vendor version
-file. Gemini CLI, OpenCode, and Grok Build have no version probe and are always
-judged on layout alone, which is the same rule rather than an exception.
+file. Gemini CLI and Grok Build have no version probe and are always judged on
+layout alone, which is the same rule rather than an exception. OpenCode has a
+version probe from T3 onward, bounded to the single build measured on a device.
 
 Phase 2 local records carry per-session `can_resume` and `can_fork`
 capabilities. Claude/Codex native actions use the exact documented argv in the
 Phase 2 acceptance matrix and preflight the executable and recorded workspace;
-physical version evidence remains a separate release gate. Gemini/OpenCode are
-read-only by phase contract.
+physical version evidence remains a separate release gate. OpenCode records are
+resumable when the vendor recorded a working directory to launch into, and
+read-only with that stated as the reason when it did not. Gemini is read-only by
+phase contract.
 
 ## Path mapping
 

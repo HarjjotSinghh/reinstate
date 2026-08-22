@@ -182,13 +182,50 @@ func normalizeAgent(agent string) (string, error) {
 	return "", fmt.Errorf("unsupported agent %q", agent)
 }
 
+// processImageNames returns every name this process could legitimately be
+// recognized by: the basename of the reported image, and the basename of the
+// program actually executed as recorded in argv[0].
+//
+// Both are needed because the reported image is not always intact. macOS `ps`
+// fixes the width of its `comm` column when other columns are requested
+// alongside it, so a process launched by absolute path is reported as the first
+// sixteen characters of that path — "/Users/exampleus" — whose basename matches
+// no agent at all. Reinstate launches vendors by their verified absolute path,
+// so that is the ordinary case, not an edge one: relying on the image alone
+// means the liveness check silently answers "nothing is running" for every
+// agent it started itself. argv[0] survives that truncation.
+func processImageNames(image, commandLine string) []string {
+	candidates := make([]string, 0, 2)
+	add := func(raw string) {
+		raw = strings.TrimSpace(raw)
+		if raw == "" {
+			return
+		}
+		name := strings.ToLower(filepath.Base(strings.ReplaceAll(raw, "\\", "/")))
+		name = strings.TrimSuffix(name, ".exe")
+		if name == "" || name == "." || name == "/" {
+			return
+		}
+		for _, existing := range candidates {
+			if existing == name {
+				return
+			}
+		}
+		candidates = append(candidates, name)
+	}
+	add(image)
+	if argv0, _, _ := strings.Cut(strings.TrimSpace(commandLine), " "); argv0 != "" {
+		add(argv0)
+	}
+	return candidates
+}
+
 func matchesAgentProcess(agent, image, commandLine string) bool {
 	spec, ok := currentSpecs()[strings.ToLower(strings.TrimSpace(agent))]
 	if !ok {
 		return false
 	}
-	name := strings.ToLower(filepath.Base(strings.TrimSpace(image)))
-	name = strings.TrimSuffix(name, ".exe")
+	names := processImageNames(image, commandLine)
 	normalized := strings.ToLower(strings.ReplaceAll(commandLine, "\\", "/"))
 
 	for _, identity := range spec.Identify {
@@ -209,12 +246,21 @@ func matchesAgentProcess(agent, image, commandLine string) bool {
 		if imageName == "" {
 			continue
 		}
-		if name == imageName || nativeVariant(name, imageName) {
-			return true
+		for _, name := range names {
+			if name == imageName || nativeVariant(name, imageName) {
+				return true
+			}
 		}
 	}
 
-	if name != "node" && name != "nodejs" {
+	hosted := false
+	for _, name := range names {
+		if name == "node" || name == "nodejs" {
+			hosted = true
+			break
+		}
+	}
+	if !hosted {
 		return false
 	}
 	for _, marker := range spec.NodeMarkers {
