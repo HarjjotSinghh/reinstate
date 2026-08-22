@@ -1,0 +1,145 @@
+<template>
+  <style>
+    @font-face{font-family:"Questrial";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/Questrial-Regular.woff2") format("woff2");}
+    @font-face{font-family:"Geist";font-weight:100 900;font-style:normal;font-display:block;src:url("assets/fonts/Geist-Variable.woff2") format("woff2");}
+    @font-face{font-family:"Geist Mono Variable";font-weight:100 900;font-style:normal;font-display:block;src:url("assets/fonts/GeistMono-Variable.woff2") format("woff2");}
+
+    #root {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      font-family: "Geist", sans-serif;
+    }
+    /* Statement ground — a lifted charcoal-green, one subtle step off the
+       terminal frames. Never a light ground: the video stays in one dark family. */
+    .f02-ground {
+      position: absolute;
+      inset: 0;
+      background: #1C1F1A;
+    }
+    .f02-glow {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 62% 58% at 50% 46%, rgba(172,237,55,0.05) 0%, rgba(0,0,0,0) 72%);
+    }
+    .f02-kicker {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 214px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      font-family: "Geist Mono Variable", monospace;
+      font-size: 26px;
+      font-weight: 550;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #ACED37;
+    }
+    .f02-spike {
+      width: 15px; height: 15px; display: inline-block;
+      background: #ACED37; border-radius: 2px; rotate: 45deg;
+    }
+    .f02-stage {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 316px;
+      text-align: center;
+    }
+    /* Explicit balanced breaks, not auto-wrap: each phrase reads as two even
+       lines, so no single word is ever orphaned onto a line of its own. */
+    .f02-line {
+      font-family: "Questrial", sans-serif;
+      font-size: 108px;
+      line-height: 1.1;
+      letter-spacing: -0.022em;
+      color: #F4F5EE;
+    }
+    .f02-line-2 { margin-top: 42px; }
+    .f02-accent { color: #ACED37; }
+    .f02-rule {
+      position: absolute;
+      left: 660px;
+      top: 806px;
+      width: 600px;
+      height: 2px;
+      overflow: hidden;
+    }
+    .f02-rule i {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: #F4F5EE;
+      opacity: 0.3;
+      transform-origin: center center;
+    }
+  </style>
+
+  <div id="root" data-composition-id="02-the-gap" data-width="1920" data-height="1080">
+    <div class="clip f02-ground" data-start="0" data-duration="3.5" data-track-index="0" id="f02-ground"></div>
+    <div class="clip f02-glow" data-start="0" data-duration="3.5" data-track-index="1" id="f02-glow"></div>
+
+    <div class="clip f02-kicker" data-start="0" data-duration="3.5" data-track-index="2" id="f02-kicker">
+      <i class="f02-spike"></i><span>The gap</span>
+    </div>
+
+    <div class="clip f02-stage" data-start="0" data-duration="3.5" data-track-index="3" id="f02-stage">
+      <div class="f02-line" id="f02-p1">Git has the code<br />and its history.</div>
+      <div class="f02-line f02-line-2" id="f02-p2">It does not have<br />the <span class="f02-accent">conversation</span>.</div>
+    </div>
+
+    <div class="clip f02-rule" data-start="0" data-duration="3.5" data-track-index="4" id="f02-rule">
+      <i id="f02-rule-fill"></i>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+
+      // ONE tempo grid drives both phrase slams — the beat-slam signature.
+      var PULSE = 0.4;
+      var BEATS = [PULSE * 0.85, PULSE * 3.1];
+
+      // Scene 1 — the kicker is the only thing on the ground at t=0.
+      tl.fromTo(
+        "#f02-kicker",
+        { opacity: 0, y: -14 },
+        { opacity: 1, y: 0, duration: 0.34, ease: "power3.out" },
+        0.06
+      );
+
+      // Scene 2 — phrase one slams alone. Distinct entrance: scale + blur release.
+      tl.fromTo(
+        "#f02-p1",
+        { scale: 1.3, filter: "blur(14px)", opacity: 0 },
+        { scale: 1, filter: "blur(0px)", opacity: 1, duration: 0.4, ease: "power4.out" },
+        BEATS[0]
+      );
+
+      // Scene 3 — phrase two slams on the next beat with its OWN entrance (rise,
+      // not scale), so the pair reads as two hits rather than one repeated move.
+      tl.fromTo(
+        "#f02-p2",
+        { yPercent: 34, filter: "blur(10px)", opacity: 0 },
+        { yPercent: 0, filter: "blur(0px)", opacity: 1, duration: 0.44, ease: "power4.out" },
+        BEATS[1]
+      );
+
+      // Scene 4 — locked finale. The rule draws outward from centre, then
+      // everything is still. No drift, no breathing.
+      tl.fromTo(
+        "#f02-rule-fill",
+        { scaleX: 0 },
+        { scaleX: 1, duration: 0.62, ease: "power3.inOut" },
+        2.24
+      );
+
+      window.__timelines["02-the-gap"] = tl;
+    })();
+  </script>
+</template>

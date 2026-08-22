@@ -1,0 +1,171 @@
+<template>
+  <style>
+    @font-face{font-family:"Questrial";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/Questrial-Regular.woff2") format("woff2");}
+    @font-face{font-family:"Geist";font-weight:100 900;font-style:normal;font-display:block;src:url("assets/fonts/Geist-Variable.woff2") format("woff2");}
+    @font-face{font-family:"Geist Mono Variable";font-weight:100 900;font-style:normal;font-display:block;src:url("assets/fonts/GeistMono-Variable.woff2") format("woff2");}
+
+    #root {
+      position: absolute; inset: 0; overflow: hidden;
+      font-family: "Geist Mono Variable", monospace;
+    }
+    .f06-ground { position: absolute; inset: 0; background: #171815; }
+    .f06-glow {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 62% 56% at 42% 42%, rgba(172,237,55,0.07) 0%, rgba(0,0,0,0) 72%);
+    }
+    .f06-cmd {
+      position: absolute; left: 260px; top: 168px;
+      display: flex; align-items: baseline;
+      font-size: 42px; color: #F4F5EE; white-space: nowrap;
+    }
+    .f06-dollar { color: #ACED37; margin-right: 16px; font-weight: 550; }
+    .f06-caret { display: inline-block; width: 19px; height: 40px; margin-left: 6px; background: #ACED37; }
+    .f06-checks { position: absolute; left: 260px; top: 288px; width: 900px; }
+    .f06-check {
+      display: flex; align-items: center; gap: 26px;
+      padding: 18px 0; font-size: 44px; color: #F4F5EE; font-weight: 500;
+    }
+    .f06-check .sub { font-size: 26px; color: #7E8A80; margin-left: auto; font-weight: 400; }
+    .f06-verified {
+      position: absolute; left: 260px; top: 300px;
+      display: inline-flex; align-items: center; gap: 18px;
+      font-size: 34px; font-weight: 650; letter-spacing: 0.19em; text-transform: uppercase;
+      color: #0B1710; background: #ACED37; padding: 16px 32px; border-radius: 8px;
+    }
+    .f06-stream {
+      position: absolute; left: 260px; top: 428px; width: 1420px;
+      border-left: 3px solid rgba(172,237,55,0.5); padding-left: 30px;
+    }
+    .f06-agent {
+      font-size: 24px; font-weight: 600; letter-spacing: 0.17em;
+      text-transform: uppercase; color: #ACED37; margin-bottom: 20px;
+    }
+    /* One flowing paragraph: no hard breaks, and `pretty` keeps the last line
+       from stranding a single word. The stream wraps naturally as it grows. */
+    .f06-body {
+      font-size: 32px; line-height: 1.62; color: #D5DBD2;
+      text-wrap: pretty; min-height: 175px;
+    }
+    .f06-scaret { display: inline-block; width: 15px; height: 30px; background: #ACED37; }
+  </style>
+
+  <div id="root" data-composition-id="06-verify" data-width="1920" data-height="1080">
+    <div class="clip f06-ground" data-start="0" data-duration="5.6" data-track-index="0" id="f06-ground"></div>
+    <div class="clip f06-glow" data-start="0" data-duration="5.6" data-track-index="1" id="f06-glow"></div>
+
+    <div class="clip f06-cmd" data-start="0" data-duration="5.6" data-track-index="2" id="f06-cmd">
+      <span class="f06-dollar">$</span><span id="f06-t1"></span><span class="f06-caret" id="f06-c1"></span>
+    </div>
+
+    <div class="clip f06-checks" data-start="0" data-duration="5.6" data-track-index="3" id="f06-checks" data-layout-allow-overlap>
+      <div class="f06-check" id="f06-k1">
+        <svg width="40" height="40" viewBox="0 0 26 26" fill="none">
+          <path class="f06-tick" d="M4 13.5 L10 19.5 L22 6.5" stroke="#ACED37" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>integrity</span><span class="sub">checksum matches</span>
+      </div>
+      <div class="f06-check" id="f06-k2">
+        <svg width="40" height="40" viewBox="0 0 26 26" fill="none">
+          <path class="f06-tick" d="M4 13.5 L10 19.5 L22 6.5" stroke="#ACED37" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>paths</span><span class="sub">remapped for this device</span>
+      </div>
+      <div class="f06-check" id="f06-k3">
+        <svg width="40" height="40" viewBox="0 0 26 26" fill="none">
+          <path class="f06-tick" d="M4 13.5 L10 19.5 L22 6.5" stroke="#ACED37" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>agent</span><span class="sub">claude-code, same vendor</span>
+      </div>
+    </div>
+
+    <div class="clip f06-verified" data-start="0" data-duration="5.6" data-track-index="4" id="f06-verified" data-layout-allow-overlap>verified</div>
+
+    <div class="clip f06-stream" data-start="0" data-duration="5.6" data-track-index="5" id="f06-stream">
+      <div class="f06-agent">session resumed</div>
+      <div class="f06-body"><span id="f06-body"></span><span class="f06-scaret" id="f06-sc"></span></div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+      var D = 5.6;
+
+      var t1 = document.getElementById("f06-t1");
+      var c1 = document.getElementById("f06-c1");
+      var body = document.getElementById("f06-body");
+      var sc = document.getElementById("f06-sc");
+
+      var SEQ1 = [
+        { t: 0.00, text: "" }, { t: 0.08, text: "re" }, { t: 0.16, text: "rein " },
+        { t: 0.24, text: "rein sta" }, { t: 0.32, text: "rein status" },
+        { t: 0.42, text: "rein status " }, { t: 0.52, text: "rein status ses_7f3a" }
+      ];
+
+      // The resumed agent picks the task back up mid-thought — synthetic work,
+      // never a real transcript.
+      var STREAM = [
+        { t: 0.00, text: "" },
+        { t: 3.32, text: "picking up where we stopped" },
+        { t: 3.52, text: "picking up where we stopped — the refund" },
+        { t: 3.72, text: "picking up where we stopped — the refund handler still" },
+        { t: 3.92, text: "picking up where we stopped — the refund handler still needs an" },
+        { t: 4.14, text: "picking up where we stopped — the refund handler still needs an idempotency key" },
+        { t: 4.40, text: "picking up where we stopped — the refund handler still needs an idempotency key before the retry path is safe. Re-reading the branch" },
+        { t: 4.70, text: "picking up where we stopped — the refund handler still needs an idempotency key before the retry path is safe. Re-reading the branch you left open, then applying the change." }
+      ];
+
+      function at(seq, time) {
+        for (var i = seq.length - 1; i >= 0; i--) if (time >= seq[i].t) return seq[i].text;
+        return "";
+      }
+
+      gsap.set(".f06-check", { opacity: 0, x: -30 });
+      gsap.set(".f06-tick", { strokeDasharray: 42, strokeDashoffset: 42 });
+      gsap.set("#f06-verified", { opacity: 0, scale: 0.7 });
+      gsap.set("#f06-stream", { opacity: 0, y: 20 });
+
+      var driver = { t: 0 };
+      tl.to(driver, {
+        t: D, duration: D, ease: "none",
+        onUpdate: function () {
+          var a = at(SEQ1, driver.t); if (t1.textContent !== a) t1.textContent = a;
+          var b = at(STREAM, driver.t); if (body.textContent !== b) body.textContent = b;
+        }
+      }, 0);
+
+      var blink = { p: 0 };
+      tl.to(blink, {
+        p: Math.PI * 2 * 11, duration: D, ease: "none",
+        onUpdate: function () {
+          var on = Math.sin(blink.p) > 0 ? "1" : "0";
+          c1.style.opacity = driver.t >= 0.72 ? "0" : on;
+          sc.style.opacity = driver.t >= 3.2 ? on : "0";
+        }
+      }, 0);
+
+      // Scene 2 — each check stamps in on its own beat, the tick drawing itself
+      // before the row locks.
+      var starts = [0.72, 1.24, 1.76];
+      ["#f06-k1", "#f06-k2", "#f06-k3"].forEach(function (id, i) {
+        tl.fromTo(id, { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.28, ease: "power3.out" }, starts[i]);
+        tl.to(id + " .f06-tick", { strokeDashoffset: 0, duration: 0.3, ease: "power2.out" }, starts[i] + 0.1);
+      });
+
+      // Scene 3 — the stack condenses into one chip at the same screen origin,
+      // clearing the space for the resumed session.
+      tl.to("#f06-checks", { opacity: 0, scale: 0.86, y: -30, duration: 0.32, ease: "power2.in" }, 2.36);
+      tl.fromTo("#f06-verified",
+        { opacity: 0, scale: 0.7 },
+        { opacity: 1, scale: 1, duration: 0.34, ease: "back.out(2)" }, 2.52);
+
+      // Scene 4 — the agent stream is the only motion left; camera holds.
+      tl.fromTo("#f06-stream",
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 3.06);
+
+      window.__timelines["06-verify"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,67 @@
+{
+  "lines": [
+    {
+      "id": "01",
+      "sfx": [
+        "keystroke-cluster",
+        "error-thud"
+      ]
+    },
+    {
+      "id": "02",
+      "sfx": [
+        "impact-soft ×2",
+        "riser-short"
+      ]
+    },
+    {
+      "id": "03",
+      "sfx": [
+        "impact-hard",
+        "whoosh-short"
+      ]
+    },
+    {
+      "id": "04",
+      "sfx": [
+        "keystroke-cluster ×2",
+        "row-tick ×4",
+        "ui-confirm"
+      ]
+    },
+    {
+      "id": "05",
+      "sfx": [
+        "whoosh-transfer",
+        "lock-seal",
+        "ui-confirm",
+        "impact-soft"
+      ]
+    },
+    {
+      "id": "06",
+      "sfx": [
+        "check-tick ×3",
+        "ui-confirm",
+        "type-stream"
+      ]
+    },
+    {
+      "id": "07",
+      "sfx": [
+        "whoosh-short ×3",
+        "impact-soft"
+      ]
+    },
+    {
+      "id": "08",
+      "sfx": [
+        "impact-hard",
+        "ui-confirm"
+      ]
+    }
+  ],
+  "bgm": {
+    "mode": "none"
+  }
+}
