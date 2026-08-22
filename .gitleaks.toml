@@ -67,3 +67,50 @@ paths = [
 regexes = [
   '''^msg_fixture(?:asst|user)001$''',
 ]
+
+# The SHA256 fingerprint of the release signing key, quoted verbatim from
+# `git verify-tag` output in acceptance reports ("Good \"git\" signature ...
+# ED25519 key SHA256:..."). It is the fingerprint of a *public* key: the key
+# itself is committed at `.github/allowed_signers`, and every report that
+# verifies a tag reproduces this line as its evidence. Publishing it is the
+# point of the row.
+#
+# `.gitleaksignore` already carries this finding pinned to one commit and line.
+# That entry has already gone stale once — the same text was re-committed at a
+# different line and the scan failed again — which is exactly the decay this
+# file's header predicts. A path-scoped allowlist does not move with the text.
+[[allowlists]]
+description = "Public release-signing key fingerprint quoted from git verify-tag in acceptance reports"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = [
+  '''^docs/testing/results/.*\.md$''',
+  '''^\.gitleaks\.toml$''',
+]
+regexes = [
+  '''uXE5rh19MaNxQO/0pgR8n2K73xR\+ck0O7fwf351W030''',
+]
+
+# A Git packfile name from a marketplace checkout, used as an input to the
+# agent probe's shape normalizer. The test asserts the normalizer collapses it
+# to `pack-<40-hex>` so no content hash from an operator's own repository ever
+# reaches a committed probe artifact — the string has to appear verbatim for
+# the assertion to mean anything.
+#
+# It is the name of an object in a public repository, not a credential. The
+# `sourcegraph-access-token` rule matches it on hex shape alone.
+[[allowlists]]
+description = "Git packfile name used as input to the agent probe shape normalizer"
+targetRules = ["sourcegraph-access-token"]
+condition = "AND"
+paths = [
+  '''^internal/agents/probe/collect_test\.go$''',
+  '''^\.gitleaks\.toml$''',
+]
+# regexTarget = "line" because the rule's captured secret is a substring of the
+# object name, not the whole `pack-...` token, so matching the secret alone
+# would have to guess where the rule chose to cut.
+regexTarget = "line"
+regexes = [
+  '''pack-8c7ffa580563b675b1fd27a53df219b761e4d0a1''',
+]
