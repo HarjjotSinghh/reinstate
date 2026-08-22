@@ -32,8 +32,8 @@ yes-or-no flag. Tiers are cumulative. New agents are declared in the
 | T4 | Handoff destination |
 | T5 | Encrypted same-vendor sync |
 
-Claude Code and Codex CLI are T5. Grok Build is T3, with its physical resume
-journey specified in
+Claude Code and Codex CLI are T5. Grok Build is T4, with its physical resume
+and destination journeys specified in
 [testing/grok-native-resume-acceptance.md](testing/grok-native-resume-acceptance.md)
 and not yet collected. Gemini CLI and OpenCode are T2. The capability matrix
 below remains the fail-closed per-surface record.
@@ -46,7 +46,7 @@ below remains the fail-closed per-surface record.
 | OpenAI Codex CLI | Included in `v0.2.0` | Included in `v0.2.0` | Yes | Yes | Supported | Later |
 | Gemini CLI | Read-only in `v0.2.0` | No | Source-only | No | No | Later |
 | OpenCode | Read-only in `v0.2.0` | No | Source-only | No | No | Later |
-| Grok Build | Read-only in `v0.4.0` | Same-vendor (T3, journey pending) | Source-only | No | No | Planned |
+| Grok Build | Read-only in `v0.4.0` | Same-vendor (T4, journey pending) | Yes | Yes (T4, journey pending) | No | Planned |
 | Kimi Code CLI | Read-only (T1) | No | No | No | No | Later |
 | Qwen Code | Read-only (T1) | No | No | No | No | Later |
 | Pi | Read-only (T1) | No | No | No | No | Later |
@@ -140,10 +140,10 @@ acknowledgements, exit codes, and provenance.
 
 ## Phase 4 structured-handoff contract (`v0.4.0`)
 
-Handoff support is directional. Claude Code and Codex are both sources and
-targets. Gemini CLI, OpenCode, and Grok Build are source-only: their transcript
+Handoff support is directional. Claude Code, Codex and Grok Build are both
+sources and targets. Gemini CLI and OpenCode are source-only: their transcript
 readers can build a capsule, but Reinstate will not launch them as handoff
-destinations in v0.4.0.
+destinations.
 
 A reader snapshots only complete source records, performs bounded local parsing,
 and preserves unknown or unavailable material through explicit fidelity states.

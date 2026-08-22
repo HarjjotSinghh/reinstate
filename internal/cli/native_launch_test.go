@@ -112,8 +112,10 @@ func TestDestinationAgentGateIsT4(t *testing.T) {
 	}{
 		{"claude", "claude", true},
 		{"codex", "codex", true},
-		{"grok is T3, not a destination", "grok", false},
+		{"grok is T4", "grok", true},
 		{"gemini is T2", "gemini", false},
+		{"opencode is T2", "opencode", false},
+		{"kimi is T1", "kimi", false},
 		{"all is never a destination", "all", false},
 		{"unknown", "nope", false},
 	}

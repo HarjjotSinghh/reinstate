@@ -88,8 +88,16 @@ storage. Phase 4 must therefore:
 3. keep Grok out of the default target set until a target packet ships.
 
 Grok sessions appear in the local index and are handoff sources. Native resume
-and fork use the vendor's own CLI against the vendor's own session, and
-Reinstate writes nothing under `~/.grok`.
+and fork use the vendor's own CLI against the vendor's own session. Grok is
+also a handoff **destination**: `rein handoff ... --to grok` runs
+`grok --session-id <uuid> "<briefing>"`, which starts a *new* session and is
+never a cross-agent resume. Requirements 1 and 2 above hold in that direction
+too — the warning is printed and redaction is forced whether Grok is the source
+or the destination, and `--no-redact` is refused either way. Requirement 3 is
+satisfied by this target packet. Reinstate writes nothing under `~/.grok` at
+any tier below T5, including no directory-trust record: no Grok trust file
+shape has been measured, and inventing one would be a vendor-internal write on
+a guess.
 
 ### Remaining omissions for a Grok reader
 
@@ -116,11 +124,12 @@ installer trees and is not committed.
 The tree still lists `mcp_credentials.json` (filename only). Exclude it on
 the next catalog pass; do not open it.
 
-### Native resume evidence status
+### Evidence status
 
 The committed Grok device rows to date cover index, search, inspect and
-handoff-source behaviour. The physical native-resume journey T3 requires —
-real agent, real session, resumed, continuation observed, on macOS **and**
-native Windows — is specified in
+handoff-source behaviour. The physical journeys T3 and T4 require — real agent,
+real session, resumed with the continuation observed; and a real destination
+session started, acknowledged and reconciled — on macOS **and** native Windows,
+are specified in
 [testing/grok-native-resume-acceptance.md](../testing/grok-native-resume-acceptance.md)
-and has not been recorded on either platform.
+and have not been recorded on either platform.

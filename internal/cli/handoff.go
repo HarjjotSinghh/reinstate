@@ -527,8 +527,11 @@ func writeHandoffPlan(cmd *cobra.Command, plan handoff.PlanResult, asJSON, showR
 }
 
 func destinationWarningHuman(warning string) string {
-	if warning == transcript.DestinationWarningGrok {
+	switch warning {
+	case transcript.DestinationWarningGrok:
 		return "Grok Build has documented repository-content upload behavior, including Git history and unredacted .env material sent to xAI cloud storage; Reinstate forced capsule redaction for this source"
+	case handoff.DestinationWarningGrokDestination:
+		return "Grok Build has documented repository-content upload behavior, including Git history and unredacted .env material sent to xAI cloud storage; this handoff sends a briefing about your repository into that CLI, and Reinstate forced capsule redaction for it"
 	}
 	return warning
 }
