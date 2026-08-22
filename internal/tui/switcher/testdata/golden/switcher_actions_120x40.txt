@@ -1,0 +1,40 @@
+ rein                                                                                 9 sessions · 5 agents · reinstate
+ ❯ type to filter                                                                                               actions
+TODAY                                                                  │ grok · reinstate-website
+  ● claude   reinstate        Fix the auth token refresh loop 25m ago  │ [31mmalicious [0m repaint attempt
+  ● codex    reinstate        認証リファクタを修正する        3h ago   │ 1d ago
+  ● gemini   reinstate-websi… 🚀 Ship the launch checklist    6h ago   │
+YESTERDAY                                                              │ ○ CANNOT RESUME
+▸ ○ grok     reinstate-websi… [31mmalicious [0m repaint atte… 1d ago   │   fixture session is read-only
+  ● opencode toolchain        Rewrite the build pipeline      1d ago   │
+THIS WEEK                                                              │ 3 messages
+  ● claude   toolchain        Bisect the flaky Windows path … 3d ago   │
+  ● codex    notes-app        Draft the release notes         5d ago   │ untrusted [2J preview text
+THIS MONTH                                                             │
+  ● gemini   reinstate        Investigate the pathmap regres… 12d ago  │
+OLDER                                                                  │
+  ◐ claude   archive-tool     Port the old importer           3mo ago  │
+                                                                       │
+                                                                       │
+                                                                       │
+                                                                       │
+                                                                       │
+                                                                       │
+                                                                       │
+                                                                       │
+                                                                       │
+                                                                       │
+                                                                       │
+                                                                       │
+                                                                       │
+                                                                       │
+                                                                       │
+                                                                       │
+                                                                       │
+                                                                       │
+                                                                       │
+                                                                       │
+                                                                       │
+                                                                       │ grok:4c2e9055
+
+ r resume   f fork   h hand off   i inspect   y copy ref   esc back

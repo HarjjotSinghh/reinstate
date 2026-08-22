@@ -28,6 +28,7 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/schema"
 	"github.com/HarjjotSinghh/reinstate/internal/sync"
+	"github.com/HarjjotSinghh/reinstate/internal/tui/wizard"
 )
 
 func defaultRegistry() *adapter.Registry {
@@ -76,11 +77,16 @@ func newInitCmd() *cobra.Command {
 		projectMappings                                       []string
 		nonInteractive                                        bool
 		force                                                 bool
+		link                                                  bool
+		paste                                                 bool
 	)
 	cmd := &cobra.Command{
 		Use:   "init",
 		Short: "Interactive setup (backend, encryption, path map)",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if link {
+				return printPairingCode(cmd)
+			}
 			home, err := config.Home()
 			if err != nil {
 				return NewExitError(ExitConfig, err.Error())
@@ -97,6 +103,41 @@ func newInitCmd() *cobra.Command {
 			}
 			if err := config.EnsureLayout(home); err != nil {
 				return err
+			}
+			// Interactive setup collects the non-secret coordinates first, so a
+			// mistake in one field never discards the others and a bad value is
+			// reported while the reader is still looking at it.
+			capability := resolveCapability(cmd, localCommandOptions{terminalCheck: defaultInitTerminalCheck}, false)
+			if wizardApplies(capability, nonInteractive, paste, endpoint, bucket) {
+				defaults := wizard.Result{
+					Provider: "r2",
+					Endpoint: endpoint,
+					Bucket:   bucket,
+					Region:   region,
+					Prefix:   prefix,
+				}
+				if paste {
+					payload, pasteErr := readPairingCode(cmd)
+					if pasteErr != nil {
+						return pasteErr
+					}
+					defaults = pairingDefaults(payload)
+				}
+				result, ok, wizardErr := runInitWizard(cmd, capability, defaults)
+				if wizardErr != nil {
+					return wizardErr
+				}
+				if !ok {
+					PrintHuman(cmd.ErrOrStderr(), "setup cancelled; nothing was written")
+					return nil
+				}
+				endpoint = result.Endpoint
+				bucket = result.Bucket
+				region = result.Region
+				prefix = result.Prefix
+				if result.JoinExisting {
+					configuredProfileID = result.ProfileID
+				}
 			}
 			profileID := configuredProfileID
 			if profileID == "" {
@@ -262,6 +303,8 @@ func newInitCmd() *cobra.Command {
 	cmd.Flags().StringVar(&configuredProfileID, "profile-id", "", "existing profile UUID from the first device")
 	cmd.Flags().StringArrayVar(&projectMappings, "project", nil, "portable project mapping ID=/absolute/local/path (repeatable)")
 	cmd.Flags().BoolVar(&nonInteractive, "yes", false, "non-interactive mode; requires endpoint, bucket, and environment credential provider")
+	cmd.Flags().BoolVar(&link, "link", false, "print this profile's pairing code for another device")
+	cmd.Flags().BoolVar(&paste, "paste", false, "start setup from a pairing code printed by another device")
 	cmd.Flags().BoolVar(&force, "force", false, "back up and replace an already-initialized home")
 	return cmd
 }

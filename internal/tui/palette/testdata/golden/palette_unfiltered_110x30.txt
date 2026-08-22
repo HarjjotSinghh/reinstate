@@ -1,0 +1,13 @@
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ ❯ run a command
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ ▸ Resume session        continue in its own agent
+   Fork session          branch through the vendor's native fork
+   Hand off to another…  new session from a briefing
+   Inspect session       full metadata and environment report
+   Copy session refere…  put agent:id on the clipboard
+   Toggle project scope  this project or every project
+   Refresh the index     rescan every agent now
+   Run diagnostics       rein doctor
+ 4 more matches
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────

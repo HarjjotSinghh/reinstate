@@ -1,0 +1,30 @@
+ rein                                                             0 sessions · 0 agents · reinstate
+ ❯ auth
+                                                           │
+  No sessions match auth.                                  │
+  Backspace to widen the filter.                           │
+  ctrl+a searches every project.                           │
+                                                           │
+                                                           │
+                                                           │
+                                                           │
+                                                           │
+                                                           │
+                                                           │
+                                                           │
+                                                           │
+                                                           │
+                                                           │
+                                                           │
+                                                           │
+                                                           │
+                                                           │
+                                                           │
+                                                           │
+                                                           │
+                                                           │
+                                                           │
+                                                           │
+                                                           │
+
+ ↵ resume   tab actions   ctrl+a scope   ctrl+k commands   esc clear

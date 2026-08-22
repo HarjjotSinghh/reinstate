@@ -1,0 +1,10 @@
+ rein init  step 6 of 7
+
+ This device
+
+ ▸ This is my first device
+     creates a new profile and a new encryption identity
+   Join a profile from another device
+     needs the profile ID shown when that device was set up
+
+ ▸ choose   ↵ next   shift+tab back   esc cancel

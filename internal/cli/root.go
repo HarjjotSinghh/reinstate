@@ -99,10 +99,11 @@ func NewRoot(opts Options) *cobra.Command {
 		processChecker = processcheck.SessionBusy
 	}
 	local := localCommandOptions{
-		sources:       opts.SessionSources,
-		launchRunner:  opts.SessionLaunchRunner,
-		verifier:      opts.PreflightVerifier,
-		terminalCheck: opts.TerminalChecker,
+		sources:        opts.SessionSources,
+		launchRunner:   opts.SessionLaunchRunner,
+		verifier:       opts.PreflightVerifier,
+		terminalCheck:  opts.TerminalChecker,
+		processChecker: processChecker,
 	}
 	if local.verifier == nil {
 		local.verifier = preflight.DefaultService()
@@ -144,6 +145,11 @@ func NewRoot(opts Options) *cobra.Command {
 		root.SetIn(opts.Stdin)
 	}
 	root.PersistentFlags().BoolVar(&jsonGlobal, "json", false, "prefer JSON output where supported")
+	root.PersistentFlags().Bool(
+		plainFlagName,
+		false,
+		"force plain non-interactive output on a terminal that could show the interactive UI",
+	)
 	root.SetHelpCommand(&cobra.Command{
 		Use:   "help [command]",
 		Short: "Help about any command",

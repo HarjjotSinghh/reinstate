@@ -7,6 +7,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Bare `rein` opens an interactive session switcher on a terminal that can host
+  one. Typing filters, the arrow keys move, and the selected session is
+  previewed beside the list. It replaces a loop that reprinted the whole list
+  after every keystroke and accepted only `NUMBER`, `/text`, `i N`, `f N`,
+  `h N`, and `q`.
+
+- Each row carries a readiness verdict — ready, needs acknowledgement, cannot
+  resume — computed in the background from the same preflight report
+  `rein resume` enforces. The engine has always known this; it was only ever
+  shown after a session had been chosen and a launch attempted. A session that
+  cannot resume because its agent is read-only now says why.
+
+- Environment warnings are acknowledged with the spacebar. The flag path
+  required reading each check identifier off the screen and typing it back
+  exactly, once per warning. The screen shows the equivalent
+  `--allow-environment-warning` command line as it is built, and the
+  identifiers collected go to the same `preflight.Authorize` call the flags
+  feed, so nothing is granted that the flags could not grant.
+
+- A handoff studio measures the projection for each destination and policy
+  before anything is written, showing what the capsule carries, what it leaves
+  behind, and how many values redaction hid. `--policy checkpoint|balanced|full`
+  was previously an invisible trade-off. Its warnings are acknowledged in the
+  studio and forwarded, and the source's own agent is not offered as a
+  destination because the pipeline refuses a same-agent handoff.
+
+- `rein init` opens a setup wizard with provider presets for Cloudflare R2,
+  Amazon S3, Backblaze B2, and MinIO, validating each field as it is entered
+  and allowing any step to be revisited. It collects no secret material:
+  storage keys and the passphrase are still read through the existing
+  hidden-input path, after the full-screen program has released the terminal.
+
+- `rein init --link` prints a pairing code carrying the endpoint, bucket,
+  region, prefix, and profile ID, and `rein init --paste` starts setup from
+  one. The code carries no keys and no passphrase.
+
+- `ctrl+k` opens a command palette, matching on subsequences so `hof` finds
+  "hand off".
+
+- A global `--plain` flag, and `REINSTATE_NO_TUI`, force the frozen
+  non-interactive output on a terminal that could show the interactive UI.
+  `--json`, a non-terminal stream, `TERM=dumb`, a CI environment, and a
+  terminal below 40x10 select it automatically. On Windows an unset `TERM` no
+  longer counts as a dumb terminal, where it would have disabled the
+  interactive UI entirely.
+
+- `scripts/tuisandbox` builds a synthetic agent home with sessions in every
+  readiness state, so the interactive surfaces can be exercised by hand
+  without touching a real `~/.claude`.
+
+### Changed
+
+- A clean launch prints one line of environment summary on an interactive
+  terminal instead of every passing check. Non-interactive output is unchanged.
+
+- `make` finds a Go toolchain installed by a version manager, prefers the mise
+  and asdf shim directories, and no longer needs `HOME` to be exported. When it
+  genuinely cannot find one it says so in a recipe rather than at parse time,
+  so `make -n`, `make help`, and `make clean` keep working.
+
+
 
 ### Changed
 

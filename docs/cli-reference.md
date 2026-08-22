@@ -57,6 +57,7 @@ rein handoff inspect HANDOFF_ID [--json]
 rein handoff export HANDOFF_ID --format json|markdown [--out PATH]
 rein init [--endpoint URL] [--bucket NAME] [--region auto] [--prefix ...]
           [--profile-id UUID] [--project ID=/absolute/local/path] [--yes]
+          [--link] [--paste]
 rein list [--agent claude|codex|all] [--json]
 rein status [--json]
 rein diff [--json]
@@ -66,6 +67,10 @@ rein conflicts list|show|resolve ...
 rein completion bash|zsh|fish|powershell
 ```
 
+Every command accepts the global `--plain` flag, which forces the frozen
+non-interactive output on a terminal that could otherwise show the interactive
+UI.
+
 ### `rein doctor`
 
 `--json` emits machine-readable diagnostics. `--self-test` runs a synthetic
@@ -73,6 +78,32 @@ encryption/storage check (in-memory; it does not prove remote storage).
 `--agents` lists every catalog agent and its support tier. `--agents --json`
 emits the redacted `AGENT-PROBE-V1` artifact. `--agents --acceptance-matrix`
 prints the generated Phase 5 acceptance row count and per-agent row list.
+
+### `rein init`
+
+On a terminal, and when the coordinates were not already supplied by flags or
+environment, `rein init` opens a setup wizard: a provider preset, then the
+endpoint, bucket, region, prefix, and whether this device is joining an existing
+profile. Each field is validated as it is entered and every step can be revisited,
+so a mistake in one does not discard the others.
+
+The wizard collects no secret material. Access keys, secret keys, and the
+passphrase are read afterwards, through the same hidden-input path they have
+always used, once the full-screen program has released the terminal.
+
+`--yes` and explicitly supplied coordinates skip the wizard entirely.
+
+#### Device pairing
+
+```text
+rein init --link      print this profile's pairing code
+rein init --paste     start setup from a pairing code
+```
+
+A pairing code carries the endpoint, bucket, region, prefix, and profile ID as
+one string, so a second device does not need those copied by hand. It carries
+**no keys and no passphrase**; the receiving device still asks for both. Treat it
+as a convenience, not a credential.
 
 ## Local commands
 
@@ -128,7 +159,66 @@ requires `--dry-run` for `resume`, `fork`, and `last`, so native child output
 cannot corrupt the JSON document. Read-only agents refuse resume/fork with
 compatibility exit `5` before any environment probe or vendor launch.
 
-On a TTY, bare `rein` refreshes and opens the numbered switcher:
+### The interactive switcher
+
+On a terminal that can host it, bare `rein` opens a full-screen session
+switcher. Typing filters the list; the arrow keys move; the selected session is
+previewed beside it with a readiness verdict computed from the same preflight
+report `rein resume` enforces.
+
+```text
+type          filter, using the same matching as `rein search`
+up/down       move; ctrl+p and ctrl+n also work
+pgup/pgdn     page; home and end jump
+enter         resume the selected session
+tab           action menu: r resume, f fork, h hand off, i inspect, y copy ref
+ctrl+a        switch between this project and every project
+ctrl+k        command palette
+ctrl+r        rescan every agent now
+esc           clear the filter, or quit when it is already empty
+```
+
+Letters always filter. Actions live behind `tab` and `ctrl+k` so that no
+keystroke means "filter" in one moment and "fork" in the next.
+
+The status column shows how resumable each session is, computed in the
+background for the rows on screen:
+
+```text
+●  ready to resume
+◐  resumable once environment warnings are acknowledged
+○  cannot resume: blocked, or a read-only agent
+◌  still being checked
+```
+
+`h` opens the handoff studio, which measures the projection for each
+destination and policy before anything is written, and states the exact
+`rein handoff` command for the current selection.
+
+Environment warnings are acknowledged with the spacebar rather than by retyping
+identifiers. The screen shows the equivalent
+`--allow-environment-warning` command line as it is built, so the scriptable
+form is always visible.
+
+### Plain output and the degradation ladder
+
+Plain output is what Reinstate emitted before the switcher existed, byte for
+byte. It is selected, in order, by:
+
+```text
+1. --json                                   always plain
+2. neither stream is a terminal             always plain
+3. --plain, REINSTATE_NO_TUI=1, TERM=dumb,
+   CI (or GITHUB_ACTIONS, GITLAB_CI,
+   BUILDKITE, CIRCLECI, TF_BUILD)           plain
+4. a terminal under 40x10                   plain
+5. NO_COLOR set                             interactive, no colour
+6. width under 80                           interactive, single column
+7. otherwise                                interactive, split panes
+```
+
+On a terminal that reaches step 3 or 4, bare `rein` falls back to the numbered
+switcher, whose contract is unchanged:
 
 ```text
 /text       filter
@@ -141,6 +231,9 @@ q           cancel
 
 On a non-TTY, bare `rein` exits promptly with usage code `2` and a
 `rein sessions --json` hint.
+
+`REINSTATE_TUI_COLS` and `REINSTATE_TUI_ROWS` pin the frame size, so acceptance
+runs produce the same frame on any console.
 
 `rein list` remains the Phase 1 compatibility command used by sync scripts.
 `rein sessions` is the canonical config-independent local listing command.

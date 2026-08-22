@@ -1,0 +1,20 @@
+ rein                               9 sessions · 5 agents · reinstate
+ ❯ type to filter
+TODAY
+  ● claude   reinstate        Fix the auth token refresh lo… 25m ago
+▸ ● codex    reinstate        認証リファクタを修正する       3h ago
+  ● gemini   reinstate-websi… 🚀 Ship the launch checklist   6h ago
+YESTERDAY
+  ○ grok     reinstate-websi… [31mmalicious [0m repaint att… 1d ago
+  ● opencode toolchain        Rewrite the build pipeline     1d ago
+THIS WEEK
+  ● claude   toolchain        Bisect the flaky Windows path… 3d ago
+  ● codex    notes-app        Draft the release notes        5d ago
+THIS MONTH
+  ● gemini   reinstate        Investigate the pathmap regre… 12d ago
+OLDER
+  ◐ claude   archive-tool     Port the old importer          3mo ago
+
+
+
+ ↵ resume   tab actions   ctrl+a scope   ctrl+k commands   esc quit

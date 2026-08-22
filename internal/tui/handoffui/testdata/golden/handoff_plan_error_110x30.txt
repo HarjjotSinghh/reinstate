@@ -1,0 +1,17 @@
+ hand off  claude claude:5f1c0b2a3e7d
+ to  ◂ codex ▸
+
+ policy  ◂ balanced   ▸                                                                        no measurement
+    newest turns that fit the prompt budget
+
+ ○ this handoff cannot be planned
+   read transcript: permission denied
+
+ starts a NEW codex session from a briefing; not a native resume
+
+ equivalent command
+ rein handoff claude:5f1c0b2a3e7d --to codex --policy balanced
+
+ this handoff cannot be planned: read transcript: permission denied
+
+ ◂▸ policy   tab destination   ↵ send   e export only   c copy command   esc cancel
