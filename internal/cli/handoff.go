@@ -221,7 +221,7 @@ func newHandoffCmd(options handoffCommandOptions) *cobra.Command {
 	cmd.Flags().BoolVar(&allowActive, "allow-active", false, "freeze the last complete record while the source is active")
 	cmd.Flags().BoolVar(&allowUntested, "allow-untested", false, "proceed with an untested source or destination layout")
 	cmd.Flags().BoolVar(&showRedactions, "show-redactions", false, "show redaction categories and counts, never values")
-	cmd.Flags().BoolVar(&noRedact, "no-redact", false, "skip secret redaction; refused for Grok sources")
+	cmd.Flags().BoolVar(&noRedact, "no-redact", false, "skip secret redaction; refused when Grok is the source or the destination")
 	cmd.AddCommand(newHandoffListCmd(), newHandoffInspectCmd(), newHandoffExportCmd())
 	return cmd
 }
@@ -540,8 +540,11 @@ func writeHandoffPlan(cmd *cobra.Command, plan handoff.PlanResult, asJSON, showR
 }
 
 func destinationWarningHuman(warning string) string {
-	if warning == transcript.DestinationWarningGrok {
+	switch warning {
+	case transcript.DestinationWarningGrok:
 		return "Grok Build has documented repository-content upload behavior, including Git history and unredacted .env material sent to xAI cloud storage; Reinstate forced capsule redaction for this source"
+	case handoff.DestinationWarningGrokDestination:
+		return "Grok Build has documented repository-content upload behavior, including Git history and unredacted .env material sent to xAI cloud storage; this handoff sends a briefing about your repository into that CLI, and Reinstate forced capsule redaction for it"
 	}
 	return warning
 }

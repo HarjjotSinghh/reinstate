@@ -48,8 +48,9 @@ run the rows; if it does not, record the row as `UNCOLLECTED`, not `PASS`.
 | `GD2` | Executing that handoff starts a **new** Grok session — not a cross-agent resume — whose id is the planned UUID, and the destination acknowledges the briefing on its first reply. |
 | `GD3` | Lineage records the destination id with state `resolved`. If the vendor did not create the pinned id, state must be `unresolved`, never a guess. |
 | `GD4` | Re-running the same handoff refuses with the session-id collision error and exit `5`, because the vendor requires `--session-id` not already exist. |
-| `GD5` | Redaction ran unconditionally on the Grok path and `--no-redact` is refused, per the upload warning in [session-storage/grok.md](../session-storage/grok.md). |
+| `GD5` | Redaction ran unconditionally on the Grok path and `--no-redact` is refused with exit `2` **in this direction**, and the human output prints the repository-upload warning naming the destination, per [session-storage/grok.md](../session-storage/grok.md). |
 | `GD6` | Grok → Claude and Grok → Codex still pass, so promoting Grok to a destination did not regress it as a source. |
+| `GD7` | Nothing was written under the Grok root by the handoff: no session files, and no directory-trust record. Compare a recursive listing before and after. If the destination TUI blocks on a directory-trust prompt, record that as a finding — Reinstate deliberately does not pre-accept trust for a vendor whose trust file shape it has not measured. |
 
 ## Recording
 

@@ -3,29 +3,29 @@ import PublicContentLayout from '../../layouts/PublicContentLayout.astro';
 
 export const prerender = true;
 
-const title = 'Grok Build as a T3 Verified Resume Agent | Reinstate';
+const title = 'Grok Build as a T4 Handoff Destination | Reinstate';
 const description =
-  'Grok Build is T3: Reinstate reads local sessions, builds a portable capsule, and launches grok --resume against the vendor session. Encrypted sync is not supported.';
+  'Grok Build is T4: Reinstate reads local sessions, hands off from and into Grok, and launches grok --resume against the vendor session. Encrypted sync is not supported.';
 ---
 
 <PublicContentLayout
   {title}
   {description}
   path="/integrations/grok"
-  eyebrow="Integration · Grok Build · T3"
-  answer="Grok Build is T3: a read-only local index, a handoff source, and same-vendor native resume through the vendor's own CLI. Reinstate is not a handoff destination for Grok and does not sync Grok sessions."
+  eyebrow="Integration · Grok Build · T4"
+  answer="Grok Build is T4: a read-only local index, a handoff source, a handoff destination, and same-vendor native resume through the vendor's own CLI. A handoff into Grok starts a new session and is never a cross-agent resume. Reinstate does not sync Grok sessions."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'Integrations', path: '/integrations' },
     { name: 'Grok Build', path: '/integrations/grok' },
   ]}
-  tags={['Grok Build', 'T3 verified resume', 'handoff source']}
+  tags={['Grok Build', 'T4 handoff destination', 'verified resume']}
 >
   <h2 id="support-at-a-glance">Grok Build support at a glance</h2>
   <dl class="pc-facts">
     <div>
       <dt>Tier</dt>
-      <dd>T3 Verified resume</dd>
+      <dd>T4 Handoff destination</dd>
     </div>
     <div>
       <dt>Storage family</dt>
@@ -41,13 +41,13 @@ const description =
     </div>
   </dl>
   <p>
-    T3 means <code>rein resume grok:&lt;id&gt;</code> launches
-    <code>grok --resume &lt;uuid&gt;</code> against the vendor's own session, and
-    <code>rein handoff --from grok</code> can build a portable capsule. Grok Build is not a
-    T4 handoff destination and not a T5 sync agent.
+    T4 means <code>rein handoff &lt;session&gt; --to grok</code> starts a <em>new</em> Grok
+    session with <code>grok --session-id &lt;uuid&gt;</code>, on top of the T3
+    <code>rein resume grok:&lt;id&gt;</code> and the T2
+    <code>rein handoff --from grok</code>. Grok Build is not a T5 sync agent.
   </p>
 
-  <h2 id="what-t3-includes">What T3 includes</h2>
+  <h2 id="what-t4-includes">What T4 includes</h2>
   <ul>
     <li>T1 read-only discovery, search, and inspect of local Grok Build sessions.</li>
     <li>T2 structured handoff from Grok Build into a new Claude Code or Codex session.</li>
@@ -55,13 +55,16 @@ const description =
       T3 same-vendor <code>rein resume</code> and <code>rein fork</code>, the latter through
       <code>grok --resume &lt;uuid&gt; --fork-session</code>.
     </li>
+    <li>
+      T4 structured handoff <em>into</em> Grok Build. That starts a new session and is never a
+      cross-agent resume: Reinstate does not reconstruct source history in Grok.
+    </li>
     <li>A bounded <code>grok --version</code> probe with a fail-closed range of 1.0.5 – 1.0.5.</li>
     <li>Fail-closed behavior on an unrecognized layout or version (exit code <code>5</code>).</li>
   </ul>
 
-  <h2 id="what-t3-excludes">What T3 excludes</h2>
+  <h2 id="what-t4-excludes">What T4 excludes</h2>
   <ul>
-    <li>No <code>rein handoff --to grok</code> destination.</li>
     <li>No <code>rein push</code> / <code>rein pull</code> of Grok sessions.</li>
     <li>No write into Grok's session store.</li>
     <li>
@@ -74,17 +77,26 @@ const description =
   <div class="pc-callout">
     <p>Native resume is same-vendor: it launches Grok's own CLI against Grok's own session.</p>
     <p>
-      A handoff starts a <em>new</em> Claude Code or Codex session. It does not reconstruct
-      Grok history or translate the vendor transcript.
+      A handoff starts a <em>new</em> destination session in either direction. It does not
+      reconstruct vendor history or translate a transcript between vendors.
+    </p>
+    <p>
+      Grok Build has documented repository-content upload behaviour, so a handoff from or into
+      it always runs capsule redaction, always prints that warning, and refuses
+      <code>--no-redact</code> with exit <code>2</code>.
     </p>
   </div>
 
   <h2 id="evidence">Evidence</h2>
   <p>
     Committed fixtures live under <code>testdata/sessionindex/grok</code> and
-    <code>testdata/handoff/grok</code>. There is no T3 version probe and no T3 device
-    report. See the
-    <a href="https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/grok.md"
+    <code>testdata/handoff/grok</code>, and the version range was measured from the real
+    binary. The resume journeys T3 rests on are recorded on both macOS and native
+    Windows. The destination journey T4 rests on has not been recorded yet, so the
+    handoff-destination half of this tier is a code-complete claim awaiting confirmation.
+    See the
+    <a
+      href="https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/grok.md"
       >Grok storage page</a
     >
     and the <a href="/compatibility">tier matrix</a>.

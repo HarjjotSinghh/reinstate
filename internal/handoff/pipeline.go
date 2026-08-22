@@ -224,6 +224,15 @@ func Plan(ctx context.Context, rec sessionindex.Record, opts Options) (PlanResul
 		if err := transcript.RefuseNoRedact(rec.Agent); err != nil {
 			return PlanResult{}, pipelineWrap(exitcode.Usage, err)
 		}
+		// The Grok redaction rule was written for Grok as a source, but the
+		// behaviour it guards against — repository content, including Git
+		// history and unredacted .env material, reaching xAI cloud storage —
+		// is a property of the Grok process. It applies at least as strongly
+		// when Reinstate is the one putting a briefing about the operator's
+		// repository into Grok.
+		if err := refuseNoRedactDestination(to); err != nil {
+			return PlanResult{}, pipelineWrap(exitcode.Usage, err)
+		}
 	}
 
 	reader := opts.Reader
@@ -385,6 +394,15 @@ func Plan(ctx context.Context, rec sessionindex.Record, opts Options) (PlanResul
 		c.Security.DestinationWarning = forced.DestinationWarning
 		c.Security.RedactionForced = forced.RedactionForced || c.Security.RedactionForced
 		c.Security.SourceInstructionsAreUntrustedHistory = true
+	}
+	// A Grok *destination* carries the same documented upload behaviour as a
+	// Grok source, so the warning and forced redaction apply in that direction
+	// too. Source and destination can never both be Grok — the pipeline
+	// already refuses a same-agent handoff — so the two never contend for this
+	// field.
+	if to == grokTargetName {
+		c.Security.DestinationWarning = DestinationWarningGrokDestination
+		c.Security.RedactionForced = true
 	}
 	if len(sidecar) > 0 {
 		c.Conversation.FullHistoryRef = "sidecar/events.jsonl"
@@ -790,7 +808,11 @@ func rewriteBootstrapArgs(plan DestinationPlan, bootstrap []byte) DestinationPla
 	}
 	// No element carried the bootstrap: fall back to the documented shapes.
 	switch normalizeAgent(plan.Agent) {
-	case "claude":
+	case "claude", grokTargetName:
+		// Both vendors pin the new session's identifier with --session-id, so
+		// the rewrite must carry the flag through. Dropping it here would let
+		// the vendor assign its own id while the plan, the lineage entry and
+		// Verify all still named the pinned one.
 		sid := strings.TrimSpace(plan.SessionID)
 		if sid == "" && len(plan.Args) >= 2 && plan.Args[0] == "--session-id" {
 			sid = plan.Args[1]

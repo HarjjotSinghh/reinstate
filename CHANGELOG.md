@@ -21,6 +21,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Grok Build moves to **T4, handoff destination**. `rein handoff <session> --to
+  grok` starts a **new** Grok Build session — never a cross-agent resume — with
+  `grok --session-id <uuid> "<briefing>"` in the verified workspace. The vendor
+  requires that the UUID not already exist under the target session directory,
+  so the target proves its absence when it plans and again immediately before
+  launch, and refuses rather than colliding. Because the identifier is pinned,
+  lineage resolves the destination session directly instead of reconciling it
+  from a post-launch scan; a session that never appeared is reported
+  `unresolved` and one UUID under two project directories is `ambiguous`,
+  never guessed. Nothing is written under the Grok root, including no
+  directory-trust record: no Grok trust file shape has been measured, and
+  inventing one would be a vendor-internal write on a guess.
+- The Grok upload warning now applies in both directions. Grok Build's
+  documented repository-content upload behaviour is a property of that process,
+  not of which side of a handoff it is on, so a handoff *into* Grok also forces
+  redaction, also prints the warning, and also refuses `--no-redact` with exit
+  `2`. Sending a briefing about the operator's repository into that CLI is the
+  direction the warning matters most in.
 - `rein handoff --to qwen` starts a **new** Qwen Code session (T4), seeded with
   the capsule briefing and pinned to an id Reinstate chooses, so lineage
   resolves instead of guessing. It is never a cross-agent resume and never
