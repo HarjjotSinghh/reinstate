@@ -84,6 +84,18 @@ type Options struct {
 	Capability capability.Options
 	// Target overrides the registered HandoffTarget (tests).
 	Target HandoffTarget
+	// ForceDestinationCompat overrides the destination's compatibility answer
+	// (tests). Detection otherwise resolves it by running `<agent> --version`
+	// as a child process under a hard deadline, which is the right production
+	// behaviour and the wrong thing for a test that asserts nothing about
+	// versions: under a saturated parallel run the probe does not reliably
+	// start in time, the run is correctly reported UNTESTED, and the test fails
+	// for a reason it was not written to measure.
+	//
+	// This is narrower than Target on purpose. Replacing the whole target skips
+	// the wiring resolveTarget installs — the Claude collision check and
+	// bootstrap renderer — and would change what the pipeline produces.
+	ForceDestinationCompat adapter.Compatibility
 	// SessionExists wires Claude UUID collision checks and is required for the
 	// registered production Claude target.
 	SessionExists ClaudeSessionExists
@@ -670,6 +682,9 @@ func resolveTarget(opts Options, to string) (HandoffTarget, error) {
 			return nil, pipelineErrorf(exitcode.Runtime, "handoff: Claude destination session collision check is required")
 		}
 		cp := *t
+		if opts.ForceDestinationCompat != "" {
+			cp.ForceCompat = opts.ForceDestinationCompat
+		}
 		cp.SessionExists = opts.SessionExists
 		cp.NewSessionID = opts.NewSessionID
 		cp.Bootstrap = func(c capsule.Capsule, _ Policy) ([]byte, error) {
@@ -678,6 +693,9 @@ func resolveTarget(opts Options, to string) (HandoffTarget, error) {
 		return &cp, nil
 	case *CodexTarget:
 		cp := *t
+		if opts.ForceDestinationCompat != "" {
+			cp.ForceCompat = opts.ForceDestinationCompat
+		}
 		return &cp, nil
 	default:
 		return base, nil

@@ -17,6 +17,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/HarjjotSinghh/reinstate/internal/adapter"
 	"github.com/HarjjotSinghh/reinstate/internal/agents"
 	"github.com/HarjjotSinghh/reinstate/internal/capability"
 	"github.com/HarjjotSinghh/reinstate/internal/capsule"
@@ -35,6 +36,8 @@ const handoffMode = "structured handoff"
 type handoffCommandOptions struct {
 	local          localCommandOptions
 	processChecker AgentProcessChecker
+	// destinationCompat is empty in production; see Options.HandoffDestinationCompat.
+	destinationCompat adapter.Compatibility
 }
 
 type handoffPlanOutput struct {
@@ -145,19 +148,20 @@ func newHandoffCmd(options handoffCommandOptions) *cobra.Command {
 				return handoffResolveError(err)
 			}
 			pipelineOptions := handoff.Options{
-				ToAgent:       strings.ToLower(strings.TrimSpace(to)),
-				Policy:        handoff.Policy(strings.ToLower(strings.TrimSpace(policy))),
-				Verifier:      options.local.verifier,
-				ResolveSource: handoffResolver(index),
-				SessionBusy:   handoff.SessionBusyFunc(options.processChecker),
-				LaunchRunner:  options.local.launchRunner,
-				ReinstateHome: home,
-				AllowActive:   allowActive,
-				AllowUntested: allowUntested,
-				AllowWarnings: append([]string(nil), allowedWarnings...),
-				NoRedact:      noRedact,
-				Capability:    handoffCapabilityOptions(options.local.verifier),
-				SessionExists: handoffClaudeSessionExists(index),
+				ToAgent:                strings.ToLower(strings.TrimSpace(to)),
+				Policy:                 handoff.Policy(strings.ToLower(strings.TrimSpace(policy))),
+				Verifier:               options.local.verifier,
+				ResolveSource:          handoffResolver(index),
+				SessionBusy:            handoff.SessionBusyFunc(options.processChecker),
+				ForceDestinationCompat: options.destinationCompat,
+				LaunchRunner:           options.local.launchRunner,
+				ReinstateHome:          home,
+				AllowActive:            allowActive,
+				AllowUntested:          allowUntested,
+				AllowWarnings:          append([]string(nil), allowedWarnings...),
+				NoRedact:               noRedact,
+				Capability:             handoffCapabilityOptions(options.local.verifier),
+				SessionExists:          handoffClaudeSessionExists(index),
 			}
 			if wd, wdErr := os.Getwd(); wdErr == nil {
 				pipelineOptions.WorkingDir = wd

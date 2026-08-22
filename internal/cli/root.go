@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
+	"github.com/HarjjotSinghh/reinstate/internal/adapter"
 	"github.com/HarjjotSinghh/reinstate/internal/preflight"
 	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
@@ -53,6 +54,19 @@ type Options struct {
 	PreflightVerifier preflight.Verifier
 	// TerminalChecker overrides TTY detection in switcher tests.
 	TerminalChecker func(io.Reader, io.Writer) bool
+	// HandoffDestinationCompat overrides the destination agent's compatibility
+	// answer in deterministic tests. Production leaves it empty and detection
+	// resolves it by running `<agent> --version` as a child process under a
+	// hard deadline.
+	//
+	// That probe was the last non-deterministic boundary in this struct with no
+	// injection point, and it is a real one: under a saturated parallel run the
+	// child does not reliably start inside the two-second bound, detection
+	// correctly reports UNTESTED, and a test that asserts nothing about
+	// versions fails for a reason it never meant to measure. The bound itself
+	// is deliberate — a hanging vendor binary must not stall handoff planning —
+	// so the seam belongs here rather than in the timeout.
+	HandoffDestinationCompat adapter.Compatibility
 }
 
 type envelopeCodecContextKey struct{}
@@ -174,7 +188,10 @@ func NewRoot(opts Options) *cobra.Command {
 		newSearchCmd(local),
 		newInspectCmd(local),
 		newLastCmd(local),
-		newHandoffCmd(handoffCommandOptions{local: local, processChecker: processChecker}),
+		newHandoffCmd(handoffCommandOptions{
+			local: local, processChecker: processChecker,
+			destinationCompat: opts.HandoffDestinationCompat,
+		}),
 		newResumeCmd(local),
 		newForkCmd(local),
 		newStatusCmd(),
