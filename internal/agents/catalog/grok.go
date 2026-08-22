@@ -18,8 +18,18 @@ func init() { agents.MustRegister(Grok()) }
 // The parenthesised build id is metadata, not part of the version, so it is
 // optional here — a build that omits it still yields a version. Anything that
 // is not `grok <semver>` fails closed, which agentcheck reports as UNTESTED.
+//
+// The trailing release channel is also metadata and also optional. It was
+// missed because it was measured from a transcription rather than from the
+// bytes: the shipped CLI prints `grok 1.0.5 (5115b46bc909) [stable]` on macOS
+// and `grok 1.0.5 (5115b46bc9) [stable]` on native Windows, and without this
+// the pattern matched neither. Every Grok resume on every platform failed
+// closed as UNTESTED and exited 5, so the T3 promotion did not work at all.
+// Physical dual-platform acceptance is what found it.
 var grokVersionPattern = regexp.MustCompile(
-	`^grok ((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))(?: \([0-9A-Za-z][0-9A-Za-z._-]{0,63}\))?$`,
+	`^grok ((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))` +
+		`(?: \([0-9A-Za-z][0-9A-Za-z._-]{0,63}\))?` +
+		`(?: \[[0-9A-Za-z][0-9A-Za-z._-]{0,31}\])?$`,
 )
 
 // Grok is the shipped Grok Build descriptor (T3).
