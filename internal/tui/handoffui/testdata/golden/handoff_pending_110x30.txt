@@ -1,0 +1,14 @@
+ hand off  claude claude:5f1c0b2a3e7d
+ to  ◂ codex ▸
+
+ policy  ◂ balanced   ▸                                                                             measuring
+    newest turns that fit the prompt budget
+
+ ◌ measuring this projection
+
+ starts a NEW codex session from a briefing; not a native resume
+
+ equivalent command
+ rein handoff claude:5f1c0b2a3e7d --to codex --policy balanced
+
+ ◂▸ policy   tab destination   ↵ send   e export only   c copy command   esc cancel

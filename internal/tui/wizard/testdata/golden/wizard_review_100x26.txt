@@ -1,0 +1,16 @@
+ rein init  step 8 of 8
+
+ Review
+
+ provider   Amazon S3
+ endpoint   https://s3.us-east-1.amazonaws.com
+ bucket     reinstate-sessions
+ region     us-east-1
+ prefix     profiles/6f1d2a8e-4c3b-4f5a-9d2e-7b8c9a0d1e2f
+ device     joining profile 6f1d2a8e-4c3b-4f5a-9d2e-7b8c9a0d1e2f
+
+ Next you will enter your storage keys, then a passphrase. The passphrase is never written to disk
+ or sent anywhere: it is asked for again on every push and pull. If you lose it, the synced
+ sessions cannot be recovered by anyone, including you.
+
+ ↵ start setup   shift+tab back   esc cancel

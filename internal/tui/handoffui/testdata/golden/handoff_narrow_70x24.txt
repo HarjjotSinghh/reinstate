@@ -1,0 +1,26 @@
+ hand off  claude claude:5f1c0b2a3e7d
+ to  ◂ codex ▸
+
+ policy  ◂ balanced   ▸            11.5 KB · 12 events · ~2.9k tokens
+    newest turns that fit the prompt budget
+
+ carried across
+   ✔ tool_results           normalized · 9 · arguments_normalized
+   ✔ user_messages          exact · 12
+
+ left behind
+   ✖ attachments            referenced · 2 · left_in_place
+   ✖ subagent_transcripts   omitted · not_representable
+
+ 3 values hidden by redaction
+   api_key, aws_access_key_id
+
+ [ ] 1 warning to acknowledge
+   source_may_have_advanced
+
+ starts a NEW codex session from a briefing; not a native resume
+
+ equivalent command
+ rein handoff claude:5f1c0b2a3e7d --to codex --policy balanced
+
+ ◂▸ policy   tab destination   a acknowledge   ↵ send   e export only…

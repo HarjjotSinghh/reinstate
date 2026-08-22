@@ -1,0 +1,11 @@
+ rein init  step 1 of 7
+
+ Storage provider
+
+ ▸ Cloudflare R2              account ID is on the R2 overview page
+   Amazon S3                  use the regional endpoint for the bucket's region
+   Backblaze B2               the S3-compatible endpoint, not the native B2 one
+   MinIO or self-hosted       any S3-compatible endpoint you operate
+   Other S3-compatible        enter the endpoint exactly as your provider documents it
+
+ ▸ choose   ↵ next   shift+tab back   esc cancel

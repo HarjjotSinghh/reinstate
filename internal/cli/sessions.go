@@ -24,6 +24,7 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/preflight"
 	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
+	"github.com/HarjjotSinghh/reinstate/internal/ui"
 	"github.com/HarjjotSinghh/reinstate/internal/workspace"
 )
 
@@ -38,6 +39,10 @@ type localCommandOptions struct {
 	launchRunner  sessionindex.LaunchRunner
 	verifier      preflight.Verifier
 	terminalCheck func(io.Reader, io.Writer) bool
+	// processChecker reports whether a vendor still holds a session file. The
+	// handoff pipeline requires it, and the interactive surfaces reach the
+	// pipeline without going through the handoff command's own options.
+	processChecker AgentProcessChecker
 }
 
 type localSessionSummary struct {
@@ -291,29 +296,70 @@ func newNativeActionCmd(options localCommandOptions, operation string, allowHand
 }
 
 func runHandoffAlias(cmd *cobra.Command, session, agent string, dryRun, asJSON bool, allowedWarnings []string) error {
+	return runHandoffWith(cmd, handoffAliasOptions{
+		Session:         session,
+		Agent:           agent,
+		DryRun:          dryRun,
+		JSON:            asJSON,
+		AllowedWarnings: allowedWarnings,
+	})
+}
+
+// handoffAliasOptions is one invocation of the real handoff command from
+// another surface.
+type handoffAliasOptions struct {
+	Session         string
+	Agent           string
+	Policy          string
+	DryRun          bool
+	JSON            bool
+	NoLaunch        bool
+	AllowedWarnings []string
+}
+
+// runHandoffWith re-enters the real `rein handoff` command with flags set.
+//
+// Going through the command itself rather than calling the pipeline directly is
+// deliberate: every caller, interactive or not, then gets the identical
+// validation, refusal, and output path. An interactive surface cannot acquire a
+// capability the flags do not already have.
+func runHandoffWith(cmd *cobra.Command, options handoffAliasOptions) error {
 	handoffCmd, _, err := cmd.Root().Find([]string{"handoff"})
 	if err != nil || handoffCmd == nil || handoffCmd.RunE == nil {
 		return localRuntimeError("prepare structured handoff", errors.New("handoff command is unavailable"))
 	}
 	handoffCmd.SetContext(cmd.Context())
-	for _, flag := range []struct {
+	flags := []struct {
 		name  string
 		value string
 	}{
-		{name: "to", value: agent},
-		{name: "dry-run", value: strconv.FormatBool(dryRun)},
-		{name: "json", value: strconv.FormatBool(asJSON)},
-	} {
+		{name: "to", value: options.Agent},
+		{name: "dry-run", value: strconv.FormatBool(options.DryRun)},
+		{name: "json", value: strconv.FormatBool(options.JSON)},
+	}
+	if options.Policy != "" {
+		flags = append(flags, struct {
+			name  string
+			value string
+		}{name: "policy", value: options.Policy})
+	}
+	if options.NoLaunch {
+		flags = append(flags, struct {
+			name  string
+			value string
+		}{name: "no-launch", value: "true"})
+	}
+	for _, flag := range flags {
 		if err := handoffCmd.Flags().Set(flag.name, flag.value); err != nil {
 			return localRuntimeError("prepare structured handoff", err)
 		}
 	}
-	for _, warning := range allowedWarnings {
+	for _, warning := range options.AllowedWarnings {
 		if err := handoffCmd.Flags().Set("allow-warning", warning); err != nil {
 			return localRuntimeError("prepare structured handoff", err)
 		}
 	}
-	return handoffCmd.RunE(handoffCmd, []string{session})
+	return handoffCmd.RunE(handoffCmd, []string{options.Session})
 }
 
 func defaultLocalSources() []sessionindex.Source {
@@ -420,7 +466,16 @@ func launchLocalRecord(
 		return nil
 	}
 
-	writeEnvironmentReportHuman(cmd.OutOrStdout(), report)
+	// On a terminal that can host the interactive surfaces the report is
+	// summarized rather than dumped. A clean launch does not need eleven
+	// passing checks printed at it — that reads as an error wall — and a launch
+	// with warnings is about to show them again in the acknowledgement
+	// checklist. Plain and non-TTY output is unchanged.
+	if capability := resolveCapability(cmd, options, false); capability.Mode.Interactive() {
+		writeEnvironmentSummaryHuman(cmd.OutOrStdout(), ui.NewTheme(capability), report)
+	} else {
+		writeEnvironmentReportHuman(cmd.OutOrStdout(), report)
+	}
 	authorizedWarnings, err := authorizeEnvironment(
 		cmd, options, report, plan, allowedWarnings, readLine,
 	)
@@ -629,6 +684,12 @@ func authorizeEnvironment(
 		}
 		return preflight.WarningIDs(report), nil
 	}
+	// An interactive terminal gets the checklist, where acknowledging a warning
+	// is a spacebar rather than an identifier retyped by hand. Everything else
+	// keeps the frozen yes/no prompt.
+	if capability := resolveCapability(cmd, options, false); capability.Mode.Interactive() {
+		return authorizeEnvironmentInteractively(cmd, capability, report, plan)
+	}
 	promptInput := environmentPromptInput{
 		readLine: readLine,
 		restore:  func() error { return nil },
@@ -740,6 +801,10 @@ func authorizationMessage(err error) string {
 	return err.Error()
 }
 
+// runSessionPicker is bare `rein`. Whether this is a terminal at all, and
+// whether it can host a full-screen program, are different questions. The first
+// decides the refusal below and is unchanged. The second only chooses which
+// switcher to draw.
 func runSessionPicker(cmd *cobra.Command, options localCommandOptions) error {
 	if !options.terminalCheck(cmd.InOrStdin(), cmd.OutOrStdout()) {
 		_ = cmd.Help()
@@ -748,6 +813,16 @@ func runSessionPicker(cmd *cobra.Command, options localCommandOptions) error {
 			"interactive session picker requires a terminal; use `rein sessions --json`",
 		)
 	}
+	if capability := resolveCapability(cmd, options, false); capability.Mode.Interactive() {
+		return runInteractiveSwitcher(cmd, options, capability)
+	}
+	return runPlainSessionPicker(cmd, options)
+}
+
+// runPlainSessionPicker is the numbered switcher. Its output is frozen: it is
+// what scripts, recorded acceptance evidence, and every terminal that cannot
+// host a full-screen program still see.
+func runPlainSessionPicker(cmd *cobra.Command, options localCommandOptions) error {
 	index, _, err := openRefreshedLocalIndex(cmd, options, "")
 	if err != nil {
 		return err
@@ -963,6 +1038,57 @@ func writeLocalInspect(
 	}
 	writeEnvironmentReportHuman(cmd.OutOrStdout(), report)
 	return nil
+}
+
+// writeEnvironmentSummaryHuman condenses the environment report for a terminal
+// that is about to hand itself to a vendor CLI.
+//
+// It prints what the reader can act on and nothing else: one line when the
+// environment verified cleanly, and only the checks that are not informational
+// when something needs attention. The full report remains one `rein inspect`
+// away, and every non-interactive caller still gets it in full.
+func writeEnvironmentSummaryHuman(writer io.Writer, theme ui.Theme, report preflight.Report) {
+	actionable := make([]preflight.Check, 0, len(report.Checks))
+	for _, check := range report.Checks {
+		if check.Severity != preflight.SeverityInfo {
+			actionable = append(actionable, check)
+		}
+	}
+	if len(actionable) == 0 {
+		PrintHuman(
+			writer,
+			"%s environment verified — %s passed",
+			theme.Ready.Render(theme.Glyphs.ReadyMark),
+			pluralCount(len(report.Checks), "check", "checks"),
+		)
+		return
+	}
+	// Warnings are about to be listed by the acknowledgement checklist, so
+	// repeating them here would ask the reader to read the same thing twice.
+	if report.Decision == preflight.DecisionConfirmationRequired {
+		return
+	}
+	for _, check := range actionable {
+		PrintHuman(
+			writer,
+			"%s %s — %s",
+			theme.Blocked.Render(theme.Glyphs.BlockedMark),
+			check.ID,
+			ui.Sanitize(check.Message),
+		)
+		if repair := ui.Sanitize(check.Repair); repair != "" {
+			PrintHuman(writer, "  %s %s", theme.Glyphs.TrailLink, repair)
+		}
+	}
+}
+
+// pluralCount renders "1 check" or "3 checks".
+func pluralCount(count int, singular, many string) string {
+	word := many
+	if count == 1 {
+		word = singular
+	}
+	return fmt.Sprintf("%d %s", count, word)
 }
 
 func writeEnvironmentReportHuman(writer io.Writer, report preflight.Report) {

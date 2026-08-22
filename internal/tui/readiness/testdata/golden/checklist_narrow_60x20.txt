@@ -1,0 +1,16 @@
+ claude:5f1c0b2a
+ ◐  2 environment warnings
+
+   [ ] env.node.version
+        node is 22.6.0, the session recorded 20.11.1
+        ⤷ repair: run nvm use 20.11.1 before resuming
+ ▸ [x] env.working_tree.drift
+        the working tree has 3 uncommitted files the
+        session did not see
+        ⤷ repair: commit or stash before resuming
+
+ equivalent command
+ rein resume claude:5f1c0b2a --allow-environment-warning
+ env.working_tree.drift
+
+ space acknowledge   a all   ↵ continue   c copy command   …

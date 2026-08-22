@@ -1,0 +1,11 @@
+ rein init  step 2 of 7
+
+ Endpoint
+
+ s3.us-east-1.amazonaws.com
+
+ Template: https://s3.<region>.amazonaws.com. Replace anything in angle brackets.
+
+ the endpoint must start with https:// or http://
+
+ type edit   ↵ next   shift+tab back   esc cancel

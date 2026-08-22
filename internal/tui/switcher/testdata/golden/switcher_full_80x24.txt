@@ -1,0 +1,24 @@
+ rein                                         9 sessions · 5 agents · reinstate
+ ❯ type to filter
+TODAY                                          │ gemini · reinstate-website
+  ● claude   reinstate   Fix the aut… 25m ago  │ 🚀 Ship the launch checklist
+  ● codex    reinstate   認証リファ…  3h ago   │ release/0.5.2 · 6h ago
+▸ ● gemini   reinstate-… 🚀 Ship the… 6h ago   │
+YESTERDAY                                      │ ● READY TO RESUME
+  ○ grok     reinstate-… [31mmalicio… 1d ago   │
+  ● opencode toolchain   Rewrite the… 1d ago   │ 8 messages
+THIS WEEK                                      │
+  ● claude   toolchain   Bisect the … 3d ago   │ walk the launch checklist and
+  ● codex    notes-app   Draft the r… 5d ago   │ mark what is still open
+THIS MONTH                                     │
+  ● gemini   reinstate   Investigate… 12d ago  │
+OLDER                                          │
+  ◐ claude   archive-to… Port the ol… 3mo ago  │
+                                               │
+                                               │
+                                               │
+                                               │
+                                               │
+                                               │ gemini:a13f7702
+
+ ↵ resume   tab actions   ctrl+a scope   ctrl+k commands   esc quit
