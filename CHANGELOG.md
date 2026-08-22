@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **OpenCode reached T4 (structured handoff destination).**
+  `rein handoff <session> --to opencode` starts a **new** OpenCode session — never
+  a cross-agent resume — seeded with the destination briefing and opened in the
+  verified workspace. Reinstate writes nothing into OpenCode's store: the vendor's
+  own `opencode --prompt` creates the session, its first message and its parts,
+  and Reinstate only ever reads that store read-only and immutable. OpenCode
+  cannot be told which session id to use, measured rather than assumed —
+  `opencode --session <unknown-id>` refuses with "Session not found" — so the id
+  is reconciled after launch by matching the verified workspace, the session's own
+  creation time, and the SHA-256 of its first human turn.
+
+  **Known limitation.** OpenCode keeps its writes in a SQLite write-ahead log and
+  does not checkpoint them on exit, and the immutable read-only handle that stops
+  Reinstate creating files beside a vendor's store also ignores that log. A
+  just-created destination session is therefore usually reconciled as
+  `unresolved`. The handoff itself still happens; only the recorded destination
+  session id is unknown. The same limitation makes recently written OpenCode
+  sessions invisible to `rein sessions` well before any handoff is involved, and
+  resolving it needs a decision about how to read a write-ahead-logged vendor
+  store without writing beside it.
+
 - **OpenCode reached T3 (verified resume).** `rein resume opencode:<id>` and
   `rein fork` now launch OpenCode's own CLI against OpenCode's own session,
   after the same executable, version, layout, workspace and liveness checks
@@ -45,6 +66,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A structured handoff planned the wrong argv for any destination whose CLI does
+  not take its initial prompt as a bare positional. The pipeline re-renders the
+  briefing after the destination target has planned, and substituted it by
+  switching on the agent name and replacing the whole argv with one bare element
+  for everything that was not Claude. OpenCode reads a bare positional as a
+  project path, so that dropped its `--prompt` flag and planned a launch into a
+  directory named after the entire briefing. The briefing now lands wherever the
+  target put its own bootstrap, and a plan that does not carry its own bootstrap
+  in its argv is refused rather than guessed at.
 - The `agent.active` liveness check could not see an agent Reinstate launched
   itself. macOS `ps` fixes the width of its `comm` column when other columns are
   requested alongside it, so a process started by absolute path — which is

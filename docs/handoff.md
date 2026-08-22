@@ -35,15 +35,20 @@ Reinstate labels these separately in the CLI, in JSON, and in docs:
 
 | Source → | Claude Code | Codex CLI | Gemini CLI | OpenCode | Grok Build |
 | -------- | :---------: | :-------: | :--------: | :------: | :--------: |
-| **Claude Code** | same-vendor native resume | **structured handoff** | not in v0.4.0 | not in v0.4.0 | not planned |
-| **Codex CLI** | **structured handoff** | same-vendor native resume | not in v0.4.0 | not in v0.4.0 | not planned |
-| **Gemini CLI** | **structured handoff** | **structured handoff** | not a target (source-only) | not in v0.4.0 | not planned |
-| **OpenCode** | **structured handoff** | **structured handoff** | not in v0.4.0 | not a target (source-only) | not planned |
-| **Grok Build** | **structured handoff** | **structured handoff** | not in v0.4.0 | not in v0.4.0 | not a target (source-only) |
+| **Claude Code** | same-vendor native resume | **structured handoff** | not in v0.4.0 | **structured handoff** | not planned |
+| **Codex CLI** | **structured handoff** | same-vendor native resume | not in v0.4.0 | **structured handoff** | not planned |
+| **Gemini CLI** | **structured handoff** | **structured handoff** | not a target (source-only) | **structured handoff** | not planned |
+| **OpenCode** | **structured handoff** | **structured handoff** | not in v0.4.0 | same-vendor native resume | not planned |
+| **Grok Build** | **structured handoff** | **structured handoff** | not in v0.4.0 | **structured handoff** | not a target (source-only) |
 
-Gemini CLI, OpenCode, and Grok Build are **source-only** in `v0.4.0`: you can
-hand off *from* them, not *to* them. Support is directional and versioned — a
-supported session adapter never implies a supported handoff.
+Gemini CLI and Grok Build are **source-only**: you can hand off *from* them,
+not *to* them. Support is directional and versioned — a supported session
+adapter never implies a supported handoff.
+
+OpenCode became a destination after `v0.4.0`, at T4. Because it keeps its writes
+in a write-ahead log that Reinstate's read-only immutable handle cannot see, the
+new destination session's id is usually recorded as `unresolved`; the session is
+still created and still opened in the verified workspace.
 
 ## Commands
 

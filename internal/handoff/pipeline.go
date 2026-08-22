@@ -698,8 +698,11 @@ func planDestination(
 		return DestinationPlan{}, capsule.Fidelity{}, pipelineWrap(exitcode.Runtime, err)
 	}
 	if len(renderedBootstrap) > 0 {
-		plan.Bootstrap = append([]byte(nil), renderedBootstrap...)
-		plan = rewriteBootstrapArgs(plan, renderedBootstrap)
+		planned := plan.Bootstrap
+		plan, err = rewriteBootstrapArgs(plan, planned, renderedBootstrap)
+		if err != nil {
+			return DestinationPlan{}, fidelity, pipelineWrap(exitcode.Runtime, err)
+		}
 		caps := target.Capabilities()
 		// Windows CreateProcess truncates an argv element at embedded CR/LF
 		// (rc.9 dest-ack: Codex only received the first bootstrap line). Fall
@@ -710,8 +713,11 @@ func planDestination(
 			if shortErr != nil {
 				return DestinationPlan{}, fidelity, pipelineErrorf(exitcode.Config, "handoff: %s", shortErr.Error())
 			}
-			plan.Bootstrap = short
-			plan = rewriteBootstrapArgs(plan, short)
+			previous := plan.Bootstrap
+			plan, err = rewriteBootstrapArgs(plan, previous, short)
+			if err != nil {
+				return DestinationPlan{}, fidelity, pipelineWrap(exitcode.Runtime, err)
+			}
 			if err := ValidateDestinationArgv(plan, caps.MaxArgvBytes); err != nil {
 				return DestinationPlan{}, fidelity, pipelineWrap(exitcode.Runtime, err)
 			}
@@ -735,19 +741,35 @@ func shortProjectionArgv(reinstateHome, capsuleID string) ([]byte, error) {
 	return []byte("Reinstate structured handoff — not native resume. Read " + projectionPath + " and continue from that briefing only. " + firstReplyAckOneLine()), nil
 }
 
-func rewriteBootstrapArgs(plan DestinationPlan, bootstrap []byte) DestinationPlan {
+// rewriteBootstrapArgs substitutes the pipeline-rendered briefing into the argv
+// the destination target planned, in the exact position the target put its own
+// bootstrap.
+//
+// The position belongs to the target, not to this function. It used to switch
+// on the agent name and, for anything that was not Claude, replace the whole
+// argv with the briefing as one bare element. That is correct only for a CLI
+// that takes its initial prompt as a bare positional. OpenCode takes it as the
+// value of an option and reads a bare positional as a project path, so the
+// switch silently dropped the flag and planned a launch into a directory named
+// after the entire briefing.
+//
+// A target whose plan does not carry its own bootstrap in its argv is refused
+// rather than guessed at: launching a prompt that differs from plan.Bootstrap
+// would also make the post-launch reconciliation unable to recognize its own
+// session.
+func rewriteBootstrapArgs(plan DestinationPlan, planned, bootstrap []byte) (DestinationPlan, error) {
 	text := string(bootstrap)
-	switch normalizeAgent(plan.Agent) {
-	case "claude":
-		sid := strings.TrimSpace(plan.SessionID)
-		if sid == "" && len(plan.Args) >= 2 && plan.Args[0] == "--session-id" {
-			sid = plan.Args[1]
+	args := append([]string(nil), plan.Args...)
+	for i, arg := range args {
+		if arg == string(planned) {
+			args[i] = text
+			plan.Args = args
+			plan.Bootstrap = append([]byte(nil), bootstrap...)
+			return plan, nil
 		}
-		plan.Args = []string{"--session-id", sid, text}
-	default:
-		plan.Args = []string{text}
 	}
-	return plan
+	return DestinationPlan{}, fmt.Errorf(
+		"handoff: destination %q planned argv that does not carry its own bootstrap prompt", plan.Agent)
 }
 
 func discoverInventory(ctx context.Context, agent string, opts capability.Options) capability.Inventory {

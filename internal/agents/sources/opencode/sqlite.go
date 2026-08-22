@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"errors"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -16,6 +15,7 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/agents"
 	"github.com/HarjjotSinghh/reinstate/internal/agents/sources"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
+	"github.com/HarjjotSinghh/reinstate/internal/transcript"
 
 	_ "modernc.org/sqlite"
 )
@@ -66,11 +66,10 @@ func DatabasePath(env agents.Env) (string, error) {
 	return filepath.Join(root, DatabaseName), nil
 }
 
-// readOnlyDSN builds an immutable read-only DSN. immutable=1 is what prevents
-// the reader from creating -wal and -shm files beside the vendor's database.
-func readOnlyDSN(path string) string {
-	return "file:" + url.PathEscape(filepath.ToSlash(path)) + "?mode=ro&immutable=1&_pragma=query_only(1)"
-}
+// readOnlyDSN defers to the single shared constructor so this source, the
+// transcript reader and the handoff destination cannot drift into three
+// different opinions about how the vendor's store is opened.
+func readOnlyDSN(path string) string { return transcript.OpenCodeReadOnlyDSN(path) }
 
 // Fingerprint summarises the store by its path, modification time and size,
 // without opening it. An unchanged store cannot yield different records, so an
