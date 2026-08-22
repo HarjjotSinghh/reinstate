@@ -68,3 +68,8 @@ website/artifacts/production-discovery/*-production.json
 /auth-wal
 /db
 /db-wal
+
+# Agent worktrees. These are full checkouts created by coding agents for
+# isolated work; they are scratch space, not source, and they are large.
+/.worktrees/
+/.claude/worktrees/
