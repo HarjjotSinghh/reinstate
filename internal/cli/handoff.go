@@ -225,7 +225,7 @@ func validateHandoffSelection(args []string, last bool, from, to string, dryRun,
 	if strings.TrimSpace(to) == "" {
 		return NewExitError(ExitUsage, "--to AGENT is required")
 	}
-	if err := validateNativeAgent(to, false); err != nil {
+	if err := validateDestinationAgent(to); err != nil {
 		return err
 	}
 	if (len(args) == 0) == !last {

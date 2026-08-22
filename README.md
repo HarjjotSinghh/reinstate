@@ -334,7 +334,7 @@ yes-or-no list.
 | [OpenAI Codex CLI](https://github.com/openai/codex) | T5 | ✅ full | ✅ same-vendor | ✅ | ✅ | ✅ |
 | [Gemini CLI](https://github.com/google-gemini/gemini-cli) | T2 | ✅ read-only | — | ✅ source-only | — | — |
 | [OpenCode](https://opencode.ai) | T2 | ✅ read-only | — | ✅ source-only | — | — |
-| [Grok Build](https://x.ai) | T2 | ✅ read-only | — | ✅ source-only | — | — |
+| [Grok Build](https://x.ai) | T3 | ✅ read-only | ✅ same-vendor (device journey pending) | ✅ source-only | — | — |
 | [Kimi Code CLI](https://www.kimi.com/code) | T1 | ✅ read-only | — | — | — | — |
 | [Qwen Code](https://qwenlm.github.io/qwen-code-docs/) | T1 | ✅ read-only | — | — | — | — |
 | [Pi](https://pi.dev/) | T1 | ✅ read-only | — | — | — | — |

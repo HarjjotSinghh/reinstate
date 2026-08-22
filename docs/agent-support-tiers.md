@@ -190,7 +190,7 @@ stays where it is, and that outcome is a successful result, not a failed task.
 | Gemini CLI | Google | F1 | **T2** | T3 |
 | Antigravity CLI | Google | F1 (expected) | — | T0 (`layout_unverified`) |
 | OpenCode | anomalyco | F2 | **T2** | T2 |
-| Grok Build | xAI | F1 | **T2** | T2 |
+| Grok Build | xAI | F1 | **T3** | T3 |
 | Kimi Code CLI | Moonshot AI | F1 | **T1** | T3 |
 | Pi | earendil-works | F1 | **T1** | T3 |
 | Qwen Code | Alibaba | F1 | **T1** | T2 |
@@ -203,6 +203,14 @@ stays where it is, and that outcome is a successful result, not a failed task.
 | OpenHands | All Hands AI | F5 (expected) | — | T0 |
 | ZCode | Z.ai | F5 (expected) | — | T0 |
 | MiniMax | MiniMax | unidentified | — | T0 |
+
+Grok Build's T3 row is a code-complete claim whose physical journey is still
+outstanding: the native argv, version range and process recognition are
+measured and merged, but the macOS and native Windows resume journeys T3
+requires are specified in
+[testing/grok-native-resume-acceptance.md](testing/grok-native-resume-acceptance.md)
+and have not been recorded. Treat it as pending confirmation, not as evidenced
+the way Claude Code and Codex CLI are.
 
 Per-agent detail, including binaries, environment overrides, evidence status,
 and blockers, is in

@@ -66,11 +66,13 @@ func TestGrokSourceIndexesMacOSAndWindowsFixtures(t *testing.T) {
 			if record.PromptPreview != test.wantPrompt {
 				t.Fatalf("prompt_preview = %q, want %q", record.PromptPreview, test.wantPrompt)
 			}
-			if record.CanResume || record.CanFork {
-				t.Fatalf("capabilities resume=%t fork=%t, want false", record.CanResume, record.CanFork)
+			// Both fixture ids are UUID-shaped, so `grok --resume <uuid>`
+			// addresses them as identifiers rather than as titles.
+			if !record.CanResume || !record.CanFork {
+				t.Fatalf("capabilities resume=%t fork=%t, want true", record.CanResume, record.CanFork)
 			}
-			if record.ReadOnlyReason != GrokReadOnlyReason {
-				t.Fatalf("read_only_reason = %q", record.ReadOnlyReason)
+			if record.ReadOnlyReason != "" {
+				t.Fatalf("read_only_reason = %q, want empty", record.ReadOnlyReason)
 			}
 			if record.Project != "demo" {
 				t.Fatalf("project = %q", record.Project)
@@ -105,7 +107,11 @@ func TestGrokSourceIndexesMacOSAndWindowsFixtures(t *testing.T) {
 	}
 }
 
-func TestGrokPlanLaunchRefusesResumeAndFork(t *testing.T) {
+// TestGrokPlanLaunchRefusesTitleAddressableSession pins the reason a Grok
+// session can still be read-only at T3: `grok --resume` resolves any value that
+// is not UUID-shaped as a session *title*, and titles are neither unique nor
+// stable. Such a record must never reach a launch plan.
+func TestGrokPlanLaunchRefusesTitleAddressableSession(t *testing.T) {
 	t.Parallel()
 	record := Record{
 		ID:             "grok-session",
@@ -113,16 +119,43 @@ func TestGrokPlanLaunchRefusesResumeAndFork(t *testing.T) {
 		Workspace:      "/Users/fixture-user/code/demo",
 		CanResume:      false,
 		CanFork:        false,
-		ReadOnlyReason: GrokReadOnlyReason,
+		ReadOnlyReason: GrokTitleAddressableReason,
 	}
 	for _, operation := range []string{OperationResume, OperationFork} {
 		_, err := PlanLaunch(record, operation)
 		if !errors.Is(err, ErrNativeActionUnsupported) {
 			t.Fatalf("PlanLaunch(%s) error = %v, want ErrNativeActionUnsupported", operation, err)
 		}
-		if !strings.Contains(err.Error(), GrokReadOnlyReason) {
+		if !strings.Contains(err.Error(), GrokTitleAddressableReason) {
 			t.Fatalf("PlanLaunch(%s) error = %v, want read-only reason", operation, err)
 		}
+	}
+}
+
+func TestIsGrokSessionID(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name string
+		id   string
+		want bool
+	}{
+		{"uuid_v7_fixture", "01987654-3210-7890-abcd-ef0123456789", true},
+		{"uuid_uppercase", "01987654-3210-7890-ABCD-EF0123456789", true},
+		{"title", "fix the parser", false},
+		{"fixture_id_with_non_hex_group", "01987654-basic-0000-0000-000000000001", false},
+		{"empty", "", false},
+		{"uuid_with_trailing_text", "01987654-3210-7890-abcd-ef0123456789 and more", false},
+		{"uuid_with_leading_text", "resume 01987654-3210-7890-abcd-ef0123456789", false},
+		{"too_short", "01987654-3210-7890-abcd-ef012345678", false},
+		{"flag_lookalike", "--fork-session", false},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			if got := IsGrokSessionID(test.id); got != test.want {
+				t.Fatalf("IsGrokSessionID(%q) = %t, want %t", test.id, got, test.want)
+			}
+		})
 	}
 }
 
