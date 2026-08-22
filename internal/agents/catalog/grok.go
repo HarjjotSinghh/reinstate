@@ -119,8 +119,8 @@ func Grok() agents.Descriptor {
 			// docs/testing/grok-native-resume-acceptance.md and is not yet
 			// recorded on either platform.
 			DeviceReports: []string{
-				"docs/testing/results/2026-08-21-macos-phase5-V050RC6.md",
-				"docs/testing/results/2026-08-21-windows-phase5-V050RC6.md",
+				"docs/testing/results/2026-08-22-macos-grok-t3.md",
+				"docs/testing/results/2026-08-22-windows-grok-t3.md",
 			},
 		},
 		NewIndexSource: groksrc.New,

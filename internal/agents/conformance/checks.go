@@ -67,15 +67,21 @@ func checkStructure(d agents.Descriptor) error {
 // checkNativeArgv asserts that a session-addressing template actually addresses
 // the session, and that a declared session-ID shape is enforceable.
 //
-// A template missing {{.SessionID}} would launch the vendor's most recent
-// session instead of the resolved one, which is a wrong-session resume that no
-// other check would notice.
+// A Resume or Fork template missing {{.SessionID}} would launch the vendor's
+// most recent session instead of the resolved one, which is a wrong-session
+// resume that no other check would notice.
+//
+// NewSession is deliberately exempt. It does not address an existing session,
+// so there is nothing for it to mis-address, and two shapes are both correct:
+// a caller-chosen identifier the vendor accepts (Claude, Qwen) and a bare
+// "start fresh" flag for a vendor that assigns its own (OpenCode). Requiring
+// the placeholder here would reject the second shape, which is the same
+// mistake checkNativeSpec avoids by not requiring the field at all.
 func checkNativeArgv(d agents.Descriptor) error {
 	const placeholder = "{{.SessionID}}"
 	for name, template := range map[string][]string{
-		"Resume":     d.Native.Resume,
-		"Fork":       d.Native.Fork,
-		"NewSession": d.Native.NewSession,
+		"Resume": d.Native.Resume,
+		"Fork":   d.Native.Fork,
 	} {
 		if len(template) == 0 {
 			continue

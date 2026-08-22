@@ -168,3 +168,69 @@ func TestProbePlatformGap(t *testing.T) {
 		}
 	}
 }
+
+// TestNewSessionNeedsNoSessionID pins the asymmetry between the templates that
+// address an existing session and the one that does not.
+//
+// Resume and Fork must substitute the resolved identifier or they silently
+// resume the wrong session. NewSession must not be held to that rule: a vendor
+// that assigns its own identifier takes a bare "start fresh" flag, and
+// requiring the placeholder would reject a shipped T4 destination.
+func TestNewSessionNeedsNoSessionID(t *testing.T) {
+	t.Parallel()
+
+	base := func() agents.NativeSpec {
+		return agents.NativeSpec{
+			Resume: []string{"--resume", "{{.SessionID}}"},
+			Fork:   []string{"--resume", "{{.SessionID}}", "--fork-session"},
+		}
+	}
+
+	for _, tc := range []struct {
+		name       string
+		newSession []string
+		wantErr    string
+	}{
+		{name: "vendor assigns the id", newSession: []string{"--new-session"}},
+		{name: "caller pins the id", newSession: []string{"--session-id", "{{.SessionID}}"}},
+		{name: "absent entirely", newSession: nil},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			spec := base()
+			spec.NewSession = tc.newSession
+			if err := checkNativeArgv(agents.Descriptor{Native: &spec}); err != nil {
+				t.Fatalf("NewSession %q rejected: %v", tc.newSession, err)
+			}
+		})
+	}
+
+	t.Run("resume still enforced", func(t *testing.T) {
+		t.Parallel()
+
+		spec := base()
+		spec.Resume = []string{"--resume"}
+		err := checkNativeArgv(agents.Descriptor{Native: &spec})
+		if err == nil {
+			t.Fatal("a Resume template with no {{.SessionID}} was accepted")
+		}
+		if !strings.Contains(err.Error(), "Resume") {
+			t.Fatalf("error does not name the offending template: %v", err)
+		}
+	})
+
+	t.Run("fork still enforced", func(t *testing.T) {
+		t.Parallel()
+
+		spec := base()
+		spec.Fork = []string{"--fork-session"}
+		err := checkNativeArgv(agents.Descriptor{Native: &spec})
+		if err == nil {
+			t.Fatal("a Fork template with no {{.SessionID}} was accepted")
+		}
+		if !strings.Contains(err.Error(), "Fork") {
+			t.Fatalf("error does not name the offending template: %v", err)
+		}
+	})
+}
