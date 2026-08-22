@@ -226,30 +226,33 @@
       "key": "qwen",
       "name": "Qwen Code",
       "vendor": "Alibaba",
-      "tier": "T1",
+      "tier": "T3",
       "storageFamily": "F1",
       "t0Reason": null,
       "integrationPath": "/integrations/qwen",
-      "status": "known",
-      "minimumTestedVersion": null,
-      "maximumTestedVersion": null,
-      "resumeMode": "Not usable (T1 discover only)",
-      "evidenceLevel": "dual-platform AGENT-PROBE-V1; F1 index source; no T3 device journey",
+      "status": "supported",
+      "minimumTestedVersion": "0.21.12",
+      "maximumTestedVersion": "0.21.13",
+      "resumeMode": "Qwen Code to Qwen Code (T3 same-vendor native resume and fork)",
+      "evidenceLevel": "dual-platform AGENT-PROBE-V1; F1 index source; T2 reader; dual-platform T3 device journey",
       "evidence": {
         "storagePage": "docs/session-storage/qwen.md",
         "fixtures": [
           "testdata/sessionindex/qwen/macos",
           "testdata/sessionindex/qwen/windows"
         ],
-        "deviceReports": [],
+        "deviceReports": [
+          "docs/testing/results/2026-08-22-macos-qwen-t3.md",
+          "docs/testing/results/2026-08-22-windows-qwen-t3.md"
+        ],
         "probeReports": [
           "docs/testing/results/agent-probes/2026-08-17-macos-qwen.json",
           "docs/testing/results/agent-probes/2026-08-17-windows-qwen.json"
         ]
       },
-      "lastTested": "2026-08-17",
+      "lastTested": "2026-08-22",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/qwen.md",
-      "notes": "T1 Discover. Sessions are indexed and searchable; resume and fork stay refused. Not a handoff destination and not a synced agent."
+      "notes": "T3 verified same-vendor resume and fork, and a T2 handoff source. Not a handoff destination and not a synced agent. Versions outside the inclusive 0.21.12-0.21.13 range fail closed as untested. The rung rests on a device journey on macOS and on native Windows: on each platform a session created by the vendor was indexed, resumed through the launch plan Reinstate produced, and the model request after the resume carried a token that existed only in the first turn."
     },
     {
       "id": "cursor",
