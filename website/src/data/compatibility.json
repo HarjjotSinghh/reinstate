@@ -109,14 +109,14 @@
       "key": "opencode",
       "name": "OpenCode",
       "vendor": "anomalyco",
-      "tier": "T3",
+      "tier": "T4",
       "storageFamily": "F3",
       "t0Reason": null,
       "integrationPath": "/integrations/opencode",
       "status": "verified-resume",
       "minimumTestedVersion": "1.18.21",
       "maximumTestedVersion": "1.18.21",
-      "resumeMode": "Native resume and fork (T3): opencode --session <id>, plus --fork",
+      "resumeMode": "OpenCode to OpenCode (T3 same-vendor resume and fork); OpenCode as a structured handoff destination (T4)",
       "evidenceLevel": "macOS physical resume journey; native Windows journey pending",
       "evidence": {
         "storagePage": "docs/session-storage/opencode.md",
@@ -127,7 +127,9 @@
         ],
         "deviceReports": [
           "docs/testing/results/2026-08-22-macos-opencode-t3-journey.md",
-          "docs/testing/results/2026-08-22-windows-opencode-t3.md"
+          "docs/testing/results/2026-08-22-windows-opencode-t3.md",
+          "docs/testing/results/2026-08-22-macos-opencode-t4-journey.md",
+          "docs/testing/results/2026-08-22-windows-opencode-t4.md"
         ],
         "probeReports": [
           "docs/testing/results/agent-probes/2026-08-21-macos-opencode.json",
@@ -136,7 +138,7 @@
       },
       "lastTested": "2026-08-22",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/opencode.md",
-      "notes": "T3 verified resume over an embedded SQLite session store (F3). The verified version range holds the single build physically measured on macOS. Not a handoff destination and not a synced agent."
+      "notes": "T4 structured handoff destination, T3 verified same-vendor resume and fork, and a T2 handoff source. Not a synced agent. OpenCode assigns its own session id, so a handoff starts a new session and its id is reconciled after launch rather than pinned; a handoff is never a cross-agent resume."
     },
     {
       "id": "grok",
