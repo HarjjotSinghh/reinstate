@@ -104,6 +104,8 @@ func checkEvidence(d agents.Descriptor, repo string) error {
 			missing = append(missing, "DeviceReports")
 		} else if gap := devicePlatformGap(d.Evidence.DeviceReports); gap != "" {
 			missing = append(missing, "DeviceReports on "+gap)
+		} else if gap := tierJourneyGap(d, repo); gap != "" {
+			missing = append(missing, "a device journey for "+gap)
 		}
 	}
 	for _, path := range d.Evidence.ProbeReports {
@@ -142,6 +144,120 @@ func checkEvidence(d agents.Descriptor, repo string) error {
 // Windows.
 func probePlatformGap(reports []string) string {
 	return platformGap(reports)
+}
+
+// legacyTierEvidence are whole-matrix device reports written before
+// AGENT-TIER-JOURNEY-V1 existed.
+//
+// They carry no per-agent tier vocabulary at all: no T3, no T5, no per-agent
+// matrix row identifiers. Nothing can read a rung out of them, so no rule
+// applied to them would be measuring anything. They were the evidence standard
+// when Claude Code and Codex CLI reached T5, and they are accepted as they
+// stand rather than rewritten.
+//
+// Nothing may be added here. Every report written since names its agent and its
+// rung in its own first heading, which is what tierJourneyGap reads.
+var legacyTierEvidence = map[string]struct{}{
+	"docs/testing/results/2026-08-11-macos-phase3-V030.md":       {},
+	"docs/testing/results/2026-08-11-windows-phase3-V030.md":     {},
+	"docs/testing/results/2026-08-15-macos-phase4-V040RC11.md":   {},
+	"docs/testing/results/2026-08-15-windows-phase4-V040RC11.md": {},
+}
+
+// tierRungs lists every rung a claim at tier must evidence, from T3 upward.
+// Below T3 no device journey is required at all.
+func tierRungs(tier agents.Tier) []agents.Tier {
+	var rungs []agents.Tier
+	for rung := agents.TierResume; rung <= tier; rung++ {
+		rungs = append(rungs, rung)
+	}
+	return rungs
+}
+
+// tierJourneyGap names what a T3+ claim cannot evidence, or "" when every rung
+// from T3 up to the declared tier has a journey on both platforms.
+//
+// devicePlatformGap already refuses a claim whose reports do not span both
+// platforms. It cannot tell what those reports are *about*, and that gap is not
+// theoretical: Grok cited two release-acceptance reports that mention it only
+// in index and handoff-source rows, and Qwen's T4 claim passed while its only
+// Windows report covered T3, because a Windows filename was present either way.
+//
+// A journey report names its agent and its rung in its first heading, so the
+// claim and the evidence can be compared directly.
+func tierJourneyGap(d agents.Descriptor, repo string) string {
+	if d.Tier < agents.TierResume {
+		return ""
+	}
+	type coverage struct{ macOS, windows bool }
+	covered := map[agents.Tier]*coverage{}
+	for _, rung := range tierRungs(d.Tier) {
+		covered[rung] = &coverage{}
+	}
+
+	for _, rel := range d.Evidence.DeviceReports {
+		if _, legacy := legacyTierEvidence[rel]; legacy {
+			// Accepted for every rung; see legacyTierEvidence.
+			for _, c := range covered {
+				name := strings.ToLower(filepath.Base(rel))
+				switch {
+				case strings.Contains(name, "-macos-"):
+					c.macOS = true
+				case strings.Contains(name, "-windows-"):
+					c.windows = true
+				}
+			}
+			continue
+		}
+		heading := firstHeading(repo, rel)
+		if heading == "" || !strings.Contains(strings.ToLower(heading), strings.ToLower(d.DisplayName)) {
+			continue
+		}
+		name := strings.ToLower(filepath.Base(rel))
+		if strings.Contains(name, "-wsl-") {
+			continue
+		}
+		for rung, c := range covered {
+			if !strings.Contains(heading, rung.String()) {
+				continue
+			}
+			switch {
+			case strings.Contains(name, "-macos-"):
+				c.macOS = true
+			case strings.Contains(name, "-windows-"):
+				c.windows = true
+			}
+		}
+	}
+
+	var missing []string
+	for _, rung := range tierRungs(d.Tier) {
+		c := covered[rung]
+		switch {
+		case !c.macOS && !c.windows:
+			missing = append(missing, rung.String()+" on macos and windows")
+		case !c.macOS:
+			missing = append(missing, rung.String()+" on macos")
+		case !c.windows:
+			missing = append(missing, rung.String()+" on windows")
+		}
+	}
+	return strings.Join(missing, ", ")
+}
+
+// firstHeading returns the report's first markdown heading, which is where a
+// journey names its agent and its rung.
+func firstHeading(repo, rel string) string {
+	body, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(rel)))
+	if err != nil {
+		return ""
+	}
+	for _, line := range strings.Split(string(body), "\n") {
+		if strings.HasPrefix(line, "# ") {
+			return strings.TrimSpace(strings.TrimPrefix(line, "# "))
+		}
+	}
+	return ""
 }
 
 // devicePlatformGap names the platforms a T3+ device-journey claim still lacks.
