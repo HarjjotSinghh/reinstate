@@ -146,8 +146,12 @@ agent, seeded with a bootstrap prompt pointing at an inspectable capsule.
 5. Bidirectional device journeys against every existing destination.
 6. No vendor-internal writes, per [ADR 0003](adr/0003-phase-4-rc1-scope-and-launch-route.md).
 
-**Not expanding in `v0.5.1`.** Claude Code and Codex CLI remain the only
-destinations.
+**Grok Build joins the destination set.** `grok --session-id <uuid>` starts a
+new conversation with a caller-chosen identifier and requires that the
+identifier not already exist under the target session directory, which is the
+precondition the target enforces before and again immediately before launch.
+Claude Code and Codex CLI remain the only *evidenced* destinations until the
+Grok journeys are recorded.
 
 ### T5 — Encrypted sync
 
@@ -190,7 +194,7 @@ stays where it is, and that outcome is a successful result, not a failed task.
 | Gemini CLI | Google | F1 | **T2** | T3 |
 | Antigravity CLI | Google | F1 (expected) | — | T0 (`layout_unverified`) |
 | OpenCode | anomalyco | F2 | **T2** | T2 |
-| Grok Build | xAI | F1 | **T2** | T2 |
+| Grok Build | xAI | F1 | **T4** | T4 |
 | Kimi Code CLI | Moonshot AI | F1 | **T1** | T3 |
 | Pi | earendil-works | F1 | **T1** | T3 |
 | Qwen Code | Alibaba | F1 | **T1** | T2 |
@@ -203,6 +207,14 @@ stays where it is, and that outcome is a successful result, not a failed task.
 | OpenHands | All Hands AI | F5 (expected) | — | T0 |
 | ZCode | Z.ai | F5 (expected) | — | T0 |
 | MiniMax | MiniMax | unidentified | — | T0 |
+
+Grok Build's T4 row is a code-complete claim whose physical journeys are still
+outstanding: the native argv, the `--session-id` destination route, the version
+range and process recognition are measured and merged, but the macOS and native
+Windows resume and destination journeys T3 and T4 require are specified in
+[testing/grok-native-resume-acceptance.md](testing/grok-native-resume-acceptance.md)
+and have not been recorded. Treat it as pending confirmation, not as evidenced
+the way Claude Code and Codex CLI are.
 
 Per-agent detail, including binaries, environment overrides, evidence status,
 and blockers, is in

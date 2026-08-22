@@ -36,20 +36,20 @@ rein sessions [--agent claude|codex|gemini|opencode|grok|kimi|qwen|pi|cursor|cop
 rein search QUERY [QUERY...] [--agent ...] [--project FRAGMENT]
             [--branch FRAGMENT] [--file FRAGMENT] [--limit N] [--json]
 rein inspect AGENT:SESSION_ID [--json]
-rein last [--agent claude|codex|all] [--project FRAGMENT] [--dry-run] [--json]
+rein last [--agent claude|codex|grok|all] [--project FRAGMENT] [--dry-run] [--json]
           [--allow-environment-warning CHECK_ID ...]
 rein resume AGENT:SESSION_ID [--dry-run] [--json] [--fork]
-            [--with claude|codex]
+            [--with claude|codex|grok]
             [--allow-environment-warning CHECK_ID ...]
 rein fork AGENT:SESSION_ID [--dry-run] [--json]
           [--allow-environment-warning CHECK_ID ...]
-rein handoff [AGENT:]SESSION_ID --to claude|codex
+rein handoff [AGENT:]SESSION_ID --to claude|codex|grok
              [--policy checkpoint|balanced|full] [--dry-run|--no-launch]
              [--json] [--export PATH] [--allow-warning ID ...]
              [--allow-active] [--allow-untested] [--show-redactions]
              [--no-redact]
 rein handoff --last [--from claude|codex|gemini|opencode|grok]
-             --to claude|codex [handoff flags]
+             --to claude|codex|grok [handoff flags]
 rein handoff list [--json] [--limit N]
 rein handoff inspect HANDOFF_ID [--json]
              [--acknowledged|--not-acknowledged]
@@ -150,8 +150,10 @@ A structured handoff continues the same task in a new Claude Code or Codex
 session. It is not native resume: Reinstate does not reconstruct vendor history,
 write a vendor-internal session file, or claim that the destination is the same
 session. Source parsing and projection are local and require no source model
-call. Gemini CLI, OpenCode, and Grok Build are source-only in v0.4.0; only Claude
-Code and Codex are destinations.
+call. Gemini CLI and OpenCode are source-only; Claude Code, Codex and Grok
+Build are destinations. A handoff into Grok always runs redaction and always
+prints the repository-upload warning; `--no-redact` is refused with exit `2` in
+that direction as well as when Grok is the source.
 
 ### `rein handoff`
 
@@ -161,7 +163,7 @@ Code and Codex are destinations.
 | ---- | -------- |
 | `--last` | Select the newest matching source instead of `SESSION`. |
 | `--from AGENT` | Restrict `--last` to one source agent. |
-| `--to AGENT` | Required destination: `claude` or `codex`. |
+| `--to AGENT` | Required destination: `claude`, `codex`, or `grok`. |
 | `--policy checkpoint\|balanced\|full` | Projection policy; default `balanced`. |
 | `--dry-run` | Preview using temporary files only; no durable handoff and no launch. |
 | `--json` | Emit machine-readable, launch-free output; requires `--dry-run` or `--no-launch`. |

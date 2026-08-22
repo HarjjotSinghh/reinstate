@@ -9,6 +9,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Grok Build moves to **T4, handoff destination**. `rein handoff <session> --to
+  grok` starts a **new** Grok Build session — never a cross-agent resume — with
+  `grok --session-id <uuid> "<briefing>"` in the verified workspace. The vendor
+  requires that the UUID not already exist under the target session directory,
+  so the target proves its absence when it plans and again immediately before
+  launch, and refuses rather than colliding. Because the identifier is pinned,
+  lineage resolves the destination session directly instead of reconciling it
+  from a post-launch scan; a session that never appeared is reported
+  `unresolved` and one UUID under two project directories is `ambiguous`,
+  never guessed. Nothing is written under the Grok root, including no
+  directory-trust record: no Grok trust file shape has been measured, and
+  inventing one would be a vendor-internal write on a guess.
+- The Grok upload warning now applies in both directions. Grok Build's
+  documented repository-content upload behaviour is a property of that process,
+  not of which side of a handoff it is on, so a handoff *into* Grok also forces
+  redaction, also prints the warning, and also refuses `--no-redact` with exit
+  `2`. Sending a briefing about the operator's repository into that CLI is the
+  direction the warning matters most in.
+- Grok Build moves to **T3, verified resume**. `rein resume grok:<id>` and
+  `rein fork grok:<id>` launch `grok --resume <uuid>` and
+  `grok --resume <uuid> --fork-session` against the vendor's own session, after
+  the same executable-trust, workspace-identity and version preflight every
+  other native launch gets. The verified version range is `1.0.5`–`1.0.5`,
+  measured from `grok --version` on the macOS acceptance host; anything outside
+  it is `UNTESTED` and exits `5`. The physical device journey this tier
+  ultimately rests on is specified in
+  `docs/testing/grok-native-resume-acceptance.md` and has not been recorded on
+  either platform yet, so the tier is a code-complete claim awaiting
+  confirmation rather than an evidenced one, and every surface that names it
+  says so.
+- Grok's `--resume` flag accepts a session **ID or a title**, and resolves any
+  value that is not UUID-shaped as a title. Titles are neither unique nor
+  stable, so a title in that position could address a session the operator
+  never selected. Descriptors can now declare `NativeSpec.SessionIDPattern`,
+  the shape an identifier must have before it may be substituted into an argv
+  template. A Grok session whose recorded id is not a UUID stays read-only with
+  that reason stated, and the argv builder refuses the substitution outright,
+  so no route to a launch plan can put a title on a `grok` command line.
 - `rein resume` and `rein fork` now report whether the session being resumed is
   already open in the agent that owns it. A detected live session is an
   environment warning, `agent.active`, so it prompts on a terminal and requires
@@ -34,7 +72,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   version" is indistinguishable from "no agent", so that became a refusal the
   user could do nothing about. The shared deadline still bounds the probe; only
   its starting point moved.
-
+- `rein handoff --to` and `rein resume --with` now validate the destination
+  against T4, the tier that actually has a handoff destination, instead of T3.
+  The flag help had always listed T4 agents while validation accepted T3 ones,
+  which no agent exercised until one reached T3 without being a destination.
+  Such an agent passed usage validation and then failed deep in the pipeline
+  with `unknown destination agent`, instead of being told which agents can
+  receive a handoff.
 - OpenCode now declares the root environment variable its reader already
   honours. OpenCode reads `$XDG_DATA_HOME/opencode`, so the variable names the
   parent of the root rather than the root itself, and the agent descriptor had

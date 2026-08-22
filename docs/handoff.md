@@ -35,15 +35,17 @@ Reinstate labels these separately in the CLI, in JSON, and in docs:
 
 | Source → | Claude Code | Codex CLI | Gemini CLI | OpenCode | Grok Build |
 | -------- | :---------: | :-------: | :--------: | :------: | :--------: |
-| **Claude Code** | same-vendor native resume | **structured handoff** | not in v0.4.0 | not in v0.4.0 | not planned |
-| **Codex CLI** | **structured handoff** | same-vendor native resume | not in v0.4.0 | not in v0.4.0 | not planned |
-| **Gemini CLI** | **structured handoff** | **structured handoff** | not a target (source-only) | not in v0.4.0 | not planned |
-| **OpenCode** | **structured handoff** | **structured handoff** | not in v0.4.0 | not a target (source-only) | not planned |
-| **Grok Build** | **structured handoff** | **structured handoff** | not in v0.4.0 | not in v0.4.0 | not a target (source-only) |
+| **Claude Code** | same-vendor native resume | **structured handoff** | not a target | not a target | **structured handoff** |
+| **Codex CLI** | **structured handoff** | same-vendor native resume | not a target | not a target | **structured handoff** |
+| **Gemini CLI** | **structured handoff** | **structured handoff** | not a target (source-only) | not a target | **structured handoff** |
+| **OpenCode** | **structured handoff** | **structured handoff** | not a target | not a target (source-only) | **structured handoff** |
+| **Grok Build** | **structured handoff** | **structured handoff** | not a target | not a target | same-vendor native resume |
 
-Gemini CLI, OpenCode, and Grok Build are **source-only** in `v0.4.0`: you can
-hand off *from* them, not *to* them. Support is directional and versioned — a
-supported session adapter never implies a supported handoff.
+Gemini CLI and OpenCode are **source-only**: you can hand off *from* them, not
+*to* them. Support is directional and versioned — a supported session adapter
+never implies a supported handoff. Every Grok Build cell above is code-complete
+and awaiting the physical journeys in
+[testing/grok-native-resume-acceptance.md](testing/grok-native-resume-acceptance.md).
 
 ## Commands
 
@@ -168,9 +170,12 @@ Imported history is untrusted data. Reinstate treats it that way:
    lookup, and MCP login under its own policy.
 8. An unknown source or destination version fails closed with exit code `5`.
 
-Handing off **from** a Grok Build session always runs redaction and always
-prints a warning about that CLI's documented repository-upload behavior. Grok
-is not available as a destination.
+A handoff **from or to** a Grok Build session always runs redaction and always
+prints a warning about that CLI's documented repository-upload behavior, and
+`--no-redact` is refused with exit `2` in both directions. The behavior belongs
+to the Grok process, not to which side of the handoff it is on — sending a
+briefing about your repository *into* Grok is the direction that warning
+matters most in.
 
 See [security-model.md](security-model.md).
 

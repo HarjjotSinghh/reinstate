@@ -225,7 +225,7 @@ func validateHandoffSelection(args []string, last bool, from, to string, dryRun,
 	if strings.TrimSpace(to) == "" {
 		return NewExitError(ExitUsage, "--to AGENT is required")
 	}
-	if err := validateNativeAgent(to, false); err != nil {
+	if err := validateDestinationAgent(to); err != nil {
 		return err
 	}
 	if (len(args) == 0) == !last {
@@ -527,8 +527,11 @@ func writeHandoffPlan(cmd *cobra.Command, plan handoff.PlanResult, asJSON, showR
 }
 
 func destinationWarningHuman(warning string) string {
-	if warning == transcript.DestinationWarningGrok {
+	switch warning {
+	case transcript.DestinationWarningGrok:
 		return "Grok Build has documented repository-content upload behavior, including Git history and unredacted .env material sent to xAI cloud storage; Reinstate forced capsule redaction for this source"
+	case handoff.DestinationWarningGrokDestination:
+		return "Grok Build has documented repository-content upload behavior, including Git history and unredacted .env material sent to xAI cloud storage; this handoff sends a briefing about your repository into that CLI, and Reinstate forced capsule redaction for it"
 	}
 	return warning
 }

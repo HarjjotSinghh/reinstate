@@ -1,7 +1,8 @@
 # Grok Build CLI (xAI)
 
 **Confidence: Documented** (vendor docs + source; R2/R3 resolved 2026-08-12).
-**No Reinstate reader exists yet.**
+A Reinstate transcript reader and index source ship; the native launch argv
+below is measured but the physical resume journey is still pending.
 
 | Aspect | Value |
 | ------ | ----- |
@@ -14,9 +15,50 @@
 | Authoritative log | `updates.jsonl` (append-only ACP/update stream) |
 | Model-facing history | `chat_history.jsonl` (`ConversationItem` JSONL; `chat_format_version` 0 legacy / 1 current) |
 | Compaction artifacts | `compaction_checkpoints/`, `compaction_requests/` |
-| Resume | `grok --resume <session-id>`, `grok --continue` |
+| Native resume | `grok --resume <session-uuid>` |
+| Native fork | `grok --resume <session-uuid> --fork-session` |
+| Continue newest here | `grok --continue` |
+| New session with pinned ID | `grok --session-id <uuid>` (valid UUID, must not already exist) |
+| Initial prompt | Positional argument: `grok "<prompt>"` |
+| Version probe | `grok --version` → `grok 1.0.5 (5115b46bc909)` on stdout |
 | In-TUI picker | `/resume` lists recent sessions for the current workspace |
 | Compaction | `/compact [context]` rewrites `chat_history.jsonl`; preserves request/checkpoint side files |
+
+### `--resume` takes an ID **or a title** (why Reinstate pins the shape)
+
+Measured from `grok --help` on Grok Build 1.0.5:
+
+> `-r, --resume [<SESSION_ID_OR_TITLE>]` — Resume a session by ID or title, or
+> the most recent if omitted. Non-ID values match session titles for the
+> current directory (ignoring letter case; a sole renamed match wins among
+> duplicates, otherwise ambiguity errors; UUID-shaped values always mean IDs).
+
+A title is not a stable identifier and two sessions can share one, so a
+non-UUID value in that position can address a session the operator never
+selected. The catalog descriptor therefore declares
+`NativeSpec.SessionIDPattern` as the 8-4-4-4-12 hex UUID shape, and:
+
+1. an indexed Grok session whose recorded id is not UUID-shaped is marked
+   `can_resume: false` with the reason
+   `Grok Build session id is not a UUID; --resume would address it by title`;
+   and
+2. the argv builder refuses to substitute any value of another shape, so no
+   route to a launch plan can put a title on the command line.
+
+`--session-id` is the reverse direction: it creates a **new** conversation with
+a caller-chosen UUID, and the vendor requires that the UUID not already exist
+under the target session directory. It never resumes.
+
+### Version range
+
+`grok --version` prints one stdout line, `grok <semver>` with an optional
+parenthesised build id, and nothing on stderr. The catalog pins the inclusive
+range `1.0.5`–`1.0.5`, measured on the macOS acceptance host on 2026-08-22
+(`grok 1.0.5 (5115b46bc909)`). The 2026-08-17 native Windows probe recorded
+`0.2.101`; that build predates this measurement and its `--version` shape has
+not been measured, so a Windows host still on `0.2.101` is reported `UNTESTED`
+and refused with exit `5` until it is upgraded or a second build is physically
+measured and the range widens.
 
 ### Workspace key encoding (R2 — Documented)
 
@@ -45,8 +87,17 @@ storage. Phase 4 must therefore:
    and
 3. keep Grok out of the default target set until a target packet ships.
 
-For v0.4.0, Grok is a **source only**: you may hand off *from* Grok, and
-Grok sessions appear in the local index. Grok is not a destination.
+Grok sessions appear in the local index and are handoff sources. Native resume
+and fork use the vendor's own CLI against the vendor's own session. Grok is
+also a handoff **destination**: `rein handoff ... --to grok` runs
+`grok --session-id <uuid> "<briefing>"`, which starts a *new* session and is
+never a cross-agent resume. Requirements 1 and 2 above hold in that direction
+too — the warning is printed and redaction is forced whether Grok is the source
+or the destination, and `--no-redact` is refused either way. Requirement 3 is
+satisfied by this target packet. Reinstate writes nothing under `~/.grok` at
+any tier below T5, including no directory-trust record: no Grok trust file
+shape has been measured, and inventing one would be a vendor-internal write on
+a guess.
 
 ### Remaining omissions for a Grok reader
 
@@ -72,3 +123,13 @@ installer trees and is not committed.
 
 The tree still lists `mcp_credentials.json` (filename only). Exclude it on
 the next catalog pass; do not open it.
+
+### Evidence status
+
+The committed Grok device rows to date cover index, search, inspect and
+handoff-source behaviour. The physical journeys T3 and T4 require — real agent,
+real session, resumed with the continuation observed; and a real destination
+session started, acknowledged and reconciled — on macOS **and** native Windows,
+are specified in
+[testing/grok-native-resume-acceptance.md](../testing/grok-native-resume-acceptance.md)
+and have not been recorded on either platform.

@@ -137,15 +137,15 @@
       "key": "grok",
       "name": "Grok Build",
       "vendor": "xAI",
-      "tier": "T2",
+      "tier": "T4",
       "storageFamily": "F1",
       "t0Reason": null,
       "integrationPath": "/integrations/grok",
-      "status": "handoff-source",
-      "minimumTestedVersion": null,
-      "maximumTestedVersion": null,
-      "resumeMode": "Handoff source only (T2); no native resume",
-      "evidenceLevel": "deterministic synthetic fixtures; no T3 version probe",
+      "status": "handoff-destination",
+      "minimumTestedVersion": "1.0.5",
+      "maximumTestedVersion": "1.0.5",
+      "resumeMode": "Same-vendor native resume via grok --resume <uuid> (T3); handoff destination via grok --session-id <uuid> (T4); device journeys pending",
+      "evidenceLevel": "deterministic synthetic fixtures and a measured grok --version range; no T3 or T4 device journey recorded",
       "evidence": {
         "storagePage": "docs/session-storage/grok.md",
         "fixtures": [
@@ -158,7 +158,7 @@
       },
       "lastTested": "2026-08-16",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/feat/universal-agent-coverage/docs/session-storage/grok.md",
-      "notes": "T2 handoff source. Not a handoff destination and not a synced agent."
+      "notes": "T4 handoff destination, code-complete and awaiting the physical macOS and native Windows journeys in docs/testing/grok-native-resume-acceptance.md. A handoff into Grok starts a new session and is never a cross-agent resume. Not a synced agent."
     },
     {
       "id": "kimi",

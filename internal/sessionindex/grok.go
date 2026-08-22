@@ -9,16 +9,45 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
 
-// GrokReadOnlyReason is the Phase 4 source-only contract for Grok Build.
-const GrokReadOnlyReason = "Grok Build sessions are source-only in Phase 4"
+// GrokSessionIDPattern is the anchored shape a Grok Build session identifier
+// must have before Reinstate will put it on a `grok` command line.
+//
+// `grok --resume [<SESSION_ID_OR_TITLE>]` accepts either an ID or a title, and
+// resolves any value that is not UUID-shaped as a title. Titles are neither
+// unique nor stable — the vendor documents that duplicates are an ambiguity
+// error — so a non-UUID value in that position can address a different session
+// than the one Reinstate resolved. Sessions whose recorded ID does not match
+// this shape stay read-only rather than being resumed by name.
+const GrokSessionIDPattern = `^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`
+
+// GrokTitleAddressableReason is the read-only contract for a Grok session whose
+// recorded identifier is not UUID-shaped.
+const GrokTitleAddressableReason = "Grok Build session id is not a UUID; --resume would address it by title"
+
+// GrokMinVerifiedVersion and GrokMaxVerifiedVersion are the inclusive Grok
+// Build range Reinstate has physically measured, from `grok --version` on the
+// macOS acceptance host (2026-08-22, "grok 1.0.5 (5115b46bc909)"). They live
+// here rather than in the catalog descriptor because the handoff destination
+// gate and the resume version probe must not be able to drift apart.
+const (
+	GrokMinVerifiedVersion = "1.0.5"
+	GrokMaxVerifiedVersion = "1.0.5"
+)
+
+var grokSessionID = regexp.MustCompile(GrokSessionIDPattern)
+
+// IsGrokSessionID reports whether id is addressable as a Grok session ID rather
+// than as a session title.
+func IsGrokSessionID(id string) bool { return grokSessionID.MatchString(id) }
 
 // GrokSource discovers Grok Build CLI sessions under <root>/sessions/.
-// Phase 4 indexes them for search/inspect/handoff-from; native resume/fork
-// remain refused.
+// Sessions are indexed for search/inspect/handoff-from, and resumed natively
+// through `grok --resume <uuid>` when the recorded id is UUID-shaped.
 type GrokSource struct {
 	root string
 }
@@ -170,6 +199,15 @@ func parseGrokSession(sessionDir string) (Record, []Warning, error) {
 	}
 	preview := firstGrokPromptPreview(sessionDir)
 
+	// `grok --resume` and `grok --resume --fork-session` address a session by
+	// UUID. A recorded id of any other shape would be matched as a title, so
+	// such a session stays read-only instead of being resumed by name.
+	resumable := IsGrokSessionID(id)
+	readOnlyReason := ""
+	if !resumable {
+		readOnlyReason = GrokTitleAddressableReason
+	}
+
 	for index := range warnings {
 		warnings[index].Agent = AgentGrok
 		warnings[index].SessionID = id
@@ -188,9 +226,9 @@ func parseGrokSession(sessionDir string) (Record, []Warning, error) {
 		MessageCount:   messageCount,
 		PromptPreview:  preview,
 		Files:          files,
-		CanResume:      false,
-		CanFork:        false,
-		ReadOnlyReason: GrokReadOnlyReason,
+		CanResume:      resumable,
+		CanFork:        resumable,
+		ReadOnlyReason: readOnlyReason,
 		SourcePath:     sessionDir,
 		SourceModTime:  authorityInfo.ModTime().UnixNano(),
 		SourceSize:     authorityInfo.Size(),

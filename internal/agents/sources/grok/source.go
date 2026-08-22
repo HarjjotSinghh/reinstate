@@ -153,6 +153,15 @@ func parseSession(sessionDir string) (sessionindex.Record, []sessionindex.Warnin
 	}
 	preview := firstPromptPreview(sessionDir)
 
+	// `grok --resume` and `grok --resume --fork-session` address a session by
+	// UUID. A recorded id of any other shape would be matched as a title, so
+	// such a session stays read-only instead of being resumed by name.
+	resumable := sessionindex.IsGrokSessionID(id)
+	readOnlyReason := ""
+	if !resumable {
+		readOnlyReason = sessionindex.GrokTitleAddressableReason
+	}
+
 	for index := range warnings {
 		warnings[index].Agent = sessionindex.AgentGrok
 		warnings[index].SessionID = id
@@ -171,9 +180,9 @@ func parseSession(sessionDir string) (sessionindex.Record, []sessionindex.Warnin
 		MessageCount:   messageCount,
 		PromptPreview:  preview,
 		Files:          files,
-		CanResume:      false,
-		CanFork:        false,
-		ReadOnlyReason: sessionindex.GrokReadOnlyReason,
+		CanResume:      resumable,
+		CanFork:        resumable,
+		ReadOnlyReason: readOnlyReason,
 		SourcePath:     sessionDir,
 		SourceModTime:  authorityInfo.ModTime().UnixNano(),
 		SourceSize:     authorityInfo.Size(),

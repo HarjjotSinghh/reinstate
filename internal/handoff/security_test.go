@@ -256,14 +256,48 @@ func TestSecurityRule8UnknownVersionsFailClosedWithoutArtifacts(t *testing.T) {
 	}
 }
 
-func TestSecurityRule9GrokDestinationRefusedAndSourceWarned(t *testing.T) {
+// TestSecurityRule9GrokIsWarnedInBothDirections pins the Grok upload contract
+// from docs/session-storage/grok.md now that Grok is also a destination.
+//
+// Grok Build has a documented history of transmitting repository contents to
+// xAI cloud storage. That is a property of the process, not of which side of a
+// handoff it is on, so the warning and forced redaction apply whether Grok
+// reads the capsule or receives it, and `--no-redact` is refused in both
+// directions with exit 2.
+func TestSecurityRule9GrokIsWarnedInBothDirections(t *testing.T) {
 	rec, opts, _ := adversarialPipeline(t, "prompt-injection")
 	opts.ToAgent = sessionindex.AgentGrok
 	opts.Target = nil
+	opts.NoRedact = true
 	_, err := Plan(context.Background(), rec, opts)
 	assertPipelineCode(t, err, exitcode.Usage)
-	if target, ok := Target(sessionindex.AgentGrok); ok || target != nil {
-		t.Fatalf("Grok destination registered: %#v", target)
+	if !errors.Is(err, transcript.ErrNoRedactRefused) {
+		t.Fatalf("--no-redact into Grok error = %v, want ErrNoRedactRefused", err)
+	}
+
+	rec, opts, _ = adversarialPipeline(t, "prompt-injection")
+	opts.ToAgent = sessionindex.AgentGrok
+	// An explicit synthetic root and a forced compatibility keep this off the
+	// contributor's real ~/.grok and off any installed grok binary. Without
+	// them the case passes only on a machine that happens to have Grok Build
+	// installed, which is a test that measures the host, not the code.
+	opts.Target = &GrokTarget{
+		Root:        grokFixtureRoot(t, nil),
+		ForceCompat: adapter.CompatibilitySupported,
+	}
+	destPlan, err := Plan(context.Background(), rec, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(destPlan.TempDir) })
+	if destPlan.Capsule.Security.DestinationWarning != DestinationWarningGrokDestination ||
+		!destPlan.Capsule.Security.RedactionForced {
+		t.Fatalf("Grok destination security warning = %+v", destPlan.Capsule.Security)
+	}
+	if destPlan.Destination.Executable != "grok" ||
+		len(destPlan.Destination.Args) < 2 || destPlan.Destination.Args[0] != "--session-id" {
+		t.Fatalf("Grok destination argv = %s %v",
+			destPlan.Destination.Executable, destPlan.Destination.Args)
 	}
 
 	rec, opts, _ = adversarialPipeline(t, "prompt-injection")
