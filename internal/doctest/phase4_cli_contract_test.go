@@ -60,8 +60,12 @@ func TestPhase4DirectionalCompatibilityIsDocumented(t *testing.T) {
 		"| **Claude Code** | same-vendor native resume | structured handoff |",
 		"| **Codex CLI** | structured handoff | same-vendor native resume |",
 		"| **Gemini CLI** | structured handoff | structured handoff | not a target (source-only) |",
-		"| **OpenCode** | structured handoff | structured handoff | not in v0.4.0 | not a target (source-only) |",
-		"| **Grok Build** | structured handoff | structured handoff | not in v0.4.0 | not in v0.4.0 | not a target (source-only) |",
+		// OpenCode is a destination as of T4, so its own column reads
+		// "same-vendor native resume" rather than "not a target". What still
+		// has to be pinned is that it is a destination for the other agents
+		// and that it is not a native resume from them.
+		"| **OpenCode** | structured handoff | structured handoff | not in v0.4.0 | same-vendor native resume |",
+		"| **Grok Build** | structured handoff | structured handoff | not in v0.4.0 | structured handoff | not a target (source-only) |",
 	} {
 		if !strings.Contains(doc, row) {
 			t.Errorf("docs/compatibility.md is missing directional row %q", row)

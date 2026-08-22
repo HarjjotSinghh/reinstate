@@ -17,8 +17,25 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-// openCodeDatabaseName is the embedded session store inside the data root.
-const openCodeDatabaseName = "opencode.db"
+// OpenCodeDatabaseName is the embedded session store inside the data root.
+const OpenCodeDatabaseName = "opencode.db"
+
+// openCodeDatabaseName is the package-local spelling of OpenCodeDatabaseName.
+const openCodeDatabaseName = OpenCodeDatabaseName
+
+// OpenCodeReadOnlyDSN builds the only DSN any part of Reinstate may use to open
+// OpenCode's store.
+//
+// All three guards matter and none is redundant. `mode=ro` refuses writes,
+// `immutable=1` is what stops SQLite creating `-wal` and `-shm` files beside the
+// vendor's database, and `query_only(1)` refuses a write attempted through a
+// connection that is already open. Creating a sidecar is a write under an agent
+// root, which is the one thing a read-only continuity tool must never do — so
+// this lives in one place, and every reader, index source and handoff
+// destination calls it rather than spelling the DSN again.
+func OpenCodeReadOnlyDSN(path string) string {
+	return "file:" + url.PathEscape(filepath.ToSlash(path)) + "?mode=ro&immutable=1&_pragma=query_only(1)"
+}
 
 // maxOpenCodeMessages bounds one session's replay.
 const maxOpenCodeMessages = 20000
@@ -40,11 +57,7 @@ func (r *OpenCodeReader) databasePath() string {
 	return filepath.Join(data, openCodeDatabaseName)
 }
 
-// openCodeReadOnlyDSN opens the store without taking a lock or creating a
-// write-ahead log beside it. A snapshot must not write under an agent root.
-func openCodeReadOnlyDSN(path string) string {
-	return "file:" + url.PathEscape(filepath.ToSlash(path)) + "?mode=ro&immutable=1&_pragma=query_only(1)"
-}
+func openCodeReadOnlyDSN(path string) string { return OpenCodeReadOnlyDSN(path) }
 
 // snapshotDatabase freezes the whole embedded store as the boundary.
 //

@@ -28,7 +28,7 @@ The Phase 2 local capability matrix is:
 | Claude Code | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64 | T5 |
 | OpenAI Codex CLI | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64 | T5 |
 | Gemini CLI | Read-only included | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac | T2 |
-| OpenCode | Read-only included | Same-vendor included | macOS resume journey recorded (`2026-08-22-macos-opencode-t3-journey.md`); native Windows journey not yet run | T3 |
+| OpenCode | Read-only included | Same-vendor included | macOS resume and handoff-destination journeys recorded; native Windows journeys not yet run | T4 |
 | Cursor CLI | Indexed (read-only) | Not implemented | Dual-platform probes committed; indexed from `meta.json`; no device journey for resume | T1 |
 | Grok Build | Read-only included | Not supported in Phase 2 | Dual-platform probes committed (`2026-08-17-windows-grok.json`, `2026-08-21-macos-grok.json`) | T2 |
 | Amp | Not readable locally (`server_backed`) | Not implemented | Not applicable | T0 |
@@ -69,16 +69,16 @@ supported destination target, encrypted sync, or same-vendor native execution.
 
 | Source → destination | Claude Code | Codex CLI | Gemini CLI | OpenCode | Grok Build |
 | -------------------- | :---------: | :-------: | :--------: | :------: | :--------: |
-| **Claude Code** | same-vendor native resume | structured handoff | not in v0.4.0 | not in v0.4.0 | not planned |
-| **Codex CLI** | structured handoff | same-vendor native resume | not in v0.4.0 | not in v0.4.0 | not planned |
-| **Gemini CLI** | structured handoff | structured handoff | not a target (source-only) | not in v0.4.0 | not planned |
-| **OpenCode** | structured handoff | structured handoff | not in v0.4.0 | not a target (source-only) | not planned |
-| **Grok Build** | structured handoff | structured handoff | not in v0.4.0 | not in v0.4.0 | not a target (source-only) |
+| **Claude Code** | same-vendor native resume | structured handoff | not in v0.4.0 | structured handoff | not planned |
+| **Codex CLI** | structured handoff | same-vendor native resume | not in v0.4.0 | structured handoff | not planned |
+| **Gemini CLI** | structured handoff | structured handoff | not a target (source-only) | structured handoff | not planned |
+| **OpenCode** | structured handoff | structured handoff | not in v0.4.0 | same-vendor native resume | not planned |
+| **Grok Build** | structured handoff | structured handoff | not in v0.4.0 | structured handoff | not a target (source-only) |
 
 Every cross-agent entry above creates a new destination session for the same
-task through Claude Code's or Codex's documented CLI. It does not reconstruct
-vendor history or write a vendor-internal session file. Gemini, OpenCode, and
-Grok are source-only in v0.4.0; attempts to use them as destinations fail closed.
+task through the destination vendor's own documented CLI. It does not
+reconstruct vendor history or write a vendor-internal session file. Gemini and
+Grok are source-only; attempts to use them as destinations fail closed.
 
 The handoff path parses the source locally without a source model call, records
 component-level fidelity, and stores its capsule and lineage only under the

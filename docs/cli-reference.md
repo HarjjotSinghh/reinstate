@@ -39,17 +39,17 @@ rein inspect AGENT:SESSION_ID [--json]
 rein last [--agent claude|codex|all] [--project FRAGMENT] [--dry-run] [--json]
           [--allow-environment-warning CHECK_ID ...]
 rein resume AGENT:SESSION_ID [--dry-run] [--json] [--fork]
-            [--with claude|codex]
+            [--with claude|codex|opencode]
             [--allow-environment-warning CHECK_ID ...]
 rein fork AGENT:SESSION_ID [--dry-run] [--json]
           [--allow-environment-warning CHECK_ID ...]
-rein handoff [AGENT:]SESSION_ID --to claude|codex
+rein handoff [AGENT:]SESSION_ID --to claude|codex|opencode
              [--policy checkpoint|balanced|full] [--dry-run|--no-launch]
              [--json] [--export PATH] [--allow-warning ID ...]
              [--allow-active] [--allow-untested] [--show-redactions]
              [--no-redact]
 rein handoff --last [--from claude|codex|gemini|opencode|grok]
-             --to claude|codex [handoff flags]
+             --to claude|codex|opencode [handoff flags]
 rein handoff list [--json] [--limit N]
 rein handoff inspect HANDOFF_ID [--json]
              [--acknowledged|--not-acknowledged]
@@ -161,7 +161,7 @@ Code and Codex are destinations.
 | ---- | -------- |
 | `--last` | Select the newest matching source instead of `SESSION`. |
 | `--from AGENT` | Restrict `--last` to one source agent. |
-| `--to AGENT` | Required destination: `claude` or `codex`. |
+| `--to AGENT` | Required destination: `claude`, `codex`, or `opencode`. |
 | `--policy checkpoint\|balanced\|full` | Projection policy; default `balanced`. |
 | `--dry-run` | Preview using temporary files only; no durable handoff and no launch. |
 | `--json` | Emit machine-readable, launch-free output; requires `--dry-run` or `--no-launch`. |

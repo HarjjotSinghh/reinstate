@@ -57,6 +57,39 @@ Device journey:
 [../testing/results/2026-08-22-macos-opencode-t3-journey.md](../testing/results/2026-08-22-macos-opencode-t3-journey.md)
 (macOS only; native Windows pending).
 
+## Handoff destination (T4)
+
+`rein handoff <session> --to opencode` starts a **new** OpenCode session. It is
+never a cross-agent resume.
+
+| Aspect | Value |
+| ------ | ----- |
+| New session with an initial prompt | `opencode --prompt "<briefing>"`, run in the verified workspace |
+| Pinned session id | **not possible** — `opencode --session <unknown-id>` refuses with `Session not found` and creates nothing |
+| Vendor files written by Reinstate | none; the vendor creates the session, its first message and its parts |
+| Directory-trust pre-acceptance | not needed; the TUI starts straight into a fresh directory |
+| Session id reconciliation | after launch, by verified workspace + the session's own `time_created` + the SHA-256 of its first human turn |
+
+### Reconciliation is usually `unresolved`
+
+OpenCode journals in SQLite WAL mode and does not checkpoint on exit. Measured
+on macOS from OpenCode `1.18.21`: after a session was created and the TUI quit
+through its own UI, `opencode.db` was 4096 bytes with no `session` table and
+543 KB sat in `opencode.db-wal`.
+
+The `immutable=1` guard that stops Reinstate creating files beside a store it
+does not own is also what makes those rows invisible. A just-created destination
+session is therefore normally recorded as `unresolved`. The handoff still
+happens — only the recorded destination session id is unknown.
+
+The same limitation applies well before any handoff: an OpenCode session written
+recently may not appear in `rein sessions` until the vendor's own later writes
+cross SQLite's automatic checkpoint threshold.
+
+Device journey:
+[../testing/results/2026-08-22-macos-opencode-t4-journey.md](../testing/results/2026-08-22-macos-opencode-t4-journey.md)
+(macOS only; native Windows pending).
+
 ### Message record schema (R1 — Documented)
 
 Each message file is a MessageV2 `Info` object discriminated on `role`
