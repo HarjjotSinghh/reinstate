@@ -1,0 +1,180 @@
+<template>
+  <style>
+    @font-face{font-family:"Questrial";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/Questrial-Regular.woff2") format("woff2");}
+    @font-face{font-family:"Geist";font-weight:100 900;font-style:normal;font-display:block;src:url("assets/fonts/Geist-Variable.woff2") format("woff2");}
+    @font-face{font-family:"Geist Mono Variable";font-weight:100 900;font-style:normal;font-display:block;src:url("assets/fonts/GeistMono-Variable.woff2") format("woff2");}
+
+    #root {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      font-family: "Geist Mono Variable", monospace;
+    }
+    .f01-ground {
+      position: absolute;
+      inset: 0;
+      background: #171815;
+    }
+    .f01-vignette {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 70% 60% at 34% 46%, rgba(172,237,55,0.05) 0%, rgba(0,0,0,0) 70%);
+    }
+    .f01-stage {
+      position: absolute;
+      left: 300px;
+      top: 392px;
+      width: 1320px;
+    }
+    .f01-line {
+      display: flex;
+      align-items: baseline;
+      font-family: "Geist Mono Variable", monospace;
+      font-size: 46px;
+      font-weight: 400;
+      letter-spacing: 0.01em;
+      color: #F4F5EE;
+      white-space: nowrap;
+    }
+    .f01-prompt {
+      color: #ACED37;
+      margin-right: 20px;
+      font-weight: 550;
+    }
+    .f01-caret {
+      display: inline-block;
+      width: 22px;
+      height: 46px;
+      margin-left: 6px;
+      transform: translateY(6px);
+      background: #ACED37;
+    }
+    .f01-out {
+      margin-top: 44px;
+      font-family: "Geist Mono Variable", monospace;
+      font-size: 46px;
+      font-weight: 500;
+      color: #ACED37;
+      letter-spacing: 0.01em;
+    }
+    .f01-caret2 {
+      display: block;
+      width: 22px;
+      height: 46px;
+      margin-top: 40px;
+      background: #ACED37;
+    }
+  </style>
+
+  <div id="root" data-composition-id="01-cold-open" data-width="1920" data-height="1080">
+    <div class="clip f01-ground" data-start="0" data-duration="2.6" data-track-index="0" id="f01-ground"></div>
+    <div class="clip f01-vignette" data-start="0" data-duration="2.6" data-track-index="1" id="f01-vignette"></div>
+
+    <div class="clip f01-stage" data-start="0" data-duration="2.6" data-track-index="2" id="f01-stage">
+      <div class="f01-line">
+        <span class="f01-prompt" id="f01-prompt">$</span>
+        <span id="f01-text"></span>
+        <span class="f01-caret" id="f01-caret"></span>
+      </div>
+      <div class="f01-out" id="f01-out"></div>
+      <div class="f01-caret2" id="f01-caret2"></div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+      var D = 2.6;
+
+      var textEl = document.getElementById("f01-text");
+      var caretEl = document.getElementById("f01-caret");
+      var caret2El = document.getElementById("f01-caret2");
+      var outEl = document.getElementById("f01-out");
+      var promptEl = document.getElementById("f01-prompt");
+
+      // Scene 2 — type-on with caret. Discrete text states: keystroke clusters
+      // with a pause at the flag boundary, so it reads as a human at a keyboard.
+      var SEQUENCE = [
+        { t: 0.00, text: "" },
+        { t: 0.30, text: "cl" },
+        { t: 0.38, text: "clau" },
+        { t: 0.47, text: "claude" },
+        { t: 0.60, text: "claude " },
+        { t: 0.70, text: "claude -" },
+        { t: 0.78, text: "claude --" },
+        { t: 0.87, text: "claude --re" },
+        { t: 0.97, text: "claude --resu" },
+        { t: 1.08, text: "claude --resume" }
+      ];
+
+      function textAt(time) {
+        for (var i = SEQUENCE.length - 1; i >= 0; i--) {
+          if (time >= SEQUENCE[i].t) return SEQUENCE[i].text;
+        }
+        return "";
+      }
+
+      // Scene 1 — the caret is the only thing alive on the frame.
+      gsap.set(promptEl, { opacity: 0 });
+      gsap.set(outEl, { opacity: 0, y: 14 });
+      gsap.set(caret2El, { opacity: 0 });
+
+      tl.fromTo(promptEl, { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out" }, 0.05);
+
+      var driver = { t: 0 };
+      tl.to(
+        driver,
+        {
+          t: D,
+          duration: D,
+          ease: "none",
+          onUpdate: function () {
+            var next = textAt(driver.t);
+            if (textEl.textContent !== next) textEl.textContent = next;
+          }
+        },
+        0
+      );
+
+      // Deterministic caret blink — square wave off the same timeline, never CSS.
+      var blink = { p: 0 };
+      tl.to(
+        blink,
+        {
+          p: Math.PI * 2 * 6,
+          duration: D,
+          ease: "none",
+          onUpdate: function () {
+            var on = Math.sin(blink.p) > 0 ? "1" : "0";
+            caretEl.style.opacity = on;
+            caret2El.style.opacity = caret2El.dataset.live === "1" ? on : "0";
+          }
+        },
+        0
+      );
+
+      // Scene 3 — the command sits. Nothing returns. The pause is the beat.
+
+      // Scene 4 — the empty result lands in accent lime; the caret keeps blinking
+      // beneath it, so the stall reads as ongoing rather than finished.
+      tl.fromTo(
+        outEl,
+        { opacity: 0, y: 14 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.22,
+          ease: "power3.out",
+          onStart: function () {
+            outEl.textContent = "No sessions found.";
+            caret2El.dataset.live = "1";
+          }
+        },
+        1.82
+      );
+
+      window.__timelines["01-cold-open"] = tl;
+    })();
+  </script>
+</template>

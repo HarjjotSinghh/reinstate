@@ -1,0 +1,11 @@
+{
+  "name": "reinstate-launch",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx --yes hyperframes@0.7.81 preview",
+    "check": "npx --yes hyperframes@0.7.81 check",
+    "render": "npx --yes hyperframes@0.7.81 render",
+    "publish": "npx --yes hyperframes@0.7.81 publish"
+  }
+}

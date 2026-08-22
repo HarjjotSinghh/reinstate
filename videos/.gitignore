@@ -1,0 +1,10 @@
+# Build output and captured material for the launch video.
+#
+# The authored composition — the brief, storyboard, frame specs, and the HTML —
+# is versioned. Everything a render or a capture step produces is not: it is
+# large, binary, and reproducible from the sources beside it.
+renders/
+snapshots/
+capture/
+**/.hyperframes/
+*.mp4

@@ -1,0 +1,219 @@
+<template>
+  <style>
+    @font-face{font-family:"Questrial";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/Questrial-Regular.woff2") format("woff2");}
+    @font-face{font-family:"Geist";font-weight:100 900;font-style:normal;font-display:block;src:url("assets/fonts/Geist-Variable.woff2") format("woff2");}
+    @font-face{font-family:"Geist Mono Variable";font-weight:100 900;font-style:normal;font-display:block;src:url("assets/fonts/GeistMono-Variable.woff2") format("woff2");}
+
+    #root {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      font-family: "Geist Mono Variable", monospace;
+    }
+    .f04-ground { position: absolute; inset: 0; background: #171815; }
+    .f04-glow {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 55% at 50% 40%, rgba(172,237,55,0.06) 0%, rgba(0,0,0,0) 72%);
+    }
+    .f04-panel {
+      position: absolute;
+      left: 190px; top: 120px;
+      width: 1540px; height: 762px;
+      background: #1D1F1B;
+      border: 1px solid rgba(172,237,55,0.26);
+      border-radius: 14px;
+      padding: 40px 48px;
+      box-shadow: 0 30px 90px rgba(0,0,0,0.42);
+    }
+    .f04-cmd {
+      display: flex; align-items: baseline;
+      font-size: 38px; font-weight: 400; color: #F4F5EE;
+      letter-spacing: 0.01em; white-space: nowrap;
+    }
+    .f04-dollar { color: #ACED37; margin-right: 16px; font-weight: 550; }
+    .f04-caret {
+      display: inline-block; width: 17px; height: 36px;
+      margin-left: 5px; background: #ACED37;
+    }
+    .f04-ok {
+      display: flex; align-items: center; gap: 14px;
+      margin-top: 20px; font-size: 32px; color: #ACED37; font-weight: 500;
+    }
+    .f04-cmd-2 { margin-top: 34px; }
+    .f04-head {
+      display: flex; margin-top: 34px; padding-bottom: 14px;
+      border-bottom: 1px solid rgba(244,245,238,0.14);
+      font-size: 22px; font-weight: 600; letter-spacing: 0.16em;
+      text-transform: uppercase; color: #7E8A80;
+    }
+    .f04-row {
+      position: relative;
+      display: flex; align-items: center;
+      padding: 15px 0 15px 18px;
+      font-size: 30px; color: #D5DBD2;
+      border-radius: 6px;
+    }
+    .f04-row .c1 { width: 210px; color: #F4F5EE; }
+    .f04-row .c2 { width: 330px; color: #ACED37; }
+    .f04-row .c3 { width: 430px; }
+    .f04-row .c4 { width: 220px; color: #8A968C; }
+    .f04-row .c5 { display: flex; align-items: center; gap: 12px; }
+    .f04-head .c1 { width: 210px; }
+    .f04-head .c2 { width: 330px; }
+    .f04-head .c3 { width: 430px; }
+    .f04-head .c4 { width: 220px; }
+    .f04-dot { width: 13px; height: 13px; border-radius: 50%; display: inline-block; }
+    .f04-dot.paused { background: #E8A55A; }
+    .f04-dot.done { background: #5DB8A6; }
+    .f04-mark {
+      position: absolute; left: 0; top: 8px; bottom: 8px; width: 5px;
+      border-radius: 3px; background: #ACED37;
+    }
+    .f04-chip {
+      position: absolute; right: 238px; top: 806px;
+      font-size: 23px; font-weight: 600; letter-spacing: 0.17em;
+      text-transform: uppercase; color: #0B1710;
+      background: #ACED37; padding: 11px 20px; border-radius: 6px;
+    }
+  </style>
+
+  <div id="root" data-composition-id="04-index" data-width="1920" data-height="1080">
+    <div class="clip f04-ground" data-start="0" data-duration="6" data-track-index="0" id="f04-ground"></div>
+    <div class="clip f04-glow" data-start="0" data-duration="6" data-track-index="1" id="f04-glow"></div>
+
+    <div class="clip f04-panel" data-start="0" data-duration="6" data-track-index="2" id="f04-panel">
+      <div class="f04-cmd">
+        <span class="f04-dollar">$</span><span id="f04-t1"></span><span class="f04-caret" id="f04-c1"></span>
+      </div>
+
+      <div class="f04-ok" id="f04-ok">
+        <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+          <path id="f04-tick" d="M5 13.5 L10.5 19 L21 7.5" stroke="#ACED37" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>indexed 4 sessions &#183; 2 agents</span>
+      </div>
+
+      <div class="f04-cmd f04-cmd-2">
+        <span class="f04-dollar">$</span><span id="f04-t2"></span><span class="f04-caret" id="f04-c2"></span>
+      </div>
+
+      <div class="f04-head" id="f04-head">
+        <span class="c1">session</span><span class="c2">agent</span><span class="c3">project</span><span class="c4">last</span><span>state</span>
+      </div>
+
+      <div class="f04-row f04-r" id="f04-row-1">
+        <div class="f04-mark" id="f04-mark"></div>
+        <span class="c1">ses_7f3a</span><span class="c2">claude-code</span><span class="c3">payments-api</span><span class="c4">2h ago</span>
+        <span class="c5"><i class="f04-dot paused"></i>paused</span>
+      </div>
+      <div class="f04-row f04-r">
+        <span class="c1">ses_2c81</span><span class="c2">codex</span><span class="c3">payments-api</span><span class="c4">5h ago</span>
+        <span class="c5"><i class="f04-dot done"></i>done</span>
+      </div>
+      <div class="f04-row f04-r">
+        <span class="c1">ses_9d14</span><span class="c2">claude-code</span><span class="c3">auth-service</span><span class="c4">1d ago</span>
+        <span class="c5"><i class="f04-dot paused"></i>paused</span>
+      </div>
+      <div class="f04-row f04-r">
+        <span class="c1">ses_4b67</span><span class="c2">codex</span><span class="c3">infra-terraform</span><span class="c4">2d ago</span>
+        <span class="c5"><i class="f04-dot done"></i>done</span>
+      </div>
+    </div>
+
+    <div class="clip f04-chip" data-start="0" data-duration="6" data-track-index="3" id="f04-chip">
+      local index &#183; no cloud required
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+      var D = 6;
+
+      var t1 = document.getElementById("f04-t1");
+      var t2 = document.getElementById("f04-t2");
+      var c1 = document.getElementById("f04-c1");
+      var c2 = document.getElementById("f04-c2");
+
+      // Two discrete typing schedules on one driver — keystroke clusters with a
+      // pause at the word break, so each command reads as typed, not pasted.
+      var SEQ1 = [
+        { t: 0.00, text: "" },
+        { t: 0.10, text: "re" },
+        { t: 0.18, text: "rein" },
+        { t: 0.28, text: "rein " },
+        { t: 0.36, text: "rein in" },
+        { t: 0.44, text: "rein ini" },
+        { t: 0.52, text: "rein init" }
+      ];
+      var SEQ2 = [
+        { t: 0.00, text: "" },
+        { t: 1.38, text: "re" },
+        { t: 1.46, text: "rein" },
+        { t: 1.56, text: "rein " },
+        { t: 1.64, text: "rein li" },
+        { t: 1.72, text: "rein lis" },
+        { t: 1.80, text: "rein list" }
+      ];
+      function at(seq, time) {
+        for (var i = seq.length - 1; i >= 0; i--) if (time >= seq[i].t) return seq[i].text;
+        return "";
+      }
+
+      gsap.set("#f04-ok", { opacity: 0, y: 12 });
+      gsap.set("#f04-head", { opacity: 0 });
+      gsap.set(".f04-r", { opacity: 0 });
+      gsap.set("#f04-mark", { opacity: 0, scaleY: 0 });
+      gsap.set("#f04-chip", { opacity: 0, y: 14 });
+      gsap.set("#f04-c2", { opacity: 0 });
+      gsap.set("#f04-tick", { strokeDasharray: 40, strokeDashoffset: 40 });
+
+      var driver = { t: 0 };
+      tl.to(driver, {
+        t: D, duration: D, ease: "none",
+        onUpdate: function () {
+          var a = at(SEQ1, driver.t);
+          if (t1.textContent !== a) t1.textContent = a;
+          var b = at(SEQ2, driver.t);
+          if (t2.textContent !== b) t2.textContent = b;
+        }
+      }, 0);
+
+      // Deterministic caret blink; the first caret hands off to the second when
+      // the second command starts typing.
+      var blink = { p: 0 };
+      tl.to(blink, {
+        p: Math.PI * 2 * 13, duration: D, ease: "none",
+        onUpdate: function () {
+          var on = Math.sin(blink.p) > 0 ? "1" : "0";
+          var handoff = driver.t >= 1.32;
+          c1.style.opacity = handoff ? "0" : on;
+          c2.style.opacity = handoff ? on : "0";
+        }
+      }, 0);
+
+      // Scene 2 — the result returns; the tick draws itself.
+      tl.fromTo("#f04-ok", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.26, ease: "power3.out" }, 0.70);
+      tl.to("#f04-tick", { strokeDashoffset: 0, duration: 0.3, ease: "power2.out" }, 0.78);
+
+      // Scene 4 — header sets, then four rows waterfall in, one per beat.
+      tl.fromTo("#f04-head", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.22, ease: "power2.out" }, 2.02);
+      tl.fromTo(
+        ".f04-r",
+        { opacity: 0, y: 34 },
+        { opacity: 1, y: 0, duration: 0.34, ease: "power3.out", stagger: 0.3 },
+        2.24
+      );
+
+      // Scene 5 — the session the rest of the video follows is marked.
+      tl.to("#f04-row-1", { backgroundColor: "rgba(172,237,55,0.10)", duration: 0.32, ease: "power2.out" }, 3.72);
+      tl.fromTo("#f04-mark", { opacity: 0, scaleY: 0 }, { opacity: 1, scaleY: 1, duration: 0.3, ease: "power3.out" }, 3.76);
+
+      // Scene 6 — the claim lands and the frame goes still.
+      tl.fromTo("#f04-chip", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 4.62);
+
+      window.__timelines["04-index"] = tl;
+    })();
+  </script>
+</template>

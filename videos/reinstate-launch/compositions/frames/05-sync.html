@@ -1,0 +1,263 @@
+<template>
+  <style>
+    @font-face{font-family:"Questrial";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/Questrial-Regular.woff2") format("woff2");}
+    @font-face{font-family:"Geist";font-weight:100 900;font-style:normal;font-display:block;src:url("assets/fonts/Geist-Variable.woff2") format("woff2");}
+    @font-face{font-family:"Geist Mono Variable";font-weight:100 900;font-style:normal;font-display:block;src:url("assets/fonts/GeistMono-Variable.woff2") format("woff2");}
+
+    #root {
+      position: absolute; inset: 0; overflow: hidden;
+      font-family: "Geist Mono Variable", monospace;
+      perspective: 2200px;
+    }
+    .f05-ground { position: absolute; inset: 0; background: #171815; }
+    .f05-glow {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 66% 58% at 50% 44%, rgba(172,237,55,0.06) 0%, rgba(0,0,0,0) 74%);
+    }
+    .f05-seam {
+      position: absolute; left: 959px; top: 186px; width: 2px; height: 566px;
+      background: linear-gradient(180deg, rgba(172,237,55,0) 0%, rgba(172,237,55,0.55) 50%, rgba(172,237,55,0) 100%);
+    }
+    .f05-panel {
+      position: absolute; top: 186px; width: 812px; height: 566px;
+      background: #1D1F1B; border: 1px solid rgba(172,237,55,0.24);
+      border-radius: 14px; padding: 34px 38px;
+      box-shadow: 0 30px 90px rgba(0,0,0,0.45);
+    }
+    .f05-wait {
+      margin-top: 40px; font-size: 27px; color: #6E7A71; font-style: italic;
+    }
+    .f05-left { left: 116px; transform-origin: right center; }
+    .f05-right { left: 992px; transform-origin: left center; }
+    .f05-os {
+      display: inline-block; font-size: 22px; font-weight: 600;
+      letter-spacing: 0.17em; text-transform: uppercase;
+      color: #0B1710; background: #ACED37; padding: 8px 16px; border-radius: 5px;
+    }
+    .f05-cmd {
+      display: flex; align-items: baseline; margin-top: 34px;
+      font-size: 33px; color: #F4F5EE; white-space: nowrap;
+    }
+    .f05-dollar { color: #ACED37; margin-right: 14px; font-weight: 550; }
+    .f05-caret { display: inline-block; width: 15px; height: 31px; margin-left: 5px; background: #ACED37; }
+    .f05-layers { margin-top: 42px; position: relative; height: 300px; }
+    .f05-layer {
+      position: absolute; left: 0; width: 660px;
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 30px; color: #D5DBD2;
+      border: 1px solid rgba(244,245,238,0.18); border-radius: 9px;
+      padding: 17px 24px; background: #232520;
+    }
+    .f05-layer em {
+      font-style: normal; font-size: 22px; color: #8D968F; letter-spacing: 0.06em;
+    }
+    .f05-capsule {
+      position: absolute; left: 0; top: 92px; width: 330px;
+      display: flex; align-items: center; gap: 14px;
+      font-size: 30px; font-weight: 600; color: #0B1710;
+      background: #ACED37; border-radius: 999px; padding: 17px 28px;
+    }
+    .f05-out { margin-top: 30px; font-size: 30px; color: #ACED37; display: flex; align-items: center; gap: 13px; }
+    .f05-morph {
+      position: absolute; left: 430px; top: 682px; width: 1060px;
+      background: #0F1410; border: 1px solid #ACED37; border-radius: 12px;
+      padding: 26px 34px; box-shadow: 0 24px 70px rgba(0,0,0,0.6);
+    }
+    .f05-path {
+      font-size: 46px; font-weight: 500; color: #F4F5EE;
+      letter-spacing: 0.01em; white-space: nowrap; text-align: center;
+    }
+    .f05-path .hot { color: #ACED37; }
+    .f05-chip {
+      position: absolute; left: 0; right: 0; top: 838px;
+      text-align: center; font-size: 23px; font-weight: 600;
+      letter-spacing: 0.19em; text-transform: uppercase; color: #ACED37;
+    }
+  </style>
+
+  <div id="root" data-composition-id="05-sync" data-width="1920" data-height="1080">
+    <div class="clip f05-ground" data-start="0" data-duration="7.4" data-track-index="0" id="f05-ground"></div>
+    <div class="clip f05-glow" data-start="0" data-duration="7.4" data-track-index="1" id="f05-glow"></div>
+    <div class="clip f05-seam" data-start="0" data-duration="7.4" data-track-index="2" id="f05-seam"></div>
+
+    <div class="clip f05-panel f05-left" data-start="0" data-duration="7.4" data-track-index="3" id="f05-pl">
+      <span class="f05-os">macOS</span>
+      <div class="f05-cmd">
+        <span class="f05-dollar">$</span><span id="f05-t1"></span><span class="f05-caret" id="f05-c1"></span>
+      </div>
+      <div class="f05-layers" id="f05-layers" data-layout-allow-overlap>
+        <div class="f05-layer" id="f05-l0" style="top:0px;">paths<em>rewritable</em></div>
+        <div class="f05-layer" id="f05-l1" style="top:74px;">metadata<em>agent, project, time</em></div>
+        <div class="f05-layer" id="f05-l2" style="top:148px;">messages<em>the conversation</em></div>
+        <div class="f05-layer" id="f05-l3" style="top:222px;">session<em>ses_7f3a</em></div>
+        <div class="f05-capsule" id="f05-cap">
+          <svg width="24" height="26" viewBox="0 0 24 26" fill="none">
+            <path id="f05-shackle" d="M7 11 V8 a5 5 0 0 1 10 0 v3" stroke="#0B1710" stroke-width="2.6" stroke-linecap="round"/>
+            <rect x="4" y="11" width="16" height="12" rx="2.5" fill="#0B1710"/>
+          </svg>
+          <span>ses_7f3a</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="clip f05-panel f05-right" data-start="0" data-duration="7.4" data-track-index="4" id="f05-pr">
+      <span class="f05-os">Windows</span>
+      <div class="f05-cmd">
+        <span class="f05-dollar">$</span><span id="f05-t2"></span><span class="f05-caret" id="f05-c2"></span>
+      </div>
+      <div class="f05-wait" id="f05-wait">no session on this device yet</div>
+      <div class="f05-out" id="f05-out">
+        <svg width="24" height="24" viewBox="0 0 26 26" fill="none">
+          <path id="f05-tick" d="M5 13.5 L10.5 19 L21 7.5" stroke="#ACED37" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>ses_7f3a restored</span>
+      </div>
+    </div>
+
+    <div class="clip f05-morph" data-start="0" data-duration="7.4" data-track-index="5" id="f05-morph">
+      <div class="f05-path" id="f05-pathline"></div>
+    </div>
+    <div class="clip f05-chip" data-start="0" data-duration="7.4" data-track-index="6" id="f05-chip">paths remapped</div>
+  </div>
+
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+      var D = 7.4;
+
+      var t1 = document.getElementById("f05-t1");
+      var t2 = document.getElementById("f05-t2");
+      var c1 = document.getElementById("f05-c1");
+      var c2 = document.getElementById("f05-c2");
+      var pathEl = document.getElementById("f05-pathline");
+
+      var SEQ1 = [
+        { t: 0.00, text: "" }, { t: 0.94, text: "re" }, { t: 1.02, text: "rein" },
+        { t: 1.12, text: "rein " }, { t: 1.20, text: "rein pu" },
+        { t: 1.28, text: "rein pus" }, { t: 1.36, text: "rein push" }
+      ];
+      var SEQ2 = [
+        { t: 0.00, text: "" }, { t: 4.52, text: "re" }, { t: 4.60, text: "rein" },
+        { t: 4.70, text: "rein " }, { t: 4.78, text: "rein pu" },
+        { t: 4.86, text: "rein pul" }, { t: 4.94, text: "rein pull" }
+      ];
+      function at(seq, time) {
+        for (var i = seq.length - 1; i >= 0; i--) if (time >= seq[i].t) return seq[i].text;
+        return "";
+      }
+
+      // Scene 6 — the path rewrite. Discrete states: the mac path holds, the
+      // changed head scrambles, then the Windows path resolves with every
+      // changed segment carrying the accent.
+      var OLD = "/Users/dev/code/payments-api";
+      var SCRAM = "@#%&";
+      function scrambleHead(seed, n) {
+        var out = "";
+        for (var i = 0; i < n; i++) out += SCRAM[(seed + i * 3) % SCRAM.length];
+        return out;
+      }
+      var PATH_STATES = [
+        { t: 0.00, html: "" },
+        { t: 5.68, html: OLD },
+        { t: 5.98, html: scrambleHead(1, 7) + "/dev/code/payments-api" },
+        { t: 6.08, html: scrambleHead(2, 7) + "\\dev/code/payments-api" },
+        { t: 6.18, html: scrambleHead(3, 5) + "s\\dev\\code/payments-api" },
+        { t: 6.28, html: '<span class="hot">C:\\</span>Users' + scrambleHead(1, 2) + "\\dev\\code\\payments-api" },
+        { t: 6.40, html: '<span class="hot">C:\\</span>Users<span class="hot">\\</span>dev<span class="hot">\\</span>code<span class="hot">\\</span>payments-api' }
+      ];
+      function pathAt(time) {
+        for (var i = PATH_STATES.length - 1; i >= 0; i--) if (time >= PATH_STATES[i].t) return PATH_STATES[i].html;
+        return "";
+      }
+
+      // Scene 1 — mirrored split-tilt entry: the two machines open like a book.
+      gsap.set("#f05-seam", { opacity: 0 });
+      gsap.set("#f05-layers .f05-layer", { opacity: 0, x: -24 });
+      gsap.set("#f05-cap", { opacity: 0, scale: 0.8 });
+      gsap.set("#f05-shackle", { strokeDasharray: 30, strokeDashoffset: 30 });
+      gsap.set("#f05-out", { opacity: 0, y: 12 });
+      gsap.set("#f05-tick", { strokeDasharray: 40, strokeDashoffset: 40 });
+      gsap.set("#f05-morph", { opacity: 0, y: 26, scale: 0.94 });
+      gsap.set("#f05-chip", { opacity: 0 });
+      gsap.set("#f05-c2", { opacity: 0 });
+
+      tl.fromTo("#f05-pl",
+        { x: -240, rotationY: 26, opacity: 0, scale: 0.86 },
+        { x: 0, rotationY: 0, opacity: 1, scale: 1, duration: 0.72, ease: "power3.out" }, 0.03);
+      tl.fromTo("#f05-pr",
+        { x: 240, rotationY: -26, opacity: 0, scale: 0.86 },
+        { x: 0, rotationY: 0, opacity: 1, scale: 1, duration: 0.72, ease: "power3.out" }, 0.17);
+      tl.fromTo("#f05-seam", { opacity: 0, scaleY: 0.4 }, { opacity: 1, scaleY: 1, duration: 0.4, ease: "power2.out" }, 0.55);
+
+      var driver = { t: 0 };
+      tl.to(driver, {
+        t: D, duration: D, ease: "none",
+        onUpdate: function () {
+          var a = at(SEQ1, driver.t); if (t1.textContent !== a) t1.textContent = a;
+          var b = at(SEQ2, driver.t); if (t2.textContent !== b) t2.textContent = b;
+          var p = pathAt(driver.t); if (pathEl.innerHTML !== p) pathEl.innerHTML = p;
+        }
+      }, 0);
+
+      var blink = { p: 0 };
+      tl.to(blink, {
+        p: Math.PI * 2 * 15, duration: D, ease: "none",
+        onUpdate: function () {
+          var on = Math.sin(blink.p) > 0 ? "1" : "0";
+          var handoff = driver.t >= 4.46;
+          c1.style.opacity = handoff ? "0" : on;
+          c2.style.opacity = handoff ? on : "0";
+        }
+      }, 0);
+
+      // Scene 2 — attention is single-pointed: the right machine sits back.
+      // 0.66, not lower: below ~0.6 the lime OS chip drops under the 4.5:1
+      // contrast floor while still on screen.
+      tl.to("#f05-pr", { opacity: 0.66, duration: 0.34, ease: "power2.out" }, 0.92);
+
+      // Scene 3 — the four layers of portable state arrive, then collapse inward
+      // into one sealed capsule; the lock draws itself closed.
+      tl.fromTo("#f05-layers .f05-layer",
+        { opacity: 0, x: -24 },
+        { opacity: 1, x: 0, duration: 0.26, ease: "power3.out", stagger: 0.12 }, 1.78);
+      // Each layer converges on the capsule's center, so the four collapse
+      // inward rather than merely fading.
+      tl.to("#f05-l0", { y: 91, opacity: 0, scale: 0.82, duration: 0.42, ease: "power2.in" }, 2.44);
+      tl.to("#f05-l1", { y: 17, opacity: 0, scale: 0.82, duration: 0.42, ease: "power2.in" }, 2.47);
+      tl.to("#f05-l2", { y: -57, opacity: 0, scale: 0.82, duration: 0.42, ease: "power2.in" }, 2.50);
+      tl.to("#f05-l3", { y: -131, opacity: 0, scale: 0.82, duration: 0.42, ease: "power2.in" }, 2.53);
+      tl.fromTo("#f05-cap", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(2)" }, 2.72);
+      tl.to("#f05-shackle", { strokeDashoffset: 0, duration: 0.28, ease: "power2.out" }, 2.86);
+
+      // Scene 4 — the sealed capsule arcs across the seam. x carries it over,
+      // y lifts and drops so the path reads as a curve, not a slide.
+      tl.to("#f05-cap", { x: 876, duration: 0.82, ease: "power2.inOut" }, 3.22);
+      tl.to("#f05-cap", { y: -104, duration: 0.41, ease: "power2.out" }, 3.22);
+      tl.to("#f05-cap", { y: 92, duration: 0.41, ease: "power2.in" }, 3.63);
+      tl.fromTo("#f05-cap", { filter: "blur(0px)" }, { filter: "blur(5px)", duration: 0.28, ease: "power1.inOut" }, 3.32);
+      tl.to("#f05-cap", { filter: "blur(0px)", duration: 0.26, ease: "power1.out" }, 3.74);
+      tl.to("#f05-seam", { opacity: 1, scaleX: 3.4, duration: 0.2, ease: "power2.out" }, 3.58);
+      tl.to("#f05-seam", { scaleX: 1, duration: 0.28, ease: "power2.inOut" }, 3.78);
+
+      // Scene 5 — focus hands over: the right machine takes full brightness,
+      // the left sits back, and the pull returns.
+      tl.to("#f05-pr", { opacity: 1, duration: 0.34, ease: "power2.out" }, 4.18);
+      // Clear before the capsule crosses it, or the arc reads muddy over the text.
+      tl.to("#f05-wait", { opacity: 0, duration: 0.26, ease: "power2.in" }, 3.32);
+      tl.to("#f05-pl", { opacity: 0.66, duration: 0.42, ease: "power2.out" }, 4.46);
+      tl.to("#f05-cap", { opacity: 0, duration: 0.26, ease: "power2.in" }, 4.22);
+      tl.fromTo("#f05-out", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.26, ease: "power3.out" }, 5.14);
+      tl.to("#f05-tick", { strokeDashoffset: 0, duration: 0.28, ease: "power2.out" }, 5.22);
+
+      // Scene 6 — the held hero beat. The card lands, the path rewrites in place,
+      // then the whole frame stops.
+      tl.fromTo("#f05-morph",
+        { opacity: 0, y: 26, scale: 0.94 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.34, ease: "power3.out" }, 5.58);
+      tl.fromTo("#f05-chip", { opacity: 0 }, { opacity: 1, duration: 0.26, ease: "power2.out" }, 6.58);
+
+      window.__timelines["05-sync"] = tl;
+    })();
+  </script>
+</template>
