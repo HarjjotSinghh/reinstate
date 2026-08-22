@@ -1192,6 +1192,16 @@ func validateNativeAgent(agent string, allowAll bool) error {
 	return validateCatalogAgent(agent, allowAll, agents.TierResume, "invalid native agent; expected %s")
 }
 
+// validateDestinationAgent gates `--to` / `--with` on T4, which is the tier
+// that actually has a handoff destination. It used to gate on T3, matching
+// neither the flag's own help text nor the ladder: a T3 agent that is not yet
+// a destination would pass usage validation and then fail deep in the pipeline
+// with "unknown destination agent", instead of being told which agents can
+// receive a handoff.
+func validateDestinationAgent(agent string) error {
+	return validateCatalogAgent(agent, false, agents.TierHandoffTo, "invalid destination agent; expected %s")
+}
+
 func validateCatalogAgent(agent string, allowAll bool, min agents.Tier, message string) error {
 	agent = strings.ToLower(strings.TrimSpace(agent))
 	keys := catalogKeysAtLeast(min)
@@ -1332,6 +1342,15 @@ func catalogNativeLaunch(agent, operation, sessionID string) (string, []string, 
 		return "", nil, false
 	}
 	if descriptor.Native.Executable == "" || len(template) == 0 {
+		return "", nil, false
+	}
+	// Last gate before a session identifier becomes argv. A vendor whose
+	// resume flag also accepts something other than an ID — Grok Build's
+	// `--resume [<SESSION_ID_OR_TITLE>]` resolves any non-UUID value as a
+	// title — declares the shape it requires, and a value of any other shape
+	// never reaches the command line. The indexed record is already refused
+	// upstream; this backstop covers every other route to PlanLaunch.
+	if !descriptor.Native.SessionIDAllowed(sessionID) {
 		return "", nil, false
 	}
 	return descriptor.Native.Executable, sessionindex.ApplyArgvTemplate(template, sessionID), true

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 	"unicode/utf8"
 
@@ -49,6 +50,67 @@ func checkStructure(d agents.Descriptor) error {
 		}
 		if d.Version == nil || d.Version.Min == "" || d.Version.Max == "" {
 			return errors.New("VersionSpec required at T3 and above")
+		}
+		if err := checkNativeArgv(d); err != nil {
+			return err
+		}
+	}
+	// NativeSpec.NewSession is deliberately not required at T4. A destination
+	// only needs it when the vendor lets the caller pin the new session's
+	// identifier; Codex CLI assigns its own and reconciles it afterwards, so
+	// requiring the field would make an existing, evidenced T5 descriptor
+	// non-conformant. checkNativeArgv still validates the template when a
+	// descriptor does declare one.
+	return nil
+}
+
+// checkNativeArgv asserts that a session-addressing template actually addresses
+// the session, and that a declared session-ID shape is enforceable.
+//
+// A Resume or Fork template missing {{.SessionID}} would launch the vendor's
+// most recent session instead of the resolved one, which is a wrong-session
+// resume that no other check would notice.
+//
+// NewSession is deliberately exempt. It does not address an existing session,
+// so there is nothing for it to mis-address, and two shapes are both correct:
+// a caller-chosen identifier the vendor accepts (Claude, Qwen) and a bare
+// "start fresh" flag for a vendor that assigns its own (OpenCode). Requiring
+// the placeholder here would reject the second shape, which is the same
+// mistake checkNativeSpec avoids by not requiring the field at all.
+func checkNativeArgv(d agents.Descriptor) error {
+	const placeholder = "{{.SessionID}}"
+	for name, template := range map[string][]string{
+		"Resume": d.Native.Resume,
+		"Fork":   d.Native.Fork,
+	} {
+		if len(template) == 0 {
+			continue
+		}
+		if !slices.ContainsFunc(template, func(part string) bool {
+			return strings.Contains(part, placeholder)
+		}) {
+			return fmt.Errorf("NativeSpec.%s does not substitute %s", name, placeholder)
+		}
+	}
+	if len(d.Native.Resume) == 0 {
+		return errors.New("NativeSpec.Resume required at T3 and above")
+	}
+	pattern := strings.TrimSpace(d.Native.SessionIDPattern)
+	if pattern == "" {
+		return nil
+	}
+	compiled, err := regexp.Compile(pattern)
+	if err != nil {
+		return fmt.Errorf("NativeSpec.SessionIDPattern does not compile: %w", err)
+	}
+	if !strings.HasPrefix(pattern, "^") || !strings.HasSuffix(pattern, "$") {
+		return errors.New("NativeSpec.SessionIDPattern must be anchored with ^ and $")
+	}
+	// An unanchored or permissive pattern would let a session title through the
+	// one gate that exists to stop it.
+	for _, title := range []string{"", "fix the parser", "recent work", "../../etc/passwd"} {
+		if compiled.MatchString(title) {
+			return fmt.Errorf("NativeSpec.SessionIDPattern accepts the non-identifier %q", title)
 		}
 	}
 	return nil

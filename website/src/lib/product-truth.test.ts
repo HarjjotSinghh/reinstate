@@ -107,11 +107,14 @@ describe('central product-truth drift guard', () => {
     );
     expect(
       compatibilityAgents.filter((agent) => agent.tier === 'T2').map((agent) => agent.key).sort(),
-    ).toEqual(['gemini', 'grok', 'kimi']);
+    ).toEqual(['gemini', 'kimi']);
     // OpenCode and Qwen both sit at T3: verified same-vendor resume, with no
     // handoff destination and no encrypted sync. What still has to be pinned is
     // that nothing above them moved.
-    expect(compatibilityAgents.filter((agent) => agent.tier === 'T3')).toEqual([]);
+    // Grok reaches T3 on journeys recorded on both platforms.
+    expect(
+      compatibilityAgents.filter((agent) => agent.tier === 'T3').map((agent) => agent.key),
+    ).toEqual(['grok']);
     // Qwen is the first agent to reach T4: a structured handoff destination
     // without encrypted sync. Claude and Codex remain the only T5 surfaces.
     expect(

@@ -105,9 +105,9 @@ export const staticOgPages: OgPage[] = [
   {
     route: '/integrations/grok',
     kind: 'Integration',
-    title: 'Grok Build is a T2 handoff source',
+    title: 'Grok Build is a T3 verified resume agent',
     description:
-      'Read-only Grok Build discovery and portable handoff. Native resume and encrypted sync are not supported.',
+      'Read-only Grok Build discovery, portable handoff, and same-vendor native resume. Encrypted sync is not supported.',
   },
   {
     route: '/integrations/kimi',

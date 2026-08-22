@@ -68,7 +68,30 @@ gave the same suffix.
   planned and `GR3` proves that argv is Reinstate's own, but the launch was not
   performed by `rein resume` itself.
 
-## 5. Why the native Windows half is missing
+## 5. Corrected 2026-08-22: the native Windows half exists
+
+**The finding recorded in this section was wrong.** It is left below rather than
+deleted, because a report that quietly loses its errors is worth less than one
+that keeps them.
+
+Grok's headless mode on native Windows does **not** fail to produce output. It
+answers correctly and then fails to exit. The original probe capped the run at
+120 seconds, killed the process before the answer was written, and read the
+empty file as "no output". Re-run with a 600-second cap, the same command
+returned `SLOWPROBE` — the expected answer — with the process still running.
+
+The turn was slow because the Windows acceptance root sets
+`fork_secondary_model = "grok-4.6"` and the session runs that model at high
+reasoning effort, while the macOS root carries no model configuration and used
+the fast default. Same binary, same version, 8 seconds against minutes.
+
+With a harness that reads stdout until the answer appears and then stops the
+process, every row collects. See `2026-08-22-windows-grok-t3.md`: `GS1`, `GV1`,
+`GR3`, `GR1`, `GR2` and `GR6` all pass there.
+
+The original text follows.
+
+### Original finding, superseded
 
 **Grok's headless mode does not return on native Windows.** `grok -p "<prompt>"`
 produces no output at all — empty stdout *and* empty stderr — and never exits:

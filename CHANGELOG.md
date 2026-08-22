@@ -63,6 +63,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`context.clear`, `context.undo`, `context.apply_compaction`) are reported as
   a parse warning rather than silently replayed. Native resume and fork stay
   refused: no device journey has run `kimi -r <id>` against a real session.
+- Grok Build moves to **T3, verified resume**. `rein resume grok:<id>` and
+  `rein fork grok:<id>` launch `grok --resume <uuid>` and
+  `grok --resume <uuid> --fork-session` against the vendor's own session, after
+  the same executable-trust, workspace-identity and version preflight every
+  other native launch gets. The verified version range is `1.0.5`–`1.0.5`,
+  measured from `grok --version` on the macOS acceptance host; anything outside
+  it is `UNTESTED` and exits `5`. The physical device journey this tier
+  ultimately rests on is specified in
+  `docs/testing/grok-native-resume-acceptance.md` and has not been recorded on
+  either platform yet, so the tier is a code-complete claim awaiting
+  confirmation rather than an evidenced one, and every surface that names it
+  says so.
+- Grok's `--resume` flag accepts a session **ID or a title**, and resolves any
+  value that is not UUID-shaped as a title. Titles are neither unique nor
+  stable, so a title in that position could address a session the operator
+  never selected. Descriptors can now declare `NativeSpec.SessionIDPattern`,
+  the shape an identifier must have before it may be substituted into an argv
+  template. A Grok session whose recorded id is not a UUID stays read-only with
+  that reason stated, and the argv builder refuses the substitution outright,
+  so no route to a launch plan can put a title on a `grok` command line.
 - `rein resume` and `rein fork` now report whether the session being resumed is
   already open in the agent that owns it. A detected live session is an
   environment warning, `agent.active`, so it prompts on a terminal and requires
@@ -109,6 +129,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   version" is indistinguishable from "no agent", so that became a refusal the
   user could do nothing about. The shared deadline still bounds the probe; only
   its starting point moved.
+
+- `rein handoff --to` and `rein resume --with` now validate the destination
+  against T4, the tier that actually has a handoff destination, instead of T3.
+  The flag help had always listed T4 agents while validation accepted T3 ones,
+  which no agent exercised until one reached T3 without being a destination.
+  Such an agent passed usage validation and then failed deep in the pipeline
+  with `unknown destination agent`, instead of being told which agents can
+  receive a handoff.
 - OpenCode now declares the root environment variable its reader already
   honours. OpenCode reads `$XDG_DATA_HOME/opencode`, so the variable names the
   parent of the root rather than the root itself, and the agent descriptor had
