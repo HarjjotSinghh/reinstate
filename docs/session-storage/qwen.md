@@ -2,18 +2,21 @@
 
 **Confidence: Documented on macOS and native Windows** —
 official product identified; both platforms have a real JSONL conversation
-with matching first-line keys; T1 index source shipped.
-**Current tier:** T1 (discover) · **Phase 5 target:** T2
+with matching first-line keys; T1 index source and T2 transcript reader shipped.
+**Current tier:** T2 (handoff source) · **Phase 5 target:** T2
 
 Catalog key is `qwen`.
 
 ## Research outcome
 
-**T0, reason `layout_unverified`.** Unchanged by the 2026-08-17 macOS re-probe.
+Promoted **T0 → T1** on 2026-08-19 (dual-platform probes) and **T1 → T2** on
+2026-08-22 (transcript reader). The sections below are kept in the order they
+were written; the record shape is settled in
+[Record shape (2026-08-22)](#record-shape-2026-08-22), and the earlier
+"do not invent a reader" warnings are what that section is the answer to.
 
-A real conversation now exists on macOS and Windows, and the JSONL first-line
-keys match. That is not a reader. Do not invent one. Do not reuse the Claude
-reader.
+The Claude reader is still not reusable. Same-shaped keys are not the same
+format.
 
 ## Device evidence (2026-08-16, macOS arm64)
 
@@ -122,6 +125,68 @@ kept `<uuid-v4>-runtime.json` (one shape per glob); the JSONL schema is in
 | Signed-in session | **yes** — one real JSONL conversation |
 | macOS AGENT-PROBE-V1 | this artifact |
 | native Windows AGENT-PROBE-V1 | [`2026-08-17-windows-qwen.json`](../testing/results/agent-probes/2026-08-17-windows-qwen.json) |
+
+## Record shape (2026-08-22)
+
+Measured on macOS arm64 with `qwen` 0.21.13 driven against a **throwaway
+`QWEN_HOME`** and a local stub model server. No real `~/.qwen` tree was read and
+no real credential was used; the vendor prints its own warning that
+`QWEN_HOME` is redirected, which is the confirmation that the override works.
+
+A record's top-level keys match Claude Code's. **The body does not.**
+
+```jsonc
+{
+  "uuid": "…", "parentUuid": "…"|null, "sessionId": "…",
+  "cwd": "/Users/…", "gitBranch": "main"|null,
+  "timestamp": "2026-08-21T23:47:19.664Z",
+  "version": "0.21.12",              // CLI version string, not a schema number
+  "type": "user"|"assistant"|"tool_result"|"system",
+  "provenance": "real_user"|"assistant_output"|"tool_result"|"system",
+  "message": { "role": "user"|"model", "parts": [ … ] }
+}
+```
+
+`message` is a **Gemini `Content` value**, not a Claude content-block array. A
+part is `{"text":…}`, `{"functionCall":{"id","name","args"}}`,
+`{"functionResponse":{"id","name","response"}}`, or an inline/file data part.
+`assistant` records add `model` and `usageMetadata`; `tool_result` records add
+`toolCallResult` (`callId`, `status`, `resultDisplay`, `executionStatus`).
+`system` records carry `subtype` plus `systemPayload` and no message at all.
+
+That is why reading Qwen as Claude finds **no text whatsoever**: it looks for
+`message.content[]` and Qwen writes `message.parts[]`.
+
+### Rewind is structural, not a marker
+
+Gemini writes a `$rewindTo` record. Qwen does not. The vendor's
+`ChatRecordingService.rewindRecording()` sets `lastRecordUuid` back to the uuid
+that was current just before the rewound user turn and then appends a
+`subtype:"rewind"` system record there. The discarded turns stay on disk on a
+**dead branch of the uuid tree**, and the vendor's own resume path
+(`walkTranscriptUuidChain`) decides what is live by walking `parentUuid` back
+from the last record.
+
+A reader that walks the file line by line replays turns the user explicitly
+threw away. `transcript.QwenReader` walks the same chain the vendor does and
+reports the excluded records as a `qwen_rewound_records_excluded` warning.
+
+### Project bucket
+
+`sanitizeCwd` replaces every non-alphanumeric byte of `cwd` with `-`, after
+lower-casing the whole path **on Windows only**. `/Users/u/code/demo` becomes
+`-Users-u-code-demo`; `C:\Users\u\code\demo` becomes
+`c--users-u-code-demo`. That is `ProjectKeyPathSlug` with a Windows-specific
+case fold.
+
+### Sidecars and archives
+
+`0.21.13` writes the runtime status sidecar as `<sessionId>.runtime.json`
+beside the conversation (the 2026-08-17 probe recorded the older
+`<uuid>-runtime.json` shape). Both are `.json`, so neither matches the
+`*.jsonl` session glob. Archived sessions move to `chats/archive/<id>.jsonl`,
+which the glob `projects/**/chats/*.jsonl` also does not reach — archived Qwen
+sessions are **not indexed today**.
 
 ## Identity
 

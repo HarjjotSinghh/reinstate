@@ -14,6 +14,7 @@ codex/{long-history,forks,parallel-tools,reasoning-items,absolute-paths,
        slash-commands,partial-final-record,unknown-records,
        os-roots/{macos,windows,wsl}}/
 gemini/{rewind,legacy-json,jsonl}/
+qwen/{basic,rewound,partial-final-record,unknown-records}/
 opencode/{storage,metadata-only}/
 grok/{basic,compacted}/
 adversarial/{prompt-injection,secret-leakage,fence-breakout,oversized}/  # WP-24

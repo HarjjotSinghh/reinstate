@@ -5,8 +5,12 @@
 //	~/.qwen/projects/<slug>/chats/<uuid-v4>.jsonl
 //
 // First-line keys on both platforms: cwd, message, parentUuid, provenance,
-// sessionId, timestamp, type, uuid, version. macOS also writes
-// <uuid-v4>-runtime.json sidecars; those are not conversations.
+// sessionId, timestamp, type, uuid, version. Runtime status sidecars are
+// written beside the conversation as JSON, not JSONL, and never match the glob.
+//
+// The keys match Claude Code's; the body does not. `message` is a Gemini
+// Content value, {"role":"user"|"model","parts":[…]}, so text lives under
+// parts[].text and tool arguments under parts[].functionCall.args.
 package qwen
 
 import (
@@ -29,7 +33,9 @@ const SessionGlob = "projects/**/chats/*.jsonl"
 // requiredKeys must appear on the first complete record or the file is unknown layout.
 var requiredKeys = []string{"cwd", "sessionId", "timestamp", "type", "uuid"}
 
-// Excluded keeps credentials, config, and the self-updater npm tree out of the walk.
+// Excluded keeps credentials, config, and the self-updater npm tree out of the
+// walk. `subagents` holds per-subagent transcripts under a project bucket; they
+// are not sessions and must never be indexed or handed off as one.
 var Excluded = []string{
 	"settings.json",
 	".env",
@@ -37,6 +43,7 @@ var Excluded = []string{
 	"skills",
 	"extension-store",
 	"updates",
+	"subagents",
 }
 
 // Source discovers Qwen Code sessions through hometree.
@@ -189,22 +196,15 @@ func readConversation(path string) (conversation, error) {
 			out.updated = time.Unix(stamp, 0).UTC()
 		}
 		kind := strings.ToLower(sources.FirstString(item, "type"))
-		text := ""
-		if message, ok := item["message"].(map[string]any); ok {
-			text = sources.ExtractTextContent(message["content"])
-		}
-		if text == "" {
-			text = sources.ExtractTextContent(item["message"])
-		}
-		if text == "" {
-			text = sources.ExtractTextContent(item["content"])
-		}
+		text := partsText(item)
 		switch kind {
 		case "user", "human":
 			out.messages++
-			out.prompts.Add(text)
-			if out.firstPrompt == "" {
-				out.firstPrompt = sessionindex.SafePreview(text)
+			if isRealUserTurn(item) {
+				out.prompts.Add(text)
+				if out.firstPrompt == "" {
+					out.firstPrompt = sessionindex.SafePreview(text)
+				}
 			}
 		case "assistant", "ai":
 			out.messages++
@@ -222,6 +222,52 @@ func readConversation(path string) (conversation, error) {
 	return out, nil
 }
 
+// messageParts returns the Gemini Content parts Qwen records under `message`.
+//
+// Qwen's top-level record keys match Claude Code's, but the body does not: it
+// is {"role":"user"|"model","parts":[…]}, never a Claude content-block array.
+// Reading it as Claude's shape finds no text at all, which is how every real
+// Qwen session was indexed with an empty title, an empty prompt preview, and
+// search text that matched nothing the operator had typed.
+func messageParts(item map[string]any) []map[string]any {
+	message, ok := item["message"].(map[string]any)
+	if !ok {
+		return nil
+	}
+	values, ok := message["parts"].([]any)
+	if !ok {
+		return nil
+	}
+	return sources.MapsFromAny(values)
+}
+
+// partsText joins the plain-text parts of a record. functionCall and
+// functionResponse parts are structure, not prose, and stay out of the preview.
+func partsText(item map[string]any) string {
+	var texts []string
+	for _, part := range messageParts(item) {
+		if sources.BoolValue(part["thought"]) {
+			continue
+		}
+		if text := sources.FirstString(part, "text"); text != "" {
+			texts = append(texts, text)
+		}
+	}
+	return strings.Join(texts, "\n")
+}
+
+// isRealUserTurn reports whether a type:"user" record is a person speaking.
+// Qwen also writes cron prompts, notifications, and goal-runtime messages as
+// type:"user" with provenance:"system"; those are harness text and must not
+// become a session's title or prompt preview.
+func isRealUserTurn(item map[string]any) bool {
+	switch strings.ToLower(sources.FirstString(item, "provenance")) {
+	case "", "real_user", "user":
+		return true
+	}
+	return strings.EqualFold(sources.FirstString(item, "subtype"), "mid_turn_user_message")
+}
+
 func collectFiles(item map[string]any, files map[string]struct{}) {
 	if len(files) >= sessionindex.MaxFileReferences {
 		return
@@ -230,5 +276,13 @@ func collectFiles(item map[string]any, files map[string]struct{}) {
 		if value := strings.TrimSpace(sources.FirstString(item, key)); value != "" && !strings.ContainsAny(value, "\r\n\x00") {
 			files[value] = struct{}{}
 		}
+	}
+	// Real file references live in tool arguments: {"functionCall":{"args":{…}}}.
+	for _, part := range messageParts(item) {
+		call, ok := part["functionCall"].(map[string]any)
+		if !ok {
+			continue
+		}
+		sources.CollectToolFiles(map[string]any{"arguments": call["args"]}, files)
 	}
 }
