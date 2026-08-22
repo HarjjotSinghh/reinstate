@@ -108,10 +108,12 @@ describe('central product-truth drift guard', () => {
     expect(
       compatibilityAgents.filter((agent) => agent.tier === 'T2').map((agent) => agent.key).sort(),
     ).toEqual(['gemini', 'grok', 'kimi', 'opencode']);
-    expect(compatibilityAgents.filter((agent) => agent.tier === 'T3')).toEqual([]);
+    expect(
+      compatibilityAgents.filter((agent) => agent.tier === 'T3').map((agent) => agent.key),
+    ).toEqual(['qwen']);
     expect(
       compatibilityAgents.filter((agent) => agent.tier === 'T1').map((agent) => agent.key),
-    ).toEqual(['pi', 'qwen', 'cursor', 'cline', 'copilot']);
+    ).toEqual(['pi', 'cursor', 'cline', 'copilot']);
     expect(compatibilityAgents.filter((agent) => agent.tier === 'T0')).toHaveLength(7);
   });
 

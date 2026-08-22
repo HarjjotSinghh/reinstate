@@ -48,6 +48,7 @@ rein handoff [AGENT:]SESSION_ID --to claude|codex
              [--json] [--export PATH] [--allow-warning ID ...]
              [--allow-active] [--allow-untested] [--show-redactions]
              [--no-redact]
+rein handoff --last [--from claude|codex|gemini|opencode|grok|qwen]
 rein handoff --last [--from claude|codex|gemini|opencode|grok|kimi]
              --to claude|codex [handoff flags]
 rein handoff list [--json] [--limit N]

@@ -73,6 +73,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `rein resume qwen:<id>` and `rein fork qwen:<id>` launch Qwen Code's own CLI
+  against its own session (T3). The descriptor now carries the measured launch
+  argv (`--resume <id>`, `--resume <id> --fork-session`, `--continue`), a
+  fail-closed version range, and the process shape that lets the `agent.active`
+  liveness check see a running Qwen. The version range spans two versions
+  because Qwen self-updates into its own home directory and then runs the
+  updated copy, so one machine answers `--version` differently depending on
+  which root is in scope. **macOS evidence only** — the native Windows journey
+  the tier requires has not been run.
+- Qwen Code is now a handoff **source** (T2): `rein handoff --from qwen` reads a
+  Qwen session and builds a portable capsule that seeds a **new** session in the
+  destination agent. Native resume for Qwen stays refused, and Qwen is not a
+  destination either; both are higher rungs with their own evidence gates.
+  The reader is not the Claude reader with a different name. Qwen's top-level
+  record keys match Claude Code's, but its message body is a Gemini `Content`
+  value (`{"role":…,"parts":[…]}`), and `/rewind` is encoded by re-rooting the
+  `parentUuid` chain rather than by writing a marker — so the live conversation
+  is the chain walked back from the last record, and records left on the dead
+  branch are excluded and reported rather than replayed.
 - **Kimi Code CLI is now T2, a handoff source.** `rein handoff --from kimi`
   reads `agents/main/wire.jsonl` and builds a portable capsule. A handoff
   starts a *new* Claude Code or Codex session; it never reconstructs Kimi
@@ -88,7 +107,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`context.clear`, `context.undo`, `context.apply_compaction`) are reported as
   a parse warning rather than silently replayed. Native resume and fork stay
   refused: no device journey has run `kimi -r <id>` against a real session.
-
 - `rein resume` and `rein fork` now report whether the session being resumed is
   already open in the agent that owns it. A detected live session is an
   environment warning, `agent.active`, so it prompts on a terminal and requires
@@ -105,6 +123,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Qwen Code sessions were indexed with an empty title, an empty prompt preview,
+  and search text that matched nothing the operator had typed. The index source
+  read the message body as Claude Code's `message.content[]` block array, and
+  Qwen writes Gemini's `message.parts[]`, so it found no text at all. The
+  committed fixtures had the same wrong shape, which is why every test passed.
+  Fixtures now match what the vendor actually writes, tool arguments are read as
+  file references, and a `type:"user"` record with `provenance:"system"` — a
+  cron prompt or a notification — can no longer become a session's title.
 - The vendor version probe now runs alongside the other preflight observations
   instead of after them. Every observer shares one wall clock, but the workspace
   probe runs first and shells out to Git, so in sequence the version probe was
@@ -114,7 +140,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   version" is indistinguishable from "no agent", so that became a refusal the
   user could do nothing about. The shared deadline still bounds the probe; only
   its starting point moved.
-
 - OpenCode now declares the root environment variable its reader already
   honours. OpenCode reads `$XDG_DATA_HOME/opencode`, so the variable names the
   parent of the root rather than the root itself, and the agent descriptor had

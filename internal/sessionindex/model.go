@@ -42,9 +42,6 @@ const (
 // so nothing here may launch it.
 const KimiReadOnlyReason = "Kimi Code CLI sessions are read-only until a device journey verifies native resume"
 
-// QwenReadOnlyReason is the T1 contract for Qwen Code.
-const QwenReadOnlyReason = "Qwen Code sessions are read-only until a device journey verifies native resume"
-
 // PiReadOnlyReason is the T1 contract for Pi.
 const PiReadOnlyReason = "Pi sessions are read-only until a device journey verifies native resume"
 
