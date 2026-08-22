@@ -4,13 +4,14 @@
   "titleKind": "replaceable",
   "isCustomTitle": false,
   "cwd": "/Users/fixture-user/code/demo",
-  "createdAt": "2026-08-16T09:00:00.000Z",
-  "updatedAt": "2026-08-16T09:12:30.000Z",
-  "lastPrompt": "Bound the retry budget",
+  "createdAt": 1786870800000,
+  "updatedAt": 1786871550000,
+  "lastPrompt": "Bound the retry budget in agentcheck",
   "lastTurnReason": "completed",
   "agents": {
     "main": {
-      "homedir": "/Users/fixture-user/.kimi-code/sessions/wd_fixture-user_a1b2c3d4e5f6/session_01987654-3210-7890-abcd-ef0123456789"
+      "homedir": "/Users/fixture-user/.kimi-code/sessions/wd_fixture-user_a1b2c3d4e5f6/session_01987654-3210-7890-abcd-ef0123456789",
+      "type": "main"
     }
   },
   "archived": false,
