@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The agent conformance suite now requires a T3+ tier claim to name a device
+  report from macOS **and** native Windows, and it applies the evidence rules to
+  every registered agent rather than to a hand-maintained list of five. Both
+  gaps let a verified-resume or handoff-destination claim rest on one platform:
+  the first because only probe reports were platform-checked, the second because
+  a newly promoted agent was simply absent from the check. WSL2 is a separate
+  device and does not satisfy native Windows. No shipped descriptor changes;
+  this only constrains what a future promotion may claim.
+
 ### Added
 
 - `rein resume` and `rein fork` now report whether the session being resumed is
