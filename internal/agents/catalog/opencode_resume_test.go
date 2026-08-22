@@ -1,10 +1,12 @@
 package catalog
 
 import (
+	"os"
 	"strings"
 	"testing"
 
 	"github.com/HarjjotSinghh/reinstate/internal/agents"
+	"github.com/HarjjotSinghh/reinstate/internal/handoff"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
 )
 
@@ -93,15 +95,15 @@ func TestOpenCodeResumeArgvIsOptionShaped(t *testing.T) {
 	}
 }
 
-// TestOpenCodeDescriptorIsT3 keeps tier, capability constructors and the
+// TestOpenCodeDescriptorIsT4 keeps tier, capability constructors and the
 // measured version range together, so a later edit cannot move one alone.
-func TestOpenCodeDescriptorIsT3(t *testing.T) {
+func TestOpenCodeDescriptorIsT4(t *testing.T) {
 	got := OpenCode()
 	if got.Key != sessionindex.AgentOpenCode {
 		t.Fatalf("Key = %q", got.Key)
 	}
-	if got.Tier != agents.TierResume {
-		t.Fatalf("Tier = %s, want T3", got.Tier)
+	if got.Tier != agents.TierHandoffTo {
+		t.Fatalf("Tier = %s, want T4", got.Tier)
 	}
 	if got.Family != agents.FamilyEmbeddedDB {
 		t.Fatalf("Family = %s, want F3", got.Family)
@@ -109,17 +111,63 @@ func TestOpenCodeDescriptorIsT3(t *testing.T) {
 	if got.Version == nil || got.Version.Min != "1.18.21" || got.Version.Max != "1.18.21" {
 		t.Fatalf("Version = %+v, want the single measured build 1.18.21", got.Version)
 	}
-	if got.NewIndexSource == nil || got.NewReader == nil {
-		t.Fatal("missing T1/T2 constructors")
+	if got.NewIndexSource == nil || got.NewReader == nil || got.NewTarget == nil {
+		t.Fatal("missing T1/T2/T4 constructors")
 	}
-	if got.NewTarget != nil || got.NewSyncAdapter != nil {
-		t.Fatal("constructors above the declared T3")
+	if got.NewSyncAdapter != nil {
+		t.Fatal("constructors above the declared T4")
 	}
 	if len(got.Process.Images) == 0 {
 		t.Fatal("T3 needs a ProcessSpec so a running OpenCode is recognized")
 	}
 	if len(got.Evidence.DeviceReports) == 0 {
 		t.Fatal("T3 requires a device journey")
+	}
+}
+
+// TestOpenCodeNewSessionArgvMatchesTheDestination keeps the descriptor's
+// declared new-session argv and the destination target's launch argv from
+// drifting. It carries no {{.SessionID}} on purpose: `opencode --session
+// <unknown-id>` refuses with "Session not found" and creates nothing, so the
+// destination id is only knowable after launch.
+func TestOpenCodeNewSessionArgvMatchesTheDestination(t *testing.T) {
+	native := OpenCode().Native
+	if native == nil || len(native.NewSession) != 1 {
+		t.Fatalf("NewSession = %v, want the vendor's single new-session flag", native.NewSession)
+	}
+	if native.NewSession[0] != handoff.OpenCodeNewSessionFlag {
+		t.Fatalf("NewSession = %v, want %q", native.NewSession, handoff.OpenCodeNewSessionFlag)
+	}
+	for _, arg := range native.NewSession {
+		if strings.Contains(arg, "{{.SessionID}}") {
+			t.Fatalf("NewSession %v pins a session id OpenCode will not accept", native.NewSession)
+		}
+	}
+	if native.InitialPrompt != agents.PromptArgv {
+		t.Fatalf("InitialPrompt = %q, want argv", native.InitialPrompt)
+	}
+}
+
+// TestOpenCodeTargetNeverWritesVendorFiles states the design conclusion the T4
+// promotion rests on in the place a future contributor will look first.
+func TestOpenCodeTargetNeverWritesVendorFiles(t *testing.T) {
+	root := t.TempDir()
+	target, err := OpenCode().NewTarget(agents.Env{FixtureRoot: root})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if target.Name() != sessionindex.AgentOpenCode {
+		t.Fatalf("Name = %q", target.Name())
+	}
+	if target.Capabilities().SupportsPinnedID {
+		t.Fatal("SupportsPinnedID = true; OpenCode assigns the session id")
+	}
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 0 {
+		t.Fatalf("constructing the destination wrote under the agent root: %d entries", len(entries))
 	}
 }
 

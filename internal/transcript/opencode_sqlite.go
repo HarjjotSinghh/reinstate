@@ -17,8 +17,10 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-// openCodeDatabaseName is the embedded session store inside the data root.
-const openCodeDatabaseName = "opencode.db"
+// OpenCodeDatabaseName is the embedded session store inside the data root.
+// Exported so the handoff destination resolves the same file this reader does,
+// rather than carrying a second copy of the name.
+const OpenCodeDatabaseName = "opencode.db"
 
 // maxOpenCodeMessages bounds one session's replay.
 const maxOpenCodeMessages = 20000
@@ -37,7 +39,7 @@ func (r *OpenCodeReader) databasePath() string {
 	if data == "" {
 		return ""
 	}
-	return filepath.Join(data, openCodeDatabaseName)
+	return filepath.Join(data, OpenCodeDatabaseName)
 }
 
 // snapshotDatabase freezes the whole embedded store as the boundary.
@@ -103,7 +105,7 @@ func fileDigest(path string) (string, error) {
 
 // isOpenCodeDatabaseBoundary reports whether a boundary names the store.
 func isOpenCodeDatabaseBoundary(b Boundary) bool {
-	return strings.EqualFold(filepath.Base(b.Path()), openCodeDatabaseName)
+	return strings.EqualFold(filepath.Base(b.Path()), OpenCodeDatabaseName)
 }
 
 // parseDatabaseMessages replays one session out of the embedded store, reusing
