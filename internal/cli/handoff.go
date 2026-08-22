@@ -162,6 +162,7 @@ func newHandoffCmd(options handoffCommandOptions) *cobra.Command {
 				NoRedact:               noRedact,
 				Capability:             handoffCapabilityOptions(options.local.verifier),
 				SessionExists:          handoffClaudeSessionExists(index),
+				QwenSessionExists:      handoff.QwenSessionExists(handoffSessionExists(index, sessionindex.AgentQwen)),
 			}
 			if wd, wdErr := os.Getwd(); wdErr == nil {
 				pipelineOptions.WorkingDir = wd
@@ -278,15 +279,23 @@ func handoffResolver(index *sessionindex.Index) handoff.ResolveSourceFunc {
 }
 
 func handoffClaudeSessionExists(index *sessionindex.Index) handoff.ClaudeSessionExists {
+	return handoff.ClaudeSessionExists(handoffSessionExists(index, sessionindex.AgentClaude))
+}
+
+// handoffSessionExists answers "is this destination session id already taken"
+// against freshly refreshed index state for one agent. A stale answer would
+// authorize a launch onto an id that has since been used, so a source that
+// did not refresh is an error rather than a "no".
+func handoffSessionExists(index *sessionindex.Index, agent string) func(context.Context, string) (bool, error) {
 	return func(ctx context.Context, sessionID string) (bool, error) {
-		refresh, err := index.RefreshAgent(ctx, sessionindex.AgentClaude)
+		refresh, err := index.RefreshAgent(ctx, agent)
 		if err != nil {
 			return false, err
 		}
-		if !refresh.SourceFresh(sessionindex.AgentClaude) {
-			return false, errors.New("claude session source did not refresh successfully")
+		if !refresh.SourceFresh(agent) {
+			return false, fmt.Errorf("%s session source did not refresh successfully", agent)
 		}
-		_, err = index.Resolve(ctx, sessionindex.CompositeReference(sessionindex.AgentClaude, sessionID))
+		_, err = index.Resolve(ctx, sessionindex.CompositeReference(agent, sessionID))
 		switch {
 		case err == nil:
 			return true, nil

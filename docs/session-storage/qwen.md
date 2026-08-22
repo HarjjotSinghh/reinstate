@@ -2,9 +2,10 @@
 
 **Confidence: Documented on macOS and native Windows** —
 official product identified; both platforms have a real JSONL conversation
-with matching first-line keys; T1 index source and T2 transcript reader shipped;
-macOS T3 resume journey recorded, native Windows journey outstanding.
-**Current tier:** T3 (verified resume) · **Phase 5 target:** T2 (exceeded)
+with matching first-line keys; T1 index source, T2 transcript reader, T3 native
+resume, and T4 handoff destination shipped; macOS journeys recorded, native
+Windows journey outstanding.
+**Current tier:** T4 (handoff destination) · **Phase 5 target:** T2 (exceeded)
 
 Catalog key is `qwen`.
 
@@ -289,8 +290,25 @@ the vendor's own help says `--continue` and `--resume` stop working when it is
 off. A session that was never recorded never appears in the index either, so
 there is nothing to offer resume for.
 
-**The T3 claim is still one platform short.** A native Windows journey has not
-been run.
+### Handoff destination (T4)
+
+`rein handoff --to qwen` launches
+`qwen --session-id <uuid> --prompt-interactive "<briefing>"` in the verified
+workspace: a **new** Qwen session seeded with a briefing, never a cross-agent
+resume and never a reconstruction of the source thread. Journey:
+[`2026-08-22-macos-qwen-t4.md`](../testing/results/2026-08-22-macos-qwen-t4.md).
+
+The destination session id is knowable at launch, so lineage resolves rather
+than guessing. The project bucket is always recomputed from the destination
+workspace — a source device's directory name is never reused, because the
+vendor lower-cases the path before sanitising it on Windows and only there.
+
+Reinstate writes nothing under `$QWEN_HOME`. Qwen did not prompt for workspace
+trust on a first launch in a fresh root, so there is no trust record to
+pre-accept.
+
+**The T3 and T4 claims are still one platform short.** A native Windows journey
+has not been run.
 
 ## Secrets in the same tree
 

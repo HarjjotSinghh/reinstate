@@ -67,6 +67,15 @@ func DiffCapabilities(source, destination capability.Inventory, srcAgent, dstAge
 	srcPresent := verifiedNames(source, srcAgent)
 	dstPresent := verifiedNames(destination, dstAgent)
 
+	// "Absent from the destination inventory" only means the destination lacks
+	// it when the destination was actually enumerated. discoverInventory covers
+	// Claude Code and Codex; every other destination arrives with an empty
+	// inventory, and reporting each source capability as degraded there would
+	// assert a gap nobody looked for.
+	gapImpact := ImpactDegraded
+	if !capabilityDiscoverySupported(dstAgent) {
+		gapImpact = ImpactInformational
+	}
 	var missing []Missing
 	for _, kind := range []string{KindInstruction, KindMCP, KindSkill} {
 		names := sortedKeys(srcPresent[kind])
@@ -77,7 +86,7 @@ func DiffCapabilities(source, destination capability.Inventory, srcAgent, dstAge
 			missing = append(missing, Missing{
 				Kind:   kind,
 				Name:   name,
-				Impact: ImpactDegraded,
+				Impact: gapImpact,
 			})
 		}
 	}
@@ -128,6 +137,18 @@ type agentProfile struct {
 	ContextCeilingTokens *int
 }
 
+// capabilityDiscoverySupported reports whether Reinstate can enumerate an
+// agent's instructions, MCP servers, and skills. It must stay in step with
+// discoverInventory in pipeline.go.
+func capabilityDiscoverySupported(agent string) bool {
+	switch normalizeAgent(agent) {
+	case "claude", "codex":
+		return true
+	default:
+		return false
+	}
+}
+
 func publishedProfile(agent string) agentProfile {
 	// Inventory discovery covers MCP/skills/instructions. Agent-level traits
 	// below are published only when Reinstate has a vendor-documented claim.
@@ -141,6 +162,13 @@ func publishedProfile(agent string) agentProfile {
 	case "codex":
 		// No vendor-published harness attachment / multi-root / tool-family /
 		// approval-mode / context-ceiling tables are recorded for Codex yet.
+		return agentProfile{}
+	case "qwen":
+		// Qwen Code accepts images interactively, but Reinstate has no
+		// vendor-published table for attachments, tool families, approval
+		// modes, multi-root, or a harness context ceiling — and the capsule
+		// never re-embeds attachment bytes anyway. Every trait stays omitted
+		// rather than guessed, which is what an empty profile means.
 		return agentProfile{}
 	default:
 		return agentProfile{}

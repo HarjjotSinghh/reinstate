@@ -33,20 +33,20 @@ Reinstate labels these separately in the CLI, in JSON, and in docs:
 
 ## Supported directions in `v0.4.0`
 
-| Source → | Claude Code | Codex CLI | Gemini CLI | OpenCode | Grok Build |
-| -------- | :---------: | :-------: | :--------: | :------: | :--------: |
-| **Claude Code** | same-vendor native resume | **structured handoff** | not in v0.4.0 | not in v0.4.0 | not planned |
-| **Codex CLI** | **structured handoff** | same-vendor native resume | not in v0.4.0 | not in v0.4.0 | not planned |
-| **Gemini CLI** | **structured handoff** | **structured handoff** | not a target (source-only) | not in v0.4.0 | not planned |
-| **OpenCode** | **structured handoff** | **structured handoff** | not in v0.4.0 | not a target (source-only) | not planned |
-| **Grok Build** | **structured handoff** | **structured handoff** | not in v0.4.0 | not in v0.4.0 | not a target (source-only) |
-| **Qwen Code** | **structured handoff** | **structured handoff** | not a target | not a target | not a target |
-| **Kimi Code CLI** | **structured handoff** | **structured handoff** | not in v0.4.0 | not in v0.4.0 | not planned |
+| Source → | Claude Code | Codex CLI | Gemini CLI | OpenCode | Grok Build | Qwen Code |
+| -------- | :---------: | :-------: | :--------: | :------: | :--------: | :-------: |
+| **Claude Code** | same-vendor native resume | **structured handoff** | not in v0.4.0 | not in v0.4.0 | not planned | **structured handoff** |
+| **Codex CLI** | **structured handoff** | same-vendor native resume | not in v0.4.0 | not in v0.4.0 | not planned | **structured handoff** |
+| **Gemini CLI** | **structured handoff** | **structured handoff** | not a target (source-only) | not in v0.4.0 | not planned | **structured handoff** |
+| **OpenCode** | **structured handoff** | **structured handoff** | not in v0.4.0 | not a target (source-only) | not planned | **structured handoff** |
+| **Grok Build** | **structured handoff** | **structured handoff** | not in v0.4.0 | not in v0.4.0 | not a target (source-only) | **structured handoff** |
+| **Qwen Code** | **structured handoff** | **structured handoff** | not a target | not a target | not a target | same-vendor native resume |
 
-Gemini CLI, OpenCode, Grok Build, and Qwen Code are **source-only**: you can
-hand off *from* them, not *to* them. Support is directional and versioned — a
+Gemini CLI, OpenCode, and Grok Build are **source-only**: you can hand off
+*from* them, not *to* them. Qwen Code is both a source and a destination on
+macOS evidence; its native Windows journey is outstanding. Support is directional and versioned — a
 supported session adapter never implies a supported handoff.
-Gemini CLI, OpenCode, Grok Build, and Kimi Code CLI are **source-only** in
+| **Kimi Code CLI** | **structured handoff** | **structured handoff** | not in v0.4.0 | not in v0.4.0 | not planned |
 
 ## Commands
 
@@ -231,3 +231,4 @@ metric reflects reality.
 - Not an agent runtime, editor, terminal, scheduler, or model router. The
   destination agent executes; Reinstate captures, verifies, projects, launches,
   and records lineage.
+Gemini CLI, OpenCode, Grok Build, and Kimi Code CLI are **source-only** in

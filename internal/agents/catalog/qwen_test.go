@@ -18,25 +18,66 @@ func TestQwenConformance(t *testing.T) {
 	})
 }
 
-func TestQwenIsResumeButNotADestination(t *testing.T) {
+func TestQwenIsAHandoffDestinationButNotSynced(t *testing.T) {
 	d := Qwen()
-	if d.Tier != agents.TierResume {
-		t.Fatalf("tier = %s, want T3", d.Tier)
+	if d.Tier != agents.TierHandoffTo {
+		t.Fatalf("tier = %s, want T4", d.Tier)
 	}
 	if d.T0Reason != "" {
 		t.Fatalf("T0Reason = %q, want empty above T0", d.T0Reason)
 	}
-	if d.NewIndexSource == nil || d.NewReader == nil {
-		t.Fatal("T3 requires an index source and a transcript reader")
+	if d.NewIndexSource == nil || d.NewReader == nil || d.NewTarget == nil {
+		t.Fatal("T4 requires an index source, a transcript reader, and a handoff target")
 	}
-	if d.NewTarget != nil || d.NewSyncAdapter != nil {
-		t.Fatal("T3 descriptor must not ship target or sync constructors")
+	if d.NewSyncAdapter != nil {
+		t.Fatal("encrypted sync is T5 and is not claimed")
 	}
 	if d.Native == nil || d.Version == nil {
-		t.Fatal("T3 requires a native launch spec and a version range")
+		t.Fatal("T4 inherits the T3 native launch spec and version range")
 	}
-	if d.Native.NewSession != nil {
-		t.Fatal("NewSession is a T4 claim")
+	if len(d.Native.NewSession) == 0 {
+		t.Fatal("T4 requires NativeSpec.NewSession")
+	}
+}
+
+func TestQwenNewSessionPinsTheCallerSuppliedID(t *testing.T) {
+	native := Qwen().Native
+	want := []string{"--session-id", "{{.SessionID}}"}
+	if len(native.NewSession) != len(want) {
+		t.Fatalf("new-session argv = %v, want %v", native.NewSession, want)
+	}
+	for i := range want {
+		if native.NewSession[i] != want[i] {
+			t.Fatalf("new-session argv = %v, want %v", native.NewSession, want)
+		}
+	}
+	if native.InitialPrompt != agents.PromptArgv {
+		t.Fatalf("initial prompt mode = %q, want argv", native.InitialPrompt)
+	}
+	// Reusing the resume argv here would continue an existing thread instead of
+	// starting the new destination session a handoff is defined as.
+	if contains(native.NewSession, "--resume") {
+		t.Fatalf("new-session argv must not resume: %v", native.NewSession)
+	}
+}
+
+func TestQwenTargetIsTheQwenTarget(t *testing.T) {
+	target, err := Qwen().NewTarget(agents.Env{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if target == nil {
+		t.Fatal("NewTarget returned no target")
+	}
+	if target.Name() != sessionindex.AgentQwen {
+		t.Fatalf("target = %q", target.Name())
+	}
+	caps := target.Capabilities()
+	if !caps.SupportsPinnedID {
+		t.Fatal("--session-id pins the id, so the destination must declare it")
+	}
+	if !caps.SupportsInitialPrompt {
+		t.Fatal("--prompt-interactive seeds the bootstrap, so the destination must declare it")
 	}
 }
 

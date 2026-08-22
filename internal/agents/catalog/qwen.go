@@ -5,6 +5,7 @@ import (
 
 	"github.com/HarjjotSinghh/reinstate/internal/agents"
 	qwensrc "github.com/HarjjotSinghh/reinstate/internal/agents/sources/qwen"
+	"github.com/HarjjotSinghh/reinstate/internal/handoff"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
 	"github.com/HarjjotSinghh/reinstate/internal/transcript"
 )
@@ -17,7 +18,7 @@ func init() { agents.MustRegister(Qwen()) }
 // against, so it fails closed.
 var qwenVersionPattern = regexp.MustCompile(`^((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))$`)
 
-// Qwen is the Qwen Code descriptor (T3, verified resume).
+// Qwen is the Qwen Code descriptor (T4, handoff destination).
 //
 // Promoted to T1 on 2026-08-19 from dual-platform AGENT-PROBE-V1. Both
 // platforms write JSONL conversations under
@@ -30,7 +31,11 @@ var qwenVersionPattern = regexp.MustCompile(`^((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9
 //
 // T3 since 2026-08-22: `rein resume qwen:<id>` and `rein fork` launch the
 // vendor's own CLI against the vendor's own session, gated by the version
-// range below. Qwen is still not a handoff destination — that is T4.
+// range below.
+//
+// T4 since 2026-08-22: `rein handoff --to qwen` starts a **new** Qwen session
+// at a caller-chosen id, seeded with a bootstrap prompt. It is never a
+// cross-agent resume and never reconstructs the source thread.
 //
 // The Claude reader is not reusable here. Qwen's top-level record keys match
 // Claude Code's, but the body is a Gemini Content value
@@ -42,7 +47,7 @@ func Qwen() agents.Descriptor {
 		DisplayName: "Qwen Code",
 		Vendor:      "Alibaba",
 		DocsURL:     "https://qwenlm.github.io/qwen-code-docs/",
-		Tier:        agents.TierResume,
+		Tier:        agents.TierHandoffTo,
 		Family:      agents.FamilyHomeTree,
 		Storage: agents.StorageSpec{
 			RootEnv: "QWEN_HOME",
@@ -70,6 +75,16 @@ func Qwen() agents.Descriptor {
 			// whose records carry forkedFrom {sessionId, messageUuid}.
 			Fork:     []string{"--resume", "{{.SessionID}}", "--fork-session"},
 			Continue: []string{"--continue"},
+			// T4. `--session-id <uuid>` creates the session at exactly that
+			// id, refuses an id that already exists ("Session Id … already
+			// exists (active or archived)"), and rejects anything that is not
+			// a UUID as a usage error. A destination whose id is knowable at
+			// launch is what lets Verify resolve instead of guessing.
+			NewSession: []string{"--session-id", "{{.SessionID}}"},
+			// The bootstrap goes on argv behind --prompt-interactive (-i),
+			// which runs the prompt and then stays interactive. -p would run
+			// it and exit, which is not a handoff the operator can continue.
+			InitialPrompt: agents.PromptArgv,
 		},
 		Version: &agents.VersionSpec{
 			Args:  []string{"--version"},
@@ -119,11 +134,15 @@ func Qwen() agents.Descriptor {
 			DeviceReports: []string{
 				"docs/testing/results/2026-08-22-macos-qwen-t3.md",
 				"docs/testing/results/2026-08-22-windows-qwen-t3.md",
+				"docs/testing/results/2026-08-22-macos-qwen-t4.md",
 			},
 		},
 		NewIndexSource: qwensrc.New,
 		NewReader: func(agents.Env) (transcript.Reader, error) {
 			return transcript.NewQwenReader(), nil
+		},
+		NewTarget: func(env agents.Env) (handoff.HandoffTarget, error) {
+			return &handoff.QwenTarget{Root: env.FixtureRoot}, nil
 		},
 	}
 }

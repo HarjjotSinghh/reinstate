@@ -232,15 +232,15 @@
       "key": "qwen",
       "name": "Qwen Code",
       "vendor": "Alibaba",
-      "tier": "T3",
+      "tier": "T4",
       "storageFamily": "F1",
       "t0Reason": null,
       "integrationPath": "/integrations/qwen",
       "status": "supported",
       "minimumTestedVersion": "0.21.12",
       "maximumTestedVersion": "0.21.13",
-      "resumeMode": "Qwen Code to Qwen Code (T3 same-vendor native resume and fork)",
-      "evidenceLevel": "dual-platform AGENT-PROBE-V1; F1 index source; T2 reader; dual-platform T3 device journey",
+      "resumeMode": "Qwen Code to Qwen Code (T3 same-vendor resume and fork); Qwen Code as a structured handoff destination (T4)",
+      "evidenceLevel": "dual-platform AGENT-PROBE-V1; F1 index source; T2 reader; dual-platform T3 device journey; T4 destination journey",
       "evidence": {
         "storagePage": "docs/session-storage/qwen.md",
         "fixtures": [
@@ -249,7 +249,8 @@
         ],
         "deviceReports": [
           "docs/testing/results/2026-08-22-macos-qwen-t3.md",
-          "docs/testing/results/2026-08-22-windows-qwen-t3.md"
+          "docs/testing/results/2026-08-22-windows-qwen-t3.md",
+          "docs/testing/results/2026-08-22-macos-qwen-t4.md"
         ],
         "probeReports": [
           "docs/testing/results/agent-probes/2026-08-17-macos-qwen.json",
@@ -258,7 +259,7 @@
       },
       "lastTested": "2026-08-22",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/qwen.md",
-      "notes": "T3 verified same-vendor resume and fork, and a T2 handoff source. Not a handoff destination and not a synced agent. Versions outside the inclusive 0.21.12-0.21.13 range fail closed as untested. The rung rests on a device journey on macOS and on native Windows: on each platform a session created by the vendor was indexed, resumed through the launch plan Reinstate produced, and the model request after the resume carried a token that existed only in the first turn."
+      "notes": "T4 structured handoff destination, T3 verified same-vendor resume and fork, and a T2 handoff source. Not a synced agent. Versions outside the inclusive 0.21.12-0.21.13 range fail closed as untested. A handoff to Qwen starts a new session at a pinned UUID and is never a cross-agent resume; the vendor refuses an id that already exists."
     },
     {
       "id": "cursor",

@@ -39,18 +39,17 @@ rein inspect AGENT:SESSION_ID [--json]
 rein last [--agent claude|codex|all] [--project FRAGMENT] [--dry-run] [--json]
           [--allow-environment-warning CHECK_ID ...]
 rein resume AGENT:SESSION_ID [--dry-run] [--json] [--fork]
-            [--with claude|codex]
+            [--with claude|codex|qwen]
             [--allow-environment-warning CHECK_ID ...]
 rein fork AGENT:SESSION_ID [--dry-run] [--json]
           [--allow-environment-warning CHECK_ID ...]
-rein handoff [AGENT:]SESSION_ID --to claude|codex
+rein handoff [AGENT:]SESSION_ID --to claude|codex|qwen
              [--policy checkpoint|balanced|full] [--dry-run|--no-launch]
              [--json] [--export PATH] [--allow-warning ID ...]
              [--allow-active] [--allow-untested] [--show-redactions]
              [--no-redact]
 rein handoff --last [--from claude|codex|gemini|opencode|grok|qwen]
-rein handoff --last [--from claude|codex|gemini|opencode|grok|kimi]
-             --to claude|codex [handoff flags]
+             --to claude|codex|qwen [handoff flags]
 rein handoff list [--json] [--limit N]
 rein handoff inspect HANDOFF_ID [--json]
              [--acknowledged|--not-acknowledged]
@@ -244,7 +243,7 @@ A structured handoff continues the same task in a new Claude Code or Codex
 session. It is not native resume: Reinstate does not reconstruct vendor history,
 write a vendor-internal session file, or claim that the destination is the same
 session. Source parsing and projection are local and require no source model
-call. Gemini CLI, OpenCode, Grok Build, and Kimi Code CLI are source-only;
+rein handoff --last [--from claude|codex|gemini|opencode|grok|kimi]
 only Claude Code and Codex are destinations.
 
 ### `rein handoff`
@@ -453,3 +452,4 @@ The design goal is one non-secret desired-state profile rendered by verified
 adapters into each target harness. Exact names and flags require an RFC before
 implementation. See
 [universal-configuration.md](universal-configuration.md).
+call. Gemini CLI, OpenCode, Grok Build, and Kimi Code CLI are source-only;
