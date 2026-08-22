@@ -60,7 +60,7 @@ func rowsIn(t *testing.T, h *Handle) []string {
 	if err != nil {
 		t.Fatalf("query: %v", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var out []string
 	for rows.Next() {
 		var id string
@@ -96,7 +96,7 @@ func TestLogContentsAreVisible(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer handle.Close()
+	defer func() { _ = handle.Close() }()
 
 	if !handle.SawWAL {
 		t.Fatal("a store with a write-ahead log did not report one")
@@ -177,7 +177,7 @@ func TestNoLogTakesTheInPlacePath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer handle.Close()
+	defer func() { _ = handle.Close() }()
 	if handle.tempDir != "" {
 		t.Fatal("a store with no write-ahead log was copied anyway")
 	}
