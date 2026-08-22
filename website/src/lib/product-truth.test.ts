@@ -107,8 +107,14 @@ describe('central product-truth drift guard', () => {
     );
     expect(
       compatibilityAgents.filter((agent) => agent.tier === 'T2').map((agent) => agent.key).sort(),
-    ).toEqual(['gemini', 'grok', 'opencode']);
-    expect(compatibilityAgents.filter((agent) => agent.tier === 'T3')).toEqual([]);
+    ).toEqual(['gemini', 'grok']);
+    // OpenCode is the first agent to sit at T3: verified resume without a
+    // handoff destination or encrypted sync. What still has to be pinned is
+    // that nothing above it moved.
+    expect(
+      compatibilityAgents.filter((agent) => agent.tier === 'T3').map((agent) => agent.key),
+    ).toEqual(['opencode']);
+    expect(compatibilityAgents.filter((agent) => agent.tier === 'T4')).toEqual([]);
     expect(
       compatibilityAgents.filter((agent) => agent.tier === 'T1').map((agent) => agent.key),
     ).toEqual(['kimi', 'pi', 'qwen', 'cursor', 'cline', 'copilot']);
