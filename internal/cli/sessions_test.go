@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/HarjjotSinghh/reinstate/internal/adapter"
 	"github.com/HarjjotSinghh/reinstate/internal/agents"
 	"github.com/HarjjotSinghh/reinstate/internal/preflight"
 	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
@@ -397,6 +398,11 @@ func TestPickerHandoffIsExplicitAndRoutesToPipeline(t *testing.T) {
 		Name: "rein", Stdout: &stdout, Stderr: &stderr,
 		Stdin: strings.NewReader("h 1\nclaude\n"), SessionSources: sources,
 		SessionLaunchRunner: runner, PreflightVerifier: readyPreflightVerifier{},
+		// This test drives Execute directly rather than through runHandoffCLI,
+		// so it needs the destination pin of its own. Without it, detection
+		// spawns `claude --version` under a two-second bound and the picker
+		// assertion fails on a loaded machine for a reason it never measures.
+		HandoffDestinationCompat: adapter.CompatibilitySupported,
 		AgentProcessChecker: func(context.Context, string, processcheck.Target) (bool, bool, error) {
 			return false, true, nil
 		},
