@@ -35,7 +35,7 @@ The Phase 2 local capability matrix is:
 | ZCode | Not implemented (`desktop_only`) | Not implemented | Not applicable | T0 |
 | OpenHands | Not implemented | Not implemented | Not applicable | T0 |
 | GitHub Copilot CLI | Indexed (read-only) | Not implemented | Dual-platform probes committed; indexed from `events.jsonl`; no device journey for resume | T1 |
-| Kimi Code CLI | Indexed (read-only) | Not implemented | Dual-platform probes committed; no device journey for resume | T1 |
+| Kimi Code CLI | Handoff source (read-only) | Not implemented | Dual-platform probes committed; wire.jsonl reader shipped; no device journey for resume | T2 |
 | Pi | Indexed (read-only) | Not implemented | Dual-platform probes committed; no device journey for resume | T1 |
 | Qwen Code | Indexed (read-only) | Not implemented | Dual-platform probes committed; no device journey for resume | T1 |
 | Antigravity CLI | Not implemented (`layout_unverified`) | Not implemented | No probe captured | T0 |
@@ -74,11 +74,12 @@ supported destination target, encrypted sync, or same-vendor native execution.
 | **Gemini CLI** | structured handoff | structured handoff | not a target (source-only) | not in v0.4.0 | not planned |
 | **OpenCode** | structured handoff | structured handoff | not in v0.4.0 | not a target (source-only) | not planned |
 | **Grok Build** | structured handoff | structured handoff | not in v0.4.0 | not in v0.4.0 | not a target (source-only) |
+| **Kimi Code CLI** | structured handoff | structured handoff | not in v0.4.0 | not in v0.4.0 | not planned |
 
 Every cross-agent entry above creates a new destination session for the same
 task through Claude Code's or Codex's documented CLI. It does not reconstruct
-vendor history or write a vendor-internal session file. Gemini, OpenCode, and
-Grok are source-only in v0.4.0; attempts to use them as destinations fail closed.
+vendor history or write a vendor-internal session file. Gemini, OpenCode, Grok,
+and Kimi are source-only in v0.5.0; attempts to use them as destinations fail closed.
 
 The handoff path parses the source locally without a source model call, records
 component-level fidelity, and stores its capsule and lineage only under the
@@ -171,8 +172,9 @@ there, so it does not block.
 
 Every transcript reader resolves the version from the installed executable
 through the same probe `rein inspect` reports; no reader reads a vendor version
-file. Gemini CLI, OpenCode, and Grok Build have no version probe and are always
-judged on layout alone, which is the same rule rather than an exception.
+file. Gemini CLI, OpenCode, Grok Build, and Kimi Code CLI have no version probe
+and are always judged on layout alone, which is the same rule rather than an
+exception.
 
 Phase 2 local records carry per-session `can_resume` and `can_fork`
 capabilities. Claude/Codex native actions use the exact documented argv in the

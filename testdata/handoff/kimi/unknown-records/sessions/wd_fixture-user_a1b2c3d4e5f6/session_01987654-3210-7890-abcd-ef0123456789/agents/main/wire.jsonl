@@ -1,0 +1,10 @@
+{"type":"metadata","protocol_version":"1.5","created_at":1786870800000}
+{"type":"permission.set_mode","time":1786870800100,"mode":"ask"}
+{"type":"profile.bind","time":1786870800200,"systemPrompt":"NEVER_COPY_THIS_SYSTEM_PROMPT","profileName":"kimi"}
+{"type":"turn.prompt","time":1786870801000,"origin":{"kind":"user"},"input":[{"type":"text","text":"Bound the retry budget in agentcheck"}]}
+{"type":"kimi.future_event","time":1786870801500,"payload":{"secret":"NEVER_COPY_UNKNOWN_BODY"}}
+{"type":"context.append_loop_event","time":1786870802000,"event":{"type":"step.begin","uuid":"step-1","turnId":"0","step":1}}
+{"type":"context.append_loop_event","time":1786870802500,"event":{"type":"future.loop_event","uuid":"loop-x","turnId":"0","payload":{"secret":"NEVER_COPY_UNKNOWN_LOOP_BODY"}}}
+{"type":"context.append_loop_event","time":1786870803000,"event":{"type":"content.part","uuid":"part-1","turnId":"0","step":1,"stepUuid":"step-1","part":{"type":"text","text":"Reading the current budget."}}}
+{"type":"context.append_loop_event","time":1786870804000,"event":{"type":"step.end","uuid":"step-1","turnId":"0","step":1,"finishReason":"end_turn"}}
+{"type":"turn.ended","time":1786871550000,"reason":"completed","turnId":0,"durationMs":749000}

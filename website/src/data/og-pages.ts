@@ -112,9 +112,9 @@ export const staticOgPages: OgPage[] = [
   {
     route: '/integrations/kimi',
     kind: 'Integration',
-    title: 'Kimi Code CLI is a T1 discover agent',
+    title: 'Kimi Code CLI is a T2 handoff source',
     description:
-      'Read-only Kimi Code CLI discovery, search, and inspect. Native resume, handoff, and encrypted sync are not supported.',
+      'Read-only Kimi Code CLI discovery and portable handoff. Native resume and encrypted sync are not supported.',
   },
   {
     route: '/integrations/qwen',

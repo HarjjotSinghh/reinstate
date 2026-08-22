@@ -23,6 +23,7 @@ func TestShippedAgentsRegisterAtDeclaredTiers(t *testing.T) {
 		{sessionindex.AgentGemini, agents.TierHandoffFrom, agents.FamilyHomeTree, "0.55.1", "0.55.1"},
 		{sessionindex.AgentOpenCode, agents.TierHandoffFrom, agents.FamilyEmbeddedDB, "", ""},
 		{sessionindex.AgentGrok, agents.TierHandoffFrom, agents.FamilyHomeTree, "", ""},
+		{sessionindex.AgentKimi, agents.TierHandoffFrom, agents.FamilyHomeTree, "", ""},
 	}
 	keys := agents.Keys()
 	for _, tt := range want {
