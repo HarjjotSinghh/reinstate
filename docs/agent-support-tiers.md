@@ -122,8 +122,8 @@ own CLI against the vendor's own session, after environment verification.
    path, reusing the Phase 3 contract.
 4. Process detection so an active session is not resumed underneath the user.
 5. A physical device journey on macOS **and** native Windows: real agent, real
-   session, resumed, and the continuation observed. Recorded in a Phase 5
-   device report.
+   session, resumed, and the continuation observed. Recorded in a journey
+   report — see "How a device journey is recognised" below.
 6. Unknown version produces exit code `5` with the range in the message.
 
 **This is the first tier that runs a binary.** A parser test is not evidence;
@@ -227,6 +227,28 @@ F5 is not a failure state. Recording that an agent keeps its history on a
 server is a real answer to a real user question.
 
 ---
+
+## How a device journey is recognised
+
+From T3 upward the conformance suite checks not only that a claim cites reports
+from macOS **and** native Windows, but that those reports are *about that agent
+reaching that rung*. It reads the first markdown heading of each cited report,
+which is why a journey names its agent and its rung there:
+
+```
+# Qwen Code T4 journey — native Windows x64, 2026-08-22
+```
+
+A claim at T4 must cite a journey for **every** rung from T3 upward, on both
+platforms. A release-acceptance report is not a substitute. It may name an agent
+in index or handoff-source rows without evidencing a resume at all, and two such
+reports once satisfied the platform check for a tier they never demonstrated.
+
+The four Phase 3 and Phase 4 device reports that Claude Code and Codex CLI cite
+predate this convention and carry no tier vocabulary — no `T3`, no `T5`, no
+per-agent row identifiers — so nothing could read a rung out of them. They are
+accepted as a closed list in `internal/agents/conformance`, and nothing is added
+to it.
 
 ## Rules that do not change with breadth
 

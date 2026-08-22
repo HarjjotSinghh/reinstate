@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The agent conformance suite now checks what a cited device report is *about*,
+  not only which device produced it. From T3 upward a claim must cite a journey
+  naming that agent and that rung, on macOS and on native Windows, for every
+  rung from T3 to the declared tier. Two real claims had passed the earlier
+  filename-only check without the evidence they implied: Grok cited two
+  release-acceptance reports that mention it only in index and handoff-source
+  rows, and Qwen's T4 claim passed while its only Windows report covered T3.
+  The four Phase 3 and Phase 4 reports behind Claude Code and Codex CLI predate
+  the tier vocabulary entirely and are accepted as a closed list.
+
 ### Added
 
 - `rein handoff --to qwen` starts a **new** Qwen Code session (T4), seeded with

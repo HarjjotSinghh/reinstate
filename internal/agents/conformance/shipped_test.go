@@ -161,3 +161,118 @@ func TestBrokenEvidencePathIsCaught(t *testing.T) {
 		t.Fatal("a descriptor naming a nonexistent evidence path passed checkEvidence")
 	}
 }
+
+// TestTierJourneyGapReadsWhatAReportCovers is the negative control for the
+// content-aware half of the evidence gate.
+//
+// devicePlatformGap refuses a claim whose reports do not span both platforms,
+// but it cannot tell what those reports are about. Both failures below actually
+// shipped: Grok cited two release-acceptance reports that mention it only in
+// index and handoff-source rows, and Qwen's T4 claim passed conformance while
+// its only Windows report covered T3, because a Windows filename was present
+// either way.
+func TestTierJourneyGapReadsWhatAReportCovers(t *testing.T) {
+	root, err := repoRoot()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	const (
+		macOSJourneyT3   = "docs/testing/results/2026-08-22-macos-qwen-t3.md"
+		windowsJourneyT3 = "docs/testing/results/2026-08-22-windows-qwen-t3.md"
+		macOSJourneyT4   = "docs/testing/results/2026-08-22-macos-qwen-t4.md"
+		windowsJourneyT4 = "docs/testing/results/2026-08-22-windows-qwen-t4.md"
+		macOSRelease     = "docs/testing/results/2026-08-21-macos-phase5-V050RC6.md"
+		windowsRelease   = "docs/testing/results/2026-08-21-windows-phase5-V050RC6.md"
+	)
+
+	qwen := func() agents.Descriptor {
+		for _, d := range agents.All() {
+			if d.Key == "qwen" {
+				return d
+			}
+		}
+		t.Fatal("qwen is not in the catalog")
+		return agents.Descriptor{}
+	}
+
+	for _, testCase := range []struct {
+		name    string
+		reports []string
+		wantGap string
+	}{
+		{
+			name:    "every rung on both platforms",
+			reports: []string{macOSJourneyT3, windowsJourneyT3, macOSJourneyT4, windowsJourneyT4},
+			wantGap: "",
+		},
+		{
+			// The hole that shipped: a Windows report exists, but it covers T3.
+			name:    "the windows report covers a lower rung",
+			reports: []string{macOSJourneyT3, windowsJourneyT3, macOSJourneyT4},
+			wantGap: "T4 on windows",
+		},
+		{
+			// The Grok trap: reports from both platforms that are about a
+			// release, not about this agent reaching this rung.
+			name:    "release acceptance is not a tier journey",
+			reports: []string{macOSRelease, windowsRelease},
+			wantGap: "T3 on macos and windows, T4 on macos and windows",
+		},
+		{
+			name:    "a skipped lower rung is still a gap",
+			reports: []string{macOSJourneyT4, windowsJourneyT4},
+			wantGap: "T3 on macos and windows",
+		},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			desc := qwen()
+			desc.Evidence.DeviceReports = testCase.reports
+			if got := tierJourneyGap(desc, root); got != testCase.wantGap {
+				t.Fatalf("tierJourneyGap = %q, want %q", got, testCase.wantGap)
+			}
+		})
+	}
+}
+
+// TestLegacyEvidenceStaysAccepted keeps the grandfathered reports working. They
+// predate AGENT-TIER-JOURNEY-V1 and carry no tier vocabulary at all, so no rule
+// could read a rung from them; rejecting them would falsify shipped history
+// rather than improve it.
+func TestLegacyEvidenceStaysAccepted(t *testing.T) {
+	root, err := repoRoot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{"claude", "codex"} {
+		var desc agents.Descriptor
+		for _, d := range agents.All() {
+			if d.Key == key {
+				desc = d
+			}
+		}
+		if desc.Key == "" {
+			t.Fatalf("%s is not in the catalog", key)
+		}
+		if gap := tierJourneyGap(desc, root); gap != "" {
+			t.Fatalf("%s (%s) reported a journey gap: %s", key, desc.Tier, gap)
+		}
+	}
+}
+
+// TestBelowT3NeedsNoJourney keeps the rule from spreading. T1 and T2 require no
+// device journey, and a reader or an index source is not evidence of a resume.
+func TestBelowT3NeedsNoJourney(t *testing.T) {
+	root, err := repoRoot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, d := range agents.All() {
+		if d.Tier >= agents.TierResume {
+			continue
+		}
+		if gap := tierJourneyGap(d, root); gap != "" {
+			t.Fatalf("%s at %s was asked for a journey: %s", d.Key, d.Tier, gap)
+		}
+	}
+}
