@@ -3,29 +3,29 @@ import PublicContentLayout from '../../layouts/PublicContentLayout.astro';
 
 export const prerender = true;
 
-const title = 'Kimi Code CLI as a T1 Discover Agent | Reinstate';
+const title = 'Kimi Code CLI as a T2 Handoff Source | Reinstate';
 const description =
-  'Kimi Code CLI is T1: Reinstate can list, search, and inspect local sessions. Native resume, handoff, and encrypted sync are not supported.';
+  'Kimi Code CLI is a T2 handoff source: Reinstate can read local sessions and build a portable capsule. Native resume and encrypted sync are not supported.';
 ---
 
 <PublicContentLayout
   {title}
   {description}
   path="/integrations/kimi"
-  eyebrow="Integration · Kimi Code CLI · T1"
-  answer="Kimi Code CLI is T1: a read-only local index. Reinstate does not launch Kimi as a native resume target, does not use it as a handoff source or destination, and does not sync Kimi sessions."
+  eyebrow="Integration · Kimi Code CLI · T2"
+  answer="Kimi Code CLI is T2: a handoff source and a read-only local index. Reinstate does not launch Kimi as a native resume target and does not sync Kimi sessions."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'Integrations', path: '/integrations' },
     { name: 'Kimi Code CLI', path: '/integrations/kimi' },
   ]}
-  tags={['Kimi Code CLI', 'T1 discover', 'read-only']}
+  tags={['Kimi Code CLI', 'T2 handoff source', 'read-only']}
 >
   <h2 id="support-at-a-glance">Kimi Code CLI support at a glance</h2>
   <dl class="pc-facts">
     <div>
       <dt>Tier</dt>
-      <dd>T1 Discover</dd>
+      <dd>T2 Handoff source</dd>
     </div>
     <div>
       <dt>Storage family</dt>
@@ -41,33 +41,40 @@ const description =
     </div>
   </dl>
   <p>
-    T1 means <code>rein sessions --agent kimi</code>, search, and inspect work
-    against local Kimi Code CLI sessions. Resume and fork stay refused.
+    T2 means <code>rein handoff --from kimi</code> can build a portable capsule.
+    Kimi Code CLI is not a T3 resume agent and not a T5 sync agent.
   </p>
 
-  <h2 id="what-t1-includes">What T1 includes</h2>
+  <h2 id="what-t2-includes">What T2 includes</h2>
   <ul>
-    <li>Read-only discovery, search, and inspect of local Kimi Code CLI sessions.</li>
-    <li>Fail-closed behavior on an unrecognized <code>state.json</code> schema or wire protocol major.</li>
+    <li>T1 read-only discovery, search, and inspect of local Kimi Code CLI sessions.</li>
+    <li>T2 structured handoff from Kimi Code CLI into a new Claude Code or Codex session.</li>
+    <li>Fail-closed behavior on an unrecognized layout (exit code <code>5</code>).</li>
+    <li>Unknown <code>wire.jsonl</code> records stay referenced, with no payload body.</li>
   </ul>
 
-  <h2 id="what-t1-excludes">What T1 excludes</h2>
+  <h2 id="what-t2-excludes">What T2 excludes</h2>
   <ul>
     <li>No <code>rein resume</code> / <code>rein fork</code> of a Kimi session.</li>
-    <li>No structured handoff from or to Kimi Code CLI.</li>
+    <li>No <code>rein handoff --to kimi</code> destination.</li>
     <li>No <code>rein push</code> / <code>rein pull</code> of Kimi sessions.</li>
     <li>No write into Kimi’s session store.</li>
   </ul>
 
   <div class="pc-callout">
     <p>Native resume is same-vendor, and Kimi Code CLI is not a T3 agent.</p>
+    <p>
+      A handoff starts a <em>new</em> Claude Code or Codex session. It does not reconstruct
+      Kimi history or translate the vendor transcript.
+    </p>
   </div>
 
   <h2 id="evidence">Evidence</h2>
   <p>
     Dual-platform probes live under <code>docs/testing/results/agent-probes</code>.
-    Fixtures live under <code>testdata/sessionindex/kimi</code>. There is no T3
-    version probe and no T3 device report. See the
+    Fixtures live under <code>testdata/sessionindex/kimi</code> and
+    <code>testdata/handoff/kimi</code>. There is no T3 version probe and no T3 device
+    report. See the
     <a href="https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/kimi.md"
       >Kimi storage page</a
     >
@@ -79,6 +86,7 @@ const description =
     <nav aria-label="Related pages">
       <a href="/integrations">All integrations</a>
       <a href="/compatibility">Compatibility matrix</a>
+      <a href="/docs/handoff">Structured handoff</a>
       <a href="/docs/adapters">Adapter documentation</a>
     </nav>
   </section>

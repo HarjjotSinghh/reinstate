@@ -73,6 +73,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Kimi Code CLI is now T2, a handoff source.** `rein handoff --from kimi`
+  reads `agents/main/wire.jsonl` and builds a portable capsule. A handoff
+  starts a *new* Claude Code or Codex session; it never reconstructs Kimi
+  history and it is not a cross-agent resume. Assistant text, tool calls, and
+  tool results are read from the `context.append_loop_event` records the CLI
+  writes today (`content.part`, `tool.call`, `tool.result`), and the older
+  `context.append_message` shape is still read so sessions migrated from the
+  legacy `kimi-cli` store keep working. `profile.bind` system prompts stay out
+  of the capsule, unknown record types are referenced with an opaque digest and
+  never copied into an event body, and a truncated last JSONL line is dropped.
+  The reader fails closed on an unrecognized `state.json` schema version or
+  `wire.jsonl` protocol major. Records that rewrite context history
+  (`context.clear`, `context.undo`, `context.apply_compaction`) are reported as
+  a parse warning rather than silently replayed. Native resume and fork stay
+  refused: no device journey has run `kimi -r <id>` against a real session.
+
 - `rein resume` and `rein fork` now report whether the session being resumed is
   already open in the agent that owns it. A detected live session is an
   environment warning, `agent.active`, so it prompts on a terminal and requires

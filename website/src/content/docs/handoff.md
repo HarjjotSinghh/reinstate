@@ -43,8 +43,9 @@ a new destination session.
 | Gemini CLI | structured handoff (source-only) | structured handoff (source-only) |
 | OpenCode | structured handoff (source-only) | structured handoff (source-only) |
 | Grok Build | structured handoff (source-only) | structured handoff (source-only) |
+| Kimi Code CLI | structured handoff (source-only) | structured handoff (source-only) |
 
-Gemini CLI, OpenCode, and Grok Build are not handoff destinations.
+Gemini CLI, OpenCode, Grok Build, and Kimi Code CLI are not handoff destinations.
 
 ## First reply
 

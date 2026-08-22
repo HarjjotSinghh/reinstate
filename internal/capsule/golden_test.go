@@ -66,6 +66,14 @@ func TestCapsuleGoldensAreDeterministic(t *testing.T) {
 				"%2FUsers%2Ffixture-user%2Fcode%2Fdemo", "01987654-basic-0000-0000-000000000001"),
 			newReader: func() transcript.Reader { return transcript.NewGrokReader() },
 		},
+		{
+			agent:          sessionindex.AgentKimi,
+			sessionID:      "session_01987654-3210-7890-abcd-ef0123456789",
+			adapterVersion: "1",
+			fixture: filepath.Join("..", "..", "testdata", "handoff", "kimi", "basic", "sessions",
+				"wd_fixture-user_a1b2c3d4e5f6", "session_01987654-3210-7890-abcd-ef0123456789"),
+			newReader: func() transcript.Reader { return transcript.NewKimiReader() },
+		},
 	}
 
 	for _, source := range sources {

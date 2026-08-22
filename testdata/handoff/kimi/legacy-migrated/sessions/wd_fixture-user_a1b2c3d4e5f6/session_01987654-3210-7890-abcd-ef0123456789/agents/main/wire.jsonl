@@ -1,0 +1,5 @@
+{"type":"metadata","protocol_version":"1.0","created_at":1786870800000}
+{"type":"context.append_message","message":{"id":"legacy-1","role":"user","content":[{"type":"text","text":"Bound the retry budget in agentcheck"}],"toolCalls":[]}}
+{"type":"context.append_message","message":{"id":"legacy-2","role":"assistant","content":[{"type":"text","text":"Reading the current budget."}],"toolCalls":[{"type":"function","id":"call_legacy_1","name":"read_file","arguments":"{\"path\":\"/Users/fixture-user/code/demo/internal/agentcheck/agent.go\"}"}]}}
+{"type":"context.append_message","message":{"role":"tool","toolCallId":"call_legacy_1","content":[{"type":"text","text":"retryBudget = 2 * time.Second"}],"toolCalls":[]}}
+{"type":"context.append_message","message":{"id":"legacy-4","role":"assistant","content":[{"type":"text","text":"The first attempt allows two seconds."}],"toolCalls":[]}}

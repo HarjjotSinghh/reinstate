@@ -19,6 +19,7 @@ func TestShippedAgentsConformance(t *testing.T) {
 		{"gemini", catalog.Gemini(), Fixtures{Root: "testdata/sessionindex/gemini", OS: []string{"macos", "windows"}}},
 		{"opencode", catalog.OpenCode(), Fixtures{Root: "testdata/sessionindex/opencode", OS: []string{"macos", "windows"}}},
 		{"grok", catalog.Grok(), Fixtures{Root: "testdata/sessionindex/grok", OS: []string{"macos", "windows"}}},
+		{"kimi", catalog.Kimi(), Fixtures{Root: "testdata/sessionindex/kimi", OS: []string{"macos", "windows"}}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

@@ -165,20 +165,21 @@
       "key": "kimi",
       "name": "Kimi Code CLI",
       "vendor": "Moonshot AI",
-      "tier": "T1",
+      "tier": "T2",
       "storageFamily": "F1",
       "t0Reason": null,
       "integrationPath": "/integrations/kimi",
-      "status": "known",
+      "status": "handoff-source",
       "minimumTestedVersion": null,
       "maximumTestedVersion": null,
-      "resumeMode": "Not usable (T1 discover only)",
-      "evidenceLevel": "dual-platform AGENT-PROBE-V1; F1 index source; no T3 device journey",
+      "resumeMode": "Handoff source only (T2); no native resume",
+      "evidenceLevel": "dual-platform AGENT-PROBE-V1 plus deterministic wire.jsonl fixtures; no T3 version probe",
       "evidence": {
         "storagePage": "docs/session-storage/kimi.md",
         "fixtures": [
           "testdata/sessionindex/kimi/macos",
-          "testdata/sessionindex/kimi/windows"
+          "testdata/sessionindex/kimi/windows",
+          "testdata/handoff/kimi"
         ],
         "deviceReports": [],
         "probeReports": [
@@ -186,9 +187,9 @@
           "docs/testing/results/agent-probes/2026-08-17-windows-kimi.json"
         ]
       },
-      "lastTested": "2026-08-17",
+      "lastTested": "2026-08-22",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/kimi.md",
-      "notes": "T1 Discover. Sessions are indexed and searchable; resume and fork stay refused. Not a handoff destination and not a synced agent."
+      "notes": "T2 handoff source. Not a handoff destination and not a synced agent. Native resume is refused until a device journey runs kimi -r."
     },
     {
       "id": "pi",
