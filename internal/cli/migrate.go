@@ -130,6 +130,9 @@ func runSyncMigrate(cmd *cobra.Command, o migrateOptions) error {
 	if cfg.Encryption.Type != schema.EncryptionRootKey {
 		return NewExitError(ExitConfig, "the locker is read with the root-key model; encryption.type is "+cfg.Encryption.Type)
 	}
+	if o.asJSON && !o.switchConfig && !o.keepHop {
+		return NewExitError(ExitUsage, "--json requires --switch or --keep-hop-config to decide what happens after verification")
+	}
 	mutationLock, err := lock.Acquire(home, "mutation")
 	if err != nil {
 		return NewExitError(ExitRuntime, err.Error())
@@ -236,16 +239,23 @@ func runSyncMigrate(cmd *cobra.Command, o migrateOptions) error {
 	}
 	report, err := migration.Run(ctx)
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			return NewExitError(ExitRuntime, fmt.Sprintf("migration interrupted after %d of %d snapshots; rerun the same command to resume", report.Written+report.Verified+report.Skipped, report.Snapshots))
+		done := report.Written + report.Verified + report.Skipped
+		switch {
+		case errors.Is(err, context.Canceled):
+			return NewExitError(ExitRuntime, fmt.Sprintf("migration interrupted after %d of %d snapshots; rerun the same command to resume", done, report.Snapshots))
+		case errors.Is(err, sync.ErrDestinationInUse):
+			return NewExitError(ExitSafety, fmt.Sprintf("%v; the root key must never live in BYO storage and another profile's storage is never merged into. Choose an empty bucket or prefix", err))
+		case errors.Is(err, sync.ErrMigrateIncomplete):
+			return hostedError(hosted, NewExitError(ExitAuthStorage, fmt.Sprintf("%v; nothing was written. Retry later; if it persists, the locker listing is incomplete", err)))
+		case errors.Is(err, sync.ErrResumeMismatch):
+			return NewExitError(ExitSafety, fmt.Sprintf("%v. Use the passphrase the earlier run used; to start over instead, delete %s and the destination prefix", err, filepath.Join(home, migrateStateFile)))
+		case errors.Is(err, sync.ErrMigrateVerify):
+			return NewExitError(ExitSafety, fmt.Sprintf("migration stopped after %d of %d snapshots: %v. That object was left for you to inspect; a rerun hits it again, so remove or move it at the destination first", done, report.Snapshots, err))
 		}
-		return hostedError(hosted, NewExitError(ExitAuthStorage, fmt.Sprintf("migration stopped after %d of %d snapshots: %v; rerun the same command to resume", report.Written+report.Verified+report.Skipped, report.Snapshots, err)))
+		return hostedError(hosted, NewExitError(ExitAuthStorage, fmt.Sprintf("migration stopped after %d of %d snapshots: %v; rerun the same command to resume", done, report.Snapshots, err)))
 	}
 	if stateErr != nil {
 		return NewExitError(ExitRuntime, "record migration progress: "+stateErr.Error())
-	}
-	if has, err := dest.ContainsKeyringObject(ctx); err != nil || has {
-		return NewExitError(ExitSafety, fmt.Sprintf("destination holds a keyring object at %s; the root key must never live in BYO storage (err=%v)", state.Destination.Prefix, err))
 	}
 	state.CompletedAt = time.Now().UTC().Format(time.RFC3339)
 	if err := saveMigrateState(home, state); err != nil {
@@ -258,9 +268,6 @@ func runSyncMigrate(cmd *cobra.Command, o migrateOptions) error {
 	forgot := false
 	decide := o.switchConfig
 	if !o.switchConfig && !o.keepHop {
-		if o.asJSON {
-			return NewExitError(ExitUsage, "--json requires --switch or --keep-hop-config to decide what happens after verification")
-		}
 		PrintHuman(errOut, "Migration verified: %d snapshots and %d sessions now live at %s (%s).", report.Snapshots, report.ManifestSessions, state.Destination.Bucket, state.Destination.Prefix)
 		if decide, err = promptYesNo(reader, errOut, "Switch this device to the destination bucket now? The locker stays as it is. [y/N] "); err != nil {
 			return NewExitError(ExitUsage, err.Error())
@@ -301,7 +308,10 @@ func runSyncMigrate(cmd *cobra.Command, o migrateOptions) error {
 	PrintHuman(out, "Every object there is sealed to the new passphrase; the root key was not written.")
 	PrintHuman(out, "profile_id=%s (use this exact ID with rein init --profile-id on every other device)", state.ProfileID)
 	if switched {
-		PrintHuman(out, "This device now syncs to the destination (storage.type=s3, encryption.type=age-scrypt); the previous config was backed up.")
+		PrintHuman(out, "This device now syncs to the destination (storage.type=s3, encryption.type=age-scrypt); the previous config.toml and state.json were backed up under backups/ (copy them back to revert).")
+		if !promptedCredentials {
+			PrintHuman(out, "The access keys came from REINSTATE_S3_* and were not stored in the OS keyring; keep them exported, or run rein init again to store them.")
+		}
 	} else {
 		PrintHuman(out, "This device still syncs to the locker; rerun with --switch to change that. Nothing in the locker was changed.")
 	}

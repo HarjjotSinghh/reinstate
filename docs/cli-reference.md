@@ -534,8 +534,11 @@ exits `3` with nothing to migrate.
    hidden prompts; and a **new BYO passphrase** from `REINSTATE_PASSPHRASE_FD`
    or a hidden prompt entered twice. A fresh profile id is minted and the
    destination prefix defaults to `profiles/<profile id>`.
-2. Lists every snapshot in the locker (heads and earlier revisions alike),
-   opens each with the root key on this device, re-seals it under the
+2. Lists every snapshot in the locker (heads and earlier revisions alike,
+   following every listing page) and refuses to write anything unless the
+   listing covers every snapshot the locker manifest points at. It also
+   refuses, before writing, a destination prefix that already holds a
+   keyring object or sessions the locker lacks (exit `6`). Then it opens each with the root key on this device, re-seals it under the
    passphrase, writes it create-only to the destination under the same
    snapshot id, and re-reads it to compare the plaintext digest. The manifest
    is written last with the usual compare-and-swap and re-read the same way.
@@ -553,20 +556,31 @@ exits `3` with nothing to migrate.
    and nothing is written twice. Flags that name a different destination
    while a migration is in progress exit `2`. A finished migration keeps the
    record so a rerun reuses the profile instead of making a second copy.
+   A destination object that re-reads differently from the source stops the
+   run with exit `6` and the object's key; it is left for you to inspect,
+   and a rerun hits the same object until it is removed or moved.
 5. Offers to switch this device to the destination (`--switch` or
    `--keep-hop-config` decide without asking; `--json` requires one of them).
    Switching backs up `config.toml` and `state.json` under `backups/`, writes
    a BYO profile (`storage.type = "s3"`, `encryption.type = "age-scrypt"`,
    `remote_profile_required = true`, projects and agents carried over),
-   stores typed access keys in the OS keyring, and keeps local state because
-   snapshot ids were preserved. Then offers to forget this device's Hop
-   sign-in (`--forget-hop`): the device token leaves the OS keyring; the
+   stores typed access keys in the OS keyring (keys that came from
+   `REINSTATE_S3_*` are not stored, so keep them exported or run `rein init`
+   to store them; the command says which applies), and keeps local state
+   because snapshot ids were preserved. Then offers to forget this device's
+   Hop sign-in (`--forget-hop`): the device token leaves the OS keyring; the
    locker and account are untouched.
+
+   To revert the switch, copy `backups/<timestamp>-migrate-byo/config.toml`
+   and `state.json` back over the ones in the home; if `--forget-hop` was
+   used, `rein login` again. The destination copy stays where it is.
 
 Other devices join the destination with `rein init --profile-id <printed id>`
 and the passphrase. Exit codes: `2` usage, `3` not a Hop profile, `4`
 storage or control-plane refusal (the message says how far it got and that a
-rerun resumes), `6` a keyring object at the destination (refused).
+rerun resumes), `6` a destination in use (keyring object or foreign
+sessions), a verification mismatch, or a resume under a different
+passphrase.
 
 ## Planned universal configuration commands
 

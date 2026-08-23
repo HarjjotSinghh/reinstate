@@ -100,6 +100,24 @@ func (m *Migration) Run(ctx context.Context) (MigrateReport, error) {
 	if err != nil {
 		return report, fmt.Errorf("read source manifest: %w", err)
 	}
+	// Every snapshot the manifest points at must be in the listing, or a
+	// short listing would produce a destination manifest that outruns the
+	// copied objects and the loss would only show up per session on pull.
+	if err := manifestCoveredBy(manifest, ids); err != nil {
+		return report, err
+	}
+	// A destination in use by another profile, or one holding a keyring,
+	// is refused before any snapshot is written so the refusal costs nothing.
+	if has, err := m.Destination.ContainsKeyringObject(ctx); err != nil {
+		return report, fmt.Errorf("check destination for a keyring: %w", err)
+	} else if has {
+		return report, fmt.Errorf("%w: destination holds a keyring object at %s", ErrDestinationInUse, keyring.ObjectKey(m.Destination.Prefix))
+	}
+	if current, _, err := m.Destination.loadManifest(ctx, true); err != nil {
+		return report, fmt.Errorf("read destination manifest: %w", err)
+	} else if err := destinationFree(current, manifest); err != nil {
+		return report, err
+	}
 	report.Snapshots = len(ids)
 	// On a resumed run the first remembered snapshot is re-read rather than
 	// trusted, so a resume under a different destination passphrase is
@@ -115,7 +133,7 @@ func (m *Migration) Run(ctx context.Context) (MigrateReport, error) {
 			if meta, err := m.Destination.Backend.Head(ctx, destKey); err == nil {
 				if !checkedResume {
 					if err := m.Destination.verifySnapshot(ctx, id, digest); err != nil {
-						return report, fmt.Errorf("snapshot %s (verified by an earlier run): %w", id, err)
+						return report, fmt.Errorf("%w: snapshot %s (verified by an earlier run): %v", ErrResumeMismatch, id, err)
 					}
 					checkedResume = true
 				}
@@ -149,6 +167,53 @@ func (m *Migration) Run(ctx context.Context) (MigrateReport, error) {
 	report.ManifestRevision = manifest.Revision
 	m.report(MigrateProgress{Completed: len(ids), Total: len(ids), Bytes: report.Bytes})
 	return report, nil
+}
+
+// ErrMigrateIncomplete means the source listing does not contain every
+// snapshot the source manifest points at, so nothing is written.
+var ErrMigrateIncomplete = errors.New("sync: source listing does not cover the manifest")
+
+// ErrResumeMismatch means a snapshot an earlier run verified no longer opens
+// to the same plaintext: the passphrase differs from the earlier run's, or
+// the object changed underneath.
+var ErrResumeMismatch = errors.New("sync: resumed migration does not match the earlier run")
+
+// ErrDestinationInUse means the destination already belongs to another
+// profile (a manifest with sessions the source lacks, or a keyring).
+var ErrDestinationInUse = errors.New("sync: destination storage is in use")
+
+// destinationFree fails when the destination manifest lists a session the
+// source does not, which means the storage belongs to someone else.
+func destinationFree(current, source *schema.Manifest) error {
+	for key := range current.Sessions {
+		if _, moved := source.Sessions[key]; !moved {
+			return fmt.Errorf("%w: destination manifest already lists %s, which the source does not; refusing to merge", ErrDestinationInUse, key)
+		}
+	}
+	return nil
+}
+
+// manifestCoveredBy fails unless every manifest session's snapshot is in ids.
+func manifestCoveredBy(manifest *schema.Manifest, ids []string) error {
+	listed := make(map[string]bool, len(ids))
+	for _, id := range ids {
+		listed[id] = true
+	}
+	var missing []string
+	for _, s := range manifest.Sessions {
+		if s.SnapshotID != "" && !listed[s.SnapshotID] {
+			missing = append(missing, s.SnapshotID)
+		}
+	}
+	if len(missing) == 0 {
+		return nil
+	}
+	sort.Strings(missing)
+	shown := missing
+	if len(shown) > 5 {
+		shown = shown[:5]
+	}
+	return fmt.Errorf("%w: %d of %d manifest snapshots are missing from the %d listed (%s)", ErrMigrateIncomplete, len(missing), len(manifest.Sessions), len(ids), strings.Join(shown, ", "))
 }
 
 func (m *Migration) report(p MigrateProgress) {
@@ -238,10 +303,8 @@ func (m *Migration) writeManifest(ctx context.Context, source *schema.Manifest) 
 		if err != nil {
 			return err
 		}
-		for key := range current.Sessions {
-			if _, moved := source.Sessions[key]; !moved {
-				return fmt.Errorf("destination manifest already lists %s, which the source does not; refusing to merge into a storage that is in use", key)
-			}
+		if err := destinationFree(current, source); err != nil {
+			return err
 		}
 		out := *source
 		out.Sessions = map[string]schema.ManifestSession{}
@@ -258,14 +321,14 @@ func (m *Migration) writeManifest(ctx context.Context, source *schema.Manifest) 
 		}
 		verify, _, err := m.Destination.loadManifest(ctx, false)
 		if err != nil {
-			return fmt.Errorf("%w: re-read manifest: %v", ErrMigrateVerify, err)
+			return fmt.Errorf("%w: re-read %s: %v", ErrMigrateVerify, m.Destination.key("manifest.age"), err)
 		}
 		if len(verify.Sessions) != len(source.Sessions) || verify.Revision != source.Revision {
-			return fmt.Errorf("%w: destination manifest differs from the source", ErrMigrateVerify)
+			return fmt.Errorf("%w: %s differs from the source manifest", ErrMigrateVerify, m.Destination.key("manifest.age"))
 		}
 		for key, want := range source.Sessions {
 			if got, ok := verify.Sessions[key]; !ok || got.SnapshotID != want.SnapshotID {
-				return fmt.Errorf("%w: destination manifest differs from the source at %s", ErrMigrateVerify, key)
+				return fmt.Errorf("%w: %s differs from the source manifest at %s", ErrMigrateVerify, m.Destination.key("manifest.age"), key)
 			}
 		}
 		return nil
@@ -321,10 +384,10 @@ func (e *Engine) snapshotDigest(ctx context.Context, id string) (string, error) 
 func (e *Engine) verifySnapshot(ctx context.Context, id, want string) error {
 	got, err := e.snapshotDigest(ctx, id)
 	if err != nil {
-		return fmt.Errorf("%w: re-read destination: %v", ErrMigrateVerify, err)
+		return fmt.Errorf("%w: re-read %s: %v", ErrMigrateVerify, e.key("snapshots/"+id+".age"), err)
 	}
 	if got != want {
-		return fmt.Errorf("%w: destination snapshot %s does not match the source", ErrMigrateVerify, id)
+		return fmt.Errorf("%w: %s does not match the source snapshot %s", ErrMigrateVerify, e.key("snapshots/"+id+".age"), id)
 	}
 	return nil
 }

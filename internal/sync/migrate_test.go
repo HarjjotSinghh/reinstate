@@ -266,3 +266,61 @@ func TestListSnapshotsIgnoresOtherObjects(t *testing.T) {
 		t.Fatalf("ids=%v err=%v", ids, err)
 	}
 }
+
+// truncatedList is a source backend whose listing omits some keys, the way
+// an un-paginated ListObjectsV2 does past 1000 keys.
+type truncatedList struct {
+	backend.Backend
+	omit map[string]bool
+}
+
+func (b *truncatedList) List(ctx context.Context, prefix string) ([]backend.ObjectMeta, error) {
+	all, err := b.Backend.List(ctx, prefix)
+	if err != nil {
+		return nil, err
+	}
+	var out []backend.ObjectMeta
+	for _, o := range all {
+		if !b.omit[o.Key] {
+			out = append(out, o)
+		}
+	}
+	return out, nil
+}
+
+func TestMigrateRefusesListingThatDoesNotCoverManifest(t *testing.T) {
+	f := newMigrateFixture(t)
+	ctx := context.Background()
+	// f.ids[0] is the orphan revision; the manifest points at f.ids[1] and
+	// f.ids[2], so only their absence must stop the run.
+	tests := []struct {
+		name string
+		omit []string
+	}{
+		{name: "one head missing", omit: []string{f.ids[2]}},
+		{name: "every head missing", omit: []string{f.ids[1], f.ids[2]}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			destStore, dest := destPair("short-listing")
+			omit := map[string]bool{}
+			for _, id := range tc.omit {
+				omit["snapshots/"+id+".age"] = true
+			}
+			src := testEngine(&Engine{Backend: &truncatedList{Backend: f.source, omit: omit}, Keys: f.src.Keys, Platform: f.src.Platform})
+			_, err := (&Migration{Source: src, Destination: dest}).Run(ctx)
+			if !errors.Is(err, ErrMigrateIncomplete) {
+				t.Fatalf("err=%v, want ErrMigrateIncomplete", err)
+			}
+			objects, _ := destStore.List(ctx, "")
+			if len(objects) != 0 {
+				t.Fatalf("destination written despite a short listing: %v", objects)
+			}
+		})
+	}
+	// The full listing still migrates, so the check is not over-strict.
+	_, dest := destPair("short-listing")
+	if _, err := (&Migration{Source: f.src, Destination: dest}).Run(ctx); err != nil {
+		t.Fatal(err)
+	}
+}

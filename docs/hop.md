@@ -228,6 +228,9 @@ verified snapshots are skipped and nothing is written twice (see
 Once verified, it offers to switch this device to the bucket (the Hop
 config is backed up first) and to forget the device's sign-in; both are
 optional, and both leave the locker and the account exactly as they were.
+Both are reversible: copy `backups/<timestamp>-migrate-byo/config.toml`
+and `state.json` back into the home to sync with the locker again, and
+`rein login` again if the sign-in was forgotten.
 Other devices follow with `rein init --profile-id <printed id>` and the
 passphrase.
 
