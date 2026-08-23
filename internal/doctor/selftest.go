@@ -32,13 +32,13 @@ func selfTest(home string, codec syncengine.EnvelopeCodec) error {
 		}
 	}
 	plain := []byte("reinstate-synthetic-self-test-payload-v1")
-	pass := "test-passphrase-not-real"
+	keys := crypto.NewPassphraseProvider("test-passphrase-not-real")
 	var buf bytes.Buffer
 	var encryptErr error
 	if codec == nil {
-		encryptErr = crypto.Encrypt(bytes.NewReader(plain), &buf, pass)
+		encryptErr = crypto.Seal(bytes.NewReader(plain), &buf, keys)
 	} else {
-		encryptErr = codec.Encrypt(bytes.NewReader(plain), &buf, pass)
+		encryptErr = codec.Encrypt(bytes.NewReader(plain), &buf, keys)
 	}
 	if encryptErr != nil {
 		return fmt.Errorf("encrypt: %w", encryptErr)
@@ -50,10 +50,10 @@ func selfTest(home string, codec syncengine.EnvelopeCodec) error {
 	var out bytes.Buffer
 	var decryptErr error
 	if codec == nil {
-		decryptErr = crypto.Decrypt(bytes.NewReader(cipher), &out, pass)
+		decryptErr = crypto.Open(bytes.NewReader(cipher), &out, keys)
 	} else {
 		var reader io.Reader
-		reader, decryptErr = codec.DecryptReader(bytes.NewReader(cipher), pass)
+		reader, decryptErr = codec.DecryptReader(bytes.NewReader(cipher), keys)
 		if decryptErr == nil {
 			_, decryptErr = io.Copy(&out, reader)
 		}
@@ -101,7 +101,7 @@ func selfTest(home string, codec syncengine.EnvelopeCodec) error {
 	}
 
 	store := memory.New()
-	engine := &syncengine.Engine{Backend: store, Passphrase: pass, Codec: codec}
+	engine := &syncengine.Engine{Backend: store, Keys: keys, Codec: codec}
 	snapshotID, err := engine.PushSession(context.Background(), syncengine.PushItem{
 		Agent: "claude", SessionID: sessions[0].ID, ProjectID: sessions[0].ProjectID,
 		LocalPath: exportPath, RelativePath: sessions[0].RelativePath,

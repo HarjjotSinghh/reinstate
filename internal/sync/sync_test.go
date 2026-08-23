@@ -11,8 +11,6 @@ import (
 	"sync"
 	"testing"
 
-	"filippo.io/age"
-
 	"github.com/HarjjotSinghh/reinstate/internal/backend"
 	"github.com/HarjjotSinghh/reinstate/internal/backend/memory"
 	"github.com/HarjjotSinghh/reinstate/internal/crypto"
@@ -28,7 +26,7 @@ func TestPushPullRoundTripMemory(t *testing.T) {
 		t.Fatal(err)
 	}
 	store := memory.New()
-	eng := testEngine(&Engine{Backend: store, Passphrase: "test-pass-phrase-32", Platform: "darwin-arm64"})
+	eng := testEngine(&Engine{Backend: store, Keys: testKeys("test-pass-phrase-32"), Platform: "darwin-arm64"})
 	ctx := context.Background()
 	id, err := eng.PushSession(ctx, PushItem{
 		Agent: "claude", SessionID: "session-001", ProjectID: "github.com/example/demo", LocalPath: session,
@@ -82,7 +80,7 @@ func TestFetchManifestMissingRemoteProfilePolicy(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			eng := testEngine(&Engine{
 				Backend:               memory.New(),
-				Passphrase:            "test-pass-phrase-32",
+				Keys:                  testKeys("test-pass-phrase-32"),
 				RequireRemoteManifest: tt.requireRemoteManifest,
 			})
 
@@ -181,7 +179,7 @@ func TestPullSessionUsesAtomicWrite(t *testing.T) {
 		t.Fatal(err)
 	}
 	store := memory.New()
-	eng := testEngine(&Engine{Backend: store, Passphrase: "test-pass-phrase-32", Platform: "darwin-arm64"})
+	eng := testEngine(&Engine{Backend: store, Keys: testKeys("test-pass-phrase-32"), Platform: "darwin-arm64"})
 	ctx := context.Background()
 	id, err := eng.PushSession(ctx, PushItem{
 		Agent: "claude", SessionID: "session-001", ProjectID: "p", LocalPath: session,
@@ -220,7 +218,7 @@ func TestRefuseCredentialPush(t *testing.T) {
 	dir := t.TempDir()
 	p := filepath.Join(dir, "auth.json")
 	_ = os.WriteFile(p, []byte(`{"token":"x"}`), 0o600)
-	eng := testEngine(&Engine{Backend: memory.New(), Passphrase: "p"})
+	eng := testEngine(&Engine{Backend: memory.New(), Keys: testKeys("p")})
 	if _, err := eng.PushSession(context.Background(), PushItem{Agent: "claude", SessionID: "s", LocalPath: p}, false); err == nil {
 		t.Fatal("expected refuse")
 	}
@@ -243,7 +241,7 @@ func TestRefuseHandoffsPush(t *testing.T) {
 	if err := os.WriteFile(session, []byte(`{}`), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	eng := testEngine(&Engine{Backend: memory.New(), Passphrase: "p"})
+	eng := testEngine(&Engine{Backend: memory.New(), Keys: testKeys("p")})
 	if _, err := eng.PushSession(context.Background(), PushItem{
 		Agent: "claude", SessionID: "s", LocalPath: session,
 		RelativePath: "handoffs/abc/capsule.json",
@@ -259,7 +257,7 @@ func TestPullDryRunStillAuthenticatesAndValidates(t *testing.T) {
 		t.Fatal(err)
 	}
 	store := memory.New()
-	good := testEngine(&Engine{Backend: store, Passphrase: "correct-passphrase"})
+	good := testEngine(&Engine{Backend: store, Keys: testKeys("correct-passphrase")})
 	id, err := good.PushSession(context.Background(), PushItem{
 		Agent: "claude", SessionID: "s", ProjectID: "p", LocalPath: session,
 	}, false)
@@ -267,7 +265,7 @@ func TestPullDryRunStillAuthenticatesAndValidates(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wrong := testEngine(&Engine{Backend: store, Passphrase: "wrong-passphrase"})
+	wrong := testEngine(&Engine{Backend: store, Keys: testKeys("wrong-passphrase")})
 	if _, _, err := wrong.PullSession(context.Background(), PullItem{
 		Agent: "claude", SessionID: "s", SnapshotID: id, ProjectID: "p",
 	}, filepath.Join(dir, "dry-run"), true); err == nil {
@@ -282,7 +280,7 @@ func TestPullRejectsPayloadHashMismatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	store := memory.New()
-	eng := testEngine(&Engine{Backend: store, Passphrase: "correct-passphrase"})
+	eng := testEngine(&Engine{Backend: store, Keys: testKeys("correct-passphrase")})
 	id, err := eng.PushSession(context.Background(), PushItem{
 		Agent: "claude", SessionID: "s", ProjectID: "p", LocalPath: session,
 	}, false)
@@ -296,13 +294,13 @@ func TestPullRejectsPayloadHashMismatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	var plain bytes.Buffer
-	if err := crypto.Decrypt(rc, &plain, eng.Passphrase); err != nil {
+	if err := crypto.Open(rc, &plain, eng.Keys); err != nil {
 		t.Fatal(err)
 	}
 	_ = rc.Close()
 	plain.WriteString("tampered")
 	var cipher bytes.Buffer
-	if err := (fastAgeEnvelopeCodec{}).Encrypt(bytes.NewReader(plain.Bytes()), &cipher, eng.Passphrase); err != nil {
+	if err := (fastAgeEnvelopeCodec{}).Encrypt(bytes.NewReader(plain.Bytes()), &cipher, eng.Keys); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := store.Put(context.Background(), key, bytes.NewReader(cipher.Bytes()), int64(cipher.Len()), backend.PutOptions{IfMatch: meta.ETag}); err != nil {
@@ -327,15 +325,15 @@ func TestManifestCASRetryMergesUnrelatedConcurrentUpdate(t *testing.T) {
 		t.Fatal(err)
 	}
 	store := memory.New()
-	base := testEngine(&Engine{Backend: store, Passphrase: "passphrase"})
+	base := testEngine(&Engine{Backend: store, Keys: testKeys("passphrase")})
 	if _, err := base.PushSession(context.Background(), PushItem{
 		Agent: "claude", SessionID: "first", ProjectID: "p", LocalPath: first,
 	}, false); err != nil {
 		t.Fatal(err)
 	}
 
-	racing := &manifestRaceBackend{base: store, passphrase: "passphrase"}
-	eng := testEngine(&Engine{Backend: racing, Passphrase: "passphrase"})
+	racing := &manifestRaceBackend{base: store, keys: testKeys("passphrase")}
+	eng := testEngine(&Engine{Backend: racing, Keys: testKeys("passphrase")})
 	if _, err := eng.PushSession(context.Background(), PushItem{
 		Agent: "claude", SessionID: "second", ProjectID: "p", LocalPath: second,
 	}, false); err != nil {
@@ -360,7 +358,7 @@ func TestPushRejectsRemoteHeadBeyondLocalBase(t *testing.T) {
 		t.Fatal(err)
 	}
 	store := memory.New()
-	eng := testEngine(&Engine{Backend: store, Passphrase: "passphrase"})
+	eng := testEngine(&Engine{Backend: store, Keys: testKeys("passphrase")})
 	first, err := eng.PushSession(context.Background(), PushItem{
 		Agent: "claude", SessionID: "s", LocalPath: path,
 	}, false)
@@ -397,8 +395,8 @@ func TestProfilePrefixesIsolateSharedBackend(t *testing.T) {
 		t.Fatal(err)
 	}
 	store := memory.New()
-	first := testEngine(&Engine{Backend: store, Passphrase: "passphrase", Prefix: "profiles/one"})
-	second := testEngine(&Engine{Backend: store, Passphrase: "passphrase", Prefix: "profiles/two"})
+	first := testEngine(&Engine{Backend: store, Keys: testKeys("passphrase"), Prefix: "profiles/one"})
+	second := testEngine(&Engine{Backend: store, Keys: testKeys("passphrase"), Prefix: "profiles/two"})
 	if _, err := first.PushSession(context.Background(), PushItem{
 		Agent: "claude", SessionID: "one", LocalPath: path,
 	}, false); err != nil {
@@ -426,10 +424,10 @@ func TestProfilePrefixesIsolateSharedBackend(t *testing.T) {
 }
 
 type manifestRaceBackend struct {
-	base       backend.Backend
-	passphrase string
-	once       sync.Once
-	err        error
+	base backend.Backend
+	keys crypto.KeyProvider
+	once sync.Once
+	err  error
 }
 
 func (r *manifestRaceBackend) Put(ctx context.Context, key string, body io.Reader, size int64, opts backend.PutOptions) (backend.ObjectMeta, error) {
@@ -442,7 +440,7 @@ func (r *manifestRaceBackend) Put(ctx context.Context, key string, body io.Reade
 			}
 			defer func() { _ = rc.Close() }()
 			var plain bytes.Buffer
-			if err := crypto.Decrypt(rc, &plain, r.passphrase); err != nil {
+			if err := crypto.Open(rc, &plain, r.keys); err != nil {
 				r.err = err
 				return
 			}
@@ -460,7 +458,7 @@ func (r *manifestRaceBackend) Put(ctx context.Context, key string, body io.Reade
 				return
 			}
 			var cipher bytes.Buffer
-			if err := (fastAgeEnvelopeCodec{}).Encrypt(bytes.NewReader(raw), &cipher, r.passphrase); err != nil {
+			if err := (fastAgeEnvelopeCodec{}).Encrypt(bytes.NewReader(raw), &cipher, r.keys); err != nil {
 				r.err = err
 				return
 			}
@@ -491,29 +489,17 @@ func (r *manifestRaceBackend) List(ctx context.Context, prefix string) ([]backen
 
 type fastAgeEnvelopeCodec struct{}
 
-func (fastAgeEnvelopeCodec) Encrypt(source io.Reader, dest io.Writer, passphrase string) error {
-	recipient, err := age.NewScryptRecipient(passphrase)
-	if err != nil {
-		return err
-	}
-	recipient.SetWorkFactor(1)
-	writer, err := age.Encrypt(dest, recipient)
-	if err != nil {
-		return err
-	}
-	if _, err := io.Copy(writer, source); err != nil {
-		_ = writer.Close()
-		return err
-	}
-	return writer.Close()
+func (fastAgeEnvelopeCodec) Encrypt(source io.Reader, dest io.Writer, keys crypto.KeyProvider) error {
+	return crypto.Seal(source, dest, keys)
 }
 
-func (fastAgeEnvelopeCodec) DecryptReader(source io.Reader, passphrase string) (io.Reader, error) {
-	identity, err := age.NewScryptIdentity(passphrase)
-	if err != nil {
-		return nil, err
-	}
-	return age.Decrypt(source, identity)
+func (fastAgeEnvelopeCodec) DecryptReader(source io.Reader, keys crypto.KeyProvider) (io.Reader, error) {
+	return crypto.OpenReader(source, keys)
+}
+
+// testKeys is the BYO passphrase model with only the scrypt cost lowered.
+func testKeys(passphrase string) crypto.KeyProvider {
+	return crypto.NewPassphraseProvider(passphrase).WithWorkFactor(1)
 }
 
 func testEngine(engine *Engine) *Engine {
