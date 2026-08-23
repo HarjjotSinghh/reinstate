@@ -1,0 +1,16 @@
+[Unit]
+Description=Reinstate daemon (session sync and device approvals)
+Documentation=https://reinstate.dev/docs/hop
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/rein daemon run --pull-every 5m
+Environment=REINSTATE_HOME=/Users/fixture-user/.reinstate
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+Restart=on-failure
+RestartSec=10
+StandardOutput=append:/Users/fixture-user/.reinstate/daemon/launch.log
+StandardError=append:/Users/fixture-user/.reinstate/daemon/launch.log
+
+[Install]
+WantedBy=default.target

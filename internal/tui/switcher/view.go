@@ -383,10 +383,14 @@ func (m *Model) readinessStyle(readiness ui.Readiness) interface{ Render(...stri
 }
 
 func (m *Model) statusLine() string {
-	if m.status == "" {
+	text := m.status
+	if text == "" {
+		text = m.daemon
+	}
+	if text == "" {
 		return ""
 	}
-	return " " + m.theme.Muted.Render(ui.Truncate(m.status, m.width-1, m.theme.Glyphs.Ellipsis))
+	return " " + m.theme.Muted.Render(ui.Truncate(text, m.width-1, m.theme.Glyphs.Ellipsis))
 }
 
 // keyBar lists the keys that are live in the current mode. Showing keys that do

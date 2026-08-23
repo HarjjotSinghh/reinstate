@@ -90,6 +90,9 @@ type Options struct {
 	// device in deterministic tests. Production leaves it nil and reads a
 	// terminal or REINSTATE_PAIRING_CODE_FD.
 	PairingCodePrompt func(prompt string) ([]byte, error)
+	// Daemon overrides the service manager, watcher, clock, and notifier
+	// behind rein daemon in deterministic tests. Production leaves it zero.
+	Daemon daemonSeams
 }
 
 type envelopeCodecContextKey struct{}
@@ -169,6 +172,11 @@ func NewRoot(opts Options) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runSessionPicker(cmd, local)
 		},
+		// A device waiting for approval is announced before any command,
+		// from the daemon's status file; nothing here reaches the network.
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			announcePendingApprovals(cmd)
+		},
 	}
 	rootContext := opts.Context
 	if rootContext == nil {
@@ -179,6 +187,8 @@ func NewRoot(opts Options) *cobra.Command {
 	}
 	rootContext = context.WithValue(rootContext, hopSeamsContextKey{}, hopOpts)
 	rootContext = context.WithValue(rootContext, hostedHolderContextKey{}, &hostedHolder{})
+	rootContext = context.WithValue(rootContext, daemonSeamsContextKey{}, opts.Daemon)
+	rootContext = context.WithValue(rootContext, rootOptionsContextKey{}, opts)
 	if opts.DeviceSecrets != nil || opts.RecoveryCodePrompt != nil || opts.PairingCodePrompt != nil {
 		rootContext = context.WithValue(rootContext, accountSeamsContextKey{}, accountSeams{
 			secrets:        opts.DeviceSecrets,
@@ -224,6 +234,7 @@ func NewRoot(opts Options) *cobra.Command {
 		newWhoamiCmd(hopOpts),
 		newHopCmd(),
 		newDevicesCmd(),
+		newDaemonCmd(opts),
 		newInitCmd(),
 		newAccountCmd(),
 		newListCmd(),

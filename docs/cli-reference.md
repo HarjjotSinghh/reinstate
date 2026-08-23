@@ -65,6 +65,9 @@ rein account recover
 rein account status [--json]
 rein devices [--json]
 rein devices approve [--request ID]
+rein daemon run [--pull-every DUR] [--debounce DUR] [--poll] [--verbose]
+rein daemon install|start|stop|uninstall
+rein daemon status [--json]
 rein list [--agent claude|codex|all] [--json]
 rein status [--json]
 rein diff [--json]
@@ -102,6 +105,24 @@ the device limit, the push-rate limit, and when the first push happened.
 Before the first push it says the locker is not provisioned yet. `--json`
 emits the same. Exit `4` when the device is not signed in or its token was
 rejected.
+
+### `rein daemon`
+
+`rein daemon` runs a resident per-device process that pushes after a
+session changes, pulls on a schedule, and surfaces devices waiting to join
+the account. `rein daemon install` registers it to start at login (launchd
+on macOS, systemd `--user` on Linux, Task Scheduler on Windows) and starts
+it; `start`, `stop`, and `uninstall` control the registered daemon.
+`rein daemon run` is the foreground loop that registration runs (`--pull-every`
+defaults to 30s, `--debounce` to 3s). While the daemon runs, `rein resume`,
+`rein fork`, and the switcher pull once more before launching when its last
+pull is older than 15s; a failed pull is reported and the local copy is
+resumed. `rein daemon status [--json]` reports whether the daemon is registered and running, the
+last push and pull, the watched roots, and — on Hop — enrolled devices and
+pending approvals. It needs the root-key model (`rein account init`, which
+works on BYO storage too). See [docs/hop.md](hop.md#the-daemon). Exit `4`
+when a hosted daemon's device is not signed in; `3` when the home is not
+configured for the root-key model.
 
 ### `rein init`
 
@@ -455,6 +476,14 @@ is `UNTESTED` or `UNSUPPORTED`; its summary never says all checks passed while
 that agent is blocked from push/pull. `rein conflicts list` and
 `rein conflicts show` require a valid config, so a missing config cannot look
 like an empty conflict set.
+
+`push --all` and `pull --all` keep going past a session that diverged on
+this device: the divergence is recorded once under `rein conflicts`
+(records are keyed by the divergence, so repeated runs never add a second
+copy), every other session is still pushed or restored, the conflicted
+sessions are reported together on stderr, and the exit code is `6`
+(`--json` lists them under `conflicts`). An explicit `--session` still
+stops at its own conflict.
 
 A mutating `pull` never waits on a human closing an agent. Liveness is scoped to
 the exact session file being replaced, so unrelated agents running in other

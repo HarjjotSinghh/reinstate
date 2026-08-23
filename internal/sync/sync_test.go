@@ -513,3 +513,53 @@ func TestEngineDefaultsToProductionAgeEnvelopeCodec(t *testing.T) {
 		t.Fatal("nil codec no longer defaults to the production age implementation")
 	}
 }
+
+func TestSaveConflictIsIdempotentPerDivergence(t *testing.T) {
+	home := t.TempDir()
+	same := Conflict{Agent: "claude", SessionID: "s1", LocalRevision: "l1", RemoteSnapshot: "snap1", RemoteRevision: "snap1"}
+	for i := 0; i < 3; i++ {
+		if err := SaveConflict(home, same); err != nil {
+			t.Fatal(err)
+		}
+	}
+	list, err := ListConflicts(home)
+	if err != nil || len(list) != 1 {
+		t.Fatalf("repeated saves of one divergence: got %d records (%v), want 1", len(list), err)
+	}
+	cases := []struct {
+		name string
+		c    Conflict
+	}{
+		{"local edit moved on", Conflict{Agent: "claude", SessionID: "s1", LocalRevision: "l2", RemoteSnapshot: "snap1"}},
+		{"remote head moved on", Conflict{Agent: "claude", SessionID: "s1", LocalRevision: "l1", RemoteSnapshot: "snap2"}},
+		{"another session", Conflict{Agent: "claude", SessionID: "s2", LocalRevision: "l1", RemoteSnapshot: "snap1"}},
+	}
+	want := 1
+	for _, tc := range cases {
+		if err := SaveConflict(home, tc.c); err != nil {
+			t.Fatalf("%s: %v", tc.name, err)
+		}
+		want++
+		list, err := ListConflicts(home)
+		if err != nil || len(list) != want {
+			t.Fatalf("%s: got %d records (%v), want %d", tc.name, len(list), err, want)
+		}
+	}
+	// Resolving a record makes room for the same divergence to be recorded again.
+	list, _ = ListConflicts(home)
+	var id string
+	for _, c := range list {
+		if c.SameDivergence(same) {
+			id = c.ID
+		}
+	}
+	if err := Resolve(home, id, KeepLocal, func(Conflict, Resolution) error { return nil }); err != nil {
+		t.Fatal(err)
+	}
+	if err := SaveConflict(home, same); err != nil {
+		t.Fatal(err)
+	}
+	if list, _ = ListConflicts(home); len(list) != want {
+		t.Fatalf("after resolve + re-save: got %d, want %d", len(list), want)
+	}
+}

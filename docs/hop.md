@@ -208,6 +208,97 @@ therefore refuse a request that is in fact still open (`expired at ...`,
 exit `2`). Fix the clock, then run `rein account join` again on the new
 device for a fresh request.
 
+## The daemon
+
+`rein daemon` is a resident per-device process that keeps a device's
+sessions synced without anyone running `push` and `pull` by hand, and
+surfaces devices waiting to join the account. It behaves identically on
+BYO storage and on Hop, and it sends nothing that `push` and `pull` do not
+already send — no telemetry (ADR 0008). Its only outputs are the locker (or
+your bucket), a local status file, a rotating log, and OS notifications on
+that one machine.
+
+```text
+rein daemon run [--pull-every DUR] [--debounce DUR] [--poll] [--verbose]
+rein daemon install       # register it to start at login, and start it now
+rein daemon start|stop    # control the registered daemon
+rein daemon uninstall     # stop it and remove the login registration
+rein daemon status [--json]
+```
+
+`rein daemon install` registers the daemon with the platform's own
+supervisor so it starts at login: a **launchd** user agent on macOS
+(`~/Library/LaunchAgents`), a **systemd `--user`** unit on Linux
+(`~/.config/systemd/user`, `WantedBy=default.target`), and a **Task
+Scheduler** task with a logon trigger on Windows (`schtasks`,
+`InteractiveToken`, per-user principal). `rein daemon run` is the
+foreground loop that registration runs; run it yourself under any
+supervisor you prefer, or just to watch it work.
+
+What the loop does:
+
+- **Watches** every detected agent's session directory (fsnotify, with a
+  polling fallback — `--poll` forces polling for network homes and some
+  containers) and **pushes** after a session file changes. Changes are
+  debounced (`--debounce`, default 3s) and coalesced, so a burst of writes
+  is one push; a session that never stops changing is still pushed at least
+  every 30s. A push that hits a conflict records it and waits — the daemon
+  never resolves conflicts or overwrites divergence; `rein conflicts` does.
+- **Pulls** on a schedule (`--pull-every`, default 30s) so a session
+  edited on another device appears here within a minute without any
+  command; `pull --all` skips whatever this device already synced, so an
+  idle pull is one manifest read. **Before a resume** — `rein resume`,
+  `rein fork`, or the switcher — the CLI pulls once more when the daemon is
+  running on this device and its last successful pull is older than 15s,
+  so what launches is the latest snapshot rather than the one from the
+  last tick. A pull that fails there is reported on stderr and never
+  blocks the resume; while the daemon itself is mid-pull the resume simply
+  uses its result. Without a running daemon nothing is pulled implicitly:
+  the shell commands stay explicit.
+- **Surfaces pending device approvals** (Hop only): it polls the control
+  plane, and when a device asks to join it shows an OS notification, writes
+  the request to the status file, and the next `rein` command on that
+  machine prints one line — `device "X" wants to join your account; run
+  rein devices approve`. Approval itself stays interactive: it needs the
+  code typed on this device (`rein devices approve`), which the daemon
+  never sees.
+
+The daemon runs one instance per home (an advisory lock file), backs off
+exponentially on errors (5s doubling to 10m; a session that keeps changing
+during an outage waits for the backoff rather than retrying on every
+write), rotates its log at 1 MB (three kept), and never crashes on a vendor
+store caught mid-write. A vendor write caught halfway through a line can
+still be pushed as a torn snapshot — it shows up as one more snapshot in
+the history — and the next change pushes the whole line. A session that
+diverged on this device (edited locally after another device moved its
+head) is recorded once under `rein conflicts`, not once per tick: the
+record is keyed by the divergence, and a scheduled `pull --all` keeps
+restoring every other session while that one waits for
+`rein conflicts resolve`. The plist, unit, or task definition is written
+owner-only, and `rein daemon install` refuses an `--env` whose name looks
+like a credential (`SECRET`, `TOKEN`, `PASSPHRASE`, …): secrets belong in
+the OS keyring or the backend's own credential store, never in a plist or
+unit file. `rein daemon install` needs the root-key model
+(`rein account init`, which works on BYO storage too) so the daemon can run
+without a passphrase prompt. A passphrase-model home can still run
+`rein daemon run` under a supervisor that supplies
+`REINSTATE_PASSPHRASE_FD`: the descriptor is read once, when the daemon
+starts, and that passphrase serves every push and pull for the daemon's
+lifetime (the pull-before-resume hook stays off on such a home, since a
+shell command cannot read the same descriptor).
+
+On Windows, an account that is a member of Administrators runs under a
+UAC-filtered token in an ordinary shell, and `schtasks /Create /XML` refuses
+that token with "Access is denied"; run `rein daemon install` from an
+elevated shell on such an account. Standard user accounts install from any
+shell.
+
+`rein daemon status` reads the status file the daemon writes after every
+action: whether the daemon is registered and running, the last push and
+pull, the watched roots, and — on Hop — the enrolled devices and any
+pending approvals. The interactive switcher shows the same one-line
+summary on its status line.
+
 ## Choosing the control plane
 
 The production control plane is `https://hop.reinstate.dev`. Override it for
@@ -258,4 +349,3 @@ events as its only product metrics.
   code today).
 - Revoke a device or sign out (also the only recovery from an account over
   its device quota).
-- Run a daemon.

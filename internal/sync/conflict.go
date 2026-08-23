@@ -31,9 +31,22 @@ const (
 	KeepBoth   Resolution = "keep-both"
 )
 
-// SaveConflict writes a conflict record under home/conflicts.
+// SaveConflict writes a conflict record under home/conflicts. It is
+// idempotent: when an unresolved record already describes the same
+// divergence (agent, session, local revision, remote snapshot) nothing is
+// written, so a daemon that pushes and pulls every few seconds against a
+// conflict it cannot resolve does not grow the directory without bound.
 func SaveConflict(home string, c Conflict) error {
 	if c.ID == "" {
+		existing, err := ListConflicts(home)
+		if err != nil {
+			return err
+		}
+		for _, e := range existing {
+			if e.SameDivergence(c) {
+				return nil
+			}
+		}
 		c.ID = fmt.Sprintf("c-%d", time.Now().UnixNano())
 	}
 	if c.CreatedAt == "" {
@@ -48,6 +61,13 @@ func SaveConflict(home string, c Conflict) error {
 		return err
 	}
 	return fsx.WriteFileAtomic(filepath.Join(dir, c.ID+".json"), append(b, '\n'), 0o600)
+}
+
+// SameDivergence reports whether two records describe the same local
+// revision diverging from the same remote snapshot of the same session.
+func (c Conflict) SameDivergence(o Conflict) bool {
+	return c.Agent == o.Agent && c.SessionID == o.SessionID &&
+		c.LocalRevision == o.LocalRevision && c.RemoteSnapshot == o.RemoteSnapshot
 }
 
 // ListConflicts returns conflict metadata records.

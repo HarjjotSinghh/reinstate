@@ -67,6 +67,11 @@ type runOptions struct {
 	pairingPrompt func(string) ([]byte, error)
 	stdout        *syncBuffer
 	stderr        *syncBuffer
+	// daemon carries the rein daemon seams (clock, events, notifier).
+	daemon daemonSeams
+	// ctx, when set, is the command's context (the daemon journey cancels
+	// it to stop the loop).
+	ctx context.Context
 }
 
 func newPairDevice(t *testing.T, plane *fakeControlPlane, name string) *pairDevice {
@@ -85,12 +90,18 @@ func (d *pairDevice) run(args ...string) (string, string, int) {
 // execute runs the CLI with this device's seams; REINSTATE_HOME must
 // already point at d.home (it is read once, when the command starts).
 func (d *pairDevice) execute(ro runOptions, args ...string) int {
+	return Execute(d.options(ro, args...))
+}
+
+// options builds the CLI Options for one invocation on this device.
+func (d *pairDevice) options(ro runOptions, args ...string) Options {
 	sleep := ro.sleep
 	if sleep == nil {
 		sleep = func(ctx context.Context, _ time.Duration) error { return ctx.Err() }
 	}
-	return Execute(Options{
+	return Options{
 		Name: "rein", Stdout: ro.stdout, Stderr: ro.stderr, Args: args,
+		Context: ro.ctx, Daemon: ro.daemon,
 		AgentProcessChecker: func(_ context.Context, _ string, _ processcheck.Target) (bool, bool, error) { return false, true, nil },
 		DeviceTokenStore:    d.tokens,
 		DeviceSecrets:       d.secrets,
@@ -115,7 +126,7 @@ func (d *pairDevice) execute(ro runOptions, args ...string) int {
 			return []byte(d.shownCode), nil
 		},
 		PairingCodePrompt: ro.pairingPrompt,
-	})
+	}
 }
 
 // joinInProgress is a `rein account join` blocked in its poll loop: the
