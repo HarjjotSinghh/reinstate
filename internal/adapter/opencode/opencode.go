@@ -199,6 +199,10 @@ SELECT id, COALESCE(directory, ''), COALESCE(title, ''),
 	}
 	defer func() { _ = rows.Close() }()
 
+	// Build the path mapper once; it resolves symlinks for every configured
+	// project root, which must not be repeated per session row.
+	mapper := a.mapper()
+
 	var sessions []adapter.Session
 	for rows.Next() {
 		if err := ctx.Err(); err != nil {
@@ -222,7 +226,10 @@ SELECT id, COALESCE(directory, ''), COALESCE(title, ''),
 		// a restore's snapshot carries back, so Discover, the exported
 		// document, and the sync envelope all agree on one identity that
 		// survives a Windows↔macOS remap.
-		projectID := a.projectKey(directory)
+		projectID := ""
+		if d := strings.TrimSpace(directory); d != "" {
+			projectID = mapper.Normalize(d)
+		}
 		if opts.ProjectID != "" && opts.ProjectID != projectID {
 			continue
 		}
