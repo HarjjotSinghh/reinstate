@@ -333,7 +333,7 @@ yes-or-no list.
 | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | T5 | ✅ full | ✅ same-vendor | ✅ | ✅ | ✅ |
 | [OpenAI Codex CLI](https://github.com/openai/codex) | T5 | ✅ full | ✅ same-vendor | ✅ | ✅ | ✅ |
 | [Gemini CLI](https://github.com/google-gemini/gemini-cli) | T2 | ✅ read-only | — | ✅ source-only | — | — |
-| [OpenCode](https://opencode.ai) | T4 | ✅ read-only | ✅ same-vendor | ✅  | ✅ | — |
+| [OpenCode](https://opencode.ai) | T5 | ✅ full | ✅ same-vendor | ✅  | ✅ | ✅ macOS (Windows pending) |
 | [Grok Build](https://x.ai) | T4 | ✅ read-only | ✅ same-vendor | ✅ | ✅ | — |
 | [Kimi Code CLI](https://www.kimi.com/code) | T2 | ✅ read-only | — | ✅ source-only | — | — |
 | [Qwen Code](https://qwenlm.github.io/qwen-code-docs/) | T4 | ✅ read-only | ✅ same-vendor | ✅ | ✅ | — |

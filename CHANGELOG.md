@@ -27,6 +27,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the static keyring or environment keys through `s3.Static` and is never
   retried, exactly as before.
 
+- OpenCode moves to **T5, encrypted sync**, the first embedded-SQLite agent to
+  reach it. A new `internal/adapter/opencode` implements the full
+  `adapter.Adapter` (`Detect`, `Discover`, `PlanExport`, `Export`,
+  `PlanRestore`, `Restore`, `Exclusions`): the synced unit is a portable,
+  path-tokenised document extracted from the `session`, `project`, `message`
+  and `part` tables — never the credential or account tables — and restore
+  writes it back into the vendor's own `opencode.db` through a checkpointed,
+  fingerprint-guarded, backed-up atomic rename. Because sessions do not each own
+  a file, the adapter implements a new `adapter.SessionRevisioner` so change
+  detection uses a device-independent content digest instead of hashing the
+  shared store; `forkRelativePath` now keeps a session's own extension so a
+  keep-both fork is not mislabelled. Deterministic synthetic seeds live under
+  `testdata/adapters/opencode/{macos,windows}`, conformance and a CLI push/pull
+  journey test cover OpenCode, and the macOS T5 device journey is recorded — its
+  native Windows physical journey is still pending.
 - The website now serves every page as Markdown through `Accept: text/markdown`
   content negotiation (with `Vary: Accept` and a 406 contract), static `.md`
   twins, `llms-full.txt`, an OpenAPI 3.1 document at `/openapi.json`, JSON

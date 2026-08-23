@@ -57,6 +57,39 @@ Device journey:
 [../testing/results/2026-08-22-macos-opencode-t3-journey.md](../testing/results/2026-08-22-macos-opencode-t3-journey.md)
 (macOS only; native Windows pending).
 
+## Encrypted sync (T5)
+
+The sync adapter is `internal/adapter/opencode`. Because OpenCode keeps every
+session in one embedded SQLite database, the synced unit is a portable,
+deterministic JSON document extracted from four tables — `session`, `project`,
+`message`, `part` — with every absolute path normalised to a `${HOME}` /
+`${REPO:…}` token. The `credential`, `account`, `control_account` and
+`account_state` tables are never opened; `Exclusions()` names them and a
+round-trip test fails if a credential value appears in an export.
+
+| Adapter surface | Behaviour |
+| --------------- | --------- |
+| `Detect` | A regular `opencode.db` under the resolved root is supported; absence is `NOT_INSTALLED`. |
+| `Discover` | Reads `session` rows via `internal/vendorsqlite` (so un-checkpointed WAL rows are visible); each session's `RelativePath` is the virtual `sessions/<id>.json`. |
+| `Export` | Extracts one session to the portable document, path-tokenised, as a single tar entry. |
+| `Restore` | Writes the document back into the destination's own `opencode.db` through a checkpointed working copy, fingerprint-guarded and backed up, then atomically renamed; stale `-wal`/`-shm` sidecars are removed so the vendor reopens the merged database. |
+| revision | `SessionRevision` is the digest of the normalised document — device-independent, so the sync engine detects a genuine edit rather than every session appearing changed whenever the shared file changes. |
+
+Because sessions do not each own a file, the adapter implements
+`adapter.SessionRevisioner`; the CLI uses it for change detection instead of
+hashing the shared database file.
+
+Restore refuses a destination whose `opencode.db` has not been initialised by
+the vendor — it writes sessions into the vendor's store but never invents its
+schema. Conflict keep-both restores a fork beside the original with derived,
+collision-free message and part ids (`--fork`-compatible), idempotent on repeat.
+
+Device journeys:
+[../testing/results/2026-08-23-macos-opencode-t5-journey.md](../testing/results/2026-08-23-macos-opencode-t5-journey.md)
+(macOS, PASS) and
+[../testing/results/2026-08-23-windows-opencode-t5.md](../testing/results/2026-08-23-windows-opencode-t5.md)
+(native Windows pending).
+
 ### Message record schema (R1 — Documented)
 
 Each message file is a MessageV2 `Info` object discriminated on `role`

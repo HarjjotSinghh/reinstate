@@ -77,28 +77,29 @@ func TestReleaseAndSupportClaims(t *testing.T) {
 		}
 	}
 
-	// OpenCode moved up the ladder, so what these rows must not claim moved with
-	// it. Gemini is still a source-only agent and keeps both trailing columns
-	// pinned. OpenCode is a handoff destination as of T4, so only the encrypted
-	// sync column stays guarded — that is the claim it must not make, and
-	// pinning the handoff-target column too would now be pinning a falsehood.
+	// OpenCode moved up the ladder again — to T5, encrypted sync — so the guard
+	// on its sync column inverts: it must now assert the sync claim rather than
+	// refuse it. Gemini is still a source-only agent and keeps both trailing
+	// columns pinned to "No".
 	adapters := read(t, "docs/adapters.md")
 	for _, re := range []*regexp.Regexp{
 		regexp.MustCompile(`(?m)^\| Gemini CLI \|[^\n]*\| No \| No \|`),
-		regexp.MustCompile(`(?m)^\| OpenCode \|[^\n]*\| No \| [^|\n]*\|$`),
+		regexp.MustCompile(`(?m)^\| OpenCode \|[^\n]*\| Supported[^|\n]*\| [^|\n]*\|$`),
 	} {
 		if !re.MatchString(adapters) {
-			t.Errorf("docs/adapters.md must keep read-only adapter capabilities explicit: %s", re.String())
+			t.Errorf("docs/adapters.md must keep adapter capabilities explicit: %s", re.String())
 		}
 	}
 
 	readme := read(t, "README.md")
+	// Gemini must not claim native mutation; OpenCode's sync column must state
+	// its evidenced scope rather than a bare em-dash.
 	for _, re := range []*regexp.Regexp{
 		regexp.MustCompile(`(?m)^\| \[Gemini CLI\][^\n]*\| — \| — \|`),
-		regexp.MustCompile(`(?m)^\| \[OpenCode\][^\n]*\| — \|$`),
+		regexp.MustCompile(`(?m)^\| \[OpenCode\][^\n]*\| ✅ macOS \(Windows pending\) \|$`),
 	} {
 		if !re.MatchString(readme) {
-			t.Errorf("README.md must not claim Gemini native mutation, or OpenCode encrypted sync: %s", re.String())
+			t.Errorf("README.md agent rows must state evidenced capabilities: %s", re.String())
 		}
 	}
 

@@ -32,9 +32,11 @@ yes-or-no flag. Tiers are cumulative. New agents are declared in the
 | T4 | Handoff destination |
 | T5 | Encrypted same-vendor sync |
 
-Claude Code and Codex CLI are T5. OpenCode, Qwen Code, and Grok Build are T4.
-Gemini CLI and Kimi Code CLI are T2. Grok's resume and destination journeys are
-recorded on both platforms. The capability matrix below remains the fail-closed
+Claude Code, Codex CLI, and OpenCode are T5. Qwen Code and Grok Build are T4.
+Gemini CLI and Kimi Code CLI are T2. OpenCode is the first embedded-SQLite agent
+to reach encrypted sync; its macOS T5 journey is recorded and its native Windows
+journey is still outstanding. Grok's resume and destination journeys are recorded
+on both platforms. The capability matrix below remains the fail-closed
 per-surface record.
 
 ## Capability matrix
@@ -44,7 +46,7 @@ per-surface record.
 | Claude Code | Included in `v0.2.0` | Included in `v0.2.0` | Yes | Yes | Supported | Later |
 | OpenAI Codex CLI | Included in `v0.2.0` | Included in `v0.2.0` | Yes | Yes | Supported | Later |
 | Gemini CLI | Read-only in `v0.2.0` | No | Source-only | No | No | Later |
-| OpenCode | Read-only in `v0.2.0` | Yes (T3) | Source-only | Yes | No | Later |
+| OpenCode | Included (T5) | Yes (T3) | Source-only | Yes | Supported (macOS journey; Windows pending) | Later |
 | Grok Build | Read-only in `v0.4.0` | Same-vendor (T3) | Yes | Yes (T4) | No | Planned |
 | Kimi Code CLI | Read-only (T1) | No | Source-only | No | No | Later |
 | Qwen Code | Read-only (T4) | Yes | Yes | Yes | No | Later |
