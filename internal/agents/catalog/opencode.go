@@ -3,6 +3,8 @@ package catalog
 import (
 	"regexp"
 
+	"github.com/HarjjotSinghh/reinstate/internal/adapter"
+	opencodeadapter "github.com/HarjjotSinghh/reinstate/internal/adapter/opencode"
 	"github.com/HarjjotSinghh/reinstate/internal/agents"
 	opencodesrc "github.com/HarjjotSinghh/reinstate/internal/agents/sources/opencode"
 	"github.com/HarjjotSinghh/reinstate/internal/handoff"
@@ -17,14 +19,14 @@ func init() { agents.MustRegister(OpenCode()) }
 // number from being read out of some other vendor's sentence.
 var opencodeVersionPattern = regexp.MustCompile(`^((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))$`)
 
-// OpenCode is the shipped OpenCode descriptor (T4, F3).
+// OpenCode is the shipped OpenCode descriptor (T5, F3).
 func OpenCode() agents.Descriptor {
 	return agents.Descriptor{
 		Key:         sessionindex.AgentOpenCode,
 		DisplayName: "OpenCode",
 		Vendor:      "anomalyco",
 		DocsURL:     "https://opencode.ai",
-		Tier:        agents.TierHandoffTo,
+		Tier:        agents.TierSync,
 		Family:      agents.FamilyEmbeddedDB,
 		Storage: agents.StorageSpec{
 			// OpenCode reads $XDG_DATA_HOME/opencode, so the variable names the
@@ -81,6 +83,8 @@ func OpenCode() agents.Descriptor {
 			Fixtures: []string{
 				"testdata/sessionindex/opencode/macos",
 				"testdata/sessionindex/opencode/windows",
+				"testdata/adapters/opencode/macos",
+				"testdata/adapters/opencode/windows",
 				"testdata/handoff/opencode",
 			},
 			DeviceReports: []string{
@@ -88,6 +92,8 @@ func OpenCode() agents.Descriptor {
 				"docs/testing/results/2026-08-22-windows-opencode-t3.md",
 				"docs/testing/results/2026-08-22-macos-opencode-t4-journey.md",
 				"docs/testing/results/2026-08-22-windows-opencode-t4.md",
+				"docs/testing/results/2026-08-23-macos-opencode-t5-journey.md",
+				"docs/testing/results/2026-08-23-windows-opencode-t5.md",
 			},
 		},
 		NewIndexSource: opencodesrc.NewSQLite,
@@ -99,6 +105,13 @@ func OpenCode() agents.Descriptor {
 			reader.DataRoot = env.FixtureRoot
 			reader.Getenv = env.LookupEnv
 			return reader, nil
+		},
+		NewSyncAdapter: func(env agents.Env) (adapter.Adapter, error) {
+			// Root is left empty so the adapter resolves the store itself:
+			// XDG_DATA_HOME names the parent, and the store lives in its
+			// "opencode" child. Passing the raw env value as Root would drop
+			// that suffix and look for opencode.db one directory too high.
+			return &opencodeadapter.Adapter{Home: env.Home}, nil
 		},
 	}
 }
