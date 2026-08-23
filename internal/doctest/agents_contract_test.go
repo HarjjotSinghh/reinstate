@@ -539,3 +539,75 @@ func agentMentioned(text string, desc agents.Descriptor) bool {
 func compactSpace(value string) string {
 	return strings.Join(strings.Fields(value), " ")
 }
+
+// unevidencedPhrases are the ways the tier doc says an agent's physical
+// journeys do not exist yet. They are correct prose for an unevidenced claim
+// and false prose for an evidenced one.
+//
+// The list is deliberately narrow. It must not match a legitimate caveat about
+// a single outstanding row, only a claim that the journeys as a whole are
+// missing.
+var unevidencedPhrases = []string{
+	"have not been recorded",
+	"has not been recorded",
+	"pending confirmation",
+	"awaiting confirmation",
+	"journeys are still outstanding",
+	"code-complete claim",
+}
+
+// TestTierDocDoesNotCallAnEvidencedAgentPending pins the direction of drift
+// that nothing else catches.
+//
+// Conformance already fails when a descriptor claims a tier it has no evidence
+// for. The reverse — evidence lands, the tier moves, and a prose paragraph
+// still tells the reader to treat it as unproven — is invisible to every gate
+// we have, because the tier table and the descriptor both read correctly. It
+// happened: Grok Build's paragraph called T4 "a code-complete claim whose
+// physical journeys are still outstanding" for three commits after all four of
+// its journey reports were merged and cited.
+func TestTierDocDoesNotCallAnEvidencedAgentPending(t *testing.T) {
+	t.Parallel()
+
+	const rel = "docs/agent-support-tiers.md"
+	evidenced := map[string]int{}
+	for _, desc := range agents.All() {
+		if name := strings.TrimSpace(desc.DisplayName); name != "" && len(desc.Evidence.DeviceReports) > 0 {
+			evidenced[name] = len(desc.Evidence.DeviceReports)
+		}
+	}
+
+	// Paragraph scope, and within a paragraph the subject is the agent named
+	// first. Such a paragraph routinely cites other agents as the standard
+	// being fallen short of ("not as evidenced the way Claude Code is"), and
+	// blaming those turns a true failure into a misdirected one.
+	for _, para := range strings.Split(read(t, rel), "\n\n") {
+		if strings.HasPrefix(strings.TrimSpace(para), "|") {
+			continue // a table row, not a claim about evidence
+		}
+		lower := strings.ToLower(para)
+		hit := ""
+		for _, phrase := range unevidencedPhrases {
+			if strings.Contains(lower, phrase) {
+				hit = phrase
+				break
+			}
+		}
+		if hit == "" {
+			continue
+		}
+		subject, at := "", -1
+		for name := range evidenced {
+			if i := strings.Index(para, name); i >= 0 && (at < 0 || i < at) {
+				subject, at = name, i
+			}
+		}
+		if subject == "" {
+			continue // the paragraph is about an agent with no evidence to contradict
+		}
+		t.Errorf(
+			"%s calls %s unevidenced (%q) but its descriptor cites %d device report(s)",
+			rel, subject, hit, evidenced[subject],
+		)
+	}
+}

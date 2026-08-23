@@ -208,13 +208,19 @@ stays where it is, and that outcome is a successful result, not a failed task.
 | ZCode | Z.ai | F5 (expected) | — | T0 |
 | MiniMax | MiniMax | unidentified | — | T0 |
 
-Grok Build's T4 row is a code-complete claim whose physical journeys are still
-outstanding: the native argv, the `--session-id` destination route, the version
-range and process recognition are measured and merged, but the macOS and native
-Windows resume and destination journeys T3 and T4 require are specified in
+Grok Build's T4 row is evidenced. The resume journeys T3 requires were recorded
+on macOS and native Windows on 2026-08-22, and the destination journeys T4
+requires on 2026-08-23 — `GD1`–`GD7`, seven of seven on macOS and six of seven
+on Windows, where `GD6`'s Codex leg is unmeasurable because that host has no
+Codex CLI. All four reports are cited in the descriptor's `Evidence`.
+
+Two limits are worth carrying. `GD8`, the destination's own tool-approval
+prompt, is outstanding on both devices: each T4 run set the vendor's approval
+setting to auto-approve so the tool loop would settle deterministically, which
+both reports disclose. And Grok declares no sync capability, so T5 is not in
+scope. See
 [testing/grok-native-resume-acceptance.md](testing/grok-native-resume-acceptance.md)
-and have not been recorded. Treat it as pending confirmation, not as evidenced
-the way Claude Code and Codex CLI are.
+for the per-rung status table.
 
 Per-agent detail, including binaries, environment overrides, evidence status,
 and blockers, is in
