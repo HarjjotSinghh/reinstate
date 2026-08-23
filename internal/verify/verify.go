@@ -422,17 +422,19 @@ func describeManifest(plain io.Reader) (string, []string, error) {
 	for _, a := range names {
 		byAgent = append(byAgent, fmt.Sprintf("%s %d", a, agents[a]))
 	}
-	summary := fmt.Sprintf("%s decrypted into the index: schema v%d, revision %s, %d session(s)", manifestObject, m.SchemaVersion, orNone(m.Revision), len(m.Sessions))
+	// The summary is uploaded with the report, so it names only the
+	// object and the schema; the revision, counts and agent mix are
+	// local detail.
+	summary := fmt.Sprintf("%s decrypted into a schema v%d index.", manifestObject, m.SchemaVersion)
+	detail := []string{fmt.Sprintf("index revision %s, %d session(s)", orNone(m.Revision), len(m.Sessions))}
 	if len(byAgent) > 0 {
-		summary += " (" + strings.Join(byAgent, ", ") + ")"
+		detail[0] += " (" + strings.Join(byAgent, ", ") + ")"
 	}
-	summary += "."
 	keys := make([]string, 0, len(m.Sessions))
 	for k := range m.Sessions {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
-	var detail []string
 	for _, k := range keys {
 		s := m.Sessions[k]
 		detail = append(detail, fmt.Sprintf("index entry %s -> %s%s.age (updated %s)", k, snapshotPrefix, s.SnapshotID, s.UpdatedAt))
@@ -463,8 +465,10 @@ func describeSnapshot(name string, plain io.Reader) (string, []string, error) {
 	if n != file.Size || sum != file.SHA256 {
 		return "", nil, fmt.Errorf("the payload (%d bytes, sha256 %s…) does not match the envelope (%d bytes, sha256 %s…)", n, sum[:12], file.Size, short(file.SHA256))
 	}
-	summary := fmt.Sprintf("%s decrypted into a %s snapshot envelope with %d file (%d bytes) whose sha256 matches the envelope.", name, env.Agent, len(env.Files), n)
-	detail := []string{fmt.Sprintf("%s: agent %s, session %s, project %s, created %s on %s, file %s", name, env.Agent, env.SessionID, env.ProjectID, env.CreatedAt, env.SourcePlatform, file.Path)}
+	// The summary is uploaded with the report; the agent, session, size
+	// and file are local detail.
+	summary := fmt.Sprintf("%s decrypted into a snapshot envelope whose payload sha256 matches the envelope.", name)
+	detail := []string{fmt.Sprintf("%s: agent %s, session %s, project %s, created %s on %s, %d file(s), payload %d bytes, file %s", name, env.Agent, env.SessionID, env.ProjectID, env.CreatedAt, env.SourcePlatform, len(env.Files), n, file.Path)}
 	return summary, detail, nil
 }
 
@@ -511,24 +515,24 @@ func isolationStep(ctx context.Context, o Options, r *Report) {
 	objects, err := b.List(ctx, "")
 	switch {
 	case errors.Is(err, backend.ErrUnauthorized):
-		observed = append(observed, "Listing the reference locker was refused (access denied).")
+		observed = append(observed, "Listing the reference locker was refused as unauthorized.")
 	case err == nil:
 		step.Status = Fail
 		observed = append(observed, fmt.Sprintf("Listing the reference locker SUCCEEDED and returned %d object(s); this account's credentials reach a bucket that is not its own.", len(objects)))
 	default:
 		step.Status = Fail
-		observed = append(observed, "Listing the reference locker neither succeeded nor was refused as access denied: "+err.Error()+".")
+		observed = append(observed, "Listing the reference locker neither succeeded nor was refused as unauthorized: "+err.Error()+".")
 	}
 	body, err := fetch(ctx, b, ref.Key)
 	switch {
 	case errors.Is(err, backend.ErrUnauthorized):
-		observed = append(observed, "Reading the probe object was refused (access denied).")
+		observed = append(observed, "Reading the probe object was refused as unauthorized.")
 	case err == nil:
 		step.Status = Fail
 		observed = append(observed, fmt.Sprintf("Reading the probe object SUCCEEDED (%d bytes); this account's credentials can read another bucket's contents.", len(body)))
 	default:
 		step.Status = Fail
-		observed = append(observed, "Reading the probe object neither succeeded nor was refused as access denied: "+err.Error()+".")
+		observed = append(observed, "Reading the probe object neither succeeded nor was refused as unauthorized: "+err.Error()+".")
 	}
 	step.Observed = strings.Join(observed, " ")
 	r.Steps = append(r.Steps, step)
@@ -573,12 +577,32 @@ func (r *Report) WriteHuman(w io.Writer) {
 		}
 		fmt.Fprintf(w, "  Result:         %s\n\n", verdictLabel(s.Status))
 	}
-	switch r.Outcome {
-	case Pass:
-		fmt.Fprintln(w, "OUTCOME: PASS. Everything in the locker is ciphertext sealed on this device, this device can open it, and this account's credentials go nowhere else.")
-	default:
-		fmt.Fprintln(w, "OUTCOME: FAIL. At least one step did not hold; read the failed step above. If the locker is a Hop locker, this is worth reporting to security@reinstate.dev.")
+	fmt.Fprintln(w, "OUTCOME: "+r.Summary())
+}
+
+// IsolationChecked reports whether the isolation step ran and passed, as
+// opposed to being not applicable (BYO storage, or a control plane without
+// a reference locker).
+func (r *Report) IsolationChecked() bool {
+	for _, s := range r.Steps {
+		if s.ID == StepIsolation {
+			return s.Status == Pass
+		}
 	}
+	return false
+}
+
+// Summary is the one-sentence outcome for a non-expert. It claims only
+// what the steps observed: the isolation clause appears only when the
+// isolation step ran and passed.
+func (r *Report) Summary() string {
+	if r.Outcome != Pass {
+		return "FAIL. At least one step did not hold; read the failed step above. If the locker is a Hop locker, this is worth reporting to security@reinstate.dev."
+	}
+	if r.IsolationChecked() {
+		return "PASS. Everything in the locker is ciphertext sealed on this device, this device can open it, and this account's credentials are refused by a bucket that is not its own."
+	}
+	return "PASS. Everything in the locker is ciphertext sealed on this device and this device can open it. Whether the credentials reach other buckets was not checked (no reference locker), so nothing is claimed about that."
 }
 
 func storageLabel(s string) string {

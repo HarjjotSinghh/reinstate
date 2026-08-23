@@ -186,20 +186,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   step. It lists the locker with this device's credentials; fetches an
   object and shows it is ciphertext (age v1 header, recipient type, no
   plaintext field name anywhere in the body); decrypts it locally and shows
-  what it contains (the index's sessions per agent, a snapshot's envelope
-  and a payload checksum that matches); and, on a Hop locker, asks the
+  what it contains (the index's revision and sessions per agent, a
+  snapshot's envelope and a payload checksum that matches, all as local
+  detail lines); and, on a Hop locker, asks the
   control plane for its **reference locker** (a bucket the operator owns,
   holding one probe object) and shows that the same credentials are refused
-  from it with access denied. Each step prints what was done, what was
+  from it as unauthorized. Each step prints what was done, what was
   seen, and PASS, FAIL, or NOT APPLICABLE; `--json` emits the report as
   data; exit `4` on any failed step. A tampered object fails: plaintext in
   place of ciphertext at step 2, a flipped byte at step 3. BYO storage runs
   the first three steps and reports the fourth as not applicable. On a Hop
-  profile the step results — opaque object names and counts only, never a
-  session id, project path, or content — are posted to the control plane
+  profile the step results — opaque object names and object counts only,
+  never a session id, project path, agent name, session count, or content —
+  are posted to the control plane
   for the account console (`--post=false` keeps them local), and the same
   checks run automatically once per device after the first push that
-  uploaded something, without ever failing that push. The fake S3 used in
+  uploaded something, without ever failing that push. The outcome sentence
+  claims isolation only when the isolation step actually ran and passed. The fake S3 used in
   tests now refuses any bucket but its own with `AccessDenied`, as R2 does.
   New docs: `docs/hop/object-format.md` (the exact object layout and
   envelope format) and `docs/hop/threat-model.md` (what the operator can

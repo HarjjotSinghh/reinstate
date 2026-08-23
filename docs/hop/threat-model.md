@@ -64,8 +64,10 @@ object storage; none of it is content.
   minted credential is scoped to exactly one bucket (the provider enforces
   it; the control plane never mints for any other).
 - **Anything from the verification report beyond step results**: the
-  upload form carries no session identifier, project path, or plaintext;
-  the local output does.
+  upload form carries no session identifier, project path, agent name,
+  session count, index revision, or plaintext — only object counts, opaque
+  object names and sizes, and each step's verdict; the local output does
+  (a unit test pins the exact uploaded text).
 
 ## Assumptions
 

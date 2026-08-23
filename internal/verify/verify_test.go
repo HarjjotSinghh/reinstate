@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -22,6 +23,20 @@ func put(t *testing.T, b backend.Backend, key string, body []byte) {
 	if _, err := b.Put(context.Background(), key, bytes.NewReader(body), int64(len(body)), backend.PutOptions{}); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func get(t *testing.T, b backend.Backend, key string) []byte {
+	t.Helper()
+	rc, _, err := b.Get(context.Background(), key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rc.Close()
+	body, err := io.ReadAll(rc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return body
 }
 
 func seal(t *testing.T, keys crypto.KeyProvider, plain []byte) []byte {
@@ -101,14 +116,33 @@ func TestRunPassesAndStripsDetailForUpload(t *testing.T) {
 	if got := r.Steps[0].Observed; !strings.Contains(got, "2 object(s)") || strings.Contains(got, "other object") {
 		t.Fatalf("listing crossed the prefix: %q", got)
 	}
-	if !strings.Contains(r.Steps[2].Observed, "1 session(s) (claude 1)") || !strings.Contains(strings.Join(r.Steps[2].Detail, "\n"), "session sess-1") {
-		t.Fatalf("decrypt step %+v", r.Steps[2])
+	detail := strings.Join(r.Steps[2].Detail, "\n")
+	if !strings.Contains(detail, "1 session(s) (claude 1)") || !strings.Contains(detail, "session sess-1") {
+		t.Fatalf("decrypt step detail %+v", r.Steps[2])
 	}
-	raw, _ := json.Marshal(r.ForUpload())
-	for _, s := range []string{"sess-1", "local/p", "detail", "lk-ref", "s3.example"} {
+	// The uploaded form reveals exactly these step summaries and nothing
+	// about the index: no agent names, counts, revision, or sizes.
+	u := r.ForUpload()
+	wantObserved := []string{
+		"2 object(s): manifest.age (the encrypted index); 1 snapshot(s) under snapshots/ named by opaque ids.",
+		"manifest.age (" + strconv.Itoa(len(get(t, store, "team/a/manifest.age"))) + " bytes): begins with the age v1 header (recipient X25519 (root key)); no plaintext field name appears anywhere in the body. " +
+			"snapshots/snap-1.age (" + strconv.Itoa(len(get(t, store, "team/a/snapshots/snap-1.age"))) + " bytes): begins with the age v1 header (recipient X25519 (root key)); no plaintext field name appears anywhere in the body.",
+		"manifest.age decrypted into a schema v1 index. snapshots/snap-1.age decrypted into a snapshot envelope whose payload sha256 matches the envelope.",
+		"Listing the reference locker was refused as unauthorized. Reading the probe object was refused as unauthorized.",
+	}
+	for i, want := range wantObserved {
+		if u.Steps[i].Observed != want {
+			t.Fatalf("upload step %d observed\n got %q\nwant %q", i+1, u.Steps[i].Observed, want)
+		}
+	}
+	raw, _ := json.Marshal(u)
+	for _, s := range []string{"sess-1", "local/p", "detail", "lk-ref", "s3.example", "claude", "session", "revision"} {
 		if bytes.Contains(raw, []byte(s)) {
 			t.Fatalf("upload carries %q: %s", s, raw)
 		}
+	}
+	if !r.IsolationChecked() || !strings.Contains(r.Summary(), "refused by a bucket that is not its own") {
+		t.Fatalf("summary %q", r.Summary())
 	}
 	var human bytes.Buffer
 	r.WriteHuman(&human)
@@ -183,5 +217,16 @@ func TestRunNotApplicable(t *testing.T) {
 	none := Run(context.Background(), Options{Backend: store, Keys: keys, Storage: StorageHop, ReferenceErr: hop.ErrNoReference})
 	if none.Outcome != Pass || none.Steps[3].Status != NotApplicable || !strings.Contains(none.Steps[3].Observed, "no reference locker") {
 		t.Fatalf("no reference %+v", none.Steps[3])
+	}
+	// A passing report whose isolation step did not run must not claim
+	// isolation in its summary.
+	for _, r := range []*Report{byo, none} {
+		var human bytes.Buffer
+		r.WriteHuman(&human)
+		if r.IsolationChecked() || !strings.Contains(human.String(), "OUTCOME: PASS. ") ||
+			!strings.Contains(human.String(), "was not checked (no reference locker)") ||
+			strings.Contains(human.String(), "refused by a bucket") {
+			t.Fatalf("summary claims more than observed:\n%s", human.String())
+		}
 	}
 }

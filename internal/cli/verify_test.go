@@ -107,7 +107,7 @@ func TestSyncVerifyJourneyHosted(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &pushed); err != nil || pushed.Verification.Outcome != "pass" || !pushed.Verification.Posted {
 		t.Fatalf("push output %q err=%v", out, err)
 	}
-	if !strings.Contains(errb, "First push from this device verified") {
+	if !strings.Contains(errb, "First push from this device verified") || !strings.Contains(errb, "refused by a bucket that is not its own") {
 		t.Fatalf("push stderr %q", errb)
 	}
 	if len(j.plane.reports) != 1 {
@@ -151,14 +151,15 @@ func TestSyncVerifyJourneyHosted(t *testing.T) {
 		"Step 2: Fetch an object and check it is ciphertext",
 		"begins with the age v1 header (recipient X25519 (root key)); no plaintext field name appears anywhere in the body",
 		"Step 3: Decrypt the object locally",
-		"manifest.age decrypted into the index: schema v1, revision ",
+		"manifest.age decrypted into a schema v1 index.",
+		"- index revision ",
 		"1 session(s) (claude 1)",
 		"index entry claude:session-locker -> snapshots/",
-		"decrypted into a claude snapshot envelope with 1 file",
-		"whose sha256 matches the envelope",
+		"decrypted into a snapshot envelope whose payload sha256 matches the envelope",
+		": agent claude, session session-locker, project ",
 		"Step 4: Prove this account's credentials are refused from another bucket",
 		"reference locker lk-0000000000000000000000refr at " + j.plane.s3.URL() + ", probe reference/probe.txt",
-		"Listing the reference locker was refused (access denied). Reading the probe object was refused (access denied).",
+		"Listing the reference locker was refused as unauthorized. Reading the probe object was refused as unauthorized.",
 		"Result:         PASS",
 		"OUTCOME: PASS.",
 		"Step results posted to the control plane",
@@ -302,8 +303,13 @@ func TestSyncVerifyJourneyReferenceReachable(t *testing.T) {
 func TestSyncVerifyJourneyNoReferenceLocker(t *testing.T) {
 	j, _ := hostedVerifyJourney(t)
 	j.plane.reference = nil
-	if _, errb, code := j.run("push", "--all"); code != ExitOK {
+	_, errb, code := j.run("push", "--all")
+	if code != ExitOK {
 		t.Fatalf("push exit=%d err=%q", code, errb)
+	}
+	// The push-hook sentence must not claim isolation that was not checked.
+	if !strings.Contains(errb, "First push from this device verified") || !strings.Contains(errb, "Isolation was not checked (no reference locker)") || strings.Contains(errb, "refused by a bucket") {
+		t.Fatalf("push stderr %q", errb)
 	}
 	out, _, code := j.run("sync", "verify", "--json", "--post=false")
 	if code != ExitOK {
@@ -313,6 +319,10 @@ func TestSyncVerifyJourneyNoReferenceLocker(t *testing.T) {
 	s := stepByID(t, v.Report, "isolation")
 	if s.Status != "not-applicable" || !strings.Contains(s.Observed, "no reference locker") || v.Report.Outcome != "pass" {
 		t.Fatalf("isolation %+v outcome %s", s, v.Report.Outcome)
+	}
+	human, _, code := j.run("sync", "verify", "--post=false")
+	if code != ExitOK || !strings.Contains(human, "OUTCOME: PASS. Everything in the locker is ciphertext sealed on this device and this device can open it. Whether the credentials reach other buckets was not checked (no reference locker)") || strings.Contains(human, "refused by a bucket") {
+		t.Fatalf("human summary claims isolation:\n%s", human)
 	}
 }
 
@@ -387,7 +397,7 @@ func TestSyncVerifyJourneyBYO(t *testing.T) {
 		"recipient scrypt (passphrase)",
 		"Result:         NOT APPLICABLE",
 		"Not applicable: BYO storage has no control plane and no reference locker",
-		"OUTCOME: PASS.",
+		"OUTCOME: PASS. Everything in the locker is ciphertext sealed on this device and this device can open it. Whether the credentials reach other buckets was not checked (no reference locker)",
 	} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("output missing %q:\n%s", want, out)

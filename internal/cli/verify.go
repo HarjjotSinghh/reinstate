@@ -170,7 +170,8 @@ func postVerification(cmd *cobra.Command, report *verify.Report) error {
 // verifyAfterFirstPush runs the verification once per device, after the
 // first push that uploaded something to a Hop locker, and posts the step
 // results. It never fails the push: a verification that cannot run or post
-// is reported on stderr and retried after the next push. The returned
+// is reported on stderr and retried after the next push that uploads
+// something. The returned
 // summary is added to the push's JSON output when the checks ran.
 func verifyAfterFirstPush(cmd *cobra.Command, eng *sync.Engine, cfg *schema.Config, home string, hosted *hop.Source) map[string]any {
 	if hosted == nil {
@@ -191,9 +192,12 @@ func verifyAfterFirstPush(cmd *cobra.Command, eng *sync.Engine, cfg *schema.Conf
 			PrintHuman(cmd.ErrOrStderr(), "note: could not record the verification: %v", err)
 		}
 	}
-	if report.Passed() {
-		PrintHuman(cmd.ErrOrStderr(), "First push from this device verified: the locker holds only ciphertext this device can open, and this account's credentials are refused elsewhere (rein sync verify shows the full report).")
-	} else {
+	switch {
+	case report.Passed() && report.IsolationChecked():
+		PrintHuman(cmd.ErrOrStderr(), "First push from this device verified: the locker holds only ciphertext this device can open, and this account's credentials are refused by a bucket that is not its own (rein sync verify shows the full report).")
+	case report.Passed():
+		PrintHuman(cmd.ErrOrStderr(), "First push from this device verified: the locker holds only ciphertext this device can open. Isolation was not checked (no reference locker) (rein sync verify shows the full report).")
+	default:
 		PrintHuman(cmd.ErrOrStderr(), "WARNING: the verification after the first push FAILED. Full report:")
 		report.WriteHuman(cmd.ErrOrStderr())
 	}

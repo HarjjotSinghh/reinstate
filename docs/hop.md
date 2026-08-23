@@ -208,15 +208,20 @@ repeated by hand with an S3 client ([object format](hop/object-format.md),
    age v1 header, the recipient type is named (X25519 for Hop, scrypt for
    BYO), and none of the plaintext field names occur anywhere in the body.
 3. **Decrypt it locally** with the key held on this device and show what it
-   contains (the index's sessions per agent; a snapshot's envelope and a
-   payload checksum that matches). Nothing leaves the machine.
+   contains. The index's revision, sessions per agent and entries, and a
+   snapshot's agent, session and payload size are printed as local detail
+   lines only; the step result that can be posted says just that the index
+   and a snapshot envelope decrypted and the payload checksum matches.
+   Nothing leaves the machine.
 4. **Prove isolation**: the control plane names its **reference locker**, a
    bucket the operator owns holding one probe object; the same credentials
-   are used to list it and read the probe, and both must be refused with
-   access denied.
+   are used to list it and read the probe, and both must be refused as
+   unauthorized (R2 answers `AccessDenied`).
 
 The report ends with `OUTCOME: PASS` or `OUTCOME: FAIL`; exit code `4` on
-any failed step. `--json` emits the report as data (see
+any failed step. The outcome sentence claims only what the steps observed:
+when step 4 is not applicable it says isolation was not checked instead of
+asserting it. `--json` emits the report as data (see
 `testdata/verify/byo-report.golden.json` under `internal/cli` for the
 shape). On a Hop profile the **step results only** — never object contents,
 session ids, or project paths — are posted to the control plane for the
@@ -227,7 +232,7 @@ The first successful push from each new device runs the same checks and
 posts the report once; a push's `--json` output then carries
 `verification: {outcome, posted}`. A verification that cannot run or post
 never fails the push; it is noted on stderr and retried after the next
-push. The [threat model](hop/threat-model.md) states what each step proves
+push that uploads something. The [threat model](hop/threat-model.md) states what each step proves
 and what the operator can and cannot see.
 
 ### Limits and refusals
@@ -369,7 +374,7 @@ passphrase, or session content. Sign-in is a device-authorization style flow:
 | 6 | `POST /v1/locker/credentials` (bearer) | `200 {access_key_id, secret_access_key, session_token, expires_at, endpoint, bucket, region}`, valid for at most an hour and scoped to the bucket. Refusals carry a `code`: `quota_storage` (403), `quota_devices` (403), `quota_push_rate` (429), `no_locker` (404), `storage_unavailable` (502). |
 | 7 | `POST /v1/locker/first-push` (bearer) | `200 {first, first_push_at}`; records the first push once. |
 | 8 | `GET /v1/verify/reference` (bearer) | `200 {endpoint, bucket, region, key}`: the operator's reference locker and its probe object, for `rein sync verify` step 4. `404 {code: "no_reference"}` when the control plane has none (the step is reported as not applicable). |
-| 9 | `POST /v1/verify-reports` (bearer) `{version: 1, generated_at, client_version, storage: "hop"\|"byo", outcome: "pass"\|"fail", steps: [{id, name, did, observed, status}]}` | `201 {id, received_at}`; stored per device for the console. Step results only; a body over 64 KB or with a verdict outside `pass`/`fail`/`not-applicable` is refused with 400. |
+| 9 | `POST /v1/verify-reports` (bearer) `{version: 1, generated_at, client_version, storage: "hop"\|"byo", outcome: "pass"\|"fail", steps: [{id, name, did, observed, status}]}` | `201 {id, received_at}`; stored per device for the console. Step results only; a body over 64 KB or with a verdict outside `pass`/`fail`/`not-applicable` is refused (400 for a bad field, 413 for an oversized body). |
 
 The CLI reads the locker with `GET /v1/locker` on every hosted command and
 only calls `POST /v1/locker` when the answer is `no_locker` (normally once,

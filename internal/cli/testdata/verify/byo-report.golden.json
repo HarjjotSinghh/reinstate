@@ -32,13 +32,14 @@
       },
       {
         "detail": [
+          "index revision <snapshot-id>, 1 session(s) (claude 1)",
           "index entry claude:session-locker -> snapshots/<snapshot-id>.age (updated <time>)",
-          "snapshots/<snapshot-id>.age: agent claude, session session-locker, project local/locker, created <time> on <platform>, file projects/<project-dir>/session-locker.jsonl"
+          "snapshots/<snapshot-id>.age: agent claude, session session-locker, project local/locker, created <time> on <platform>, 1 file(s), payload 2048 bytes, file projects/<project-dir>/session-locker.jsonl"
         ],
         "did": "Opened the same bytes on this device with the key held here (the root key for Hop, the passphrase for BYO storage) and read what they contain. Nothing was sent anywhere.",
         "id": "decrypt",
         "name": "Decrypt the object locally",
-        "observed": "manifest.age decrypted into the index: schema v1, revision <snapshot-id>, 1 session(s) (claude 1). snapshots/<snapshot-id>.age decrypted into a claude snapshot envelope with 1 file (<n> bytes) whose sha256 matches the envelope.",
+        "observed": "manifest.age decrypted into a schema v1 index. snapshots/<snapshot-id>.age decrypted into a snapshot envelope whose payload sha256 matches the envelope.",
         "status": "pass"
       },
       {
