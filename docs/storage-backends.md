@@ -22,6 +22,14 @@ export REINSTATE_S3_ACCESS_KEY_ID=...
 export REINSTATE_S3_SECRET_ACCESS_KEY=...
 ```
 
+Internally the backend reads keys through a `CredentialSource`. BYO storage
+uses the static source above. A source may instead return keys with an expiry
+(for example short-lived locker credentials); the backend refreshes them
+before they lapse and, if the endpoint rejects a key early, asks the source
+again and retries the request once. Conditional puts keep their semantics
+across a refresh: a `412 Precondition Failed` is reported as a precondition
+error, never mistaken for a credential problem.
+
 Remote layout:
 
 ```text
