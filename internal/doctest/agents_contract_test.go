@@ -556,58 +556,82 @@ var unevidencedPhrases = []string{
 	"code-complete claim",
 }
 
-// TestTierDocDoesNotCallAnEvidencedAgentPending pins the direction of drift
-// that nothing else catches.
+// unevidencedHit returns the first phrase in body that claims an agent's
+// journeys do not exist. Table rows are skipped: they carry tier letters, not
+// claims about evidence.
+func unevidencedHit(body string) string {
+	for _, para := range strings.Split(body, "\n\n") {
+		if strings.HasPrefix(strings.TrimSpace(para), "|") {
+			continue
+		}
+		lower := strings.ToLower(para)
+		for _, phrase := range unevidencedPhrases {
+			if strings.Contains(lower, phrase) {
+				return phrase
+			}
+		}
+	}
+	return ""
+}
+
+// TestDocsDoNotCallAnEvidencedAgentPending pins the direction of drift that
+// nothing else catches.
 //
 // Conformance already fails when a descriptor claims a tier it has no evidence
-// for. The reverse — evidence lands, the tier moves, and a prose paragraph
-// still tells the reader to treat it as unproven — is invisible to every gate
-// we have, because the tier table and the descriptor both read correctly. It
-// happened: Grok Build's paragraph called T4 "a code-complete claim whose
-// physical journeys are still outstanding" for three commits after all four of
-// its journey reports were merged and cited.
-func TestTierDocDoesNotCallAnEvidencedAgentPending(t *testing.T) {
+// for. The reverse — evidence lands, the tier moves, and prose still tells the
+// reader to treat it as unproven — is invisible to every gate we have, because
+// the tier table and the descriptor both read correctly and only the sentence
+// is stale. It happened twice for Grok Build, in two different files, from the
+// same promotion: the tier doc called T4 "a code-complete claim", and the
+// storage page said the journeys "have not been recorded on either platform".
+//
+// Both surfaces are checked, because fixing only the one that was noticed is
+// what left the second copy standing.
+func TestDocsDoNotCallAnEvidencedAgentPending(t *testing.T) {
 	t.Parallel()
 
-	const rel = "docs/agent-support-tiers.md"
 	evidenced := map[string]int{}
+	shared := map[string]int{}
 	for _, desc := range agents.All() {
+		if page := strings.TrimSpace(desc.Evidence.StoragePage); page != "" {
+			shared[page]++
+		}
 		if name := strings.TrimSpace(desc.DisplayName); name != "" && len(desc.Evidence.DeviceReports) > 0 {
 			evidenced[name] = len(desc.Evidence.DeviceReports)
 		}
 	}
 
-	// Paragraph scope, and within a paragraph the subject is the agent named
-	// first. Such a paragraph routinely cites other agents as the standard
-	// being fallen short of ("not as evidenced the way Claude Code is"), and
-	// blaming those turns a true failure into a misdirected one.
-	for _, para := range strings.Split(read(t, rel), "\n\n") {
-		if strings.HasPrefix(strings.TrimSpace(para), "|") {
-			continue // a table row, not a claim about evidence
-		}
-		lower := strings.ToLower(para)
-		hit := ""
-		for _, phrase := range unevidencedPhrases {
-			if strings.Contains(lower, phrase) {
-				hit = phrase
-				break
-			}
-		}
-		if hit == "" {
-			continue
-		}
+	// The shared tier doc names many agents, so the subject is the one named
+	// first. Such a paragraph routinely cites others as the standard being
+	// fallen short of ("not as evidenced the way Claude Code is"); blaming
+	// those turns a true failure into a misdirected one.
+	const tierDoc = "docs/agent-support-tiers.md"
+	body := read(t, tierDoc)
+	if hit := unevidencedHit(body); hit != "" {
 		subject, at := "", -1
 		for name := range evidenced {
-			if i := strings.Index(para, name); i >= 0 && (at < 0 || i < at) {
+			if i := strings.Index(body, name); i >= 0 && (at < 0 || i < at) {
 				subject, at = name, i
 			}
 		}
-		if subject == "" {
-			continue // the paragraph is about an agent with no evidence to contradict
+		if subject != "" {
+			t.Errorf("%s calls %s unevidenced (%q) but its descriptor cites %d device report(s)",
+				tierDoc, subject, hit, evidenced[subject])
 		}
-		t.Errorf(
-			"%s calls %s unevidenced (%q) but its descriptor cites %d device report(s)",
-			rel, subject, hit, evidenced[subject],
-		)
+	}
+
+	// A per-agent storage page has exactly one subject, so no attribution is
+	// needed. A page shared by several descriptors does, so it is skipped here
+	// rather than blamed on whichever agent sorts first.
+	for _, desc := range agents.All() {
+		page := strings.TrimSpace(desc.Evidence.StoragePage)
+		name := strings.TrimSpace(desc.DisplayName)
+		if page == "" || name == "" || len(desc.Evidence.DeviceReports) == 0 || shared[page] > 1 {
+			continue
+		}
+		if hit := unevidencedHit(read(t, page)); hit != "" {
+			t.Errorf("%s calls %s unevidenced (%q) but its descriptor cites %d device report(s)",
+				page, name, hit, len(desc.Evidence.DeviceReports))
+		}
 	}
 }
