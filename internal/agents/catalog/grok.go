@@ -128,6 +128,7 @@ func Grok() agents.Descriptor {
 			DeviceReports: []string{
 				"docs/testing/results/2026-08-22-macos-grok-t3.md",
 				"docs/testing/results/2026-08-22-windows-grok-t3.md",
+				"docs/testing/results/2026-08-23-windows-grok-t4.md",
 			},
 		},
 		NewIndexSource: groksrc.New,
