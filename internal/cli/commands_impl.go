@@ -6,10 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"time"
 
@@ -26,6 +28,7 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/crypto"
 	"github.com/HarjjotSinghh/reinstate/internal/fsx"
 	"github.com/HarjjotSinghh/reinstate/internal/hop"
+	"github.com/HarjjotSinghh/reinstate/internal/keyring"
 	"github.com/HarjjotSinghh/reinstate/internal/lock"
 	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/schema"
@@ -495,7 +498,7 @@ func engineFromConfig(cmd *cobra.Command, passphrase string) (*sync.Engine, *sch
 			return nil, nil, "", hostedError(hosted, err)
 		}
 	} else if hosted != nil {
-		return nil, nil, "", NewExitError(ExitConfig, "the hosted tier uses the root-key model; run rein account init on the first device (encryption.type must be "+schema.EncryptionRootKey+", not "+cfg.Encryption.Type+")")
+		return nil, nil, "", hostedError(hosted, hostedNotEnrolledError(context.Background(), cfg, b, enginePrefix))
 	} else {
 		if passphrase == "" {
 			secret, err := crypto.ReadPassphrase(cmd.InOrStdin(), cmd.ErrOrStderr())
@@ -522,6 +525,35 @@ func engineFromConfig(cmd *cobra.Command, passphrase string) (*sync.Engine, *sch
 		rememberHosted(cmd, hosted)
 	}
 	return eng, cfg, home, nil
+}
+
+// refusedRestoreMessage names the agent and session an adapter refused to
+// restore. On a fresh device the usual cause is a vendor that has not been
+// installed (or run) yet, so the message says which one to set up.
+func refusedRestoreMessage(agent, sessionID, refuse string) string {
+	msg := fmt.Sprintf("%s session %s: %s", agent, sessionID, refuse)
+	if strings.Contains(refuse, string(adapter.CompatibilityNotInstalled)) {
+		msg += fmt.Sprintf("; install and run %s once on this device so its session layout exists, then pull again", agent)
+	}
+	return msg
+}
+
+// hostedNotEnrolledError explains a hosted profile that still uses the
+// passphrase model. The right next step depends on the locker: a fresh
+// account enrols with `rein account init`; an account whose keyring already
+// exists (a wiped or additional device) recovers or joins, and must not be
+// told to create a second root key.
+func hostedNotEnrolledError(ctx context.Context, cfg *schema.Config, b backend.Backend, prefix string) error {
+	detail := " (encryption.type is " + cfg.Encryption.Type + ", the hosted tier uses " + schema.EncryptionRootKey + ")"
+	_, _, err := keyring.Load(ctx, b, keyring.ObjectKey(prefix))
+	switch {
+	case err == nil:
+		return NewExitError(ExitConfig, "this device is not enrolled in the account's keyring yet; run rein account recover with your recovery code, or rein account join and approve it from an enrolled device"+detail)
+	case errors.Is(err, keyring.ErrNotFound):
+		return NewExitError(ExitConfig, "the account has no root key yet; run rein account init on this first device"+detail)
+	default:
+		return NewExitError(ExitAuthStorage, err.Error())
+	}
 }
 
 // memoryBackendRoot is where the disk-backed "memory" backend keeps objects.
@@ -933,7 +965,18 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 			}
 			var plans []pullPlan
 			var pulled int
-			for _, s := range man.Sessions {
+			// Sessions restored so far are recorded even when a later one
+			// fails: otherwise the next pull finds a local copy it has no
+			// revision for and reports a conflict that never happened.
+			var restoredAny, stateSaved bool
+			defer func() {
+				if !dryRun && restoredAny && !stateSaved {
+					state.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+					_ = config.SaveState(home, state)
+				}
+			}()
+			for _, key := range slices.Sorted(maps.Keys(man.Sessions)) {
+				s := man.Sessions[key]
 				if agent != "" && s.Agent != agent {
 					continue
 				}
@@ -1004,7 +1047,7 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 					return err
 				}
 				if restorePlan.Refuse != "" {
-					return NewExitError(ExitCompatibility, restorePlan.Refuse)
+					return NewExitError(ExitCompatibility, refusedRestoreMessage(s.Agent, s.SessionID, restorePlan.Refuse))
 				}
 				plans = append(plans, pullPlan{
 					Agent: s.Agent, SessionID: s.SessionID, SnapshotID: s.SnapshotID,
@@ -1057,6 +1100,7 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 							LocalRevision: localHash, RemoteRevision: s.SnapshotID,
 							UpdatedAt: time.Now().UTC().Format(time.RFC3339),
 						}
+						restoredAny = true
 					}
 				}
 				pulled++
@@ -1070,6 +1114,7 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 				if err := config.SaveState(home, state); err != nil {
 					return err
 				}
+				stateSaved = true
 			}
 			if asJSON {
 				return WriteJSON(cmd.OutOrStdout(), map[string]any{

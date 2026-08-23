@@ -331,3 +331,18 @@ func TestCodexTransformLeavesPathLikeTranscriptContentUntouched(t *testing.T) {
 		t.Fatalf("path-like transcript prose was mutated: %s", out)
 	}
 }
+
+// TestDiscoverWithConfiguredRootAndNoSessionsDir covers a fresh device: a
+// configured CODEX_HOME that Codex has not populated yet discovers nothing
+// and does not fail the push or pull that asked.
+func TestDiscoverWithConfiguredRootAndNoSessionsDir(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "codex-not-run-yet")
+	t.Setenv("CODEX_HOME", root)
+	sessions, err := (&Adapter{}).Discover(context.Background(), adapter.DiscoverOptions{})
+	if err != nil {
+		t.Fatalf("discover with a missing sessions directory: %v", err)
+	}
+	if len(sessions) != 0 {
+		t.Fatalf("sessions = %v, want none", sessions)
+	}
+}

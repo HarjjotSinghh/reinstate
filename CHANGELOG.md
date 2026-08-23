@@ -77,6 +77,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   devices` lists the account's devices, whether each holds a wrap, and
   pending requests. `rein account recover` remains the no-other-device
   fallback. See `docs/hop.md`, "Adding a device".
+- The hosted first-push journey is covered end to end
+  (`TestHopFirstPushJourney`): sign in, `init --hop`, `account init`, push
+  Claude Code, Codex, and OpenCode sessions, wipe the device, sign in again,
+  `account recover` with the recovery code, pull, and verified resume of
+  each session; the first push is reported to the control plane exactly once
+  and sign-in to first push is measured against a two-minute budget. The
+  same journey runs against a real control plane and locker with
+  `go test -tags hopacceptance` when `HOP_STAGING_URL` is set together with
+  either `HOP_LOGIN_EMAIL` (two real `rein login --email` sign-ins, links
+  approved by hand) or two device tokens of one account in
+  `HOP_DEVICE_TOKEN` and `HOP_DEVICE_TOKEN_2`, and skips otherwise. See
+  `docs/hop.md`, "Your first push", and the lab record
+  `docs/testing/results/2026-08-24-first-push-acceptance-lab.md`.
+- The lab locker (`scripts/testing/fakelocker`) serves each bucket from its
+  own in-memory store, so two accounts sharing one running lab locker no
+  longer find each other's keyring.
+
+### Fixed
+
+- A hosted profile that is not enrolled yet no longer tells every device to
+  run `rein account init`: when the locker already holds a keyring the
+  message points at `rein account recover` or `rein account join`, and only
+  a locker without one is sent to `account init`.
+- `rein pull --all` that restores some sessions and is then refused on a
+  later one (an agent not installed on the device yet) now records the
+  sessions it restored, so the next pull continues instead of reporting a
+  conflict for copies it wrote itself; the refusal names the agent and
+  session and says to install and run that agent once. Pulls restore in a
+  stable order.
+- Claude Code with a configured `CLAUDE_CONFIG_DIR` whose `projects`
+  directory does not exist yet, and Codex with a configured `CODEX_HOME`
+  whose `sessions` directory does not exist yet (a fresh device before the
+  agent has run), are treated as having no sessions instead of failing every
+  push and pull with a stat error.
 
 - The S3-compatible backend can now obtain its keys from a credential source
   that expires and refreshes (`s3.CredentialSource`), the seam that lets a

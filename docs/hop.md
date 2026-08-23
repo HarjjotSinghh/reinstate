@@ -19,21 +19,76 @@ rein devices [--json]
 rein devices approve [--request ID]
 ```
 
-## From sign-in to the first push
+## Your first push
+
+Four commands take a machine from nothing to ciphertext in the locker; the
+whole run is meant to fit in under two minutes, most of it the browser tab.
 
 ```bash
 rein login                 # GitHub in the browser, or --email you@example.com
 rein init --hop            # profile for the locker; provisions it
 rein account init          # root key on this device; recovery code shown once
 rein push --all            # first push: credentials minted, ciphertext lands
-rein hop status            # bucket, location, usage, limits
+rein hop status            # bucket, location, usage, limits, first push time
 ```
+
+What each step leaves behind:
+
+- `rein login` stores a **device token** in the OS keyring and nothing else.
+  The control plane now knows this device; the locker does not exist yet.
+- `rein init --hop` writes the profile (the account is the profile, this
+  device is the device) and provisions the locker. No endpoint, bucket, or
+  key lands in `config.toml`.
+- `rein account init` generates the **root key** on this device, writes the
+  **keyring** to the locker with the first minted credential, and shows the
+  **recovery code** once. Write it down: the operator cannot recover the
+  locker for you.
+- `rein push --all` encrypts every session Reinstate can find (Claude Code,
+  Codex, OpenCode, and the other synced agents) under the root key and
+  uploads it. The first completed push is reported to the control plane
+  exactly once, so `rein hop status` shows a first-push time from then on; a
+  later push that has nothing to send reports nothing.
+
+### The same machine, wiped
+
+A reinstalled machine (or a new laptop standing in for one) gets its
+sessions back with the recovery code and nothing else:
+
+```bash
+rein login                 # a new device token
+rein init --hop            # the profile again; the locker already exists
+rein account recover       # enter the recovery code; this device joins the keyring
+rein pull --all            # sessions are decrypted into each agent's own layout
+rein resume claude:<id>    # verified resume, as before
+```
+
+Install and run each agent once before `rein pull`: Reinstate restores into
+the vendor's own layout and never invents it. A pull on a machine where an
+agent is still missing names that agent and stops; the sessions restored
+before it are kept and remembered, so the next pull carries on rather than
+reporting a conflict. A `rein push` or `rein pull` on a device that has not
+enrolled yet says so, and tells you whether this is the first device
+(`rein account init`) or an additional one (`rein account recover`, or
+`rein account join` approved from an enrolled device).
+
+### Adding a second machine instead
 
 A second machine runs `rein login`, `rein init --hop`, and
 `rein account join`; it shows a short code, you enter that code on the first
 machine with `rein devices approve`, and the second machine pulls. When no
 enrolled device is at hand, `rein account recover` with the recovery code is
 the fallback.
+
+The whole journey is exercised end to end by `TestHopFirstPushJourney`
+(`internal/cli`, against the in-process fake control plane and locker) and,
+with `-tags hopacceptance`, by `TestHopFirstPushJourneyStaging` against a
+real control plane named by `HOP_STAGING_URL`. That suite signs in twice
+(day one, and again after the wipe, as a new device), either with a real
+`rein login --email` for `HOP_LOGIN_EMAIL` whose links you approve within
+`HOP_LOGIN_TIMEOUT` (default 5m), or with two pre-issued tokens of one
+account in `HOP_DEVICE_TOKEN` and `HOP_DEVICE_TOKEN_2`; without those it
+skips. A run of both modes against `hopd` and the lab locker is recorded in
+`docs/testing/results/2026-08-24-first-push-acceptance-lab.md`.
 
 ## Adding a device (pairing)
 

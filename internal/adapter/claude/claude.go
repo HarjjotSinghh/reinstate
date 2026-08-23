@@ -146,6 +146,11 @@ func (a *Adapter) Discover(ctx context.Context, opts adapter.DiscoverOptions) ([
 	}
 	// layout: root/projects/<project>/session-*.jsonl or recursive *.jsonl under projects
 	projects := filepath.Join(inst.Root, "projects")
+	if _, statErr := os.Stat(projects); os.IsNotExist(statErr) {
+		// A configured CLAUDE_CONFIG_DIR on a fresh device has no projects
+		// directory until Claude Code runs; nothing to discover, not an error.
+		return nil, nil
+	}
 	err = filepath.Walk(projects, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err

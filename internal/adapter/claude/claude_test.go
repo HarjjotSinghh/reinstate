@@ -592,3 +592,18 @@ func TestClaudeTransformLeavesPathLikeTranscriptContentUntouched(t *testing.T) {
 		t.Fatalf("path-like transcript prose was mutated: %s", out)
 	}
 }
+
+// TestDiscoverWithConfiguredRootAndNoProjectsDir covers a fresh device: the
+// operator (or a lab) points CLAUDE_CONFIG_DIR at a directory Claude Code
+// has not populated yet. There is nothing to discover and no error.
+func TestDiscoverWithConfiguredRootAndNoProjectsDir(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "claude-not-run-yet")
+	t.Setenv("CLAUDE_CONFIG_DIR", root)
+	sessions, err := (&Adapter{}).Discover(context.Background(), adapter.DiscoverOptions{})
+	if err != nil {
+		t.Fatalf("discover with a missing projects directory: %v", err)
+	}
+	if len(sessions) != 0 {
+		t.Fatalf("sessions = %v, want none", sessions)
+	}
+}
