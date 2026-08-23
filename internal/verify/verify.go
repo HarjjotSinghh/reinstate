@@ -93,6 +93,10 @@ type Report struct {
 	// unopened describes, for Summary, the objects step 1 saw but steps
 	// 2–3 did not fetch. Set by Run; a decoded report has none.
 	unopened string
+	// checked names what step 2 actually fetched ("the index", "the
+	// newest snapshot"), so Summary claims only those objects. Set by
+	// Run; a decoded report has none.
+	checked []string
 }
 
 // LockerInfo names the bucket the checks ran against.
@@ -132,6 +136,11 @@ func (r *Report) ForUpload() Upload {
 
 // Passed reports whether every step passed or did not apply.
 func (r *Report) Passed() bool { return r.Outcome == Pass }
+
+// CheckedObjects names, as one phrase ("the index and the newest
+// snapshot"), the objects step 2 actually fetched, so sentences outside
+// the report claim only those. Empty for a report decoded from JSON.
+func (r *Report) CheckedObjects() string { return strings.Join(r.checked, " and ") }
 
 // Codec decrypts an envelope; it matches sync.EnvelopeCodec's read half so
 // the CLI can pass the engine's codec through.
@@ -192,6 +201,7 @@ func Run(ctx context.Context, o Options) *Report {
 	inv, akid := listStep(ctx, o, r)
 	r.unopened = describeUnopened(inv)
 	raw := ciphertextStep(ctx, o, r, inv)
+	r.checked = describeChecked(raw)
 	decryptStep(ctx, o, r, inv, raw)
 	isolationStep(ctx, o, r, akid)
 
@@ -224,6 +234,24 @@ func describeUnopened(inv *inventory) string {
 		return "No other object is in the locker."
 	}
 	return "Not opened and judged by name only: " + strings.Join(parts, ", ") + "."
+}
+
+// describeChecked names the objects step 2 fetched, in order, so the
+// summary never claims an object that was not fetched (a manifest-only
+// locker fetches only the index).
+func describeChecked(got []fetched) []string {
+	var names []string
+	for _, f := range got {
+		switch {
+		case f.name == manifestObject:
+			names = append(names, "the index")
+		case strings.HasPrefix(f.name, snapshotPrefix):
+			names = append(names, "the newest snapshot")
+		default:
+			names = append(names, f.name)
+		}
+	}
+	return names
 }
 
 // inventory is what the listing found.
@@ -544,6 +572,16 @@ func isolationStep(ctx context.Context, o Options, r *Report, lockerAKID string)
 	}
 	ref := *o.Reference
 	step.Detail = append(step.Detail, fmt.Sprintf("reference locker %s at %s, probe %s", ref.Bucket, ref.Endpoint, ref.Key))
+	// A refusal only proves bucket scope when it comes from the same
+	// storage endpoint that accepted the credentials in step 1. A control
+	// plane pointing this step at some other host — any host answers a
+	// foreign credential with 403 — would otherwise buy a passing report.
+	if o.Locker.Endpoint != "" && !sameEndpoint(o.Locker.Endpoint, ref.Endpoint) {
+		step.Status = Fail
+		step.Observed = fmt.Sprintf("The control plane pointed this step at %s, but step 1 listed this account's locker at %s. A refusal from a different endpoint proves nothing about this locker's credentials, so nothing about bucket scope was shown.", ref.Endpoint, o.Locker.Endpoint)
+		r.Steps = append(r.Steps, step)
+		return
+	}
 	b, akid, err := o.OpenReference(ctx, ref)
 	if err != nil {
 		step.Status = Fail
@@ -593,6 +631,17 @@ func isolationStep(ctx context.Context, o Options, r *Report, lockerAKID string)
 	}
 	step.Observed = strings.Join(observed, " ")
 	r.Steps = append(r.Steps, step)
+}
+
+// sameEndpoint compares two endpoint URLs ignoring the scheme and any
+// trailing slash, so https://host, http://host and https://host/ are the
+// same endpoint.
+func sameEndpoint(a, b string) bool { return trimEndpoint(a) == trimEndpoint(b) }
+
+func trimEndpoint(s string) string {
+	s = strings.TrimPrefix(s, "https://")
+	s = strings.TrimPrefix(s, "http://")
+	return strings.TrimRight(s, "/")
 }
 
 func orNone(s string) string {
@@ -658,7 +707,16 @@ func (r *Report) Summary() string {
 	if r.Outcome != Pass {
 		return "FAIL. At least one step did not hold; read the failed step above. If the locker is a Hop locker, this is worth reporting to security@reinstate.dev."
 	}
-	checked := "The objects checked (the index and the newest snapshot) are ciphertext this device can open."
+	names := r.checked
+	if len(names) == 0 {
+		// A report decoded from JSON carries no record of what step 2
+		// fetched; claim nothing more specific than "fetched".
+		names = []string{"the fetched objects"}
+	}
+	checked := fmt.Sprintf("The objects checked (%s) are ciphertext this device can open.", strings.Join(names, " and "))
+	if len(r.checked) == 1 {
+		checked = fmt.Sprintf("The object checked (%s) is ciphertext this device can open.", r.checked[0])
+	}
 	if r.unopened != "" {
 		checked += " " + r.unopened
 	}

@@ -214,6 +214,14 @@ func TestRunFailures(t *testing.T) {
 		{"reference unknown error", func(o *Options, _ *memory.Store) {
 			o.Reference, o.ReferenceErr = nil, errors.New("control plane down")
 		}, StepIsolation, "control plane down"},
+		// A control plane could point step 4 at any host it likes — every
+		// bucket answers a foreign credential with 403 — so a reference
+		// locker at a different endpoint than the one step 1 listed fails
+		// the step even though the probe is refused as access denied.
+		{"reference at a different endpoint", func(o *Options, _ *memory.Store) {
+			o.Locker.Endpoint = "https://locker.example"
+			o.Reference = &hop.Reference{Endpoint: "https://always-403.example", Bucket: "lk-ref", Key: "reference/probe.txt"}
+		}, StepIsolation, "pointed this step at https://always-403.example, but step 1 listed this account's locker at https://locker.example"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -263,6 +271,69 @@ func TestRunNotApplicable(t *testing.T) {
 			strings.Contains(human.String(), "refused by a bucket") {
 			t.Fatalf("summary claims more than observed:\n%s", human.String())
 		}
+	}
+}
+
+// TestIsolationEndpointMustMatchStepOne: the reference locker only proves
+// bucket scope when it lives at the endpoint step 1 actually listed;
+// scheme and trailing-slash differences are the same endpoint.
+func TestIsolationEndpointMustMatchStepOne(t *testing.T) {
+	keys := rootKeys(t)
+	tests := []struct {
+		name     string
+		locker   string
+		ref      string
+		status   Status
+		observed string
+	}{
+		{"same endpoint modulo scheme and slash", "http://s3.example/", "https://s3.example", Pass, "refused as access denied"},
+		{"different host", "https://s3.example", "https://always-403.example", Fail, "pointed this step at https://always-403.example, but step 1 listed this account's locker at https://s3.example"},
+		{"unknown locker endpoint is not compared", "", "https://always-403.example", Pass, "refused as access denied"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			store := lockerWith(t, keys, "")
+			r := Run(context.Background(), Options{Backend: store, Keys: keys, Storage: StorageHop,
+				Locker:        LockerInfo{Endpoint: tc.locker, Bucket: "lk-1"},
+				Reference:     &hop.Reference{Endpoint: tc.ref, Bucket: "lk-ref", Key: "reference/probe.txt"},
+				OpenReference: openRef(denied, "AKIAHOP1"), CredentialID: credential("AKIAHOP1")})
+			step := r.Steps[3]
+			if step.ID != StepIsolation || step.Status != tc.status || !strings.Contains(step.Observed, tc.observed) {
+				t.Fatalf("isolation step %+v; want %s containing %q", step, tc.status, tc.observed)
+			}
+			// The reference endpoint is on record either way, so a reader
+			// can see where the step was pointed.
+			if !strings.Contains(strings.Join(step.Detail, "\n"), "at "+tc.ref) {
+				t.Fatalf("detail does not record the endpoint: %+v", step.Detail)
+			}
+		})
+	}
+}
+
+// TestSummaryClaimsOnlyWhatWasFetched: a manifest-only locker fetched only
+// the index, and the outcome sentence must not name a snapshot it never
+// read.
+func TestSummaryClaimsOnlyWhatWasFetched(t *testing.T) {
+	keys := rootKeys(t)
+	store := memory.New()
+	man := schema.NewManifest("r1")
+	manRaw, _ := json.Marshal(man)
+	put(t, store, "manifest.age", seal(t, keys, manRaw))
+	r := Run(context.Background(), Options{Backend: store, Keys: keys, Storage: StorageHop,
+		Reference:     &hop.Reference{Endpoint: "e", Bucket: "lk-ref", Key: "reference/probe.txt"},
+		OpenReference: openRef(denied, "AKIAHOP1"), CredentialID: credential("AKIAHOP1")})
+	if !r.Passed() {
+		t.Fatalf("report %+v", r)
+	}
+	sum := r.Summary()
+	if !strings.Contains(sum, "The object checked (the index) is ciphertext this device can open.") {
+		t.Fatalf("summary does not name only the index: %q", sum)
+	}
+	if strings.Contains(sum, "newest snapshot") {
+		t.Fatalf("summary names a snapshot that was never fetched: %q", sum)
+	}
+	if got := r.CheckedObjects(); got != "the index" {
+		t.Fatalf("CheckedObjects() = %q", got)
 	}
 }
 

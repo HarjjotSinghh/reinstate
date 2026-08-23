@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -200,11 +201,20 @@ func verifyAfterFirstPush(cmd *cobra.Command, eng *sync.Engine, cfg *schema.Conf
 			PrintHuman(cmd.ErrOrStderr(), "note: could not record the verification: %v", err)
 		}
 	}
+	// The line claims only the objects the checks fetched: a manifest-only
+	// locker verified only the index.
+	checked, verb := report.CheckedObjects(), "are"
+	if checked == "" {
+		checked = "the fetched objects"
+	}
+	if !strings.Contains(checked, " and ") {
+		verb = "is"
+	}
 	switch {
 	case report.Passed() && report.IsolationChecked():
-		PrintHuman(cmd.ErrOrStderr(), "First push from this device verified: the index and newest snapshot fetched from the locker are ciphertext this device can open, and this account's credentials are refused by a bucket that is not its own (rein sync verify shows the full report).")
+		PrintHuman(cmd.ErrOrStderr(), "First push from this device verified: %s fetched from the locker %s ciphertext this device can open, and this account's credentials are refused by a bucket that is not its own (rein sync verify shows the full report).", checked, verb)
 	case report.Passed():
-		PrintHuman(cmd.ErrOrStderr(), "First push from this device verified: the index and newest snapshot fetched from the locker are ciphertext this device can open. Isolation was not checked (no reference locker) (rein sync verify shows the full report).")
+		PrintHuman(cmd.ErrOrStderr(), "First push from this device verified: %s fetched from the locker %s ciphertext this device can open. Isolation was not checked (no reference locker) (rein sync verify shows the full report).", checked, verb)
 	default:
 		PrintHuman(cmd.ErrOrStderr(), "WARNING: the verification after the first push FAILED. Full report:")
 		report.WriteHuman(cmd.ErrOrStderr())

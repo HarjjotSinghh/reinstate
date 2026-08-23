@@ -193,9 +193,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   holding one probe object) and shows that the same credentials are refused
   from it as access denied (a rejection of the credential itself, such as
   `InvalidAccessKeyId` or `ExpiredToken`, fails the step because it shows
-  nothing about scope; the access key id used in steps 1 and 4 is recorded
-  as local detail). The outcome sentence names only the fetched objects as
-  ciphertext and lists what was judged by name. Each step prints what was done, what was
+  nothing about scope, and so does a reference locker at a different
+  storage endpoint than the one step 1 listed — any host refuses a foreign
+  credential, so a refusal from elsewhere proves nothing; the access key
+  id used in steps 1 and 4 and the reference endpoint are recorded as
+  local detail). The outcome sentence names only the objects that were
+  actually fetched as ciphertext — the index, and the newest snapshot when
+  one exists — and lists what was judged by name. Each step prints what was done, what was
   seen, and PASS, FAIL, or NOT APPLICABLE; `--json` emits the report as
   data; exit `4` on any failed step. A tampered object fails: plaintext in
   place of ciphertext at step 2, a flipped byte at step 3. BYO storage runs

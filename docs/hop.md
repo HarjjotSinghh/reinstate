@@ -223,14 +223,19 @@ repeated by hand with an S3 client ([object format](hop/object-format.md),
    (`InvalidAccessKeyId`, `SignatureDoesNotMatch`, `ExpiredToken`,
    `InvalidToken`) is what every bucket answers a dead credential, so it
    proves nothing about scope and **fails** the step, as does a credential
-   that changed between step 1 and step 4. The step's local detail names
-   the access key id so the report shows the credential the locker
-   accepted is the one the reference refused.
+   that changed between step 1 and step 4, and so does a reference locker
+   at a **different storage endpoint** than the one step 1 listed (any
+   host answers a foreign credential with 403, so a refusal from
+   elsewhere shows nothing; scheme and trailing-slash differences are the
+   same endpoint). The step's local detail names the access key id and
+   the reference endpoint so the report shows the credential the locker
+   accepted is the one the reference refused, and where.
 
 The report ends with `OUTCOME: PASS` or `OUTCOME: FAIL`; exit code `4` on
 any failed step. The outcome sentence claims only what the steps observed:
-it calls ciphertext only the objects that were fetched (the index and the
-newest snapshot), names what was judged by name only (older snapshots, the
+it calls ciphertext only the objects that were actually fetched — the
+index, and the newest snapshot when one exists (a manifest-only locker
+verifies only the index) — names what was judged by name only (older snapshots, the
 keyring, anything unrecognised), says nothing about which device sealed
 them, and when step 4 is not applicable it says isolation was not checked
 instead of asserting it. `--json` emits the report as data (see

@@ -119,7 +119,7 @@ func TestSyncVerifyJourneyHosted(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &pushed); err != nil || pushed.Verification.Outcome != "pass" || !pushed.Verification.Posted {
 		t.Fatalf("push output %q err=%v", out, err)
 	}
-	if !strings.Contains(errb, "First push from this device verified: the index and newest snapshot fetched from the locker are ciphertext this device can open, and this account's credentials are refused by a bucket that is not its own") {
+	if !strings.Contains(errb, "First push from this device verified: the index and the newest snapshot fetched from the locker are ciphertext this device can open, and this account's credentials are refused by a bucket that is not its own") {
 		t.Fatalf("push stderr %q", errb)
 	}
 	if len(j.plane.reports) != 1 {
