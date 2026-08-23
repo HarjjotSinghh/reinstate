@@ -1,0 +1,55 @@
+{
+  "posted": false,
+  "report": {
+    "client_version": "reinstate <version>",
+    "generated_at": "2026-08-23T12:10:00Z",
+    "locker": {
+      "bucket": "memory:<home>/cache/memory-backend",
+      "prefix": "team/a"
+    },
+    "outcome": "pass",
+    "steps": [
+      {
+        "detail": [
+          "snapshots/<snapshot-id>.age"
+        ],
+        "did": "Asked the storage endpoint for every object under this account's prefix, signed with the credentials this device uses to push.",
+        "id": "list",
+        "name": "List the locker with this device's credentials",
+        "observed": "2 object(s): manifest.age (the encrypted index); 1 snapshot(s) under snapshots/ named by opaque ids.",
+        "status": "pass"
+      },
+      {
+        "detail": [
+          "manifest.age first line: age-encryption.org/v1",
+          "snapshots/<snapshot-id>.age first line: age-encryption.org/v1"
+        ],
+        "did": "Downloaded the index object (and one snapshot, when any exists) and looked at the raw bytes for the age encryption header and for any field name that appears in the plaintext.",
+        "id": "ciphertext",
+        "name": "Fetch an object and check it is ciphertext",
+        "observed": "manifest.age (<n> bytes): begins with the age v1 header (recipient scrypt (passphrase)); no plaintext field name appears anywhere in the body. snapshots/<snapshot-id>.age (<n> bytes): begins with the age v1 header (recipient scrypt (passphrase)); no plaintext field name appears anywhere in the body.",
+        "status": "pass"
+      },
+      {
+        "detail": [
+          "index entry claude:session-locker -> snapshots/<snapshot-id>.age (updated <time>)",
+          "snapshots/<snapshot-id>.age: agent claude, session session-locker, project local/locker, created <time> on <platform>, file projects/<project-dir>/session-locker.jsonl"
+        ],
+        "did": "Opened the same bytes on this device with the key held here (the root key for Hop, the passphrase for BYO storage) and read what they contain. Nothing was sent anywhere.",
+        "id": "decrypt",
+        "name": "Decrypt the object locally",
+        "observed": "manifest.age decrypted into the index: schema v1, revision <snapshot-id>, 1 session(s) (claude 1). snapshots/<snapshot-id>.age decrypted into a claude snapshot envelope with 1 file (<n> bytes) whose sha256 matches the envelope.",
+        "status": "pass"
+      },
+      {
+        "did": "Asked the control plane for its reference locker (a bucket the operator owns, holding one probe object), then tried to list it and read the probe with the same credentials that just listed this account's locker.",
+        "id": "isolation",
+        "name": "Prove this account's credentials are refused from another bucket",
+        "observed": "Not applicable: BYO storage has no control plane and no reference locker. Whether your credentials reach other buckets is decided by your own bucket policy.",
+        "status": "not-applicable"
+      }
+    ],
+    "storage": "byo",
+    "version": 1
+  }
+}

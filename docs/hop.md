@@ -17,6 +17,7 @@ rein hop status [--json]
 rein account join
 rein devices [--json]
 rein devices approve [--request ID]
+rein sync verify [--json] [--post=false]
 rein sync migrate --to byo [--endpoint URL --bucket NAME] [--switch] [--forget-hop]
 ```
 
@@ -31,6 +32,7 @@ rein init --hop            # profile for the locker; provisions it
 rein account init          # root key on this device; recovery code shown once
 rein push --all            # first push: credentials minted, ciphertext lands
 rein hop status            # bucket, location, usage, limits, first push time
+rein sync verify           # the verification report, any time
 ```
 
 What each step leaves behind:
@@ -187,7 +189,46 @@ or `oc`. Later devices' hints do not move an existing locker.
 
 After the first completed push the client tells the control plane once, so
 the `first_push` event is counted from a push that finished rather than
-guessed from bucket size.
+guessed from bucket size. The same first push is followed, once per device,
+by the verification below.
+
+## Verifying the claim (`rein sync verify`)
+
+The claim is that the locker holds only ciphertext sealed on your devices,
+that your devices can open it, and that your account's credentials reach
+your locker and nothing else. `rein sync verify` checks all of it and
+prints a **verification report** written for a non-expert: each step says
+what was done, what was seen, and PASS or FAIL, and every step can be
+repeated by hand with an S3 client ([object format](hop/object-format.md),
+"Reproducing the checks by hand").
+
+1. **List the locker** with the credentials this device pushes with; shows
+   `manifest.age`, `keyring.v1.json`, and the snapshots by their opaque ids.
+2. **Fetch an object and check it is ciphertext**: the bytes begin with the
+   age v1 header, the recipient type is named (X25519 for Hop, scrypt for
+   BYO), and none of the plaintext field names occur anywhere in the body.
+3. **Decrypt it locally** with the key held on this device and show what it
+   contains (the index's sessions per agent; a snapshot's envelope and a
+   payload checksum that matches). Nothing leaves the machine.
+4. **Prove isolation**: the control plane names its **reference locker**, a
+   bucket the operator owns holding one probe object; the same credentials
+   are used to list it and read the probe, and both must be refused with
+   access denied.
+
+The report ends with `OUTCOME: PASS` or `OUTCOME: FAIL`; exit code `4` on
+any failed step. `--json` emits the report as data (see
+`testdata/verify/byo-report.golden.json` under `internal/cli` for the
+shape). On a Hop profile the **step results only** — never object contents,
+session ids, or project paths — are posted to the control plane for the
+account console; `--post=false` keeps them local. BYO storage runs steps
+1–3 and reports step 4 as not applicable.
+
+The first successful push from each new device runs the same checks and
+posts the report once; a push's `--json` output then carries
+`verification: {outcome, posted}`. A verification that cannot run or post
+never fails the push; it is noted on stderr and retried after the next
+push. The [threat model](hop/threat-model.md) states what each step proves
+and what the operator can and cannot see.
 
 ### Limits and refusals
 
@@ -327,6 +368,8 @@ passphrase, or session content. Sign-in is a device-authorization style flow:
 | 5 | `POST /v1/locker` (bearer) | Idempotent provisioning: `200 {endpoint, bucket, region, prefix, location_hint, plan, created_at, first_push_at?, devices, usage: {bytes, objects, observed_at}, quota: {storage_bytes, devices, mints_per_hour}}`. `GET /v1/locker` returns the same without provisioning (`404 {code: "no_locker"}` before the first `POST`). |
 | 6 | `POST /v1/locker/credentials` (bearer) | `200 {access_key_id, secret_access_key, session_token, expires_at, endpoint, bucket, region}`, valid for at most an hour and scoped to the bucket. Refusals carry a `code`: `quota_storage` (403), `quota_devices` (403), `quota_push_rate` (429), `no_locker` (404), `storage_unavailable` (502). |
 | 7 | `POST /v1/locker/first-push` (bearer) | `200 {first, first_push_at}`; records the first push once. |
+| 8 | `GET /v1/verify/reference` (bearer) | `200 {endpoint, bucket, region, key}`: the operator's reference locker and its probe object, for `rein sync verify` step 4. `404 {code: "no_reference"}` when the control plane has none (the step is reported as not applicable). |
+| 9 | `POST /v1/verify-reports` (bearer) `{version: 1, generated_at, client_version, storage: "hop"\|"byo", outcome: "pass"\|"fail", steps: [{id, name, did, observed, status}]}` | `201 {id, received_at}`; stored per device for the console. Step results only; a body over 64 KB or with a verdict outside `pass`/`fail`/`not-applicable` is refused with 400. |
 
 The CLI reads the locker with `GET /v1/locker` on every hosted command and
 only calls `POST /v1/locker` when the answer is `no_locker` (normally once,
@@ -341,8 +384,9 @@ state, so do not enrol more devices than the plan allows.
 Device tokens are 256-bit random values prefixed `hop_`. The control plane
 stores only a hash, bound to one device record (name, platform, location
 hint, created, last seen). The CLI sends no telemetry; the control plane
-records `sign_up`, `device_enrolled`, `locker_provisioned`, and `first_push`
-events as its only product metrics.
+records `sign_up`, `device_enrolled`, `locker_provisioned`, `first_push`,
+`pairing_requested`, `pairing_approved`, `trial_started`, and
+`verify_reported` events as its only product metrics.
 
 ## Leaving Hop
 

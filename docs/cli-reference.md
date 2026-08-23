@@ -70,6 +70,7 @@ rein daemon install|start|stop|uninstall
 rein daemon status [--json]
 rein list [--agent claude|codex|all] [--json]
 rein status [--json]
+rein sync verify [--json] [--post=false]
 rein diff [--json]
 rein push [--agent ...] [--session ...|--all] [--dry-run] [--json]
 rein pull [--agent ...] [--session ...|--all] [--dry-run] [--json]
@@ -126,6 +127,33 @@ pending approvals. It needs the root-key model (`rein account init`, which
 works on BYO storage too). See [docs/hop.md](hop.md#the-daemon). Exit `4`
 when a hosted daemon's device is not signed in; `3` when the home is not
 configured for the root-key model.
+
+### `rein sync verify`
+
+Runs the checks behind the zero-knowledge claim against the configured
+storage and prints a verification report a non-expert can read and repeat
+step by step: list the store with this device's credentials; fetch an
+object and show it is ciphertext (age v1 header, recipient type, no
+plaintext field names in the body); decrypt it locally and show what it
+contains (the index, a snapshot's envelope and verified payload checksum);
+and, on a Hop locker, show that the same credentials are refused (access
+denied) from the control plane's reference locker. Each step prints what
+was done, what was seen, and PASS, FAIL, or NOT APPLICABLE, followed by
+`OUTCOME: PASS` or `OUTCOME: FAIL`.
+
+`--json` emits the report (`report.steps[].{id,name,did,observed,status,
+detail}`, `report.outcome`, `report.storage`, `report.locker`) plus
+`posted`. On a Hop profile the step results (never object contents,
+session ids, or project paths) are posted to the control plane for the
+account console; `--post=false` keeps them local. BYO storage runs the
+first three steps and reports the fourth as not applicable. Exit `0` when
+every step passed or did not apply, `4` (safety) when a step failed, and
+the usual storage or sign-in codes when the store cannot be opened.
+
+The same checks run automatically, once per device, after the first push
+that uploaded something to a Hop locker; `rein push --json` then carries
+`verification: {outcome, posted}`. See [hop.md](hop.md) and the
+[threat model](hop/threat-model.md).
 
 ### `rein init`
 

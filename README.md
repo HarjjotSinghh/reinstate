@@ -433,7 +433,8 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 | [Adapters](docs/adapters.md) | Per-agent layouts & support matrix |
 | [Universal configuration](docs/universal-configuration.md) | Planned MCP/skills/loops/plugins/settings portability |
 | [Security model](docs/security-model.md) | Threat model & defaults |
-| [Reinstate Hop](docs/hop.md) | Hosted-tier sign-in (`rein login`, `rein whoami`), the locker, device approval, leaving for your own bucket (`rein sync migrate --to byo`), and the public protocol |
+| [Reinstate Hop](docs/hop.md) | Hosted-tier sign-in (`rein login`, `rein whoami`), the locker, device approval, `rein sync verify`, leaving for your own bucket (`rein sync migrate --to byo`), and the public protocol |
+| [Locker object format](docs/hop/object-format.md) and [threat model](docs/hop/threat-model.md) | What is written to storage, byte by byte; what the operator can and cannot see; how `rein sync verify` checks each claim |
 | [Comparison](docs/comparison.md) | vs native sync, claude-sync, DIY |
 | [FAQ](docs/faq.md) | Common questions |
 | [Troubleshooting](docs/troubleshooting.md) | Path remap, conflicts, large histories |

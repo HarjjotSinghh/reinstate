@@ -131,6 +131,18 @@ func (f *Fake) handle(w http.ResponseWriter, r *http.Request) {
 	if m := credentialRe.FindStringSubmatch(r.Header.Get("Authorization")); m != nil {
 		akid = m[1]
 	}
+	if !f.AnyBucket {
+		// A request for any other bucket is refused the way R2 refuses a
+		// credential scoped to one bucket: AccessDenied, never a listing
+		// and never NoSuchBucket. This is what rein sync verify relies on
+		// when it probes the reference locker. Mu is already held here.
+		if p := r.URL.EscapedPath(); p != "/"+f.Bucket && !strings.HasPrefix(p, "/"+f.Bucket+"/") {
+			f.Requests = append(f.Requests, r.Method+" "+strings.TrimPrefix(p, "/")+" as "+akid+" (foreign bucket)")
+			f.Mu.Unlock()
+			writeS3Error(w, http.StatusForbidden, "AccessDenied", "Access Denied")
+			return
+		}
+	}
 	f.Requests = append(f.Requests, r.Method+" "+key+" as "+akid)
 	if f.Hook != nil {
 		f.Hook(len(f.Requests))

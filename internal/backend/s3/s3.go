@@ -150,6 +150,21 @@ func credentialRejected(err error) bool {
 	return false
 }
 
+// CurrentCredentials returns the credential set the client is signing with
+// right now, fetching one from the source if none is cached. It is how
+// rein sync verify probes the reference locker with exactly the credential
+// the locker accepted, without minting another.
+func (c *Client) CurrentCredentials(ctx context.Context) (Credentials, error) {
+	if c.creds == nil {
+		return Credentials{}, errors.New("s3: client uses the SDK default credential chain")
+	}
+	v, err := c.creds.Retrieve(ctx)
+	if err != nil {
+		return Credentials{}, err
+	}
+	return Credentials{AccessKeyID: v.AccessKeyID, SecretAccessKey: v.SecretAccessKey, SessionToken: v.SessionToken, Expires: v.Expires}, nil
+}
+
 func (c *Client) key(k string) string {
 	k = strings.TrimPrefix(k, "/")
 	if c.prefix == "" {

@@ -48,6 +48,11 @@ type fakeControlPlane struct {
 	// Pairing relays (see pairing_fake_test.go).
 	pairings   map[string]*fakePairing
 	pairingSeq int
+
+	// Verification (see verify_fake_test.go): the reference locker the
+	// plane advertises (nil = none) and every report posted, in order.
+	reference *fakeReference
+	reports   []fakeReport
 }
 
 type fakeLocker struct {
@@ -75,6 +80,7 @@ func newFakeControlPlane(t *testing.T) *fakeControlPlane {
 	mux.HandleFunc("POST /v1/locker/credentials", f.mintCredentials)
 	mux.HandleFunc("POST /v1/locker/first-push", f.firstPush)
 	f.registerPairing(mux)
+	f.registerVerify(mux)
 	mux.HandleFunc("GET /login/github/{link}", func(w http.ResponseWriter, r *http.Request) {
 		f.approveLink(w, r.PathValue("link"), "github")
 	})
