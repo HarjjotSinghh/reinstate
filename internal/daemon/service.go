@@ -155,7 +155,8 @@ func writeDefinition(path string, content []byte) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(path, content, 0o644)
+	// Owner-only: the definition carries the service environment.
+	return os.WriteFile(path, content, 0o600)
 }
 
 // ---------- launchd (macOS) ----------
