@@ -10,8 +10,11 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
+
+	"github.com/HarjjotSinghh/reinstate/internal/config"
 
 	"github.com/HarjjotSinghh/reinstate/internal/preflight"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
@@ -20,6 +23,16 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/tui/switcher"
 	"github.com/HarjjotSinghh/reinstate/internal/ui"
 )
+
+// switcherDaemonLine is the daemon summary for the switcher's status line,
+// read from the status file the daemon writes; empty when none has run.
+func switcherDaemonLine() string {
+	home, err := config.Home()
+	if err != nil {
+		return ""
+	}
+	return daemonSummaryLine(home, time.Now())
+}
 
 // runInteractiveSwitcher opens the full-screen session switcher and then
 // performs whatever the user chose.
@@ -54,6 +67,7 @@ func runInteractiveSwitcher(
 		ProjectLabel: scope.label,
 		Limit:        sessionindex.DefaultLimit,
 		Clipboard:    tui.OSC52Clipboard(cmd.OutOrStdout()),
+		Daemon:       switcherDaemonLine(),
 	})
 
 	intent, err := tui.Run(cmd.Context(), model, tui.RunOptions{

@@ -932,7 +932,7 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 				ForkedSessionID string `json:"forked_session_id,omitempty"`
 			}
 			var plans []pullPlan
-			var pulled int
+			var pulled, skipped int
 			for _, s := range man.Sessions {
 				if agent != "" && s.Agent != agent {
 					continue
@@ -956,6 +956,19 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 						return hashErr
 					}
 					prior, known := state.Sessions[key]
+					if session == "" && known && prior.RemoteRevision == s.SnapshotID && prior.LocalRevision != "" {
+						// pull --all asks for what is newer remotely. This
+						// snapshot is the one this device last synced, so
+						// there is nothing newer to restore, and a local
+						// edit since then belongs to the next push, not to
+						// a conflict. Restoring anyway would rewrite and
+						// back up an identical file on every pull, which
+						// the daemon runs every few minutes. An explicit
+						// --session still restores (and still records a
+						// conflict when the local copy diverged).
+						skipped++
+						continue
+					}
 					if !known || prior.LocalRevision == "" || localHash != prior.LocalRevision {
 						conflict := sync.Conflict{
 							Agent: s.Agent, SessionID: s.SessionID, ProjectID: s.ProjectID,
@@ -1073,13 +1086,13 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 			}
 			if asJSON {
 				return WriteJSON(cmd.OutOrStdout(), map[string]any{
-					"pulled": pulled, "dry_run": dryRun, "plans": plans,
+					"pulled": pulled, "skipped": skipped, "dry_run": dryRun, "plans": plans,
 				})
 			}
 			if dryRun {
-				PrintHuman(cmd.OutOrStdout(), "would pull %d snapshot(s), dry_run=true", pulled)
+				PrintHuman(cmd.OutOrStdout(), "would pull %d snapshot(s), would skip %d already synced, dry_run=true", pulled, skipped)
 			} else {
-				PrintHuman(cmd.OutOrStdout(), "pulled %d snapshot(s), dry_run=false", pulled)
+				PrintHuman(cmd.OutOrStdout(), "pulled %d snapshot(s), skipped %d already synced, dry_run=false", pulled, skipped)
 			}
 			for _, plan := range plans {
 				PrintHuman(cmd.OutOrStdout(), "  %s:%s -> %s (backups: %s)",

@@ -116,6 +116,10 @@ type Options struct {
 	Limit int
 	// Clipboard copies a session reference. nil disables the copy action.
 	Clipboard tui.ClipboardFunc
+	// Daemon is the one-line daemon summary (state, last push and pull,
+	// devices, pending approvals) shown on the status line while no
+	// transient message is up. Empty when no daemon has run.
+	Daemon string
 }
 
 // Model is the switcher's Bubble Tea model.
@@ -148,6 +152,7 @@ type Model struct {
 	filter  string
 	mode    mode
 	status  string
+	daemon  string
 	loadErr error
 	palette *palette.Model
 
@@ -196,6 +201,7 @@ func New(opts Options) *Model {
 		loader:       opts.Loader,
 		readiness:    provider,
 		clipboard:    opts.Clipboard,
+		daemon:       strings.TrimSpace(opts.Daemon),
 		now:          now,
 		limit:        limit,
 		project:      strings.TrimSpace(opts.Project),

@@ -67,6 +67,11 @@ type runOptions struct {
 	pairingPrompt func(string) ([]byte, error)
 	stdout        *syncBuffer
 	stderr        *syncBuffer
+	// daemon carries the rein daemon seams (clock, events, notifier).
+	daemon daemonSeams
+	// ctx, when set, is the command's context (the daemon journey cancels
+	// it to stop the loop).
+	ctx context.Context
 }
 
 func newPairDevice(t *testing.T, plane *fakeControlPlane, name string) *pairDevice {
@@ -91,6 +96,7 @@ func (d *pairDevice) execute(ro runOptions, args ...string) int {
 	}
 	return Execute(Options{
 		Name: "rein", Stdout: ro.stdout, Stderr: ro.stderr, Args: args,
+		Context: ro.ctx, Daemon: ro.daemon,
 		AgentProcessChecker: func(_ context.Context, _ string, _ processcheck.Target) (bool, bool, error) { return false, true, nil },
 		DeviceTokenStore:    d.tokens,
 		DeviceSecrets:       d.secrets,
