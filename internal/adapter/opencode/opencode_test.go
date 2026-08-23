@@ -88,7 +88,7 @@ const (
 
 func TestDetect(t *testing.T) {
 	root := hydrateStore(t, macosSeed)
-	a := &Adapter{Root: root, Home: "/Users/fixture-user"}
+	a := &Adapter{Root: root, Home: "/Users/fixture-user", GOOS: "darwin"}
 	inst, compat, err := a.Detect(context.Background())
 	if err != nil || compat != adapter.CompatibilitySupported {
 		t.Fatalf("detect = %+v %s %v", inst, compat, err)
@@ -106,7 +106,7 @@ func TestDetect(t *testing.T) {
 
 func TestDiscover(t *testing.T) {
 	root := hydrateStore(t, macosSeed)
-	a := &Adapter{Root: root, Home: "/Users/fixture-user"}
+	a := &Adapter{Root: root, Home: "/Users/fixture-user", GOOS: "darwin"}
 	sessions, err := a.Discover(context.Background(), adapter.DiscoverOptions{})
 	if err != nil {
 		t.Fatal(err)
@@ -165,7 +165,7 @@ func exportOne(t *testing.T, a *Adapter, id string) []byte {
 
 func TestExportRestoreRoundTrip(t *testing.T) {
 	srcRoot := hydrateStore(t, macosSeed)
-	src := &Adapter{Root: srcRoot, Home: "/Users/fixture-user"}
+	src := &Adapter{Root: srcRoot, Home: "/Users/fixture-user", GOOS: "darwin"}
 	archive := exportOne(t, src, "ses_fixture001")
 
 	// The portable document must not carry the credential token.
@@ -181,7 +181,7 @@ func TestExportRestoreRoundTrip(t *testing.T) {
 	}
 
 	destRoot := schemaOnlyStore(t, macosSeed)
-	dest := &Adapter{Root: destRoot, Home: "/Users/other-user"}
+	dest := &Adapter{Root: destRoot, Home: "/Users/other-user", GOOS: "darwin"}
 	restore(t, dest, "sessions/ses_fixture001.json", "ses_fixture001", "", archive)
 
 	got, err := dest.readSessionDocument(context.Background(), filepath.Join(destRoot, DatabaseName), "ses_fixture001")
@@ -282,12 +282,12 @@ func storedMessageData(t *testing.T, root, id string) string {
 
 func TestForkKeepBoth(t *testing.T) {
 	srcRoot := hydrateStore(t, macosSeed)
-	src := &Adapter{Root: srcRoot, Home: "/Users/fixture-user"}
+	src := &Adapter{Root: srcRoot, Home: "/Users/fixture-user", GOOS: "darwin"}
 	archive := exportOne(t, src, "ses_fixture001")
 
 	// Destination already holds the original session; a fork must land beside it.
 	destRoot := hydrateStore(t, macosSeed)
-	dest := &Adapter{Root: destRoot, Home: "/Users/fixture-user"}
+	dest := &Adapter{Root: destRoot, Home: "/Users/fixture-user", GOOS: "darwin"}
 	restore(t, dest, "sessions/ses_fixture001.json", "ses_fixture001", "ses_fork0001", archive)
 
 	db, err := sql.Open("sqlite", "file:"+filepath.ToSlash(filepath.Join(destRoot, DatabaseName)))
@@ -422,7 +422,7 @@ func TestRestoreRefusesEmptyOrMismatchedSessionID(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			destRoot := schemaOnlyStore(t, macosSeed)
-			dest := &Adapter{Root: destRoot, Home: "/Users/fixture-user"}
+			dest := &Adapter{Root: destRoot, Home: "/Users/fixture-user", GOOS: "darwin"}
 			var buf bytes.Buffer
 			body := fmt.Sprintf(`{"schema":%q,"session":{"id":%q,"project_id":"","slug":"s","directory":"/tmp","title":"t","version":"1","time_created":1,"time_updated":1},"messages":[],"parts":[]}`, exportSchema, tc.docID)
 			writeTarEntry(t, &buf, "sessions/x.json", []byte(body))
@@ -456,10 +456,10 @@ func TestRestoreRefusesEmptyOrMismatchedSessionID(t *testing.T) {
 
 func TestForkIsIdempotent(t *testing.T) {
 	srcRoot := hydrateStore(t, macosSeed)
-	src := &Adapter{Root: srcRoot, Home: "/Users/fixture-user"}
+	src := &Adapter{Root: srcRoot, Home: "/Users/fixture-user", GOOS: "darwin"}
 	archive := exportOne(t, src, "ses_fixture001")
 	destRoot := hydrateStore(t, macosSeed)
-	dest := &Adapter{Root: destRoot, Home: "/Users/fixture-user"}
+	dest := &Adapter{Root: destRoot, Home: "/Users/fixture-user", GOOS: "darwin"}
 	restore(t, dest, "sessions/ses_fixture001.json", "ses_fixture001", "ses_fork0001", archive)
 	restore(t, dest, "sessions/ses_fixture001.json", "ses_fixture001", "ses_fork0001", archive)
 
@@ -509,7 +509,7 @@ func TestSessionRevisionStableAndDeviceIndependent(t *testing.T) {
 // own project-row timestamps; otherwise every pull would look like a local edit.
 func TestSessionRevisionIgnoresDestinationProjectTimes(t *testing.T) {
 	srcRoot := hydrateStore(t, macosSeed)
-	src := &Adapter{Root: srcRoot, Home: "/Users/fixture-user"}
+	src := &Adapter{Root: srcRoot, Home: "/Users/fixture-user", GOOS: "darwin"}
 	archive := exportOne(t, src, "ses_fixture001")
 	srcRev, err := src.SessionRevision(context.Background(), adapter.Session{ID: "ses_fixture001"})
 	if err != nil {
@@ -525,7 +525,7 @@ func TestSessionRevisionIgnoresDestinationProjectTimes(t *testing.T) {
 		t.Fatal(err)
 	}
 	_ = db.Close()
-	dest := &Adapter{Root: destRoot, Home: "/Users/fixture-user"}
+	dest := &Adapter{Root: destRoot, Home: "/Users/fixture-user", GOOS: "darwin"}
 	restore(t, dest, "sessions/ses_fixture001.json", "ses_fixture001", "", archive)
 	destRev, err := dest.SessionRevision(context.Background(), adapter.Session{ID: "ses_fixture001"})
 	if err != nil {
@@ -538,7 +538,7 @@ func TestSessionRevisionIgnoresDestinationProjectTimes(t *testing.T) {
 
 func TestUnsafeSnapshotPathRefused(t *testing.T) {
 	root := hydrateStore(t, macosSeed)
-	a := &Adapter{Root: root, Home: "/Users/fixture-user"}
+	a := &Adapter{Root: root, Home: "/Users/fixture-user", GOOS: "darwin"}
 	for _, bad := range []string{"../escape.json", "sessions/../../etc/passwd", "other/x.json", "sessions/x.jsonl"} {
 		_, err := a.PlanRestore(context.Background(), adapter.Snapshot{SessionID: "x", RelativePath: bad}, adapter.RestoreOptions{})
 		if err == nil {
@@ -549,11 +549,11 @@ func TestUnsafeSnapshotPathRefused(t *testing.T) {
 
 func TestRestoreRefusesUninitialisedStore(t *testing.T) {
 	srcRoot := hydrateStore(t, macosSeed)
-	src := &Adapter{Root: srcRoot, Home: "/Users/fixture-user"}
+	src := &Adapter{Root: srcRoot, Home: "/Users/fixture-user", GOOS: "darwin"}
 	archive := exportOne(t, src, "ses_fixture001")
 
 	destRoot := t.TempDir() // no opencode.db
-	dest := &Adapter{Root: destRoot, Home: "/Users/fixture-user", ForceCompat: adapter.CompatibilitySupported}
+	dest := &Adapter{Root: destRoot, Home: "/Users/fixture-user", GOOS: "darwin", ForceCompat: adapter.CompatibilitySupported}
 	plan := adapter.RestorePlan{
 		Session:     adapter.Session{ID: "ses_fixture001", Agent: "opencode", Path: filepath.Join(destRoot, DatabaseName), RelativePath: "sessions/ses_fixture001.json"},
 		Files:       []string{filepath.Join(destRoot, DatabaseName)},
@@ -567,7 +567,7 @@ func TestRestoreRefusesUninitialisedStore(t *testing.T) {
 
 func TestRestoreRejectsWrongSchemaArchive(t *testing.T) {
 	destRoot := schemaOnlyStore(t, macosSeed)
-	dest := &Adapter{Root: destRoot, Home: "/Users/fixture-user"}
+	dest := &Adapter{Root: destRoot, Home: "/Users/fixture-user", GOOS: "darwin"}
 	// A tar with a single JSON entry carrying the wrong schema.
 	var buf bytes.Buffer
 	writeTarEntry(t, &buf, "sessions/ses_x.json", []byte(`{"schema":"bogus/9"}`))
@@ -702,10 +702,10 @@ func TestRestorePreservesUncheckpointedWALRows(t *testing.T) {
 	}
 
 	srcRoot := hydrateStore(t, macosSeed)
-	src := &Adapter{Root: srcRoot, Home: "/Users/fixture-user"}
+	src := &Adapter{Root: srcRoot, Home: "/Users/fixture-user", GOOS: "darwin"}
 	archive := exportOne(t, src, "ses_fixture001")
 
-	dest := &Adapter{Root: destRoot, Home: "/Users/other-user"}
+	dest := &Adapter{Root: destRoot, Home: "/Users/other-user", GOOS: "darwin"}
 	restore(t, dest, "sessions/ses_fixture001.json", "ses_fixture001", "", archive)
 
 	db, err := sql.Open("sqlite", "file:"+filepath.ToSlash(filepath.Join(destRoot, DatabaseName)))
