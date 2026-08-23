@@ -32,8 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   foreground loop; it watches every detected agent's session directory
   (fsnotify, polling fallback) and pushes after a session changes
   (debounced and coalesced, capped so a store that never goes quiet is
-  still pushed), pulls on a schedule so the local index and sessions stay
-  fresh, and — on Hop — polls the control plane for pending pairing
+  still pushed), pulls on a schedule (default every 30s, so a session
+  edited on another device appears within a minute with no command) and
+  once more before `rein resume`, `rein fork`, or a switcher launch when
+  its last pull is older than 15s, and — on Hop — polls the control plane for pending pairing
   requests and surfaces each one as an OS notification, a line in the
   status file, and a stderr line on the next `rein` command (`device "X"
   wants to join your account; run rein devices approve`); approval itself
@@ -44,7 +46,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   service state, the last push and pull, the watched roots, and the
   enrolled devices and pending approvals; the interactive switcher shows
   the same one-line summary on its status line. One instance per home (a
-  lock file), exponential backoff, a size-rotated log, and a sync step that
+  lock file), exponential backoff that a busy session cannot bypass, an
+  owner-only service definition that refuses credential-looking `--env`
+  names, a size-rotated log, and a sync step that
   panics (a vendor store changing mid-write) is recovered rather than
   crashing the daemon. It behaves identically on BYO storage and on Hop and
   sends nothing that `push` and `pull` do not already send (no telemetry,

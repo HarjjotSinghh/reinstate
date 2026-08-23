@@ -113,8 +113,11 @@ session changes, pulls on a schedule, and surfaces devices waiting to join
 the account. `rein daemon install` registers it to start at login (launchd
 on macOS, systemd `--user` on Linux, Task Scheduler on Windows) and starts
 it; `start`, `stop`, and `uninstall` control the installed service.
-`rein daemon run` is the foreground loop the service runs. `rein daemon
-status [--json]` reports whether the service is installed and running, the
+`rein daemon run` is the foreground loop the service runs (`--pull-every`
+defaults to 30s, `--debounce` to 3s). While the daemon runs, `rein resume`,
+`rein fork`, and the switcher pull once more before launching when its last
+pull is older than 15s; a failed pull is reported and the local copy is
+resumed. `rein daemon status [--json]` reports whether the service is installed and running, the
 last push and pull, the watched roots, and — on Hop — enrolled devices and
 pending approvals. It needs the root-key model (`rein account init`, which
 works on BYO storage too). See [docs/hop.md](hop.md#the-daemon). Exit `4`
