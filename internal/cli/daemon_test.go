@@ -412,7 +412,7 @@ func TestDaemonInstallLifecycle(t *testing.T) {
 	if spec.Label == daemon.DefaultLabel || !strings.HasPrefix(spec.Label, daemon.DefaultLabel+".") {
 		t.Fatalf("a non-default home must get its own label: %q", spec.Label)
 	}
-	if !strings.HasPrefix(spec.Path, "/opt/rein/bin") || spec.LogPath != filepath.Join(a.home, "daemon", "service.log") {
+	if !strings.HasPrefix(spec.Path, filepath.Dir("/opt/rein/bin/rein")) || spec.LogPath != filepath.Join(a.home, "daemon", "service.log") {
 		t.Fatalf("spec path/log: %+v", spec)
 	}
 	out, _, code = run("daemon", "status", "--json")
