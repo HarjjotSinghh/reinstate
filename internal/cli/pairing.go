@@ -100,16 +100,13 @@ func runAccountJoin(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	if deviceKey != nil && ring.HasDevice(cfg.DeviceID) {
-		if _, _, err := ring.UnwrapForDevice(cfg.DeviceID, deviceKey); err != nil {
-			return NewExitError(ExitSafety, fmt.Sprintf("the keyring lists device %s but not the key held in the OS keyring (%v); nothing was written. Choose a new device_id in config, or revoke this device from another enrolled device", cfg.DeviceID, err))
-		}
-		if err := saveAccountEnrolmentConfirmed(home, cfg, now, ring.CurrentGeneration, "join", false); err != nil {
-			return err
-		}
-		PrintHuman(cmd.OutOrStdout(), "device already enrolled; local enrolment record restored, keyring and device key unchanged")
-		return nil
-	}
+	// A keyring that already lists this device with this machine's key is
+	// never taken as proof of enrolment: the public key is published in
+	// the pairing request, so a control plane that also holds the bucket
+	// could forge a keyring wrapping its own root key for it. Joining
+	// always goes through a fresh request and an approval typed on an
+	// enrolled device; the approver re-seals for a listed key without
+	// appending a second wrap.
 	if deviceKey == nil {
 		// The key is generated and stored before the request exists, so a
 		// crash between the two leaves nothing an approval could target.

@@ -68,7 +68,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   checksum; requests expire after ten minutes and are released once, and an
   approval whose request expires while the code prompt is open refuses
   before writing or rolls its own wrap back, so an expired request never
-  leaves a device enrolled without an approval. `rein
+  leaves a device enrolled without an approval. A keyring that already
+  lists the joining device with its own key is never taken as enrolment
+  (the public key is public, and a control plane that also holds the bucket
+  could forge such a keyring): `account join` always opens a fresh request
+  and waits for a typed approval, and the approver re-seals for a listed
+  key rather than appending a second wrap. `rein
   devices` lists the account's devices, whether each holds a wrap, and
   pending requests. `rein account recover` remains the no-other-device
   fallback. See `docs/hop.md`, "Adding a device".

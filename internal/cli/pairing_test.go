@@ -16,11 +16,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/HarjjotSinghh/reinstate/internal/backend"
 	"github.com/HarjjotSinghh/reinstate/internal/backend/s3/s3test"
 	"github.com/HarjjotSinghh/reinstate/internal/config"
 	"github.com/HarjjotSinghh/reinstate/internal/credentials"
+	"github.com/HarjjotSinghh/reinstate/internal/crypto"
 	"github.com/HarjjotSinghh/reinstate/internal/keyring"
 	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
+
+	"filippo.io/age"
 )
 
 var pairingCodePattern = regexp.MustCompile(`\b(?:[0-9A-Z]{4}-){3}[0-9A-Z]{4}\b`)
@@ -488,6 +492,52 @@ func TestPairingJourneyJoinApprovePull(t *testing.T) {
 		t.Fatalf("C stale join: exit=%d out=%q err=%q", code, out, errb)
 	}
 
+	// A malicious operator holds both the relay and the bucket. It reads
+	// C's device id and public key from the (now expired) request, writes a
+	// keyring for the same profile that wraps an operator-chosen root key
+	// for C, and waits for C to join again. The keyring listing this device
+	// with this machine's key must not count as enrolment: the join opens
+	// a fresh request and waits for an approval, and when none comes it
+	// fails closed with no account record and nothing pushed under the
+	// operator's key.
+	plane.mu.Lock()
+	forgedFor := plane.pairings[staleID]
+	plane.mu.Unlock()
+	keyringKey, genuineKeyring := forgeKeyringForDevice(t, plane, forgedFor.deviceID, forgedFor.publicKey)
+	forgedJoin := c.startJoin()
+	if strings.Contains(forgedJoin.stdout.String(), "already enrolled") {
+		t.Fatalf("forged keyring enrolled C without approval: %q", forgedJoin.stdout.String())
+	}
+	plane.mu.Lock()
+	forgedID := ""
+	for _, p := range plane.pairings {
+		if p.status == "pending" && !p.expired && p.deviceID == forgedFor.deviceID {
+			forgedID = p.id
+			p.expired = true
+		}
+	}
+	plane.mu.Unlock()
+	if forgedID == "" || forgedID == staleID {
+		t.Fatalf("join against a forged keyring did not open a fresh request (id=%q)", forgedID)
+	}
+	if out, errb, code := forgedJoin.finish(t); code != ExitAuthStorage || !strings.Contains(errb, "expired") {
+		t.Fatalf("C join against forged keyring: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if _, err := config.LoadAccount(c.home); !os.IsNotExist(err) {
+		t.Fatalf("join against a forged keyring wrote an account record: %v", err)
+	}
+	if out, errb, code := c.run("push", "--all", "--json"); code == ExitOK {
+		t.Fatalf("C pushed under the operator's key: out=%q err=%q", out, errb)
+	}
+	// The operator puts the genuine keyring back (the forgery found no
+	// taker); the rest of the journey runs against it.
+	if _, err := plane.s3.Store.Put(context.Background(), keyringKey, bytes.NewReader(genuineKeyring), int64(len(genuineKeyring)), backend.PutOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	if n := a.keyringDevices(); n != 2 {
+		t.Fatalf("genuine keyring not restored: %d devices", n)
+	}
+
 	// C retries: a fresh request with a fresh code, never "already
 	// enrolled" from a wrap left behind by a failed approval.
 	joinC := c.startJoin()
@@ -568,4 +618,66 @@ func assertPairingCodeNeverSent(t *testing.T, plane *fakeControlPlane, code stri
 			}
 		}
 	}
+}
+
+// forgeKeyringForDevice plays the operator: it replaces the bucket's keyring
+// with one for the same profile that wraps an operator-chosen root key for
+// the given device id and public key (both readable from a pairing
+// request). It returns the keyring's object key and the genuine bytes so the
+// caller can put them back.
+func forgeKeyringForDevice(t *testing.T, plane *fakeControlPlane, deviceID, publicKey string) (string, []byte) {
+	t.Helper()
+	ctx := context.Background()
+	objects, err := plane.s3.Store.List(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var key string
+	for _, meta := range objects {
+		if strings.HasSuffix(meta.Key, keyring.ObjectName) {
+			key = meta.Key
+		}
+	}
+	if key == "" {
+		t.Fatal("no keyring in the bucket to forge")
+	}
+	genuine, _, err := keyring.Load(ctx, plane.s3.Store, key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	genuineRaw, err := genuine.Marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	operatorKey, err := crypto.NewRootKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	operatorDevice, err := age.GenerateX25519Identity()
+	if err != nil {
+		t.Fatal(err)
+	}
+	operatorRecovery, err := keyring.GenerateRecoveryCode()
+	if err != nil {
+		t.Fatal(err)
+	}
+	forged, err := keyring.New(genuine.ProfileID, operatorKey, operatorRecovery, "operator", operatorDevice, time.Now().UTC())
+	if err != nil {
+		t.Fatal(err)
+	}
+	recipient, err := age.ParseX25519Recipient(publicKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := forged.Enrol(operatorKey, deviceID, recipient, time.Now().UTC()); err != nil {
+		t.Fatal(err)
+	}
+	forgedRaw, err := forged.Marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := plane.s3.Store.Put(ctx, key, bytes.NewReader(forgedRaw), int64(len(forgedRaw)), backend.PutOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	return key, genuineRaw
 }
