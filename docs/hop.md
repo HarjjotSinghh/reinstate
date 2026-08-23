@@ -176,6 +176,18 @@ were, so:
   against the bucket until they expire, up to the operator's credential
   TTL of at most an hour, so it can still push or pull within that
   window), and cannot open anything pushed after the revocation;
+- the keyring itself carries no integrity protection, so within that same
+  window the revoked device could put its pre-rollover copy of
+  `keyring.v1.json` back. Each device therefore pins the highest key
+  generation it has seen in its local account state (the revoking device
+  pins the generation it created; every other device pins a higher one the
+  first time it reads it) and fails closed (`ExitSafety`, "the keyring was
+  rolled back") on a keyring whose `current_generation` is lower, before
+  any push, pull, approval or revocation. A device that has not yet seen
+  the rollover when the rollback lands cannot tell and would keep writing
+  under the old generation until a device that has seen it revokes again;
+  closing that gap needs the control plane to carry the generation floor,
+  which is a follow-up;
 - a device enrolled later (`rein account join`, or `rein account recover`
   with the recovery code) is enrolled into every generation and reads the
   whole locker too.
@@ -379,7 +391,7 @@ passphrase, or session content. Sign-in is a device-authorization style flow:
 | 6 | `POST /v1/locker/credentials` (bearer) | `200 {access_key_id, secret_access_key, session_token, expires_at, endpoint, bucket, region}`, valid for at most an hour and scoped to the bucket. Refusals carry a `code`: `quota_storage` (403), `quota_devices` (403), `quota_push_rate` (429), `no_locker` (404), `storage_unavailable` (502). |
 | 7 | `POST /v1/locker/first-push` (bearer) | `200 {first, first_push_at}`; records the first push once. |
 | 8 | `GET /v1/devices` (bearer) | `200 {devices: [{id, name, platform, location_hint?, created_at, last_seen_at, revoked_at?}]}`; revoked devices stay listed with `revoked_at`. |
-| 9 | `DELETE /v1/devices/{id}` (bearer; `POST /v1/devices/{id}/revoke` is an alias) | `200 {device, revoked}`; `revoked` is `false` when it already was (idempotent). The token is refused everywhere from then on and the device no longer counts toward the device quota. Another account's device: `403 {code: "wrong_account"}`; unknown: `404 {code: "device_unknown"}`; the calling device itself: `400 {code: "self_revoke"}`. The call carries no key material: the key generation rollover happens in the keyring before it. |
+| 9 | `DELETE /v1/devices/{id}` (bearer; `POST /v1/devices/{id}/revoke` is an alias) | `200 {device, revoked}`; `revoked` is `false` when it already was (idempotent). The token is refused everywhere from then on and the device no longer counts toward the device quota. Another account's device or an unknown id: `404 {code: "device_unknown"}` (one answer, so ids cannot be probed across accounts); the calling device itself: `400 {code: "self_revoke"}`. The call carries no key material: the key generation rollover happens in the keyring before it. |
 
 The CLI reads the locker with `GET /v1/locker` on every hosted command and
 only calls `POST /v1/locker` when the answer is `no_locker` (normally once,

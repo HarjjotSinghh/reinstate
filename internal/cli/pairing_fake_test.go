@@ -105,7 +105,7 @@ func (f *fakeControlPlane) revokeDevice(w http.ResponseWriter, r *http.Request) 
 			continue
 		}
 		if identity.Account.ID != id.Account.ID {
-			writeFakeErrorCode(w, 403, "wrong_account", "the device belongs to another account")
+			writeFakeErrorCode(w, 404, "device_unknown", "no such device on this account")
 			return
 		}
 		d := identity.Device

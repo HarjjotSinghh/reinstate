@@ -120,7 +120,15 @@ read them), cannot open the new one, and its token is refused by the
 control plane, so it cannot mint new locker credentials; credentials it
 minted before the revocation stay valid against the bucket until they
 expire (at most an hour), and only during that window can it still push or
-pull bytes it can no longer decrypt. A device
+pull bytes it can no longer decrypt. The keyring has no integrity
+protection, so within that window the revoked device could also write its
+pre-rollover keyring back; every device pins the highest key generation it
+has observed in local account state and refuses a keyring whose current
+generation is lower (fail closed, nothing written), so a device that saw the
+rollover is never talked back into the old generation. A device that had not
+yet observed the rollover when the rollback landed is still exposed until one
+that had revokes again; carrying the generation floor on the control plane
+(a counter, not key material) is the follow-up that closes it. A device
 enrolled after a rollover (by approval, or from the recovery code, which
 wraps every generation) is enrolled into all generations and reads the
 whole locker. Concurrent changes to the keyring converge through the

@@ -216,7 +216,10 @@ written under the current key generation.`,
 				if err != nil {
 					return err
 				}
-				if tok.DeviceID != "" && tok.DeviceID != cfg.DeviceID {
+				if tok.DeviceID == "" {
+					return NewExitError(ExitConfig, "the stored device token names no device; run rein login again before enrolling")
+				}
+				if tok.DeviceID != cfg.DeviceID {
 					return NewExitError(ExitConfig, fmt.Sprintf("this home's device_id (%s) is not the signed-in device (%s); run rein init --hop --force so the keyring and the control plane agree on this device's identity", cfg.DeviceID, tok.DeviceID))
 				}
 			}
@@ -529,6 +532,9 @@ func rootKeysFromConfig(ctx context.Context, cmd *cobra.Command, cfg *schema.Con
 	if err != nil {
 		return nil, NewExitError(ExitAuthStorage, err.Error())
 	}
+	if err := observeKeyGeneration(home, ring.CurrentGeneration); err != nil {
+		return nil, err
+	}
 	current, earlier, err := ring.UnwrapForDevice(cfg.DeviceID, deviceKey)
 	if errors.Is(err, keyring.ErrDeviceNotEnrolled) {
 		return nil, NewExitError(ExitAuthStorage, fmt.Sprintf("this device is not enrolled in key generation %d; %s", ring.CurrentGeneration, notEnrolled))
@@ -545,4 +551,71 @@ func rootKeysFromConfig(ctx context.Context, cmd *cobra.Command, cfg *schema.Con
 		return nil, NewExitError(ExitRuntime, err.Error())
 	}
 	return keys, nil
+}
+
+// keyGenerationFloor returns the highest key generation this device has
+// observed, as recorded in account state. Zero means no record exists.
+func keyGenerationFloor(home string) (int, error) {
+	account, err := config.LoadAccount(home)
+	if os.IsNotExist(err) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, NewExitError(ExitConfig, "read account state: "+err.Error())
+	}
+	return account.KeyGeneration, nil
+}
+
+// keyringRolledBackError reports a keyring whose current generation is
+// below one this device has already observed.
+type keyringRolledBackError struct{ saw, floor int }
+
+func (e *keyringRolledBackError) Error() string {
+	return fmt.Sprintf("keyring current_generation %d is below the %d this device has already seen; the keyring was rolled back (a revoked device may have restored an older copy inside its credential window). Nothing was written; run rein devices revoke again from a device that saw generation %d", e.saw, e.floor, e.floor)
+}
+
+// checkKeyGenerationFloor fails closed when observed is below floor. The
+// keyring carries no integrity protection of its own, so the generation
+// number each device has already seen is the only defence against a
+// revoked device putting its pre-rollover copy back.
+func checkKeyGenerationFloor(observed, floor int) error {
+	if observed < floor {
+		return &keyringRolledBackError{saw: observed, floor: floor}
+	}
+	return nil
+}
+
+// observeKeyGeneration compares the generation just read from the keyring
+// with the floor recorded in account state: it refuses a lower one and
+// raises the record when a higher one is seen, so a rollover is pinned on
+// every device the first time that device sees it.
+func observeKeyGeneration(home string, observed int) error {
+	account, err := config.LoadAccount(home)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return NewExitError(ExitConfig, "read account state: "+err.Error())
+	}
+	if err := checkKeyGenerationFloor(observed, account.KeyGeneration); err != nil {
+		return NewExitError(ExitSafety, err.Error())
+	}
+	if observed == account.KeyGeneration {
+		return nil
+	}
+	account.KeyGeneration = observed
+	if err := config.SaveAccount(home, account); err != nil {
+		return NewExitError(ExitConfig, err.Error())
+	}
+	return nil
+}
+
+// exitForKeyringUpdate maps a keyring rollback seen inside a CAS closure
+// to a safety exit, leaving other errors untouched.
+func exitForKeyringUpdate(err error) error {
+	var rolled *keyringRolledBackError
+	if errors.As(err, &rolled) {
+		return NewExitError(ExitSafety, rolled.Error())
+	}
+	return nil
 }

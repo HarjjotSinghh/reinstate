@@ -418,11 +418,18 @@ func approvePairingRequest(ctx context.Context, cmd *cobra.Command, client *hop.
 	// that is current then, and into every earlier one this device can
 	// read, so it reads the whole locker). A device this machine can no
 	// longer open (it was revoked meanwhile) approves nothing.
+	floor, err := keyGenerationFloor(home)
+	if err != nil {
+		return 0, err
+	}
 	appended := false
 	var rootKey []byte
 	updated, err := keyring.Update(ctx, store, keyring.ObjectKey(prefix), func(k *keyring.Keyring) error {
 		appended = false
 		crypto.Zero(rootKey)
+		if err := checkKeyGenerationFloor(k.CurrentGeneration, floor); err != nil {
+			return err
+		}
 		keys, err := k.UnwrapGenerations(cfg.DeviceID, deviceKey)
 		if err != nil {
 			return err
@@ -444,11 +451,17 @@ func approvePairingRequest(ctx context.Context, cmd *cobra.Command, client *hop.
 		return nil
 	})
 	defer crypto.Zero(rootKey)
+	if exit := exitForKeyringUpdate(err); exit != nil {
+		return 0, exit
+	}
 	if errors.Is(err, keyring.ErrDeviceNotEnrolled) {
 		return 0, NewExitError(ExitAuthStorage, fmt.Sprintf("this device cannot open the current key generation (%v); only an enrolled device can approve another", err))
 	}
 	if err != nil {
 		return 0, NewExitError(ExitAuthStorage, err.Error())
+	}
+	if err := observeKeyGeneration(home, updated.CurrentGeneration); err != nil {
+		return 0, err
 	}
 	payload, err := pairing.SealRootKey(rootKey, req.ID, recipient, updated.CurrentGeneration)
 	if err != nil {
@@ -578,8 +591,15 @@ func runDevicesRevoke(cmd *cobra.Command, target string) error {
 	// new generation; a device already revoked is reported, not revoked
 	// into a third generation).
 	now := time.Now().UTC()
+	floor, err := keyGenerationFloor(home)
+	if err != nil {
+		return err
+	}
 	var generation int
 	updated, err := keyring.Update(ctx, store, keyring.ObjectKey(prefix), func(k *keyring.Keyring) error {
+		if err := checkKeyGenerationFloor(k.CurrentGeneration, floor); err != nil {
+			return err
+		}
 		current, earlier, err := k.UnwrapForDevice(cfg.DeviceID, deviceKey)
 		if err != nil {
 			return err
@@ -597,6 +617,9 @@ func runDevicesRevoke(cmd *cobra.Command, target string) error {
 		return nil
 	})
 	already := false
+	if exit := exitForKeyringUpdate(err); exit != nil {
+		return exit
+	}
 	switch {
 	case errors.Is(err, keyring.ErrRecoveryMismatch):
 		return NewExitError(ExitAuthStorage, "recovery code does not match this keyring; nothing was revoked")
@@ -616,6 +639,12 @@ func runDevicesRevoke(cmd *cobra.Command, target string) error {
 		updated, generation = ring, ring.CurrentGeneration
 	case err != nil:
 		return NewExitError(ExitAuthStorage, err.Error())
+	}
+	// Pin the generation this device just created (or observed) before the
+	// control plane is told: a rolled-back keyring is then refused here
+	// even if the revocation call below fails and is retried.
+	if err := observeKeyGeneration(home, generation); err != nil {
+		return err
 	}
 
 	revocation, err := client.RevokeDevice(ctx, tok.Token, victim.ID)

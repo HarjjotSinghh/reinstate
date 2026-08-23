@@ -13,6 +13,7 @@ import (
 
 	"filippo.io/age"
 
+	"github.com/HarjjotSinghh/reinstate/internal/backend"
 	"github.com/HarjjotSinghh/reinstate/internal/backend/s3/s3test"
 	"github.com/HarjjotSinghh/reinstate/internal/config"
 	"github.com/HarjjotSinghh/reinstate/internal/crypto"
@@ -577,3 +578,155 @@ func TestResolveDevice(t *testing.T) {
 		})
 	}
 }
+
+// keyringObject returns the stored keyring's key and bytes.
+func keyringObject(t *testing.T, plane *fakeControlPlane) (string, []byte) {
+	t.Helper()
+	ctx := context.Background()
+	objects, err := plane.s3.Store.List(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, meta := range objects {
+		if strings.HasSuffix(meta.Key, keyring.ObjectName) {
+			rc, _, err := plane.s3.Store.Get(ctx, meta.Key)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer rc.Close()
+			raw, err := io.ReadAll(rc)
+			if err != nil {
+				t.Fatal(err)
+			}
+			return meta.Key, raw
+		}
+	}
+	t.Fatal("no keyring in storage")
+	return "", nil
+}
+
+// TestRevocationRefusesRolledBackKeyring is the rollback probe: a revoked
+// device that still holds locker credentials puts its pre-rollover copy of
+// the keyring back. Every remaining device has pinned the generation it
+// saw, so push, pull, approve and revoke all fail closed instead of
+// writing under the generation the revoked device holds.
+func TestRevocationRefusesRolledBackKeyring(t *testing.T) {
+	plane := newFakeControlPlane(t)
+	plane.s3 = s3test.NewPlain(t, "lk-0000000000000000000rollback")
+	t.Setenv(hopURLEnv, plane.srv.URL)
+	for _, env := range []string{"REINSTATE_BACKEND", "REINSTATE_S3_ACCESS_KEY_ID", "REINSTATE_S3_SECRET_ACCESS_KEY", "REINSTATE_PASSPHRASE_FD", "REINSTATE_RECOVERY_CODE_FD", "REINSTATE_PAIRING_CODE_FD", "REINSTATE_HOP_LOCATION", "CLAUDE_CONFIG_DIR", "CODEX_HOME"} {
+		t.Setenv(env, "")
+	}
+	project := writeClaudeFixture(t)
+	userHome := os.Getenv("HOME")
+	ctx := context.Background()
+
+	a := newPairDevice(t, plane, "macbook")
+	for _, args := range [][]string{{"login"}, {"init", "--hop", "--project", "local/locker=" + project}, {"account", "init"}, {"push", "--all", "--json"}} {
+		if out, errb, code := a.run(args...); code != ExitOK {
+			t.Fatalf("A %v: exit=%d out=%q err=%q", args, code, out, errb)
+		}
+	}
+	b := newPairDevice(t, plane, "desktop")
+	if _, errb, code := b.run("login"); code != ExitOK {
+		t.Fatalf("B login: %d %q", code, errb)
+	}
+	if _, errb, code := b.run("init", "--hop", "--project", "local/locker="+filepath.Join(userHome, "Projects", "desktop-target")); code != ExitOK {
+		t.Fatalf("B init --hop: %d %q", code, errb)
+	}
+	join := b.startJoin()
+	if out, errb, code := a.approve(join.code, false); code != ExitOK {
+		t.Fatalf("A approves B: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if out, errb, code := join.finish(t); code != ExitOK {
+		t.Fatalf("B join: exit=%d out=%q err=%q", code, out, errb)
+	}
+	_, bKeys := b.keyringState(t, plane)
+
+	// B snapshots the keyring while still enrolled (it holds credentials
+	// that last until expiry, so it can write the locker for a while).
+	key, snapshot := keyringObject(t, plane)
+	bID := deviceID(t, b)
+	if out, errb, code := a.revoke(bID, a.shownCode); code != ExitOK {
+		t.Fatalf("revoke: exit=%d out=%q err=%q", code, out, errb)
+	}
+	account, err := config.LoadAccount(a.home)
+	if err != nil || account.KeyGeneration != 2 {
+		t.Fatalf("A did not pin the generation it created: %+v %v", account, err)
+	}
+	before := objectKeys(t, plane)
+
+	// B puts the generation-1 keyring back.
+	if _, err := plane.s3.Store.Put(ctx, key, bytes.NewReader(snapshot), int64(len(snapshot)), backendPutOptions()); err != nil {
+		t.Fatal(err)
+	}
+	root := filepath.Join(userHome, ".claude", "projects", claudeProjectDirectoryForTest(project))
+	meta, _ := json.Marshal(map[string]any{"type": "meta", "cwd": project})
+	content := append(meta, '\n')
+	content = append(content, []byte(`{"type":"user","message":{"content":"written after the rollback"}}`+"\n")...)
+	if err := os.WriteFile(filepath.Join(root, "session-rollback.jsonl"), content, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	want := "rolled back"
+	if out, errb, code := a.run("push", "--all", "--json"); code != ExitSafety || !strings.Contains(errb, want) || !strings.Contains(errb, "current_generation 1 is below the 2") {
+		t.Fatalf("A push on a rolled-back keyring: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if out, errb, code := a.run("pull", "--all", "--json"); code != ExitSafety || !strings.Contains(errb, want) {
+		t.Fatalf("A pull on a rolled-back keyring: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if out, errb, code := a.revoke(bID, a.shownCode); code != ExitSafety || !strings.Contains(errb, want) {
+		t.Fatalf("A revoke on a rolled-back keyring: exit=%d out=%q err=%q", code, out, errb)
+	}
+	c := newPairDevice(t, plane, "laptop-2")
+	if _, errb, code := c.run("login"); code != ExitOK {
+		t.Fatalf("C login: %d %q", code, errb)
+	}
+	if _, errb, code := c.run("init", "--hop", "--project", "local/locker="+filepath.Join(userHome, "Projects", "laptop-target")); code != ExitOK {
+		t.Fatalf("C init --hop: %d %q", code, errb)
+	}
+	joinC := c.startJoin()
+	if out, errb, code := a.approve(joinC.code, false); code != ExitSafety || !strings.Contains(errb, want) {
+		t.Fatalf("A approve on a rolled-back keyring: exit=%d out=%q err=%q", code, out, errb)
+	}
+	// The request is left pending; expire it so C's join returns.
+	plane.mu.Lock()
+	for _, p := range plane.pairings {
+		if p.status == "pending" {
+			p.expired = true
+		}
+	}
+	plane.mu.Unlock()
+	if out, errb, code := joinC.finish(t); code == ExitOK {
+		t.Fatalf("C join succeeded without an approval: out=%q err=%q", out, errb)
+	}
+
+	// Nothing new was written, the generation-1 key opens nothing it did
+	// not already open, and the keyring on disk is the rolled-back copy.
+	after := objectKeys(t, plane)
+	bProvider, err := crypto.NewRootKeyProvider(bKeys[1])
+	if err != nil {
+		t.Fatal(err)
+	}
+	for k := range after {
+		if strings.HasSuffix(k, keyring.ObjectName) {
+			continue
+		}
+		if !before[k] {
+			t.Fatalf("object %s was written on a rolled-back keyring", k)
+		}
+		if !strings.HasSuffix(k, "manifest.age") && !opensWith(t, plane, k, bProvider) {
+			t.Fatalf("pre-revocation object %s no longer opens under generation 1", k)
+		}
+	}
+	if _, raw := keyringObject(t, plane); !bytes.Equal(raw, snapshot) {
+		t.Fatal("a refused command rewrote the keyring")
+	}
+	if account, err := config.LoadAccount(a.home); err != nil || account.KeyGeneration != 2 {
+		t.Fatalf("A's pinned generation moved: %+v %v", account, err)
+	}
+	if len(plane.events) != 1 {
+		t.Fatalf("control plane events %v", plane.events)
+	}
+}
+
+func backendPutOptions() backend.PutOptions { return backend.PutOptions{} }

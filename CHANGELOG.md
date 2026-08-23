@@ -207,14 +207,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   every key generation (the recovery code opens all of them), so a device
   added after a revocation reads the whole locker; `rein account recover`
   under `storage.type = "hop"` refuses a home whose `device_id` is not the
-  signed-in device.
+  signed-in device. Every device pins the highest key generation it has
+  seen in its account state and refuses a keyring rolled back below it
+  (`ExitSafety`), so a revoked device restoring its old keyring copy inside
+  the credential window cannot talk a remaining device into writing under
+  the generation it still holds.
 - Keyring format version 2: every wrap is bound to the profile id and the
   key generation it belongs to (device wraps carry the binding inside the
   age payload, the recovery wrap as AEAD associated data), so a wrap lifted
   from one keyring or generation cannot be replayed in another. Version 1
   keyrings are still read; they are rewritten as version 2 on the first
-  write that holds the root key (enrolment rebinds the current generation's
-  device wraps, a rollover rebinds the recovery wrap). The parser rejects
+  write that holds the root key (enrolment and rollover rebind the current
+  generation's device wraps; generation 1's recovery wrap stays in the
+  legacy format, the only place the parser still accepts one). The parser rejects
   duplicate generation numbers and duplicate device ids; a device listed
   under an earlier generation with a key this machine no longer holds is
   skipped rather than treated as an error; `DeviceMembership` names the

@@ -542,8 +542,10 @@ func (k *Keyring) Enrol(rootKey []byte, deviceID string, recipient *age.X25519Re
 		return err
 	}
 	g.Devices = append(g.Devices, wrap)
-	// Holding the root key is the one moment legacy wraps can be rebound
-	// without anyone else's help; the recovery wrap waits for a rollover.
+	// Holding the root key is the one moment legacy device wraps can be
+	// rebound without anyone else's help. Generation 1's legacy recovery
+	// wrap is never rewritten (the code is not at hand here); Parse
+	// accepts a legacy wrap in generation 1 only.
 	return k.rebindDevices(g, rootKey)
 }
 
