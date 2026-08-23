@@ -485,6 +485,38 @@ func TestSessionRevisionStableAndDeviceIndependent(t *testing.T) {
 	}
 }
 
+// TestSessionRevisionIgnoresDestinationProjectTimes pins that a pulled session
+// has the same revision as its source even though the destination keeps its
+// own project-row timestamps; otherwise every pull would look like a local edit.
+func TestSessionRevisionIgnoresDestinationProjectTimes(t *testing.T) {
+	srcRoot := hydrateStore(t, macosSeed)
+	src := &Adapter{Root: srcRoot, Home: "/Users/fixture-user"}
+	archive := exportOne(t, src, "ses_fixture001")
+	srcRev, err := src.SessionRevision(context.Background(), adapter.Session{ID: "ses_fixture001"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	destRoot := schemaOnlyStore(t, macosSeed)
+	db, err := sql.Open("sqlite", "file:"+filepath.ToSlash(filepath.Join(destRoot, DatabaseName)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO project VALUES ('proj_fixture','/Users/fixture-user/code/demo','demo','[]',1,2)`); err != nil {
+		t.Fatal(err)
+	}
+	_ = db.Close()
+	dest := &Adapter{Root: destRoot, Home: "/Users/fixture-user"}
+	restore(t, dest, "sessions/ses_fixture001.json", "ses_fixture001", "", archive)
+	destRev, err := dest.SessionRevision(context.Background(), adapter.Session{ID: "ses_fixture001"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if srcRev != destRev {
+		t.Fatalf("revision changed across pull: src=%s dest=%s", srcRev, destRev)
+	}
+}
+
 func TestUnsafeSnapshotPathRefused(t *testing.T) {
 	root := hydrateStore(t, macosSeed)
 	a := &Adapter{Root: root, Home: "/Users/fixture-user"}

@@ -76,14 +76,65 @@ export.
    Native visibility after a Reinstate restore — not merely a Reinstate read of
    its own write.
 
+### 3a. Resume fidelity, re-run after review (2026-08-23, same device)
+
+A listing proves the session row, not its body. The leg was re-run against two
+fresh vendor-initialised throwaway stores with a session whose bodies carry
+unique markers, and the **vendor's own export** of the restored session in the
+destination store (`opencode --pure export <id>`, the same read path
+`opencode --session <id>` resumes from) was captured. Both messages and both
+parts came back with their bodies intact:
+
+```text
+$ opencode --pure export ses_synthetic00000000000t5fid     # destination store
+"id": "ses_synthetic00000000000t5fid",
+  "role": "user",
+  "id": "msg_synthetic0000000000user1",
+    "text": "SYNTHETIC-USER-BODY: summarise the demo workspace layout",
+    "id": "prt_synthetic0000000000user1",
+  "parentID": "msg_synthetic0000000000user1",
+  "role": "assistant",
+  "id": "msg_synthetic0000000000asst1",
+    "text": "SYNTHETIC-ASSISTANT-BODY: the demo workspace has a single README.",
+    "id": "prt_synthetic0000000000asst1",
+```
+
+(`grep` of the export over `id`/`role`/`parentID`/`text` keys; the full
+document also carried the assistant `path.cwd`/`path.root`, denormalised back
+onto this device.) The assistant message's `parentID` still names the user
+message and the vendor re-attached each part to its message, which is the
+message/part fidelity T5 item 6 asks for.
+
+Two further measurements from this re-run:
+
+- **Revision across a pull.** The first re-run showed the restored session's
+  `SessionRevision` differing from the source's, because the destination keeps
+  its own `project` row timestamps (the upsert deliberately does not overwrite
+  them) and those were hashed. The revision now excludes project timestamps
+  (`documentRevision`); the re-run reported `revision-matches=true`, pinned by
+  `TestSessionRevisionIgnoresDestinationProjectTimes`. Without this every
+  pulled session would have looked locally edited on the next push.
+- **Row shape on 1.18.21.** The vendor strips `id`, `sessionID` and
+  `messageID` out of the `message.data` / `part.data` blobs on write (identity
+  lives in the columns) and re-attaches them on export. The committed seeds
+  match that shape, so the fork id-remap has no stale `data.id` to miss; it
+  still rewrites those keys if a future build keeps them.
+- The restored `opencode.db` keeps the vendor's file mode (`0644` here) rather
+  than the working copy's `0600`.
+
+No real store was touched: both stores lived under scratch `XDG_DATA_HOME`
+roots with `XDG_CONFIG_HOME` and `HOME` pointed at scratch directories, and
+`--pure` kept plugins out.
+
 ## 4. Encryption, conflicts, and forks
 
 The encrypted transport (age envelope, payload-hash verification, manifest CAS)
 is the same code every synced agent uses and is covered by `internal/sync`
 tests; this journey exercised the OpenCode-specific extract/apply ends of it.
 Conflict-fork safety — a fork landing beside the original with its own derived
-message/part ids, idempotent on re-restore — is covered by `TestForkKeepBoth`
-and `TestForkIsIdempotent`. Live-store safety is a fingerprint-before/after
+message/part ids, its assistant `parentID` pointing at the fork's own user
+message rather than the original session's, idempotent on re-restore — is
+covered by `TestForkKeepBoth` and `TestForkIsIdempotent`. Live-store safety is a fingerprint-before/after
 guard around the atomic rename in `Restore`.
 
 ## 5. Cross-OS remapping

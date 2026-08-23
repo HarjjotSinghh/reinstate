@@ -76,7 +76,7 @@ round-trip test fails if a credential value appears in an export.
 | `Discover` | Reads `session` rows via `internal/vendorsqlite` (so un-checkpointed WAL rows are visible); each session's `RelativePath` is the virtual `sessions/<id>.json`. |
 | `Export` | Extracts one session to the portable document, path-tokenised, as a single tar entry. |
 | `Restore` | Writes the document back into the destination's own `opencode.db` through a checkpointed working copy staged in a hidden directory beside the store (same volume, so the final rename cannot fail across filesystems), fingerprint-guarded and backed up, then atomically renamed; stale `-wal`/`-shm` sidecars are removed so the vendor reopens the merged database. |
-| revision | `SessionRevision` is the digest of the normalised document — device-independent, so the sync engine detects a genuine edit rather than every session appearing changed whenever the shared file changes. |
+| revision | `SessionRevision` is the digest of the normalised document minus the `project` row's timestamps (the destination keeps its own on restore) — device-independent, so the sync engine detects a genuine edit rather than every session appearing changed whenever the shared file changes, and a freshly pulled session is not mistaken for a local edit. |
 
 Because sessions do not each own a file, the adapter implements
 `adapter.SessionRevisioner`; the CLI uses it for change detection instead of
@@ -86,8 +86,19 @@ their separators rewritten.
 
 Restore refuses a destination whose `opencode.db` has not been initialised by
 the vendor — it writes sessions into the vendor's store but never invents its
-schema. Conflict keep-both restores a fork beside the original with derived,
-collision-free message and part ids (`--fork`-compatible), idempotent on repeat.
+schema. It also refuses an archive whose entry carries no session id, a
+document whose `session.id` is not the planned source session, and an empty
+destination id, before the store is touched; archive entry names containing a
+backslash are refused on every host. Conflict keep-both restores a fork beside
+the original with derived, collision-free message and part ids
+(`--fork`-compatible), idempotent on repeat; the `id`, `parentID` and
+`messageID` fields inside each forked row's `data` are rewritten through the
+same map so the fork never points back into the original session.
+
+Measured row shape (1.18.21, macOS): the vendor strips `id`, `sessionID` and
+`messageID` from the `message.data` and `part.data` blobs on write — identity
+lives in the columns — and re-attaches them on `opencode export`. The seeds
+under `testdata/adapters/opencode/` follow that shape.
 
 Device journeys:
 [../testing/results/2026-08-23-macos-opencode-t5-journey.md](../testing/results/2026-08-23-macos-opencode-t5-journey.md)

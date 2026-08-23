@@ -40,10 +40,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `forkRelativePath` now keeps a session's own extension so a keep-both fork is
   not mislabelled. Deterministic synthetic seeds live under
   `testdata/adapters/opencode/{macos,windows}`, and a CLI push/pull journey
-  test drives the adapter through the real entrypoint. **OpenCode stays at T4
-  in the catalog**: the macOS T5 device journey is recorded, and the tier is
-  advertised (and the adapter wired into `rein push`/`pull`) only once the
-  native Windows journey is recorded as well.
+  test drives the adapter through the real entrypoint. A keep-both fork
+  rewrites the `id`/`parentID`/`messageID` fields inside each forked row so the
+  fork is self-contained; restore refuses id-less or mismatched session
+  documents before touching the store; and the session revision excludes the
+  destination-owned `project` timestamps so a freshly pulled session does not
+  read as a local edit. **OpenCode stays at T4 in the catalog**: the macOS T5
+  device journey is recorded (including the vendor's own export of the restored
+  session's message bodies), and the tier is advertised (and the adapter wired
+  into `rein push`/`pull`) only once the native Windows journey is recorded as
+  well.
 - The website now serves every page as Markdown through `Accept: text/markdown`
   content negotiation (with `Vary: Accept` and a 406 contract), static `.md`
   twins, `llms-full.txt`, an OpenAPI 3.1 document at `/openapi.json`, JSON

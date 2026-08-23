@@ -243,6 +243,19 @@ func (a *Adapter) SessionRevision(ctx context.Context, s adapter.Session) (strin
 	if err != nil {
 		return "", err
 	}
+	return documentRevision(doc)
+}
+
+// documentRevision digests a document without the project row's timestamps.
+// Those belong to whichever store first created the project (the destination
+// keeps its own on restore), so hashing them would make every pulled session
+// look locally modified on the next push.
+func documentRevision(doc sessionDocument) (string, error) {
+	if doc.Project != nil {
+		project := *doc.Project
+		project.TimeCreated, project.TimeUpdated = 0, 0
+		doc.Project = &project
+	}
 	encoded, err := json.Marshal(doc)
 	if err != nil {
 		return "", err

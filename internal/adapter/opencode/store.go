@@ -416,6 +416,7 @@ func checkpointedCopy(src string) (string, func(), error) {
 	}
 	cleanup := func() { _ = os.RemoveAll(tempDir) }
 	copyPath := filepath.Join(tempDir, DatabaseName)
+	// The working copy replaces the vendor's file, so it keeps the vendor's mode.
 	if err := copyFile(src, copyPath); err != nil {
 		cleanup()
 		return "", func() {}, err
@@ -466,5 +467,11 @@ func copyFile(source, destination string) error {
 		_ = out.Close()
 		return err
 	}
-	return out.Close()
+	if err := out.Close(); err != nil {
+		return err
+	}
+	if info, err := in.Stat(); err == nil {
+		return os.Chmod(destination, info.Mode().Perm())
+	}
+	return nil
 }
