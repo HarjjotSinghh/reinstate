@@ -260,9 +260,13 @@ func (m *launchdManager) Start(ctx context.Context, spec Spec) error {
 	if _, err := os.Stat(path); err != nil {
 		return fmt.Errorf("the daemon is not installed (%s missing); run rein daemon install", path)
 	}
-	// bootstrap is a no-op error when the agent is already loaded.
-	_, _ = m.run(ctx, "launchctl", "bootstrap", m.domain(), path)
-	_, err := m.run(ctx, "launchctl", "kickstart", "-k", m.domain()+"/"+spec.Label)
+	// A loaded agent is restarted in place; an unloaded one is loaded,
+	// which starts it (RunAtLoad) without a second spawn.
+	if _, err := m.run(ctx, "launchctl", "print", m.domain()+"/"+spec.Label); err == nil {
+		_, err := m.run(ctx, "launchctl", "kickstart", "-k", m.domain()+"/"+spec.Label)
+		return err
+	}
+	_, err := m.run(ctx, "launchctl", "bootstrap", m.domain(), path)
 	return err
 }
 
@@ -289,14 +293,13 @@ func (m *launchdManager) Status(ctx context.Context, spec Spec) (State, error) {
 		state.Detail = "not loaded"
 		return state, nil
 	}
+	// The first "state =" line is the service's own; nested ones belong
+	// to its endpoints.
 	for _, line := range strings.Split(out, "\n") {
 		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "state = ") {
+		if strings.HasPrefix(line, "state = ") && state.Detail == "" {
 			state.Detail = strings.TrimPrefix(line, "state = ")
 			state.Running = state.Detail == "running"
-		}
-		if strings.HasPrefix(line, "pid = ") && state.Detail == "" {
-			state.Running = true
 		}
 	}
 	if state.Detail == "" {

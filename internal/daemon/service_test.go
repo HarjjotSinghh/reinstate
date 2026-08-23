@@ -130,7 +130,7 @@ func (e *execError) Error() string { return e.what + ": exit status 1: No such p
 
 func TestLaunchdLifecycleCommands(t *testing.T) {
 	userHome := t.TempDir()
-	runner := &recordingRunner{answers: map[string]string{"launchctl print": "\tstate = running\n\tpid = 4242\n"}}
+	runner := &recordingRunner{answers: map[string]string{"launchctl print": "\tstate = running\n\tpid = 4242\n\tendpoints = {\n\t\tstate = active\n\t}\n"}}
 	m, _ := NewManager("darwin", userHome, runner.run)
 	spec := goldenSpec
 	ctx := context.Background()
@@ -162,7 +162,7 @@ func TestLaunchdLifecycleCommands(t *testing.T) {
 		"launchctl bootstrap gui/",
 		"launchctl print gui/",
 		"launchctl bootout gui/",
-		"launchctl bootstrap gui/",
+		"launchctl print gui/",
 		"launchctl kickstart -k gui/",
 		"launchctl bootout gui/",
 	}

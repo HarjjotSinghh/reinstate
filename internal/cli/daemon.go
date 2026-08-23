@@ -190,6 +190,16 @@ func runDaemon(cmd *cobra.Command, opts Options, flags daemonRunFlags, verbose b
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	// Detecting agents runs their version probes, which can take a few
+	// seconds; a status written first lets rein daemon status say
+	// "running" meanwhile instead of "stopped".
+	backend := "byo"
+	if cfg.Storage.Type == schema.StorageHop {
+		backend = "hop"
+	}
+	if err := (daemon.Status{Version: daemon.StatusVersion, PID: os.Getpid(), StartedAt: time.Now().UTC(), UpdatedAt: time.Now().UTC(), Watch: "starting", Backend: backend, Pending: []daemon.PendingApproval{}}).Write(home); err != nil {
+		logger.Printf("status: %v", err)
+	}
 	roots := watchRoots(ctx)
 	events := seams.events
 	watchMode := "fake"
@@ -204,10 +214,8 @@ func runDaemon(cmd *cobra.Command, opts Options, flags daemonRunFlags, verbose b
 		events, watchMode = watcher.Events, watcher.Mode
 	}
 
-	backend := "byo"
 	var account daemon.Account
-	if cfg.Storage.Type == schema.StorageHop {
-		backend = "hop"
+	if backend == "hop" {
 		account = &hostedAccount{opts: opts}
 	}
 	notifier := seams.notifier
