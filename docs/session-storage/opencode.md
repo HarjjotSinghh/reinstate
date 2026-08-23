@@ -73,14 +73,22 @@ round-trip test fails if a credential value appears in an export.
 | `Detect` | A regular `opencode.db` under the resolved root is supported; absence is `NOT_INSTALLED`. |
 | `Discover` | Reads `session` rows via `internal/vendorsqlite` (so un-checkpointed WAL rows are visible); each session's `RelativePath` is the virtual `sessions/<id>.json`. |
 | `Export` | Extracts one session to the portable document, path-tokenised, as a single tar entry. |
-| `Restore` | Writes the document back into the destination's own `opencode.db` through a checkpointed working copy staged in a hidden directory beside the store (same volume, so the final rename cannot fail across filesystems), fingerprint-guarded and backed up, then atomically renamed; stale `-wal`/`-shm` sidecars are removed so the vendor reopens the merged database. |
+| `Restore` | Writes the document back into the destination's own `opencode.db` through a checkpointed working copy staged in a hidden directory beside the store (same volume, so the final rename cannot fail across filesystems), fingerprint-guarded and backed up, then atomically renamed; stale `-wal`/`-shm` sidecars are removed so the vendor reopens the merged database. The store fingerprint is checked after the merge and again immediately before the rename, so a vendor write that lands while the merge or backup is in progress aborts the restore; a write that lands in the residual window between that last check and the rename is not detected and its `-wal` is removed with the stale sidecars — close OpenCode before pulling into a live store. |
 | revision | `SessionRevision` is the digest of the normalised document minus the `project` row's timestamps (the destination keeps its own on restore) — device-independent, so the sync engine detects a genuine edit rather than every session appearing changed whenever the shared file changes, and a freshly pulled session is not mistaken for a local edit. |
 
 Because sessions do not each own a file, the adapter implements
 `adapter.SessionRevisioner`; the CLI uses it for change detection instead of
 hashing the shared database file. Paths carrying no `${HOME}`/`${REPO:…}`
-token (outside every known root) are restored verbatim rather than having
-their separators rewritten.
+token (outside every known root) have their separators normalised to `/` on
+export (the portable form every untokenised path takes) and are then written
+back as-is on restore, without being rewritten onto the destination platform.
+The vendor itself stores forward-slash paths on Windows, so the form is native
+to it.
+
+Message and part `data` blobs that carry no path token are written back to the
+destination store in the vendor's own compact shape and key order: the export
+document is indented for readability, so the adapter compacts each embedded
+blob on restore rather than storing the indented bytes or re-keying the blob.
 
 Restore refuses a destination whose `opencode.db` has not been initialised by
 the vendor — it writes sessions into the vendor's store but never invents its

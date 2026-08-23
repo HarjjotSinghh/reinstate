@@ -196,6 +196,49 @@ func TestExportRestoreRoundTrip(t *testing.T) {
 	if dbDir != "/Users/other-user/code/demo" {
 		t.Fatalf("restored directory = %q", dbDir)
 	}
+	// The rows written into the vendor store must be compact JSON, the shape
+	// the vendor writes itself, not the indented form of the export document.
+	assertStoreBlobsCompact(t, destRoot, "ses_fixture001")
+}
+
+// assertStoreBlobsCompact fails if any message or part data blob of the
+// session in the store is not byte-identical to its own compacted form.
+func assertStoreBlobsCompact(t *testing.T, root, sessionID string) {
+	t.Helper()
+	db, err := sql.Open("sqlite", "file:"+filepath.ToSlash(filepath.Join(root, DatabaseName)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+	for _, q := range []string{
+		`SELECT id, data FROM message WHERE session_id = ?`,
+		`SELECT part.id, part.data FROM part JOIN message ON message.id = part.message_id WHERE message.session_id = ?`,
+	} {
+		rows, err := db.Query(q, sessionID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		n := 0
+		for rows.Next() {
+			var id string
+			var data []byte
+			if err := rows.Scan(&id, &data); err != nil {
+				t.Fatal(err)
+			}
+			var compact bytes.Buffer
+			if err := json.Compact(&compact, data); err != nil {
+				t.Fatalf("%s: stored blob is not JSON: %v", id, err)
+			}
+			if !bytes.Equal(compact.Bytes(), data) {
+				t.Fatalf("%s: stored blob is not compact:\n%s", id, data)
+			}
+			n++
+		}
+		_ = rows.Close()
+		if n == 0 {
+			t.Fatalf("query %q matched no rows", q)
+		}
+	}
 }
 
 // restore drives Restore with a RestorePlan analogous to what the CLI builds.
@@ -807,6 +850,12 @@ func TestRewriteJSONPathsKeepsVendorBytesWhenUnchanged(t *testing.T) {
 				t.Fatalf("rewriteJSONPaths = %s, want the original bytes %s", got, tc.want)
 			}
 		})
+	}
+	// An indented blob (the export document is MarshalIndent-ed, which indents
+	// the embedded vendor rows) comes back compact, in the vendor's key order.
+	pretty := "{\n  \"z\": 1,\n  \"a\": \"<b> & c\",\n  \"cwd\": \"relative/dir\"\n}"
+	if got := rewriteJSONPaths([]byte(pretty), identity); string(got) != `{"z":1,"a":"<b> & c","cwd":"relative/dir"}` {
+		t.Fatalf("indented blob not compacted: %s", got)
 	}
 	// A genuine rewrite still lands, re-marshalled.
 	got := rewriteJSONPaths([]byte(`{"z":1,"cwd":"/Users/x/repo"}`), func(s string) string { return "${HOME}/repo" })

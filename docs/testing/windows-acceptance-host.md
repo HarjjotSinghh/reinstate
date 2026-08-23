@@ -91,6 +91,10 @@ powershell -NoProfile -File .\scripts\test-install.ps1 -DistDir dist
   PATH entries and EvalSymlinks fallbacks (`internal/executabletrust`)
 - Owner-only DACLs on derived index/lock files
 - Real Claude and Codex same-vendor resume/fork with installed artifacts
+- Real OpenCode `rein push` / `rein pull` into a vendor-initialised
+  `opencode.db`, then `opencode --pure export <id>` showing compact message
+  bodies and the workspace path remapped onto the device (the T5 procedure in
+  `phase-1-mac-windows-acceptance.md` §17b)
 - Path remapping and non-TTY warning policy under PowerShell redirection
 
 ## Human-owned Windows Terminal rows

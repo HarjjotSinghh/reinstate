@@ -18,9 +18,16 @@ func rewriteJSONPaths(data []byte, mapPath func(string) string) json.RawMessage 
 		return json.RawMessage(data)
 	}
 	if !walkPaths(v, mapPath) {
-		// Nothing was rewritten: keep the vendor's bytes rather than re-keying
-		// the blob (sorted keys, HTML-escaped runes) for no reason.
-		return json.RawMessage(data)
+		// Nothing was rewritten: keep the vendor's key order and runes rather
+		// than re-keying the blob (sorted keys, HTML-escaped runes) for no
+		// reason. The export document is indented, which indents the embedded
+		// blobs too, so compact them back to the vendor's own shape; compacting
+		// already-compact vendor bytes is a no-op.
+		var compact bytes.Buffer
+		if err := json.Compact(&compact, data); err != nil {
+			return json.RawMessage(data)
+		}
+		return json.RawMessage(compact.Bytes())
 	}
 	out, err := json.Marshal(v)
 	if err != nil {
