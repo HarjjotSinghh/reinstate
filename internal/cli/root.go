@@ -78,6 +78,14 @@ type Options struct {
 	LoginPollSleep func(context.Context, time.Duration) error
 	// DeviceName overrides the hostname `rein login` reports in tests.
 	DeviceName string
+	// DeviceSecrets overrides the OS keyring that holds this device's hosted
+	// key in deterministic tests. Production leaves it nil.
+	DeviceSecrets credentials.SecretStore
+	// RecoveryCodePrompt overrides hidden recovery-code entry in deterministic
+	// tests (both the forced re-entry at init and the prompt at recover).
+	// Production leaves it nil and reads a terminal or
+	// REINSTATE_RECOVERY_CODE_FD.
+	RecoveryCodePrompt func(prompt string) ([]byte, error)
 }
 
 type envelopeCodecContextKey struct{}
@@ -165,6 +173,12 @@ func NewRoot(opts Options) *cobra.Command {
 	if opts.EnvelopeCodec != nil {
 		rootContext = context.WithValue(rootContext, envelopeCodecContextKey{}, opts.EnvelopeCodec)
 	}
+	if opts.DeviceSecrets != nil || opts.RecoveryCodePrompt != nil {
+		rootContext = context.WithValue(rootContext, accountSeamsContextKey{}, accountSeams{
+			secrets:        opts.DeviceSecrets,
+			recoveryPrompt: opts.RecoveryCodePrompt,
+		})
+	}
 	root.SetContext(rootContext)
 	if opts.Stdout != nil {
 		root.SetOut(opts.Stdout)
@@ -202,6 +216,7 @@ func NewRoot(opts Options) *cobra.Command {
 		newLoginCmd(hopOpts),
 		newWhoamiCmd(hopOpts),
 		newInitCmd(),
+		newAccountCmd(),
 		newListCmd(),
 		newSessionsCmd(local),
 		newSearchCmd(local),

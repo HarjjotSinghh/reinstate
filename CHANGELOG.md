@@ -19,6 +19,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Hosted key model on the first device (`rein account init`, `rein account
+  recover`, `rein account status`). `account init` generates a random 256-bit
+  root key on the device, derives the age identity that seals envelopes from
+  it, writes the **keyring** (the root key wrapped to this device's key and
+  under the recovery code) to the configured storage with a create-only put,
+  and shows the **recovery code** exactly once with a forced re-entry before
+  anything is written. `account recover` enrols a fresh machine from the
+  recovery code alone (hidden prompt, or `REINSTATE_RECOVERY_CODE_FD` for
+  automation) and appends a wrap for the new device with the same
+  compare-and-swap discipline as the manifest. The root key and recovery code
+  never touch disk, config, or logs; the device key lives in the OS keyring
+  and is never overwritten or deleted by a later `init` or `recover`: a device
+  the keyring already lists re-attaches from its stored key, and a mismatch
+  refuses with nothing written.
+  Selection between the BYO passphrase and the root key is `encryption.type`
+  (`age-scrypt` or `root-key`); BYO behaviour is unchanged. See
+  `docs/security-model.md`, "Hosted key model".
+
 - The S3-compatible backend can now obtain its keys from a credential source
   that expires and refreshes (`s3.CredentialSource`), the seam that lets a
   hosted locker mint short-lived credentials. A credential that expires or is

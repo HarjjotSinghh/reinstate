@@ -224,7 +224,7 @@ func newInitCmd() *cobra.Command {
 			ctx := context.Background()
 			if os.Getenv("REINSTATE_BACKEND") == "memory" {
 				if configuredProfileID != "" {
-					disk, err := memory.NewDisk(filepath.Join(home, "cache", "memory-backend"))
+					disk, err := memory.NewDisk(memoryBackendRoot(home))
 					if err != nil {
 						return NewExitError(ExitRuntime, err.Error())
 					}
@@ -419,38 +419,26 @@ func engineFromConfig(cmd *cobra.Command, passphrase string) (*sync.Engine, *sch
 			state.LastManifestRev != "" ||
 			len(state.Sessions) != 0
 	}
-	// Backend selection: disk-backed "memory" for local e2e, else S3.
-	var b backend.Backend
-	enginePrefix := ""
-	if os.Getenv("REINSTATE_BACKEND") == "memory" {
-		disk, err := memory.NewDisk(filepath.Join(home, "cache", "memory-backend"))
-		if err != nil {
-			return nil, nil, "", NewExitError(ExitRuntime, err.Error())
-		}
-		b = disk
-		enginePrefix = cfg.Storage.Prefix
-	} else {
-		creds, err := credentials.Resolve(home, cfg.Storage.CredentialRef)
-		if err != nil {
-			return nil, nil, "", NewExitError(ExitAuthStorage, err.Error())
-		}
-		client, err := s3.New(context.Background(), s3.Config{
-			Endpoint: cfg.Storage.Endpoint, Region: cfg.Storage.Region,
-			Bucket: cfg.Storage.Bucket, Prefix: cfg.Storage.Prefix,
-			AccessKey: creds.AccessKeyID, SecretKey: creds.SecretAccessKey,
-		})
-		if err != nil {
-			return nil, nil, "", NewExitError(ExitAuthStorage, err.Error())
-		}
-		b = client
+	b, enginePrefix, err := backendFromConfig(cfg, home)
+	if err != nil {
+		return nil, nil, "", err
 	}
-	if passphrase == "" {
-		secret, err := crypto.ReadPassphrase(cmd.InOrStdin(), cmd.ErrOrStderr())
+	var keys crypto.KeyProvider
+	if cfg.Encryption.Type == schema.EncryptionRootKey {
+		keys, err = rootKeysFromConfig(context.Background(), cmd, cfg, home, b, enginePrefix)
 		if err != nil {
-			return nil, nil, "", NewExitError(ExitUsage, err.Error())
+			return nil, nil, "", err
 		}
-		passphrase = string(secret)
-		crypto.Zero(secret)
+	} else {
+		if passphrase == "" {
+			secret, err := crypto.ReadPassphrase(cmd.InOrStdin(), cmd.ErrOrStderr())
+			if err != nil {
+				return nil, nil, "", NewExitError(ExitUsage, err.Error())
+			}
+			passphrase = string(secret)
+			crypto.Zero(secret)
+		}
+		keys = crypto.NewPassphraseProvider(passphrase)
 	}
 	var envelopeCodec sync.EnvelopeCodec
 	if commandContext := cmd.Context(); commandContext != nil {
@@ -458,11 +446,47 @@ func engineFromConfig(cmd *cobra.Command, passphrase string) (*sync.Engine, *sch
 	}
 	return &sync.Engine{
 		Backend:               b,
-		Keys:                  crypto.NewPassphraseProvider(passphrase),
+		Keys:                  keys,
 		Prefix:                enginePrefix,
 		RequireRemoteManifest: requireRemoteManifest,
 		Codec:                 envelopeCodec,
 	}, cfg, home, nil
+}
+
+// memoryBackendRoot is where the disk-backed "memory" backend keeps objects.
+// REINSTATE_MEMORY_BACKEND_DIR lets two homes share one store, which is how
+// the CLI journeys simulate two devices against one locker.
+func memoryBackendRoot(home string) string {
+	if dir := strings.TrimSpace(os.Getenv("REINSTATE_MEMORY_BACKEND_DIR")); dir != "" && filepath.IsAbs(dir) {
+		return dir
+	}
+	return filepath.Join(home, "cache", "memory-backend")
+}
+
+// backendFromConfig opens the configured storage: disk-backed "memory" for
+// local e2e, else S3. The returned prefix is the engine-side key prefix
+// (empty when the client already scopes keys).
+func backendFromConfig(cfg *schema.Config, home string) (backend.Backend, string, error) {
+	if os.Getenv("REINSTATE_BACKEND") == "memory" {
+		disk, err := memory.NewDisk(memoryBackendRoot(home))
+		if err != nil {
+			return nil, "", NewExitError(ExitRuntime, err.Error())
+		}
+		return disk, cfg.Storage.Prefix, nil
+	}
+	creds, err := credentials.Resolve(home, cfg.Storage.CredentialRef)
+	if err != nil {
+		return nil, "", NewExitError(ExitAuthStorage, err.Error())
+	}
+	client, err := s3.New(context.Background(), s3.Config{
+		Endpoint: cfg.Storage.Endpoint, Region: cfg.Storage.Region,
+		Bucket: cfg.Storage.Bucket, Prefix: cfg.Storage.Prefix,
+		AccessKey: creds.AccessKeyID, SecretKey: creds.SecretAccessKey,
+	})
+	if err != nil {
+		return nil, "", NewExitError(ExitAuthStorage, err.Error())
+	}
+	return client, "", nil
 }
 
 func newStatusCmd() *cobra.Command {
