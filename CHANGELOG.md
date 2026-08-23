@@ -29,7 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   recovery code alone (hidden prompt, or `REINSTATE_RECOVERY_CODE_FD` for
   automation) and appends a wrap for the new device with the same
   compare-and-swap discipline as the manifest. The root key and recovery code
-  never touch disk, config, or logs; the device key lives in the OS keyring.
+  never touch disk, config, or logs; the device key lives in the OS keyring
+  and is never overwritten or deleted by a later `init` or `recover`: a device
+  the keyring already lists re-attaches from its stored key, and a mismatch
+  refuses with nothing written.
   Selection between the BYO passphrase and the root key is `encryption.type`
   (`age-scrypt` or `root-key`); BYO behaviour is unchanged. See
   `docs/security-model.md`, "Hosted key model".

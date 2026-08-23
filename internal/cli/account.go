@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"crypto/subtle"
 	"errors"
 	"fmt"
 	"os"
@@ -150,7 +151,7 @@ written. It is never stored on disk, in config, or in logs.`,
 			}
 			confirmed, err := keyring.NormalizeRecoveryCode(string(typed))
 			crypto.Zero(typed)
-			if err != nil || confirmed != recoveryCode {
+			if err != nil || subtle.ConstantTimeCompare([]byte(confirmed), []byte(recoveryCode)) != 1 {
 				return NewExitError(ExitSafety, "recovery code confirmation did not match; nothing was written. Run rein account init again and re-enter the new code exactly")
 			}
 
@@ -161,18 +162,22 @@ written. It is never stored on disk, in config, or in logs.`,
 			}
 			secrets := seams.secretStore()
 			secretRef := deviceSecretRef(cfg.ProfileID, cfg.DeviceID)
+			if err := refuseExistingDeviceSecret(secrets, secretRef); err != nil {
+				return err
+			}
 			if err := secrets.SetSecret(secretRef, []byte(deviceKey.String())); err != nil {
 				return NewExitError(ExitAuthStorage, err.Error())
 			}
 			if err := keyring.Create(ctx, store, keyringKey, ring); err != nil {
+				// Only the key this command just created is rolled back.
 				_ = secrets.DeleteSecret(secretRef)
 				return NewExitError(ExitAuthStorage, err.Error())
 			}
-			if err := saveAccountEnrolment(home, cfg, now, "init"); err != nil {
+			if err := saveAccountEnrolment(home, cfg, now, ring.CurrentGeneration, "init"); err != nil {
 				return err
 			}
 			PrintHuman(cmd.OutOrStdout(), "account initialized: root key generated on this device, keyring written to storage")
-			PrintHuman(cmd.OutOrStdout(), "profile_id=%s device_id=%s key_generation=1 devices=1", cfg.ProfileID, cfg.DeviceID)
+			PrintHuman(cmd.OutOrStdout(), "profile_id=%s device_id=%s key_generation=%d devices=1", cfg.ProfileID, cfg.DeviceID, ring.CurrentGeneration)
 			PrintHuman(cmd.OutOrStdout(), "recovery code confirmed on this device; encryption.type=%s", schema.EncryptionRootKey)
 			return nil
 		},
@@ -235,24 +240,57 @@ written under the current key generation.`,
 			}
 			defer crypto.Zero(rootKey)
 
+			now := time.Now().UTC()
+			secrets := seams.secretStore()
+			secretRef := deviceSecretRef(cfg.ProfileID, cfg.DeviceID)
+			existing, err := loadDeviceKey(secrets, secretRef)
+			if err != nil {
+				return err
+			}
+			listed := ring.HasDevice(cfg.DeviceID)
+			switch {
+			case existing != nil && listed:
+				// The keyring already holds a wrap for the key this device
+				// keeps (for example the local record was lost, or an earlier
+				// enrolment crashed before writing it). Re-attach without
+				// touching the device key or the keyring.
+				current, earlier, err := ring.UnwrapForDevice(cfg.DeviceID, existing)
+				if err != nil {
+					return NewExitError(ExitSafety, fmt.Sprintf("the keyring lists device %s but not the key held in the OS keyring (%v); nothing was written. Choose a new device_id in config, or revoke this device from another enrolled device", cfg.DeviceID, err))
+				}
+				crypto.Zero(current)
+				for _, key := range earlier {
+					crypto.Zero(key)
+				}
+				if err := saveAccountEnrolment(home, cfg, now, ring.CurrentGeneration, "recover"); err != nil {
+					return err
+				}
+				PrintHuman(cmd.OutOrStdout(), "device already enrolled; local enrolment record restored, keyring and device key unchanged")
+				PrintHuman(cmd.OutOrStdout(), "profile_id=%s device_id=%s key_generation=%d devices=%d", cfg.ProfileID, cfg.DeviceID, ring.CurrentGeneration, ring.DeviceCount())
+				PrintHuman(cmd.ErrOrStderr(), "%s", unrecoverableNotice)
+				return nil
+			case existing != nil:
+				return NewExitError(ExitSafety, fmt.Sprintf("the OS keyring already holds a key for device %s that the keyring does not list; nothing was written. Remove that entry (%s) or choose a new device_id in config before enrolling", cfg.DeviceID, secretRef))
+			case listed:
+				return NewExitError(ExitSafety, fmt.Sprintf("the keyring lists device %s but this machine holds no key for it; nothing was written. Choose a new device_id in config, or revoke this device from another enrolled device", cfg.DeviceID))
+			}
+
 			deviceKey, err := age.GenerateX25519Identity()
 			if err != nil {
 				return NewExitError(ExitRuntime, err.Error())
 			}
-			secrets := seams.secretStore()
-			secretRef := deviceSecretRef(cfg.ProfileID, cfg.DeviceID)
 			if err := secrets.SetSecret(secretRef, []byte(deviceKey.String())); err != nil {
 				return NewExitError(ExitAuthStorage, err.Error())
 			}
-			now := time.Now().UTC()
 			updated, err := keyring.Update(ctx, store, keyringKey, func(k *keyring.Keyring) error {
 				return k.Enrol(rootKey, cfg.DeviceID, deviceKey.Recipient(), now)
 			})
 			if err != nil {
+				// Only the key this command just created is rolled back.
 				_ = secrets.DeleteSecret(secretRef)
 				return NewExitError(ExitAuthStorage, err.Error())
 			}
-			if err := saveAccountEnrolment(home, cfg, now, "recover"); err != nil {
+			if err := saveAccountEnrolment(home, cfg, now, updated.CurrentGeneration, "recover"); err != nil {
 				return err
 			}
 			PrintHuman(cmd.OutOrStdout(), "device enrolled from the recovery code; this device now reads everything written under key generation %d", updated.CurrentGeneration)
@@ -366,7 +404,7 @@ func loadAccountHome() (string, *schema.Config, error) {
 // saveAccountEnrolment switches the profile to the root-key model and records
 // the local enrolment. Config is saved first so a crash between the two
 // leaves a config whose key model matches the keyring already in storage.
-func saveAccountEnrolment(home string, cfg *schema.Config, now time.Time, via string) error {
+func saveAccountEnrolment(home string, cfg *schema.Config, now time.Time, generation int, via string) error {
 	cfg.Encryption.Type = schema.EncryptionRootKey
 	if err := config.SaveConfig(home, cfg); err != nil {
 		return NewExitError(ExitConfig, err.Error())
@@ -375,7 +413,7 @@ func saveAccountEnrolment(home string, cfg *schema.Config, now time.Time, via st
 		SchemaVersion:         schema.AccountSchemaVersion,
 		ProfileID:             cfg.ProfileID,
 		DeviceID:              cfg.DeviceID,
-		KeyGeneration:         1,
+		KeyGeneration:         generation,
 		RecoveryCodeConfirmed: true,
 		EnrolledVia:           via,
 		EnrolledAt:            now.Format(time.RFC3339),
@@ -384,6 +422,38 @@ func saveAccountEnrolment(home string, cfg *schema.Config, now time.Time, via st
 		return NewExitError(ExitConfig, err.Error())
 	}
 	return nil
+}
+
+// loadDeviceKey returns the device key stored under ref, nil when none is
+// stored, and an exit error when the store fails or the entry is malformed.
+func loadDeviceKey(secrets credentials.SecretStore, ref string) (*age.X25519Identity, error) {
+	secret, err := secrets.GetSecret(ref)
+	if errors.Is(err, credentials.ErrSecretNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, NewExitError(ExitAuthStorage, err.Error())
+	}
+	defer crypto.Zero(secret)
+	identity, err := age.ParseX25519Identity(strings.TrimSpace(string(secret)))
+	if err != nil {
+		return nil, NewExitError(ExitSafety, fmt.Sprintf("the OS keyring holds a malformed device key under %s; nothing was written. Remove that entry before enrolling", ref))
+	}
+	return identity, nil
+}
+
+// refuseExistingDeviceSecret keeps enrolment from overwriting a device key
+// that already exists: an existing key may be the only way to read wraps in
+// a keyring somewhere, so it is never replaced silently.
+func refuseExistingDeviceSecret(secrets credentials.SecretStore, ref string) error {
+	_, err := secrets.GetSecret(ref)
+	if errors.Is(err, credentials.ErrSecretNotFound) {
+		return nil
+	}
+	if err != nil {
+		return NewExitError(ExitAuthStorage, err.Error())
+	}
+	return NewExitError(ExitSafety, fmt.Sprintf("the OS keyring already holds a device key under %s; nothing was written. Remove that entry or choose a new device_id in config before initializing", ref))
 }
 
 // rootKeysFromConfig resolves the hosted-tier key provider for push and pull:

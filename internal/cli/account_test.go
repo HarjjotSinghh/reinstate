@@ -12,6 +12,8 @@ import (
 	"strings"
 	"testing"
 
+	"filippo.io/age"
+
 	"github.com/HarjjotSinghh/reinstate/internal/config"
 	"github.com/HarjjotSinghh/reinstate/internal/credentials"
 	"github.com/HarjjotSinghh/reinstate/internal/keyring"
@@ -383,4 +385,144 @@ func assertRecoveryCodeNotOnDisk(t *testing.T, needle string, roots ...string) {
 			t.Fatal(err)
 		}
 	}
+}
+
+// TestAccountRecoverOnListedDevice: a device whose keyring wrap already
+// exists must never have its device key overwritten or deleted. Losing the
+// local record re-attaches; a missing or foreign key refuses without writes.
+func TestAccountRecoverOnListedDevice(t *testing.T) {
+	locker := t.TempDir()
+	t.Setenv("REINSTATE_BACKEND", "memory")
+	t.Setenv("REINSTATE_MEMORY_BACKEND_DIR", locker)
+	t.Setenv("REINSTATE_S3_ACCESS_KEY_ID", "AKIA_TEST")
+	t.Setenv("REINSTATE_S3_SECRET_ACCESS_KEY", "SECRET_TEST")
+	t.Setenv("REINSTATE_RECOVERY_CODE_FD", "")
+	secrets := credentials.NewMemorySecrets()
+	device := &accountJourney{t: t, home: t.TempDir(), secrets: secrets}
+	if _, errb, code := device.run("init", "--endpoint", "https://example.r2.cloudflarestorage.com", "--bucket", "hop-test", "--yes"); code != ExitOK {
+		t.Fatalf("init exit=%d err=%q", code, errb)
+	}
+	var shownCode string
+	device.prompt = func(_ string, stderrSoFar func() string) ([]byte, error) {
+		shownCode = recoveryCodePattern.FindString(stderrSoFar())
+		return []byte(shownCode), nil
+	}
+	if out, errb, code := device.run("account", "init"); code != ExitOK {
+		t.Fatalf("account init exit=%d out=%q err=%q", code, out, errb)
+	}
+	device.prompt = nil
+	cfg, err := config.LoadConfig(device.home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ref := deviceSecretRef(cfg.ProfileID, cfg.DeviceID)
+	original, err := secrets.GetSecret(ref)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertKeyUnchanged := func(t *testing.T) {
+		t.Helper()
+		now, err := secrets.GetSecret(ref)
+		if err != nil || !bytes.Equal(now, original) {
+			t.Fatalf("device key changed or removed: %v", err)
+		}
+	}
+	assertKeyringUnchanged := func(t *testing.T) {
+		t.Helper()
+		out, errb, code := device.run("account", "status", "--json")
+		if code != ExitOK {
+			t.Fatalf("status exit=%d err=%q", code, errb)
+		}
+		var status map[string]any
+		_ = json.Unmarshal([]byte(out), &status)
+		if status["enrolled_devices"] != float64(1) || status["key_generation"] != float64(1) {
+			t.Fatalf("keyring changed: %v", status)
+		}
+	}
+
+	// Lost local record, key still present: recover re-attaches.
+	if err := os.Remove(config.AccountPath(device.home)); err != nil {
+		t.Fatal(err)
+	}
+	withRecoveryCodeFD(t, shownCode)
+	out, errb, code := device.run("account", "recover")
+	if code != ExitOK || !strings.Contains(out, "already enrolled") || !strings.Contains(out, "devices=1") {
+		t.Fatalf("re-attach: exit=%d out=%q err=%q", code, out, errb)
+	}
+	assertKeyUnchanged(t)
+	assertKeyringUnchanged(t)
+	account, err := config.LoadAccount(device.home)
+	if err != nil || account.KeyGeneration != 1 || account.EnrolledVia != "recover" || !account.RecoveryCodeConfirmed {
+		t.Fatalf("account record after re-attach: %+v %v", account, err)
+	}
+	if out, errb, code := device.run("status"); code != ExitOK {
+		t.Fatalf("status after re-attach: exit=%d out=%q err=%q", code, out, errb)
+	}
+
+	// Listed device whose key the OS keyring no longer holds: refuse, and do
+	// not touch the keyring.
+	if err := os.Remove(config.AccountPath(device.home)); err != nil {
+		t.Fatal(err)
+	}
+	if err := secrets.DeleteSecret(ref); err != nil {
+		t.Fatal(err)
+	}
+	withRecoveryCodeFD(t, shownCode)
+	out, errb, code = device.run("account", "recover")
+	if code != ExitSafety || !strings.Contains(errb, "holds no key") || !strings.Contains(errb, "nothing was written") {
+		t.Fatalf("missing key: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if _, err := secrets.GetSecret(ref); !errors.Is(err, credentials.ErrSecretNotFound) {
+		t.Fatalf("recover wrote a device key: %v", err)
+	}
+	if _, err := config.LoadAccount(device.home); !os.IsNotExist(err) {
+		t.Fatalf("recover wrote an account record: %v", err)
+	}
+	assertKeyringUnchanged(t)
+
+	// A key the keyring does not list: refuse without overwriting it.
+	foreign, err := age.GenerateX25519Identity()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := secrets.SetSecret(ref, []byte(foreign.String())); err != nil {
+		t.Fatal(err)
+	}
+	withRecoveryCodeFD(t, shownCode)
+	out, errb, code = device.run("account", "recover")
+	if code != ExitSafety || !strings.Contains(errb, "not the key held") {
+		t.Fatalf("foreign key: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if now, err := secrets.GetSecret(ref); err != nil || string(now) != foreign.String() {
+		t.Fatalf("foreign key overwritten or deleted: %v", err)
+	}
+	assertKeyringUnchanged(t)
+
+	// account init never overwrites an existing device key either.
+	original = []byte(foreign.String())
+	fresh := &accountJourney{t: t, home: t.TempDir(), secrets: secrets}
+	t.Setenv("REINSTATE_MEMORY_BACKEND_DIR", t.TempDir())
+	if _, errb, code := fresh.run("init", "--endpoint", "https://example.r2.cloudflarestorage.com", "--bucket", "hop-test",
+		"--yes"); code != ExitOK {
+		t.Fatalf("fresh init exit=%d err=%q", code, errb)
+	}
+	// Same profile and device ids as the enrolled device, pointed at an
+	// empty locker, so the only thing standing in the way is the stored key.
+	freshCfg, err := config.LoadConfig(fresh.home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	freshCfg.ProfileID = cfg.ProfileID
+	freshCfg.DeviceID = cfg.DeviceID
+	if err := config.SaveConfig(fresh.home, freshCfg); err != nil {
+		t.Fatal(err)
+	}
+	fresh.prompt = func(_ string, stderrSoFar func() string) ([]byte, error) {
+		return []byte(recoveryCodePattern.FindString(stderrSoFar())), nil
+	}
+	out, errb, code = fresh.run("account", "init")
+	if code != ExitSafety || !strings.Contains(errb, "already holds a device key") {
+		t.Fatalf("init over existing key: exit=%d out=%q err=%q", code, out, errb)
+	}
+	assertKeyUnchanged(t)
 }

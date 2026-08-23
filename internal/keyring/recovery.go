@@ -46,7 +46,7 @@ func GenerateRecoveryCode() (string, error) {
 // The canonical form is the only string ever fed to the key derivation.
 func NormalizeRecoveryCode(typed string) (string, error) {
 	var compact strings.Builder
-	for _, r := range strings.ToUpper(typed) {
+	for i, r := range strings.ToUpper(typed) {
 		switch {
 		case r == '-' || r == ' ' || r == '\t' || r == '\r' || r == '\n':
 			continue
@@ -57,7 +57,7 @@ func NormalizeRecoveryCode(typed string) (string, error) {
 		case strings.ContainsRune(crockford, r):
 			compact.WriteRune(r)
 		default:
-			return "", fmt.Errorf("recovery code contains an invalid character %q", r)
+			return "", fmt.Errorf("recovery code contains an invalid character at position %d (only Crockford base32 letters and digits, dashes, and spaces are allowed)", i+1)
 		}
 	}
 	code := compact.String()

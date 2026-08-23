@@ -455,7 +455,12 @@ with the storage coordinates first).
   descriptor for automation, like `REINSTATE_PASSPHRASE_FD`). Unwraps the root
   key locally, generates this device's key, and appends a wrap for it with
   compare-and-swap. A wrong code fails closed (exit `4`); a code with a typo
-  is rejected by its checksum before any key derivation (exit `2`).
+  is rejected by its checksum before any key derivation (exit `2`). An
+  existing device key in the OS keyring is never overwritten or deleted: when
+  the keyring already lists this device and the stored key matches, `recover`
+  only restores the local enrolment record; when the two disagree (key gone,
+  or a key the keyring does not list) it refuses with exit `7` and nothing is
+  written.
 - `rein account status [--json]` — encryption mode, whether this device is
   enrolled and how, whether the recovery code was confirmed here (a local
   boolean only), whether the device key is present in the OS keyring, and the
