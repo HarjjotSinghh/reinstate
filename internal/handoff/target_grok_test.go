@@ -1,11 +1,9 @@
 package handoff
 
 import (
-	"net/url"
-
 	"context"
 	"errors"
-	"github.com/HarjjotSinghh/reinstate/internal/exitcode"
+	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -15,6 +13,7 @@ import (
 
 	"github.com/HarjjotSinghh/reinstate/internal/adapter"
 	"github.com/HarjjotSinghh/reinstate/internal/capsule"
+	"github.com/HarjjotSinghh/reinstate/internal/exitcode"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
 )
 
