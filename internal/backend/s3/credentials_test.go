@@ -143,7 +143,7 @@ func TestRejectedCredentialIsRefreshedAndRetried(t *testing.T) {
 	for _, code := range []string{"ExpiredToken", "InvalidAccessKeyId", "AccessDenied"} {
 		t.Run(code, func(t *testing.T) {
 			f := newFakeS3(t, "reinstate")
-			f.rejectAs = code
+			f.RejectAs = code
 			f.accept("AKIA1")
 			src := &fakeSource{script: []Credentials{hourly("AKIA1"), hourly("AKIA2")}}
 			c := f.client(t, Config{Credentials: src})
@@ -259,14 +259,14 @@ func TestPushCompletesWhenCredentialExpiresMidPush(t *testing.T) {
 	// Expire AKIA1 right after the snapshot PUT of the second push, so the
 	// manifest GET and the conditional manifest PUT run on a refreshed key.
 	var expiredAt int
-	f.mu.Lock()
-	f.hook = func(n int) {
-		if expiredAt == 0 && n > seedRequests && strings.HasPrefix(f.requests[n-1], "PUT profiles/p1/snapshots/") {
+	f.Mu.Lock()
+	f.Hook = func(n int) {
+		if expiredAt == 0 && n > seedRequests && strings.HasPrefix(f.Requests[n-1], "PUT profiles/p1/snapshots/") {
 			expiredAt = n
-			f.valid = map[string]bool{"AKIA2": true}
+			f.AcceptLocked("AKIA2")
 		}
 	}
-	f.mu.Unlock()
+	f.Mu.Unlock()
 
 	session := filepath.Join(t.TempDir(), "session-001.jsonl")
 	plain := []byte(`{"type":"user","text":"synthetic fixture only"}`)

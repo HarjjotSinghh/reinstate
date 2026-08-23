@@ -19,6 +19,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Hosted storage: `storage.type = "hop"` syncs to the signed-in account's
+  **locker**, the storage bucket the control plane provisions for exactly one
+  account. `rein init --hop` writes that profile (the account is the profile,
+  the enrolled device is the device; no endpoint, bucket, or key is stored),
+  provisions the locker on the spot, and leaves `rein account init` and
+  `rein push` as the next steps. On every push and pull the client asks the
+  control plane for credentials bound to that bucket, valid for at most an
+  hour, and then speaks the S3 API to the locker directly; a credential that
+  expires or is refused mid-push is replaced by a fresh one and the push
+  continues. The first completed push is reported once so the control plane
+  can count it. `rein hop status` shows the locker's endpoint, bucket,
+  location, usage, enrolled devices, and the plan's limits. Refusals are
+  spelled out: not signed in (`rein login`), token revoked (`rein login`
+  again), and over quota by storage, devices, or push rate, each with the
+  control plane's own sentence and no SDK prose. `rein login` now sends a
+  location hint (`REINSTATE_HOP_LOCATION`, else the time zone's region;
+  `apac` by default and for India) that decides where the locker is
+  created. BYO storage is untouched.
 - Hosted key model on the first device (`rein account init`, `rein account
   recover`, `rein account status`). `account init` generates a random 256-bit
   root key on the device, derives the age identity that seals envelopes from

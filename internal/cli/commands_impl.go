@@ -25,6 +25,7 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/credentials"
 	"github.com/HarjjotSinghh/reinstate/internal/crypto"
 	"github.com/HarjjotSinghh/reinstate/internal/fsx"
+	"github.com/HarjjotSinghh/reinstate/internal/hop"
 	"github.com/HarjjotSinghh/reinstate/internal/lock"
 	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/schema"
@@ -80,6 +81,7 @@ func newInitCmd() *cobra.Command {
 		force                                                 bool
 		link                                                  bool
 		paste                                                 bool
+		hosted                                                bool
 	)
 	cmd := &cobra.Command{
 		Use:   "init",
@@ -104,6 +106,12 @@ func newInitCmd() *cobra.Command {
 			}
 			if err := config.EnsureLayout(home); err != nil {
 				return err
+			}
+			if hosted {
+				if endpoint != "" || bucket != "" || prefix != "" || paste || configuredProfileID != "" {
+					return NewExitError(ExitUsage, "--hop takes its endpoint, bucket, and profile from the signed-in account; do not combine it with --endpoint, --bucket, --prefix, --profile-id, or --paste")
+				}
+				return initHosted(cmd, home, existingFiles, projectMappings)
 			}
 			// Interactive setup collects the non-secret coordinates first, so a
 			// mistake in one field never discards the others and a bad value is
@@ -307,7 +315,63 @@ func newInitCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&link, "link", false, "print this profile's pairing code for another device")
 	cmd.Flags().BoolVar(&paste, "paste", false, "start setup from a pairing code printed by another device")
 	cmd.Flags().BoolVar(&force, "force", false, "back up and replace an already-initialized home")
+	cmd.Flags().BoolVar(&hosted, "hop", false, "use the Reinstate Hop locker of the signed-in account instead of your own bucket")
 	return cmd
+}
+
+// initHosted writes a config that syncs to the signed-in account's locker.
+// The profile is the account (one locker, one profile), the device is the
+// enrolled device, and no storage coordinate or credential is stored: the
+// control plane supplies them per session. Provisioning the locker is the
+// reachability probe.
+func initHosted(cmd *cobra.Command, home string, existingFiles, projectMappings []string) error {
+	tok, client, err := hostedSession(cmd)
+	if err != nil {
+		return err
+	}
+	if tok.AccountID == "" || tok.DeviceID == "" {
+		return NewExitError(ExitAuthStorage, "the stored device token predates locker support; run rein login again")
+	}
+	ctx := cmd.Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	locker, err := client.ProvisionLocker(ctx, tok.Token)
+	if err != nil {
+		return hopExitError(err)
+	}
+	cfg := schema.DefaultConfig(tok.AccountID, tok.DeviceID)
+	cfg.Storage = schema.StorageConfig{Type: schema.StorageHop}
+	cfg.Hop.URL = tok.ControlPlaneURL
+	for _, mapping := range projectMappings {
+		project, parseErr := parseProjectMapping(mapping)
+		if parseErr != nil {
+			return NewExitError(ExitUsage, parseErr.Error())
+		}
+		cfg.Projects = append(cfg.Projects, project)
+	}
+	if len(existingFiles) != 0 {
+		backupPath, err := fsx.BackupFiles(home, filepath.Join(home, "backups"), "reinitialize", existingFiles...)
+		if err != nil {
+			return NewExitError(ExitRuntime, "back up existing init state: "+err.Error())
+		}
+		backupRelative, err := filepath.Rel(home, backupPath)
+		if err != nil {
+			return NewExitError(ExitRuntime, "report init backup path: "+err.Error())
+		}
+		PrintHuman(cmd.OutOrStdout(), "backed up existing config/state to %s before reinitializing", filepath.ToSlash(backupRelative))
+	}
+	if err := config.SaveConfig(home, cfg); err != nil {
+		return err
+	}
+	if err := config.SaveState(home, schema.NewState()); err != nil {
+		return err
+	}
+	PrintHuman(cmd.OutOrStdout(), "initialized reinstate home for Reinstate Hop (config.toml + state.json); storage.type=%s", schema.StorageHop)
+	PrintHuman(cmd.OutOrStdout(), "locker %s at %s (location %s, plan %s)", locker.Bucket, locker.Endpoint, locker.LocationHint, locker.Plan)
+	PrintHuman(cmd.OutOrStdout(), "profile_id=%s device_id=%s", cfg.ProfileID, cfg.DeviceID)
+	PrintHuman(cmd.OutOrStdout(), "next: rein account init on this first device (or rein account recover on another), then rein push")
+	return nil
 }
 
 func existingInitFiles(home string) ([]string, error) {
@@ -420,7 +484,7 @@ func engineFromConfig(cmd *cobra.Command, passphrase string) (*sync.Engine, *sch
 			state.LastManifestRev != "" ||
 			len(state.Sessions) != 0
 	}
-	b, enginePrefix, err := backendFromConfig(cfg, home)
+	b, enginePrefix, hosted, err := openBackend(cmd, cfg, home)
 	if err != nil {
 		return nil, nil, "", err
 	}
@@ -428,8 +492,10 @@ func engineFromConfig(cmd *cobra.Command, passphrase string) (*sync.Engine, *sch
 	if cfg.Encryption.Type == schema.EncryptionRootKey {
 		keys, err = rootKeysFromConfig(context.Background(), cmd, cfg, home, b, enginePrefix)
 		if err != nil {
-			return nil, nil, "", err
+			return nil, nil, "", hostedError(hosted, err)
 		}
+	} else if hosted != nil {
+		return nil, nil, "", NewExitError(ExitConfig, "the hosted tier uses the root-key model; run rein account init on the first device (encryption.type must be "+schema.EncryptionRootKey+", not "+cfg.Encryption.Type+")")
 	} else {
 		if passphrase == "" {
 			secret, err := crypto.ReadPassphrase(cmd.InOrStdin(), cmd.ErrOrStderr())
@@ -445,13 +511,17 @@ func engineFromConfig(cmd *cobra.Command, passphrase string) (*sync.Engine, *sch
 	if commandContext := cmd.Context(); commandContext != nil {
 		envelopeCodec, _ = commandContext.Value(envelopeCodecContextKey{}).(sync.EnvelopeCodec)
 	}
-	return &sync.Engine{
+	eng := &sync.Engine{
 		Backend:               b,
 		Keys:                  keys,
 		Prefix:                enginePrefix,
 		RequireRemoteManifest: requireRemoteManifest,
 		Codec:                 envelopeCodec,
-	}, cfg, home, nil
+	}
+	if hosted != nil {
+		rememberHosted(cmd, hosted)
+	}
+	return eng, cfg, home, nil
 }
 
 // memoryBackendRoot is where the disk-backed "memory" backend keeps objects.
@@ -465,19 +535,35 @@ func memoryBackendRoot(home string) string {
 }
 
 // backendFromConfig opens the configured storage: disk-backed "memory" for
-// local e2e, else S3. The returned prefix is the engine-side key prefix
-// (empty when the client already scopes keys).
-func backendFromConfig(cfg *schema.Config, home string) (backend.Backend, string, error) {
+// local e2e, the hosted locker for storage.type "hop", else S3. The
+// returned prefix is the engine-side key prefix (empty when the client
+// already scopes keys).
+func backendFromConfig(cmd *cobra.Command, cfg *schema.Config, home string) (backend.Backend, string, error) {
+	b, prefix, _, err := openBackend(cmd, cfg, home)
+	return b, prefix, err
+}
+
+// openBackend is backendFromConfig that also returns the hosted credential
+// source when the locker is in use, so callers can report the control
+// plane's refusal instead of the storage layer's wrapped error.
+func openBackend(cmd *cobra.Command, cfg *schema.Config, home string) (backend.Backend, string, *hop.Source, error) {
 	if os.Getenv("REINSTATE_BACKEND") == "memory" {
 		disk, err := memory.NewDisk(memoryBackendRoot(home))
 		if err != nil {
-			return nil, "", NewExitError(ExitRuntime, err.Error())
+			return nil, "", nil, NewExitError(ExitRuntime, err.Error())
 		}
-		return disk, cfg.Storage.Prefix, nil
+		return disk, cfg.Storage.Prefix, nil, nil
+	}
+	if cfg.Storage.Type == schema.StorageHop {
+		client, source, err := hostedBackend(cmd)
+		if err != nil {
+			return nil, "", nil, err
+		}
+		return client, "", source, nil
 	}
 	creds, err := credentials.Resolve(home, cfg.Storage.CredentialRef)
 	if err != nil {
-		return nil, "", NewExitError(ExitAuthStorage, err.Error())
+		return nil, "", nil, NewExitError(ExitAuthStorage, err.Error())
 	}
 	client, err := s3.New(context.Background(), s3.Config{
 		Endpoint: cfg.Storage.Endpoint, Region: cfg.Storage.Region,
@@ -485,9 +571,9 @@ func backendFromConfig(cfg *schema.Config, home string) (backend.Backend, string
 		AccessKey: creds.AccessKeyID, SecretKey: creds.SecretAccessKey,
 	})
 	if err != nil {
-		return nil, "", NewExitError(ExitAuthStorage, err.Error())
+		return nil, "", nil, NewExitError(ExitAuthStorage, err.Error())
 	}
-	return client, "", nil
+	return client, "", nil, nil
 }
 
 func newStatusCmd() *cobra.Command {
@@ -637,7 +723,7 @@ func newPushCmd() *cobra.Command {
 			}
 			remoteManifest, err := eng.FetchManifest(context.Background())
 			if err != nil {
-				return NewExitError(ExitAuthStorage, err.Error())
+				return hostedError(hostedFrom(cmd), NewExitError(ExitAuthStorage, err.Error()))
 			}
 			var uploaded []string
 			var skipped int
@@ -707,6 +793,9 @@ func newPushCmd() *cobra.Command {
 						})
 						return NewExitError(ExitConflict, err.Error())
 					}
+					if hosted := hostedFrom(cmd); hosted != nil && hosted.LastError() != nil {
+						return hostedError(hosted, err)
+					}
 					if strings.Contains(err.Error(), "credential") {
 						return NewExitError(ExitSafety, err.Error())
 					}
@@ -730,6 +819,13 @@ func newPushCmd() *cobra.Command {
 				}
 				if err := config.SaveState(home, state); err != nil {
 					return err
+				}
+				if hosted := hostedFrom(cmd); hosted != nil && len(uploaded) != 0 {
+					// The first_push product event comes from this report;
+					// a failed report never fails a push that completed.
+					if err := hosted.ReportFirstPush(context.Background()); err != nil {
+						PrintHuman(cmd.ErrOrStderr(), "note: could not report the push to the control plane: %v", err)
+					}
 				}
 			}
 			if asJSON {

@@ -91,7 +91,24 @@ device token lands in the OS keyring. `rein whoami` prints the account, the
 device, and the control plane. `REINSTATE_HOP_URL` or `[hop] url` selects a
 non-production control plane. See [docs/hop.md](hop.md).
 
+### `rein hop status`
+
+Shows the signed-in account's locker: endpoint, bucket, location, plan,
+measured usage against the plan's storage limit, enrolled devices against
+the device limit, the push-rate limit, and when the first push happened.
+Before the first push it says the locker is not provisioned yet. `--json`
+emits the same. Exit `4` when the device is not signed in or its token was
+rejected.
+
 ### `rein init`
+
+`rein init --hop` configures this home for the hosted tier instead of your
+own bucket: it needs a prior `rein login`, provisions the account's locker,
+and writes `storage.type = "hop"` with the account as the profile and the
+enrolled device as the device. It takes `--project` and `--force` but not
+`--endpoint`, `--bucket`, `--prefix`, `--profile-id`, or `--paste`. Follow it
+with `rein account init` (first device) or `rein account recover` (later
+devices); see [docs/hop.md](hop.md).
 
 On a terminal, and when the coordinates were not already supplied by flags or
 environment, `rein init` opens a setup wizard: a provider preset, then the

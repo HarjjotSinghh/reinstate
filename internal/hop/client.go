@@ -65,23 +65,30 @@ func New(baseURL string) *Client {
 type DeviceInfo struct {
 	Name     string `json:"name"`
 	Platform string `json:"platform"`
+	// LocationHint is where this device would like the account's locker to
+	// live (see LocationHint). It matters only for the sign-in that creates
+	// the account.
+	LocationHint string `json:"location_hint,omitempty"`
 }
 
 // Account is the sign-in identity as shown to its owner.
 type Account struct {
-	ID          string `json:"id"`
-	Email       string `json:"email,omitempty"`
-	GitHubLogin string `json:"github_login,omitempty"`
-	CreatedAt   string `json:"created_at"`
+	ID           string `json:"id"`
+	Email        string `json:"email,omitempty"`
+	GitHubLogin  string `json:"github_login,omitempty"`
+	Plan         string `json:"plan,omitempty"`
+	LocationHint string `json:"location_hint,omitempty"`
+	CreatedAt    string `json:"created_at"`
 }
 
 // Device is one enrolled machine.
 type Device struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	Platform   string `json:"platform"`
-	CreatedAt  string `json:"created_at"`
-	LastSeenAt string `json:"last_seen_at"`
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	Platform     string `json:"platform"`
+	LocationHint string `json:"location_hint,omitempty"`
+	CreatedAt    string `json:"created_at"`
+	LastSeenAt   string `json:"last_seen_at"`
 }
 
 // LoginSession is a sign-in attempt awaiting browser approval.
@@ -111,6 +118,8 @@ type Identity struct {
 type Error struct {
 	Status  int
 	Message string
+	// Code names the kind of refusal when the control plane sent one.
+	Code string
 }
 
 func (e *Error) Error() string {
@@ -261,9 +270,10 @@ func (c *Client) do(ctx context.Context, method, path, token string, in, out any
 	if resp.StatusCode/100 != 2 {
 		var e struct {
 			Error string `json:"error"`
+			Code  string `json:"code"`
 		}
 		_ = json.Unmarshal(raw, &e)
-		return &Error{Status: resp.StatusCode, Message: e.Error}
+		return &Error{Status: resp.StatusCode, Message: e.Error, Code: e.Code}
 	}
 	return nil
 }

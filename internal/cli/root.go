@@ -173,6 +173,8 @@ func NewRoot(opts Options) *cobra.Command {
 	if opts.EnvelopeCodec != nil {
 		rootContext = context.WithValue(rootContext, envelopeCodecContextKey{}, opts.EnvelopeCodec)
 	}
+	rootContext = context.WithValue(rootContext, hopSeamsContextKey{}, hopOpts)
+	rootContext = context.WithValue(rootContext, hostedHolderContextKey{}, &hostedHolder{})
 	if opts.DeviceSecrets != nil || opts.RecoveryCodePrompt != nil {
 		rootContext = context.WithValue(rootContext, accountSeamsContextKey{}, accountSeams{
 			secrets:        opts.DeviceSecrets,
@@ -215,6 +217,7 @@ func NewRoot(opts Options) *cobra.Command {
 		newSetupCmd(),
 		newLoginCmd(hopOpts),
 		newWhoamiCmd(hopOpts),
+		newHopCmd(),
 		newInitCmd(),
 		newAccountCmd(),
 		newListCmd(),
