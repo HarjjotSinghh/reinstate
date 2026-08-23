@@ -305,7 +305,16 @@ func (m *launchdManager) Status(ctx context.Context, spec Spec) (State, error) {
 		line = strings.TrimSpace(line)
 		if strings.HasPrefix(line, "state = ") && state.Detail == "" {
 			state.Detail = strings.TrimPrefix(line, "state = ")
-			state.Running = state.Detail == "running"
+			switch state.Detail {
+			case "running":
+				state.Running = true
+			case "xpcproxy":
+				// launchd has handed the job to xpcproxy and the process is
+				// about to exec; for the first second after install the
+				// daemon is starting, not stopped.
+				state.Running = true
+				state.Detail = "starting"
+			}
 		}
 	}
 	if state.Detail == "" {

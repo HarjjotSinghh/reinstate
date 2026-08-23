@@ -13,7 +13,7 @@ var goldenSpec = Spec{
 	Executable: "/usr/local/bin/rein",
 	Args:       []string{"daemon", "run", "--pull-every", "5m"},
 	Home:       "/Users/fixture-user/.reinstate",
-	LogPath:    "/Users/fixture-user/.reinstate/daemon/service.log",
+	LogPath:    "/Users/fixture-user/.reinstate/daemon/launch.log",
 	Path:       "/usr/local/bin:/usr/bin:/bin",
 }
 
@@ -22,7 +22,7 @@ var windowsSpec = Spec{
 	Executable: `C:\Program Files\Reinstate\rein.exe`,
 	Args:       []string{"daemon", "run", "--pull-every", "5m"},
 	Home:       `C:\Users\fixture-user\.reinstate`,
-	LogPath:    `C:\Users\fixture-user\.reinstate\daemon\service.log`,
+	LogPath:    `C:\Users\fixture-user\.reinstate\daemon\launch.log`,
 	Path:       `C:\Windows\System32`,
 	UserID:     `HARJOTS-PC\fixture-user`,
 }
@@ -146,6 +146,13 @@ func TestLaunchdLifecycleCommands(t *testing.T) {
 	if err != nil || !state.Installed || !state.Running || state.Detail != "running" {
 		t.Fatalf("status: %+v err=%v", state, err)
 	}
+	// Right after bootstrap launchd reports the job as handed to xpcproxy;
+	// that is a daemon starting, not a stopped one.
+	runner.answers["launchctl print"] = "\tstate = xpcproxy\n\tpid = 4243\n"
+	if state, err := m.Status(ctx, spec); err != nil || !state.Running || state.Detail != "starting" {
+		t.Fatalf("status while xpcproxy spawns: %+v err=%v", state, err)
+	}
+	runner.calls = runner.calls[:len(runner.calls)-1]
 	if err := m.Stop(ctx, spec); err != nil {
 		t.Fatal(err)
 	}

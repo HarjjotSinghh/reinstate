@@ -119,8 +119,8 @@ on Reinstate Hop, and sends nothing that push and pull do not already send.
 
 rein daemon install registers it with launchd (macOS), Task Scheduler
 (Windows), or systemd --user (Linux) so it starts at login. rein daemon run
-is the foreground loop the service runs; use it under your own supervisor
-or to watch it work.`,
+is the foreground loop that login registration runs; use it under your own
+supervisor or to watch it work.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error { return cmd.Help() },
 	}
@@ -166,8 +166,22 @@ func runDaemon(cmd *cobra.Command, opts Options, flags daemonRunFlags, verbose b
 	if err != nil {
 		return err
 	}
-	if cfg.Encryption.Type != schema.EncryptionRootKey && os.Getenv(crypto.PassphraseFDEnv) == "" {
-		return NewExitError(ExitConfig, "the daemon cannot prompt for a passphrase; run rein account init so this device holds a root key (works on BYO storage and on Hop), or run it under a supervisor that sets "+crypto.PassphraseFDEnv)
+	syncer := &inProcessSyncer{opts: opts}
+	if cfg.Encryption.Type != schema.EncryptionRootKey {
+		// The passphrase descriptor is read to EOF once; a resident process
+		// must keep what it read for every later push and pull.
+		secret, configured, readErr := crypto.ReadSecretFD(crypto.PassphraseFDEnv)
+		if !configured {
+			return NewExitError(ExitConfig, "the daemon cannot prompt for a passphrase; run rein account init so this device holds a root key (works on BYO storage and on Hop), or run rein daemon run under a supervisor that sets "+crypto.PassphraseFDEnv)
+		}
+		if readErr != nil {
+			return NewExitError(ExitConfig, readErr.Error())
+		}
+		if len(secret) == 0 {
+			return NewExitError(ExitConfig, crypto.PassphraseFDEnv+" carried no passphrase (the descriptor is read once, when the daemon starts)")
+		}
+		syncer.passphrase = string(secret)
+		crypto.Zero(secret)
 	}
 	seams := daemonSeamsFrom(cmd)
 
@@ -240,7 +254,7 @@ func runDaemon(cmd *cobra.Command, opts Options, flags daemonRunFlags, verbose b
 	PrintHuman(cmd.ErrOrStderr(), "rein daemon running for %s (%s); log: %s; Ctrl-C stops it", home, backend, daemon.LogPath(home))
 	return daemon.Run(ctx, daemon.Options{
 		Home:     home,
-		Syncer:   &inProcessSyncer{opts: opts},
+		Syncer:   syncer,
 		Account:  account,
 		Notifier: notifier,
 		Clock:    seams.clock,
@@ -290,46 +304,76 @@ func sessionRootFor(agent, root string) string {
 // stores. Output is captured; the JSON result becomes the summary.
 type inProcessSyncer struct {
 	opts Options
+	// passphrase is the BYO passphrase read once at daemon start for
+	// homes still on the passphrase model; empty under the root-key model.
+	passphrase string
 }
 
+// passphraseContextKey carries a passphrase already read by the daemon to
+// the in-process push and pull, so they do not read the (spent) descriptor
+// or prompt. It never leaves the process.
+type passphraseContextKey struct{}
+
+func cachedPassphraseFrom(cmd *cobra.Command) string {
+	if ctx := cmd.Context(); ctx != nil {
+		if p, ok := ctx.Value(passphraseContextKey{}).(string); ok {
+			return p
+		}
+	}
+	return ""
+}
+
+// Push runs push --all. A conflict comes back as ErrConflict together with
+// the summary of what was still pushed past the diverged session(s).
 func (s *inProcessSyncer) Push(ctx context.Context) (string, error) {
 	out, err := s.execute(ctx, "push", "--all", "--json")
-	if err != nil {
+	if err != nil && !errors.Is(err, daemon.ErrConflict) {
 		return "", err
 	}
 	var result struct {
 		Snapshots []string `json:"snapshots"`
 		Skipped   int      `json:"skipped"`
+		Conflicts []string `json:"conflicts"`
 	}
 	if jsonErr := json.Unmarshal(out, &result); jsonErr != nil {
-		return strings.TrimSpace(string(out)), nil
+		return strings.TrimSpace(string(out)), err
 	}
-	return fmt.Sprintf("pushed %d snapshot(s), skipped %d unchanged", len(result.Snapshots), result.Skipped), nil
+	return summarize("pushed", len(result.Snapshots), "skipped", result.Skipped, "unchanged", len(result.Conflicts)), err
 }
 
 func (s *inProcessSyncer) Pull(ctx context.Context) (string, error) {
-	pulled, skipped, err := s.pullAll(ctx)
-	if err != nil {
+	pulled, skipped, conflicts, err := s.pullAll(ctx)
+	if err != nil && !errors.Is(err, daemon.ErrConflict) {
 		return "", err
 	}
-	return fmt.Sprintf("pulled %d snapshot(s), skipped %d already synced", pulled, skipped), nil
+	return summarize("pulled", pulled, "skipped", skipped, "already synced", conflicts), err
 }
 
-// pullAll runs pull --all and reports how many snapshots it restored and
-// how many were already synced.
-func (s *inProcessSyncer) pullAll(ctx context.Context) (pulled, skipped int, err error) {
+func summarize(verb string, n int, skipVerb string, skipped int, skipWhy string, conflicts int) string {
+	out := fmt.Sprintf("%s %d snapshot(s), %s %d %s", verb, n, skipVerb, skipped, skipWhy)
+	if conflicts > 0 {
+		out += fmt.Sprintf(", %d diverged (rein conflicts)", conflicts)
+	}
+	return out
+}
+
+// pullAll runs pull --all and reports how many snapshots it restored, how
+// many were already synced, and how many sessions it recorded a conflict
+// for (the error is then ErrConflict, with the counts still valid).
+func (s *inProcessSyncer) pullAll(ctx context.Context) (pulled, skipped, conflicts int, err error) {
 	out, err := s.execute(ctx, "pull", "--all", "--json")
-	if err != nil {
-		return 0, 0, err
+	if err != nil && !errors.Is(err, daemon.ErrConflict) {
+		return 0, 0, 0, err
 	}
 	var result struct {
-		Pulled  int `json:"pulled"`
-		Skipped int `json:"skipped"`
+		Pulled    int      `json:"pulled"`
+		Skipped   int      `json:"skipped"`
+		Conflicts []string `json:"conflicts"`
 	}
 	if jsonErr := json.Unmarshal(out, &result); jsonErr != nil {
-		return 0, 0, fmt.Errorf("pull: unexpected output %q", strings.TrimSpace(string(out)))
+		return 0, 0, 0, fmt.Errorf("pull: unexpected output %q", strings.TrimSpace(string(out)))
 	}
-	return result.Pulled, result.Skipped, nil
+	return result.Pulled, result.Skipped, len(result.Conflicts), err
 }
 
 // resumePullFresh is how recent the daemon's last successful pull must be
@@ -363,16 +407,29 @@ func resumePull(ctx context.Context, opts Options, home string, now time.Time) s
 	if err != nil || !status.Alive(now) {
 		return ""
 	}
+	// This measures the daemon's last pull, not this command's own: two
+	// resumes within resumePullFresh of a stale daemon pull both pull (one
+	// manifest read each, nothing newer the second time). The daemon owns
+	// the status file, so the hook does not stamp it.
 	if !status.Pull.LastOK.IsZero() && now.Sub(status.Pull.LastOK) < resumePullFresh {
 		return ""
 	}
-	pulled, _, err := (&inProcessSyncer{opts: opts}).pullAll(ctx)
+	if cfg, err := config.LoadConfig(home); err != nil || (cfg.Encryption.Type != schema.EncryptionRootKey && os.Getenv(crypto.PassphraseFDEnv) == "") {
+		// A passphrase-model home would have to prompt here; the daemon's
+		// own schedule keeps it fresh instead.
+		return ""
+	}
+	pulled, _, conflicts, err := (&inProcessSyncer{opts: opts}).pullAll(ctx)
 	switch {
 	case errors.Is(err, daemon.ErrLocked):
 		// The daemon is pulling right now; its result is as fresh as ours.
 		return ""
 	case errors.Is(err, daemon.ErrConflict):
-		return "pull before resume: " + err.Error()
+		note := fmt.Sprintf("pull before resume: %d session(s) diverged on this device (rein conflicts)", conflicts)
+		if pulled > 0 {
+			note += fmt.Sprintf("; pulled %d newer snapshot(s)", pulled)
+		}
+		return note
 	case err != nil:
 		return "pull before resume failed: " + err.Error() + "; resuming the local copy"
 	case pulled > 0:
@@ -385,6 +442,9 @@ func resumePull(ctx context.Context, opts Options, home string, now time.Time) s
 func (s *inProcessSyncer) execute(ctx context.Context, args ...string) ([]byte, error) {
 	var stdout, stderr bytes.Buffer
 	opts := s.opts
+	if s.passphrase != "" {
+		ctx = context.WithValue(ctx, passphraseContextKey{}, s.passphrase)
+	}
 	opts.Context = ctx
 	opts.Stdout, opts.Stderr, opts.Stdin = &stdout, &stderr, strings.NewReader("")
 	opts.Args = args
@@ -393,7 +453,9 @@ func (s *inProcessSyncer) execute(ctx context.Context, args ...string) ([]byte, 
 	case ExitOK:
 		return stdout.Bytes(), nil
 	case ExitConflict:
-		return nil, fmt.Errorf("%s: %w", args[0], daemon.ErrConflict)
+		// --json output was written before the exit; callers that care
+		// about what still happened past the conflict can read it.
+		return stdout.Bytes(), fmt.Errorf("%s: %w", args[0], daemon.ErrConflict)
 	}
 	msg := strings.TrimSpace(stderr.String())
 	if msg == "" {
@@ -477,7 +539,7 @@ func daemonSpec(cmd *cobra.Command, flags daemonRunFlags) (daemon.Manager, daemo
 		Label:      daemon.LabelFor(home, defaultHome),
 		Executable: exe,
 		Args:       flags.args(),
-		LogPath:    filepath.Join(daemon.Dir(home), "service.log"),
+		LogPath:    filepath.Join(daemon.Dir(home), "launch.log"),
 		Path:       servicePath(exe),
 	}
 	if runtime.GOOS == "windows" {
@@ -561,7 +623,7 @@ func newDaemonInstallCmd() *cobra.Command {
 		},
 	}
 	flags.bind(cmd)
-	cmd.Flags().StringArrayVar(&flags.env, "env", nil, "extra KEY=VALUE for the service environment (not on Windows)")
+	cmd.Flags().StringArrayVar(&flags.env, "env", nil, "extra KEY=VALUE for the daemon's environment at login (not on Windows)")
 	_ = cmd.Flags().MarkHidden("home")
 	_ = cmd.Flags().MarkHidden("env")
 	return cmd
@@ -580,10 +642,30 @@ func newDaemonUninstallCmd() *cobra.Command {
 			if err := manager.Uninstall(cmd.Context(), spec); err != nil {
 				return NewExitError(ExitRuntime, fmt.Sprintf("uninstall with %s: %v", manager.Kind(), err))
 			}
-			_ = os.Remove(daemon.StatusPath(home))
+			// The daemon writes its status file once more as it stops; remove
+			// it only after that, or the final write brings it back.
+			if daemonGone(home, 5*time.Second) {
+				_ = os.Remove(daemon.StatusPath(home))
+			}
 			PrintHuman(cmd.OutOrStdout(), "uninstalled %s %s; the log under %s is kept", manager.Kind(), spec.Label, daemon.Dir(home))
 			return nil
 		},
+	}
+}
+
+// daemonGone waits up to timeout for the daemon to finish stopping (its
+// status file then names no pid, or the process is no longer there).
+func daemonGone(home string, timeout time.Duration) bool {
+	deadline := time.Now().Add(timeout)
+	for {
+		status, err := daemon.ReadStatus(home)
+		if err != nil || status.PID == 0 || !status.Alive(time.Now()) {
+			return true
+		}
+		if time.Now().After(deadline) {
+			return false
+		}
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 
@@ -665,7 +747,7 @@ func newDaemonStatusCmd() *cobra.Command {
 					registration += " (" + state.Detail + ")"
 				}
 			}
-			PrintHuman(out, "service:  %s %s, %s", manager.Kind(), spec.Label, registration)
+			PrintHuman(out, "login:    %s %s, %s", manager.Kind(), spec.Label, registration)
 			switch {
 			case errors.Is(statusErr, daemon.ErrNoStatus):
 				PrintHuman(out, "daemon:   never ran for %s", home)
@@ -721,7 +803,11 @@ func describeOutcome(now time.Time, o daemon.Outcome) string {
 	case o.OK:
 		return fmt.Sprintf("%s, %s", o.Summary, ago(now, o.At))
 	case o.Conflict:
-		return fmt.Sprintf("conflict recorded %s; rein conflicts list", ago(now, o.At))
+		text := fmt.Sprintf("conflict recorded %s; rein conflicts list", ago(now, o.At))
+		if o.Summary != "" {
+			text = o.Summary + ", " + text
+		}
+		return text
 	default:
 		text := fmt.Sprintf("failed %s: %s", ago(now, o.At), o.Error)
 		if !o.LastOK.IsZero() {

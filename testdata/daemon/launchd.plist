@@ -31,8 +31,8 @@
 	<key>ProcessType</key>
 	<string>Background</string>
 	<key>StandardOutPath</key>
-	<string>/Users/fixture-user/.reinstate/daemon/service.log</string>
+	<string>/Users/fixture-user/.reinstate/daemon/launch.log</string>
 	<key>StandardErrorPath</key>
-	<string>/Users/fixture-user/.reinstate/daemon/service.log</string>
+	<string>/Users/fixture-user/.reinstate/daemon/launch.log</string>
 </dict>
 </plist>

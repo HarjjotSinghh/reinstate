@@ -11,8 +11,10 @@ import (
 	"time"
 
 	"github.com/HarjjotSinghh/reinstate/internal/backend/s3/s3test"
+	"github.com/HarjjotSinghh/reinstate/internal/config"
 	"github.com/HarjjotSinghh/reinstate/internal/daemon"
 	"github.com/HarjjotSinghh/reinstate/internal/daemon/daemontest"
+	syncengine "github.com/HarjjotSinghh/reinstate/internal/sync"
 )
 
 // fakeManager is a service manager that records what the CLI asked of it.
@@ -313,7 +315,7 @@ func TestDaemonJourneyHop(t *testing.T) {
 	if code != ExitOK {
 		t.Fatalf("daemon status: exit=%d out=%q", code, out)
 	}
-	for _, want := range []string{"service:  fake", "daemon:   running (pid", "push:     pushed 1 snapshot(s), skipped 0 unchanged, just now", "pull:     pulled 0 snapshot(s), skipped 1 already synced, just now", "devices:  macbook (this device), desktop", `pending:  device "desktop" wants to join`, "watching: " + status.Roots[0]} {
+	for _, want := range []string{"login:    fake", "daemon:   running (pid", "push:     pushed 1 snapshot(s), skipped 0 unchanged, just now", "pull:     pulled 0 snapshot(s), skipped 1 already synced, just now", "devices:  macbook (this device), desktop", `pending:  device "desktop" wants to join`, "watching: " + status.Roots[0]} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("daemon status missing %q:\n%s", want, out)
 		}
@@ -433,7 +435,7 @@ func TestDaemonInstallLifecycle(t *testing.T) {
 	if spec.Label == daemon.DefaultLabel || !strings.HasPrefix(spec.Label, daemon.DefaultLabel+".") {
 		t.Fatalf("a non-default home must get its own label: %q", spec.Label)
 	}
-	if !strings.HasPrefix(spec.Path, filepath.Dir("/opt/rein/bin/rein")) || spec.LogPath != filepath.Join(a.home, "daemon", "service.log") {
+	if !strings.HasPrefix(spec.Path, filepath.Dir("/opt/rein/bin/rein")) || spec.LogPath != filepath.Join(a.home, "daemon", "launch.log") {
 		t.Fatalf("spec path/log: %+v", spec)
 	}
 	out, _, code = run("daemon", "status", "--json")
@@ -494,5 +496,167 @@ func TestSessionRootFor(t *testing.T) {
 	}
 	if got := sessionRootFor("opencode", "/h/opencode"); got != "/h/opencode" {
 		t.Fatal(got)
+	}
+}
+
+// TestPullAllContinuesPastConflictedSessions: the daemon runs pull --all on
+// a schedule, so one diverged session must neither hold back the other
+// sessions' newer snapshots nor grow the conflicts directory on every tick.
+func TestPullAllContinuesPastConflictedSessions(t *testing.T) {
+	plane := newFakeControlPlane(t)
+	plane.s3 = s3test.NewPlain(t, "lk-0000000000000000pullconflict")
+	t.Setenv(hopURLEnv, plane.srv.URL)
+	for _, env := range []string{"REINSTATE_BACKEND", "REINSTATE_S3_ACCESS_KEY_ID", "REINSTATE_S3_SECRET_ACCESS_KEY", "REINSTATE_PASSPHRASE_FD", "REINSTATE_RECOVERY_CODE_FD", "REINSTATE_PAIRING_CODE_FD", "REINSTATE_HOP_LOCATION", "CLAUDE_CONFIG_DIR", "CODEX_HOME"} {
+		t.Setenv(env, "")
+	}
+	project := writeClaudeFixture(t)
+	root := filepath.Join(os.Getenv("HOME"), ".claude", "projects", claudeProjectDirectoryForTest(project))
+	meta, _ := json.Marshal(map[string]any{"type": "meta", "cwd": project})
+	second := append(append([]byte{}, meta...), []byte("\n"+`{"type":"user","message":{"content":"second session"}}`+"\n")...)
+	if err := os.WriteFile(filepath.Join(root, "session-second.jsonl"), second, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	a := newPairDevice(t, plane, "macbook")
+	for _, args := range [][]string{{"login"}, {"init", "--hop", "--project", "local/locker=" + project}, {"account", "init"}, {"push", "--all"}} {
+		if out, errb, code := a.run(args...); code != ExitOK {
+			t.Fatalf("A %v: exit=%d out=%q err=%q", args, code, out, errb)
+		}
+	}
+	// Another device moved session-locker's head (this device's state no
+	// longer names the remote snapshot) and this device edited its local
+	// copy since its last sync. That is a divergence pull cannot resolve on
+	// its own, while session-second stays in step.
+	state, err := config.LoadState(a.home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lockerKey := syncengine.SessionKey("claude", "session-locker")
+	entry := state.Sessions[lockerKey]
+	entry.RemoteRevision = "snap-moved-elsewhere"
+	state.Sessions[lockerKey] = entry
+	if err := config.SaveState(a.home, state); err != nil {
+		t.Fatal(err)
+	}
+	if err := appendLine(filepath.Join(root, "session-locker.jsonl"), `{"type":"assistant","message":{"content":"edited here too"}}`); err != nil {
+		t.Fatal(err)
+	}
+
+	conflictFiles := func() int {
+		entries, _ := filepath.Glob(filepath.Join(a.home, "conflicts", "c-*.json"))
+		return len(entries)
+	}
+	for i := 1; i <= 3; i++ {
+		out, errb, code := a.run("pull", "--all", "--json")
+		if code != ExitConflict {
+			t.Fatalf("pull %d: exit=%d out=%q err=%q", i, code, out, errb)
+		}
+		var result struct {
+			Pulled    int      `json:"pulled"`
+			Skipped   int      `json:"skipped"`
+			Conflicts []string `json:"conflicts"`
+		}
+		if err := json.Unmarshal([]byte(out), &result); err != nil {
+			t.Fatalf("pull %d output %q: %v", i, out, err)
+		}
+		if result.Skipped != 1 || len(result.Conflicts) != 1 || result.Conflicts[0] != lockerKey {
+			t.Fatalf("pull %d should skip the synced session and report the diverged one: %+v", i, result)
+		}
+		if !strings.Contains(errb, "1 session(s) diverged locally") || !strings.Contains(errb, lockerKey) {
+			t.Fatalf("pull %d stderr: %q", i, errb)
+		}
+		if n := conflictFiles(); n != 1 {
+			t.Fatalf("after pull %d: %d conflict record(s), want exactly 1", i, n)
+		}
+	}
+	// push --all meets the same divergence, does not add a record either,
+	// and still pushes the other session's change.
+	if err := appendLine(filepath.Join(root, "session-second.jsonl"), `{"type":"assistant","message":{"content":"second moved on"}}`); err != nil {
+		t.Fatal(err)
+	}
+	for i := 1; i <= 2; i++ {
+		out, errb, code := a.run("push", "--all", "--json")
+		if code != ExitConflict {
+			t.Fatalf("push %d: exit=%d out=%q err=%q", i, code, out, errb)
+		}
+		var result struct {
+			Snapshots []string `json:"snapshots"`
+			Skipped   int      `json:"skipped"`
+			Conflicts []string `json:"conflicts"`
+		}
+		if err := json.Unmarshal([]byte(out), &result); err != nil {
+			t.Fatalf("push %d output %q: %v", i, out, err)
+		}
+		wantPushed := 0
+		if i == 1 {
+			wantPushed = 1
+		}
+		if len(result.Snapshots) != wantPushed || result.Skipped != 1-wantPushed || len(result.Conflicts) != 1 || result.Conflicts[0] != lockerKey {
+			t.Fatalf("push %d should push the other session past the diverged one: %+v", i, result)
+		}
+		if n := conflictFiles(); n != 1 {
+			t.Fatalf("after push %d: %d conflict record(s), want exactly 1", i, n)
+		}
+	}
+}
+
+// TestDaemonRunKeepsThePassphraseForItsLifetime: a BYO home still on the
+// passphrase model hands the daemon its passphrase through a descriptor,
+// which is read once; every later push and pull must reuse it rather than
+// read the spent descriptor and fail with an empty secret.
+func TestDaemonRunKeepsThePassphraseForItsLifetime(t *testing.T) {
+	t.Setenv("REINSTATE_BACKEND", "memory")
+	t.Setenv("REINSTATE_S3_ACCESS_KEY_ID", "AKIA_TEST")
+	t.Setenv("REINSTATE_S3_SECRET_ACCESS_KEY", "SECRET_TEST")
+	for _, env := range []string{"REINSTATE_PASSPHRASE_FD", "REINSTATE_RECOVERY_CODE_FD", "REINSTATE_PAIRING_CODE_FD", "CLAUDE_CONFIG_DIR", "CODEX_HOME"} {
+		t.Setenv(env, "")
+	}
+	project := writeClaudeFixture(t)
+	plane := newFakeControlPlane(t)
+	a := newPairDevice(t, plane, "macbook")
+	if out, errb, code := a.run("init", "--endpoint", "https://example.r2.cloudflarestorage.com", "--bucket", "reinstate-test", "--project", "local/locker="+project, "--yes"); code != ExitOK {
+		t.Fatalf("init: exit=%d out=%q err=%q", code, out, errb)
+	}
+
+	// Without the descriptor the daemon refuses up front instead of failing
+	// on its first pull.
+	if out, errb, code := a.run("daemon", "run"); code != ExitConfig || !strings.Contains(errb, "cannot prompt for a passphrase") {
+		t.Fatalf("daemon run without a passphrase source: exit=%d out=%q err=%q", code, out, errb)
+	}
+
+	withSecretFD(t, "REINSTATE_PASSPHRASE_FD", "daemon-test-passphrase-not-real")
+	d := startDaemon(t, a, &fakeManager{})
+	if e := eventOf(t, d.until(1), "pull"); e.Err != nil {
+		t.Fatalf("start-up pull: %v", e.Err)
+	}
+	if e := eventOf(t, d.advance(3*time.Second), "push"); e.Err != nil {
+		t.Fatalf("start-up push (second use of the passphrase): %v", e.Err)
+	}
+	if e := eventOf(t, d.advance(time.Minute), "pull"); e.Err != nil {
+		t.Fatalf("scheduled pull (third use of the passphrase): %v", e.Err)
+	}
+	sessionPath := filepath.Join(os.Getenv("HOME"), ".claude", "projects", claudeProjectDirectoryForTest(project), "session-locker.jsonl")
+	if err := appendLine(sessionPath, `{"type":"assistant","message":{"content":"still encrypted with the same passphrase"}}`); err != nil {
+		t.Fatal(err)
+	}
+	d.events <- daemon.Change{Path: sessionPath}
+	d.until(1)
+	if e := eventOf(t, d.advance(3*time.Second), "push"); e.Err != nil {
+		t.Fatalf("push after change: %v", e.Err)
+	}
+	status, err := daemon.ReadStatus(a.home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !status.Push.OK || !status.Pull.OK || status.Push.Summary != "pushed 1 snapshot(s), skipped 0 unchanged" {
+		t.Fatalf("status: push=%+v pull=%+v", status.Push, status.Pull)
+	}
+	// The shell, given a fresh descriptor, reads what the daemon pushed.
+	if code := d.stop(); code != ExitOK {
+		t.Fatalf("daemon exit=%d err=%q", code, d.stderr.String())
+	}
+	withSecretFD(t, "REINSTATE_PASSPHRASE_FD", "daemon-test-passphrase-not-real")
+	if out, errb, code := a.run("pull", "--all", "--json"); code != ExitOK || !strings.Contains(out, `"skipped": 1`) {
+		t.Fatalf("pull after the daemon: exit=%d out=%q err=%q", code, out, errb)
 	}
 }
