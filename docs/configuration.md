@@ -53,6 +53,24 @@ control plane. The device token issued by `rein login` is never a config
 field: it lives in the OS keyring under `reinstate` / `hop/device-token`. See
 [hop.md](hop.md).
 
+A profile that syncs to the account's locker is written by `rein init --hop`:
+
+```toml
+[storage]
+type = "hop"
+
+[encryption]
+type = "root-key"
+
+[hop]
+url = "https://hop.reinstate.dev"
+```
+
+`endpoint`, `bucket`, `region`, and `credential_ref` stay empty: the control
+plane supplies the locker's coordinates and hourly credentials to the
+signed-in device on every run. `profile_id` is the account id and
+`device_id` the enrolled device id.
+
 ## Restore safety
 
 A restore replaces a vendor session file, so Reinstate first checks whether an

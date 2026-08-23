@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/HarjjotSinghh/reinstate/internal/backend/s3/s3test"
 	"github.com/HarjjotSinghh/reinstate/internal/credentials"
 	"github.com/HarjjotSinghh/reinstate/internal/hop"
 )
@@ -31,6 +32,22 @@ type fakeControlPlane struct {
 	emails   []string                // addresses a link was "sent" to
 	expireAt map[string]bool         // session ids reported as expired
 	seq      int
+
+	// Locker state (see hop_locker_test.go for the journeys).
+	s3 *s3test.Fake // nil until a test attaches one
+	// locker is the single account's bucket; provisioned on first POST.
+	locker      *fakeLocker
+	hints       []string // location hints received at sign-in
+	mints       []string // access key ids minted, in order
+	credTTL     time.Duration
+	refuse      string // error code every mint answers with, when set
+	usageBytes  int64
+	firstPushes int
+}
+
+type fakeLocker struct {
+	bucket      string
+	firstPushAt string
 }
 
 type fakeSession struct {
@@ -48,6 +65,10 @@ func newFakeControlPlane(t *testing.T) *fakeControlPlane {
 	mux.HandleFunc("POST /v1/login/sessions", f.create)
 	mux.HandleFunc("POST /v1/login/sessions/{id}/poll", f.poll)
 	mux.HandleFunc("GET /v1/whoami", f.whoami)
+	mux.HandleFunc("POST /v1/locker", f.provisionLocker)
+	mux.HandleFunc("GET /v1/locker", f.lockerStatus)
+	mux.HandleFunc("POST /v1/locker/credentials", f.mintCredentials)
+	mux.HandleFunc("POST /v1/locker/first-push", f.firstPush)
 	mux.HandleFunc("GET /login/github/{link}", func(w http.ResponseWriter, r *http.Request) {
 		f.approveLink(w, r.PathValue("link"), "github")
 	})
@@ -77,6 +98,7 @@ func (f *fakeControlPlane) create(w http.ResponseWriter, r *http.Request) {
 		writeFakeError(w, 400, "device.name and device.platform are required")
 		return
 	}
+	f.hints = append(f.hints, req.Device.LocationHint)
 	f.seq++
 	s := &fakeSession{id: "sess-" + strconv.Itoa(f.seq), secret: "secret-" + strconv.Itoa(f.seq), link: "link-" + strconv.Itoa(f.seq), method: req.Method, email: req.Email, device: req.Device, status: hop.StatusPending}
 	resp := map[string]any{"session_id": s.id, "poll_secret": s.secret, "method": s.method, "expires_at": "2026-08-23T12:10:00Z", "interval_seconds": 0}
@@ -111,7 +133,7 @@ func (f *fakeControlPlane) approveLink(w http.ResponseWriter, link, method strin
 		}
 		s.status = hop.StatusApproved
 		s.token = "hop_" + s.id
-		acct := hop.Account{ID: "acct-1", CreatedAt: "2026-08-23T12:00:00Z"}
+		acct := hop.Account{ID: "acct-1", Plan: "hop", LocationHint: "apac", CreatedAt: "2026-08-23T12:00:00Z"}
 		if method == "github" {
 			acct.GitHubLogin, acct.Email = "octocat", "octo@example.com"
 		} else {

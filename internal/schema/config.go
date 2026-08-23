@@ -59,6 +59,18 @@ type RestoreConfig struct {
 	ActiveAgentPolicy string `toml:"active_agent_policy"`
 }
 
+// Storage backend types.
+const (
+	// StorageS3 is BYO storage: an S3-compatible bucket the user owns,
+	// reached with keys from the OS keyring or environment.
+	StorageS3 = "s3"
+	// StorageHop is the hosted tier: the account's locker, reached with
+	// hourly credentials minted by the control plane for the signed-in
+	// device. Endpoint, bucket, and region come from the control plane, so
+	// none of them is stored here.
+	StorageHop = "hop"
+)
+
 // StorageConfig describes remote storage (no secrets).
 type StorageConfig struct {
 	Type          string `toml:"type"`

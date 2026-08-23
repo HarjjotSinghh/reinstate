@@ -14,6 +14,7 @@ import (
 
 	"github.com/HarjjotSinghh/reinstate/internal/config"
 	"github.com/HarjjotSinghh/reinstate/internal/pairing"
+	"github.com/HarjjotSinghh/reinstate/internal/schema"
 	"github.com/HarjjotSinghh/reinstate/internal/tui"
 	"github.com/HarjjotSinghh/reinstate/internal/tui/wizard"
 	"github.com/HarjjotSinghh/reinstate/internal/ui"
@@ -58,6 +59,9 @@ func printPairingCode(cmd *cobra.Command) error {
 	cfg, err := config.LoadConfig(home)
 	if err != nil {
 		return NewExitError(ExitConfig, "this device is not initialized yet; run rein init first")
+	}
+	if cfg.Storage.Type == schema.StorageHop {
+		return NewExitError(ExitConfig, "this profile syncs to a Reinstate Hop locker; another device joins it with rein login, rein init --hop, and rein account recover, not a pairing code")
 	}
 	if strings.TrimSpace(cfg.Storage.Bucket) == "" {
 		return NewExitError(ExitConfig, "this device has no storage configured; run rein init first")

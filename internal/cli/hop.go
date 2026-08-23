@@ -104,7 +104,7 @@ func runLogin(cmd *cobra.Command, o hopCommandOptions, addr string, asJSON, noBr
 	if addr != "" {
 		method = hop.MethodEmail
 	}
-	info := hop.DeviceInfo{Name: o.name(), Platform: device.PlatformID()}
+	info := hop.DeviceInfo{Name: o.name(), Platform: device.PlatformID(), LocationHint: hop.LocationHint()}
 	out, errOut := cmd.OutOrStdout(), cmd.ErrOrStderr()
 	if !asJSON {
 		if existing, err := o.tokenStore().GetDeviceToken(); err == nil {
@@ -203,6 +203,9 @@ func newWhoamiCmd(o hopCommandOptions) *cobra.Command {
 			}
 			out := cmd.OutOrStdout()
 			PrintHuman(out, "Account: %s", accountLabel(id.Account))
+			if id.Account.Plan != "" {
+				PrintHuman(out, "Plan:    %s (locker location %s)", id.Account.Plan, id.Account.LocationHint)
+			}
 			PrintHuman(out, "Device:  %s (%s, enrolled %s)", id.Device.Name, id.Device.Platform, id.Device.CreatedAt)
 			PrintHuman(out, "Hop:     %s", tok.ControlPlaneURL)
 			return nil

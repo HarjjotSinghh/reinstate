@@ -108,7 +108,7 @@ written. It is never stored on disk, in config, or in logs.`,
 				return NewExitError(ExitConfig, "read account state: "+err.Error())
 			}
 			ctx := context.Background()
-			store, prefix, err := backendFromConfig(cfg, home)
+			store, prefix, err := backendFromConfig(cmd, cfg, home)
 			if err != nil {
 				return err
 			}
@@ -207,7 +207,7 @@ written under the current key generation.`,
 				return NewExitError(ExitConfig, "read account state: "+err.Error())
 			}
 			ctx := context.Background()
-			store, prefix, err := backendFromConfig(cfg, home)
+			store, prefix, err := backendFromConfig(cmd, cfg, home)
 			if err != nil {
 				return err
 			}
@@ -343,7 +343,7 @@ func newAccountStatusCmd() *cobra.Command {
 			if _, err := seams.secretStore().GetSecret(deviceSecretRef(cfg.ProfileID, cfg.DeviceID)); err == nil {
 				r.DeviceKeyPresent = true
 			}
-			if store, prefix, err := backendFromConfig(cfg, home); err != nil {
+			if store, prefix, err := backendFromConfig(cmd, cfg, home); err != nil {
 				r.Error = err.Error()
 			} else if ring, _, err := keyring.Load(context.Background(), store, keyring.ObjectKey(prefix)); err == nil {
 				r.KeyringPresent = true
