@@ -100,9 +100,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   conflict for copies it wrote itself; the refusal names the agent and
   session and says to install and run that agent once. Pulls restore in a
   stable order.
-- Codex with a configured `CODEX_HOME` whose `sessions` directory does not
-  exist yet (a fresh device) is treated as having no sessions instead of
-  failing every push and pull with a stat error.
+- Claude Code with a configured `CLAUDE_CONFIG_DIR` whose `projects`
+  directory does not exist yet, and Codex with a configured `CODEX_HOME`
+  whose `sessions` directory does not exist yet (a fresh device before the
+  agent has run), are treated as having no sessions instead of failing every
+  push and pull with a stat error.
 
 - The S3-compatible backend can now obtain its keys from a credential source
   that expires and refreshes (`s3.CredentialSource`), the seam that lets a
