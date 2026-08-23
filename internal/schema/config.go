@@ -60,6 +60,18 @@ type StorageConfig struct {
 	CredentialRef string `toml:"credential_ref"`
 }
 
+// Encryption key models. The selection decides which crypto.KeyProvider
+// every push and pull uses; nothing else in sync changes between them.
+const (
+	// EncryptionPassphrase is BYO storage: an age scrypt passphrase typed on
+	// every device.
+	EncryptionPassphrase = "age-scrypt"
+	// EncryptionRootKey is the hosted-tier model: a root key generated on the
+	// first device and carried by the keyring, never typed and never stored
+	// in config.
+	EncryptionRootKey = "root-key"
+)
+
 // EncryptionConfig selects client-side encryption.
 type EncryptionConfig struct {
 	Type string `toml:"type"`
@@ -97,7 +109,12 @@ func ValidateConfig(c *Config) error {
 		return fmt.Errorf("storage.type is required")
 	}
 	if c.Encryption.Type == "" {
-		c.Encryption.Type = "age-scrypt"
+		c.Encryption.Type = EncryptionPassphrase
+	}
+	switch c.Encryption.Type {
+	case EncryptionPassphrase, EncryptionRootKey:
+	default:
+		return fmt.Errorf("unsupported encryption.type %q (want %q or %q)", c.Encryption.Type, EncryptionPassphrase, EncryptionRootKey)
 	}
 	if c.Restore.ActiveAgentPolicy == "" {
 		c.Restore.ActiveAgentPolicy = DefaultActiveAgentPolicy

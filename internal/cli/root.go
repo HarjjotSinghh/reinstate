@@ -11,6 +11,7 @@ import (
 	"golang.org/x/term"
 
 	"github.com/HarjjotSinghh/reinstate/internal/adapter"
+	"github.com/HarjjotSinghh/reinstate/internal/credentials"
 	"github.com/HarjjotSinghh/reinstate/internal/preflight"
 	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
@@ -67,6 +68,14 @@ type Options struct {
 	// is deliberate — a hanging vendor binary must not stall handoff planning —
 	// so the seam belongs here rather than in the timeout.
 	HandoffDestinationCompat adapter.Compatibility
+	// DeviceSecrets overrides the OS keyring that holds this device's hosted
+	// key in deterministic tests. Production leaves it nil.
+	DeviceSecrets credentials.SecretStore
+	// RecoveryCodePrompt overrides hidden recovery-code entry in deterministic
+	// tests (both the forced re-entry at init and the prompt at recover).
+	// Production leaves it nil and reads a terminal or
+	// REINSTATE_RECOVERY_CODE_FD.
+	RecoveryCodePrompt func(prompt string) ([]byte, error)
 }
 
 type envelopeCodecContextKey struct{}
@@ -148,6 +157,12 @@ func NewRoot(opts Options) *cobra.Command {
 	if opts.EnvelopeCodec != nil {
 		rootContext = context.WithValue(rootContext, envelopeCodecContextKey{}, opts.EnvelopeCodec)
 	}
+	if opts.DeviceSecrets != nil || opts.RecoveryCodePrompt != nil {
+		rootContext = context.WithValue(rootContext, accountSeamsContextKey{}, accountSeams{
+			secrets:        opts.DeviceSecrets,
+			recoveryPrompt: opts.RecoveryCodePrompt,
+		})
+	}
 	root.SetContext(rootContext)
 	if opts.Stdout != nil {
 		root.SetOut(opts.Stdout)
@@ -183,6 +198,7 @@ func NewRoot(opts Options) *cobra.Command {
 		newDoctorCmd(),
 		newSetupCmd(),
 		newInitCmd(),
+		newAccountCmd(),
 		newListCmd(),
 		newSessionsCmd(local),
 		newSearchCmd(local),

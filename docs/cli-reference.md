@@ -436,6 +436,32 @@ New-session restores, `--keep-both`, and `pull --dry-run` remain available.
 See [Configuration](configuration.md) for `restore.active_agent_policy`
 (`fork` by default, or `scoped`, `strict`, `off`).
 
+### `rein account`
+
+Hosted key model. All three subcommands need an initialized home (`rein init`
+with the storage coordinates first).
+
+- `rein account init` — generate the root key on this first device, write the
+  keyring to storage, and show the recovery code exactly once. The code must
+  be re-entered before anything is written; a mismatch aborts with nothing
+  written. Prints the recovery policy plainly: losing every device and the
+  recovery code makes the locker unrecoverable by anyone; local copies survive.
+  Refuses when this device is already enrolled or a keyring already exists.
+- `rein account recover` — enrol a fresh machine from the recovery code
+  (hidden prompt, or `REINSTATE_RECOVERY_CODE_FD` pointing at a pre-opened
+  descriptor for automation, like `REINSTATE_PASSPHRASE_FD`). Unwraps the root
+  key locally, generates this device's key, and appends a wrap for it with
+  compare-and-swap. A wrong code fails closed (exit `4`); a code with a typo
+  is rejected by its checksum before any key derivation (exit `2`).
+- `rein account status [--json]` — encryption mode, whether this device is
+  enrolled and how, whether the recovery code was confirmed here (a local
+  boolean only), whether the device key is present in the OS keyring, and the
+  keyring's key generation and enrolled device count.
+
+After enrolment `push`, `pull`, `status`, and `diff` use the root key and no
+longer prompt for a passphrase. The root key and recovery code are never
+accepted as flags or plain environment variables.
+
 ## Planned universal configuration commands
 
 The following is roadmap direction, **not current CLI syntax**:
