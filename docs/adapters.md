@@ -32,12 +32,10 @@ yes-or-no flag. Tiers are cumulative. New agents are declared in the
 | T4 | Handoff destination |
 | T5 | Encrypted same-vendor sync |
 
-Claude Code and Codex CLI are T5. Qwen Code is T4 on macOS evidence, with the
-native Windows journey still outstanding. Gemini CLI, OpenCode, and Grok Build
-are T2.
-Claude Code and Codex CLI are T5. Qwen Code is T3 on macOS evidence, with the
-Claude Code and Codex CLI are T5. Gemini CLI, OpenCode, Grok Build, and Kimi
-The capability matrix below remains the fail-closed per-surface record.
+Claude Code and Codex CLI are T5. OpenCode, Qwen Code, and Grok Build are T4.
+Gemini CLI and Kimi Code CLI are T2. Grok's resume and destination journeys are
+recorded on both platforms. The capability matrix below remains the fail-closed
+per-surface record.
 
 ## Capability matrix
 
@@ -46,8 +44,8 @@ The capability matrix below remains the fail-closed per-surface record.
 | Claude Code | Included in `v0.2.0` | Included in `v0.2.0` | Yes | Yes | Supported | Later |
 | OpenAI Codex CLI | Included in `v0.2.0` | Included in `v0.2.0` | Yes | Yes | Supported | Later |
 | Gemini CLI | Read-only in `v0.2.0` | No | Source-only | No | No | Later |
-| OpenCode | Read-only in `v0.2.0` | Yes (T3) | Source-only | No | No | Later |
-| Grok Build | Read-only in `v0.4.0` | No | Source-only | No | No | Planned |
+| OpenCode | Read-only in `v0.2.0` | Yes (T3) | Source-only | Yes | No | Later |
+| Grok Build | Read-only in `v0.4.0` | Same-vendor (T3) | Yes | Yes (T4) | No | Planned |
 | Kimi Code CLI | Read-only (T1) | No | Source-only | No | No | Later |
 | Qwen Code | Read-only (T4) | Yes | Yes | Yes | No | Later |
 | Pi | Read-only (T1) | No | No | No | No | Later |
@@ -146,8 +144,8 @@ acknowledgements, exit codes, and provenance.
 
 ## Phase 4 structured-handoff contract (`v0.4.0`)
 
-Handoff support is directional. Claude Code and Codex are both sources and
-targets, and Qwen Code joins them. Gemini CLI, OpenCode, and Grok Build are
+Handoff support is directional. Claude Code, Codex, OpenCode, Qwen Code, and
+Grok Build are both sources and targets. Gemini CLI and Kimi Code CLI are
 source-only: their transcript readers can build a capsule, but Reinstate will
 not launch them as handoff destinations.
 

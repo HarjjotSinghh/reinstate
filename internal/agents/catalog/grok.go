@@ -5,6 +5,7 @@ import (
 
 	"github.com/HarjjotSinghh/reinstate/internal/agents"
 	groksrc "github.com/HarjjotSinghh/reinstate/internal/agents/sources/grok"
+	"github.com/HarjjotSinghh/reinstate/internal/handoff"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
 	"github.com/HarjjotSinghh/reinstate/internal/transcript"
 )
@@ -32,14 +33,14 @@ var grokVersionPattern = regexp.MustCompile(
 		`(?: \[[0-9A-Za-z][0-9A-Za-z._-]{0,31}\])?$`,
 )
 
-// Grok is the shipped Grok Build descriptor (T3).
+// Grok is the shipped Grok Build descriptor (T4).
 func Grok() agents.Descriptor {
 	return agents.Descriptor{
 		Key:         sessionindex.AgentGrok,
 		DisplayName: "Grok Build",
 		Vendor:      "xAI",
 		DocsURL:     "https://docs.x.ai",
-		Tier:        agents.TierResume,
+		Tier:        agents.TierHandoffTo,
 		Family:      agents.FamilyHomeTree,
 		Storage: agents.StorageSpec{
 			RootEnv: "GROK_HOME",
@@ -71,15 +72,21 @@ func Grok() agents.Descriptor {
 		//	-r, --resume [<SESSION_ID_OR_TITLE>]
 		//	    --fork-session
 		//	-c, --continue
+		//	-s, --session-id <SESSION_ID>   new conversation with this UUID;
+		//	                                must not already exist under the
+		//	                                target session directory
 		//
 		// --resume falls back to title matching for any value that is not
 		// UUID-shaped, and titles are neither unique nor stable, so
 		// SessionIDPattern makes a title unrepresentable in this position.
+		// NewSession is the opposite direction: it starts a *new* session with
+		// a caller-chosen id and never resumes.
 		Native: &agents.NativeSpec{
 			Executable:       "grok",
 			Resume:           []string{"--resume", "{{.SessionID}}"},
 			Fork:             []string{"--resume", "{{.SessionID}}", "--fork-session"},
 			Continue:         []string{"--continue"},
+			NewSession:       []string{"--session-id", "{{.SessionID}}"},
 			InitialPrompt:    agents.PromptArgv,
 			SessionIDPattern: sessionindex.GrokSessionIDPattern,
 		},
@@ -89,8 +96,8 @@ func Grok() agents.Descriptor {
 			// Pinned to the single build measured on the macOS acceptance host
 			// (2026-08-22, `grok --version` = "grok 1.0.5 (5115b46bc909)").
 			// The range widens only when another build is physically measured.
-			Min: "1.0.5",
-			Max: "1.0.5",
+			Min: sessionindex.GrokMinVerifiedVersion,
+			Max: sessionindex.GrokMaxVerifiedVersion,
 		},
 		// Grok Build ships a native binary (Mach-O on macOS), not a node
 		// launcher, so an image match is the whole recognition rule and
@@ -121,11 +128,16 @@ func Grok() agents.Descriptor {
 			DeviceReports: []string{
 				"docs/testing/results/2026-08-22-macos-grok-t3.md",
 				"docs/testing/results/2026-08-22-windows-grok-t3.md",
+				"docs/testing/results/2026-08-23-macos-grok-t4.md",
+				"docs/testing/results/2026-08-23-windows-grok-t4.md",
 			},
 		},
 		NewIndexSource: groksrc.New,
 		NewReader: func(agents.Env) (transcript.Reader, error) {
 			return transcript.NewGrokReader(), nil
+		},
+		NewTarget: func(env agents.Env) (handoff.HandoffTarget, error) {
+			return &handoff.GrokTarget{Root: env.FixtureRoot}, nil
 		},
 	}
 }

@@ -29,6 +29,16 @@ const GrokSessionIDPattern = `^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9
 // recorded identifier is not UUID-shaped.
 const GrokTitleAddressableReason = "Grok Build session id is not a UUID; --resume would address it by title"
 
+// GrokMinVerifiedVersion and GrokMaxVerifiedVersion are the inclusive Grok
+// Build range Reinstate has physically measured, from `grok --version` on the
+// macOS acceptance host (2026-08-22, "grok 1.0.5 (5115b46bc909)"). They live
+// here rather than in the catalog descriptor because the handoff destination
+// gate and the resume version probe must not be able to drift apart.
+const (
+	GrokMinVerifiedVersion = "1.0.5"
+	GrokMaxVerifiedVersion = "1.0.5"
+)
+
 var grokSessionID = regexp.MustCompile(GrokSessionIDPattern)
 
 // IsGrokSessionID reports whether id is addressable as a Grok session ID rather

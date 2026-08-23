@@ -30,7 +30,7 @@ The Phase 2 local capability matrix is:
 | Gemini CLI | Read-only included | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac | T2 |
 | OpenCode | Read-only included | Same-vendor included | Resume journeys recorded on macOS and native Windows; destination journeys recorded on both, with the executed launch collected on macOS only | T4 |
 | Cursor CLI | Indexed (read-only) | Not implemented | Dual-platform probes committed; indexed from `meta.json`; no device journey for resume | T1 |
-| Grok Build | Read-only included | Same-vendor included | Resume journeys recorded on macOS and native Windows; on both, the planned argv was executed and the vendor recalled the prior turn | T3 |
+| Grok Build | Read-only included | Same-vendor included | Resume and handoff-destination journeys recorded on macOS and native Windows | T4 |
 | Amp | Not readable locally (`server_backed`) | Not implemented | Not applicable | T0 |
 | ZCode | Not implemented (`desktop_only`) | Not implemented | Not applicable | T0 |
 | OpenHands | Not implemented | Not implemented | Not applicable | T0 |
@@ -69,19 +69,18 @@ supported destination target, encrypted sync, or same-vendor native execution.
 
 | Source → destination | Claude Code | Codex CLI | Gemini CLI | OpenCode | Grok Build | Qwen Code |
 | -------------------- | :---------: | :-------: | :--------: | :------: | :--------: | :-------: |
-| **Claude Code** | same-vendor native resume | structured handoff | not in v0.4.0 | not in v0.4.0 | not planned | structured handoff |
-| **Codex CLI** | structured handoff | same-vendor native resume | not in v0.4.0 | not in v0.4.0 | not planned | structured handoff |
-| **Gemini CLI** | structured handoff | structured handoff | not a target (source-only) | not in v0.4.0 | not planned | structured handoff |
-| **OpenCode** | structured handoff | structured handoff | not in v0.4.0 | not a target (source-only) | not planned | structured handoff |
-| **Grok Build** | structured handoff | structured handoff | not in v0.4.0 | not in v0.4.0 | not a target (source-only) | structured handoff |
-| **Qwen Code** | structured handoff | structured handoff | not a target | not a target | not a target | same-vendor native resume |
+| **Claude Code** | same-vendor native resume | structured handoff | not a target | structured handoff | structured handoff | structured handoff |
+| **Codex CLI** | structured handoff | same-vendor native resume | not a target | structured handoff | structured handoff | structured handoff |
+| **Gemini CLI** | structured handoff | structured handoff | not a target (source-only) | structured handoff | structured handoff | structured handoff |
+| **OpenCode** | structured handoff | structured handoff | not a target | same-vendor native resume | structured handoff | structured handoff |
+| **Grok Build** | structured handoff | structured handoff | not a target | structured handoff | same-vendor native resume | structured handoff |
+| **Qwen Code** | structured handoff | structured handoff | not a target | structured handoff | structured handoff | same-vendor native resume |
+| **Kimi Code CLI** | structured handoff | structured handoff | not a target | structured handoff | structured handoff | structured handoff |
 
 Every cross-agent entry above creates a new destination session for the same
-task through the destination's own documented CLI. It does not reconstruct
-vendor history or write a vendor-internal session file. Gemini, OpenCode, and
-Grok are source-only; attempts to use them as destinations fail closed. The
-Qwen Code column carries only macOS evidence — the native Windows journey the
-tier requires has not been run.
+task through the destination vendor's own documented CLI. It does not
+reconstruct vendor history or write a vendor-internal session file. Gemini and
+Kimi are source-only; attempts to use them as destinations fail closed.
 
 The handoff path parses the source locally without a source model call, records
 component-level fidelity, and stores its capsule and lineage only under the

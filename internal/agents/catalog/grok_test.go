@@ -13,8 +13,8 @@ func TestGrokExcludesInstallNoise(t *testing.T) {
 	if d.Key != sessionindex.AgentGrok {
 		t.Fatalf("Key = %q", d.Key)
 	}
-	if d.Tier != agents.TierResume {
-		t.Fatalf("Tier = %s, want T3", d.Tier)
+	if d.Tier != agents.TierHandoffTo {
+		t.Fatalf("Tier = %s, want T4", d.Tier)
 	}
 	for _, want := range []string{
 		"bundled",
@@ -52,6 +52,7 @@ func TestGrokNativeArgvMatchesMeasuredHelp(t *testing.T) {
 		{"resume", native.Resume, []string{"--resume", "{{.SessionID}}"}},
 		{"fork", native.Fork, []string{"--resume", "{{.SessionID}}", "--fork-session"}},
 		{"continue", native.Continue, []string{"--continue"}},
+		{"new_session", native.NewSession, []string{"--session-id", "{{.SessionID}}"}},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

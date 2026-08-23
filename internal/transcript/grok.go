@@ -21,9 +21,14 @@ import (
 // It names the documented mid-2026 repository-upload history.
 const DestinationWarningGrok = "grok_source_upload_history"
 
-// ErrNoRedactRefused is returned when --no-redact is requested for a Grok source.
-// CLI maps this to exit code 2 (usage).
-var ErrNoRedactRefused = errors.New("no-redact refused for Grok Build source")
+// ErrNoRedactRefused is returned when --no-redact is requested for a handoff
+// with Grok Build on either side. CLI maps this to exit code 2 (usage).
+//
+// The sentinel names no direction on purpose. It is wrapped by RefuseNoRedact
+// for a Grok source and by the handoff package for a Grok destination, and each
+// wrap supplies the direction; naming one of them here made the destination
+// refusal report itself as a source.
+var ErrNoRedactRefused = errors.New("no-redact refused for Grok Build")
 
 func init() {
 	_ = Register(NewGrokReader())
