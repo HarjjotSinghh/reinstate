@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -121,6 +122,11 @@ type harness struct {
 
 func newHarness(t *testing.T, account *fakeAccount, syncer *fakeSyncer) *harness {
 	t.Helper()
+	return newHarnessLogging(t, account, syncer, io.Discard)
+}
+
+func newHarnessLogging(t *testing.T, account *fakeAccount, syncer *fakeSyncer, logOut io.Writer) *harness {
+	t.Helper()
 	h := &harness{
 		t: t, clock: daemontest.NewFakeClock(), syncer: syncer, account: account, notify: &fakeNotifier{},
 		events: make(chan daemon.Change, 16), seen: make(chan daemon.Event, 1024), home: t.TempDir(), done: make(chan error, 1),
@@ -132,7 +138,7 @@ func newHarness(t *testing.T, account *fakeAccount, syncer *fakeSyncer) *harness
 	h.cancel = cancel
 	opts := daemon.Options{
 		Home: h.home, Syncer: h.syncer, Notifier: h.notify, Clock: h.clock, Events: h.events,
-		Logger:   log.New(io.Discard, "", 0),
+		Logger:   log.New(logOut, "", 0),
 		Observe:  func(e daemon.Event) { h.seen <- e },
 		Debounce: 3 * time.Second, MaxDebounce: 30 * time.Second,
 		PullEvery: 5 * time.Minute, ApprovalsEvery: time.Minute,
@@ -406,6 +412,55 @@ func TestLoopConflictStopsRetryUntilNextChange(t *testing.T) {
 	if s := h.status(); !s.Push.OK || s.Push.Conflict {
 		t.Fatalf("push after the next change: %+v", s.Push)
 	}
+}
+
+// TestLoopPullConflictKeepsScheduleWithoutLogSpam: a standing pull
+// conflict (one session diverged on this device) must not stop the
+// scheduled pull, since pull --all still restores every other session and
+// the conflict record is idempotent; the log names it once, not every tick.
+func TestLoopPullConflictKeepsScheduleWithoutLogSpam(t *testing.T) {
+	conflict := fmt.Errorf("pull: %w", daemon.ErrConflict)
+	syncer := &fakeSyncer{pullErrs: []error{nil, conflict, conflict, conflict, nil}}
+	logBuf := &lockedBuffer{}
+	h := newHarnessLogging(t, nil, syncer, logBuf)
+	h.start()
+	for i := 0; i < 3; i++ {
+		if e := h.find(h.advance(5*time.Minute), "pull"); !errors.Is(e.Err, daemon.ErrConflict) {
+			t.Fatalf("pull %d: %v", i+1, e.Err)
+		}
+		if s := h.status(); !s.Pull.Conflict || s.Pull.OK {
+			t.Fatalf("status after conflicted pull %d: %+v", i+1, s.Pull)
+		}
+	}
+	if _, pulls := h.syncer.counts(); pulls != 4 {
+		t.Fatalf("pulls=%d, want the start-up pull plus one per scheduled tick", pulls)
+	}
+	if n := strings.Count(logBuf.String(), "conflict recorded"); n != 1 {
+		t.Fatalf("conflict logged %d time(s) over three ticks, want 1:\n%s", n, logBuf.String())
+	}
+	if e := h.find(h.advance(5*time.Minute), "pull"); e.Err != nil {
+		t.Fatalf("pull once the conflict is resolved: %v", e.Err)
+	}
+	if s := h.status(); !s.Pull.OK || s.Pull.Conflict {
+		t.Fatalf("status after the conflict cleared: %+v", s.Pull)
+	}
+}
+
+type lockedBuffer struct {
+	mu sync.Mutex
+	b  strings.Builder
+}
+
+func (l *lockedBuffer) Write(p []byte) (int, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.b.Write(p)
+}
+
+func (l *lockedBuffer) String() string {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.b.String()
 }
 
 func TestLoopSurvivesAPanickingSyncer(t *testing.T) {

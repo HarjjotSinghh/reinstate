@@ -10,6 +10,7 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strings"
 	"time"
 
@@ -498,6 +499,9 @@ func engineFromConfig(cmd *cobra.Command, passphrase string) (*sync.Engine, *sch
 		return nil, nil, "", NewExitError(ExitConfig, "the hosted tier uses the root-key model; run rein account init on the first device (encryption.type must be "+schema.EncryptionRootKey+", not "+cfg.Encryption.Type+")")
 	} else {
 		if passphrase == "" {
+			passphrase = cachedPassphraseFrom(cmd)
+		}
+		if passphrase == "" {
 			secret, err := crypto.ReadPassphrase(cmd.InOrStdin(), cmd.ErrOrStderr())
 			if err != nil {
 				return nil, nil, "", NewExitError(ExitUsage, err.Error())
@@ -727,6 +731,7 @@ func newPushCmd() *cobra.Command {
 			}
 			var uploaded []string
 			var skipped int
+			var conflicted []string
 			for _, it := range items {
 				a, ok := reg.Get(it.Agent)
 				if !ok {
@@ -786,12 +791,22 @@ func newPushCmd() *cobra.Command {
 								remoteSnapshot = remote.SnapshotID
 							}
 						}
+						// LocalRevision is the current local hash, the same
+						// key pull --all records for this divergence, so push
+						// and pull share one record instead of two.
 						_ = sync.SaveConflict(home, sync.Conflict{
 							Agent: it.Agent, SessionID: it.SessionID, ProjectID: it.ProjectID,
-							LocalRevision: it.BaseRevision, RemoteRevision: remoteSnapshot,
+							LocalRevision: localHash, RemoteRevision: remoteSnapshot,
 							RemoteSnapshot: remoteSnapshot,
 						})
-						return NewExitError(ExitConflict, err.Error())
+						if session != "" {
+							return NewExitError(ExitConflict, err.Error())
+						}
+						// push --all keeps going so one diverged session
+						// does not hold every other session's changes back
+						// (the daemon runs this push after every change).
+						conflicted = append(conflicted, key)
+						continue
 					}
 					if hosted := hostedFrom(cmd); hosted != nil && hosted.LastError() != nil {
 						return hostedError(hosted, err)
@@ -828,17 +843,28 @@ func newPushCmd() *cobra.Command {
 					}
 				}
 			}
+			sort.Strings(conflicted)
+			conflictErr := func() error {
+				if len(conflicted) == 0 {
+					return nil
+				}
+				return NewExitError(ExitConflict, fmt.Sprintf("%d session(s) diverged from the locker; conflict recorded for %s (pushed %d other snapshot(s))",
+					len(conflicted), strings.Join(conflicted, ", "), len(uploaded)))
+			}
 			if asJSON {
-				return WriteJSON(cmd.OutOrStdout(), map[string]any{
-					"snapshots": uploaded, "skipped": skipped, "dry_run": dryRun,
-				})
+				if err := WriteJSON(cmd.OutOrStdout(), map[string]any{
+					"snapshots": uploaded, "skipped": skipped, "dry_run": dryRun, "conflicts": conflicted,
+				}); err != nil {
+					return err
+				}
+				return conflictErr()
 			}
 			if dryRun {
 				PrintHuman(cmd.OutOrStdout(), "would push %d snapshot(s), would skip %d unchanged, dry_run=true", len(uploaded), skipped)
-				return nil
+				return conflictErr()
 			}
 			PrintHuman(cmd.OutOrStdout(), "pushed %d snapshot(s), skipped %d unchanged, dry_run=%v", len(uploaded), skipped, dryRun)
-			return nil
+			return conflictErr()
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "emit machine-readable JSON")
@@ -933,6 +959,7 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 			}
 			var plans []pullPlan
 			var pulled, skipped int
+			var conflicted []string
 			for _, s := range man.Sessions {
 				if agent != "" && s.Agent != agent {
 					continue
@@ -980,7 +1007,15 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 								return err
 							}
 						}
-						return NewExitError(ExitConflict, "local session diverged; conflict recorded")
+						if session != "" {
+							return NewExitError(ExitConflict, "local session diverged; conflict recorded")
+						}
+						// pull --all keeps going: one diverged session must
+						// not hold back every other session's newer
+						// snapshot (the daemon runs this pull on a
+						// schedule). The conflicts are reported together.
+						conflicted = append(conflicted, key)
+						continue
 					}
 				}
 				dest := filepath.Join(home, "cache", "pull", s.SnapshotID)
@@ -1084,10 +1119,21 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 					return err
 				}
 			}
+			sort.Strings(conflicted)
+			conflictErr := func() error {
+				if len(conflicted) == 0 {
+					return nil
+				}
+				return NewExitError(ExitConflict, fmt.Sprintf("%d session(s) diverged locally; conflict recorded for %s (pulled %d other snapshot(s))",
+					len(conflicted), strings.Join(conflicted, ", "), pulled))
+			}
 			if asJSON {
-				return WriteJSON(cmd.OutOrStdout(), map[string]any{
-					"pulled": pulled, "skipped": skipped, "dry_run": dryRun, "plans": plans,
-				})
+				if err := WriteJSON(cmd.OutOrStdout(), map[string]any{
+					"pulled": pulled, "skipped": skipped, "dry_run": dryRun, "plans": plans, "conflicts": conflicted,
+				}); err != nil {
+					return err
+				}
+				return conflictErr()
 			}
 			if dryRun {
 				PrintHuman(cmd.OutOrStdout(), "would pull %d snapshot(s), would skip %d already synced, dry_run=true", pulled, skipped)
@@ -1103,7 +1149,7 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 						plan.SessionID, plan.ForkedSessionID)
 				}
 			}
-			return nil
+			return conflictErr()
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "emit machine-readable JSON")

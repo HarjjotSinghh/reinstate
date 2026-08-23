@@ -306,8 +306,8 @@ func (l *loop) push(ctx context.Context) time.Duration {
 		l.dirty = false
 		l.pushFails = 0
 		l.notBefore = time.Time{}
-		l.status.Push = Outcome{At: now, OK: false, Error: err.Error(), Conflict: true, LastOK: l.status.Push.LastOK}
-		l.opts.Logger.Printf("push: %v", err)
+		l.status.Push = Outcome{At: now, OK: false, Error: err.Error(), Conflict: true, Summary: summary, LastOK: l.status.Push.LastOK}
+		l.opts.Logger.Printf("push: %v; %s", err, summary)
 		l.writeStatus()
 		l.observe(Event{Kind: "push", Err: err})
 		return 0
@@ -337,9 +337,15 @@ func (l *loop) pull(ctx context.Context) Timer {
 		l.status.Pull = Outcome{At: now, OK: true, Summary: summary, LastOK: now}
 		l.opts.Logger.Printf("pull: %s", summary)
 	case errors.Is(err, ErrConflict):
+		// The conflict record is idempotent and pull --all still restores
+		// every other session, so the schedule stands; only the log line
+		// is held back while the same conflict repeats tick after tick.
 		l.pullFails = 0
-		l.status.Pull = Outcome{At: now, OK: false, Error: err.Error(), Conflict: true, LastOK: l.status.Pull.LastOK}
-		l.opts.Logger.Printf("pull: %v", err)
+		repeated := l.status.Pull.Conflict && l.status.Pull.Error == err.Error() && l.status.Pull.Summary == summary
+		l.status.Pull = Outcome{At: now, OK: false, Error: err.Error(), Conflict: true, Summary: summary, LastOK: l.status.Pull.LastOK}
+		if !repeated {
+			l.opts.Logger.Printf("pull: %v; %s (not logged again while it stands)", err, summary)
+		}
 	default:
 		l.pullFails++
 		next = l.backoff(l.pullFails)
