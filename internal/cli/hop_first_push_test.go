@@ -389,9 +389,12 @@ func TestHopFirstPushJourney(t *testing.T) {
 	home.reinstallOpenCode(t)
 	pullOut := fresh.mustRun("pull --all", "pull", "--all", "--json")
 	var pulled struct {
-		Pulled int `json:"pulled"`
+		Pulled  int `json:"pulled"`
+		Skipped int `json:"skipped"`
 	}
-	if err := json.Unmarshal([]byte(pullOut), &pulled); err != nil || pulled.Pulled != 3 {
+	// Claude Code and Codex landed in the partial pull and were remembered,
+	// so this pull skips them as already synced and restores only OpenCode.
+	if err := json.Unmarshal([]byte(pullOut), &pulled); err != nil || pulled.Pulled != 1 || pulled.Skipped != 2 {
 		t.Fatalf("pull output %q: %v", pullOut, err)
 	}
 	if out := fresh.mustRun("conflicts list", "conflicts", "list"); strings.Contains(out, "session-first-push") || strings.Contains(out, "rollout-first-push") {
