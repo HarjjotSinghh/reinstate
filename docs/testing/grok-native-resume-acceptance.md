@@ -1,18 +1,28 @@
 # Grok Build — native resume and handoff-destination acceptance
 
-**Status:** specification only. No row below has been collected.
+**Status:** collected, with one row outstanding.
 **Owner:** release coordinator (both devices).
 **Applies to:** the catalog promotion of Grok Build from T2 to T3, and from T3
-to T4.
+to T4. Both promotions have landed.
 
-This page exists because the tier ladder's evidence gate is physical. The code
-for both rungs is merged and unit-tested, but
+| Rung | macOS | Native Windows | Report |
+| ---- | ----- | -------------- | ------ |
+| T3 (`GS*`, `GV*`, `GR*`) | collected 2026-08-22 | collected 2026-08-22 | `2026-08-22-macos-grok-t3.md`, `2026-08-22-windows-grok-t3.md` |
+| T4 (`GD1`–`GD7`) | 7 of 7 | 6 of 7 — `GD6`'s Codex leg is unmeasurable there, that host has no Codex CLI | `2026-08-23-macos-grok-t4.md`, `2026-08-23-windows-grok-t4.md` |
+| T4 (`GD8`) | **outstanding** | **outstanding** | — |
+
+`GD8` is outstanding on both devices because both T4 runs set `yolo = true` in
+the acceptance root to make the vendor's tool loop deterministic. That is
+disclosed in both reports, and under the rule below it means the approval prompt
+was never exercised. Collecting `GD8` needs an attended run at the vendor's
+default setting; it deepens T4 rather than gating it, since the tier landed on
+`GD1`–`GD7`.
+
+This page exists because the tier ladder's evidence gate is physical.
 [agent-support-tiers.md](../agent-support-tiers.md) requires, at T3, "a physical
 device journey on macOS **and** native Windows: real agent, real session,
 resumed, and the continuation observed", and at T4 bidirectional destination
-journeys. Neither has been run. Until the rows below are recorded in a device
-report under `results/`, Grok's declared tier is an implementation claim
-awaiting confirmation, and that is stated on every surface that names it.
+journeys.
 
 Do not install Grok Build solely to run this. If the device already has it,
 run the rows; if it does not, record the row as `UNCOLLECTED`, not `PASS`.
@@ -25,8 +35,27 @@ run the rows; if it does not, record the row as `UNCOLLECTED`, not `PASS`.
    That outcome is itself a valid row (`GV1`), but it does not satisfy `GR1`.
 2. A throwaway `GROK_HOME` for every command that could write. Never point a
    probe or a launch at the operator's own tree.
-3. A real console. `IsTerminal` must be true; autonomous SSH without a TTY is
+3. A real console, on **both** stdin and stdout. `IsTerminal` must be true for
+   each; redirecting the command's stdout to a log file makes it false, and the
+   launch then refuses with `requires an interactive terminal` — a harness
+   mistake that reads like a product refusal. Autonomous SSH without a TTY is
    not an excuse for a missing dest-ack row.
+4. A pseudo-terminal that **answers back**. The vendor TUI queries the terminal
+   before it starts — device attributes, cursor position (`ESC[6n`), and OSC
+   10/11 colour (`ESC]11;?`) — and blocks until each is answered. A passive
+   recorder such as `script(1)` leaves the process alive with zero bytes
+   captured, which is indistinguishable from a hung vendor. The driver must
+   reply.
+5. Patience measured in turns, not writes. The acknowledgement is not the first
+   assistant record: the vendor opens with a short intent line carrying tool
+   calls and restates the five bullets several turns later (measured: turn nine
+   of thirteen on macOS). A watcher that stops at the first assistant record, or
+   at the first history write, will report an acknowledgement that arrived as
+   missing.
+6. `REINSTATE_ALLOW_NON_TTY_LAUNCH` is **not** an acceptance shortcut. It lets
+   the launch proceed without a terminal, but the vendor then stalls on a
+   tool-approval prompt it has no terminal to draw. Any row collected under it
+   is void.
 
 ## T3 rows — native resume
 
@@ -51,9 +80,15 @@ run the rows; if it does not, record the row as `UNCOLLECTED`, not `PASS`.
 | `GD5` | Redaction ran unconditionally on the Grok path and `--no-redact` is refused with exit `2` **in this direction**, and the human output prints the repository-upload warning naming the destination, per [session-storage/grok.md](../session-storage/grok.md). |
 | `GD6` | Grok → Claude and Grok → Codex still pass, so promoting Grok to a destination did not regress it as a source. |
 | `GD7` | Nothing was written under the Grok root by the handoff: no session files, and no directory-trust record. Compare a recursive listing before and after. If the destination TUI blocks on a directory-trust prompt, record that as a finding — Reinstate deliberately does not pre-accept trust for a vendor whose trust file shape it has not measured. |
+| `GD8` | The destination's **tool-approval prompt** is exercised, not configured away. Run one handoff with the vendor's default approval setting — for Grok Build that is `yolo = false` — and record three things: that Reinstate's briefing still arrives intact; that the vendor blocks on its own prompt rather than failing; and that after the operator approves, the five-bullet acknowledgement lands as in `GD2`. Reinstate must neither set nor read this setting: it is vendor-internal state, and writing it would violate the same rule `GD7` protects. A journey that sets `yolo = true` has **not** collected this row, and must say so. |
 
 ## Recording
 
 One device report per platform under `results/`, using the Phase 5 template.
 Device reports are immutable once written; if a row is wrong, add a new report
 rather than editing an old one.
+
+Every deviation from vendor defaults in the acceptance root — an approval
+setting, a pinned model, a reasoning effort — must be stated in the report, next
+to the rows it could have changed. A run that is more deterministic than a real
+operator's is only useful if the reader can see where.
