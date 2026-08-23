@@ -45,6 +45,23 @@ func GenerateRecoveryCode() (string, error) {
 // canonical grouped form, or an error when the length or checksum is wrong.
 // The canonical form is the only string ever fed to the key derivation.
 func NormalizeRecoveryCode(typed string) (string, error) {
+	code, err := compactCrockford(typed)
+	if err != nil {
+		return "", fmt.Errorf("recovery code %w", err)
+	}
+	if len(code) != recoveryTotalChars {
+		return "", fmt.Errorf("recovery code must have %d groups of %d characters (%s)", recoveryTotalGroups, recoveryGroupLen, RecoveryCodeFormat)
+	}
+	data, check := code[:recoveryDataChars], code[recoveryDataChars:]
+	if check != recoveryChecksum(data) {
+		return "", fmt.Errorf("recovery code checksum does not match; check it for typos")
+	}
+	return formatRecoveryCode(code), nil
+}
+
+// compactCrockford folds a typed code to its canonical characters: upper
+// case, separators dropped, O/I/L mapped to 0/1.
+func compactCrockford(typed string) (string, error) {
 	var compact strings.Builder
 	for i, r := range strings.ToUpper(typed) {
 		switch {
@@ -57,18 +74,10 @@ func NormalizeRecoveryCode(typed string) (string, error) {
 		case strings.ContainsRune(crockford, r):
 			compact.WriteRune(r)
 		default:
-			return "", fmt.Errorf("recovery code contains an invalid character at position %d (only Crockford base32 letters and digits, dashes, and spaces are allowed)", i+1)
+			return "", fmt.Errorf("contains an invalid character at position %d (only Crockford base32 letters and digits, dashes, and spaces are allowed)", i+1)
 		}
 	}
-	code := compact.String()
-	if len(code) != recoveryTotalChars {
-		return "", fmt.Errorf("recovery code must have %d groups of %d characters (%s)", recoveryTotalGroups, recoveryGroupLen, RecoveryCodeFormat)
-	}
-	data, check := code[:recoveryDataChars], code[recoveryDataChars:]
-	if check != recoveryChecksum(data) {
-		return "", fmt.Errorf("recovery code checksum does not match; check it for typos")
-	}
-	return formatRecoveryCode(code), nil
+	return compact.String(), nil
 }
 
 func recoveryChecksum(data string) string {

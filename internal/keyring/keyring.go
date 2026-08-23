@@ -157,6 +157,28 @@ func (k *Keyring) current() *Generation {
 	return nil
 }
 
+// CurrentRecipient is the current generation's root-key recipient, the
+// public half a joining device checks a received root key against.
+func (k *Keyring) CurrentRecipient() string {
+	if g := k.current(); g != nil {
+		return g.Recipient
+	}
+	return ""
+}
+
+// DevicePublicKey returns the public key the current generation lists for
+// deviceID, or "" when the device is not enrolled.
+func (k *Keyring) DevicePublicKey(deviceID string) string {
+	if g := k.current(); g != nil {
+		for _, d := range g.Devices {
+			if d.DeviceID == deviceID {
+				return d.PublicKey
+			}
+		}
+	}
+	return ""
+}
+
 // DeviceCount reports how many devices are enrolled in the current generation.
 func (k *Keyring) DeviceCount() int {
 	if g := k.current(); g != nil {
@@ -247,6 +269,26 @@ func (k *Keyring) Enrol(rootKey []byte, deviceID string, recipient *age.X25519Re
 	}
 	g.Devices = append(g.Devices, wrap)
 	return nil
+}
+
+// Unenrol removes the current generation's wrap for deviceID, but only when
+// the wrap was made for publicKey: an approving device uses it to roll back
+// a wrap it appended itself when the relay then refused (request expired or
+// already decided), and the key check keeps it from ever touching a wrap a
+// different approval wrote for the same device id. Reports whether a wrap
+// was removed.
+func (k *Keyring) Unenrol(deviceID, publicKey string) bool {
+	g := k.current()
+	if g == nil || publicKey == "" {
+		return false
+	}
+	for i, d := range g.Devices {
+		if d.DeviceID == deviceID && d.PublicKey == publicKey {
+			g.Devices = append(g.Devices[:i:i], g.Devices[i+1:]...)
+			return true
+		}
+	}
+	return false
 }
 
 func unwrapDevice(g *Generation, deviceID string, device *age.X25519Identity) ([]byte, error) {

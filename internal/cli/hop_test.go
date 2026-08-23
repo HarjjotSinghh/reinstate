@@ -44,6 +44,10 @@ type fakeControlPlane struct {
 	refuse      string // error code every mint answers with, when set
 	usageBytes  int64
 	firstPushes int
+
+	// Pairing relays (see pairing_fake_test.go).
+	pairings   map[string]*fakePairing
+	pairingSeq int
 }
 
 type fakeLocker struct {
@@ -70,6 +74,7 @@ func newFakeControlPlane(t *testing.T) *fakeControlPlane {
 	mux.HandleFunc("GET /v1/locker", f.lockerStatus)
 	mux.HandleFunc("POST /v1/locker/credentials", f.mintCredentials)
 	mux.HandleFunc("POST /v1/locker/first-push", f.firstPush)
+	f.registerPairing(mux)
 	mux.HandleFunc("GET /login/github/{link}", func(w http.ResponseWriter, r *http.Request) {
 		f.approveLink(w, r.PathValue("link"), "github")
 	})

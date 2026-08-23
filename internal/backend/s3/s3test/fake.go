@@ -34,6 +34,13 @@ type Fake struct {
 	Mu sync.Mutex
 	// Valid is the set of access key ids currently accepted.
 	Valid map[string]bool
+	// AcceptPrefix, when set, accepts every access key id that starts with
+	// it in addition to Valid (the physical lab server uses it to take
+	// whatever hopd's fake provider mints).
+	AcceptPrefix string
+	// AnyBucket serves every bucket name instead of only Bucket: the first
+	// path segment is treated as the bucket whatever it is.
+	AnyBucket bool
 	// RejectAs is the S3 error code answered for a rejected key.
 	RejectAs string
 	// Requests is "METHOD key as AKID" per request, in order.
@@ -89,8 +96,17 @@ func (f *Fake) RequestLog() []string {
 // URL is the endpoint to configure a client with.
 func (f *Fake) URL() string { return f.Srv.URL }
 
+// ServeHTTP lets a Fake be mounted on any server, not only httptest.
+func (f *Fake) ServeHTTP(w http.ResponseWriter, r *http.Request) { f.handle(w, r) }
+
 func (f *Fake) handle(w http.ResponseWriter, r *http.Request) {
-	path := strings.TrimPrefix(r.URL.EscapedPath(), "/"+f.Bucket)
+	var path string
+	if f.AnyBucket {
+		_, rest, _ := strings.Cut(strings.TrimPrefix(r.URL.EscapedPath(), "/"), "/")
+		path = "/" + rest
+	} else {
+		path = strings.TrimPrefix(r.URL.EscapedPath(), "/"+f.Bucket)
+	}
 	key := strings.TrimPrefix(path, "/")
 	akid := ""
 	if m := credentialRe.FindStringSubmatch(r.Header.Get("Authorization")); m != nil {
@@ -101,7 +117,7 @@ func (f *Fake) handle(w http.ResponseWriter, r *http.Request) {
 	if f.Hook != nil {
 		f.Hook(len(f.Requests))
 	}
-	ok := f.Valid[akid]
+	ok := f.Valid[akid] || (f.AcceptPrefix != "" && akid != "" && strings.HasPrefix(akid, f.AcceptPrefix))
 	code := f.RejectAs
 	f.Mu.Unlock()
 	if !ok {

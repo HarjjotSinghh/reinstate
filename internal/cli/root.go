@@ -86,6 +86,10 @@ type Options struct {
 	// Production leaves it nil and reads a terminal or
 	// REINSTATE_RECOVERY_CODE_FD.
 	RecoveryCodePrompt func(prompt string) ([]byte, error)
+	// PairingCodePrompt overrides hidden pairing-code entry on the approving
+	// device in deterministic tests. Production leaves it nil and reads a
+	// terminal or REINSTATE_PAIRING_CODE_FD.
+	PairingCodePrompt func(prompt string) ([]byte, error)
 }
 
 type envelopeCodecContextKey struct{}
@@ -175,10 +179,11 @@ func NewRoot(opts Options) *cobra.Command {
 	}
 	rootContext = context.WithValue(rootContext, hopSeamsContextKey{}, hopOpts)
 	rootContext = context.WithValue(rootContext, hostedHolderContextKey{}, &hostedHolder{})
-	if opts.DeviceSecrets != nil || opts.RecoveryCodePrompt != nil {
+	if opts.DeviceSecrets != nil || opts.RecoveryCodePrompt != nil || opts.PairingCodePrompt != nil {
 		rootContext = context.WithValue(rootContext, accountSeamsContextKey{}, accountSeams{
 			secrets:        opts.DeviceSecrets,
 			recoveryPrompt: opts.RecoveryCodePrompt,
+			pairingPrompt:  opts.PairingCodePrompt,
 		})
 	}
 	root.SetContext(rootContext)
@@ -218,6 +223,7 @@ func NewRoot(opts Options) *cobra.Command {
 		newLoginCmd(hopOpts),
 		newWhoamiCmd(hopOpts),
 		newHopCmd(),
+		newDevicesCmd(),
 		newInitCmd(),
 		newAccountCmd(),
 		newListCmd(),

@@ -55,6 +55,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`age-scrypt` or `root-key`); BYO behaviour is unchanged. See
   `docs/security-model.md`, "Hosted key model".
 
+- Device approval (pairing): `rein account join` on a new machine shows a
+  16-character code and waits; `rein devices approve` on any enrolled
+  machine takes that code (hidden prompt, or `REINSTATE_PAIRING_CODE_FD` for
+  automation), checks it against the request, appends the new device's
+  root-key wrap to the keyring with compare-and-swap, and relays the root
+  key through the control plane sealed under a key derived from the code
+  (argon2id) and to the new device's key, so the relay holds ciphertext it
+  cannot open and never sees the code. The joining device accepts the key
+  only when the keyring's own wrap for it opens to the same bytes of the same
+  generation. A wrong code approves nothing; a typo is caught by the
+  checksum; requests expire after ten minutes and are released once, and an
+  approval whose request expires while the code prompt is open refuses
+  before writing or rolls its own wrap back, so an expired request never
+  leaves a device enrolled without an approval. A keyring that already
+  lists the joining device with its own key is never taken as enrolment
+  (the public key is public, and a control plane that also holds the bucket
+  could forge such a keyring): `account join` always opens a fresh request
+  and waits for a typed approval, and the approver re-seals for a listed
+  key rather than appending a second wrap. `rein
+  devices` lists the account's devices, whether each holds a wrap, and
+  pending requests. `rein account recover` remains the no-other-device
+  fallback. See `docs/hop.md`, "Adding a device".
+
 - The S3-compatible backend can now obtain its keys from a credential source
   that expires and refreshes (`s3.CredentialSource`), the seam that lets a
   hosted locker mint short-lived credentials. A credential that expires or is

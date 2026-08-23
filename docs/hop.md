@@ -4,7 +4,8 @@ Reinstate Hop is the paid hosted tier: a locker (a storage bucket provisioned
 for exactly one account, holding only ciphertext) plus a console. Every client
 capability stays in the free CLI; Hop gates storage and the console only. This
 page covers what has landed in the client: passwordless sign-in, device
-tokens, and syncing to the locker. Pairing and the daemon follow.
+tokens, syncing to the locker, and device approval (pairing). The daemon
+follows.
 
 ## Commands
 
@@ -13,6 +14,9 @@ rein login [--email ADDRESS] [--no-browser] [--json]
 rein whoami [--json]
 rein init --hop [--project ID=PATH]... [--force]
 rein hop status [--json]
+rein account join
+rein devices [--json]
+rein devices approve [--request ID]
 ```
 
 ## From sign-in to the first push
@@ -26,7 +30,66 @@ rein hop status            # bucket, location, usage, limits
 ```
 
 A second machine runs `rein login`, `rein init --hop`, and
-`rein account recover` with the recovery code, then `rein pull`.
+`rein account join`; it shows a short code, you enter that code on the first
+machine with `rein devices approve`, and the second machine pulls. When no
+enrolled device is at hand, `rein account recover` with the recovery code is
+the fallback.
+
+## Adding a device (pairing)
+
+Nothing is typed on the new device except the sign-in. On it:
+
+```bash
+rein login
+rein init --hop
+rein account join          # shows a code such as P5EZ-6PN0-WDB5-T0J0 and waits
+```
+
+On any machine that is already enrolled:
+
+```bash
+rein devices               # lists devices and the pending request
+rein devices approve       # asks for the code shown on the new device
+```
+
+The enrolled machine checks the code against the request, appends a wrap of
+the root key for the new device to the keyring (compare-and-swap, so two
+approvals at once both land), and relays the root key sealed so that only
+the holder of the code can open it. The new machine opens it, confirms that
+the keyring's wrap for itself opens to the same root key of the same
+generation, and from then on reads and writes the locker.
+
+What the control plane sees: the new device's public key, a random salt, a
+binding value, and later a ciphertext; never the code. The code is 60
+random bits plus a checksum (`XXXX-XXXX-XXXX-XXXX`, Crockford base32; O/I/L
+are accepted for 0/1); the wrapping key is argon2id over the code and salt,
+so guessing the code offline against the relayed material costs one
+memory-hard derivation per candidate across 2^60 candidates. The relay
+expires after ten minutes, hands the ciphertext out once, and refuses
+after 600 polls. A wrong code on the approving side fails closed with
+nothing written anywhere; a typo is caught by the checksum first. A request
+that has already expired when the code is entered (the prompt can sit open
+while you walk to the other machine) is refused before anything is
+written; if the control plane refuses the relay after the wrap was
+appended (expired or decided meanwhile), the approving device removes that
+wrap again, so the new machine's next `rein account join` is a fresh
+request rather than a silent enrolment without an approval behind it. The
+joining machine never treats a keyring that already lists it as proof of
+enrolment: its public key is published in the request, so a control plane
+that also holds the bucket could write a keyring wrapping a root key of its
+own choosing for that key. `rein account join` therefore always opens a
+fresh request and waits for a code to be typed on an enrolled device, and
+only the root key received through that approval (and matched against the
+keyring) is ever used. If a device's local account record is lost, run
+`rein account join` again and approve it again, or `rein account recover`
+with the recovery code. The code
+can be supplied to automation through `REINSTATE_PAIRING_CODE_FD` (a
+pre-opened descriptor, like `REINSTATE_PASSPHRASE_FD`); it is never a flag
+or a plain environment value. The full protocol and threat argument are in
+the control plane's `docs/hop.md`, "Pairing".
+
+`rein devices` shows every device enrolled under the account, whether the
+keyring holds a root-key wrap for it, and any pending pairing request.
 
 `rein login` signs this device in. With no flag it starts a GitHub sign-in:
 the CLI prints a URL, opens it in your browser, and waits. With
@@ -83,6 +146,12 @@ and what to do (`rein hop status` shows usage against every limit). Exit
 codes: `4` (`auth_storage`) when the device is not signed in, when its
 token was rejected, and for every quota refusal; `1` when the control
 plane could not reach the storage provider (retry).
+
+`rein devices approve` compares a pending request's expiry with this
+machine's clock before it writes anything; a clock that is far wrong can
+therefore refuse a request that is in fact still open (`expired at ...`,
+exit `2`). Fix the clock, then run `rein account join` again on the new
+device for a fresh request.
 
 ## Choosing the control plane
 

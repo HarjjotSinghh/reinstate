@@ -28,6 +28,7 @@ import (
 type accountSeams struct {
 	secrets        credentials.SecretStore
 	recoveryPrompt func(prompt string) ([]byte, error)
+	pairingPrompt  func(prompt string) ([]byte, error)
 }
 
 type accountSeamsContextKey struct{}
@@ -79,11 +80,12 @@ func newAccountCmd() *cobra.Command {
 		Long: `Manage this device's enrolment in the hosted key model.
 
 The first device generates the root key and the recovery code. Other devices
-enrol from the recovery code (rein account recover) and read everything the
-first device wrote. The root key and recovery code never leave a device; the
+join by device approval (rein account join, confirmed on an enrolled device
+with rein devices approve) or, when no other device is available, from the
+recovery code (rein account recover). The root key and recovery code never leave a device; the
 keyring in storage holds only wrapped copies.`,
 	}
-	root.AddCommand(newAccountInitCmd(), newAccountRecoverCmd(), newAccountStatusCmd())
+	root.AddCommand(newAccountInitCmd(), newAccountJoinCmd(), newAccountRecoverCmd(), newAccountStatusCmd())
 	return root
 }
 
@@ -405,6 +407,13 @@ func loadAccountHome() (string, *schema.Config, error) {
 // the local enrolment. Config is saved first so a crash between the two
 // leaves a config whose key model matches the keyring already in storage.
 func saveAccountEnrolment(home string, cfg *schema.Config, now time.Time, generation int, via string) error {
+	return saveAccountEnrolmentConfirmed(home, cfg, now, generation, via, true)
+}
+
+// saveAccountEnrolmentConfirmed is saveAccountEnrolment with an explicit
+// recovery-code flag: a device enrolled by approval (join) never saw the
+// recovery code, and its record must say so.
+func saveAccountEnrolmentConfirmed(home string, cfg *schema.Config, now time.Time, generation int, via string, recoveryConfirmed bool) error {
 	cfg.Encryption.Type = schema.EncryptionRootKey
 	if err := config.SaveConfig(home, cfg); err != nil {
 		return NewExitError(ExitConfig, err.Error())
@@ -414,7 +423,7 @@ func saveAccountEnrolment(home string, cfg *schema.Config, now time.Time, genera
 		ProfileID:             cfg.ProfileID,
 		DeviceID:              cfg.DeviceID,
 		KeyGeneration:         generation,
-		RecoveryCodeConfirmed: true,
+		RecoveryCodeConfirmed: recoveryConfirmed,
 		EnrolledVia:           via,
 		EnrolledAt:            now.Format(time.RFC3339),
 	}

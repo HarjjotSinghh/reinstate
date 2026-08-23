@@ -61,7 +61,7 @@ func printPairingCode(cmd *cobra.Command) error {
 		return NewExitError(ExitConfig, "this device is not initialized yet; run rein init first")
 	}
 	if cfg.Storage.Type == schema.StorageHop {
-		return NewExitError(ExitConfig, "this profile syncs to a Reinstate Hop locker; another device joins it with rein login, rein init --hop, and rein account recover, not a pairing code")
+		return NewExitError(ExitConfig, "this profile syncs to a Reinstate Hop locker; another device joins it with rein login, rein init --hop, and rein account join, not init --link")
 	}
 	if strings.TrimSpace(cfg.Storage.Bucket) == "" {
 		return NewExitError(ExitConfig, "this device has no storage configured; run rein init first")
