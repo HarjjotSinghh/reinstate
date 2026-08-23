@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -641,7 +642,18 @@ func newPushCmd() *cobra.Command {
 			var uploaded []string
 			var skipped int
 			for _, it := range items {
-				localHash, err := hashFile(it.LocalPath)
+				a, ok := reg.Get(it.Agent)
+				if !ok {
+					return NewExitError(ExitCompatibility, "adapter unavailable for "+it.Agent)
+				}
+				sessionMeta := adapter.Session{
+					ID:           it.SessionID,
+					Agent:        it.Agent,
+					ProjectID:    it.ProjectID,
+					Path:         it.LocalPath,
+					RelativePath: it.RelativePath,
+				}
+				localHash, err := sessionRevision(a, sessionMeta)
 				if err != nil {
 					return err
 				}
@@ -653,17 +665,6 @@ func newPushCmd() *cobra.Command {
 					prior.RemoteRevision == remote.SnapshotID {
 					skipped++
 					continue
-				}
-				a, ok := reg.Get(it.Agent)
-				if !ok {
-					return NewExitError(ExitCompatibility, "adapter unavailable for "+it.Agent)
-				}
-				sessionMeta := adapter.Session{
-					ID:           it.SessionID,
-					Agent:        it.Agent,
-					ProjectID:    it.ProjectID,
-					Path:         it.LocalPath,
-					RelativePath: it.RelativePath,
 				}
 				plan, err := a.PlanExport(context.Background(), sessionMeta, adapter.ExportOptions{DryRun: dryRun})
 				if err != nil {
@@ -850,7 +851,11 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 				// A forked restore never replaces the local file, so divergence
 				// protection does not apply to it.
 				if localSession, exists := localSessions[key]; exists && !forkSessions[key] {
-					localHash, hashErr := hashFile(localSession.Path)
+					localAdapter, ok := reg.Get(s.Agent)
+					if !ok {
+						return NewExitError(ExitCompatibility, "adapter unavailable for "+s.Agent)
+					}
+					localHash, hashErr := sessionRevision(localAdapter, localSession)
 					if hashErr != nil {
 						return hashErr
 					}
@@ -944,7 +949,7 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 					if err != nil {
 						return fmt.Errorf("verify restored session: %w", err)
 					}
-					localHash, err := hashFile(restored.Path)
+					localHash, err := sessionRevision(a, restored)
 					if err != nil {
 						return err
 					}
@@ -1207,7 +1212,7 @@ func resolveKeepLocal(
 	if err != nil {
 		return err
 	}
-	localHash, err := hashFile(selected.Path)
+	localHash, err := sessionRevision(selectedAdapter, selected)
 	if err != nil {
 		return err
 	}
@@ -1275,7 +1280,7 @@ func resolveKeepRemote(
 	if err != nil {
 		return fmt.Errorf("verify resolved session: %w", err)
 	}
-	localHash, err := hashFile(restored.Path)
+	localHash, err := sessionRevision(selectedAdapter, restored)
 	if err != nil {
 		return err
 	}
@@ -1424,11 +1429,29 @@ func requireSessionRestorable(
 }
 
 func forkRelativePath(source, sessionID string) string {
-	dir := filepath.ToSlash(filepath.Dir(filepath.FromSlash(source)))
-	if dir == "." {
-		return sessionID + ".jsonl"
+	slashSource := filepath.ToSlash(source)
+	// Keep the source's own extension so an embedded-store agent whose sessions
+	// are addressed as ".json" does not have a fork mislabelled ".jsonl".
+	ext := path.Ext(slashSource)
+	if ext == "" {
+		ext = ".jsonl"
 	}
-	return dir + "/" + sessionID + ".jsonl"
+	dir := path.Dir(slashSource)
+	if dir == "." {
+		return sessionID + ext
+	}
+	return dir + "/" + sessionID + ext
+}
+
+// sessionRevision returns a stable per-session content revision. Embedded-store
+// adapters implement adapter.SessionRevisioner because their sessions do not
+// each own a file to hash; a file-per-session adapter falls back to hashing the
+// session's file.
+func sessionRevision(a adapter.Adapter, s adapter.Session) (string, error) {
+	if revisioner, ok := a.(adapter.SessionRevisioner); ok {
+		return revisioner.SessionRevision(context.Background(), s)
+	}
+	return hashFile(s.Path)
 }
 
 // allPathsExist reports whether every path is already present on disk.

@@ -55,7 +55,62 @@ OpenCode is launched into a directory, so such a row has nowhere to go.
 
 Device journey:
 [../testing/results/2026-08-22-macos-opencode-t3-journey.md](../testing/results/2026-08-22-macos-opencode-t3-journey.md)
-(macOS only; native Windows pending).
+(macOS; the native Windows T5 journey below covers the same build).
+
+## Encrypted sync (T5)
+
+The sync adapter is `internal/adapter/opencode`, wired by the catalog
+(`rein push`/`pull` offer OpenCode once its store is detected). Because
+OpenCode keeps every session in one embedded SQLite database, the synced unit is a portable,
+deterministic JSON document extracted from four tables — `session`, `project`,
+`message`, `part` — with every absolute path normalised to a `${HOME}` /
+`${REPO:…}` token. The `credential`, `account`, `control_account` and
+`account_state` tables are never opened; `Exclusions()` names them and a
+round-trip test fails if a credential value appears in an export.
+
+| Adapter surface | Behaviour |
+| --------------- | --------- |
+| `Detect` | A regular `opencode.db` under the resolved root is supported; absence is `NOT_INSTALLED`. |
+| `Discover` | Reads `session` rows via `internal/vendorsqlite` (so un-checkpointed WAL rows are visible); each session's `RelativePath` is the virtual `sessions/<id>.json`. |
+| `Export` | Extracts one session to the portable document, path-tokenised, as a single tar entry. |
+| `Restore` | Writes the document back into the destination's own `opencode.db` through a checkpointed working copy staged in a hidden directory beside the store (same volume, so the final rename cannot fail across filesystems), fingerprint-guarded and backed up, then atomically renamed; stale `-wal`/`-shm` sidecars are removed so the vendor reopens the merged database. The store fingerprint is checked after the merge and again immediately before the rename, so a vendor write that lands while the merge or backup is in progress aborts the restore; a write that lands in the residual window between that last check and the rename is not detected and its `-wal` is removed with the stale sidecars — close OpenCode before pulling into a live store. |
+| revision | `SessionRevision` is the digest of the normalised document minus the `project` row's timestamps (the destination keeps its own on restore) — device-independent, so the sync engine detects a genuine edit rather than every session appearing changed whenever the shared file changes, and a freshly pulled session is not mistaken for a local edit. |
+
+Because sessions do not each own a file, the adapter implements
+`adapter.SessionRevisioner`; the CLI uses it for change detection instead of
+hashing the shared database file. Paths carrying no `${HOME}`/`${REPO:…}`
+token (outside every known root) have their separators normalised to `/` on
+export (the portable form every untokenised path takes) and are then written
+back as-is on restore, without being rewritten onto the destination platform.
+The vendor itself stores forward-slash paths on Windows, so the form is native
+to it.
+
+Message and part `data` blobs that carry no path token are written back to the
+destination store in the vendor's own compact shape and key order: the export
+document is indented for readability, so the adapter compacts each embedded
+blob on restore rather than storing the indented bytes or re-keying the blob.
+
+Restore refuses a destination whose `opencode.db` has not been initialised by
+the vendor — it writes sessions into the vendor's store but never invents its
+schema. It also refuses an archive whose entry carries no session id, a
+document whose `session.id` is not the planned source session, and an empty
+destination id, before the store is touched; archive entry names containing a
+backslash are refused on every host. Conflict keep-both restores a fork beside
+the original with derived, collision-free message and part ids
+(`--fork`-compatible), idempotent on repeat; the `id`, `parentID` and
+`messageID` fields inside each forked row's `data` are rewritten through the
+same map so the fork never points back into the original session.
+
+Measured row shape (1.18.21, macOS): the vendor strips `id`, `sessionID` and
+`messageID` from the `message.data` and `part.data` blobs on write — identity
+lives in the columns — and re-attaches them on `opencode export`. The seeds
+under `testdata/adapters/opencode/` follow that shape.
+
+Device journeys:
+[../testing/results/2026-08-23-macos-opencode-t5-journey.md](../testing/results/2026-08-23-macos-opencode-t5-journey.md)
+(macOS, PASS) and
+[../testing/results/2026-08-23-windows-opencode-t5.md](../testing/results/2026-08-23-windows-opencode-t5.md)
+(native Windows, PASS).
 
 ### Message record schema (R1 — Documented)
 

@@ -104,6 +104,18 @@ type Adapter interface {
 	Exclusions() []Exclusion
 }
 
+// SessionRevisioner is implemented by adapters whose sessions do not each own a
+// file to hash — an embedded-store agent keeps every session in one shared
+// database. The revision is a stable, device-independent digest of one
+// session's content, so the sync engine detects a genuine edit instead of
+// treating every session as changed whenever the shared store file changes.
+//
+// A file-per-session adapter does not implement this; callers fall back to
+// hashing Session.Path.
+type SessionRevisioner interface {
+	SessionRevision(context.Context, Session) (string, error)
+}
+
 // CanRestore reports whether restore is allowed for a compatibility state.
 func CanRestore(c Compatibility, override bool) bool {
 	switch c {
