@@ -1,0 +1,579 @@
+package cli
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
+	"sync"
+	"testing"
+
+	"filippo.io/age"
+
+	"github.com/HarjjotSinghh/reinstate/internal/backend/s3/s3test"
+	"github.com/HarjjotSinghh/reinstate/internal/config"
+	"github.com/HarjjotSinghh/reinstate/internal/crypto"
+	"github.com/HarjjotSinghh/reinstate/internal/hop"
+	"github.com/HarjjotSinghh/reinstate/internal/keyring"
+)
+
+// revoke runs `rein devices revoke <target>` on d, answering the recovery
+// prompt with code.
+func (d *pairDevice) revoke(target, code string) (string, string, int) {
+	d.t.Helper()
+	d.t.Setenv("REINSTATE_HOME", d.home)
+	out, errb := &syncBuffer{}, &syncBuffer{}
+	exit := d.execute(runOptions{stdout: out, stderr: errb, recovery: code}, "devices", "revoke", target)
+	return out.String(), errb.String(), exit
+}
+
+// recover runs `rein account recover` on d with the recovery code.
+func (d *pairDevice) recover(code string) (string, string, int) {
+	d.t.Helper()
+	d.t.Setenv("REINSTATE_HOME", d.home)
+	out, errb := &syncBuffer{}, &syncBuffer{}
+	exit := d.execute(runOptions{stdout: out, stderr: errb, recovery: code}, "account", "recover")
+	return out.String(), errb.String(), exit
+}
+
+// enrol signs d in, inits it for Hop against project, and enrols it from
+// the recovery code.
+func (d *pairDevice) enrol(project, code string) {
+	d.t.Helper()
+	if _, errb, exit := d.run("login"); exit != ExitOK {
+		d.t.Fatalf("%s login: %d %q", d.name, exit, errb)
+	}
+	if _, errb, exit := d.run("init", "--hop", "--project", "local/locker="+project); exit != ExitOK {
+		d.t.Fatalf("%s init --hop: %d %q", d.name, exit, errb)
+	}
+	if out, errb, exit := d.recover(code); exit != ExitOK {
+		d.t.Fatalf("%s recover: %d out=%q err=%q", d.name, exit, out, errb)
+	}
+}
+
+// keyringState loads the keyring as stored and this device's generation
+// keys, for assertions that bypass the CLI.
+func (d *pairDevice) keyringState(t *testing.T, plane *fakeControlPlane) (*keyring.Keyring, map[int][]byte) {
+	t.Helper()
+	ctx := context.Background()
+	cfg, err := config.LoadConfig(d.home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	objects, err := plane.s3.Store.List(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var key string
+	for _, meta := range objects {
+		if strings.HasSuffix(meta.Key, keyring.ObjectName) {
+			key = meta.Key
+		}
+	}
+	ring, _, err := keyring.Load(ctx, plane.s3.Store, key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	secret, err := d.secrets.GetSecret(deviceSecretRef(cfg.ProfileID, cfg.DeviceID))
+	if err != nil {
+		t.Fatal(err)
+	}
+	identity, err := age.ParseX25519Identity(strings.TrimSpace(string(secret)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	keys, err := ring.UnwrapGenerations(cfg.DeviceID, identity)
+	if err != nil {
+		t.Fatalf("%s cannot open the keyring: %v", d.name, err)
+	}
+	return ring, keys
+}
+
+func objectKeys(t *testing.T, plane *fakeControlPlane) map[string]bool {
+	t.Helper()
+	objects, err := plane.s3.Store.List(context.Background(), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	keys := map[string]bool{}
+	for _, meta := range objects {
+		keys[meta.Key] = true
+	}
+	return keys
+}
+
+// opensWith reports whether the object at key is an envelope the provider
+// can open.
+func opensWith(t *testing.T, plane *fakeControlPlane, key string, keys crypto.KeyProvider) bool {
+	t.Helper()
+	rc, _, err := plane.s3.Store.Get(context.Background(), key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rc.Close()
+	raw, _ := io.ReadAll(rc)
+	var out bytes.Buffer
+	return crypto.Open(bytes.NewReader(raw), &out, keys) == nil
+}
+
+func deviceID(t *testing.T, d *pairDevice) string {
+	t.Helper()
+	tok, err := d.tokens.GetDeviceToken()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return tok.DeviceID
+}
+
+// TestRevocationJourney is the primary-seam journey for device revocation
+// and key generations: A and B are enrolled; A revokes B, which starts key
+// generation 2; B can neither mint credentials nor open anything pushed
+// afterwards, while A reads the whole history; the recovery code enrols a
+// new device after the rollover and that device reads everything too; a
+// revocation racing an approval, in either order, converges on one
+// keyring where the approved device holds a wrap and the revoked one does
+// not.
+func TestRevocationJourney(t *testing.T) {
+	plane := newFakeControlPlane(t)
+	plane.s3 = s3test.NewPlain(t, "lk-000000000000000000000revoke")
+	t.Setenv(hopURLEnv, plane.srv.URL)
+	for _, env := range []string{"REINSTATE_BACKEND", "REINSTATE_S3_ACCESS_KEY_ID", "REINSTATE_S3_SECRET_ACCESS_KEY", "REINSTATE_PASSPHRASE_FD", "REINSTATE_RECOVERY_CODE_FD", "REINSTATE_PAIRING_CODE_FD", "REINSTATE_HOP_LOCATION", "CLAUDE_CONFIG_DIR", "CODEX_HOME"} {
+		t.Setenv(env, "")
+	}
+	project := writeClaudeFixture(t)
+	userHome := os.Getenv("HOME")
+	ctx := context.Background()
+
+	// A: first device, pushes the first session.
+	a := newPairDevice(t, plane, "macbook")
+	for _, args := range [][]string{{"login"}, {"init", "--hop", "--project", "local/locker=" + project}, {"account", "init"}, {"push", "--all", "--json"}} {
+		if out, errb, code := a.run(args...); code != ExitOK {
+			t.Fatalf("A %v: exit=%d out=%q err=%q", args, code, out, errb)
+		}
+	}
+	// B: joins by approval and pulls.
+	b := newPairDevice(t, plane, "desktop")
+	if _, errb, code := b.run("login"); code != ExitOK {
+		t.Fatalf("B login: %d %q", code, errb)
+	}
+	if _, errb, code := b.run("init", "--hop", "--project", "local/locker="+filepath.Join(userHome, "Projects", "desktop-target")); code != ExitOK {
+		t.Fatalf("B init --hop: %d %q", code, errb)
+	}
+	join := b.startJoin()
+	if out, errb, code := a.approve(join.code, false); code != ExitOK {
+		t.Fatalf("A approves B: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if out, errb, code := join.finish(t); code != ExitOK {
+		t.Fatalf("B join: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if out, errb, code := b.run("pull", "--all", "--json"); code != ExitOK {
+		t.Fatalf("B pull: exit=%d out=%q err=%q", code, out, errb)
+	}
+	bID := deviceID(t, b)
+	_, bKeys := b.keyringState(t, plane)
+	if len(bKeys) != 1 || bKeys[1] == nil {
+		t.Fatalf("B holds generations %v, want only 1", bKeys)
+	}
+	before := objectKeys(t, plane)
+
+	// Refusals: an unknown device, this device, a wrong recovery code.
+	// None of them changes the keyring or the control plane.
+	if out, errb, code := a.revoke("nobody", a.shownCode); code != ExitUsage || !strings.Contains(errb, `no device "nobody"`) {
+		t.Fatalf("revoke unknown: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if out, errb, code := a.revoke("macbook", a.shownCode); code != ExitUsage || !strings.Contains(errb, "is this device") {
+		t.Fatalf("revoke self: exit=%d out=%q err=%q", code, out, errb)
+	}
+	wrongCode, err := keyring.GenerateRecoveryCode()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out, errb, code := a.revoke("desktop", wrongCode); code != ExitAuthStorage || !strings.Contains(errb, "does not match") || !strings.Contains(errb, "nothing was revoked") {
+		t.Fatalf("revoke with wrong code: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if out, errb, code := a.revoke("desktop", "not-a-code"); code != ExitUsage {
+		t.Fatalf("revoke with malformed code: exit=%d out=%q err=%q", code, out, errb)
+	}
+	ring, _ := a.keyringState(t, plane)
+	if ring.CurrentGeneration != 1 || ring.DeviceCount() != 2 || len(plane.events) != 0 {
+		t.Fatalf("a refused revocation changed state: gen=%d devices=%d events=%v", ring.CurrentGeneration, ring.DeviceCount(), plane.events)
+	}
+	// B's token still mints.
+	if out, errb, code := b.run("hop", "status"); code != ExitOK {
+		t.Fatalf("B hop status before revocation: exit=%d out=%q err=%q", code, out, errb)
+	}
+
+	// A revokes B by name, typing the code loosely.
+	out, errb, code := a.revoke("Desktop", strings.ToLower(strings.ReplaceAll(a.shownCode, "-", " ")))
+	if code != ExitOK || !strings.Contains(out, `revoked device "desktop"`) || !strings.Contains(out, "key generation 2 started with 1 enrolled device") {
+		t.Fatalf("revoke: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if strings.Contains(out, a.shownCode) || strings.Contains(errb, a.shownCode) {
+		t.Fatal("the recovery code was echoed")
+	}
+	plane.mu.Lock()
+	events := append([]string(nil), plane.events...)
+	_, bStillKnown := plane.revoked[bID]
+	plane.mu.Unlock()
+	if len(events) != 1 || events[0] != "device_revoked:"+bID || !bStillKnown {
+		t.Fatalf("control plane events %v, revoked=%v", events, bStillKnown)
+	}
+	ring, aKeys := a.keyringState(t, plane)
+	if ring.CurrentGeneration != 2 || len(ring.Generations) != 2 || ring.DeviceCount() != 1 || ring.HasDevice(bID) || !ring.RevokedDevice(bID) {
+		t.Fatalf("keyring after revocation: gen=%d gens=%d devices=%d b=%v", ring.CurrentGeneration, len(ring.Generations), ring.DeviceCount(), ring.HasDevice(bID))
+	}
+	if len(aKeys) != 2 || !bytes.Equal(aKeys[1], bKeys[1]) {
+		t.Fatalf("A holds generations %v after rollover", aKeys)
+	}
+	// Generation 1 is untouched: B's old wrap still opens it (B already
+	// had that key), which is exactly why nothing new is written under it.
+	if !bytes.Equal(aKeys[1], bKeys[1]) {
+		t.Fatal("generation 1 was rewritten")
+	}
+
+	// Visible on both sides.
+	out, _, code = a.run("devices")
+	if code != ExitOK || !strings.Contains(out, "desktop") || !strings.Contains(out, ", revoked 20") || !strings.Contains(out, "holds a root-key wrap (key generation 2)") {
+		t.Fatalf("A devices after revocation: exit=%d out=%q", code, out)
+	}
+	out, _, code = a.run("devices", "--json")
+	var listed struct {
+		Devices []struct {
+			ID        string `json:"id"`
+			RevokedAt string `json:"revoked_at"`
+			InKeyring *bool  `json:"in_keyring"`
+		} `json:"devices"`
+		KeyGeneration int `json:"key_generation"`
+	}
+	_ = json.Unmarshal([]byte(out), &listed)
+	if code != ExitOK || listed.KeyGeneration != 2 || len(listed.Devices) != 2 {
+		t.Fatalf("A devices --json: exit=%d out=%q", code, out)
+	}
+	for _, d := range listed.Devices {
+		if d.ID == bID && (d.RevokedAt == "" || d.InKeyring == nil || *d.InKeyring) {
+			t.Fatalf("B row after revocation: %+v", d)
+		}
+		if d.ID != bID && (d.RevokedAt != "" || d.InKeyring == nil || !*d.InKeyring) {
+			t.Fatalf("A row after revocation: %+v", d)
+		}
+	}
+	// B: the token is refused everywhere, so nothing mints and nothing
+	// pulls; the session it already pulled stays on disk.
+	if out, errb, code := b.run("devices"); code != ExitAuthStorage || !strings.Contains(errb, "token was rejected") {
+		t.Fatalf("B devices after revocation: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if out, errb, code := b.run("pull", "--all", "--json"); code == ExitOK || !strings.Contains(errb, "token was rejected") {
+		t.Fatalf("B pull after revocation: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if out, errb, code := b.run("push", "--all", "--json"); code == ExitOK {
+		t.Fatalf("B push after revocation: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if out, errb, code := b.run("account", "join"); code != ExitSafety || !strings.Contains(errb, "already enrolled") {
+		t.Fatalf("B join after revocation: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if content, err := os.ReadFile(filepath.Join(userHome, ".claude", "projects", claudeProjectDirectoryForTest(filepath.Join(userHome, "Projects", "desktop-target")), "session-locker.jsonl")); err != nil || !bytes.Contains(content, []byte("synthetic locker journey")) {
+		t.Fatalf("revocation touched B's local copy: %v", err)
+	}
+
+	// A pushes a new session. B's only key (generation 1) opens every
+	// object written before the revocation and none written after; A
+	// opens all of them and pulls its whole history.
+	root := filepath.Join(userHome, ".claude", "projects", claudeProjectDirectoryForTest(project))
+	meta, _ := json.Marshal(map[string]any{"type": "meta", "cwd": project})
+	content := append(meta, '\n')
+	content = append(content, []byte(`{"type":"user","message":{"content":"written after the revocation"}}`+"\n")...)
+	if err := os.WriteFile(filepath.Join(root, "session-after.jsonl"), content, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if out, errb, code := a.run("push", "--all", "--json"); code != ExitOK {
+		t.Fatalf("A push after revocation: exit=%d out=%q err=%q", code, out, errb)
+	}
+	bProvider, err := crypto.NewRootKeyProvider(bKeys[1])
+	if err != nil {
+		t.Fatal(err)
+	}
+	aProvider, err := crypto.NewRootKeyProvider(aKeys[2], aKeys[1])
+	if err != nil {
+		t.Fatal(err)
+	}
+	after := objectKeys(t, plane)
+	newObjects, oldEnvelopes := 0, 0
+	for key := range after {
+		if strings.HasSuffix(key, keyring.ObjectName) {
+			continue
+		}
+		switch {
+		case before[key] && !strings.HasSuffix(key, "manifest.age"):
+			oldEnvelopes++
+			if !opensWith(t, plane, key, bProvider) {
+				t.Fatalf("pre-revocation object %s no longer opens under generation 1", key)
+			}
+		case !before[key] || strings.HasSuffix(key, "manifest.age"):
+			newObjects++
+			if opensWith(t, plane, key, bProvider) {
+				t.Fatalf("object %s written after the revocation opens with the revoked device's key", key)
+			}
+		}
+		if !opensWith(t, plane, key, aProvider) {
+			t.Fatalf("A cannot open %s", key)
+		}
+	}
+	if newObjects == 0 || oldEnvelopes == 0 {
+		t.Fatalf("expected objects on both sides of the revocation: new=%d old=%d keys=%v", newObjects, oldEnvelopes, after)
+	}
+	if out, errb, code := a.run("pull", "--all", "--json"); code != ExitOK {
+		t.Fatalf("A pull after revocation: exit=%d out=%q err=%q", code, out, errb)
+	}
+
+	// Revoking again is harmless on both sides.
+	if out, errb, code := a.revoke(bID, a.shownCode); code != ExitOK || !strings.Contains(out, "already revoked") {
+		t.Fatalf("second revoke: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if ring, _ := a.keyringState(t, plane); ring.CurrentGeneration != 2 || len(ring.Generations) != 2 {
+		t.Fatalf("second revoke changed the keyring: gen=%d gens=%d", ring.CurrentGeneration, len(ring.Generations))
+	}
+	if len(plane.events) != 1 {
+		t.Fatalf("second revoke recorded another event: %v", plane.events)
+	}
+
+	// The recovery code still works after the rollover: a new device
+	// enrols from it into every generation and reads the whole locker,
+	// including what was written before the revocation.
+	d := newPairDevice(t, plane, "workstation")
+	d.enrol(filepath.Join(userHome, "Projects", "workstation-target"), a.shownCode)
+	out, errb, code = d.run("account", "status", "--json")
+	if code != ExitOK {
+		t.Fatalf("D status: %d %q", code, errb)
+	}
+	var status map[string]any
+	_ = json.Unmarshal([]byte(out), &status)
+	if status["key_generation"] != float64(2) || status["enrolled_devices"] != float64(2) || status["device_in_keyring"] != true {
+		t.Fatalf("D status = %v", status)
+	}
+	if p := status["account_path"].(string); strings.Contains(p, `\`) {
+		t.Fatalf("account_path must be slash-normalized on every host: %v", p)
+	}
+	if _, dKeys := d.keyringState(t, plane); len(dKeys) != 2 || !bytes.Equal(dKeys[1], aKeys[1]) || !bytes.Equal(dKeys[2], aKeys[2]) {
+		t.Fatalf("D holds generations %v, want both", dKeys)
+	}
+	if out, errb, code := d.run("pull", "--all", "--json"); code != ExitOK {
+		t.Fatalf("D pull: exit=%d out=%q err=%q", code, out, errb)
+	}
+	dRoot := filepath.Join(userHome, ".claude", "projects", claudeProjectDirectoryForTest(filepath.Join(userHome, "Projects", "workstation-target")))
+	for file, want := range map[string]string{"session-locker.jsonl": "synthetic locker journey", "session-after.jsonl": "written after the revocation"} {
+		got, err := os.ReadFile(filepath.Join(dRoot, file))
+		if err != nil || !bytes.Contains(got, []byte(want)) {
+			t.Fatalf("D did not restore %s: %v %q", file, err, got)
+		}
+	}
+	// B, revoked, enrols again from the recovery code as the same device
+	// id with a fresh key, and reads everything again.
+	if _, err := os.Stat(config.AccountPath(b.home)); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(config.AccountPath(b.home)); err != nil {
+		t.Fatal(err)
+	}
+	if _, errb, code := b.run("login"); code != ExitOK {
+		t.Fatalf("B login again: %d %q", code, errb)
+	}
+	bReID := deviceID(t, b)
+	if bReID == bID {
+		t.Fatal("login again reused the revoked device id")
+	}
+	// The home still names the revoked device id: enrolling that id again
+	// under the new token is refused until init --hop --force aligns it.
+	if out, errb, code := b.recover(a.shownCode); code != ExitConfig || !strings.Contains(errb, "is not the signed-in device") {
+		t.Fatalf("B recover with stale device_id: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if _, errb, code := b.run("init", "--hop", "--force", "--project", "local/locker="+filepath.Join(userHome, "Projects", "desktop-target-2")); code != ExitOK {
+		t.Fatalf("B init --hop again: %d %q", code, errb)
+	}
+	if out, errb, code := b.recover(a.shownCode); code != ExitOK || !strings.Contains(out, "1 earlier one") {
+		t.Fatalf("B recover after revocation: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if _, bAgain := b.keyringState(t, plane); len(bAgain) != 2 {
+		t.Fatalf("re-enrolled B holds generations %v, want both", bAgain)
+	}
+	if out, errb, code := b.run("pull", "--all", "--json"); code != ExitOK {
+		t.Fatalf("B pull after re-enrolment: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if got, err := os.ReadFile(filepath.Join(userHome, ".claude", "projects", claudeProjectDirectoryForTest(filepath.Join(userHome, "Projects", "desktop-target-2")), "session-after.jsonl")); err != nil || !bytes.Contains(got, []byte("written after the revocation")) {
+		t.Fatalf("re-enrolled B did not restore the post-revocation session: %v", err)
+	}
+
+	// A revocation racing an approval, revocation first: C joins, A's
+	// prompt is open, D revokes B's new enrolment meanwhile. A's approval
+	// lands on the rolled-over keyring and enrols C into generation 3 and
+	// both earlier ones; C's join names generation 3 and succeeds.
+	c := newPairDevice(t, plane, "laptop-2")
+	if _, errb, code := c.run("login"); code != ExitOK {
+		t.Fatalf("C login: %d %q", code, errb)
+	}
+	if _, errb, code := c.run("init", "--hop", "--project", "local/locker="+filepath.Join(userHome, "Projects", "laptop-target")); code != ExitOK {
+		t.Fatalf("C init --hop: %d %q", code, errb)
+	}
+	joinC := c.startJoin()
+	out, errb, code = a.approveWhilePrompting(joinC.code, false, func() {
+		if out, errb, code := d.revoke(bReID, a.shownCode); code != ExitOK || !strings.Contains(out, "key generation 3") {
+			t.Errorf("D revokes B during A's prompt: exit=%d out=%q err=%q", code, out, errb)
+		}
+		// REINSTATE_HOME is process-wide; hand it back to A's command.
+		t.Setenv("REINSTATE_HOME", a.home)
+	})
+	if code != ExitOK || !strings.Contains(out, "key generation 3") {
+		t.Fatalf("A approves C across a rollover: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if out, errb, code := joinC.finish(t); code != ExitOK || !strings.Contains(out, "key_generation=3") {
+		t.Fatalf("C join across a rollover: exit=%d out=%q err=%q", code, out, errb)
+	}
+	ring, _ = a.keyringState(t, plane)
+	cID := deviceID(t, c)
+	if ring.CurrentGeneration != 3 || ring.DeviceCount() != 3 || !ring.HasDevice(cID) || ring.HasDevice(bReID) {
+		t.Fatalf("keyring after approve-across-rollover: gen=%d devices=%d c=%v b=%v", ring.CurrentGeneration, ring.DeviceCount(), ring.HasDevice(cID), ring.HasDevice(bReID))
+	}
+	if _, cKeys := c.keyringState(t, plane); len(cKeys) != 3 {
+		t.Fatalf("C holds generations %v, want all three", cKeys)
+	}
+	if out, errb, code := c.run("pull", "--all", "--json"); code != ExitOK {
+		t.Fatalf("C pull: exit=%d out=%q err=%q", code, out, errb)
+	}
+
+	// Approval first, then a revocation before the joiner collects: the
+	// rollover carries the just-approved wrap into generation 4, the
+	// joiner refuses a payload naming generation 3 (fail closed, no
+	// record), and its retry is approved at generation 4.
+	e := newPairDevice(t, plane, "tablet")
+	if _, errb, code := e.run("login"); code != ExitOK {
+		t.Fatalf("E login: %d %q", code, errb)
+	}
+	if _, errb, code := e.run("init", "--hop", "--project", "local/locker="+filepath.Join(userHome, "Projects", "tablet-target")); code != ExitOK {
+		t.Fatalf("E init --hop: %d %q", code, errb)
+	}
+	joinE := e.startJoin()
+	if out, errb, code := a.approve(joinE.code, false); code != ExitOK || !strings.Contains(out, "key generation 3") {
+		t.Fatalf("A approves E: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if out, errb, code := d.revoke(cID, a.shownCode); code != ExitOK || !strings.Contains(out, "key generation 4") {
+		t.Fatalf("D revokes C after E's approval: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if out, errb, code := joinE.finish(t); code != ExitSafety || !strings.Contains(errb, "generation 4 but the approval named 3") {
+		t.Fatalf("E join after a rollover: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if _, err := config.LoadAccount(e.home); !os.IsNotExist(err) {
+		t.Fatalf("E's refused join wrote an account record: %v", err)
+	}
+	eID := deviceID(t, e)
+	ring, _ = a.keyringState(t, plane)
+	if ring.CurrentGeneration != 4 || !ring.HasDevice(eID) || ring.HasDevice(cID) {
+		t.Fatalf("keyring after revoke-after-approve: gen=%d e=%v c=%v", ring.CurrentGeneration, ring.HasDevice(eID), ring.HasDevice(cID))
+	}
+	retryE := e.startJoin()
+	if out, errb, code := a.approve(retryE.code, false); code != ExitOK || !strings.Contains(out, "key generation 4") {
+		t.Fatalf("A re-approves E: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if out, errb, code := retryE.finish(t); code != ExitOK || !strings.Contains(out, "key_generation=4") {
+		t.Fatalf("E join retry: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if out, errb, code := e.run("pull", "--all", "--json"); code != ExitOK {
+		t.Fatalf("E pull: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if out, errb, code := c.run("pull", "--all", "--json"); code == ExitOK || !strings.Contains(errb, "token was rejected") {
+		t.Fatalf("C pull after revocation: exit=%d out=%q err=%q", code, out, errb)
+	}
+
+	// Two devices revoke the same device at the same moment: both finish,
+	// exactly one generation is started, and the control plane records
+	// one event.
+	f := newPairDevice(t, plane, "spare")
+	f.enrol(filepath.Join(userHome, "Projects", "spare-target"), a.shownCode)
+	fID := deviceID(t, f)
+	ring, _ = a.keyringState(t, plane)
+	generationsBefore := len(ring.Generations)
+	eventsBefore := len(plane.events)
+	var wg sync.WaitGroup
+	results := make([]struct {
+		out, errb string
+		code      int
+	}, 2)
+	// REINSTATE_HOME is process-wide, so both revocations run from A's
+	// home: two shells on the same machine racing each other, which is
+	// the same compare-and-swap race on the keyring.
+	t.Setenv("REINSTATE_HOME", a.home)
+	for i := range results {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			out, errb := &syncBuffer{}, &syncBuffer{}
+			code := a.execute(runOptions{stdout: out, stderr: errb, recovery: a.shownCode}, "devices", "revoke", fID)
+			results[i].out, results[i].errb, results[i].code = out.String(), errb.String(), code
+		}(i)
+	}
+	wg.Wait()
+	revokedCount, alreadyCount := 0, 0
+	for i, r := range results {
+		if r.code != ExitOK {
+			t.Fatalf("concurrent revoke %d: exit=%d out=%q err=%q", i, r.code, r.out, r.errb)
+		}
+		switch {
+		case strings.Contains(r.out, "revoked device"):
+			revokedCount++
+		case strings.Contains(r.out, "already revoked"), strings.Contains(r.out, "had no wrap"):
+			alreadyCount++
+		}
+	}
+	if revokedCount != 1 || alreadyCount != 1 {
+		t.Fatalf("concurrent revocations: %d revoked, %d already (%+v)", revokedCount, alreadyCount, results)
+	}
+	ring, _ = a.keyringState(t, plane)
+	if len(ring.Generations) != generationsBefore+1 || ring.HasDevice(fID) || len(plane.events) != eventsBefore+1 {
+		t.Fatalf("concurrent revocations: gens %d->%d, f=%v, events %d->%d", generationsBefore, len(ring.Generations), ring.HasDevice(fID), eventsBefore, len(plane.events))
+	}
+	for _, dev := range []*pairDevice{a, d, e} {
+		if out, errb, code := dev.run("pull", "--all", "--json"); code != ExitOK {
+			t.Fatalf("%s pull at the end: exit=%d out=%q err=%q", dev.name, code, out, errb)
+		}
+	}
+	_ = ctx
+}
+
+func TestResolveDevice(t *testing.T) {
+	devices := []hop.Device{
+		{ID: "dev-1", Name: "macbook", Platform: "darwin-arm64", CreatedAt: "2026-08-01T00:00:00Z"},
+		{ID: "dev-2", Name: "DESKTOP-7Q2", Platform: "windows-amd64", CreatedAt: "2026-08-02T00:00:00Z"},
+		{ID: "dev-3", Name: "desktop-7q2", Platform: "windows-amd64", CreatedAt: "2026-08-03T00:00:00Z", RevokedAt: "2026-08-04T00:00:00Z"},
+	}
+	cases := map[string]struct {
+		target  string
+		wantID  string
+		wantErr string
+	}{
+		"by id":                  {"dev-1", "dev-1", ""},
+		"by name":                {"macbook", "dev-1", ""},
+		"by name any case":       {"MacBook", "dev-1", ""},
+		"padded":                 {"  dev-2 ", "dev-2", ""},
+		"ambiguous windows name": {"desktop-7q2", "", "2 devices are named"},
+		"unknown":                {"nobody", "", `no device "nobody"`},
+		"empty":                  {"", "", "required"},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			got, err := resolveDevice(devices, tc.target)
+			if tc.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
+					t.Fatalf("got %v, want %q", err, tc.wantErr)
+				}
+				if name == "ambiguous windows name" && (!strings.Contains(err.Error(), "revoked 2026-08-04") || !strings.Contains(err.Error(), "enrolled 2026-08-02")) {
+					t.Fatalf("ambiguity message lacks state: %v", err)
+				}
+				return
+			}
+			if err != nil || got.ID != tc.wantID {
+				t.Fatalf("got %+v, %v", got, err)
+			}
+		})
+	}
+}

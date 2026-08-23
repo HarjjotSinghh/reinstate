@@ -15,7 +15,6 @@ import (
 
 	"github.com/HarjjotSinghh/reinstate/internal/backend"
 	"github.com/HarjjotSinghh/reinstate/internal/config"
-	"github.com/HarjjotSinghh/reinstate/internal/credentials"
 	"github.com/HarjjotSinghh/reinstate/internal/crypto"
 	"github.com/HarjjotSinghh/reinstate/internal/hop"
 	"github.com/HarjjotSinghh/reinstate/internal/keyring"
@@ -209,11 +208,11 @@ func verifyJoinedKeyring(ctx context.Context, store backend.Backend, key, device
 func newDevicesCmd() *cobra.Command {
 	root := &cobra.Command{
 		Use:   "devices",
-		Short: "List this account's devices and approve new ones",
+		Short: "List this account's devices, approve new ones, revoke lost ones",
 		Args:  cobra.NoArgs,
 		RunE:  runDevicesList,
 	}
-	root.AddCommand(newDevicesApproveCmd())
+	root.AddCommand(newDevicesApproveCmd(), newDevicesRevokeCmd())
 	root.PersistentFlags().Bool("json", false, "emit machine-readable JSON")
 	return root
 }
@@ -238,10 +237,12 @@ func runDevicesList(cmd *cobra.Command, _ []string) error {
 	// gets the control-plane view.
 	inKeyring := map[string]bool{}
 	keyringSeen := false
+	generation := 0
 	if home, cfg, err := loadAccountHome(); err == nil {
 		if store, prefix, err := backendFromConfig(cmd, cfg, home); err == nil {
 			if ring, _, err := keyring.Load(ctx, store, keyring.ObjectKey(prefix)); err == nil {
 				keyringSeen = true
+				generation = ring.CurrentGeneration
 				for _, d := range devices {
 					inKeyring[d.ID] = ring.HasDevice(d.ID)
 				}
@@ -262,17 +263,22 @@ func runDevicesList(cmd *cobra.Command, _ []string) error {
 			}
 			rows = append(rows, row)
 		}
-		return WriteJSON(cmd.OutOrStdout(), map[string]any{"devices": rows, "pending_pairings": pending})
+		report := map[string]any{"devices": rows, "pending_pairings": pending}
+		if keyringSeen {
+			report["key_generation"] = generation
+		}
+		return WriteJSON(cmd.OutOrStdout(), report)
 	}
 	out := cmd.OutOrStdout()
 	for _, d := range devices {
 		line := fmt.Sprintf("%s  %s (%s), enrolled %s, last seen %s", d.ID, d.Name, d.Platform, d.CreatedAt, d.LastSeenAt)
-		if keyringSeen {
-			if inKeyring[d.ID] {
-				line += ", holds a root-key wrap"
-			} else {
-				line += ", no root-key wrap yet"
-			}
+		switch {
+		case d.Revoked():
+			line += ", revoked " + d.RevokedAt
+		case keyringSeen && inKeyring[d.ID]:
+			line += fmt.Sprintf(", holds a root-key wrap (key generation %d)", generation)
+		case keyringSeen:
+			line += ", no root-key wrap yet"
 		}
 		PrintHuman(out, "%s", line)
 	}
@@ -401,19 +407,28 @@ func approvePairingRequest(ctx context.Context, cmd *cobra.Command, client *hop.
 	if err != nil {
 		return 0, err
 	}
-	rootKey, err := unwrapDeviceRootKey(ctx, cmd, cfg, home, store, prefix)
+	deviceKey, err := loadEnrolledDeviceKey(accountSeamsFrom(cmd), cfg, home)
 	if err != nil {
 		return 0, err
 	}
-	defer crypto.Zero(rootKey)
 
-	// Compare-and-swap: on interference the keyring is reloaded and the
-	// enrolment re-checked; a generation rollover under our feet makes
-	// Enrol refuse (this root key no longer belongs to the current
-	// generation), so a just-revoked state can never be extended.
+	// Compare-and-swap: the root keys are unwrapped from the keyring the
+	// closure is handed, so a generation rollover landing in between is
+	// seen on the retry (the new device is enrolled into the generation
+	// that is current then, and into every earlier one this device can
+	// read, so it reads the whole locker). A device this machine can no
+	// longer open (it was revoked meanwhile) approves nothing.
 	appended := false
+	var rootKey []byte
 	updated, err := keyring.Update(ctx, store, keyring.ObjectKey(prefix), func(k *keyring.Keyring) error {
 		appended = false
+		crypto.Zero(rootKey)
+		keys, err := k.UnwrapGenerations(cfg.DeviceID, deviceKey)
+		if err != nil {
+			return err
+		}
+		defer keyring.ZeroGenerations(keys)
+		rootKey = append([]byte(nil), keys[k.CurrentGeneration]...)
 		if listed := k.DevicePublicKey(req.Device.ID); listed != "" {
 			if listed == req.PublicKey {
 				// A previous approval wrote the wrap but the relay call
@@ -422,12 +437,16 @@ func approvePairingRequest(ctx context.Context, cmd *cobra.Command, client *hop.
 			}
 			return fmt.Errorf("the keyring already lists device %s with a different key; revoke it before approving a new enrolment", req.Device.ID)
 		}
-		if err := k.Enrol(rootKey, req.Device.ID, recipient, time.Now().UTC()); err != nil {
+		if err := k.EnrolAll(keys, req.Device.ID, recipient, time.Now().UTC()); err != nil {
 			return err
 		}
 		appended = true
 		return nil
 	})
+	defer crypto.Zero(rootKey)
+	if errors.Is(err, keyring.ErrDeviceNotEnrolled) {
+		return 0, NewExitError(ExitAuthStorage, fmt.Sprintf("this device cannot open the current key generation (%v); only an enrolled device can approve another", err))
+	}
 	if err != nil {
 		return 0, NewExitError(ExitAuthStorage, err.Error())
 	}
@@ -480,10 +499,182 @@ func rollBackPairingWrap(ctx context.Context, store backend.Backend, prefix stri
 	return err
 }
 
-// unwrapDeviceRootKey resolves this device's key and unwraps the current
-// root key from the keyring, refusing when the device is not enrolled.
-func unwrapDeviceRootKey(ctx context.Context, cmd *cobra.Command, cfg *schema.Config, home string, store backend.Backend, prefix string) ([]byte, error) {
+func newDevicesRevokeCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "revoke <device-id|name>",
+		Short: "Revoke a device: start a new key generation without it",
+		Long: `Revoke a device that is lost, retired, or no longer trusted.
+
+Run from any other enrolled device. It reads the recovery code (hidden
+prompt, or REINSTATE_RECOVERY_CODE_FD for automation), starts a new key
+generation in the keyring (a fresh root key wrapped for every remaining
+device and under the recovery code; earlier generations stay so everything
+already in the locker remains readable), and then tells the control plane,
+which refuses the revoked device's token from then on. The revoked device
+keeps whatever it already pulled; it cannot read anything pushed after the
+revocation, and it cannot push. Revoking the same device twice is harmless.
+
+A device cannot revoke itself; use another enrolled device.`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runDevicesRevoke(cmd, args[0])
+		},
+	}
+	return cmd
+}
+
+func runDevicesRevoke(cmd *cobra.Command, target string) error {
 	seams := accountSeamsFrom(cmd)
+	tok, client, err := hostedSession(cmd)
+	if err != nil {
+		return err
+	}
+	ctx := cmd.Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	devices, err := client.Devices(ctx, tok.Token)
+	if err != nil {
+		return hopExitError(err)
+	}
+	victim, err := resolveDevice(devices, target)
+	if err != nil {
+		return err
+	}
+	home, cfg, err := loadAccountHome()
+	if err != nil {
+		return err
+	}
+	if victim.ID == cfg.DeviceID || victim.ID == tok.DeviceID {
+		return NewExitError(ExitUsage, fmt.Sprintf("device %s (%s) is this device; revoke it from another enrolled device instead", victim.ID, victim.Name))
+	}
+	if cfg.Encryption.Type != schema.EncryptionRootKey {
+		return NewExitError(ExitConfig, "this device is not enrolled in the hosted key model; only an enrolled device can revoke another")
+	}
+	store, prefix, err := backendFromConfig(cmd, cfg, home)
+	if err != nil {
+		return err
+	}
+	deviceKey, err := loadEnrolledDeviceKey(seams, cfg, home)
+	if err != nil {
+		return err
+	}
+	errOut := cmd.ErrOrStderr()
+	PrintHuman(errOut, "Revoking %q (%s, %s). The account's key generation moves on without it;", victim.Name, victim.Platform, victim.ID)
+	PrintHuman(errOut, "the recovery code is needed so the new generation stays recoverable.")
+	typed, err := seams.readRecoveryCode(cmd, "Recovery code: ")
+	if err != nil {
+		return NewExitError(ExitUsage, err.Error())
+	}
+	recoveryCode, err := keyring.NormalizeRecoveryCode(string(typed))
+	crypto.Zero(typed)
+	if err != nil {
+		return NewExitError(ExitUsage, err.Error())
+	}
+
+	// Compare-and-swap: the closure re-unwraps the current root key from
+	// whatever keyring it is handed, so an approval or another revocation
+	// landing in between is folded in (the new device gets a wrap in the
+	// new generation; a device already revoked is reported, not revoked
+	// into a third generation).
+	now := time.Now().UTC()
+	var generation int
+	updated, err := keyring.Update(ctx, store, keyring.ObjectKey(prefix), func(k *keyring.Keyring) error {
+		current, earlier, err := k.UnwrapForDevice(cfg.DeviceID, deviceKey)
+		if err != nil {
+			return err
+		}
+		defer crypto.Zero(current)
+		for _, key := range earlier {
+			crypto.Zero(key)
+		}
+		next, err := k.Rollover(current, recoveryCode, []string{victim.ID}, cfg.DeviceID, now)
+		if err != nil {
+			return err
+		}
+		crypto.Zero(next)
+		generation = k.CurrentGeneration
+		return nil
+	})
+	already := false
+	switch {
+	case errors.Is(err, keyring.ErrRecoveryMismatch):
+		return NewExitError(ExitAuthStorage, "recovery code does not match this keyring; nothing was revoked")
+	case errors.Is(err, keyring.ErrSelfRevoke):
+		return NewExitError(ExitUsage, "a device cannot revoke itself; revoke it from another enrolled device")
+	case errors.Is(err, keyring.ErrDeviceNotEnrolled) && !errors.Is(err, keyring.ErrAlreadyRevoked):
+		return NewExitError(ExitAuthStorage, fmt.Sprintf("this device cannot open the current key generation (%v); only an enrolled device can revoke another", err))
+	case errors.Is(err, keyring.ErrAlreadyRevoked):
+		// The victim already has no wrap in the current generation
+		// (revoked earlier, possibly by a device racing this one, or it
+		// never finished enrolling). The control plane is still told.
+		already = true
+		ring, _, loadErr := keyring.Load(ctx, store, keyring.ObjectKey(prefix))
+		if loadErr != nil {
+			return NewExitError(ExitAuthStorage, loadErr.Error())
+		}
+		updated, generation = ring, ring.CurrentGeneration
+	case err != nil:
+		return NewExitError(ExitAuthStorage, err.Error())
+	}
+
+	revocation, err := client.RevokeDevice(ctx, tok.Token, victim.ID)
+	if err != nil {
+		if already {
+			return hopExitError(err)
+		}
+		return NewExitError(ExitAuthStorage, fmt.Sprintf("the keyring moved to key generation %d without %s, but the control plane could not be told (%v); its token still works until it is. Run rein devices revoke %s again", generation, victim.ID, err, victim.ID))
+	}
+	out := cmd.OutOrStdout()
+	switch {
+	case already && !revocation.Revoked:
+		PrintHuman(out, "device %q (%s) was already revoked; key generation %d, %d enrolled device(s)", victim.Name, victim.ID, generation, updated.DeviceCount())
+	case already:
+		PrintHuman(out, "device %q (%s) had no wrap in key generation %d; its token is now refused by the control plane", victim.Name, victim.ID, generation)
+	default:
+		PrintHuman(out, "revoked device %q (%s); key generation %d started with %d enrolled device(s), and the control plane refuses its token", victim.Name, victim.ID, generation, updated.DeviceCount())
+		PrintHuman(out, "earlier key generations stay readable on every remaining device; nothing pushed from now on is readable by the revoked device")
+	}
+	return nil
+}
+
+// resolveDevice picks one device by id or, when unique, by name.
+func resolveDevice(devices []hop.Device, target string) (hop.Device, error) {
+	target = strings.TrimSpace(target)
+	if target == "" {
+		return hop.Device{}, NewExitError(ExitUsage, "a device id or name is required; rein devices lists them")
+	}
+	for _, d := range devices {
+		if d.ID == target {
+			return d, nil
+		}
+	}
+	var byName []hop.Device
+	for _, d := range devices {
+		if strings.EqualFold(d.Name, target) {
+			byName = append(byName, d)
+		}
+	}
+	switch len(byName) {
+	case 1:
+		return byName[0], nil
+	case 0:
+		return hop.Device{}, NewExitError(ExitUsage, fmt.Sprintf("no device %q on this account; rein devices lists them", target))
+	}
+	msg := fmt.Sprintf("%d devices are named %q; rerun with the id:", len(byName), target)
+	for _, d := range byName {
+		state := "enrolled " + d.CreatedAt
+		if d.Revoked() {
+			state = "revoked " + d.RevokedAt
+		}
+		msg += fmt.Sprintf("\n  %s  %s (%s), %s", d.ID, d.Name, d.Platform, state)
+	}
+	return hop.Device{}, NewExitError(ExitUsage, msg)
+}
+
+// loadEnrolledDeviceKey returns this device's key for the hosted key model,
+// refusing when the device was never enrolled here.
+func loadEnrolledDeviceKey(seams accountSeams, cfg *schema.Config, home string) (*age.X25519Identity, error) {
 	notEnrolled := "this device is not enrolled in the hosted key model; run rein account recover with the recovery code, or rein account init on a first device"
 	if _, err := config.LoadAccount(home); err != nil {
 		if os.IsNotExist(err) {
@@ -491,34 +682,12 @@ func unwrapDeviceRootKey(ctx context.Context, cmd *cobra.Command, cfg *schema.Co
 		}
 		return nil, NewExitError(ExitConfig, "read account state: "+err.Error())
 	}
-	secret, err := seams.secretStore().GetSecret(deviceSecretRef(cfg.ProfileID, cfg.DeviceID))
-	if errors.Is(err, credentials.ErrSecretNotFound) {
+	deviceKey, err := loadDeviceKey(seams.secretStore(), deviceSecretRef(cfg.ProfileID, cfg.DeviceID))
+	if err != nil {
+		return nil, err
+	}
+	if deviceKey == nil {
 		return nil, NewExitError(ExitConfig, "device key missing from the OS keyring; "+notEnrolled)
 	}
-	if err != nil {
-		return nil, NewExitError(ExitAuthStorage, err.Error())
-	}
-	deviceKey, err := age.ParseX25519Identity(strings.TrimSpace(string(secret)))
-	crypto.Zero(secret)
-	if err != nil {
-		return nil, NewExitError(ExitConfig, "device key in the OS keyring is malformed; "+notEnrolled)
-	}
-	ring, _, err := keyring.Load(ctx, store, keyring.ObjectKey(prefix))
-	if errors.Is(err, keyring.ErrNotFound) {
-		return nil, NewExitError(ExitAuthStorage, "keyring missing at the configured storage; the profile is configured for the root-key model but no keyring exists")
-	}
-	if err != nil {
-		return nil, NewExitError(ExitAuthStorage, err.Error())
-	}
-	current, earlier, err := ring.UnwrapForDevice(cfg.DeviceID, deviceKey)
-	if errors.Is(err, keyring.ErrDeviceNotEnrolled) {
-		return nil, NewExitError(ExitAuthStorage, fmt.Sprintf("this device is not enrolled in key generation %d; %s", ring.CurrentGeneration, notEnrolled))
-	}
-	if err != nil {
-		return nil, NewExitError(ExitAuthStorage, err.Error())
-	}
-	for _, key := range earlier {
-		crypto.Zero(key)
-	}
-	return current, nil
+	return deviceKey, nil
 }

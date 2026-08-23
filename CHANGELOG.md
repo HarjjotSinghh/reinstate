@@ -181,6 +181,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   agent has run), are treated as having no sessions instead of failing every
   push and pull with a stat error.
 
+- Device revocation and key generations (#11): `rein devices revoke
+  <device-id|name>` from any other enrolled device reads the recovery code
+  (hidden prompt, or `REINSTATE_RECOVERY_CODE_FD`) and starts a new **key
+  generation**: a fresh root key wrapped for every remaining device and
+  under the recovery code, appended to the keyring with compare-and-swap;
+  then the control plane is told (`DELETE /v1/devices/{id}`) so the revoked
+  device's token is refused everywhere, including credential minting and
+  pairing. Earlier generations stay untouched, so everything already in the
+  locker remains readable by every remaining device (the
+  `RootKeyProvider` opens with every generation the device can unwrap and
+  seals only to the current one, the envelope's own age header deciding
+  which generation applies); the revoked device cannot mint, cannot push,
+  and cannot open anything pushed after the revocation, and keeps what it
+  already pulled. Revoking twice is harmless, a device cannot revoke
+  itself, and a wrong recovery code revokes nothing. A revocation racing an
+  approval converges either way: the approval lands in the generation that
+  is current when its compare-and-swap succeeds (and enrols the new device
+  into every earlier generation too), and a joiner handed a payload naming
+  a generation the keyring has since left fails closed and is approved
+  again. Two devices revoking the same device at once start one generation.
+  `rein devices` shows revoked devices and the current key generation;
+  `rein account recover` and `rein devices approve` now enrol a device into
+  every key generation (the recovery code opens all of them), so a device
+  added after a revocation reads the whole locker; `rein account recover`
+  under `storage.type = "hop"` refuses a home whose `device_id` is not the
+  signed-in device.
+- Keyring format version 2: every wrap is bound to the profile id and the
+  key generation it belongs to (device wraps carry the binding inside the
+  age payload, the recovery wrap as AEAD associated data), so a wrap lifted
+  from one keyring or generation cannot be replayed in another. Version 1
+  keyrings are still read; they are rewritten as version 2 on the first
+  write that holds the root key (enrolment rebinds the current generation's
+  device wraps, a rollover rebinds the recovery wrap). The parser rejects
+  duplicate generation numbers and duplicate device ids; a device listed
+  under an earlier generation with a key this machine no longer holds is
+  skipped rather than treated as an error; `DeviceMembership` names the
+  "listed but the key is gone" and "listed under another key" cases so
+  every command words them the same way. Golden fixtures:
+  `testdata/keyring/keyring.v1.json` (legacy) and `keyring.v2.json` (two
+  generations, one revocation).
+
 - The S3-compatible backend can now obtain its keys from a credential source
   that expires and refreshes (`s3.CredentialSource`), the seam that lets a
   hosted locker mint short-lived credentials. A credential that expires or is

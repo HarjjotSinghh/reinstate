@@ -208,6 +208,18 @@ written under the current key generation.`,
 			} else if !os.IsNotExist(err) {
 				return NewExitError(ExitConfig, "read account state: "+err.Error())
 			}
+			if cfg.Storage.Type == schema.StorageHop {
+				// The keyring's device id and the control plane's must
+				// agree, or a revoked id could be enrolled again under a
+				// token that belongs to a different device record.
+				tok, _, err := hostedSession(cmd)
+				if err != nil {
+					return err
+				}
+				if tok.DeviceID != "" && tok.DeviceID != cfg.DeviceID {
+					return NewExitError(ExitConfig, fmt.Sprintf("this home's device_id (%s) is not the signed-in device (%s); run rein init --hop --force so the keyring and the control plane agree on this device's identity", cfg.DeviceID, tok.DeviceID))
+				}
+			}
 			ctx := context.Background()
 			store, prefix, err := backendFromConfig(cmd, cfg, home)
 			if err != nil {
@@ -233,14 +245,11 @@ written under the current key generation.`,
 			if err != nil {
 				return NewExitError(ExitUsage, err.Error())
 			}
-			rootKey, err := ring.UnwrapWithRecoveryCode(recoveryCode)
-			if errors.Is(err, keyring.ErrRecoveryMismatch) {
+			if _, err := ring.UnwrapWithRecoveryCode(recoveryCode); errors.Is(err, keyring.ErrRecoveryMismatch) {
 				return NewExitError(ExitAuthStorage, "recovery code does not match this keyring; nothing was written")
-			}
-			if err != nil {
+			} else if err != nil {
 				return NewExitError(ExitAuthStorage, err.Error())
 			}
-			defer crypto.Zero(rootKey)
 
 			now := time.Now().UTC()
 			secrets := seams.secretStore()
@@ -249,16 +258,15 @@ written under the current key generation.`,
 			if err != nil {
 				return err
 			}
-			listed := ring.HasDevice(cfg.DeviceID)
-			switch {
-			case existing != nil && listed:
+			switch ring.DeviceMembership(cfg.DeviceID, existing) {
+			case keyring.Enrolled:
 				// The keyring already holds a wrap for the key this device
 				// keeps (for example the local record was lost, or an earlier
 				// enrolment crashed before writing it). Re-attach without
 				// touching the device key or the keyring.
 				current, earlier, err := ring.UnwrapForDevice(cfg.DeviceID, existing)
 				if err != nil {
-					return NewExitError(ExitSafety, fmt.Sprintf("the keyring lists device %s but not the key held in the OS keyring (%v); nothing was written. Choose a new device_id in config, or revoke this device from another enrolled device", cfg.DeviceID, err))
+					return NewExitError(ExitSafety, fmt.Sprintf("the keyring lists device %s but its wrap does not open with the key held in the OS keyring (%v); nothing was written. Choose a new device_id in config, or revoke this device from another enrolled device", cfg.DeviceID, err))
 				}
 				crypto.Zero(current)
 				for _, key := range earlier {
@@ -271,12 +279,19 @@ written under the current key generation.`,
 				PrintHuman(cmd.OutOrStdout(), "profile_id=%s device_id=%s key_generation=%d devices=%d", cfg.ProfileID, cfg.DeviceID, ring.CurrentGeneration, ring.DeviceCount())
 				PrintHuman(cmd.ErrOrStderr(), "%s", unrecoverableNotice)
 				return nil
-			case existing != nil:
-				return NewExitError(ExitSafety, fmt.Sprintf("the OS keyring already holds a key for device %s that the keyring does not list; nothing was written. Remove that entry (%s) or choose a new device_id in config before enrolling", cfg.DeviceID, secretRef))
-			case listed:
-				return NewExitError(ExitSafety, fmt.Sprintf("the keyring lists device %s but this machine holds no key for it; nothing was written. Choose a new device_id in config, or revoke this device from another enrolled device", cfg.DeviceID))
+			case keyring.KeyMismatch:
+				return NewExitError(ExitSafety, fmt.Sprintf("the keyring lists device %s but not the key held in the OS keyring; nothing was written. Choose a new device_id in config, or revoke this device from another enrolled device (rein devices revoke %s)", cfg.DeviceID, cfg.DeviceID))
+			case keyring.KeyGone:
+				return NewExitError(ExitSafety, fmt.Sprintf("the keyring lists device %s but this machine holds no key for it; nothing was written. Choose a new device_id in config, or revoke this device from another enrolled device (rein devices revoke %s)", cfg.DeviceID, cfg.DeviceID))
+			case keyring.NotListed:
+				if existing != nil && !ring.RevokedDevice(cfg.DeviceID) {
+					return NewExitError(ExitSafety, fmt.Sprintf("the OS keyring already holds a key for device %s that the keyring does not list; nothing was written. Remove that entry (%s) or choose a new device_id in config before enrolling", cfg.DeviceID, secretRef))
+				}
 			}
 
+			// A device that was revoked and is being enrolled again gets a
+			// fresh key: the old one belongs to generations it already read,
+			// and the old wraps in those generations are left as they are.
 			deviceKey, err := age.GenerateX25519Identity()
 			if err != nil {
 				return NewExitError(ExitRuntime, err.Error())
@@ -284,18 +299,36 @@ written under the current key generation.`,
 			if err := secrets.SetSecret(secretRef, []byte(deviceKey.String())); err != nil {
 				return NewExitError(ExitAuthStorage, err.Error())
 			}
+			// The code opens every generation (each was wrapped under it
+			// when it started), so this device is enrolled into all of them
+			// and reads the whole locker, not only what is written from now
+			// on. Unwrapping happens inside the compare-and-swap so a
+			// rollover landing in between is seen, not raced.
 			updated, err := keyring.Update(ctx, store, keyringKey, func(k *keyring.Keyring) error {
-				return k.Enrol(rootKey, cfg.DeviceID, deviceKey.Recipient(), now)
+				keys, err := k.UnwrapGenerationsWithRecoveryCode(recoveryCode)
+				if err != nil {
+					return err
+				}
+				defer keyring.ZeroGenerations(keys)
+				return k.EnrolAll(keys, cfg.DeviceID, deviceKey.Recipient(), now)
 			})
 			if err != nil {
-				// Only the key this command just created is rolled back.
-				_ = secrets.DeleteSecret(secretRef)
+				// Only the key this command just created is rolled back
+				// (to the previous key when the device was re-enrolling).
+				if existing != nil {
+					_ = secrets.SetSecret(secretRef, []byte(existing.String()))
+				} else {
+					_ = secrets.DeleteSecret(secretRef)
+				}
+				if errors.Is(err, keyring.ErrRecoveryMismatch) {
+					return NewExitError(ExitAuthStorage, "recovery code does not match this keyring; nothing was written")
+				}
 				return NewExitError(ExitAuthStorage, err.Error())
 			}
 			if err := saveAccountEnrolment(home, cfg, now, updated.CurrentGeneration, "recover"); err != nil {
 				return err
 			}
-			PrintHuman(cmd.OutOrStdout(), "device enrolled from the recovery code; this device now reads everything written under key generation %d", updated.CurrentGeneration)
+			PrintHuman(cmd.OutOrStdout(), "device enrolled from the recovery code; this device now reads everything written under key generation %d and the %d earlier one(s)", updated.CurrentGeneration, len(updated.GenerationNumbers())-1)
 			PrintHuman(cmd.OutOrStdout(), "profile_id=%s device_id=%s key_generation=%d devices=%d", cfg.ProfileID, cfg.DeviceID, updated.CurrentGeneration, updated.DeviceCount())
 			PrintHuman(cmd.ErrOrStderr(), "%s", unrecoverableNotice)
 			return nil

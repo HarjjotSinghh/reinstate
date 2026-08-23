@@ -65,8 +65,10 @@ type pairDevice struct {
 type runOptions struct {
 	sleep         func(context.Context, time.Duration) error
 	pairingPrompt func(string) ([]byte, error)
-	stdout        *syncBuffer
-	stderr        *syncBuffer
+	// recovery answers a "Recovery code:" prompt (revoke, recover).
+	recovery string
+	stdout   *syncBuffer
+	stderr   *syncBuffer
 	// daemon carries the rein daemon seams (clock, events, notifier).
 	daemon daemonSeams
 	// ctx, when set, is the command's context (the daemon journey cancels
@@ -116,6 +118,12 @@ func (d *pairDevice) options(ro runOptions, args ...string) Options {
 		LoginPollSleep: sleep,
 		DeviceName:     d.name,
 		RecoveryCodePrompt: func(prompt string) ([]byte, error) {
+			if strings.HasPrefix(prompt, "Recovery code") {
+				if ro.recovery == "" {
+					return nil, errors.New("no recovery code available for prompt " + prompt)
+				}
+				return []byte(ro.recovery), nil
+			}
 			if !strings.Contains(prompt, "Re-enter") {
 				return nil, errors.New("unexpected prompt " + prompt)
 			}

@@ -17,6 +17,7 @@ rein hop status [--json]
 rein account join
 rein devices [--json]
 rein devices approve [--request ID]
+rein devices revoke <device-id|name>
 rein sync migrate --to byo [--endpoint URL --bucket NAME] [--switch] [--forget-hop]
 ```
 
@@ -145,7 +146,54 @@ or a plain environment value. The full protocol and threat argument are in
 the control plane's `docs/hop.md`, "Pairing".
 
 `rein devices` shows every device enrolled under the account, whether the
-keyring holds a root-key wrap for it, and any pending pairing request.
+keyring holds a root-key wrap for it (and in which key generation), any
+revoked devices, and any pending pairing request.
+
+## Revoking a device (key generations)
+
+A lost laptop, a retired desktop, a machine you no longer trust: revoke it
+from any other enrolled device.
+
+```bash
+rein devices                         # find its id or name
+rein devices revoke desktop          # asks for the recovery code
+```
+
+Revocation starts a new **key generation**. The revoking device unwraps the
+current root key, draws a fresh one, wraps it for every remaining device's
+public key and under the recovery code, and appends the new generation to
+the keyring with compare-and-swap; then it tells the control plane, which
+refuses the revoked device's token from then on (no more credential mints,
+no pairing, no device list). Earlier generations are left exactly as they
+were, so:
+
+- every remaining device reads everything already in the locker (the
+  provider opens with every generation it can unwrap and seals only to the
+  current one; which generation an object needs is decided by the object's
+  own age header);
+- the revoked device keeps what it already pulled, cannot mint credentials
+  or push, and cannot open anything pushed after the revocation;
+- a device enrolled later (`rein account join`, or `rein account recover`
+  with the recovery code) is enrolled into every generation and reads the
+  whole locker too.
+
+The recovery code is asked for because the new generation must stay
+recoverable and nothing but the code can wrap for it; a wrong code revokes
+nothing. A device cannot revoke itself. Revoking a device twice is
+harmless: the keyring reports it already gone and the control plane answers
+idempotently. A revocation that races an approval converges in either
+order: an approval lands in whichever generation is current when its
+compare-and-swap succeeds, and a joining device handed a payload that names
+a generation the keyring has since left fails closed (no account record)
+and is simply approved again. Two devices revoking the same device at the
+same moment start one generation, not two. The revoked device's own
+enrolment record is untouched; to enrol that machine again, sign in again
+(`rein login`), run `rein init --hop --force` so the home names the new
+device, and `rein account join` or `rein account recover`.
+
+`rein account status` and `rein devices --json` report the current key
+generation; the keyring keeps a `revoked` record on the generation each
+revocation started.
 
 `rein login` signs this device in. With no flag it starts a GitHub sign-in:
 the CLI prints a URL, opens it in your browser, and waits. With
@@ -327,6 +375,8 @@ passphrase, or session content. Sign-in is a device-authorization style flow:
 | 5 | `POST /v1/locker` (bearer) | Idempotent provisioning: `200 {endpoint, bucket, region, prefix, location_hint, plan, created_at, first_push_at?, devices, usage: {bytes, objects, observed_at}, quota: {storage_bytes, devices, mints_per_hour}}`. `GET /v1/locker` returns the same without provisioning (`404 {code: "no_locker"}` before the first `POST`). |
 | 6 | `POST /v1/locker/credentials` (bearer) | `200 {access_key_id, secret_access_key, session_token, expires_at, endpoint, bucket, region}`, valid for at most an hour and scoped to the bucket. Refusals carry a `code`: `quota_storage` (403), `quota_devices` (403), `quota_push_rate` (429), `no_locker` (404), `storage_unavailable` (502). |
 | 7 | `POST /v1/locker/first-push` (bearer) | `200 {first, first_push_at}`; records the first push once. |
+| 8 | `GET /v1/devices` (bearer) | `200 {devices: [{id, name, platform, location_hint?, created_at, last_seen_at, revoked_at?}]}`; revoked devices stay listed with `revoked_at`. |
+| 9 | `DELETE /v1/devices/{id}` (bearer; `POST /v1/devices/{id}/revoke` is an alias) | `200 {device, revoked}`; `revoked` is `false` when it already was (idempotent). The token is refused everywhere from then on and the device no longer counts toward the device quota. Another account's device: `403 {code: "wrong_account"}`; unknown: `404 {code: "device_unknown"}`; the calling device itself: `400 {code: "self_revoke"}`. The call carries no key material: the key generation rollover happens in the keyring before it. |
 
 The CLI reads the locker with `GET /v1/locker` on every hosted command and
 only calls `POST /v1/locker` when the answer is `no_locker` (normally once,
@@ -335,14 +385,14 @@ from `rein init --hop`).
 The device quota is enforced when credentials are minted, not when a device
 enrols: a sixth device on a five-device plan can still sign in, after which
 no device on the account can mint until the count is back under the plan.
-Until device revocation ships there is no self-serve way out of that
-state, so do not enrol more devices than the plan allows.
+`rein devices revoke` is the way out: a revoked device no longer counts.
 
 Device tokens are 256-bit random values prefixed `hop_`. The control plane
 stores only a hash, bound to one device record (name, platform, location
 hint, created, last seen). The CLI sends no telemetry; the control plane
-records `sign_up`, `device_enrolled`, `locker_provisioned`, and `first_push`
-events as its only product metrics.
+records `sign_up`, `device_enrolled`, `locker_provisioned`, `first_push`,
+`pairing_requested`, `pairing_approved`, `trial_started`, and
+`device_revoked` events as its only product metrics.
 
 ## Leaving Hop
 
@@ -382,10 +432,7 @@ passphrase.
 
 ## What this does not do yet
 
-- Pair devices through a code (a second device enrols with the recovery
-  code today).
-- Revoke a device or sign out (also the only recovery from an account over
-  its device quota).
-  its device quota). `rein sync migrate --to byo --forget-hop` drops this
-  device's token locally but does not revoke it at the control plane.
+- Sign out a device from itself (revoke it from another device instead;
+  `rein sync migrate --to byo --forget-hop` drops this device's token
+  locally but does not revoke it at the control plane).
 - Run a daemon.

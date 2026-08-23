@@ -122,6 +122,8 @@ func hopExitError(err error) error {
 	case errors.Is(err, hop.ErrPairingExpired), errors.Is(err, hop.ErrPairingDecided), errors.Is(err, hop.ErrPairingConsumed),
 		errors.Is(err, hop.ErrPairingRate), errors.Is(err, hop.ErrWrongAccount):
 		return NewExitError(ExitAuthStorage, err.Error())
+	case errors.Is(err, hop.ErrSelfRevoke), errors.Is(err, hop.ErrDeviceUnknown):
+		return NewExitError(ExitUsage, err.Error())
 	case errors.Is(err, credentials.ErrNoDeviceToken):
 		return errNotSignedIn()
 	}

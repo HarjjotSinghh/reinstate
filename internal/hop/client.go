@@ -89,7 +89,13 @@ type Device struct {
 	LocationHint string `json:"location_hint,omitempty"`
 	CreatedAt    string `json:"created_at"`
 	LastSeenAt   string `json:"last_seen_at"`
+	// RevokedAt is set once the device was revoked: its token is refused
+	// everywhere and the account's key generation moved on without it.
+	RevokedAt string `json:"revoked_at,omitempty"`
 }
+
+// Revoked reports whether the control plane lists the device as revoked.
+func (d Device) Revoked() bool { return d.RevokedAt != "" }
 
 // LoginSession is a sign-in attempt awaiting browser approval.
 type LoginSession struct {

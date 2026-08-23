@@ -33,6 +33,8 @@ func (f *fakeControlPlane) registerPairing(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/pairing/{id}/claim", f.claimPairing)
 	mux.HandleFunc("POST /v1/pairing/{id}/expire", f.expirePairing)
 	mux.HandleFunc("GET /v1/devices", f.listDevices)
+	mux.HandleFunc("DELETE /v1/devices/{id}", f.revokeDevice)
+	mux.HandleFunc("POST /v1/devices/{id}/revoke", f.revokeDevice)
 }
 
 // identityFor resolves the bearer token, answering the 401 itself.
@@ -72,7 +74,57 @@ func (f *fakeControlPlane) deviceByID(id string) hop.Device {
 			return identity.Device
 		}
 	}
+	if d, ok := f.revoked[id]; ok {
+		return d
+	}
 	return hop.Device{ID: id}
+}
+
+// revokeDevice is DELETE /v1/devices/{id}: like hopd, the device record
+// stays with revoked_at set, its token is forgotten so every later call
+// (minting and pairing included) answers 401, its pending pairing request
+// is expired, and a device_revoked event is recorded once.
+func (f *fakeControlPlane) revokeDevice(w http.ResponseWriter, r *http.Request) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	id, ok := f.identityFor(w, r)
+	if !ok {
+		return
+	}
+	target := r.PathValue("id")
+	if target == id.Device.ID {
+		writeFakeErrorCode(w, 400, "self_revoke", "a device cannot revoke itself; revoke it from another enrolled device")
+		return
+	}
+	if d, ok := f.revoked[target]; ok {
+		_ = json.NewEncoder(w).Encode(map[string]any{"device": d, "revoked": false})
+		return
+	}
+	for token, identity := range f.tokens {
+		if identity.Device.ID != target {
+			continue
+		}
+		if identity.Account.ID != id.Account.ID {
+			writeFakeErrorCode(w, 403, "wrong_account", "the device belongs to another account")
+			return
+		}
+		d := identity.Device
+		d.RevokedAt = time.Now().UTC().Format(time.RFC3339)
+		if f.revoked == nil {
+			f.revoked = map[string]hop.Device{}
+		}
+		f.revoked[target] = d
+		delete(f.tokens, token)
+		for _, p := range f.pairings {
+			if p.deviceID == target && p.status == "pending" {
+				p.status = "expired"
+			}
+		}
+		f.events = append(f.events, "device_revoked:"+target)
+		_ = json.NewEncoder(w).Encode(map[string]any{"device": d, "revoked": true})
+		return
+	}
+	writeFakeErrorCode(w, 404, "device_unknown", "no such device on this account")
 }
 
 func (f *fakeControlPlane) createPairing(w http.ResponseWriter, r *http.Request) {
@@ -231,9 +283,14 @@ func (f *fakeControlPlane) listDevices(w http.ResponseWriter, r *http.Request) {
 	devices := []hop.Device{}
 	seen := map[string]bool{}
 	for i := 1; i <= f.seq; i++ {
+		id := "dev-sess-" + strconv.Itoa(i)
+		if d, ok := f.revoked[id]; ok && !seen[id] {
+			seen[id] = true
+			devices = append(devices, d)
+		}
 		for _, identity := range f.tokens {
-			if identity.Device.ID == "dev-sess-"+strconv.Itoa(i) && !seen[identity.Device.ID] {
-				seen[identity.Device.ID] = true
+			if identity.Device.ID == id && !seen[id] {
+				seen[id] = true
 				devices = append(devices, identity.Device)
 			}
 		}

@@ -48,6 +48,9 @@ type fakeControlPlane struct {
 	// Pairing relays (see pairing_fake_test.go).
 	pairings   map[string]*fakePairing
 	pairingSeq int
+	// Revoked devices keep their record (with revoked_at) but no token.
+	revoked map[string]hop.Device
+	events  []string // "<type>:<device id>" in order
 }
 
 type fakeLocker struct {

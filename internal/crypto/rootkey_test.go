@@ -114,4 +114,24 @@ func TestRootKeyProviderReadsEarlierGenerations(t *testing.T) {
 	if err := Open(bytes.NewReader(fresh.Bytes()), &out, old); err == nil {
 		t.Fatal("a revoked generation opened a new envelope")
 	}
+	if both.Generations() != 2 || old.Generations() != 1 || (*RootKeyProvider)(nil).Generations() != 0 {
+		t.Fatalf("generation counts: both=%d old=%d", both.Generations(), old.Generations())
+	}
+	// Three generations, objects from each: every one opens by its own
+	// header, and the provider seals only to the newest.
+	gen3, _ := NewRootKey()
+	three, _ := NewRootKeyProvider(gen3, gen2, gen1)
+	for i, payload := range [][]byte{cipher.Bytes(), fresh.Bytes()} {
+		out.Reset()
+		if err := Open(bytes.NewReader(payload), &out, three); err != nil {
+			t.Fatalf("generation %d object: %v", i+1, err)
+		}
+	}
+	var newest bytes.Buffer
+	if err := Seal(bytes.NewReader([]byte("gen3 payload")), &newest, three); err != nil {
+		t.Fatal(err)
+	}
+	if err := Open(bytes.NewReader(newest.Bytes()), &out, both); err == nil {
+		t.Fatal("a provider without generation 3 opened a generation 3 envelope")
+	}
 }
