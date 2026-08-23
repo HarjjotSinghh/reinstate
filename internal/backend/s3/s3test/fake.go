@@ -47,6 +47,12 @@ type Fake struct {
 	buckets   map[string]*memory.Store
 	// RejectAs is the S3 error code answered for a rejected key.
 	RejectAs string
+	// ForeignBucketAs is the error code answered for another bucket; empty
+	// means AccessDenied, which is what R2 answers a bucket-scoped key.
+	ForeignBucketAs string
+	// PageSize caps one ListObjectsV2 page, with a continuation token for
+	// the rest; zero means everything in one page.
+	PageSize int
 	// Requests is "METHOD key as AKID" per request, in order.
 	Requests []string
 	// Hook runs under Mu before each request is authorised, with the
@@ -138,8 +144,12 @@ func (f *Fake) handle(w http.ResponseWriter, r *http.Request) {
 		// when it probes the reference locker. Mu is already held here.
 		if p := r.URL.EscapedPath(); p != "/"+f.Bucket && !strings.HasPrefix(p, "/"+f.Bucket+"/") {
 			f.Requests = append(f.Requests, r.Method+" "+strings.TrimPrefix(p, "/")+" as "+akid+" (foreign bucket)")
+			code := f.ForeignBucketAs
 			f.Mu.Unlock()
-			writeS3Error(w, http.StatusForbidden, "AccessDenied", "Access Denied")
+			if code == "" {
+				code = "AccessDenied"
+			}
+			writeS3Error(w, http.StatusForbidden, code, "Access Denied")
 			return
 		}
 	}

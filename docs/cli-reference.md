@@ -137,7 +137,9 @@ object and show it is ciphertext (age v1 header, recipient type, no
 plaintext field names in the body); decrypt it locally and show what it
 contains (the index, a snapshot's envelope and verified payload checksum);
 and, on a Hop locker, show that the same credentials are refused (access
-denied) from the control plane's reference locker. Each step prints what
+denied, not a rejection of the credential itself) from the control
+plane's reference locker. The outcome sentence names only what was
+fetched as ciphertext and lists what was judged by name. Each step prints what
 was done, what was seen, and PASS, FAIL, or NOT APPLICABLE, followed by
 `OUTCOME: PASS` or `OUTCOME: FAIL`.
 

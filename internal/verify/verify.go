@@ -90,6 +90,9 @@ type Report struct {
 	Steps         []Step `json:"steps"`
 	// Locker names what was checked; shown locally, never uploaded.
 	Locker LockerInfo `json:"locker"`
+	// unopened describes, for Summary, the objects step 1 saw but steps
+	// 2–3 did not fetch. Set by Run; a decoded report has none.
+	unopened string
 }
 
 // LockerInfo names the bucket the checks ran against.
@@ -161,8 +164,13 @@ type Options struct {
 	Reference    *hop.Reference
 	ReferenceErr error
 	// OpenReference opens the reference locker with this device's locker
-	// credentials. Required when Reference is set.
-	OpenReference func(ctx context.Context, ref hop.Reference) (backend.Backend, error)
+	// credentials and returns the access key id it signs with. Required
+	// when Reference is set.
+	OpenReference func(ctx context.Context, ref hop.Reference) (backend.Backend, string, error)
+	// CredentialID returns the access key id Backend is signing with right
+	// now; optional. It is recorded in step 1 so the report shows the
+	// credential the locker accepted is the one the reference refused.
+	CredentialID func(ctx context.Context) (string, error)
 	// ClientVersion is recorded in the report.
 	ClientVersion string
 	// Now is injectable for golden output.
@@ -181,10 +189,11 @@ func Run(ctx context.Context, o Options) *Report {
 	}
 	r := &Report{Version: ReportVersion, GeneratedAt: now().UTC().Format(time.RFC3339), ClientVersion: o.ClientVersion, Storage: o.Storage, Locker: o.Locker}
 
-	inv := listStep(ctx, o, r)
+	inv, akid := listStep(ctx, o, r)
+	r.unopened = describeUnopened(inv)
 	raw := ciphertextStep(ctx, o, r, inv)
 	decryptStep(ctx, o, r, inv, raw)
-	isolationStep(ctx, o, r)
+	isolationStep(ctx, o, r, akid)
 
 	r.Outcome = Pass
 	for _, s := range r.Steps {
@@ -193,6 +202,28 @@ func Run(ctx context.Context, o Options) *Report {
 		}
 	}
 	return r
+}
+
+// describeUnopened says what step 1 listed that no later step fetched, so
+// the summary does not call objects ciphertext that were judged by name.
+func describeUnopened(inv *inventory) string {
+	if inv == nil {
+		return ""
+	}
+	var parts []string
+	if n := len(inv.snapshots) - 1; n > 0 {
+		parts = append(parts, fmt.Sprintf("%d older age-named snapshot(s)", n))
+	}
+	if inv.keyring {
+		parts = append(parts, "the wrapped keyring")
+	}
+	if n := len(inv.other); n > 0 {
+		parts = append(parts, fmt.Sprintf("%d unrecognised object(s)", n))
+	}
+	if len(parts) == 0 {
+		return "No other object is in the locker."
+	}
+	return "Not opened and judged by name only: " + strings.Join(parts, ", ") + "."
 }
 
 // inventory is what the listing found.
@@ -212,15 +243,25 @@ func key(prefix, relative string) string {
 	return prefix + "/" + relative
 }
 
-func listStep(ctx context.Context, o Options, r *Report) *inventory {
+// listStep lists the locker and returns what it found plus the access key
+// id the listing was signed with (empty when the backend has no notion of
+// one, such as BYO keys from the SDK chain or the memory backend).
+func listStep(ctx context.Context, o Options, r *Report) (*inventory, string) {
 	step := Step{ID: StepList, Name: "List the locker with this device's credentials",
-		Did: "Asked the storage endpoint for every object under this account's prefix, signed with the credentials this device uses to push."}
+		Did: "Asked the storage endpoint for every object under this account's prefix (following every listing page), signed with the credentials this device uses to push."}
 	objects, err := o.Backend.List(ctx, strings.Trim(o.Prefix, "/"))
+	akid := ""
+	if o.CredentialID != nil {
+		if id, idErr := o.CredentialID(ctx); idErr == nil && id != "" {
+			akid = id
+			step.Detail = append(step.Detail, "signed with access key id "+akid)
+		}
+	}
 	if err != nil {
 		step.Status = Fail
 		step.Observed = "The listing was refused or failed: " + err.Error()
 		r.Steps = append(r.Steps, step)
-		return nil
+		return nil, akid
 	}
 	inv := &inventory{total: len(objects)}
 	for _, obj := range objects {
@@ -265,7 +306,7 @@ func listStep(ctx context.Context, o Options, r *Report) *inventory {
 		step.Detail = append(step.Detail, k)
 	}
 	r.Steps = append(r.Steps, step)
-	return inv
+	return inv, akid
 }
 
 // fetched is one object body the ciphertext step read.
@@ -472,7 +513,7 @@ func describeSnapshot(name string, plain io.Reader) (string, []string, error) {
 	return summary, detail, nil
 }
 
-func isolationStep(ctx context.Context, o Options, r *Report) {
+func isolationStep(ctx context.Context, o Options, r *Report, lockerAKID string) {
 	step := Step{ID: StepIsolation, Name: "Prove this account's credentials are refused from another bucket",
 		Did: "Asked the control plane for its reference locker (a bucket the operator owns, holding one probe object), then tried to list it and read the probe with the same credentials that just listed this account's locker."}
 	switch {
@@ -503,36 +544,52 @@ func isolationStep(ctx context.Context, o Options, r *Report) {
 	}
 	ref := *o.Reference
 	step.Detail = append(step.Detail, fmt.Sprintf("reference locker %s at %s, probe %s", ref.Bucket, ref.Endpoint, ref.Key))
-	b, err := o.OpenReference(ctx, ref)
+	b, akid, err := o.OpenReference(ctx, ref)
 	if err != nil {
 		step.Status = Fail
 		step.Observed = "Could not build a client for the reference locker: " + err.Error() + "."
 		r.Steps = append(r.Steps, step)
 		return
 	}
+	if akid != "" {
+		step.Detail = append(step.Detail, "signed with access key id "+akid)
+	}
 	step.Status = Pass
 	var observed []string
+	// The step holds only when the credential that step 1 proved the
+	// locker accepts is the one the reference refuses. A credential that
+	// was rotated between the steps proves nothing about scope.
+	if lockerAKID != "" && akid != "" && lockerAKID != akid {
+		step.Status = Fail
+		observed = append(observed, fmt.Sprintf("The locker credential changed between step 1 (%s) and this step (%s), so a refusal here would not be about the credential the locker accepted. Run rein sync verify again.", lockerAKID, akid))
+	}
 	objects, err := b.List(ctx, "")
 	switch {
-	case errors.Is(err, backend.ErrUnauthorized):
-		observed = append(observed, "Listing the reference locker was refused as unauthorized.")
+	case errors.Is(err, backend.ErrAccessDenied):
+		observed = append(observed, "Listing the reference locker was refused as access denied.")
+	case errors.Is(err, backend.ErrCredentialRejected):
+		step.Status = Fail
+		observed = append(observed, "Listing the reference locker failed because the credential itself was rejected ("+err.Error()+"), so nothing about bucket scope was shown.")
 	case err == nil:
 		step.Status = Fail
 		observed = append(observed, fmt.Sprintf("Listing the reference locker SUCCEEDED and returned %d object(s); this account's credentials reach a bucket that is not its own.", len(objects)))
 	default:
 		step.Status = Fail
-		observed = append(observed, "Listing the reference locker neither succeeded nor was refused as unauthorized: "+err.Error()+".")
+		observed = append(observed, "Listing the reference locker neither succeeded nor was refused as access denied: "+err.Error()+".")
 	}
 	body, err := fetch(ctx, b, ref.Key)
 	switch {
-	case errors.Is(err, backend.ErrUnauthorized):
-		observed = append(observed, "Reading the probe object was refused as unauthorized.")
+	case errors.Is(err, backend.ErrAccessDenied):
+		observed = append(observed, "Reading the probe object was refused as access denied.")
+	case errors.Is(err, backend.ErrCredentialRejected):
+		step.Status = Fail
+		observed = append(observed, "Reading the probe object failed because the credential itself was rejected ("+err.Error()+"), so nothing about bucket scope was shown.")
 	case err == nil:
 		step.Status = Fail
 		observed = append(observed, fmt.Sprintf("Reading the probe object SUCCEEDED (%d bytes); this account's credentials can read another bucket's contents.", len(body)))
 	default:
 		step.Status = Fail
-		observed = append(observed, "Reading the probe object neither succeeded nor was refused as unauthorized: "+err.Error()+".")
+		observed = append(observed, "Reading the probe object neither succeeded nor was refused as access denied: "+err.Error()+".")
 	}
 	step.Observed = strings.Join(observed, " ")
 	r.Steps = append(r.Steps, step)
@@ -592,17 +649,23 @@ func (r *Report) IsolationChecked() bool {
 	return false
 }
 
-// Summary is the one-sentence outcome for a non-expert. It claims only
-// what the steps observed: the isolation clause appears only when the
-// isolation step ran and passed.
+// Summary is the short outcome for a non-expert. It claims only what the
+// steps observed: only the fetched objects are called ciphertext (the
+// rest were judged by name in step 1), nothing is said about which device
+// sealed them, and the isolation clause appears only when the isolation
+// step ran and passed.
 func (r *Report) Summary() string {
 	if r.Outcome != Pass {
 		return "FAIL. At least one step did not hold; read the failed step above. If the locker is a Hop locker, this is worth reporting to security@reinstate.dev."
 	}
-	if r.IsolationChecked() {
-		return "PASS. Everything in the locker is ciphertext sealed on this device, this device can open it, and this account's credentials are refused by a bucket that is not its own."
+	checked := "The objects checked (the index and the newest snapshot) are ciphertext this device can open."
+	if r.unopened != "" {
+		checked += " " + r.unopened
 	}
-	return "PASS. Everything in the locker is ciphertext sealed on this device and this device can open it. Whether the credentials reach other buckets was not checked (no reference locker), so nothing is claimed about that."
+	if r.IsolationChecked() {
+		return "PASS. " + checked + " This account's credentials are refused by a bucket that is not its own."
+	}
+	return "PASS. " + checked + " Whether the credentials reach other buckets was not checked (no reference locker), so nothing is claimed about that."
 }
 
 func storageLabel(s string) string {

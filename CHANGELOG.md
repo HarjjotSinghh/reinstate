@@ -191,7 +191,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   detail lines); and, on a Hop locker, asks the
   control plane for its **reference locker** (a bucket the operator owns,
   holding one probe object) and shows that the same credentials are refused
-  from it as unauthorized. Each step prints what was done, what was
+  from it as access denied (a rejection of the credential itself, such as
+  `InvalidAccessKeyId` or `ExpiredToken`, fails the step because it shows
+  nothing about scope; the access key id used in steps 1 and 4 is recorded
+  as local detail). The outcome sentence names only the fetched objects as
+  ciphertext and lists what was judged by name. Each step prints what was done, what was
   seen, and PASS, FAIL, or NOT APPLICABLE; `--json` emits the report as
   data; exit `4` on any failed step. A tampered object fails: plaintext in
   place of ciphertext at step 2, a flipped byte at step 3. BYO storage runs
@@ -204,6 +208,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   uploaded something, without ever failing that push. The outcome sentence
   claims isolation only when the isolation step actually ran and passed. The fake S3 used in
   tests now refuses any bucket but its own with `AccessDenied`, as R2 does.
+  `backend.Refusal` keeps the storage error code and matches
+  `backend.ErrAccessDenied` or `backend.ErrCredentialRejected` (both still
+  match `backend.ErrUnauthorized`), and the S3 backend's `List` now follows
+  continuation tokens, so a locker past one page is listed in full.
   New docs: `docs/hop/object-format.md` (the exact object layout and
   envelope format) and `docs/hop/threat-model.md` (what the operator can
   and cannot see, the assumptions, and how each verify step maps to each

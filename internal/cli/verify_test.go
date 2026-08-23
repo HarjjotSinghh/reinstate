@@ -66,6 +66,18 @@ func hostedVerifyJourney(t *testing.T) (*lockerJourney, string) {
 	return j, project
 }
 
+// akid is the newest credential the fake control plane minted, the one
+// every request of the latest run was signed with.
+func (j *lockerJourney) akid() string {
+	j.t.Helper()
+	j.plane.mu.Lock()
+	defer j.plane.mu.Unlock()
+	if len(j.plane.mints) == 0 {
+		j.t.Fatal("no credential minted")
+	}
+	return j.plane.mints[len(j.plane.mints)-1]
+}
+
 func (j *lockerJourney) object(key string) []byte {
 	j.t.Helper()
 	rc, _, err := j.plane.s3.Store.Get(context.Background(), key)
@@ -107,7 +119,7 @@ func TestSyncVerifyJourneyHosted(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &pushed); err != nil || pushed.Verification.Outcome != "pass" || !pushed.Verification.Posted {
 		t.Fatalf("push output %q err=%v", out, err)
 	}
-	if !strings.Contains(errb, "First push from this device verified") || !strings.Contains(errb, "refused by a bucket that is not its own") {
+	if !strings.Contains(errb, "First push from this device verified: the index and newest snapshot fetched from the locker are ciphertext this device can open, and this account's credentials are refused by a bucket that is not its own") {
 		t.Fatalf("push stderr %q", errb)
 	}
 	if len(j.plane.reports) != 1 {
@@ -159,17 +171,25 @@ func TestSyncVerifyJourneyHosted(t *testing.T) {
 		": agent claude, session session-locker, project ",
 		"Step 4: Prove this account's credentials are refused from another bucket",
 		"reference locker lk-0000000000000000000000refr at " + j.plane.s3.URL() + ", probe reference/probe.txt",
-		"Listing the reference locker was refused as unauthorized. Reading the probe object was refused as unauthorized.",
+		"Listing the reference locker was refused as access denied. Reading the probe object was refused as access denied.",
 		"Result:         PASS",
-		"OUTCOME: PASS.",
+		"OUTCOME: PASS. The objects checked (the index and the newest snapshot) are ciphertext this device can open. Not opened and judged by name only: 1 older age-named snapshot(s), the wrapped keyring. This account's credentials are refused by a bucket that is not its own.",
 		"Step results posted to the control plane",
 	} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("sync verify output missing %q:\n%s", want, out)
 		}
 	}
-	if strings.Contains(out, "FAIL") {
-		t.Fatalf("a passing report mentions FAIL:\n%s", out)
+	if strings.Contains(out, "FAIL") || strings.Contains(out, "Everything in the locker") || strings.Contains(out, "sealed on this device") {
+		t.Fatalf("a passing report mentions FAIL or over-claims:\n%s", out)
+	}
+	// Steps 1 and 4 name the same access key id: the credential the locker
+	// accepted is the one the reference refused. The id stays local.
+	if n := strings.Count(out, "- signed with access key id "+j.akid()); n != 2 {
+		t.Fatalf("access key id recorded %d time(s), want 2 (steps 1 and 4):\n%s", n, out)
+	}
+	if bytes.Contains(j.plane.reports[1].raw, []byte(j.akid())) {
+		t.Fatalf("posted report carries the access key id: %s", j.plane.reports[1].raw)
 	}
 	if len(j.plane.reports) != 2 {
 		t.Fatalf("reports after sync verify: %d", len(j.plane.reports))
@@ -298,6 +318,40 @@ func TestSyncVerifyJourneyReferenceReachable(t *testing.T) {
 	}
 }
 
+// TestSyncVerifyJourneyReferenceRejectsTheCredential: a 403 that says the
+// credential itself is bad (unknown key id, bad signature, expired token)
+// is what every bucket answers a dead credential, so it proves nothing
+// about scope: step 4 fails and says so, through the real S3 client.
+func TestSyncVerifyJourneyReferenceRejectsTheCredential(t *testing.T) {
+	for _, code := range []string{"InvalidAccessKeyId", "SignatureDoesNotMatch", "ExpiredToken", "InvalidToken"} {
+		t.Run(code, func(t *testing.T) {
+			j, _ := hostedVerifyJourney(t)
+			if _, errb, code := j.run("push", "--all"); code != ExitOK {
+				t.Fatalf("push exit=%d err=%q", code, errb)
+			}
+			j.plane.s3.Mu.Lock()
+			j.plane.s3.ForeignBucketAs = code
+			j.plane.s3.Mu.Unlock()
+			out, _, exit := j.run("sync", "verify", "--post=false")
+			if exit != ExitSafety {
+				t.Fatalf("exit=%d:\n%s", exit, out)
+			}
+			for _, want := range []string{
+				"Listing the reference locker failed because the credential itself was rejected (backend: credential rejected (" + code + ")), so nothing about bucket scope was shown.",
+				"Reading the probe object failed because the credential itself was rejected (",
+				"OUTCOME: FAIL.",
+			} {
+				if !strings.Contains(out, want) {
+					t.Fatalf("output missing %q:\n%s", want, out)
+				}
+			}
+			if strings.Contains(out, "refused as access denied") || strings.Contains(out, "refused by a bucket that is not its own") {
+				t.Fatalf("a rejected credential was read as a scope refusal:\n%s", out)
+			}
+		})
+	}
+}
+
 // TestSyncVerifyJourneyNoReferenceLocker: a control plane without a
 // reference locker makes the isolation step not applicable, not a failure.
 func TestSyncVerifyJourneyNoReferenceLocker(t *testing.T) {
@@ -321,7 +375,7 @@ func TestSyncVerifyJourneyNoReferenceLocker(t *testing.T) {
 		t.Fatalf("isolation %+v outcome %s", s, v.Report.Outcome)
 	}
 	human, _, code := j.run("sync", "verify", "--post=false")
-	if code != ExitOK || !strings.Contains(human, "OUTCOME: PASS. Everything in the locker is ciphertext sealed on this device and this device can open it. Whether the credentials reach other buckets was not checked (no reference locker)") || strings.Contains(human, "refused by a bucket") {
+	if code != ExitOK || !strings.Contains(human, "OUTCOME: PASS. The objects checked (the index and the newest snapshot) are ciphertext this device can open. Not opened and judged by name only: the wrapped keyring. Whether the credentials reach other buckets was not checked (no reference locker)") || strings.Contains(human, "refused by a bucket") {
 		t.Fatalf("human summary claims isolation:\n%s", human)
 	}
 }
@@ -397,7 +451,7 @@ func TestSyncVerifyJourneyBYO(t *testing.T) {
 		"recipient scrypt (passphrase)",
 		"Result:         NOT APPLICABLE",
 		"Not applicable: BYO storage has no control plane and no reference locker",
-		"OUTCOME: PASS. Everything in the locker is ciphertext sealed on this device and this device can open it. Whether the credentials reach other buckets was not checked (no reference locker)",
+		"OUTCOME: PASS. The objects checked (the index and the newest snapshot) are ciphertext this device can open. No other object is in the locker. Whether the credentials reach other buckets was not checked (no reference locker)",
 	} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("output missing %q:\n%s", want, out)

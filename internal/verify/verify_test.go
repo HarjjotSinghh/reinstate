@@ -85,15 +85,31 @@ func rootKeys(t *testing.T) *crypto.RootKeyProvider {
 	return keys
 }
 
-// refusing is a reference locker that behaves like R2: access denied.
-type refusing struct{ backend.Backend }
-
-func (refusing) List(context.Context, string) ([]backend.ObjectMeta, error) {
-	return nil, backend.ErrUnauthorized
+// refusing is a reference locker that answers every request with the
+// given refusal, the way R2 answers a credential scoped to another bucket
+// (AccessDenied) or a dead credential (InvalidAccessKeyId and friends).
+type refusing struct {
+	backend.Backend
+	err error
 }
 
-func (refusing) Get(context.Context, string) (io.ReadCloser, backend.ObjectMeta, error) {
-	return nil, backend.ObjectMeta{}, backend.ErrUnauthorized
+func (r refusing) List(context.Context, string) ([]backend.ObjectMeta, error) {
+	return nil, r.err
+}
+
+func (r refusing) Get(context.Context, string) (io.ReadCloser, backend.ObjectMeta, error) {
+	return nil, backend.ObjectMeta{}, r.err
+}
+
+// denied is the reference locker as R2 presents it to a bucket-scoped key.
+var denied = refusing{err: &backend.Refusal{Code: "AccessDenied"}}
+
+func openRef(b backend.Backend, akid string) func(context.Context, hop.Reference) (backend.Backend, string, error) {
+	return func(context.Context, hop.Reference) (backend.Backend, string, error) { return b, akid, nil }
+}
+
+func credential(akid string) func(context.Context) (string, error) {
+	return func(context.Context) (string, error) { return akid, nil }
 }
 
 func TestRunPassesAndStripsDetailForUpload(t *testing.T) {
@@ -102,7 +118,7 @@ func TestRunPassesAndStripsDetailForUpload(t *testing.T) {
 	ref := &hop.Reference{Endpoint: "https://s3.example", Bucket: "lk-ref", Region: "auto", Key: "reference/probe.txt"}
 	r := Run(context.Background(), Options{
 		Backend: store, Prefix: "team/a", Keys: keys, Storage: StorageHop, Reference: ref,
-		OpenReference: func(context.Context, hop.Reference) (backend.Backend, error) { return refusing{}, nil },
+		OpenReference: openRef(denied, "AKIAHOP1"), CredentialID: credential("AKIAHOP1"),
 		ClientVersion: "rein test", Now: func() time.Time { return time.Date(2026, 8, 23, 12, 0, 0, 0, time.UTC) },
 	})
 	if r.Outcome != Pass || len(r.Steps) != 4 {
@@ -120,6 +136,13 @@ func TestRunPassesAndStripsDetailForUpload(t *testing.T) {
 	if !strings.Contains(detail, "1 session(s) (claude 1)") || !strings.Contains(detail, "session sess-1") {
 		t.Fatalf("decrypt step detail %+v", r.Steps[2])
 	}
+	// Steps 1 and 4 record the same access key id, so the report shows the
+	// credential the locker accepted is the one the reference refused.
+	for _, i := range []int{0, 3} {
+		if !strings.Contains(strings.Join(r.Steps[i].Detail, "\n"), "signed with access key id AKIAHOP1") {
+			t.Fatalf("step %d detail lacks the access key id: %+v", i+1, r.Steps[i].Detail)
+		}
+	}
 	// The uploaded form reveals exactly these step summaries and nothing
 	// about the index: no agent names, counts, revision, or sizes.
 	u := r.ForUpload()
@@ -128,7 +151,7 @@ func TestRunPassesAndStripsDetailForUpload(t *testing.T) {
 		"manifest.age (" + strconv.Itoa(len(get(t, store, "team/a/manifest.age"))) + " bytes): begins with the age v1 header (recipient X25519 (root key)); no plaintext field name appears anywhere in the body. " +
 			"snapshots/snap-1.age (" + strconv.Itoa(len(get(t, store, "team/a/snapshots/snap-1.age"))) + " bytes): begins with the age v1 header (recipient X25519 (root key)); no plaintext field name appears anywhere in the body.",
 		"manifest.age decrypted into a schema v1 index. snapshots/snap-1.age decrypted into a snapshot envelope whose payload sha256 matches the envelope.",
-		"Listing the reference locker was refused as unauthorized. Reading the probe object was refused as unauthorized.",
+		"Listing the reference locker was refused as access denied. Reading the probe object was refused as access denied.",
 	}
 	for i, want := range wantObserved {
 		if u.Steps[i].Observed != want {
@@ -136,13 +159,19 @@ func TestRunPassesAndStripsDetailForUpload(t *testing.T) {
 		}
 	}
 	raw, _ := json.Marshal(u)
-	for _, s := range []string{"sess-1", "local/p", "detail", "lk-ref", "s3.example", "claude", "session", "revision"} {
+	for _, s := range []string{"sess-1", "local/p", "detail", "lk-ref", "s3.example", "claude", "session", "revision", "AKIAHOP1"} {
 		if bytes.Contains(raw, []byte(s)) {
 			t.Fatalf("upload carries %q: %s", s, raw)
 		}
 	}
 	if !r.IsolationChecked() || !strings.Contains(r.Summary(), "refused by a bucket that is not its own") {
 		t.Fatalf("summary %q", r.Summary())
+	}
+	// The summary claims only what was fetched and says nothing about
+	// which device sealed the objects.
+	if sum := r.Summary(); !strings.Contains(sum, "The objects checked (the index and the newest snapshot) are ciphertext this device can open. No other object is in the locker.") ||
+		strings.Contains(sum, "Everything in the locker") || strings.Contains(sum, "sealed on this device") {
+		t.Fatalf("summary over-claims: %q", sum)
 	}
 	var human bytes.Buffer
 	r.WriteHuman(&human)
@@ -174,8 +203,14 @@ func TestRunFailures(t *testing.T) {
 			_ = s.Delete(context.Background(), "manifest.age")
 		}, StepList, "nothing has been pushed"},
 		{"reference reachable", func(o *Options, _ *memory.Store) {
-			o.OpenReference = func(context.Context, hop.Reference) (backend.Backend, error) { return leaky, nil }
+			o.OpenReference = openRef(leaky, "AKIAHOP1")
 		}, StepIsolation, "SUCCEEDED"},
+		{"credential rotated between steps", func(o *Options, _ *memory.Store) {
+			o.OpenReference = openRef(denied, "AKIAHOP2")
+		}, StepIsolation, "changed between step 1 (AKIAHOP1) and this step (AKIAHOP2)"},
+		{"reference refused for another reason", func(o *Options, _ *memory.Store) {
+			o.OpenReference = openRef(refusing{err: errors.New("dial tcp: connection refused")}, "AKIAHOP1")
+		}, StepIsolation, "neither succeeded nor was refused as access denied"},
 		{"reference unknown error", func(o *Options, _ *memory.Store) {
 			o.Reference, o.ReferenceErr = nil, errors.New("control plane down")
 		}, StepIsolation, "control plane down"},
@@ -185,7 +220,7 @@ func TestRunFailures(t *testing.T) {
 			store := lockerWith(t, keys, "")
 			o := Options{Backend: store, Keys: keys, Storage: StorageHop,
 				Reference:     &hop.Reference{Endpoint: "e", Bucket: "lk-ref", Key: "reference/probe.txt"},
-				OpenReference: func(context.Context, hop.Reference) (backend.Backend, error) { return refusing{}, nil }}
+				OpenReference: openRef(denied, "AKIAHOP1"), CredentialID: credential("AKIAHOP1")}
 			tc.mutate(&o, store)
 			r := Run(context.Background(), o)
 			if r.Outcome != Fail {
@@ -228,5 +263,43 @@ func TestRunNotApplicable(t *testing.T) {
 			strings.Contains(human.String(), "refused by a bucket") {
 			t.Fatalf("summary claims more than observed:\n%s", human.String())
 		}
+	}
+}
+
+// TestIsolationFailsWhenTheCredentialItselfIsRejected: a refusal that says
+// the credential is dead (unknown key id, bad signature, expired token) is
+// refused by every bucket, so it proves nothing about scope and must not
+// pass the isolation step. Only AccessDenied (or a bodiless 403) does.
+func TestIsolationFailsWhenTheCredentialItselfIsRejected(t *testing.T) {
+	keys := rootKeys(t)
+	for _, code := range []string{"InvalidAccessKeyId", "SignatureDoesNotMatch", "ExpiredToken", "ExpiredTokenException", "InvalidToken", "TokenRefreshRequired"} {
+		t.Run(code, func(t *testing.T) {
+			store := lockerWith(t, keys, "")
+			r := Run(context.Background(), Options{Backend: store, Keys: keys, Storage: StorageHop,
+				Reference:     &hop.Reference{Endpoint: "e", Bucket: "lk-ref", Key: "reference/probe.txt"},
+				OpenReference: openRef(refusing{err: &backend.Refusal{Code: code, Credential: true}}, "AKIAHOP1"),
+				CredentialID:  credential("AKIAHOP1")})
+			step := r.Steps[3]
+			if r.Outcome != Fail || step.Status != Fail || r.IsolationChecked() {
+				t.Fatalf("%s passed isolation: %+v", code, step)
+			}
+			for _, want := range []string{"the credential itself was rejected (", code, "so nothing about bucket scope was shown"} {
+				if strings.Count(step.Observed, want) < 1 {
+					t.Fatalf("%s: observed %q lacks %q", code, step.Observed, want)
+				}
+			}
+		})
+	}
+	for _, code := range []string{"AccessDenied", "Forbidden"} {
+		t.Run(code, func(t *testing.T) {
+			store := lockerWith(t, keys, "")
+			r := Run(context.Background(), Options{Backend: store, Keys: keys, Storage: StorageHop,
+				Reference:     &hop.Reference{Endpoint: "e", Bucket: "lk-ref", Key: "reference/probe.txt"},
+				OpenReference: openRef(refusing{err: &backend.Refusal{Code: code}}, "AKIAHOP1"),
+				CredentialID:  credential("AKIAHOP1")})
+			if r.Outcome != Pass || !r.IsolationChecked() {
+				t.Fatalf("%s did not pass isolation: %+v", code, r.Steps[3])
+			}
+		})
 	}
 }

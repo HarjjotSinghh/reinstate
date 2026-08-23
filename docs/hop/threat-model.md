@@ -43,7 +43,9 @@ object storage; none of it is content.
   enrolled device wraps, their public keys, and the number of key
   generations are visible. Public keys identify nothing outside the locker.
 - **Verification reports**: the pass/fail per step a device posts,
-  including object counts and the opaque object names the steps mention.
+  including object counts, object sizes, and the opaque object names the
+  steps mention, plus the client version (`client_version`) that ran them.
+  Access key ids and per-session detail stay local.
 - **Product events**: `sign_up`, `device_enrolled`, `locker_provisioned`,
   `first_push`, `pairing_requested`, `pairing_approved`, `trial_started`,
   `verify_reported`, each with an account id, a device id where one applies,
@@ -107,10 +109,10 @@ object storage; none of it is content.
 
 | Step | What it does | Claim it supports |
 | --- | --- | --- |
-| 1. List the locker | Lists every object with the credentials this device pushes with. | The locker holds only the three object kinds in the [object format](object-format.md); names are opaque; the operator sees counts and sizes, nothing more. |
+| 1. List the locker | Lists every object (every page) with the credentials this device pushes with and records the access key id locally. | The locker holds only the three object kinds in the [object format](object-format.md); names are opaque; the operator sees counts and sizes, nothing more. |
 | 2. Fetch and inspect | Downloads `manifest.age` (and one snapshot) and checks the raw bytes start with `age-encryption.org/v1`, names the recipient type (`X25519` for Hop, `scrypt` for BYO), and finds none of the field names that appear in the plaintext. | What is stored is an age envelope, not content. A tampered or plaintext object fails here. |
 | 3. Decrypt locally | Opens the same bytes with the key held on this device, shows the index it contains, and checks a snapshot's payload against the SHA-256 in its envelope. Nothing is sent anywhere. | The ciphertext is real (it opens to the expected structure with the expected key) and intact (authenticated; a flipped byte fails here). The key is on the device, not with the operator. |
-| 4. Isolation | Asks the control plane for its **reference locker** (an operator-owned bucket, named like any locker, holding one plaintext probe), then lists it and reads the probe with the credential that just listed this locker; expects `AccessDenied` both times. | A credential minted for this account is refused from any other bucket at the same endpoint. Not applicable on BYO storage (no control plane) or on a control plane that advertises no reference locker. |
+| 4. Isolation | Asks the control plane for its **reference locker** (an operator-owned bucket, named like any locker, holding one plaintext probe), then lists it and reads the probe with the credential that just listed this locker (same access key id, recorded locally in both steps); expects `AccessDenied` (or a bodiless 403) both times. A refusal of the credential itself (`InvalidAccessKeyId`, `SignatureDoesNotMatch`, `ExpiredToken`, `InvalidToken`) fails the step: a dead credential is refused everywhere and shows nothing about scope. | A credential minted for this account, one the locker has just accepted, is refused from any other bucket at the same endpoint. Not applicable on BYO storage (no control plane) or on a control plane that advertises no reference locker. |
 
 The report is printed in full locally, with per-session detail; after the
 first successful push on each new device, and on every `rein sync verify`

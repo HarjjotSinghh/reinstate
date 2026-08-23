@@ -13,7 +13,7 @@
         "detail": [
           "snapshots/<snapshot-id>.age"
         ],
-        "did": "Asked the storage endpoint for every object under this account's prefix, signed with the credentials this device uses to push.",
+        "did": "Asked the storage endpoint for every object under this account's prefix (following every listing page), signed with the credentials this device uses to push.",
         "id": "list",
         "name": "List the locker with this device's credentials",
         "observed": "2 object(s): manifest.age (the encrypted index); 1 snapshot(s) under snapshots/ named by opaque ids.",

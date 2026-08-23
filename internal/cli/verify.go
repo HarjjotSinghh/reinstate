@@ -121,18 +121,25 @@ func runVerification(cmd *cobra.Command, eng *sync.Engine, cfg *schema.Config, h
 			opts.Reference = &ref
 		}
 		client, _ := eng.Backend.(*s3.Client)
-		opts.OpenReference = func(ctx context.Context, ref hop.Reference) (backend.Backend, error) {
+		if client != nil {
+			opts.CredentialID = func(ctx context.Context) (string, error) {
+				creds, err := client.CurrentCredentials(ctx)
+				return creds.AccessKeyID, err
+			}
+		}
+		opts.OpenReference = func(ctx context.Context, ref hop.Reference) (backend.Backend, string, error) {
 			if client == nil {
-				return nil, errors.New("the locker client cannot lend its credentials")
+				return nil, "", errors.New("the locker client cannot lend its credentials")
 			}
 			creds, err := client.CurrentCredentials(ctx)
 			if err != nil {
-				return nil, err
+				return nil, "", err
 			}
-			return s3.New(ctx, s3.Config{
+			b, err := s3.New(ctx, s3.Config{
 				Endpoint: ref.Endpoint, Region: ref.Region, Bucket: ref.Bucket,
 				Credentials: s3.StaticCredentials(creds),
 			})
+			return b, creds.AccessKeyID, err
 		}
 	default:
 		opts.Locker = verify.LockerInfo{Endpoint: cfg.Storage.Endpoint, Bucket: cfg.Storage.Bucket, Prefix: cfg.Storage.Prefix}
@@ -194,9 +201,9 @@ func verifyAfterFirstPush(cmd *cobra.Command, eng *sync.Engine, cfg *schema.Conf
 	}
 	switch {
 	case report.Passed() && report.IsolationChecked():
-		PrintHuman(cmd.ErrOrStderr(), "First push from this device verified: the locker holds only ciphertext this device can open, and this account's credentials are refused by a bucket that is not its own (rein sync verify shows the full report).")
+		PrintHuman(cmd.ErrOrStderr(), "First push from this device verified: the index and newest snapshot fetched from the locker are ciphertext this device can open, and this account's credentials are refused by a bucket that is not its own (rein sync verify shows the full report).")
 	case report.Passed():
-		PrintHuman(cmd.ErrOrStderr(), "First push from this device verified: the locker holds only ciphertext this device can open. Isolation was not checked (no reference locker) (rein sync verify shows the full report).")
+		PrintHuman(cmd.ErrOrStderr(), "First push from this device verified: the index and newest snapshot fetched from the locker are ciphertext this device can open. Isolation was not checked (no reference locker) (rein sync verify shows the full report).")
 	default:
 		PrintHuman(cmd.ErrOrStderr(), "WARNING: the verification after the first push FAILED. Full report:")
 		report.WriteHuman(cmd.ErrOrStderr())

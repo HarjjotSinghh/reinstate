@@ -194,7 +194,7 @@ by the verification below.
 
 ## Verifying the claim (`rein sync verify`)
 
-The claim is that the locker holds only ciphertext sealed on your devices,
+The claim is that the locker holds only ciphertext sealed by your devices,
 that your devices can open it, and that your account's credentials reach
 your locker and nothing else. `rein sync verify` checks all of it and
 prints a **verification report** written for a non-expert: each step says
@@ -202,8 +202,10 @@ what was done, what was seen, and PASS or FAIL, and every step can be
 repeated by hand with an S3 client ([object format](hop/object-format.md),
 "Reproducing the checks by hand").
 
-1. **List the locker** with the credentials this device pushes with; shows
-   `manifest.age`, `keyring.v1.json`, and the snapshots by their opaque ids.
+1. **List the locker** with the credentials this device pushes with,
+   following every listing page; shows `manifest.age`, `keyring.v1.json`,
+   and the snapshots by their opaque ids, and records (locally) the access
+   key id the listing was signed with.
 2. **Fetch an object and check it is ciphertext**: the bytes begin with the
    age v1 header, the recipient type is named (X25519 for Hop, scrypt for
    BYO), and none of the plaintext field names occur anywhere in the body.
@@ -216,12 +218,22 @@ repeated by hand with an S3 client ([object format](hop/object-format.md),
 4. **Prove isolation**: the control plane names its **reference locker**, a
    bucket the operator owns holding one probe object; the same credentials
    are used to list it and read the probe, and both must be refused as
-   unauthorized (R2 answers `AccessDenied`).
+   **access denied** (R2 answers `AccessDenied`; a bodiless 403 counts the
+   same). A refusal that says the credential itself is bad
+   (`InvalidAccessKeyId`, `SignatureDoesNotMatch`, `ExpiredToken`,
+   `InvalidToken`) is what every bucket answers a dead credential, so it
+   proves nothing about scope and **fails** the step, as does a credential
+   that changed between step 1 and step 4. The step's local detail names
+   the access key id so the report shows the credential the locker
+   accepted is the one the reference refused.
 
 The report ends with `OUTCOME: PASS` or `OUTCOME: FAIL`; exit code `4` on
 any failed step. The outcome sentence claims only what the steps observed:
-when step 4 is not applicable it says isolation was not checked instead of
-asserting it. `--json` emits the report as data (see
+it calls ciphertext only the objects that were fetched (the index and the
+newest snapshot), names what was judged by name only (older snapshots, the
+keyring, anything unrecognised), says nothing about which device sealed
+them, and when step 4 is not applicable it says isolation was not checked
+instead of asserting it. `--json` emits the report as data (see
 `testdata/verify/byo-report.golden.json` under `internal/cli` for the
 shape). On a Hop profile the **step results only** — never object contents,
 session ids, or project paths — are posted to the control plane for the
