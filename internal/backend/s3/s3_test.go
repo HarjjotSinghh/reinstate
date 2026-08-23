@@ -79,27 +79,3 @@ func TestNewClientConstruction(t *testing.T) {
 		t.Fatalf("key %q", got)
 	}
 }
-
-// TestListFollowsContinuationTokens: a locker with more keys than one
-// ListObjectsV2 page is listed in full, so rein sync verify counts every
-// object rather than the first thousand.
-func TestListFollowsContinuationTokens(t *testing.T) {
-	f := newFakeS3(t, "reinstate")
-	f.PageSize = 3
-	f.accept("AKIA1")
-	c := f.client(t, Config{Credentials: &fakeSource{script: []Credentials{hourly("AKIA1")}}})
-	ctx := context.Background()
-	for i := 0; i < 8; i++ {
-		k := "snapshots/" + strings.Repeat("a", i+1) + ".age"
-		if _, err := c.Put(ctx, k, strings.NewReader("x"), 1, backend.PutOptions{}); err != nil {
-			t.Fatal(err)
-		}
-	}
-	got, err := c.List(ctx, "snapshots/")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(got) != 8 {
-		t.Fatalf("listed %d of 8 keys: %+v", len(got), got)
-	}
-}

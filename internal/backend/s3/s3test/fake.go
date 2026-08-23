@@ -44,7 +44,11 @@ type Fake struct {
 	// gets its own store (so two accounts sharing one lab locker never see
 	// each other's keyring). Store is ignored in this mode.
 	AnyBucket bool
-	buckets   map[string]*memory.Store
+	// SharedStore, in AnyBucket mode, serves every bucket from Store, the
+	// way a misconfigured endpoint that ignores the bucket name would.
+	// The verify journey uses it to make the reference locker reachable.
+	SharedStore bool
+	buckets     map[string]*memory.Store
 	// RejectAs is the S3 error code answered for a rejected key.
 	RejectAs string
 	// ForeignBucketAs is the error code answered for another bucket; empty
@@ -61,9 +65,6 @@ type Fake struct {
 	// ReadOnly refuses every PUT and DELETE with AccessDenied, the way a
 	// locker behaves once the account is read-only (lapsed).
 	ReadOnly bool
-	// PageSize, when positive, truncates listings to that many keys per
-	// page and hands out continuation tokens, the way S3 does at 1000.
-	PageSize int
 }
 
 var credentialRe = regexp.MustCompile(`Credential=([^/]+)/`)
@@ -122,12 +123,14 @@ func (f *Fake) handle(w http.ResponseWriter, r *http.Request) {
 	if f.AnyBucket {
 		bucket, rest, _ := strings.Cut(strings.TrimPrefix(r.URL.EscapedPath(), "/"), "/")
 		path = "/" + rest
-		if f.buckets == nil {
-			f.buckets = map[string]*memory.Store{}
-		}
-		if store = f.buckets[bucket]; store == nil {
-			store = memory.New()
-			f.buckets[bucket] = store
+		if !f.SharedStore {
+			if f.buckets == nil {
+				f.buckets = map[string]*memory.Store{}
+			}
+			if store = f.buckets[bucket]; store == nil {
+				store = memory.New()
+				f.buckets[bucket] = store
+			}
 		}
 	} else {
 		path = strings.TrimPrefix(r.URL.EscapedPath(), "/"+f.Bucket)

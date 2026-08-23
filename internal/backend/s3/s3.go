@@ -263,6 +263,8 @@ func (c *Client) Delete(ctx context.Context, key string) error {
 	return mapErr(err)
 }
 
+// List returns every object under prefix, following continuation tokens so
+// a locker with more than one page (1000 keys) is listed in full.
 func (c *Client) List(ctx context.Context, prefix string) ([]backend.ObjectMeta, error) {
 	full := c.key(prefix)
 	var res []backend.ObjectMeta
@@ -317,9 +319,14 @@ func mapErr(err error) error {
 			return backend.ErrNotFound
 		case "PreconditionFailed", "412":
 			return backend.ErrPrecondition
-		case "AccessDenied", "InvalidAccessKeyId", "SignatureDoesNotMatch", "Forbidden",
+		case "AccessDenied", "Forbidden":
+			// The credential was recognised; the request fell outside what it
+			// may do. "Forbidden" is a bodiless 403 (HEAD), which carries no
+			// code, so it is treated as the same scope refusal.
+			return &backend.Refusal{Code: apiErr.ErrorCode()}
+		case "InvalidAccessKeyId", "SignatureDoesNotMatch",
 			"ExpiredToken", "ExpiredTokenException", "InvalidToken", "TokenRefreshRequired":
-			return backend.ErrUnauthorized
+			return &backend.Refusal{Code: apiErr.ErrorCode(), Credential: true}
 		}
 	}
 	// HeadObject often returns 404 as http status without typed error on all backends

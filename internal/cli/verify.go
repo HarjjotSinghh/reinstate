@@ -25,10 +25,11 @@ type verifyNowContextKey struct{}
 func newSyncCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "sync",
-		Short: "Checks on the encrypted sync store",
-		Long:  "Commands that inspect the configured storage rather than move sessions. `rein push`, `rein pull`, and `rein status` do the moving.",
+		Short: "Storage-level operations on the configured sync profile",
+		Long:  "Commands that inspect or move the configured storage rather than individual sessions. `rein push`, `rein pull`, and `rein status` move sessions.",
 	}
 	cmd.AddCommand(newSyncVerifyCmd())
+	cmd.AddCommand(newSyncMigrateCmd())
 	return cmd
 }
 

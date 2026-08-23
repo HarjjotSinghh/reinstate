@@ -48,15 +48,6 @@ type migrateState struct {
 	CompletedAt string `json:"completed_at,omitempty"`
 }
 
-func newSyncCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "sync",
-		Short: "Storage-level operations on the configured sync profile",
-	}
-	cmd.AddCommand(newSyncMigrateCmd())
-	return cmd
-}
-
 func newSyncMigrateCmd() *cobra.Command {
 	var (
 		to, endpoint, bucket, region, prefix string

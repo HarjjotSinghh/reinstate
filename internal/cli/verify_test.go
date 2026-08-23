@@ -301,6 +301,7 @@ func TestSyncVerifyJourneyReferenceReachable(t *testing.T) {
 	// would, with the probe present.
 	j.plane.s3.Mu.Lock()
 	j.plane.s3.AnyBucket = true
+	j.plane.s3.SharedStore = true
 	j.plane.s3.Mu.Unlock()
 	j.overwrite("reference/probe.txt", []byte("Reinstate Hop reference locker probe.\n"))
 
