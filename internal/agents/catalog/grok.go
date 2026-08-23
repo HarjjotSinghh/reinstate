@@ -130,6 +130,7 @@ func Grok() agents.Descriptor {
 				"docs/testing/results/2026-08-22-windows-grok-t3.md",
 				"docs/testing/results/2026-08-23-macos-grok-t4.md",
 				"docs/testing/results/2026-08-23-windows-grok-t4.md",
+				"docs/testing/results/2026-08-23-macos-grok-gd8.md",
 			},
 		},
 		NewIndexSource: groksrc.New,
