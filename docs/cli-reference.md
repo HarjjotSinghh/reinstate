@@ -65,6 +65,9 @@ rein account recover
 rein account status [--json]
 rein devices [--json]
 rein devices approve [--request ID]
+rein daemon run [--pull-every DUR] [--debounce DUR] [--poll] [--verbose]
+rein daemon install|start|stop|uninstall
+rein daemon status [--json]
 rein list [--agent claude|codex|all] [--json]
 rein status [--json]
 rein diff [--json]
@@ -102,6 +105,21 @@ the device limit, the push-rate limit, and when the first push happened.
 Before the first push it says the locker is not provisioned yet. `--json`
 emits the same. Exit `4` when the device is not signed in or its token was
 rejected.
+
+### `rein daemon`
+
+`rein daemon` runs a resident per-device process that pushes after a
+session changes, pulls on a schedule, and surfaces devices waiting to join
+the account. `rein daemon install` registers it to start at login (launchd
+on macOS, systemd `--user` on Linux, Task Scheduler on Windows) and starts
+it; `start`, `stop`, and `uninstall` control the installed service.
+`rein daemon run` is the foreground loop the service runs. `rein daemon
+status [--json]` reports whether the service is installed and running, the
+last push and pull, the watched roots, and — on Hop — enrolled devices and
+pending approvals. It needs the root-key model (`rein account init`, which
+works on BYO storage too). See [docs/hop.md](hop.md#the-daemon). Exit `4`
+when a hosted daemon's device is not signed in; `3` when the home is not
+configured for the root-key model.
 
 ### `rein init`
 

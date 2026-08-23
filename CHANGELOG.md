@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `rein pull --all` now skips a session whose remote snapshot this device
+  already synced instead of restoring, rewriting, and backing up an
+  identical file on every run, and no longer records a conflict for a local
+  edit that has simply not been pushed yet (that edit belongs to the next
+  push). An explicit `rein pull --session` still restores and still records
+  a conflict when the local copy diverged. This keeps the daemon's
+  five-minute pulls from churning the backup directory.
 - Envelope encryption now sits behind a key-provider seam
   (`internal/crypto.KeyProvider`). BYO storage keeps the age scrypt passphrase
   model through `PassphraseProvider`, which writes identical envelopes and reads
@@ -19,6 +26,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The daemon: `rein daemon` runs a resident per-device process that keeps a
+  device's sessions synced without anyone running `push` and `pull` by hand
+  and surfaces devices waiting to join the account. `rein daemon run` is the
+  foreground loop; it watches every detected agent's session directory
+  (fsnotify, polling fallback) and pushes after a session changes
+  (debounced and coalesced, capped so a store that never goes quiet is
+  still pushed), pulls on a schedule so the local index and sessions stay
+  fresh, and — on Hop — polls the control plane for pending pairing
+  requests and surfaces each one as an OS notification, a line in the
+  status file, and a stderr line on the next `rein` command (`device "X"
+  wants to join your account; run rein devices approve`); approval itself
+  stays interactive. `rein daemon install|start|stop|uninstall` register it
+  to start at login through the platform's own supervisor — a launchd user
+  agent on macOS, a systemd `--user` unit on Linux, a Task Scheduler task
+  with a logon trigger on Windows. `rein daemon status [--json]` reports the
+  service state, the last push and pull, the watched roots, and the
+  enrolled devices and pending approvals; the interactive switcher shows
+  the same one-line summary on its status line. One instance per home (a
+  lock file), exponential backoff, a size-rotated log, and a sync step that
+  panics (a vendor store changing mid-write) is recovered rather than
+  crashing the daemon. It behaves identically on BYO storage and on Hop and
+  sends nothing that `push` and `pull` do not already send (no telemetry,
+  ADR 0008). It needs the root-key model (`rein account init`, which works
+  on BYO storage too). See [docs/hop.md](docs/hop.md#the-daemon).
 - Hosted storage: `storage.type = "hop"` syncs to the signed-in account's
   **locker**, the storage bucket the control plane provisions for exactly one
   account. `rein init --hop` writes that profile (the account is the profile,
