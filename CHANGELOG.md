@@ -212,6 +212,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `backend.ErrAccessDenied` or `backend.ErrCredentialRejected` (both still
   match `backend.ErrUnauthorized`), and the S3 backend's `List` now follows
   continuation tokens, so a locker past one page is listed in full.
+  Windows record: the seven `rein sync verify` journeys (hosted pass,
+  tampered objects, reachable reference, rejected credential, no reference,
+  before any push, BYO with golden JSON) passed as a windows/amd64 test
+  binary on the Windows 11 bench (NT 10.0.26200) on 2026-08-23, with the
+  fake control plane and fake S3 in-process.
   New docs: `docs/hop/object-format.md` (the exact object layout and
   envelope format) and `docs/hop/threat-model.md` (what the operator can
   and cannot see, the assumptions, and how each verify step maps to each
