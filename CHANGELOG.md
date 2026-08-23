@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The website now serves every page as Markdown through `Accept: text/markdown`
+  content negotiation (with `Vary: Accept` and a 406 contract), static `.md`
+  twins, `llms-full.txt`, an OpenAPI 3.1 document at `/openapi.json`, JSON
+  error bodies with codes and hints on every `/api/*` route, a Markdown 404
+  for non-browser clients, a `/developers` resource hub, and
+  `agent-instructions.md` plus when-to-use guidance in `llms.txt`.
+
 ### Changed
 
 - The agent conformance suite now checks what a cited device report is *about*,

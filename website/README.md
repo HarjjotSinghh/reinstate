@@ -37,6 +37,54 @@ not execute server routes such as the waitlist API, RSS feed, or IndexNow
 key-proof endpoint. Use `npm run dev` for ordinary development and the Vercel
 local runtime when server-route parity is required.
 
+## Agent surface
+
+Every page has two representations at one URL. Browsers get HTML; a client
+that sends `Accept: text/markdown` gets Markdown with
+`Content-Type: text/markdown; charset=utf-8` and `Vary: Accept`
+(acceptmarkdown.com convention, q-values honored, 406 when neither
+representation is acceptable). Each page also has a static twin at the same
+path plus `.md` (`/docs/faq.md`; the homepage is `/index.md`), and
+`/llms-full.txt` concatenates every indexable page.
+
+How it fits together:
+
+- `src/integrations/agent-surface.ts` runs after the Vercel adapter's
+  `astro:build:done`, converts each prerendered page with
+  `src/lib/agent-surface/html-to-markdown.ts`, writes the twins and
+  `llms-full.txt` into `dist/client` and `.vercel/output/static`, and injects
+  two routes into `.vercel/output/config.json` (see `vercel-routes.ts`):
+  one before the filesystem phase that sends `Accept: text/markdown`
+  requests to `/agent-surface/markdown`, and one before the 404 catch-all that
+  sends unknown paths from non-HTML clients to `/agent-surface/not-found`.
+  Prerendered pages never reach Astro middleware on Vercel, so this is the
+  only place same-URL negotiation can live.
+- `src/middleware.ts` serves `/{page}.md` in `astro dev` and applies the
+  contract to on-demand HTML routes. Astro strips request headers from
+  prerendered routes in dev (as at build time), so canonical-URL negotiation
+  is exercised locally through the endpoint the Vercel route targets:
+  `curl -H "Accept: text/markdown" "http://localhost:4321/agent-surface/markdown?path=/docs"`,
+  plus `curl http://localhost:4321/docs.md` for the twin. The 406 and
+  Markdown-404 branches are unit-tested in `src/lib/agent-surface/`.
+- `vercel.json` adds `Vary: Accept` to page URLs and serves `*.md` as
+  `text/markdown`.
+- `/openapi.json` (`src/lib/openapi.ts`) documents the HTTP surface; every
+  `/api/*` error is JSON with `code`, `error`, `hint`, and `docs`.
+- `public/llms.txt` (curated index with when-to-use guidance),
+  `public/agent-instructions.md`, and `/developers` are the discovery entry
+  points.
+
+Audit the generated output after a build:
+
+```bash
+npm run build
+npm run check:agent-surface
+```
+
+The check verifies a twin for every page, the Vercel route order, `llms.txt`
+structure and link targets, the OpenAPI invariants, and the header rules.
+Its fixture tests run in `npm test`.
+
 ## SEO validation
 
 Run the production-build audit locally after changing routes, metadata,

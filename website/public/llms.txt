@@ -2,6 +2,24 @@
 
 > Reinstate is an open-source tool that syncs encrypted coding-agent sessions across devices. The current pre-1.0 release candidate supports same-vendor Claude Code and Codex session transfer across macOS and Windows with user-owned S3-compatible storage.
 
+Reinstate is a local command-line tool (`rein`, also `reinstate`), Apache-2.0, written in Go, with no hosted service, account, or API key. It finds and continues local coding-agent sessions, syncs encrypted Claude Code and Codex sessions between a user's own machines through storage they own, and hands a task off to a new Claude Code or Codex session through an explicit structured handoff.
+
+**When to use Reinstate:** the job is about the continuity of a coding-agent session rather than the code. Continue a Claude Code or Codex session on another computer (work and personal, desktop and laptop, macOS and Windows); keep an encrypted, user-owned backup of sessions in Amazon S3, Cloudflare R2, or another S3-compatible bucket; find an earlier local session by project, branch, file, or phrase; resume or fork the newest resumable session from the terminal; or continue the same task in a new Claude Code or Codex session, including across those two vendors.
+
+**When not to use Reinstate:** versioning or sharing source code (use Git), remote desktop or cloud IDE needs, hosted coding agents, translating transcripts between agent vendors, or syncing credentials. Agents other than Claude Code and Codex are local-discovery or handoff-only; check the compatibility data before promising support.
+
+**How an agent should call it:** in the user's shell, never over HTTP. Start with `rein version` and `rein doctor`; discover with `rein sessions --json`, `rein search "<terms>" --json`, and `rein inspect <agent>:<id> --json` (no storage, passphrase, or network needed); add `--dry-run` before `rein last`, `rein resume`, `rein fork`, `rein handoff`, `rein push`, or `rein pull`. Full guidance: https://reinstate.dev/agent-instructions.md. Every page below also answers `Accept: text/markdown` at its URL and has a Markdown twin at the same path plus `.md`.
+
+## Developer and agent resources
+
+- [Developer resources](https://reinstate.dev/developers): CLI, website HTTP API, machine-readable files, and what Reinstate does not provide
+- [Agent instructions](https://reinstate.dev/agent-instructions.md): When to use Reinstate, when not to, the commands to run, and the safety rules
+- [OpenAPI document](https://reinstate.dev/openapi.json): OpenAPI 3.1 description of the website HTTP surface with operation IDs, schemas, and the JSON error shape
+- [Full documentation as Markdown](https://reinstate.dev/llms-full.txt): Every indexable page in one file, each section prefixed with its canonical URL
+- [Compatibility JSON](https://reinstate.dev/compatibility.json): Agent tiers, tested version ranges, environment status, evidence links, and review dates
+- [CLI reference](https://reinstate.dev/docs/cli-reference): Every current command with parameters, expected evidence, exit codes, and recovery paths
+- [Waitlist API](https://reinstate.dev/api/waitlist): GET describes the endpoint; POST {"email"} joins the early-access waitlist; errors are JSON with a code and a hint
+
 ## Product
 
 - [Homepage](https://reinstate.dev/): Product overview and current workflow
@@ -9,31 +27,65 @@
 - [Compatibility](https://reinstate.dev/compatibility): Current agents, operating systems, versions, and limitations
 - [Security](https://reinstate.dev/security): Encryption, credentials, trust boundaries, and exclusions
 - [Open source](https://reinstate.dev/open-source): Source, license, governance, and contribution links
+- [Roadmap](https://reinstate.dev/roadmap): Planned work, labeled as planned rather than shipped
 - [Changelog](https://reinstate.dev/changelog): Current release status and release history
 
 ## Documentation
 
 - [Documentation](https://reinstate.dev/docs): Documentation hub
 - [Getting started](https://reinstate.dev/docs/getting-started): Install and configure Reinstate
+- [Installation](https://reinstate.dev/docs/installation): Install the pinned release on macOS, native Windows, or WSL2 and verify it
+- [Configuration](https://reinstate.dev/docs/configuration): Profiles, S3-compatible storage coordinates, keyring credentials, and portable project paths
+- [Features](https://reinstate.dev/docs/features): Which features and commands shipped in each release
+- [CLI reference](https://reinstate.dev/docs/cli-reference): Every command, flag, exit code, and failure path
+- [Push one session](https://reinstate.dev/docs/sync-a-session): Select, dry-run, encrypt, and push one Claude Code or Codex session
+- [Restore and resume one session](https://reinstate.dev/docs/restore-a-session): Dry-run, restore, verify, and natively resume on another computer
+- [Structured handoff](https://reinstate.dev/docs/handoff): Continue the same task in a new Claude Code or Codex session without transcript translation
+- [Storage](https://reinstate.dev/docs/storage): Storage fields, object layout, required permissions, and encrypted payloads
 - [Architecture](https://reinstate.dev/docs/architecture): Adapter, path mapping, encryption, and restore design
 - [Adapters](https://reinstate.dev/docs/adapters): Agent compatibility and adapter behavior
 - [Security model](https://reinstate.dev/docs/security-model): Detailed threat model and security boundaries
+- [Limitations](https://reinstate.dev/docs/limitations): Agent, platform, resume, storage, and path-remapping boundaries
+- [Comparison](https://reinstate.dev/docs/comparison): Reinstate compared with vendor sync, session browsers, and file sync
+- [Universal configuration roadmap](https://reinstate.dev/docs/universal-configuration): Planned non-secret desired-state model; not shipped
 - [Troubleshooting](https://reinstate.dev/docs/troubleshooting): Error diagnosis and safe fixes
 - [FAQ](https://reinstate.dev/docs/faq): Direct answers to common questions
 
 ## Integrations
 
+- [Integrations index](https://reinstate.dev/integrations): Every supported agent with its current tier
 - [Claude Code](https://reinstate.dev/integrations/claude-code): T5 same-vendor Claude Code session sync
 - [Codex](https://reinstate.dev/integrations/codex): T5 same-vendor Codex session sync
 - [Gemini CLI](https://reinstate.dev/integrations/gemini): T2 handoff source; no native resume or sync
-- [OpenCode](https://reinstate.dev/integrations/opencode): T2 handoff source; no native resume or sync
-- [Grok Build](https://reinstate.dev/integrations/grok): T2 handoff source; no native resume or sync
+- [OpenCode](https://reinstate.dev/integrations/opencode): T4 handoff destination with same-vendor native resume; no encrypted sync
+- [Grok Build](https://reinstate.dev/integrations/grok): T3 verified same-vendor native resume and handoff source; no encrypted sync
+- [Kimi Code CLI](https://reinstate.dev/integrations/kimi): T2 handoff source; no native resume or sync
+- [Qwen Code](https://reinstate.dev/integrations/qwen): T4 handoff destination with same-vendor native resume; no encrypted sync
+- [Pi](https://reinstate.dev/integrations/pi): T1 local discovery only
+- [Cursor CLI](https://reinstate.dev/integrations/cursor): T1 local discovery only
+- [GitHub Copilot CLI](https://reinstate.dev/integrations/copilot): T1 local discovery only
+- [Cline](https://reinstate.dev/integrations/cline): T1 local discovery only
 
 ## Guides
 
 - [Guide index](https://reinstate.dev/guides): Current, reviewed session-sync workflows
 - [Sync Claude Code sessions across devices](https://reinstate.dev/guides/sync-claude-code-sessions-across-devices): Install, map, push, pull, verify, and resume with Claude Code
 - [Sync Codex sessions across devices](https://reinstate.dev/guides/sync-codex-sessions-across-devices): Install, map, push, pull, verify, and resume with Codex CLI
+- [Move a session from Mac to Windows](https://reinstate.dev/guides/move-a-coding-agent-session-from-mac-to-windows): One encrypted session from macOS to native Windows with path remapping
+- [Use Cloudflare R2 for session storage](https://reinstate.dev/guides/use-cloudflare-r2-for-coding-agent-session-storage): Private R2 bucket and bucket-scoped S3 credentials
+- [Use Amazon S3 for session storage](https://reinstate.dev/guides/use-s3-for-coding-agent-session-storage): Private S3 bucket and least-privilege credentials
+
+## Use cases and comparisons
+
+- [Use cases](https://reinstate.dev/use-cases): Cross-device coding-agent work scenarios
+- [Work and personal computers](https://reinstate.dev/use-cases/work-and-personal-computers): Sync sessions between a work machine and a personal machine
+- [macOS and Windows](https://reinstate.dev/use-cases/macos-and-windows): Move Claude Code and Codex sessions between the two operating systems
+- [Desktop and laptop](https://reinstate.dev/use-cases/desktop-and-laptop): Continue a session from a desktop on a laptop
+- [Encrypted session backup](https://reinstate.dev/use-cases/encrypted-session-backup): Keep an encrypted, user-owned backup of sessions
+- [Compare](https://reinstate.dev/compare): Reinstate against Git and session-transfer workflows
+- [Reinstate vs. Git](https://reinstate.dev/compare/reinstate-vs-git): Source history versus agent-session continuity
+- [Reinstate vs. manual session copying](https://reinstate.dev/compare/reinstate-vs-manual-session-copying): Why copying session files by hand breaks resume
+- [Reinstate vs. remote desktop](https://reinstate.dev/compare/reinstate-vs-remote-desktop): Local continuity versus driving a remote machine
 
 ## Engineering notes
 
@@ -44,6 +96,7 @@
 
 - [Reinstate glossary](https://reinstate.dev/glossary): Definitions for session-continuity terms, compatibility states, and current-versus-planned behavior
 - [Path-mapping visualizer](https://reinstate.dev/tools/path-mapping-visualizer): Fixed synthetic macOS-to-Windows and Windows-to-macOS path-mapping examples for Claude Code and Codex
+- [Research and evidence](https://reinstate.dev/research): Compatibility evidence and format research
 - [Encrypted snapshot format v1](https://reinstate.dev/research/encrypted-snapshot-format-v1): Current internal manifest, metadata, TAR payload, encryption, and validation contract; not an interoperability standard
 - [Agent-version history](https://reinstate.dev/compatibility/agent-version-history): Current tested ranges and tagged release evidence for Claude Code and Codex compatibility
 
@@ -52,6 +105,7 @@
 - [GitHub repository](https://github.com/HarjjotSinghh/reinstate)
 - [Source tags](https://github.com/HarjjotSinghh/reinstate/tags): Published release-candidate source tags
 - [Security policy](https://github.com/HarjjotSinghh/reinstate/security/policy)
+- [Sitemap](https://reinstate.dev/sitemap-index.xml)
 - [All-updates RSS feed](https://reinstate.dev/rss.xml)
 - [Blog RSS feed](https://reinstate.dev/blog/rss.xml)
 - [Changelog RSS feed](https://reinstate.dev/changelog/rss.xml)

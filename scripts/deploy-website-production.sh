@@ -165,6 +165,7 @@ echo "CLI installer release: $cli_version"
   npm run build
   npm run check:seo
   npm run check:links
+  npm run check:agent-surface
   npm run check:performance
   npm run check:freshness
   npm run check:indexnow

@@ -1,20 +1,11 @@
 import type { APIRoute } from 'astro';
 import { validateEmail } from '../../lib/email';
 import { storeWaitlistEmail } from '../../lib/waitlist-store';
+import { apiError, apiJson, methodNotAllowed } from '../../lib/api-errors';
 
 export const prerender = false;
 
-const corsHeaders = {
-  'Content-Type': 'application/json',
-  'Cache-Control': 'no-store',
-};
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: corsHeaders,
-  });
-}
+export const WAITLIST_METHODS = ['GET', 'POST'] as const;
 
 /** Optional Resend notify — never required for success. */
 async function maybeNotifyResend(email: string): Promise<void> {
@@ -46,7 +37,12 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     payload = await request.json();
   } catch {
-    return json({ ok: false, error: 'Expected JSON body with an email field.' }, 400);
+    return apiError(
+      400,
+      'invalid_json',
+      'Expected JSON body with an email field.',
+      'Send Content-Type: application/json with a body like {"email":"you@example.com"}.',
+    );
   }
 
   const emailRaw =
@@ -56,7 +52,12 @@ export const POST: APIRoute = async ({ request }) => {
 
   const validated = validateEmail(emailRaw);
   if (!validated.ok) {
-    return json({ ok: false, error: validated.error }, 400);
+    return apiError(
+      400,
+      'invalid_email',
+      validated.error,
+      'Provide one deliverable address in the email field; it is trimmed and lower-cased before storage.',
+    );
   }
 
   try {
@@ -64,7 +65,7 @@ export const POST: APIRoute = async ({ request }) => {
     if (result.status === 'created') {
       void maybeNotifyResend(validated.email);
     }
-    return json({
+    return apiJson({
       ok: true,
       status: result.status,
       email: result.email,
@@ -76,21 +77,23 @@ export const POST: APIRoute = async ({ request }) => {
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Could not save email.';
     console.error('[waitlist]', message);
-    return json(
-      {
-        ok: false,
-        error:
-          'Waitlist storage is temporarily unavailable. Try again or star the GitHub repo.',
-      },
+    return apiError(
       503,
+      'storage_unavailable',
+      'Waitlist storage is temporarily unavailable. Try again or star the GitHub repo.',
+      'Retry after the Retry-After delay; the request is idempotent, so resubmitting the same address is safe.',
+      { headers: { 'Retry-After': '60' } },
     );
   }
 };
 
-export const GET: APIRoute = async () => {
-  return json({
+export const GET: APIRoute = async () =>
+  apiJson({
     ok: true,
     service: 'reinstate-waitlist',
     accepts: 'POST { "email": "you@example.com" }',
   });
-};
+
+/** Any other method gets a JSON 405 with an Allow header instead of the HTML 404 shell. */
+export const ALL: APIRoute = ({ request, url }) =>
+  methodNotAllowed(request.method, WAITLIST_METHODS, url.pathname);
