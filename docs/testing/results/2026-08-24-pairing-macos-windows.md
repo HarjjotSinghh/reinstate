@@ -301,3 +301,25 @@ scheduled tasks `hop8-*` were deleted. Both machines' OS keyrings still
 hold the lab account's device token and device key (entries named
 `reinstate` / `reinstate/cedb5b42-…/device/…`); they refer to a control
 plane that no longer exists and can be removed by hand.
+
+## 8. Addendum: expiry-at-prompt fix (review follow-up, ebe0e21)
+
+Review found that an approval whose request expired while the code prompt
+was open left the joining device's wrap in the keyring, so the joiner's
+retry restored a local enrolment with no approval behind it. The fix
+(refuse before any write when the listed expiry has passed; roll the
+appended wrap back when the relay then refuses) was verified at the CLI
+seam, not re-run physically: the journey now expires a request while A's
+prompt is open and asserts the keyring stays at two devices and that C's
+retry is a fresh request. The bench re-ran the same journey on the fixed
+commit:
+
+```
+PS D:\Projects\reinstate> git log --oneline -1
+ebe0e210 fix(hop): refuse or roll back an approval whose pairing request expired
+PS D:\Projects\reinstate> go test ./internal/cli/ -run "TestPairingJourney|TestLockerJourney|TestAccountJourney" -count=1
+ok  	github.com/HarjjotSinghh/reinstate/internal/cli	4.100s
+PS D:\Projects\reinstate> go test ./internal/keyring/ ./internal/hop/ -count=1
+ok  	github.com/HarjjotSinghh/reinstate/internal/keyring	0.634s
+ok  	github.com/HarjjotSinghh/reinstate/internal/hop	0.830s
+```
