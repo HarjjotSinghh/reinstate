@@ -9,14 +9,15 @@ Windows leg.
 ## Verdict
 
 - **Windows journey:** `PENDING` — not yet collected on a native Windows host.
-- **Tier claim:** OpenCode's T5 is **code-complete and macOS-verified**; the
-  native Windows physical run is outstanding. Treat it as pending confirmation
-  on this platform, the same standing Grok Build carries for its own outstanding
-  legs.
+- **Tier claim:** none. OpenCode's encrypted-sync adapter is code-complete and
+  macOS-verified, but the catalog keeps OpenCode at **T4** and does not wire the
+  adapter until this leg is recorded as `PASS`. The T5 gate requires both
+  platforms; half of it is not a tier.
 
-This report exists so the claim and its evidence can be compared directly, and
-so the gap is stated rather than implied. It will be replaced with a `PASS`
-record once the round-trip is run on a native Windows x64 device.
+This report exists so the gap is stated rather than implied. It will be
+replaced with a `PASS` record once the round-trip is run on a native Windows
+x64 device; that is the change that flips the descriptor to T5 and wires
+`NewSyncAdapter`.
 
 ## 1. What is already established for Windows path shapes
 

@@ -3,8 +3,6 @@ package catalog
 import (
 	"regexp"
 
-	"github.com/HarjjotSinghh/reinstate/internal/adapter"
-	opencodeadapter "github.com/HarjjotSinghh/reinstate/internal/adapter/opencode"
 	"github.com/HarjjotSinghh/reinstate/internal/agents"
 	opencodesrc "github.com/HarjjotSinghh/reinstate/internal/agents/sources/opencode"
 	"github.com/HarjjotSinghh/reinstate/internal/handoff"
@@ -19,14 +17,23 @@ func init() { agents.MustRegister(OpenCode()) }
 // number from being read out of some other vendor's sentence.
 var opencodeVersionPattern = regexp.MustCompile(`^((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))$`)
 
-// OpenCode is the shipped OpenCode descriptor (T5, F3).
+// OpenCode is the shipped OpenCode descriptor (T4, F3).
+//
+// The encrypted-sync adapter (internal/adapter/opencode) is complete and its
+// macOS T5 journey is recorded, but T5 is advertised only once the physical
+// round-trip is recorded on both platforms. The native Windows leg is still
+// pending (docs/testing/results/2026-08-23-windows-opencode-t5.md), so the
+// descriptor stays at T4 and NewSyncAdapter is deliberately absent: the tier
+// contract requires capabilities and tier to agree exactly, and an
+// unevidenced rung is not shipped. Wire the adapter here when that report
+// lands as PASS.
 func OpenCode() agents.Descriptor {
 	return agents.Descriptor{
 		Key:         sessionindex.AgentOpenCode,
 		DisplayName: "OpenCode",
 		Vendor:      "anomalyco",
 		DocsURL:     "https://opencode.ai",
-		Tier:        agents.TierSync,
+		Tier:        agents.TierHandoffTo,
 		Family:      agents.FamilyEmbeddedDB,
 		Storage: agents.StorageSpec{
 			// OpenCode reads $XDG_DATA_HOME/opencode, so the variable names the
@@ -105,13 +112,6 @@ func OpenCode() agents.Descriptor {
 			reader.DataRoot = env.FixtureRoot
 			reader.Getenv = env.LookupEnv
 			return reader, nil
-		},
-		NewSyncAdapter: func(env agents.Env) (adapter.Adapter, error) {
-			// Root is left empty so the adapter resolves the store itself:
-			// XDG_DATA_HOME names the parent, and the store lives in its
-			// "opencode" child. Passing the raw env value as Root would drop
-			// that suffix and look for opencode.db one directory too high.
-			return &opencodeadapter.Adapter{Home: env.Home}, nil
 		},
 	}
 }

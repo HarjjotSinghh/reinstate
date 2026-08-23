@@ -46,7 +46,7 @@ Requires `rein init` and a passphrase on each device.
 | `rein list` | Compatibility listing used by sync scripts. Prefer `rein sessions` for local work. |
 | `rein status` | Compare local sessions with the remote manifest. |
 | `rein diff` | Show divergence before a transfer. |
-| `rein push` | Encrypt and upload selected Claude, Codex, and OpenCode sessions. |
+| `rein push` | Encrypt and upload selected Claude/Codex sessions. |
 | `rein pull` | Download, decrypt, and restore with backups. |
 | `rein conflicts list\|show\|resolve` | Inspect and resolve sync conflicts. |
 

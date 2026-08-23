@@ -12,7 +12,6 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/adapter"
 	"github.com/HarjjotSinghh/reinstate/internal/adapter/claude"
 	"github.com/HarjjotSinghh/reinstate/internal/adapter/codex"
-	"github.com/HarjjotSinghh/reinstate/internal/adapter/opencode"
 	"github.com/HarjjotSinghh/reinstate/internal/config"
 	"github.com/HarjjotSinghh/reinstate/internal/credentials"
 	"github.com/HarjjotSinghh/reinstate/internal/device"
@@ -94,7 +93,7 @@ func Run(ctx context.Context, opts Options) (*Report, error) {
 	}
 
 	// Adapter compatibility probes inspect only roots/layout markers.
-	adapters := []adapter.Adapter{&claude.Adapter{}, &codex.Adapter{}, &opencode.Adapter{}}
+	adapters := []adapter.Adapter{&claude.Adapter{}, &codex.Adapter{}}
 	for _, selected := range adapters {
 		install, compatibility, err := selected.Detect(ctx)
 		name := selected.Name()

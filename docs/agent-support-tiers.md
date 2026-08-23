@@ -173,14 +173,16 @@ plus:
 6. A cross-device physical journey: push on one OS, pull on the other, resume
    natively, in a Phase 5 device report.
 
-**Hop launch set.** Claude Code, Codex CLI, and OpenCode are the synced agents.
-OpenCode is the first embedded-store agent at this rung: its sessions live in one
-SQLite database rather than a file per session, so the synced unit is a portable
-document extracted from the `session`, `project`, `message` and `part` tables
-(never the credential or account tables), and restore writes it back into the
-vendor's own store. OpenCode's macOS T5 journey is recorded; its native Windows
-physical journey is still outstanding — treat it as pending confirmation on
-Windows, not as evidenced there the way Claude Code and Codex CLI are.
+Claude Code and Codex CLI are the synced agents. OpenCode is the next
+candidate for this rung and would be the first embedded-store agent to reach it:
+its sessions live in one SQLite database rather than a file per session, so the
+synced unit is a portable document extracted from the `session`, `project`,
+`message` and `part` tables (never the credential or account tables), and
+restore writes it back into the vendor's own store. The adapter
+(`internal/adapter/opencode`) is complete and its macOS journey is recorded,
+but the tier is **not** advertised until the native Windows journey is also
+recorded — item 6 above requires both platforms, and the catalog stays at T4
+until the Windows report lands as `PASS`.
 
 ---
 
@@ -199,7 +201,7 @@ stays where it is, and that outcome is a successful result, not a failed task.
 | Codex CLI | OpenAI | F1 | **T5** | T5 |
 | Gemini CLI | Google | F1 | **T2** | T3 |
 | Antigravity CLI | Google | F1 (expected) | — | T0 (`layout_unverified`) |
-| OpenCode | anomalyco | F3 | **T5** | T5 |
+| OpenCode | anomalyco | F3 | **T4** | T5 |
 | Grok Build | xAI | F1 | **T4** | T4 |
 | Kimi Code CLI | Moonshot AI | F1 | **T2** | T3 |
 | Pi | earendil-works | F1 | **T1** | T3 |
@@ -290,8 +292,7 @@ Correct:
 > Reinstate indexes Kimi Code CLI sessions and can hand off from them. Native
 > resume for Kimi is not yet verified.
 
-> Encrypted sync covers Claude Code and Codex CLI, and OpenCode on macOS with
-> its native Windows journey still pending.
+> Encrypted sync covers Claude Code and Codex CLI.
 
 Incorrect, and blocked by the website contract tests in
 `website/src/lib/comparison-pages.test.ts`:

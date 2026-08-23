@@ -57,9 +57,12 @@ Device journey:
 [../testing/results/2026-08-22-macos-opencode-t3-journey.md](../testing/results/2026-08-22-macos-opencode-t3-journey.md)
 (macOS only; native Windows pending).
 
-## Encrypted sync (T5)
+## Encrypted sync (T5 candidate — not yet advertised)
 
-The sync adapter is `internal/adapter/opencode`. Because OpenCode keeps every
+The sync adapter is `internal/adapter/opencode`. It is complete and tested, but
+the catalog keeps OpenCode at T4 and does not wire the adapter until the native
+Windows journey is recorded alongside the macOS one below; `rein push`/`pull`
+do not offer OpenCode until then. Because OpenCode keeps every
 session in one embedded SQLite database, the synced unit is a portable,
 deterministic JSON document extracted from four tables — `session`, `project`,
 `message`, `part` — with every absolute path normalised to a `${HOME}` /
@@ -72,12 +75,14 @@ round-trip test fails if a credential value appears in an export.
 | `Detect` | A regular `opencode.db` under the resolved root is supported; absence is `NOT_INSTALLED`. |
 | `Discover` | Reads `session` rows via `internal/vendorsqlite` (so un-checkpointed WAL rows are visible); each session's `RelativePath` is the virtual `sessions/<id>.json`. |
 | `Export` | Extracts one session to the portable document, path-tokenised, as a single tar entry. |
-| `Restore` | Writes the document back into the destination's own `opencode.db` through a checkpointed working copy, fingerprint-guarded and backed up, then atomically renamed; stale `-wal`/`-shm` sidecars are removed so the vendor reopens the merged database. |
+| `Restore` | Writes the document back into the destination's own `opencode.db` through a checkpointed working copy staged in a hidden directory beside the store (same volume, so the final rename cannot fail across filesystems), fingerprint-guarded and backed up, then atomically renamed; stale `-wal`/`-shm` sidecars are removed so the vendor reopens the merged database. |
 | revision | `SessionRevision` is the digest of the normalised document — device-independent, so the sync engine detects a genuine edit rather than every session appearing changed whenever the shared file changes. |
 
 Because sessions do not each own a file, the adapter implements
 `adapter.SessionRevisioner`; the CLI uses it for change detection instead of
-hashing the shared database file.
+hashing the shared database file. Paths carrying no `${HOME}`/`${REPO:…}`
+token (outside every known root) are restored verbatim rather than having
+their separators rewritten.
 
 Restore refuses a destination whose `opencode.db` has not been initialised by
 the vendor — it writes sessions into the vendor's store but never invents its

@@ -28,7 +28,7 @@ The Phase 2 local capability matrix is:
 | Claude Code | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64 | T5 |
 | OpenAI Codex CLI | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64 | T5 |
 | Gemini CLI | Read-only included | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac | T2 |
-| OpenCode | Included | Same-vendor included | Resume and destination journeys recorded on both platforms; encrypted-sync (T5) journey recorded on macOS, native Windows pending | T5 |
+| OpenCode | Read-only included | Same-vendor included | Resume journeys recorded on macOS and native Windows; destination journeys recorded on both, with the executed launch collected on macOS only | T4 |
 | Cursor CLI | Indexed (read-only) | Not implemented | Dual-platform probes committed; indexed from `meta.json`; no device journey for resume | T1 |
 | Grok Build | Read-only included | Same-vendor included | Resume and handoff-destination journeys recorded on macOS and native Windows | T4 |
 | Amp | Not readable locally (`server_backed`) | Not implemented | Not applicable | T0 |
@@ -103,7 +103,7 @@ it is not an enforced protocol.
 - Treating native Windows and WSL as the same Reinstate device
 - Automatic sharing of one agent-state directory between Windows and WSL
 - Untested agent layouts during restore without an explicit override
-- Mutation/sync for Gemini CLI in Phase 2
+- Mutation/sync for Gemini CLI and OpenCode in Phase 2
 - Other coding agents without an explicit local source contract
 
 ## Phase 1 sync compatibility states

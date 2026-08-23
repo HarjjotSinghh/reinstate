@@ -32,6 +32,11 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/tui/wizard"
 )
 
+// extraSyncAdapters lets a test register a sync adapter the shipped catalog
+// does not yet advertise, so an adapter can be exercised through the real CLI
+// before its tier is flipped. It is nil in production.
+var extraSyncAdapters func() []adapter.Adapter
+
 func defaultRegistry() *adapter.Registry {
 	userHome, _ := os.UserHomeDir()
 	projects := map[string]string{}
@@ -57,6 +62,12 @@ func defaultRegistry() *adapter.Registry {
 		}
 		assignAdapterProjects(instance, projects)
 		_ = r.Register(instance)
+	}
+	if extraSyncAdapters != nil {
+		for _, instance := range extraSyncAdapters() {
+			assignAdapterProjects(instance, projects)
+			_ = r.Register(instance)
+		}
 	}
 	return r
 }
