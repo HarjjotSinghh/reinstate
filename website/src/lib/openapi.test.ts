@@ -35,7 +35,7 @@ const IMPLEMENTATIONS: Record<string, string[]> = {
   '/api/waitlist': ['src/pages/api/waitlist.ts'],
   '/api/{path}': ['src/pages/api/[...path].ts'],
   '/compatibility.json': ['src/pages/compatibility.json.ts'],
-  '/{page}': ['src/pages/agent-surface/markdown.ts', 'src/middleware.ts'],
+  '/{page}': ['src/lib/agent-surface/function.ts', 'src/middleware.ts'],
   '/{page}.md': ['src/lib/agent-surface/build.ts'],
   '/llms.txt': ['public/llms.txt'],
   '/llms-full.txt': ['src/lib/agent-surface/build.ts'],

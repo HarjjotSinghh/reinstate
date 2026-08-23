@@ -1,8 +1,8 @@
 /**
  * Astro integration that turns the finished static build into an
  * agent-readable surface: Markdown twins for every page, `llms-full.txt`,
- * and the Vercel routes that make `Accept: text/markdown` work on the
- * canonical URLs. Runs after the Vercel adapter's own `astro:build:done`
+ * the Vercel routes that make `Accept: text/markdown` work on the canonical
+ * URLs, and the dedicated Vercel function those routes target. Runs after the Vercel adapter's own `astro:build:done`
  * (Astro registers the adapter first), so the Build Output folder already
  * exists when this hook fires.
  */
@@ -41,11 +41,13 @@ export default function agentSurface(options: AgentSurfaceOptions = {}): AstroIn
           productName: options.productName,
           mirrorDirs: [join(vercelOutput, 'static')],
           vercelConfigPath: join(vercelOutput, 'config.json'),
+          vercelFunctionsDir: join(vercelOutput, 'functions'),
+          agentFunctionEntry: join(root, 'src', 'lib', 'agent-surface', 'function.ts'),
         });
         logger.info(
           `${result.twins.length} Markdown twins, llms-full.txt (${Math.round(result.llmsFullBytes / 1024)} KiB)${
             result.vercelRoutesInjected ? ', Vercel agent routes injected' : ''
-          }${result.skipped.length ? `; skipped ${result.skipped.join(', ')}` : ''}`,
+          }${result.agentFunction ? `, agent function bundled (${Math.round(result.agentFunction.bytes / 1024)} KiB, ${result.agentFunction.runtime})` : ''}${result.skipped.length ? `; skipped ${result.skipped.join(', ')}` : ''}`,
         );
       },
     },

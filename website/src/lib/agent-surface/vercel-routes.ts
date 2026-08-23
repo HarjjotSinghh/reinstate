@@ -10,19 +10,31 @@
  * (redirects and headers first, then the filesystem handle, then rewrites),
  * so both files keep their jobs: headers live in `vercel.json`, phase-sensitive
  * rewrites live here.
+ *
+ * Both routes target the dedicated `agent-surface` function that `bundle.ts`
+ * writes next to Astro's `_render` function. Vercel always invokes a function
+ * with the original request path, and Astro's router refuses prerendered
+ * static routes at request time, so agent traffic must bypass Astro entirely.
+ * Routes carry only schema-standard keys: Vercel rejects unknown properties
+ * (`invalid_routes`) when it merges `vercel.json`.
  */
-import { AGENT_MARKDOWN_ENDPOINT, AGENT_NOT_FOUND_ENDPOINT } from './paths';
+import { AGENT_FUNCTION } from './bundle';
 
 /**
  * Clean page paths only: no dots (assets, feeds, JSON, Markdown twins) and no
- * runtime namespace (`/api/`, `/agent-surface/`, Astro internals, social cards).
+ * runtime namespace (`/api/`, Astro internals, social cards).
  * Keep in sync with {@link isPagePath} in `paths.ts`.
  */
-export const PAGE_PATH_SOURCE =
-  '^(/(?!api(?:/|$)|agent-surface(?:/|$)|_astro/|_image|_server-islands|og/)[^.]*)$';
+export const PAGE_PATH_SOURCE = '^(/(?!api(?:/|$)|_astro/|_image|_server-islands|og/)[^.]*)$';
 
 export const ACCEPT_MARKDOWN_PATTERN = '.*text/markdown.*';
 export const ACCEPT_HTML_PATTERN = '.*text/html.*';
+
+/** Keys Vercel accepts on a Build Output route. */
+export const STANDARD_ROUTE_KEYS = new Set([
+  'src', 'dest', 'handle', 'status', 'methods', 'check', 'continue', 'headers', 'has', 'missing',
+  'locale', 'caseSensitive', 'important', 'override', 'middlewarePath', 'middlewareRawSrc', 'transforms', 'mitigate',
+]);
 
 export interface VercelRoute {
   src?: string;
@@ -44,29 +56,33 @@ export interface VercelOutputConfig {
   [key: string]: unknown;
 }
 
-export const AGENT_ROUTE_MARKER = 'x-reinstate-agent-route';
+export type AgentRouteKind = 'markdown' | 'not-found';
 
-/** Requests that list `text/markdown` are negotiated by the markdown endpoint before static files are considered. */
+/** Identifies an injected route by its shape; no custom keys are allowed on routes. */
+export function agentRouteKind(route: VercelRoute): AgentRouteKind | null {
+  if (route.src !== PAGE_PATH_SOURCE || route.dest !== AGENT_FUNCTION) return null;
+  if (route.has?.some((condition) => condition.key === 'accept' && condition.value === ACCEPT_MARKDOWN_PATTERN)) return 'markdown';
+  if (route.missing?.some((condition) => condition.key === 'accept' && condition.value === ACCEPT_HTML_PATTERN)) return 'not-found';
+  return null;
+}
+
+/** Requests that list `text/markdown` reach the agent function before static files are considered. */
 export function markdownNegotiationRoute(): VercelRoute {
   return {
     src: PAGE_PATH_SOURCE,
     has: [{ type: 'header', key: 'accept', value: ACCEPT_MARKDOWN_PATTERN }],
     methods: ['GET', 'HEAD'],
-    dest: `${AGENT_MARKDOWN_ENDPOINT}?path=$1`,
-    check: true,
-    [AGENT_ROUTE_MARKER]: 'markdown',
+    dest: AGENT_FUNCTION,
   };
 }
 
-/** Unmatched page paths from clients that do not ask for HTML get a Markdown 404 instead of the HTML shell. */
+/** Unmatched page paths from clients that do not ask for HTML get the Markdown 404 instead of the HTML shell. */
 export function markdownNotFoundRoute(): VercelRoute {
   return {
     src: PAGE_PATH_SOURCE,
     missing: [{ type: 'header', key: 'accept', value: ACCEPT_HTML_PATTERN }],
     methods: ['GET', 'HEAD'],
-    dest: `${AGENT_NOT_FOUND_ENDPOINT}?path=$1`,
-    check: true,
-    [AGENT_ROUTE_MARKER]: 'not-found',
+    dest: AGENT_FUNCTION,
   };
 }
 
@@ -79,46 +95,28 @@ function isFilesystemHandle(route: VercelRoute): boolean {
  * injected routes are replaced, so re-running a build never duplicates them.
  */
 export function injectAgentRoutes(config: VercelOutputConfig): VercelOutputConfig {
-  const routes = (config.routes ?? []).filter((route) => !(AGENT_ROUTE_MARKER in route));
+  const routes = (config.routes ?? []).filter((route) => agentRouteKind(route) === null);
   const filesystemIndex = routes.findIndex(isFilesystemHandle);
 
   if (filesystemIndex === -1) {
-    return {
-      ...config,
-      routes: [
-        markdownNegotiationRoute(),
-        { handle: 'filesystem' },
-        markdownNotFoundRoute(),
-        ...routes,
-      ],
-    };
+    return { ...config, routes: [markdownNegotiationRoute(), { handle: 'filesystem' }, markdownNotFoundRoute(), ...routes] };
   }
 
   const before = routes.slice(0, filesystemIndex);
   const after = routes.slice(filesystemIndex + 1);
   return {
     ...config,
-    routes: [
-      ...before,
-      markdownNegotiationRoute(),
-      { handle: 'filesystem' },
-      markdownNotFoundRoute(),
-      ...after,
-    ],
+    routes: [...before, markdownNegotiationRoute(), { handle: 'filesystem' }, markdownNotFoundRoute(), ...after],
   };
 }
 
-/** Validates an output config: both routes present, in the right phases, exactly once. */
+/** Validates an output config: both routes present, in the right phases, exactly once, standard keys only. */
 export function verifyAgentRoutes(config: VercelOutputConfig): string[] {
   const errors: string[] = [];
   const routes = config.routes ?? [];
   const filesystemIndex = routes.findIndex(isFilesystemHandle);
-  const markdownIndexes = routes
-    .map((route, index) => (route[AGENT_ROUTE_MARKER] === 'markdown' ? index : -1))
-    .filter((index) => index !== -1);
-  const notFoundIndexes = routes
-    .map((route, index) => (route[AGENT_ROUTE_MARKER] === 'not-found' ? index : -1))
-    .filter((index) => index !== -1);
+  const markdownIndexes = routes.map((route, index) => (agentRouteKind(route) === 'markdown' ? index : -1)).filter((i) => i !== -1);
+  const notFoundIndexes = routes.map((route, index) => (agentRouteKind(route) === 'not-found' ? index : -1)).filter((i) => i !== -1);
   const catchAllIndex = routes.findIndex(
     (route) => route.status === 404 && typeof route.src === 'string' && /^\^?\/\.\*\$?$/.test(route.src),
   );
@@ -137,6 +135,11 @@ export function verifyAgentRoutes(config: VercelOutputConfig): string[] {
     }
     if (catchAllIndex !== -1 && notFoundIndexes[0]! > catchAllIndex) {
       errors.push('config.json: markdown not-found route must precede the 404 catch-all');
+    }
+  }
+  for (const route of routes) {
+    for (const key of Object.keys(route)) {
+      if (!STANDARD_ROUTE_KEYS.has(key)) errors.push(`config.json: route ${route.src ?? route.handle} has non-standard key "${key}"`);
     }
   }
   return errors;

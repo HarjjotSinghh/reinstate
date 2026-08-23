@@ -42,11 +42,10 @@ const OPENAPI = {
 const CONFIG = {
   version: 3,
   routes: [
-    { src: '^(/[^.]*)$', has: [{ type: 'header', key: 'accept', value: '.*text/markdown.*' }], dest: '/agent-surface/markdown?path=$1', check: true, 'x-reinstate-agent-route': 'markdown' },
+    { src: '^(/[^.]*)$', has: [{ type: 'header', key: 'accept', value: '.*text/markdown.*' }], methods: ['GET', 'HEAD'], dest: 'agent-surface' },
     { handle: 'filesystem' },
-    { src: '^(/[^.]*)$', missing: [{ type: 'header', key: 'accept', value: '.*text/html.*' }], dest: '/agent-surface/not-found?path=$1', check: true, 'x-reinstate-agent-route': 'not-found' },
-    { src: '^/agent-surface/markdown/?$', dest: '_render' },
-    { src: '^/agent-surface/not-found/?$', dest: '_render' },
+    { src: '^(/[^.]*)$', missing: [{ type: 'header', key: 'accept', value: '.*text/html.*' }], methods: ['GET', 'HEAD'], dest: 'agent-surface' },
+    { src: '^/api/(.*?)/?$', dest: '_render' },
     { src: '^/.*$', dest: '/404.html', status: 404 },
   ],
 };
@@ -54,7 +53,7 @@ const CONFIG = {
 const html = (title) => `<!doctype html><html><head><title>${title}</title></head><body><main><h1>${title}</h1></main></body></html>`;
 const twin = (path) => `# Page\n\nBody.\n\n---\n\nSource: https://reinstate.dev${path}\n`;
 
-async function fixture({ withTwins = true, withVercel = true, llms = LLMS, openapi = OPENAPI, config = CONFIG } = {}) {
+async function fixture({ withTwins = true, withVercel = true, withFunction = true, llms = LLMS, openapi = OPENAPI, config = CONFIG } = {}) {
   const root = await mkdtemp(join(tmpdir(), 'rein-check-agent-'));
   const build = join(root, 'dist', 'client');
   const pages = ['/', '/docs/getting-started', '/docs/cli-reference', '/developers', '/integrations/codex'];
@@ -70,7 +69,7 @@ async function fixture({ withTwins = true, withVercel = true, llms = LLMS, opena
   await writeFile(join(build, 'openapi.json'), JSON.stringify(openapi));
   await writeFile(join(build, 'agent-instructions.md'), '# Agents\n\n## When to use Reinstate\n\n## When not to use Reinstate\n\n## How to call it\n');
   await writeFile(join(build, 'compatibility.json'), JSON.stringify({ agents: [{ id: 'codex', integrationPath: '/integrations/codex', tier: 'T5' }] }));
-  await writeFile(join(build, 'robots.txt'), 'User-agent: *\nDisallow: /api/\nDisallow: /agent-surface/\n');
+  await writeFile(join(build, 'robots.txt'), 'User-agent: *\nDisallow: /api/\n');
   await writeFile(
     join(root, 'vercel.json'),
     JSON.stringify({
@@ -89,6 +88,13 @@ async function fixture({ withTwins = true, withVercel = true, llms = LLMS, opena
       if (withTwins) await writeFile(file, twin(page));
     }
     await writeFile(join(vercel, 'config.json'), JSON.stringify(config));
+    await mkdir(join(vercel, 'functions', '_render.func'), { recursive: true });
+    await writeFile(join(vercel, 'functions', '_render.func', '.vc-config.json'), '{}');
+    if (withFunction) {
+      await mkdir(join(vercel, 'functions', 'agent-surface.func'), { recursive: true });
+      await writeFile(join(vercel, 'functions', 'agent-surface.func', '.vc-config.json'), '{}');
+      await writeFile(join(vercel, 'functions', 'agent-surface.func', 'index.mjs'), 'export default () => {};\n');
+    }
   }
   return root;
 }
@@ -132,13 +138,34 @@ test('missing twins, routes, and llms.txt guidance are reported with fixes', asy
 });
 
 test('misordered Vercel routes and unknown llms.txt targets fail', async () => {
-  const misordered = { ...CONFIG, routes: [CONFIG.routes[1], CONFIG.routes[0], CONFIG.routes[3], CONFIG.routes[4], CONFIG.routes[2], CONFIG.routes[5]] };
+  const misordered = { ...CONFIG, routes: [CONFIG.routes[1], CONFIG.routes[0], CONFIG.routes[3], CONFIG.routes[4], CONFIG.routes[2]] };
   const root = await fixture({ config: misordered, llms: `${LLMS}- [Ghost](https://reinstate.dev/ghost): missing\n` });
   try {
     const result = await checkAgentSurface({ root });
     assert.ok(result.errors.some((error) => error.includes('must precede the filesystem handle')));
-    assert.ok(result.errors.some((error) => error.includes('must precede the /agent-surface/* function routes')));
+    assert.ok(result.errors.some((error) => error.includes('must precede the 404 catch-all')));
     assert.ok(result.errors.some((error) => error.includes('link target /ghost is not in the build output')));
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('a missing agent function fails', async () => {
+  const root = await fixture({ withFunction: false });
+  try {
+    const result = await checkAgentSurface({ root });
+    assert.ok(result.errors.some((error) => error.includes('agent-surface.func/index.mjs: missing')));
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('non-standard route keys fail', async () => {
+  const tagged = { ...CONFIG, routes: CONFIG.routes.map((route, index) => (index === 0 ? { ...route, 'x-reinstate-agent-route': 'markdown' } : route)) };
+  const root = await fixture({ config: tagged });
+  try {
+    const result = await checkAgentSurface({ root });
+    assert.ok(result.errors.some((error) => error.includes('non-standard key "x-reinstate-agent-route"')));
   } finally {
     await rm(root, { recursive: true, force: true });
   }

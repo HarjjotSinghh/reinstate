@@ -1,7 +1,6 @@
 User-agent: *
 Allow: /
 Disallow: /api/
-Disallow: /agent-surface/
 Disallow: /preview/
 Disallow: /drafts/
 

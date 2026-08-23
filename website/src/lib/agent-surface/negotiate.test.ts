@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { negotiatePage, notFoundPage, type Fetcher } from './negotiate';
+import { SELF_FETCH_HEADER, negotiatePage, type Fetcher } from './negotiate';
 
 const ORIGIN = 'https://reinstate.dev';
 
@@ -25,7 +25,7 @@ const files = {
 };
 
 function request(path: string, accept?: string, method = 'GET'): Request {
-  return new Request(`${ORIGIN}/agent-surface/markdown?path=${encodeURIComponent(path)}`, {
+  return new Request(`${ORIGIN}${path}`, {
     method,
     headers: accept === undefined ? {} : { accept },
   });
@@ -49,6 +49,32 @@ describe('negotiatePage', () => {
     expect(response.headers.get('ETag')).toBe('"abc"');
     expect(await response.text()).toBe('# FAQ\n\nAnswers.\n');
     expect(calls).toEqual([{ url: `${ORIGIN}/docs/faq.md`, accept: 'text/markdown' }]);
+  });
+
+  it('marks self-requests and never answers one with another self-request', async () => {
+    const { fetcher, calls } = fakeFetcher(files);
+    const capture: Fetcher = async (url, init) => {
+      expect(new Headers(init?.headers).get(SELF_FETCH_HEADER)).toBe('1');
+      return fetcher(url, init);
+    };
+    await negotiatePage({ request: request('/docs/faq', 'text/markdown'), origin: ORIGIN, path: '/docs/faq', fetcher: capture });
+    expect(calls).toHaveLength(1);
+
+    const self = new Request(`${ORIGIN}/docs/nope`, { headers: { accept: 'text/html', [SELF_FETCH_HEADER]: '1' } });
+    const response = await negotiatePage({ request: self, origin: ORIGIN, path: '/docs/nope', fetcher });
+    expect(response.status).toBe(404);
+    expect(response.headers.get('Content-Type')).toBe('text/plain; charset=utf-8');
+    expect(calls).toHaveLength(1);
+  });
+
+  it('serves the static 404.html to browsers in production without rewriting', async () => {
+    const { fetcher, calls } = fakeFetcher({ ...files, [`${ORIGIN}/404.html`]: { status: 200, body: '<h1>Not found</h1>', type: 'text/html; charset=utf-8' } });
+    const response = await negotiatePage({ request: request('/docs/nope', 'text/html,*/*;q=0.8'), origin: ORIGIN, path: '/docs/nope', fetcher });
+    expect(response.status).toBe(404);
+    expect(response.headers.get('Content-Type')).toBe('text/html; charset=utf-8');
+    expect(response.headers.get('Vary')).toBe('Accept');
+    expect(await response.text()).toContain('<h1>Not found</h1>');
+    expect(calls.map((call) => call.url)).toEqual([`${ORIGIN}/docs/nope`, `${ORIGIN}/404.html`]);
   });
 
   it('maps the homepage to /index.md', async () => {
@@ -131,20 +157,5 @@ describe('negotiatePage', () => {
     expect(response.status).toBe(503);
     expect(response.headers.get('Retry-After')).toBe('30');
     expect(await response.text()).toContain('ECONNRESET');
-  });
-});
-
-describe('notFoundPage', () => {
-  it('always returns the Markdown 404', async () => {
-    const response = notFoundPage({ request: new Request(`${ORIGIN}/agent-surface/not-found?path=/nope`), path: '/nope' });
-    expect(response.status).toBe(404);
-    expect(response.headers.get('Content-Type')).toBe('text/markdown; charset=utf-8');
-    expect(await response.text()).toContain('/nope');
-  });
-
-  it('strips bodies for HEAD', async () => {
-    const response = notFoundPage({ request: new Request(`${ORIGIN}/agent-surface/not-found?path=/nope`, { method: 'HEAD' }), path: '/nope' });
-    expect(response.status).toBe(404);
-    expect(await response.text()).toBe('');
   });
 });
