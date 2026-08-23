@@ -2,7 +2,7 @@
 // on a real TCP address, so two physical machines can share one "locker"
 // against a locally run control plane whose storage provider is a fake.
 //
-// It is a lab fixture, not a product: every bucket name is served, every
+// It is a lab fixture, not a product: every bucket name is served (each from its own in-memory store), every
 // access key id with the given prefix is accepted, and nothing is persisted.
 //
 //	go run ./scripts/testing/fakelocker -addr 0.0.0.0:9000 -accept FAKEKEY

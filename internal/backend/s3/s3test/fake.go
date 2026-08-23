@@ -39,8 +39,11 @@ type Fake struct {
 	// whatever hopd's fake provider mints).
 	AcceptPrefix string
 	// AnyBucket serves every bucket name instead of only Bucket: the first
-	// path segment is treated as the bucket whatever it is.
+	// path segment is treated as the bucket whatever it is, and each bucket
+	// gets its own store (so two accounts sharing one lab locker never see
+	// each other's keyring). Store is ignored in this mode.
 	AnyBucket bool
+	buckets   map[string]*memory.Store
 	// RejectAs is the S3 error code answered for a rejected key.
 	RejectAs string
 	// Requests is "METHOD key as AKID" per request, in order.
@@ -101,9 +104,18 @@ func (f *Fake) ServeHTTP(w http.ResponseWriter, r *http.Request) { f.handle(w, r
 
 func (f *Fake) handle(w http.ResponseWriter, r *http.Request) {
 	var path string
+	store := f.Store
+	f.Mu.Lock()
 	if f.AnyBucket {
-		_, rest, _ := strings.Cut(strings.TrimPrefix(r.URL.EscapedPath(), "/"), "/")
+		bucket, rest, _ := strings.Cut(strings.TrimPrefix(r.URL.EscapedPath(), "/"), "/")
 		path = "/" + rest
+		if f.buckets == nil {
+			f.buckets = map[string]*memory.Store{}
+		}
+		if store = f.buckets[bucket]; store == nil {
+			store = memory.New()
+			f.buckets[bucket] = store
+		}
 	} else {
 		path = strings.TrimPrefix(r.URL.EscapedPath(), "/"+f.Bucket)
 	}
@@ -112,7 +124,6 @@ func (f *Fake) handle(w http.ResponseWriter, r *http.Request) {
 	if m := credentialRe.FindStringSubmatch(r.Header.Get("Authorization")); m != nil {
 		akid = m[1]
 	}
-	f.Mu.Lock()
 	f.Requests = append(f.Requests, r.Method+" "+key+" as "+akid)
 	if f.Hook != nil {
 		f.Hook(len(f.Requests))
@@ -127,7 +138,7 @@ func (f *Fake) handle(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	switch {
 	case r.Method == http.MethodGet && r.URL.Query().Get("list-type") == "2":
-		items, err := f.Store.List(ctx, r.URL.Query().Get("prefix"))
+		items, err := store.List(ctx, r.URL.Query().Get("prefix"))
 		if err != nil {
 			writeS3Error(w, 500, "InternalError", err.Error())
 			return
@@ -159,7 +170,7 @@ func (f *Fake) handle(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("If-None-Match") == "*" {
 			opts.IfNoneMatch = true
 		}
-		meta, err := f.Store.Put(ctx, key, bytes.NewReader(body), int64(len(body)), opts)
+		meta, err := store.Put(ctx, key, bytes.NewReader(body), int64(len(body)), opts)
 		switch {
 		case errors.Is(err, backend.ErrPrecondition), errors.Is(err, backend.ErrAlreadyExists):
 			writeS3Error(w, http.StatusPreconditionFailed, "PreconditionFailed", "At least one of the pre-conditions you specified did not hold")
@@ -171,7 +182,7 @@ func (f *Fake) handle(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("ETag", `"`+meta.ETag+`"`)
 		w.WriteHeader(http.StatusOK)
 	case r.Method == http.MethodGet || r.Method == http.MethodHead:
-		rc, meta, err := f.Store.Get(ctx, key)
+		rc, meta, err := store.Get(ctx, key)
 		if errors.Is(err, backend.ErrNotFound) {
 			if r.Method == http.MethodHead {
 				w.WriteHeader(http.StatusNotFound)
@@ -194,7 +205,7 @@ func (f *Fake) handle(w http.ResponseWriter, r *http.Request) {
 			_, _ = w.Write(data)
 		}
 	case r.Method == http.MethodDelete:
-		if err := f.Store.Delete(ctx, key); err != nil && !errors.Is(err, backend.ErrNotFound) {
+		if err := store.Delete(ctx, key); err != nil && !errors.Is(err, backend.ErrNotFound) {
 			writeS3Error(w, 500, "InternalError", err.Error())
 			return
 		}
