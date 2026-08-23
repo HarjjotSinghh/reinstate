@@ -189,6 +189,35 @@ func TestEnrolRejectsForeignRootKeyAndDuplicates(t *testing.T) {
 	}
 }
 
+func TestUnenrolRemovesOnlyTheMatchingWrap(t *testing.T) {
+	k := loadGolden(t)
+	device, _ := age.GenerateX25519Identity()
+	other, _ := age.GenerateX25519Identity()
+	if err := k.Enrol(goldenRootKey(), "new-device", device.Recipient(), time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	before := k.DeviceCount()
+	if k.Unenrol("new-device", other.Recipient().String()) || k.DeviceCount() != before {
+		t.Fatal("removed a wrap made for a different public key")
+	}
+	if k.Unenrol("missing", device.Recipient().String()) || k.Unenrol("new-device", "") || k.DeviceCount() != before {
+		t.Fatal("removed a wrap for an unknown device or an empty key")
+	}
+	if !k.Unenrol("new-device", device.Recipient().String()) || k.DeviceCount() != before-1 || k.HasDevice("new-device") {
+		t.Fatal("did not remove the matching wrap")
+	}
+	golden, err := age.ParseX25519Identity(goldenDeviceKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := k.UnwrapForDevice(goldenDeviceID, golden); err != nil {
+		t.Fatalf("the original device's wrap was disturbed: %v", err)
+	}
+	if k.Unenrol("new-device", device.Recipient().String()) {
+		t.Fatal("removed the same wrap twice")
+	}
+}
+
 // racingBackend makes another device's enrolment land between this
 // device's load and conditional put, exactly once, so Update must observe
 // the precondition failure and re-apply on the fresh keyring.

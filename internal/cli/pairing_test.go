@@ -178,6 +178,14 @@ func (j *joinInProgress) finish(t *testing.T) (string, string, int) {
 // true, the automation path), optionally for one request id.
 func (d *pairDevice) approve(code string, fd bool, extra ...string) (string, string, int) {
 	d.t.Helper()
+	return d.approveWhilePrompting(code, fd, nil, extra...)
+}
+
+// approveWhilePrompting is approve with a hook that runs while the hidden
+// prompt is open (before the code is answered), standing in for whatever
+// happens on the other machine while the user walks over to read the code.
+func (d *pairDevice) approveWhilePrompting(code string, fd bool, atPrompt func(), extra ...string) (string, string, int) {
+	d.t.Helper()
 	d.t.Setenv("REINSTATE_HOME", d.home)
 	out, errb := &syncBuffer{}, &syncBuffer{}
 	ro := runOptions{stdout: out, stderr: errb}
@@ -187,6 +195,9 @@ func (d *pairDevice) approve(code string, fd bool, extra ...string) (string, str
 		ro.pairingPrompt = func(prompt string) ([]byte, error) {
 			if !strings.Contains(prompt, "Pairing code") {
 				return nil, errors.New("unexpected prompt " + prompt)
+			}
+			if atPrompt != nil {
+				atPrompt()
 			}
 			return []byte(code), nil
 		}
@@ -421,6 +432,69 @@ func TestPairingJourneyJoinApprovePull(t *testing.T) {
 		t.Fatalf("expired join changed the keyring: %d devices", n)
 	}
 
+	// The request expires while A's prompt is open (the user walked over
+	// to read the code): the relay refuses, and the wrap A had already
+	// appended is removed again so C's next join is a fresh request, not
+	// a silent enrolment without an approval behind it.
+	promptJoin := c.startJoin()
+	out, errb, code = a.approveWhilePrompting(promptJoin.code, false, func() {
+		plane.mu.Lock()
+		defer plane.mu.Unlock()
+		for _, p := range plane.pairings {
+			if p.status == "pending" {
+				p.expired = true
+			}
+		}
+	})
+	if code != ExitAuthStorage || !strings.Contains(errb, "expired") || !strings.Contains(errb, "was removed again") {
+		t.Fatalf("approve expiring at the prompt: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if n := a.keyringDevices(); n != 2 {
+		t.Fatalf("expiry at the prompt left a wrap behind: %d devices", n)
+	}
+	if out, errb, code := promptJoin.finish(t); code != ExitAuthStorage || !strings.Contains(errb, "expired") {
+		t.Fatalf("C join expired at the prompt: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if _, err := config.LoadAccount(c.home); !os.IsNotExist(err) {
+		t.Fatalf("join expired at the prompt wrote an account record: %v", err)
+	}
+
+	// A request listed as pending whose expiry has nonetheless passed on
+	// A's clock (skew, or a listing that sat in a pager) is refused before
+	// anything is written, and the request is left untouched.
+	staleJoin := c.startJoin()
+	plane.mu.Lock()
+	var staleID string
+	for _, p := range plane.pairings {
+		if p.status == "pending" && !p.expired {
+			staleID = p.id
+			p.expiresAt = time.Now().UTC().Add(-time.Minute)
+		}
+	}
+	plane.mu.Unlock()
+	if out, errb, code := a.approve(staleJoin.code, false); code != ExitUsage || !strings.Contains(errb, "expired at") {
+		t.Fatalf("approve past expiry: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if n := a.keyringDevices(); n != 2 {
+		t.Fatalf("refused approval changed the keyring: %d devices", n)
+	}
+	plane.mu.Lock()
+	if p := plane.pairings[staleID]; p.status != "pending" || p.payload != "" {
+		t.Fatalf("refused approval touched the request: status=%s payload=%q", p.status, p.payload)
+	}
+	plane.pairings[staleID].expired = true
+	plane.mu.Unlock()
+	if out, errb, code := staleJoin.finish(t); code != ExitAuthStorage || !strings.Contains(errb, "expired") {
+		t.Fatalf("C stale join: exit=%d out=%q err=%q", code, out, errb)
+	}
+
+	// C retries: a fresh request with a fresh code, never "already
+	// enrolled" from a wrap left behind by a failed approval.
+	joinC := c.startJoin()
+	if strings.Contains(joinC.stdout.String(), "already enrolled") || joinC.code == promptJoin.code {
+		t.Fatalf("C retry after rollback: out=%q err=%q", joinC.stdout.String(), joinC.stderr.String())
+	}
+
 	// Two requests pending at once (C retries, D is new): approving both
 	// back to back converges on one keyring holding every wrap, and each
 	// joiner verifies its own wrap before trusting anything.
@@ -431,7 +505,7 @@ func TestPairingJourneyJoinApprovePull(t *testing.T) {
 	if _, errb, code := d.run("init", "--hop", "--project", "local/locker="+filepath.Join(userHome, "Projects", "workstation-target")); code != ExitOK {
 		t.Fatalf("D init --hop: %d %q", code, errb)
 	}
-	joinC, joinD := c.startJoin(), d.startJoin()
+	joinD := d.startJoin()
 	if joinC.code == joinD.code {
 		t.Fatal("two requests drew the same code")
 	}

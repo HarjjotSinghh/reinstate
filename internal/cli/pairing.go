@@ -209,7 +209,7 @@ func verifyJoinedKeyring(ctx context.Context, store backend.Backend, key, device
 }
 
 // newDevicesCmd lists enrolled devices and approves pairing requests.
-func newDevicesCmd(o hopCommandOptions) *cobra.Command {
+func newDevicesCmd() *cobra.Command {
 	root := &cobra.Command{
 		Use:   "devices",
 		Short: "List this account's devices and approve new ones",
@@ -217,7 +217,6 @@ func newDevicesCmd(o hopCommandOptions) *cobra.Command {
 		RunE:  runDevicesList,
 	}
 	root.AddCommand(newDevicesApproveCmd())
-	_ = o
 	root.PersistentFlags().Bool("json", false, "emit machine-readable JSON")
 	return root
 }
@@ -386,6 +385,13 @@ func approvePairingRequest(ctx context.Context, cmd *cobra.Command, client *hop.
 	if err != nil {
 		return 0, NewExitError(ExitSafety, "the pairing request carries a malformed device key; nothing was approved")
 	}
+	// The request was listed while pending, but the hidden prompt can sit
+	// open for longer than the request lives. Refuse before any write
+	// rather than append a wrap the control plane will then refuse to
+	// relay; the control plane's own clock is re-checked at relay time.
+	if err := pairingStillOpen(req, time.Now()); err != nil {
+		return 0, err
+	}
 
 	home, cfg, err := loadAccountHome()
 	if err != nil {
@@ -408,7 +414,9 @@ func approvePairingRequest(ctx context.Context, cmd *cobra.Command, client *hop.
 	// enrolment re-checked; a generation rollover under our feet makes
 	// Enrol refuse (this root key no longer belongs to the current
 	// generation), so a just-revoked state can never be extended.
+	appended := false
 	updated, err := keyring.Update(ctx, store, keyring.ObjectKey(prefix), func(k *keyring.Keyring) error {
+		appended = false
 		if listed := k.DevicePublicKey(req.Device.ID); listed != "" {
 			if listed == req.PublicKey {
 				// A previous approval wrote the wrap but the relay call
@@ -417,7 +425,11 @@ func approvePairingRequest(ctx context.Context, cmd *cobra.Command, client *hop.
 			}
 			return fmt.Errorf("the keyring already lists device %s with a different key; revoke it before approving a new enrolment", req.Device.ID)
 		}
-		return k.Enrol(rootKey, req.Device.ID, recipient, time.Now().UTC())
+		if err := k.Enrol(rootKey, req.Device.ID, recipient, time.Now().UTC()); err != nil {
+			return err
+		}
+		appended = true
+		return nil
 	})
 	if err != nil {
 		return 0, NewExitError(ExitAuthStorage, err.Error())
@@ -427,9 +439,48 @@ func approvePairingRequest(ctx context.Context, cmd *cobra.Command, client *hop.
 		return 0, NewExitError(ExitRuntime, err.Error())
 	}
 	if err := client.ApprovePairing(ctx, token, req.ID, payload, updated.CurrentGeneration); err != nil {
+		// The control plane refused a request that was pending when the
+		// code was entered (it expired, or another device decided it). A
+		// wrap this call appended must not outlive the request: the
+		// joining device would otherwise find itself enrolled on its next
+		// join with no approval event behind it. Only the wrap made for
+		// this request's key is removed; a competing approval's wrap for
+		// the same device id stays.
+		if appended && (errors.Is(err, hop.ErrPairingExpired) || errors.Is(err, hop.ErrPairingDecided)) {
+			if rbErr := rollBackPairingWrap(ctx, store, prefix, req); rbErr != nil {
+				return 0, NewExitError(ExitAuthStorage, fmt.Sprintf("%v; the wrap appended for device %s could not be removed (%v): run rein devices approve again once the device retries, or revoke it", err, req.Device.ID, rbErr))
+			}
+			return 0, NewExitError(ExitAuthStorage, fmt.Sprintf("%v; the wrap appended for device %s was removed again, nothing was approved", err, req.Device.ID))
+		}
 		return 0, hopExitError(err)
 	}
 	return updated.CurrentGeneration, nil
+}
+
+// pairingStillOpen refuses a request whose expiry has passed on this
+// device's clock. A missing or malformed expiry is not trusted either: the
+// relay is the only path and it always stamps one.
+func pairingStillOpen(req hop.PairingRequest, now time.Time) error {
+	expires, err := time.Parse(time.RFC3339Nano, req.ExpiresAt)
+	if err != nil {
+		return NewExitError(ExitSafety, "the pairing request carries a malformed expiry; nothing was approved")
+	}
+	if !now.Before(expires) {
+		return NewExitError(ExitUsage, fmt.Sprintf("pairing request %s expired at %s; nothing was approved. Run rein account join again on the new device and enter the fresh code", req.ID, req.ExpiresAt))
+	}
+	return nil
+}
+
+// rollBackPairingWrap removes the wrap approvePairingRequest appended for
+// req when the relay then refused it, under the same compare-and-swap as
+// the enrolment. Removing nothing is not an error: a concurrent revocation
+// or rollover may already have taken it.
+func rollBackPairingWrap(ctx context.Context, store backend.Backend, prefix string, req hop.PairingRequest) error {
+	_, err := keyring.Update(ctx, store, keyring.ObjectKey(prefix), func(k *keyring.Keyring) error {
+		k.Unenrol(req.Device.ID, req.PublicKey)
+		return nil
+	})
+	return err
 }
 
 // unwrapDeviceRootKey resolves this device's key and unwraps the current

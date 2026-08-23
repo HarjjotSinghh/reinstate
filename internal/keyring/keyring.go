@@ -271,6 +271,26 @@ func (k *Keyring) Enrol(rootKey []byte, deviceID string, recipient *age.X25519Re
 	return nil
 }
 
+// Unenrol removes the current generation's wrap for deviceID, but only when
+// the wrap was made for publicKey: an approving device uses it to roll back
+// a wrap it appended itself when the relay then refused (request expired or
+// already decided), and the key check keeps it from ever touching a wrap a
+// different approval wrote for the same device id. Reports whether a wrap
+// was removed.
+func (k *Keyring) Unenrol(deviceID, publicKey string) bool {
+	g := k.current()
+	if g == nil || publicKey == "" {
+		return false
+	}
+	for i, d := range g.Devices {
+		if d.DeviceID == deviceID && d.PublicKey == publicKey {
+			g.Devices = append(g.Devices[:i:i], g.Devices[i+1:]...)
+			return true
+		}
+	}
+	return false
+}
+
 func unwrapDevice(g *Generation, deviceID string, device *age.X25519Identity) ([]byte, error) {
 	for _, d := range g.Devices {
 		if d.DeviceID != deviceID {

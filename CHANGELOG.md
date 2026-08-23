@@ -65,7 +65,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   cannot open and never sees the code. The joining device accepts the key
   only when the keyring's own wrap for it opens to the same bytes of the same
   generation. A wrong code approves nothing; a typo is caught by the
-  checksum; requests expire after ten minutes and are released once. `rein
+  checksum; requests expire after ten minutes and are released once, and an
+  approval whose request expires while the code prompt is open refuses
+  before writing or rolls its own wrap back, so an expired request never
+  leaves a device enrolled without an approval. `rein
   devices` lists the account's devices, whether each holds a wrap, and
   pending requests. `rein account recover` remains the no-other-device
   fallback. See `docs/hop.md`, "Adding a device".

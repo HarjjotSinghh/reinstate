@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/HarjjotSinghh/reinstate/internal/hop"
 )
@@ -22,6 +23,7 @@ type fakePairing struct {
 	approvedBy               string
 	expired                  bool
 	claims                   int
+	createdAt, expiresAt     time.Time
 }
 
 func (f *fakeControlPlane) registerPairing(mux *http.ServeMux) {
@@ -59,7 +61,7 @@ func (f *fakeControlPlane) pairingView(p *fakePairing) map[string]any {
 	return map[string]any{
 		"id": p.id, "status": status, "device": dev,
 		"public_key": p.publicKey, "salt": p.salt, "binding": p.binding,
-		"created_at": "2026-08-23T12:03:00Z", "expires_at": "2026-08-23T12:13:00Z",
+		"created_at": p.createdAt.Format(time.RFC3339Nano), "expires_at": p.expiresAt.Format(time.RFC3339Nano),
 		"interval_seconds": 0,
 	}
 }
@@ -98,6 +100,7 @@ func (f *fakeControlPlane) createPairing(w http.ResponseWriter, r *http.Request)
 	p := &fakePairing{
 		id: "pair-" + strconv.Itoa(f.pairingSeq), deviceID: id.Device.ID,
 		publicKey: req.PublicKey, salt: req.Salt, binding: req.Binding, status: "pending",
+		createdAt: time.Now().UTC(), expiresAt: time.Now().UTC().Add(10 * time.Minute),
 	}
 	if f.pairings == nil {
 		f.pairings = map[string]*fakePairing{}

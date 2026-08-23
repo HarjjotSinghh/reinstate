@@ -67,7 +67,13 @@ so guessing the code offline against the relayed material costs one
 memory-hard derivation per candidate across 2^60 candidates. The relay
 expires after ten minutes, hands the ciphertext out once, and refuses
 after 600 polls. A wrong code on the approving side fails closed with
-nothing written anywhere; a typo is caught by the checksum first. The code
+nothing written anywhere; a typo is caught by the checksum first. A request
+that has already expired when the code is entered (the prompt can sit open
+while you walk to the other machine) is refused before anything is
+written; if the control plane refuses the relay after the wrap was
+appended (expired or decided meanwhile), the approving device removes that
+wrap again, so the new machine's next `rein account join` is a fresh
+request rather than a silent enrolment without an approval behind it. The code
 can be supplied to automation through `REINSTATE_PAIRING_CODE_FD` (a
 pre-opened descriptor, like `REINSTATE_PASSPHRASE_FD`); it is never a flag
 or a plain environment value. The full protocol and threat argument are in

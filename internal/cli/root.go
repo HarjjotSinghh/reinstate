@@ -223,7 +223,7 @@ func NewRoot(opts Options) *cobra.Command {
 		newLoginCmd(hopOpts),
 		newWhoamiCmd(hopOpts),
 		newHopCmd(),
-		newDevicesCmd(hopOpts),
+		newDevicesCmd(),
 		newInitCmd(),
 		newAccountCmd(),
 		newListCmd(),
