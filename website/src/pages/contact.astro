@@ -1,0 +1,136 @@
+---
+import PublicContentLayout from '../layouts/PublicContentLayout.astro';
+import { product } from '../data/product';
+
+export const prerender = true;
+
+const title = 'Contact Reinstate: Support, Security Reports, and Maintainer';
+const description =
+  'How to reach the Reinstate project: public GitHub issue forms for questions, bugs, and adapter requests; private security reporting; the maintainer; and expected response times.';
+
+const repository = product.repositoryUrl;
+const channels = [
+  {
+    name: 'Questions and setup help',
+    href: `${repository}/issues/new?template=question.yml`,
+    how: 'Public question form on GitHub. Redact bucket names, paths, and anything from a session transcript before posting.',
+    response: 'As capacity allows',
+  },
+  {
+    name: 'Bug reports',
+    href: `${repository}/issues/new/choose`,
+    how: 'GitHub bug report template. Include the Reinstate version, agent, operating system, and the exact command.',
+    response: '5 business days on the latest stable release',
+  },
+  {
+    name: 'Feature and adapter requests',
+    href: `${repository}/issues/new/choose`,
+    how: 'Feature request and adapter request templates on GitHub. Roadmap discussion is welcome; search existing issues first.',
+    response: 'As capacity allows',
+  },
+  {
+    name: 'Security vulnerabilities',
+    href: `${repository}/security/advisories/new`,
+    how: 'Private GitHub security advisory (preferred) or email security@harjot.co. Never post vulnerability details in a public issue.',
+    response: 'Acknowledged within 72 hours; initial assessment within 7 days',
+  },
+  {
+    name: 'Privacy requests',
+    href: '/privacy',
+    how: 'Ask to access, correct, or delete a waitlist record from the address concerned, using the private security contact.',
+    response: 'Handled with security reports',
+  },
+] as const;
+---
+
+<PublicContentLayout
+  {title}
+  {description}
+  path="/contact"
+  eyebrow="Contact"
+  answer={`${product.name} is an open-source project maintained by ${product.maintainer.name}. Support happens in public on GitHub so answers stay searchable; security reports and privacy requests go through a private channel. There is no sales team, no hosted account, and no paid support tier.`}
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Contact', path: '/contact' },
+  ]}
+  tags={['contact', 'support', 'security', 'open source']}
+>
+  <h2 id="channels">Where to reach the project</h2>
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">Need</th>
+          <th scope="col">Channel</th>
+          <th scope="col">Target first response</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          channels.map((channel) => (
+            <tr>
+              <td><a href={channel.href}>{channel.name}</a></td>
+              <td>{channel.how}</td>
+              <td>{channel.response}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="maintainer">Maintainer</h2>
+  <dl class="pc-facts">
+    <div>
+      <dt>Name</dt>
+      <dd><a href={product.maintainer.url}>{product.maintainer.name}</a></dd>
+    </div>
+    <div>
+      <dt>GitHub</dt>
+      <dd><a href={product.maintainer.githubUrl}>@HarjjotSinghh</a></dd>
+    </div>
+    <div>
+      <dt>Project</dt>
+      <dd><a href={repository}>{repository.replace('https://', '')}</a></dd>
+    </div>
+    <div>
+      <dt>License</dt>
+      <dd><a href={product.licenseUrl}>{product.licenseName}</a></dd>
+    </div>
+    <div>
+      <dt>Security contact</dt>
+      <dd><a href="mailto:security@harjot.co">security@harjot.co</a></dd>
+    </div>
+    <div>
+      <dt>Website</dt>
+      <dd><a href="/">{product.siteUrl.replace('https://', '')}</a></dd>
+    </div>
+  </dl>
+
+  <h2 id="before-you-write">Before you write</h2>
+  <ul>
+    <li>
+      Check the <a href="/docs/troubleshooting">troubleshooting guide</a> and the
+      <a href="/docs/faq">FAQ</a>; most setup, path-mapping, conflict, and restore questions are
+      answered there.
+    </li>
+    <li>
+      Run <code>rein doctor</code> and include its output. Never paste an encryption passphrase,
+      bucket credentials, or session transcript content.
+    </li>
+    <li>
+      Reinstate does not provide support for Claude Code, Codex, or other agents themselves, for
+      cloud-storage billing, or for debugging your own application code. Use the vendor's channels
+      for those.
+    </li>
+  </ul>
+
+  <h2 id="early-access">Early access and updates</h2>
+  <p>
+    Install from the <a href="/#install">homepage install section</a>, and follow the
+    <a href="/changelog">changelog</a> and its <a href="/changelog/rss.xml">RSS feed</a> for
+    release notices. The early-access waitlist is reachable programmatically at
+    <a href="/api/v1/waitlist">/api/v1/waitlist</a>. Programmatic contact for agents is documented under
+    <a href="/developers">developer resources</a>.
+  </p>
+</PublicContentLayout>

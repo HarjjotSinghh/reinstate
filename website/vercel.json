@@ -92,6 +92,27 @@
           "value": "public, max-age=0, must-revalidate"
         }
       ]
+    },
+    {
+      "source": "/.well-known/api-catalog",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/linkset+json; profile=\"https://www.rfc-editor.org/info/rfc9727\"; charset=utf-8"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        },
+        {
+          "key": "Link",
+          "value": "<https://reinstate.dev/openapi.json>; rel=\"service-desc\"; type=\"application/vnd.oai.openapi+json\", <https://reinstate.dev/developers>; rel=\"service-doc\"; type=\"text/html\""
+        }
+      ]
     }
   ]
 }

@@ -32,9 +32,11 @@ const LLMS = `# Reinstate
 const OPENAPI = {
   openapi: '3.1.0',
   servers: [{ url: 'https://reinstate.dev' }],
+  'x-api-lifecycle': { deprecationPolicy: 'https://reinstate.dev/developers#versioning-and-deprecation' },
+  'x-rate-limit-policy': { quota: 60 },
   paths: {
-    '/api/waitlist': {
-      get: { operationId: 'getWaitlistService', description: 'Describe.', responses: { 200: { description: 'ok' } } },
+    '/api/v1/waitlist': {
+      get: { operationId: 'getWaitlistService', description: 'Describe.', responses: { 200: { description: 'ok', content: { 'application/json': { schema: { type: 'object' } } } } } },
     },
   },
 };
@@ -69,6 +71,8 @@ async function fixture({ withTwins = true, withVercel = true, withFunction = tru
   await writeFile(join(build, 'openapi.json'), JSON.stringify(openapi));
   await writeFile(join(build, 'agent-instructions.md'), '# Agents\n\n## When to use Reinstate\n\n## When not to use Reinstate\n\n## How to call it\n');
   await writeFile(join(build, 'compatibility.json'), JSON.stringify({ agents: [{ id: 'codex', integrationPath: '/integrations/codex', tier: 'T5' }] }));
+  await mkdir(join(build, '.well-known'), { recursive: true });
+  await writeFile(join(build, '.well-known', 'api-catalog'), JSON.stringify({ linkset: [{ anchor: 'https://reinstate.dev/api/v1/waitlist', 'service-desc': [{ href: 'https://reinstate.dev/openapi.json', type: 'application/vnd.oai.openapi+json' }] }] }));
   await writeFile(join(build, 'robots.txt'), 'User-agent: *\nDisallow: /api/\n');
   await writeFile(
     join(root, 'vercel.json'),
@@ -76,6 +80,7 @@ async function fixture({ withTwins = true, withVercel = true, withFunction = tru
       headers: [
         { source: '/:path([^.]*)', headers: [{ key: 'Vary', value: 'Accept' }] },
         { source: '/:path*.md', headers: [{ key: 'Content-Type', value: 'text/markdown; charset=utf-8' }] },
+        { source: '/.well-known/api-catalog', headers: [{ key: 'Content-Type', value: 'application/linkset+json; charset=utf-8' }] },
       ],
     }),
   );
@@ -185,8 +190,8 @@ test('duplicate operationIds and a stray 404 twin fail', async () => {
   const dupe = {
     ...OPENAPI,
     paths: {
-      '/a': { get: { operationId: 'same', description: 'A.', responses: { 200: { description: 'ok' } } } },
-      '/b': { get: { operationId: 'same', description: 'B.', responses: { 200: { description: 'ok' } } } },
+      '/api/v1/a': { get: { operationId: 'same', description: 'A.', responses: { 200: { description: 'ok', content: { 'application/json': { schema: { type: 'object' } } } } } } },
+      '/api/v1/b': { get: { operationId: 'same', description: 'B.', responses: { 200: { description: 'text', content: { 'text/plain': { schema: { type: 'string' } } } } } } },
     },
   };
   const root = await fixture({ openapi: dupe });
@@ -194,6 +199,7 @@ test('duplicate operationIds and a stray 404 twin fail', async () => {
     await writeFile(join(root, 'dist', 'client', '404.md'), '# nope');
     const result = await checkAgentSurface({ root });
     assert.ok(result.errors.some((error) => error.includes('operationIds must be unique')));
+    assert.ok(result.errors.some((error) => error.includes('GET /api/v1/b 200 must define a typed JSON response schema')));
     assert.ok(result.errors.some((error) => error.startsWith('404.md:')));
   } finally {
     await rm(root, { recursive: true, force: true });

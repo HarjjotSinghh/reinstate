@@ -49,6 +49,12 @@ describe('vercel.json agent headers', () => {
     }
   });
 
+  it('serves the RFC 9727 API catalog as a linkset with its profile', () => {
+    const headers = headersFor('/.well-known/api-catalog');
+    expect(headers['content-type']).toBe('application/linkset+json; profile="https://www.rfc-editor.org/info/rfc9727"; charset=utf-8');
+    expect(headers.link).toContain('rel="service-desc"');
+  });
+
   it('keeps llms-full.txt and the installers as plain text', () => {
     expect(headersFor('/llms-full.txt')['content-type']).toBe('text/plain; charset=utf-8');
     expect(headersFor('/install.sh')['content-type']).toBe('text/plain; charset=utf-8');

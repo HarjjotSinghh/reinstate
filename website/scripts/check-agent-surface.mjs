@@ -229,8 +229,36 @@ export async function checkAgentSurface({ root, buildDir = resolve(root, 'dist/c
       }
       if (new Set(ids).size !== ids.length) errors.push('openapi.json: operationIds must be unique');
       if (!document.servers?.some((server) => server.url === 'https://reinstate.dev')) errors.push('openapi.json: servers must include https://reinstate.dev');
+      if (!Object.keys(document.paths ?? {}).some((path) => path.startsWith('/api/v1/'))) errors.push('openapi.json: stable operations must live under /api/v1/');
+      if (!document['x-api-lifecycle']?.deprecationPolicy) errors.push('openapi.json: declare x-api-lifecycle.deprecationPolicy');
+      if (!document['x-rate-limit-policy']?.quota) errors.push('openapi.json: declare x-rate-limit-policy');
+      for (const [path, item] of Object.entries(document.paths ?? {})) {
+        for (const [method, operation] of Object.entries(item)) {
+          if (!['get', 'post', 'put', 'patch', 'delete', 'head', 'options'].includes(method)) continue;
+          for (const [status, response] of Object.entries(operation.responses ?? {})) {
+            const types = Object.keys(response.content ?? {});
+            if (!types.length || !types.every((type) => /json/.test(type)) || !types.every((type) => response.content[type]?.schema)) {
+              errors.push(`openapi.json: ${method.toUpperCase()} ${path} ${status} must define a typed JSON response schema`);
+            }
+          }
+        }
+      }
     } catch (error) {
       errors.push(`openapi.json: ${error.message}`);
+    }
+  }
+
+  const catalogPath = join(buildDir, '.well-known', 'api-catalog');
+  if (!(await exists(catalogPath))) {
+    errors.push('.well-known/api-catalog: missing RFC 9727 API catalog');
+  } else {
+    try {
+      const catalog = JSON.parse(await readFile(catalogPath, 'utf8'));
+      if (!Array.isArray(catalog.linkset) || !catalog.linkset.some((entry) => Array.isArray(entry['service-desc']) && entry['service-desc'].some((link) => link.href === 'https://reinstate.dev/openapi.json'))) {
+        errors.push('.well-known/api-catalog: linkset must point a service-desc at https://reinstate.dev/openapi.json');
+      }
+    } catch (error) {
+      errors.push(`.well-known/api-catalog: ${error.message}`);
     }
   }
 
@@ -257,6 +285,9 @@ export async function checkAgentSurface({ root, buildDir = resolve(root, 'dist/c
     const headerRules = config.headers ?? [];
     const varyRule = headerRules.find((rule) => rule.headers?.some((header) => header.key.toLowerCase() === 'vary' && header.value === 'Accept'));
     if (!varyRule) errors.push('vercel.json: add a headers rule that sets Vary: Accept on page URLs');
+    if (!headerRules.some((rule) => rule.source === '/.well-known/api-catalog' && rule.headers?.some((header) => header.key.toLowerCase() === 'content-type' && header.value.startsWith('application/linkset+json')))) {
+      errors.push('vercel.json: serve /.well-known/api-catalog as application/linkset+json');
+    }
     const markdownRule = headerRules.find((rule) => rule.source?.endsWith('.md'));
     if (!markdownRule?.headers?.some((header) => header.key.toLowerCase() === 'content-type' && header.value.startsWith('text/markdown'))) {
       errors.push('vercel.json: add a headers rule that serves *.md as text/markdown; charset=utf-8');

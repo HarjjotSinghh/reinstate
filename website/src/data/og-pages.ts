@@ -236,6 +236,13 @@ export const staticOgPages: OgPage[] = [
       'Current pre-1.0 release status, verified changes, compatibility evidence, and full release history.',
   },
   {
+    route: '/contact',
+    kind: 'Contact',
+    title: 'Contact Reinstate',
+    description:
+      'Public GitHub issue forms for questions and bugs, private security reporting, the maintainer, and response-time targets.',
+  },
+  {
     route: '/privacy',
     kind: 'Privacy',
     title: 'Website privacy notice',

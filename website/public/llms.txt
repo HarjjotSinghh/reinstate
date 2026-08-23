@@ -18,7 +18,10 @@ Reinstate is a local command-line tool (`rein`, also `reinstate`), Apache-2.0, w
 - [Full documentation as Markdown](https://reinstate.dev/llms-full.txt): Every indexable page in one file, each section prefixed with its canonical URL
 - [Compatibility JSON](https://reinstate.dev/compatibility.json): Agent tiers, tested version ranges, environment status, evidence links, and review dates
 - [CLI reference](https://reinstate.dev/docs/cli-reference): Every current command with parameters, expected evidence, exit codes, and recovery paths
-- [Waitlist API](https://reinstate.dev/api/waitlist): GET describes the endpoint; POST {"email"} joins the early-access waitlist; errors are JSON with a code and a hint
+- [Waitlist API v1](https://reinstate.dev/api/v1/waitlist): GET describes the endpoint; POST {"email"} joins the early-access waitlist; errors are RFC 9457 problem+json with a code and a hint
+- [API catalog (RFC 9727)](https://reinstate.dev/.well-known/api-catalog): Linkset pointing at the OpenAPI description, docs, and machine-readable surfaces
+- [API versioning and deprecation policy](https://reinstate.dev/developers#versioning-and-deprecation): Major version in the path, RFC 9745 Deprecation and Sunset signalling, 90-day notice
+- [API rate limits](https://reinstate.dev/developers#rate-limits): 60 requests per client per minute with IETF RateLimit headers and Retry-After on 429
 
 ## Product
 
@@ -29,6 +32,7 @@ Reinstate is a local command-line tool (`rein`, also `reinstate`), Apache-2.0, w
 - [Open source](https://reinstate.dev/open-source): Source, license, governance, and contribution links
 - [Roadmap](https://reinstate.dev/roadmap): Planned work, labeled as planned rather than shipped
 - [Changelog](https://reinstate.dev/changelog): Current release status and release history
+- [Contact](https://reinstate.dev/contact): Public GitHub issue forms, private security reporting, the maintainer, and response-time targets
 
 ## Documentation
 
@@ -58,7 +62,7 @@ Reinstate is a local command-line tool (`rein`, also `reinstate`), Apache-2.0, w
 - [Codex](https://reinstate.dev/integrations/codex): T5 same-vendor Codex session sync
 - [Gemini CLI](https://reinstate.dev/integrations/gemini): T2 handoff source; no native resume or sync
 - [OpenCode](https://reinstate.dev/integrations/opencode): T4 handoff destination with same-vendor native resume; no encrypted sync
-- [Grok Build](https://reinstate.dev/integrations/grok): T3 verified same-vendor native resume and handoff source; no encrypted sync
+- [Grok Build](https://reinstate.dev/integrations/grok): T4 handoff destination with same-vendor native resume; no encrypted sync
 - [Kimi Code CLI](https://reinstate.dev/integrations/kimi): T2 handoff source; no native resume or sync
 - [Qwen Code](https://reinstate.dev/integrations/qwen): T4 handoff destination with same-vendor native resume; no encrypted sync
 - [Pi](https://reinstate.dev/integrations/pi): T1 local discovery only

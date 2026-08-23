@@ -43,5 +43,6 @@ Reinstate is a CLI. Run it in the user's shell; there is nothing to call over HT
 
 - Any page answers `Accept: text/markdown` at its canonical URL, and has a static twin at the same path plus `.md` (homepage: `/index.md`).
 - https://reinstate.dev/llms.txt is the curated index; https://reinstate.dev/llms-full.txt is every documentation page in one file.
-- https://reinstate.dev/openapi.json describes the website's small HTTP surface (waitlist, compatibility JSON, page Markdown, feeds, installers). All `/api/*` errors are JSON with a `code` and a `hint`.
+- https://reinstate.dev/openapi.json describes the website's JSON API (waitlist under `/api/v1/`, compatibility JSON, this description); https://reinstate.dev/.well-known/api-catalog is the RFC 9727 catalog. All `/api/*` errors are RFC 9457 `application/problem+json` with a `code` and a `hint`; responses carry IETF `RateLimit` headers (60 requests per minute per client) and 429 includes `Retry-After`. Deprecated paths keep working and send `Deprecation` headers.
+- Humans reach the project through https://reinstate.dev/contact (GitHub issue forms, private security reporting).
 - Unknown paths return HTTP 404 with a short Markdown body that links back to the sitemap and documentation index.

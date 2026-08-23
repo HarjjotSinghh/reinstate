@@ -1,9 +1,12 @@
 /**
- * Structured JSON errors for every `/api/*` response so agents get a code,
- * a message, and a resolution hint instead of an HTML error page.
+ * Structured JSON errors for every `/api/*` response, in the RFC 9457
+ * `application/problem+json` shape (`type`, `title`, `status`, `detail`,
+ * `instance`) plus the stable extension members agents and the waitlist form
+ * rely on: `code`, `hint`, `docs`, and the original `ok`/`error` pair.
  *
- * The `ok`/`error` pair is the original contract the waitlist form reads;
- * `code`, `hint`, `docs`, and `status` are additive.
+ * Every API response also carries the RFC 8288 `Link` relations that point
+ * at the OpenAPI description, the RFC 9727 API catalog, the developer
+ * documentation, and the versioning/deprecation policy.
  */
 import { siteUrl } from '../data/product';
 
@@ -13,54 +16,103 @@ export const API_ERROR_CODES = [
   'storage_unavailable',
   'not_found',
   'method_not_allowed',
+  'rate_limited',
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];
 
-export interface ApiErrorBody {
-  ok: false;
+export const API_ERROR_TITLES: Record<ApiErrorCode, string> = {
+  invalid_json: 'Request body is not JSON',
+  invalid_email: 'Email address is invalid',
+  storage_unavailable: 'Waitlist storage is unavailable',
+  not_found: 'API route not found',
+  method_not_allowed: 'Method not allowed',
+  rate_limited: 'Too many requests',
+};
+
+export interface ProblemDetails {
+  type: string;
+  title: string;
   status: number;
+  detail: string;
+  instance?: string;
   code: ApiErrorCode;
-  error: string;
   hint: string;
   docs: string;
+  /** Legacy members kept for the waitlist form and early integrations. */
+  ok: false;
+  error: string;
 }
 
-export const API_DOCS_URL = siteUrl('/openapi.json');
+export const PROBLEM_CONTENT_TYPE = 'application/problem+json; charset=utf-8';
+export const JSON_CONTENT_TYPE = 'application/json; charset=utf-8';
 
-const JSON_HEADERS = {
-  'Content-Type': 'application/json; charset=utf-8',
-  'Cache-Control': 'no-store',
-  'X-Content-Type-Options': 'nosniff',
-} as const;
+export const API_DOCS_URL = siteUrl('/developers');
+export const API_ERRORS_URL = siteUrl('/developers#errors');
+export const API_VERSIONING_URL = siteUrl('/developers#versioning-and-deprecation');
+export const API_RATE_LIMITS_URL = siteUrl('/developers#rate-limits');
+export const OPENAPI_URL = siteUrl('/openapi.json');
+export const API_CATALOG_URL = siteUrl('/.well-known/api-catalog');
 
-export function apiErrorBody(
+/** RFC 8288 `Link` value advertised on every API response. */
+export const API_LINK_HEADER = [
+  `<${OPENAPI_URL}>; rel="service-desc"; type="application/vnd.oai.openapi+json"`,
+  `<${API_CATALOG_URL}>; rel="api-catalog"`,
+  `<${API_DOCS_URL}>; rel="service-doc"; type="text/html"`,
+  `<${API_VERSIONING_URL}>; rel="deprecation"; type="text/html"`,
+].join(', ');
+
+export function problemType(code: ApiErrorCode): string {
+  return siteUrl(`/developers#error-${code.replace(/_/g, '-')}`);
+}
+
+export function problemDetails(
   status: number,
   code: ApiErrorCode,
-  error: string,
+  detail: string,
   hint: string,
-  docs: string = API_DOCS_URL,
-): ApiErrorBody {
-  return { ok: false, status, code, error, hint, docs };
+  options: { instance?: string; docs?: string } = {},
+): ProblemDetails {
+  return {
+    type: problemType(code),
+    title: API_ERROR_TITLES[code],
+    status,
+    detail,
+    ...(options.instance ? { instance: options.instance } : {}),
+    code,
+    hint,
+    docs: options.docs ?? API_ERRORS_URL,
+    ok: false,
+    error: detail,
+  };
+}
+
+function baseHeaders(contentType: string, cacheControl: string): Record<string, string> {
+  return {
+    'Content-Type': contentType,
+    'Cache-Control': cacheControl,
+    'X-Content-Type-Options': 'nosniff',
+    Link: API_LINK_HEADER,
+  };
 }
 
 export function apiError(
   status: number,
   code: ApiErrorCode,
-  error: string,
+  detail: string,
   hint: string,
-  options: { docs?: string; headers?: Record<string, string> } = {},
+  options: { instance?: string; docs?: string; headers?: Record<string, string> } = {},
 ): Response {
-  return new Response(JSON.stringify(apiErrorBody(status, code, error, hint, options.docs)), {
+  return new Response(JSON.stringify(problemDetails(status, code, detail, hint, options)), {
     status,
-    headers: { ...JSON_HEADERS, ...(options.headers ?? {}) },
+    headers: { ...baseHeaders(PROBLEM_CONTENT_TYPE, 'no-store'), ...(options.headers ?? {}) },
   });
 }
 
 export function apiJson(body: unknown, status = 200, headers: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...JSON_HEADERS, ...headers },
+    headers: { ...baseHeaders(JSON_CONTENT_TYPE, 'no-store'), ...headers },
   });
 }
 
@@ -71,7 +123,7 @@ export function methodNotAllowed(method: string, allowed: readonly string[], pat
     'method_not_allowed',
     `${method} is not supported at ${path}.`,
     `Use one of: ${allow}. The Allow header lists the same methods.`,
-    { headers: { Allow: allow } },
+    { instance: path, headers: { Allow: allow } },
   );
 }
 
@@ -80,6 +132,7 @@ export function apiNotFound(path: string): Response {
     404,
     'not_found',
     `No API route exists at ${path}.`,
-    `The only documented API routes are listed in ${API_DOCS_URL}; the waitlist lives at /api/waitlist.`,
+    `The documented routes are listed in ${OPENAPI_URL}; the waitlist lives at /api/v1/waitlist.`,
+    { instance: path },
   );
 }

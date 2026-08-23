@@ -21,6 +21,12 @@ import {
 } from './lib/agent-surface/accept';
 import { notFoundMarkdownResponse } from './lib/agent-surface/not-found';
 import { isPagePath, pagePathForMarkdown } from './lib/agent-surface/paths';
+import { apiError } from './lib/api-errors';
+import { apiLimiter, clientKey } from './lib/rate-limit';
+
+function isApiPath(pathname: string): boolean {
+  return pathname === '/api' || pathname.startsWith('/api/');
+}
 
 function isHtml(response: Response): boolean {
   return (response.headers.get('content-type') ?? '').toLowerCase().startsWith('text/html');
@@ -28,6 +34,30 @@ function isHtml(response: Response): boolean {
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const { method } = context.request;
+
+  // Best-effort per-client quota on the JSON API, with IETF RateLimit headers on every response.
+  if (isApiPath(context.url.pathname)) {
+    let address: string | undefined;
+    try {
+      address = context.clientAddress;
+    } catch {
+      address = undefined;
+    }
+    const decision = apiLimiter.hit(clientKey(context.request, address));
+    if (!decision.allowed) {
+      return apiError(
+        429,
+        'rate_limited',
+        `More than ${apiLimiter.policy.quota} requests in ${apiLimiter.policy.windowSeconds} seconds from this client.`,
+        'Wait for the number of seconds in Retry-After, then retry; RateLimit headers show the remaining quota.',
+        { instance: context.url.pathname, headers: { 'Retry-After': String(decision.resetSeconds), ...decision.headers } },
+      );
+    }
+    const response = await next();
+    for (const [name, value] of Object.entries(decision.headers)) response.headers.set(name, value);
+    return response;
+  }
+
   if (method !== 'GET' && method !== 'HEAD') return next();
 
   const pathname = context.url.pathname;
