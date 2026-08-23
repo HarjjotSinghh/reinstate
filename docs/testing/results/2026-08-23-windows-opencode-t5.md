@@ -31,7 +31,7 @@ bucket both devices share.
 | Go toolchain | `go1.25.13` (`go version go1.25.13 windows/amd64`; the bench's default `go` is 1.26.1, pinned with `GOTOOLCHAIN=go1.25.13`) |
 | Vendor | OpenCode, single native executable at `C:\Users\admin\.bun\bin\opencode.exe` |
 | Vendor version measured | `1.18.21` (bare `MAJOR.MINOR.PATCH` on stdout, identical to macOS) |
-| Branch | `hop/04-opencode-t5` @ `1c21cbc` |
+| Branch | `hop/04-opencode-t5`; sections 1–7 recorded @ `1c21cbc`, the pull leg re-driven @ `7145168` (the shipped behaviour; section 8 below). This record itself lands in the docs-only commit that follows `7145168`. |
 | Source device (leg A) | `macos-arm64`, OpenCode `1.18.21` |
 
 ## 2. What this leg establishes that macOS could not alone
@@ -178,3 +178,107 @@ covered by the adapter unit tests, which pass natively on this device
 - No real store, credential, or account token was touched: every store lived
   under a throwaway `XDG_DATA_HOME`, and the `credential`/`account` tables are
   never opened by the export path.
+
+## 8. Pull leg re-run against the shipped commit (`7145168`)
+
+Commits after `1c21cbc` changed what Restore writes into the vendor store
+(`rewriteJSONPaths` first kept unchanged blobs byte-for-byte, which stored the
+export document's indented form; `7145168` compacts them back to the vendor's
+own shape). The Windows pull leg was therefore re-driven against `7145168`
+exactly, on the same bench, with the same macOS-pushed snapshot.
+
+Harness checks first, because a vacuous pass is worse than none:
+
+- The bench repo had to be detached and force-fetched: the branch was rebased
+  onto `hop/main`, so a plain `git fetch` of the bundle was rejected
+  (`non-fast-forward`) and the first build in this pass was still `1c21cbc`.
+  `git rev-parse --short HEAD` → `71451686`, `git status --short` clean,
+  `go build -o D:\Projects\reinstate\rein.exe ./cmd/reinstate` exit 0.
+- `go test ./internal/adapter/opencode/... -run 'TestExportRestoreRoundTrip|TestRewriteJSONPathsKeepsVendorBytesWhenUnchanged|TestCrossOSRemapping' -v`
+  → all `PASS` natively (the first two are the new compact-row assertions).
+- The passphrase launcher (anonymous inheritable pipe →
+  `REINSTATE_PASSPHRASE_FD`, passphrase read from a local file that is never
+  committed) was invoked with `powershell -File`, which hands `a,b` to a
+  `[string[]]` parameter as the single string `"a,b"`; `rein` exited 2 with no
+  output until the launcher split its arguments. Verified fixed with
+  `rein status --json` listing the remote session before any pull was run.
+- The destination store was reset to the vendor-initialised pre-pull copy
+  (`backups\20260823T045735…-opencode.db-store\opencode.db{,-wal,-shm}`
+  copied back over `D:\Projects\hop-oc\xdg\opencode\`), the
+  `sessions` map in `state.json` was emptied (original kept as
+  `state.json.1c21cbc`), and the reset was proven, not assumed:
+  `opencode --pure session list` showed only `ses_hop04winb00000000seed1`,
+  and a direct SQLite read found **no** `message`/`part` rows for
+  `ses_hop04mac0000000000000a1`.
+
+```text
+PS> rein pull --agent opencode --session ses_hop04mac0000000000000a1 --dry-run --json
+{ "dry_run": true, "plans": [ { "agent": "opencode",
+    "session_id": "ses_hop04mac0000000000000a1",
+    "snapshot_id": "cabc51ee-ba5d-4d7a-b05a-8c36e71e07f9",
+    "destinations": [ "D:\\Projects\\hop-oc\\xdg\\opencode\\opencode.db" ],
+    "backup_root": "D:\\Projects\\hop-reinhome\\backups" } ], "pulled": 1 }
+exit 0
+
+PS> rein pull --agent opencode --session ses_hop04mac0000000000000a1 --json
+{ "dry_run": false, ... same plan ..., "pulled": 1 }
+exit 0
+```
+
+Rows read straight out of `opencode.db` **before** the vendor touched the
+store (a throwaway Go probe using the same `modernc.org/sqlite` driver; it
+prints each blob, its byte length, newline count, and whether it equals its own
+`json.Compact` form):
+
+```text
+session ses_hop04mac0000000000000a1 directory=C:\Users\admin\code\demo
+session ses_hop04winb00000000seed1 directory=D:/Projects/hop-oc/work
+message msg_hop04mac000000000asst1 bytes=437 newlines=0 compact=true
+  {"agent":"build","cost":0,"mode":"build","modelID":"fixture-model","parentID":"msg_hop04mac000000000user1","path":{"cwd":"/Users/harjjotsinghh/Documents/Projects/reinstate-worktrees/04","root":"/Users/harjjotsinghh/Documents/Projects/reinstate-worktrees/04"},"providerID":"synthetic","role":"assistant","time":{"completed":1755950002000,"created":1755950001000},"tokens":{"cache":{"read":0,"write":0},"input":1,"output":1,"reasoning":0}}
+message msg_hop04mac000000000user1 bytes=125 newlines=0 compact=true
+  {"agent":"build","model":{"modelID":"fixture-model","providerID":"synthetic"},"role":"user","time":{"created":1755950000000}}
+part prt_hop04mac000000000asst1 bytes=79 newlines=0 compact=true
+  {"text":"HOP04-ASSISTANT-BODY: the demo workspace has a README.","type":"text"}
+part prt_hop04mac000000000user1 bytes=70 newlines=0 compact=true
+  {"text":"HOP04-USER-BODY: summarise the demo workspace","type":"text"}
+```
+
+Every stored blob is compact (`newlines=0`, `compact=true`), identity fields
+live in the columns as the vendor writes them, and the untokenised
+`path.cwd`/`path.root` came through as-is with `/` separators.
+
+The vendor's own read path on the pulled store:
+
+```text
+PS> opencode --pure session list
+Session ID                   Title                                Updated
+─────────────────────────────────────────────────────────────────────────
+ses_hop04winb00000000seed1   Windows device pre-existing session  8:10 PM · 8/23/2025
+ses_hop04mac0000000000000a1  Hop04 macOS seed session             5:24 PM · 8/23/2025
+
+PS> opencode --pure export ses_hop04mac0000000000000a1      # exit 0
+"id": "ses_hop04mac0000000000000a1",
+"directory": "C:\\Users\\admin\\code\\demo",
+  "id": "msg_hop04mac000000000user1",
+    "text": "HOP04-USER-BODY: summarise the demo workspace",
+  "id": "msg_hop04mac000000000asst1",
+    "parentID": "msg_hop04mac000000000user1",
+    "text": "HOP04-ASSISTANT-BODY: the demo workspace has a README.",
+```
+
+Both sessions listed; both messages and both parts exported with bodies intact
+and the assistant's `parentID` pointing at the user message. After the vendor
+opened the store it re-created its own `-wal`/`-shm` sidecars (16512 / 32768
+bytes), i.e. it treated the merged database as a healthy one.
+
+Backup: `D:\Projects\hop-reinhome\backups\20260823T052717.589447600Z-opencode.db-store\opencode.db`
+(no sidecars this time, because the vendor's earlier `session list` had
+checkpointed and removed them before the pull). The same probe on that backup
+shows only `ses_hop04winb00000000seed1`, so it is a faithful pre-pull copy.
+
+Bench facts for this pass: `Microsoft Windows 11 Pro 10.0.26200`, OpenCode
+`1.18.21`, `go version go1.26.1 windows/amd64` (the bench default; the build
+was not pinned to 1.25 this time). Nothing outside `D:\Projects` and the
+throwaway `XDG_DATA_HOME` was touched; the probe source was removed from the
+bench checkout afterwards and the checkout is clean.
+
