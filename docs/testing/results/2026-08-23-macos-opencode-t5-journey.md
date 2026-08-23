@@ -147,7 +147,34 @@ Windows leg is recorded separately and is still outstanding.
 
 ## 6. Scope this report does not claim
 
-- It is one device. The T5 gate needs native Windows too.
+- It is one device. The T5 gate needs native Windows too — now recorded in
+  [2026-08-23-windows-opencode-t5.md](2026-08-23-windows-opencode-t5.md).
 - It did not drive two physical machines over a real BYO bucket; the encrypted
   push/pull transport is evidenced by unit tests, and the vendor-store
   extract/restore ends are evidenced here on real vendor data.
+
+## 7. Addendum (2026-08-23, same device): full `rein` CLI round trip
+
+Recorded after the catalog was wired to T5, so the whole path runs through the
+shipped CLI rather than the adapter API directly. Two throwaway vendor stores
+(device A and device B, both macOS, own `$XDG_DATA_HOME`) shared one disk-backed
+`memory` backend under a throwaway `$REINSTATE_HOME`; the passphrase reached
+`rein` only through `REINSTATE_PASSPHRASE_FD`.
+
+```text
+$ rein push --agent opencode --session ses_hop04mac0000000000000a1 --json     # device A
+{ "dry_run": false, "skipped": 0, "snapshots": [ "cabc51ee-…-8c36e71e07f9" ] }
+
+$ rein pull --agent opencode --session ses_hop04mac0000000000000a1 --json     # device B
+{ "dry_run": false, "plans": [ { "agent": "opencode", "pulled": … } ], "pulled": 1 }
+
+# device B store, read back through the vendor's own export:
+$ opencode --pure export ses_hop04mac0000000000000a1
+  "text": "HOP04-USER-BODY: summarise the demo workspace"
+  "parentID": "msg_hop04mac000000000user1"
+  "text": "HOP04-ASSISTANT-BODY: the demo workspace has a README."
+```
+
+Device B's `${HOME}/code/demo` denormalised onto device B's home, and device B's
+own pre-existing session was left in place — the non-destructive restore. The
+cross-**OS** direction of the same round trip is the native Windows leg.
