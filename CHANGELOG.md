@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Envelope encryption now sits behind a key-provider seam
+  (`internal/crypto.KeyProvider`). BYO storage keeps the age scrypt passphrase
+  model through `PassphraseProvider`, which writes identical envelopes and reads
+  every envelope written before the seam (covered by golden fixtures under
+  `testdata/crypto/pre-seam`). No CLI surface or behaviour changes for BYO
+  users; the seam exists so other key models can plug in without touching sync,
+  manifest, or conflict code.
+
 ### Added
 
 - The website now serves every page as Markdown through `Accept: text/markdown`

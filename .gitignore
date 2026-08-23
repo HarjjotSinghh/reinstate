@@ -43,6 +43,8 @@ auth.json
 # Reinstate local state (if running from repo)
 .reinstate/
 *.age
+# Golden pre-seam envelopes are deliberately tracked test fixtures.
+!testdata/crypto/pre-seam/*.age
 
 # Dependencies
 /vendor/

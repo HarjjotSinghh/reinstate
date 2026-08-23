@@ -26,7 +26,8 @@ Product layers and non-goals: [product-strategy.md](product-strategy.md),
 └──────────────────────┬───────────────────────────┘
                        ▼
 ┌──────────────────────────────────────────────────┐
-│  Encryption (age / scrypt passphrase recipient)   │
+│  Encryption (age behind a key provider; BYO uses   │
+│  the scrypt passphrase provider)                   │
 │  client-side only — remote never sees plaintext   │
 └──────────────────────┬───────────────────────────┘
                        ▼

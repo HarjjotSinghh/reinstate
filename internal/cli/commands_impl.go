@@ -458,7 +458,7 @@ func engineFromConfig(cmd *cobra.Command, passphrase string) (*sync.Engine, *sch
 	}
 	return &sync.Engine{
 		Backend:               b,
-		Passphrase:            passphrase,
+		Keys:                  crypto.NewPassphraseProvider(passphrase),
 		Prefix:                enginePrefix,
 		RequireRemoteManifest: requireRemoteManifest,
 		Codec:                 envelopeCodec,

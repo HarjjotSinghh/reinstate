@@ -11,6 +11,7 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/adapter/claude"
 	"github.com/HarjjotSinghh/reinstate/internal/backend/memory"
 	"github.com/HarjjotSinghh/reinstate/internal/config"
+	"github.com/HarjjotSinghh/reinstate/internal/crypto"
 	"github.com/HarjjotSinghh/reinstate/internal/schema"
 	syncengine "github.com/HarjjotSinghh/reinstate/internal/sync"
 )
@@ -125,7 +126,7 @@ func newConflictFixture(t *testing.T) conflictFixture {
 	}
 	t.Cleanup(func() { _ = os.Remove(artifactPath) })
 	engine := &syncengine.Engine{
-		Backend: memory.New(), Passphrase: "test-passphrase",
+		Backend: memory.New(), Keys: crypto.NewPassphraseProvider("test-passphrase"),
 		Codec: &fastAgeEnvelopeCodec{},
 	}
 	snapshotID, err := engine.PushSession(context.Background(), syncengine.PushItem{
