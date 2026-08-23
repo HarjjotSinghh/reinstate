@@ -116,7 +116,15 @@ working in.
 
 ## Encryption
 
-Default: `age-scrypt` passphrase. Passphrase is not stored in config.
+`encryption.type` selects the key model; nothing else in sync changes.
+
+- `age-scrypt` (default): BYO storage. A passphrase typed on every device
+  derives the key. The passphrase is not stored in config.
+- `root-key`: the hosted key model. `rein account init` or
+  `rein account recover` sets this after enrolling the device; the root key is
+  unwrapped from the keyring in storage with the device key held in the OS
+  keyring. No passphrase is asked for. See the "Hosted key model" section of
+  [security-model.md](security-model.md).
 
 ## Universal agent configuration (roadmap)
 

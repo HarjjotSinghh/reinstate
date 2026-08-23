@@ -57,6 +57,9 @@ rein handoff export HANDOFF_ID --format json|markdown [--out PATH]
 rein init [--endpoint URL] [--bucket NAME] [--region auto] [--prefix ...]
           [--profile-id UUID] [--project ID=/absolute/local/path] [--yes]
           [--link] [--paste]
+rein account init
+rein account recover
+rein account status [--json]
 rein list [--agent claude|codex|all] [--json]
 rein status [--json]
 rein diff [--json]
