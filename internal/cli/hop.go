@@ -48,8 +48,8 @@ func (o hopCommandOptions) browser() func(string) error {
 }
 
 func (o hopCommandOptions) name() string {
-	if o.deviceName != "" {
-		return o.deviceName
+	if name := strings.TrimSpace(o.deviceName); name != "" {
+		return name
 	}
 	if host, err := os.Hostname(); err == nil && strings.TrimSpace(host) != "" {
 		return strings.TrimSpace(host)
@@ -108,7 +108,7 @@ func runLogin(cmd *cobra.Command, o hopCommandOptions, addr string, asJSON, noBr
 	out, errOut := cmd.OutOrStdout(), cmd.ErrOrStderr()
 	if !asJSON {
 		if existing, err := o.tokenStore().GetDeviceToken(); err == nil {
-			PrintHuman(errOut, "This machine is already signed in (device %s at %s); continuing enrols it again as a new device and replaces the stored token.", existing.DeviceID, existing.ControlPlaneURL)
+			PrintHuman(errOut, "This device is already signed in (device %s at %s); continuing enrols it again as a new device and replaces the stored token.", existing.DeviceID, existing.ControlPlaneURL)
 		}
 		if plaintextRemote(baseURL) {
 			PrintHuman(errOut, "Warning: %s is plain http to a non-loopback host; the device token will travel unencrypted.", baseURL)
@@ -181,7 +181,7 @@ func newWhoamiCmd(o hopCommandOptions) *cobra.Command {
 	var asJSON bool
 	cmd := &cobra.Command{
 		Use:   "whoami",
-		Short: "Show the Reinstate Hop account and device this machine is signed in as",
+		Short: "Show the Reinstate Hop account this device is enrolled under",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			tok, err := o.tokenStore().GetDeviceToken()

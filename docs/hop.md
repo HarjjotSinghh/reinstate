@@ -19,7 +19,7 @@ the CLI prints a URL, opens it in your browser, and waits. With
 address instead; open it on any device to approve this one. Either way, no
 password exists or is ever asked for.
 
-On approval the control plane enrols this machine as a **device** under your
+On approval the control plane enrols this computer as a **device** under your
 **account** and issues a device token. The token is stored in the OS keyring
 (macOS Keychain, Windows Credential Manager, or the supported Linux
 provider), never in a file under `~/.reinstate`. `rein whoami` presents it
