@@ -1,0 +1,24 @@
+{
+  "_comment": "Tiers as of the release named below. compatibility.json must match this exactly. Updated only by a release; a promotion on main that is not released will fail the guard, which is the point.",
+  "release": "v0.5.2-rc.1",
+  "tiers": {
+    "aider": "T0",
+    "amp": "T0",
+    "antigravity": "T0",
+    "claude": "T5",
+    "cline": "T1",
+    "codex": "T5",
+    "copilot": "T1",
+    "cursor": "T1",
+    "gemini": "T2",
+    "grok": "T4",
+    "kimi": "T2",
+    "minimax-code": "T0",
+    "opencode": "T4",
+    "openhands": "T0",
+    "pi": "T1",
+    "qwen": "T4",
+    "roo": "T0",
+    "zcode": "T0"
+  }
+}

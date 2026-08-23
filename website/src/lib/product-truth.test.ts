@@ -2,6 +2,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { extname } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import compatibility from '../data/compatibility.json';
+import releasedTiers from '../data/released-tiers.json';
 import { product } from '../data/product';
 import { compatibilityAgents } from './agent-catalog';
 import { homepageSchema } from './schema';
@@ -97,31 +98,38 @@ describe('central product-truth drift guard', () => {
     expect(stale).toEqual([]);
   });
 
-  it('keeps the v0.5.1 catalog line from claiming an unpublished tag or extra T5 agents', () => {
-    expect(product.currentRelease).toBe('v0.5.1');
+  it('keeps the catalog line from claiming an unpublished tag or extra T5 agents', () => {
+    expect(product.currentRelease).toBe('v0.5.2-rc.1');
+    // Stable deliberately lags the candidate: the interactive surfaces have
+    // development verification but no tagged-artifact acceptance yet.
     expect(product.stableRelease).toBe('v0.5.1');
-    expect(compatibility.reinstateVersion).toBe('v0.5.1');
-    expect(compatibility.catalogLine).toBe('v0.5.1');
+    expect(compatibility.reinstateVersion).toBe(product.currentRelease);
+    expect(compatibility.catalogLine).toBe(product.currentRelease);
     expect(compatibilityAgents.filter((agent) => agent.tier === 'T5').map((agent) => agent.key)).toEqual(
       ['claude', 'codex'],
     );
-    // Grok joins OpenCode and Qwen at T4: a structured handoff destination with
-    // verified same-vendor resume beneath it, and no encrypted sync. Claude and
-    // Codex remain the only T5 surfaces.
-    expect(
-      compatibilityAgents.filter((agent) => agent.tier === 'T4').map((agent) => agent.key).sort(),
-    ).toEqual(['grok', 'opencode', 'qwen']);
     // T3 is empty, and that is not a gap. Every agent with a verified resume
     // journey has also earned a destination, so nothing currently stops at the
     // rung between them. A new agent landing at T3 must add itself here.
     expect(compatibilityAgents.filter((agent) => agent.tier === 'T3')).toEqual([]);
-    expect(
-      compatibilityAgents.filter((agent) => agent.tier === 'T2').map((agent) => agent.key).sort(),
-    ).toEqual(['gemini', 'kimi']);
-    expect(
-      compatibilityAgents.filter((agent) => agent.tier === 'T1').map((agent) => agent.key),
-    ).toEqual(['pi', 'cursor', 'cline', 'copilot']);
     expect(compatibilityAgents.filter((agent) => agent.tier === 'T0')).toHaveLength(7);
+  });
+
+  // The published matrix describes a *release*, not main. A user or coding
+  // agent reading it cannot install main, so a tier that exists only there is a
+  // claim they cannot act on.
+  //
+  // This is what went wrong once already: compatibility.json advertised three
+  // agents at T4 while declaring itself reviewed against v0.5.1, a release
+  // whose binary had them at T2, T2 and T1. Nothing caught it, because the
+  // tiers were correct about main and the version field was maintained by hand
+  // and had not moved since the file was created.
+  it('pins every published tier to the release the matrix names', () => {
+    expect(compatibility.reinstateVersion).toBe(releasedTiers.release);
+    const published = Object.fromEntries(
+      compatibilityAgents.map((agent) => [agent.key, agent.tier]),
+    );
+    expect(published).toEqual(releasedTiers.tiers);
   });
 
   it('keeps the doctor self-test distinct from real remote-storage evidence', async () => {

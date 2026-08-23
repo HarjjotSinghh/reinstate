@@ -21,7 +21,7 @@ and structured handoff from five. A structured handoff continues the same task
 in a *new* Claude Code or Codex session. Apple Silicon macOS and native Windows
 x64 passed dual-platform tagged-artifact acceptance on candidate `v0.5.0-rc.6`
 (150/150 on both
-devices); the public installers pin `v0.5.1`, whose acceptance is still
+devices); the public installers pin candidate `v0.5.2-rc.1`, whose acceptance is still
 pending. Intel macOS and Linux/WSL2 downloads remain preview/unverified
 pending issues
 [#97](https://github.com/HarjjotSinghh/reinstate/issues/97) and
@@ -196,7 +196,7 @@ not part of the current CLI. See
 
 ## Quick start
 
-> **Platform boundary:** the public installers pin stable `v0.5.1`, which
+> **Platform boundary:** the public installers pin candidate `v0.5.2-rc.1`, which
 > passed dual-platform tagged-artifact acceptance on Apple Silicon macOS and
 > native Windows x64. Intel macOS and Linux/WSL2
 > remain optional and unverified
@@ -281,7 +281,7 @@ Apple Silicon macOS with Homebrew:
 brew install HarjjotSinghh/tap/reinstate
 ```
 
-The GitHub Release and `reinstate.dev` installers pin `v0.5.1`. The Homebrew
+The GitHub Release and `reinstate.dev` installers pin `v0.5.2-rc.1`. The Homebrew
 tap may still list an earlier release until its formula is updated. Intel macOS
 and Linuxbrew remain optional and unverified.
 
