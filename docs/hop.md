@@ -166,7 +166,7 @@ that one machine.
 ```text
 rein daemon run [--pull-every DUR] [--debounce DUR] [--poll] [--verbose]
 rein daemon install       # register it to start at login, and start it now
-rein daemon start|stop    # control the installed service
+rein daemon start|stop    # control the registered daemon
 rein daemon uninstall     # stop it and remove the login registration
 rein daemon status [--json]
 ```
@@ -177,8 +177,8 @@ supervisor so it starts at login: a **launchd** user agent on macOS
 (`~/.config/systemd/user`, `WantedBy=default.target`), and a **Task
 Scheduler** task with a logon trigger on Windows (`schtasks`,
 `InteractiveToken`, per-user principal). `rein daemon run` is the
-foreground loop the service runs; run it yourself under any supervisor you
-prefer, or just to watch it work.
+foreground loop that registration runs; run it yourself under any
+supervisor you prefer, or just to watch it work.
 
 What the loop does:
 
@@ -212,13 +212,25 @@ The daemon runs one instance per home (an advisory lock file), backs off
 exponentially on errors (5s doubling to 10m; a session that keeps changing
 during an outage waits for the backoff rather than retrying on every
 write), rotates its log at 1 MB (three kept), and never crashes on a vendor
-store caught mid-write. The service definition is written owner-only, and
-`rein daemon install` refuses an `--env` whose name looks like a credential
-(`SECRET`, `TOKEN`, `PASSPHRASE`, …): secrets belong in the OS keyring or
-the backend's own credential store, never in a plist or unit file. It needs the root-key model
-(`rein account init`, which works on BYO storage too) so it can run without
-a passphrase prompt; a passphrase-model home can run it under a supervisor
-that supplies `REINSTATE_PASSPHRASE_FD`.
+store caught mid-write. A vendor write caught halfway through a line can
+still be pushed as a torn snapshot — it shows up as one more snapshot in
+the history — and the next change pushes the whole line. A session that
+diverged on this device (edited locally after another device moved its
+head) is recorded once under `rein conflicts`, not once per tick: the
+record is keyed by the divergence, and a scheduled `pull --all` keeps
+restoring every other session while that one waits for
+`rein conflicts resolve`. The plist, unit, or task definition is written
+owner-only, and `rein daemon install` refuses an `--env` whose name looks
+like a credential (`SECRET`, `TOKEN`, `PASSPHRASE`, …): secrets belong in
+the OS keyring or the backend's own credential store, never in a plist or
+unit file. `rein daemon install` needs the root-key model
+(`rein account init`, which works on BYO storage too) so the daemon can run
+without a passphrase prompt. A passphrase-model home can still run
+`rein daemon run` under a supervisor that supplies
+`REINSTATE_PASSPHRASE_FD`: the descriptor is read once, when the daemon
+starts, and that passphrase serves every push and pull for the daemon's
+lifetime (the pull-before-resume hook stays off on such a home, since a
+shell command cannot read the same descriptor).
 
 On Windows, an account that is a member of Administrators runs under a
 UAC-filtered token in an ordinary shell, and `schtasks /Create /XML` refuses
@@ -227,7 +239,7 @@ elevated shell on such an account. Standard user accounts install from any
 shell.
 
 `rein daemon status` reads the status file the daemon writes after every
-action: whether the service is installed and running, the last push and
+action: whether the daemon is registered and running, the last push and
 pull, the watched roots, and — on Hop — the enrolled devices and any
 pending approvals. The interactive switcher shows the same one-line
 summary on its status line.

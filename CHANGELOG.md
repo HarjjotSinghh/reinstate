@@ -15,7 +15,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   edit that has simply not been pushed yet (that edit belongs to the next
   push). An explicit `rein pull --session` still restores and still records
   a conflict when the local copy diverged. This keeps the daemon's
-  five-minute pulls from churning the backup directory.
+  scheduled pulls from churning the backup directory.
+- Conflict records are keyed by the divergence (agent, session, local
+  revision, remote snapshot): `rein push --all` and `rein pull --all`
+  record the same unresolved divergence once rather than writing a fresh
+  `conflicts/c-*.json` on every run, so a daemon that pushes and pulls
+  every few seconds against one diverged session no longer grows the
+  directory without bound. `rein pull --all` also continues past a
+  diverged session instead of stopping at the first one: every other
+  session's newer snapshot is still restored, and the conflicted sessions
+  are reported together (exit code unchanged; `--json` adds `conflicts`).
 - Envelope encryption now sits behind a key-provider seam
   (`internal/crypto.KeyProvider`). BYO storage keeps the age scrypt passphrase
   model through `PassphraseProvider`, which writes identical envelopes and reads
@@ -43,7 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to start at login through the platform's own supervisor — a launchd user
   agent on macOS, a systemd `--user` unit on Linux, a Task Scheduler task
   with a logon trigger on Windows. `rein daemon status [--json]` reports the
-  service state, the last push and pull, the watched roots, and the
+  login registration, the last push and pull, the watched roots, and the
   enrolled devices and pending approvals; the interactive switcher shows
   the same one-line summary on its status line. One instance per home (a
   lock file), exponential backoff that a busy session cannot bypass, an
@@ -52,8 +61,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   panics (a vendor store changing mid-write) is recovered rather than
   crashing the daemon. It behaves identically on BYO storage and on Hop and
   sends nothing that `push` and `pull` do not already send (no telemetry,
-  ADR 0008). It needs the root-key model (`rein account init`, which works
-  on BYO storage too). See [docs/hop.md](docs/hop.md#the-daemon).
+  ADR 0008). `rein daemon install` needs the root-key model
+  (`rein account init`, which works on BYO storage too); a passphrase-model
+  home can run `rein daemon run` under a supervisor that supplies
+  `REINSTATE_PASSPHRASE_FD`, which the daemon reads once at start and keeps
+  for every push and pull of its lifetime. See
+  [docs/hop.md](docs/hop.md#the-daemon).
 - Hosted storage: `storage.type = "hop"` syncs to the signed-in account's
   **locker**, the storage bucket the control plane provisions for exactly one
   account. `rein init --hop` writes that profile (the account is the profile,
