@@ -11,6 +11,7 @@
   </Triggers>
   <Principals>
     <Principal id="Author">
+      <UserId>HARJOTS-PC\fixture-user</UserId>
       <LogonType>InteractiveToken</LogonType>
       <RunLevel>LeastPrivilege</RunLevel>
     </Principal>

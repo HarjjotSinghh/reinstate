@@ -24,6 +24,7 @@ var windowsSpec = Spec{
 	Home:       `C:\Users\fixture-user\.reinstate`,
 	LogPath:    `C:\Users\fixture-user\.reinstate\daemon\service.log`,
 	Path:       `C:\Windows\System32`,
+	UserID:     `HARJOTS-PC\fixture-user`,
 }
 
 func TestRenderGolden(t *testing.T) {

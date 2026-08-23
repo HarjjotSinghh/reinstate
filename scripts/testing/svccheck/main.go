@@ -13,6 +13,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/user"
 	"runtime"
 	"time"
 
@@ -41,6 +42,11 @@ func main() {
 		Args:       []string{"version"},
 		LogPath:    os.TempDir() + string(os.PathSeparator) + *label + ".log",
 		Path:       os.Getenv("PATH"),
+	}
+	if runtime.GOOS == "windows" {
+		if u, err := user.Current(); err == nil {
+			spec.UserID = u.Username
+		}
 	}
 	ctx := context.Background()
 	fmt.Printf("manager: %s\n", manager.Kind())

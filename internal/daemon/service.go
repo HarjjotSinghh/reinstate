@@ -35,6 +35,11 @@ type Spec struct {
 	// Path is the PATH the service inherits; launchd agents start with a
 	// minimal one that cannot find vendor CLIs otherwise.
 	Path string
+	// UserID is the account the Windows task runs as (DOMAIN\user or a
+	// SID). Task Scheduler refuses a /XML create whose principal names no
+	// user with "Access is denied" under a non-elevated token, so the
+	// installer always sets it. Ignored off Windows.
+	UserID string
 	// Env are extra environment variables (lab fixtures such as
 	// REINSTATE_BACKEND, or a non-production control plane). Task
 	// Scheduler has no per-task environment, so Windows ignores them.
@@ -439,6 +444,9 @@ var schtasksTemplate = template.Must(template.New("task").Funcs(template.FuncMap
   </Triggers>
   <Principals>
     <Principal id="Author">
+{{- if .UserID}}
+      <UserId>{{esc .UserID}}</UserId>
+{{- end}}
       <LogonType>InteractiveToken</LogonType>
       <RunLevel>LeastPrivilege</RunLevel>
     </Principal>

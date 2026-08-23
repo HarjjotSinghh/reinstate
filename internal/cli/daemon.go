@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"os/user"
 	"path/filepath"
 	"runtime"
 	"sort"
@@ -405,6 +406,13 @@ func daemonSpec(cmd *cobra.Command, flags daemonRunFlags) (daemon.Manager, daemo
 		Args:       flags.args(),
 		LogPath:    filepath.Join(daemon.Dir(home), "service.log"),
 		Path:       servicePath(exe),
+	}
+	if runtime.GOOS == "windows" {
+		// Task Scheduler refuses a /XML create whose principal names no
+		// user; the task runs as the installing user.
+		if u, err := user.Current(); err == nil {
+			spec.UserID = u.Username
+		}
 	}
 	if filepath.Clean(home) != filepath.Clean(defaultHome) {
 		spec.Home = home
