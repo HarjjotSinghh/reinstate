@@ -304,6 +304,10 @@ plane that no longer exists and can be removed by hand.
 
 ## 8. Addendum: expiry-at-prompt fix (review follow-up, ebe0e21)
 
+The bench ran ebe0e21; the branch tip at the time of this section
+(a301b8c) differed from it only by this document, so the recorded output
+applies to that tip's code.
+
 Review found that an approval whose request expired while the code prompt
 was open left the joining device's wrap in the keyring, so the joiner's
 retry restored a local enrolment with no approval behind it. The fix
@@ -323,3 +327,33 @@ PS D:\Projects\reinstate> go test ./internal/keyring/ ./internal/hop/ -count=1
 ok  	github.com/HarjjotSinghh/reinstate/internal/keyring	0.634s
 ok  	github.com/HarjjotSinghh/reinstate/internal/hop	0.830s
 ```
+
+## 9. Addendum: listed keyring entry is not enrolment (review follow-up, 7fa9cb5)
+
+A second review found that `rein account join` enrolled a device with no
+code and no approval whenever the bucket's keyring already listed it with
+the key this machine holds; since the joining device's public key is in
+the pairing request, an operator holding both the relay and the bucket
+could forge such a keyring around a root key of its own choosing, answer
+the claim with `expired`, and wait for the retry. The restore shortcut is
+gone: join always opens a fresh request and waits for a typed approval.
+The CLI journey now plays that operator (forged keyring in the bucket,
+expired request) and asserts a new pending request, no account record,
+and no push. Verified at the CLI seam on the Mac and re-run on the bench
+at the fixed commit; no new physical two-device run, because the change
+removes a code path rather than adding one and the cross-device flow is
+the one recorded in sections 1 to 7.
+
+```
+PS D:\Projects\reinstate> git log --oneline -1
+7fa9cb51 fix(hop): never treat a keyring that lists this device as enrolment (#9)
+PS D:\Projects\reinstate> go build ./...
+PS D:\Projects\reinstate> go test ./internal/cli/ -run "TestPairingJourney|TestLockerJourney|TestAccountJourney" -count=1
+ok  	github.com/HarjjotSinghh/reinstate/internal/cli	4.520s
+PS D:\Projects\reinstate> go test ./internal/keyring/ ./internal/hop/ ./internal/pairing/ -count=1
+ok  	github.com/HarjjotSinghh/reinstate/internal/keyring	0.681s
+ok  	github.com/HarjjotSinghh/reinstate/internal/hop	0.861s
+ok  	github.com/HarjjotSinghh/reinstate/internal/pairing	0.303s
+```
+
+The bench stash (`stash@{0}: WIP on (no branch): ae2ffae`) is untouched.
