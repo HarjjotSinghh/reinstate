@@ -12,7 +12,12 @@ const machineReadable = [
   {
     path: '/openapi.json',
     name: 'OpenAPI 3.1 document',
-    what: 'Describes every HTTP endpoint on reinstate.dev with operation IDs, typed parameters, response schemas, and the JSON error shape.',
+    what: 'Describes the JSON API with operation IDs, typed parameters, typed response schemas, rate-limit headers, and the versioning and deprecation policy.',
+  },
+  {
+    path: '/.well-known/api-catalog',
+    name: 'API catalog (RFC 9727)',
+    what: 'Linkset that points at the OpenAPI description, the developer docs, and the agent index files.',
   },
   {
     path: '/compatibility.json',
@@ -49,19 +54,38 @@ const machineReadable = [
 const apiRoutes = [
   {
     method: 'GET',
-    path: '/api/waitlist',
-    what: 'Service descriptor; doubles as a liveness probe.',
+    path: '/api/v1/waitlist',
+    what: 'Service descriptor with the API major version; doubles as a liveness probe.',
   },
   {
     method: 'POST',
-    path: '/api/waitlist',
+    path: '/api/v1/waitlist',
     what: 'Join the early-access waitlist with {"email":"you@example.com"}. Duplicate submissions return status "duplicate".',
+  },
+  {
+    method: 'GET/POST',
+    path: '/api/waitlist',
+    what: 'Deprecated unversioned alias of /api/v1/waitlist. Same behavior plus Deprecation and Link rel="successor-version" headers; no Sunset scheduled.',
+  },
+  {
+    method: 'GET',
+    path: '/.well-known/api-catalog',
+    what: 'RFC 9727 API catalog (linkset) pointing at the OpenAPI description, these docs, and the agent index files.',
   },
   {
     method: 'ANY',
     path: '/api/*',
-    what: 'Undocumented paths return a JSON 404; unsupported methods return a JSON 405 with an Allow header.',
+    what: 'Undocumented paths, including unknown /api/v1/* paths, return a problem+json 404; unsupported methods return 405 with an Allow header.',
   },
+] as const;
+
+const errorCodes = [
+  { code: 'invalid_json', status: 400, when: 'The request body is not JSON or lacks the email field.' },
+  { code: 'invalid_email', status: 400, when: 'The email field is empty or not a deliverable address.' },
+  { code: 'storage_unavailable', status: 503, when: 'Waitlist storage is temporarily down; Retry-After is set and the request is safe to repeat.' },
+  { code: 'not_found', status: 404, when: 'No API route exists at the path.' },
+  { code: 'method_not_allowed', status: 405, when: 'The path does not support the method; the Allow header lists the supported ones.' },
+  { code: 'rate_limited', status: 429, when: 'More than 60 requests in 60 seconds from one client address; Retry-After is set.' },
 ] as const;
 ---
 
@@ -149,9 +173,10 @@ rein sessions --json</code></pre>
 
   <h2 id="http-api">Website HTTP API</h2>
   <p>
-    The website API is small and documented in full by <a href="/openapi.json">/openapi.json</a>.
-    Every error is JSON with a stable <code>code</code>, a message, and a <code>hint</code>
-    describing what to change before retrying.
+    The website API is small and documented in full by <a href="/openapi.json">/openapi.json</a>
+    (OpenAPI 3.1) and catalogued at <a href="/.well-known/api-catalog">/.well-known/api-catalog</a>
+    (RFC 9727). No authentication, no API key. Every response links back to these documents in
+    its <code>Link</code> header.
   </p>
   <div class="pc-table-wrap">
     <table class="pc-table">
@@ -175,14 +200,76 @@ rein sessions --json</code></pre>
       </tbody>
     </table>
   </div>
+  <h3 id="versioning-and-deprecation">Versioning and deprecation</h3>
+  <p>
+    Stable operations live under a major-version path, <code>/api/v1/</code>. Additive changes
+    ship in place; a breaking change requires a new major path such as <code>/api/v2/</code>.
+    A deprecated path keeps working and announces itself with the RFC 9745
+    <code>Deprecation</code> header (the date in <code>@seconds</code> form), a
+    <code>Link</code> with <code>rel="successor-version"</code>, and, once a removal date exists,
+    the RFC 8594 <code>Sunset</code> header at least 90 days before removal. Today
+    <code>/api/waitlist</code> is the only deprecated path; it has no scheduled Sunset. The same
+    policy is machine-readable under <code>x-api-lifecycle</code> in
+    <a href="/openapi.json">/openapi.json</a>.
+  </p>
+
+  <h3 id="rate-limits">Rate limits</h3>
+  <p>
+    Every <code>/api/*</code> response carries the IETF RateLimit header fields
+    (<code>RateLimit-Policy</code> and <code>RateLimit</code> as structured fields, plus the
+    compatibility <code>RateLimit-Limit</code>, <code>RateLimit-Remaining</code>, and
+    <code>RateLimit-Reset</code>). The policy is <code>"api";q=60;w=60</code>: 60 requests per
+    client address per 60 seconds, counted per function instance, so treat it as advisory. A 429
+    response is a problem document with <code>code: "rate_limited"</code> and a
+    <code>Retry-After</code> header.
+  </p>
+  <pre data-language="http"><code>RateLimit-Policy: "api";q=60;w=60
+RateLimit: "api";r=59;t=42
+RateLimit-Limit: 60
+RateLimit-Remaining: 59
+RateLimit-Reset: 42</code></pre>
+
+  <h3 id="errors">Errors</h3>
+  <p>
+    Errors are RFC 9457 problem details (<code>application/problem+json</code>). The
+    <code>type</code> URI resolves to the matching entry below, <code>code</code> is stable,
+    <code>hint</code> says what to change before retrying, and the legacy <code>ok</code> and
+    <code>error</code> members remain for early integrations.
+  </p>
   <pre data-language="json"><code>{`{
-  "ok": false,
+  "type": "https://reinstate.dev/developers#error-invalid-email",
+  "title": "Email address is invalid",
   "status": 400,
+  "detail": "Enter a valid email address.",
+  "instance": "/api/v1/waitlist",
   "code": "invalid_email",
-  "error": "Enter a valid email address.",
   "hint": "Provide one deliverable address in the email field; it is trimmed and lower-cased before storage.",
-  "docs": "https://reinstate.dev/openapi.json"
+  "docs": "https://reinstate.dev/developers#errors",
+  "ok": false,
+  "error": "Enter a valid email address."
 }`}</code></pre>
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">Code</th>
+          <th scope="col">Status</th>
+          <th scope="col">When</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          errorCodes.map((entry) => (
+            <tr id={`error-${entry.code.replace(/_/g, '-')}`}>
+              <td><code>{entry.code}</code></td>
+              <td>{entry.status}</td>
+              <td>{entry.when}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
 
   <h2 id="markdown">Markdown for agents</h2>
   <p>

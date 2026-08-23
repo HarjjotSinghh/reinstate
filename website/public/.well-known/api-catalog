@@ -1,0 +1,42 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://reinstate.dev/api/v1/waitlist",
+      "service-desc": [
+        { "href": "https://reinstate.dev/openapi.json", "type": "application/vnd.oai.openapi+json", "title": "Reinstate website API (OpenAPI 3.1)" }
+      ],
+      "service-doc": [
+        { "href": "https://reinstate.dev/developers", "type": "text/html", "title": "Reinstate developer resources" },
+        { "href": "https://reinstate.dev/developers#versioning-and-deprecation", "type": "text/html", "title": "Versioning and deprecation policy" },
+        { "href": "https://reinstate.dev/developers#rate-limits", "type": "text/html", "title": "Rate limits" }
+      ],
+      "service-meta": [
+        { "href": "https://reinstate.dev/llms.txt", "type": "text/plain", "title": "llms.txt index for agents" },
+        { "href": "https://reinstate.dev/agent-instructions.md", "type": "text/markdown", "title": "When and how agents should use Reinstate" }
+      ],
+      "status": [
+        { "href": "https://reinstate.dev/api/v1/waitlist", "type": "application/json", "title": "Service descriptor (liveness probe)" }
+      ]
+    },
+    {
+      "anchor": "https://reinstate.dev/compatibility.json",
+      "service-desc": [
+        { "href": "https://reinstate.dev/openapi.json", "type": "application/vnd.oai.openapi+json", "title": "Reinstate website API (OpenAPI 3.1)" }
+      ],
+      "service-doc": [
+        { "href": "https://reinstate.dev/compatibility", "type": "text/html", "title": "Reinstate compatibility" }
+      ]
+    },
+    {
+      "anchor": "https://reinstate.dev/",
+      "service-doc": [
+        { "href": "https://reinstate.dev/developers", "type": "text/html", "title": "Reinstate developer resources" }
+      ],
+      "service-meta": [
+        { "href": "https://reinstate.dev/llms.txt", "type": "text/plain", "title": "llms.txt index for agents" },
+        { "href": "https://reinstate.dev/llms-full.txt", "type": "text/plain", "title": "Every page as Markdown" },
+        { "href": "https://reinstate.dev/sitemap-index.xml", "type": "application/xml", "title": "Sitemap index" }
+      ]
+    }
+  ]
+}

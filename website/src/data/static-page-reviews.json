@@ -36,5 +36,6 @@
   {"route": "/compare/reinstate-vs-manual-session-copying", "reviewedAt": "2026-07-27", "owner": "Harjot Singh Rana", "sources": ["src/pages/compare/reinstate-vs-manual-session-copying.astro", "src/content/docs/comparison.md"]},
   {"route": "/compare/reinstate-vs-remote-desktop", "reviewedAt": "2026-07-27", "owner": "Harjot Singh Rana", "sources": ["src/pages/compare/reinstate-vs-remote-desktop.astro", "src/content/docs/comparison.md"]},
   {"route": "/compare/reinstate-vs-git", "reviewedAt": "2026-07-27", "owner": "Harjot Singh Rana", "sources": ["src/pages/compare/reinstate-vs-git.astro", "src/content/docs/comparison.md"]},
-  {"route": "/developers", "reviewedAt": "2026-08-22", "owner": "Harjot Singh Rana", "sources": ["src/pages/developers.astro", "src/lib/openapi.ts", "src/pages/api/waitlist.ts", "src/lib/agent-surface/negotiate.ts"]}
+  {"route": "/developers", "reviewedAt": "2026-08-22", "owner": "Harjot Singh Rana", "sources": ["src/pages/developers.astro", "src/lib/openapi.ts", "src/pages/api/waitlist.ts", "src/lib/agent-surface/negotiate.ts"]},
+  {"route": "/contact", "reviewedAt": "2026-08-22", "owner": "Harjot Singh Rana", "sources": ["src/pages/contact.astro", "../SUPPORT.md", "../SECURITY.md", "../MAINTAINERS.md"]}
 ]

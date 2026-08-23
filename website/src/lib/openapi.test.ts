@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { API_ERROR_CODES } from './api-errors';
-import { OPENAPI_VERSION, openApiDocument, openApiJson } from './openapi';
+import { API_RATE_LIMIT } from './rate-limit';
+import { API_VERSION, OPENAPI_VERSION, openApiDocument, openApiJson } from './openapi';
 import { product } from '../data/product';
 
 type Operation = Record<string, any>;
 
 const HTTP_METHODS = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace'];
+const JSON_MEDIA_TYPES = ['application/json', 'application/problem+json', 'application/linkset+json'];
 
 function operations(document: Record<string, any>): Array<{ path: string; method: string; operation: Operation }> {
   const result: Array<{ path: string; method: string; operation: Operation }> = [];
@@ -32,37 +34,53 @@ function collectRefs(value: unknown, refs: Set<string>): void {
 
 /** Where each documented path is implemented; keeps the spec honest about what the site serves. */
 const IMPLEMENTATIONS: Record<string, string[]> = {
-  '/api/waitlist': ['src/pages/api/waitlist.ts'],
+  '/api/v1/waitlist': ['src/pages/api/v1/waitlist.ts', 'src/lib/waitlist-api.ts'],
+  '/api/waitlist': ['src/pages/api/waitlist.ts', 'src/lib/waitlist-api.ts'],
   '/api/{path}': ['src/pages/api/[...path].ts'],
   '/compatibility.json': ['src/pages/compatibility.json.ts'],
-  '/{page}': ['src/lib/agent-surface/function.ts', 'src/middleware.ts'],
-  '/{page}.md': ['src/lib/agent-surface/build.ts'],
-  '/llms.txt': ['public/llms.txt'],
-  '/llms-full.txt': ['src/lib/agent-surface/build.ts'],
-  '/agent-instructions.md': ['public/agent-instructions.md'],
   '/openapi.json': ['src/pages/openapi.json.ts'],
-  '/sitemap-index.xml': ['astro.config.mjs'],
-  '/rss.xml': ['src/pages/rss.xml.ts'],
-  '/install.sh': ['public/install.sh'],
-  '/install.ps1': ['public/install.ps1'],
+  '/.well-known/api-catalog': ['public/.well-known/api-catalog'],
 };
 
 describe('openApiDocument', () => {
   const document = openApiDocument() as Record<string, any>;
   const ops = operations(document);
 
-  it('is an OpenAPI 3.1 document that names the product and the production server', () => {
+  it('is an OpenAPI 3.1 document that names the product, the API version, and the production server', () => {
     expect(document.openapi).toBe(OPENAPI_VERSION);
+    expect(document.info.version).toBe(API_VERSION);
+    expect(document.info['x-reinstate-release']).toBe(product.currentRelease);
     expect(document.info.title).toContain(product.name);
     expect(document.info.description).toContain(product.name);
     expect(document.info.description).toContain('no hosted Reinstate API');
+    expect(document.info.contact.url).toBe(`${product.siteUrl}/contact`);
     expect(document.servers).toEqual([{ url: product.siteUrl, description: 'Production' }]);
     expect(document.externalDocs.url).toBe(`${product.siteUrl}/developers`);
     expect(document.info.license.name).toBe(product.licenseName);
   });
 
+  it('declares the versioning, deprecation, and rate-limit policies agents can rely on', () => {
+    expect(document['x-api-lifecycle']).toMatchObject({
+      deprecationPolicy: `${product.siteUrl}/developers#versioning-and-deprecation`,
+      minimumNoticeDays: 90,
+      deprecated: [{ path: '/api/waitlist', successor: '/api/v1/waitlist', sunset: null }],
+    });
+    expect(document['x-api-lifecycle'].versioning).toContain('/api/v1/');
+    expect(document['x-rate-limit-policy']).toMatchObject({
+      quota: API_RATE_LIMIT.quota,
+      windowSeconds: API_RATE_LIMIT.windowSeconds,
+      documentation: `${product.siteUrl}/developers#rate-limits`,
+    });
+    expect(Object.keys(document.paths).some((path) => path.startsWith('/api/v1/'))).toBe(true);
+    for (const op of ['get', 'post']) {
+      expect(document.paths['/api/waitlist'][op].deprecated).toBe(true);
+      expect(document.paths['/api/waitlist'][op].responses['200'].headers.Deprecation).toBeDefined();
+      expect(document.paths['/api/v1/waitlist'][op].deprecated).toBeUndefined();
+    }
+  });
+
   it('gives every operation a unique operationId, summary, description, tags, and responses', () => {
-    expect(ops.length).toBeGreaterThanOrEqual(14);
+    expect(ops.length).toBeGreaterThanOrEqual(8);
     const ids = ops.map(({ operation }) => operation.operationId);
     expect(new Set(ids).size).toBe(ids.length);
     const declaredTags = new Set((document.tags as Array<{ name: string }>).map((tag) => tag.name));
@@ -73,29 +91,49 @@ describe('openApiDocument', () => {
       expect(operation.description?.length, label).toBeGreaterThan(20);
       expect(operation.tags?.length, label).toBeGreaterThan(0);
       for (const tag of operation.tags) expect(declaredTags.has(tag), `${label} tag ${tag}`).toBe(true);
-      const responses = Object.entries(operation.responses as Record<string, any>);
-      expect(responses.length, label).toBeGreaterThan(0);
-      for (const [status, response] of responses) {
-        expect(status, label).toMatch(/^[1-5]\d\d$/);
-        expect(response.description?.length, `${label} ${status}`).toBeGreaterThan(3);
-      }
-      expect(responses.some(([, response]) => response.content), `${label} has a typed response`).toBe(true);
+      expect(Object.keys(operation.responses).length, label).toBeGreaterThan(0);
     }
   });
 
-  it('types every parameter and documents every path parameter', () => {
-    for (const { path, operation } of ops) {
-      const pathParams = [...path.matchAll(/\{(\w+)\}/g)].map((match) => match[1]);
-      const declared = (operation.parameters ?? []) as Array<Record<string, any>>;
-      for (const parameter of declared) {
+  it('types every response as JSON with an object schema and describes every header', () => {
+    for (const { path, method, operation } of ops) {
+      for (const [status, response] of Object.entries(operation.responses as Record<string, any>)) {
+        const label = `${method.toUpperCase()} ${path} ${status}`;
+        expect(status, label).toMatch(/^[1-5]\d\d$/);
+        expect(response.description?.length, label).toBeGreaterThan(3);
+        const mediaTypes = Object.keys(response.content ?? {});
+        expect(mediaTypes.length, `${label} has content`).toBe(1);
+        expect(JSON_MEDIA_TYPES, label).toContain(mediaTypes[0]);
+        const schema = response.content[mediaTypes[0]!].schema;
+        const name = schema.$ref?.replace('#/components/schemas/', '');
+        expect(name, `${label} uses a named schema`).toBeDefined();
+        expect(document.components.schemas[name].type, `${label} schema ${name}`).toBe('object');
+        for (const [headerName, header] of Object.entries(response.headers ?? {})) {
+          const resolved = (header as any).$ref ? document.components.headers[(header as any).$ref.replace('#/components/headers/', '')] : header;
+          expect(resolved?.description?.length, `${label} header ${headerName}`).toBeGreaterThan(5);
+          expect(resolved?.schema?.type, `${label} header ${headerName}`).toBeDefined();
+        }
+      }
+      for (const parameter of (operation.parameters ?? []) as Array<Record<string, any>>) {
         expect(parameter.schema?.type, `${path} ${parameter.name}`).toBeDefined();
         expect(parameter.description?.length, `${path} ${parameter.name}`).toBeGreaterThan(5);
-        expect(['path', 'query', 'header']).toContain(parameter.in);
         if (parameter.in === 'path') expect(parameter.required).toBe(true);
       }
-      for (const name of pathParams) {
-        expect(declared.some((parameter) => parameter.in === 'path' && parameter.name === name), `${path} declares ${name}`).toBe(true);
+      for (const name of [...path.matchAll(/\{(\w+)\}/g)].map((match) => match[1])) {
+        expect((operation.parameters ?? []).some((parameter: any) => parameter.in === 'path' && parameter.name === name), `${path} declares ${name}`).toBe(true);
       }
+    }
+  });
+
+  it('documents the rate-limit headers on every dynamic operation and 429 with Retry-After', () => {
+    for (const { path, operation } of ops.filter((op) => op.path.startsWith('/api/'))) {
+      for (const [status, response] of Object.entries(operation.responses as Record<string, any>)) {
+        for (const header of ['RateLimit-Policy', 'RateLimit', 'RateLimit-Limit', 'RateLimit-Remaining', 'RateLimit-Reset', 'Link']) {
+          expect(response.headers?.[header], `${path} ${status} ${header}`).toBeDefined();
+        }
+      }
+      expect(operation.responses['429'], `${path} documents 429`).toBeDefined();
+      expect(operation.responses['429'].headers['Retry-After']).toBeDefined();
     }
   });
 
@@ -104,11 +142,11 @@ describe('openApiDocument', () => {
     collectRefs(document.paths, refs);
     collectRefs(document.components, refs);
     for (const ref of refs) {
-      const name = ref.replace('#/components/schemas/', '');
-      expect(document.components.schemas[name], ref).toBeDefined();
+      const [, kind, name] = ref.match(/^#\/components\/(schemas|headers)\/(.+)$/)!;
+      expect(document.components[kind!][name!], ref).toBeDefined();
     }
-    expect(document.components.schemas.ErrorResponse.properties.code.enum).toEqual([...API_ERROR_CODES]);
-    expect(document.components.schemas.ErrorResponse.required).toEqual(['ok', 'status', 'code', 'error', 'hint', 'docs']);
+    expect(document.components.schemas.ProblemDetails.properties.code.enum).toEqual([...API_ERROR_CODES]);
+    expect(document.components.schemas.ProblemDetails.required).toEqual(['type', 'title', 'status', 'detail', 'code', 'hint', 'docs', 'ok', 'error']);
   });
 
   it('documents only paths that exist in this repository', () => {
@@ -119,14 +157,6 @@ describe('openApiDocument', () => {
       for (const file of files!) expect(existsSync(resolve(root, file)), file).toBe(true);
     }
     expect(Object.keys(IMPLEMENTATIONS).sort()).toEqual(Object.keys(document.paths).sort());
-  });
-
-  it('says the negotiated page endpoint varies on Accept and can return 406', () => {
-    const page = document.paths['/{page}'].get;
-    expect(page.responses['200'].headers.Vary.schema.const).toBe('Accept');
-    expect(Object.keys(page.responses['200'].content)).toEqual(['text/markdown', 'text/html']);
-    expect(page.responses['404'].content['text/markdown']).toBeDefined();
-    expect(page.responses['406'].content['text/plain']).toBeDefined();
   });
 
   it('serializes as stable, pretty JSON ending in a newline', () => {

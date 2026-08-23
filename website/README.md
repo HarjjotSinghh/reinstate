@@ -23,7 +23,7 @@ npm run dev
 ```
 
 - Site: http://localhost:4321
-- Waitlist: `POST /api/waitlist` with `{ "email": "you@example.com" }`
+- Waitlist: `POST /api/v1/waitlist` with `{ "email": "you@example.com" }` (`/api/waitlist` is a deprecated alias)
 
 ```bash
 npm test

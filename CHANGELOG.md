@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   error bodies with codes and hints on every `/api/*` route, a Markdown 404
   for non-browser clients, a `/developers` resource hub, and
   `agent-instructions.md` plus when-to-use guidance in `llms.txt`.
+- The website API is now versioned under `/api/v1/` (the unversioned
+  `/api/waitlist` stays as a deprecated alias with RFC 9745 `Deprecation`
+  headers), answers with RFC 9457 `application/problem+json` errors, IETF
+  `RateLimit` headers (60 requests per client per minute, 429 with
+  `Retry-After`), and `Link` relations to `/openapi.json`, the RFC 9727
+  `/.well-known/api-catalog`, and the policy on `/developers`. A `/contact`
+  page lists the public support channels and private security reporting.
 
 ### Changed
 
