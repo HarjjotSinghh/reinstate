@@ -9,14 +9,20 @@ to T4. Both promotions have landed.
 | ---- | ----- | -------------- | ------ |
 | T3 (`GS*`, `GV*`, `GR*`) | collected 2026-08-22 | collected 2026-08-22 | `2026-08-22-macos-grok-t3.md`, `2026-08-22-windows-grok-t3.md` |
 | T4 (`GD1`–`GD7`) | 7 of 7 | 6 of 7 — `GD6`'s Codex leg is unmeasurable there, that host has no Codex CLI | `2026-08-23-macos-grok-t4.md`, `2026-08-23-windows-grok-t4.md` |
-| T4 (`GD8`) | **outstanding** | **outstanding** | — |
+| T4 (`GD8`) | collected 2026-08-23 | **outstanding** | `2026-08-23-macos-grok-gd8.md` |
 
-`GD8` is outstanding on both devices because both T4 runs set `yolo = true` in
-the acceptance root to make the vendor's tool loop deterministic. That is
-disclosed in both reports, and under the rule below it means the approval prompt
-was never exercised. Collecting `GD8` needs an attended run at the vendor's
-default setting; it deepens T4 rather than gating it, since the tier landed on
+`GD8` was outstanding on both devices because both T4 runs set `yolo = true` in
+the acceptance root to make the vendor's tool loop deterministic, which is
+disclosed in both reports. It is now collected on macOS, and the result narrows
+the row: the approval gate sits **after** the handoff contract, not inside it.
+Restating the five bullets needs only read-only tools, which Grok does not gate,
+so the prompt appears when the agent moves from describing to executing — where
+the briefing already draws the line. Auto-approval was never load-bearing for
 `GD1`–`GD7`.
+
+Native Windows is still outstanding: that host's ConPTY channel stopped
+allocating terminals during the T4 runs, and `vendor-tty-driver.py` is Unix-only.
+`GD8` deepens T4 rather than gating it, since the tier landed on `GD1`–`GD7`.
 
 This page exists because the tier ladder's evidence gate is physical.
 [agent-support-tiers.md](../agent-support-tiers.md) requires, at T3, "a physical
@@ -44,8 +50,14 @@ run the rows; if it does not, record the row as `UNCOLLECTED`, not `PASS`.
    before it starts — device attributes, cursor position (`ESC[6n`), and OSC
    10/11 colour (`ESC]11;?`) — and blocks until each is answered. A passive
    recorder such as `script(1)` leaves the process alive with zero bytes
-   captured, which is indistinguishable from a hung vendor. The driver must
-   reply.
+   captured, which is indistinguishable from a hung vendor. Use
+   [`scripts/testing/vendor-tty-driver.py`](../../scripts/testing/vendor-tty-driver.py),
+   which replies to all three, records the transcript, and can inject input
+   when a pattern appears:
+
+   ```
+   scripts/testing/vendor-tty-driver.py --log run.log --timeout 900 -- rein handoff <id> --to grok
+   ```
 5. Patience measured in turns, not writes. The acknowledgement is not the first
    assistant record: the vendor opens with a short intent line carrying tool
    calls and restates the five bullets several turns later (measured: turn nine
