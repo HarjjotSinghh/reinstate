@@ -7,9 +7,9 @@ import {
   analyticsPageEvent,
 } from '../lib/analytics';
 
-const domain = import.meta.env.PUBLIC_PLAUSIBLE_DOMAIN;
-const scriptUrl = import.meta.env.PUBLIC_PLAUSIBLE_SCRIPT_URL;
-const enabled = Boolean(domain && scriptUrl);
+const projectToken = import.meta.env.PUBLIC_POSTHOG_PROJECT_TOKEN;
+const apiHost = import.meta.env.PUBLIC_POSTHOG_HOST;
+const enabled = Boolean(projectToken && apiHost);
 const pageEvent = analyticsPageEvent(Astro.url.pathname);
 const analyticsConfig = JSON.stringify({
   pageEvent,
@@ -21,27 +21,71 @@ const analyticsConfig = JSON.stringify({
   .replace(/</g, '\\u003c')
   .replace(/\u2028/g, '\\u2028')
   .replace(/\u2029/g, '\\u2029');
+const runtimeConfig = JSON.stringify({ token: projectToken, apiHost })
+  .replace(/</g, '\\u003c');
 ---
 
 {
   enabled && (
     <script
       is:inline
-      defer
-      data-domain={domain}
-      src={scriptUrl}
-    />
-  )
-}
-{
-  enabled && (
-    <script
-      is:inline
       set:html={`
         var reinstateAnalytics = ${analyticsConfig};
-        window.plausible = window.plausible || function () {
-          (window.plausible.q = window.plausible.q || []).push(arguments);
-        };
+        var reinstatePostHog = ${runtimeConfig};
+
+    !(function (t, e) {
+        var o, n, p, r;
+        e.__SV ||
+          ((window.posthog = e),
+          (e._i = []),
+          (e.init = function (i, s, a) {
+            function g(t, e) {
+              var o = e.split('.');
+              2 == o.length && ((t = t[o[0]]), (e = o[1]));
+              t[e] = function () {
+                t.push([e].concat(Array.prototype.slice.call(arguments, 0)));
+              };
+            }
+            ((p = t.createElement('script')).type = 'text/javascript'),
+              (p.crossOrigin = 'anonymous'),
+              (p.async = !0),
+              (p.src = s.api_host + '/static/array.js'),
+              (r = t.getElementsByTagName('script')[0]).parentNode.insertBefore(p, r);
+            var u = e;
+            for (
+              void 0 !== a ? (u = e[a] = []) : (a = 'posthog'),
+                (u.people = u.people || []),
+                (u.toString = function (t) {
+                  var e = 'posthog';
+                  return 'posthog' !== a && (e += '.' + a), t || (e += ' (stub)'), e;
+                }),
+                (u.people.toString = function () {
+                  return u.toString(1) + '.people (stub)';
+                }),
+                o = 'capture identify alias people.set people.set_once set_config register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled onFeatureFlags getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures getActiveMatchingSurveys getSurveys getNextSurveyStep onSessionId'.split(
+                  ' '
+                ),
+                n = 0;
+              n < o.length;
+              n++
+            )
+              g(u, o[n]);
+            e._i.push([i, s, a]);
+          }),
+          (e.__SV = 1));
+    })(document, window.posthog || []);
+
+        posthog.init(reinstatePostHog.token, {
+          api_host: reinstatePostHog.apiHost,
+          ui_host: 'https://us.posthog.com',
+          autocapture: false,
+          capture_pageview: true,
+          capture_pageleave: true,
+          disable_session_recording: true,
+          disable_surveys: true,
+          persistence: 'localStorage',
+          person_profiles: 'identified_only',
+        });
 
         function normalizedReferralHostname(value) {
           try {
@@ -97,9 +141,7 @@ const analyticsConfig = JSON.stringify({
           if (reinstateReferralChannel) {
             props.ai_referral_channel = reinstateReferralChannel;
           }
-          window.plausible(name, {
-            props: props
-          });
+          posthog.capture(name, props);
           return true;
         }
         window.reinstateTrack = sendReinstateEvent;
