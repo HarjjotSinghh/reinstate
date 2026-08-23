@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"github.com/HarjjotSinghh/reinstate/internal/backend"
+	"github.com/HarjjotSinghh/reinstate/internal/crypto"
+	"github.com/HarjjotSinghh/reinstate/internal/crypto/cryptotest"
 	reinsync "github.com/HarjjotSinghh/reinstate/internal/sync"
 )
 
@@ -217,7 +219,7 @@ type markerCodec struct{}
 
 const marker = "fake-age-envelope:"
 
-func (markerCodec) Encrypt(src io.Reader, dst io.Writer, _ string) error {
+func (markerCodec) Encrypt(src io.Reader, dst io.Writer, _ crypto.KeyProvider) error {
 	if _, err := io.WriteString(dst, marker); err != nil {
 		return err
 	}
@@ -225,7 +227,7 @@ func (markerCodec) Encrypt(src io.Reader, dst io.Writer, _ string) error {
 	return err
 }
 
-func (markerCodec) DecryptReader(src io.Reader, _ string) (io.Reader, error) {
+func (markerCodec) DecryptReader(src io.Reader, _ crypto.KeyProvider) (io.Reader, error) {
 	head := make([]byte, len(marker))
 	if _, err := io.ReadFull(src, head); err != nil || string(head) != marker {
 		return nil, errors.New("bad envelope")
@@ -244,7 +246,7 @@ func TestPushCompletesWhenCredentialExpiresMidPush(t *testing.T) {
 
 	// Seed a manifest so the push performs a real If-Match compare-and-swap.
 	ctx := context.Background()
-	eng := &reinsync.Engine{Backend: c, Passphrase: "test-pass-phrase-32", Platform: "darwin-arm64", Codec: markerCodec{}}
+	eng := &reinsync.Engine{Backend: c, Keys: cryptotest.Passphrase("test-pass-phrase-32"), Platform: "darwin-arm64", Codec: markerCodec{}}
 	seed := filepath.Join(t.TempDir(), "seed.jsonl")
 	if err := os.WriteFile(seed, []byte(`{"type":"user","text":"synthetic seed"}`), 0o600); err != nil {
 		t.Fatal(err)
