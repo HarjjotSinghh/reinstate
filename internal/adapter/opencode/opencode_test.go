@@ -428,3 +428,73 @@ func writeTarEntry(t *testing.T, w *bytes.Buffer, name string, body []byte) {
 		t.Fatal(err)
 	}
 }
+
+// TestCheckpointedCopyStaysBesideStore pins the working copy to the store's own
+// directory: the final os.Rename cannot cross filesystems, so a copy under the
+// system temp directory would fail after the backup had been taken.
+func TestCheckpointedCopyStaysBesideStore(t *testing.T) {
+	root := hydrateStore(t, macosSeed)
+	store := filepath.Join(root, DatabaseName)
+	working, cleanup, err := checkpointedCopy(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if filepath.Dir(filepath.Dir(working)) != root {
+		t.Fatalf("working copy %q is not staged beside %q", working, store)
+	}
+	if filepath.Dir(working) == root {
+		t.Fatalf("working copy %q collides with the live store's directory entries", working)
+	}
+	cleanup()
+	if _, err := os.Stat(filepath.Dir(working)); !os.IsNotExist(err) {
+		t.Fatalf("cleanup left %q behind (err=%v)", filepath.Dir(working), err)
+	}
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range entries {
+		if strings.HasPrefix(e.Name(), ".reinstate-opencode-restore-") {
+			t.Fatalf("stale working directory %q left beside the store", e.Name())
+		}
+	}
+}
+
+// TestDenormalizerLeavesUntokenisedPathsAlone guards that a path outside every
+// known root (no ${HOME}/${REPO:} token) is restored verbatim rather than
+// having its separators flipped into a path that exists nowhere.
+func TestDenormalizerLeavesUntokenisedPathsAlone(t *testing.T) {
+	tests := []struct {
+		name string
+		goos string
+		home string
+		in   string
+		want string
+	}{
+		{"windows keeps posix path", "windows", `C:\Users\fixture-user`, "/opt/tools", "/opt/tools"},
+		{"darwin keeps windows path", "darwin", "/Users/fixture-user", `D:\tools`, `D:\tools`},
+		{"windows home token", "windows", `C:\Users\fixture-user`, "${HOME}/code/demo", `C:\Users\fixture-user\code\demo`},
+		{"darwin home token", "darwin", "/Users/fixture-user", "${HOME}/code/demo", "/Users/fixture-user/code/demo"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &Adapter{Root: t.TempDir(), Home: tt.home, GOOS: tt.goos}
+			if got := a.denormalizer()(tt.in); got != tt.want {
+				t.Fatalf("denormalize(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestRewriteJSONPathsKeepsLargeIntegers proves a message body survives the
+// path rewrite with integers above 2^53 intact instead of rounded via float64.
+func TestRewriteJSONPathsKeepsLargeIntegers(t *testing.T) {
+	in := []byte(`{"id":9007199254740993,"path":{"cwd":"/Users/fixture-user/code/demo"}}`)
+	out := rewriteJSONPaths(in, func(string) string { return "${HOME}/code/demo" })
+	if !strings.Contains(string(out), `9007199254740993`) {
+		t.Fatalf("large integer lost precision: %s", out)
+	}
+	if !strings.Contains(string(out), `"cwd":"${HOME}/code/demo"`) {
+		t.Fatalf("path not rewritten: %s", out)
+	}
+}

@@ -1,6 +1,7 @@
 package opencode
 
 import (
+	"bytes"
 	"encoding/json"
 	"strings"
 )
@@ -12,8 +13,8 @@ func rewriteJSONPaths(data []byte, mapPath func(string) string) json.RawMessage 
 	if len(strings.TrimSpace(string(data))) == 0 {
 		return json.RawMessage(data)
 	}
-	var v any
-	if err := json.Unmarshal(data, &v); err != nil {
+	v, err := decodeJSON(data)
+	if err != nil {
 		return json.RawMessage(data)
 	}
 	walkPaths(v, mapPath)
@@ -22,6 +23,19 @@ func rewriteJSONPaths(data []byte, mapPath func(string) string) json.RawMessage 
 		return json.RawMessage(data)
 	}
 	return json.RawMessage(out)
+}
+
+// decodeJSON parses a blob with numbers kept as their literal text, so a
+// re-marshalled body carries integers above 2^53 (ids, nanosecond stamps)
+// byte-for-byte rather than rounded through float64.
+func decodeJSON(data []byte) (any, error) {
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
+	var v any
+	if err := dec.Decode(&v); err != nil {
+		return nil, err
+	}
+	return v, nil
 }
 
 func walkPaths(v any, mapPath func(string) string) {
@@ -66,8 +80,8 @@ func rewriteSessionRef(data json.RawMessage, sourceID, targetID string) json.Raw
 	if sourceID == "" || targetID == "" || sourceID == targetID || len(data) == 0 {
 		return data
 	}
-	var v any
-	if err := json.Unmarshal(data, &v); err != nil {
+	v, err := decodeJSON(data)
+	if err != nil {
 		return data
 	}
 	walkSessionRef(v, sourceID, targetID)

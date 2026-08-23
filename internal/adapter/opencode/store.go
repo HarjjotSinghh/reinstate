@@ -357,6 +357,12 @@ func (a *Adapter) denormalizer() func(string) string {
 		goos = runtime.GOOS
 	}
 	return func(p string) string {
+		if !strings.HasPrefix(p, "${") {
+			// A path that was never tokenised (no ${HOME} or ${REPO:} prefix)
+			// belongs to no known root on this device, so swapping its
+			// separators would only manufacture a path that exists nowhere.
+			return p
+		}
 		out := m.Denormalize(p)
 		if goos == "windows" {
 			return strings.ReplaceAll(out, "/", `\`)
@@ -386,9 +392,14 @@ func rawOrNull(raw json.RawMessage) any {
 
 // checkpointedCopy makes a private, write-ahead-merged copy of a store so
 // edits happen off to the side and the live store is only replaced by an atomic
-// rename. The vendor's directory is never written to.
+// rename. The copy lives in a hidden directory beside the store, on the same
+// volume, because os.Rename does not cross filesystems: a copy under the
+// system temp directory would fail the final rename with EXDEV on hosts where
+// /tmp is tmpfs, or on Windows when %TEMP% is on another drive, after the
+// backup had already been taken. The Claude and Codex adapters stage their
+// restores beside the destination for the same reason.
 func checkpointedCopy(src string) (string, func(), error) {
-	tempDir, err := os.MkdirTemp("", "reinstate-opencode-restore-")
+	tempDir, err := os.MkdirTemp(filepath.Dir(src), ".reinstate-opencode-restore-")
 	if err != nil {
 		return "", func() {}, err
 	}
