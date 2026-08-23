@@ -31,6 +31,7 @@ export const DEFAULT_LAUNCH_PATHS = [
   '/about/reinstate',
   '/glossary',
   '/open-source',
+  '/developers',
   '/roadmap',
   '/research',
   '/research/encrypted-snapshot-format-v1',

@@ -1,0 +1,219 @@
+---
+import PublicContentLayout from '../layouts/PublicContentLayout.astro';
+import { product } from '../data/product';
+
+export const prerender = true;
+
+const title = 'Reinstate Developer Resources: CLI, HTTP API, OpenAPI, and Agent Files';
+const description =
+  'Every machine-readable Reinstate surface in one place: the rein CLI reference, the website HTTP API with its OpenAPI document, compatibility JSON, Markdown page twins, llms.txt, and agent instructions.';
+
+const machineReadable = [
+  {
+    path: '/openapi.json',
+    name: 'OpenAPI 3.1 document',
+    what: 'Describes every HTTP endpoint on reinstate.dev with operation IDs, typed parameters, response schemas, and the JSON error shape.',
+  },
+  {
+    path: '/compatibility.json',
+    name: 'Compatibility matrix',
+    what: 'Agent tiers, tested version ranges, operating-system status, evidence links, and review dates. Same data as the compatibility page.',
+  },
+  {
+    path: '/llms.txt',
+    name: 'llms.txt',
+    what: 'Curated index of canonical pages with one-line summaries and a when-to-use section for agents.',
+  },
+  {
+    path: '/llms-full.txt',
+    name: 'llms-full.txt',
+    what: 'Every indexable page as one Markdown file, each section prefixed with its canonical URL.',
+  },
+  {
+    path: '/agent-instructions.md',
+    name: 'Agent instructions',
+    what: 'Best-fit jobs, jobs Reinstate is wrong for, the commands to run, and the safety rules that apply.',
+  },
+  {
+    path: '/sitemap-index.xml',
+    name: 'Sitemap index',
+    what: 'XML sitemap of every indexable page.',
+  },
+  {
+    path: '/rss.xml',
+    name: 'All-updates feed',
+    what: 'RSS feed of blog posts and changelog entries; /blog/rss.xml and /changelog/rss.xml are the split feeds.',
+  },
+] as const;
+
+const apiRoutes = [
+  {
+    method: 'GET',
+    path: '/api/waitlist',
+    what: 'Service descriptor; doubles as a liveness probe.',
+  },
+  {
+    method: 'POST',
+    path: '/api/waitlist',
+    what: 'Join the early-access waitlist with {"email":"you@example.com"}. Duplicate submissions return status "duplicate".',
+  },
+  {
+    method: 'ANY',
+    path: '/api/*',
+    what: 'Undocumented paths return a JSON 404; unsupported methods return a JSON 405 with an Allow header.',
+  },
+] as const;
+---
+
+<PublicContentLayout
+  {title}
+  {description}
+  path="/developers"
+  eyebrow="Developer resources"
+  answer="Reinstate is a local CLI, so the only hosted surface is this website. Everything on it that a program or an AI agent might need is listed here: the CLI reference, the website HTTP API and its OpenAPI document, the compatibility matrix as JSON, a Markdown representation of every page, and the index files agents read first."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Developers', path: '/developers' },
+  ]}
+  tags={['developer resources', 'API', 'OpenAPI', 'llms.txt', 'coding agents']}
+>
+  <h2 id="what-exists">What exists today</h2>
+  <dl class="pc-facts">
+    <div>
+      <dt>Product</dt>
+      <dd>{product.name}, an open-source {product.category} tool written in {product.programmingLanguage}</dd>
+    </div>
+    <div>
+      <dt>CLI</dt>
+      <dd><code>{product.cliName}</code> or <code>reinstate</code>; see the <a href="/docs/cli-reference">command reference</a></dd>
+    </div>
+    <div>
+      <dt>Current release</dt>
+      <dd><a href={product.currentReleaseUrl}>{product.currentRelease}</a></dd>
+    </div>
+    <div>
+      <dt>Hosted API</dt>
+      <dd>None. The CLI talks only to your own S3-compatible bucket; this website exposes the endpoints below.</dd>
+    </div>
+    <div>
+      <dt>Account</dt>
+      <dd>Not required for the CLI or for any endpoint on this site</dd>
+    </div>
+    <div>
+      <dt>License</dt>
+      <dd><a href={product.licenseUrl}>{product.licenseName}</a></dd>
+    </div>
+  </dl>
+
+  <h2 id="cli">Reinstate CLI</h2>
+  <p>
+    Install with the pinned bootstrap scripts, then use the
+    <a href="/docs/cli-reference">CLI reference</a> for every command, flag, exit code, and
+    recovery path. Scripts and agents should pass <code>--json</code> where a command supports it
+    and <code>--dry-run</code> before any command that launches a vendor or writes to storage.
+  </p>
+  <pre data-language="sh"><code>curl -fsSL https://reinstate.dev/install.sh | sh
+rein doctor
+rein sessions --json</code></pre>
+  <p>
+    The installers live at <a href="/install.sh">/install.sh</a> (macOS, Linux, WSL2) and
+    <a href="/install.ps1">/install.ps1</a> (native Windows PowerShell). Read them before piping
+    them to a shell; they pin a specific signed release.
+  </p>
+
+  <h2 id="machine-readable">Machine-readable files</h2>
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">URL</th>
+          <th scope="col">What it is</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          machineReadable.map((entry) => (
+            <tr>
+              <td>
+                <a href={entry.path}>{entry.name}</a>
+                <br />
+                <code>{entry.path}</code>
+              </td>
+              <td>{entry.what}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="http-api">Website HTTP API</h2>
+  <p>
+    The website API is small and documented in full by <a href="/openapi.json">/openapi.json</a>.
+    Every error is JSON with a stable <code>code</code>, a message, and a <code>hint</code>
+    describing what to change before retrying.
+  </p>
+  <div class="pc-table-wrap">
+    <table class="pc-table">
+      <thead>
+        <tr>
+          <th scope="col">Method</th>
+          <th scope="col">Path</th>
+          <th scope="col">Behavior</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          apiRoutes.map((route) => (
+            <tr>
+              <td><code>{route.method}</code></td>
+              <td><code>{route.path}</code></td>
+              <td>{route.what}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+  <pre data-language="json"><code>{`{
+  "ok": false,
+  "status": 400,
+  "code": "invalid_email",
+  "error": "Enter a valid email address.",
+  "hint": "Provide one deliverable address in the email field; it is trimmed and lower-cased before storage.",
+  "docs": "https://reinstate.dev/openapi.json"
+}`}</code></pre>
+
+  <h2 id="markdown">Markdown for agents</h2>
+  <p>
+    Every page negotiates on the <code>Accept</code> header. Send
+    <code>Accept: text/markdown</code> to the canonical URL and the response is the page's
+    Markdown representation with <code>Content-Type: text/markdown; charset=utf-8</code> and
+    <code>Vary: Accept</code>; send <code>text/html</code> or nothing and the HTML page comes
+    back. Each page also has a static twin at the same path plus <code>.md</code>
+    (<code>/docs/getting-started.md</code>; the homepage is <code>/index.md</code>).
+  </p>
+  <pre data-language="sh"><code>curl -sH "Accept: text/markdown" https://reinstate.dev/docs/getting-started
+curl -s https://reinstate.dev/docs/getting-started.md</code></pre>
+  <p>
+    Unknown paths return a real HTTP 404. Browsers get the not-found page; any client that does
+    not ask for HTML gets a short Markdown body that links to the sitemap, llms.txt, and the
+    documentation index. An <code>Accept</code> header that rejects both HTML and Markdown returns
+    406 with a plain-text list of the two representations.
+  </p>
+
+  <h2 id="not-provided">Not provided</h2>
+  <ul>
+    <li>No hosted Reinstate service, API key, or account: sessions move between your devices through storage you own.</li>
+    <li>No MCP server, plugin runtime, or marketplace. Universal agent configuration is a <a href="/roadmap">roadmap</a> item, not a shipped feature.</li>
+    <li>No cross-vendor transcript translation. Cross-agent work uses the explicit <a href="/docs/handoff">structured handoff</a>.</li>
+  </ul>
+
+  <h2 id="source">Source, security, and support</h2>
+  <ul>
+    <li><a href={product.repositoryUrl}>GitHub repository</a> and <a href={product.tagsUrl}>release tags</a></li>
+    <li><a href="https://github.com/HarjjotSinghh/reinstate/security/policy">Security policy</a> and the <a href="/docs/security-model">security model</a></li>
+    <li><a href="/compatibility">Compatibility</a> and <a href="/compatibility/agent-version-history">agent-version history</a></li>
+    <li><a href="/docs/troubleshooting">Troubleshooting</a> and <a href="/docs/faq">FAQ</a></li>
+  </ul>
+</PublicContentLayout>

@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite';
 import mdx from '@astrojs/mdx';
 import vercel from '@astrojs/vercel';
 import sitemap from '@astrojs/sitemap';
+import agentSurface from './src/integrations/agent-surface';
 
 const ignoreGeneratedDevPath = (filePath) =>
   /\/(?:\.vercel|dist)(?:\/|$)/.test(filePath.replaceAll('\\', '/'));
@@ -22,6 +23,7 @@ export default defineConfig({
         !page.includes('/preview') &&
         !page.endsWith('/404'),
     }),
+    agentSurface(),
   ],
   vite: {
     plugins: [tailwindcss()],

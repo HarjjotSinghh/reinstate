@@ -19,6 +19,7 @@ const CONTENT_TYPES = new Map([
   ['.js', 'text/javascript; charset=utf-8'],
   ['.json', 'application/json; charset=utf-8'],
   ['.map', 'application/json; charset=utf-8'],
+  ['.md', 'text/markdown; charset=utf-8'],
   ['.png', 'image/png'],
   ['.ps1', 'text/plain; charset=utf-8'],
   ['.sh', 'text/x-shellscript; charset=utf-8'],

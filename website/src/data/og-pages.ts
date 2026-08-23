@@ -187,6 +187,13 @@ export const staticOgPages: OgPage[] = [
       'Inspect Reinstate source, security policy, roadmap, governance, releases, and Apache-2.0 license.',
   },
   {
+    route: '/developers',
+    kind: 'Developer resources',
+    title: 'Reinstate developer resources',
+    description:
+      'CLI reference, website HTTP API with OpenAPI, compatibility JSON, Markdown page twins, llms.txt, and agent instructions.',
+  },
+  {
     route: '/roadmap',
     kind: 'Product roadmap',
     title: 'From encrypted sync to work continuity',
