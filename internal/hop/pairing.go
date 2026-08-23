@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -73,7 +74,7 @@ type Revocation struct {
 // rollover happens in the keyring before this is called.
 func (c *Client) RevokeDevice(ctx context.Context, token, id string) (Revocation, error) {
 	var out Revocation
-	if err := c.do(ctx, http.MethodDelete, "/v1/devices/"+id, token, nil, &out); err != nil {
+	if err := c.do(ctx, http.MethodDelete, "/v1/devices/"+url.PathEscape(id), token, nil, &out); err != nil {
 		return Revocation{}, pairingError(err)
 	}
 	if out.Device.ID == "" {

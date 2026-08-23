@@ -497,3 +497,59 @@ func TestRolloverConvergesAgainstConcurrentEnrol(t *testing.T) {
 		t.Fatalf("concurrent revocations produced %d generations (current %d)", len(stored.Generations), stored.CurrentGeneration)
 	}
 }
+
+// TestLegacyWrapCannotBeReplayedIntoLaterGeneration mirrors the review probe
+// for #11: a legacy (unbound) generation-1 wrap lifted into a later
+// generation must not be accepted, or the holder would seal new pushes to a
+// root key the revoked device still has. Three layers refuse it: Parse
+// rejects unbound wraps outside generation 1, Rollover rebinds the outgoing
+// generation so no legacy device wrap survives, and unwrapDevice checks the
+// unwrapped key against the generation's recipient.
+func TestLegacyWrapCannotBeReplayedIntoLaterGeneration(t *testing.T) {
+	k := loadGolden(t)
+	legacyA := k.Generations[0].Devices[0]
+	if legacyA.Format != WrapFormatLegacy {
+		t.Fatalf("fixture wrap for A is not legacy")
+	}
+	a, b := goldenIdentities(t)
+	if err := k.Enrol(goldenRootKey(), goldenDeviceBID, b.Recipient(), time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	// Undo Enrol's rebinding of A so the outgoing generation still holds
+	// the legacy wrap when Rollover runs.
+	k.Generations[0].Devices[0] = legacyA
+	next, err := k.Rollover(goldenRootKey(), goldenRecoveryCode, []string{goldenDeviceBID}, goldenDeviceID, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer crypto.Zero(next)
+	for _, d := range k.Generations[0].Devices {
+		if d.Format != WrapFormatBound {
+			t.Fatalf("rollover left a legacy wrap for %s in the outgoing generation", d.DeviceID)
+		}
+	}
+
+	// Transplant A's legacy generation-1 wrap into generation 2.
+	cur := k.current()
+	for i := range cur.Devices {
+		if cur.Devices[i].DeviceID == goldenDeviceID {
+			cur.Devices[i] = legacyA
+		}
+	}
+	raw, err := k.Marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Parse(raw); err == nil {
+		t.Fatal("Parse accepted a legacy wrap in generation 2")
+	}
+	// Even bypassing Parse, the unwrapped key must match the recipient.
+	current, _, err := k.UnwrapForDevice(goldenDeviceID, a)
+	if err == nil {
+		crypto.Zero(current)
+		t.Fatal("UnwrapForDevice returned a key for a transplanted wrap")
+	}
+	if bytes.Equal(current, goldenRootKey()) {
+		t.Fatal("generation-1 root key reported as current")
+	}
+}

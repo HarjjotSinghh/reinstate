@@ -219,6 +219,12 @@ func Parse(raw []byte) (*Keyring, error) {
 			if k.SchemaVersion == 1 && w != WrapFormatLegacy {
 				return nil, fmt.Errorf("keyring: schema_version 1 cannot hold format %d wraps", w)
 			}
+			if g.Number != 1 && w == WrapFormatLegacy {
+				// Only generation 1 can predate binding; Rollover always
+				// writes bound wraps, so a legacy wrap in a later
+				// generation is a transplant.
+				return nil, fmt.Errorf("keyring: generation %d holds an unbound wrap", g.Number)
+			}
 		}
 	}
 	if k.current() == nil {
@@ -687,6 +693,11 @@ func (k *Keyring) Rollover(currentRootKey []byte, recoveryCode string, revoke []
 	if revokedBy != "" && !k.HasDevice(revokedBy) {
 		return nil, fmt.Errorf("%w: revoking device %s has no wrap in generation %d", ErrDeviceNotEnrolled, revokedBy, g.Number)
 	}
+	// Rebind the outgoing generation's legacy device wraps while the root
+	// key is in hand so no unbound wrap survives a rollover.
+	if err := k.rebindDevices(g, currentRootKey); err != nil {
+		return nil, err
+	}
 
 	next := Generation{Number: k.maxGeneration() + 1, CreatedAt: now.UTC().Format(time.RFC3339)}
 	bind := binding{profileID: k.ProfileID, generation: next.Number}
@@ -810,6 +821,15 @@ func unwrapDevice(g *Generation, deviceID string, device *age.X25519Identity, bi
 		}
 		key := append([]byte(nil), payload[len(prefix):]...)
 		crypto.Zero(payload)
+		identity, err := crypto.RootKeyIdentity(key)
+		if err != nil {
+			crypto.Zero(key)
+			return nil, err
+		}
+		if identity.Recipient().String() != g.Recipient {
+			crypto.Zero(key)
+			return nil, fmt.Errorf("keyring: device wrap does not hold generation %d's root key", g.Number)
+		}
 		return key, nil
 	}
 	return nil, ErrDeviceNotEnrolled

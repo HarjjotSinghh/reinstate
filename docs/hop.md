@@ -171,8 +171,11 @@ were, so:
   provider opens with every generation it can unwrap and seals only to the
   current one; which generation an object needs is decided by the object's
   own age header);
-- the revoked device keeps what it already pulled, cannot mint credentials
-  or push, and cannot open anything pushed after the revocation;
+- the revoked device keeps what it already pulled, cannot mint new locker
+  credentials (credentials it minted before the revocation keep working
+  against the bucket until they expire, up to the operator's credential
+  TTL of at most an hour, so it can still push or pull within that
+  window), and cannot open anything pushed after the revocation;
 - a device enrolled later (`rein account join`, or `rein account recover`
   with the recovery code) is enrolled into every generation and reads the
   whole locker too.

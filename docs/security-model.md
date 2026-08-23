@@ -117,7 +117,10 @@ object's own age header (one recipient stanza per generation it was sealed
 to) decides which applies, so no generation number is stored beside an
 object. The revoked device keeps the generations it already held (it had
 read them), cannot open the new one, and its token is refused by the
-control plane, so it can neither mint credentials nor push. A device
+control plane, so it cannot mint new locker credentials; credentials it
+minted before the revocation stay valid against the bucket until they
+expire (at most an hour), and only during that window can it still push or
+pull bytes it can no longer decrypt. A device
 enrolled after a rollover (by approval, or from the recovery code, which
 wraps every generation) is enrolled into all generations and reads the
 whole locker. Concurrent changes to the keyring converge through the
@@ -126,7 +129,12 @@ generation is current when its write succeeds, and a joiner handed a
 generation the keyring has since left fails closed. Revocation does not
 re-encrypt existing objects; it bounds what a revoked device can learn from
 then on, which is the threat it addresses. The keyring parser refuses
-duplicate generation numbers and duplicate device ids.
+duplicate generation numbers, duplicate device ids, and unbound (version 1)
+wraps anywhere but generation 1; a rollover rebinds the outgoing
+generation's remaining legacy wraps, and an unwrapped key is checked
+against the generation's recorded recipient, so a wrap lifted out of a
+keyring that was once version 1 cannot be replayed into a later generation
+either.
 
 ## What is never synced (defaults)
 

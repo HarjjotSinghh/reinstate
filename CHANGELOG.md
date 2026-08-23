@@ -192,9 +192,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   locker remains readable by every remaining device (the
   `RootKeyProvider` opens with every generation the device can unwrap and
   seals only to the current one, the envelope's own age header deciding
-  which generation applies); the revoked device cannot mint, cannot push,
-  and cannot open anything pushed after the revocation, and keeps what it
-  already pulled. Revoking twice is harmless, a device cannot revoke
+  which generation applies); the revoked device cannot mint new locker
+  credentials (ones minted before the revocation last until they expire,
+  at most an hour), cannot open anything pushed after the revocation, and
+  keeps what it already pulled. Revoking twice is harmless, a device cannot revoke
   itself, and a wrong recovery code revokes nothing. A revocation racing an
   approval converges either way: the approval lands in the generation that
   is current when its compare-and-swap succeeds (and enrols the new device
