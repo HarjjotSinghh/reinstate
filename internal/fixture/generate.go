@@ -28,6 +28,87 @@ var SyntheticFiles = map[string]string{
 	"codex/wsl/sessions/rollout-syn-001.jsonl": `{"type":"session_meta","payload":{"id":"rollout-syn-001","cwd":"/home/fixture-user/code/demo"}}
 {"type":"message","role":"user","content":"Synthetic Codex WSL2 fixture request"}
 `,
+	// OpenCode keeps every session in one embedded SQLite store, so its adapter
+	// fixture is a deterministic SQL seed rather than a session file. Tests
+	// hydrate an opencode.db from it; the credential row proves the export path
+	// never touches that table. See testdata/adapters/README.md.
+	"opencode/macos/store.sql":   openCodeStoreSQL(openCodeMacOSData),
+	"opencode/windows/store.sql": openCodeStoreSQL(openCodeWindowsData),
+}
+
+// openCodeStoreSchema is the subset of the OpenCode 1.18.21 store the sync
+// adapter reads and writes: session, project, message and part. The credential
+// table is present only so the exclusion contract can be tested — the adapter
+// never selects it.
+const openCodeStoreSchema = `CREATE TABLE project (
+  id TEXT PRIMARY KEY,
+  worktree TEXT NOT NULL,
+  name TEXT,
+  sandboxes TEXT NOT NULL DEFAULT '[]',
+  time_created INTEGER NOT NULL,
+  time_updated INTEGER NOT NULL
+);
+CREATE TABLE session (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL,
+  slug TEXT NOT NULL,
+  directory TEXT NOT NULL,
+  path TEXT,
+  title TEXT NOT NULL,
+  version TEXT NOT NULL,
+  agent TEXT,
+  model TEXT,
+  metadata TEXT,
+  time_created INTEGER NOT NULL,
+  time_updated INTEGER NOT NULL
+);
+CREATE TABLE message (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  time_created INTEGER NOT NULL,
+  time_updated INTEGER NOT NULL,
+  data TEXT NOT NULL
+);
+CREATE TABLE part (
+  id TEXT PRIMARY KEY,
+  message_id TEXT NOT NULL,
+  session_id TEXT NOT NULL,
+  time_created INTEGER NOT NULL,
+  time_updated INTEGER NOT NULL,
+  data TEXT NOT NULL
+);
+CREATE TABLE credential (
+  id TEXT PRIMARY KEY,
+  label TEXT NOT NULL,
+  value TEXT NOT NULL
+);
+`
+
+// openCodeMacOSData seeds one session whose paths are macOS shaped.
+const openCodeMacOSData = `INSERT INTO project VALUES ('proj_fixture','/Users/fixture-user/code/demo','demo','[]',1755900000000,1755900060000);
+INSERT INTO session VALUES ('ses_fixture001','proj_fixture','synthetic-fixture-session','/Users/fixture-user/code/demo',NULL,'Synthetic OpenCode fixture session','1.18.21','build','synthetic/fixture-model',NULL,1755900000000,1755900060000);
+INSERT INTO message VALUES ('msg_fixtureasst001','ses_fixture001',1755900001000,1755900002000,'{"role":"assistant","time":{"created":1755900001000,"completed":1755900002000},"parentID":"msg_fixtureuser001","agent":"build","path":{"cwd":"/Users/fixture-user/code/demo","root":"/Users/fixture-user/code/demo"}}');
+INSERT INTO message VALUES ('msg_fixtureuser001','ses_fixture001',1755900000000,1755900000000,'{"role":"user","time":{"created":1755900000000},"agent":"build","model":{"providerID":"synthetic","modelID":"fixture-model"}}');
+INSERT INTO part VALUES ('prt_fixtureasst001','msg_fixtureasst001','ses_fixture001',1755900002000,1755900002000,'{"type":"text","text":"Synthetic fixture reply."}');
+INSERT INTO part VALUES ('prt_fixtureuser001','msg_fixtureuser001','ses_fixture001',1755900000000,1755900000000,'{"type":"text","text":"Synthetic OpenCode fixture request about the demo workspace"}');
+INSERT INTO credential VALUES ('cred_fixture','synthetic','synthetic-not-a-real-token');
+`
+
+// openCodeWindowsData seeds the same session with Windows shaped paths so the
+// macOS-to-Windows remapping has both ends.
+const openCodeWindowsData = `INSERT INTO project VALUES ('proj_fixture','C:\Users\fixture-user\code\demo','demo','[]',1755900000000,1755900060000);
+INSERT INTO session VALUES ('ses_fixture001','proj_fixture','synthetic-fixture-session','C:\Users\fixture-user\code\demo',NULL,'Synthetic OpenCode fixture session','1.18.21','build','synthetic/fixture-model',NULL,1755900000000,1755900060000);
+INSERT INTO message VALUES ('msg_fixtureasst001','ses_fixture001',1755900001000,1755900002000,'{"role":"assistant","time":{"created":1755900001000,"completed":1755900002000},"parentID":"msg_fixtureuser001","agent":"build","path":{"cwd":"C:\\Users\\fixture-user\\code\\demo","root":"C:\\Users\\fixture-user\\code\\demo"}}');
+INSERT INTO message VALUES ('msg_fixtureuser001','ses_fixture001',1755900000000,1755900000000,'{"role":"user","time":{"created":1755900000000},"agent":"build","model":{"providerID":"synthetic","modelID":"fixture-model"}}');
+INSERT INTO part VALUES ('prt_fixtureasst001','msg_fixtureasst001','ses_fixture001',1755900002000,1755900002000,'{"type":"text","text":"Synthetic fixture reply."}');
+INSERT INTO part VALUES ('prt_fixtureuser001','msg_fixtureuser001','ses_fixture001',1755900000000,1755900000000,'{"type":"text","text":"Synthetic OpenCode fixture request about the demo workspace"}');
+INSERT INTO credential VALUES ('cred_fixture','synthetic','synthetic-not-a-real-token');
+`
+
+func openCodeStoreSQL(data string) string {
+	return "-- Synthetic OpenCode session store seed. All identities are synthetic.\n" +
+		"-- Hydrate with: sqlite3 opencode.db < store.sql\n" +
+		openCodeStoreSchema + data
 }
 
 // HandoffTreeDirs are §10 directories that must exist for corpus completeness.
