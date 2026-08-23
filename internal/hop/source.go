@@ -29,13 +29,18 @@ func NewSource(client *Client, token string) *Source {
 }
 
 // Locker returns the account's locker, provisioning it on the first call.
+// An existing locker is read with GET /v1/locker; only ErrNoLocker leads to
+// POST /v1/locker, so routine commands never hit the provisioning path.
 func (s *Source) Locker(ctx context.Context) (Locker, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.locker != nil {
 		return *s.locker, nil
 	}
-	l, err := s.client.ProvisionLocker(ctx, s.token)
+	l, err := s.client.LockerStatus(ctx, s.token)
+	if errors.Is(err, ErrNoLocker) {
+		l, err = s.client.ProvisionLocker(ctx, s.token)
+	}
 	if err != nil {
 		s.lastErr = err
 		return Locker{}, err

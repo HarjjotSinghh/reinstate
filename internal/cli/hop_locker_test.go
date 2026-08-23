@@ -50,6 +50,7 @@ func (f *fakeControlPlane) provisionLocker(w http.ResponseWriter, r *http.Reques
 	if !f.authed(w, r) {
 		return
 	}
+	f.provisions++
 	if f.locker == nil {
 		f.locker = &fakeLocker{bucket: f.s3.Bucket}
 	}
@@ -327,6 +328,10 @@ func TestLockerJourneyLoginInitPushStatus(t *testing.T) {
 	// account init minted one, the push minted one, the expiry forced a third.
 	if len(j.plane.mints) != 3 {
 		t.Fatalf("mints after push: %v", j.plane.mints)
+	}
+	// init --hop provisioned once; every later command read the locker.
+	if j.plane.provisions != 1 {
+		t.Fatalf("POST /v1/locker was called %d times; once is enough", j.plane.provisions)
 	}
 	log := j.plane.s3.RequestLog()
 	if signedBy(log, "AKIAHOP002") == 0 || signedBy(log, "AKIAHOP003") == 0 {

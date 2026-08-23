@@ -37,6 +37,7 @@ type fakeControlPlane struct {
 	s3 *s3test.Fake // nil until a test attaches one
 	// locker is the single account's bucket; provisioned on first POST.
 	locker      *fakeLocker
+	provisions  int      // POST /v1/locker calls; only the first should ever happen
 	hints       []string // location hints received at sign-in
 	mints       []string // access key ids minted, in order
 	credTTL     time.Duration

@@ -112,6 +112,16 @@ passphrase, or session content. Sign-in is a device-authorization style flow:
 | 6 | `POST /v1/locker/credentials` (bearer) | `200 {access_key_id, secret_access_key, session_token, expires_at, endpoint, bucket, region}`, valid for at most an hour and scoped to the bucket. Refusals carry a `code`: `quota_storage` (403), `quota_devices` (403), `quota_push_rate` (429), `no_locker` (404), `storage_unavailable` (502). |
 | 7 | `POST /v1/locker/first-push` (bearer) | `200 {first, first_push_at}`; records the first push once. |
 
+The CLI reads the locker with `GET /v1/locker` on every hosted command and
+only calls `POST /v1/locker` when the answer is `no_locker` (normally once,
+from `rein init --hop`).
+
+The device quota is enforced when credentials are minted, not when a device
+enrols: a sixth device on a five-device plan can still sign in, after which
+no device on the account can mint until the count is back under the plan.
+Until device revocation ships there is no self-serve way out of that
+state, so do not enrol more devices than the plan allows.
+
 Device tokens are 256-bit random values prefixed `hop_`. The control plane
 stores only a hash, bound to one device record (name, platform, location
 hint, created, last seen). The CLI sends no telemetry; the control plane
@@ -122,5 +132,6 @@ events as its only product metrics.
 
 - Pair devices through a code (a second device enrols with the recovery
   code today).
-- Revoke a device or sign out.
+- Revoke a device or sign out (also the only recovery from an account over
+  its device quota).
 - Run a daemon.
