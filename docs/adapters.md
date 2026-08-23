@@ -33,10 +33,8 @@ yes-or-no flag. Tiers are cumulative. New agents are declared in the
 | T5 | Encrypted same-vendor sync |
 
 Claude Code and Codex CLI are T5. OpenCode, Qwen Code, and Grok Build are T4.
-Gemini CLI and Kimi Code CLI are T2. Grok's resume journeys are recorded on both
-platforms; its destination journey is specified in
-[testing/grok-native-resume-acceptance.md](testing/grok-native-resume-acceptance.md)
-and not yet collected. The capability matrix below remains the fail-closed
+Gemini CLI and Kimi Code CLI are T2. Grok's resume and destination journeys are
+recorded on both platforms. The capability matrix below remains the fail-closed
 per-surface record.
 
 ## Capability matrix
@@ -47,7 +45,7 @@ per-surface record.
 | OpenAI Codex CLI | Included in `v0.2.0` | Included in `v0.2.0` | Yes | Yes | Supported | Later |
 | Gemini CLI | Read-only in `v0.2.0` | No | Source-only | No | No | Later |
 | OpenCode | Read-only in `v0.2.0` | Yes (T3) | Source-only | Yes | No | Later |
-| Grok Build | Read-only in `v0.4.0` | Same-vendor (T3) | Yes | Yes (T4, journey pending) | No | Planned |
+| Grok Build | Read-only in `v0.4.0` | Same-vendor (T3) | Yes | Yes (T4) | No | Planned |
 | Kimi Code CLI | Read-only (T1) | No | Source-only | No | No | Later |
 | Qwen Code | Read-only (T4) | Yes | Yes | Yes | No | Later |
 | Pi | Read-only (T1) | No | No | No | No | Later |

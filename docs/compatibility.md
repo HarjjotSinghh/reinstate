@@ -30,7 +30,7 @@ The Phase 2 local capability matrix is:
 | Gemini CLI | Read-only included | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac | T2 |
 | OpenCode | Read-only included | Same-vendor included | Resume journeys recorded on macOS and native Windows; destination journeys recorded on both, with the executed launch collected on macOS only | T4 |
 | Cursor CLI | Indexed (read-only) | Not implemented | Dual-platform probes committed; indexed from `meta.json`; no device journey for resume | T1 |
-| Grok Build | Read-only included | Same-vendor included | Resume journeys recorded on macOS and native Windows; handoff-destination journey specified and not yet collected | T4 |
+| Grok Build | Read-only included | Same-vendor included | Resume and handoff-destination journeys recorded on macOS and native Windows | T4 |
 | Amp | Not readable locally (`server_backed`) | Not implemented | Not applicable | T0 |
 | ZCode | Not implemented (`desktop_only`) | Not implemented | Not applicable | T0 |
 | OpenHands | Not implemented | Not implemented | Not applicable | T0 |
@@ -80,9 +80,7 @@ supported destination target, encrypted sync, or same-vendor native execution.
 Every cross-agent entry above creates a new destination session for the same
 task through the destination vendor's own documented CLI. It does not
 reconstruct vendor history or write a vendor-internal session file. Gemini and
-Kimi are source-only; attempts to use them as destinations fail closed. The Grok
-Build column carries no destination journey yet — the code is complete and the
-physical evidence the T4 rung requires has not been collected.
+Kimi are source-only; attempts to use them as destinations fail closed.
 
 The handoff path parses the source locally without a source model call, records
 component-level fidelity, and stores its capsule and lineage only under the
