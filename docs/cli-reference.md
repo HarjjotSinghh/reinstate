@@ -60,8 +60,11 @@ rein init [--endpoint URL] [--bucket NAME] [--region auto] [--prefix ...]
           [--profile-id UUID] [--project ID=/absolute/local/path] [--yes]
           [--link] [--paste]
 rein account init
+rein account join
 rein account recover
 rein account status [--json]
+rein devices [--json]
+rein devices approve [--request ID]
 rein list [--agent claude|codex|all] [--json]
 rein status [--json]
 rein diff [--json]
@@ -107,8 +110,9 @@ own bucket: it needs a prior `rein login`, provisions the account's locker,
 and writes `storage.type = "hop"` with the account as the profile and the
 enrolled device as the device. It takes `--project` and `--force` but not
 `--endpoint`, `--bucket`, `--prefix`, `--profile-id`, or `--paste`. Follow it
-with `rein account init` (first device) or `rein account recover` (later
-devices); see [docs/hop.md](hop.md).
+with `rein account init` (first device) or `rein account join` (later
+devices, approved from an enrolled one with `rein devices approve`; `rein
+account recover` is the recovery-code fallback); see [docs/hop.md](hop.md).
 
 On a terminal, and when the coordinates were not already supplied by flags or
 environment, `rein init` opens a setup wizard: a provider preset, then the
@@ -468,7 +472,7 @@ See [Configuration](configuration.md) for `restore.active_agent_policy`
 
 ### `rein account`
 
-Hosted key model. All three subcommands need an initialized home (`rein init`
+Hosted key model. Every subcommand needs an initialized home (`rein init`
 with the storage coordinates first).
 
 - `rein account init` — generate the root key on this first device, write the
@@ -477,6 +481,24 @@ with the storage coordinates first).
   written. Prints the recovery policy plainly: losing every device and the
   recovery code makes the locker unrecoverable by anyone; local copies survive.
   Refuses when this device is already enrolled or a keyring already exists.
+- `rein account join` — enrol this machine by approval from one that is
+  already enrolled. Needs a prior `rein login` whose device matches the
+  home's `device_id` (`rein init --hop` guarantees that). Generates this
+  device's key, publishes a pairing request, shows a 16-character code once
+  on stderr, and waits (Ctrl-C withdraws the request). When an enrolled
+  device approves, the root key arrives sealed under the code and to this
+  device's key; it is accepted only if the keyring's own wrap for this device
+  opens to the same key of the same generation. An expired request exits `4`
+  with nothing written; a device already enrolled exits `7`.
+- `rein devices` — list the account's devices (from the control plane),
+  whether each holds a root-key wrap (from the keyring), and pending pairing
+  requests. `rein devices approve` reads the code shown on the joining device
+  (hidden prompt, or `REINSTATE_PAIRING_CODE_FD`), checks it against the
+  request, appends the new device's wrap with compare-and-swap, and relays
+  the sealed root key. A wrong code exits `7` and approves nothing; a typo is
+  rejected by the checksum (exit `2`); with several requests pending,
+  `--request ID` picks one (exit `2` otherwise). Only an enrolled device can
+  approve.
 - `rein account recover` — enrol a fresh machine from the recovery code
   (hidden prompt, or `REINSTATE_RECOVERY_CODE_FD` pointing at a pre-opened
   descriptor for automation, like `REINSTATE_PASSPHRASE_FD`). Unwraps the root

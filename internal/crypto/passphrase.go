@@ -22,6 +22,11 @@ const PassphraseFDEnv = "REINSTATE_PASSPHRASE_FD"
 // never an ordinary environment value, never a flag.
 const RecoveryCodeFDEnv = "REINSTATE_RECOVERY_CODE_FD"
 
+// PairingCodeFDEnv names the descriptor that carries a pairing code for
+// automation on the approving device. Same pattern: never an ordinary
+// environment value, never a flag.
+const PairingCodeFDEnv = "REINSTATE_PAIRING_CODE_FD"
+
 // ReadPassphrase reads a passphrase from REINSTATE_PASSPHRASE_FD when
 // deliberately configured, otherwise from an interactive terminal with echo
 // disabled. Passphrases are never accepted as command arguments or ordinary

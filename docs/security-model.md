@@ -92,6 +92,19 @@ unrecoverable by anyone — not the user, not the operator.** Local session
 copies on each machine are unaffected; only the encrypted remote copy is out
 of reach. The CLI states this at `account init` and `account recover`.
 
+Pairing (`rein account join` / `rein devices approve`): the joining device
+publishes its public key, a 16-byte salt, and an HMAC binding of the key
+under a wrapping key derived with argon2id (3 passes, 64 MiB, 4 lanes) from
+a 60-bit code it shows on screen. The approving device derives the same key
+from the typed code, verifies the binding in constant time (a control plane
+that swapped the public key is caught here), appends the new device's wrap
+to the keyring, and relays the root key wrapped to the new device's key and
+then sealed under the code-derived key with the request id, public key, and
+generation as associated data. The control plane stores the ciphertext for
+at most ten minutes, releases it once, and never holds the code. The joining
+device accepts the key only when the keyring's wrap for it opens to the
+same bytes, so neither channel can be substituted alone.
+
 Key generations: revoking a device starts a new generation with a fresh root
 key (a later release); earlier objects stay readable under the generation
 that wrote them, and the provider opens with every generation the device can

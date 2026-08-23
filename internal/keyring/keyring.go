@@ -157,6 +157,28 @@ func (k *Keyring) current() *Generation {
 	return nil
 }
 
+// CurrentRecipient is the current generation's root-key recipient, the
+// public half a joining device checks a received root key against.
+func (k *Keyring) CurrentRecipient() string {
+	if g := k.current(); g != nil {
+		return g.Recipient
+	}
+	return ""
+}
+
+// DevicePublicKey returns the public key the current generation lists for
+// deviceID, or "" when the device is not enrolled.
+func (k *Keyring) DevicePublicKey(deviceID string) string {
+	if g := k.current(); g != nil {
+		for _, d := range g.Devices {
+			if d.DeviceID == deviceID {
+				return d.PublicKey
+			}
+		}
+	}
+	return ""
+}
+
 // DeviceCount reports how many devices are enrolled in the current generation.
 func (k *Keyring) DeviceCount() int {
 	if g := k.current(); g != nil {

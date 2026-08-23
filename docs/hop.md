@@ -4,7 +4,8 @@ Reinstate Hop is the paid hosted tier: a locker (a storage bucket provisioned
 for exactly one account, holding only ciphertext) plus a console. Every client
 capability stays in the free CLI; Hop gates storage and the console only. This
 page covers what has landed in the client: passwordless sign-in, device
-tokens, and syncing to the locker. Pairing and the daemon follow.
+tokens, syncing to the locker, and device approval (pairing). The daemon
+follows.
 
 ## Commands
 
@@ -13,6 +14,9 @@ rein login [--email ADDRESS] [--no-browser] [--json]
 rein whoami [--json]
 rein init --hop [--project ID=PATH]... [--force]
 rein hop status [--json]
+rein account join
+rein devices [--json]
+rein devices approve [--request ID]
 ```
 
 ## From sign-in to the first push
@@ -26,7 +30,51 @@ rein hop status            # bucket, location, usage, limits
 ```
 
 A second machine runs `rein login`, `rein init --hop`, and
-`rein account recover` with the recovery code, then `rein pull`.
+`rein account join`; it shows a short code, you enter that code on the first
+machine with `rein devices approve`, and the second machine pulls. When no
+enrolled device is at hand, `rein account recover` with the recovery code is
+the fallback.
+
+## Adding a device (pairing)
+
+Nothing is typed on the new device except the sign-in. On it:
+
+```bash
+rein login
+rein init --hop
+rein account join          # shows a code such as P5EZ-6PN0-WDB5-T0J0 and waits
+```
+
+On any machine that is already enrolled:
+
+```bash
+rein devices               # lists devices and the pending request
+rein devices approve       # asks for the code shown on the new device
+```
+
+The enrolled machine checks the code against the request, appends a wrap of
+the root key for the new device to the keyring (compare-and-swap, so two
+approvals at once both land), and relays the root key sealed so that only
+the holder of the code can open it. The new machine opens it, confirms that
+the keyring's wrap for itself opens to the same root key of the same
+generation, and from then on reads and writes the locker.
+
+What the control plane sees: the new device's public key, a random salt, a
+binding value, and later a ciphertext; never the code. The code is 60
+random bits plus a checksum (`XXXX-XXXX-XXXX-XXXX`, Crockford base32; O/I/L
+are accepted for 0/1); the wrapping key is argon2id over the code and salt,
+so guessing the code offline against the relayed material costs one
+memory-hard derivation per candidate across 2^60 candidates. The relay
+expires after ten minutes, hands the ciphertext out once, and refuses
+after 600 polls. A wrong code on the approving side fails closed with
+nothing written anywhere; a typo is caught by the checksum first. The code
+can be supplied to automation through `REINSTATE_PAIRING_CODE_FD` (a
+pre-opened descriptor, like `REINSTATE_PASSPHRASE_FD`); it is never a flag
+or a plain environment value. The full protocol and threat argument are in
+the control plane's `docs/hop.md`, "Pairing".
+
+`rein devices` shows every device enrolled under the account, whether the
+keyring holds a root-key wrap for it, and any pending pairing request.
 
 `rein login` signs this device in. With no flag it starts a GitHub sign-in:
 the CLI prints a URL, opens it in your browser, and waits. With

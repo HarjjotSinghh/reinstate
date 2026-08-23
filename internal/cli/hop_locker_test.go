@@ -283,7 +283,7 @@ func TestLockerJourneyLoginInitPushStatus(t *testing.T) {
 	}
 
 	// A pairing code is a BYO concept; hosted profiles are joined by login.
-	if _, errb, code := j.run("init", "--link"); code != ExitConfig || !strings.Contains(errb, "rein account recover") {
+	if _, errb, code := j.run("init", "--link"); code != ExitConfig || !strings.Contains(errb, "rein account join") {
 		t.Fatalf("init --link on hop: exit=%d err=%q", code, errb)
 	}
 

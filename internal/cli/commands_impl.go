@@ -370,7 +370,7 @@ func initHosted(cmd *cobra.Command, home string, existingFiles, projectMappings 
 	PrintHuman(cmd.OutOrStdout(), "initialized reinstate home for Reinstate Hop (config.toml + state.json); storage.type=%s", schema.StorageHop)
 	PrintHuman(cmd.OutOrStdout(), "locker %s at %s (location %s, plan %s)", locker.Bucket, locker.Endpoint, locker.LocationHint, locker.Plan)
 	PrintHuman(cmd.OutOrStdout(), "profile_id=%s device_id=%s", cfg.ProfileID, cfg.DeviceID)
-	PrintHuman(cmd.OutOrStdout(), "next: rein account init on this first device (or rein account recover on another), then rein push")
+	PrintHuman(cmd.OutOrStdout(), "next: rein account init on this first device (or rein account join on another), then rein push")
 	return nil
 }
 
