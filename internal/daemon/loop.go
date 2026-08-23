@@ -99,9 +99,13 @@ type Options struct {
 
 // Defaults are the production intervals.
 const (
-	DefaultDebounce       = 3 * time.Second
-	DefaultMaxDebounce    = 30 * time.Second
-	DefaultPullEvery      = 5 * time.Minute
+	DefaultDebounce    = 3 * time.Second
+	DefaultMaxDebounce = 30 * time.Second
+	// DefaultPullEvery is short enough that a session edited on another
+	// device appears here within a minute without any command; pull --all
+	// skips snapshots this device already synced, so an idle pull is one
+	// manifest read.
+	DefaultPullEvery      = 30 * time.Second
 	DefaultApprovalsEvery = time.Minute
 	DefaultBackoffMin     = 5 * time.Second
 	DefaultBackoffMax     = 10 * time.Minute
@@ -171,9 +175,13 @@ type loop struct {
 
 	dirty      bool
 	firstDirty time.Time
-	pushFails  int
-	pullFails  int
-	seen       map[string]bool // pairing request ids already notified
+	// notBefore is the earliest the next push attempt may run after a
+	// failure; changes arriving during the backoff wait for it instead of
+	// pushing immediately.
+	notBefore time.Time
+	pushFails int
+	pullFails int
+	seen      map[string]bool // pairing request ids already notified
 }
 
 // Run drives the loop until ctx ends. It pulls once and polls approvals
@@ -230,12 +238,7 @@ func Run(ctx context.Context, opts Options) error {
 			now := opts.Clock.Now()
 			l.markDirty(now)
 			stopTimer(debounceT)
-			if now.Sub(l.firstDirty) >= opts.MaxDebounce {
-				// A session that never stops changing still gets pushed.
-				debounceT = opts.Clock.NewTimer(0)
-			} else {
-				debounceT = opts.Clock.NewTimer(opts.Debounce)
-			}
+			debounceT = opts.Clock.NewTimer(l.pushDelay(now))
 			l.opts.Logger.Printf("change: %s", change.Path)
 		case <-timerC(debounceT):
 			debounceT = nil
@@ -264,9 +267,27 @@ func (l *loop) markDirty(now time.Time) {
 	l.dirty = true
 }
 
+// pushDelay is how long a change that just arrived waits before the push:
+// the debounce, or nothing once changes have kept the store dirty for
+// MaxDebounce (a session that never stops changing still gets pushed),
+// but never earlier than the backoff after a failed push allows.
+func (l *loop) pushDelay(now time.Time) time.Duration {
+	delay := l.opts.Debounce
+	if now.Sub(l.firstDirty) >= l.opts.MaxDebounce {
+		delay = 0
+	}
+	if wait := l.notBefore.Sub(now); wait > delay {
+		delay = wait
+	}
+	return delay
+}
+
 // push runs one push. It returns the delay before the next attempt, or 0
 // when nothing should be retried until the next change.
 func (l *loop) push(ctx context.Context) time.Duration {
+	// Every attempt restarts the max-debounce window, so changes that
+	// arrive while a push is failing do not bypass the backoff.
+	l.firstDirty = l.opts.Clock.Now()
 	summary, err := l.guard(ctx, l.opts.Syncer.Push)
 	now := l.opts.Clock.Now()
 	l.status.Push.At = now
@@ -274,6 +295,7 @@ func (l *loop) push(ctx context.Context) time.Duration {
 	case err == nil:
 		l.dirty = false
 		l.pushFails = 0
+		l.notBefore = time.Time{}
 		l.status.Push = Outcome{At: now, OK: true, Summary: summary, LastOK: now}
 		l.opts.Logger.Printf("push: %s", summary)
 		l.writeStatus()
@@ -283,6 +305,7 @@ func (l *loop) push(ctx context.Context) time.Duration {
 		// The conflict is recorded locally; a retry would hit it again.
 		l.dirty = false
 		l.pushFails = 0
+		l.notBefore = time.Time{}
 		l.status.Push = Outcome{At: now, OK: false, Error: err.Error(), Conflict: true, LastOK: l.status.Push.LastOK}
 		l.opts.Logger.Printf("push: %v", err)
 		l.writeStatus()
@@ -294,6 +317,7 @@ func (l *loop) push(ctx context.Context) time.Duration {
 		if errors.Is(err, ErrLocked) {
 			delay = l.opts.BackoffMin
 		}
+		l.notBefore = now.Add(delay)
 		l.status.Push = Outcome{At: now, OK: false, Error: err.Error(), LastOK: l.status.Push.LastOK}
 		l.opts.Logger.Printf("push failed (retry in %s): %v", delay, err)
 		l.writeStatus()

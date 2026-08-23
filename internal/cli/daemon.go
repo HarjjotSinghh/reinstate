@@ -50,6 +50,20 @@ type daemonSeams struct {
 
 type daemonSeamsContextKey struct{}
 
+// rootOptionsContextKey carries the Options the root command was built
+// with, so a command can run another command in-process with the same
+// seams (the resume hook runs pull this way).
+type rootOptionsContextKey struct{}
+
+func rootOptionsFrom(cmd *cobra.Command) (Options, bool) {
+	if ctx := cmd.Context(); ctx != nil {
+		if o, ok := ctx.Value(rootOptionsContextKey{}).(Options); ok {
+			return o, true
+		}
+	}
+	return Options{}, false
+}
+
 func daemonSeamsFrom(cmd *cobra.Command) daemonSeams {
 	if ctx := cmd.Context(); ctx != nil {
 		if s, ok := ctx.Value(daemonSeamsContextKey{}).(daemonSeams); ok {
@@ -294,18 +308,77 @@ func (s *inProcessSyncer) Push(ctx context.Context) (string, error) {
 }
 
 func (s *inProcessSyncer) Pull(ctx context.Context) (string, error) {
-	out, err := s.execute(ctx, "pull", "--all", "--json")
+	pulled, skipped, err := s.pullAll(ctx)
 	if err != nil {
 		return "", err
+	}
+	return fmt.Sprintf("pulled %d snapshot(s), skipped %d already synced", pulled, skipped), nil
+}
+
+// pullAll runs pull --all and reports how many snapshots it restored and
+// how many were already synced.
+func (s *inProcessSyncer) pullAll(ctx context.Context) (pulled, skipped int, err error) {
+	out, err := s.execute(ctx, "pull", "--all", "--json")
+	if err != nil {
+		return 0, 0, err
 	}
 	var result struct {
 		Pulled  int `json:"pulled"`
 		Skipped int `json:"skipped"`
 	}
 	if jsonErr := json.Unmarshal(out, &result); jsonErr != nil {
-		return strings.TrimSpace(string(out)), nil
+		return 0, 0, fmt.Errorf("pull: unexpected output %q", strings.TrimSpace(string(out)))
 	}
-	return fmt.Sprintf("pulled %d snapshot(s), skipped %d already synced", result.Pulled, result.Skipped), nil
+	return result.Pulled, result.Skipped, nil
+}
+
+// resumePullFresh is how recent the daemon's last successful pull must be
+// for a resume to trust the local copy without pulling first.
+const resumePullFresh = 15 * time.Second
+
+// pullBeforeResume pulls the latest snapshots before a resume or fork when
+// the daemon is running on this device and has not pulled within
+// resumePullFresh, so a session edited on another device moments ago is
+// what gets resumed. Without a running daemon nothing happens: the shell
+// commands stay explicit. A failed pull never blocks the resume; it is
+// reported on stderr and the local copy is used.
+func pullBeforeResume(cmd *cobra.Command) {
+	opts, ok := rootOptionsFrom(cmd)
+	if !ok {
+		return
+	}
+	home, err := config.Home()
+	if err != nil {
+		return
+	}
+	if note := resumePull(cmd.Context(), opts, home, time.Now()); note != "" {
+		PrintHuman(cmd.ErrOrStderr(), "%s", note)
+	}
+}
+
+// resumePull is pullBeforeResume's decision and outcome as one line for
+// stderr; empty when nothing needs saying.
+func resumePull(ctx context.Context, opts Options, home string, now time.Time) string {
+	status, err := daemon.ReadStatus(home)
+	if err != nil || !status.Alive(now) {
+		return ""
+	}
+	if !status.Pull.LastOK.IsZero() && now.Sub(status.Pull.LastOK) < resumePullFresh {
+		return ""
+	}
+	pulled, _, err := (&inProcessSyncer{opts: opts}).pullAll(ctx)
+	switch {
+	case errors.Is(err, daemon.ErrLocked):
+		// The daemon is pulling right now; its result is as fresh as ours.
+		return ""
+	case errors.Is(err, daemon.ErrConflict):
+		return "pull before resume: " + err.Error()
+	case err != nil:
+		return "pull before resume failed: " + err.Error() + "; resuming the local copy"
+	case pulled > 0:
+		return fmt.Sprintf("pulled %d newer snapshot(s) before resuming", pulled)
+	}
+	return ""
 }
 
 // execute runs one CLI command in-process and maps its exit code.
@@ -422,12 +495,28 @@ func daemonSpec(cmd *cobra.Command, flags daemonRunFlags) (daemon.Manager, daemo
 		if !ok || strings.TrimSpace(key) == "" {
 			return nil, daemon.Spec{}, "", NewExitError(ExitUsage, "--env takes KEY=VALUE, got "+pair)
 		}
+		if isCredentialEnvKey(key) {
+			return nil, daemon.Spec{}, "", NewExitError(ExitUsage, "--env "+strings.TrimSpace(key)+" looks like a credential; the service definition is a plain file, keep secrets in the OS keyring or the backend's own credential store")
+		}
 		if spec.Env == nil {
 			spec.Env = map[string]string{}
 		}
 		spec.Env[strings.TrimSpace(key)] = value
 	}
 	return manager, spec, home, nil
+}
+
+// isCredentialEnvKey reports whether an environment variable name looks
+// like it carries a secret, so it never gets baked into a service
+// definition on disk.
+func isCredentialEnvKey(key string) bool {
+	upper := strings.ToUpper(strings.TrimSpace(key))
+	for _, marker := range []string{"SECRET", "PASSPHRASE", "PASSWORD", "TOKEN", "CREDENTIAL", "PRIVATE_KEY", "API_KEY"} {
+		if strings.Contains(upper, marker) {
+			return true
+		}
+	}
+	return false
 }
 
 // servicePath is the PATH the service runs with: the directory of the

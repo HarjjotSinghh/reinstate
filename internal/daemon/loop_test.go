@@ -363,6 +363,33 @@ func TestLoopBacksOffAfterFailuresAndRecovers(t *testing.T) {
 	}
 }
 
+func TestLoopBackoffHoldsWhileSessionStaysActiveDuringOutage(t *testing.T) {
+	boom := errors.New("locker unreachable")
+	errs := make([]error, 200)
+	for i := range errs {
+		errs[i] = boom
+	}
+	syncer := &fakeSyncer{pushErrs: errs}
+	h := newHarness(t, nil, syncer)
+	h.start()
+	h.find(h.advance(3*time.Second), "push") // fails; retry in 5s
+	// One write per second for 90 seconds while the locker is down. A
+	// change arriving during the backoff waits for it, and every attempt
+	// restarts the 30-second max-debounce window, so the attempts land at
+	// t=3s, 33s, and 63s: three in total, not one per change.
+	for i := 0; i < 90; i++ {
+		h.change("/store/busy.jsonl")
+		h.advance(time.Second)
+	}
+	if pushes, _ := h.syncer.counts(); pushes != 3 {
+		t.Fatalf("pushes=%d in 90s of outage, want 3", pushes)
+	}
+	s := h.status()
+	if s.Push.OK || s.Push.Error != boom.Error() {
+		t.Fatalf("status during outage: %+v", s.Push)
+	}
+}
+
 func TestLoopConflictStopsRetryUntilNextChange(t *testing.T) {
 	syncer := &fakeSyncer{pushErrs: []error{fmt.Errorf("push: %w", daemon.ErrConflict), nil}}
 	h := newHarness(t, nil, syncer)

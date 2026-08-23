@@ -188,6 +188,7 @@ func NewRoot(opts Options) *cobra.Command {
 	rootContext = context.WithValue(rootContext, hopSeamsContextKey{}, hopOpts)
 	rootContext = context.WithValue(rootContext, hostedHolderContextKey{}, &hostedHolder{})
 	rootContext = context.WithValue(rootContext, daemonSeamsContextKey{}, opts.Daemon)
+	rootContext = context.WithValue(rootContext, rootOptionsContextKey{}, opts)
 	if opts.DeviceSecrets != nil || opts.RecoveryCodePrompt != nil || opts.PairingCodePrompt != nil {
 		rootContext = context.WithValue(rootContext, accountSeamsContextKey{}, accountSeams{
 			secrets:        opts.DeviceSecrets,

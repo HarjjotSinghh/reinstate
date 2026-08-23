@@ -260,6 +260,24 @@ func TestDaemonJourneyHop(t *testing.T) {
 		t.Fatalf("rein status with nothing pending: exit=%d out=%q err=%q", code, out, errb)
 	}
 
+	// A resume pulls first only when the daemon's last pull is stale:
+	// just after the scheduled pull nothing is fetched; a minute later
+	// the locker is read again (nothing newer, so nothing is said).
+	resumeOpts := a.options(runOptions{stdout: &syncBuffer{}, stderr: &syncBuffer{}})
+	requests := len(plane.s3.RequestLog())
+	if note := resumePull(context.Background(), resumeOpts, a.home, d.clock.Now()); note != "" {
+		t.Fatalf("resume pull right after the daemon pulled: %q", note)
+	}
+	if n := len(plane.s3.RequestLog()); n != requests {
+		t.Fatalf("resume must not pull when the daemon just did: %d new request(s)", n-requests)
+	}
+	if note := resumePull(context.Background(), resumeOpts, a.home, d.clock.Now().Add(time.Minute)); note != "" {
+		t.Fatalf("resume pull with nothing newer: %q", note)
+	}
+	if n := len(plane.s3.RequestLog()); n == requests {
+		t.Fatal("resume should pull when the daemon's last pull is stale")
+	}
+
 	// Device B asks to join. The daemon's next poll notifies, records the
 	// request in the status file, and the next shell command says so.
 	b := newPairDevice(t, plane, "desktop")
@@ -400,6 +418,9 @@ func TestDaemonInstallLifecycle(t *testing.T) {
 	out, errb, code := run("daemon", "status")
 	if code != ExitOK || !strings.Contains(out, "not installed") || !strings.Contains(out, "never ran") {
 		t.Fatalf("status before install: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if out, errb, code := run("daemon", "install", "--env", "REINSTATE_S3_SECRET_ACCESS_KEY=abc"); code != ExitUsage || !strings.Contains(errb, "looks like a credential") || manager.installed {
+		t.Fatalf("install must refuse to bake a credential into the definition: exit=%d out=%q err=%q calls=%v", code, out, errb, manager.calls)
 	}
 	out, errb, code = run("daemon", "install", "--pull-every", "10m", "--poll", "--env", "REINSTATE_BACKEND=memory")
 	if code != ExitOK || !strings.Contains(out, "installed fake com.reinstate.daemon.") {

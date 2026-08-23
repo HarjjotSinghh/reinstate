@@ -101,6 +101,7 @@ func performIntent(
 		if intent.Action == tui.ActionFork {
 			operation = sessionindex.OperationFork
 		}
+		pullBeforeResume(cmd)
 		record, _, fresh, err := index.RefreshAndResolve(cmd.Context(), intent.Reference)
 		if err != nil {
 			return localResolveError(err)
