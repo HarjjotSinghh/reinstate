@@ -28,7 +28,7 @@ The Phase 2 local capability matrix is:
 | Claude Code | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64 | T5 |
 | OpenAI Codex CLI | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64 | T5 |
 | Gemini CLI | Read-only included | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac | T2 |
-| OpenCode | Read-only included | Same-vendor included | Resume journeys recorded on macOS and native Windows; destination journeys recorded on both, with the executed launch collected on macOS only | T4 |
+| OpenCode | Read-only included | Same-vendor included | Encrypted-sync round-trip recorded on macOS and native Windows: create with real OpenCode, `rein push`, cross-device `rein pull`, verified resume in the vendor with the remapped path | T5 |
 | Cursor CLI | Indexed (read-only) | Not implemented | Dual-platform probes committed; indexed from `meta.json`; no device journey for resume | T1 |
 | Grok Build | Read-only included | Same-vendor included | Resume and handoff-destination journeys recorded on macOS and native Windows | T4 |
 | Amp | Not readable locally (`server_backed`) | Not implemented | Not applicable | T0 |

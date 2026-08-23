@@ -27,15 +27,30 @@ import (
 // Field order and the sorted rows below make json.Marshal deterministic, which
 // the sync engine relies on for content-addressed change detection.
 type sessionDocument struct {
-	Schema   string       `json:"schema"`
-	Session  sessionRow   `json:"session"`
-	Project  *projectRow  `json:"project,omitempty"`
-	Messages []messageRow `json:"messages"`
-	Parts    []partRow    `json:"parts"`
+	Schema string `json:"schema"`
+	// ProjectKey is Reinstate's portable project identity for the session —
+	// the same value Discover reports as adapter.Session.ProjectID — so the
+	// document names the project the sync envelope was filed under. It is
+	// derived from the session's working directory (a configured project id,
+	// else a ${HOME}-relative token) and so survives a cross-device path remap;
+	// it is deliberately not the vendor's own project-table id, which lives in
+	// Session.ProjectID and is only meaningful inside one store.
+	ProjectKey string       `json:"project_key,omitempty"`
+	Session    sessionRow   `json:"session"`
+	Project    *projectRow  `json:"project,omitempty"`
+	Messages   []messageRow `json:"messages"`
+	Parts      []partRow    `json:"parts"`
 }
 
+// sessionRow carries the columns of the vendor's session table that a resume
+// depends on. Columns are always named in SQL, never positional, so a store
+// with more columns than these (1.18.21 has 29) reads and writes the same way
+// as the synthetic seeds.
 type sessionRow struct {
-	ID          string          `json:"id"`
+	ID string `json:"id"`
+	// ProjectID is the vendor's project-table id ("global" for a session
+	// outside any project, a 40-hex digest for a repository). It is the
+	// session's foreign key inside its own store, not a portable identity.
 	ProjectID   string          `json:"project_id"`
 	Slug        string          `json:"slug"`
 	Directory   string          `json:"directory"`
@@ -52,6 +67,7 @@ type sessionRow struct {
 type projectRow struct {
 	ID          string `json:"id"`
 	Worktree    string `json:"worktree"`
+	VCS         string `json:"vcs,omitempty"`
 	Name        string `json:"name,omitempty"`
 	Sandboxes   string `json:"sandboxes"`
 	TimeCreated int64  `json:"time_created"`
@@ -111,6 +127,7 @@ SELECT id, project_id, slug, directory, path, title, version, agent, model, meta
 		return sessionDocument{}, err
 	}
 	sess.ProjectID = projectID
+	doc.ProjectKey = a.projectKey(sess.Directory)
 	sess.Directory = mapper.Normalize(sess.Directory)
 	if path.Valid && path.String != "" {
 		sess.Path = mapper.Normalize(path.String)
@@ -149,12 +166,13 @@ SELECT id, project_id, slug, directory, path, title, version, agent, model, meta
 func readProject(ctx context.Context, db *sql.DB, id string, mapPath func(string) string) (projectRow, bool, error) {
 	var (
 		p         projectRow
+		vcs       sql.NullString
 		name      sql.NullString
 		sandboxes sql.NullString
 	)
 	err := db.QueryRowContext(ctx, `
-SELECT id, worktree, name, sandboxes, COALESCE(time_created, 0), COALESCE(time_updated, 0)
-  FROM project WHERE id = ?`, id).Scan(&p.ID, &p.Worktree, &name, &sandboxes, &p.TimeCreated, &p.TimeUpdated)
+SELECT id, worktree, vcs, name, sandboxes, COALESCE(time_created, 0), COALESCE(time_updated, 0)
+  FROM project WHERE id = ?`, id).Scan(&p.ID, &p.Worktree, &vcs, &name, &sandboxes, &p.TimeCreated, &p.TimeUpdated)
 	if err == sql.ErrNoRows {
 		return projectRow{}, false, nil
 	}
@@ -162,6 +180,7 @@ SELECT id, worktree, name, sandboxes, COALESCE(time_created, 0), COALESCE(time_u
 		return projectRow{}, false, err
 	}
 	p.Worktree = mapPath(p.Worktree)
+	p.VCS = vcs.String
 	p.Name = name.String
 	p.Sandboxes = sandboxes.String
 	if p.Sandboxes == "" {
@@ -280,14 +299,30 @@ func (a *Adapter) applyDocument(ctx context.Context, dbPath string, doc sessionD
 		}
 	}()
 
+	// The session row's project_id is a foreign key into the project table
+	// (ON DELETE CASCADE on 1.18.21), so the project row must exist before the
+	// session is written. A project the destination already knows keeps its
+	// own worktree: the destination created that row from its own filesystem,
+	// and the source's remapped guess must not move it. A project the
+	// destination has never seen is created from the document, remapped onto
+	// this device; a document with no project row at all (the source store was
+	// missing it) still gets a minimal row so the session can be written.
 	if doc.Project != nil {
 		if _, err := tx.ExecContext(ctx, `
-INSERT INTO project (id, worktree, name, sandboxes, time_created, time_updated)
-VALUES (?, ?, ?, ?, ?, ?)
-ON CONFLICT(id) DO UPDATE SET worktree=excluded.worktree, name=excluded.name`,
-			doc.Project.ID, doc.Project.Worktree, nullIfEmpty(doc.Project.Name), doc.Project.Sandboxes,
-			doc.Project.TimeCreated, doc.Project.TimeUpdated); err != nil {
+INSERT INTO project (id, worktree, vcs, name, sandboxes, time_created, time_updated)
+VALUES (?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(id) DO UPDATE SET name=COALESCE(project.name, excluded.name)`,
+			doc.Project.ID, doc.Project.Worktree, nullIfEmpty(doc.Project.VCS), nullIfEmpty(doc.Project.Name),
+			doc.Project.Sandboxes, doc.Project.TimeCreated, doc.Project.TimeUpdated); err != nil {
 			return fmt.Errorf("restore opencode project: %w", err)
+		}
+	} else if strings.TrimSpace(doc.Session.ProjectID) != "" {
+		if _, err := tx.ExecContext(ctx, `
+INSERT INTO project (id, worktree, sandboxes, time_created, time_updated)
+VALUES (?, ?, '[]', ?, ?)
+ON CONFLICT(id) DO NOTHING`,
+			doc.Session.ProjectID, doc.Session.Directory, doc.Session.TimeCreated, doc.Session.TimeUpdated); err != nil {
+			return fmt.Errorf("restore opencode project placeholder: %w", err)
 		}
 	}
 
@@ -421,8 +456,11 @@ func checkpointedCopy(src string) (string, func(), error) {
 		cleanup()
 		return "", func() {}, err
 	}
-	if _, err := os.Stat(src + "-wal"); err == nil {
-		if err := copyFile(src+"-wal", copyPath+"-wal"); err != nil {
+	for _, suffix := range storeSidecars {
+		if _, err := os.Stat(src + suffix); err != nil {
+			continue
+		}
+		if err := copyFile(src+suffix, copyPath+suffix); err != nil {
 			cleanup()
 			return "", func() {}, err
 		}
@@ -452,6 +490,11 @@ func checkpointedCopy(src string) (string, func(), error) {
 	_ = os.Remove(copyPath + "-shm")
 	return copyPath, cleanup, nil
 }
+
+// storeSidecars are the write-ahead-log files SQLite keeps beside a WAL-mode
+// database. Rows the vendor has committed but not yet checkpointed live only
+// in the -wal file, so any faithful copy of the store must carry them.
+var storeSidecars = []string{"-wal", "-shm"}
 
 func copyFile(source, destination string) error {
 	in, err := os.Open(source)

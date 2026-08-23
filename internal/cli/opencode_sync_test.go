@@ -11,8 +11,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/HarjjotSinghh/reinstate/internal/adapter"
-	opencodeadapter "github.com/HarjjotSinghh/reinstate/internal/adapter/opencode"
 	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
 
 	_ "modernc.org/sqlite"
@@ -27,9 +25,9 @@ import (
 // The store is hydrated from the committed synthetic seed
 // testdata/adapters/opencode/macos/store.sql; nothing touches a real store.
 //
-// The shipped catalog keeps OpenCode at T4 until its native Windows T5 journey
-// is recorded, so the adapter is registered through the test-only hook rather
-// than the descriptor; the rest of the path is the production code.
+// OpenCode ships at T5, so the sync adapter is registered by the shipped
+// catalog's NewSyncAdapter — this test installs no test-only registration hook,
+// so it exercises exactly the production wiring an operator gets.
 func TestCLIOpenCodeSyncJourney(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("REINSTATE_HOME", home)
@@ -53,11 +51,6 @@ func TestCLIOpenCodeSyncJourney(t *testing.T) {
 	}
 	dbPath := filepath.Join(storeDir, "opencode.db")
 	hydrateOpenCodeStore(t, dbPath, "../../testdata/adapters/opencode/macos/store.sql")
-
-	extraSyncAdapters = func() []adapter.Adapter {
-		return []adapter.Adapter{&opencodeadapter.Adapter{Home: userHome}}
-	}
-	t.Cleanup(func() { extraSyncAdapters = nil })
 
 	testCodec := &fastAgeEnvelopeCodec{}
 	inactive := func(_ context.Context, _ string, _ processcheck.Target) (bool, bool, error) { return false, true, nil }

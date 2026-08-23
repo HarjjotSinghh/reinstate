@@ -27,29 +27,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the static keyring or environment keys through `s3.Static` and is never
   retried, exactly as before.
 
-- An OpenCode encrypted-sync adapter, `internal/adapter/opencode`, implementing
-  the full `adapter.Adapter` (`Detect`, `Discover`, `PlanExport`, `Export`,
+- **OpenCode moves to T5, encrypted sync** — the first embedded-SQLite agent to
+  reach it. The adapter `internal/adapter/opencode` implements the full
+  `adapter.Adapter` (`Detect`, `Discover`, `PlanExport`, `Export`,
   `PlanRestore`, `Restore`, `Exclusions`): the synced unit is a portable,
   path-tokenised document extracted from the `session`, `project`, `message`
   and `part` tables — never the credential or account tables — and restore
   writes it back into the vendor's own `opencode.db` through a checkpointed
   working copy staged beside the store, fingerprint-guarded, backed up, then
-  atomically renamed. Because sessions do not each own a file, the adapter
-  implements a new `adapter.SessionRevisioner` so change detection uses a
-  device-independent content digest instead of hashing the shared store;
-  `forkRelativePath` now keeps a session's own extension so a keep-both fork is
-  not mislabelled. Deterministic synthetic seeds live under
-  `testdata/adapters/opencode/{macos,windows}`, and a CLI push/pull journey
-  test drives the adapter through the real entrypoint. A keep-both fork
-  rewrites the `id`/`parentID`/`messageID` fields inside each forked row so the
-  fork is self-contained; restore refuses id-less or mismatched session
-  documents before touching the store; and the session revision excludes the
-  destination-owned `project` timestamps so a freshly pulled session does not
-  read as a local edit. **OpenCode stays at T4 in the catalog**: the macOS T5
-  device journey is recorded (including the vendor's own export of the restored
-  session's message bodies), and the tier is advertised (and the adapter wired
-  into `rein push`/`pull`) only once the native Windows journey is recorded as
-  well.
+  atomically renamed. The restore backup is a faithful pre-restore copy of the
+  whole store, including the `-wal`/`-shm` sidecars, and the fingerprint guard
+  and the backup both consider the write-ahead log so a session the vendor
+  committed only to the `-wal` is neither missed by the guard nor lost by the
+  rename. Discover, the exported document, and the sync envelope agree on one
+  portable project identity derived from the session's working directory (not
+  the vendor's opaque project-table id, observed as `global` on 1.18.21), so the
+  identity survives a round trip and a Windows↔macOS remap. Because sessions do
+  not each own a file, the adapter implements `adapter.SessionRevisioner` so
+  change detection uses a device-independent content digest instead of hashing
+  the shared store. Deterministic synthetic seeds under
+  `testdata/adapters/opencode/{macos,windows}` now mirror the real 1.18.21
+  schema (extra columns and sibling tables included) and the reader names its
+  columns so it tolerates a store wider than the ones it selects. Conformance,
+  a CLI push/pull journey test, and the physical round-trip recorded on macOS
+  and native Windows back the tier; the catalog wires `NewSyncAdapter` and the
+  tier table, adapters docs, and README report T5.
 - The website now serves every page as Markdown through `Accept: text/markdown`
   content negotiation (with `Vary: Accept` and a 406 contract), static `.md`
   twins, `llms-full.txt`, an OpenAPI 3.1 document at `/openapi.json`, JSON

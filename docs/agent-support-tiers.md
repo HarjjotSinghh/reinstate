@@ -173,16 +173,16 @@ plus:
 6. A cross-device physical journey: push on one OS, pull on the other, resume
    natively, in a Phase 5 device report.
 
-Claude Code and Codex CLI are the synced agents. OpenCode is the next
-candidate for this rung and would be the first embedded-store agent to reach it:
-its sessions live in one SQLite database rather than a file per session, so the
-synced unit is a portable document extracted from the `session`, `project`,
-`message` and `part` tables (never the credential or account tables), and
-restore writes it back into the vendor's own store. The adapter
-(`internal/adapter/opencode`) is complete and its macOS journey is recorded,
-but the tier is **not** advertised until the native Windows journey is also
-recorded — item 6 above requires both platforms, and the catalog stays at T4
-until the Windows report lands as `PASS`.
+Claude Code, Codex CLI and OpenCode are the synced agents. OpenCode is the
+first embedded-store agent to reach this rung: its sessions live in one SQLite
+database rather than a file per session, so the synced unit is a portable
+document extracted from the `session`, `project`, `message` and `part` tables
+(never the credential or account tables), and restore writes it back into the
+vendor's own store. The adapter (`internal/adapter/opencode`) is wired at T5,
+and item 6 above is satisfied on both platforms: the physical encrypted-sync
+round-trip is recorded on macOS
+(`docs/testing/results/2026-08-23-macos-opencode-t5-journey.md`) and native
+Windows (`docs/testing/results/2026-08-23-windows-opencode-t5.md`).
 
 ---
 
@@ -201,7 +201,7 @@ stays where it is, and that outcome is a successful result, not a failed task.
 | Codex CLI | OpenAI | F1 | **T5** | T5 |
 | Gemini CLI | Google | F1 | **T2** | T3 |
 | Antigravity CLI | Google | F1 (expected) | — | T0 (`layout_unverified`) |
-| OpenCode | anomalyco | F3 | **T4** | T5 |
+| OpenCode | anomalyco | F3 | **T5** | T5 |
 | Grok Build | xAI | F1 | **T4** | T4 |
 | Kimi Code CLI | Moonshot AI | F1 | **T2** | T3 |
 | Pi | earendil-works | F1 | **T1** | T3 |

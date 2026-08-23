@@ -121,8 +121,27 @@ func TestDiscover(t *testing.T) {
 	if s.RelativePath != "sessions/ses_fixture001.json" {
 		t.Fatalf("relative = %q", s.RelativePath)
 	}
-	if s.ProjectID != "/Users/fixture-user/code/demo" {
+	// The reported project identity is the portable, device-independent token
+	// for the session's working directory — not the vendor's opaque
+	// project-table id (a 40-hex digest, or "global"), which would not survive
+	// a cross-device remap.
+	if s.ProjectID != "${HOME}/code/demo" {
 		t.Fatalf("project = %q", s.ProjectID)
+	}
+	// A Discover filtered by the ProjectID a prior Discover reported returns the
+	// same session: the identity round-trips through the sync engine's
+	// per-project addressing. (Blocker 3: Discover/Restore/Index must agree.)
+	filtered, err := a.Discover(context.Background(), adapter.DiscoverOptions{ProjectID: s.ProjectID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(filtered) != 1 || filtered[0].ID != "ses_fixture001" {
+		t.Fatalf("filter by reported ProjectID %q returned %+v", s.ProjectID, filtered)
+	}
+	// The exported document carries the same portable project key.
+	archive := exportOne(t, a, "ses_fixture001")
+	if !bytes.Contains(archive, []byte(`"project_key": "${HOME}/code/demo"`)) {
+		t.Fatalf("export document project_key does not match Discover ProjectID: %s", archive)
 	}
 	// Project filter that matches nothing.
 	none, err := a.Discover(context.Background(), adapter.DiscoverOptions{ProjectID: "/nope"})
@@ -502,7 +521,7 @@ func TestSessionRevisionIgnoresDestinationProjectTimes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := db.Exec(`INSERT INTO project VALUES ('proj_fixture','/Users/fixture-user/code/demo','demo','[]',1,2)`); err != nil {
+	if _, err := db.Exec(`INSERT INTO project (id, worktree, name, sandboxes, time_created, time_updated) VALUES ('proj_fixture','/Users/fixture-user/code/demo','demo','[]',1,2)`); err != nil {
 		t.Fatal(err)
 	}
 	_ = db.Close()
@@ -619,6 +638,117 @@ func TestCheckpointedCopyStaysBesideStore(t *testing.T) {
 			t.Fatalf("stale working directory %q left beside the store", e.Name())
 		}
 	}
+}
+
+// stageUncheckpointedStore builds a store whose newest session lives only in
+// the write-ahead log, never checkpointed into the main file — the exact state
+// OpenCode leaves behind between sessions. The files are copied out while the
+// writing connection is open, because closing the last connection checkpoints
+// and deletes the log. It returns the store's root directory.
+func stageUncheckpointedStore(t *testing.T, seed string) string {
+	t.Helper()
+	src := schemaOnlyStore(t, seed)
+	path := filepath.Join(src, DatabaseName)
+	db, err := sql.Open("sqlite",
+		"file:"+filepath.ToSlash(path)+"?_pragma=journal_mode(WAL)&_pragma=wal_autocheckpoint(0)")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var mode string
+	if err := db.QueryRow(`PRAGMA journal_mode`).Scan(&mode); err != nil {
+		t.Fatal(err)
+	}
+	if mode != "wal" {
+		t.Fatalf("fixture journalling in %q, not wal; the test would prove nothing", mode)
+	}
+	if _, err := db.Exec(`INSERT INTO project (id, worktree, sandboxes, time_created, time_updated)
+		VALUES ('proj_wal','/Users/fixture-user/code/wal','[]',1,2)`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO session (id, project_id, slug, directory, title, version, time_created, time_updated)
+		VALUES ('ses_wal','proj_wal','wal-only','/Users/fixture-user/code/wal','Session still in the log','1.18.21',3,4)`); err != nil {
+		t.Fatal(err)
+	}
+
+	target := t.TempDir()
+	for _, suffix := range []string{"", "-wal", "-shm"} {
+		body, readErr := os.ReadFile(path + suffix)
+		if readErr != nil {
+			continue
+		}
+		if writeErr := os.WriteFile(filepath.Join(target, DatabaseName+suffix), body, 0o600); writeErr != nil {
+			t.Fatal(writeErr)
+		}
+	}
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Stat(filepath.Join(target, DatabaseName+"-wal"))
+	if err != nil || info.Size() == 0 {
+		t.Fatalf("staged store has no write-ahead log; the test would prove nothing")
+	}
+	return target
+}
+
+// TestRestorePreservesUncheckpointedWALRows is the reviewer's probe: a session
+// the vendor committed only to the -wal must still be present after a restore
+// writes a different session into the store. The checkpointed working copy
+// folds the log in, so the rename cannot discard those rows.
+func TestRestorePreservesUncheckpointedWALRows(t *testing.T) {
+	destRoot := stageUncheckpointedStore(t, macosSeed)
+	// The WAL-only session is invisible in the bare main file.
+	if walOnlySessionCount(t, filepath.Join(destRoot, DatabaseName), "ses_wal", true) != 0 {
+		t.Fatal("staged main file already contains the WAL-only session; the test would prove nothing")
+	}
+
+	srcRoot := hydrateStore(t, macosSeed)
+	src := &Adapter{Root: srcRoot, Home: "/Users/fixture-user"}
+	archive := exportOne(t, src, "ses_fixture001")
+
+	dest := &Adapter{Root: destRoot, Home: "/Users/other-user"}
+	restore(t, dest, "sessions/ses_fixture001.json", "ses_fixture001", "", archive)
+
+	db, err := sql.Open("sqlite", "file:"+filepath.ToSlash(filepath.Join(destRoot, DatabaseName)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+	for _, id := range []string{"ses_wal", "ses_fixture001"} {
+		var n int
+		if err := db.QueryRow(`SELECT COUNT(*) FROM session WHERE id = ?`, id).Scan(&n); err != nil {
+			t.Fatal(err)
+		}
+		if n != 1 {
+			t.Fatalf("session %q count = %d after restore, want 1", id, n)
+		}
+	}
+	// The sidecars from the pre-restore inode must be gone so the vendor reopens
+	// the merged database rather than a database plus a stale log.
+	for _, suffix := range []string{"-wal", "-shm"} {
+		if _, err := os.Stat(filepath.Join(destRoot, DatabaseName+suffix)); !os.IsNotExist(err) {
+			t.Fatalf("stale %s left beside the restored store", DatabaseName+suffix)
+		}
+	}
+}
+
+// walOnlySessionCount reads the session count, optionally against the bare main
+// file only (immutable, ignoring any -wal) to prove where a row lives.
+func walOnlySessionCount(t *testing.T, dbPath, id string, mainFileOnly bool) int {
+	t.Helper()
+	dsn := "file:" + filepath.ToSlash(dbPath)
+	if mainFileOnly {
+		dsn += "?mode=ro&immutable=1"
+	}
+	db, err := sql.Open("sqlite", dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+	var n int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM session WHERE id = ?`, id).Scan(&n); err != nil {
+		t.Fatal(err)
+	}
+	return n
 }
 
 // TestDenormalizerLeavesUntokenisedPathsAlone guards that a path outside every

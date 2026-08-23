@@ -157,6 +157,20 @@ func (a *Adapter) mapper() pathmap.Mapper {
 	}
 }
 
+// projectKey turns a session's working directory into Reinstate's portable
+// project identity: a configured project's canonical id where the directory
+// falls inside one, otherwise the directory normalised to a device-independent
+// token (${HOME}-relative, or left as-is when it belongs to no known root).
+// It is deliberately not the vendor's project-table id, which is meaningful
+// only inside a single store and would not survive a cross-device remap.
+func (a *Adapter) projectKey(directory string) string {
+	directory = strings.TrimSpace(directory)
+	if directory == "" {
+		return ""
+	}
+	return a.mapper().Normalize(directory)
+}
+
 // Discover lists every session in the store as adapter.Session metadata. Every
 // session shares the store path; RelativePath is the virtual per-session
 // archive name so the sync engine can address one session at a time.
@@ -201,7 +215,14 @@ SELECT id, COALESCE(directory, ''), COALESCE(title, ''),
 		if id == "" {
 			continue
 		}
-		projectID := strings.TrimSpace(directory)
+		// The portable project identity is the session's working directory
+		// normalised to a device-independent token (a configured ${REPO:id}
+		// or a ${HOME}-relative path), never the vendor's opaque project-table
+		// id. It is the value the export files the snapshot under and the value
+		// a restore's snapshot carries back, so Discover, the exported
+		// document, and the sync envelope all agree on one identity that
+		// survives a Windows↔macOS remap.
+		projectID := a.projectKey(directory)
 		if opts.ProjectID != "" && opts.ProjectID != projectID {
 			continue
 		}
@@ -418,7 +439,12 @@ func (a *Adapter) Restore(ctx context.Context, plan adapter.RestorePlan, r io.Re
 		return fmt.Errorf("opencode store is not initialised at %s; run opencode once before pulling", dest)
 	}
 
-	before, err := fsx.FingerprintFile(dest)
+	// The guard covers the whole store, main file and write-ahead sidecars
+	// together: in WAL mode a concurrent vendor write can land entirely in the
+	// -wal file and leave the main file's size and mtime untouched, so a guard
+	// that watched only the main file would miss exactly the write it exists to
+	// catch.
+	before, err := storeFingerprint(dest)
 	if err != nil {
 		return err
 	}
@@ -433,18 +459,21 @@ func (a *Adapter) Restore(ctx context.Context, plan adapter.RestorePlan, r io.Re
 		return err
 	}
 
-	if err := fsx.VerifyUnchanged(dest, before); err != nil {
+	if err := verifyStoreUnchanged(dest, before); err != nil {
 		return err
 	}
-	// The backup is the whole store, not one session, so it is labelled by the
-	// store file name rather than the virtual sessions/<id>.json path.
-	if _, err := fsx.BackupFile(dest, plan.BackupRoot, filepath.Base(dest)); err != nil {
+	// The backup is a faithful pre-restore copy of the whole store: the main
+	// file and any -wal/-shm sidecars, so rows the vendor committed only to the
+	// log are recoverable too. It is labelled by the store file name rather
+	// than the virtual sessions/<id>.json path because it is the store, not one
+	// session.
+	if err := backupStore(dest, plan.BackupRoot); err != nil {
 		return fmt.Errorf("backup existing OpenCode store: %w", err)
 	}
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	if err := fsx.VerifyUnchanged(dest, before); err != nil {
+	if err := verifyStoreUnchanged(dest, before); err != nil {
 		return err
 	}
 	if err := os.Rename(working, dest); err != nil {
@@ -455,6 +484,53 @@ func (a *Adapter) Restore(ctx context.Context, plan adapter.RestorePlan, r io.Re
 	_ = os.Remove(dest + "-wal")
 	_ = os.Remove(dest + "-shm")
 	return nil
+}
+
+// storeFingerprint captures the observable state of the store and its
+// write-ahead sidecars together. The main file always contributes; a sidecar
+// contributes only when it is present, and its later appearance or
+// disappearance is itself a change fsx.Fingerprint records via Exists.
+func storeFingerprint(dest string) (map[string]fsx.Fingerprint, error) {
+	out := make(map[string]fsx.Fingerprint, 1+len(storeSidecars))
+	for _, suffix := range append([]string{""}, storeSidecars...) {
+		fp, err := fsx.FingerprintFile(dest + suffix)
+		if err != nil {
+			return nil, err
+		}
+		out[suffix] = fp
+	}
+	return out, nil
+}
+
+// verifyStoreUnchanged fails if the store or any sidecar changed since before,
+// so a vendor write that touched only the -wal aborts the restore.
+func verifyStoreUnchanged(dest string, before map[string]fsx.Fingerprint) error {
+	current, err := storeFingerprint(dest)
+	if err != nil {
+		return err
+	}
+	for suffix, prior := range before {
+		if !current[suffix].Equal(prior) {
+			return fmt.Errorf(
+				"opencode store changed on disk during restore (%s%s); another agent is writing to it, so the restore was abandoned to avoid discarding those changes",
+				filepath.Base(dest), suffix)
+		}
+	}
+	return nil
+}
+
+// backupStore copies the store and every present sidecar into one timestamped
+// backup set, so the backup can be replayed as a faithful pre-restore store
+// even when uncommitted rows lived only in the -wal.
+func backupStore(dest, backupRoot string) error {
+	relatives := []string{filepath.Base(dest)}
+	for _, suffix := range storeSidecars {
+		if _, err := os.Stat(dest + suffix); err == nil {
+			relatives = append(relatives, filepath.Base(dest)+suffix)
+		}
+	}
+	_, err := fsx.BackupFiles(filepath.Dir(dest), backupRoot, DatabaseName+"-store", relatives...)
+	return err
 }
 
 const maxSnapshotBytes = 256 << 20
