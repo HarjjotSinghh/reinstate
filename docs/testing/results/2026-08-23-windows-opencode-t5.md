@@ -141,7 +141,7 @@ normalization the project requires. The pre-existing Windows session's path was
 left untouched.
 
 The assistant message body's `path.cwd`/`path.root` remained
-`/Users/harjjotsinghh/…/reinstate-worktrees/04`, verbatim: that absolute path
+`/Users/fixture-user/…/reinstate`, verbatim: that absolute path
 belonged to no configured root or home token on the source device, so it was
 correctly left as-is rather than having its separators rewritten into a path
 that exists nowhere.
