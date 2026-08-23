@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -51,6 +52,12 @@ type Fake struct {
 	// Hook runs under Mu before each request is authorised, with the
 	// 1-based request number; tests use it to expire a key mid-operation.
 	Hook func(n int)
+	// ReadOnly refuses every PUT and DELETE with AccessDenied, the way a
+	// locker behaves once the account is read-only (lapsed).
+	ReadOnly bool
+	// PageSize, when positive, truncates listings to that many keys per
+	// page and hands out continuation tokens, the way S3 does at 1000.
+	PageSize int
 }
 
 var credentialRe = regexp.MustCompile(`Credential=([^/]+)/`)
@@ -130,9 +137,15 @@ func (f *Fake) handle(w http.ResponseWriter, r *http.Request) {
 	}
 	ok := f.Valid[akid] || (f.AcceptPrefix != "" && akid != "" && strings.HasPrefix(akid, f.AcceptPrefix))
 	code := f.RejectAs
+	readOnly := f.ReadOnly
+	pageSize := f.PageSize
 	f.Mu.Unlock()
 	if !ok {
 		writeS3Error(w, http.StatusForbidden, code, "credential rejected by fake S3")
+		return
+	}
+	if readOnly && (r.Method == http.MethodPut || r.Method == http.MethodDelete) {
+		writeS3Error(w, http.StatusForbidden, "AccessDenied", "this bucket is read-only")
 		return
 	}
 	ctx := r.Context()
@@ -149,8 +162,25 @@ func (f *Fake) handle(w http.ResponseWriter, r *http.Request) {
 			Size int64  `xml:"Size"`
 		}
 		var out struct {
-			XMLName  xml.Name  `xml:"ListBucketResult"`
-			Contents []content `xml:"Contents"`
+			XMLName               xml.Name  `xml:"ListBucketResult"`
+			Contents              []content `xml:"Contents"`
+			IsTruncated           bool      `xml:"IsTruncated"`
+			NextContinuationToken string    `xml:"NextContinuationToken,omitempty"`
+		}
+		// S3 lists in key order; a continuation token is the last key of
+		// the previous page, so the next page starts after it.
+		sort.Slice(items, func(i, j int) bool { return items[i].Key < items[j].Key })
+		if after := r.URL.Query().Get("continuation-token"); after != "" {
+			n := 0
+			for n < len(items) && items[n].Key <= after {
+				n++
+			}
+			items = items[n:]
+		}
+		if pageSize > 0 && len(items) > pageSize {
+			items = items[:pageSize]
+			out.IsTruncated = true
+			out.NextContinuationToken = items[len(items)-1].Key
 		}
 		for _, it := range items {
 			out.Contents = append(out.Contents, content{Key: it.Key, ETag: `"` + it.ETag + `"`, Size: it.Size})

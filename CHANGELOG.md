@@ -103,6 +103,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`age-scrypt` or `root-key`); BYO behaviour is unchanged. See
   `docs/security-model.md`, "Hosted key model".
 
+- S3 backend: `List` follows `ListObjectsV2` continuation tokens instead of
+  stopping at the first 1000 keys.
+- Leaving Hop: `rein sync migrate --to byo` moves every snapshot and the
+  manifest from the locker to a bucket you own under a new BYO passphrase.
+  Each envelope is opened with the root key on the device and re-sealed to
+  the passphrase; the root key, keyring, and device key never reach the
+  destination, and every destination object is sealed to the passphrase
+  alone. Snapshot ids are preserved, writes are create-only, the manifest is
+  written last with compare-and-swap, and every object is read back and its
+  plaintext digest compared before the command reports success. The locker
+  is only read, so the command works on a read-only (lapsed) account and
+  never deletes or empties the locker. An interrupted run resumes from
+  `migrate-byo.json` (coordinates and digests only; no secrets) without
+  writing anything twice, and refuses a different destination or passphrase
+  mid-way. The locker listing follows every page and is checked against the
+  locker manifest before anything is written, so a short listing can never
+  produce a "verified" copy that is missing snapshots. Afterwards it offers to switch this device to the bucket
+  (`--switch` / `--keep-hop-config`, config backed up first) and to forget
+  the device's Hop sign-in (`--forget-hop`). Other devices join with
+  `rein init --profile-id` and the passphrase. See `docs/hop.md`, "Leaving
+  Hop".
 - Device approval (pairing): `rein account join` on a new machine shows a
   16-character code and waits; `rein devices approve` on any enrolled
   machine takes that code (hidden prompt, or `REINSTATE_PAIRING_CODE_FD` for

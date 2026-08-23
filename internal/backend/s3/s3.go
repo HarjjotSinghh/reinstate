@@ -250,31 +250,41 @@ func (c *Client) Delete(ctx context.Context, key string) error {
 
 func (c *Client) List(ctx context.Context, prefix string) ([]backend.ObjectMeta, error) {
 	full := c.key(prefix)
-	var out *s3.ListObjectsV2Output
-	err := c.withCredentialRetry(nil, func() (err error) {
-		out, err = c.api.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
-			Bucket: aws.String(c.bucket),
-			Prefix: aws.String(full),
-		})
-		return err
-	})
-	if err != nil {
-		return nil, mapErr(err)
-	}
 	var res []backend.ObjectMeta
-	for _, o := range out.Contents {
-		k := aws.ToString(o.Key)
-		if c.prefix != "" {
-			k = strings.TrimPrefix(k, c.prefix+"/")
+	var token *string
+	// ListObjectsV2 returns at most 1000 keys per call; a locker with a long
+	// history holds more, so every page is followed until the listing is
+	// no longer truncated.
+	for {
+		var out *s3.ListObjectsV2Output
+		err := c.withCredentialRetry(nil, func() (err error) {
+			out, err = c.api.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
+				Bucket:            aws.String(c.bucket),
+				Prefix:            aws.String(full),
+				ContinuationToken: token,
+			})
+			return err
+		})
+		if err != nil {
+			return nil, mapErr(err)
 		}
-		et := strings.Trim(aws.ToString(o.ETag), `"`)
-		var size int64
-		if o.Size != nil {
-			size = *o.Size
+		for _, o := range out.Contents {
+			k := aws.ToString(o.Key)
+			if c.prefix != "" {
+				k = strings.TrimPrefix(k, c.prefix+"/")
+			}
+			et := strings.Trim(aws.ToString(o.ETag), `"`)
+			var size int64
+			if o.Size != nil {
+				size = *o.Size
+			}
+			res = append(res, backend.ObjectMeta{Key: k, ETag: et, Size: size})
 		}
-		res = append(res, backend.ObjectMeta{Key: k, ETag: et, Size: size})
+		if out.IsTruncated == nil || !*out.IsTruncated || out.NextContinuationToken == nil || *out.NextContinuationToken == "" {
+			return res, nil
+		}
+		token = out.NextContinuationToken
 	}
-	return res, nil
 }
 
 func mapErr(err error) error {

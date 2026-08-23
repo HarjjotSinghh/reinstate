@@ -73,6 +73,9 @@ rein status [--json]
 rein diff [--json]
 rein push [--agent ...] [--session ...|--all] [--dry-run] [--json]
 rein pull [--agent ...] [--session ...|--all] [--dry-run] [--json]
+rein sync migrate --to=byo [--endpoint URL] [--bucket NAME] [--region auto]
+                  [--prefix ...] [--switch|--keep-hop-config] [--forget-hop]
+                  [--json]
 rein conflicts list|show|resolve ...
 rein completion bash|zsh|fish|powershell
 ```
@@ -547,6 +550,66 @@ with the storage coordinates first).
 After enrolment `push`, `pull`, `status`, and `diff` use the root key and no
 longer prompt for a passphrase. The root key and recovery code are never
 accepted as flags or plain environment variables.
+
+### `rein sync migrate --to=byo`
+
+Leave Reinstate Hop with the history intact. Works on a home whose
+`storage.type` is `hop` and `encryption.type` is `root-key`; anything else
+exits `3` with nothing to migrate.
+
+1. Takes the destination bucket from flags, `REINSTATE_S3_ENDPOINT` /
+   `REINSTATE_S3_BUCKET` / `REINSTATE_S3_REGION`, or prompts; its access keys
+   from `REINSTATE_S3_ACCESS_KEY_ID` / `REINSTATE_S3_SECRET_ACCESS_KEY` or
+   hidden prompts; and a **new BYO passphrase** from `REINSTATE_PASSPHRASE_FD`
+   or a hidden prompt entered twice. A fresh profile id is minted and the
+   destination prefix defaults to `profiles/<profile id>`.
+2. Lists every snapshot in the locker (heads and earlier revisions alike,
+   following every listing page) and refuses to write anything unless the
+   listing covers every snapshot the locker manifest points at. It also
+   refuses, before writing, a destination prefix that already holds a
+   keyring object or sessions the locker lacks (exit `6`). Then it opens each with the root key on this device, re-seals it under the
+   passphrase, writes it create-only to the destination under the same
+   snapshot id, and re-reads it to compare the plaintext digest. The manifest
+   is written last with the usual compare-and-swap and re-read the same way.
+   Progress (`[n/total] <snapshot> written (bytes so far)`) goes to stderr.
+   The root key, the keyring, and the device key are never written to the
+   destination; every destination envelope is sealed to the passphrase only.
+3. The locker is only read (list, get, head): the command works while the
+   account is read-only after a lapse, and it never empties or deletes the
+   locker (that is account deletion).
+4. Interrupted? Rerun the same command. `migrate-byo.json` in the home
+   records the destination, the profile id, and the digests of verified
+   snapshots (never a passphrase or credential); verified snapshots are
+   skipped (the first one is re-read as a check that the passphrase is the
+   same), an object that exists but was not recorded is verified in place,
+   and nothing is written twice. Flags that name a different destination
+   while a migration is in progress exit `2`. A finished migration keeps the
+   record so a rerun reuses the profile instead of making a second copy.
+   A destination object that re-reads differently from the source stops the
+   run with exit `6` and the object's key; it is left for you to inspect,
+   and a rerun hits the same object until it is removed or moved.
+5. Offers to switch this device to the destination (`--switch` or
+   `--keep-hop-config` decide without asking; `--json` requires one of them).
+   Switching backs up `config.toml` and `state.json` under `backups/`, writes
+   a BYO profile (`storage.type = "s3"`, `encryption.type = "age-scrypt"`,
+   `remote_profile_required = true`, projects and agents carried over),
+   stores typed access keys in the OS keyring (keys that came from
+   `REINSTATE_S3_*` are not stored, so keep them exported or run `rein init`
+   to store them; the command says which applies), and keeps local state
+   because snapshot ids were preserved. Then offers to forget this device's
+   Hop sign-in (`--forget-hop`): the device token leaves the OS keyring; the
+   locker and account are untouched.
+
+   To revert the switch, copy `backups/<timestamp>-migrate-byo/config.toml`
+   and `state.json` back over the ones in the home; if `--forget-hop` was
+   used, `rein login` again. The destination copy stays where it is.
+
+Other devices join the destination with `rein init --profile-id <printed id>`
+and the passphrase. Exit codes: `2` usage, `3` not a Hop profile, `4`
+storage or control-plane refusal (the message says how far it got and that a
+rerun resumes), `6` a destination in use (keyring object or foreign
+sessions), a verification mismatch, or a resume under a different
+passphrase.
 
 ## Planned universal configuration commands
 

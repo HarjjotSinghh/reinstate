@@ -252,6 +252,7 @@ func NewRoot(opts Options) *cobra.Command {
 		newDiffCmd(),
 		newPushCmd(),
 		newPullCmd(processChecker),
+		newSyncCmd(),
 		newConflictsCmd(processChecker),
 		newCompletionCmd(),
 	)
