@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2-rc.1] - 2026-08-23
+
+Release candidate. Stable remains `v0.5.1`; the public installers still pin it.
+
+**Highlights.** Bare `rein` now opens an interactive session switcher, with a
+readiness verdict per row, a handoff studio, a setup wizard, and a `ctrl+k`
+palette — every `--json` document stays byte-identical, and `--plain` or
+`REINSTATE_NO_TUI` restores the frozen output. OpenCode, Grok Build, and Qwen
+Code become handoff **destinations**, so `rein handoff --to` now reaches five
+agents instead of two. OpenCode and Grok Build also gained verified native
+resume.
+
+**Not yet certified.** The interactive surfaces have development verification on
+both platforms but no tagged-artifact acceptance; that is what this candidate
+exists to enable, per
+[testing/v0.5.2-cli-experience-acceptance.md](docs/testing/v0.5.2-cli-experience-acceptance.md).
+
 ### Added
 
 - Bare `rein` opens an interactive session switcher on a terminal that can host

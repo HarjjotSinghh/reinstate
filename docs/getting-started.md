@@ -11,7 +11,7 @@ client-side-encrypted, user-owned object storage.
 Dual-platform tagged-artifact acceptance passed on candidate `v0.4.0-rc.11`
 (Apple Silicon macOS 44/44, native Windows x64 44/44).
 
-> **Release status:** the public installers pin candidate `v0.5.1`.
+> **Release status:** the public installers pin candidate `v0.5.2-rc.1`; stable remains `v0.5.1`.
 > Dual-platform tagged-artifact acceptance is pending. Stable remains `v0.4.0`.
 > Intel macOS and Linux/WSL2 remain optional,
 > unsupported/unverified evidence tracked in [#97](https://github.com/HarjjotSinghh/reinstate/issues/97)
