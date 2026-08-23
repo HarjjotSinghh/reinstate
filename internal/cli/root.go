@@ -6,11 +6,13 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
 	"github.com/HarjjotSinghh/reinstate/internal/adapter"
+	"github.com/HarjjotSinghh/reinstate/internal/credentials"
 	"github.com/HarjjotSinghh/reinstate/internal/preflight"
 	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
@@ -67,6 +69,15 @@ type Options struct {
 	// is deliberate — a hanging vendor binary must not stall handoff planning —
 	// so the seam belongs here rather than in the timeout.
 	HandoffDestinationCompat adapter.Compatibility
+	// DeviceTokenStore overrides the OS keyring holding the Hop device token
+	// in deterministic tests. Production uses the native keyring.
+	DeviceTokenStore credentials.DeviceTokenStore
+	// OpenBrowser overrides launching the system browser for `rein login`.
+	OpenBrowser func(url string) error
+	// LoginPollSleep overrides the wait between login polls in tests.
+	LoginPollSleep func(context.Context, time.Duration) error
+	// DeviceName overrides the hostname `rein login` reports in tests.
+	DeviceName string
 }
 
 type envelopeCodecContextKey struct{}
@@ -130,6 +141,12 @@ func NewRoot(opts Options) *cobra.Command {
 				term.IsTerminal(int(outputFile.Fd()))
 		}
 	}
+	hopOpts := hopCommandOptions{
+		tokens:      opts.DeviceTokenStore,
+		openBrowser: opts.OpenBrowser,
+		sleep:       opts.LoginPollSleep,
+		deviceName:  opts.DeviceName,
+	}
 	var jsonGlobal bool
 	root := &cobra.Command{
 		Use:           name,
@@ -182,6 +199,8 @@ func NewRoot(opts Options) *cobra.Command {
 		newVersionCmd(),
 		newDoctorCmd(),
 		newSetupCmd(),
+		newLoginCmd(hopOpts),
+		newWhoamiCmd(hopOpts),
 		newInitCmd(),
 		newListCmd(),
 		newSessionsCmd(local),

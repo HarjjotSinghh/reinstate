@@ -22,6 +22,15 @@ type Config struct {
 	Agents                map[string]AgentConfig `toml:"agents"`
 	Projects              []ProjectConfig        `toml:"projects"`
 	Restore               RestoreConfig          `toml:"restore"`
+	Hop                   HopConfig              `toml:"hop,omitempty"`
+}
+
+// HopConfig points at the Reinstate Hop control plane. It holds no secret:
+// the device token lives in the OS keyring.
+type HopConfig struct {
+	// URL overrides the production control plane (for staging or a local
+	// hopd). REINSTATE_HOP_URL takes precedence over this value.
+	URL string `toml:"url"`
 }
 
 // Active-agent policies for restore.

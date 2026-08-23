@@ -41,6 +41,18 @@ Project paths are portable only when each device defines the same canonical ID:
 rein init --project github.com/acme/app=/absolute/local/path
 ```
 
+## Reinstate Hop
+
+```toml
+[hop]
+url = "https://hop.reinstate.dev"
+```
+
+Optional. `REINSTATE_HOP_URL` takes precedence; the default is the production
+control plane. The device token issued by `rein login` is never a config
+field: it lives in the OS keyring under `reinstate` / `hop/device-token`. See
+[hop.md](hop.md).
+
 ## Restore safety
 
 A restore replaces a vendor session file, so Reinstate first checks whether an
