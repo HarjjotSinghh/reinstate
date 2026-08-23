@@ -48,6 +48,9 @@ type Fake struct {
 	// Hook runs under Mu before each request is authorised, with the
 	// 1-based request number; tests use it to expire a key mid-operation.
 	Hook func(n int)
+	// ReadOnly refuses every PUT and DELETE with AccessDenied, the way a
+	// locker behaves once the account is read-only (lapsed).
+	ReadOnly bool
 }
 
 var credentialRe = regexp.MustCompile(`Credential=([^/]+)/`)
@@ -119,9 +122,14 @@ func (f *Fake) handle(w http.ResponseWriter, r *http.Request) {
 	}
 	ok := f.Valid[akid] || (f.AcceptPrefix != "" && akid != "" && strings.HasPrefix(akid, f.AcceptPrefix))
 	code := f.RejectAs
+	readOnly := f.ReadOnly
 	f.Mu.Unlock()
 	if !ok {
 		writeS3Error(w, http.StatusForbidden, code, "credential rejected by fake S3")
+		return
+	}
+	if readOnly && (r.Method == http.MethodPut || r.Method == http.MethodDelete) {
+		writeS3Error(w, http.StatusForbidden, "AccessDenied", "this bucket is read-only")
 		return
 	}
 	ctx := r.Context()

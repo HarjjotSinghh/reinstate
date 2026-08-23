@@ -17,6 +17,7 @@ rein hop status [--json]
 rein account join
 rein devices [--json]
 rein devices approve [--request ID]
+rein sync migrate --to byo [--endpoint URL --bucket NAME] [--switch] [--forget-hop]
 ```
 
 ## From sign-in to the first push
@@ -197,10 +198,44 @@ hint, created, last seen). The CLI sends no telemetry; the control plane
 records `sign_up`, `device_enrolled`, `locker_provisioned`, and `first_push`
 events as its only product metrics.
 
+## Leaving Hop
+
+Leaving is one command to your own bucket, available at any time, including
+the read-only period after a trial or subscription lapses:
+
+```bash
+export REINSTATE_S3_ACCESS_KEY_ID=... REINSTATE_S3_SECRET_ACCESS_KEY=...
+rein sync migrate --to byo --endpoint https://<account>.r2.cloudflarestorage.com --bucket my-sessions
+```
+
+It asks for a new passphrase (twice; or `REINSTATE_PASSPHRASE_FD`), reads
+every snapshot and the manifest from the locker, opens them with the root
+key held on this device, re-seals them under the passphrase, writes them to
+the bucket under a fresh profile, and reads each one back to compare
+digests before the manifest is written. Nothing derived from the root key
+reaches the bucket: no keyring, no device wrap, no X25519 recipient; every
+object there opens with the passphrase alone. Snapshot ids are preserved, so
+local state on every device keeps meaning.
+
+The locker is only read. The command never deletes, empties, or rewrites
+it, and it does not report a push; that is why it works on a lapsed,
+read-only account. Deleting the locker is account deletion, a separate
+step.
+
+A run that is interrupted resumes when you run the same command again:
+verified snapshots are skipped and nothing is written twice (see
+`docs/cli-reference.md` for the record it keeps and the checks it makes).
+Once verified, it offers to switch this device to the bucket (the Hop
+config is backed up first) and to forget the device's sign-in; both are
+optional, and both leave the locker and the account exactly as they were.
+Other devices follow with `rein init --profile-id <printed id>` and the
+passphrase.
+
 ## What this does not do yet
 
 - Pair devices through a code (a second device enrols with the recovery
   code today).
 - Revoke a device or sign out (also the only recovery from an account over
-  its device quota).
+  its device quota). `rein sync migrate --to byo --forget-hop` drops this
+  device's token locally but does not revoke it at the control plane.
 - Run a daemon.
