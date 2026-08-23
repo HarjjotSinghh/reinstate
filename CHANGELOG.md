@@ -19,6 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The S3-compatible backend can now obtain its keys from a credential source
+  that expires and refreshes (`s3.CredentialSource`), the seam that lets a
+  hosted locker mint short-lived credentials. A credential that expires or is
+  revoked mid-operation is refreshed and the request retried once, including
+  the manifest compare-and-swap and create-only puts. BYO storage keeps using
+  the static keyring or environment keys through `s3.Static` and is never
+  retried, exactly as before.
+
 - The website now serves every page as Markdown through `Accept: text/markdown`
   content negotiation (with `Vary: Accept` and a 406 contract), static `.md`
   twins, `llms-full.txt`, an OpenAPI 3.1 document at `/openapi.json`, JSON
