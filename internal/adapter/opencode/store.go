@@ -192,7 +192,7 @@ SELECT id, worktree, vcs, name, sandboxes, COALESCE(time_created, 0), COALESCE(t
 func readMessages(ctx context.Context, db *sql.DB, sessionID string, mapPath func(string) string) ([]messageRow, error) {
 	rows, err := db.QueryContext(ctx, `
 SELECT id, COALESCE(time_created, 0), COALESCE(time_updated, 0), data
-  FROM message WHERE session_id = ? ORDER BY id LIMIT ?`, sessionID, maxExportMessages)
+  FROM message WHERE session_id = ? ORDER BY id LIMIT ?`, sessionID, maxExportMessages+1)
 	if err != nil {
 		return nil, err
 	}
@@ -207,6 +207,9 @@ SELECT id, COALESCE(time_created, 0), COALESCE(time_updated, 0), data
 		m.SessionID = sessionID
 		m.Data = rewriteJSONPaths(data, mapPath)
 		out = append(out, m)
+		if len(out) > maxExportMessages {
+			return nil, fmt.Errorf("opencode: session %s has more than %d messages; refusing a truncated export", sessionID, maxExportMessages)
+		}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

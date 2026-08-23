@@ -28,7 +28,7 @@ bucket both devices share.
 | Device | `windows-amd64`, native — not WSL |
 | OS | `Microsoft Windows 11 Pro`, `10.0.26200.0` |
 | CPU architecture | `AMD64`, native process |
-| Go toolchain | `go1.25.13` (`go version go1.25.13 windows/amd64`) |
+| Go toolchain | `go1.25.13` (`go version go1.25.13 windows/amd64`; the bench's default `go` is 1.26.1, pinned with `GOTOOLCHAIN=go1.25.13`) |
 | Vendor | OpenCode, single native executable at `C:\Users\admin\.bun\bin\opencode.exe` |
 | Vendor version measured | `1.18.21` (bare `MAJOR.MINOR.PATCH` on stdout, identical to macOS) |
 | Branch | `hop/04-opencode-t5` @ `1c21cbc` |

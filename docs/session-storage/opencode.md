@@ -55,15 +55,13 @@ OpenCode is launched into a directory, so such a row has nowhere to go.
 
 Device journey:
 [../testing/results/2026-08-22-macos-opencode-t3-journey.md](../testing/results/2026-08-22-macos-opencode-t3-journey.md)
-(macOS only; native Windows pending).
+(macOS; the native Windows T5 journey below covers the same build).
 
-## Encrypted sync (T5 candidate — not yet advertised)
+## Encrypted sync (T5)
 
-The sync adapter is `internal/adapter/opencode`. It is complete and tested, but
-the catalog keeps OpenCode at T4 and does not wire the adapter until the native
-Windows journey is recorded alongside the macOS one below; `rein push`/`pull`
-do not offer OpenCode until then. Because OpenCode keeps every
-session in one embedded SQLite database, the synced unit is a portable,
+The sync adapter is `internal/adapter/opencode`, wired by the catalog
+(`rein push`/`pull` offer OpenCode once its store is detected). Because
+OpenCode keeps every session in one embedded SQLite database, the synced unit is a portable,
 deterministic JSON document extracted from four tables — `session`, `project`,
 `message`, `part` — with every absolute path normalised to a `${HOME}` /
 `${REPO:…}` token. The `credential`, `account`, `control_account` and
@@ -104,7 +102,7 @@ Device journeys:
 [../testing/results/2026-08-23-macos-opencode-t5-journey.md](../testing/results/2026-08-23-macos-opencode-t5-journey.md)
 (macOS, PASS) and
 [../testing/results/2026-08-23-windows-opencode-t5.md](../testing/results/2026-08-23-windows-opencode-t5.md)
-(native Windows pending).
+(native Windows, PASS).
 
 ### Message record schema (R1 — Documented)
 

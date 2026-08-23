@@ -17,7 +17,11 @@ func rewriteJSONPaths(data []byte, mapPath func(string) string) json.RawMessage 
 	if err != nil {
 		return json.RawMessage(data)
 	}
-	walkPaths(v, mapPath)
+	if !walkPaths(v, mapPath) {
+		// Nothing was rewritten: keep the vendor's bytes rather than re-keying
+		// the blob (sorted keys, HTML-escaped runes) for no reason.
+		return json.RawMessage(data)
+	}
 	out, err := json.Marshal(v)
 	if err != nil {
 		return json.RawMessage(data)
@@ -38,23 +42,34 @@ func decodeJSON(data []byte) (any, error) {
 	return v, nil
 }
 
-func walkPaths(v any, mapPath func(string) string) {
+// walkPaths rewrites every absolute path value under a path key in place and
+// reports whether any value actually changed.
+func walkPaths(v any, mapPath func(string) string) bool {
+	changed := false
 	switch t := v.(type) {
 	case map[string]any:
 		for k, child := range t {
 			if s, ok := child.(string); ok {
 				if isPathKey(k) && isAbs(s) {
-					t[k] = mapPath(s)
+					if mapped := mapPath(s); mapped != s {
+						t[k] = mapped
+						changed = true
+					}
 				}
 				continue
 			}
-			walkPaths(child, mapPath)
+			if walkPaths(child, mapPath) {
+				changed = true
+			}
 		}
 	case []any:
 		for _, c := range t {
-			walkPaths(c, mapPath)
+			if walkPaths(c, mapPath) {
+				changed = true
+			}
 		}
 	}
+	return changed
 }
 
 func isPathKey(key string) bool {

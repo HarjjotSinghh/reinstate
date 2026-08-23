@@ -789,3 +789,62 @@ func TestRewriteJSONPathsKeepsLargeIntegers(t *testing.T) {
 		t.Fatalf("path not rewritten: %s", out)
 	}
 }
+
+func TestRewriteJSONPathsKeepsVendorBytesWhenUnchanged(t *testing.T) {
+	identity := func(s string) string { return s }
+	cases := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"no path key", `{"z":1,"a":"<b> & c","cwd":"relative/dir"}`, `{"z":1,"a":"<b> & c","cwd":"relative/dir"}`},
+		{"path key but mapper is identity", `{"cwd":"/Users/x/repo","z":2}`, `{"cwd":"/Users/x/repo","z":2}`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := rewriteJSONPaths([]byte(tc.in), identity)
+			if string(got) != tc.want {
+				t.Fatalf("rewriteJSONPaths = %s, want the original bytes %s", got, tc.want)
+			}
+		})
+	}
+	// A genuine rewrite still lands, re-marshalled.
+	got := rewriteJSONPaths([]byte(`{"z":1,"cwd":"/Users/x/repo"}`), func(s string) string { return "${HOME}/repo" })
+	var doc map[string]any
+	if err := json.Unmarshal(got, &doc); err != nil {
+		t.Fatal(err)
+	}
+	if doc["cwd"] != "${HOME}/repo" || doc["z"] != float64(1) {
+		t.Fatalf("rewritten blob = %s", got)
+	}
+}
+
+func TestReadMessagesRefusesTruncatedExport(t *testing.T) {
+	root := hydrateStore(t, macosSeed)
+	dbPath := filepath.Join(root, DatabaseName)
+	db, err := sql.Open("sqlite", "file:"+filepath.ToSlash(dbPath))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+	tx, err := db.Begin()
+	if err != nil {
+		t.Fatal(err)
+	}
+	stmt, err := tx.Prepare(`INSERT INTO message (id, session_id, time_created, time_updated, data) VALUES (?, 'ses_fixture001', 1, 1, '{}')`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i <= maxExportMessages; i++ {
+		if _, err := stmt.Exec(fmt.Sprintf("msg_bulk_%06d", i)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		t.Fatal(err)
+	}
+	_, err = readMessages(context.Background(), db, "ses_fixture001", func(s string) string { return s })
+	if err == nil || !strings.Contains(err.Error(), "truncated") {
+		t.Fatalf("readMessages over the cap: err = %v, want a refusal", err)
+	}
+}
