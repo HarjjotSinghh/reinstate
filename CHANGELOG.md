@@ -33,8 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   file; `whoami` reports the account, the enrolled device, and the control
   plane. `REINSTATE_HOP_URL` or `[hop] url` in `config.toml` selects a
   non-production control plane. The sign-in protocol is documented in
-  `docs/hop.md`. Locker provisioning, pairing, and the daemon are not part of
-  this change.
+  `docs/hop.md`. The `[hop]` section is written to `config.toml` only when
+  set, so BYO configurations are unchanged. Locker provisioning, pairing, and
+  the daemon are not part of this change.
 - The website now serves every page as Markdown through `Accept: text/markdown`
   content negotiation (with `Vary: Accept` and a 406 contract), static `.md`
   twins, `llms-full.txt`, an OpenAPI 3.1 document at `/openapi.json`, JSON

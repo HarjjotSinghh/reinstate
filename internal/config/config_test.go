@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/HarjjotSinghh/reinstate/internal/schema"
@@ -141,5 +142,29 @@ func TestStateRoundTripAndMigrationError(t *testing.T) {
 	}
 	if _, err := LoadState(home); err == nil {
 		t.Fatal("expected migration error")
+	}
+}
+
+func TestSaveConfigOmitsUnsetHopSection(t *testing.T) {
+	home := t.TempDir()
+	cfg := &schema.Config{SchemaVersion: 1, ProfileID: "p", DeviceID: "d"}
+	cfg.Storage.Type = "s3"
+	if err := SaveConfig(home, cfg); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(filepath.Join(home, "config.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(raw), "[hop]") {
+		t.Fatalf("BYO config gained a [hop] section:\n%s", raw)
+	}
+	cfg.Hop.URL = "https://staging.example"
+	if err := SaveConfig(home, cfg); err != nil {
+		t.Fatal(err)
+	}
+	raw, _ = os.ReadFile(filepath.Join(home, "config.toml"))
+	if !strings.Contains(string(raw), "[hop]") || !strings.Contains(string(raw), "https://staging.example") {
+		t.Fatalf("set hop url not written:\n%s", raw)
 	}
 }

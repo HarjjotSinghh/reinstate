@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
+	"net/url"
 	"os"
 	"os/exec"
 	"runtime"
@@ -104,6 +106,14 @@ func runLogin(cmd *cobra.Command, o hopCommandOptions, addr string, asJSON, noBr
 	}
 	info := hop.DeviceInfo{Name: o.name(), Platform: device.PlatformID()}
 	out, errOut := cmd.OutOrStdout(), cmd.ErrOrStderr()
+	if !asJSON {
+		if existing, err := o.tokenStore().GetDeviceToken(); err == nil {
+			PrintHuman(errOut, "This machine is already signed in (device %s at %s); continuing enrols it again as a new device and replaces the stored token.", existing.DeviceID, existing.ControlPlaneURL)
+		}
+		if plaintextRemote(baseURL) {
+			PrintHuman(errOut, "Warning: %s is plain http to a non-loopback host; the device token will travel unencrypted.", baseURL)
+		}
+	}
 
 	session, err := client.StartLogin(ctx, method, addr, info)
 	if err != nil {
@@ -150,6 +160,21 @@ func runLogin(cmd *cobra.Command, o hopCommandOptions, addr string, asJSON, noBr
 	PrintHuman(out, "Signed in to Reinstate Hop as %s.", accountLabel(approval.Account))
 	PrintHuman(out, "This device is enrolled as %q (%s); its token is in the OS keyring.", approval.Device.Name, approval.Device.Platform)
 	return nil
+}
+
+// plaintextRemote reports whether baseURL is http:// to a host other than
+// loopback, where a device token would be sent in the clear.
+func plaintextRemote(baseURL string) bool {
+	u, err := url.Parse(baseURL)
+	if err != nil || u.Scheme != "http" {
+		return false
+	}
+	host := u.Hostname()
+	if host == "localhost" {
+		return false
+	}
+	ip := net.ParseIP(host)
+	return ip == nil || !ip.IsLoopback()
 }
 
 func newWhoamiCmd(o hopCommandOptions) *cobra.Command {

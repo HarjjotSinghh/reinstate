@@ -51,7 +51,12 @@ func newFakeControlPlane(t *testing.T) *fakeControlPlane {
 	mux.HandleFunc("GET /login/github/{link}", func(w http.ResponseWriter, r *http.Request) {
 		f.approveLink(w, r.PathValue("link"), "github")
 	})
+	// Like hopd, the emailed link renders a confirm form on GET and enrols
+	// only on POST, so a mail scanner's prefetch cannot sign anyone in.
 	mux.HandleFunc("GET /login/email/{link}", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`<h1>Approve this device?</h1><form method="post"><button>Approve device</button></form>`))
+	})
+	mux.HandleFunc("POST /login/email/{link}", func(w http.ResponseWriter, r *http.Request) {
 		f.approveLink(w, r.PathValue("link"), "email")
 	})
 	f.srv = httptest.NewServer(mux)
@@ -172,7 +177,20 @@ func (f *fakeControlPlane) approveLatestEmail() {
 	if latest == nil {
 		f.t.Fatal("no email session to approve")
 	}
-	resp, err := http.Get(f.srv.URL + "/login/email/" + latest.link)
+	link := f.srv.URL + "/login/email/" + latest.link
+	// A prefetch of the link must leave the session pending.
+	get, err := http.Get(link)
+	if err != nil {
+		f.t.Fatal(err)
+	}
+	get.Body.Close()
+	f.mu.Lock()
+	if latest.status != hop.StatusPending {
+		f.mu.Unlock()
+		f.t.Fatal("GET on the emailed link approved the session")
+	}
+	f.mu.Unlock()
+	resp, err := http.PostForm(link, nil)
 	if err != nil {
 		f.t.Fatal(err)
 	}
@@ -263,6 +281,14 @@ func TestLoginWithGitHubThenWhoami(t *testing.T) {
 		if !strings.Contains(out, want) {
 			t.Fatalf("whoami output %q missing %q", out, want)
 		}
+	}
+
+	// A second login on a signed-in machine says so before enrolling again.
+	if _, errb, code := h.run("login"); code != ExitOK || !strings.Contains(errb, "already signed in (device dev-sess-1") {
+		t.Fatalf("re-login exit=%d stderr=%q", code, errb)
+	}
+	if tok, _ := h.tokens.GetDeviceToken(); tok.DeviceID != "dev-sess-2" {
+		t.Fatalf("re-login did not replace the token: %+v", tok)
 	}
 
 	out, _, code = h.run("whoami", "--json")
@@ -422,5 +448,24 @@ func TestControlPlaneURLResolution(t *testing.T) {
 	t.Setenv(hop.URLEnv, "http://127.0.0.1:9999/")
 	if got := controlPlaneURL(); got != "http://127.0.0.1:9999" {
 		t.Fatalf("env %q", got)
+	}
+}
+
+func TestPlaintextRemoteWarning(t *testing.T) {
+	tests := []struct {
+		url  string
+		want bool
+	}{
+		{"https://hop.reinstate.dev", false},
+		{"http://127.0.0.1:8080", false},
+		{"http://localhost:8080", false},
+		{"http://[::1]:8080", false},
+		{"http://staging.example", true},
+		{"http://10.0.0.5:8080", true},
+	}
+	for _, tc := range tests {
+		if got := plaintextRemote(tc.url); got != tc.want {
+			t.Errorf("plaintextRemote(%q) = %v, want %v", tc.url, got, tc.want)
+		}
 	}
 }

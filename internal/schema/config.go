@@ -22,7 +22,7 @@ type Config struct {
 	Agents                map[string]AgentConfig `toml:"agents"`
 	Projects              []ProjectConfig        `toml:"projects"`
 	Restore               RestoreConfig          `toml:"restore"`
-	Hop                   HopConfig              `toml:"hop"`
+	Hop                   HopConfig              `toml:"hop,omitempty"`
 }
 
 // HopConfig points at the Reinstate Hop control plane. It holds no secret:

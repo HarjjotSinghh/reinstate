@@ -50,7 +50,7 @@ passphrase, or session content. Sign-in is a device-authorization style flow:
 | Step | Request | Answer |
 | ---- | ------- | ------ |
 | 1 | `POST /v1/login/sessions` `{method: "github"\|"email", email?, device: {name, platform}}` | `201 {session_id, poll_secret, verification_url?, expires_at, interval_seconds}`. For `email` the link is mailed, not returned. |
-| 2 | Browser opens `verification_url` (GitHub OAuth) or the emailed link | The control plane creates the account on first sight and enrols the device. Each link works once and expires with the session. |
+| 2 | Browser opens `verification_url` (GitHub OAuth) or the emailed link | The emailed link shows an "Approve this device?" form on `GET`; enrolment happens only on its `POST`, so mail link scanners that prefetch the link neither sign anyone in nor burn it. The control plane creates the account on first sight and enrols the device in one transaction. Each link works once and expires with the session. |
 | 3 | `POST /v1/login/sessions/{id}/poll` `{poll_secret}` | `200 {status: "pending"}` until approved; then exactly once `200 {status: "approved", device_token, account, device}`; afterwards `410 {status: "consumed"}`. Past `expires_at`: `410 {status: "expired"}`. Wrong secret: `404`. |
 | 4 | `GET /v1/whoami` with `Authorization: Bearer <device_token>` | `200 {account, device}`; unknown or revoked token: `401`. |
 
