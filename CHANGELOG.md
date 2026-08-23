@@ -83,10 +83,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `account recover` with the recovery code, pull, and verified resume of
   each session; the first push is reported to the control plane exactly once
   and sign-in to first push is measured against a two-minute budget. The
-  same journey runs against a staging control plane and real locker with
-  `go test -tags hopacceptance` when `HOP_STAGING_URL` and
-  `HOP_DEVICE_TOKEN` are set, and skips otherwise. See `docs/hop.md`,
-  "Your first push".
+  same journey runs against a real control plane and locker with
+  `go test -tags hopacceptance` when `HOP_STAGING_URL` is set together with
+  either `HOP_LOGIN_EMAIL` (two real `rein login --email` sign-ins, links
+  approved by hand) or two device tokens of one account in
+  `HOP_DEVICE_TOKEN` and `HOP_DEVICE_TOKEN_2`, and skips otherwise. See
+  `docs/hop.md`, "Your first push", and the lab record
+  `docs/testing/results/2026-08-24-first-push-acceptance-lab.md`.
+- The lab locker (`scripts/testing/fakelocker`) serves each bucket from its
+  own in-memory store, so two accounts sharing one running lab locker no
+  longer find each other's keyring.
 
 ### Fixed
 

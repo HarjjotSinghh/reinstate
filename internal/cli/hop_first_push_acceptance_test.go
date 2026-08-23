@@ -4,6 +4,7 @@ package cli
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"os"
 	"strings"
@@ -11,32 +12,59 @@ import (
 	"time"
 
 	"github.com/HarjjotSinghh/reinstate/internal/credentials"
+	"github.com/HarjjotSinghh/reinstate/internal/hop"
 	"github.com/HarjjotSinghh/reinstate/internal/preflight"
 )
 
 // TestHopFirstPushJourneyStaging runs the first-push journey of
 // TestHopFirstPushJourney against a real control plane and a real locker.
 // It is built only with -tags hopacceptance and skips unless the
-// environment names a staging control plane and a device token:
+// environment names a staging control plane and a way to sign in:
 //
-//	HOP_STAGING_URL     control plane base URL (https://hop-staging.example)
-//	HOP_DEVICE_TOKEN    a device token issued by that control plane
-//	                    (`rein login` needs a browser, so sign in once by
-//	                    hand and export the token for the run)
-//	HOP_ACCOUNT_ID      optional; recorded in the token for `rein whoami`
+//	HOP_STAGING_URL      control plane base URL (https://hop-staging.example)
+//
+// and one of
+//
+//	HOP_LOGIN_EMAIL      the journey runs `rein login --email` for each of
+//	                     its two devices and waits (HOP_LOGIN_TIMEOUT,
+//	                     default 5m) for each link to be approved, so the
+//	                     sign-in is the real one; approve the two links by
+//	                     hand (or from the control plane's log sender)
+//	HOP_DEVICE_TOKEN and HOP_DEVICE_TOKEN_2
+//	                     tokens already issued by that control plane for two
+//	                     distinct devices of one account; the journey fills
+//	                     in each device id from /v1/whoami. Two are needed
+//	                     because the wiped device signs in again as a new
+//	                     device, exactly as the in-process journey does; a
+//	                     keyring that already lists a device id for which
+//	                     this machine holds no key is refused by
+//	                     `rein account recover`.
 //
 // The account must be a disposable staging account: the journey pushes
 // three synthetic sessions into its locker, and the first_push check is
 // only exact when the locker has never seen a push before. It never runs
-// in CI and never against production.
+// in CI and never against production. A lab run against hopd and the
+// fake locker is recorded in docs/testing/results/2026-08-24-first-push-acceptance-lab.md.
 func TestHopFirstPushJourneyStaging(t *testing.T) {
 	stagingURL := strings.TrimSpace(os.Getenv("HOP_STAGING_URL"))
-	token := strings.TrimSpace(os.Getenv("HOP_DEVICE_TOKEN"))
-	if stagingURL == "" || token == "" {
-		t.Skip("HOP_STAGING_URL and HOP_DEVICE_TOKEN are not set; the staging first-push journey is skipped")
+	loginEmail := strings.TrimSpace(os.Getenv("HOP_LOGIN_EMAIL"))
+	tokens := []string{strings.TrimSpace(os.Getenv("HOP_DEVICE_TOKEN")), strings.TrimSpace(os.Getenv("HOP_DEVICE_TOKEN_2"))}
+	switch {
+	case stagingURL == "":
+		t.Skip("HOP_STAGING_URL is not set; the staging first-push journey is skipped")
+	case loginEmail == "" && (tokens[0] == "" || tokens[1] == ""):
+		t.Skip("neither HOP_LOGIN_EMAIL nor both HOP_DEVICE_TOKEN and HOP_DEVICE_TOKEN_2 are set; the staging first-push journey is skipped")
 	}
 	if strings.Contains(stagingURL, "hop.reinstate.dev") && !strings.Contains(stagingURL, "staging") {
 		t.Fatalf("refusing to run the first-push journey against %s; use a staging control plane", stagingURL)
+	}
+	loginTimeout := 5 * time.Minute
+	if v := strings.TrimSpace(os.Getenv("HOP_LOGIN_TIMEOUT")); v != "" {
+		d, err := time.ParseDuration(v)
+		if err != nil {
+			t.Fatalf("HOP_LOGIN_TIMEOUT %q: %v", v, err)
+		}
+		loginTimeout = d
 	}
 	t.Setenv(hopURLEnv, stagingURL)
 	for _, env := range []string{"REINSTATE_BACKEND", "REINSTATE_S3_ACCESS_KEY_ID", "REINSTATE_S3_SECRET_ACCESS_KEY", "REINSTATE_PASSPHRASE_FD", "REINSTATE_RECOVERY_CODE_FD", "CLAUDE_CONFIG_DIR"} {
@@ -44,13 +72,71 @@ func TestHopFirstPushJourneyStaging(t *testing.T) {
 	}
 	home := plantJourneyHome(t, t.TempDir())
 
-	signIn := func(d *hopDevice) {
+	// Pre-issued tokens are checked before anything is pushed: each must
+	// resolve to a device (`rein init --hop` refuses a token without a device
+	// id) and the two must be different devices of one account.
+	var identities []hop.Identity
+	if loginEmail == "" {
+		for i, token := range tokens {
+			id, err := hop.New(stagingURL).Whoami(context.Background(), token)
+			if err != nil {
+				t.Fatalf("whoami for device token %d: %v", i+1, err)
+			}
+			if id.Device.ID == "" {
+				t.Fatalf("device token %d resolves to no device id", i+1)
+			}
+			identities = append(identities, id)
+		}
+		switch {
+		case identities[0].Device.ID == identities[1].Device.ID:
+			t.Fatalf("HOP_DEVICE_TOKEN and HOP_DEVICE_TOKEN_2 both belong to device %s; the wiped device needs its own device, see the test comment", identities[0].Device.ID)
+		case identities[0].Account.ID != identities[1].Account.ID:
+			t.Fatalf("HOP_DEVICE_TOKEN (account %s) and HOP_DEVICE_TOKEN_2 (account %s) must belong to one account", identities[0].Account.ID, identities[1].Account.ID)
+		}
+	}
+
+	// signIn enrols d as a new device of the staging account and returns
+	// the time spent waiting for a person to approve the link (zero when a
+	// pre-issued token stands in for the browser round-trip).
+	nextToken := 0
+	seenDevices := map[string]string{}
+	signIn := func(d *hopDevice) time.Duration {
 		t.Helper()
-		// The token stands in for the browser round-trip of `rein login`.
-		if err := d.tokens.SetDeviceToken(credentials.DeviceToken{Token: token, ControlPlaneURL: stagingURL, AccountID: os.Getenv("HOP_ACCOUNT_ID")}); err != nil {
+		if loginEmail != "" {
+			d.loginSleep = func(ctx context.Context, wait time.Duration) error {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case <-time.After(wait):
+					return nil
+				}
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), loginTimeout)
+			defer cancel()
+			t.Logf("device %q: approve the sign-in link sent to %s within %s", d.name, loginEmail, loginTimeout)
+			waited := time.Now()
+			d.ctx = ctx
+			d.mustRun("login --email", "login", "--email", loginEmail)
+			d.ctx = nil
+			approval := time.Since(waited)
+			tok, err := d.tokens.GetDeviceToken()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if prev, dup := seenDevices[tok.DeviceID]; dup {
+				t.Fatalf("the control plane enrolled %q under the device id of %q; each sign-in must mint a new device", d.name, prev)
+			}
+			seenDevices[tok.DeviceID] = d.name
+			t.Logf("device %q signed in as device %s after %s", d.name, tok.DeviceID, approval.Round(time.Millisecond))
+			return approval
+		}
+		token, id := tokens[nextToken], identities[nextToken]
+		nextToken++
+		if err := d.tokens.SetDeviceToken(credentials.DeviceToken{Token: token, ControlPlaneURL: stagingURL, AccountID: id.Account.ID, DeviceID: id.Device.ID}); err != nil {
 			t.Fatal(err)
 		}
 		d.mustRun("whoami", "whoami")
+		return 0
 	}
 	firstPushAt := func(d *hopDevice) string {
 		t.Helper()
@@ -73,7 +159,7 @@ func TestHopFirstPushJourneyStaging(t *testing.T) {
 	laptop := newHopDevice(t, nil, "acceptance-laptop")
 	laptop.verifier = preflight.DefaultService()
 	start := time.Now()
-	signIn(laptop)
+	approvalWait := signIn(laptop)
 	before := firstPushAt(laptop)
 	if before != "" {
 		t.Logf("the locker already records a first push at %s; this run can only check it does not change", before)
@@ -82,14 +168,16 @@ func TestHopFirstPushJourneyStaging(t *testing.T) {
 	laptop.mustRun("account init", "account", "init")
 	recoveryCode := laptop.shownCode
 	pushOut := laptop.mustRun("push --all", "push", "--all", "--json")
-	elapsed := time.Since(start)
+	// The approval wait is a person clicking a link, not the product; the
+	// budget covers everything from the signed-in device to its first push.
+	elapsed := time.Since(start) - approvalWait
 	var pushed struct {
 		Snapshots []string `json:"snapshots"`
 	}
 	if err := json.Unmarshal([]byte(pushOut), &pushed); err != nil || len(pushed.Snapshots) != 3 {
 		t.Fatalf("push output %q: %v", pushOut, err)
 	}
-	t.Logf("sign-in to first successful push against %s: %s (budget %s)", stagingURL, elapsed.Round(time.Millisecond), firstPushBudget)
+	t.Logf("sign-in to first successful push against %s: %s (budget %s; %s more waiting for the sign-in link to be approved)", stagingURL, elapsed.Round(time.Millisecond), firstPushBudget, approvalWait.Round(time.Millisecond))
 	if elapsed > firstPushBudget {
 		t.Fatalf("sign-in to first push took %s, over the %s budget", elapsed, firstPushBudget)
 	}
@@ -111,7 +199,7 @@ func TestHopFirstPushJourneyStaging(t *testing.T) {
 
 	// --- the device is wiped ---
 	home.wipe(t)
-	fresh := newHopDevice(t, nil, "acceptance-laptop")
+	fresh := newHopDevice(t, nil, "acceptance-laptop-wiped")
 	fresh.verifier = preflight.DefaultService()
 	signIn(fresh)
 	fresh.mustRun("init --hop again", "init", "--hop", "--project", "local/first-push="+home.project)

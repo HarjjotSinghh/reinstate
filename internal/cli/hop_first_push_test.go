@@ -43,6 +43,13 @@ type hopDevice struct {
 	// verifier replaces the verified-resume environment inspection; nil
 	// uses the always-ready fake, the staging acceptance sets the real one.
 	verifier preflight.Verifier
+	// loginSleep replaces the wait between login polls; nil never waits
+	// (the fake control plane approves on the first poll), the staging
+	// acceptance waits for a real approval.
+	loginSleep func(context.Context, time.Duration) error
+	// ctx bounds one command (a real login waiting for approval); nil
+	// means no deadline.
+	ctx context.Context
 }
 
 func newHopDevice(t *testing.T, plane *fakeControlPlane, name string) *hopDevice {
@@ -62,7 +69,7 @@ func (d *hopDevice) run(args ...string) (stdout, stderr string, code int) {
 		verifier = readyPreflightVerifier{}
 	}
 	code = Execute(Options{
-		Name: "rein", Stdout: &out, Stderr: &errb, Args: args,
+		Name: "rein", Stdout: &out, Stderr: &errb, Args: args, Context: d.ctx,
 		AgentProcessChecker: func(_ context.Context, _ string, _ processcheck.Target) (bool, bool, error) { return false, true, nil },
 		DeviceTokenStore:    d.tokens,
 		DeviceSecrets:       d.secrets,
@@ -75,7 +82,7 @@ func (d *hopDevice) run(args ...string) (stdout, stderr string, code int) {
 			resp.Body.Close()
 			return nil
 		},
-		LoginPollSleep: func(ctx context.Context, _ time.Duration) error { return ctx.Err() },
+		LoginPollSleep: d.loginSleepFunc(),
 		DeviceName:     d.name,
 		RecoveryCodePrompt: func(prompt string) ([]byte, error) {
 			if strings.HasPrefix(prompt, "Recovery code") && d.typedCode != "" {
@@ -92,6 +99,13 @@ func (d *hopDevice) run(args ...string) (stdout, stderr string, code int) {
 		},
 	})
 	return out.String(), errb.String(), code
+}
+
+func (d *hopDevice) loginSleepFunc() func(context.Context, time.Duration) error {
+	if d.loginSleep != nil {
+		return d.loginSleep
+	}
+	return func(ctx context.Context, _ time.Duration) error { return ctx.Err() }
 }
 
 func (d *hopDevice) mustRun(step string, args ...string) string {

@@ -82,8 +82,13 @@ the fallback.
 The whole journey is exercised end to end by `TestHopFirstPushJourney`
 (`internal/cli`, against the in-process fake control plane and locker) and,
 with `-tags hopacceptance`, by `TestHopFirstPushJourneyStaging` against a
-staging control plane named by `HOP_STAGING_URL` with a device token in
-`HOP_DEVICE_TOKEN`; without those it skips.
+real control plane named by `HOP_STAGING_URL`. That suite signs in twice
+(day one, and again after the wipe, as a new device), either with a real
+`rein login --email` for `HOP_LOGIN_EMAIL` whose links you approve within
+`HOP_LOGIN_TIMEOUT` (default 5m), or with two pre-issued tokens of one
+account in `HOP_DEVICE_TOKEN` and `HOP_DEVICE_TOKEN_2`; without those it
+skips. A run of both modes against `hopd` and the lab locker is recorded in
+`docs/testing/results/2026-08-24-first-push-acceptance-lab.md`.
 
 ## Adding a device (pairing)
 

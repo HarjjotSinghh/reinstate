@@ -65,6 +65,8 @@ Two lab facts, recorded for the next run:
   account's `keyring.v1.json` and `rein account init` correctly refuses
   (`a keyring already exists for this profile; enrol this device with rein
   account recover instead`). Restart `fakelocker` together with `hopd`.
+  (Fixed on this branch after the run: `AnyBucket` now serves each bucket
+  from its own store; see the acceptance lab record.)
 - `hopd`'s `fake` storage provider reports no usage, so `Usage: 0 B in 0
   object(s)` is the provider, not the push.
 
