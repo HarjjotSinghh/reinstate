@@ -250,6 +250,9 @@ func (a *Adapter) applyDocument(ctx context.Context, dbPath string, doc sessionD
 	if forking {
 		targetID = forkID
 	}
+	if strings.TrimSpace(targetID) == "" {
+		return fmt.Errorf("opencode restore requires a session id")
+	}
 
 	messageIDs := map[string]string{}
 	for i := range doc.Messages {
@@ -306,6 +309,12 @@ ON CONFLICT(id) DO UPDATE SET
 	for _, m := range doc.Messages {
 		newID := messageIDs[m.ID]
 		data := rewriteSessionRef(m.Data, sourceID, targetID)
+		if forking {
+			// A forked message must point at the fork's own copies of its
+			// neighbours (its parent user message, its own id), never back
+			// into the original session.
+			data = rewriteIDRefs(data, messageIDs, messageIDKeys)
+		}
 		if _, err := tx.ExecContext(ctx, `
 INSERT INTO message (id, session_id, time_created, time_updated, data)
 VALUES (?, ?, ?, ?, ?)
@@ -321,10 +330,12 @@ ON CONFLICT(id) DO UPDATE SET session_id=excluded.session_id, time_updated=exclu
 		if newMsgID == "" {
 			newMsgID = p.MessageID
 		}
+		data := rewriteSessionRef(p.Data, sourceID, targetID)
 		if forking {
 			newID = derivedID("prt", forkID, p.ID)
+			data = rewriteIDRefs(data, messageIDs, messageIDKeys)
+			data = rewriteIDRefs(data, map[string]string{p.ID: newID}, partIDKeys)
 		}
-		data := rewriteSessionRef(p.Data, sourceID, targetID)
 		if _, err := tx.ExecContext(ctx, `
 INSERT INTO part (id, message_id, session_id, time_created, time_updated, data)
 VALUES (?, ?, ?, ?, ?, ?)

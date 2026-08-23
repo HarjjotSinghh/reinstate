@@ -5,6 +5,8 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -303,6 +305,133 @@ SELECT COUNT(*) FROM part p
 	}
 	if danglingParts != 0 {
 		t.Fatalf("fork has %d parts with no fork message", danglingParts)
+	}
+	// The fork is self-contained: its assistant message answers the fork's own
+	// user message, not the original session's.
+	forkAsst := derivedID("msg", "ses_fork0001", "msg_fixtureasst001")
+	forkUser := derivedID("msg", "ses_fork0001", "msg_fixtureuser001")
+	var asstData string
+	if err := db.QueryRow(`SELECT data FROM message WHERE id = ?`, forkAsst).Scan(&asstData); err != nil {
+		t.Fatal(err)
+	}
+	var asst struct {
+		ParentID string `json:"parentID"`
+	}
+	if err := json.Unmarshal([]byte(asstData), &asst); err != nil {
+		t.Fatal(err)
+	}
+	if asst.ParentID != forkUser {
+		t.Fatalf("fork assistant parentID = %q, want fork user %q", asst.ParentID, forkUser)
+	}
+	var crossRefs int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM message WHERE session_id = 'ses_fork0001' AND data LIKE '%msg_fixture%'`).Scan(&crossRefs); err != nil {
+		t.Fatal(err)
+	}
+	if crossRefs != 0 {
+		t.Fatalf("%d fork messages still reference original message ids", crossRefs)
+	}
+}
+
+func TestRewriteIDRefs(t *testing.T) {
+	idMap := map[string]string{"msg_a": "msg_fork_a", "prt_a": "prt_fork_a"}
+	tests := []struct {
+		name string
+		in   string
+		keys map[string]bool
+		want string
+	}{
+		{"parent and own id", `{"id":"msg_a","parentID":"msg_a","role":"assistant"}`, messageIDKeys, `{"id":"msg_fork_a","parentID":"msg_fork_a","role":"assistant"}`},
+		{"part message ref", `{"messageID":"msg_a","type":"text"}`, messageIDKeys, `{"messageID":"msg_fork_a","type":"text"}`},
+		{"part own id only", `{"id":"prt_a","messageID":"msg_a"}`, partIDKeys, `{"id":"prt_fork_a","messageID":"msg_a"}`},
+		{"prose is untouched", `{"text":"see msg_a","id":"other"}`, messageIDKeys, `{"text":"see msg_a","id":"other"}`},
+		{"unknown id untouched", `{"parentID":"msg_z"}`, messageIDKeys, `{"parentID":"msg_z"}`},
+		{"unparseable verbatim", `{not json`, messageIDKeys, `{not json`},
+		{"nested ids are not identity", `{"meta":{"id":"msg_a"}}`, messageIDKeys, `{"meta":{"id":"msg_a"}}`},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := string(rewriteIDRefs(json.RawMessage(tc.in), idMap, tc.keys))
+			if got != tc.want {
+				t.Fatalf("got %s want %s", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestArchiveSessionID(t *testing.T) {
+	tests := []struct {
+		in      string
+		want    string
+		wantErr bool
+	}{
+		{"sessions/ses_x.json", "ses_x", false},
+		{"sessions/.json", "", true},
+		{"sessions/ .json", "", true},
+		{`sessions\ses_x.json`, "", true},
+		{"sessions/../ses_x.json", "", true},
+		{"sessions/sub/ses_x.json", "", true},
+		{"", "", true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.in, func(t *testing.T) {
+			got, err := archiveSessionID(tc.in)
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("err=%v wantErr=%v", err, tc.wantErr)
+			}
+			if got != tc.want {
+				t.Fatalf("id=%q want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+// TestRestoreRefusesEmptyOrMismatchedSessionID pins the fail-closed contract:
+// a document with no session id, or one whose id is not the planned source,
+// never reaches the vendor store.
+func TestRestoreRefusesEmptyOrMismatchedSessionID(t *testing.T) {
+	tests := []struct {
+		name      string
+		docID     string
+		planID    string
+		sourceID  string
+		wantInErr string
+	}{
+		{"empty everywhere", "", "", "", "no session id"},
+		{"empty destination", "ses_x", "", "ses_x", "destination session id"},
+		{"document is another session", "ses_other", "ses_x", "ses_x", "not the planned"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			destRoot := schemaOnlyStore(t, macosSeed)
+			dest := &Adapter{Root: destRoot, Home: "/Users/fixture-user"}
+			var buf bytes.Buffer
+			body := fmt.Sprintf(`{"schema":%q,"session":{"id":%q,"project_id":"","slug":"s","directory":"/tmp","title":"t","version":"1","time_created":1,"time_updated":1},"messages":[],"parts":[]}`, exportSchema, tc.docID)
+			writeTarEntry(t, &buf, "sessions/x.json", []byte(body))
+			dbPath := filepath.Join(destRoot, DatabaseName)
+			plan := adapter.RestorePlan{
+				Session:         adapter.Session{ID: tc.planID, Agent: "opencode", Path: dbPath, RelativePath: "sessions/x.json"},
+				Files:           []string{dbPath},
+				BackupRoot:      t.TempDir(),
+				ArchivePath:     "sessions/x.json",
+				SourceSessionID: tc.sourceID,
+			}
+			err := dest.Restore(context.Background(), plan, &buf)
+			if err == nil || !strings.Contains(err.Error(), tc.wantInErr) {
+				t.Fatalf("expected refusal containing %q, got %v", tc.wantInErr, err)
+			}
+			db, oerr := sql.Open("sqlite", "file:"+filepath.ToSlash(dbPath))
+			if oerr != nil {
+				t.Fatal(oerr)
+			}
+			defer func() { _ = db.Close() }()
+			var rows int
+			if err := db.QueryRow(`SELECT COUNT(*) FROM session`).Scan(&rows); err != nil {
+				t.Fatal(err)
+			}
+			if rows != 0 {
+				t.Fatalf("refused restore still wrote %d session rows", rows)
+			}
+		})
 	}
 }
 

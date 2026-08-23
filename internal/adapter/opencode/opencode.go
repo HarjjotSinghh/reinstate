@@ -126,9 +126,6 @@ func (a *Adapter) Detect(ctx context.Context) (adapter.Install, adapter.Compatib
 	root, _ := a.resolveRoot()
 	inst := adapter.Install{Agent: "opencode", Root: root, Layout: "embedded-sqlite-session-store"}
 	if a.ForceCompat != "" {
-		if root == "" {
-			return inst, a.ForceCompat, nil
-		}
 		return inst, a.ForceCompat, nil
 	}
 	if root == "" {
@@ -384,6 +381,15 @@ func (a *Adapter) Restore(ctx context.Context, plan adapter.RestorePlan, r io.Re
 	if doc.Schema != exportSchema {
 		return fmt.Errorf("unrecognised OpenCode snapshot schema %q", doc.Schema)
 	}
+	if strings.TrimSpace(doc.Session.ID) == "" {
+		return fmt.Errorf("opencode snapshot carries no session id")
+	}
+	if plan.SourceSessionID != "" && doc.Session.ID != plan.SourceSessionID {
+		return fmt.Errorf("opencode snapshot is session %q, not the planned %q", doc.Session.ID, plan.SourceSessionID)
+	}
+	if strings.TrimSpace(plan.Session.ID) == "" {
+		return fmt.Errorf("opencode restore requires a destination session id")
+	}
 
 	dest := plan.Session.Path
 	if dest == "" && len(plan.Files) > 0 {
@@ -417,11 +423,9 @@ func (a *Adapter) Restore(ctx context.Context, plan adapter.RestorePlan, r io.Re
 	if err := fsx.VerifyUnchanged(dest, before); err != nil {
 		return err
 	}
-	relative := plan.Session.RelativePath
-	if relative == "" {
-		relative = filepath.Base(dest)
-	}
-	if _, err := fsx.BackupFile(dest, plan.BackupRoot, relative); err != nil {
+	// The backup is the whole store, not one session, so it is labelled by the
+	// store file name rather than the virtual sessions/<id>.json path.
+	if _, err := fsx.BackupFile(dest, plan.BackupRoot, filepath.Base(dest)); err != nil {
 		return fmt.Errorf("backup existing OpenCode store: %w", err)
 	}
 	if err := ctx.Err(); err != nil {
@@ -447,8 +451,13 @@ func archiveRelativePath(id string) string {
 }
 
 // archiveSessionID validates a snapshot relative path and returns its session
-// id. It refuses anything that escapes the store's session namespace.
+// id. It refuses anything that escapes the store's session namespace, and an
+// entry with no id at all. Backslashes are refused outright so the contract is
+// identical on every host rather than depending on the platform separator.
 func archiveSessionID(relative string) (string, error) {
+	if strings.Contains(relative, `\`) {
+		return "", fmt.Errorf("unsafe snapshot path %q", relative)
+	}
 	clean := filepath.Clean(filepath.FromSlash(relative))
 	if clean == "." || clean == ".." || filepath.IsAbs(clean) ||
 		strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
@@ -458,7 +467,11 @@ func archiveSessionID(relative string) (string, error) {
 	if len(parts) != 2 || parts[0] != archiveTop || !strings.HasSuffix(parts[1], ".json") {
 		return "", fmt.Errorf("unexpected opencode snapshot path %q", relative)
 	}
-	return strings.TrimSuffix(parts[1], ".json"), nil
+	id := strings.TrimSuffix(parts[1], ".json")
+	if strings.TrimSpace(id) == "" || id == "." {
+		return "", fmt.Errorf("opencode snapshot path %q carries no session id", relative)
+	}
+	return id, nil
 }
 
 func unixFromMillisOrSeconds(value int64) int64 {

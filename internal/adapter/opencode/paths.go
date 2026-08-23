@@ -119,3 +119,51 @@ func isSessionRefKey(key string) bool {
 		return false
 	}
 }
+
+// messageIDKeys are the data fields that hold a message id: a message's own id,
+// the user message an assistant message answers, and the message a part
+// belongs to.
+var messageIDKeys = map[string]bool{
+	"id": true, "parentID": true, "parent_id": true, "messageID": true, "message_id": true,
+}
+
+// partIDKeys are the data fields that hold a part's own id.
+var partIDKeys = map[string]bool{"id": true}
+
+// rewriteIDRefs replaces, at the top level of a data blob, every string value
+// under one of keys that is an exact key of idMap with the mapped id. Only
+// whole-string matches are rewritten so prose mentioning an id is untouched.
+// Nested objects are left alone: OpenCode keeps identity fields at the top of
+// each message and part row.
+func rewriteIDRefs(data json.RawMessage, idMap map[string]string, keys map[string]bool) json.RawMessage {
+	if len(data) == 0 || len(idMap) == 0 {
+		return data
+	}
+	v, err := decodeJSON(data)
+	if err != nil {
+		return data
+	}
+	obj, ok := v.(map[string]any)
+	if !ok {
+		return data
+	}
+	changed := false
+	for k, child := range obj {
+		s, isString := child.(string)
+		if !isString || !keys[k] {
+			continue
+		}
+		if mapped, found := idMap[s]; found && mapped != s {
+			obj[k] = mapped
+			changed = true
+		}
+	}
+	if !changed {
+		return data
+	}
+	out, err := json.Marshal(obj)
+	if err != nil {
+		return data
+	}
+	return json.RawMessage(out)
+}
