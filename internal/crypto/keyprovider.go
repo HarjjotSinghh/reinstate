@@ -28,20 +28,14 @@ type KeyProvider interface {
 // before the provider seam existed.
 type PassphraseProvider struct {
 	passphrase string
-	workFactor int
 }
 
 // NewPassphraseProvider wraps a passphrase. An empty passphrase is rejected
-// lazily, when the provider is first asked for a recipient or identity.
+// lazily, when the provider is first asked for a recipient or identity. The
+// scrypt work factor is always age's default; there is no production knob to
+// lower it (tests use internal/crypto/cryptotest).
 func NewPassphraseProvider(passphrase string) *PassphraseProvider {
 	return &PassphraseProvider{passphrase: passphrase}
-}
-
-// WithWorkFactor returns a copy whose scrypt recipient uses 2^workFactor
-// iterations instead of age's default. Only deterministic tests should lower
-// it; production callers keep the default.
-func (p *PassphraseProvider) WithWorkFactor(workFactor int) *PassphraseProvider {
-	return &PassphraseProvider{passphrase: p.passphrase, workFactor: workFactor}
 }
 
 // Recipients implements KeyProvider.
@@ -52,9 +46,6 @@ func (p *PassphraseProvider) Recipients() ([]age.Recipient, error) {
 	recipient, err := age.NewScryptRecipient(p.passphrase)
 	if err != nil {
 		return nil, err
-	}
-	if p.workFactor > 0 {
-		recipient.SetWorkFactor(p.workFactor)
 	}
 	return []age.Recipient{recipient}, nil
 }

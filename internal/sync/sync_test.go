@@ -14,6 +14,7 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/backend"
 	"github.com/HarjjotSinghh/reinstate/internal/backend/memory"
 	"github.com/HarjjotSinghh/reinstate/internal/crypto"
+	"github.com/HarjjotSinghh/reinstate/internal/crypto/cryptotest"
 	"github.com/HarjjotSinghh/reinstate/internal/fsx"
 	"github.com/HarjjotSinghh/reinstate/internal/schema"
 )
@@ -499,7 +500,7 @@ func (fastAgeEnvelopeCodec) DecryptReader(source io.Reader, keys crypto.KeyProvi
 
 // testKeys is the BYO passphrase model with only the scrypt cost lowered.
 func testKeys(passphrase string) crypto.KeyProvider {
-	return crypto.NewPassphraseProvider(passphrase).WithWorkFactor(1)
+	return cryptotest.Passphrase(passphrase)
 }
 
 func testEngine(engine *Engine) *Engine {

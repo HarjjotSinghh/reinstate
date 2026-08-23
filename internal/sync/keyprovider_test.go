@@ -127,6 +127,9 @@ func TestEngineRequiresKeyProvider(t *testing.T) {
 // by the engine before the key-provider seam (testdata/crypto/pre-seam) and
 // requires the passphrase provider to read them with identical plaintext.
 func TestGoldenPreSeamProfileReadsUnchanged(t *testing.T) {
+	if testing.Short() {
+		t.Skip("decrypts at age's default scrypt cost")
+	}
 	fixture := filepath.Join("..", "..", "testdata", "crypto", "pre-seam")
 	read := func(name string) []byte {
 		t.Helper()

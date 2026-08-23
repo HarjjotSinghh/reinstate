@@ -30,9 +30,28 @@ func (p *x25519TestProvider) Identities() ([]age.Identity, error) {
 	return []age.Identity{p.identity}, nil
 }
 
-func fastPassphrase(passphrase string) *PassphraseProvider {
-	return NewPassphraseProvider(passphrase).WithWorkFactor(1)
+// fastPassphrase lowers only the scrypt cost of the production provider. It
+// mirrors cryptotest.FastScrypt, which cannot be imported here without a cycle.
+func fastPassphrase(passphrase string) KeyProvider {
+	return fastScrypt{keys: NewPassphraseProvider(passphrase)}
 }
+
+type fastScrypt struct{ keys KeyProvider }
+
+func (f fastScrypt) Recipients() ([]age.Recipient, error) {
+	recipients, err := f.keys.Recipients()
+	if err != nil {
+		return nil, err
+	}
+	for _, r := range recipients {
+		if scrypt, ok := r.(*age.ScryptRecipient); ok {
+			scrypt.SetWorkFactor(1)
+		}
+	}
+	return recipients, nil
+}
+
+func (f fastScrypt) Identities() ([]age.Identity, error) { return f.keys.Identities() }
 
 func TestSealOpenRoundTripByProvider(t *testing.T) {
 	plain := []byte("session-payload-synthetic")
@@ -127,6 +146,9 @@ func TestPassphraseProviderRejectsEmpty(t *testing.T) {
 // predates the key-provider seam (testdata/crypto/pre-seam, generated from
 // main with the default scrypt work factor) and requires identical plaintext.
 func TestGoldenPreSeamEnvelopeDecrypts(t *testing.T) {
+	if testing.Short() {
+		t.Skip("decrypts at age's default scrypt cost")
+	}
 	cipher, err := os.ReadFile(filepath.Join("..", "..", "testdata", "crypto", "pre-seam", "envelope.age"))
 	if err != nil {
 		t.Fatal(err)
