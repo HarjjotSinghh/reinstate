@@ -32,6 +32,8 @@ rein
 rein version [--json]
 rein doctor [--json] [--self-test] [--agents] [--acceptance-matrix]
 rein setup check [--json]
+rein login [--email ADDRESS] [--no-browser] [--json]
+rein whoami [--json]
 rein sessions [--agent claude|codex|gemini|opencode|grok|kimi|qwen|pi|cursor|copilot|cline|all] [--json]
 rein search QUERY [QUERY...] [--agent ...] [--project FRAGMENT]
             [--branch FRAGMENT] [--file FRAGMENT] [--limit N] [--json]
@@ -77,6 +79,14 @@ encryption/storage check (in-memory; it does not prove remote storage).
 `--agents` lists every catalog agent and its support tier. `--agents --json`
 emits the redacted `AGENT-PROBE-V1` artifact. `--agents --acceptance-matrix`
 prints the generated Phase 5 acceptance row count and per-agent row list.
+
+### `rein login` and `rein whoami`
+
+`rein login` signs this device in to Reinstate Hop without a password: GitHub
+in the browser by default, or a one-time link with `--email ADDRESS`. The
+device token lands in the OS keyring. `rein whoami` prints the account, the
+device, and the control plane. `REINSTATE_HOP_URL` or `[hop] url` selects a
+non-production control plane. See [docs/hop.md](hop.md).
 
 ### `rein init`
 
