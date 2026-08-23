@@ -469,17 +469,18 @@ func approvePairingRequest(ctx context.Context, cmd *cobra.Command, client *hop.
 	}
 	if err := client.ApprovePairing(ctx, token, req.ID, payload, updated.CurrentGeneration); err != nil {
 		// The control plane refused a request that was pending when the
-		// code was entered (it expired, or another device decided it). A
-		// wrap this call appended must not outlive the request: the
-		// joining device would otherwise find itself enrolled on its next
-		// join with no approval event behind it. Only the wrap made for
-		// this request's key is removed; a competing approval's wrap for
-		// the same device id stays.
+		// code was entered (it expired, or another device decided it). No
+		// wrap this call appended may outlive the request — in any
+		// generation, or the refused device could still unwrap
+		// pre-revocation history: the joining device would otherwise find
+		// itself enrolled on its next join with no approval event behind
+		// it. Only wraps made for this request's key are removed; a
+		// competing approval's wraps for the same device id stay.
 		if appended && (errors.Is(err, hop.ErrPairingExpired) || errors.Is(err, hop.ErrPairingDecided)) {
 			if rbErr := rollBackPairingWrap(ctx, store, prefix, req); rbErr != nil {
-				return 0, NewExitError(ExitAuthStorage, fmt.Sprintf("%v; the wrap appended for device %s could not be removed (%v): run rein devices approve again once the device retries, or revoke it", err, req.Device.ID, rbErr))
+				return 0, NewExitError(ExitAuthStorage, fmt.Sprintf("%v; the wraps appended for device %s could not be removed (%v): run rein devices approve again once the device retries, or revoke it", err, req.Device.ID, rbErr))
 			}
-			return 0, NewExitError(ExitAuthStorage, fmt.Sprintf("%v; the wrap appended for device %s was removed again, nothing was approved", err, req.Device.ID))
+			return 0, NewExitError(ExitAuthStorage, fmt.Sprintf("%v; every wrap appended for device %s was removed again, nothing was approved", err, req.Device.ID))
 		}
 		return 0, hopExitError(err)
 	}
@@ -500,13 +501,17 @@ func pairingStillOpen(req hop.PairingRequest, now time.Time) error {
 	return nil
 }
 
-// rollBackPairingWrap removes the wrap approvePairingRequest appended for
+// rollBackPairingWrap removes the wraps approvePairingRequest appended for
 // req when the relay then refused it, under the same compare-and-swap as
-// the enrolment. Removing nothing is not an error: a concurrent revocation
-// or rollover may already have taken it.
+// the enrolment. The approval enrolled the device into every generation
+// this device could read (EnrolAll), so the rollback sweeps every
+// generation too — taking back only the current generation's wrap would
+// leave the refused device able to unwrap pre-revocation history. Removing
+// nothing is not an error: a concurrent revocation or rollover may already
+// have taken them.
 func rollBackPairingWrap(ctx context.Context, store backend.Backend, prefix string, req hop.PairingRequest) error {
 	_, err := keyring.Update(ctx, store, keyring.ObjectKey(prefix), func(k *keyring.Keyring) error {
-		k.Unenrol(req.Device.ID, req.PublicKey)
+		k.UnenrolEverywhere(req.Device.ID, req.PublicKey)
 		return nil
 	})
 	return err

@@ -553,3 +553,77 @@ func TestLegacyWrapCannotBeReplayedIntoLaterGeneration(t *testing.T) {
 		t.Fatal("generation-1 root key reported as current")
 	}
 }
+
+// generationsListing lists the generation numbers whose device table lists
+// id, in storage order.
+func generationsListing(k *Keyring, id string) []int {
+	var listed []int
+	for _, g := range k.Generations {
+		for _, d := range g.Devices {
+			if d.DeviceID == id {
+				listed = append(listed, g.Number)
+				break
+			}
+		}
+	}
+	return listed
+}
+
+// TestUnenrolEverywhereSweepsAllGenerations: an approval enrols the joining
+// device into every generation it can read (EnrolAll), so rolling back a
+// refused approval must sweep every generation. Unenrol alone clears only
+// the current one — the exact hole that would leave the refused device able
+// to unwrap pre-revocation history.
+func TestUnenrolEverywhereSweepsAllGenerations(t *testing.T) {
+	a, b := goldenIdentities(t)
+	k, err := New(goldenProfileID, goldenRootKey(), goldenRecoveryCode, goldenDeviceID, a, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := k.Enrol(goldenRootKey(), goldenDeviceBID, b.Recipient(), time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	next, err := k.Rollover(goldenRootKey(), goldenRecoveryCode, []string{goldenDeviceBID}, goldenDeviceID, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer crypto.Zero(next)
+
+	joiner, _ := age.GenerateX25519Identity()
+	if err := k.EnrolAll(map[int][]byte{1: goldenRootKey(), 2: next}, "joiner", joiner.Recipient(), time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if got := generationsListing(k, "joiner"); len(got) != 2 {
+		t.Fatalf("EnrolAll wrote into generations %v, want both", got)
+	}
+
+	// The key check still holds across generations: a different public
+	// key, or none, removes nothing.
+	other, _ := age.GenerateX25519Identity()
+	if k.UnenrolEverywhere("joiner", other.Recipient().String()) || len(generationsListing(k, "joiner")) != 2 {
+		t.Fatal("removed a wrap made for a different public key")
+	}
+	if k.UnenrolEverywhere("joiner", "") || len(generationsListing(k, "joiner")) != 2 {
+		t.Fatal("removed a wrap for an empty key")
+	}
+
+	if !k.UnenrolEverywhere("joiner", joiner.Recipient().String()) {
+		t.Fatal("did not remove the joiner's wraps")
+	}
+	if got := generationsListing(k, "joiner"); len(got) != 0 {
+		t.Fatalf("generations %v still list the joiner after the sweep", got)
+	}
+	if _, err := k.UnwrapGenerations("joiner", joiner); !errors.Is(err, ErrDeviceNotEnrolled) {
+		t.Fatalf("swept device still opens the keyring: %v", err)
+	}
+	// The approving device's wraps are untouched: it still reads both
+	// generations.
+	keys, err := k.UnwrapGenerations(goldenDeviceID, a)
+	if err != nil || len(keys) != 2 {
+		t.Fatalf("approver disturbed: %v generations=%d", err, len(keys))
+	}
+	ZeroGenerations(keys)
+	if k.UnenrolEverywhere("joiner", joiner.Recipient().String()) {
+		t.Fatal("removed the same wraps twice")
+	}
+}

@@ -773,6 +773,32 @@ func (k *Keyring) Unenrol(deviceID, publicKey string) bool {
 	return false
 }
 
+// UnenrolEverywhere removes deviceID's wrap from every generation, but only
+// where the wrap was made for publicKey. It is the cross-generation
+// counterpart to Unenrol: an approval enrols the joining device into every
+// generation it can read (EnrolAll), so rolling back a refused approval
+// must sweep them all — removing only the current generation's wrap would
+// leave the refused device able to unwrap pre-revocation history. The same
+// key check keeps it from touching a wrap a different approval wrote for
+// the same device id. Reports whether any wrap was removed.
+func (k *Keyring) UnenrolEverywhere(deviceID, publicKey string) bool {
+	if publicKey == "" {
+		return false
+	}
+	removed := false
+	for gi := range k.Generations {
+		g := &k.Generations[gi]
+		for i, d := range g.Devices {
+			if d.DeviceID == deviceID && d.PublicKey == publicKey {
+				g.Devices = append(g.Devices[:i:i], g.Devices[i+1:]...)
+				removed = true
+				break
+			}
+		}
+	}
+	return removed
+}
+
 // Binding prefixes. age has no associated data, so a bound device wrap
 // carries the binding inside its authenticated payload and the reader
 // checks it; the recovery wrap uses real AEAD associated data.

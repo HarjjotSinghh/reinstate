@@ -730,3 +730,91 @@ func TestRevocationRefusesRolledBackKeyring(t *testing.T) {
 }
 
 func backendPutOptions() backend.PutOptions { return backend.PutOptions{} }
+
+// TestExpiredApprovalRollsBackEveryGeneration: on a multi-generation
+// keyring, an approval enrols the joining device into every generation the
+// approver can read (EnrolAll). When the relay then refuses — the request
+// expired while the approver's prompt was open — the rollback must sweep
+// every generation: removing only the current generation's wrap would
+// leave the refused device able to unwrap pre-revocation history.
+func TestExpiredApprovalRollsBackEveryGeneration(t *testing.T) {
+	plane := newFakeControlPlane(t)
+	plane.s3 = s3test.NewPlain(t, "lk-00000000000000000rollback")
+	t.Setenv(hopURLEnv, plane.srv.URL)
+	for _, env := range []string{"REINSTATE_BACKEND", "REINSTATE_S3_ACCESS_KEY_ID", "REINSTATE_S3_SECRET_ACCESS_KEY", "REINSTATE_PASSPHRASE_FD", "REINSTATE_RECOVERY_CODE_FD", "REINSTATE_PAIRING_CODE_FD", "REINSTATE_HOP_LOCATION", "CLAUDE_CONFIG_DIR", "CODEX_HOME"} {
+		t.Setenv(env, "")
+	}
+	project := writeClaudeFixture(t)
+	userHome := os.Getenv("HOME")
+
+	// A: first device. B: joins by approval. A revokes B, which starts
+	// key generation 2 — the keyring now has history worth protecting.
+	a := newPairDevice(t, plane, "macbook")
+	for _, args := range [][]string{{"login"}, {"init", "--hop", "--project", "local/locker=" + project}, {"account", "init"}, {"push", "--all", "--json"}} {
+		if out, errb, code := a.run(args...); code != ExitOK {
+			t.Fatalf("A %v: exit=%d out=%q err=%q", args, code, out, errb)
+		}
+	}
+	b := newPairDevice(t, plane, "desktop")
+	if _, errb, code := b.run("login"); code != ExitOK {
+		t.Fatalf("B login: %d %q", code, errb)
+	}
+	if _, errb, code := b.run("init", "--hop", "--project", "local/locker="+filepath.Join(userHome, "Projects", "desktop-target")); code != ExitOK {
+		t.Fatalf("B init --hop: %d %q", code, errb)
+	}
+	joinB := b.startJoin()
+	if out, errb, code := a.approve(joinB.code, false); code != ExitOK {
+		t.Fatalf("A approves B: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if out, errb, code := joinB.finish(t); code != ExitOK {
+		t.Fatalf("B join: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if out, errb, code := a.revoke("desktop", a.shownCode); code != ExitOK {
+		t.Fatalf("A revokes B: exit=%d out=%q err=%q", code, out, errb)
+	}
+
+	// C asks to join; the request expires while A's prompt is open. The
+	// approval had already written C's wrap into both generations.
+	c := newPairDevice(t, plane, "laptop-2")
+	if _, errb, code := c.run("login"); code != ExitOK {
+		t.Fatalf("C login: %d %q", code, errb)
+	}
+	if _, errb, code := c.run("init", "--hop"); code != ExitOK {
+		t.Fatalf("C init --hop: %d %q", code, errb)
+	}
+	cID := deviceID(t, c)
+	joinC := c.startJoin()
+	out, errb, code := a.approveWhilePrompting(joinC.code, false, func() {
+		plane.mu.Lock()
+		defer plane.mu.Unlock()
+		for _, p := range plane.pairings {
+			if p.status == "pending" {
+				p.expired = true
+			}
+		}
+	})
+	if code != ExitAuthStorage || !strings.Contains(errb, "expired") || !strings.Contains(errb, "was removed again") {
+		t.Fatalf("approve expiring at the prompt: exit=%d out=%q err=%q", code, out, errb)
+	}
+
+	// NO generation lists the refused device: the current one and every
+	// earlier one, or C could still unwrap pre-revocation history.
+	ring, aKeys := a.keyringState(t, plane)
+	keyring.ZeroGenerations(aKeys)
+	if ring.CurrentGeneration != 2 || len(ring.Generations) != 2 {
+		t.Fatalf("keyring shape changed: gen=%d gens=%d", ring.CurrentGeneration, len(ring.Generations))
+	}
+	for _, g := range ring.Generations {
+		for _, d := range g.Devices {
+			if d.DeviceID == cID {
+				t.Fatalf("generation %d still lists refused device %s", g.Number, cID)
+			}
+		}
+	}
+	if out, errb, code := joinC.finish(t); code != ExitAuthStorage || !strings.Contains(errb, "expired") {
+		t.Fatalf("C join expired at the prompt: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if _, err := config.LoadAccount(c.home); !os.IsNotExist(err) {
+		t.Fatalf("expired join wrote an account record: %v", err)
+	}
+}

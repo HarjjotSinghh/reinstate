@@ -211,7 +211,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   seen in its account state and refuses a keyring rolled back below it
   (`ExitSafety`), so a revoked device restoring its old keyring copy inside
   the credential window cannot talk a remaining device into writing under
-  the generation it still holds.
+  the generation it still holds. An approval the relay then refuses (the
+  request expired or was decided while the approver's prompt was open) is
+  rolled back from every generation, not only the current one, so a
+  refused device is never left holding a wrap for pre-revocation history.
 - Keyring format version 2: every wrap is bound to the profile id and the
   key generation it belongs to (device wraps carry the binding inside the
   age payload, the recovery wrap as AEAD associated data), so a wrap lifted
