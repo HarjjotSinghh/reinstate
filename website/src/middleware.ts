@@ -2,7 +2,7 @@
  * Accept negotiation for pages Astro renders at request time.
  *
  * Prerendered routes never see request headers: on Vercel they are static
- * files negotiated by the injected `/agent-surface/*` routes, and Astro strips
+ * files negotiated by the dedicated agent function, and Astro strips
  * headers from prerendered routes at build time and in `astro dev` to mirror
  * that. So this middleware (1) serves the `/{page}.md` twin URLs in dev by
  * converting the rendered HTML with the build-time converter, and (2) applies

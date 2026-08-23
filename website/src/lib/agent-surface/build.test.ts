@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { buildAgentSurface, fullTextOrder, htmlFileForPage, isExcludedFromFullText, isExcludedFromTwins } from './build';
 import { verifyAgentRoutes } from './vercel-routes';
 
@@ -32,6 +32,11 @@ describe('buildAgentSurface', () => {
       vercelConfig,
       JSON.stringify({ version: 3, routes: [{ handle: 'filesystem' }, { src: '^/.*$', dest: '/404.html', status: 404 }] }),
     );
+    mkdirSync(join(root, '.vercel', 'output', 'functions', '_render.func'), { recursive: true });
+    writeFileSync(
+      join(root, '.vercel', 'output', 'functions', '_render.func', '.vc-config.json'),
+      JSON.stringify({ runtime: 'nodejs24.x', handler: 'dist/server/entry.mjs', launcherType: 'Nodejs' }),
+    );
   });
 
   afterEach(() => {
@@ -45,7 +50,13 @@ describe('buildAgentSurface', () => {
       site: 'https://reinstate.dev/',
       mirrorDirs: [vercelStatic, join(root, 'absent')],
       vercelConfigPath: vercelConfig,
+      vercelFunctionsDir: join(root, '.vercel', 'output', 'functions'),
+      agentFunctionEntry: resolve(import.meta.dirname, 'function.ts'),
     });
+
+    expect(result.agentFunction?.runtime).toBe('nodejs24.x');
+    expect(existsSync(join(root, '.vercel', 'output', 'functions', 'agent-surface.func', 'index.mjs'))).toBe(true);
+    expect(existsSync(join(root, '.vercel', 'output', 'functions', 'agent-surface.func', '.vc-config.json'))).toBe(true);
 
     expect(result.twins.map((twin) => twin.file).sort()).toEqual(['docs.md', 'docs/faq.md', 'index.md', 'preview.md']);
     expect(result.skipped).toEqual(['/404', '/missing/page']);

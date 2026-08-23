@@ -23,8 +23,6 @@ describe('isPagePath', () => {
       '/rss.xml',
       '/api',
       '/api/waitlist',
-      '/agent-surface',
-      '/agent-surface/markdown',
       '/_astro/x.css',
       '/_image',
       '/_server-islands/x',
@@ -46,7 +44,7 @@ describe('isPagePath', () => {
     for (const path of ['/', '/docs', '/docs/getting-started', '/developers']) {
       expect(source.test(path), path).toBe(true);
     }
-    for (const path of ['/docs/faq.md', '/api/waitlist', '/api', '/agent-surface/markdown', '/_astro/a.css', '/og/home.png', '/_image', '/rss.xml']) {
+    for (const path of ['/docs/faq.md', '/api/waitlist', '/api', '/_astro/a.css', '/og/home.png', '/_image', '/rss.xml']) {
       expect(source.test(path), path).toBe(false);
     }
   });

@@ -22,7 +22,7 @@ export const REQUIRED_LLMS_LINKS = [
   '/compatibility.json',
   '/docs/cli-reference',
 ];
-export const REQUIRED_NOT_FOUND_DISALLOW = ['/api/', '/agent-surface/'];
+export const REQUIRED_NOT_FOUND_DISALLOW = ['/api/'];
 
 async function exists(path) {
   try {
@@ -115,8 +115,10 @@ export async function checkAgentSurface({ root, buildDir = resolve(root, 'dist/c
       const config = JSON.parse(await readFile(configPath, 'utf8'));
       const routes = config.routes ?? [];
       const filesystemIndex = routes.findIndex((route) => route.handle === 'filesystem');
-      const markdownIndex = routes.findIndex((route) => route['x-reinstate-agent-route'] === 'markdown');
-      const notFoundIndex = routes.findIndex((route) => route['x-reinstate-agent-route'] === 'not-found');
+      const accepts = (route, list, pattern) => route.dest === 'agent-surface' && Array.isArray(route[list]) && route[list].some((c) => c.key === 'accept' && c.value === pattern);
+      const isAgent = (route, kind) => (kind === 'markdown' ? accepts(route, 'has', '.*text/markdown.*') : accepts(route, 'missing', '.*text/html.*'));
+      const markdownIndex = routes.findIndex((route) => isAgent(route, 'markdown'));
+      const notFoundIndex = routes.findIndex((route) => isAgent(route, 'not-found'));
       const catchAllIndex = routes.findIndex((route) => route.status === 404 && /^\^?\/\.\*\$?$/.test(route.src ?? ''));
       const renderIndexes = routes.map((route, index) => (route.dest === '_render' && /agent-surface/.test(route.src ?? '') ? index : -1)).filter((index) => index !== -1);
       if (markdownIndex === -1) errors.push('.vercel/output/config.json: markdown negotiation route missing');
@@ -125,11 +127,18 @@ export async function checkAgentSurface({ root, buildDir = resolve(root, 'dist/c
       else {
         if (notFoundIndex < filesystemIndex) errors.push('.vercel/output/config.json: markdown not-found route must follow the filesystem handle');
         if (catchAllIndex !== -1 && notFoundIndex > catchAllIndex) errors.push('.vercel/output/config.json: markdown not-found route must precede the 404 catch-all');
-        if (renderIndexes.some((index) => index < notFoundIndex)) errors.push('.vercel/output/config.json: markdown not-found route must precede the /agent-surface/* function routes so `check` can reach them');
       }
-      if (renderIndexes.length < 2) errors.push('.vercel/output/config.json: expected /agent-surface/markdown and /agent-surface/not-found function routes');
-      const duplicates = routes.filter((route) => route['x-reinstate-agent-route']).length;
+      for (const file of ['.vc-config.json', 'index.mjs']) {
+        if (!(await exists(join(vercelDir, 'functions', 'agent-surface.func', file)))) errors.push(`.vercel/output/functions/agent-surface.func/${file}: missing; the reinstate-agent-surface integration must bundle the agent function`);
+      }
+      const duplicates = routes.filter((route) => isAgent(route, 'markdown') || isAgent(route, 'not-found')).length;
       if (duplicates > 2) errors.push(`.vercel/output/config.json: agent routes injected ${duplicates} times; expected 2`);
+      const allowedKeys = new Set(['src', 'dest', 'has', 'missing', 'methods', 'check', 'continue', 'headers', 'status', 'handle', 'locale', 'caseSensitive', 'important', 'override', 'middlewarePath', 'middlewareRawSrc', 'transforms', 'mitigate']);
+      for (const route of routes) {
+        for (const key of Object.keys(route)) {
+          if (!allowedKeys.has(key)) errors.push(`.vercel/output/config.json: route ${route.src ?? route.handle} has non-standard key "${key}"; Vercel rejects it as invalid_routes when merging vercel.json`);
+        }
+      }
     }
   }
 

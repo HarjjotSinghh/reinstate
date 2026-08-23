@@ -13,6 +13,7 @@ import { dirname, join } from 'node:path';
 import { htmlToMarkdown } from './html-to-markdown';
 import { markdownFileFor, pagePathFromBuildPathname } from './paths';
 import { injectAgentRoutes, type VercelOutputConfig } from './vercel-routes';
+import { bundleAgentFunction, type BundledAgentFunction } from './bundle';
 
 export interface BuildAgentSurfaceOptions {
   /** Directory that holds the prerendered HTML (`dist/client`). */
@@ -25,6 +26,10 @@ export interface BuildAgentSurfaceOptions {
   mirrorDirs?: string[];
   /** Vercel Build Output `config.json` to inject the agent routes into, if it exists. */
   vercelConfigPath?: string;
+  /** Vercel Build Output `functions` directory; the dedicated agent function is bundled there when set. */
+  vercelFunctionsDir?: string;
+  /** Absolute path of the agent function entry (`src/lib/agent-surface/function.ts`). */
+  agentFunctionEntry?: string;
   /** Product name used in the llms-full.txt header. */
   productName?: string;
 }
@@ -40,6 +45,8 @@ export interface BuildAgentSurfaceResult {
   twins: BuiltTwin[];
   llmsFullBytes: number;
   vercelRoutesInjected: boolean;
+  /** Present when the dedicated agent function was bundled into the Build Output. */
+  agentFunction: BundledAgentFunction | null;
   skipped: string[];
 }
 
@@ -183,10 +190,16 @@ export async function buildAgentSurface(options: BuildAgentSurfaceOptions): Prom
     vercelRoutesInjected = true;
   }
 
+  let agentFunction: BundledAgentFunction | null = null;
+  if (options.vercelFunctionsDir && options.agentFunctionEntry && (await exists(options.vercelFunctionsDir))) {
+    agentFunction = await bundleAgentFunction({ entry: options.agentFunctionEntry, functionsDir: options.vercelFunctionsDir });
+  }
+
   return {
     twins,
     llmsFullBytes: Buffer.byteLength(llmsFull, 'utf8'),
     vercelRoutesInjected,
+    agentFunction,
     skipped,
   };
 }

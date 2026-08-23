@@ -55,17 +55,23 @@ How it fits together:
   `llms-full.txt` into `dist/client` and `.vercel/output/static`, and injects
   two routes into `.vercel/output/config.json` (see `vercel-routes.ts`):
   one before the filesystem phase that sends `Accept: text/markdown`
-  requests to `/agent-surface/markdown`, and one before the 404 catch-all that
-  sends unknown paths from non-HTML clients to `/agent-surface/not-found`.
-  Prerendered pages never reach Astro middleware on Vercel, so this is the
-  only place same-URL negotiation can live.
+  requests to a dedicated Vercel function, and one before the 404 catch-all
+  that sends unknown paths from non-HTML clients there too. That function
+  (`functions/agent-surface.func`, bundled from `function.ts` with esbuild)
+  negotiates on the original request path and fetches the twin or the HTML
+  page from the same deployment. It bypasses Astro's router on purpose:
+  Vercel always forwards the original path to a function, and Astro refuses
+  prerendered static routes at request time. Routes may only carry standard
+  keys; Vercel rejects unknown route properties when merging `vercel.json`.
 - `src/middleware.ts` serves `/{page}.md` in `astro dev` and applies the
   contract to on-demand HTML routes. Astro strips request headers from
   prerendered routes in dev (as at build time), so canonical-URL negotiation
-  is exercised locally through the endpoint the Vercel route targets:
-  `curl -H "Accept: text/markdown" "http://localhost:4321/agent-surface/markdown?path=/docs"`,
-  plus `curl http://localhost:4321/docs.md` for the twin. The 406 and
-  Markdown-404 branches are unit-tested in `src/lib/agent-surface/`.
+  is verified against a preview deployment (`vercel build` then
+  `vercel deploy --prebuilt`). Locally,
+  `curl http://localhost:4321/docs.md` serves the twin and
+  `curl -H "Accept: text/markdown" http://localhost:4321/no-such-page` the
+  Markdown 404. The 406 and negotiation branches are unit-tested in
+  `src/lib/agent-surface/`.
 - `vercel.json` adds `Vary: Accept` to page URLs and serves `*.md` as
   `text/markdown`.
 - `/openapi.json` (`src/lib/openapi.ts`) documents the HTTP surface; every
