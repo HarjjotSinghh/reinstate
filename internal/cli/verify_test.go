@@ -538,6 +538,54 @@ func TestSyncVerifyBeforeAnyPush(t *testing.T) {
 	}
 }
 
+// TestSyncVerifyUnreachableControlPlanePrintsAReport: a Hop locker is
+// listed with credentials the control plane mints, so an outage stops
+// every check before it starts. The command used to answer that with a
+// bare Winsock dial error and no report at all, which leaves the reader
+// unable to tell an outage from a finding — the one distinction this
+// command exists to make.
+func TestSyncVerifyUnreachableControlPlanePrintsAReport(t *testing.T) {
+	j, _ := hostedVerifyJourney(t)
+	if _, errb, code := j.run("push", "--all"); code != ExitOK {
+		t.Fatalf("push exit=%d err=%q", code, errb)
+	}
+	j.plane.srv.Close()
+
+	out, errb, code := j.run("sync", "verify")
+	if code != ExitRuntime {
+		t.Fatalf("an unreachable control plane exits %d, want %d:\n%s\n%s", code, ExitRuntime, out, errb)
+	}
+	for _, want := range []string{
+		"VERIFICATION REPORT",
+		"Could not run: the control plane could not be reached",
+		"a Hop locker is listed with credentials the control plane mints for this device",
+		"The key this step would have used never leaves this device and was never involved.",
+		"OUTCOME: NOT VERIFIED.",
+		"No step failed and nothing here says anything about what the locker holds.",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("output missing %q:\n%s", want, out)
+		}
+	}
+	for _, unwanted := range []string{"OUTCOME: FAIL", "Result:         FAIL", "security@reinstate.dev"} {
+		if strings.Contains(out, unwanted) {
+			t.Fatalf("an outage reads as a finding (%q):\n%s", unwanted, out)
+		}
+	}
+	if n := strings.Count(out, "Result:         NOT APPLICABLE"); n != 4 {
+		t.Fatalf("%d of 4 steps say they could not run:\n%s", n, out)
+	}
+
+	out, _, code = j.run("sync", "verify", "--json")
+	if code != ExitRuntime {
+		t.Fatalf("exit=%d out=%q", code, out)
+	}
+	v := decodeVerify(t, out)
+	if v.Report.Outcome != verify.NotApplicable || v.Posted || len(v.Report.Steps) != 4 {
+		t.Fatalf("report %+v posted=%t", v.Report, v.Posted)
+	}
+}
+
 // TestSyncVerifyExitCodes pins the exit code a script is told to watch
 // for. It was documented as 4 in three places and has always been 7, so a
 // user who scripted the documented value got them exactly backwards: no

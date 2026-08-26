@@ -17,7 +17,7 @@ supports, and it is narrower than #9's and #10's physical journeys.
 
 ## Verdict
 
-- **The `rein sync verify` journeys:** `PASS`, eleven of eleven, driving
+- **The `rein sync verify` journeys:** `PASS`, twelve of twelve, driving
   the real CLI end to end.
 - **`make test-race`:** no data race reported, on a bench with cgo. This
   is the first time it has been run on the public repository at all —
@@ -37,7 +37,7 @@ supports, and it is narrower than #9's and #10's physical journeys.
 | UTC date | `2026-08-27` |
 | Bench | `Microsoft Windows 11 Pro` `10.0.26200.8328`, `windows-amd64` native (not WSL) |
 | Toolchain | `go version go1.26.1 windows/amd64`; `make test-race` pins `GOTOOLCHAIN=go1.25.13`; `gcc.exe (MinGW-W64 x86_64-ucrt-posix-seh) 16.1.0`, `CGO_ENABLED=1` available |
-| Tree | `hop/12-verify` at `b1c8f8f2`, worktree `D:\Projects\reinstate-worktrees\12` |
+| Tree | `hop/12-verify` at `b1c8f8f2`, plus the commit that carries this record and the unreachable-control-plane journey; worktree `D:\Projects\reinstate-worktrees\12` |
 | Control plane | the in-process fake in `internal/cli/hop_locker_test.go` and `verify_fake_test.go`; no `hopd`, no network beyond loopback |
 | Storage | `internal/backend/s3/s3test` (fake S3, loopback `httptest` server) for the hosted journeys; `internal/backend/memory` on disk for the BYO journey |
 | Environment | every run under `env -u REINSTATE_BACKEND -u REINSTATE_MEMORY_BACKEND_DIR -u REINSTATE_S3_ACCESS_KEY_ID -u REINSTATE_S3_SECRET_ACCESS_KEY`, so no leftover lab variable reached a test |
@@ -48,18 +48,19 @@ supports, and it is narrower than #9's and #10's physical journeys.
 ```
 go test ./internal/cli/... -run 'TestSyncVerify|TestHopCredentials' -count=1 -v
 
---- PASS: TestHopCredentialsMakesTheByHandRecipeReal (0.26s)
+--- PASS: TestHopCredentialsMakesTheByHandRecipeReal (0.27s)
 --- PASS: TestHopCredentialsNeedsASignedInDevice (0.03s)
 --- PASS: TestSyncVerifyJourneyHosted (0.38s)
---- PASS: TestSyncVerifyHostedReportGolden (0.27s)
---- PASS: TestSyncVerifyJourneyTamperedObjects (0.29s)
---- PASS: TestSyncVerifyJourneyReferenceReachable (0.24s)
---- PASS: TestSyncVerifyJourneyReferenceRejectsTheCredential (0.96s)
+--- PASS: TestSyncVerifyHostedReportGolden (0.29s)
+--- PASS: TestSyncVerifyJourneyTamperedObjects (0.30s)
+--- PASS: TestSyncVerifyJourneyReferenceReachable (0.25s)
+--- PASS: TestSyncVerifyJourneyReferenceRejectsTheCredential (0.95s)
 --- PASS: TestSyncVerifyJourneyNoReferenceLocker (0.27s)
---- PASS: TestSyncVerifyBeforeAnyPush (0.21s)
+--- PASS: TestSyncVerifyBeforeAnyPush (0.19s)
+--- PASS: TestSyncVerifyUnreachableControlPlanePrintsAReport (0.26s)
 --- PASS: TestSyncVerifyExitCodes (0.27s)
---- PASS: TestSyncVerifyJourneyBYO (0.20s)
-ok  	github.com/HarjjotSinghh/reinstate/internal/cli	4.756s
+--- PASS: TestSyncVerifyJourneyBYO (0.23s)
+ok  	github.com/HarjjotSinghh/reinstate/internal/cli	5.081s
 ```
 
 What each one drives, so the list is readable without the source:
@@ -73,6 +74,7 @@ What each one drives, so the list is readable without the source:
 | `JourneyReferenceRejectsTheCredential` | `InvalidAccessKeyId`, `SignatureDoesNotMatch`, `ExpiredToken`, `InvalidToken` each fail step 4 rather than reading as a scope refusal, and none asks for a security report |
 | `JourneyNoReferenceLocker` | a control plane with no reference locker makes step 4 not applicable, and neither the report nor the push-hook line claims isolation |
 | `BeforeAnyPush` | a profile that has pushed nothing: four NOT APPLICABLE steps, `OUTCOME: NOT YET VERIFIABLE`, exit `0`, nothing posted |
+| `UnreachableControlPlanePrintsAReport` | with the fake control plane shut down, the command still prints a report saying which checks could not run and why, ends `OUTCOME: NOT VERIFIED`, and exits `1` rather than emitting a bare dial error |
 | `ExitCodes` | a passing run exits `0` and a failed one exits `7` (`exitcode.Safety`), not the `4` three documents used to claim |
 | `JourneyBYO` | BYO over the memory backend with the passphrase: steps 1–3 pass, step 4 is not applicable, nothing is posted, and the `--json` document matches `byo-report.golden.json` |
 | `HopCredentialsMakesTheByHandRecipeReal` | `rein hop credentials` mints and prints the live locker credential; a push afterwards still succeeds, and the S3 fake accepts only the newest mint |

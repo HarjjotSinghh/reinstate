@@ -261,7 +261,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   match `backend.ErrUnauthorized`).
   Windows record:
   [`docs/testing/results/2026-08-27-sync-verify-windows.md`](docs/testing/results/2026-08-27-sync-verify-windows.md)
-  — eleven `rein sync verify` and `rein hop credentials` journeys against
+  — twelve `rein sync verify` and `rein hop credentials` journeys against
   the in-process fake control plane and fake S3, `make test-race` with no
   data race (the first time it has been run on this repository at all),
   `go vet`, and the three cross-builds, on the Windows 11 bench (NT
