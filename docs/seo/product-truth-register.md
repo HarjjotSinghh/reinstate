@@ -1,6 +1,6 @@
 # Reinstate product-truth register
 
-Last reviewed: 2026-08-19
+Last reviewed: 2026-08-27
 Canonical website source: `website/src/data/product.ts`
 Reviewed release: `v0.5.1` candidate; public installers pin this tag.
 Stable remains `v0.4.0`. Dual-platform tagged-artifact acceptance is pending.
@@ -20,6 +20,7 @@ marketing claim.
 | Audience | Developers continuing coding-agent work across work/personal computers, desktop/laptop, projects, or environments | product strategy and published use cases |
 | Current agents | Claude Code and Codex CLI | adapter registry, compatibility data, setup checks |
 | Native-resume boundary | Claude Code → Claude Code and Codex → Codex only | adapter implementation, docs, protected claim tests |
+| Environment preflight | Every same-vendor native continuation runs an environment preflight before the agent starts: it reports the environment it can actually observe, compares only facts with trustworthy recorded provenance, and refuses a silent bad continuation instead of guessing. Shipped in `v0.3.0`. | `internal/preflight`, executable-trust/workspace-identity/version checks on both adapter launch paths, `docs/verified-resume.md`, Phase 3 CLI tests |
 | Cross-agent behavior | `v0.4.0` provides explicit structured handoff into a new Claude Code or Codex session; it does not translate or transfer a native session | handoff contract, ADR 0003, CLI/doctest contracts |
 | Handoff source scope | Claude Code, Codex CLI, Gemini CLI, OpenCode, Grok Build, and Kimi Code CLI can be sources; Gemini, OpenCode, Grok, and Kimi are source-only | directional compatibility matrix, reader tests |
 | Current OS targets | Apple Silicon macOS and native Windows x64 are mandatory RC/stable targets; Intel macOS and Linux/WSL2 are optional and unsupported/unverified | release runbook, compatibility data, limitations |
@@ -36,8 +37,9 @@ marketing claim.
 
 | Location or surface | Conflict | Classification | Resolution |
 | --- | --- | --- | --- |
-| Live GitHub About description | “Sync and resume coding-agent work across every device” is broader than verified OS/acceptance scope | Unsupported as written | Owner-operated update remains required; exact replacement is in `launch-distribution.md`. |
-| Live GitHub topics/social preview | Topics are incomplete and the generic social image does not match the canonical entity/brand packet | Stale external entity metadata | Reviewed topics and reproducible 1280×640 image are prepared; application remains an external repository-settings action. |
+| Live GitHub About description | Previously “Sync and resume coding-agent work across every device”, which was broader than verified OS/acceptance scope | Resolved 2026-08-27 | The live About now reads “Find, resume, and hand off Claude Code and Codex sessions across machines — encrypted, your own bucket.” Verified against the GitHub API. It names both supported agents, keeps hand-off distinct from resume, and makes no OS claim, so it is within scope. |
+| Live GitHub topics | Previously incomplete | Resolved 2026-08-27 | Eleven topics are now applied and verified against the GitHub API: `agents`, `claude-code`, `codex`, `context`, `state`, `cli`, `developer-tools`, `encryption`, `go`, `golang`, `session-management`. |
+| Live GitHub social preview image | The generic social image may still not match the canonical entity/brand packet | Unverified | The reproducible 1280×640 image is prepared. Whether it has been applied was not checked — the GitHub API does not expose it in the fields queried on 2026-08-27. Confirm in repository settings before treating this as done. |
 | Candidate surfaces | Phase 4 structured handoff is stable in `v0.4.0` | Verified | Docs must not describe handoff as pending candidate work. |
 | Roadmap surfaces | Universal configuration and team continuity can be mistaken for current features | Planned | Current pages separate stable `v0.5.1` from later roadmap work. |
 | OS language | Availability of a Linux binary can be mistaken for certified Phase 1 Linux agent resume | Ambiguous without qualification | Published install and guide copy says plain Linux is not a certified Phase 1 agent-resume target. |
