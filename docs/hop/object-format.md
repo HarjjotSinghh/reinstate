@@ -24,10 +24,19 @@ empty for a Hop locker, whose bucket already belongs to one account):
 | `snapshots/<uuid>.age` | age envelope around one session snapshot | every push that uploads a session | never; created with `If-None-Match: *`, immutable, named by a random v4 UUID |
 | `keyring.v1.json` | plaintext JSON carrying wrapped keys | `rein account init`, `rein account join`/`rein devices approve`, `rein account recover` | yes, compare-and-swap |
 
-Nothing else is written. A BYO bucket shared by several profiles holds one
-such set per prefix. No object name, prefix, or bucket name encodes an
-account, a device, a session, a project, or a time; a listing reveals only
-how many snapshots exist and how large they are.
+Nothing else is written during normal operation. `rein init` writes one
+`probes/<uuid>` object holding `ok` and deletes it again, as its check
+that the credentials can write; a run interrupted between the two leaves
+it behind, and nothing reaps it. A BYO bucket shared by several profiles
+holds one such set per prefix.
+
+No object name encodes a device, a session, a project, or a time, and a
+listing reveals only how many snapshots exist and how large they are. The
+**prefix** is a different matter: on a Hop locker it is empty, but a BYO
+profile initialised without `--prefix` defaults to `profiles/<profile
+id>`, which is the account's own identifier, and a prefix given by hand is
+whatever you chose. `rein sync verify` step 1 lists exactly what is
+there.
 
 ## The age envelope
 
@@ -75,9 +84,20 @@ A single JSON document, at most 4 MiB:
 }
 ```
 
-`revision` doubles as the optimistic-concurrency token: a push that finds a
-different head than it started from stops with a conflict instead of
-overwriting another device's work.
+`revision` is the snapshot id of the last push, kept for display and for
+local state. It is **not** the concurrency token — nothing reads it to
+decide a conflict. Two mechanisms do that, and both are checked on every
+push:
+
+- The index is replaced with `If-Match` on the ETag the push read it at
+  (`If-None-Match: *` when there was no index). A device whose ETag is
+  stale is refused by the storage endpoint and re-reads, up to four
+  times, before reporting a conflict. `keyring.v1.json` is written the
+  same way.
+- Each session carries its own parent: a push records the snapshot id it
+  believed the session's head to be, and stops with a conflict if the
+  index names a different one. Two devices pushing different sessions
+  therefore never conflict with each other, however close together.
 
 ### `snapshots/<uuid>.age` → one session
 
@@ -102,9 +122,13 @@ the agent adapter produced it (at most 32 GiB):
 }
 ```
 
-A pull checks that the payload's length and SHA-256 match `files[0]`
-before anything is written to disk; `rein sync verify` does the same check
-in memory. Paths inside the export are relative, so a snapshot made on
+A pull streams the payload into a temporary file in the destination
+directory while hashing it, and renames that file into place only if the
+length and SHA-256 match `files[0]`; a mismatch, or any failure on the
+way, removes the temporary file and leaves the destination untouched. So
+no unverified byte ever reaches the destination path, though bytes do
+reach the disk beside it while they are being checked. `rein sync verify`
+does the same check in memory. Paths inside the export are relative, so a snapshot made on
 Windows restores on macOS (path remapping is applied at pull time, never
 stored).
 
@@ -133,15 +157,21 @@ not contain.
   recipient), so a device can confirm it unwrapped the right key.
 - Each `devices[].wrap` is the 32-byte root key age-encrypted to that
   device's X25519 public key. The matching private key is generated on the
-  device at sign-in and kept in the OS keychain; it never leaves the
-  device and is never in the locker.
+  device by `rein account init`, `rein account join` or `rein account
+  recover` — the commands that enrol it in the account, not `rein login`,
+  which only signs the device in — and kept in the OS keychain; it never
+  leaves the device and is never in the locker.
 - `recovery.wrap` is the root key sealed with XChaCha20-Poly1305 under a key
   derived from the recovery code by argon2id (the parameters are recorded
   beside it so they can be raised later). The recovery code is shown once
   at `rein account init` and stored nowhere.
-- A device revocation starts a new generation with a fresh root key; older
-  generations stay so objects sealed under them remain readable, and every
-  envelope written afterwards is sealed to the new key only.
+- The `generations` array is a list because a future root key rollover
+  appends to it: older generations stay so objects sealed under them
+  remain readable, and every envelope written afterwards is sealed to the
+  newest key only. **Nothing on this release writes a second generation.**
+  Device revocation and the rollover that goes with it land with #11; see
+  [security-model.md](../security-model.md) for what does and does not
+  ship today.
 
 Pairing (device approval) relays a root-key wrap under a code-derived key
 through the control plane; it writes the joining device's wrap into this
@@ -151,10 +181,16 @@ object and nothing else to the locker.
 
 From a listing alone: the number of snapshots, each object's size and
 last-modified time, and therefore roughly how often pushes happen and how
-large sessions are. From `keyring.v1.json`: the number of enrolled devices,
-when each enrolled, and the number of key generations. Nothing else — see
-the [threat model](threat-model.md) for what the operator does and does not
-see.
+large sessions are.
+
+`keyring.v1.json` is plaintext and gives up more than counts. It carries
+the account's `profile_id`, every enrolled `device_id`, every device's
+X25519 **public** key, each device's enrolment time, and the number of key
+generations — all of it visible in the example above. It carries no usable
+key. The identifiers are opaque outside the locker (they name nothing a
+person is called), but anyone with bucket access can tell one account's
+locker from another's and count and track its devices. See the [threat
+model](threat-model.md) for what that means.
 
 ## Reproducing the checks by hand
 

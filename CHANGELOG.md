@@ -284,7 +284,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   New docs: `docs/hop/object-format.md` (the exact object layout and
   envelope format) and `docs/hop/threat-model.md` (what the operator can
   and cannot see, the assumptions, and how each verify step maps to each
-  claim).
+  claim). Both are published as the protocol, so both are stated against
+  the code rather than the intention: the concurrency token is the
+  object ETag under `If-Match` plus each session's recorded parent
+  snapshot, not the manifest's `revision` field; the default BYO prefix
+  is `profiles/<profile id>`, which does encode the account; `rein init`
+  writes and deletes a `probes/<uuid>` object and an interrupted run
+  leaves it behind; `keyring.v1.json` is plaintext and carries the
+  `profile_id` and every `device_id`, not only counts and dates; a device
+  key is generated at `rein account init`, `join` or `recover`, never at
+  `rein login`; a pull streams a payload into a temporary file beside the
+  destination while hashing it and renames only on a match; the device
+  location hint is listed among what the operator holds; the pairing
+  bullet states the offline-guess bound (60-bit code, argon2id
+  t=3/64 MiB/4 lanes); step 1 is described as listing what is there
+  rather than proving only three object kinds exist; key-generation
+  rollover is marked as landing later rather than as current behaviour;
+  and the threat model now describes the operator as a *write* adversary
+  over an unauthenticated keyring, says which release closes it, and says
+  plainly that `rein sync verify` does not detect a planted keyring.
+  `docs/hop.md`, `docs/hop/threat-model.md` and
+  `docs/hop/object-format.md` join the fourteen pages already under the
+  doc gate in `internal/doctest`, so a future overclaim on them is caught
+  the way it is everywhere else.
 
 - The S3-compatible backend can now obtain its keys from a credential source
   that expires and refreshes (`s3.CredentialSource`), the seam that lets a
