@@ -81,6 +81,10 @@ func TestProductDocsDoNotClaimCrossAgentNativeIdentity(t *testing.T) {
 		"docs/comparison.md", "docs/cross-agent-continuation.md", "docs/faq.md",
 		"docs/getting-started.md", "docs/handoff.md", "docs/security-model.md",
 		"docs/troubleshooting.md", "docs/seo/product-truth-register.md",
+		// The Hop protocol pages carry the strongest claims the product
+		// makes — what the operator can see, what the bytes in the locker
+		// are — and were the only published pages outside this gate.
+		"docs/hop.md", "docs/hop/threat-model.md", "docs/hop/object-format.md",
 	}
 	for _, path := range paths {
 		for number, paragraph := range markdownParagraphs(read(t, path)) {
