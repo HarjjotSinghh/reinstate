@@ -191,15 +191,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   detail lines); and, on a Hop locker, asks the
   control plane for its **reference locker** (a bucket the operator owns,
   holding one probe object) and shows that the same credentials are refused
-  from it as access denied (a rejection of the credential itself, such as
-  `InvalidAccessKeyId` or `ExpiredToken`, fails the step because it shows
-  nothing about scope, and so does a reference locker at a different
-  storage endpoint than the one step 1 listed — any host refuses a foreign
-  credential, so a refusal from elsewhere proves nothing; the access key
-  id used in steps 1 and 4 and the reference endpoint are recorded as
-  local detail). The outcome sentence names only the objects that were
-  actually fetched as ciphertext — the index, and the newest snapshot when
-  one exists — and lists what was judged by name. Each step prints what was done, what was
+  from it as access denied. That step is pinned to the response, not to the
+  endpoint the control plane named: the probe client refuses to follow a
+  redirect, so the locker credential is only ever sent to the host step 1
+  listed, and the refusal has to arrive from that host as an S3 error
+  naming its code. The probe makes exactly the two requests the step
+  describes and does not retry a refusal, which would only multiply the
+  record and the wait (`s3.Config.MaxAttempts`). A rejection of the
+  credential itself (`InvalidAccessKeyId`,
+  `ExpiredToken`) fails the step because it shows nothing about scope, and so
+  do a redirect and a reference locker at a different storage endpoint than
+  the one step 1 listed — any host refuses a foreign credential, so a
+  refusal from elsewhere proves nothing. Where the step cannot conclude it
+  reports **not applicable** rather than passing: a 403 with no S3 error
+  body (any web server answers 403), a run whose step 1 did not pass (no
+  locker was shown to accept these credentials), and a locker whose own
+  storage endpoint is not known on this device (nothing to pin the
+  reference against). The access key id used in steps 1 and 4 and the
+  reference endpoint are recorded as local detail. The outcome sentence
+  names only the objects that were actually fetched as ciphertext — the
+  index, and the snapshot the index records as updated last, chosen by
+  opening the index rather than by sorting random ids, and called "one
+  snapshot" when the index could not be opened to say — and lists what was
+  judged by name. Each step prints what was done, what was
   seen, and PASS, FAIL, or NOT APPLICABLE; `--json` emits the report as
   data; exit `4` on any failed step. A tampered object fails: plaintext in
   place of ciphertext at step 2, a flipped byte at step 3. BYO storage runs
@@ -211,7 +225,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   checks run automatically once per device after the first push that
   uploaded something, without ever failing that push. The outcome sentence
   claims isolation only when the isolation step actually ran and passed. The fake S3 used in
-  tests now refuses any bucket but its own with `AccessDenied`, as R2 does.
+  tests now refuses any bucket but its own with `AccessDenied`, as R2 does —
+  after checking the signature, not before, so a credential the endpoint
+  does not know is answered `InvalidAccessKeyId` whatever bucket it names,
+  which is the distinction step 4 rests on.
   `backend.Refusal` keeps the storage error code and matches
   `backend.ErrAccessDenied` or `backend.ErrCredentialRejected` (both still
   match `backend.ErrUnauthorized`), and the S3 backend's `List` now follows

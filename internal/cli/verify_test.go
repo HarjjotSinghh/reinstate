@@ -119,7 +119,7 @@ func TestSyncVerifyJourneyHosted(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &pushed); err != nil || pushed.Verification.Outcome != "pass" || !pushed.Verification.Posted {
 		t.Fatalf("push output %q err=%v", out, err)
 	}
-	if !strings.Contains(errb, "First push from this device verified: the index and the newest snapshot fetched from the locker are ciphertext this device can open, and this account's credentials are refused by a bucket that is not its own") {
+	if !strings.Contains(errb, "First push from this device verified: the index and the newest snapshot in the index fetched from the locker are ciphertext this device can open, and this account's credentials are refused by a bucket that is not its own") {
 		t.Fatalf("push stderr %q", errb)
 	}
 	if len(j.plane.reports) != 1 {
@@ -173,7 +173,7 @@ func TestSyncVerifyJourneyHosted(t *testing.T) {
 		"reference locker lk-0000000000000000000000refr at " + j.plane.s3.URL() + ", probe reference/probe.txt",
 		"Listing the reference locker was refused as access denied. Reading the probe object was refused as access denied.",
 		"Result:         PASS",
-		"OUTCOME: PASS. The objects checked (the index and the newest snapshot) are ciphertext this device can open. Not opened and judged by name only: 1 older age-named snapshot(s), the wrapped keyring. This account's credentials are refused by a bucket that is not its own.",
+		"OUTCOME: PASS. The objects checked (the index and the newest snapshot in the index) are ciphertext this device can open. Not opened and judged by name only: 1 other age-named snapshot(s), the wrapped keyring. This account's credentials are refused by a bucket that is not its own.",
 		"Step results posted to the control plane",
 	} {
 		if !strings.Contains(out, want) {
@@ -386,7 +386,7 @@ func TestSyncVerifyJourneyNoReferenceLocker(t *testing.T) {
 		t.Fatalf("push exit=%d err=%q", code, errb)
 	}
 	// The push-hook sentence must not claim isolation that was not checked.
-	if !strings.Contains(errb, "First push from this device verified") || !strings.Contains(errb, "Isolation was not checked (no reference locker)") || strings.Contains(errb, "refused by a bucket") {
+	if !strings.Contains(errb, "First push from this device verified") || !strings.Contains(errb, "Whether this account's credentials reach other buckets was not checked (rein sync verify shows the full report and why)") || strings.Contains(errb, "refused by a bucket") {
 		t.Fatalf("push stderr %q", errb)
 	}
 	out, _, code := j.run("sync", "verify", "--json", "--post=false")
@@ -399,7 +399,7 @@ func TestSyncVerifyJourneyNoReferenceLocker(t *testing.T) {
 		t.Fatalf("isolation %+v outcome %s", s, v.Report.Outcome)
 	}
 	human, _, code := j.run("sync", "verify", "--post=false")
-	if code != ExitOK || !strings.Contains(human, "OUTCOME: PASS. The objects checked (the index and the newest snapshot) are ciphertext this device can open. Not opened and judged by name only: the wrapped keyring. Whether the credentials reach other buckets was not checked (no reference locker)") || strings.Contains(human, "refused by a bucket") {
+	if code != ExitOK || !strings.Contains(human, "OUTCOME: PASS. The objects checked (the index and the newest snapshot in the index) are ciphertext this device can open. Not opened and judged by name only: the wrapped keyring. Whether the credentials reach other buckets was not checked (step 4 above says why)") || strings.Contains(human, "refused by a bucket") {
 		t.Fatalf("human summary claims isolation:\n%s", human)
 	}
 }
@@ -475,7 +475,7 @@ func TestSyncVerifyJourneyBYO(t *testing.T) {
 		"recipient scrypt (passphrase)",
 		"Result:         NOT APPLICABLE",
 		"Not applicable: BYO storage has no control plane and no reference locker",
-		"OUTCOME: PASS. The objects checked (the index and the newest snapshot) are ciphertext this device can open. No other object is in the locker. Whether the credentials reach other buckets was not checked (no reference locker)",
+		"OUTCOME: PASS. The objects checked (the index and the newest snapshot in the index) are ciphertext this device can open. No other object is in the locker. Whether the credentials reach other buckets was not checked (step 4 above says why)",
 	} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("output missing %q:\n%s", want, out)

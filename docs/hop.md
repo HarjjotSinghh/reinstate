@@ -206,9 +206,12 @@ repeated by hand with an S3 client ([object format](hop/object-format.md),
    following every listing page; shows `manifest.age`, `keyring.v1.json`,
    and the snapshots by their opaque ids, and records (locally) the access
    key id the listing was signed with.
-2. **Fetch an object and check it is ciphertext**: the bytes begin with the
-   age v1 header, the recipient type is named (X25519 for Hop, scrypt for
-   BYO), and none of the plaintext field names occur anywhere in the body.
+2. **Fetch an object and check it is ciphertext**: the index, and the one
+   snapshot the index records as updated last (snapshot ids are random, so
+   the index is the only thing that knows which that is). The bytes begin
+   with the age v1 header, the recipient type is named (X25519 for Hop,
+   scrypt for BYO), and none of the plaintext field names occur anywhere in
+   the body.
 3. **Decrypt it locally** with the key held on this device and show what it
    contains. The index's revision, sessions per agent and entries, and a
    snapshot's agent, session and payload size are printed as local detail
@@ -218,27 +221,44 @@ repeated by hand with an S3 client ([object format](hop/object-format.md),
 4. **Prove isolation**: the control plane names its **reference locker**, a
    bucket the operator owns holding one probe object; the same credentials
    are used to list it and read the probe, and both must be refused as
-   **access denied** (R2 answers `AccessDenied`; a bodiless 403 counts the
-   same). A refusal that says the credential itself is bad
-   (`InvalidAccessKeyId`, `SignatureDoesNotMatch`, `ExpiredToken`,
-   `InvalidToken`) is what every bucket answers a dead credential, so it
-   proves nothing about scope and **fails** the step, as does a credential
-   that changed between step 1 and step 4, and so does a reference locker
-   at a **different storage endpoint** than the one step 1 listed (any
-   host answers a foreign credential with 403, so a refusal from
-   elsewhere shows nothing; scheme and trailing-slash differences are the
-   same endpoint). The step's local detail names the access key id and
-   the reference endpoint so the report shows the credential the locker
-   accepted is the one the reference refused, and where.
+   **access denied** (R2 answers `AccessDenied`).
+
+   The verdict is pinned to the answer rather than to the endpoint the
+   control plane named, because both endpoint strings come from the
+   control plane and neither says where the request landed. The probe
+   client **refuses to follow a redirect**, so this account's credential
+   is only ever sent to the host step 1 listed; the refusal must come back
+   from that host, and it must be an S3 error naming its code. A **403
+   with no S3 error body** is something any web server answers, so it
+   shows nothing and the step is reported **not applicable** rather than
+   passed. So is a run where step 1 did not pass — no locker was shown to
+   accept these credentials, and a refusal of a credential nothing accepts
+   is what every host gives — and a run where the locker's own storage
+   endpoint is not known on this device, which leaves nothing to pin the
+   reference against.
+
+   A refusal that says the credential itself is bad (`InvalidAccessKeyId`,
+   `SignatureDoesNotMatch`, `ExpiredToken`, `InvalidToken`) is what every
+   bucket answers a dead credential, so it proves nothing about scope and
+   **fails** the step, as does a credential that changed between step 1
+   and step 4, a redirect offered by the reference endpoint, and a
+   reference locker at a **different storage endpoint** than the one step
+   1 listed (scheme case and a trailing slash are the same endpoint; a
+   different port is a different endpoint). The step's local detail names
+   the access key id and the reference endpoint so the report shows the
+   credential the locker accepted is the one the reference refused, and
+   where.
 
 The report ends with `OUTCOME: PASS` or `OUTCOME: FAIL`; exit code `4` on
 any failed step. The outcome sentence claims only what the steps observed:
 it calls ciphertext only the objects that were actually fetched — the
-index, and the newest snapshot when one exists (a manifest-only locker
-verifies only the index) — names what was judged by name only (older snapshots, the
-keyring, anything unrecognised), says nothing about which device sealed
-them, and when step 4 is not applicable it says isolation was not checked
-instead of asserting it. `--json` emits the report as data (see
+index, and the snapshot the index records as updated last (a manifest-only
+locker verifies only the index; a snapshot chosen without the index, because
+the index would not open here, is called "one snapshot" and not the newest)
+— names what was judged by name only (the other snapshots, the keyring,
+anything unrecognised), says nothing about which device sealed them, and
+when step 4 is not applicable it says isolation was not checked instead of
+asserting it. `--json` emits the report as data (see
 `testdata/verify/byo-report.golden.json` under `internal/cli` for the
 shape). On a Hop profile the **step results only** — never object contents,
 session ids, or project paths — are posted to the control plane for the

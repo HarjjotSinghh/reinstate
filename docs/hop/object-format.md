@@ -174,5 +174,6 @@ for Hop (the identity is the device-unwrapped root key; `rein sync verify`
 does the unwrap for you) or `age -d manifest.age` with the passphrase for
 BYO. Step 4 (`rein sync verify` on Hop only) lists and reads the
 operator's reference locker with the same credentials and expects
-`AccessDenied` twice; `GET /v1/verify/reference` on the control plane names
-the bucket and key.
+`AccessDenied` twice, from the same storage endpoint step 1 listed and with
+an S3 error body naming the code; `GET /v1/verify/reference` on the control
+plane names the bucket and key.

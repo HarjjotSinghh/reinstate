@@ -9,7 +9,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/HarjjotSinghh/reinstate/internal/backend"
 	"github.com/HarjjotSinghh/reinstate/internal/backend/s3"
 	"github.com/HarjjotSinghh/reinstate/internal/config"
 	"github.com/HarjjotSinghh/reinstate/internal/hop"
@@ -129,19 +128,27 @@ func runVerification(cmd *cobra.Command, eng *sync.Engine, cfg *schema.Config, h
 				return creds.AccessKeyID, err
 			}
 		}
-		opts.OpenReference = func(ctx context.Context, ref hop.Reference) (backend.Backend, string, error) {
+		opts.OpenReference = func(ctx context.Context, ref hop.Reference) (verify.Probe, error) {
 			if client == nil {
-				return nil, "", errors.New("the locker client cannot lend its credentials")
+				return verify.Probe{}, errors.New("the locker client cannot lend its credentials")
 			}
 			creds, err := client.CurrentCredentials(ctx)
 			if err != nil {
-				return nil, "", err
+				return verify.Probe{}, err
 			}
+			// The probe client refuses redirects and records every
+			// exchange, so the step can show the locker credential went to
+			// the endpoint the control plane pinned and nowhere else.
+			httpClient, exchanges := verify.ProbeClient(nil)
 			b, err := s3.New(ctx, s3.Config{
 				Endpoint: ref.Endpoint, Region: ref.Region, Bucket: ref.Bucket,
-				Credentials: s3.StaticCredentials(creds),
+				Credentials: s3.StaticCredentials(creds), HTTPClient: httpClient,
+				MaxAttempts: 1,
 			})
-			return b, creds.AccessKeyID, err
+			if err != nil {
+				return verify.Probe{}, err
+			}
+			return verify.Probe{Backend: b, AccessKeyID: creds.AccessKeyID, Exchanges: exchanges}, nil
 		}
 	default:
 		opts.Locker = verify.LockerInfo{Endpoint: cfg.Storage.Endpoint, Bucket: cfg.Storage.Bucket, Prefix: cfg.Storage.Prefix}
@@ -214,7 +221,7 @@ func verifyAfterFirstPush(cmd *cobra.Command, eng *sync.Engine, cfg *schema.Conf
 	case report.Passed() && report.IsolationChecked():
 		PrintHuman(cmd.ErrOrStderr(), "First push from this device verified: %s fetched from the locker %s ciphertext this device can open, and this account's credentials are refused by a bucket that is not its own (rein sync verify shows the full report).", checked, verb)
 	case report.Passed():
-		PrintHuman(cmd.ErrOrStderr(), "First push from this device verified: %s fetched from the locker %s ciphertext this device can open. Isolation was not checked (no reference locker) (rein sync verify shows the full report).", checked, verb)
+		PrintHuman(cmd.ErrOrStderr(), "First push from this device verified: %s fetched from the locker %s ciphertext this device can open. Whether this account's credentials reach other buckets was not checked (rein sync verify shows the full report and why).", checked, verb)
 	default:
 		PrintHuman(cmd.ErrOrStderr(), "WARNING: the verification after the first push FAILED. Full report:")
 		report.WriteHuman(cmd.ErrOrStderr())

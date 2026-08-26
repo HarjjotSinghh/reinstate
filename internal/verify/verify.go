@@ -16,6 +16,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
+	"net/url"
 	"sort"
 	"strings"
 	"time"
@@ -93,9 +95,9 @@ type Report struct {
 	// unopened describes, for Summary, the objects step 1 saw but steps
 	// 2–3 did not fetch. Set by Run; a decoded report has none.
 	unopened string
-	// checked names what step 2 actually fetched ("the index", "the
-	// newest snapshot"), so Summary claims only those objects. Set by
-	// Run; a decoded report has none.
+	// checked names what step 2 actually fetched ("the index", "the newest
+	// snapshot in the index"), so Summary claims only those objects. Set
+	// by Run; a decoded report has none.
 	checked []string
 }
 
@@ -137,9 +139,10 @@ func (r *Report) ForUpload() Upload {
 // Passed reports whether every step passed or did not apply.
 func (r *Report) Passed() bool { return r.Outcome == Pass }
 
-// CheckedObjects names, as one phrase ("the index and the newest
-// snapshot"), the objects step 2 actually fetched, so sentences outside
-// the report claim only those. Empty for a report decoded from JSON.
+// CheckedObjects names, as one phrase ("the index and the newest snapshot
+// in the index"), the objects step 2 actually fetched, so sentences
+// outside the report claim only those. Empty for a report decoded from
+// JSON.
 func (r *Report) CheckedObjects() string { return strings.Join(r.checked, " and ") }
 
 // Codec decrypts an envelope; it matches sync.EnvelopeCodec's read half so
@@ -173,9 +176,11 @@ type Options struct {
 	Reference    *hop.Reference
 	ReferenceErr error
 	// OpenReference opens the reference locker with this device's locker
-	// credentials and returns the access key id it signs with. Required
-	// when Reference is set.
-	OpenReference func(ctx context.Context, ref hop.Reference) (backend.Backend, string, error)
+	// credentials. Required when Reference is set. The client it returns
+	// must refuse redirects and record its exchanges (see ProbeClient), so
+	// the isolation step can pin its verdict to the response rather than
+	// to the endpoint the control plane named.
+	OpenReference func(ctx context.Context, ref hop.Reference) (Probe, error)
 	// CredentialID returns the access key id Backend is signing with right
 	// now; optional. It is recorded in step 1 so the report shows the
 	// credential the locker accepted is the one the reference refused.
@@ -184,6 +189,24 @@ type Options struct {
 	ClientVersion string
 	// Now is injectable for golden output.
 	Now func() time.Time
+}
+
+// Probe is the reference locker opened with this device's locker
+// credentials, together with the record of what its transport saw. The
+// isolation step needs both: a backend to make the request with, and a
+// record proving the request carried the credential to the host the
+// control plane pinned and came back as a signed S3 refusal.
+type Probe struct {
+	// Backend talks to the reference locker.
+	Backend backend.Backend
+	// AccessKeyID is the access key id Backend signs with; empty when the
+	// client has no notion of one.
+	AccessKeyID string
+	// Exchanges returns, in order, what the transport observed for every
+	// request Backend has made so far. A nil Exchanges means the client
+	// was not instrumented: the step then has nothing to pin its verdict
+	// to and reports not-applicable rather than passing.
+	Exchanges func() []Exchange
 }
 
 // Run executes the checks and returns the report. It never returns an
@@ -198,12 +221,12 @@ func Run(ctx context.Context, o Options) *Report {
 	}
 	r := &Report{Version: ReportVersion, GeneratedAt: now().UTC().Format(time.RFC3339), ClientVersion: o.ClientVersion, Storage: o.Storage, Locker: o.Locker}
 
-	inv, akid := listStep(ctx, o, r)
-	r.unopened = describeUnopened(inv)
+	inv, akid, listed := listStep(ctx, o, r)
 	raw := ciphertextStep(ctx, o, r, inv)
+	r.unopened = describeUnopened(inv, raw)
 	r.checked = describeChecked(raw)
 	decryptStep(ctx, o, r, inv, raw)
-	isolationStep(ctx, o, r, akid)
+	isolationStep(ctx, o, r, akid, listed)
 
 	r.Outcome = Pass
 	for _, s := range r.Steps {
@@ -216,13 +239,25 @@ func Run(ctx context.Context, o Options) *Report {
 
 // describeUnopened says what step 1 listed that no later step fetched, so
 // the summary does not call objects ciphertext that were judged by name.
-func describeUnopened(inv *inventory) string {
+// The snapshots are counted against what step 2 actually read rather than
+// assumed to be "all but one": a fetch that failed leaves nothing opened.
+func describeUnopened(inv *inventory, got []fetched) string {
 	if inv == nil {
 		return ""
 	}
+	opened := map[string]bool{}
+	for _, f := range got {
+		opened[f.name] = true
+	}
 	var parts []string
-	if n := len(inv.snapshots) - 1; n > 0 {
-		parts = append(parts, fmt.Sprintf("%d older age-named snapshot(s)", n))
+	n := 0
+	for _, id := range inv.snapshots {
+		if !opened[snapshotPrefix+id+".age"] {
+			n++
+		}
+	}
+	if n > 0 {
+		parts = append(parts, fmt.Sprintf("%d other age-named snapshot(s)", n))
 	}
 	if inv.keyring {
 		parts = append(parts, "the wrapped keyring")
@@ -238,18 +273,13 @@ func describeUnopened(inv *inventory) string {
 
 // describeChecked names the objects step 2 fetched, in order, so the
 // summary never claims an object that was not fetched (a manifest-only
-// locker fetches only the index).
+// locker fetches only the index). The label is the one step 2 earned: a
+// snapshot is only called the newest when the index said which one that
+// is.
 func describeChecked(got []fetched) []string {
 	var names []string
 	for _, f := range got {
-		switch {
-		case f.name == manifestObject:
-			names = append(names, "the index")
-		case strings.HasPrefix(f.name, snapshotPrefix):
-			names = append(names, "the newest snapshot")
-		default:
-			names = append(names, f.name)
-		}
+		names = append(names, f.label)
 	}
 	return names
 }
@@ -271,10 +301,12 @@ func key(prefix, relative string) string {
 	return prefix + "/" + relative
 }
 
-// listStep lists the locker and returns what it found plus the access key
-// id the listing was signed with (empty when the backend has no notion of
-// one, such as BYO keys from the SDK chain or the memory backend).
-func listStep(ctx context.Context, o Options, r *Report) (*inventory, string) {
+// listStep lists the locker and returns what it found, the access key id
+// the listing was signed with (empty when the backend has no notion of
+// one, such as BYO keys from the SDK chain or the memory backend), and the
+// step's own verdict, which step 4 needs: a credential no locker was shown
+// to accept proves nothing when another bucket refuses it.
+func listStep(ctx context.Context, o Options, r *Report) (*inventory, string, Status) {
 	step := Step{ID: StepList, Name: "List the locker with this device's credentials",
 		Did: "Asked the storage endpoint for every object under this account's prefix (following every listing page), signed with the credentials this device uses to push."}
 	objects, err := o.Backend.List(ctx, strings.Trim(o.Prefix, "/"))
@@ -289,7 +321,7 @@ func listStep(ctx context.Context, o Options, r *Report) (*inventory, string) {
 		step.Status = Fail
 		step.Observed = "The listing was refused or failed: " + err.Error()
 		r.Steps = append(r.Steps, step)
-		return nil, akid
+		return nil, akid, step.Status
 	}
 	inv := &inventory{total: len(objects)}
 	for _, obj := range objects {
@@ -334,39 +366,38 @@ func listStep(ctx context.Context, o Options, r *Report) (*inventory, string) {
 		step.Detail = append(step.Detail, k)
 	}
 	r.Steps = append(r.Steps, step)
-	return inv, akid
+	return inv, akid, step.Status
 }
 
-// fetched is one object body the ciphertext step read.
+// fetched is one object body the ciphertext step read. label is how the
+// report names it to a reader ("the index", "the newest snapshot in the
+// index"); it is what the summary is allowed to claim.
 type fetched struct {
-	name string
-	body []byte
+	name  string
+	label string
+	body  []byte
 }
 
 func ciphertextStep(ctx context.Context, o Options, r *Report, inv *inventory) []fetched {
 	step := Step{ID: StepCiphertext, Name: "Fetch an object and check it is ciphertext",
-		Did: "Downloaded the index object (and one snapshot, when any exists) and looked at the raw bytes for the age encryption header and for any field name that appears in the plaintext."}
+		Did: "Downloaded the index object and, when the index names one, the snapshot it records as updated last, and looked at the raw bytes for the age encryption header and for any field name that appears in the plaintext."}
 	if inv == nil || !inv.manifest {
 		step.Status = Fail
 		step.Observed = "Not run: there is no object to fetch (see step 1)."
 		r.Steps = append(r.Steps, step)
 		return nil
 	}
-	names := []string{manifestObject}
-	if n := len(inv.snapshots); n > 0 {
-		names = append(names, snapshotPrefix+inv.snapshots[n-1]+".age")
-	}
 	var got []fetched
 	var observed []string
 	step.Status = Pass
-	for _, name := range names {
+	read := func(name, label string) []byte {
 		body, err := fetch(ctx, o.Backend, key(o.Prefix, name))
 		if err != nil {
 			step.Status = Fail
 			observed = append(observed, fmt.Sprintf("%s could not be fetched: %v", name, err))
-			continue
+			return nil
 		}
-		got = append(got, fetched{name: name, body: body})
+		got = append(got, fetched{name: name, label: label, body: body})
 		verdict, ok := inspectCiphertext(body)
 		if !ok {
 			step.Status = Fail
@@ -375,10 +406,80 @@ func ciphertextStep(ctx context.Context, o Options, r *Report, inv *inventory) [
 		if head, _, found := bytes.Cut(body, []byte("\n")); found && len(head) < 200 {
 			step.Detail = append(step.Detail, name+" first line: "+string(head))
 		}
+		return body
+	}
+	// The index is read first because it is the only thing that knows which
+	// snapshot is the newest one; the ids themselves are random.
+	manifest := read(manifestObject, "the index")
+	if len(inv.snapshots) > 0 {
+		id, fromIndex := newestSnapshot(o, inv, manifest)
+		label := "one snapshot"
+		if fromIndex {
+			label = "the newest snapshot in the index"
+		}
+		read(snapshotPrefix+id+".age", label)
 	}
 	step.Observed = strings.Join(observed, " ")
 	r.Steps = append(r.Steps, step)
 	return got
+}
+
+// newestSnapshot names the snapshot step 2 fetches. Snapshot ids are random
+// uuids, so sort order says nothing about age; the index does, because it
+// records when each session was last updated. The index is opened here with
+// the key held on this device — the same open step 3 reports on — and the
+// snapshot its newest entry points at is the one fetched.
+//
+// It reports false when the index cannot be opened or read here, or names
+// none of the snapshots the listing found. The last id in sort order is
+// then used and the report calls it "one snapshot" rather than the newest,
+// because nothing observed its age.
+func newestSnapshot(o Options, inv *inventory, manifest []byte) (string, bool) {
+	fallback := inv.snapshots[len(inv.snapshots)-1]
+	if len(manifest) == 0 || o.Keys == nil || o.Codec == nil {
+		return fallback, false
+	}
+	plain, err := o.Codec.DecryptReader(bytes.NewReader(manifest), o.Keys)
+	if err != nil {
+		return fallback, false
+	}
+	raw, err := io.ReadAll(io.LimitReader(plain, maxObjectBytes))
+	if err != nil {
+		return fallback, false
+	}
+	var m schema.Manifest
+	if err := json.Unmarshal(raw, &m); err != nil {
+		return fallback, false
+	}
+	listed := map[string]bool{}
+	for _, id := range inv.snapshots {
+		listed[id] = true
+	}
+	keys := make([]string, 0, len(m.Sessions))
+	for k := range m.Sessions {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	best, bestAt := "", time.Time{}
+	// Entries are walked in key order and the first of any tie wins, so two
+	// runs against the same index fetch the same object.
+	for _, k := range keys {
+		s := m.Sessions[k]
+		if !listed[s.SnapshotID] {
+			continue
+		}
+		at, err := time.Parse(time.RFC3339, s.UpdatedAt)
+		if err != nil {
+			continue
+		}
+		if best == "" || at.After(bestAt) {
+			best, bestAt = s.SnapshotID, at
+		}
+	}
+	if best == "" {
+		return fallback, false
+	}
+	return best, true
 }
 
 // inspectCiphertext says what the bytes look like and whether they pass.
@@ -541,9 +642,9 @@ func describeSnapshot(name string, plain io.Reader) (string, []string, error) {
 	return summary, detail, nil
 }
 
-func isolationStep(ctx context.Context, o Options, r *Report, lockerAKID string) {
+func isolationStep(ctx context.Context, o Options, r *Report, lockerAKID string, listed Status) {
 	step := Step{ID: StepIsolation, Name: "Prove this account's credentials are refused from another bucket",
-		Did: "Asked the control plane for its reference locker (a bucket the operator owns, holding one probe object), then tried to list it and read the probe with the same credentials that just listed this account's locker."}
+		Did: "Asked the control plane for its reference locker (a bucket the operator owns, holding one probe object), then tried to list it and read the probe with the same credentials that just listed this account's locker, over a client that refuses to follow a redirect anywhere else."}
 	switch {
 	case o.Storage == StorageBYO:
 		step.Status = NotApplicable
@@ -569,23 +670,50 @@ func isolationStep(ctx context.Context, o Options, r *Report, lockerAKID string)
 		step.Observed = "No way to open the reference locker was configured."
 		r.Steps = append(r.Steps, step)
 		return
+	case listed != Pass:
+		// A refusal is only evidence of bucket scope when the credential
+		// refused is one some locker was just shown to accept. Step 1 did
+		// not show that, so a 403 here would be the answer every host gives
+		// a credential it does not know.
+		step.Status = NotApplicable
+		step.Observed = "Not applicable: step 1 did not list this account's locker, so no locker was shown to accept these credentials and a refusal here would show nothing about bucket scope. Fix step 1 and verify again."
+		r.Steps = append(r.Steps, step)
+		return
 	}
 	ref := *o.Reference
 	step.Detail = append(step.Detail, fmt.Sprintf("reference locker %s at %s, probe %s", ref.Bucket, ref.Endpoint, ref.Key))
+	if o.Locker.Endpoint == "" {
+		// Without the locker's own endpoint there is nothing to pin the
+		// reference against, and an unpinned refusal is worth nothing: any
+		// host answers a foreign credential with 403. Unverifiable is
+		// not-applicable, never a pass.
+		step.Status = NotApplicable
+		step.Observed = "Not applicable: the storage endpoint this account's locker was listed at is not known here, so the reference locker cannot be pinned to it and a refusal from it would show nothing about bucket scope."
+		r.Steps = append(r.Steps, step)
+		return
+	}
 	// A refusal only proves bucket scope when it comes from the same
 	// storage endpoint that accepted the credentials in step 1. A control
 	// plane pointing this step at some other host — any host answers a
 	// foreign credential with 403 — would otherwise buy a passing report.
-	if o.Locker.Endpoint != "" && !sameEndpoint(o.Locker.Endpoint, ref.Endpoint) {
+	pinned := endpointHost(ref.Endpoint)
+	if pinned == "" || pinned != endpointHost(o.Locker.Endpoint) {
 		step.Status = Fail
-		step.Observed = fmt.Sprintf("The control plane pointed this step at %s, but step 1 listed this account's locker at %s. A refusal from a different endpoint proves nothing about this locker's credentials, so nothing about bucket scope was shown.", ref.Endpoint, o.Locker.Endpoint)
+		step.Observed = fmt.Sprintf("The control plane pointed this step at %s, but step 1 listed this account's locker at %s. A refusal from a different endpoint proves nothing about this locker's credentials, so nothing about bucket scope was shown.", orNone(ref.Endpoint), o.Locker.Endpoint)
 		r.Steps = append(r.Steps, step)
 		return
 	}
-	b, akid, err := o.OpenReference(ctx, ref)
+	probe, err := o.OpenReference(ctx, ref)
 	if err != nil {
 		step.Status = Fail
 		step.Observed = "Could not build a client for the reference locker: " + err.Error() + "."
+		r.Steps = append(r.Steps, step)
+		return
+	}
+	b, akid := probe.Backend, probe.AccessKeyID
+	if b == nil {
+		step.Status = Fail
+		step.Observed = "No client for the reference locker was returned, so nothing was asked of it."
 		r.Steps = append(r.Steps, step)
 		return
 	}
@@ -629,19 +757,79 @@ func isolationStep(ctx context.Context, o Options, r *Report, lockerAKID string)
 		step.Status = Fail
 		observed = append(observed, "Reading the probe object neither succeeded nor was refused as access denied: "+err.Error()+".")
 	}
+	// Everything above is what the S3 client made of the answers. The
+	// verdict is then pinned to the answers themselves, because the two
+	// endpoint strings compared earlier both came from the control plane
+	// and neither says where the request landed.
+	if note, verdict := pinToResponse(pinned, probe.Exchanges); verdict != Pass {
+		if verdict == Fail || step.Status == Pass {
+			step.Status = verdict
+		}
+		observed = append(observed, note)
+	}
 	step.Observed = strings.Join(observed, " ")
 	r.Steps = append(r.Steps, step)
 }
 
-// sameEndpoint compares two endpoint URLs ignoring the scheme and any
-// trailing slash, so https://host, http://host and https://host/ are the
-// same endpoint.
-func sameEndpoint(a, b string) bool { return trimEndpoint(a) == trimEndpoint(b) }
+// pinToResponse judges the isolation step against what the probe's
+// transport actually saw, so the step passes only on a refusal that
+// carried this account's credential to the pinned host and came back as a
+// signed S3 error.
+//
+// It never turns a failure into a pass: the caller applies a Fail always
+// and a NotApplicable only over an otherwise-passing step. NotApplicable
+// is the verdict whenever the pin cannot be made, because an unverifiable
+// pin shows nothing and must not read as proof.
+func pinToResponse(pinned string, exchanges func() []Exchange) (string, Status) {
+	if exchanges == nil {
+		return "The reference probe's client was not instrumented, so where the request landed and what the endpoint answered could not be checked; nothing about bucket scope is claimed.", NotApplicable
+	}
+	seen := exchanges()
+	if len(seen) == 0 {
+		return "The reference probe made no request at all, so this account's credentials were never offered to another bucket and nothing about bucket scope was shown.", NotApplicable
+	}
+	for _, ex := range seen {
+		if ex.RedirectedTo != "" {
+			return fmt.Sprintf("The reference locker answered with a redirect to %s, which the probe refused to follow: a credential is only refused by a bucket if it was sent to that bucket, and this one was not, so nothing about bucket scope was shown.", ex.RedirectedTo), Fail
+		}
+		if ex.Host != pinned {
+			return fmt.Sprintf("The reference probe's request went to %s, not to the pinned endpoint %s, so nothing about this locker's credentials was shown.", orNone(ex.Host), pinned), Fail
+		}
+	}
+	refusals := 0
+	for _, ex := range seen {
+		if ex.Status != http.StatusForbidden {
+			continue
+		}
+		if ex.ErrorCode == "" {
+			return fmt.Sprintf("%s answered 403 with no S3 error body. Any web server answers 403; only an S3 refusal naming its code shows a bucket refused this credential, so nothing about bucket scope was shown.", pinned), NotApplicable
+		}
+		refusals++
+	}
+	if refusals == 0 {
+		return fmt.Sprintf("%s never answered 403 to the probe, so no bucket was observed refusing this account's credentials.", pinned), NotApplicable
+	}
+	return "", Pass
+}
 
-func trimEndpoint(s string) string {
-	s = strings.TrimPrefix(s, "https://")
-	s = strings.TrimPrefix(s, "http://")
-	return strings.TrimRight(s, "/")
+// endpointHost is the host an endpoint URL addresses, lowercased and with
+// its port kept: a different port is a different endpoint. Scheme and any
+// trailing slash are ignored, so https://host, http://host and
+// https://host/ are the same endpoint, and an endpoint written as a bare
+// host is read as one.
+func endpointHost(s string) string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return ""
+	}
+	if !strings.Contains(s, "//") {
+		s = "//" + s
+	}
+	u, err := url.Parse(s)
+	if err != nil || u.Host == "" {
+		return ""
+	}
+	return strings.ToLower(u.Host)
 }
 
 func orNone(s string) string {
@@ -723,7 +911,11 @@ func (r *Report) Summary() string {
 	if r.IsolationChecked() {
 		return "PASS. " + checked + " This account's credentials are refused by a bucket that is not its own."
 	}
-	return "PASS. " + checked + " Whether the credentials reach other buckets was not checked (no reference locker), so nothing is claimed about that."
+	// The isolation step can end up not-applicable for several reasons —
+	// no reference locker, an endpoint that cannot be pinned, a refusal
+	// that decided nothing — and it states its own above, so the summary
+	// points at it rather than guessing which one it was.
+	return "PASS. " + checked + " Whether the credentials reach other buckets was not checked (step 4 above says why), so nothing is claimed about that."
 }
 
 func storageLabel(s string) string {

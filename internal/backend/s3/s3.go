@@ -35,6 +35,11 @@ type Config struct {
 	Credentials CredentialSource
 	// HTTPClient optional for tests (fake server).
 	HTTPClient *http.Client
+	// MaxAttempts caps how many times the SDK tries one request; zero keeps
+	// the SDK default. `rein sync verify`'s reference probe sets it to 1:
+	// it exists to observe one answer, and retrying a refusal only
+	// multiplies the record and the wait.
+	MaxAttempts int
 }
 
 // Client wraps aws s3 client.
@@ -76,6 +81,9 @@ func New(ctx context.Context, cfg Config) (*Client, error) {
 	}
 	if cfg.HTTPClient != nil {
 		opts = append(opts, config.WithHTTPClient(cfg.HTTPClient))
+	}
+	if cfg.MaxAttempts > 0 {
+		opts = append(opts, config.WithRetryMaxAttempts(cfg.MaxAttempts))
 	}
 	awsCfg, err := config.LoadDefaultConfig(ctx, opts...)
 	if err != nil {
