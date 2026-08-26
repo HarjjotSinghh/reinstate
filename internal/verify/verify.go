@@ -65,6 +65,15 @@ const (
 	maxHeaderBytes = 4096
 )
 
+// accessKeyIDNote follows every access key id the report prints. The id
+// is there so a reader can see that the credential step 1's locker
+// accepted is the one step 4's reference locker refused, which is the
+// whole of what step 4 proves — but a reader who has never signed an S3
+// request has no way to know that half of a credential pair is a public
+// identifier, and a report that looks like it is leaking a secret is not
+// a report anyone will show to a third party.
+const accessKeyIDNote = "(shown so steps 1 and 4 can be seen to name the same credential; an access key id is a public identifier, and the secret key and session token are never printed)"
+
 // plaintextMarkers are field names every manifest and snapshot envelope
 // contains in the clear before encryption. Finding one in an object body
 // means the object is not ciphertext.
@@ -83,6 +92,13 @@ type Step struct {
 }
 
 // Report is the verification report as printed and as `--json` emits it.
+//
+// Summary, CheckedObjects and Unopened are serialised because a consumer
+// that decodes the document has to be able to rebuild the same sentence
+// the human output ends with. Without them a decoder sees `outcome: pass`
+// and nothing else, and the honest qualifications the human text was
+// written to carry — which objects were opened, which were judged by
+// name — are lost exactly where an over-claim is easiest to make.
 type Report struct {
 	Version       int    `json:"version"`
 	GeneratedAt   string `json:"generated_at"`
@@ -92,13 +108,27 @@ type Report struct {
 	Steps         []Step `json:"steps"`
 	// Locker names what was checked; shown locally, never uploaded.
 	Locker LockerInfo `json:"locker"`
-	// unopened describes, for Summary, the objects step 1 saw but steps
-	// 2–3 did not fetch. Set by Run; a decoded report has none.
-	unopened string
-	// checked names what step 2 actually fetched ("the index", "the newest
-	// snapshot in the index"), so Summary claims only those objects. Set
-	// by Run; a decoded report has none.
-	checked []string
+	// Summary is the outcome sentence, the one line the whole report comes
+	// down to. It is the text after "OUTCOME: " in the human output.
+	Summary string `json:"summary"`
+	// CheckedObjects names what step 2 actually fetched ("the index", "the
+	// newest snapshot in the index"), so nothing claims an object no step
+	// opened.
+	CheckedObjects []string `json:"checked_objects,omitempty"`
+	// Unopened describes the objects step 1 saw and steps 2–3 did not
+	// fetch, so a passing report never reads as "everything is verified".
+	Unopened string `json:"unopened,omitempty"`
+	// plaintext records that step 2 found an object that is not an age
+	// envelope, or an envelope with plaintext in its body. It decides
+	// whether the summary asks for a security report.
+	plaintext bool
+	// foreignBucket records that step 4 reached a bucket that is not this
+	// account's. It decides the same thing.
+	foreignBucket bool
+	// wrongKey records that every object step 2 proved to be ciphertext
+	// failed to open with the key held here — the mistyped-passphrase
+	// shape, not a security incident.
+	wrongKey bool
 }
 
 // LockerInfo names the bucket the checks ran against.
@@ -136,14 +166,17 @@ func (r *Report) ForUpload() Upload {
 	return u
 }
 
-// Passed reports whether every step passed or did not apply.
+// Passed reports whether every step that could run passed.
 func (r *Report) Passed() bool { return r.Outcome == Pass }
 
-// CheckedObjects names, as one phrase ("the index and the newest snapshot
+// Failed reports whether a step did not hold. It is distinct from
+// !Passed(): a run with nothing to check yet is neither.
+func (r *Report) Failed() bool { return r.Outcome == Fail }
+
+// CheckedPhrase names, as one phrase ("the index and the newest snapshot
 // in the index"), the objects step 2 actually fetched, so sentences
-// outside the report claim only those. Empty for a report decoded from
-// JSON.
-func (r *Report) CheckedObjects() string { return strings.Join(r.checked, " and ") }
+// outside the report claim only those.
+func (r *Report) CheckedPhrase() string { return strings.Join(r.CheckedObjects, " and ") }
 
 // Codec decrypts an envelope; it matches sync.EnvelopeCodec's read half so
 // the CLI can pass the engine's codec through.
@@ -223,18 +256,68 @@ func Run(ctx context.Context, o Options) *Report {
 
 	inv, akid, listed := listStep(ctx, o, r)
 	raw := ciphertextStep(ctx, o, r, inv)
-	r.unopened = describeUnopened(inv, raw)
-	r.checked = describeChecked(raw)
+	r.Unopened = describeUnopened(inv, raw)
+	r.CheckedObjects = describeChecked(raw)
 	decryptStep(ctx, o, r, inv, raw)
 	isolationStep(ctx, o, r, akid, listed)
 
-	r.Outcome = Pass
-	for _, s := range r.Steps {
-		if s.Status == Fail {
-			r.Outcome = Fail
+	r.Outcome = outcomeOf(r.Steps)
+	r.Summary = r.buildSummary()
+	return r
+}
+
+// NotRun returns the report for a run that never started because the
+// control plane could not be reached. On a Hop locker the credentials the
+// first three checks need are minted by the control plane, so an outage
+// stops all four; a reader still deserves to see which four, and to be
+// told the difference between a service being down and a claim not
+// holding. cause is the transport failure, kept verbatim.
+func NotRun(o Options, cause error) *Report {
+	now := time.Now
+	if o.Now != nil {
+		now = o.Now
+	}
+	r := &Report{Version: ReportVersion, GeneratedAt: now().UTC().Format(time.RFC3339), ClientVersion: o.ClientVersion, Storage: o.Storage, Outcome: NotApplicable, Locker: o.Locker}
+	because := "the control plane could not be reached"
+	if cause != nil {
+		because += " (" + cause.Error() + ")"
+	}
+	for _, s := range []struct{ id, name, observed string }{
+		{StepList, "List the locker with this device's credentials",
+			"Could not run: " + because + ", and a Hop locker is listed with credentials the control plane mints for this device, so there were no credentials to list it with."},
+		{StepCiphertext, "Fetch an object and check it is ciphertext",
+			"Could not run: no object could be fetched, because the locker could not be opened (see step 1)."},
+		{StepDecrypt, "Decrypt the object locally",
+			"Could not run: no object was fetched (see step 2). The key this step would have used never leaves this device and was never involved."},
+		{StepIsolation, "Prove this account's credentials are refused from another bucket",
+			"Could not run: " + because + ", so it could not say where its reference locker is."},
+	} {
+		r.Steps = append(r.Steps, Step{ID: s.id, Name: s.name, Did: "Nothing: the check did not start.", Observed: s.observed, Status: NotApplicable})
+	}
+	r.Summary = "NOT VERIFIED. Nothing was checked, because " + because + ". No step failed and nothing here says anything about what the locker holds. Run rein sync verify again when the control plane is reachable."
+	return r
+}
+
+// outcomeOf folds the step verdicts into the report's own. A single
+// failed step fails the report; a run where no step could reach a verdict
+// at all — a profile that has never pushed — is neither a pass nor a
+// failure, and saying "pass" there would be the report's largest possible
+// over-claim.
+func outcomeOf(steps []Step) Status {
+	ran := false
+	for _, s := range steps {
+		switch s.Status {
+		case Fail:
+			return Fail
+		case NotApplicable:
+		default:
+			ran = true
 		}
 	}
-	return r
+	if !ran {
+		return NotApplicable
+	}
+	return Pass
 }
 
 // describeUnopened says what step 1 listed that no later step fetched, so
@@ -314,12 +397,12 @@ func listStep(ctx context.Context, o Options, r *Report) (*inventory, string, St
 	if o.CredentialID != nil {
 		if id, idErr := o.CredentialID(ctx); idErr == nil && id != "" {
 			akid = id
-			step.Detail = append(step.Detail, "signed with access key id "+akid)
+			step.Detail = append(step.Detail, "signed with access key id "+akid+" "+accessKeyIDNote)
 		}
 	}
 	if err != nil {
 		step.Status = Fail
-		step.Observed = "The listing was refused or failed: " + err.Error()
+		step.Observed = "The listing was refused or failed: " + withCause(explainBackendError(err), err) + "."
 		r.Steps = append(r.Steps, step)
 		return nil, akid, step.Status
 	}
@@ -353,8 +436,12 @@ func listStep(ctx context.Context, o Options, r *Report) (*inventory, string, St
 		parts = append(parts, fmt.Sprintf("%d other object(s)", n))
 	}
 	if !inv.manifest {
-		step.Status = Fail
-		step.Observed = fmt.Sprintf("%d object(s), but no %s: nothing has been pushed from this profile yet. Run rein push first, then verify again.", inv.total, manifestObject)
+		// Nothing to check is not a failed check. A device that has not
+		// pushed yet is the ordinary state of a new install, and reporting
+		// it as a failure is how the command ended up telling first-time
+		// users to report a security incident.
+		step.Status = NotApplicable
+		step.Observed = fmt.Sprintf("%d object(s) under this prefix, and no %s: nothing has been pushed from this profile yet, so there is nothing to check. Run rein push first, then rein sync verify again.", inv.total, manifestObject)
 	} else {
 		step.Status = Pass
 		step.Observed = fmt.Sprintf("%d object(s): %s.", inv.total, strings.Join(parts, "; "))
@@ -381,9 +468,19 @@ type fetched struct {
 func ciphertextStep(ctx context.Context, o Options, r *Report, inv *inventory) []fetched {
 	step := Step{ID: StepCiphertext, Name: "Fetch an object and check it is ciphertext",
 		Did: "Downloaded the index object and, when the index names one, the snapshot it records as updated last, and looked at the raw bytes for the age encryption header and for any field name that appears in the plaintext."}
-	if inv == nil || !inv.manifest {
-		step.Status = Fail
-		step.Observed = "Not run: there is no object to fetch (see step 1)."
+	// A step that never ran is not a step that failed. Which of the two it
+	// was is the difference between "you have not pushed yet" and "your
+	// locker is not what we said it is", and the report has to keep them
+	// apart: step 1 has already said which, so this step points at it.
+	if inv == nil {
+		step.Status = NotApplicable
+		step.Observed = "Could not run: the locker could not be listed, so there was nothing to fetch (see step 1)."
+		r.Steps = append(r.Steps, step)
+		return nil
+	}
+	if !inv.manifest {
+		step.Status = NotApplicable
+		step.Observed = "Not run: the locker holds no index yet, so there is no object to fetch (see step 1)."
 		r.Steps = append(r.Steps, step)
 		return nil
 	}
@@ -394,13 +491,14 @@ func ciphertextStep(ctx context.Context, o Options, r *Report, inv *inventory) [
 		body, err := fetch(ctx, o.Backend, key(o.Prefix, name))
 		if err != nil {
 			step.Status = Fail
-			observed = append(observed, fmt.Sprintf("%s could not be fetched: %v", name, err))
+			observed = append(observed, fmt.Sprintf("%s could not be fetched: %s.", name, withCause(explainBackendError(err), err)))
 			return nil
 		}
 		got = append(got, fetched{name: name, label: label, body: body})
 		verdict, ok := inspectCiphertext(body)
 		if !ok {
 			step.Status = Fail
+			r.plaintext = true
 		}
 		observed = append(observed, fmt.Sprintf("%s (%d bytes): %s", name, len(body), verdict))
 		if head, _, found := bytes.Cut(body, []byte("\n")); found && len(head) < 200 {
@@ -526,7 +624,7 @@ func decryptStep(_ context.Context, o Options, r *Report, inv *inventory, got []
 	step := Step{ID: StepDecrypt, Name: "Decrypt the object locally",
 		Did: "Opened the same bytes on this device with the key held here (the root key for Hop, the passphrase for BYO storage) and read what they contain. Nothing was sent anywhere."}
 	if inv == nil || len(got) == 0 {
-		step.Status = Fail
+		step.Status = NotApplicable
 		step.Observed = "Not run: no object was fetched (see step 2)."
 		r.Steps = append(r.Steps, step)
 		return
@@ -538,14 +636,17 @@ func decryptStep(_ context.Context, o Options, r *Report, inv *inventory, got []
 		return
 	}
 	step.Status = Pass
+	opened, refused := 0, 0
 	var observed []string
 	for _, f := range got {
 		plain, err := o.Codec.DecryptReader(bytes.NewReader(f.body), o.Keys)
 		if err != nil {
 			step.Status = Fail
-			observed = append(observed, fmt.Sprintf("%s did not decrypt with this device's key: %v.", f.name, err))
+			refused++
+			observed = append(observed, fmt.Sprintf("%s did not decrypt: %s.", f.name, withCause(explainDecryptError(o.Storage, f.body, err), err)))
 			continue
 		}
+		opened++
 		if f.name == manifestObject {
 			summary, detail, err := describeManifest(plain)
 			if err != nil {
@@ -566,6 +667,12 @@ func decryptStep(_ context.Context, o Options, r *Report, inv *inventory, got []
 		observed = append(observed, summary)
 		step.Detail = append(step.Detail, detail...)
 	}
+	// Every envelope step 2 proved to be ciphertext refused this device's
+	// key, and none opened. That is the shape of a key that does not
+	// belong to these objects — a second passphrase, a device enrolled
+	// against another account — not the shape of an operator holding
+	// plaintext, and the summary must not confuse the two.
+	r.wrongKey = refused > 0 && opened == 0
 	step.Observed = strings.Join(observed, " ")
 	r.Steps = append(r.Steps, step)
 }
@@ -636,9 +743,13 @@ func describeSnapshot(name string, plain io.Reader) (string, []string, error) {
 		return "", nil, fmt.Errorf("the payload (%d bytes, sha256 %s…) does not match the envelope (%d bytes, sha256 %s…)", n, sum[:12], file.Size, short(file.SHA256))
 	}
 	// The summary is uploaded with the report; the agent, session, size
-	// and file are local detail.
+	// and file are local detail. The project id and the archive path are
+	// redacted even so: this report is written to be handed to somebody
+	// else, and both carry the local project directory, which the agent
+	// harnesses store as a flattened absolute path.
 	summary := fmt.Sprintf("%s decrypted into a snapshot envelope whose payload sha256 matches the envelope.", name)
-	detail := []string{fmt.Sprintf("%s: agent %s, session %s, project %s, created %s on %s, %d file(s), payload %d bytes, file %s", name, env.Agent, env.SessionID, env.ProjectID, env.CreatedAt, env.SourcePlatform, len(env.Files), n, file.Path)}
+	detail := []string{fmt.Sprintf("%s: agent %s, session %s, project %s, created %s on %s, %d file(s), payload %d bytes, file %s",
+		name, env.Agent, env.SessionID, redactLocalPath(env.ProjectID), env.CreatedAt, env.SourcePlatform, len(env.Files), n, redactLocalPath(file.Path))}
 	return summary, detail, nil
 }
 
@@ -656,6 +767,14 @@ func isolationStep(ctx context.Context, o Options, r *Report, lockerAKID string,
 		step.Observed = "Not applicable: " + o.ReferenceErr.Error() + "."
 		r.Steps = append(r.Steps, step)
 		return
+	case o.Reference == nil && hop.Unreachable(o.ReferenceErr):
+		// A control plane nobody could reach is a check that did not run,
+		// not a check that failed. It says nothing either way about where
+		// this account's credentials reach, and the summary says so.
+		step.Status = NotApplicable
+		step.Observed = "Could not run: the control plane could not be reached, so it could not say where its reference locker is and nothing about bucket scope was shown (" + o.ReferenceErr.Error() + "). The first three steps above ran entirely against storage and the key on this device and stand on their own; run rein sync verify again when the control plane is reachable."
+		r.Steps = append(r.Steps, step)
+		return
 	case o.Reference == nil:
 		step.Status = Fail
 		step.Observed = "The control plane did not say where its reference locker is"
@@ -668,6 +787,15 @@ func isolationStep(ctx context.Context, o Options, r *Report, lockerAKID string,
 	case o.OpenReference == nil:
 		step.Status = Fail
 		step.Observed = "No way to open the reference locker was configured."
+		r.Steps = append(r.Steps, step)
+		return
+	case listed == NotApplicable:
+		// Step 1 found nothing to check. There is a locker and it accepted
+		// the credentials, but with no push behind it this step would be
+		// checking the scope of a credential on an empty bucket, which is
+		// not what the report is for.
+		step.Status = NotApplicable
+		step.Observed = "Not applicable: nothing has been pushed from this profile yet (see step 1), so there is nothing to verify. Run rein push, then rein sync verify again."
 		r.Steps = append(r.Steps, step)
 		return
 	case listed != Pass:
@@ -718,7 +846,7 @@ func isolationStep(ctx context.Context, o Options, r *Report, lockerAKID string,
 		return
 	}
 	if akid != "" {
-		step.Detail = append(step.Detail, "signed with access key id "+akid)
+		step.Detail = append(step.Detail, "signed with access key id "+akid+" "+accessKeyIDNote)
 	}
 	step.Status = Pass
 	var observed []string
@@ -735,13 +863,14 @@ func isolationStep(ctx context.Context, o Options, r *Report, lockerAKID string,
 		observed = append(observed, "Listing the reference locker was refused as access denied.")
 	case errors.Is(err, backend.ErrCredentialRejected):
 		step.Status = Fail
-		observed = append(observed, "Listing the reference locker failed because the credential itself was rejected ("+err.Error()+"), so nothing about bucket scope was shown.")
+		observed = append(observed, "Listing the reference locker failed because the credential itself was rejected — "+withCause(explainBackendError(err), err)+" — and a credential no bucket accepts is refused everywhere, so nothing about bucket scope was shown.")
 	case err == nil:
 		step.Status = Fail
+		r.foreignBucket = true
 		observed = append(observed, fmt.Sprintf("Listing the reference locker SUCCEEDED and returned %d object(s); this account's credentials reach a bucket that is not its own.", len(objects)))
 	default:
 		step.Status = Fail
-		observed = append(observed, "Listing the reference locker neither succeeded nor was refused as access denied: "+err.Error()+".")
+		observed = append(observed, "Listing the reference locker neither succeeded nor was refused as access denied: "+withCause(explainBackendError(err), err)+".")
 	}
 	body, err := fetch(ctx, b, ref.Key)
 	switch {
@@ -749,13 +878,14 @@ func isolationStep(ctx context.Context, o Options, r *Report, lockerAKID string,
 		observed = append(observed, "Reading the probe object was refused as access denied.")
 	case errors.Is(err, backend.ErrCredentialRejected):
 		step.Status = Fail
-		observed = append(observed, "Reading the probe object failed because the credential itself was rejected ("+err.Error()+"), so nothing about bucket scope was shown.")
+		observed = append(observed, "Reading the probe object failed because the credential itself was rejected — "+withCause(explainBackendError(err), err)+" — and a credential no bucket accepts is refused everywhere, so nothing about bucket scope was shown.")
 	case err == nil:
 		step.Status = Fail
+		r.foreignBucket = true
 		observed = append(observed, fmt.Sprintf("Reading the probe object SUCCEEDED (%d bytes); this account's credentials can read another bucket's contents.", len(body)))
 	default:
 		step.Status = Fail
-		observed = append(observed, "Reading the probe object neither succeeded nor was refused as access denied: "+err.Error()+".")
+		observed = append(observed, "Reading the probe object neither succeeded nor was refused as access denied: "+withCause(explainBackendError(err), err)+".")
 	}
 	// Everything above is what the S3 client made of the answers. The
 	// verdict is then pinned to the answers themselves, because the two
@@ -871,7 +1001,7 @@ func (r *Report) WriteHuman(w io.Writer) {
 		}
 		fmt.Fprintf(w, "  Result:         %s\n\n", verdictLabel(s.Status))
 	}
-	fmt.Fprintln(w, "OUTCOME: "+r.Summary())
+	fmt.Fprintln(w, "OUTCOME: "+r.Summary)
 }
 
 // IsolationChecked reports whether the isolation step ran and passed, as
@@ -886,27 +1016,44 @@ func (r *Report) IsolationChecked() bool {
 	return false
 }
 
-// Summary is the short outcome for a non-expert. It claims only what the
-// steps observed: only the fetched objects are called ciphertext (the
-// rest were judged by name in step 1), nothing is said about which device
-// sealed them, and the isolation clause appears only when the isolation
-// step ran and passed.
-func (r *Report) Summary() string {
-	if r.Outcome != Pass {
-		return "FAIL. At least one step did not hold; read the failed step above. If the locker is a Hop locker, this is worth reporting to security@reinstate.dev."
+// buildSummary writes the short outcome for a non-expert. It claims only
+// what the steps observed: only the fetched objects are called ciphertext
+// (the rest were judged by name in step 1), nothing is said about which
+// device sealed them, and the isolation clause appears only when the
+// isolation step ran and passed.
+//
+// A failure is not one thing, and the three it can be want three
+// different next steps. Telling a new user who has pushed nothing, or
+// someone who mistyped a passphrase, to report a security incident is
+// worse than saying nothing: it teaches them that this command's alarm
+// means nothing, which is precisely the alarm that has to be believed the
+// one time it fires for real.
+func (r *Report) buildSummary() string {
+	switch {
+	case r.Outcome == NotApplicable:
+		return "NOT YET VERIFIABLE. Nothing has been pushed from this profile yet, so the locker holds nothing to check. Run rein push, then rein sync verify again."
+	case r.Outcome == Fail && (r.plaintext || r.foreignBucket):
+		// The two findings this command exists to catch: something other
+		// than an age envelope in the locker, or a credential that reached
+		// a bucket that is not this account's.
+		return "FAIL. " + r.alarm() + " This is what these checks exist to catch. Keep this report; if the locker is a Hop locker, send it to security@reinstate.dev."
+	case r.Outcome == Fail && r.wrongKey:
+		return "FAIL. The objects in the locker are ciphertext, but " + r.keyAdvice() + " Nothing here says the locker holds anything it should not; it says this device cannot read it."
+	case r.Outcome == Fail:
+		return "FAIL. At least one step did not hold. The failed step above names what was seen and what to do about it."
 	}
-	names := r.checked
+	names := r.CheckedObjects
 	if len(names) == 0 {
-		// A report decoded from JSON carries no record of what step 2
-		// fetched; claim nothing more specific than "fetched".
+		// A report decoded from an older document carries no record of what
+		// step 2 fetched; claim nothing more specific than "fetched".
 		names = []string{"the fetched objects"}
 	}
 	checked := fmt.Sprintf("The objects checked (%s) are ciphertext this device can open.", strings.Join(names, " and "))
-	if len(r.checked) == 1 {
-		checked = fmt.Sprintf("The object checked (%s) is ciphertext this device can open.", r.checked[0])
+	if len(names) == 1 {
+		checked = fmt.Sprintf("The object checked (%s) is ciphertext this device can open.", names[0])
 	}
-	if r.unopened != "" {
-		checked += " " + r.unopened
+	if r.Unopened != "" {
+		checked += " " + r.Unopened
 	}
 	if r.IsolationChecked() {
 		return "PASS. " + checked + " This account's credentials are refused by a bucket that is not its own."
@@ -916,6 +1063,29 @@ func (r *Report) Summary() string {
 	// that decided nothing — and it states its own above, so the summary
 	// points at it rather than guessing which one it was.
 	return "PASS. " + checked + " Whether the credentials reach other buckets was not checked (step 4 above says why), so nothing is claimed about that."
+}
+
+// alarm names, in one clause, the finding that warrants a security report.
+func (r *Report) alarm() string {
+	switch {
+	case r.plaintext && r.foreignBucket:
+		return "An object in the locker is not encrypted, and this account's credentials reached a bucket that is not its own."
+	case r.plaintext:
+		return "An object in the locker is not encrypted: something wrote readable bytes where only an age envelope belongs."
+	default:
+		return "This account's credentials reached a bucket that is not its own, so they are not scoped to this locker."
+	}
+}
+
+// keyAdvice names the likeliest cause of a key that does not open the
+// account's own objects, and what to do about it. It is storage-specific
+// because the key is: a passphrase the person types on BYO storage, a
+// root key the account holds on Hop.
+func (r *Report) keyAdvice() string {
+	if r.Storage == StorageHop {
+		return "the root key this device holds did not open them. The usual cause is a device enrolled against a different account, or one that never received the current key generation: run rein devices to see whether the keyring holds a wrap for this device, then rein account recover with your recovery code, or rein account join and approve it from an enrolled device. If this device has opened these objects before and nothing about the account has changed, keep this report and send it to security@reinstate.dev."
+	}
+	return "the passphrase this device used did not open them. The usual cause is a different passphrase than the one given at rein init — it is never stored anywhere, so a typo or a second passphrase produces exactly this. Try again with the passphrase this profile was created with. If you are certain it is the right one, the objects may have been altered in the bucket; keep this report and send it to security@reinstate.dev."
 }
 
 func storageLabel(s string) string {

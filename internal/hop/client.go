@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -131,6 +132,28 @@ func (e *Error) Error() string {
 
 // ErrUnauthorized reports a token the control plane no longer accepts.
 var ErrUnauthorized = errors.New("device token rejected by the control plane")
+
+// Unreachable reports whether err is a failure to reach the control plane
+// at all — no DNS answer, no route, no TLS handshake, no reply in time —
+// as opposed to an answer it gave. The distinction matters wherever a
+// caller has to tell a check that could not run from a check that failed:
+// a service nobody could reach says nothing about the property being
+// checked, and reporting it as a failure of that property is a false
+// alarm.
+//
+// Every non-2xx answer leaves do as *Error and every transport failure as
+// the *url.Error net/http wraps it in, so the two are cleanly separable.
+func Unreachable(err error) bool {
+	if err == nil {
+		return false
+	}
+	var answered *Error
+	if errors.As(err, &answered) {
+		return false
+	}
+	var transport *url.Error
+	return errors.As(err, &transport)
+}
 
 // StartLogin opens a login session. For email sign-in the link is sent to
 // addr and VerificationURL stays empty.

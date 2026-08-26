@@ -151,8 +151,8 @@ func TestIsolationIsPinnedToTheResponse(t *testing.T) {
 			} else if r.Outcome != want {
 				t.Fatalf("outcome %s, want %s", r.Outcome, want)
 			}
-			if tc.status == NotApplicable && strings.Contains(r.Summary(), "refused by a bucket") {
-				t.Fatalf("an inconclusive probe still claimed isolation: %q", r.Summary())
+			if tc.status == NotApplicable && strings.Contains(r.Summary, "refused by a bucket") {
+				t.Fatalf("an inconclusive probe still claimed isolation: %q", r.Summary)
 			}
 		})
 	}
@@ -195,8 +195,8 @@ func TestIsolationRefusesARedirectedProbe(t *testing.T) {
 	if elsewhere != 0 {
 		t.Fatalf("the locker credential was sent to the redirect target %d time(s)", elsewhere)
 	}
-	if strings.Contains(r.Summary(), "refused by a bucket that is not its own") {
-		t.Fatalf("summary claims isolation: %q", r.Summary())
+	if strings.Contains(r.Summary, "refused by a bucket that is not its own") {
+		t.Fatalf("summary claims isolation: %q", r.Summary)
 	}
 }
 

@@ -8,19 +8,20 @@
     "client_version": "reinstate <version>",
     "generated_at": "2026-08-23T12:10:00Z",
     "locker": {
-      "bucket": "memory:<home>/cache/memory-backend",
-      "prefix": "team/a"
+      "bucket": "lk-0000000000000000000000test",
+      "endpoint": "<endpoint>"
     },
     "outcome": "pass",
     "steps": [
       {
         "detail": [
+          "signed with access key id <access-key-id> (shown so steps 1 and 4 can be seen to name the same credential; an access key id is a public identifier, and the secret key and session token are never printed)",
           "snapshots/<snapshot-id>.age"
         ],
         "did": "Asked the storage endpoint for every object under this account's prefix (following every listing page), signed with the credentials this device uses to push.",
         "id": "list",
         "name": "List the locker with this device's credentials",
-        "observed": "2 object(s): manifest.age (the encrypted index); 1 snapshot(s) under snapshots/ named by opaque ids.",
+        "observed": "3 object(s): manifest.age (the encrypted index); keyring.v1.json (the root key, wrapped per device; holds no usable key on its own); 1 snapshot(s) under snapshots/ named by opaque ids.",
         "status": "pass"
       },
       {
@@ -31,7 +32,7 @@
         "did": "Downloaded the index object and, when the index names one, the snapshot it records as updated last, and looked at the raw bytes for the age encryption header and for any field name that appears in the plaintext.",
         "id": "ciphertext",
         "name": "Fetch an object and check it is ciphertext",
-        "observed": "manifest.age (<n> bytes): begins with the age v1 header (recipient scrypt (passphrase)); no plaintext field name appears anywhere in the body. snapshots/<snapshot-id>.age (<n> bytes): begins with the age v1 header (recipient scrypt (passphrase)); no plaintext field name appears anywhere in the body.",
+        "observed": "manifest.age (<n> bytes): begins with the age v1 header (recipient X25519 (root key)); no plaintext field name appears anywhere in the body. snapshots/<snapshot-id>.age (<n> bytes): begins with the age v1 header (recipient X25519 (root key)); no plaintext field name appears anywhere in the body.",
         "status": "pass"
       },
       {
@@ -47,16 +48,20 @@
         "status": "pass"
       },
       {
+        "detail": [
+          "reference locker lk-0000000000000000000000refr at <endpoint>, probe reference/probe.txt",
+          "signed with access key id <access-key-id> (shown so steps 1 and 4 can be seen to name the same credential; an access key id is a public identifier, and the secret key and session token are never printed)"
+        ],
         "did": "Asked the control plane for its reference locker (a bucket the operator owns, holding one probe object), then tried to list it and read the probe with the same credentials that just listed this account's locker, over a client that refuses to follow a redirect anywhere else.",
         "id": "isolation",
         "name": "Prove this account's credentials are refused from another bucket",
-        "observed": "Not applicable: BYO storage has no control plane and no reference locker. Whether your credentials reach other buckets is decided by your own bucket policy.",
-        "status": "not-applicable"
+        "observed": "Listing the reference locker was refused as access denied. Reading the probe object was refused as access denied.",
+        "status": "pass"
       }
     ],
-    "storage": "byo",
-    "summary": "PASS. The objects checked (the index and the newest snapshot in the index) are ciphertext this device can open. No other object is in the locker. Whether the credentials reach other buckets was not checked (step 4 above says why), so nothing is claimed about that.",
-    "unopened": "No other object is in the locker.",
+    "storage": "hop",
+    "summary": "PASS. The objects checked (the index and the newest snapshot in the index) are ciphertext this device can open. Not opened and judged by name only: the wrapped keyring. This account's credentials are refused by a bucket that is not its own.",
+    "unopened": "Not opened and judged by name only: the wrapped keyring.",
     "version": 1
   }
 }

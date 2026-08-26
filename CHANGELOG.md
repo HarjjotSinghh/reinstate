@@ -215,9 +215,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   snapshot" when the index could not be opened to say — and lists what was
   judged by name. Each step prints what was done, what was
   seen, and PASS, FAIL, or NOT APPLICABLE; `--json` emits the report as
-  data; exit `4` on any failed step. A tampered object fails: plaintext in
+  data, including `report.summary` (the outcome sentence itself),
+  `report.checked_objects` and `report.unopened`, so a consumer that
+  decodes the document rebuilds exactly the sentence a person reads rather
+  than inferring "everything verified" from `outcome: pass`. Exit `7`
+  (safety) on any failed step. A tampered object fails: plaintext in
   place of ciphertext at step 2, a flipped byte at step 3. BYO storage runs
-  the first three steps and reports the fourth as not applicable. On a Hop
+  the first three steps and reports the fourth as not applicable.
+  A check that could not run is never reported as a check that failed. A
+  profile that has pushed nothing yet marks all four steps **not
+  applicable**, ends `OUTCOME: NOT YET VERIFIABLE`, exits `0`, and posts
+  nothing — there is no verdict for the console to show. A control plane
+  that cannot be reached prints a report saying which checks did not run
+  and why (a Hop locker is listed with credentials the control plane mints,
+  so an outage stops all four) and exits `1`, the code every other hosted
+  command uses for that, instead of a bare dial error. And the outcome
+  sentence now tells the three failures apart: objects that are ciphertext
+  the key here cannot open names the likeliest cause (a different
+  passphrase than the one given at `rein init`; a device enrolled against
+  another account) and what to try; only plaintext in the locker or a
+  credential that reached another bucket asks for a report to
+  `security@reinstate.dev`.
+  Every error the report shows names a cause in ordinary words and keeps
+  the underlying error after it: plaintext reads as "not an age envelope at
+  all" rather than age's "file is empty", a key that does not match reads
+  as the key rather than three layers of recipient-block prose, and a bare
+  S3 code (`InvalidAccessKeyId`) is glossed. The local project id and
+  archive path are redacted, because the harnesses store them as an
+  absolute path flattened into one directory name and this report exists to
+  be shown to somebody else; the access key id is still printed, with a
+  line saying why it is there and that it is not the secret half. On a Hop
   profile the step results — opaque object names and object counts only,
   never a session id, project path, agent name, session count, or content —
   are posted to the control plane

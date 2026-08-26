@@ -182,12 +182,12 @@ func TestRunPassesAndStripsDetailForUpload(t *testing.T) {
 			t.Fatalf("upload carries %q: %s", s, raw)
 		}
 	}
-	if !r.IsolationChecked() || !strings.Contains(r.Summary(), "refused by a bucket that is not its own") {
-		t.Fatalf("summary %q", r.Summary())
+	if !r.IsolationChecked() || !strings.Contains(r.Summary, "refused by a bucket that is not its own") {
+		t.Fatalf("summary %q", r.Summary)
 	}
 	// The summary claims only what was fetched and says nothing about
 	// which device sealed the objects.
-	if sum := r.Summary(); !strings.Contains(sum, "The objects checked (the index and the newest snapshot in the index) are ciphertext this device can open. No other object is in the locker.") ||
+	if sum := r.Summary; !strings.Contains(sum, "The objects checked (the index and the newest snapshot in the index) are ciphertext this device can open. No other object is in the locker.") ||
 		strings.Contains(sum, "Everything in the locker") || strings.Contains(sum, "sealed on this device") {
 		t.Fatalf("summary over-claims: %q", sum)
 	}
@@ -215,11 +215,11 @@ func TestRunFailures(t *testing.T) {
 		{"age header then plaintext", func(_ *Options, s *memory.Store) {
 			put(t, s, "manifest.age", []byte("age-encryption.org/v1\n-> X25519 x\n{\"sessions\":{}}"))
 		}, StepCiphertext, `plaintext field "sessions" appears`},
-		{"wrong key", func(o *Options, _ *memory.Store) { o.Keys = other }, StepDecrypt, "did not decrypt with this device's key"},
+		{"wrong key", func(o *Options, _ *memory.Store) { o.Keys = other }, StepDecrypt, "the key held on this device is not one of the object's recipients"},
 		{"no key", func(o *Options, _ *memory.Store) { o.Keys = nil }, StepDecrypt, "No key is available"},
-		{"nothing pushed", func(_ *Options, s *memory.Store) {
-			_ = s.Delete(context.Background(), "manifest.age")
-		}, StepList, "nothing has been pushed"},
+		{"listing refused", func(o *Options, _ *memory.Store) {
+			o.Backend = refusing{err: &backend.Refusal{Code: "AccessDenied"}}
+		}, StepList, "the storage endpoint recognised the credential and refused the request anyway (AccessDenied)"},
 		{"reference reachable", func(o *Options, _ *memory.Store) {
 			o.OpenReference = openRef(leaky, "AKIAHOP1",
 				Exchange{Host: "s3.example", Status: 200},
@@ -352,14 +352,14 @@ func TestSummaryClaimsOnlyWhatWasFetched(t *testing.T) {
 	if !r.Passed() {
 		t.Fatalf("report %+v", r)
 	}
-	sum := r.Summary()
+	sum := r.Summary
 	if !strings.Contains(sum, "The object checked (the index) is ciphertext this device can open.") {
 		t.Fatalf("summary does not name only the index: %q", sum)
 	}
 	if strings.Contains(sum, "newest snapshot") {
 		t.Fatalf("summary names a snapshot that was never fetched: %q", sum)
 	}
-	if got := r.CheckedObjects(); got != "the index" {
+	if got := r.CheckedPhrase(); got != "the index" {
 		t.Fatalf("CheckedObjects() = %q", got)
 	}
 }
@@ -384,7 +384,7 @@ func TestIsolationFailsWhenTheCredentialItselfIsRejected(t *testing.T) {
 			if r.Outcome != Fail || step.Status != Fail || r.IsolationChecked() {
 				t.Fatalf("%s passed isolation: %+v", code, step)
 			}
-			for _, want := range []string{"the credential itself was rejected (", code, "so nothing about bucket scope was shown"} {
+			for _, want := range []string{"the credential itself was rejected — ", code, "a credential no bucket accepts is refused everywhere, so nothing about bucket scope was shown"} {
 				if strings.Count(step.Observed, want) < 1 {
 					t.Fatalf("%s: observed %q lacks %q", code, step.Observed, want)
 				}
@@ -419,9 +419,11 @@ func TestIsolationNeedsStepOneToHavePassed(t *testing.T) {
 	tests := []struct {
 		name  string
 		store func() *memory.Store
+		step1 Status
+		why   string
 	}{
-		{"the listing was refused", func() *memory.Store { return nil }},
-		{"nothing has been pushed yet", func() *memory.Store { return memory.New() }},
+		{"the listing was refused", func() *memory.Store { return nil }, Fail, "step 1 did not list this account's locker"},
+		{"nothing has been pushed yet", func() *memory.Store { return memory.New() }, NotApplicable, "nothing has been pushed from this profile yet"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -433,14 +435,14 @@ func TestIsolationNeedsStepOneToHavePassed(t *testing.T) {
 				Locker:        LockerInfo{Endpoint: "https://s3.example", Bucket: "lk-1"},
 				Reference:     &hop.Reference{Endpoint: "https://s3.example", Bucket: "lk-ref", Key: "reference/probe.txt"},
 				OpenReference: openRef(denied, "AKIAHOP1"), CredentialID: credential("AKIAHOP1")})
-			if r.Steps[0].Status != Fail {
-				t.Fatalf("step 1 %+v; this test needs it to fail", r.Steps[0])
+			if r.Steps[0].Status != tc.step1 {
+				t.Fatalf("step 1 %+v; this test needs it %s", r.Steps[0], tc.step1)
 			}
 			step := r.Steps[3]
 			if step.Status != NotApplicable || r.IsolationChecked() {
-				t.Fatalf("isolation claimed on a failed step 1: %+v", step)
+				t.Fatalf("isolation claimed without a passing step 1: %+v", step)
 			}
-			if !strings.Contains(step.Observed, "step 1 did not list this account's locker") {
+			if !strings.Contains(step.Observed, tc.why) {
 				t.Fatalf("the step does not say why it did not apply: %q", step.Observed)
 			}
 		})
@@ -488,7 +490,7 @@ func TestCiphertextStepFetchesTheSnapshotTheIndexCallsNewest(t *testing.T) {
 	}
 	// Having chosen by recency, the report may say so — and must count the
 	// two it left alone without calling them older than anything.
-	sum := r.Summary()
+	sum := r.Summary
 	if !strings.Contains(sum, "The objects checked (the index and the newest snapshot in the index) are ciphertext this device can open.") ||
 		!strings.Contains(sum, "2 other age-named snapshot(s)") {
 		t.Fatalf("summary %q", sum)
@@ -525,11 +527,11 @@ func TestCiphertextStepClaimsNoRecencyItCannotSee(t *testing.T) {
 				OpenReference: openRef(denied, "AKIAHOP1"), CredentialID: credential("AKIAHOP1")}
 			tc.mutate(store, &o)
 			r := Run(context.Background(), o)
-			if got := r.CheckedObjects(); got != "the index and one snapshot" {
+			if got := r.CheckedPhrase(); got != "the index and one snapshot" {
 				t.Fatalf("CheckedObjects() = %q; a snapshot chosen without the index must not be called the newest", got)
 			}
-			if strings.Contains(r.Summary(), "newest") {
-				t.Fatalf("summary claims recency nothing observed: %q", r.Summary())
+			if strings.Contains(r.Summary, "newest") {
+				t.Fatalf("summary claims recency nothing observed: %q", r.Summary)
 			}
 		})
 	}

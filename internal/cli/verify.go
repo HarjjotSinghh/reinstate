@@ -46,19 +46,41 @@ credentials are refused from a bucket the operator owns (the reference
 locker). BYO storage runs the first three checks; the fourth is reported as
 not applicable.
 
-The exit status is 0 when every step passed or did not apply and ` + "`" + `4` + "`" + ` (safety)
-when a step failed. On a Hop locker the step results (never object contents
-or session names) are posted to the control plane for the account console
-unless --post=false is given.`,
+The exit status is 0 when every step passed or did not apply — including a
+profile that has pushed nothing yet, where there is nothing to check — and
+` + "`" + `7` + "`" + ` (safety) when a step failed. A control plane that cannot be reached
+exits ` + "`" + `1` + "`" + ` after printing the report, because a check that could not run is
+not a check that failed. On a Hop locker the step results (never object
+contents or session names) are posted to the control plane for the account
+console unless --post=false is given.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			eng, cfg, home, err := engineFromConfig(cmd, "")
 			if err != nil {
+				// A Hop locker is opened with credentials the control plane
+				// mints, so a control plane nobody can reach stops every check
+				// before it starts. That is still worth a report: a bare dial
+				// error leaves the reader unable to tell an outage from a
+				// finding, which is the one distinction this command exists to
+				// make. Print what could and could not run, then exit with the
+				// runtime code every other hosted command uses for an
+				// unreachable control plane.
+				if report := unreachableReport(cmd, cfg); report != nil {
+					if asJSON {
+						if jsonErr := WriteJSON(cmd.OutOrStdout(), map[string]any{"report": report, "posted": false}); jsonErr != nil {
+							return jsonErr
+						}
+					} else {
+						report.WriteHuman(cmd.OutOrStdout())
+					}
+				}
 				return err
 			}
 			hosted := hostedFrom(cmd)
 			report := runVerification(cmd, eng, cfg, home, hosted)
 			posted := false
-			if hosted != nil && post {
+			// Nothing was checked, so there is no verdict to show in the
+			// account console and nothing to post.
+			if hosted != nil && post && report.Outcome != verify.NotApplicable {
 				if err := postVerification(cmd, report); err != nil {
 					PrintHuman(cmd.ErrOrStderr(), "note: could not post the report to the control plane: %v", err)
 				} else {
@@ -75,7 +97,7 @@ unless --post=false is given.`,
 					PrintHuman(cmd.OutOrStdout(), "Step results posted to the control plane for the account console.")
 				}
 			}
-			if !report.Passed() {
+			if report.Failed() {
 				return NewExitError(ExitSafety, "verification failed; see the report")
 			}
 			return nil
@@ -84,6 +106,27 @@ unless --post=false is given.`,
 	cmd.Flags().BoolVar(&asJSON, "json", false, "emit machine-readable JSON")
 	cmd.Flags().BoolVar(&post, "post", true, "post the step results to the control plane (Hop only); --post=false keeps them local")
 	return cmd
+}
+
+// unreachableReport returns the report to print when the profile could
+// not be opened at all because the control plane could not be reached,
+// and nil for every other failure — a bad config, a rejected token, a
+// quota refusal — which the command's own error already explains.
+func unreachableReport(cmd *cobra.Command, cfg *schema.Config) *verify.Report {
+	hosted := hostedFrom(cmd)
+	if hosted == nil || !hop.Unreachable(hosted.LastError()) {
+		return nil
+	}
+	opts := verify.Options{Storage: verify.StorageHop, ClientVersion: version.String()}
+	if cfg != nil {
+		opts.Locker = verify.LockerInfo{Endpoint: cfg.Storage.Endpoint, Bucket: cfg.Storage.Bucket, Prefix: cfg.Storage.Prefix}
+	}
+	if ctx := cmd.Context(); ctx != nil {
+		if now, ok := ctx.Value(verifyNowContextKey{}).(func() time.Time); ok {
+			opts.Now = now
+		}
+	}
+	return verify.NotRun(opts, hosted.LastError())
 }
 
 // runVerification runs the checks against the engine's backend and keys.
@@ -198,6 +241,14 @@ func verifyAfterFirstPush(cmd *cobra.Command, eng *sync.Engine, cfg *schema.Conf
 		return nil
 	}
 	report := runVerification(cmd, eng, cfg, home, hosted)
+	if report.Outcome == verify.NotApplicable {
+		// Nothing was checked, so there is nothing to post and nothing to
+		// record: the hook must stay armed for the next push that uploads
+		// something. A push that uploaded is not expected to land here, so
+		// say so rather than pass silently.
+		PrintHuman(cmd.ErrOrStderr(), "note: the verification after the first push had nothing to check: %s", report.Summary)
+		return nil
+	}
 	summary := map[string]any{"outcome": report.Outcome, "posted": false}
 	if err := postVerification(cmd, report); err != nil {
 		PrintHuman(cmd.ErrOrStderr(), "note: verification ran (%s) but the report could not be posted: %v", report.Outcome, err)
@@ -210,7 +261,7 @@ func verifyAfterFirstPush(cmd *cobra.Command, eng *sync.Engine, cfg *schema.Conf
 	}
 	// The line claims only the objects the checks fetched: a manifest-only
 	// locker verified only the index.
-	checked, verb := report.CheckedObjects(), "are"
+	checked, verb := report.CheckedPhrase(), "are"
 	if checked == "" {
 		checked = "the fetched objects"
 	}

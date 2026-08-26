@@ -235,6 +235,84 @@ func TestSyncVerifyJourneyHosted(t *testing.T) {
 	}
 }
 
+// TestSyncVerifyHostedReportGolden pins the document a Hop customer's
+// tooling actually reads. The only golden the branch shipped covered BYO
+// storage over the memory backend, which has no locker endpoint, no
+// isolation step and no credential — that is, none of the fields a hosted
+// report exists to carry. This one is generated from the real CLI against
+// the fake control plane and the S3 fake.
+func TestSyncVerifyHostedReportGolden(t *testing.T) {
+	j, _ := hostedVerifyJourney(t)
+	j.ctx = context.WithValue(context.Background(), verifyNowContextKey{},
+		func() time.Time { return time.Date(2026, 8, 23, 12, 10, 0, 0, time.UTC) })
+	if _, errb, code := j.run("push", "--all"); code != ExitOK {
+		t.Fatalf("push exit=%d err=%q", code, errb)
+	}
+	out, errb, code := j.run("sync", "verify", "--json", "--post=false")
+	if code != ExitOK {
+		t.Fatalf("sync verify exit=%d out=%q err=%q", code, out, errb)
+	}
+	got := normalizeHostedVerifyJSON(t, out, j)
+	golden := filepath.Join("testdata", "verify", "hop-report.golden.json")
+	if *updateGolden {
+		if err := os.MkdirAll(filepath.Dir(golden), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(golden, got, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	want, err := os.ReadFile(golden)
+	if err != nil {
+		t.Fatalf("golden: %v (run with -update to create it)", err)
+	}
+	if !bytes.Equal(bytes.TrimSpace(want), bytes.TrimSpace(got)) {
+		t.Fatalf("hosted verify --json drifted from %s:\n--- want\n%s\n--- got\n%s", golden, want, got)
+	}
+	// The summary in the document is the sentence the human output ends
+	// with, so a consumer that renders the JSON cannot say more than the
+	// report does.
+	human, _, code := j.run("sync", "verify", "--post=false")
+	if code != ExitOK {
+		t.Fatalf("sync verify exit=%d out=%q", code, human)
+	}
+	if !strings.Contains(human, "OUTCOME: "+decodeVerify(t, out).Report.Summary) {
+		t.Fatalf("the document's summary is not the one printed:\n%s", human)
+	}
+}
+
+// normalizeHostedVerifyJSON replaces everything that differs run to run in
+// a hosted report — the loopback endpoint, the minted access key id, the
+// snapshot ids, timestamps and sizes — and re-indents.
+func normalizeHostedVerifyJSON(t *testing.T, out string, j *lockerJourney) []byte {
+	t.Helper()
+	var v map[string]any
+	if err := json.Unmarshal([]byte(out), &v); err != nil {
+		t.Fatalf("json %q: %v", out, err)
+	}
+	report := v["report"].(map[string]any)
+	report["client_version"] = "reinstate <version>"
+	m := regexp.MustCompile(`snapshots/([0-9a-f-]{36})\.age`).FindStringSubmatch(out)
+	if m == nil {
+		t.Fatalf("no snapshot id in %s", out)
+	}
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(v); err != nil {
+		t.Fatal(err)
+	}
+	s := string(bytes.TrimSpace(buf.Bytes()))
+	s = strings.ReplaceAll(s, m[1], "<snapshot-id>")
+	s = strings.ReplaceAll(s, j.plane.s3.URL(), "<endpoint>")
+	s = strings.ReplaceAll(s, j.akid(), "<access-key-id>")
+	s = replaceAllRegexp(s, `updated \d{4}-\d{2}-\d{2}T[0-9:]+Z`, `updated <time>`)
+	s = replaceAllRegexp(s, `created \d{4}-\d{2}-\d{2}T[0-9:]+Z on [a-z0-9-]+`, `created <time> on <platform>`)
+	s = replaceAllRegexp(s, `\.age \(\d+ bytes\)`, `.age (<n> bytes)`)
+	return []byte(s + "\n")
+}
+
 // TestSyncVerifyJourneyTamperedObjects: an object replaced with plaintext
 // fails the ciphertext step; a ciphertext with a flipped byte still looks
 // like ciphertext but fails to decrypt; both exit with the safety code.
@@ -351,9 +429,13 @@ func TestSyncVerifyJourneyReferenceRejectsTheCredential(t *testing.T) {
 				t.Fatalf("exit=%d:\n%s", exit, out)
 			}
 			for _, want := range []string{
-				"Listing the reference locker failed because the credential itself was rejected (backend: credential rejected (" + code + ")), so nothing about bucket scope was shown.",
-				"Reading the probe object failed because the credential itself was rejected (",
-				"OUTCOME: FAIL.",
+				// The refusal keeps its code, and gains a cause a reader who
+				// has never signed an S3 request can act on.
+				"backend: credential rejected (" + code + ")",
+				"Listing the reference locker failed because the credential itself was rejected — ",
+				"a credential no bucket accepts is refused everywhere, so nothing about bucket scope was shown.",
+				"Reading the probe object failed because the credential itself was rejected — ",
+				"OUTCOME: FAIL. At least one step did not hold.",
 			} {
 				if !strings.Contains(out, want) {
 					t.Fatalf("output missing %q:\n%s", want, out)
@@ -361,6 +443,11 @@ func TestSyncVerifyJourneyReferenceRejectsTheCredential(t *testing.T) {
 			}
 			if strings.Contains(out, "refused as access denied") || strings.Contains(out, "refused by a bucket that is not its own") {
 				t.Fatalf("a rejected credential was read as a scope refusal:\n%s", out)
+			}
+			// A credential the endpoint would not take is an ordinary
+			// operational fault, not a finding about the operator.
+			if strings.Contains(out, "security@reinstate.dev") {
+				t.Fatalf("a dead credential is reported as a security incident:\n%s", out)
 			}
 			// The fake answered the reference bucket with the credential's
 			// own code rather than AccessDenied, which is only possible
@@ -404,17 +491,72 @@ func TestSyncVerifyJourneyNoReferenceLocker(t *testing.T) {
 	}
 }
 
-// TestSyncVerifyBeforeAnyPush: nothing pushed yet is a failed listing with
-// the next step spelled out, and nothing is posted after a push that
-// uploaded nothing.
+// TestSyncVerifyBeforeAnyPush: the state every Hop account is in for the
+// minutes between `rein init --hop` and the first push. Nothing has been
+// pushed, so nothing can be checked — which is not a failed verification,
+// and must not read as one. Before this the command answered a brand-new
+// account with three FAILs, `OUTCOME: FAIL`, exit 7, and an invitation to
+// report a security incident.
 func TestSyncVerifyBeforeAnyPush(t *testing.T) {
 	j, _ := hostedVerifyJourney(t)
-	out, _, code := j.run("sync", "verify", "--post=false")
-	if code != ExitSafety || !strings.Contains(out, "no manifest.age: nothing has been pushed from this profile yet. Run rein push first") {
+	out, _, code := j.run("sync", "verify")
+	if code != ExitOK {
+		t.Fatalf("a profile with nothing pushed exits %d:\n%s", code, out)
+	}
+	for _, want := range []string{
+		"nothing has been pushed from this profile yet, so there is nothing to check. Run rein push first",
+		"OUTCOME: NOT YET VERIFIABLE. Nothing has been pushed from this profile yet, so the locker holds nothing to check. Run rein push, then rein sync verify again.",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("output missing %q:\n%s", want, out)
+		}
+	}
+	for _, unwanted := range []string{"OUTCOME: FAIL", "Result:         FAIL", "security@reinstate.dev"} {
+		if strings.Contains(out, unwanted) {
+			t.Fatalf("a profile with nothing pushed still says %q:\n%s", unwanted, out)
+		}
+	}
+	if n := strings.Count(out, "Result:         NOT APPLICABLE"); n != 4 {
+		t.Fatalf("%d of 4 steps are not applicable:\n%s", n, out)
+	}
+	// There is no verdict to show in the account console, so nothing is
+	// posted even though --post defaults to true.
+	if len(j.plane.reports) != 0 {
+		t.Fatalf("a report with nothing in it was posted: %d", len(j.plane.reports))
+	}
+	// The same shape reaches a decoder, so a script cannot read "pass".
+	out, _, code = j.run("sync", "verify", "--json")
+	if code != ExitOK {
 		t.Fatalf("exit=%d out=%q", code, out)
 	}
-	if len(j.plane.reports) != 0 {
-		t.Fatal("a report was posted with --post=false")
+	v := decodeVerify(t, out)
+	if v.Report.Outcome != verify.NotApplicable || v.Posted {
+		t.Fatalf("report %+v posted=%t", v.Report, v.Posted)
+	}
+	if !strings.HasPrefix(v.Report.Summary, "NOT YET VERIFIABLE.") {
+		t.Fatalf("summary %q", v.Report.Summary)
+	}
+}
+
+// TestSyncVerifyExitCodes pins the exit code a script is told to watch
+// for. It was documented as 4 in three places and has always been 7, so a
+// user who scripted the documented value got them exactly backwards: no
+// alert on a failed verification, and one on a sign-in problem.
+func TestSyncVerifyExitCodes(t *testing.T) {
+	j, _ := hostedVerifyJourney(t)
+	if _, errb, code := j.run("push", "--all"); code != ExitOK {
+		t.Fatalf("push exit=%d err=%q", code, errb)
+	}
+	if _, _, code := j.run("sync", "verify", "--post=false"); code != ExitOK {
+		t.Fatalf("a passing verification exits %d, want %d", code, ExitOK)
+	}
+	j.overwrite("manifest.age", []byte(`{"schema_version":1,"revision":"r1","sessions":{}}`))
+	_, _, code := j.run("sync", "verify", "--post=false")
+	if code != ExitSafety {
+		t.Fatalf("a failed verification exits %d, want %d (exitcode.Safety)", code, ExitSafety)
+	}
+	if code == ExitAuthStorage {
+		t.Fatal("a failed verification must not share the sign-in code")
 	}
 }
 
@@ -542,7 +684,10 @@ func normalizeVerifyJSON(t *testing.T, out, home string) []byte {
 	s = replaceAllRegexp(s, `manifest\.age \(\d+ bytes\)`, `manifest.age (<n> bytes)`)
 	s = replaceAllRegexp(s, `snapshots/<snapshot-id>\.age \(\d+ bytes\)`, `snapshots/<snapshot-id>.age (<n> bytes)`)
 	s = replaceAllRegexp(s, `with 1 file \(\d+ bytes\)`, `with 1 file (<n> bytes)`)
-	s = replaceAllRegexp(s, `file projects/[^/"]+/`, `file projects/<project-dir>/`)
+	// The archive path is deliberately not normalised: the project
+	// directory a harness stores is an absolute local path with its
+	// separators replaced by dashes, and the golden's job here is to show
+	// that the report removes it rather than to hide that it did not.
 	return []byte(s + "\n")
 }
 
