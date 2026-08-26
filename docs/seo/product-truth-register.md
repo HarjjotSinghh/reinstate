@@ -2,8 +2,9 @@
 
 Last reviewed: 2026-08-27
 Canonical website source: `website/src/data/product.ts`
-Reviewed release: `v0.5.1` candidate; public installers pin this tag.
-Stable remains `v0.4.0`. Dual-platform tagged-artifact acceptance is pending.
+Stable release: `v0.5.1`, dated 2026-08-21.
+Reviewed candidate: `v0.5.2-rc.1`, dated 2026-08-23; interactive-CLI
+tagged-artifact acceptance is still pending for it.
 
 This is the required output of the repository-local
 `reinstate-product-truth` workflow. It separates released facts from roadmap
@@ -30,7 +31,7 @@ marketing claim.
 | Paths | Recognized structural project roots are tokenized and expanded through a canonical project ID; arbitrary prose is not rewritten | `internal/pathmap`, adapter tests, configuration docs |
 | License | Apache-2.0 | `LICENSE`, `product.ts` |
 | Account requirement | The CLI does not require a Reinstate account | released architecture and `product.ts` |
-| Current release | `v0.5.1` candidate (stable remains `v0.4.0`; dual-platform tagged-artifact acceptance pending) | changelog, release history, compatibility data |
+| Current release | Stable is `v0.5.1`, dated 2026-08-21. `v0.5.2-rc.1`, dated 2026-08-23, is a candidate awaiting interactive-CLI tagged-artifact acceptance. | `website/src/data/product.ts`, `CHANGELOG.md` section `[0.5.1]`, release history |
 | Maintainer | Harjot Singh Rana | repository metadata and `product.ts` |
 
 ## Conflicting claims and resolution
@@ -50,7 +51,7 @@ marketing claim.
 
 - support for agents other than Claude Code and Codex as current Phase 1
   adapters;
-- stable `v0.5.1` support without a separate reviewed promotion and fresh
+- stable `v0.5.2` support without a separate reviewed promotion and fresh
   Apple Silicon macOS/native Windows tagged-artifact evidence;
 - stable support for Intel macOS, WSL2, or plain Linux without completed
   acceptance evidence;
