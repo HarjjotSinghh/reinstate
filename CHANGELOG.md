@@ -231,8 +231,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   which is the distinction step 4 rests on.
   `backend.Refusal` keeps the storage error code and matches
   `backend.ErrAccessDenied` or `backend.ErrCredentialRejected` (both still
-  match `backend.ErrUnauthorized`), and the S3 backend's `List` now follows
-  continuation tokens, so a locker past one page is listed in full.
+  match `backend.ErrUnauthorized`).
   Windows record: the seven `rein sync verify` journeys (hosted pass,
   tampered objects, reachable reference, rejected credential, no reference,
   before any push, BYO with golden JSON) passed as a windows/amd64 test
