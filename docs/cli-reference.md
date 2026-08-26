@@ -146,13 +146,20 @@ was done, what was seen, and PASS, FAIL, or NOT APPLICABLE, followed by
 `OUTCOME: PASS` or `OUTCOME: FAIL`.
 
 `--json` emits the report (`report.steps[].{id,name,did,observed,status,
-detail}`, `report.outcome`, `report.storage`, `report.locker`) plus
-`posted`. On a Hop profile the step results (never object contents,
+detail}`, `report.outcome`, `report.storage`, `report.locker`,
+`report.summary`, `report.checked_objects`, `report.unopened`) plus
+`posted`. `report.summary` is the outcome sentence itself, so a script
+renders exactly what a person reads instead of inferring it from
+`outcome`. On a Hop profile the step results (never object contents,
 session ids, or project paths) are posted to the control plane for the
 account console; `--post=false` keeps them local. BYO storage runs the
 first three steps and reports the fourth as not applicable. Exit `0` when
-every step passed or did not apply, `4` (safety) when a step failed, and
-the usual storage or sign-in codes when the store cannot be opened.
+every step passed or did not apply — including a profile that has pushed
+nothing yet, where `outcome` is `not-applicable` and the report ends
+`OUTCOME: NOT YET VERIFIABLE` — `7` (safety) when a step failed, `1` when
+the control plane could not be reached (the report still prints, saying
+which checks did not run), and the usual storage or sign-in codes when
+the store cannot be opened.
 
 The same checks run automatically, once per device, after the first push
 that uploaded something to a Hop locker; `rein push --json` then carries

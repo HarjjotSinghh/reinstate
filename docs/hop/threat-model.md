@@ -117,8 +117,8 @@ object storage; none of it is content.
 The report is printed in full locally, with per-session detail; after the
 first successful push on each new device, and on every `rein sync verify`
 unless `--post=false`, the step results are posted to the control plane so
-the account console can show them per device. Exit code `4` on any failed
-step.
+the account console can show them per device; a run with nothing to check
+posts nothing. Exit code `7` (`safety`) on any failed step.
 
 A passing report proves what the device observed at that moment against
 that endpoint. It does not prove the operator's internals; it proves that

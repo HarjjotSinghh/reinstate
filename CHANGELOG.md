@@ -264,6 +264,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   before any push, BYO with golden JSON) passed as a windows/amd64 test
   binary on the Windows 11 bench (NT 10.0.26200) on 2026-08-23, with the
   fake control plane and fake S3 in-process.
+  Both report shapes are pinned by a golden generated from the real CLI:
+  `internal/cli/testdata/verify/hop-report.golden.json` (a Hop locker,
+  with `locker.endpoint`, the isolation step and the access key id) and
+  `byo-report.golden.json` (BYO over the memory backend, which has none of
+  those).
   New docs: `docs/hop/object-format.md` (the exact object layout and
   envelope format) and `docs/hop/threat-model.md` (what the operator can
   and cannot see, the assumptions, and how each verify step maps to each

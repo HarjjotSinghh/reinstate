@@ -249,8 +249,12 @@ repeated by hand with an S3 client ([object format](hop/object-format.md),
    credential the locker accepted is the one the reference refused, and
    where.
 
-The report ends with `OUTCOME: PASS` or `OUTCOME: FAIL`; exit code `4` on
-any failed step. The outcome sentence claims only what the steps observed:
+The report ends with `OUTCOME: PASS`, `OUTCOME: FAIL`, or — on a profile
+that has pushed nothing yet, where all four steps are not applicable and
+there is nothing to check — `OUTCOME: NOT YET VERIFIABLE`. Exit code `7`
+(`safety`) on any failed step, `0` otherwise, and `1` when the control
+plane could not be reached, which prints a report naming the checks that
+did not run rather than a bare dial error. The outcome sentence claims only what the steps observed:
 it calls ciphertext only the objects that were actually fetched — the
 index, and the snapshot the index records as updated last (a manifest-only
 locker verifies only the index; a snapshot chosen without the index, because
@@ -258,9 +262,13 @@ the index would not open here, is called "one snapshot" and not the newest)
 — names what was judged by name only (the other snapshots, the keyring,
 anything unrecognised), says nothing about which device sealed them, and
 when step 4 is not applicable it says isolation was not checked instead of
-asserting it. `--json` emits the report as data (see
-`testdata/verify/byo-report.golden.json` under `internal/cli` for the
-shape). On a Hop profile the **step results only** — never object contents,
+asserting it. The same sentence is in the document `--json` emits, as
+`report.summary`, beside `report.checked_objects` and `report.unopened`,
+so a script shows what a person reads rather than reducing the report to
+`outcome`. (See `testdata/verify/hop-report.golden.json` and
+`byo-report.golden.json` under `internal/cli` for the two shapes: the
+hosted one carries `locker.endpoint`, the isolation step, and the access
+key id; the BYO one does not.) On a Hop profile the **step results only** — never object contents,
 session ids, or project paths — are posted to the control plane for the
 account console; `--post=false` keeps them local. BYO storage runs steps
 1–3 and reports step 4 as not applicable.
