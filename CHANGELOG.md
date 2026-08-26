@@ -259,11 +259,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `backend.Refusal` keeps the storage error code and matches
   `backend.ErrAccessDenied` or `backend.ErrCredentialRejected` (both still
   match `backend.ErrUnauthorized`).
-  Windows record: the seven `rein sync verify` journeys (hosted pass,
-  tampered objects, reachable reference, rejected credential, no reference,
-  before any push, BYO with golden JSON) passed as a windows/amd64 test
-  binary on the Windows 11 bench (NT 10.0.26200) on 2026-08-23, with the
-  fake control plane and fake S3 in-process.
+  Windows record:
+  [`docs/testing/results/2026-08-27-sync-verify-windows.md`](docs/testing/results/2026-08-27-sync-verify-windows.md)
+  — eleven `rein sync verify` and `rein hop credentials` journeys against
+  the in-process fake control plane and fake S3, `make test-race` with no
+  data race (the first time it has been run on this repository at all),
+  `go vet`, and the three cross-builds, on the Windows 11 bench (NT
+  10.0.26200) on 2026-08-27. It says what it does not cover: no second
+  device, no live R2, no real `hopd`.
   `rein hop credentials [--json]` mints one credential set for the
   account's locker and prints it, so steps 1, 2 and 4 can actually be
   repeated by hand with an S3 client — until now `docs/hop.md` promised a
