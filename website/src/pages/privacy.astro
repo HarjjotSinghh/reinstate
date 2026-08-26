@@ -68,11 +68,17 @@ const schema = [
 
       <h2 id="analytics">Optional site analytics</h2>
       <p>
-        No analytics script is emitted unless both Plausible configuration values are present at
-        build time. When enabled, the site can record page views and events from a fixed, reviewed
+        No analytics script is emitted unless a Plausible script URL is configured at build time.
+        When enabled, the site can record page views and events from a fixed, reviewed
         taxonomy: command copies, getting-started entry, integration and storage-guide views,
         security-document views, repository and release-download clicks, RSS subscriptions,
         issue-report and contribution links, and successful waitlist submissions.
+      </p>
+      <p>
+        Plausible's automatic capture of outbound links and file downloads is deliberately left
+        off, because it would transmit destination addresses as event properties. Clicks that
+        leave the site are instead reported through the reviewed taxonomy above, as a controlled
+        event name and a controlled label, without the address.
       </p>
       <p>
         Event properties contain only a controlled event name, the current path without its query

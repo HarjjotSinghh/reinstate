@@ -9,9 +9,19 @@ import {
   marketingReferralRules,
 } from '../lib/analytics';
 
+// Plausible ships two tracker generations and this component supports both.
+//
+//   current: https://plausible.io/js/pa-<siteId>.js  — the site is identified by
+//            the script filename, there is no data-domain, and plausible.init()
+//            must be called before any event is sent.
+//   legacy:  https://plausible.io/js/script.js       — identified by data-domain.
+//
+// Only the script URL is required, because that is the single value Plausible
+// hands you today. PUBLIC_PLAUSIBLE_DOMAIN stays optional and is emitted as
+// data-domain when set, which the current tracker ignores harmlessly.
 const domain = import.meta.env.PUBLIC_PLAUSIBLE_DOMAIN;
 const scriptUrl = import.meta.env.PUBLIC_PLAUSIBLE_SCRIPT_URL;
-const enabled = Boolean(domain && scriptUrl);
+const enabled = Boolean(scriptUrl);
 const pageEvent = analyticsPageEvent(Astro.url.pathname);
 const analyticsConfig = JSON.stringify({
   pageEvent,
@@ -46,6 +56,15 @@ const analyticsConfig = JSON.stringify({
         window.plausible = window.plausible || function () {
           (window.plausible.q = window.plausible.q || []).push(arguments);
         };
+        window.plausible.init = window.plausible.init || function (options) {
+          window.plausible.o = options || {};
+        };
+        // Called with no options on purpose. The current tracker can auto-capture
+        // outbound links and file downloads, but that transmits destination URLs
+        // as event properties, which the privacy commitment does not allow. This
+        // site reports those clicks through its own reviewed taxonomy instead,
+        // with controlled labels and no URLs.
+        window.plausible.init();
 
         function normalizedReferralHostname(value) {
           try {
