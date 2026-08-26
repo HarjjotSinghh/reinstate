@@ -158,22 +158,38 @@ see.
 
 ## Reproducing the checks by hand
 
-With any S3 client: for BYO storage use the profile's own keys and
-coordinates; for a Hop locker, `rein hop status --json` names the endpoint
-and bucket, and the credentials are the hourly ones the control plane mints
-(`POST /v1/locker/credentials` with the device token):
+Steps 1, 2 and 4 can be run with any S3 client. Step 3 can be, on BYO
+storage; on a Hop locker it cannot, and the reason is stated below rather
+than worked around.
+
+For BYO storage use the profile's own keys and coordinates. For a Hop
+locker, `rein hop credentials` mints one credential set and prints the
+bucket, endpoint and region beside it:
 
 ```bash
+eval "$(rein hop credentials | grep '^AWS_')"            # an hour, this bucket only
 aws s3 ls s3://<bucket>/<prefix>/ --recursive            # step 1: the listing
 aws s3 cp s3://<bucket>/<prefix>/manifest.age - | head -c 22  # step 2: "age-encryption.org/v1"
 aws s3 cp s3://<bucket>/<prefix>/manifest.age - | strings | grep -c '"sessions"'   # step 2: 0
 ```
 
-Step 3 needs the key: `age -d -i <root key identity file> manifest.age`
-for Hop (the identity is the device-unwrapped root key; `rein sync verify`
-does the unwrap for you) or `age -d manifest.age` with the passphrase for
-BYO. Step 4 (`rein sync verify` on Hop only) lists and reads the
-operator's reference locker with the same credentials and expects
-`AccessDenied` twice, from the same storage endpoint step 1 listed and with
-an S3 error body naming the code; `GET /v1/verify/reference` on the control
-plane names the bucket and key.
+Step 4 uses the same credentials against the operator's reference locker,
+whose bucket, region and probe key come from `GET /v1/verify/reference`
+with the device token (`rein sync verify` prints them in step 4's detail
+lines). Both requests must be refused with `AccessDenied`, from the same
+storage endpoint step 1 listed, as an S3 error body naming the code:
+
+```bash
+aws s3 ls s3://<reference bucket>/                       # step 4: AccessDenied
+aws s3 cp s3://<reference bucket>/<probe key> -          # step 4: AccessDenied
+```
+
+Step 3 needs the key. On BYO storage that is the passphrase you already
+have: `age -d manifest.age` reproduces the check exactly. On a Hop locker
+it is the account's root key, which lives in the OS keychain wrapped to
+this device and is never written to a file — **no command exports it, and
+none will**. A command that wrote it out would hand over every object the
+account has ever written, past and future, in one step; that is a larger
+exposure than the gap it would close. `rein sync verify` performs step 3
+on the device and shows what the plaintext contains; on a Hop locker,
+that is where the reproduction ends.

@@ -264,6 +264,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   before any push, BYO with golden JSON) passed as a windows/amd64 test
   binary on the Windows 11 bench (NT 10.0.26200) on 2026-08-23, with the
   fake control plane and fake S3 in-process.
+  `rein hop credentials [--json]` mints one credential set for the
+  account's locker and prints it, so steps 1, 2 and 4 can actually be
+  repeated by hand with an S3 client — until now `docs/hop.md` promised a
+  by-hand reproduction and `docs/hop/object-format.md` shipped the recipe,
+  and on a Hop locker no command yielded the hourly credentials it needs.
+  These are the credentials `rein push` already uses: at most an hour old,
+  scoped by the provider to this account's bucket and no other, and able
+  to read nothing but ciphertext. Step 3 needs the account's root key,
+  which never leaves the device and which no command exports; a command
+  that wrote it out would hand over every object the account has ever
+  written. The recipe now says so, rather than instructing the reader to
+  pass `age -d -i` an identity file nothing produces.
   Both report shapes are pinned by a golden generated from the real CLI:
   `internal/cli/testdata/verify/hop-report.golden.json` (a Hop locker,
   with `locker.endpoint`, the isolation step and the access key id) and

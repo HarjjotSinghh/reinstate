@@ -18,6 +18,7 @@ func newHopCmd() *cobra.Command {
 			"with hourly credentials the control plane mints for this device.",
 	}
 	cmd.AddCommand(newHopStatusCmd())
+	cmd.AddCommand(newHopCredentialsCmd())
 	return cmd
 }
 

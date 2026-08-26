@@ -110,6 +110,26 @@ Before the first push it says the locker is not provisioned yet. `--json`
 emits the same. Exit `4` when the device is not signed in or its token was
 rejected.
 
+### `rein hop credentials`
+
+Mints one credential set for this account's locker and prints it, so the
+first, second and fourth checks of `rein sync verify` can be repeated by
+hand with any S3 client ([object format](hop/object-format.md),
+"Reproducing the checks by hand"). It prints the bucket, endpoint, region
+and expiry, then `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`,
+`AWS_SESSION_TOKEN` and `AWS_ENDPOINT_URL` on stdout, with a caution on
+stderr so the values can be redirected without it. `--json` emits the same
+fields as data.
+
+These are the credentials `rein push` already uses: valid for at most an
+hour, scoped by the storage provider to this account's bucket and no other
+(which is what step 4 of the verification tests), and able to read nothing
+but ciphertext. Each run mints a fresh set and counts against the
+push-rate limit `rein hop status` shows. The third check needs the
+account's root key, which never leaves the device and which no command
+exports. Exit `4` when the device is not signed in, its token was
+rejected, or the mint was refused by a quota.
+
 ### `rein daemon`
 
 `rein daemon` runs a resident per-device process that pushes after a

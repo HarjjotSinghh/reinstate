@@ -198,9 +198,14 @@ The claim is that the locker holds only ciphertext sealed by your devices,
 that your devices can open it, and that your account's credentials reach
 your locker and nothing else. `rein sync verify` checks all of it and
 prints a **verification report** written for a non-expert: each step says
-what was done, what was seen, and PASS or FAIL, and every step can be
-repeated by hand with an S3 client ([object format](hop/object-format.md),
-"Reproducing the checks by hand").
+what was done, what was seen, and PASS or FAIL. Steps 1, 2 and 4 can be
+repeated by hand with any S3 client and the credentials `rein hop
+credentials` prints. Step 3 can be, on BYO storage, where the key is your
+own passphrase; on a Hop locker it cannot, because the account's root key
+never leaves the device and no command exports it — a command that wrote
+it to a file would expose every object the account has ever written
+([object format](hop/object-format.md), "Reproducing the checks by
+hand").
 
 1. **List the locker** with the credentials this device pushes with,
    following every listing page; shows `manifest.age`, `keyring.v1.json`,
