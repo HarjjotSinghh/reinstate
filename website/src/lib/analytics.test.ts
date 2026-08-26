@@ -2,11 +2,15 @@ import { describe, expect, it } from 'vitest';
 import {
   aiReferralRules,
   analyticsAiReferralChannel,
+  analyticsCampaign,
+  analyticsCampaigns,
   analyticsEventTargets,
   analyticsEvents,
   analyticsLinkEvent,
+  analyticsMarketingReferralChannel,
   analyticsPageEvent,
   isAllowedAnalyticsEvent,
+  marketingReferralRules,
 } from './analytics';
 
 describe('analytics event taxonomy', () => {
@@ -150,5 +154,99 @@ describe('analytics event taxonomy', () => {
         ({ hostnames, utmTokens }) => hostnames.length + utmTokens.length > 0,
       ),
     ).toBe(true);
+  });
+});
+
+describe('marketing referral classification', () => {
+  it.each([
+    ['https://x.com/someone/status/1', 'https://reinstate.dev/', 'x'],
+    ['https://t.co/abc', 'https://reinstate.dev/', 'x'],
+    ['https://www.linkedin.com/feed/', 'https://reinstate.dev/', 'linkedin'],
+    ['https://lnkd.in/abc', 'https://reinstate.dev/', 'linkedin'],
+    ['https://dev.to/harjjotsinghh/post', 'https://reinstate.dev/', 'devto'],
+    ['https://news.ycombinator.com/item?id=1', 'https://reinstate.dev/', 'hackernews'],
+    ['https://github.com/HarjjotSinghh/reinstate', 'https://reinstate.dev/', 'github'],
+    ['', 'https://reinstate.dev/?utm_source=paid-x', 'paid-x'],
+    ['', 'https://reinstate.dev/?utm_source=paid-meta', 'paid-meta'],
+    ['', 'https://reinstate.dev/?utm_source=tldr', 'newsletter'],
+  ])('classifies controlled marketing referrals from %s', (referrer, currentUrl, channel) => {
+    expect(analyticsMarketingReferralChannel({ referrer, currentUrl })).toBe(channel);
+  });
+
+  it('does not classify unknown referrers or arbitrary substrings', () => {
+    expect(
+      analyticsMarketingReferralChannel({
+        referrer: 'https://www.google.com/search?q=reinstate',
+        currentUrl: 'https://reinstate.dev/',
+      }),
+    ).toBeNull();
+    expect(
+      analyticsMarketingReferralChannel({
+        referrer: 'https://notx.example.com/',
+        currentUrl: 'https://reinstate.dev/?utm_source=x-ray-vision',
+      }),
+    ).toBeNull();
+  });
+
+  it('keeps AI and marketing channels as disjoint vocabularies', () => {
+    expect(marketingReferralRules.map(({ channel }) => channel)).toEqual([
+      'x',
+      'linkedin',
+      'devto',
+      'hackernews',
+      'github',
+      'newsletter',
+      'paid-x',
+      'paid-meta',
+    ]);
+    const aiChannels = new Set<string>(aiReferralRules.map(({ channel }) => channel));
+    expect(
+      marketingReferralRules.some(({ channel }) => aiChannels.has(channel)),
+    ).toBe(false);
+    expect(
+      marketingReferralRules.every(
+        ({ hostnames, utmTokens }) => hostnames.length + utmTokens.length > 0,
+      ),
+    ).toBe(true);
+  });
+
+  it('classifies an AI referral and a marketing referral independently', () => {
+    const fromChatgpt = {
+      referrer: 'https://chatgpt.com/',
+      currentUrl: 'https://reinstate.dev/',
+    };
+    expect(analyticsAiReferralChannel(fromChatgpt)).toBe('chatgpt');
+    expect(analyticsMarketingReferralChannel(fromChatgpt)).toBeNull();
+
+    const fromX = { referrer: 'https://x.com/', currentUrl: 'https://reinstate.dev/' };
+    expect(analyticsMarketingReferralChannel(fromX)).toBe('x');
+    expect(analyticsAiReferralChannel(fromX)).toBeNull();
+  });
+});
+
+describe('campaign allowlist', () => {
+  it('resolves only allowlisted campaign identifiers', () => {
+    expect(analyticsCampaign('https://reinstate.dev/?utm_content=hk01-paths')).toBe(
+      'hk01-paths',
+    );
+    expect(analyticsCampaign('https://reinstate.dev/?utm_content=HK05-RECOVER')).toBe(
+      'hk05-recover',
+    );
+  });
+
+  it('discards any value that is not on the list, rather than passing it through', () => {
+    expect(analyticsCampaign('https://reinstate.dev/?utm_content=arbitrary')).toBeNull();
+    expect(
+      analyticsCampaign('https://reinstate.dev/?utm_content=user@example.com'),
+    ).toBeNull();
+    expect(analyticsCampaign('https://reinstate.dev/')).toBeNull();
+    expect(analyticsCampaign('not a url')).toBeNull();
+  });
+
+  it('keeps campaign identifiers non-identifying and stable', () => {
+    expect(
+      analyticsCampaigns.every((campaign) => /^[a-z0-9-]+$/.test(campaign)),
+    ).toBe(true);
+    expect(new Set(analyticsCampaigns).size).toBe(analyticsCampaigns.length);
   });
 });

@@ -92,6 +92,96 @@ export const aiReferralRules: readonly AiReferralRule[] = [
   },
 ] as const;
 
+/**
+ * Marketing referral channels.
+ *
+ * Deliberately separate from `aiReferralRules`: AI-search citation and marketing
+ * distribution are different questions, they are reported separately, and mixing
+ * them would silently change the meaning of the existing AI-referral baseline.
+ *
+ * Like every other value in this file, these are a fixed reviewed taxonomy. The
+ * resolved value is a channel *label* chosen from this list — never the raw
+ * referrer, and never the raw query string.
+ */
+export type MarketingReferralChannel =
+  | 'x'
+  | 'linkedin'
+  | 'devto'
+  | 'hackernews'
+  | 'github'
+  | 'newsletter'
+  | 'paid-x'
+  | 'paid-meta';
+
+export interface MarketingReferralRule {
+  channel: MarketingReferralChannel;
+  hostnames: readonly string[];
+  utmTokens: readonly string[];
+}
+
+export const marketingReferralRules: readonly MarketingReferralRule[] = [
+  {
+    channel: 'x',
+    hostnames: ['x.com', 'twitter.com', 't.co'],
+    utmTokens: ['x', 'x.com', 'twitter'],
+  },
+  {
+    channel: 'linkedin',
+    hostnames: ['linkedin.com', 'lnkd.in'],
+    utmTokens: ['linkedin'],
+  },
+  {
+    channel: 'devto',
+    hostnames: ['dev.to'],
+    utmTokens: ['devto', 'dev-to', 'dev.to'],
+  },
+  {
+    channel: 'hackernews',
+    hostnames: ['news.ycombinator.com'],
+    utmTokens: ['hn', 'hackernews'],
+  },
+  {
+    channel: 'github',
+    hostnames: ['github.com'],
+    utmTokens: ['github'],
+  },
+  {
+    channel: 'newsletter',
+    hostnames: [],
+    utmTokens: ['newsletter', 'tldr', 'console-dev'],
+  },
+  {
+    channel: 'paid-x',
+    hostnames: [],
+    utmTokens: ['paid-x'],
+  },
+  {
+    channel: 'paid-meta',
+    hostnames: [],
+    utmTokens: ['paid-meta'],
+  },
+] as const;
+
+/**
+ * Allowlisted campaign identifiers.
+ *
+ * A paid test needs to tell its variants apart, but the privacy commitment is
+ * that no raw query parameter is ever transmitted. So `utm_content` is not read
+ * through — it is matched against this fixed list, and only an exact match is
+ * sent. An unrecognised value resolves to null and nothing is transmitted.
+ *
+ * Adding a campaign is a reviewed edit to this array, not a runtime behaviour.
+ */
+export const analyticsCampaigns = [
+  'hk01-paths',
+  'hk02-remote',
+  'hk03-outcome',
+  'hk04-envelope',
+  'hk05-recover',
+] as const;
+
+export type AnalyticsCampaign = (typeof analyticsCampaigns)[number];
+
 export const analyticsLinkRules: readonly AnalyticsLinkRule[] = [
   {
     includes: '/releases/download/',
@@ -132,13 +222,22 @@ function normalizedTrackingTokens(url: URL): string[] {
     .filter((value): value is string => Boolean(value));
 }
 
-export function analyticsAiReferralChannel({
-  referrer,
-  currentUrl,
-}: {
-  referrer?: string;
-  currentUrl: string;
-}): AiReferralChannel | null {
+interface ReferralRule<TChannel extends string> {
+  channel: TChannel;
+  hostnames: readonly string[];
+  utmTokens: readonly string[];
+}
+
+/**
+ * Resolve a referral to a channel label.
+ *
+ * UTM tokens win over the referrer hostname, because an explicit campaign tag is
+ * a stronger statement of origin than whatever the browser happened to send.
+ */
+function resolveReferralChannel<TChannel extends string>(
+  rules: readonly ReferralRule<TChannel>[],
+  { referrer, currentUrl }: { referrer?: string; currentUrl: string },
+): TChannel | null {
   let destination: URL;
   try {
     destination = new URL(currentUrl, 'https://reinstate.dev');
@@ -147,7 +246,7 @@ export function analyticsAiReferralChannel({
   }
 
   const trackingTokens = normalizedTrackingTokens(destination);
-  for (const rule of aiReferralRules) {
+  for (const rule of rules) {
     if (
       rule.utmTokens.some((expected) =>
         trackingTokens.some((value) => value === expected),
@@ -165,10 +264,44 @@ export function analyticsAiReferralChannel({
     return null;
   }
   const hostname = source.hostname.toLowerCase().replace(/\.$/, '');
-  const matched = aiReferralRules.find((rule) =>
+  const matched = rules.find((rule) =>
     rule.hostnames.some((expected) => hostnameMatches(hostname, expected)),
   );
   return matched?.channel ?? null;
+}
+
+export function analyticsAiReferralChannel(input: {
+  referrer?: string;
+  currentUrl: string;
+}): AiReferralChannel | null {
+  return resolveReferralChannel(aiReferralRules, input);
+}
+
+export function analyticsMarketingReferralChannel(input: {
+  referrer?: string;
+  currentUrl: string;
+}): MarketingReferralChannel | null {
+  return resolveReferralChannel(marketingReferralRules, input);
+}
+
+/**
+ * Resolve `utm_content` to an allowlisted campaign id, or null.
+ *
+ * Anything not on the list is discarded rather than transmitted, so an arbitrary
+ * query parameter can never reach the analytics provider through this path.
+ */
+export function analyticsCampaign(currentUrl: string): AnalyticsCampaign | null {
+  let destination: URL;
+  try {
+    destination = new URL(currentUrl, 'https://reinstate.dev');
+  } catch {
+    return null;
+  }
+  const value = destination.searchParams.get('utm_content')?.trim().toLowerCase();
+  if (!value) return null;
+  return (
+    analyticsCampaigns.find((campaign) => campaign === value) ?? null
+  );
 }
 
 export function analyticsPageEvent(pathname: string): AnalyticsEventMatch | null {

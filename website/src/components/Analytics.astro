@@ -1,10 +1,12 @@
 ---
 import {
   aiReferralRules,
+  analyticsCampaigns,
   analyticsEvents,
   analyticsEventTargets,
   analyticsLinkRules,
   analyticsPageEvent,
+  marketingReferralRules,
 } from '../lib/analytics';
 
 const domain = import.meta.env.PUBLIC_PLAUSIBLE_DOMAIN;
@@ -17,6 +19,8 @@ const analyticsConfig = JSON.stringify({
   eventTargets: analyticsEventTargets,
   linkRules: analyticsLinkRules,
   referralRules: aiReferralRules,
+  marketingReferralRules,
+  campaigns: analyticsCampaigns,
 })
   .replace(/</g, '\\u003c')
   .replace(/\u2028/g, '\\u2028')
@@ -51,7 +55,7 @@ const analyticsConfig = JSON.stringify({
           }
         }
 
-        function aiReferralChannel() {
+        function resolveChannel(rules) {
           var trackingTokens = ['utm_source', 'utm_medium', 'utm_campaign']
             .map(function (key) {
               return new URL(window.location.href).searchParams.get(key);
@@ -61,7 +65,7 @@ const analyticsConfig = JSON.stringify({
               return value.trim().toLowerCase();
             });
 
-          var utmRule = reinstateAnalytics.referralRules.find(function (rule) {
+          var utmRule = rules.find(function (rule) {
             return rule.utmTokens.some(function (expected) {
               return trackingTokens.some(function (value) {
                 return value === expected;
@@ -72,7 +76,7 @@ const analyticsConfig = JSON.stringify({
 
           var hostname = normalizedReferralHostname(document.referrer);
           if (!hostname) return '';
-          var hostRule = reinstateAnalytics.referralRules.find(function (rule) {
+          var hostRule = rules.find(function (rule) {
             return rule.hostnames.some(function (expected) {
               return hostname === expected || hostname.endsWith('.' + expected);
             });
@@ -80,7 +84,18 @@ const analyticsConfig = JSON.stringify({
           return hostRule ? hostRule.channel : '';
         }
 
-        var reinstateReferralChannel = aiReferralChannel();
+        // utm_content is matched against a fixed allowlist rather than read
+        // through, so an arbitrary query value can never be transmitted.
+        function resolveCampaign() {
+          var raw = new URL(window.location.href).searchParams.get('utm_content');
+          if (!raw) return '';
+          var value = raw.trim().toLowerCase();
+          return reinstateAnalytics.campaigns.indexOf(value) === -1 ? '' : value;
+        }
+
+        var reinstateReferralChannel = resolveChannel(reinstateAnalytics.referralRules);
+        var reinstateMarketingChannel = resolveChannel(reinstateAnalytics.marketingReferralRules);
+        var reinstateCampaign = resolveCampaign();
 
         function sendReinstateEvent(name, target) {
           if (
@@ -96,6 +111,12 @@ const analyticsConfig = JSON.stringify({
           };
           if (reinstateReferralChannel) {
             props.ai_referral_channel = reinstateReferralChannel;
+          }
+          if (reinstateMarketingChannel) {
+            props.referral_channel = reinstateMarketingChannel;
+          }
+          if (reinstateCampaign) {
+            props.campaign = reinstateCampaign;
           }
           window.plausible(name, {
             props: props

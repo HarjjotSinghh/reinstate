@@ -76,11 +76,26 @@ const schema = [
       </p>
       <p>
         Event properties contain only a controlled event name, the current path without its query
-        string, and a controlled placement label. Reinstate's event code does not send form values,
-        email addresses, coding-agent content, source code, repository names, bucket names,
-        credentials, passphrases, or link query parameters. The deployed Plausible service can
-        still process ordinary request information according to its configuration and privacy
+        string, a controlled placement label, and—when they can be resolved—a controlled referral
+        channel label and a controlled campaign identifier. Reinstate's event code does not send
+        form values, email addresses, coding-agent content, source code, repository names, bucket
+        names, credentials, passphrases, or link query parameters. The deployed Plausible service
+        can still process ordinary request information according to its configuration and privacy
         policy.
+      </p>
+      <p>
+        The referral channel label is chosen from a fixed, reviewed list and describes where a
+        visit came from, not who made it. Two independent lists are used: AI answer engines
+        (ChatGPT, Perplexity, Microsoft Copilot, Google Gemini, and Google AI features) and
+        marketing channels (X, LinkedIn, Dev.to, Hacker News, GitHub, newsletters, and paid
+        placements on X or Meta). A referrer that matches neither list produces no label at all.
+      </p>
+      <p>
+        The campaign identifier exists so that a marketing test can tell its own variants apart.
+        It is not read through from the address bar: an incoming <code>utm_content</code> value is
+        compared against a fixed allowlist of campaign identifiers held in the site's source code,
+        and only an exact match is recorded. Any other value is discarded and nothing is
+        transmitted. Adding a campaign identifier requires a reviewed change to that list.
       </p>
 
       <h2 id="logs">Infrastructure logs</h2>
