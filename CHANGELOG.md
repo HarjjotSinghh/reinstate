@@ -7,8 +7,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **Key generations are now authenticated (#11).** A revoked device keeps
+  working locker credentials for the rest of their TTL, so it can write the
+  keyring object; until now nothing about a key generation was secret or
+  authenticated, and a party with bucket write access could append a
+  *higher* generation carrying a root key of its own, wrapped to every
+  listed device's published public key. Every remaining device adopted it —
+  and pinned it, since the floor check only refused a *lower* number. That
+  refuted the promise in `docs/hop.md`, `docs/security-model.md` and this
+  file that a revoked device "cannot open anything pushed after the
+  revocation". Two layers close it:
+  - **The generation chain.** Every generation past the first carries an
+    HMAC-SHA256 over its own header — number, `created_at`, `recipient`,
+    the revocations that started it, the profile id, and the number and
+    recipient of the generation it follows — keyed by a value derived
+    (HKDF-SHA256) from the **previous generation's root key**. A device
+    revoked at generation N never held generation N+1's key and cannot
+    obtain N's again, so it cannot write a generation the account will
+    adopt. The chain is verified on **every** path that loads the keyring,
+    not only on push: `push`, `pull`, `rein devices approve`, `rein devices
+    revoke` and `rein account recover` all fail closed (`ExitSafety`) on a
+    current generation they cannot trace back to one they already trusted.
+  - **The local anchor.** The chain proves a relative fact, so a keyring
+    forged from generation 1 upward is self-consistent and nothing inside
+    the object could tell it from the account's own. `account.json` now
+    records the root-key **recipient** of the generation this device last
+    unwrapped, alongside the generation number it already recorded (both
+    public; neither is key material). A keyring whose recorded generation
+    is missing, or now names a different root key, was replaced rather than
+    appended to, and is refused with nothing written — including by `rein
+    account status` and `rein devices`, which hold no root key, check the
+    anchor alone, and now say the keyring is refused rather than reporting
+    it as the account's key-model truth. A device with no local record
+    anchors on what brought it there: the recovery code, or the root key an
+    enrolled device relayed through a pairing approval.
+
+  `docs/hop.md` now states what the claim covers and what it does not
+  (denial of service by anyone who can write the bucket, and the fact that
+  revocation never re-encrypts what was already pushed);
+  `docs/security-model.md` carries the same argument in full.
+- Keyring format version 3, a clean cutover: versions 1 and 2 are no longer
+  read at all. They carried no chain between generations, so continuing to
+  read them would have preserved exactly the hole above; unbound (version 1)
+  wraps are now refused everywhere rather than tolerated in generation 1.
+  The parser also refuses gaps in the generation numbering and a chain of
+  the wrong shape. No keyring has ever been deployed, so nothing needs
+  migrating; a home written by an earlier build starts again with `rein
+  account init` against a fresh locker. The golden fixtures are renamed for
+  what they hold, rather than for a schema version that has now moved:
+  `testdata/keyring/keyring.one-generation.json` and
+  `keyring.two-generations.json`.
+
 ### Fixed
 
+- A refused pairing approval no longer takes back wraps it never wrote
+  (#11). `UnenrolEverywhere` removed every `(device id, public key)` match
+  in every generation, while `EnrolInto` leaves a generation alone when it
+  already holds a wrap for that public key — and two approvals of the same
+  joining device carry the same public key, because the device generates its
+  key once, before its first request. So a rolled-back approval could strip
+  a competing approval's wrap, or the pre-revocation wraps of a device that
+  was revoked and is joining again. `EnrolAll` now reports the wraps it
+  actually appended, by generation and by ciphertext, and the rollback
+  removes exactly those.
 - `rein init --force` now backs up **and removes** `account.json`, so the
   re-enrolment recipe in `docs/hop.md` works as written (#11). Run verbatim
   it used to dead-end: nothing in the CLI removed the enrolment record, so
@@ -227,29 +290,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   every key generation (the recovery code opens all of them), so a device
   added after a revocation reads the whole locker; `rein account recover`
   under `storage.type = "hop"` refuses a home whose `device_id` is not the
-  signed-in device. Every device pins the highest key generation it has
-  seen in its account state and refuses a keyring rolled back below it
-  (`ExitSafety`), so a revoked device restoring its old keyring copy inside
-  the credential window cannot talk a remaining device into writing under
-  the generation it still holds. An approval the relay then refuses (the
-  request expired or was decided while the approver's prompt was open) is
-  rolled back from every generation, not only the current one, so a
-  refused device is never left holding a wrap for pre-revocation history.
-- Keyring format version 2: every wrap is bound to the profile id and the
+  signed-in device. Every device pins the key generation it last unwrapped,
+  and that generation's root-key recipient, in its account state, and
+  refuses a keyring rolled back below it or replaced under it
+  (`ExitSafety`); the keyring's generations are chained so that only a
+  holder of one generation's root key can write the next. See the Security
+  entry above for the whole argument and what it does not cover. An
+  approval the relay then refuses (the request expired or was decided while
+  the approver's prompt was open) is rolled back from every generation it
+  wrote into, not only the current one, so a refused device is never left
+  holding a wrap for pre-revocation history.
+- Keyring format version 3: every wrap is bound to the profile id and the
   key generation it belongs to (device wraps carry the binding inside the
   age payload, the recovery wrap as AEAD associated data), so a wrap lifted
-  from one keyring or generation cannot be replayed in another. Version 1
-  keyrings are still read; they are rewritten as version 2 on the first
-  write that holds the root key (enrolment and rollover rebind the current
-  generation's device wraps; generation 1's recovery wrap stays in the
-  legacy format, the only place the parser still accepts one). The parser rejects
-  duplicate generation numbers and duplicate device ids; a device listed
-  under an earlier generation with a key this machine no longer holds is
-  skipped rather than treated as an error; `DeviceMembership` names the
-  "listed but the key is gone" and "listed under another key" cases so
-  every command words them the same way. Golden fixtures:
-  `testdata/keyring/keyring.v1.json` (legacy) and `keyring.v2.json` (two
-  generations, one revocation).
+  from one keyring or generation cannot be replayed in another; and every
+  generation past the first carries a chain MAC keyed by the previous
+  generation's root key. The parser rejects duplicate generation numbers,
+  duplicate device ids, gaps in the numbering, unbound wraps, a chain of
+  the wrong shape, and any earlier schema version. A device listed under an
+  earlier generation with a key this machine no longer holds is skipped
+  rather than treated as an error; `DeviceMembership` names the "listed but
+  the key is gone" and "listed under another key" cases so every command
+  words them the same way. Golden fixtures:
+  `testdata/keyring/keyring.one-generation.json` and
+  `keyring.two-generations.json` (two generations, one revocation).
 
 - The S3-compatible backend can now obtain its keys from a credential source
   that expires and refreshes (`s3.CredentialSource`), the seam that lets a

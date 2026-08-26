@@ -10,8 +10,12 @@ package keyring
 
 import (
 	"bytes"
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/base64"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -24,33 +28,37 @@ import (
 	"filippo.io/age"
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/chacha20poly1305"
+	"golang.org/x/crypto/hkdf"
 
 	"github.com/HarjjotSinghh/reinstate/internal/crypto"
 )
 
-// SchemaVersion is the keyring object format version this package writes.
+// SchemaVersion is the keyring object format version this package reads and
+// writes. It is the only version accepted: there is no compatibility mode,
+// because every earlier version is missing a property this one relies on.
 //
 // Version 1 wrapped the root key with nothing but the key itself. Version 2
-// binds every wrap to the profile id and the key generation it belongs to
-// (device wraps carry the binding inside the age payload; the recovery wrap
-// carries it as AEAD associated data), so a wrap lifted out of one keyring
-// or generation cannot be replayed in another. Version 1 objects are still
-// read; they are rewritten as version 2 on the first write that holds the
-// root key (see Enrol and Rollover).
-const SchemaVersion = 2
+// bound every wrap to the profile id and the key generation it belongs to
+// (device wraps inside the age payload, the recovery wrap as AEAD associated
+// data), so a wrap could not be replayed in another keyring or generation —
+// but nothing tied one generation to the next, so a party that could write
+// the object could append a generation of its own and every device would
+// adopt it. Version 3 chains the generations: each one past the first
+// carries a MAC over its own header, keyed by the previous generation's root
+// key (see generationChain), so only a holder of generation N's root key can
+// write generation N+1. Version 3 also requires every wrap to be bound;
+// unbound wraps no longer exist anywhere.
+const SchemaVersion = 3
 
 // ObjectName is the keyring object's name inside the profile prefix. The
 // name is the object's identity in storage and does not change with the
 // schema version; schema_version inside the object does.
 const ObjectName = "keyring.v1.json"
 
-// Wrap formats recorded per wrap. WrapFormatLegacy is the version 1 wrap
-// (no binding) and is written as an absent field; WrapFormatBound is the
-// version 2 wrap.
-const (
-	WrapFormatLegacy = 0
-	WrapFormatBound  = 2
-)
+// WrapFormatBound is the format recorded on every wrap: one whose payload
+// (device) or associated data (recovery) names the profile and generation
+// it belongs to. It is the only format this version reads or writes.
+const WrapFormatBound = 2
 
 // Argon2id parameters for the recovery-code wrap. Memory-hard so an offline
 // guess against a leaked keyring costs real hardware per attempt; recorded in
@@ -84,6 +92,10 @@ var (
 	// ErrSelfRevoke reports an attempt to revoke the device doing the
 	// revoking, which would leave it unable to read the new generation.
 	ErrSelfRevoke = errors.New("keyring: a device cannot revoke itself")
+	// ErrUnauthenticatedGeneration reports a key generation this reader
+	// must not adopt: its chain does not check out against the previous
+	// generation's root key, or the reader holds no key that could check it.
+	ErrUnauthenticatedGeneration = errors.New("keyring: key generation is not authenticated by the generation before it")
 )
 
 // Keyring is the wire shape of the keyring object.
@@ -107,6 +119,15 @@ type Generation struct {
 	// It is a record for people and status output; the key model is the
 	// absence of a wrap.
 	Revoked []Revocation `json:"revoked,omitempty"`
+	// Chain authenticates this generation against the one before it: a MAC
+	// over this generation's header — number, created_at, recipient, the
+	// revocations that started it, the profile id, and the number and
+	// recipient of the generation it follows — keyed by the previous
+	// generation's root key. Only a device that could open the previous
+	// generation can produce it, which is precisely what a revoked device
+	// can no longer do. Generation 1 has no predecessor and carries none;
+	// what anchors generation 1 is outside the object (see VerifyChain).
+	Chain string `json:"chain,omitempty"`
 }
 
 // Revocation records why a generation exists.
@@ -125,8 +146,8 @@ type RecoveryWrap struct {
 	Threads   uint8  `json:"threads"`
 	Salt      string `json:"salt"`
 	Wrap      string `json:"wrap"`
-	// Format is WrapFormatBound for a wrap whose associated data names the
-	// profile and generation; absent for a version 1 wrap.
+	// Format is WrapFormatBound: the associated data names the profile and
+	// generation. No other value is accepted.
 	Format int `json:"format,omitempty"`
 }
 
@@ -136,8 +157,8 @@ type DeviceWrap struct {
 	PublicKey  string `json:"public_key"`
 	EnrolledAt string `json:"enrolled_at"`
 	Wrap       string `json:"wrap"`
-	// Format is WrapFormatBound for a wrap whose payload names the profile
-	// and generation; absent for a version 1 wrap.
+	// Format is WrapFormatBound: the age payload names the profile and
+	// generation. No other value is accepted.
 	Format int `json:"format,omitempty"`
 }
 
@@ -181,14 +202,17 @@ func New(profileID string, rootKey []byte, recoveryCode string, deviceID string,
 	}, nil
 }
 
-// Parse decodes and validates a keyring object.
+// Parse decodes and structurally validates a keyring object. Structure is
+// all it can check: whether the generations are the account's own is a
+// cryptographic question, answered by VerifyChain against root keys the
+// reader holds, and Parse deliberately does not pretend to answer it.
 func Parse(raw []byte) (*Keyring, error) {
 	var k Keyring
 	if err := json.Unmarshal(raw, &k); err != nil {
 		return nil, fmt.Errorf("keyring: invalid object: %w", err)
 	}
-	if k.SchemaVersion < 1 || k.SchemaVersion > SchemaVersion {
-		return nil, fmt.Errorf("keyring: unsupported schema_version %d (this version reads 1 to %d)", k.SchemaVersion, SchemaVersion)
+	if k.SchemaVersion != SchemaVersion {
+		return nil, fmt.Errorf("keyring: unsupported schema_version %d (this version reads %d only; earlier formats did not authenticate their key generations and are not read)", k.SchemaVersion, SchemaVersion)
 	}
 	if k.ProfileID == "" || len(k.Generations) == 0 {
 		return nil, fmt.Errorf("keyring: profile_id and at least one generation are required")
@@ -213,24 +237,48 @@ func Parse(raw []byte) (*Keyring, error) {
 			devices[d.DeviceID] = true
 		}
 		for _, w := range append([]int{g.Recovery.Format}, deviceFormats(g.Devices)...) {
-			if w != WrapFormatLegacy && w != WrapFormatBound {
+			if w != WrapFormatBound {
 				return nil, fmt.Errorf("keyring: generation %d holds a wrap of unknown format %d", g.Number, w)
 			}
-			if k.SchemaVersion == 1 && w != WrapFormatLegacy {
-				return nil, fmt.Errorf("keyring: schema_version 1 cannot hold format %d wraps", w)
-			}
-			if g.Number != 1 && w == WrapFormatLegacy {
-				// Only generation 1 can predate binding; Rollover always
-				// writes bound wraps, so a legacy wrap in a later
-				// generation is a transplant.
-				return nil, fmt.Errorf("keyring: generation %d holds an unbound wrap", g.Number)
-			}
+		}
+		if err := checkChainShape(g); err != nil {
+			return nil, err
+		}
+	}
+	// Generations run 1..n with no gaps. Rollover only ever appends
+	// maxGeneration()+1, so a gap means generations were removed or a
+	// number was invented; either way the chain from 1 upward is broken
+	// and no reader could authenticate what is left.
+	for n := 1; n <= len(k.Generations); n++ {
+		if !seen[n] {
+			return nil, fmt.Errorf("keyring: generation %d is missing from a keyring holding %d generations", n, len(k.Generations))
 		}
 	}
 	if k.current() == nil {
 		return nil, fmt.Errorf("keyring: current_generation %d is not present", k.CurrentGeneration)
 	}
 	return &k, nil
+}
+
+// checkChainShape refuses a generation whose chain field is the wrong shape
+// for its position: absent on generation 1, and a full-length MAC on every
+// generation after it. Whether the MAC is *correct* is VerifyChain's
+// question; this only rules out an object no reader could ever check.
+func checkChainShape(g Generation) error {
+	if g.Number == 1 {
+		if g.Chain != "" {
+			return fmt.Errorf("keyring: generation 1 carries a chain but has no generation before it")
+		}
+		return nil
+	}
+	mac, err := base64.StdEncoding.DecodeString(g.Chain)
+	if err != nil {
+		return fmt.Errorf("keyring: generation %d has a chain that is not valid base64", g.Number)
+	}
+	if len(mac) != chainMACSize {
+		return fmt.Errorf("keyring: generation %d has a %d-byte chain, want %d", g.Number, len(mac), chainMACSize)
+	}
+	return nil
 }
 
 func deviceFormats(devices []DeviceWrap) []int {
@@ -241,9 +289,7 @@ func deviceFormats(devices []DeviceWrap) []int {
 	return out
 }
 
-// Marshal encodes the keyring for storage. A keyring read as version 1 is
-// written as version 2 (the object format is forwards-only); wraps keep the
-// format they were made in until a holder of the root key rebinds them.
+// Marshal encodes the keyring for storage.
 
 func (k *Keyring) Marshal() ([]byte, error) {
 	k.SchemaVersion = SchemaVersion
@@ -269,6 +315,134 @@ func (k *Keyring) generation(number int) *Generation {
 
 func (k *Keyring) bindingFor(g *Generation) binding {
 	return binding{profileID: k.ProfileID, generation: g.Number}
+}
+
+// generationChainInfo is the HKDF info string that separates the chain MAC
+// key from everything else a root key derives (it also derives the age
+// identity that seals envelopes). Changing it would invalidate every chain
+// ever written, so it is versioned and never reused.
+const generationChainInfo = "reinstate/keyring/generation-chain/v1"
+
+// chainMACSize is the chain MAC's length: HMAC-SHA256.
+const chainMACSize = sha256.Size
+
+// generationChainKey derives the MAC key for the link out of the generation
+// whose root key is rootKey.
+func generationChainKey(rootKey []byte) ([]byte, error) {
+	if len(rootKey) != crypto.RootKeySize {
+		return nil, fmt.Errorf("keyring: root key must be %d bytes, got %d", crypto.RootKeySize, len(rootKey))
+	}
+	key := make([]byte, chainMACSize)
+	if _, err := io.ReadFull(hkdf.New(sha256.New, rootKey, nil, []byte(generationChainInfo)), key); err != nil {
+		return nil, fmt.Errorf("keyring: derive generation chain key: %w", err)
+	}
+	return key, nil
+}
+
+// generationChain computes g's chain value: a MAC keyed by prevRootKey, the
+// root key of the generation g follows, over every part of g's header a
+// reader trusts. Fields are length-prefixed so no two different headers can
+// produce the same input.
+//
+// The device wraps are deliberately not covered. They change after a
+// generation is written — a device enrolled later is given a wrap in every
+// generation it may read — and re-MACing on every enrolment would need the
+// previous generation's key at moments a caller does not have it. They do
+// not need covering: a wrap is only ever accepted when the key inside it
+// derives the generation's recorded recipient (see unwrapDevice), and the
+// recipient is covered here. So appending a working wrap to a generation
+// still requires that generation's root key; what an attacker with bucket
+// write access can do to the device list is remove or corrupt entries, which
+// denies service rather than substituting a key.
+func generationChain(profileID string, g, prev *Generation, prevRootKey []byte) (string, error) {
+	key, err := generationChainKey(prevRootKey)
+	if err != nil {
+		return "", err
+	}
+	defer crypto.Zero(key)
+	mac := hmac.New(sha256.New, key)
+	var size [8]byte
+	write := func(fields ...string) {
+		for _, f := range fields {
+			binary.BigEndian.PutUint64(size[:], uint64(len(f)))
+			mac.Write(size[:])
+			mac.Write([]byte(f))
+		}
+	}
+	write(generationChainInfo, profileID,
+		strconv.Itoa(g.Number), g.CreatedAt, g.Recipient,
+		strconv.Itoa(prev.Number), prev.Recipient,
+		strconv.Itoa(len(g.Revoked)))
+	for _, r := range g.Revoked {
+		write(r.DeviceID, r.RevokedAt, r.RevokedBy)
+	}
+	return base64.StdEncoding.EncodeToString(mac.Sum(nil)), nil
+}
+
+// VerifyChain authenticates this keyring's generations against the root keys
+// the reader was able to unwrap from it, keyed by generation number. Every
+// link it can check, it checks; and the current generation must be one of
+// them, so a reader never acts on a generation it cannot authenticate.
+//
+// What this proves: generation N+1 was written by someone holding generation
+// N's root key. A device revoked at generation N never held N's root key —
+// that is the whole point of the rollover — so it cannot append a generation
+// the rest of the account will adopt, even with full write access to the
+// bucket.
+//
+// What this does not prove: that generation 1 is the account's own. Nothing
+// inside the object can say so; a chain forged from a root key of the
+// attacker's choosing at generation 1 is self-consistent. Generation 1 is
+// anchored from outside — by the recovery code (only its holder can write a
+// recovery wrap that opens), by the root key relayed through a pairing
+// approval, or by the generation and recipient a device recorded locally the
+// last time it read the keyring. Callers must supply one of those anchors;
+// see the anchor check in the CLI's account state.
+func (k *Keyring) VerifyChain(keys map[int][]byte) error {
+	for _, n := range k.GenerationNumbers() {
+		prevKey, ok := keys[n-1]
+		if n == 1 || !ok {
+			continue
+		}
+		if err := k.verifyGenerationChain(n, prevKey); err != nil {
+			return err
+		}
+	}
+	if k.CurrentGeneration == 1 {
+		return nil
+	}
+	if _, ok := keys[k.CurrentGeneration-1]; !ok {
+		return fmt.Errorf("%w: generation %d cannot be checked here, because this device holds no root key for generation %d", ErrUnauthenticatedGeneration, k.CurrentGeneration, k.CurrentGeneration-1)
+	}
+	return nil
+}
+
+// verifyGenerationChain checks the single link from n-1 into n, given n-1's
+// root key.
+func (k *Keyring) verifyGenerationChain(n int, prevRootKey []byte) error {
+	g, prev := k.generation(n), k.generation(n-1)
+	if g == nil || prev == nil {
+		return fmt.Errorf("%w: generation %d has no generation %d before it", ErrUnauthenticatedGeneration, n, n-1)
+	}
+	want, err := generationChain(k.ProfileID, g, prev, prevRootKey)
+	if err != nil {
+		return err
+	}
+	if subtle.ConstantTimeCompare([]byte(want), []byte(g.Chain)) != 1 {
+		return fmt.Errorf("%w: generation %d was not written by a holder of generation %d's root key", ErrUnauthenticatedGeneration, n, n-1)
+	}
+	return nil
+}
+
+// GenerationRecipient is the root-key recipient recorded for one generation,
+// or "" when the keyring holds no such generation. A device records the
+// current one locally so a later read can tell an appended keyring from a
+// replaced one.
+func (k *Keyring) GenerationRecipient(number int) string {
+	if g := k.generation(number); g != nil {
+		return g.Recipient
+	}
+	return ""
 }
 
 // GenerationNumbers lists every generation held, oldest first.
@@ -542,11 +716,7 @@ func (k *Keyring) Enrol(rootKey []byte, deviceID string, recipient *age.X25519Re
 		return err
 	}
 	g.Devices = append(g.Devices, wrap)
-	// Holding the root key is the one moment legacy device wraps can be
-	// rebound without anyone else's help. Generation 1's legacy recovery
-	// wrap is never rewritten (the code is not at hand here); Parse
-	// accepts a legacy wrap in generation 1 only.
-	return k.rebindDevices(g, rootKey)
+	return nil
 }
 
 // EnrolInto gives deviceID a wrap in an earlier generation so a device
@@ -592,23 +762,64 @@ func (k *Keyring) EnrolInto(generation int, rootKey []byte, deviceID string, rec
 	return nil
 }
 
+// AppendedWrap names one wrap an enrolment wrote: the generation it went
+// into and the exact ciphertext written there. A caller that must undo an
+// enrolment matches on both, so it can never take back a wrap some other
+// approval wrote for the same device under the same public key.
+type AppendedWrap struct {
+	Generation int
+	Wrap       string
+}
+
 // EnrolAll enrols deviceID into every generation in keys (the current one
 // with Enrol, earlier ones with EnrolInto). keys is the map shape returned
 // by UnwrapGenerations; the current generation's key must be present.
-func (k *Keyring) EnrolAll(keys map[int][]byte, deviceID string, recipient *age.X25519Recipient, now time.Time) error {
+//
+// It reports the wraps it actually wrote, oldest generation first. That is
+// not the same as "every generation in keys": EnrolInto leaves a generation
+// alone when it already holds a wrap for this public key, and a caller
+// rolling the enrolment back must leave those alone too.
+func (k *Keyring) EnrolAll(keys map[int][]byte, deviceID string, recipient *age.X25519Recipient, now time.Time) ([]AppendedWrap, error) {
 	current, ok := keys[k.CurrentGeneration]
 	if !ok {
-		return fmt.Errorf("%w: no key for generation %d", ErrStaleRootKey, k.CurrentGeneration)
+		return nil, fmt.Errorf("%w: no key for generation %d", ErrStaleRootKey, k.CurrentGeneration)
 	}
 	if err := k.Enrol(current, deviceID, recipient, now); err != nil {
-		return err
+		return nil, err
 	}
-	for n, key := range keys {
-		if n == k.CurrentGeneration {
-			continue
+	appended := []AppendedWrap{{Generation: k.CurrentGeneration, Wrap: k.deviceWrap(k.CurrentGeneration, deviceID).Wrap}}
+	earlier := make([]int, 0, len(keys))
+	for n := range keys {
+		if n != k.CurrentGeneration {
+			earlier = append(earlier, n)
 		}
-		if err := k.EnrolInto(n, key, deviceID, recipient, now); err != nil {
-			return err
+	}
+	sort.Ints(earlier)
+	for _, n := range earlier {
+		before := ""
+		if w := k.deviceWrap(n, deviceID); w != nil {
+			before = w.Wrap
+		}
+		if err := k.EnrolInto(n, keys[n], deviceID, recipient, now); err != nil {
+			return appended, err
+		}
+		if after := k.deviceWrap(n, deviceID); after != nil && after.Wrap != before {
+			appended = append(appended, AppendedWrap{Generation: n, Wrap: after.Wrap})
+		}
+	}
+	sort.Slice(appended, func(i, j int) bool { return appended[i].Generation < appended[j].Generation })
+	return appended, nil
+}
+
+// deviceWrap is the wrap generation number holds for deviceID, or nil.
+func (k *Keyring) deviceWrap(number int, deviceID string) *DeviceWrap {
+	g := k.generation(number)
+	if g == nil {
+		return nil
+	}
+	for i := range g.Devices {
+		if g.Devices[i].DeviceID == deviceID {
+			return &g.Devices[i]
 		}
 	}
 	return nil
@@ -622,28 +833,6 @@ func (k *Keyring) checkCurrentRootKey(rootKey []byte) error {
 	}
 	if identity.Recipient().String() != g.Recipient {
 		return fmt.Errorf("%w (generation %d)", ErrStaleRootKey, g.Number)
-	}
-	return nil
-}
-
-// rebindDevices rewrites every legacy device wrap in g as a bound wrap.
-// Public keys and enrolment times are kept; only the ciphertext changes.
-func (k *Keyring) rebindDevices(g *Generation, rootKey []byte) error {
-	bind := k.bindingFor(g)
-	for i, d := range g.Devices {
-		if d.Format == WrapFormatBound {
-			continue
-		}
-		recipient, err := age.ParseX25519Recipient(d.PublicKey)
-		if err != nil {
-			return fmt.Errorf("keyring: device %s has a malformed public key: %w", d.DeviceID, err)
-		}
-		var cipher bytes.Buffer
-		if err := sealForDevice(&cipher, rootKey, recipient, bind); err != nil {
-			return err
-		}
-		g.Devices[i].Wrap = base64.StdEncoding.EncodeToString(cipher.Bytes())
-		g.Devices[i].Format = WrapFormatBound
 	}
 	return nil
 }
@@ -695,11 +884,6 @@ func (k *Keyring) Rollover(currentRootKey []byte, recoveryCode string, revoke []
 	if revokedBy != "" && !k.HasDevice(revokedBy) {
 		return nil, fmt.Errorf("%w: revoking device %s has no wrap in generation %d", ErrDeviceNotEnrolled, revokedBy, g.Number)
 	}
-	// Rebind the outgoing generation's legacy device wraps while the root
-	// key is in hand so no unbound wrap survives a rollover.
-	if err := k.rebindDevices(g, currentRootKey); err != nil {
-		return nil, err
-	}
 
 	next := Generation{Number: k.maxGeneration() + 1, CreatedAt: now.UTC().Format(time.RFC3339)}
 	bind := binding{profileID: k.ProfileID, generation: next.Number}
@@ -737,6 +921,15 @@ func (k *Keyring) Rollover(currentRootKey []byte, recoveryCode string, revoke []
 		wrap.EnrolledAt = d.EnrolledAt
 		next.Devices = append(next.Devices, wrap)
 	}
+	// Last, once the header is final: chain the new generation to the one
+	// it replaces, keyed by the root key this caller proved it holds. The
+	// device being revoked does not hold that key from here on, so this is
+	// the last generation it could ever have signed.
+	next.Chain, err = generationChain(k.ProfileID, &next, g, currentRootKey)
+	if err != nil {
+		crypto.Zero(rootKey)
+		return nil, err
+	}
 	k.Generations = append(k.Generations, next)
 	k.CurrentGeneration = next.Number
 	k.SchemaVersion = SchemaVersion
@@ -753,43 +946,36 @@ func (k *Keyring) maxGeneration() int {
 	return n
 }
 
-// Unenrol removes the current generation's wrap for deviceID, but only when
-// the wrap was made for publicKey: an approving device uses it to roll back
-// a wrap it appended itself when the relay then refused (request expired or
-// already decided), and the key check keeps it from ever touching a wrap a
-// different approval wrote for the same device id. Reports whether a wrap
-// was removed.
-func (k *Keyring) Unenrol(deviceID, publicKey string) bool {
-	g := k.current()
-	if g == nil || publicKey == "" {
-		return false
-	}
-	for i, d := range g.Devices {
-		if d.DeviceID == deviceID && d.PublicKey == publicKey {
-			g.Devices = append(g.Devices[:i:i], g.Devices[i+1:]...)
-			return true
-		}
-	}
-	return false
-}
-
-// UnenrolEverywhere removes deviceID's wrap from every generation, but only
-// where the wrap was made for publicKey. It is the cross-generation
-// counterpart to Unenrol: an approval enrols the joining device into every
-// generation it can read (EnrolAll), so rolling back a refused approval
-// must sweep them all — removing only the current generation's wrap would
-// leave the refused device able to unwrap pre-revocation history. The same
-// key check keeps it from touching a wrap a different approval wrote for
-// the same device id. Reports whether any wrap was removed.
-func (k *Keyring) UnenrolEverywhere(deviceID, publicKey string) bool {
-	if publicKey == "" {
-		return false
-	}
+// UnenrolAppended takes back exactly the wraps an EnrolAll wrote for
+// deviceID, and nothing else: a wrap is removed only where the generation,
+// the device id, and the ciphertext all still match what was written. An
+// approving device uses it to undo an enrolment the relay then refused (the
+// request expired, or another device had already decided it).
+//
+// Matching on the ciphertext rather than on the device's public key is what
+// keeps it honest. Two approvals of the same joining device carry the same
+// public key — the device generates its key once, before its first request —
+// so a key match would let a refused approval strip wraps a successful one
+// wrote, and would also strip wraps from generations this approval found
+// already populated and deliberately left alone.
+//
+// One case it cannot separate: if a competing approval relayed the very wrap
+// this one appended (it found the device listed and sealed for the same key
+// without appending a second time), taking it back leaves that device
+// without a wrap until it is approved again. That is visible and repairable;
+// leaving a refused device enrolled would not be.
+//
+// Reports whether any wrap was removed. Removing nothing is not an error: a
+// concurrent revocation or rollover may already have taken them.
+func (k *Keyring) UnenrolAppended(deviceID string, appended []AppendedWrap) bool {
 	removed := false
-	for gi := range k.Generations {
-		g := &k.Generations[gi]
+	for _, a := range appended {
+		g := k.generation(a.Generation)
+		if g == nil || a.Wrap == "" {
+			continue
+		}
 		for i, d := range g.Devices {
-			if d.DeviceID == deviceID && d.PublicKey == publicKey {
+			if d.DeviceID == deviceID && d.Wrap == a.Wrap {
 				g.Devices = append(g.Devices[:i:i], g.Devices[i+1:]...)
 				removed = true
 				break
@@ -804,7 +990,6 @@ func (k *Keyring) UnenrolEverywhere(deviceID, publicKey string) bool {
 // checks it; the recovery wrap uses real AEAD associated data.
 const (
 	deviceWrapInfo   = "reinstate/keyring/device-wrap/v2"
-	recoveryAAD      = "reinstate/keyring/recovery-wrap/v1"
 	recoveryAADBound = "reinstate/keyring/recovery-wrap/v2"
 )
 
@@ -824,6 +1009,9 @@ func unwrapDevice(g *Generation, deviceID string, device *age.X25519Identity, bi
 		if d.PublicKey != device.Recipient().String() {
 			return nil, fmt.Errorf("%w: %w", ErrDeviceNotEnrolled, ErrDeviceKeyMismatch)
 		}
+		if d.Format != WrapFormatBound {
+			return nil, fmt.Errorf("keyring: generation %d holds a wrap of unknown format %d for device %s", g.Number, d.Format, deviceID)
+		}
 		cipher, err := base64.StdEncoding.DecodeString(d.Wrap)
 		if err != nil {
 			return nil, fmt.Errorf("keyring: device wrap is not valid base64")
@@ -832,10 +1020,7 @@ func unwrapDevice(g *Generation, deviceID string, device *age.X25519Identity, bi
 		if err != nil {
 			return nil, fmt.Errorf("keyring: unwrap root key for device: %w", err)
 		}
-		prefix := []byte(nil)
-		if d.Format == WrapFormatBound {
-			prefix = bind.devicePrefix()
-		}
+		prefix := bind.devicePrefix()
 		payload, err := io.ReadAll(io.LimitReader(r, int64(len(prefix)+crypto.RootKeySize+1)))
 		if err != nil {
 			return nil, err
@@ -930,6 +1115,9 @@ func unwrapWithRecoveryCode(wrap RecoveryWrap, recoveryCode string, bind binding
 	if wrap.KDF != recoveryKDFName {
 		return nil, fmt.Errorf("keyring: unsupported recovery kdf %q", wrap.KDF)
 	}
+	if wrap.Format != WrapFormatBound {
+		return nil, fmt.Errorf("keyring: generation %d holds a recovery wrap of unknown format %d", bind.generation, wrap.Format)
+	}
 	salt, err := base64.StdEncoding.DecodeString(wrap.Salt)
 	if err != nil {
 		return nil, fmt.Errorf("keyring: recovery salt is not valid base64")
@@ -947,11 +1135,7 @@ func unwrapWithRecoveryCode(wrap RecoveryWrap, recoveryCode string, bind binding
 	if len(cipher) < aead.NonceSize() {
 		return nil, fmt.Errorf("keyring: recovery wrap is truncated")
 	}
-	aad := []byte(recoveryAAD)
-	if wrap.Format == WrapFormatBound {
-		aad = bind.recoveryAAD()
-	}
-	rootKey, err := aead.Open(nil, cipher[:aead.NonceSize()], cipher[aead.NonceSize():], aad)
+	rootKey, err := aead.Open(nil, cipher[:aead.NonceSize()], cipher[aead.NonceSize():], bind.recoveryAAD())
 	if err != nil {
 		return nil, ErrRecoveryMismatch
 	}

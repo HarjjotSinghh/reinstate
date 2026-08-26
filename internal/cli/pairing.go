@@ -160,10 +160,11 @@ func runAccountJoin(cmd *cobra.Command, _ []string) error {
 	// device must decrypt to the same root key of the same generation, so
 	// a control plane that altered either channel is caught before any
 	// data is written under a wrong key.
-	if err := verifyJoinedKeyring(ctx, store, keyringKey, cfg.DeviceID, deviceKey, rootKey, payload.KeyGeneration); err != nil {
+	ring, err = verifyJoinedKeyring(ctx, store, keyringKey, cfg.DeviceID, deviceKey, rootKey, payload.KeyGeneration)
+	if err != nil {
 		return err
 	}
-	if err := saveAccountEnrolmentConfirmed(home, cfg, now, payload.KeyGeneration, "join", false); err != nil {
+	if err := saveAccountEnrolmentConfirmed(home, cfg, now, ring, "join", false); err != nil {
 		return err
 	}
 	out := cmd.OutOrStdout()
@@ -180,28 +181,36 @@ func runAccountJoin(cmd *cobra.Command, _ []string) error {
 
 // verifyJoinedKeyring reloads the keyring and confirms it lists this device
 // with a wrap that opens to exactly the root key received through the
-// pairing, in the generation the approver named.
-func verifyJoinedKeyring(ctx context.Context, store backend.Backend, key, deviceID string, deviceKey *age.X25519Identity, rootKey []byte, generation int) error {
+// pairing, in the generation the approver named. The root key relayed by an
+// already-enrolled device is this device's anchor — it has no local record
+// yet — and the generation chain is checked on top of it, over every
+// generation the approval enrolled this device into.
+func verifyJoinedKeyring(ctx context.Context, store backend.Backend, key, deviceID string, deviceKey *age.X25519Identity, rootKey []byte, generation int) (*keyring.Keyring, error) {
 	ring, _, err := keyring.Load(ctx, store, key)
 	if err != nil {
-		return NewExitError(ExitAuthStorage, err.Error())
+		return nil, NewExitError(ExitAuthStorage, err.Error())
 	}
 	if ring.CurrentGeneration != generation {
-		return NewExitError(ExitSafety, fmt.Sprintf("the keyring is at generation %d but the approval named %d; nothing was written. Run rein account join again", ring.CurrentGeneration, generation))
+		return nil, NewExitError(ExitSafety, fmt.Sprintf("the keyring is at generation %d but the approval named %d; nothing was written. Run rein account join again", ring.CurrentGeneration, generation))
 	}
-	fromRing, _, err := ring.UnwrapForDevice(deviceID, deviceKey)
+	keys, err := trustKeyring(keyringAnchor{}, ring, func() (map[int][]byte, error) {
+		return ring.UnwrapGenerations(deviceID, deviceKey)
+	})
+	if errors.Is(err, keyring.ErrUnauthenticatedGeneration) {
+		return nil, NewExitError(ExitSafety, fmt.Sprintf("the keyring's key generations do not chain back to one this approval can vouch for (%v); nothing was written. Run rein account join again from a device you trust", err))
+	}
 	if err != nil {
-		return NewExitError(ExitSafety, fmt.Sprintf("the keyring does not hold a working wrap for this device (%v); nothing was written. Run rein account join again", err))
+		return nil, NewExitError(ExitSafety, fmt.Sprintf("the keyring does not hold a working wrap for this device (%v); nothing was written. Run rein account join again", err))
 	}
-	defer crypto.Zero(fromRing)
+	defer keyring.ZeroGenerations(keys)
 	identity, err := crypto.RootKeyIdentity(rootKey)
 	if err != nil {
-		return NewExitError(ExitSafety, err.Error())
+		return nil, NewExitError(ExitSafety, err.Error())
 	}
-	if subtle.ConstantTimeCompare(fromRing, rootKey) != 1 || identity.Recipient().String() != ring.CurrentRecipient() {
-		return NewExitError(ExitSafety, "the root key received through the pairing does not match the keyring's current generation; nothing was written. The storage or relay may have been tampered with")
+	if subtle.ConstantTimeCompare(keys[ring.CurrentGeneration], rootKey) != 1 || identity.Recipient().String() != ring.CurrentRecipient() {
+		return nil, NewExitError(ExitSafety, "the root key received through the pairing does not match the keyring's current generation; nothing was written. The storage or relay may have been tampered with")
 	}
-	return nil
+	return ring, nil
 }
 
 // newDevicesCmd lists enrolled devices and approves pairing requests.
@@ -237,14 +246,27 @@ func runDevicesList(cmd *cobra.Command, _ []string) error {
 	// gets the control-plane view.
 	inKeyring := map[string]bool{}
 	keyringSeen := false
+	keyringRefused := ""
 	generation := 0
 	if home, cfg, err := loadAccountHome(); err == nil {
 		if store, prefix, err := backendFromConfig(cmd, cfg, home); err == nil {
 			if ring, _, err := keyring.Load(ctx, store, keyring.ObjectKey(prefix)); err == nil {
-				keyringSeen = true
-				generation = ring.CurrentGeneration
-				for _, d := range devices {
-					inKeyring[d.ID] = ring.HasDevice(d.ID)
+				// Listing holds no root key, so the generation chain is
+				// out of reach here; the local anchor is not, and a
+				// keyring rolled back or replaced under this device must
+				// not be reported as the account's key-model truth.
+				anchor, anchorErr := loadKeyringAnchor(home)
+				if anchorErr == nil {
+					anchorErr = anchor.check(ring)
+				}
+				if anchorErr != nil {
+					keyringRefused = anchorErr.Error()
+				} else {
+					keyringSeen = true
+					generation = ring.CurrentGeneration
+					for _, d := range devices {
+						inKeyring[d.ID] = ring.HasDevice(d.ID)
+					}
 				}
 			}
 		}
@@ -267,9 +289,15 @@ func runDevicesList(cmd *cobra.Command, _ []string) error {
 		if keyringSeen {
 			report["key_generation"] = generation
 		}
+		if keyringRefused != "" {
+			report["keyring_error"] = keyringRefused
+		}
 		return WriteJSON(cmd.OutOrStdout(), report)
 	}
 	out := cmd.OutOrStdout()
+	if keyringRefused != "" {
+		PrintHuman(out, "keyring: this device refuses it (%s)", keyringRefused)
+	}
 	for _, d := range devices {
 		line := fmt.Sprintf("%s  %s (%s), enrolled %s, last seen %s", d.ID, d.Name, d.Platform, d.CreatedAt, d.LastSeenAt)
 		switch {
@@ -418,19 +446,18 @@ func approvePairingRequest(ctx context.Context, cmd *cobra.Command, client *hop.
 	// that is current then, and into every earlier one this device can
 	// read, so it reads the whole locker). A device this machine can no
 	// longer open (it was revoked meanwhile) approves nothing.
-	floor, err := keyGenerationFloor(home)
+	anchor, err := loadKeyringAnchor(home)
 	if err != nil {
 		return 0, err
 	}
-	appended := false
+	var appended []keyring.AppendedWrap
 	var rootKey []byte
 	updated, err := keyring.Update(ctx, store, keyring.ObjectKey(prefix), func(k *keyring.Keyring) error {
-		appended = false
+		appended = nil
 		crypto.Zero(rootKey)
-		if err := checkKeyGenerationFloor(k.CurrentGeneration, floor); err != nil {
-			return err
-		}
-		keys, err := k.UnwrapGenerations(cfg.DeviceID, deviceKey)
+		keys, err := trustKeyring(anchor, k, func() (map[int][]byte, error) {
+			return k.UnwrapGenerations(cfg.DeviceID, deviceKey)
+		})
 		if err != nil {
 			return err
 		}
@@ -444,14 +471,11 @@ func approvePairingRequest(ctx context.Context, cmd *cobra.Command, client *hop.
 			}
 			return fmt.Errorf("the keyring already lists device %s with a different key; revoke it before approving a new enrolment", req.Device.ID)
 		}
-		if err := k.EnrolAll(keys, req.Device.ID, recipient, time.Now().UTC()); err != nil {
-			return err
-		}
-		appended = true
-		return nil
+		appended, err = k.EnrolAll(keys, req.Device.ID, recipient, time.Now().UTC())
+		return err
 	})
 	defer crypto.Zero(rootKey)
-	if exit := exitForKeyringUpdate(err); exit != nil {
+	if exit := exitForKeyringTrust(err); exit != nil {
 		return 0, exit
 	}
 	if errors.Is(err, keyring.ErrDeviceNotEnrolled) {
@@ -460,7 +484,7 @@ func approvePairingRequest(ctx context.Context, cmd *cobra.Command, client *hop.
 	if err != nil {
 		return 0, NewExitError(ExitAuthStorage, err.Error())
 	}
-	if err := observeKeyGeneration(home, updated.CurrentGeneration); err != nil {
+	if err := observeKeyring(home, updated); err != nil {
 		return 0, err
 	}
 	payload, err := pairing.SealRootKey(rootKey, req.ID, recipient, updated.CurrentGeneration)
@@ -474,10 +498,11 @@ func approvePairingRequest(ctx context.Context, cmd *cobra.Command, client *hop.
 		// generation, or the refused device could still unwrap
 		// pre-revocation history: the joining device would otherwise find
 		// itself enrolled on its next join with no approval event behind
-		// it. Only wraps made for this request's key are removed; a
-		// competing approval's wraps for the same device id stay.
-		if appended && (errors.Is(err, hop.ErrPairingExpired) || errors.Is(err, hop.ErrPairingDecided)) {
-			if rbErr := rollBackPairingWrap(ctx, store, prefix, req); rbErr != nil {
+		// it. Exactly the wraps this call wrote are removed, matched by
+		// generation and ciphertext, so wraps that were already there when
+		// it ran are left alone.
+		if len(appended) > 0 && (errors.Is(err, hop.ErrPairingExpired) || errors.Is(err, hop.ErrPairingDecided)) {
+			if rbErr := rollBackPairingWrap(ctx, store, prefix, req, appended); rbErr != nil {
 				return 0, NewExitError(ExitAuthStorage, fmt.Sprintf("%v; the wraps appended for device %s could not be removed (%v): run rein devices approve again once the device retries, or revoke it", err, req.Device.ID, rbErr))
 			}
 			return 0, NewExitError(ExitAuthStorage, fmt.Sprintf("%v; every wrap appended for device %s was removed again, nothing was approved", err, req.Device.ID))
@@ -504,14 +529,16 @@ func pairingStillOpen(req hop.PairingRequest, now time.Time) error {
 // rollBackPairingWrap removes the wraps approvePairingRequest appended for
 // req when the relay then refused it, under the same compare-and-swap as
 // the enrolment. The approval enrolled the device into every generation
-// this device could read (EnrolAll), so the rollback sweeps every
-// generation too — taking back only the current generation's wrap would
-// leave the refused device able to unwrap pre-revocation history. Removing
-// nothing is not an error: a concurrent revocation or rollover may already
-// have taken them.
-func rollBackPairingWrap(ctx context.Context, store backend.Backend, prefix string, req hop.PairingRequest) error {
+// this device could read (EnrolAll), so the rollback covers all of them —
+// taking back only the current generation's wrap would leave the refused
+// device able to unwrap pre-revocation history. It takes back only the
+// wraps this approval actually wrote: appended names them by generation and
+// by ciphertext, so a generation that already held a wrap for this device
+// when the approval ran keeps it. Removing nothing is not an error: a
+// concurrent revocation or rollover may already have taken them.
+func rollBackPairingWrap(ctx context.Context, store backend.Backend, prefix string, req hop.PairingRequest, appended []keyring.AppendedWrap) error {
 	_, err := keyring.Update(ctx, store, keyring.ObjectKey(prefix), func(k *keyring.Keyring) error {
-		k.UnenrolEverywhere(req.Device.ID, req.PublicKey)
+		k.UnenrolAppended(req.Device.ID, appended)
 		return nil
 	})
 	return err
@@ -599,24 +626,20 @@ func runDevicesRevoke(cmd *cobra.Command, target string) error {
 	// new generation; a device already revoked is reported, not revoked
 	// into a third generation).
 	now := time.Now().UTC()
-	floor, err := keyGenerationFloor(home)
+	anchor, err := loadKeyringAnchor(home)
 	if err != nil {
 		return err
 	}
 	var generation int
 	updated, err := keyring.Update(ctx, store, keyring.ObjectKey(prefix), func(k *keyring.Keyring) error {
-		if err := checkKeyGenerationFloor(k.CurrentGeneration, floor); err != nil {
-			return err
-		}
-		current, earlier, err := k.UnwrapForDevice(cfg.DeviceID, deviceKey)
+		keys, err := trustKeyring(anchor, k, func() (map[int][]byte, error) {
+			return k.UnwrapGenerations(cfg.DeviceID, deviceKey)
+		})
 		if err != nil {
 			return err
 		}
-		defer crypto.Zero(current)
-		for _, key := range earlier {
-			crypto.Zero(key)
-		}
-		next, err := k.Rollover(current, recoveryCode, []string{victim.ID}, cfg.DeviceID, now)
+		defer keyring.ZeroGenerations(keys)
+		next, err := k.Rollover(keys[k.CurrentGeneration], recoveryCode, []string{victim.ID}, cfg.DeviceID, now)
 		if err != nil {
 			return err
 		}
@@ -625,7 +648,7 @@ func runDevicesRevoke(cmd *cobra.Command, target string) error {
 		return nil
 	})
 	already := false
-	if exit := exitForKeyringUpdate(err); exit != nil {
+	if exit := exitForKeyringTrust(err); exit != nil {
 		return exit
 	}
 	switch {
@@ -651,7 +674,7 @@ func runDevicesRevoke(cmd *cobra.Command, target string) error {
 	// Pin the generation this device just created (or observed) before the
 	// control plane is told: a rolled-back keyring is then refused here
 	// even if the revocation call below fails and is retried.
-	if err := observeKeyGeneration(home, generation); err != nil {
+	if err := observeKeyring(home, updated); err != nil {
 		return err
 	}
 

@@ -185,7 +185,7 @@ written. It is never stored on disk, in config, or in logs.`,
 				_ = secrets.DeleteSecret(secretRef)
 				return NewExitError(ExitAuthStorage, err.Error())
 			}
-			if err := saveAccountEnrolment(home, cfg, now, ring.CurrentGeneration, "init"); err != nil {
+			if err := saveAccountEnrolment(home, cfg, now, ring, "init"); err != nil {
 				return err
 			}
 			PrintHuman(cmd.OutOrStdout(), "account initialized: root key generated on this device, keyring written to storage")
@@ -258,10 +258,22 @@ written under the current key generation.`,
 			if err != nil {
 				return NewExitError(ExitUsage, err.Error())
 			}
-			if _, err := ring.UnwrapWithRecoveryCode(recoveryCode); errors.Is(err, keyring.ErrRecoveryMismatch) {
+			// The recovery code is this device's anchor: it has no local
+			// record to check history against (recover refuses to run with
+			// one), but only a holder of the code can write a recovery wrap
+			// that opens, so a generation whose wrap opens is the account's
+			// own. The chain is then checked over every generation the code
+			// opened, so one appended by somebody else is refused here too.
+			recoveryKeys, err := ring.UnwrapGenerationsWithRecoveryCode(recoveryCode)
+			if errors.Is(err, keyring.ErrRecoveryMismatch) {
 				return NewExitError(ExitAuthStorage, "recovery code does not match this keyring; nothing was written")
 			} else if err != nil {
 				return NewExitError(ExitAuthStorage, err.Error())
+			}
+			verifyErr := ring.VerifyChain(recoveryKeys)
+			keyring.ZeroGenerations(recoveryKeys)
+			if exit := exitForKeyringTrust(verifyErr); exit != nil {
+				return exit
 			}
 
 			now := time.Now().UTC()
@@ -285,7 +297,7 @@ written under the current key generation.`,
 				for _, key := range earlier {
 					crypto.Zero(key)
 				}
-				if err := saveAccountEnrolment(home, cfg, now, ring.CurrentGeneration, "recover"); err != nil {
+				if err := saveAccountEnrolment(home, cfg, now, ring, "recover"); err != nil {
 					return err
 				}
 				PrintHuman(cmd.OutOrStdout(), "device already enrolled; local enrolment record restored, keyring and device key unchanged")
@@ -318,12 +330,18 @@ written under the current key generation.`,
 			// on. Unwrapping happens inside the compare-and-swap so a
 			// rollover landing in between is seen, not raced.
 			updated, err := keyring.Update(ctx, store, keyringKey, func(k *keyring.Keyring) error {
-				keys, err := k.UnwrapGenerationsWithRecoveryCode(recoveryCode)
+				// Verified again on every attempt: a rollover — or a
+				// forged generation — landing between the load above and
+				// this write is seen here, not raced past.
+				keys, err := trustKeyring(keyringAnchor{}, k, func() (map[int][]byte, error) {
+					return k.UnwrapGenerationsWithRecoveryCode(recoveryCode)
+				})
 				if err != nil {
 					return err
 				}
 				defer keyring.ZeroGenerations(keys)
-				return k.EnrolAll(keys, cfg.DeviceID, deviceKey.Recipient(), now)
+				_, err = k.EnrolAll(keys, cfg.DeviceID, deviceKey.Recipient(), now)
+				return err
 			})
 			if err != nil {
 				// Only the key this command just created is rolled back
@@ -333,12 +351,15 @@ written under the current key generation.`,
 				} else {
 					_ = secrets.DeleteSecret(secretRef)
 				}
+				if exit := exitForKeyringTrust(err); exit != nil {
+					return exit
+				}
 				if errors.Is(err, keyring.ErrRecoveryMismatch) {
 					return NewExitError(ExitAuthStorage, "recovery code does not match this keyring; nothing was written")
 				}
 				return NewExitError(ExitAuthStorage, err.Error())
 			}
-			if err := saveAccountEnrolment(home, cfg, now, updated.CurrentGeneration, "recover"); err != nil {
+			if err := saveAccountEnrolment(home, cfg, now, updated, "recover"); err != nil {
 				return err
 			}
 			PrintHuman(cmd.OutOrStdout(), "device enrolled from the recovery code; this device now reads everything written under key generation %d and the %d earlier one(s)", updated.CurrentGeneration, len(updated.GenerationNumbers())-1)
@@ -391,6 +412,10 @@ func newAccountStatusCmd() *cobra.Command {
 			if _, err := seams.secretStore().GetSecret(deviceSecretRef(cfg.ProfileID, cfg.DeviceID)); err == nil {
 				r.DeviceKeyPresent = true
 			}
+			// Status is a diagnostic and reports what it finds rather than
+			// failing on it, so an unreadable enrolment record becomes the
+			// reported reason the keyring cannot be judged here.
+			anchor, anchorErr := loadKeyringAnchor(home)
 			if store, prefix, err := backendFromConfig(cmd, cfg, home); err != nil {
 				r.Error = err.Error()
 			} else if ring, _, err := keyring.Load(context.Background(), store, keyring.ObjectKey(prefix)); err == nil {
@@ -398,6 +423,18 @@ func newAccountStatusCmd() *cobra.Command {
 				r.KeyGeneration = ring.CurrentGeneration
 				r.EnrolledDevices = ring.DeviceCount()
 				r.DeviceInKeyring = ring.HasDevice(cfg.DeviceID)
+				// Status holds no root key, so it cannot check the
+				// generation chain. The anchor needs nothing but public
+				// fields, and it is what catches a keyring rolled back or
+				// replaced under this device.
+				switch {
+				case anchorErr != nil:
+					r.Error = anchorErr.Error()
+				default:
+					if err := anchor.check(ring); err != nil {
+						r.Error = err.Error()
+					}
+				}
 			} else if !errors.Is(err, keyring.ErrNotFound) {
 				r.Error = err.Error()
 			}
@@ -420,7 +457,11 @@ func newAccountStatusCmd() *cobra.Command {
 				PrintHuman(out, "keyring: not found at the configured storage")
 			}
 			if r.Error != "" {
-				PrintHuman(out, "keyring: unavailable (%s)", r.Error)
+				if r.KeyringPresent {
+					PrintHuman(out, "keyring: this device refuses it (%s)", r.Error)
+				} else {
+					PrintHuman(out, "keyring: unavailable (%s)", r.Error)
+				}
 			}
 			PrintHuman(out, "local record: %s", r.AccountPath)
 			return nil
@@ -452,14 +493,16 @@ func loadAccountHome() (string, *schema.Config, error) {
 // saveAccountEnrolment switches the profile to the root-key model and records
 // the local enrolment. Config is saved first so a crash between the two
 // leaves a config whose key model matches the keyring already in storage.
-func saveAccountEnrolment(home string, cfg *schema.Config, now time.Time, generation int, via string) error {
-	return saveAccountEnrolmentConfirmed(home, cfg, now, generation, via, true)
+func saveAccountEnrolment(home string, cfg *schema.Config, now time.Time, ring *keyring.Keyring, via string) error {
+	return saveAccountEnrolmentConfirmed(home, cfg, now, ring, via, true)
 }
 
 // saveAccountEnrolmentConfirmed is saveAccountEnrolment with an explicit
 // recovery-code flag: a device enrolled by approval (join) never saw the
-// recovery code, and its record must say so.
-func saveAccountEnrolmentConfirmed(home string, cfg *schema.Config, now time.Time, generation int, via string, recoveryConfirmed bool) error {
+// recovery code, and its record must say so. The keyring's current
+// generation and its root-key recipient are both recorded: together they
+// are the anchor every later read of the keyring is checked against.
+func saveAccountEnrolmentConfirmed(home string, cfg *schema.Config, now time.Time, ring *keyring.Keyring, via string, recoveryConfirmed bool) error {
 	cfg.Encryption.Type = schema.EncryptionRootKey
 	if err := config.SaveConfig(home, cfg); err != nil {
 		return NewExitError(ExitConfig, err.Error())
@@ -468,7 +511,8 @@ func saveAccountEnrolmentConfirmed(home string, cfg *schema.Config, now time.Tim
 		SchemaVersion:         schema.AccountSchemaVersion,
 		ProfileID:             cfg.ProfileID,
 		DeviceID:              cfg.DeviceID,
-		KeyGeneration:         generation,
+		KeyGeneration:         ring.CurrentGeneration,
+		KeyRecipient:          ring.CurrentRecipient(),
 		RecoveryCodeConfirmed: recoveryConfirmed,
 		EnrolledVia:           via,
 		EnrolledAt:            now.Format(time.RFC3339),
@@ -542,38 +586,70 @@ func rootKeysFromConfig(ctx context.Context, cmd *cobra.Command, cfg *schema.Con
 	if err != nil {
 		return nil, NewExitError(ExitAuthStorage, err.Error())
 	}
-	if err := observeKeyGeneration(home, ring.CurrentGeneration); err != nil {
+	anchor, err := loadKeyringAnchor(home)
+	if err != nil {
 		return nil, err
 	}
-	current, earlier, err := ring.UnwrapForDevice(cfg.DeviceID, deviceKey)
+	generations, err := trustKeyring(anchor, ring, func() (map[int][]byte, error) {
+		return ring.UnwrapGenerations(cfg.DeviceID, deviceKey)
+	})
+	if exit := exitForKeyringTrust(err); exit != nil {
+		return nil, exit
+	}
 	if errors.Is(err, keyring.ErrDeviceNotEnrolled) {
 		return nil, NewExitError(ExitAuthStorage, fmt.Sprintf("this device is not enrolled in key generation %d; %s", ring.CurrentGeneration, notEnrolled))
 	}
 	if err != nil {
 		return nil, NewExitError(ExitAuthStorage, err.Error())
 	}
-	keys, err := crypto.NewRootKeyProvider(current, earlier...)
-	crypto.Zero(current)
-	for _, key := range earlier {
-		crypto.Zero(key)
+	defer keyring.ZeroGenerations(generations)
+	// Pinned only now, once the keyring has been authenticated end to end.
+	if err := observeKeyring(home, ring); err != nil {
+		return nil, err
 	}
+	current := generations[ring.CurrentGeneration]
+	earlier := make([][]byte, 0, len(generations))
+	for n, key := range generations {
+		if n != ring.CurrentGeneration {
+			earlier = append(earlier, key)
+		}
+	}
+	keys, err := crypto.NewRootKeyProvider(current, earlier...)
 	if err != nil {
 		return nil, NewExitError(ExitRuntime, err.Error())
 	}
 	return keys, nil
 }
 
-// keyGenerationFloor returns the highest key generation this device has
-// observed, as recorded in account state. Zero means no record exists.
-func keyGenerationFloor(home string) (int, error) {
+// keyringAnchor is what this device already knows about its account's
+// keyring, read from the local enrolment record.
+//
+// It exists because the keyring's generation chain proves a relative fact,
+// not an absolute one: generation N+1 was written by a holder of generation
+// N's root key. That stops a revoked device from appending a generation the
+// account would adopt, but it says nothing about which keyring is this
+// account's, so a party with write access to the bucket could otherwise
+// replace the whole object with a self-consistent forgery built on a root
+// key of its own. The anchor refuses that: the generation this device last
+// unwrapped must still be there, and must still name the same root key.
+type keyringAnchor struct {
+	generation int
+	recipient  string
+}
+
+// loadKeyringAnchor reads the anchor from account state. A device with no
+// enrolment record has no anchor (zero value), which is correct: it has
+// never seen this account's keyring, and the path it is on supplies its own
+// anchor — the recovery code, or the root key relayed by an approval.
+func loadKeyringAnchor(home string) (keyringAnchor, error) {
 	account, err := config.LoadAccount(home)
 	if os.IsNotExist(err) {
-		return 0, nil
+		return keyringAnchor{}, nil
 	}
 	if err != nil {
-		return 0, NewExitError(ExitConfig, "read account state: "+err.Error())
+		return keyringAnchor{}, NewExitError(ExitConfig, "read account state: "+err.Error())
 	}
-	return account.KeyGeneration, nil
+	return keyringAnchor{generation: account.KeyGeneration, recipient: account.KeyRecipient}, nil
 }
 
 // keyringRolledBackError reports a keyring whose current generation is
@@ -584,10 +660,25 @@ func (e *keyringRolledBackError) Error() string {
 	return fmt.Sprintf("keyring current_generation %d is below the %d this device has already seen; the keyring was rolled back (a revoked device may have restored an older copy inside its credential window). Nothing was written; run rein devices revoke again from a device that saw generation %d", e.saw, e.floor, e.floor)
 }
 
-// checkKeyGenerationFloor fails closed when observed is below floor. The
-// keyring carries no integrity protection of its own, so the generation
-// number each device has already seen is the only defence against a
-// revoked device putting its pre-rollover copy back.
+// keyringRewrittenError reports a keyring whose history no longer matches
+// what this device recorded: the generation it last unwrapped is gone, or
+// now names a different root key. Appending never does either.
+type keyringRewrittenError struct {
+	generation  int
+	want, found string
+}
+
+func (e *keyringRewrittenError) Error() string {
+	what := fmt.Sprintf("key generation %d now names root key %s, not the %s this device recorded", e.generation, e.found, e.want)
+	if e.found == "" {
+		what = fmt.Sprintf("key generation %d, which this device has already unwrapped, is no longer in the keyring", e.generation)
+	}
+	return what + ". The keyring was replaced rather than appended to, which no legitimate change does; someone else can write this locker. Nothing was written: restore the account's keyring, or re-enrol this device from the recovery code once you know who has write access"
+}
+
+// checkKeyGenerationFloor fails closed when observed is below floor: a
+// device that has seen a rollover is never talked back into the generation
+// a revoked device still holds.
 func checkKeyGenerationFloor(observed, floor int) error {
 	if observed < floor {
 		return &keyringRolledBackError{saw: observed, floor: floor}
@@ -595,11 +686,58 @@ func checkKeyGenerationFloor(observed, floor int) error {
 	return nil
 }
 
-// observeKeyGeneration compares the generation just read from the keyring
-// with the floor recorded in account state: it refuses a lower one and
-// raises the record when a higher one is seen, so a rollover is pinned on
-// every device the first time that device sees it.
-func observeKeyGeneration(home string, observed int) error {
+// check refuses a keyring this device must not act on: one rolled back
+// below the generation it has already seen, and one whose history was
+// rewritten under it. It reads nothing but public fields, so every command
+// can afford it, including the ones that hold no keys.
+func (a keyringAnchor) check(k *keyring.Keyring) error {
+	if a.generation == 0 {
+		return nil
+	}
+	if err := checkKeyGenerationFloor(k.CurrentGeneration, a.generation); err != nil {
+		return err
+	}
+	if a.recipient == "" {
+		// Enrolled by a build that recorded only the generation number.
+		// The next successful command records the recipient too; until
+		// then the floor is all this device has.
+		return nil
+	}
+	if found := k.GenerationRecipient(a.generation); found != a.recipient {
+		return &keyringRewrittenError{generation: a.generation, want: a.recipient, found: found}
+	}
+	return nil
+}
+
+// trustKeyring is the one place a loaded keyring becomes something this
+// device will act on. The anchor goes first: it is cheap, needs no keys, and
+// names the rollback and rewrite cases precisely. Only then are the root
+// keys unwrapped, and only then is the generation chain checked against
+// them, so nothing is written under a generation this device cannot trace
+// back to one it already trusted.
+//
+// The returned keys must be zeroed by the caller.
+func trustKeyring(anchor keyringAnchor, k *keyring.Keyring, unwrap func() (map[int][]byte, error)) (map[int][]byte, error) {
+	if err := anchor.check(k); err != nil {
+		return nil, err
+	}
+	keys, err := unwrap()
+	if err != nil {
+		return nil, err
+	}
+	if err := k.VerifyChain(keys); err != nil {
+		keyring.ZeroGenerations(keys)
+		return nil, err
+	}
+	return keys, nil
+}
+
+// observeKeyring records the keyring this device has just accepted: the
+// current generation becomes the floor no later read may fall below, and its
+// root-key recipient becomes the anchor a later read checks history against.
+// It runs only after trustKeyring, so a device can never pin a generation it
+// was unable to authenticate and lock itself out of its own account.
+func observeKeyring(home string, k *keyring.Keyring) error {
 	account, err := config.LoadAccount(home)
 	if os.IsNotExist(err) {
 		return nil
@@ -607,25 +745,36 @@ func observeKeyGeneration(home string, observed int) error {
 	if err != nil {
 		return NewExitError(ExitConfig, "read account state: "+err.Error())
 	}
-	if err := checkKeyGenerationFloor(observed, account.KeyGeneration); err != nil {
+	anchor := keyringAnchor{generation: account.KeyGeneration, recipient: account.KeyRecipient}
+	if err := anchor.check(k); err != nil {
 		return NewExitError(ExitSafety, err.Error())
 	}
-	if observed == account.KeyGeneration {
+	recipient := k.CurrentRecipient()
+	if account.KeyGeneration == k.CurrentGeneration && account.KeyRecipient == recipient {
 		return nil
 	}
-	account.KeyGeneration = observed
+	account.KeyGeneration = k.CurrentGeneration
+	account.KeyRecipient = recipient
 	if err := config.SaveAccount(home, account); err != nil {
 		return NewExitError(ExitConfig, err.Error())
 	}
 	return nil
 }
 
-// exitForKeyringUpdate maps a keyring rollback seen inside a CAS closure
-// to a safety exit, leaving other errors untouched.
-func exitForKeyringUpdate(err error) error {
+// exitForKeyringTrust maps a keyring this device refuses to trust — rolled
+// back, rewritten under it, or carrying a generation it cannot authenticate
+// — to a safety exit, leaving other errors untouched. It is used where the
+// refusal surfaces out of a compare-and-swap closure.
+func exitForKeyringTrust(err error) error {
 	var rolled *keyringRolledBackError
-	if errors.As(err, &rolled) {
+	var rewritten *keyringRewrittenError
+	switch {
+	case errors.As(err, &rolled):
 		return NewExitError(ExitSafety, rolled.Error())
+	case errors.As(err, &rewritten):
+		return NewExitError(ExitSafety, rewritten.Error())
+	case errors.Is(err, keyring.ErrUnauthenticatedGeneration):
+		return NewExitError(ExitSafety, err.Error()+". Nothing was written; a party with write access to the locker may have appended a key generation of its own")
 	}
 	return nil
 }

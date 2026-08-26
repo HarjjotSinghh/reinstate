@@ -3,8 +3,10 @@ package keyring
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -23,7 +25,7 @@ const (
 	goldenDeviceBKey = "AGE-SECRET-KEY-1VS4RSCKH9SR69GZ3KNZEJFATML08MLNAY3TV79RAX2YAKVS87V6Q9AEM8G"
 )
 
-var goldenV2Path = filepath.Join("..", "..", "testdata", "keyring", "keyring.v2.json")
+var goldenV2Path = filepath.Join("..", "..", "testdata", "keyring", "keyring.two-generations.json")
 
 func goldenIdentities(t *testing.T) (a, b *age.X25519Identity) {
 	t.Helper()
@@ -38,13 +40,14 @@ func goldenIdentities(t *testing.T) (a, b *age.X25519Identity) {
 	return a, b
 }
 
-// TestGoldenV2Fixture pins the version 2 object format: two generations,
-// device B revoked by device A between them. Set KEYRING_WRITE_GOLDEN=1 to
-// regenerate the fixture after a deliberate format change.
-func TestGoldenV2Fixture(t *testing.T) {
+// TestGoldenRolledOverFixture pins the object format across a rollover: two
+// generations, device B revoked by device A between them, generation 2
+// chained to generation 1. Set KEYRING_WRITE_GOLDEN=1 to regenerate the
+// fixture after a deliberate format change.
+func TestGoldenRolledOverFixture(t *testing.T) {
 	a, b := goldenIdentities(t)
 	if os.Getenv("KEYRING_WRITE_GOLDEN") == "1" {
-		t0 := time.Date(2026, 8, 23, 12, 0, 0, 0, time.UTC)
+		t0 := goldenStamp
 		k, err := New(goldenProfileID, goldenRootKey(), goldenRecoveryCode, goldenDeviceID, a, t0)
 		if err != nil {
 			t.Fatal(err)
@@ -73,8 +76,19 @@ func TestGoldenV2Fixture(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if k.SchemaVersion != 2 || k.CurrentGeneration != 2 || len(k.Generations) != 2 || k.DeviceCount() != 1 {
+	if k.SchemaVersion != SchemaVersion || k.CurrentGeneration != 2 || len(k.Generations) != 2 || k.DeviceCount() != 1 {
 		t.Fatalf("unexpected fixture shape: version=%d current=%d gens=%d devices=%d", k.SchemaVersion, k.CurrentGeneration, len(k.Generations), k.DeviceCount())
+	}
+	if k.Generations[0].Chain != "" || k.Generations[1].Chain == "" {
+		t.Fatalf("chain shape: gen1=%q gen2=%q", k.Generations[0].Chain, k.Generations[1].Chain)
+	}
+	// The chain checks out against generation 1's root key, and only that.
+	if err := k.VerifyChain(map[int][]byte{1: goldenRootKey()}); err != nil {
+		t.Fatalf("golden chain does not verify: %v", err)
+	}
+	wrongKey, _ := crypto.NewRootKey()
+	if err := k.VerifyChain(map[int][]byte{1: wrongKey}); !errors.Is(err, ErrUnauthenticatedGeneration) {
+		t.Fatalf("chain verified under a foreign key: %v", err)
 	}
 	for _, g := range k.Generations {
 		if g.Recovery.Format != WrapFormatBound {
@@ -172,64 +186,28 @@ func TestBoundWrapsRefuseTransplant(t *testing.T) {
 	})
 }
 
-// TestLegacyKeyringMigratesOnWrite: a version 1 object is read as is, and
-// the first write that holds the root key rebinds its device wraps and
-// stamps version 2; the recovery wrap is rebound at the next rollover.
-func TestLegacyKeyringMigratesOnWrite(t *testing.T) {
-	k := loadGolden(t)
-	if k.SchemaVersion != 1 || k.Generations[0].Devices[0].Format != WrapFormatLegacy || k.Generations[0].Recovery.Format != WrapFormatLegacy {
-		t.Fatalf("v1 fixture is not legacy: %+v", k.Generations[0])
-	}
-	a, b := goldenIdentities(t)
-	if err := k.Enrol(goldenRootKey(), goldenDeviceBID, b.Recipient(), time.Now()); err != nil {
-		t.Fatal(err)
-	}
-	raw, err := k.Marshal()
+// TestEarlierSchemaVersionsAreNotRead is the cutover: version 1 and version
+// 2 objects had no chain between their generations, so a party with write
+// access to the bucket could append a generation of its own and every device
+// would adopt it. Reading them at all would keep that hole open, so they are
+// refused outright rather than upgraded in place.
+func TestEarlierSchemaVersionsAreNotRead(t *testing.T) {
+	raw, err := os.ReadFile(goldenV2Path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	again, err := Parse(raw)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if again.SchemaVersion != 2 {
-		t.Fatalf("schema_version %d after write", again.SchemaVersion)
-	}
-	for _, d := range again.Generations[0].Devices {
-		if d.Format != WrapFormatBound {
-			t.Fatalf("device %s was not rebound", d.DeviceID)
+	for _, version := range []float64{1, 2} {
+		var obj map[string]any
+		_ = json.Unmarshal(raw, &obj)
+		obj["schema_version"] = version
+		bad, _ := json.Marshal(obj)
+		_, err := Parse(bad)
+		if err == nil || !strings.Contains(err.Error(), "unsupported schema_version") {
+			t.Fatalf("schema_version %v: got %v", version, err)
 		}
-	}
-	if again.Generations[0].Recovery.Format != WrapFormatLegacy {
-		t.Fatal("recovery wrap cannot be rebound without the code")
-	}
-	for id, identity := range map[string]*age.X25519Identity{goldenDeviceID: a, goldenDeviceBID: b} {
-		if current, _, err := again.UnwrapForDevice(id, identity); err != nil || !bytes.Equal(current, goldenRootKey()) {
-			t.Fatalf("%s after migration: %v", id, err)
+		if !strings.Contains(err.Error(), "did not authenticate their key generations") {
+			t.Fatalf("the refusal does not say why version %v is refused: %v", version, err)
 		}
-	}
-	if got, err := again.UnwrapWithRecoveryCode(goldenRecoveryCode); err != nil || !bytes.Equal(got, goldenRootKey()) {
-		t.Fatalf("legacy recovery wrap after migration: %v", err)
-	}
-	next, err := again.Rollover(goldenRootKey(), goldenRecoveryCode, []string{goldenDeviceBID}, goldenDeviceID, time.Now())
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer crypto.Zero(next)
-	if again.current().Recovery.Format != WrapFormatBound {
-		t.Fatal("rollover did not bind the recovery wrap")
-	}
-	got, err := again.UnwrapWithRecoveryCode(goldenRecoveryCode)
-	if err != nil || !bytes.Equal(got, next) {
-		t.Fatalf("recovery after rollover: %v", err)
-	}
-	// A version 1 object claiming bound wraps is malformed.
-	var obj map[string]any
-	_ = json.Unmarshal(raw, &obj)
-	obj["schema_version"] = 1
-	bad, _ := json.Marshal(obj)
-	if _, err := Parse(bad); err == nil {
-		t.Fatal("accepted schema_version 1 with bound wraps")
 	}
 }
 
@@ -265,7 +243,29 @@ func TestParseRejectsMalformedGenerations(t *testing.T) {
 		"unknown wrap format": {mutate(func(o map[string]any) {
 			gens(o)[1].(map[string]any)["recovery"].(map[string]any)["format"] = float64(9)
 		}), "unknown format"},
-		"future schema": {mutate(func(o map[string]any) { o["schema_version"] = float64(3) }), "unsupported schema_version"},
+		"unbound device wrap": {mutate(func(o map[string]any) {
+			delete(gens(o)[0].(map[string]any)["devices"].([]any)[0].(map[string]any), "format")
+		}), "unknown format"},
+		"future schema": {mutate(func(o map[string]any) { o["schema_version"] = float64(SchemaVersion + 1) }), "unsupported schema_version"},
+		// A generation past the first with no chain, a chain of the wrong
+		// length, a chain on generation 1, or a gap in the numbering: each
+		// leaves a generation no reader could ever authenticate.
+		"missing chain": {mutate(func(o map[string]any) {
+			delete(gens(o)[1].(map[string]any), "chain")
+		}), "0-byte chain"},
+		"short chain": {mutate(func(o map[string]any) {
+			gens(o)[1].(map[string]any)["chain"] = "AAAA"
+		}), "3-byte chain"},
+		"chain that is not base64": {mutate(func(o map[string]any) {
+			gens(o)[1].(map[string]any)["chain"] = "not base64!"
+		}), "not valid base64"},
+		"chain on the first generation": {mutate(func(o map[string]any) {
+			gens(o)[0].(map[string]any)["chain"] = gens(o)[1].(map[string]any)["chain"]
+		}), "no generation before it"},
+		"gap in the numbering": {mutate(func(o map[string]any) {
+			gens(o)[1].(map[string]any)["number"] = float64(3)
+			o["current_generation"] = float64(3)
+		}), "generation 2 is missing"},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -498,59 +498,236 @@ func TestRolloverConvergesAgainstConcurrentEnrol(t *testing.T) {
 	}
 }
 
-// TestLegacyWrapCannotBeReplayedIntoLaterGeneration mirrors the review probe
-// for #11: a legacy (unbound) generation-1 wrap lifted into a later
-// generation must not be accepted, or the holder would seal new pushes to a
-// root key the revoked device still has. Three layers refuse it: Parse
-// rejects unbound wraps outside generation 1, Rollover rebinds the outgoing
-// generation so no legacy device wrap survives, and unwrapDevice checks the
-// unwrapped key against the generation's recipient.
-func TestLegacyWrapCannotBeReplayedIntoLaterGeneration(t *testing.T) {
-	k := loadGolden(t)
-	legacyA := k.Generations[0].Devices[0]
-	if legacyA.Format != WrapFormatLegacy {
-		t.Fatalf("fixture wrap for A is not legacy")
+// forgeGeneration appends the generation a party with write access to the
+// bucket, but no root key, can build from the keyring alone: a fresh root
+// key of its own, one age wrap per listed device sealed to that device's
+// published public key, and a recovery wrap it cannot make open (it does not
+// have the code). It is the exact object the 2026-08-27 verification round
+// used to take over an account.
+func forgeGeneration(t *testing.T, k *Keyring, chain string) *Keyring {
+	t.Helper()
+	g := k.current()
+	attackerKey, err := crypto.NewRootKey()
+	if err != nil {
+		t.Fatal(err)
 	}
+	identity, err := crypto.RootKeyIdentity(attackerKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	next := Generation{
+		Number:    k.maxGeneration() + 1,
+		CreatedAt: time.Now().UTC().Format(time.RFC3339),
+		Recipient: identity.Recipient().String(),
+		Recovery:  g.Recovery,
+		Chain:     chain,
+	}
+	bind := binding{profileID: k.ProfileID, generation: next.Number}
+	for _, d := range g.Devices {
+		recipient, err := age.ParseX25519Recipient(d.PublicKey)
+		if err != nil {
+			t.Fatal(err)
+		}
+		wrap, err := wrapForDevice(attackerKey, d.DeviceID, recipient, time.Now(), bind)
+		if err != nil {
+			t.Fatal(err)
+		}
+		next.Devices = append(next.Devices, wrap)
+	}
+	forged := *k
+	forged.Generations = append(append([]Generation(nil), k.Generations...), next)
+	forged.CurrentGeneration = next.Number
+	return &forged
+}
+
+// TestForgedGenerationIsRefused is the blocker probe from the 2026-08-27
+// verification round. Everything the forgery needs is public — the profile
+// id, the generation numbers, and every device's public key — so the object
+// parses and the wraps open. What it cannot produce is the chain, which is
+// keyed by the root key of the generation it claims to follow, and a party
+// that never held that key cannot compute it.
+func TestForgedGenerationIsRefused(t *testing.T) {
 	a, b := goldenIdentities(t)
+	k, err := New(goldenProfileID, goldenRootKey(), goldenRecoveryCode, goldenDeviceID, a, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := k.Enrol(goldenRootKey(), goldenDeviceBID, b.Recipient(), time.Now()); err != nil {
 		t.Fatal(err)
 	}
-	// Undo Enrol's rebinding of A so the outgoing generation still holds
-	// the legacy wrap when Rollover runs.
-	k.Generations[0].Devices[0] = legacyA
 	next, err := k.Rollover(goldenRootKey(), goldenRecoveryCode, []string{goldenDeviceBID}, goldenDeviceID, time.Now())
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer crypto.Zero(next)
-	for _, d := range k.Generations[0].Devices {
-		if d.Format != WrapFormatBound {
-			t.Fatalf("rollover left a legacy wrap for %s in the outgoing generation", d.DeviceID)
-		}
+
+	chains := map[string]string{
+		"no chain at all":              "",
+		"a chain of the right length":  base64.StdEncoding.EncodeToString(make([]byte, chainMACSize)),
+		"the previous chain replayed":  k.current().Chain,
+		"a chain keyed by its own key": "",
+	}
+	// The last case: the attacker MACs its own header with a key it chose
+	// itself, which is what it would try after reading this package.
+	attackerKey := bytes.Repeat([]byte{0xAA}, crypto.RootKeySize)
+	forgedSelf := forgeGeneration(t, k, "")
+	selfChain, err := generationChain(forgedSelf.ProfileID, forgedSelf.current(), forgedSelf.generation(2), attackerKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	chains["a chain keyed by its own key"] = selfChain
+
+	for name, chain := range chains {
+		t.Run(name, func(t *testing.T) {
+			forged := forgeGeneration(t, k, chain)
+			raw, err := json.Marshal(forged)
+			if err != nil {
+				t.Fatal(err)
+			}
+			parsed, err := Parse(raw)
+			if err != nil {
+				// Refused before any key is involved: also correct.
+				return
+			}
+			if parsed.CurrentGeneration != 3 {
+				t.Fatalf("forged keyring parsed at generation %d", parsed.CurrentGeneration)
+			}
+			// A remaining device unwraps its wraps — the forged one opens,
+			// which is the point: nothing about the wrap gives it away.
+			keys, err := parsed.UnwrapGenerations(goldenDeviceID, a)
+			if err != nil {
+				t.Fatalf("the forged wrap did not even open, so the probe proves nothing: %v", err)
+			}
+			defer ZeroGenerations(keys)
+			if err := parsed.VerifyChain(keys); !errors.Is(err, ErrUnauthenticatedGeneration) {
+				t.Fatalf("VerifyChain accepted a forged generation: %v", err)
+			}
+			// And the recovery code cannot be talked into it either.
+			if _, err := parsed.UnwrapWithRecoveryCode(goldenRecoveryCode); !errors.Is(err, ErrRecoveryMismatch) {
+				t.Fatalf("the recovery code opened a forged generation: %v", err)
+			}
+		})
 	}
 
-	// Transplant A's legacy generation-1 wrap into generation 2.
-	cur := k.current()
-	for i := range cur.Devices {
-		if cur.Devices[i].DeviceID == goldenDeviceID {
-			cur.Devices[i] = legacyA
+	// The genuine keyring still verifies, from every reader's point of view.
+	genuine, err := k.UnwrapGenerations(goldenDeviceID, a)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ZeroGenerations(genuine)
+	if err := k.VerifyChain(genuine); err != nil {
+		t.Fatalf("the genuine keyring does not verify: %v", err)
+	}
+	fromCode, err := k.UnwrapGenerationsWithRecoveryCode(goldenRecoveryCode)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ZeroGenerations(fromCode)
+	if err := k.VerifyChain(fromCode); err != nil {
+		t.Fatalf("the recovery code cannot verify the genuine keyring: %v", err)
+	}
+}
+
+// TestVerifyChainNeedsThePredecessorsKey: a reader that cannot reach the
+// generation before the current one cannot authenticate the current one
+// either, and must say so rather than accept it.
+func TestVerifyChainNeedsThePredecessorsKey(t *testing.T) {
+	a, b := goldenIdentities(t)
+	k, err := New(goldenProfileID, goldenRootKey(), goldenRecoveryCode, goldenDeviceID, a, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := k.Enrol(goldenRootKey(), goldenDeviceBID, b.Recipient(), time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	// Generation 1 alone: nothing to chain, and nothing to refuse.
+	if err := k.VerifyChain(map[int][]byte{}); err != nil {
+		t.Fatalf("generation 1 needs no chain: %v", err)
+	}
+	next, err := k.Rollover(goldenRootKey(), goldenRecoveryCode, []string{goldenDeviceBID}, goldenDeviceID, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer crypto.Zero(next)
+	err = k.VerifyChain(map[int][]byte{2: next})
+	if !errors.Is(err, ErrUnauthenticatedGeneration) || !strings.Contains(err.Error(), "no root key for generation 1") {
+		t.Fatalf("holding only the current key: %v", err)
+	}
+	if err := k.VerifyChain(map[int][]byte{1: goldenRootKey(), 2: next}); err != nil {
+		t.Fatalf("holding both keys: %v", err)
+	}
+}
+
+// TestChainSurvivesManyRolloversAndRecovery: the chain must hold at depth,
+// and the recovery code must still enrol a device after several rollovers —
+// a chain that only verifies at depth 1, or that a recovery code cannot
+// check, would brick the account instead of protecting it.
+func TestChainSurvivesManyRolloversAndRecovery(t *testing.T) {
+	a, _ := goldenIdentities(t)
+	k, err := New(goldenProfileID, goldenRootKey(), goldenRecoveryCode, goldenDeviceID, a, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	current := goldenRootKey()
+	for i := range 8 {
+		victim, _ := age.GenerateX25519Identity()
+		id := fmt.Sprintf("victim-%d", i)
+		if err := k.Enrol(current, id, victim.Recipient(), time.Now()); err != nil {
+			t.Fatal(err)
 		}
+		next, err := k.Rollover(current, goldenRecoveryCode, []string{id}, goldenDeviceID, time.Now())
+		if err != nil {
+			t.Fatalf("rollover %d: %v", i, err)
+		}
+		crypto.Zero(current)
+		current = next
+	}
+	crypto.Zero(current)
+	if k.CurrentGeneration != 9 {
+		t.Fatalf("current generation %d after eight rollovers", k.CurrentGeneration)
 	}
 	raw, err := k.Marshal()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Parse(raw); err == nil {
-		t.Fatal("Parse accepted a legacy wrap in generation 2")
+	stored, err := Parse(raw)
+	if err != nil {
+		t.Fatal(err)
 	}
-	// Even bypassing Parse, the unwrapped key must match the recipient.
-	current, _, err := k.UnwrapForDevice(goldenDeviceID, a)
-	if err == nil {
-		crypto.Zero(current)
-		t.Fatal("UnwrapForDevice returned a key for a transplanted wrap")
+	// The device that made every generation verifies all of them.
+	keys, err := stored.UnwrapGenerations(goldenDeviceID, a)
+	if err != nil || len(keys) != 9 {
+		t.Fatalf("A holds %d generations: %v", len(keys), err)
 	}
-	if bytes.Equal(current, goldenRootKey()) {
-		t.Fatal("generation-1 root key reported as current")
+	defer ZeroGenerations(keys)
+	if err := stored.VerifyChain(keys); err != nil {
+		t.Fatalf("chain at depth 9: %v", err)
+	}
+	// A device enrolling from the recovery code after all of it verifies
+	// the whole chain from the code alone, and lands in every generation.
+	fromCode, err := stored.UnwrapGenerationsWithRecoveryCode(goldenRecoveryCode)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ZeroGenerations(fromCode)
+	if err := stored.VerifyChain(fromCode); err != nil {
+		t.Fatalf("the recovery code cannot verify a nine-generation chain: %v", err)
+	}
+	fresh, _ := age.GenerateX25519Identity()
+	appended, err := stored.EnrolAll(fromCode, "recovered", fresh.Recipient(), time.Now())
+	if err != nil {
+		t.Fatalf("recovery after eight rollovers: %v", err)
+	}
+	if len(appended) != 9 {
+		t.Fatalf("recovery enrolled into %d generations, want 9", len(appended))
+	}
+	recovered, err := stored.UnwrapGenerations("recovered", fresh)
+	if err != nil || len(recovered) != 9 {
+		t.Fatalf("the recovered device holds %d generations: %v", len(recovered), err)
+	}
+	defer ZeroGenerations(recovered)
+	if err := stored.VerifyChain(recovered); err != nil {
+		t.Fatalf("the recovered device cannot verify the chain it just joined: %v", err)
 	}
 }
 
@@ -569,12 +746,88 @@ func generationsListing(k *Keyring, id string) []int {
 	return listed
 }
 
-// TestUnenrolEverywhereSweepsAllGenerations: an approval enrols the joining
-// device into every generation it can read (EnrolAll), so rolling back a
-// refused approval must sweep every generation. Unenrol alone clears only
-// the current one — the exact hole that would leave the refused device able
-// to unwrap pre-revocation history.
-func TestUnenrolEverywhereSweepsAllGenerations(t *testing.T) {
+// TestRollbackRemovesOnlyWhatTheApprovalWrote is the interleaving the
+// 2026-08-27 verification round found: two approvals of the same joining
+// device carry the same public key, because the device generates its key
+// once, before its first request. Removing every (device, public key) match
+// in every generation therefore takes back wraps this approval never wrote.
+//
+// The shape here is the one that actually occurs. A device joins and is
+// enrolled into both generations; it is revoked, so generation 3 starts
+// without it while its pre-revocation wraps stay where they are; it asks to
+// join again with the key it still holds. The second approval appends into
+// generation 3 only — generations 1 and 2 already list that key, and
+// EnrolInto leaves them alone. When the relay then refuses, only generation
+// 3's wrap may be taken back.
+func TestRollbackRemovesOnlyWhatTheApprovalWrote(t *testing.T) {
+	a, _ := goldenIdentities(t)
+	k, err := New(goldenProfileID, goldenRootKey(), goldenRecoveryCode, goldenDeviceID, a, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	joiner, _ := age.GenerateX25519Identity()
+	if err := k.Enrol(goldenRootKey(), "joiner", joiner.Recipient(), time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	spare, _ := age.GenerateX25519Identity()
+	if err := k.Enrol(goldenRootKey(), "spare", spare.Recipient(), time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	gen2, err := k.Rollover(goldenRootKey(), goldenRecoveryCode, []string{"spare"}, goldenDeviceID, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer crypto.Zero(gen2)
+	gen3, err := k.Rollover(gen2, goldenRecoveryCode, []string{"joiner"}, goldenDeviceID, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer crypto.Zero(gen3)
+	if got := generationsListing(k, "joiner"); len(got) != 2 {
+		t.Fatalf("the revoked joiner is listed in generations %v, want 1 and 2", got)
+	}
+
+	// The re-join. Its wrap goes into generation 3 and nowhere else.
+	keys := map[int][]byte{1: goldenRootKey(), 2: gen2, 3: gen3}
+	appended, err := k.EnrolAll(keys, "joiner", joiner.Recipient(), time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(appended) != 1 || appended[0].Generation != 3 {
+		t.Fatalf("EnrolAll reported %+v, want generation 3 alone", appended)
+	}
+	if got := generationsListing(k, "joiner"); len(got) != 3 {
+		t.Fatalf("after the re-join the joiner is listed in %v", got)
+	}
+
+	// The relay refuses. Generation 3's wrap goes; 1 and 2 stay, because
+	// this approval did not write them.
+	if !k.UnenrolAppended("joiner", appended) {
+		t.Fatal("the rollback removed nothing")
+	}
+	if got := generationsListing(k, "joiner"); len(got) != 2 || got[0] != 1 || got[1] != 2 {
+		t.Fatalf("the rollback left the joiner in %v, want exactly 1 and 2", got)
+	}
+	if _, err := k.UnwrapGenerations("joiner", joiner); !errors.Is(err, ErrDeviceNotEnrolled) {
+		t.Fatalf("the refused device still opens the current generation: %v", err)
+	}
+	// The approving device is untouched and still reads everything.
+	approver, err := k.UnwrapGenerations(goldenDeviceID, a)
+	if err != nil || len(approver) != 3 {
+		t.Fatalf("approver disturbed: %v generations=%d", err, len(approver))
+	}
+	ZeroGenerations(approver)
+	if k.UnenrolAppended("joiner", appended) {
+		t.Fatal("removed the same wrap twice")
+	}
+}
+
+// TestRollbackSweepsEveryGenerationItWrote: the other half of the same
+// contract. A first-time joiner is enrolled into every generation the
+// approver can read, so a refused approval must take all of them back —
+// clearing only the current one would leave the refused device able to
+// unwrap pre-revocation history.
+func TestRollbackSweepsEveryGenerationItWrote(t *testing.T) {
 	a, b := goldenIdentities(t)
 	k, err := New(goldenProfileID, goldenRootKey(), goldenRecoveryCode, goldenDeviceID, a, time.Now())
 	if err != nil {
@@ -590,40 +843,20 @@ func TestUnenrolEverywhereSweepsAllGenerations(t *testing.T) {
 	defer crypto.Zero(next)
 
 	joiner, _ := age.GenerateX25519Identity()
-	if err := k.EnrolAll(map[int][]byte{1: goldenRootKey(), 2: next}, "joiner", joiner.Recipient(), time.Now()); err != nil {
+	appended, err := k.EnrolAll(map[int][]byte{1: goldenRootKey(), 2: next}, "joiner", joiner.Recipient(), time.Now())
+	if err != nil {
 		t.Fatal(err)
 	}
-	if got := generationsListing(k, "joiner"); len(got) != 2 {
-		t.Fatalf("EnrolAll wrote into generations %v, want both", got)
+	if len(appended) != 2 || appended[0].Generation != 1 || appended[1].Generation != 2 {
+		t.Fatalf("EnrolAll reported %+v, want both generations", appended)
 	}
-
-	// The key check still holds across generations: a different public
-	// key, or none, removes nothing.
-	other, _ := age.GenerateX25519Identity()
-	if k.UnenrolEverywhere("joiner", other.Recipient().String()) || len(generationsListing(k, "joiner")) != 2 {
-		t.Fatal("removed a wrap made for a different public key")
-	}
-	if k.UnenrolEverywhere("joiner", "") || len(generationsListing(k, "joiner")) != 2 {
-		t.Fatal("removed a wrap for an empty key")
-	}
-
-	if !k.UnenrolEverywhere("joiner", joiner.Recipient().String()) {
+	if !k.UnenrolAppended("joiner", appended) {
 		t.Fatal("did not remove the joiner's wraps")
 	}
 	if got := generationsListing(k, "joiner"); len(got) != 0 {
-		t.Fatalf("generations %v still list the joiner after the sweep", got)
+		t.Fatalf("generations %v still list the joiner after the rollback", got)
 	}
 	if _, err := k.UnwrapGenerations("joiner", joiner); !errors.Is(err, ErrDeviceNotEnrolled) {
 		t.Fatalf("swept device still opens the keyring: %v", err)
-	}
-	// The approving device's wraps are untouched: it still reads both
-	// generations.
-	keys, err := k.UnwrapGenerations(goldenDeviceID, a)
-	if err != nil || len(keys) != 2 {
-		t.Fatalf("approver disturbed: %v generations=%d", err, len(keys))
-	}
-	ZeroGenerations(keys)
-	if k.UnenrolEverywhere("joiner", joiner.Recipient().String()) {
-		t.Fatal("removed the same wraps twice")
 	}
 }

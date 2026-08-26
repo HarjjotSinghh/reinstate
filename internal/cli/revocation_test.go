@@ -3,13 +3,16 @@ package cli
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"filippo.io/age"
 
@@ -871,5 +874,261 @@ func TestRevokeHelpNamesTheCredentialWindow(t *testing.T) {
 	}
 	if strings.Contains(long, "and it cannot push") {
 		t.Fatalf("rein devices revoke --help still claims the revoked device cannot push:\n%s", long)
+	}
+}
+
+// forgeKeyring builds the object a party with write access to the locker,
+// and no root key at all, can put in the keyring's place: a whole keyring
+// for the same profile, wrapping a root key of its own to the public keys
+// the genuine keyring published, rolled forward to generation so it clears
+// the floor every remaining device has pinned.
+//
+// This is the residual attack the generation chain alone cannot stop — a
+// forged chain built from generation 1 upward is self-consistent — and the
+// one the locally recorded anchor exists to catch.
+func forgeKeyring(t *testing.T, genuine *keyring.Keyring, generation int) []byte {
+	t.Helper()
+	attackerKey, err := crypto.NewRootKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	attackerDevice, err := age.GenerateX25519Identity()
+	if err != nil {
+		t.Fatal(err)
+	}
+	attackerCode, err := keyring.GenerateRecoveryCode()
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	forged, err := keyring.New(genuine.ProfileID, attackerKey, attackerCode, "attacker-device", attackerDevice, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Every device the genuine keyring lists gets a wrap of the attacker's
+	// key, sealed to the public key the genuine keyring published.
+	for _, id := range currentDeviceIDs(genuine) {
+		recipient, err := age.ParseX25519Recipient(genuine.DevicePublicKey(id))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := forged.Enrol(attackerKey, id, recipient, now); err != nil {
+			t.Fatal(err)
+		}
+	}
+	current := attackerKey
+	for forged.CurrentGeneration < generation {
+		spare, err := age.GenerateX25519Identity()
+		if err != nil {
+			t.Fatal(err)
+		}
+		id := fmt.Sprintf("spare-%d", forged.CurrentGeneration)
+		if err := forged.Enrol(current, id, spare.Recipient(), now); err != nil {
+			t.Fatal(err)
+		}
+		next, err := forged.Rollover(current, attackerCode, []string{id}, "attacker-device", now)
+		if err != nil {
+			t.Fatal(err)
+		}
+		current = next
+	}
+	raw, err := forged.Marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return raw
+}
+
+// currentDeviceIDs lists the devices the current generation wraps for.
+func currentDeviceIDs(k *keyring.Keyring) []string {
+	var ids []string
+	for _, g := range k.Generations {
+		if g.Number != k.CurrentGeneration {
+			continue
+		}
+		for _, d := range g.Devices {
+			ids = append(ids, d.DeviceID)
+		}
+	}
+	return ids
+}
+
+// TestKeyringForgeryIsRefusedOnEveryReadPath is the blocker probe from the
+// 2026-08-27 verification round, driven through the real CLI.
+//
+// A revoked device keeps working locker credentials for the rest of their
+// TTL, so it can write the keyring object. Two forgeries follow from that,
+// and every command that acts on the keyring must refuse both: appending a
+// generation whose chain nobody but the previous generation's key holder
+// could compute, and replacing the whole object with a self-consistent
+// keyring built on a root key of its own. Refusing on push alone would not
+// be a fix — pull, approve, revoke and recover all load the keyring too.
+func TestKeyringForgeryIsRefusedOnEveryReadPath(t *testing.T) {
+	plane := newFakeControlPlane(t)
+	plane.s3 = s3test.NewPlain(t, "lk-00000000000000000000forge")
+	t.Setenv(hopURLEnv, plane.srv.URL)
+	for _, env := range []string{"REINSTATE_BACKEND", "REINSTATE_S3_ACCESS_KEY_ID", "REINSTATE_S3_SECRET_ACCESS_KEY", "REINSTATE_PASSPHRASE_FD", "REINSTATE_RECOVERY_CODE_FD", "REINSTATE_PAIRING_CODE_FD", "REINSTATE_HOP_LOCATION", "CLAUDE_CONFIG_DIR", "CODEX_HOME"} {
+		t.Setenv(env, "")
+	}
+	project := writeClaudeFixture(t)
+	userHome := os.Getenv("HOME")
+	ctx := context.Background()
+
+	a := newPairDevice(t, plane, "macbook")
+	for _, args := range [][]string{{"login"}, {"init", "--hop", "--project", "local/locker=" + project}, {"account", "init"}, {"push", "--all", "--json"}} {
+		if out, errb, code := a.run(args...); code != ExitOK {
+			t.Fatalf("A %v: exit=%d out=%q err=%q", args, code, out, errb)
+		}
+	}
+	b := newPairDevice(t, plane, "desktop")
+	if _, errb, code := b.run("login"); code != ExitOK {
+		t.Fatalf("B login: %d %q", code, errb)
+	}
+	if _, errb, code := b.run("init", "--hop", "--project", "local/locker="+filepath.Join(userHome, "Projects", "desktop-target")); code != ExitOK {
+		t.Fatalf("B init --hop: %d %q", code, errb)
+	}
+	join := b.startJoin()
+	if out, errb, code := a.approve(join.code, false); code != ExitOK {
+		t.Fatalf("A approves B: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if out, errb, code := join.finish(t); code != ExitOK {
+		t.Fatalf("B join: exit=%d out=%q err=%q", code, out, errb)
+	}
+	bID := deviceID(t, b)
+	if out, errb, code := a.revoke(bID, a.shownCode); code != ExitOK {
+		t.Fatalf("A revokes B: exit=%d out=%q err=%q", code, out, errb)
+	}
+	key, genuine := keyringObject(t, plane)
+	ring, err := keyring.Parse(genuine)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ring.CurrentGeneration != 2 {
+		t.Fatalf("expected generation 2 after the revocation, got %d", ring.CurrentGeneration)
+	}
+	account, err := config.LoadAccount(a.home)
+	if err != nil || account.KeyGeneration != 2 || account.KeyRecipient != ring.CurrentRecipient() {
+		t.Fatalf("A did not pin the generation it created: %+v %v", account, err)
+	}
+	before := objectKeys(t, plane)
+
+	// Something for a push to have to write.
+	root := filepath.Join(userHome, ".claude", "projects", claudeProjectDirectoryForTest(project))
+	meta, _ := json.Marshal(map[string]any{"type": "meta", "cwd": project})
+	content := append(meta, '\n')
+	content = append(content, []byte(`{"type":"user","message":{"content":"written after the forgery"}}`+"\n")...)
+	if err := os.WriteFile(filepath.Join(root, "session-forged.jsonl"), content, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	put := func(raw []byte) {
+		t.Helper()
+		if _, err := plane.s3.Store.Put(ctx, key, bytes.NewReader(raw), int64(len(raw)), backendPutOptions()); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// refuseEverywhere drives every command that loads the keyring and
+	// requires each one to fail closed for the same stated reason.
+	refuseEverywhere := func(t *testing.T, label, want string) {
+		t.Helper()
+		for _, args := range [][]string{{"push", "--all", "--json"}, {"pull", "--all", "--json"}} {
+			out, errb, code := a.run(args...)
+			if code != ExitSafety || !strings.Contains(errb, want) {
+				t.Fatalf("A %v on a forged keyring: exit=%d out=%q err=%q", args, code, out, errb)
+			}
+		}
+		if out, errb, code := a.revoke(bID, a.shownCode); code != ExitSafety || !strings.Contains(errb, want) {
+			t.Fatalf("A revoke on a forged keyring: exit=%d out=%q err=%q", code, out, errb)
+		}
+		c := newPairDevice(t, plane, "laptop-"+label)
+		if _, errb, code := c.run("login"); code != ExitOK {
+			t.Fatalf("C login: %d %q", code, errb)
+		}
+		if _, errb, code := c.run("init", "--hop"); code != ExitOK {
+			t.Fatalf("C init --hop: %d %q", code, errb)
+		}
+		joinC := c.startJoin()
+		out, errb, code := a.approve(joinC.code, false)
+		if code != ExitSafety || !strings.Contains(errb, want) {
+			t.Fatalf("A approve on a forged keyring: exit=%d out=%q err=%q", code, out, errb)
+		}
+		plane.mu.Lock()
+		for _, p := range plane.pairings {
+			if p.status == "pending" {
+				p.expired = true
+			}
+		}
+		plane.mu.Unlock()
+		if out, errb, code := joinC.finish(t); code == ExitOK {
+			t.Fatalf("C join succeeded against a forged keyring: out=%q err=%q", out, errb)
+		}
+		for k := range objectKeys(t, plane) {
+			if !before[k] && !strings.HasSuffix(k, keyring.ObjectName) {
+				t.Fatalf("object %s was written on a forged keyring", k)
+			}
+		}
+	}
+
+	// Forgery 1: a generation appended by a party that never held the
+	// previous generation's root key. It cannot compute the chain, so
+	// whatever it writes there is wrong — modelled here by replacing the
+	// chain the genuine rollover produced, which is what any forged value
+	// looks like to a reader.
+	t.Run("a generation nothing chains to", func(t *testing.T) {
+		var obj map[string]any
+		if err := json.Unmarshal(genuine, &obj); err != nil {
+			t.Fatal(err)
+		}
+		gen2 := obj["generations"].([]any)[1].(map[string]any)
+		forgedChain := make([]byte, 32)
+		forgedChain[0] = 1
+		gen2["chain"] = base64.StdEncoding.EncodeToString(forgedChain)
+		raw, err := json.Marshal(obj)
+		if err != nil {
+			t.Fatal(err)
+		}
+		put(raw)
+		refuseEverywhere(t, "chain", "not authenticated by the generation before it")
+	})
+
+	// Forgery 2: the whole object replaced. A chain forged from generation
+	// 1 upward checks out against itself, so only the generation and root
+	// key this device recorded locally can tell the account's own keyring
+	// from a replacement.
+	t.Run("the whole keyring replaced", func(t *testing.T) {
+		put(forgeKeyring(t, ring, 2))
+		refuseEverywhere(t, "rewrite", "replaced rather than appended to")
+		out, _, code := a.run("account", "status")
+		if code != ExitOK || !strings.Contains(out, "this device refuses it") {
+			t.Fatalf("A account status on a replaced keyring: exit=%d out=%q", code, out)
+		}
+		out, _, code = a.run("devices")
+		if code != ExitOK || !strings.Contains(out, "this device refuses it") {
+			t.Fatalf("A devices on a replaced keyring: exit=%d out=%q", code, out)
+		}
+	})
+
+	// A forgery must not brick anything either: with the genuine object
+	// back, every command works, the pinned generation never moved, and
+	// the recovery code still enrols a device that reads everything.
+	put(genuine)
+	if account, err := config.LoadAccount(a.home); err != nil || account.KeyGeneration != 2 || account.KeyRecipient != ring.CurrentRecipient() {
+		t.Fatalf("A's anchor moved while the forgeries were in place: %+v %v", account, err)
+	}
+	for _, args := range [][]string{{"push", "--all", "--json"}, {"pull", "--all", "--json"}} {
+		if out, errb, code := a.run(args...); code != ExitOK {
+			t.Fatalf("A %v after the genuine keyring came back: exit=%d out=%q err=%q", args, code, out, errb)
+		}
+	}
+	d := newPairDevice(t, plane, "workstation")
+	d.enrol(filepath.Join(userHome, "Projects", "workstation-target"), a.shownCode)
+	if _, dKeys := d.keyringState(t, plane); len(dKeys) != 2 {
+		t.Fatalf("the recovered device holds generations %v, want both", dKeys)
+	}
+	if out, errb, code := d.run("pull", "--all", "--json"); code != ExitOK {
+		t.Fatalf("D pull: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if got, err := os.ReadFile(filepath.Join(userHome, ".claude", "projects", claudeProjectDirectoryForTest(filepath.Join(userHome, "Projects", "workstation-target")), "session-forged.jsonl")); err != nil || !bytes.Contains(got, []byte("written after the forgery")) {
+		t.Fatalf("D did not restore the session pushed after the forgeries: %v", err)
 	}
 }

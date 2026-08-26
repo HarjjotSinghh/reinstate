@@ -176,18 +176,30 @@ were, so:
   against the bucket until they expire, up to the operator's credential
   TTL of at most an hour, so it can still push or pull within that
   window), and cannot open anything pushed after the revocation;
-- the keyring itself carries no integrity protection, so within that same
-  window the revoked device could put its pre-rollover copy of
-  `keyring.v1.json` back. Each device therefore pins the highest key
-  generation it has seen in its local account state (the revoking device
-  pins the generation it created; every other device pins a higher one the
-  first time it reads it) and fails closed (`ExitSafety`, "the keyring was
-  rolled back") on a keyring whose `current_generation` is lower, before
-  any push, pull, approval or revocation. A device that has not yet seen
-  the rollover when the rollback lands cannot tell and would keep writing
-  under the old generation until a device that has seen it revokes again;
-  closing that gap needs the control plane to carry the generation floor,
-  which is a follow-up;
+- that same window is enough to **write** the keyring object, so the
+  keyring authenticates itself. Every generation past the first carries a
+  `chain`: a MAC over its own header — number, `created_at`, `recipient`,
+  the revocations that started it, and the number and recipient of the
+  generation it follows — keyed by the **previous generation's root key**.
+  A revoked device never held the new generation's root key and can no
+  longer obtain it, so it cannot write a generation the account will adopt.
+  Every command that acts on the keyring checks the chain against the root
+  keys it just unwrapped — push, pull, `devices approve`, `devices revoke`
+  and `account recover` — and fails closed (`ExitSafety`) when the current
+  generation does not chain back to one it already trusted;
+- the chain is a relative claim, so it needs an anchor. Each device records
+  in its local account state the generation it last unwrapped **and that
+  generation's root-key recipient**. A keyring whose `current_generation`
+  is lower is a rollback (`ExitSafety`, "the keyring was rolled back"); one
+  where the recorded generation is missing, or now names a different root
+  key, was replaced rather than appended to — which no legitimate change
+  ever does — and is refused with it. `rein account status` and `rein
+  devices` hold no root key and so cannot check the chain, but they check
+  the same anchor and say the keyring is refused rather than reporting it
+  as the account's key-model truth. A device with no local record yet
+  anchors on whatever brought it here instead: the recovery code (only its
+  holder can write a recovery wrap that opens) or the root key an enrolled
+  device relayed through the pairing;
 - a device enrolled later (`rein account join`, or `rein account recover`
   with the recovery code) is enrolled into every generation and reads the
   whole locker too.
@@ -222,6 +234,38 @@ one file `init` does not otherwise rewrite. Nothing else removes it.
 `rein account status` and `rein devices --json` report the current key
 generation; the keyring keeps a `revoked` record on the generation each
 revocation started.
+
+### What "cannot open anything pushed after the revocation" means
+
+Precisely: against a party that can read **and write** the locker bucket —
+which a revoked device is, for the rest of its credential's TTL — no
+remaining device will seal anything to a root key that party controls. The
+generation chain rules out appending a generation, because computing the
+chain needs the previous generation's root key. The locally recorded
+generation and root-key recipient rule out replacing the object outright,
+because a forgery built from generation 1 upward is self-consistent and
+nothing inside the object could tell it apart.
+
+What that does *not* cover, stated plainly:
+
+- **A device that has never read this account's keyring has no anchor of
+  its own.** It borrows one: the recovery code, or the root key an enrolled
+  device relayed through a pairing approval. A machine holding neither
+  cannot enrol, which is the intended answer, but it also means the anchor
+  is only as good as the recovery code and the approval flow.
+- **Objects, not the key model.** Anyone with write access can still
+  delete or corrupt snapshots, the manifest, or the keyring itself. That is
+  denial of service, and the chain does not address it; it addresses
+  reading and writing under a key someone else chose.
+- **The wraps inside a generation are not covered by that generation's
+  chain**, because devices are enrolled into generations after the fact. A
+  wrap is only ever accepted when the key inside it derives the
+  generation's recorded `recipient`, and the recipient *is* covered — so
+  appending a working wrap still needs that generation's root key. What a
+  writer without it can do is remove or corrupt wraps, which again denies
+  service rather than substituting a key.
+- **Nothing here re-encrypts what was already pushed.** A revoked device
+  keeps every generation it held and everything it already pulled.
 
 `rein login` signs this device in. With no flag it starts a GitHub sign-in:
 the CLI prints a URL, opens it in your browser, and waits. With
