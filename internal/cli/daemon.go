@@ -73,6 +73,16 @@ func daemonSeamsFrom(cmd *cobra.Command) daemonSeams {
 	return daemonSeams{}
 }
 
+// daemonNow is the clock the daemon's own status timestamps are read against.
+// Production is the wall clock; the seams override it so a run driven by a
+// fake clock and the status that run wrote agree on how long ago it was.
+func daemonNow(cmd *cobra.Command) time.Time {
+	if c := daemonSeamsFrom(cmd).clock; c != nil {
+		return c.Now()
+	}
+	return time.Now()
+}
+
 // daemonRunFlags are the loop settings `rein daemon run` accepts and
 // `rein daemon install` bakes into the service definition.
 type daemonRunFlags struct {
@@ -723,7 +733,7 @@ func newDaemonStatusCmd() *cobra.Command {
 				return NewExitError(ExitRuntime, err.Error())
 			}
 			status, statusErr := daemon.ReadStatus(home)
-			now := time.Now()
+			now := daemonNow(cmd)
 			alive := statusErr == nil && status.Alive(now)
 			if asJSON {
 				payload := map[string]any{

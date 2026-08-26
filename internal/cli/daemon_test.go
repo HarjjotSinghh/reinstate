@@ -96,10 +96,10 @@ type runningDaemon struct {
 	done   chan int
 }
 
-func startDaemon(t *testing.T, d *pairDevice, manager daemon.Manager) *runningDaemon {
+func startDaemon(t *testing.T, d *pairDevice, manager daemon.Manager, clock *daemontest.FakeClock) *runningDaemon {
 	t.Helper()
 	r := &runningDaemon{
-		t: t, clock: daemontest.NewFakeClock(), events: make(chan daemon.Change, 16), seen: make(chan daemon.Event, 4096),
+		t: t, clock: clock, events: make(chan daemon.Change, 16), seen: make(chan daemon.Event, 4096),
 		notify: &recordingNotifier{}, stdout: &syncBuffer{}, stderr: &syncBuffer{}, done: make(chan int, 1),
 	}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -198,18 +198,23 @@ func TestDaemonJourneyHop(t *testing.T) {
 			t.Fatalf("A %v: exit=%d out=%q err=%q", args, code, out, errb)
 		}
 	}
+	// One clock for the whole journey: the loop stamps the status file with
+	// it, and `rein daemon status` reads those stamps against it. Reading
+	// them against the wall clock made this test fail a day after it was
+	// written.
+	clock := daemontest.NewFakeClock()
 	// daemonStatus runs rein daemon status on A with the fake manager.
 	daemonStatus := func() (string, int) {
 		t.Helper()
 		t.Setenv("REINSTATE_HOME", a.home)
 		out, errb := &syncBuffer{}, &syncBuffer{}
-		code := a.execute(runOptions{stdout: out, stderr: errb, daemon: daemonSeams{manager: manager}}, "daemon", "status")
+		code := a.execute(runOptions{stdout: out, stderr: errb, daemon: daemonSeams{manager: manager, clock: clock}}, "daemon", "status")
 		return out.String(), code
 	}
 
 	// A second daemon for the same home is refused while the first holds
 	// the lock.
-	d := startDaemon(t, a, manager)
+	d := startDaemon(t, a, manager, clock)
 	start := d.until(1)
 	eventOf(t, start, "start")
 	if e := eventOf(t, start, "pull"); e.Err != nil {
@@ -315,12 +320,12 @@ func TestDaemonJourneyHop(t *testing.T) {
 	if code != ExitOK {
 		t.Fatalf("daemon status: exit=%d out=%q", code, out)
 	}
-	for _, want := range []string{"login:    fake", "daemon:   running (pid", "push:     pushed 1 snapshot(s), skipped 0 unchanged, just now", "pull:     pulled 0 snapshot(s), skipped 1 already synced, just now", "devices:  macbook (this device), desktop", `pending:  device "desktop" wants to join`, "watching: " + status.Roots[0]} {
+	for _, want := range []string{"login:    fake", "daemon:   running (pid", "push:     pushed 1 snapshot(s), skipped 0 unchanged, 10m ago", "pull:     pulled 0 snapshot(s), skipped 1 already synced, just now", "devices:  macbook (this device), desktop", `pending:  device "desktop" wants to join`, "watching: " + status.Roots[0]} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("daemon status missing %q:\n%s", want, out)
 		}
 	}
-	if line := daemonSummaryLine(a.home, time.Now()); !strings.Contains(line, "daemon running") || !strings.Contains(line, `"desktop" wants to join`) || !strings.Contains(line, "2 device(s)") {
+	if line := daemonSummaryLine(a.home, d.clock.Now()); !strings.Contains(line, "daemon running") || !strings.Contains(line, `"desktop" wants to join`) || !strings.Contains(line, "2 device(s)") {
 		t.Fatalf("switcher line: %q", line)
 	}
 
@@ -350,7 +355,7 @@ func TestDaemonJourneyHop(t *testing.T) {
 		t.Fatalf("daemon exit=%d err=%q", code, d.stderr.String())
 	}
 	status, _ = daemon.ReadStatus(a.home)
-	if status.PID != 0 || status.Alive(time.Now()) {
+	if status.PID != 0 || status.Alive(d.clock.Now()) {
 		t.Fatalf("stopped daemon still alive: %+v", status)
 	}
 	logText, err := os.ReadFile(daemon.LogPath(a.home))
@@ -625,7 +630,7 @@ func TestDaemonRunKeepsThePassphraseForItsLifetime(t *testing.T) {
 	}
 
 	withSecretFD(t, "REINSTATE_PASSPHRASE_FD", "daemon-test-passphrase-not-real")
-	d := startDaemon(t, a, &fakeManager{})
+	d := startDaemon(t, a, &fakeManager{}, daemontest.NewFakeClock())
 	if e := eventOf(t, d.until(1), "pull"); e.Err != nil {
 		t.Fatalf("start-up pull: %v", e.Err)
 	}
