@@ -89,6 +89,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   hour — and `storage.Provider` exposes no way to withdraw one. `docs/hop.md`
   already stated this correctly; the command now agrees, and the message
   printed after a revocation tells the operator about the window.
+- The keyring can no longer grow into an object the account cannot read
+  (#11). Every revocation appends a generation holding one wrap per
+  remaining device and none is ever removed, so at five devices the object
+  grew about 4.5 KiB per revocation while `keyring.Load` caps a read at
+  1 MiB: at roughly 231 revocations an account would have written a keyring
+  that no push, pull, revocation or `rein account recover` could read again.
+  A write past three quarters of the read cap is now refused with a message
+  naming the remedy. Compaction was considered and rejected: dropping a
+  superseded generation drops the only copy of the root key that opens
+  everything sealed under it.
 
 ### Changed
 

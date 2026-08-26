@@ -202,7 +202,15 @@ were, so:
   device relayed through the pairing;
 - a device enrolled later (`rein account join`, or `rein account recover`
   with the recovery code) is enrolled into every generation and reads the
-  whole locker too.
+  whole locker too;
+- the keyring only grows. Each revocation appends a generation holding one
+  wrap per remaining device, and no generation is ever removed, because
+  removing one would make everything written under it unreadable. A read
+  accepts at most 1 MiB, so a write that would take the object past three
+  quarters of that is refused (`ExitSafety`) rather than leaving the
+  account with an object it could never read back. At five surviving
+  devices that ceiling is around 170 revocations; reaching it means moving
+  the account to a fresh locker.
 
 The recovery code is asked for because the new generation must stay
 recoverable and nothing but the code can wrap for it; a wrong code revokes
