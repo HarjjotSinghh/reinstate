@@ -121,6 +121,9 @@ func TestInitWithProfileIDRejectsMissingRemoteManifest(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("REINSTATE_HOME", home)
 	t.Setenv("REINSTATE_BACKEND", "memory")
+	// Pin the store this test means: an inherited REINSTATE_MEMORY_BACKEND_DIR
+	// would send the probe to a locker this test never wrote.
+	t.Setenv("REINSTATE_MEMORY_BACKEND_DIR", t.TempDir())
 	t.Setenv("REINSTATE_S3_ACCESS_KEY_ID", "AKIA_TEST")
 	t.Setenv("REINSTATE_S3_SECRET_ACCESS_KEY", "SECRET_TEST")
 
@@ -150,7 +153,9 @@ func TestInitWithProfileIDRecordsRemoteManifestRequirement(t *testing.T) {
 	profileID := "33333333-3333-4333-8333-333333333333"
 	prefix := "profiles/" + profileID
 
-	store, err := memory.NewDisk(filepath.Join(home, "cache", "memory-backend"))
+	memoryRoot := filepath.Join(home, "cache", "memory-backend")
+	t.Setenv("REINSTATE_MEMORY_BACKEND_DIR", memoryRoot)
+	store, err := memory.NewDisk(memoryRoot)
 	if err != nil {
 		t.Fatal(err)
 	}

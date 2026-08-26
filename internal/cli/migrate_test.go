@@ -295,6 +295,13 @@ func TestMigrateJourneyLeaveHopForBYO(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &pulled); err != nil || len(pulled.Plans) != 3 {
 		t.Fatalf("pull output %q: %v", out, err)
 	}
+	// The cwd lands inside a JSON string, so a Windows path arrives with its
+	// separators escaped. Look for the encoded form, not the raw path.
+	encodedProject, marshalErr := json.Marshal(secondProject)
+	if marshalErr != nil {
+		t.Fatal(marshalErr)
+	}
+	wantCwd := bytes.Trim(encodedProject, `"`)
 	for _, r := range pulled.Plans {
 		if len(r.Destinations) != 1 {
 			t.Fatalf("restored %+v", r)
@@ -303,7 +310,7 @@ func TestMigrateJourneyLeaveHopForBYO(t *testing.T) {
 		// (path remapping is first-class) and re-serialises each line; the
 		// conversation itself must be the same records.
 		got, err := os.ReadFile(r.Destinations[0])
-		if err != nil || !bytes.Contains(got, []byte(secondProject)) {
+		if err != nil || !bytes.Contains(got, wantCwd) {
 			t.Fatalf("restored %s (err=%v):\n%s", r.SessionID, err, got)
 		}
 		gotLines, wantLines := jsonLines(t, got), jsonLines(t, sessions[r.SessionID])
@@ -317,6 +324,10 @@ func TestMigrateJourneyLeaveHopForBYO(t *testing.T) {
 			t.Fatalf("restored outside the second device's home: %s", r.Destinations[0])
 		}
 	}
+	// Stub the agent before the preflight runs: reading the contributor's
+	// installed Claude Code makes this resume depend on whether that install
+	// happens to sit inside the release's verified range.
+	fakeAgentBin(t, map[string]string{"claude": "2.1.227 (Claude Code)"})
 	out, errb, code = j.runIn(secondHome, true, "", "resume", "claude:session-windows", "--dry-run", "--json")
 	if code != ExitOK || !strings.Contains(out, "session-windows") {
 		t.Fatalf("resume on the second device exit=%d out=%q err=%q", code, out, errb)
