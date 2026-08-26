@@ -51,8 +51,10 @@ type Fake struct {
 	buckets     map[string]*memory.Store
 	// RejectAs is the S3 error code answered for a rejected key.
 	RejectAs string
-	// ForeignBucketAs is the error code answered for another bucket; empty
-	// means AccessDenied, which is what R2 answers a bucket-scoped key.
+	// ForeignBucketAs is the error code answered for another bucket once
+	// the credential itself has been accepted; empty means AccessDenied,
+	// which is what R2 answers a bucket-scoped key. A credential the fake
+	// does not accept is answered RejectAs whatever bucket it names.
 	ForeignBucketAs string
 	// PageSize caps one ListObjectsV2 page, with a continuation token for
 	// the rest; zero means everything in one page.
@@ -140,33 +142,45 @@ func (f *Fake) handle(w http.ResponseWriter, r *http.Request) {
 	if m := credentialRe.FindStringSubmatch(r.Header.Get("Authorization")); m != nil {
 		akid = m[1]
 	}
+	// A request for any bucket but this one is refused the way R2 refuses a
+	// credential scoped to one bucket: AccessDenied, never a listing and
+	// never NoSuchBucket. This is what rein sync verify relies on when it
+	// probes the reference locker.
+	foreign := false
 	if !f.AnyBucket {
-		// A request for any other bucket is refused the way R2 refuses a
-		// credential scoped to one bucket: AccessDenied, never a listing
-		// and never NoSuchBucket. This is what rein sync verify relies on
-		// when it probes the reference locker. Mu is already held here.
-		if p := r.URL.EscapedPath(); p != "/"+f.Bucket && !strings.HasPrefix(p, "/"+f.Bucket+"/") {
-			f.Requests = append(f.Requests, r.Method+" "+strings.TrimPrefix(p, "/")+" as "+akid+" (foreign bucket)")
-			code := f.ForeignBucketAs
-			f.Mu.Unlock()
-			if code == "" {
-				code = "AccessDenied"
-			}
-			writeS3Error(w, http.StatusForbidden, code, "Access Denied")
-			return
-		}
+		p := r.URL.EscapedPath()
+		foreign = p != "/"+f.Bucket && !strings.HasPrefix(p, "/"+f.Bucket+"/")
 	}
-	f.Requests = append(f.Requests, r.Method+" "+key+" as "+akid)
+	entry := r.Method + " " + key + " as " + akid
+	if foreign {
+		entry += " (foreign bucket)"
+	}
+	f.Requests = append(f.Requests, entry)
 	if f.Hook != nil {
 		f.Hook(len(f.Requests))
 	}
 	ok := f.Valid[akid] || (f.AcceptPrefix != "" && akid != "" && strings.HasPrefix(akid, f.AcceptPrefix))
 	code := f.RejectAs
+	foreignCode := f.ForeignBucketAs
 	readOnly := f.ReadOnly
 	pageSize := f.PageSize
 	f.Mu.Unlock()
+	// The credential is checked first, and only then the bucket. That is
+	// the order a real bucket applies: a request signed with an access key
+	// id R2 does not know is answered InvalidAccessKeyId whatever bucket it
+	// names, and AccessDenied for a foreign bucket is reserved for a
+	// credential the endpoint recognised. rein sync verify's isolation step
+	// is built on exactly that distinction, so the fake must not collapse
+	// it by refusing the bucket before looking at the signature.
 	if !ok {
 		writeS3Error(w, http.StatusForbidden, code, "credential rejected by fake S3")
+		return
+	}
+	if foreign {
+		if foreignCode == "" {
+			foreignCode = "AccessDenied"
+		}
+		writeS3Error(w, http.StatusForbidden, foreignCode, "Access Denied")
 		return
 	}
 	if readOnly && (r.Method == http.MethodPut || r.Method == http.MethodDelete) {

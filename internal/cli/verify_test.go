@@ -323,6 +323,14 @@ func TestSyncVerifyJourneyReferenceReachable(t *testing.T) {
 // credential itself is bad (unknown key id, bad signature, expired token)
 // is what every bucket answers a dead credential, so it proves nothing
 // about scope: step 4 fails and says so, through the real S3 client.
+//
+// Nothing here hand-sets the answer the fake gives for a foreign bucket.
+// The locker credential is dropped the moment step 4's first request
+// arrives — the account was revoked, or the hour ran out — and the fake
+// reaches its answer the way a real bucket does, by checking the signature
+// before the bucket. That ordering is the whole basis of this step: R2
+// answers a bad access key id `InvalidAccessKeyId` whatever bucket the
+// request named, and `AccessDenied` only for a credential it recognised.
 func TestSyncVerifyJourneyReferenceRejectsTheCredential(t *testing.T) {
 	for _, code := range []string{"InvalidAccessKeyId", "SignatureDoesNotMatch", "ExpiredToken", "InvalidToken"} {
 		t.Run(code, func(t *testing.T) {
@@ -331,7 +339,12 @@ func TestSyncVerifyJourneyReferenceRejectsTheCredential(t *testing.T) {
 				t.Fatalf("push exit=%d err=%q", code, errb)
 			}
 			j.plane.s3.Mu.Lock()
-			j.plane.s3.ForeignBucketAs = code
+			j.plane.s3.RejectAs = code
+			j.plane.s3.Hook = func(n int) {
+				if strings.Contains(j.plane.s3.Requests[n-1], "(foreign bucket)") {
+					j.plane.s3.AcceptLocked("AKIA-the-locker-credential-just-died")
+				}
+			}
 			j.plane.s3.Mu.Unlock()
 			out, _, exit := j.run("sync", "verify", "--post=false")
 			if exit != ExitSafety {
@@ -348,6 +361,16 @@ func TestSyncVerifyJourneyReferenceRejectsTheCredential(t *testing.T) {
 			}
 			if strings.Contains(out, "refused as access denied") || strings.Contains(out, "refused by a bucket that is not its own") {
 				t.Fatalf("a rejected credential was read as a scope refusal:\n%s", out)
+			}
+			// The fake answered the reference bucket with the credential's
+			// own code rather than AccessDenied, which is only possible
+			// because it validates the signature before the bucket.
+			probed := false
+			for _, entry := range j.plane.s3.RequestLog() {
+				probed = probed || strings.Contains(entry, "(foreign bucket)")
+			}
+			if !probed {
+				t.Fatal("the reference bucket was never probed")
 			}
 		})
 	}
