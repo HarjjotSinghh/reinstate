@@ -65,7 +65,7 @@ func runAccountJoin(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	if _, err := config.LoadAccount(home); err == nil {
-		return NewExitError(ExitSafety, "this device is already enrolled; rein account status shows the keyring state")
+		return NewExitError(ExitSafety, alreadyEnrolledHere)
 	} else if !os.IsNotExist(err) {
 		return NewExitError(ExitConfig, "read account state: "+err.Error())
 	}
@@ -529,8 +529,11 @@ generation in the keyring (a fresh root key wrapped for every remaining
 device and under the recovery code; earlier generations stay so everything
 already in the locker remains readable), and then tells the control plane,
 which refuses the revoked device's token from then on. The revoked device
-keeps whatever it already pulled; it cannot read anything pushed after the
-revocation, and it cannot push. Revoking the same device twice is harmless.
+keeps whatever it already pulled and cannot read anything pushed after the
+revocation. It cannot mint new locker credentials either — but a credential
+it minted before the revocation keeps working against the bucket until it
+expires, up to an hour, so within that window it can still write bytes it
+can no longer read. Revoking the same device twice is harmless.
 
 A device cannot revoke itself; use another enrolled device.`,
 		Args: cobra.ExactArgs(1),
@@ -668,6 +671,7 @@ func runDevicesRevoke(cmd *cobra.Command, target string) error {
 	default:
 		PrintHuman(out, "revoked device %q (%s); key generation %d started with %d enrolled device(s), and the control plane refuses its token", victim.Name, victim.ID, generation, updated.DeviceCount())
 		PrintHuman(out, "earlier key generations stay readable on every remaining device; nothing pushed from now on is readable by the revoked device")
+		PrintHuman(out, "it can mint no new locker credentials, but one it minted before now keeps working against the bucket until it expires (up to an hour), so it can still write objects during that window — objects it cannot read")
 	}
 	return nil
 }

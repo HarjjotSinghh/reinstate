@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `rein init --force` now backs up **and removes** `account.json`, so the
+  re-enrolment recipe in `docs/hop.md` works as written (#11). Run verbatim
+  it used to dead-end: nothing in the CLI removed the enrolment record, so
+  both `rein account recover` and `rein account join` exited `7`, "this
+  device is already enrolled", on the very machine the recipe is for. The
+  record is copied into the timestamped backup set alongside `config.toml`
+  and `state.json` first, and the "already enrolled" message now names `rein
+  init --hop --force` as the step that clears it. `rein sync migrate --to
+  byo` clears it the same way, since the BYO profile it writes has no
+  keyring behind it.
+- `rein devices revoke`'s own help text and its success message no longer
+  claim the revoked device "cannot push" (#11). New credential mints are
+  refused instantly, but a credential the device already holds keeps working
+  against the bucket for the rest of its TTL — up to `MaxCredentialTTL`, an
+  hour — and `storage.Provider` exposes no way to withdraw one. `docs/hop.md`
+  already stated this correctly; the command now agrees, and the message
+  printed after a revocation tells the operator about the window.
+
 ### Changed
 
 - `rein pull --all` now skips a session whose remote snapshot this device

@@ -212,6 +212,12 @@ func TestRevocationJourney(t *testing.T) {
 	if code != ExitOK || !strings.Contains(out, `revoked device "desktop"`) || !strings.Contains(out, "key generation 2 started with 1 enrolled device") {
 		t.Fatalf("revoke: exit=%d out=%q err=%q", code, out, errb)
 	}
+	// The success message must not leave the operator believing the
+	// revoked device is locked out of the bucket the moment this returns:
+	// a credential it already minted keeps working until it expires.
+	if !strings.Contains(out, "until it expires") || !strings.Contains(out, "up to an hour") {
+		t.Fatalf("the revocation message does not name the credential window: %q", out)
+	}
 	if strings.Contains(out, a.shownCode) || strings.Contains(errb, a.shownCode) {
 		t.Fatal("the recovery code was echoed")
 	}
@@ -370,12 +376,10 @@ func TestRevocationJourney(t *testing.T) {
 			t.Fatalf("D did not restore %s: %v %q", file, err, got)
 		}
 	}
-	// B, revoked, enrols again from the recovery code as the same device
-	// id with a fresh key, and reads everything again.
+	// B, revoked, enrols again by the recipe docs/hop.md documents, run
+	// verbatim and with nothing removed by hand: sign in again, rein init
+	// --hop --force, then rein account recover.
 	if _, err := os.Stat(config.AccountPath(b.home)); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Remove(config.AccountPath(b.home)); err != nil {
 		t.Fatal(err)
 	}
 	if _, errb, code := b.run("login"); code != ExitOK {
@@ -385,16 +389,50 @@ func TestRevocationJourney(t *testing.T) {
 	if bReID == bID {
 		t.Fatal("login again reused the revoked device id")
 	}
-	// The home still names the revoked device id: enrolling that id again
-	// under the new token is refused until init --hop --force aligns it.
-	if out, errb, code := b.recover(a.shownCode); code != ExitConfig || !strings.Contains(errb, "is not the signed-in device") {
-		t.Fatalf("B recover with stale device_id: exit=%d out=%q err=%q", code, out, errb)
+	// The revoked machine still carries the record of the enrolment it
+	// lost, and nothing but init --force removes it. Both enrolment
+	// commands refuse while it is there, and both name the way out.
+	for _, attempt := range []struct {
+		name string
+		run  func() (string, string, int)
+	}{
+		{"recover", func() (string, string, int) { return b.recover(a.shownCode) }},
+		{"join", func() (string, string, int) { return b.run("account", "join") }},
+	} {
+		out, errb, code := attempt.run()
+		if code != ExitSafety || !strings.Contains(errb, "already enrolled") || !strings.Contains(errb, "rein init --hop --force") {
+			t.Fatalf("B %s before reinitializing: exit=%d out=%q err=%q", attempt.name, code, out, errb)
+		}
 	}
 	if _, errb, code := b.run("init", "--hop", "--force", "--project", "local/locker="+filepath.Join(userHome, "Projects", "desktop-target-2")); code != ExitOK {
 		t.Fatalf("B init --hop again: %d %q", code, errb)
 	}
+	// init --force is what makes the documented recipe run: it copies the
+	// stale enrolment record into a backup set and takes it off the home.
+	if _, err := config.LoadAccount(b.home); !os.IsNotExist(err) {
+		t.Fatalf("rein init --force left the stale enrolment record in place: %v", err)
+	}
+	backedUp, err := filepath.Glob(filepath.Join(b.home, "backups", "*", "account.json"))
+	if err != nil || len(backedUp) == 0 {
+		t.Fatalf("rein init --force removed the enrolment record without backing it up: %v %v", backedUp, err)
+	}
 	if out, errb, code := b.recover(a.shownCode); code != ExitOK || !strings.Contains(out, "1 earlier one") {
 		t.Fatalf("B recover after revocation: exit=%d out=%q err=%q", code, out, errb)
+	}
+	// The other gate is still there for a home that carries no enrolment
+	// record but names a device the account no longer signs in as.
+	g := newPairDevice(t, plane, "unenrolled")
+	if _, errb, code := g.run("login"); code != ExitOK {
+		t.Fatalf("G login: %d %q", code, errb)
+	}
+	if _, errb, code := g.run("init", "--hop", "--project", "local/locker="+filepath.Join(userHome, "Projects", "unenrolled-target")); code != ExitOK {
+		t.Fatalf("G init --hop: %d %q", code, errb)
+	}
+	if _, errb, code := g.run("login"); code != ExitOK {
+		t.Fatalf("G login again: %d %q", code, errb)
+	}
+	if out, errb, code := g.recover(a.shownCode); code != ExitConfig || !strings.Contains(errb, "is not the signed-in device") {
+		t.Fatalf("G recover with a stale device_id: exit=%d out=%q err=%q", code, out, errb)
 	}
 	if _, bAgain := b.keyringState(t, plane); len(bAgain) != 2 {
 		t.Fatalf("re-enrolled B holds generations %v, want both", bAgain)
@@ -816,5 +854,22 @@ func TestExpiredApprovalRollsBackEveryGeneration(t *testing.T) {
 	}
 	if _, err := config.LoadAccount(c.home); !os.IsNotExist(err) {
 		t.Fatalf("expired join wrote an account record: %v", err)
+	}
+}
+
+// TestRevokeHelpNamesTheCredentialWindow: the command's own help text and
+// docs/hop.md must agree. A revoked device is refused new credentials
+// instantly, but one it already minted keeps working against the bucket
+// until it expires, and storage.Provider has no way to withdraw it. Help
+// that says only "cannot push" tells the operator the window does not exist.
+func TestRevokeHelpNamesTheCredentialWindow(t *testing.T) {
+	long := strings.Join(strings.Fields(newDevicesRevokeCmd().Long), " ")
+	for _, want := range []string{"cannot mint new locker credentials", "until it expires", "up to an hour"} {
+		if !strings.Contains(long, want) {
+			t.Fatalf("rein devices revoke --help does not say %q:\n%s", want, long)
+		}
+	}
+	if strings.Contains(long, "and it cannot push") {
+		t.Fatalf("rein devices revoke --help still claims the revoked device cannot push:\n%s", long)
 	}
 }

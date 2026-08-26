@@ -201,10 +201,23 @@ order: an approval lands in whichever generation is current when its
 compare-and-swap succeeds, and a joining device handed a payload that names
 a generation the keyring has since left fails closed (no account record)
 and is simply approved again. Two devices revoking the same device at the
-same moment start one generation, not two. The revoked device's own
-enrolment record is untouched; to enrol that machine again, sign in again
-(`rein login`), run `rein init --hop --force` so the home names the new
-device, and `rein account join` or `rein account recover`.
+same moment start one generation, not two.
+
+To enrol a revoked machine again, three commands, in this order:
+
+```bash
+rein login                  # a new device record and token
+rein init --hop --force     # the home names the new device; see below
+rein account recover        # or rein account join, approved elsewhere
+```
+
+`--force` matters. The revoked machine still carries the local enrolment
+record of the enrolment it lost, and both `rein account join` and `rein
+account recover` refuse to run where one exists ("this device is already
+enrolled", exit `7`, and the message names this step). `rein init --force`
+copies `config.toml`, `state.json` and `account.json` into a timestamped
+set under `backups/` and then removes the enrolment record, which is the
+one file `init` does not otherwise rewrite. Nothing else removes it.
 
 `rein account status` and `rein devices --json` report the current key
 generation; the keyring keeps a `revoked` record on the generation each

@@ -73,6 +73,16 @@ const unrecoverableNotice = `If you lose every enrolled device and this recovery
 recover the locker: not you, and not the operator, who only ever holds
 ciphertext. Local session copies on each machine are unaffected.`
 
+// alreadyEnrolledHere is what init, join, and recover say when this home
+// already carries an enrolment record. It names the way out, because there
+// is one and it is not obvious: a machine that was revoked still has the
+// record of the enrolment it lost, and nothing else removes it.
+// rein init --force copies the record into a backup set and takes it off the
+// home, after which join or recover can enrol this machine again.
+const alreadyEnrolledHere = "this device is already enrolled; rein account status shows the keyring state. " +
+	"If this device was revoked and you are enrolling it again, run rein init --hop --force (or rein init --force for BYO storage) first: " +
+	"it backs up this home's config, state, and enrolment record, then removes the enrolment record so this command can run"
+
 func newAccountCmd() *cobra.Command {
 	root := &cobra.Command{
 		Use:   "account",
@@ -105,7 +115,7 @@ written. It is never stored on disk, in config, or in logs.`,
 				return err
 			}
 			if _, err := config.LoadAccount(home); err == nil {
-				return NewExitError(ExitSafety, "this device is already enrolled; rein account status shows the keyring state")
+				return NewExitError(ExitSafety, alreadyEnrolledHere)
 			} else if !os.IsNotExist(err) {
 				return NewExitError(ExitConfig, "read account state: "+err.Error())
 			}
@@ -204,7 +214,7 @@ written under the current key generation.`,
 				return err
 			}
 			if _, err := config.LoadAccount(home); err == nil {
-				return NewExitError(ExitSafety, "this device is already enrolled; rein account status shows the keyring state")
+				return NewExitError(ExitSafety, alreadyEnrolledHere)
 			} else if !os.IsNotExist(err) {
 				return NewExitError(ExitConfig, "read account state: "+err.Error())
 			}

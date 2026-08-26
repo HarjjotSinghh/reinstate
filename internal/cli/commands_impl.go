@@ -268,12 +268,7 @@ func newInitCmd() *cobra.Command {
 			}
 			keyringStore := credentials.NewKeyringStore()
 			if len(existingFiles) != 0 {
-				backupPath, err := fsx.BackupFiles(
-					home,
-					filepath.Join(home, "backups"),
-					"reinitialize",
-					existingFiles...,
-				)
+				backupPath, err := backupExistingInitFiles(home, "reinitialize", existingFiles)
 				if err != nil {
 					return NewExitError(ExitRuntime, "back up existing init state: "+err.Error())
 				}
@@ -355,7 +350,7 @@ func initHosted(cmd *cobra.Command, home string, existingFiles, projectMappings 
 		cfg.Projects = append(cfg.Projects, project)
 	}
 	if len(existingFiles) != 0 {
-		backupPath, err := fsx.BackupFiles(home, filepath.Join(home, "backups"), "reinitialize", existingFiles...)
+		backupPath, err := backupExistingInitFiles(home, "reinitialize", existingFiles)
 		if err != nil {
 			return NewExitError(ExitRuntime, "back up existing init state: "+err.Error())
 		}
@@ -378,9 +373,13 @@ func initHosted(cmd *cobra.Command, home string, existingFiles, projectMappings 
 	return nil
 }
 
+// existingInitFiles lists the files in home that a re-initialization
+// replaces. account.json is one of them: it records this device's place in
+// one account's keyring, and re-initializing can point the home at a
+// different account, profile, or device id.
 func existingInitFiles(home string) ([]string, error) {
 	var existing []string
-	for _, name := range []string{"config.toml", "state.json"} {
+	for _, name := range []string{"config.toml", "state.json", "account.json"} {
 		if _, err := os.Lstat(filepath.Join(home, name)); err == nil {
 			existing = append(existing, name)
 		} else if !os.IsNotExist(err) {
@@ -388,6 +387,27 @@ func existingInitFiles(home string) ([]string, error) {
 		}
 	}
 	return existing, nil
+}
+
+// backupExistingInitFiles copies the home's existing init state into one
+// timestamped backup set and then removes the enrolment record.
+//
+// Removing it is the point. init rewrites config.toml and state.json, but
+// nothing rewrites account.json, and both `rein account join` and `rein
+// account recover` refuse to run where one exists ("this device is already
+// enrolled"). A device that was revoked and is re-initializing to enrol
+// again would otherwise have no way forward: the record describes an
+// enrolment the account no longer has, and no command removed it. The copy
+// in the backup set keeps the history.
+func backupExistingInitFiles(home, name string, existing []string) (string, error) {
+	path, err := fsx.BackupFiles(home, filepath.Join(home, "backups"), name, existing...)
+	if err != nil {
+		return "", err
+	}
+	if err := os.Remove(config.AccountPath(home)); err != nil && !os.IsNotExist(err) {
+		return "", err
+	}
+	return path, nil
 }
 
 func requireRemoteProfileManifest(ctx context.Context, store backend.Backend, key string) error {

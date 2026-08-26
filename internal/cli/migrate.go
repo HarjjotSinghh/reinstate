@@ -21,7 +21,6 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/config"
 	"github.com/HarjjotSinghh/reinstate/internal/credentials"
 	"github.com/HarjjotSinghh/reinstate/internal/crypto"
-	"github.com/HarjjotSinghh/reinstate/internal/fsx"
 	"github.com/HarjjotSinghh/reinstate/internal/lock"
 	"github.com/HarjjotSinghh/reinstate/internal/schema"
 	"github.com/HarjjotSinghh/reinstate/internal/sync"
@@ -438,7 +437,11 @@ func switchConfigToBYO(home string, old *schema.Config, state *migrateState, acc
 		return NewExitError(ExitRuntime, err.Error())
 	}
 	if len(existing) != 0 {
-		if _, err := fsx.BackupFiles(home, filepath.Join(home, "backups"), "migrate-byo", existing...); err != nil {
+		// The hosted enrolment record goes into the backup and off the
+		// home: the BYO profile written below has no keyring behind it,
+		// and a record claiming otherwise describes an account this home
+		// no longer speaks to.
+		if _, err := backupExistingInitFiles(home, "migrate-byo", existing); err != nil {
 			return NewExitError(ExitRuntime, "back up hosted config: "+err.Error())
 		}
 	}
