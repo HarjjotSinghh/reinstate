@@ -32,7 +32,8 @@ type Exchange struct {
 	// Scheme is the URL scheme the request was sent under, lowercased. It
 	// is part of where the request went: `http` means the credential
 	// signing it went out in the clear, which the isolation step refuses
-	// whatever endpoint the control plane named.
+	// for every endpoint the control plane can name except a loopback
+	// address, where the request does not leave the machine.
 	Scheme string
 	// Host is the host (with port, when the URL carried one) the request
 	// was addressed to, lowercased.

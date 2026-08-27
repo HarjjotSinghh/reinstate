@@ -55,6 +55,38 @@ func explainBackendError(err error) string {
 	return ""
 }
 
+// answered reports whether a storage error is the endpoint's answer about
+// this request, as opposed to no answer at all.
+//
+// The difference is the whole of the report's honesty, and it is the same
+// line the isolation step already draws. A refusal, a rejected credential,
+// a missing object, a failed precondition: those are things the endpoint
+// said, and a step may conclude something from them. A request that timed
+// out, a connection that dropped, a name that did not resolve, a TLS
+// handshake that failed, a 500: those are not answers about this locker,
+// and a step that reports one as a failure tells the reader their locker
+// failed a security check when what failed was the trip to it.
+//
+// A nil error is an answer: the request succeeded.
+func answered(err error) bool {
+	if err == nil {
+		return true
+	}
+	var refusal *backend.Refusal
+	if errors.As(err, &refusal) {
+		return true
+	}
+	for _, sentinel := range []error{
+		backend.ErrUnauthorized, backend.ErrAccessDenied, backend.ErrCredentialRejected,
+		backend.ErrNotFound, backend.ErrPrecondition, backend.ErrAlreadyExists,
+	} {
+		if errors.Is(err, sentinel) {
+			return true
+		}
+	}
+	return false
+}
+
 // withCause joins a plain-English cause to the error it came from, so the
 // sentence a person acts on comes first and the exact text a maintainer
 // needs is still there. A cause it has no gloss for degrades to the raw

@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -19,6 +20,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/HarjjotSinghh/reinstate/internal/backend"
 	"github.com/HarjjotSinghh/reinstate/internal/backend/memory"
@@ -88,6 +90,70 @@ func NewPlain(t *testing.T, bucket string) *Fake {
 	f.Srv = httptest.NewServer(http.HandlerFunc(f.handle))
 	t.Cleanup(f.Srv.Close)
 	return f
+}
+
+// NewPlainOn is NewPlain on an address the caller chose, so a test can
+// reach the fake somewhere other than loopback.
+//
+// httptest listens on loopback (127.0.0.1, or ::1 where IPv4 is not
+// available), which is the one address `rein sync verify` exempts from
+// its plaintext refusal — so a check driven through the CLI against a
+// plain httptest fake takes the exempt path, and the refusal itself never
+// ran end to end. A listener on a non-loopback local address is what
+// makes that path reachable through the real client. See
+// NonLoopbackListener.
+func NewPlainOn(t *testing.T, bucket string, ln net.Listener) *Fake {
+	t.Helper()
+	f := &Fake{Store: memory.New(), Bucket: bucket, Valid: map[string]bool{}, RejectAs: "ExpiredToken"}
+	srv := httptest.NewUnstartedServer(http.HandlerFunc(f.handle))
+	_ = srv.Listener.Close()
+	srv.Listener = ln
+	srv.Start()
+	f.Srv = srv
+	t.Cleanup(f.Srv.Close)
+	return f
+}
+
+// NonLoopbackListener listens on an address of this machine that is not a
+// loopback address, and reports false when the machine has none it can
+// bind and reach. A container with only `lo`, or a laptop with every
+// interface down, is such a machine, and a test that needs one has to
+// skip there rather than fail.
+//
+// The connection a test makes to it is still to this machine and answered
+// by it. What the address is not is 127.0.0.0/8, ::1 or `localhost`,
+// which is exactly the distinction the isolation step's plaintext refusal
+// turns on. Note that a listener on such an address is, unlike a loopback
+// one, reachable from the network while the test runs; it serves a fake
+// bucket holding whatever that test put in it.
+func NonLoopbackListener(t *testing.T) (net.Listener, bool) {
+	t.Helper()
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return nil, false
+	}
+	for _, addr := range addrs {
+		n, ok := addr.(*net.IPNet)
+		if !ok || n.IP.IsLoopback() || n.IP.To4() == nil || n.IP.IsLinkLocalUnicast() {
+			continue
+		}
+		ln, err := net.Listen("tcp", net.JoinHostPort(n.IP.String(), "0"))
+		if err != nil {
+			continue
+		}
+		// Bound is not the same as reachable: a host firewall can accept
+		// the bind and drop the connection. Only an address this machine
+		// can actually dial is any use to a journey.
+		conn, err := net.DialTimeout("tcp", ln.Addr().String(), 2*time.Second)
+		if err != nil {
+			_ = ln.Close()
+			continue
+		}
+		_ = conn.Close()
+		t.Cleanup(func() { _ = ln.Close() })
+		return ln, true
+	}
+	return nil, false
 }
 
 // Accept replaces the set of accepted access key ids.

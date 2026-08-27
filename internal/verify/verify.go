@@ -19,6 +19,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -130,6 +131,12 @@ type Report struct {
 	// failed to open with the key held here — the mistyped-passphrase
 	// shape, not a security incident.
 	wrongKey bool
+	// unreached is why the storage endpoint gave no answer, when steps 1
+	// or 2 got none: a timeout, a dropped connection, a name that did not
+	// resolve. It is what separates "nothing could be checked" from
+	// "nothing has been pushed yet", which are the two ways this report
+	// ends up with no verdict at all.
+	unreached string
 }
 
 // LockerInfo names the bucket the checks ran against.
@@ -263,6 +270,14 @@ func Run(ctx context.Context, o Options) *Report {
 	isolationStep(ctx, o, r, akid, listed)
 
 	r.Outcome = outcomeOf(r.Steps)
+	// A run that listed the locker but opened nothing has shown nothing
+	// about what the locker holds, and "pass" is the one word it must not
+	// be reduced to. This is only reachable when a fetch got no answer at
+	// all — a locker with an index always has an object to fetch — so the
+	// report says so instead of passing on the strength of step 1.
+	if r.Outcome == Pass && len(r.CheckedObjects) == 0 {
+		r.Outcome = NotApplicable
+	}
 	r.Summary = r.buildSummary()
 	return r
 }
@@ -274,29 +289,90 @@ func Run(ctx context.Context, o Options) *Report {
 // told the difference between a service being down and a claim not
 // holding. cause is the transport failure, kept verbatim.
 func NotRun(o Options, cause error) *Report {
+	because := withReason("the control plane could not be reached", cause)
+	return notStarted(o, because,
+		"Could not run: "+because+", and a Hop locker is listed with credentials the control plane mints for this device, so there were no credentials to list it with.",
+		"Could not run: "+because+", so it could not say where its reference locker is.",
+		"Run rein sync verify again when the control plane is reachable.")
+}
+
+// NotReached returns the report for a run that never started because the
+// storage endpoint gave no answer — a request that timed out, a
+// connection refused, a name that did not resolve. It is the storage half
+// of NotRun, and it exists for the same reason: the profile could not
+// even be opened, and the reader has to be able to tell an outage from a
+// finding. Use Unreachable to decide whether an error belongs here.
+func NotReached(o Options, cause error) *Report {
+	because := withReason("the storage endpoint gave no answer", cause)
+	return notStarted(o, because,
+		"Could not run: "+because+", so the locker could not be opened or listed.",
+		"Could not run: step 1 could not list this account's locker, so a refusal from another bucket would show nothing about bucket scope.",
+		"Run rein sync verify again when the storage endpoint answers.")
+}
+
+// withReason appends the underlying failure, kept verbatim, to the plain
+// sentence a reader acts on.
+func withReason(sentence string, cause error) string {
+	if cause == nil {
+		return sentence
+	}
+	return sentence + " (" + cause.Error() + ")"
+}
+
+// notStarted builds the four not-applicable steps for a run that never
+// began, so the reader still sees which four checks exist and which of
+// them said nothing. It is never a failure and never a pass.
+func notStarted(o Options, because, listed, isolation, retry string) *Report {
 	now := time.Now
 	if o.Now != nil {
 		now = o.Now
 	}
-	r := &Report{Version: ReportVersion, GeneratedAt: now().UTC().Format(time.RFC3339), ClientVersion: o.ClientVersion, Storage: o.Storage, Outcome: NotApplicable, Locker: o.Locker}
-	because := "the control plane could not be reached"
-	if cause != nil {
-		because += " (" + cause.Error() + ")"
-	}
+	r := &Report{Version: ReportVersion, GeneratedAt: now().UTC().Format(time.RFC3339), ClientVersion: o.ClientVersion, Storage: o.Storage, Outcome: NotApplicable, Locker: o.Locker, unreached: because}
 	for _, s := range []struct{ id, name, observed string }{
-		{StepList, "List the locker with this device's credentials",
-			"Could not run: " + because + ", and a Hop locker is listed with credentials the control plane mints for this device, so there were no credentials to list it with."},
+		{StepList, "List the locker with this device's credentials", listed},
 		{StepCiphertext, "Fetch an object and check it is ciphertext",
 			"Could not run: no object could be fetched, because the locker could not be opened (see step 1)."},
 		{StepDecrypt, "Decrypt the object locally",
 			"Could not run: no object was fetched (see step 2). The key this step would have used never leaves this device and was never involved."},
-		{StepIsolation, "Prove this account's credentials are refused from another bucket",
-			"Could not run: " + because + ", so it could not say where its reference locker is."},
+		{StepIsolation, "Prove this account's credentials are refused from another bucket", isolation},
 	} {
 		r.Steps = append(r.Steps, Step{ID: s.id, Name: s.name, Did: "Nothing: the check did not start.", Observed: s.observed, Status: NotApplicable})
 	}
-	r.Summary = "NOT VERIFIED. Nothing was checked, because " + because + ". No step failed and nothing here says anything about what the locker holds. Run rein sync verify again when the control plane is reachable."
+	r.Summary = "NOT VERIFIED. Nothing was checked, because " + because + ". No step failed and nothing here says anything about what the locker holds. " + retry
 	return r
+}
+
+// Unreachable reports an error that is a failure to reach an endpoint at
+// all, rather than anything the endpoint said. A dial that was refused, a
+// name that did not resolve, a handshake that never finished, a request
+// that timed out: none of them says a word about the locker, and the
+// command that establishes trust must not present one as a finding.
+//
+// It is deliberately a positive test rather than "not a refusal": the
+// caller uses it on errors from opening a whole profile, where a bad
+// config file and an unreachable bucket both arrive as errors and only
+// one of them is an outage.
+func Unreachable(err error) bool {
+	if err == nil || answered(err) {
+		return false
+	}
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		return true
+	}
+	var opErr *net.OpError
+	if errors.As(err, &opErr) {
+		return true
+	}
+	var dnsErr *net.DNSError
+	if errors.As(err, &dnsErr) {
+		return true
+	}
+	var syscallErr *os.SyscallError
+	if errors.As(err, &syscallErr) {
+		return true
+	}
+	return errors.Is(err, context.DeadlineExceeded) || errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF)
 }
 
 // outcomeOf folds the step verdicts into the report's own. A single
@@ -402,8 +478,21 @@ func listStep(ctx context.Context, o Options, r *Report) (*inventory, string, St
 		}
 	}
 	if err != nil {
-		step.Status = Fail
-		step.Observed = "The listing was refused or failed: " + withCause(explainBackendError(err), err) + "."
+		// A listing the endpoint refused is an answer, and the answer
+		// contradicts the claim that this device's credentials open this
+		// locker. A listing that got no answer — a timeout, a dropped
+		// connection, a name that did not resolve — is not an answer about
+		// anything, and reporting it as a failed check would tell the
+		// reader their locker failed a security check because their
+		// network dropped.
+		if !answered(err) {
+			step.Status = NotApplicable
+			step.Observed = "Could not run: the storage endpoint gave no answer to the listing — " + withCause(explainBackendError(err), err) + " — so nothing about this locker was shown either way."
+			r.unreached = "The locker could not be listed: " + withCause(explainBackendError(err), err) + "."
+		} else {
+			step.Status = Fail
+			step.Observed = "The listing was refused or failed: " + withCause(explainBackendError(err), err) + "."
+		}
 		r.Steps = append(r.Steps, step)
 		return nil, akid, step.Status
 	}
@@ -491,14 +580,26 @@ func ciphertextStep(ctx context.Context, o Options, r *Report, inv *inventory) [
 	read := func(name, label string) []byte {
 		body, err := fetch(ctx, o.Backend, key(o.Prefix, name))
 		if err != nil {
-			step.Status = Fail
+			// The same line step 1 draws: a refusal is an answer and
+			// contradicts the claim; a request that got no answer at all
+			// shows nothing about the object and must not be reported as a
+			// check that failed.
+			if !answered(err) {
+				degrade(&step, NotApplicable)
+				observed = append(observed, fmt.Sprintf("Could not run: the storage endpoint gave no answer for %s — %s — so nothing about that object was shown.", name, withCause(explainBackendError(err), err)))
+				if r.unreached == "" {
+					r.unreached = fmt.Sprintf("%s could not be fetched: %s.", name, withCause(explainBackendError(err), err))
+				}
+				return nil
+			}
+			degrade(&step, Fail)
 			observed = append(observed, fmt.Sprintf("%s could not be fetched: %s.", name, withCause(explainBackendError(err), err)))
 			return nil
 		}
 		got = append(got, fetched{name: name, label: label, body: body})
 		verdict, ok := inspectCiphertext(body)
 		if !ok {
-			step.Status = Fail
+			degrade(&step, Fail)
 			r.plaintext = true
 		}
 		observed = append(observed, fmt.Sprintf("%s (%d bytes): %s", name, len(body), verdict))
@@ -761,7 +862,9 @@ func describeSnapshot(name string, plain io.Reader) (string, []string, error) {
 // claim: a reference locker that accepted the credential, a request that
 // landed somewhere other than the endpoint step 1 listed, a redirect
 // offered in place of an answer, or a control plane asking for the
-// credential to be sent over an unencrypted connection. Everything else
+// credential to be sent over an unencrypted connection to anything but a
+// loopback address (see loopback, and every page that documents this
+// refusal states that exemption too). Everything else
 // that stops the check — an outage, a control plane that answered an
 // error, a reference bucket that has been deleted, a dropped connection,
 // a credential that died between step 1 and here — is a check that could
@@ -776,6 +879,11 @@ func isolationStep(ctx context.Context, o Options, r *Report, lockerAKID string,
 		Did: "Asked the control plane for its reference locker (a bucket the operator owns, holding one probe object), checked that it names a different bucket at the same storage endpoint step 1 listed and that reaching it would not put this device's credentials on the wire unencrypted, then tried to list it and read the probe with the same credentials that just listed this account's locker, over a client that refuses to follow a redirect anywhere else."}
 	switch {
 	case o.Storage == StorageBYO:
+		// "What was done" has to be what was done on the profile the
+		// reader is on. The sentence above describes asking a control
+		// plane; this profile has none, and printing it here would tell a
+		// BYO reader about requests that were never made.
+		step.Did = "Nothing. This profile stores to a bucket you configured yourself, so there is no control plane to name a reference locker and no operator-owned bucket to offer these credentials to. No request was made."
 		step.Status = NotApplicable
 		step.Observed = "Not applicable: BYO storage has no control plane and no reference locker. Whether your credentials reach other buckets is decided by your own bucket policy."
 		r.Steps = append(r.Steps, step)
@@ -879,13 +987,14 @@ func isolationStep(ctx context.Context, o Options, r *Report, lockerAKID string,
 	// The pin now agrees, which on a plaintext endpoint means both sides
 	// agree on sending a live secret key and session token where anything
 	// on the path can read them. No pin makes that the right thing to do,
-	// so the probe is not made at all. A loopback address is exempt because
-	// the request never reaches a network: that is the fake locker the
-	// tests and a local development control plane use, and no Hop endpoint
-	// is one.
+	// so the probe is not made at all. One address is exempt and it is
+	// stated wherever this refusal is documented: a loopback address,
+	// where the request does not leave the machine. That is the fake
+	// locker the tests and a locally run control plane use, and no Hop
+	// endpoint is one.
 	if pinned.plaintext() && !pinned.loopback() {
 		step.Status = Fail
-		step.Observed = fmt.Sprintf("The control plane pointed this step at %s, which is plaintext http. This step signs its request with the same temporary credentials this device pushes with — a secret key and a session token — and those are never sent over an unencrypted connection, so no request was made and nothing about bucket scope was shown. Step 1 listed this account's locker at %s, so those credentials are already travelling unencrypted on every push: report this to the operator.", ref.Endpoint, o.Locker.Endpoint)
+		step.Observed = fmt.Sprintf("The control plane pointed this step at %s, which is plaintext http. This step signs its request with the same temporary credentials this device pushes with — a secret key and a session token — and it sends those over an unencrypted connection to nothing but this machine's own loopback address, so no request was made and nothing about bucket scope was shown. Step 1 listed this account's locker at %s, so those credentials are already travelling unencrypted on every push: report this to the operator.", ref.Endpoint, o.Locker.Endpoint)
 		r.Steps = append(r.Steps, step)
 		return
 	}
@@ -917,47 +1026,66 @@ func isolationStep(ctx context.Context, o Options, r *Report, lockerAKID string,
 		degrade(&step, NotApplicable)
 		observed = append(observed, fmt.Sprintf("Could not run: the locker credential changed between step 1 (%s) and this step (%s), so a refusal here would not be about the credential the locker accepted. Run rein sync verify again.", lockerAKID, akid))
 	}
-	objects, err := b.List(ctx, "")
+	objects, listErr := b.List(ctx, "")
+	body, fetchErr := fetch(ctx, b, ref.Key)
+	// The pin is read before either answer is turned into a verdict. The
+	// two endpoint strings compared above both came from the control
+	// plane; only the transport says where the request landed, and an
+	// answer it cannot place is not evidence about buckets. Deciding the
+	// other way round is how a report came to assert that credentials
+	// reached a foreign bucket on the strength of an observation the pin
+	// then invalidated — degrade cannot lift a Fail, so the alarm could
+	// not be taken back.
+	pin := pinToResponse(pinned, probe.Exchanges)
+	// concluded is the clause that names what an answer means for bucket
+	// scope. It is added only when the transport placed the request at the
+	// pinned endpoint, because that is what makes "another bucket" a fact
+	// rather than a name the control plane supplied.
+	concluded := func(clause string) string {
+		if pin.placed {
+			return " " + clause
+		}
+		return " Where that request went could not be established (see below), so nothing is concluded from it about bucket scope."
+	}
 	switch {
-	case errors.Is(err, backend.ErrAccessDenied):
+	case errors.Is(listErr, backend.ErrAccessDenied):
 		observed = append(observed, "Listing the reference locker was refused as access denied.")
-	case errors.Is(err, backend.ErrCredentialRejected):
+	case errors.Is(listErr, backend.ErrCredentialRejected):
 		degrade(&step, NotApplicable)
-		observed = append(observed, "Could not run: listing the reference locker failed because the credential itself was rejected — "+withCause(explainBackendError(err), err)+" — and a credential no bucket accepts is refused everywhere, so nothing about bucket scope was shown.")
-	case err == nil:
+		observed = append(observed, "Could not run: listing the reference locker failed because the credential itself was rejected — "+withCause(explainBackendError(listErr), listErr)+" — and a credential no bucket accepts is refused everywhere, so nothing about bucket scope was shown.")
+	case listErr == nil:
 		degrade(&step, Fail)
-		r.foreignBucket = true
-		observed = append(observed, fmt.Sprintf("Listing the reference locker SUCCEEDED and returned %d object(s); this account's credentials reach a bucket that is not its own.", len(objects)))
+		r.foreignBucket = r.foreignBucket || pin.placed
+		observed = append(observed, fmt.Sprintf("Listing the reference locker SUCCEEDED and returned %d object(s).%s", len(objects), concluded("This account's credentials reach a bucket that is not its own.")))
 	default:
 		// Neither a refusal nor a success: a bucket that has been deleted,
 		// an endpoint answering 500, a connection that dropped, a request
 		// that timed out. None of it says anything about bucket scope, and
 		// none of it is this account's doing.
 		degrade(&step, NotApplicable)
-		observed = append(observed, "Could not run: listing the reference locker neither succeeded nor was refused as access denied: "+withCause(explainBackendError(err), err)+".")
+		observed = append(observed, "Could not run: listing the reference locker neither succeeded nor was refused as access denied: "+withCause(explainBackendError(listErr), listErr)+".")
 	}
-	body, err := fetch(ctx, b, ref.Key)
 	switch {
-	case errors.Is(err, backend.ErrAccessDenied):
+	case errors.Is(fetchErr, backend.ErrAccessDenied):
 		observed = append(observed, "Reading the probe object was refused as access denied.")
-	case errors.Is(err, backend.ErrCredentialRejected):
+	case errors.Is(fetchErr, backend.ErrCredentialRejected):
 		degrade(&step, NotApplicable)
-		observed = append(observed, "Could not run: reading the probe object failed because the credential itself was rejected — "+withCause(explainBackendError(err), err)+" — and a credential no bucket accepts is refused everywhere, so nothing about bucket scope was shown.")
-	case err == nil:
+		observed = append(observed, "Could not run: reading the probe object failed because the credential itself was rejected — "+withCause(explainBackendError(fetchErr), fetchErr)+" — and a credential no bucket accepts is refused everywhere, so nothing about bucket scope was shown.")
+	case fetchErr == nil:
 		degrade(&step, Fail)
-		r.foreignBucket = true
-		observed = append(observed, fmt.Sprintf("Reading the probe object SUCCEEDED (%d bytes); this account's credentials can read another bucket's contents.", len(body)))
+		r.foreignBucket = r.foreignBucket || pin.placed
+		observed = append(observed, fmt.Sprintf("Reading the probe object SUCCEEDED (%d bytes).%s", len(body), concluded("This account's credentials can read another bucket's contents.")))
 	default:
 		degrade(&step, NotApplicable)
-		observed = append(observed, "Could not run: reading the probe object neither succeeded nor was refused as access denied: "+withCause(explainBackendError(err), err)+".")
+		observed = append(observed, "Could not run: reading the probe object neither succeeded nor was refused as access denied: "+withCause(explainBackendError(fetchErr), fetchErr)+".")
 	}
-	// Everything above is what the S3 client made of the answers. The
-	// verdict is then pinned to the answers themselves, because the two
-	// endpoint strings compared earlier both came from the control plane
-	// and neither says where the request landed.
-	if note, verdict := pinToResponse(pinned, probe.Exchanges); verdict != Pass {
-		degrade(&step, verdict)
-		observed = append(observed, note)
+	// The pin's own verdict, read above, is applied last only so its
+	// sentence closes the paragraph; it was already decided before any
+	// answer was read, and nothing above it drew a conclusion it did not
+	// support.
+	if pin.verdict != Pass {
+		degrade(&step, pin.verdict)
+		observed = append(observed, pin.note)
 	}
 	step.Observed = strings.Join(observed, " ")
 	r.Steps = append(r.Steps, step)
@@ -987,6 +1115,22 @@ func sameBucket(a, b string) bool {
 	return strings.EqualFold(strings.TrimSpace(a), strings.TrimSpace(b))
 }
 
+// pinResult is what the probe's transport says about the requests the
+// isolation step made.
+type pinResult struct {
+	// placed is true when every request the probe made was observed and
+	// went to the pinned endpoint without a redirect. Only then does an
+	// answer say which bucket answered it, so only then may the step
+	// conclude anything about bucket scope from one.
+	placed bool
+	// note is the sentence to add to the step, empty when the transport
+	// has nothing to add.
+	note string
+	// verdict is Pass only when the transport confirms a signed S3 refusal
+	// from the pinned endpoint.
+	verdict Status
+}
+
 // pinToResponse judges the isolation step against what the probe's
 // transport actually saw, so the step passes only on a refusal that
 // carried this account's credential to the pinned host and came back as a
@@ -996,21 +1140,21 @@ func sameBucket(a, b string) bool {
 // and a NotApplicable only over an otherwise-passing step. NotApplicable
 // is the verdict whenever the pin cannot be made, because an unverifiable
 // pin shows nothing and must not read as proof.
-func pinToResponse(pinned endpointURL, exchanges func() []Exchange) (string, Status) {
+func pinToResponse(pinned endpointURL, exchanges func() []Exchange) pinResult {
 	if exchanges == nil {
-		return "The reference probe's client was not instrumented, so where the request landed and what the endpoint answered could not be checked; nothing about bucket scope is claimed.", NotApplicable
+		return pinResult{note: "The reference probe's client was not instrumented, so where the request landed and what the endpoint answered could not be checked; nothing about bucket scope is claimed.", verdict: NotApplicable}
 	}
 	seen := exchanges()
 	if len(seen) == 0 {
-		return "The reference probe made no request at all, so this account's credentials were never offered to another bucket and nothing about bucket scope was shown.", NotApplicable
+		return pinResult{note: "The reference probe made no request at all, so this account's credentials were never offered to another bucket and nothing about bucket scope was shown.", verdict: NotApplicable}
 	}
 	for _, ex := range seen {
 		if ex.RedirectedTo != "" {
-			return fmt.Sprintf("The reference locker answered with a redirect to %s, which the probe refused to follow: a credential is only refused by a bucket if it was sent to that bucket, and this one was not, so nothing about bucket scope was shown.", ex.RedirectedTo), Fail
+			return pinResult{note: fmt.Sprintf("The reference locker answered with a redirect to %s, which the probe refused to follow: a credential is only refused by a bucket if it was sent to that bucket, and this one was not, so nothing about bucket scope was shown.", ex.RedirectedTo), verdict: Fail}
 		}
 		landed, ok := parseEndpoint(ex.Scheme + "://" + ex.Host)
 		if !ok || !landed.equal(pinned) {
-			return fmt.Sprintf("The reference probe's request went to %s, not to the pinned endpoint %s, so nothing about this locker's credentials was shown.", orNone(strings.TrimPrefix(ex.Scheme+"://"+ex.Host, "://")), pinned), Fail
+			return pinResult{note: fmt.Sprintf("The reference probe's request went to %s, not to the pinned endpoint %s, so nothing about this locker's credentials was shown.", orNone(strings.TrimPrefix(ex.Scheme+"://"+ex.Host, "://")), pinned), verdict: Fail}
 		}
 	}
 	refusals := 0
@@ -1019,14 +1163,14 @@ func pinToResponse(pinned endpointURL, exchanges func() []Exchange) (string, Sta
 			continue
 		}
 		if ex.ErrorCode == "" {
-			return fmt.Sprintf("%s answered 403 with no S3 error body. Any web server answers 403; only an S3 refusal naming its code shows a bucket refused this credential, so nothing about bucket scope was shown.", pinned), NotApplicable
+			return pinResult{placed: true, note: fmt.Sprintf("%s answered 403 with no S3 error body. Any web server answers 403; only an S3 refusal naming its code shows a bucket refused this credential, so nothing about bucket scope was shown.", pinned), verdict: NotApplicable}
 		}
 		refusals++
 	}
 	if refusals == 0 {
-		return fmt.Sprintf("%s never answered 403 to the probe, so no bucket was observed refusing this account's credentials.", pinned), NotApplicable
+		return pinResult{placed: true, note: fmt.Sprintf("%s never answered 403 to the probe, so no bucket was observed refusing this account's credentials.", pinned), verdict: NotApplicable}
 	}
-	return "", Pass
+	return pinResult{placed: true, verdict: Pass}
 }
 
 // endpointURL is an endpoint reduced to what the isolation step compares:
@@ -1092,9 +1236,17 @@ func (e endpointURL) equal(other endpointURL) bool { return e == other }
 // signing them, are readable by anything on the path.
 func (e endpointURL) plaintext() bool { return e.scheme == "http" }
 
-// loopback reports an address whose traffic never reaches a network. It is
-// the one place plaintext is not an exposure, and it is what the test
-// fakes and a locally run control plane use.
+// loopback reports an address whose traffic does not leave the machine.
+// It is the one exemption from the plaintext refusal above, and it is
+// what the test fakes and a locally run control plane use.
+//
+// The literals (127.0.0.0/8, ::1) are decided here. The name "localhost"
+// is taken at its word rather than resolved: RFC 6761 reserves it for the
+// loopback interface, but this does not check the resolver, so a machine
+// whose hosts file points "localhost" somewhere else would have a
+// plaintext probe made to that host. Every other name — including one
+// that resolves to a loopback address — is not exempt, which is the side
+// to err on.
 func (e endpointURL) loopback() bool {
 	if e.host == "localhost" {
 		return true
@@ -1154,6 +1306,19 @@ func (r *Report) WriteHuman(w io.Writer) {
 	fmt.Fprintln(w, "OUTCOME: "+r.Summary)
 }
 
+// NotVerified reports a run that reached no verdict because the storage
+// endpoint gave no answer, as opposed to one that reached none because
+// there was nothing to check. Both end with Outcome NotApplicable and
+// neither is a failure, but only this one is worth a non-zero exit: the
+// caller asked for the locker to be checked and it was not.
+//
+// It is computed while the run happens, so it is false on a report
+// decoded from JSON; a decoder reads Summary, which says the same thing
+// in words.
+func (r *Report) NotVerified() bool {
+	return r.Outcome == NotApplicable && r.unreached != ""
+}
+
 // IsolationChecked reports whether the isolation step ran and passed, as
 // opposed to being not applicable (BYO storage, or a control plane without
 // a reference locker).
@@ -1180,6 +1345,12 @@ func (r *Report) IsolationChecked() bool {
 // one time it fires for real.
 func (r *Report) buildSummary() string {
 	switch {
+	case r.Outcome == NotApplicable && r.unreached != "":
+		// No verdict, and not because there was nothing to check: the
+		// storage endpoint gave no answer. Saying "nothing has been pushed
+		// yet" here would send the reader to `rein push`, which is not the
+		// problem, and would read as a clean bill of health besides.
+		return "NOT VERIFIED. " + r.unreached + " Nothing was checked, so nothing here says anything about what the locker holds or where these credentials reach. Run rein sync verify again when the storage endpoint answers."
 	case r.Outcome == NotApplicable:
 		return "NOT YET VERIFIABLE. Nothing has been pushed from this profile yet, so the locker holds nothing to check. Run rein push, then rein sync verify again."
 	case r.Outcome == Fail && (r.plaintext || r.foreignBucket):
@@ -1204,6 +1375,13 @@ func (r *Report) buildSummary() string {
 	}
 	if r.Unopened != "" {
 		checked += " " + r.Unopened
+	}
+	if r.unreached != "" {
+		// Something the report set out to fetch gave no answer, and the
+		// rest of the run passed. The sentence keeps the two apart rather
+		// than letting the pass cover both: a step that could not run is
+		// not a step that failed, and it is not a step that passed either.
+		checked += " " + r.unreached + " That object was not checked; the steps above say why."
 	}
 	if r.IsolationChecked() {
 		return "PASS. " + checked + " This account's credentials are refused by a bucket that is not its own."

@@ -51,7 +51,14 @@ func stepByID(t *testing.T, r verify.Report, id string) verify.Step {
 // pushes once, with the fake control plane advertising a reference locker.
 func hostedVerifyJourney(t *testing.T) (*lockerJourney, string) {
 	t.Helper()
-	j := newLockerJourney(t)
+	return hostedVerifyJourneyOn(t, newLockerJourney(t))
+}
+
+// hostedVerifyJourneyOn is hostedVerifyJourney over a journey the caller
+// has already adjusted — the fake locker moved to another address, say —
+// so the sign-in sequence is written once.
+func hostedVerifyJourneyOn(t *testing.T, j *lockerJourney) (*lockerJourney, string) {
+	t.Helper()
 	j.plane.reference = &fakeReference{bucket: "lk-0000000000000000000000refr", key: "reference/probe.txt"}
 	project := writeClaudeFixture(t)
 	if _, errb, code := j.run("login"); code != ExitOK {
@@ -806,6 +813,26 @@ func TestSyncVerifyJourneyBYO(t *testing.T) {
 	}
 	if strings.Contains(out, "posted") {
 		t.Fatalf("BYO verify claims to post:\n%s", out)
+	}
+	// "What was done" is read by someone deciding whether to believe the
+	// report, so on this profile it may not describe requests this profile
+	// never makes. There is no control plane here: nothing was asked of
+	// one, no reference locker was named, and no probe was fetched. Step 4
+	// says what did happen, which is nothing.
+	for _, block := range strings.Split(out, "Step ")[1:] {
+		did, _, _ := strings.Cut(block, "What was seen:")
+		for _, absent := range []string{
+			"Asked the control plane",
+			"tried to list it and read the probe",
+			"checked that it names a different bucket",
+		} {
+			if strings.Contains(did, absent) {
+				t.Fatalf("a BYO report says it did something it did not do (%q):\n%s", absent, did)
+			}
+		}
+		if strings.HasPrefix(block, "4:") && !strings.Contains(did, "What was done:  Nothing.") {
+			t.Fatalf("step 4 on BYO storage does not say that nothing was done:\n%s", did)
+		}
 	}
 
 	out, _, code = run("sync", "verify", "--json")

@@ -37,7 +37,7 @@ func newSyncVerifyCmd() *cobra.Command {
 	var asJSON, post bool
 	cmd := &cobra.Command{
 		Use:   "verify",
-		Short: "Show that the store holds only ciphertext this device can open",
+		Short: "Show that the store holds ciphertext this device can open, and what it holds in the clear",
 		Long: `Runs the checks behind the zero-knowledge claim and prints a verification
 report a non-expert can read and repeat: list the locker with this device's
 credentials; fetch an object and show it is ciphertext; decrypt it locally
@@ -46,25 +46,37 @@ credentials are refused from a bucket the operator owns (the reference
 locker). BYO storage runs the first three checks; the fourth is reported as
 not applicable.
 
+Every session object Reinstate writes to the locker is ciphertext. One
+object it writes is not, and the report names it rather than passing over
+it: ` + "`" + `keyring.v1.json` + "`" + ` is plaintext by design. It holds no usable key,
+and it gives up the account's profile id, every enrolled device's id,
+public key and enrolment time, and one entry per key generation with the
+time it started — so a locker with more than one generation also shows
+which devices stopped being enrolled, and when. See
+docs/hop/object-format.md for the full list.
+
 The exit status is 0 when every step passed or did not apply — including a
 profile that has pushed nothing yet, where there is nothing to check — and
-` + "`" + `7` + "`" + ` (safety) when a step failed. A control plane that cannot be reached
-exits ` + "`" + `1` + "`" + ` after printing the report, because a check that could not run is
-not a check that failed. On a Hop locker the step results (never object
-contents or session names) are posted to the control plane for the account
-console unless --post=false is given.`,
+` + "`" + `7` + "`" + ` (safety) when a step failed. A control plane or a storage endpoint
+that could not be reached exits ` + "`" + `1` + "`" + ` after printing the report, because a
+step that got no answer is not a step that failed. On a Hop locker the step
+results are posted to the control plane for the account console unless
+--post=false is given: the step verdicts and their sentences, with the
+per-session detail lines stripped, so no object contents, session names or
+project paths go with them.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			eng, cfg, home, err := engineFromConfig(cmd, "")
 			if err != nil {
 				// A Hop locker is opened with credentials the control plane
-				// mints, so a control plane nobody can reach stops every check
-				// before it starts. That is still worth a report: a bare dial
-				// error leaves the reader unable to tell an outage from a
-				// finding, which is the one distinction this command exists to
-				// make. Print what could and could not run, then exit with the
-				// runtime code every other hosted command uses for an
-				// unreachable control plane.
-				if report := unreachableReport(cmd, cfg); report != nil {
+				// mints and a keyring fetched from the bucket, so either one
+				// being unreachable stops every check before it starts. That
+				// is still worth a report: a bare dial error leaves the
+				// reader unable to tell an outage from a finding, which is
+				// the one distinction this command exists to make. Print what
+				// could and could not run, then exit with the runtime code
+				// every other hosted command uses for an outage.
+				report, exit := notStartedReport(cmd, cfg, err)
+				if report != nil {
 					if asJSON {
 						if jsonErr := WriteJSON(cmd.OutOrStdout(), map[string]any{"report": report, "posted": false}); jsonErr != nil {
 							return jsonErr
@@ -72,6 +84,9 @@ console unless --post=false is given.`,
 					} else {
 						report.WriteHuman(cmd.OutOrStdout())
 					}
+				}
+				if exit != nil {
+					return exit
 				}
 				return err
 			}
@@ -100,6 +115,14 @@ console unless --post=false is given.`,
 			if report.Failed() {
 				return NewExitError(ExitSafety, "verification failed; see the report")
 			}
+			// The storage endpoint gave no answer, so nothing was checked.
+			// That is not a failed verification and must not exit 7, but it
+			// is not a clean run either: a script that reads the exit code
+			// alone would otherwise take an outage for a pass. It is the
+			// same code an unreachable control plane exits with.
+			if report.NotVerified() {
+				return NewExitError(ExitRuntime, "nothing could be verified; see the report")
+			}
 			return nil
 		},
 	}
@@ -108,16 +131,23 @@ console unless --post=false is given.`,
 	return cmd
 }
 
-// unreachableReport returns the report to print when the profile could
-// not be opened at all because the control plane could not be reached,
-// and nil for every other failure — a bad config, a rejected token, a
-// quota refusal — which the command's own error already explains.
-func unreachableReport(cmd *cobra.Command, cfg *schema.Config) *verify.Report {
+// notStartedReport returns the report to print when the profile could not
+// be opened at all, together with the exit error to use in place of the
+// command's own.
+//
+// There are two outages that stop every check before it starts, and both
+// have to read as outages rather than as findings: a control plane nobody
+// can reach (a Hop locker's credentials are minted there) and a storage
+// endpoint that gives no answer (the keyring is fetched from the bucket).
+// Both exit `1`. Every other failure — a bad config, a rejected token, a
+// quota refusal, a passphrase that does not open the keyring — returns
+// nil for both, and the command's own error and exit code stand.
+func notStartedReport(cmd *cobra.Command, cfg *schema.Config, err error) (*verify.Report, error) {
 	hosted := hostedFrom(cmd)
-	if hosted == nil || !hop.Unreachable(hosted.LastError()) {
-		return nil
+	opts := verify.Options{Storage: verify.StorageBYO, ClientVersion: version.String()}
+	if hosted != nil {
+		opts.Storage = verify.StorageHop
 	}
-	opts := verify.Options{Storage: verify.StorageHop, ClientVersion: version.String()}
 	if cfg != nil {
 		opts.Locker = verify.LockerInfo{Endpoint: cfg.Storage.Endpoint, Bucket: cfg.Storage.Bucket, Prefix: cfg.Storage.Prefix}
 	}
@@ -126,7 +156,15 @@ func unreachableReport(cmd *cobra.Command, cfg *schema.Config) *verify.Report {
 			opts.Now = now
 		}
 	}
-	return verify.NotRun(opts, hosted.LastError())
+	switch {
+	case hosted != nil && hop.Unreachable(hosted.LastError()):
+		// The control plane's own error already carries ExitRuntime, so the
+		// command's error stands and only the report is added.
+		return verify.NotRun(opts, hosted.LastError()), nil
+	case verify.Unreachable(err):
+		return verify.NotReached(opts, err), NewExitError(ExitRuntime, "nothing could be verified; see the report")
+	}
+	return nil, nil
 }
 
 // runVerification runs the checks against the engine's backend and keys.
@@ -245,8 +283,14 @@ func verifyAfterFirstPush(cmd *cobra.Command, eng *sync.Engine, cfg *schema.Conf
 		// Nothing was checked, so there is nothing to post and nothing to
 		// record: the hook must stay armed for the next push that uploads
 		// something. A push that uploaded is not expected to land here, so
-		// say so rather than pass silently.
-		PrintHuman(cmd.ErrOrStderr(), "note: the verification after the first push had nothing to check: %s", report.Summary)
+		// say so rather than pass silently — and say which of the two it
+		// was, since a storage endpoint that gave no answer is not the
+		// same thing as a locker with nothing in it.
+		what := "had nothing to check"
+		if report.NotVerified() {
+			what = "could not run"
+		}
+		PrintHuman(cmd.ErrOrStderr(), "note: the verification after the first push %s: %s", what, report.Summary)
 		return nil
 	}
 	summary := map[string]any{"outcome": report.Outcome, "posted": false}

@@ -458,8 +458,9 @@ func TestRunNotApplicable(t *testing.T) {
 // The scheme case is the one this table was written for. `http://<the same
 // host>` used to satisfy the pin, and the step then signed a request to it
 // with the live secret key and session token this device pushes with. The
-// probe is never sent over an unencrypted connection, whatever the pin
-// says.
+// probe goes over an unencrypted connection to nothing but a loopback
+// address, whatever the pin says — and the loopback rows below are that
+// exemption, stated as cases rather than left to a sentence.
 func TestIsolationEndpointMustMatchStepOne(t *testing.T) {
 	keys := rootKeys(t)
 	tests := []struct {
