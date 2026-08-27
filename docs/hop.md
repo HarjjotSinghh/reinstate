@@ -210,7 +210,8 @@ one object that is not ciphertext: it is plaintext by design, holds no
 usable key, and gives up the account and device metadata the [object
 format](hop/object-format.md) lists in full. `rein sync verify` checks the
 claim and prints a **verification report** written for a non-expert: each
-step says what was done, what was seen, and PASS or FAIL. Steps 1, 2 and 4
+step says what was done, what was seen, and PASS, FAIL or NOT
+APPLICABLE. Steps 1, 2 and 4
 can be repeated by hand with any S3 client and the credentials
 `rein hop credentials --export` prints. Step 3 can be, on BYO storage, where the key is your
 own passphrase; on a Hop locker it cannot, because the account's root key

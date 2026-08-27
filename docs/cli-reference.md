@@ -183,7 +183,9 @@ locally run control plane in development is. The
 outcome sentence names only what was fetched as ciphertext and lists what
 was judged by name. Each step prints what
 was done, what was seen, and PASS, FAIL, or NOT APPLICABLE, followed by
-`OUTCOME: PASS` or `OUTCOME: FAIL`.
+one of four outcome lines: `OUTCOME: PASS`, `OUTCOME: FAIL`,
+`OUTCOME: NOT VERIFIED` (nothing answered, so nothing was checked), or
+`OUTCOME: NOT YET VERIFIABLE` (nothing has been pushed yet).
 
 A step that got no answer — from the storage endpoint or from the control
 plane — is reported as a check that could not run, not as a check that
