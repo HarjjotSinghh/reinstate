@@ -822,8 +822,10 @@ func observeKeyring(home string, k *keyring.Keyring) error {
 // exitForKeyringRefusal maps every keyring this device refuses to act on to
 // a safety exit, leaving other errors untouched: one rolled back, one
 // rewritten under it, one holding a generation that does not verify, one
-// signed by another account's key, and one whose local anchor is unusable.
-// It is used where the refusal surfaces out of a compare-and-swap closure.
+// signed by another account's key, one whose local anchor is unusable, and
+// one that has grown past the size a read accepts. It is used where the
+// refusal surfaces out of a compare-and-swap closure, and it is the reason
+// every one of these exits `7` rather than the generic storage `4`.
 func exitForKeyringRefusal(err error) error {
 	var rolled *keyringRolledBackError
 	var rewritten *keyringRewrittenError
@@ -839,6 +841,8 @@ func exitForKeyringRefusal(err error) error {
 		return NewExitError(ExitSafety, err.Error()+". Nothing was written; the keyring in storage was replaced by one signed with a key this account never used")
 	case errors.Is(err, keyring.ErrUnauthenticatedGeneration):
 		return NewExitError(ExitSafety, err.Error()+". Nothing was written; a party with write access to the locker may have written a key generation of its own")
+	case errors.Is(err, keyring.ErrTooLarge):
+		return NewExitError(ExitSafety, err.Error())
 	}
 	return nil
 }

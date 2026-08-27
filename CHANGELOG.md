@@ -121,9 +121,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   keyring that no push, pull, revocation or `rein account recover` could
   read again.
   A write past three quarters of the read cap is now refused with a message
-  naming the remedy. Compaction was considered and rejected: dropping a
-  superseded generation drops the only copy of the root key that opens
-  everything sealed under it.
+  naming the remedy, and that refusal exits `7` (`ExitSafety`) as
+  `docs/hop.md` says it does — it reached the user as the generic `4`
+  (`auth_storage`) until `keyring.ErrTooLarge` was mapped, and a table test
+  now pins the exit code of every keyring refusal so the two cannot drift
+  again. Compaction was considered and rejected: dropping a superseded
+  generation drops the only copy of the root key that opens everything
+  sealed under it.
 
 ### Changed
 
