@@ -85,6 +85,9 @@ func runAccountJoin(cmd *cobra.Command, _ []string) error {
 	if errors.Is(err, keyring.ErrNotFound) {
 		return NewExitError(ExitAuthStorage, "no keyring exists for this profile yet; run rein account init on the first device, then rein account join here")
 	}
+	if exit := exitForKeyringRefusal(err); exit != nil {
+		return exit
+	}
 	if err != nil {
 		return NewExitError(ExitAuthStorage, err.Error())
 	}
@@ -181,12 +184,22 @@ func runAccountJoin(cmd *cobra.Command, _ []string) error {
 
 // verifyJoinedKeyring reloads the keyring and confirms it lists this device
 // with a wrap that opens to exactly the root key received through the
-// pairing, in the generation the approver named. The root key relayed by an
-// already-enrolled device is this device's anchor — it has no local record
-// yet — and the generation chain is checked on top of it, over every
-// generation the approval enrolled this device into.
+// pairing, in the generation the approver named.
+//
+// A joining device has no anchor of its own: it has never read this
+// account's keyring, so it cannot say whose account key the object is signed
+// under. Every generation must verify under whatever key the object
+// publishes — that much is checked whether or not there is an anchor — and
+// the thing that makes this account's keyring is the root key an enrolled
+// device relayed through the approval, matched here against the keyring's
+// own wrap for this device. Both channels must agree, so neither the relay
+// nor the storage can substitute a keyring alone. The account key is pinned
+// from this object once they do, and every later read is checked against it.
 func verifyJoinedKeyring(ctx context.Context, store backend.Backend, key, deviceID string, deviceKey *age.X25519Identity, rootKey []byte, generation int) (*keyring.Keyring, error) {
 	ring, _, err := keyring.Load(ctx, store, key)
+	if exit := exitForKeyringRefusal(err); exit != nil {
+		return nil, exit
+	}
 	if err != nil {
 		return nil, NewExitError(ExitAuthStorage, err.Error())
 	}
@@ -196,8 +209,8 @@ func verifyJoinedKeyring(ctx context.Context, store backend.Backend, key, device
 	keys, err := trustKeyring(keyringAnchor{}, ring, func() (map[int][]byte, error) {
 		return ring.UnwrapGenerations(deviceID, deviceKey)
 	})
-	if errors.Is(err, keyring.ErrUnauthenticatedGeneration) {
-		return nil, NewExitError(ExitSafety, fmt.Sprintf("the keyring's key generations do not chain back to one this approval can vouch for (%v); nothing was written. Run rein account join again from a device you trust", err))
+	if exit := exitForKeyringRefusal(err); exit != nil {
+		return nil, exit
 	}
 	if err != nil {
 		return nil, NewExitError(ExitSafety, fmt.Sprintf("the keyring does not hold a working wrap for this device (%v); nothing was written. Run rein account join again", err))
@@ -250,11 +263,18 @@ func runDevicesList(cmd *cobra.Command, _ []string) error {
 	generation := 0
 	if home, cfg, err := loadAccountHome(); err == nil {
 		if store, prefix, err := backendFromConfig(cmd, cfg, home); err == nil {
-			if ring, _, err := keyring.Load(ctx, store, keyring.ObjectKey(prefix)); err == nil {
-				// Listing holds no root key, so the generation chain is
-				// out of reach here; the local anchor is not, and a
-				// keyring rolled back or replaced under this device must
-				// not be reported as the account's key-model truth.
+			// Listing holds no key of any kind and needs none: the
+			// generation signatures verify against the account key alone.
+			// A keyring signed by another key, rolled back, or replaced
+			// under this device must not be reported as the account's
+			// key-model truth, so a refusal here is printed as a refusal.
+			ring, _, loadErr := keyring.Load(ctx, store, keyring.ObjectKey(prefix))
+			switch {
+			case loadErr != nil:
+				if exitForKeyringRefusal(loadErr) != nil {
+					keyringRefused = loadErr.Error()
+				}
+			default:
 				anchor, anchorErr := loadKeyringAnchor(home)
 				if anchorErr == nil {
 					anchorErr = anchor.check(ring)
@@ -475,7 +495,7 @@ func approvePairingRequest(ctx context.Context, cmd *cobra.Command, client *hop.
 		return err
 	})
 	defer crypto.Zero(rootKey)
-	if exit := exitForKeyringTrust(err); exit != nil {
+	if exit := exitForKeyringRefusal(err); exit != nil {
 		return 0, exit
 	}
 	if errors.Is(err, keyring.ErrDeviceNotEnrolled) {
@@ -553,8 +573,9 @@ func newDevicesRevokeCmd() *cobra.Command {
 Run from any other enrolled device. It reads the recovery code (hidden
 prompt, or REINSTATE_RECOVERY_CODE_FD for automation), starts a new key
 generation in the keyring (a fresh root key wrapped for every remaining
-device and under the recovery code; earlier generations stay so everything
-already in the locker remains readable), and then tells the control plane,
+device and under the recovery code, and signed by the account key that code
+derives; earlier generations stay so everything already in the locker
+remains readable), and then tells the control plane,
 which refuses the revoked device's token from then on. The revoked device
 keeps whatever it already pulled and cannot read anything pushed after the
 revocation. It cannot mint new locker credentials either — but a credential
@@ -648,7 +669,7 @@ func runDevicesRevoke(cmd *cobra.Command, target string) error {
 		return nil
 	})
 	already := false
-	if exit := exitForKeyringTrust(err); exit != nil {
+	if exit := exitForKeyringRefusal(err); exit != nil {
 		return exit
 	}
 	switch {
@@ -664,6 +685,9 @@ func runDevicesRevoke(cmd *cobra.Command, target string) error {
 		// never finished enrolling). The control plane is still told.
 		already = true
 		ring, _, loadErr := keyring.Load(ctx, store, keyring.ObjectKey(prefix))
+		if exit := exitForKeyringRefusal(loadErr); exit != nil {
+			return exit
+		}
 		if loadErr != nil {
 			return NewExitError(ExitAuthStorage, loadErr.Error())
 		}

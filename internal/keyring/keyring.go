@@ -10,10 +10,8 @@ package keyring
 
 import (
 	"bytes"
-	"crypto/hmac"
+	"crypto/ed25519"
 	"crypto/rand"
-	"crypto/sha256"
-	"crypto/subtle"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
@@ -28,7 +26,6 @@ import (
 	"filippo.io/age"
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/chacha20poly1305"
-	"golang.org/x/crypto/hkdf"
 
 	"github.com/HarjjotSinghh/reinstate/internal/crypto"
 )
@@ -43,12 +40,22 @@ import (
 // data), so a wrap could not be replayed in another keyring or generation —
 // but nothing tied one generation to the next, so a party that could write
 // the object could append a generation of its own and every device would
-// adopt it. Version 3 chains the generations: each one past the first
-// carries a MAC over its own header, keyed by the previous generation's root
-// key (see generationChain), so only a holder of generation N's root key can
-// write generation N+1. Version 3 also requires every wrap to be bound;
-// unbound wraps no longer exist anywhere.
-const SchemaVersion = 3
+// adopt it. Version 3 MACed each generation under the previous generation's
+// root key, which failed in the case it was written for: the device revoked
+// at the N -> N+1 rollover is exactly the device that held generation N's
+// root key, so within its credential window it could write the generation
+// created to remove it. A reader that held no key for generation N could
+// not check that link either, and skipped it.
+//
+// Version 4 signs instead. Every generation, including the first, carries an
+// ed25519 signature over its own header, under a keypair derived from the
+// **recovery code** — the one secret no device ever holds (see signing.go).
+// Verification needs only the public half, which the object publishes and
+// every device pins locally, so every read path can check every generation
+// without holding any key at all, and a generation that does not verify
+// makes the whole keyring untrusted. Version 4 also keeps version 3's rule
+// that every wrap is bound; unbound wraps no longer exist anywhere.
+const SchemaVersion = 4
 
 // ObjectName is the keyring object's name inside the profile prefix. The
 // name is the object's identity in storage and does not change with the
@@ -93,17 +100,25 @@ var (
 	// revoking, which would leave it unable to read the new generation.
 	ErrSelfRevoke = errors.New("keyring: a device cannot revoke itself")
 	// ErrUnauthenticatedGeneration reports a key generation this reader
-	// must not adopt: its chain does not check out against the previous
-	// generation's root key, or the reader holds no key that could check it.
-	ErrUnauthenticatedGeneration = errors.New("keyring: key generation is not authenticated by the generation before it")
+	// must not adopt: its signature is missing, malformed, or does not
+	// verify under the account's signing key. One such generation makes the
+	// whole keyring untrusted — there is no partial acceptance.
+	ErrUnauthenticatedGeneration = errors.New("keyring: key generation is not signed by this account's key")
 )
 
 // Keyring is the wire shape of the keyring object.
 type Keyring struct {
-	SchemaVersion     int          `json:"schema_version"`
-	ProfileID         string       `json:"profile_id"`
-	CurrentGeneration int          `json:"current_generation"`
-	Generations       []Generation `json:"generations"`
+	SchemaVersion     int    `json:"schema_version"`
+	ProfileID         string `json:"profile_id"`
+	CurrentGeneration int    `json:"current_generation"`
+	// AccountKey is the public half of the account signing key, base64. It
+	// is derived from the recovery code (see signing.go) and every
+	// generation in this object is signed under it. Publishing it here is
+	// what lets a device with no local record verify at all; pinning it in
+	// account.json is what stops the whole object being replaced by one
+	// signed under somebody else's key.
+	AccountKey  string       `json:"account_key"`
+	Generations []Generation `json:"generations"`
 }
 
 // Generation is one root key's lifetime. A new generation starts when a
@@ -119,15 +134,14 @@ type Generation struct {
 	// It is a record for people and status output; the key model is the
 	// absence of a wrap.
 	Revoked []Revocation `json:"revoked,omitempty"`
-	// Chain authenticates this generation against the one before it: a MAC
-	// over this generation's header — number, created_at, recipient, the
-	// revocations that started it, the profile id, and the number and
-	// recipient of the generation it follows — keyed by the previous
-	// generation's root key. Only a device that could open the previous
-	// generation can produce it, which is precisely what a revoked device
-	// can no longer do. Generation 1 has no predecessor and carries none;
-	// what anchors generation 1 is outside the object (see VerifyChain).
-	Chain string `json:"chain,omitempty"`
+	// Signature authenticates this generation: ed25519 over its own header
+	// — the profile id, the account key, this generation's number,
+	// created_at and recipient, the number and recipient of the generation
+	// it follows (0 and "" for the first), and every revocation record —
+	// under the account signing key the recovery code derives. Every
+	// generation carries one, the first included, and a keyring holding a
+	// generation whose signature does not verify is refused whole.
+	Signature string `json:"signature"`
 }
 
 // Revocation records why a generation exists.
@@ -187,11 +201,20 @@ func New(profileID string, rootKey []byte, recoveryCode string, deviceID string,
 	if err != nil {
 		return nil, err
 	}
+	// The account signing key is derived here for the first and only time
+	// this device will hold it without being asked for the code again: the
+	// caller had the code in hand to write the recovery wrap above.
+	account, err := DeriveAccountKey(profileID, recoveryCode)
+	if err != nil {
+		return nil, err
+	}
+	defer account.Zero()
 	identity, _ := crypto.RootKeyIdentity(rootKey)
-	return &Keyring{
+	k := &Keyring{
 		SchemaVersion:     SchemaVersion,
 		ProfileID:         profileID,
 		CurrentGeneration: 1,
+		AccountKey:        account.Public(),
 		Generations: []Generation{{
 			Number:    1,
 			CreatedAt: now.UTC().Format(time.RFC3339),
@@ -199,20 +222,29 @@ func New(profileID string, rootKey []byte, recoveryCode string, deviceID string,
 			Recovery:  recovery,
 			Devices:   []DeviceWrap{deviceWrap},
 		}},
-	}, nil
+	}
+	k.Generations[0].Signature = account.sign(k.generationMessage(&k.Generations[0], nil))
+	return k, nil
 }
 
-// Parse decodes and structurally validates a keyring object. Structure is
-// all it can check: whether the generations are the account's own is a
-// cryptographic question, answered by VerifyChain against root keys the
-// reader holds, and Parse deliberately does not pretend to answer it.
+// Parse decodes a keyring object, validates its structure, and verifies
+// every generation's signature under the account key the object publishes.
+// A keyring holding one generation that does not verify does not parse at
+// all, so no read path can act on part of it.
+//
+// What Parse cannot answer is whether that account key is this account's.
+// Nothing inside the object can say so: a keyring built from generation 1
+// upward under a signing key of the attacker's choosing is self-consistent.
+// That is the anchor's question — the key pinned in account.json, or the key
+// the typed recovery code derives — and callers supply it through
+// VerifyGenerations.
 func Parse(raw []byte) (*Keyring, error) {
 	var k Keyring
 	if err := json.Unmarshal(raw, &k); err != nil {
 		return nil, fmt.Errorf("keyring: invalid object: %w", err)
 	}
 	if k.SchemaVersion != SchemaVersion {
-		return nil, fmt.Errorf("keyring: unsupported schema_version %d (this version reads %d only; earlier formats did not authenticate their key generations and are not read)", k.SchemaVersion, SchemaVersion)
+		return nil, fmt.Errorf("keyring: unsupported schema_version %d (this version reads %d only; earlier formats did not authenticate their key generations against a key no device holds, and are not read)", k.SchemaVersion, SchemaVersion)
 	}
 	if k.ProfileID == "" || len(k.Generations) == 0 {
 		return nil, fmt.Errorf("keyring: profile_id and at least one generation are required")
@@ -241,14 +273,14 @@ func Parse(raw []byte) (*Keyring, error) {
 				return nil, fmt.Errorf("keyring: generation %d holds a wrap of unknown format %d", g.Number, w)
 			}
 		}
-		if err := checkChainShape(g); err != nil {
+		if err := checkSignatureShape(g); err != nil {
 			return nil, err
 		}
 	}
 	// Generations run 1..n with no gaps. Rollover only ever appends
 	// maxGeneration()+1, so a gap means generations were removed or a
-	// number was invented; either way the chain from 1 upward is broken
-	// and no reader could authenticate what is left.
+	// number was invented; either way a generation past the gap names a
+	// predecessor that is not here, and its signature cannot be checked.
 	for n := 1; n <= len(k.Generations); n++ {
 		if !seen[n] {
 			return nil, fmt.Errorf("keyring: generation %d is missing from a keyring holding %d generations", n, len(k.Generations))
@@ -257,26 +289,26 @@ func Parse(raw []byte) (*Keyring, error) {
 	if k.current() == nil {
 		return nil, fmt.Errorf("keyring: current_generation %d is not present", k.CurrentGeneration)
 	}
+	// Last, and never skipped: every generation must be signed by the
+	// account key this object publishes. Whether that key is the account's
+	// own is VerifyGenerations' question, asked with an anchor.
+	if err := k.VerifyGenerations(""); err != nil {
+		return nil, err
+	}
 	return &k, nil
 }
 
-// checkChainShape refuses a generation whose chain field is the wrong shape
-// for its position: absent on generation 1, and a full-length MAC on every
-// generation after it. Whether the MAC is *correct* is VerifyChain's
-// question; this only rules out an object no reader could ever check.
-func checkChainShape(g Generation) error {
-	if g.Number == 1 {
-		if g.Chain != "" {
-			return fmt.Errorf("keyring: generation 1 carries a chain but has no generation before it")
-		}
-		return nil
-	}
-	mac, err := base64.StdEncoding.DecodeString(g.Chain)
+// checkSignatureShape refuses a generation whose signature field could never
+// verify — the wrong length, or not base64. Whether it is *correct* is
+// VerifyGenerations' question; this only rules out an object that is
+// malformed before any key is involved.
+func checkSignatureShape(g Generation) error {
+	sig, err := base64.StdEncoding.DecodeString(g.Signature)
 	if err != nil {
-		return fmt.Errorf("keyring: generation %d has a chain that is not valid base64", g.Number)
+		return fmt.Errorf("%w: generation %d has a signature that is not valid base64", ErrUnauthenticatedGeneration, g.Number)
 	}
-	if len(mac) != chainMACSize {
-		return fmt.Errorf("keyring: generation %d has a %d-byte chain, want %d", g.Number, len(mac), chainMACSize)
+	if len(sig) != ed25519.SignatureSize {
+		return fmt.Errorf("%w: generation %d has a %d-byte signature, want %d", ErrUnauthenticatedGeneration, g.Number, len(sig), ed25519.SignatureSize)
 	}
 	return nil
 }
@@ -317,122 +349,100 @@ func (k *Keyring) bindingFor(g *Generation) binding {
 	return binding{profileID: k.ProfileID, generation: g.Number}
 }
 
-// generationChainInfo is the HKDF info string that separates the chain MAC
-// key from everything else a root key derives (it also derives the age
-// identity that seals envelopes). Changing it would invalidate every chain
-// ever written, so it is versioned and never reused.
-const generationChainInfo = "reinstate/keyring/generation-chain/v1"
-
-// chainMACSize is the chain MAC's length: HMAC-SHA256.
-const chainMACSize = sha256.Size
-
-// generationChainKey derives the MAC key for the link out of the generation
-// whose root key is rootKey.
-func generationChainKey(rootKey []byte) ([]byte, error) {
-	if len(rootKey) != crypto.RootKeySize {
-		return nil, fmt.Errorf("keyring: root key must be %d bytes, got %d", crypto.RootKeySize, len(rootKey))
-	}
-	key := make([]byte, chainMACSize)
-	if _, err := io.ReadFull(hkdf.New(sha256.New, rootKey, nil, []byte(generationChainInfo)), key); err != nil {
-		return nil, fmt.Errorf("keyring: derive generation chain key: %w", err)
-	}
-	return key, nil
-}
-
-// generationChain computes g's chain value: a MAC keyed by prevRootKey, the
-// root key of the generation g follows, over every part of g's header a
-// reader trusts. Fields are length-prefixed so no two different headers can
-// produce the same input.
+// generationMessage is the byte string one generation's signature covers:
+// the domain separator, the profile id, the account key, this generation's
+// number, created_at and recipient, the number and recipient of the
+// generation it follows (0 and "" for the first), and every revocation
+// record. Fields are length-prefixed, so no two different headers can
+// produce the same message.
 //
 // The device wraps are deliberately not covered. They change after a
 // generation is written — a device enrolled later is given a wrap in every
-// generation it may read — and re-MACing on every enrolment would need the
-// previous generation's key at moments a caller does not have it. They do
-// not need covering: a wrap is only ever accepted when the key inside it
-// derives the generation's recorded recipient (see unwrapDevice), and the
-// recipient is covered here. So appending a working wrap to a generation
-// still requires that generation's root key; what an attacker with bucket
-// write access can do to the device list is remove or corrupt entries, which
-// denies service rather than substituting a key.
-func generationChain(profileID string, g, prev *Generation, prevRootKey []byte) (string, error) {
-	key, err := generationChainKey(prevRootKey)
-	if err != nil {
-		return "", err
-	}
-	defer crypto.Zero(key)
-	mac := hmac.New(sha256.New, key)
+// generation it may read — and re-signing on every enrolment would need the
+// recovery code at moments no caller has it. They do not need covering: a
+// wrap is only ever accepted when the key inside it derives the generation's
+// recorded recipient (see unwrapDevice), and the recipient is signed here.
+// So appending a *working* wrap to a generation still requires that
+// generation's root key; what a writer without it can do to the device list
+// is remove or corrupt entries, which denies service rather than
+// substituting a key.
+func (k *Keyring) generationMessage(g, prev *Generation) []byte {
+	var buf bytes.Buffer
 	var size [8]byte
 	write := func(fields ...string) {
 		for _, f := range fields {
 			binary.BigEndian.PutUint64(size[:], uint64(len(f)))
-			mac.Write(size[:])
-			mac.Write([]byte(f))
+			buf.Write(size[:])
+			buf.WriteString(f)
 		}
 	}
-	write(generationChainInfo, profileID,
+	prevNumber, prevRecipient := 0, ""
+	if prev != nil {
+		prevNumber, prevRecipient = prev.Number, prev.Recipient
+	}
+	write(generationSignatureInfo, k.ProfileID, k.AccountKey,
 		strconv.Itoa(g.Number), g.CreatedAt, g.Recipient,
-		strconv.Itoa(prev.Number), prev.Recipient,
+		strconv.Itoa(prevNumber), prevRecipient,
 		strconv.Itoa(len(g.Revoked)))
 	for _, r := range g.Revoked {
 		write(r.DeviceID, r.RevokedAt, r.RevokedBy)
 	}
-	return base64.StdEncoding.EncodeToString(mac.Sum(nil)), nil
+	return buf.Bytes()
 }
 
-// VerifyChain authenticates this keyring's generations against the root keys
-// the reader was able to unwrap from it, keyed by generation number. Every
-// link it can check, it checks; and the current generation must be one of
-// them, so a reader never acts on a generation it cannot authenticate.
+// VerifyGenerations authenticates every generation in this keyring under the
+// account signing key, and fails closed on the first one that does not
+// verify: there is no partial acceptance, and in particular no path that
+// accepts a keyring because the *current* generation happens to check out.
+// It needs no root key and no device key, so every command can afford it,
+// including the ones that hold no keys at all.
 //
-// What this proves: generation N+1 was written by someone holding generation
-// N's root key. A device revoked at generation N never held N's root key —
-// that is the whole point of the rollover — so it cannot append a generation
-// the rest of the account will adopt, even with full write access to the
-// bucket.
-//
-// What this does not prove: that generation 1 is the account's own. Nothing
-// inside the object can say so; a chain forged from a root key of the
-// attacker's choosing at generation 1 is self-consistent. Generation 1 is
-// anchored from outside — by the recovery code (only its holder can write a
-// recovery wrap that opens), by the root key relayed through a pairing
-// approval, or by the generation and recipient a device recorded locally the
-// last time it read the keyring. Callers must supply one of those anchors;
-// see the anchor check in the CLI's account state.
-func (k *Keyring) VerifyChain(keys map[int][]byte) error {
-	for _, n := range k.GenerationNumbers() {
-		prevKey, ok := keys[n-1]
-		if n == 1 || !ok {
-			continue
-		}
-		if err := k.verifyGenerationChain(n, prevKey); err != nil {
-			return err
-		}
-	}
-	if k.CurrentGeneration == 1 {
-		return nil
-	}
-	if _, ok := keys[k.CurrentGeneration-1]; !ok {
-		return fmt.Errorf("%w: generation %d cannot be checked here, because this device holds no root key for generation %d", ErrUnauthenticatedGeneration, k.CurrentGeneration, k.CurrentGeneration-1)
-	}
-	return nil
-}
-
-// verifyGenerationChain checks the single link from n-1 into n, given n-1's
-// root key.
-func (k *Keyring) verifyGenerationChain(n int, prevRootKey []byte) error {
-	g, prev := k.generation(n), k.generation(n-1)
-	if g == nil || prev == nil {
-		return fmt.Errorf("%w: generation %d has no generation %d before it", ErrUnauthenticatedGeneration, n, n-1)
-	}
-	want, err := generationChain(k.ProfileID, g, prev, prevRootKey)
+// pinned is the account key this caller already trusts — the one recorded in
+// account.json at enrolment, or the one the typed recovery code derives —
+// and "" when the caller has none. With a pinned key, the object's own
+// account_key must equal it; without one, the object is verified under the
+// key it publishes, which authenticates the generations against each other
+// but says nothing about whose account this is. A caller with no anchor is
+// trusting whatever brought it here: the recovery code, or the root key an
+// enrolled device relayed through a pairing approval.
+func (k *Keyring) VerifyGenerations(pinned string) error {
+	public, err := parseAccountPublicKey(k.AccountKey)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w: %w", ErrUnauthenticatedGeneration, err)
 	}
-	if subtle.ConstantTimeCompare([]byte(want), []byte(g.Chain)) != 1 {
-		return fmt.Errorf("%w: generation %d was not written by a holder of generation %d's root key", ErrUnauthenticatedGeneration, n, n-1)
+	if pinned != "" && pinned != k.AccountKey {
+		return fmt.Errorf("%w: it is signed by account key %s, not the %s expected here", ErrAccountKeyMismatch, k.AccountKey, pinned)
+	}
+	numbers := k.GenerationNumbers()
+	for _, n := range numbers {
+		g := k.generation(n)
+		prev := k.generation(n - 1)
+		if n > 1 && prev == nil {
+			return fmt.Errorf("%w: generation %d has no generation %d before it", ErrUnauthenticatedGeneration, n, n-1)
+		}
+		sig, err := base64.StdEncoding.DecodeString(g.Signature)
+		if err != nil || len(sig) != ed25519.SignatureSize {
+			return fmt.Errorf("%w: generation %d carries no usable signature", ErrUnauthenticatedGeneration, n)
+		}
+		if !ed25519.Verify(public, k.generationMessage(g, prev), sig) {
+			return fmt.Errorf("%w: generation %d does not verify under account key %s", ErrUnauthenticatedGeneration, n, k.AccountKey)
+		}
 	}
 	return nil
 }
+
+// signGeneration signs g in place, against the generation before it.
+func (k *Keyring) signGeneration(account *AccountKey, g, prev *Generation) error {
+	if account.Public() != k.AccountKey {
+		return fmt.Errorf("%w: this recovery code derives account key %s, but the keyring is signed by %s", ErrAccountKeyMismatch, account.Public(), k.AccountKey)
+	}
+	g.Signature = account.sign(k.generationMessage(g, prev))
+	return nil
+}
+
+// AccountPublicKey is the published half of this account's signing key. It
+// is what a device pins locally at enrolment.
+func (k *Keyring) AccountPublicKey() string { return k.AccountKey }
 
 // GenerationRecipient is the root-key recipient recorded for one generation,
 // or "" when the keyring holds no such generation. A device records the
@@ -840,12 +850,19 @@ func (k *Keyring) checkCurrentRootKey(rootKey []byte) error {
 // Rollover starts a new key generation without the revoked devices: a fresh
 // root key, wrapped (bound) for every device still listed in the current
 // generation and under the recovery code, appended as the new current
-// generation. Earlier generations are not touched. The caller must hold
-// the current generation's root key (checked against the recorded
-// recipient, so a caller whose view is behind a concurrent rollover gets
-// ErrStaleRootKey and must reload) and the recovery code (checked against
-// the current recovery wrap first, so a wrong code can never produce a
-// generation the code does not open).
+// generation and signed by the account key the code derives. Earlier
+// generations are not touched. The caller must hold the current
+// generation's root key (checked against the recorded recipient, so a
+// caller whose view is behind a concurrent rollover gets ErrStaleRootKey and
+// must reload) and the recovery code (checked against the current recovery
+// wrap first, so a wrong code can never produce a generation the code does
+// not open, and then against the keyring's account key, so it can never
+// produce one no device will verify).
+//
+// The recovery code is what makes this a revocation rather than a formality:
+// the device being revoked held the current root key — that is why it is
+// being revoked — but it never held the recovery code, so it cannot sign a
+// generation of its own.
 //
 // revoke must name devices listed in the current generation; one that is
 // not listed yields ErrAlreadyRevoked (which also matches
@@ -871,6 +888,18 @@ func (k *Keyring) Rollover(currentRootKey []byte, recoveryCode string, revoke []
 		return nil, err
 	}
 	crypto.Zero(fromRecovery)
+	// The code opened the current generation, so it is this account's code.
+	// If the key it derives is nevertheless not the one the keyring is
+	// signed by, the object was tampered with rather than mistyped, and
+	// signing a generation nothing would verify is worse than refusing.
+	account, err := DeriveAccountKey(k.ProfileID, recoveryCode)
+	if err != nil {
+		return nil, err
+	}
+	defer account.Zero()
+	if account.Public() != k.AccountKey {
+		return nil, fmt.Errorf("%w: this recovery code derives account key %s, but the keyring is signed by %s", ErrAccountKeyMismatch, account.Public(), k.AccountKey)
+	}
 	revoked := map[string]bool{}
 	for _, id := range revoke {
 		if id == revokedBy {
@@ -921,12 +950,11 @@ func (k *Keyring) Rollover(currentRootKey []byte, recoveryCode string, revoke []
 		wrap.EnrolledAt = d.EnrolledAt
 		next.Devices = append(next.Devices, wrap)
 	}
-	// Last, once the header is final: chain the new generation to the one
-	// it replaces, keyed by the root key this caller proved it holds. The
-	// device being revoked does not hold that key from here on, so this is
-	// the last generation it could ever have signed.
-	next.Chain, err = generationChain(k.ProfileID, &next, g, currentRootKey)
-	if err != nil {
+	// Last, once the header is final: sign the new generation, naming the
+	// one it follows. Only a holder of the recovery code can produce this
+	// signature, and the device being revoked is not one — the root key it
+	// held until a moment ago buys it nothing here.
+	if err := k.signGeneration(account, &next, g); err != nil {
 		crypto.Zero(rootKey)
 		return nil, err
 	}

@@ -153,6 +153,20 @@ type joinInProgress struct {
 // test decides exactly when the approval becomes visible to it.
 func (d *pairDevice) startJoin() *joinInProgress {
 	d.t.Helper()
+	j, out, errb, code := d.tryStartJoin()
+	if j == nil {
+		d.t.Fatalf("join exited before publishing a request: exit=%d out=%q err=%q", code, out, errb)
+	}
+	return j
+}
+
+// tryStartJoin is startJoin for callers that expect the join may refuse
+// before it ever publishes a request — a keyring the joining device will not
+// touch is refused on the first load, not after an approval. It returns
+// either the in-progress join, or nil plus that refusal's output and exit
+// code.
+func (d *pairDevice) tryStartJoin() (*joinInProgress, string, string, int) {
+	d.t.Helper()
 	d.t.Setenv("REINSTATE_HOME", d.home)
 	j := &joinInProgress{stdout: &syncBuffer{}, stderr: &syncBuffer{}, release: make(chan struct{}), done: make(chan int, 1)}
 	requested := make(chan struct{})
@@ -172,7 +186,7 @@ func (d *pairDevice) startJoin() *joinInProgress {
 	select {
 	case <-requested:
 	case code := <-j.done:
-		d.t.Fatalf("join exited before publishing a request: exit=%d out=%q err=%q", code, j.stdout.String(), j.stderr.String())
+		return nil, j.stdout.String(), j.stderr.String(), code
 	case <-time.After(30 * time.Second):
 		d.t.Fatal("join never published a pairing request")
 	}
@@ -180,7 +194,7 @@ func (d *pairDevice) startJoin() *joinInProgress {
 	if j.code == "" {
 		d.t.Fatalf("join showed no pairing code: %q", j.stderr.String())
 	}
-	return j
+	return j, "", "", 0
 }
 
 // finish lets the join poll again and returns its result.

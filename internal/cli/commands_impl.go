@@ -570,6 +570,9 @@ func refusedRestoreMessage(agent, sessionID, refuse string) string {
 func hostedNotEnrolledError(ctx context.Context, cfg *schema.Config, b backend.Backend, prefix string) error {
 	detail := " (encryption.type is " + cfg.Encryption.Type + ", the hosted tier uses " + schema.EncryptionRootKey + ")"
 	_, _, err := keyring.Load(ctx, b, keyring.ObjectKey(prefix))
+	if exit := exitForKeyringRefusal(err); exit != nil {
+		return exit
+	}
 	switch {
 	case err == nil:
 		return NewExitError(ExitConfig, "this device is not enrolled in the account's keyring yet; run rein account recover with your recovery code, or rein account join and approve it from an enrolled device"+detail)

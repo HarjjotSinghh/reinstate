@@ -161,8 +161,9 @@ rein devices revoke desktop          # asks for the recovery code
 
 Revocation starts a new **key generation**. The revoking device unwraps the
 current root key, draws a fresh one, wraps it for every remaining device's
-public key and under the recovery code, and appends the new generation to
-the keyring with compare-and-swap; then it tells the control plane, which
+public key and under the recovery code, signs the new generation with the
+account key that code derives, and appends it to the keyring with
+compare-and-swap; then it tells the control plane, which
 refuses the revoked device's token from then on (no more credential mints,
 no pairing, no device list). Earlier generations are left exactly as they
 were, so:
@@ -177,29 +178,56 @@ were, so:
   TTL of at most an hour, so it can still push or pull within that
   window), and cannot open anything pushed after the revocation;
 - that same window is enough to **write** the keyring object, so the
-  keyring authenticates itself. Every generation past the first carries a
-  `chain`: a MAC over its own header — number, `created_at`, `recipient`,
-  the revocations that started it, and the number and recipient of the
-  generation it follows — keyed by the **previous generation's root key**.
-  A revoked device never held the new generation's root key and can no
-  longer obtain it, so it cannot write a generation the account will adopt.
-  Every command that acts on the keyring checks the chain against the root
-  keys it just unwrapped — push, pull, `devices approve`, `devices revoke`
-  and `account recover` — and fails closed (`ExitSafety`) when the current
-  generation does not chain back to one it already trusted;
-- the chain is a relative claim, so it needs an anchor. Each device records
-  in its local account state the generation it last unwrapped **and that
-  generation's root-key recipient**. A keyring whose `current_generation`
-  is lower is a rollback (`ExitSafety`, "the keyring was rolled back"); one
-  where the recorded generation is missing, or now names a different root
-  key, was replaced rather than appended to — which no legitimate change
-  ever does — and is refused with it. `rein account status` and `rein
-  devices` hold no root key and so cannot check the chain, but they check
-  the same anchor and say the keyring is refused rather than reporting it
-  as the account's key-model truth. A device with no local record yet
-  anchors on whatever brought it here instead: the recovery code (only its
-  holder can write a recovery wrap that opens) or the root key an enrolled
-  device relayed through the pairing;
+  keyring authenticates itself. Every generation, the first included,
+  carries a `signature`: ed25519 over its own header — the profile id, the
+  account key, the generation's number, `created_at` and `recipient`, the
+  number and recipient of the generation it follows, and the revocations
+  that started it — under a keypair derived from the **recovery code**. The
+  recovery code is the one secret no device ever holds: it is shown once,
+  written down, re-entered to confirm at `rein account init`, and typed in
+  again only at the two commands that need it afterwards — `rein devices
+  revoke` and `rein account recover`, both of which already asked for it. A
+  revoked device never held it, so it cannot sign a generation the account
+  will adopt, and the root key it *did* hold until the rollover buys it
+  nothing here;
+- verifying needs only the public half, which the keyring publishes as
+  `account_key` and each device pins locally at enrolment. So the check
+  costs no key material and no prompt, and **every** command that loads the
+  keyring makes it — push, pull, `devices approve`, `devices revoke`,
+  `account recover`, `account join`, and the two that hold no keys at all,
+  `account status` and `rein devices`. It fails closed: a generation whose
+  signature is missing, malformed, or wrong makes the **whole** keyring
+  untrusted, current or not. There is no partial acceptance and no path
+  that accepts a keyring because its current generation happens to check
+  out. Every command that acts on the keyring exits `7` (`ExitSafety`) with
+  nothing written; the two diagnostics exit `0` and say the keyring is
+  refused rather than reporting it as the account's key-model truth;
+- the signature is a claim about one key, so it needs an anchor: it says
+  every generation here was signed by the account key this object
+  publishes, not that this is your account's keyring. A party that can
+  write the bucket can replace the whole object with one it signed itself.
+  So each device records in `account.json` the account key, the generation
+  it last unwrapped, **and that generation's root-key recipient**. A
+  keyring signed by a different account key was replaced (`ExitSafety`,
+  "signed by a different account key"); one whose `current_generation` is
+  lower is a rollback; one where the recorded generation is missing, or now
+  names a different root key, was replaced rather than appended to. All
+  three fail closed with nothing written, on every path, and the two
+  diagnostics report them the same way. The record must carry all three
+  values or the command refuses and names the way out; a record with a
+  field deleted does not fall back to trusting the object;
+- **what deriving a signing key from a typed code costs.** A party holding
+  the keyring can guess the recovery code offline by testing candidate
+  signatures. That is not a new exposure: the same object already carries
+  the recovery *wrap*, which the same party can attack the same way, and
+  both cost one argon2id derivation per candidate at the same parameters
+  (3 passes, 64 MiB, 4 lanes). The code carries 140 bits of entropy (seven
+  groups of four Crockford base32 characters at five bits each, plus a
+  checksum group), so the search is 2^140 memory-hard derivations wide. The
+  derivation is salted from the profile id, so work done against one
+  account is worth nothing against another, and the private half is never
+  stored anywhere — it exists only while a command that took the code is
+  running;
 - a device enrolled later (`rein account join`, or `rein account recover`
   with the recovery code) is enrolled into every generation and reads the
   whole locker too;
@@ -212,16 +240,16 @@ were, so:
   devices that ceiling is around 170 revocations; reaching it means moving
   the account to a fresh locker.
 
-The recovery code is asked for because the new generation must stay
-recoverable and nothing but the code can wrap for it; a wrong code revokes
-nothing. A device cannot revoke itself. Revoking a device twice is
-harmless: the keyring reports it already gone and the control plane answers
-idempotently. A revocation that races an approval converges in either
-order: an approval lands in whichever generation is current when its
-compare-and-swap succeeds, and a joining device handed a payload that names
-a generation the keyring has since left fails closed (no account record)
-and is simply approved again. Two devices revoking the same device at the
-same moment start one generation, not two.
+The recovery code is asked for because the new generation must be signed
+and must stay recoverable, and nothing but the code can do either; a wrong
+code revokes nothing. A device cannot revoke itself. Revoking a device
+twice is harmless: the keyring reports it already gone and the control
+plane answers idempotently. A revocation that races an approval converges
+in either order: an approval lands in whichever generation is current when
+its compare-and-swap succeeds, and a joining device handed a payload that
+names a generation the keyring has since left fails closed (no account
+record) and is simply approved again. Two devices revoking the same device
+at the same moment start one generation, not two.
 
 To enrol a revoked machine again, three commands, in this order:
 
@@ -247,28 +275,39 @@ revocation started.
 
 Precisely: against a party that can read **and write** the locker bucket —
 which a revoked device is, for the rest of its credential's TTL — no
-remaining device will seal anything to a root key that party controls. The
-generation chain rules out appending a generation, because computing the
-chain needs the previous generation's root key. The locally recorded
-generation and root-key recipient rule out replacing the object outright,
-because a forgery built from generation 1 upward is self-consistent and
-nothing inside the object could tell it apart.
+remaining device will accept a key generation that party wrote. Writing one
+means signing it under the account key, and that key is derived from the
+recovery code, which no device holds and a revoked device never held. The
+locally pinned account key rules out replacing the object outright, because
+a keyring signed end to end under a key of the attacker's own is internally
+perfect and nothing inside it could tell it apart.
 
 What that does *not* cover, stated plainly:
 
 - **A device that has never read this account's keyring has no anchor of
-  its own.** It borrows one: the recovery code, or the root key an enrolled
-  device relayed through a pairing approval. A machine holding neither
-  cannot enrol, which is the intended answer, but it also means the anchor
-  is only as good as the recovery code and the approval flow.
+  its own.** It borrows one, and there are exactly two: the recovery code
+  (`rein account recover` derives the account key from the typed code and
+  requires the keyring to be signed under it) and a typed pairing code
+  (`rein account join` takes the root key an enrolled device relayed
+  through the approval and requires the keyring's own wrap for this device
+  to open to the same bytes in the same generation, so neither the relay
+  nor the storage can substitute a keyring alone). A machine holding
+  neither cannot enrol, which is the intended answer, but it also means a
+  fresh install's anchor is only as good as those two codes.
+- **Anyone who knows the recovery code can sign a generation.** That is
+  what the code is: knowing it already opens the current root key from the
+  recovery wrap, so this adds no secret that was not already decisive.
+  Revoking a device does not revoke knowledge of the code, and there is no
+  command that rotates it. If the code itself may have leaked, the account
+  has to start again on a fresh locker.
 - **Objects, not the key model.** Anyone with write access can still
   delete or corrupt snapshots, the manifest, or the keyring itself. That is
-  denial of service, and the chain does not address it; it addresses
+  denial of service, and the signature does not address it; it addresses
   reading and writing under a key someone else chose.
 - **The wraps inside a generation are not covered by that generation's
-  chain**, because devices are enrolled into generations after the fact. A
-  wrap is only ever accepted when the key inside it derives the
-  generation's recorded `recipient`, and the recipient *is* covered — so
+  signature**, because devices are enrolled into generations after the
+  fact. A wrap is only ever accepted when the key inside it derives the
+  generation's recorded `recipient`, and the recipient *is* signed — so
   appending a working wrap still needs that generation's root key. What a
   writer without it can do is remove or corrupt wraps, which again denies
   service rather than substituting a key.

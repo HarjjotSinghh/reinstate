@@ -84,8 +84,11 @@ func TestGoldenKeyringUnwraps(t *testing.T) {
 	if k.SchemaVersion != SchemaVersion || k.ProfileID != goldenProfileID || k.CurrentGeneration != 1 || k.DeviceCount() != 1 {
 		t.Fatalf("unexpected golden shape: %+v", k)
 	}
-	if k.Generations[0].Chain != "" {
-		t.Fatal("generation 1 carries a chain, but it has no generation before it")
+	if k.Generations[0].Signature == "" {
+		t.Fatal("generation 1 carries no signature")
+	}
+	if err := k.VerifyGenerations(""); err != nil {
+		t.Fatalf("the one-generation fixture does not verify: %v", err)
 	}
 	if k.Generations[0].Recipient != goldenRecipient {
 		t.Fatalf("recipient drifted: %s", k.Generations[0].Recipient)

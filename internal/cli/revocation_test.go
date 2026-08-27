@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"context"
+	"crypto/ed25519"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -877,15 +878,34 @@ func TestRevokeHelpNamesTheCredentialWindow(t *testing.T) {
 	}
 }
 
+// mutateGeneration rewrites one generation inside a marshalled keyring, by
+// index, leaving every other byte of the object alone. It is how the
+// forgeries here are built: a party with bucket write access edits the
+// published object, it does not rebuild it.
+func mutateGeneration(t *testing.T, raw []byte, index int, f func(map[string]any)) []byte {
+	t.Helper()
+	var obj map[string]any
+	if err := json.Unmarshal(raw, &obj); err != nil {
+		t.Fatal(err)
+	}
+	f(obj["generations"].([]any)[index].(map[string]any))
+	out, err := json.Marshal(obj)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
 // forgeKeyring builds the object a party with write access to the locker,
 // and no root key at all, can put in the keyring's place: a whole keyring
 // for the same profile, wrapping a root key of its own to the public keys
-// the genuine keyring published, rolled forward to generation so it clears
-// the floor every remaining device has pinned.
+// the genuine keyring published, signed under an account key it derived
+// from a recovery code it drew itself, and rolled forward to generation so
+// it clears the floor every remaining device has pinned.
 //
-// This is the residual attack the generation chain alone cannot stop — a
-// forged chain built from generation 1 upward is self-consistent — and the
-// one the locally recorded anchor exists to catch.
+// This is the residual attack signature verification alone cannot stop — the
+// object is internally perfect — and the one the locally pinned account key
+// exists to catch.
 func forgeKeyring(t *testing.T, genuine *keyring.Keyring, generation int) []byte {
 	t.Helper()
 	attackerKey, err := crypto.NewRootKey()
@@ -958,11 +978,11 @@ func currentDeviceIDs(k *keyring.Keyring) []string {
 //
 // A revoked device keeps working locker credentials for the rest of their
 // TTL, so it can write the keyring object. Two forgeries follow from that,
-// and every command that acts on the keyring must refuse both: appending a
-// generation whose chain nobody but the previous generation's key holder
-// could compute, and replacing the whole object with a self-consistent
-// keyring built on a root key of its own. Refusing on push alone would not
-// be a fix — pull, approve, revoke and recover all load the keyring too.
+// and every command that acts on the keyring must refuse both: writing a
+// generation nobody but a holder of the recovery code could sign, and
+// replacing the whole object with a self-consistent keyring signed under an
+// account key of its own. Refusing on push alone would not be a fix — pull,
+// approve, revoke and recover all load the keyring too.
 func TestKeyringForgeryIsRefusedOnEveryReadPath(t *testing.T) {
 	plane := newFakeControlPlane(t)
 	plane.s3 = s3test.NewPlain(t, "lk-00000000000000000000forge")
@@ -1047,20 +1067,31 @@ func TestKeyringForgeryIsRefusedOnEveryReadPath(t *testing.T) {
 		if _, errb, code := c.run("init", "--hop"); code != ExitOK {
 			t.Fatalf("C init --hop: %d %q", code, errb)
 		}
-		joinC := c.startJoin()
-		out, errb, code := a.approve(joinC.code, false)
-		if code != ExitSafety || !strings.Contains(errb, want) {
-			t.Fatalf("A approve on a forged keyring: exit=%d out=%q err=%q", code, out, errb)
-		}
-		plane.mu.Lock()
-		for _, p := range plane.pairings {
-			if p.status == "pending" {
-				p.expired = true
+		// A joining device refuses the object on its first load, before it
+		// publishes anything; only when it gets past that does the
+		// approving device's refusal come into it. Both are failures
+		// closed, and both must name the same reason.
+		joinC, out, errb, code := c.tryStartJoin()
+		switch {
+		case joinC == nil:
+			if code != ExitSafety || !strings.Contains(errb, want) {
+				t.Fatalf("C join on a forged keyring: exit=%d out=%q err=%q", code, out, errb)
 			}
-		}
-		plane.mu.Unlock()
-		if out, errb, code := joinC.finish(t); code == ExitOK {
-			t.Fatalf("C join succeeded against a forged keyring: out=%q err=%q", out, errb)
+		default:
+			out, errb, code := a.approve(joinC.code, false)
+			if code != ExitSafety || !strings.Contains(errb, want) {
+				t.Fatalf("A approve on a forged keyring: exit=%d out=%q err=%q", code, out, errb)
+			}
+			plane.mu.Lock()
+			for _, p := range plane.pairings {
+				if p.status == "pending" {
+					p.expired = true
+				}
+			}
+			plane.mu.Unlock()
+			if out, errb, code := joinC.finish(t); code == ExitOK {
+				t.Fatalf("C join succeeded against a forged keyring: out=%q err=%q", out, errb)
+			}
 		}
 		for k := range objectKeys(t, plane) {
 			if !before[k] && !strings.HasSuffix(k, keyring.ObjectName) {
@@ -1069,35 +1100,38 @@ func TestKeyringForgeryIsRefusedOnEveryReadPath(t *testing.T) {
 		}
 	}
 
-	// Forgery 1: a generation appended by a party that never held the
-	// previous generation's root key. It cannot compute the chain, so
-	// whatever it writes there is wrong — modelled here by replacing the
-	// chain the genuine rollover produced, which is what any forged value
-	// looks like to a reader.
-	t.Run("a generation nothing chains to", func(t *testing.T) {
-		var obj map[string]any
-		if err := json.Unmarshal(genuine, &obj); err != nil {
-			t.Fatal(err)
-		}
-		gen2 := obj["generations"].([]any)[1].(map[string]any)
-		forgedChain := make([]byte, 32)
-		forgedChain[0] = 1
-		gen2["chain"] = base64.StdEncoding.EncodeToString(forgedChain)
-		raw, err := json.Marshal(obj)
-		if err != nil {
-			t.Fatal(err)
-		}
-		put(raw)
-		refuseEverywhere(t, "chain", "not authenticated by the generation before it")
+	// Forgery 1: a generation whose signature does not verify. A party with
+	// bucket write access has everything else — the profile id, the
+	// generation numbers, the account key, every device's public key — and
+	// cannot produce the one value only the recovery code derives.
+	// Corrupting the signature the genuine rollover produced is what any
+	// forged value looks like to a reader.
+	t.Run("a generation nothing signed", func(t *testing.T) {
+		put(mutateGeneration(t, genuine, 1, func(g map[string]any) {
+			forged := make([]byte, ed25519.SignatureSize)
+			forged[0] = 1
+			g["signature"] = base64.StdEncoding.EncodeToString(forged)
+		}))
+		refuseEverywhere(t, "signature", "is not signed by this account's key")
 	})
 
-	// Forgery 2: the whole object replaced. A chain forged from generation
-	// 1 upward checks out against itself, so only the generation and root
-	// key this device recorded locally can tell the account's own keyring
-	// from a replacement.
+	// Forgery 1b: the same, one generation back. A reader that accepted a
+	// keyring because its *current* generation verified would sail past
+	// this one, which is how the version 3 chain failed open.
+	t.Run("an earlier generation nothing signed", func(t *testing.T) {
+		put(mutateGeneration(t, genuine, 0, func(g map[string]any) {
+			g["signature"] = base64.StdEncoding.EncodeToString(make([]byte, ed25519.SignatureSize))
+		}))
+		refuseEverywhere(t, "earlier", "is not signed by this account's key")
+	})
+
+	// Forgery 2: the whole object replaced, signed end to end under an
+	// account key the attacker derived from a recovery code of its own. It
+	// verifies against itself, so only the account key this device pinned
+	// at enrolment tells it from the account's own keyring.
 	t.Run("the whole keyring replaced", func(t *testing.T) {
 		put(forgeKeyring(t, ring, 2))
-		refuseEverywhere(t, "rewrite", "replaced rather than appended to")
+		refuseEverywhere(t, "rewrite", "signed by a different account key")
 		out, _, code := a.run("account", "status")
 		if code != ExitOK || !strings.Contains(out, "this device refuses it") {
 			t.Fatalf("A account status on a replaced keyring: exit=%d out=%q", code, out)
