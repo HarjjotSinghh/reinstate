@@ -163,6 +163,17 @@ derives the generation's recorded `recipient`, which the signature does
 cover. Appending a *working* wrap therefore still requires that
 generation's root key.
 
+The **recovery** wrap is covered, and the reason is a message rather than a
+key. It is written once, by a caller holding the code, and never appended
+to, so covering it costs nothing. Left out, a party with write access could
+flip one byte of its ciphertext and every later `rein account recover` would
+tell the person their recovery code was wrong — at the one moment where the
+only thing they can act on is the code, and the code was right. Covered
+(keyring format 5), the same edit fails the generation signature and is
+refused as tampering, on every route, before a code is asked for at all. A
+`recovery code does not match` message therefore now means the code as
+typed, or a keyring belonging to another account, and says so.
+
 The anchor is the second half, because a signature proves an internal fact:
 every generation here was signed by the account key this object publishes.
 A keyring built from generation 1 upward under a signing key of the
@@ -201,15 +212,66 @@ recovery wrap, so nothing new is lost. Revocation does not revoke knowledge
 of the code and no command rotates it; a code that may have leaked means
 moving the account to a fresh locker.
 
-Taken together: against a party that can read and write the locker bucket,
-no remaining device accepts a key generation that party wrote, and no
-remaining device seals anything to a root key that party controls, unless
-that party holds the recovery code. What remains outside that claim is
-denial of service — deleting or corrupting snapshots, the manifest, or
-wraps — a fresh install with no anchor, which trusts whichever code was
-typed into it, and the fact that revocation does not re-encrypt existing
-objects; it bounds what a revoked device can learn from then on, which is
-the threat it addresses.
+The anchor is per device, and that is a real gap rather than a detail: a
+device that has not yet read a rollover holds nothing locally that a
+rollback would contradict. The pre-revocation keyring is genuine, its
+signatures verify, and the generation it names is the generation that
+device last saw. So a revoked device, inside the credential window
+described above, can put the earlier object back and a device that has run
+nothing since would accept it — correctly, by every rule it holds — and
+keep sealing to the root key the revoked device still has.
+
+**The account key generation floor** closes that against the revoked
+device. The control plane carries one number per account, monotonic, and
+`rein devices revoke` raises it once the rollover has landed in the keyring;
+every command that reads the keyring on a Hop profile asks for it and
+refuses a keyring below it, before unwrapping anything. It reaches the
+lagging device because the control plane, not the device, is the party that
+saw the rollover — and a revoked device cannot lower it, because the same
+control plane refuses that device's token. It costs nothing in
+availability: reaching a Hop locker already means minting credentials from
+that control plane in the same command, so there is no "offline but syncing"
+state to trade away. The number and the time it was confirmed are recorded
+in `account.json` and only ever move up, and the floor a command uses is the
+higher of the live answer and that record — so a deployment that stops
+serving the route, and one that answers below a number it has already given
+this device, both leave the established floor standing. A device that has
+never confirmed a floor has nothing to be higher than, which is the same
+position as a device on an account that has genuinely never had a
+revocation.
+
+Be exact about what the floor is worth:
+
+- **Against the revoked device — the adversary revocation exists to stop,
+  and the realistic one, a stolen laptop — it closes the gap.** That device
+  is refused by the control plane, so it can neither read nor lower the
+  floor, and every other device is told the account has moved on whether or
+  not it has read the keyring.
+- **Against an operator holding both the control plane and the bucket it
+  adds nothing**, because that party serves whatever floor suits it. What
+  covers that adversary is the recovery-code signature on every generation
+  and the local anchor on a device that has an anchor — as far as those go,
+  which is: it cannot make a device accept a generation it wrote, and it
+  cannot make a device that has read generation N accept N-1.
+- **On a profile using your own bucket there is no control plane to ask**,
+  so there the per-device anchor is the whole of it. `rein devices revoke`
+  requires a signed-in Hop account, so revocation is a Hop feature either
+  way.
+- **A control plane that does not serve the floor** leaves a device that
+  has never confirmed one with nothing to check a restored earlier keyring
+  against. `rein devices revoke` says so on stderr when it meets one.
+
+Taken together: against a party that can read and write the locker bucket —
+which a revoked device is, for the rest of its credential's TTL — no
+remaining device accepts a key generation that party *wrote*, and no
+remaining device seals to a root key that party controls once that device
+has read the current generation or asked a control plane that carries the
+floor. What remains outside that claim is denial of service — deleting or
+corrupting snapshots, the manifest, or wraps — a fresh install with no
+anchor, which trusts whichever code was typed into it, an operator who
+holds the control plane and the bucket at once, and the fact that
+revocation does not re-encrypt existing objects; it bounds what a revoked
+device can learn from then on, which is the threat it addresses.
 
 A device enrolled after a rollover (by approval, or from the recovery code,
 which wraps every generation) is enrolled into all generations and reads the

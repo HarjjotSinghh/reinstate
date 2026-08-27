@@ -26,6 +26,8 @@ func TestKeyringRefusalsAllExitSafety(t *testing.T) {
 		want int
 	}{
 		"rolled back":                   {&keyringRolledBackError{saw: 1, floor: 2}, ExitSafety},
+		"rolled back against the floor": {&keyringRolledBackError{saw: 1, floor: 2, source: floorFromControlPlane}, ExitSafety},
+		"floor never established":       {&keyringFloorUndecidedError{}, ExitSafety},
 		"rewritten":                     {&keyringRewrittenError{generation: 1, want: "age1a", found: "age1b"}, ExitSafety},
 		"anchor without an account key": {&keyringAnchorBrokenError{missing: "account signing key"}, ExitSafety},
 		"unsigned generation":           {fmt.Errorf("wrapped: %w", keyring.ErrUnauthenticatedGeneration), ExitSafety},

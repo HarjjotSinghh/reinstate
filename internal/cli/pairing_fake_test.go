@@ -35,6 +35,58 @@ func (f *fakeControlPlane) registerPairing(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/devices", f.listDevices)
 	mux.HandleFunc("DELETE /v1/devices/{id}", f.revokeDevice)
 	mux.HandleFunc("POST /v1/devices/{id}/revoke", f.revokeDevice)
+	mux.HandleFunc("GET "+hop.KeyGenerationPath, f.readKeyGeneration)
+	mux.HandleFunc("POST "+hop.KeyGenerationPath, f.raiseKeyGeneration)
+}
+
+// readKeyGeneration and raiseKeyGeneration are the account key-generation
+// floor: a per-account number that only ever goes up, served to and raised
+// by authenticated devices. A revoked device's token is gone from f.tokens,
+// so identityFor answers 401 and it can neither read the floor nor lower it.
+//
+// Setting noKeyGenerationFloor makes the fake behave like a control plane
+// that predates the route, which is the case the client falls back for.
+func (f *fakeControlPlane) readKeyGeneration(w http.ResponseWriter, r *http.Request) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if _, ok := f.identityFor(w, r); !ok {
+		return
+	}
+	if f.noKeyGenerationFloor {
+		writeFakeErrorCode(w, 404, hop.CodeNoKeyGeneration, "this control plane does not carry a key generation floor")
+		return
+	}
+	f.keyGenerationReads++
+	_ = json.NewEncoder(w).Encode(f.keyGenerationView())
+}
+
+func (f *fakeControlPlane) raiseKeyGeneration(w http.ResponseWriter, r *http.Request) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if _, ok := f.identityFor(w, r); !ok {
+		return
+	}
+	if f.noKeyGenerationFloor {
+		writeFakeErrorCode(w, 404, hop.CodeNoKeyGeneration, "this control plane does not carry a key generation floor")
+		return
+	}
+	var req struct {
+		KeyGeneration int `json:"key_generation"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&req)
+	if req.KeyGeneration < 1 {
+		writeFakeError(w, 400, "key_generation must be at least 1")
+		return
+	}
+	if req.KeyGeneration > f.keyGeneration {
+		f.keyGeneration = req.KeyGeneration
+		f.keyGenerationAt = time.Now().UTC().Format(time.RFC3339)
+	}
+	_ = json.NewEncoder(w).Encode(f.keyGenerationView())
+}
+
+func (f *fakeControlPlane) keyGenerationView() map[string]any {
+	return map[string]any{"key_generation": f.keyGeneration, "updated_at": f.keyGenerationAt}
 }
 
 // identityFor resolves the bearer token, answering the 401 itself.

@@ -9,6 +9,76 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- **The account key generation floor closes the lagging device (#11).**
+  Every defence the keyring had was local to one device: the generation it
+  last unwrapped and that generation's root-key recipient. A device that
+  had *not* yet read a rollover held nothing a rollback would contradict —
+  the pre-revocation keyring is genuine and its signatures verify — so a
+  revoked device, inside the credential window this file describes, could
+  restore the earlier object and a device that had run nothing since would
+  accept it and keep sealing to the root key the revoked device holds. That
+  was reproduced end to end.
+  - **The control plane carries one monotonic key generation per account**
+    (`GET`/`POST /v1/account/key-generation`, bearer). `rein devices
+    revoke` raises it once the rollover is in the keyring and the token is
+    refused; every command that reads the keyring on a Hop profile asks for
+    it first and refuses a keyring below it (`ExitSafety`, naming the
+    control plane), before unwrapping anything — push, pull, `devices
+    approve`, `devices revoke`, `account recover`, `account join`, and the
+    two diagnostics.
+  - **What it buys, stated both ways.** Against the revoked device — the
+    adversary revocation exists to stop, and the realistic one — it closes
+    the gap: the control plane refuses that device's token, so it can
+    neither read the floor nor lower it. Against an operator holding *both*
+    the control plane and the bucket it adds nothing, because that party
+    serves whatever floor it likes; the generation signature and the local
+    anchor are what cover that adversary. `docs/hop.md` and
+    `docs/security-model.md` say both.
+  - **No offline trade.** Reaching a Hop locker already means minting
+    credentials from the same control plane in the same command, so there
+    is no device that can sync but not ask. The one case with no live
+    answer is a control plane that does not carry the floor (`404
+    no_key_generation`): the last floor it confirmed to this device stands,
+    recorded in `account.json` as `control_plane_key_generation` and
+    `control_plane_confirmed_at` and raised only upward, so a deployment
+    that stops serving it cannot drop the account back to generation 0.
+    `rein devices revoke` prints on stderr when it meets such a control
+    plane, rather than reporting a protection it did not get.
+  - **The claim, as it now reads.** A revoked device cannot open what a
+    device pushes *once that device has the new key generation* — which it
+    has as soon as it next reads the keyring, and which the floor makes it
+    check for even before then. Unqualified, the old sentence was false.
+    `docs/hop.md`, `docs/security-model.md`, `rein devices revoke --help`
+    and the message the command prints all carry the qualification, and
+    `TestControlPlaneFloorReachesADeviceThatLagsBehind` and
+    `TestWithoutAControlPlaneFloorALaggingDeviceAcceptsTheOldKeyring` hold
+    both halves to the code.
+  - **Every route, not one route.** The floor is part of `keyringAnchor`,
+    whose zero value is undecided and refuses every keyring, and two source
+    walks hold the class rather than the instance:
+    `TestEveryKeyringAnchorDecidesTheFloor` fails on any anchor built in
+    `internal/cli` without an explicit floor decision, and
+    `TestEveryKeyringUnwrapGoesThroughTheAnchor` fails on any keyring unwrap
+    that is not lexically inside a `trustKeyring` call — with the two
+    deliberate exceptions named in its own table, and the reason each is
+    safe. Both were confirmed by adding a route and watching them fail.
+- **The recovery wrap is inside the generation signature (#11), keyring
+  format 5.** It was outside, and the cost was a message: a party with
+  bucket write access could flip one byte of the ciphertext, and every
+  later `rein account recover` told the person their recovery code was
+  wrong — at the one moment where the only thing they can act on is the
+  code, and the code was right. The wrap is written once, by a caller
+  holding the code, and never appended to, so covering it costs nothing.
+  The same edit now fails the generation signature and is refused as
+  tampering, by `keyring.Parse`, on every route, before a code is asked for
+  at all. `recovery code does not match` now means the code as typed or a
+  keyring belonging to another account, and says so; a wrap this build
+  cannot attempt at all (unknown derivation or format, a salt or ciphertext
+  that is not base64, a ciphertext shorter than its nonce) is a separate
+  error that exits `7` and names damage rather than the code. Device wraps
+  are still deliberately outside the signature — they are appended after a
+  generation is written — and the reason that is safe is unchanged and
+  documented next to it.
 - **Key generations are now signed (#11).** A revoked device keeps working
   locker credentials for the rest of their TTL, so it can write the keyring
   object; until now nothing about a key generation was secret or
@@ -58,8 +128,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     code can sign a generation (and could already unwrap the root key),
     denial of service by anyone who can write the bucket, and the fact that
     revocation never re-encrypts what was already pushed.
-- Keyring format version 4, a clean cutover: versions 1, 2 and 3 are no
-  longer read at all. Versions 1 and 2 tied nothing between generations.
+- Keyring format version 5, a clean cutover: versions 1 to 4 are no
+  longer read at all. Version 5 differs from 4 by one thing — the recovery
+  wrap's parameters, salt, format and ciphertext are inside the generation
+  signature — and the reason is in the Security section above. Versions 1
+  and 2 tied nothing between generations.
   Version 3, added earlier in this cycle, tied each generation to the one
   before it with an HMAC keyed by the **previous generation's root key** —
   which is precisely the key held by the device being revoked, so within its
@@ -106,6 +179,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   init --hop --force` as the step that clears it. `rein sync migrate --to
   byo` clears it the same way, since the BYO profile it writes has no
   keyring behind it.
+- ...and now ends in a **working** `rein push` (#11). `rein init --hop
+  --force` is in that recipe for one reason — it is the only thing that
+  removes the enrolment record — and clearing `state.json` was collateral,
+  not the point. Without the session records the push that follows saw a
+  local revision and a remote snapshot that differ with no shared base,
+  recorded a conflict, and exited `6`: the last step of a recovery path
+  failing on state the path itself threw away. Re-initializing a home
+  against the **same profile** now carries the session records forward — the
+  profile is the locker, so the snapshot ids are still the account's, and
+  only the device id changed. A different profile is a different locker and
+  still starts clean, and the previous state is in the backup set either
+  way. `TestReEnrolmentRecipeEndsInAWorkingPush` runs the documented recipe
+  verbatim, with the session changed after the revocation as it would be on
+  a machine that was still in use.
+- `rein devices revoke`'s help text and success message say when the
+  revocation reaches a device that has not read the keyring (#11), rather
+  than implying it is instantaneous account-wide. The message names the key
+  generation, says what is not readable by the revoked device once a device
+  has it, and reports whether the control plane took the key generation
+  floor — because on a control plane that does not carry one the operator
+  needs to know the other devices are covered only as each next reads the
+  keyring.
 - `rein devices revoke`'s own help text and its success message no longer
   claim the revoked device "cannot push" (#11). New credential mints are
   refused instantly, but a credential the device already holds keeps working
@@ -113,6 +208,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   hour — and `storage.Provider` exposes no way to withdraw one. `docs/hop.md`
   already stated this correctly; the command now agrees, and the message
   printed after a revocation tells the operator about the window.
+- `keyring.Parse` now says which of its checks are load-bearing and which
+  are duplicated further along (#11). Several are refused a second time by
+  `VerifyGenerations`, which every read path runs again against its anchor,
+  so a mutation test finds them individually survivable — that is defence in
+  depth, not dead code, and the note names the copy a later refactor should
+  delete (this one) and the copies that exist nowhere else (the
+  `schema_version` gate, the wrap-format rule, the duplicate device id rule,
+  and the closing `VerifyGenerations` call that makes an unverifiable
+  keyring fail to parse at all).
 - The keyring can no longer grow into an object the account cannot read
   (#11). Every revocation appends a generation holding one wrap per
   remaining device and none is ever removed, so at five devices the object
@@ -316,8 +420,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   seals only to the current one, the envelope's own age header deciding
   which generation applies); the revoked device cannot mint new locker
   credentials (ones minted before the revocation last until they expire,
-  at most an hour), cannot open anything pushed after the revocation, and
-  keeps what it already pulled. Revoking twice is harmless, a device cannot revoke
+  at most an hour), cannot open what a device pushes once that device has
+  the new key generation, and keeps what it already pulled. Revoking twice is harmless, a device cannot revoke
   itself, and a wrong recovery code revokes nothing. A revocation racing an
   approval converges either way: the approval lands in the generation that
   is current when its compare-and-swap succeeds (and enrols the new device

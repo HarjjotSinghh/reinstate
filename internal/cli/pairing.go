@@ -163,11 +163,20 @@ func runAccountJoin(cmd *cobra.Command, _ []string) error {
 	// device must decrypt to the same root key of the same generation, so
 	// a control plane that altered either channel is caught before any
 	// data is written under a wrong key.
-	ring, err = verifyJoinedKeyring(ctx, store, keyringKey, cfg.DeviceID, deviceKey, rootKey, payload.KeyGeneration)
+	floor, err := confirmKeyGenerationFloor(cmd, home, cfg)
+	if err != nil {
+		return err
+	}
+	ring, err = verifyJoinedKeyring(ctx, store, keyringKey, cfg.DeviceID, deviceKey, rootKey, payload.KeyGeneration, floor)
 	if err != nil {
 		return err
 	}
 	if err := saveAccountEnrolmentConfirmed(home, cfg, now, ring, "join", false); err != nil {
+		return err
+	}
+	// The record exists only now, so the floor confirmed above had nowhere
+	// to be written until this point.
+	if err := rememberKeyGenerationFloor(home, floor); err != nil {
 		return err
 	}
 	out := cmd.OutOrStdout()
@@ -186,7 +195,7 @@ func runAccountJoin(cmd *cobra.Command, _ []string) error {
 // with a wrap that opens to exactly the root key received through the
 // pairing, in the generation the approver named.
 //
-// A joining device has no anchor of its own: it has never read this
+// A joining device has no local anchor of its own: it has never read this
 // account's keyring, so it cannot say whose account key the object is signed
 // under. Every generation must verify under whatever key the object
 // publishes — that much is checked whether or not there is an anchor — and
@@ -195,7 +204,12 @@ func runAccountJoin(cmd *cobra.Command, _ []string) error {
 // own wrap for this device. Both channels must agree, so neither the relay
 // nor the storage can substitute a keyring alone. The account key is pinned
 // from this object once they do, and every later read is checked against it.
-func verifyJoinedKeyring(ctx context.Context, store backend.Backend, key, deviceID string, deviceKey *age.X25519Identity, rootKey []byte, generation int) (*keyring.Keyring, error) {
+//
+// floor is the account-wide key generation the control plane reports, and it
+// applies here too: an approval relaying a genuine older generation, and a
+// bucket holding the matching older keyring, agree with each other and would
+// otherwise satisfy the paragraph above.
+func verifyJoinedKeyring(ctx context.Context, store backend.Backend, key, deviceID string, deviceKey *age.X25519Identity, rootKey []byte, generation int, floor keyringFloor) (*keyring.Keyring, error) {
 	ring, _, err := keyring.Load(ctx, store, key)
 	if exit := exitForKeyringRefusal(err); exit != nil {
 		return nil, exit
@@ -206,7 +220,7 @@ func verifyJoinedKeyring(ctx context.Context, store backend.Backend, key, device
 	if ring.CurrentGeneration != generation {
 		return nil, NewExitError(ExitSafety, fmt.Sprintf("the keyring is at generation %d but the approval named %d; nothing was written. Run rein account join again", ring.CurrentGeneration, generation))
 	}
-	keys, err := trustKeyring(keyringAnchor{}, ring, func() (map[int][]byte, error) {
+	keys, err := trustKeyring(keyringAnchor{floor: floor}, ring, func() (map[int][]byte, error) {
 		return ring.UnwrapGenerations(deviceID, deviceKey)
 	})
 	if exit := exitForKeyringRefusal(err); exit != nil {
@@ -275,7 +289,7 @@ func runDevicesList(cmd *cobra.Command, _ []string) error {
 					keyringRefused = loadErr.Error()
 				}
 			default:
-				anchor, anchorErr := loadKeyringAnchor(home)
+				anchor, anchorErr := loadKeyringAnchor(cmd, home, cfg)
 				if anchorErr == nil {
 					anchorErr = anchor.check(ring)
 				}
@@ -466,7 +480,7 @@ func approvePairingRequest(ctx context.Context, cmd *cobra.Command, client *hop.
 	// that is current then, and into every earlier one this device can
 	// read, so it reads the whole locker). A device this machine can no
 	// longer open (it was revoked meanwhile) approves nothing.
-	anchor, err := loadKeyringAnchor(home)
+	anchor, err := loadKeyringAnchor(cmd, home, cfg)
 	if err != nil {
 		return 0, err
 	}
@@ -504,7 +518,7 @@ func approvePairingRequest(ctx context.Context, cmd *cobra.Command, client *hop.
 	if err != nil {
 		return 0, NewExitError(ExitAuthStorage, err.Error())
 	}
-	if err := observeKeyring(home, updated); err != nil {
+	if err := observeKeyring(home, anchor.floor, updated); err != nil {
 		return 0, err
 	}
 	payload, err := pairing.SealRootKey(rootKey, req.ID, recipient, updated.CurrentGeneration)
@@ -575,13 +589,22 @@ prompt, or REINSTATE_RECOVERY_CODE_FD for automation), starts a new key
 generation in the keyring (a fresh root key wrapped for every remaining
 device and under the recovery code, and signed by the account key that code
 derives; earlier generations stay so everything already in the locker
-remains readable), and then tells the control plane,
-which refuses the revoked device's token from then on. The revoked device
-keeps whatever it already pulled and cannot read anything pushed after the
-revocation. It cannot mint new locker credentials either — but a credential
-it minted before the revocation keeps working against the bucket until it
-expires, up to an hour, so within that window it can still write bytes it
-can no longer read. Revoking the same device twice is harmless.
+remains readable), tells the control plane, which refuses the revoked
+device's token from then on, and raises the account's key generation floor
+there so the other devices refuse the earlier keyring even before they have
+read the new one.
+
+The revoked device keeps whatever it already pulled and cannot read what a
+device pushes once that device has the new key generation. It cannot mint
+new locker credentials either — but a credential it minted before the
+revocation keeps working against the bucket until it expires, up to an
+hour, so within that window it can still write bytes it can no longer read,
+and it can put the old keyring back. A device that has already read the new
+generation refuses that; a device that has not is covered by the control
+plane's floor, and a control plane that does not carry one leaves that
+device with nothing to check against until it next reads the keyring — the
+command says so on stderr when it meets one. Revoking the same device twice
+is harmless.
 
 A device cannot revoke itself; use another enrolled device.`,
 		Args: cobra.ExactArgs(1),
@@ -647,7 +670,7 @@ func runDevicesRevoke(cmd *cobra.Command, target string) error {
 	// new generation; a device already revoked is reported, not revoked
 	// into a third generation).
 	now := time.Now().UTC()
-	anchor, err := loadKeyringAnchor(home)
+	anchor, err := loadKeyringAnchor(cmd, home, cfg)
 	if err != nil {
 		return err
 	}
@@ -672,9 +695,12 @@ func runDevicesRevoke(cmd *cobra.Command, target string) error {
 	if exit := exitForKeyringRefusal(err); exit != nil {
 		return exit
 	}
+	if errors.Is(err, keyring.ErrRecoveryMismatch) || errors.Is(err, keyring.ErrRecoveryWrapMalformed) {
+		// Same two answers as `rein account recover`: a code to re-type, or
+		// a keyring to restore. Nothing was revoked either way.
+		return exitForRecoveryWrap(err, "revoked")
+	}
 	switch {
-	case errors.Is(err, keyring.ErrRecoveryMismatch):
-		return NewExitError(ExitAuthStorage, "recovery code does not match this keyring; nothing was revoked")
 	case errors.Is(err, keyring.ErrSelfRevoke):
 		return NewExitError(ExitUsage, "a device cannot revoke itself; revoke it from another enrolled device")
 	case errors.Is(err, keyring.ErrDeviceNotEnrolled) && !errors.Is(err, keyring.ErrAlreadyRevoked):
@@ -698,7 +724,7 @@ func runDevicesRevoke(cmd *cobra.Command, target string) error {
 	// Pin the generation this device just created (or observed) before the
 	// control plane is told: a rolled-back keyring is then refused here
 	// even if the revocation call below fails and is retried.
-	if err := observeKeyring(home, updated); err != nil {
+	if err := observeKeyring(home, anchor.floor, updated); err != nil {
 		return err
 	}
 
@@ -709,6 +735,17 @@ func runDevicesRevoke(cmd *cobra.Command, target string) error {
 		}
 		return NewExitError(ExitAuthStorage, fmt.Sprintf("the keyring moved to key generation %d without %s, but the control plane could not be told (%v); its token still works until it is. Run rein devices revoke %s again", generation, victim.ID, err, victim.ID))
 	}
+	// Raise the account-wide floor last, once the keyring holds the new
+	// generation and the token is refused. This is what reaches the devices
+	// that have not read the keyring yet: without it, a device that has run
+	// nothing since the previous generation would accept the pre-rollover
+	// keyring the revoked device can still put back. Revoking is idempotent
+	// on both halves, so a failure here is reported and re-run rather than
+	// left to a later command to notice.
+	carried, err := raiseKeyGenerationFloor(cmd, home, cfg, generation)
+	if err != nil {
+		return NewExitError(ExitAuthStorage, fmt.Sprintf("device %s is revoked and the keyring is at key generation %d, but the account's key generation floor could not be raised (%v); a device that has not yet read key generation %d would still accept the earlier keyring. Run rein devices revoke %s again", victim.ID, generation, err, generation, victim.ID))
+	}
 	out := cmd.OutOrStdout()
 	switch {
 	case already && !revocation.Revoked:
@@ -717,8 +754,13 @@ func runDevicesRevoke(cmd *cobra.Command, target string) error {
 		PrintHuman(out, "device %q (%s) had no wrap in key generation %d; its token is now refused by the control plane", victim.Name, victim.ID, generation)
 	default:
 		PrintHuman(out, "revoked device %q (%s); key generation %d started with %d enrolled device(s), and the control plane refuses its token", victim.Name, victim.ID, generation, updated.DeviceCount())
-		PrintHuman(out, "earlier key generations stay readable on every remaining device; nothing pushed from now on is readable by the revoked device")
+		PrintHuman(out, "earlier key generations stay readable on every remaining device; what any device pushes once it has key generation %d is not readable by the revoked device", generation)
 		PrintHuman(out, "it can mint no new locker credentials, but one it minted before now keeps working against the bucket until it expires (up to an hour), so it can still write objects during that window — objects it cannot read")
+	}
+	if carried {
+		PrintHuman(out, "the control plane now reports key generation %d for this account, so a device that has not read the keyring since the rollover refuses the earlier copy too", generation)
+	} else {
+		PrintHuman(cmd.ErrOrStderr(), "note: this control plane does not carry an account key generation floor, so a device that has not read key generation %d yet has nothing to check a restored earlier keyring against — run rein account status on your other devices to bring each one up to date", generation)
 	}
 	return nil
 }

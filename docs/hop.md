@@ -176,7 +176,11 @@ were, so:
   credentials (credentials it minted before the revocation keep working
   against the bucket until they expire, up to the operator's credential
   TTL of at most an hour, so it can still push or pull within that
-  window), and cannot open anything pushed after the revocation;
+  window), and cannot open what any device pushes once that device has the
+  new key generation. Whether a device *has* it is the qualification the
+  rest of this section is about: it arrives per device, and the control
+  plane's key generation floor is what carries it to a device that has not
+  read the keyring yet;
 - that same window is enough to **write** the keyring object, so the
   keyring authenticates itself. Every generation, the first included,
   carries a `signature`: ed25519 over its own header — the profile id, the
@@ -251,12 +255,13 @@ names a generation the keyring has since left fails closed (no account
 record) and is simply approved again. Two devices revoking the same device
 at the same moment start one generation, not two.
 
-To enrol a revoked machine again, three commands, in this order:
+To enrol a revoked machine again, four commands, in this order:
 
 ```bash
 rein login                  # a new device record and token
 rein init --hop --force     # the home names the new device; see below
 rein account recover        # or rein account join, approved elsewhere
+rein push --all             # back in sync
 ```
 
 `--force` matters. The revoked machine still carries the local enrolment
@@ -267,11 +272,95 @@ copies `config.toml`, `state.json` and `account.json` into a timestamped
 set under `backups/` and then removes the enrolment record, which is the
 one file `init` does not otherwise rewrite. Nothing else removes it.
 
+Because `--force` is reached for to remove that one file, it keeps the
+**sync state** when the home is being pointed at the same profile: the
+profile is the locker, so the snapshot ids in `state.json` are still this
+account's and only the device id changed. Without that, the `rein push`
+above would see a local session that has moved on and a remote snapshot
+with no shared base between them, call it a divergence and exit `6` — the
+last step of the recovery path failing on state the path itself discarded.
+Re-initializing against a *different* profile is a different locker and does
+start from an empty state. Either way the previous `state.json` is in the
+backup set.
+
 `rein account status` and `rein devices --json` report the current key
 generation; the keyring keeps a `revoked` record on the generation each
 revocation started.
 
-### What "cannot open anything pushed after the revocation" means
+### The account key generation floor
+
+Every check described above is **local to one device**: the generation it
+last unwrapped, and the root-key recipient it recorded for that generation.
+A device that has not yet read the rollover holds nothing a rollback would
+contradict — the pre-revocation keyring is genuine, its signatures verify,
+and the generation it names is the one that device last saw. Inside its
+credential window the revoked device can restore exactly that object, and a
+device that has run nothing since would accept it and keep sealing to the
+root key the revoked device still holds.
+
+The control plane closes that, because it is the party that saw the rollover
+the lagging device missed. It carries one number per account:
+
+| route | who | answer |
+| --- | --- | --- |
+| `GET /v1/account/key-generation` (bearer) | any enrolled device | `200 {"key_generation": N, "updated_at"}`; `N` is `0` until a revocation raises it. `404 {code: "no_key_generation"}` from a control plane that does not carry one. |
+| `POST /v1/account/key-generation` (bearer) `{"key_generation": N}` | any enrolled device; in practice the one doing the revoking | `200 {"key_generation": M, "updated_at"}` where `M` is the higher of what it held and `N` — the number is monotonic, so reporting a smaller one raises nothing. The CLI refuses an answer below the `N` it sent, which catches a control plane that is not keeping it monotonic; it cannot compel one, and the row below says what that leaves open. |
+
+`rein devices revoke` raises the floor once the new generation is in the
+keyring and the control plane has refused the revoked token. Every command
+that reads the keyring on a Hop profile asks for the floor first and refuses
+a keyring below it (`ExitSafety`, naming the control plane as the source),
+before unwrapping anything: push, pull, `devices approve`, `devices revoke`,
+`account recover`, `account join`, and the two diagnostics.
+
+What that does and does not buy, precisely:
+
+- **Against the revoked device it closes the gap.** That is the adversary
+  revocation exists to stop, and the realistic one — a stolen or retired
+  laptop. The control plane refuses its token, so it can neither read the
+  floor nor lower it, and it cannot stop another device from being told the
+  account has moved on.
+- **Against an operator holding both the control plane and the bucket it
+  adds nothing**, because that party serves whatever floor it likes. The
+  recovery-code signature on every generation and the local anchor are what
+  cover that adversary, as far as they cover it — see the list below.
+- **A profile on your own bucket has no control plane to ask**, so there the
+  per-device floor and the local anchor remain the whole of it. `rein
+  devices revoke` requires a signed-in Hop account, so revocation is a Hop
+  feature either way.
+- **A control plane that does not carry the floor** (an older deployment,
+  answering `404`) leaves a device that has never confirmed one with nothing
+  to check a restored earlier keyring against. `rein devices revoke` prints
+  that on stderr rather than reporting a protection it did not get.
+
+**Offline.** There is no offline case on a Hop profile, and that is why this
+is not a trade. Reaching the locker at all means minting credentials from
+the same control plane in the same command, so a device that cannot reach it
+cannot push or pull either — refusing to sync offline is not a choice being
+made here. The one case with no live answer is the `404` above, and there
+the floor falls back to the last one the control plane confirmed to this
+device, which `account.json` records as `control_plane_key_generation` and
+`control_plane_confirmed_at` and only ever raises. In fact the floor a
+command uses is always the higher of the live answer and that record, so a
+control plane that stops serving the route *and* one that answers below a
+number it has already given this device both leave the established floor
+standing; a refusal made on that basis says which floor it used and when it
+was confirmed. What that does not reach is a device that has never confirmed
+a floor at all: there is nothing to be higher than, and a control plane
+serving `0` — or one that has genuinely never had a revocation — is
+indistinguishable to it.
+
+### What revocation establishes, and what it does not
+
+The sentence worth being careful about is "a revoked device cannot open
+anything pushed after the revocation". Unqualified it is false, and it was
+false in a way that was demonstrated end to end. Here it is with the
+qualification:
+
+> A revoked device cannot open what a device pushes once that device has
+> the new key generation — which it has as soon as it next reads the
+> keyring, and which a control plane carrying the key generation floor
+> makes it check for even before then.
 
 Precisely: against a party that can read **and write** the locker bucket —
 which a revoked device is, for the rest of its credential's TTL — no
@@ -280,9 +369,26 @@ means signing it under the account key, and that key is derived from the
 recovery code, which no device holds and a revoked device never held. The
 locally pinned account key rules out replacing the object outright, because
 a keyring signed end to end under a key of the attacker's own is internally
-perfect and nothing inside it could tell it apart.
+perfect and nothing inside it could tell it apart. And restoring a
+*genuine* earlier keyring — which needs no signing at all — is refused by
+any device that has read the newer generation, and by any device whose
+control plane reports a higher floor.
 
 What that does *not* cover, stated plainly:
+
+- **An operator holding both the control plane and the bucket.** The floor
+  is only as good as the party serving it, and that party serves it. What
+  is left against this adversary is the generation signature (it cannot
+  write a generation any device will adopt without the recovery code) and
+  the local anchor (it cannot talk a device that has read generation N back
+  to N-1). It can still hand a device that has never read this account's
+  keyring a floor of 0.
+- **A device that has never contacted a control plane carrying the floor,
+  on a control plane that does not carry one.** It has nothing to check a
+  restored earlier keyring against until it reads the new generation for
+  itself. `rein devices revoke` says so when it meets such a control plane.
+- **BYO storage.** No control plane, no floor; the per-device anchor is the
+  whole of it.
 
 - **A device that has never read this account's keyring has no anchor of
   its own.** It borrows one, and there are exactly two: the recovery code
@@ -495,7 +601,7 @@ passphrase, or session content. Sign-in is a device-authorization style flow:
 | 6 | `POST /v1/locker/credentials` (bearer) | `200 {access_key_id, secret_access_key, session_token, expires_at, endpoint, bucket, region}`, valid for at most an hour and scoped to the bucket. Refusals carry a `code`: `quota_storage` (403), `quota_devices` (403), `quota_push_rate` (429), `no_locker` (404), `storage_unavailable` (502). |
 | 7 | `POST /v1/locker/first-push` (bearer) | `200 {first, first_push_at}`; records the first push once. |
 | 8 | `GET /v1/devices` (bearer) | `200 {devices: [{id, name, platform, location_hint?, created_at, last_seen_at, revoked_at?}]}`; revoked devices stay listed with `revoked_at`. |
-| 9 | `DELETE /v1/devices/{id}` (bearer; `POST /v1/devices/{id}/revoke` is an alias) | `200 {device, revoked}`; `revoked` is `false` when it already was (idempotent). The token is refused everywhere from then on and the device no longer counts toward the device quota. Another account's device or an unknown id: `404 {code: "device_unknown"}` (one answer, so ids cannot be probed across accounts); the calling device itself: `400 {code: "self_revoke"}`. The call carries no key material: the key generation rollover happens in the keyring before it. |
+| 9 | `DELETE /v1/devices/{id}` (bearer; `POST /v1/devices/{id}/revoke` is an alias) | `200 {device, revoked}`; `revoked` is `false` when it already was (idempotent). The token answers `401` on every authenticated route from then on, and the device no longer counts toward the device quota — but a locker credential minted before the revocation keeps working against the bucket until it expires, at most an hour, and the control plane cannot withdraw one. Another account's device or an unknown id: `404 {code: "device_unknown"}` (one answer, so ids cannot be probed across accounts); the calling device itself: `400 {code: "self_revoke"}`. The call carries no key material: the key generation rollover happens in the keyring before it, and `POST /v1/account/key-generation` raises the account floor after it. |
 
 The CLI reads the locker with `GET /v1/locker` on every hosted command and
 only calls `POST /v1/locker` when the answer is `no_locker` (normally once,

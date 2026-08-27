@@ -51,6 +51,14 @@ type fakeControlPlane struct {
 	// Revoked devices keep their record (with revoked_at) but no token.
 	revoked map[string]hop.Device
 	events  []string // "<type>:<device id>" in order
+
+	// The account key-generation floor (see pairing_fake_test.go).
+	keyGeneration      int
+	keyGenerationAt    string
+	keyGenerationReads int
+	// noKeyGenerationFloor makes both floor routes answer 404, as a
+	// control plane that predates them does.
+	noKeyGenerationFloor bool
 }
 
 type fakeLocker struct {

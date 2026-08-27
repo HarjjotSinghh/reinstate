@@ -40,6 +40,20 @@ type Account struct {
 	// anywhere and is re-derived from the recovery code when a generation
 	// has to be written.
 	AccountKey string `json:"account_key"`
+	// ControlPlaneKeyGeneration is the highest key generation the control
+	// plane has confirmed to this device, and ControlPlaneConfirmedAt is
+	// when it last did. Both are absent until a control plane that carries
+	// the floor has answered once.
+	//
+	// The live answer is what a command enforces; this copy is the fallback
+	// for the one case where a command runs without one — a control plane
+	// that does not serve the floor at all — so a deployment that stops
+	// serving it cannot quietly drop the account back to generation 0. It
+	// moves up only. Neither field is key material, and neither is
+	// required: a record without them has never had a floor confirmed,
+	// which is where every device starts.
+	ControlPlaneKeyGeneration int    `json:"control_plane_key_generation,omitempty"`
+	ControlPlaneConfirmedAt   string `json:"control_plane_confirmed_at,omitempty"`
 	// RecoveryCodeConfirmed records that the recovery code was re-entered on
 	// this device. It is a local boolean only and is never sent anywhere.
 	RecoveryCodeConfirmed bool `json:"recovery_code_confirmed"`
