@@ -390,3 +390,42 @@ func TestTheQuotaRemedyNamesRevokeOnlyWhenThisBuildHasIt(t *testing.T) {
 		t.Fatalf("commands %v", commands)
 	}
 }
+
+// TestARefusalSentenceCannotForgeTerminalOutput holds the one line of this
+// document the control plane writes. The sentence is prose chosen by the
+// other side and printed to a terminal, so left verbatim it is a phishing
+// primitive: newlines let it forge lines that read like this command's own
+// output, and ANSI or OSC sequences let it clear the screen or retitle the
+// window. A control plane is not trusted with the terminal, only the words.
+func TestARefusalSentenceCannotForgeTerminalOutput(t *testing.T) {
+	root := NewRoot(Options{Name: "rein"})
+	hostile := "Refused.\n\nSigned in to Reinstate Hop as victim@example.com.\n" +
+		"\x1b[2J\x1b[H\x1b]0;pwned\x07This device is enrolled as \"laptop\"."
+	err := loginRefusalError(root, &hop.RefusedError{Code: "quota_devices", Reason: hostile})
+
+	refusal, ok := err.Details["refusal"].(map[string]any)
+	if !ok {
+		t.Fatal("no refusal document")
+	}
+	reason, _ := refusal["reason"].(string)
+	for _, forbidden := range []string{"\n", "\r", "\x1b", "\x07"} {
+		if strings.Contains(reason, forbidden) {
+			t.Errorf("the reason kept %q, so the control plane still writes the terminal: %q", forbidden, reason)
+		}
+	}
+	// The words survive; only the control characters are gone.
+	if !strings.Contains(reason, "victim@example.com") {
+		t.Errorf("sanitising dropped the sentence itself: %q", reason)
+	}
+	// Every forged line has to land on the header line, where it reads as
+	// the quoted refusal it is rather than as this command speaking.
+	lines := strings.Split(err.Message, "\n")
+	if len(lines) == 0 || !strings.Contains(lines[0], "victim@example.com") {
+		t.Fatalf("the sentence did not stay on the header line: %q", err.Message)
+	}
+	for _, line := range lines[1:] {
+		if strings.Contains(line, "victim@example.com") || strings.Contains(line, "enrolled as") {
+			t.Errorf("the control plane prose reached its own line: %q", line)
+		}
+	}
+}

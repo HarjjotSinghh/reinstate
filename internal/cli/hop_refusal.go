@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/HarjjotSinghh/reinstate/internal/hop"
+	"github.com/HarjjotSinghh/reinstate/internal/safetext"
 )
 
 // Reporting a refused sign-in.
@@ -106,6 +107,11 @@ func signInByEmail(*cobra.Command) (string, []string) {
 		[]string{"rein login --email <address>"}
 }
 
+// maxRefusalSentenceRunes bounds the control plane's sentence. The longest
+// one it sends today is under 200 runes; the bound exists so a refusal
+// cannot fill the terminal, not to truncate anything real.
+const maxRefusalSentenceRunes = 400
+
 // loginRefusalError turns a refused sign-in into the error `rein login`
 // exits with: the control plane's sentence, what it means for this machine,
 // the commands this build can offer, and — under --json — the same as a
@@ -116,7 +122,13 @@ func loginRefusalError(root *cobra.Command, refused *hop.RefusedError) *ExitErro
 	if !known {
 		entry = unknownLoginRefusal
 	}
-	reason := refused.Sentence()
+	// The sentence is prose the control plane chose, printed to a terminal.
+	// Left verbatim it carries newlines and ANSI sequences, so a hostile or
+	// intercepted control plane can forge lines that read like this command's
+	// own output — clear the screen, set the window title, or announce a
+	// sign-in that never happened. safetext flattens it to one bounded line
+	// and keeps the backticked command text the sentences rely on.
+	reason := safetext.Text(refused.Sentence(), maxRefusalSentenceRunes)
 
 	head := "Reinstate Hop refused this sign-in"
 	if code != "" {
