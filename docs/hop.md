@@ -1,7 +1,16 @@
 # Reinstate Hop: sign-in, devices, and the locker
 
 Reinstate Hop is the paid hosted tier: a locker (a storage bucket provisioned
-for exactly one account, holding only ciphertext) plus a console. Every client
+for exactly one account) plus a console. Every session object Reinstate writes
+to the locker is ciphertext; one object it writes is not, and it is named here
+rather than rounded off.
+`keyring.v1.json` is plaintext by design: it holds no usable key, and it gives
+up the account's profile id, every enrolled device's id, public key and
+enrolment time, and one entry per key generation with the time it started — so
+a locker whose key has rolled over also shows which devices stopped being
+enrolled, and when. The [object format](hop/object-format.md#keyringv1json--the-wrapped-root-key)
+lists it in full and the [threat model](hop/threat-model.md) says what it is
+worth to an observer. Every client
 capability stays in the free CLI; Hop gates storage and the console only. This
 page covers what has landed in the client: passwordless sign-in, device
 tokens, syncing to the locker, and device approval (pairing). The daemon
@@ -270,11 +279,30 @@ hand").
    endpoint so the report shows the credential the locker accepted is the
    one the reference refused, and where.
 
-The report ends with `OUTCOME: PASS`, `OUTCOME: FAIL`, or — on a profile
-that has pushed nothing yet, where all four steps are not applicable and
-there is nothing to check — `OUTCOME: NOT YET VERIFIABLE`. Exit code `7`
-(`safety`) on any failed step, `0` otherwise, and `1` when the control
-plane could not be reached, which prints a report naming the checks that
+**A step that got no answer is not a step that failed**, and that holds on
+all four steps rather than only on the fourth. Steps 1 and 2 draw the
+same line step 4 draws: a listing or a fetch the storage endpoint
+**refused** is an answer, it contradicts the claim, and it fails the step;
+a listing or a fetch that got **no answer at all** — a request that timed
+out, a connection that dropped, a name that did not resolve, a 500 — shows
+nothing either way and is reported not applicable with a reason beginning
+"Could not run". A run whose storage endpoint answered nothing has checked
+nothing, so it does not pass: `outcome` is `not-applicable` and the report
+ends `OUTCOME: NOT VERIFIED`, naming what could not be reached.
+
+The one check that cannot run and is still reported as a failure: step 3
+with no key on this device. `rein sync verify` resolves a key before it
+runs, so the command does not reach that state, but the `verify` package
+called without one does.
+
+The report ends with `OUTCOME: PASS`, `OUTCOME: FAIL`, `OUTCOME: NOT
+VERIFIED` (the storage endpoint or the control plane gave no answer), or —
+on a profile that has pushed nothing yet, where all four steps are not
+applicable and there is nothing to check — `OUTCOME: NOT YET VERIFIABLE`.
+Exit code `7`
+(`safety`) on any failed step, `0` when every step passed or did not
+apply, and `1` when the control plane or the storage endpoint could not be
+reached, which prints a report naming the checks that
 did not run rather than a bare dial error. The outcome sentence claims only what the steps observed:
 it calls ciphertext only the objects that were actually fetched — the
 index, and the snapshot the index records as updated last (a manifest-only

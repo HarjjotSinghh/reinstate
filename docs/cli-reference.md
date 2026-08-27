@@ -115,24 +115,31 @@ rejected.
 Mints one credential set for this account's locker and prints it, so the
 first, second and fourth checks of `rein sync verify` can be repeated by
 hand with any S3 client ([object format](hop/object-format.md),
-"Reproducing the checks by hand"). It prints the bucket, endpoint, region
-and expiry, then `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`,
-`AWS_SESSION_TOKEN` and `AWS_ENDPOINT_URL` on stdout, with a caution on
-stderr so the values can be redirected without it. `--json` emits the same
-fields as data. `--export` prints shell `export` statements and nothing
-else — the four names above plus `AWS_REGION`, `AWS_DEFAULT_REGION` and
-`REIN_LOCKER_BUCKET` — for `eval "$(rein hop credentials --export)"`,
+"Reproducing the checks by hand"). It prints the bucket, the locker's key
+prefix, the endpoint, region and expiry, then `AWS_ACCESS_KEY_ID`,
+`AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN` and `AWS_ENDPOINT_URL` on
+stdout, with a caution on stderr so the values can be redirected without
+it. `--json` emits the credential fields as data. `--export` prints shell
+`export` statements and nothing else — the four names above plus
+`AWS_REGION`, `AWS_DEFAULT_REGION`, `REIN_LOCKER_BUCKET` and
+`REIN_LOCKER_PREFIX` — for `eval "$(rein hop credentials --export)"`,
 which is how the documented recipe starts: a shell assignment that is
 never exported does not reach the `aws` process, which is why the flag
-exists. `--json` and `--export` cannot be combined.
+exists. `REIN_LOCKER_PREFIX` is empty on a locker with no prefix and ends
+in `/` on one that has a prefix, so the recipe can paste it in front of a
+key either way. Reading the prefix costs one extra request to the control
+plane, made before the mint so a failed lookup does not spend one. `--json`
+and `--export` cannot be combined.
 
 These are the credentials `rein push` already uses: valid for at most an
 hour, scoped by the storage provider to this account's bucket and no other
 (which is what step 4 of the verification tests). Every session object
 they can read is ciphertext; `keyring.v1.json` is not, and is not meant to
 be — it is plaintext by design and holds no usable key, but it names the
-account's profile id and every enrolled device's id, public key and
-enrolment time, so a credential printed here hands that over too. Each run
+account's profile id, every enrolled device's id, public key and enrolment
+time, and one entry per key generation with the time it started (so a
+locker whose key has rolled over also shows which devices stopped being
+enrolled, and when), so a credential printed here hands that over too. Each run
 mints a fresh set and counts against the push-rate limit `rein hop status`
 shows. The third check needs the account's root key, which never leaves
 the device and which no command exports. Exit `4` when the device is not
@@ -168,21 +175,40 @@ and, on a Hop locker, show that the same credentials are refused (access
 denied, not a rejection of the credential itself) from the control
 plane's reference locker — a different bucket, at the same storage
 endpoint the listing used, over a client that refuses to follow a redirect
-elsewhere and never sends the credential over plaintext `http`. The
+elsewhere and sends the credential over plaintext `http` to nothing but a
+loopback address (`localhost`, `127.0.0.0/8`, `::1`), where the request
+does not leave the machine; every other plaintext endpoint is refused
+without a request being made. No Hop locker is at a loopback address; a
+locally run control plane in development is. The
 outcome sentence names only what was fetched as ciphertext and lists what
 was judged by name. Each step prints what
 was done, what was seen, and PASS, FAIL, or NOT APPLICABLE, followed by
 `OUTCOME: PASS` or `OUTCOME: FAIL`.
 
-A check that could not run is never reported as a check that failed. The
-fourth step is NOT APPLICABLE, with a reason beginning "Could not run",
-whenever the control plane could not be reached or answered an error, its
-reference row names this account's own bucket, the reference bucket has
-been deleted or would not answer, or the locker credential was rejected or
-rotated mid-run; the run's exit code is unaffected and the outcome
-sentence says isolation was not checked. The
+A step that got no answer — from the storage endpoint or from the control
+plane — is reported as a check that could not run, not as a check that
+failed. That holds on all four steps, not only the fourth. Steps 1 and 2
+are NOT APPLICABLE, with a reason beginning "Could not run", when the
+storage endpoint answered nothing at all: a request that timed out, a
+connection that dropped, a name that did not resolve, a 500. A refusal is
+an answer, and a refusal still fails the step. The fourth step is NOT
+APPLICABLE whenever the control plane could not be reached or answered an
+error, its reference row names this account's own bucket, the reference
+bucket has been deleted or would not answer, or the locker credential was
+rejected or rotated mid-run; a step 4 that could not run leaves the exit
+code unchanged, and the outcome sentence says isolation was not checked. A
+step 4 that *failed* exits `7` like any other failed step. A run where the
+storage endpoint answered nothing checks nothing: `outcome` is
+`not-applicable`, the report ends `OUTCOME: NOT VERIFIED`, and the exit
+code is `1`. The
 [threat model](hop/threat-model.md) lists every case, and what does fail
 the step.
+
+One check that cannot run is still reported as a failure, and it is named
+here rather than left to be found: step 3 with no key available on this
+device fails. `rein sync verify` resolves a key before it runs, so the CLI
+does not reach that state; a caller embedding the `verify` package without
+one does.
 
 `--json` emits the report (`report.steps[].{id,name,did,observed,status,
 detail}`, `report.outcome`, `report.storage`, `report.locker`,
@@ -196,9 +222,9 @@ first three steps and reports the fourth as not applicable. Exit `0` when
 every step passed or did not apply — including a profile that has pushed
 nothing yet, where `outcome` is `not-applicable` and the report ends
 `OUTCOME: NOT YET VERIFIABLE` — `7` (safety) when a step failed, `1` when
-the control plane could not be reached (the report still prints, saying
-which checks did not run), and the usual storage or sign-in codes when
-the store cannot be opened.
+the control plane or the storage endpoint could not be reached (the report
+still prints, saying which checks did not run), and the usual storage or
+sign-in codes when the store cannot be opened.
 
 The same checks run automatically, once per device, after the first push
 that uploaded something to a Hop locker; `rein push --json` then carries

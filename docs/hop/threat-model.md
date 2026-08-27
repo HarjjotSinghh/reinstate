@@ -178,10 +178,15 @@ observed that contradicts the claim, and there are four:
   listed;
 - the control plane named a **plaintext `http` endpoint** that is not a
   loopback address. The step signs its request with the temporary secret
-  key and session token this device pushes with, and those are never sent
-  over an unencrypted connection, whatever endpoint was named — so no
-  request is made, and the step fails. (A loopback address is exempt
-  because nothing leaves the machine; no Hop endpoint is one.)
+  key and session token this device pushes with, and it sends those over
+  an unencrypted connection to nothing but a loopback address, whatever
+  endpoint was named — so no request is made, and the step fails. The
+  loopback exemption (`localhost`, `127.0.0.0/8`, `::1`) is real and is
+  stated on every page that describes this refusal: the request does not
+  leave the machine, it is what the test fakes and a locally run control
+  plane use, and no Hop endpoint is one. `localhost` is taken at its word
+  rather than resolved, so a machine whose hosts file points that name
+  elsewhere would have the probe made to that host in the clear.
 
 Everything else that stops the step is a **check that could not run**. It
 is reported not applicable, with a reason beginning "Could not run", it
@@ -203,6 +208,22 @@ Most of those are faults on the operator's side of the service. Reporting
 them as a failed verification would tell a customer their locker failed a
 security check because a row on the control plane was wrong, and an alarm
 that fires for non-events is one nobody believes when it fires for real.
+
+### The same rule on steps 1 and 2
+
+Steps 1 and 2 draw the line in the same place, and for the same reason. A
+listing or a fetch the storage endpoint **refused** is an answer about
+this locker, it contradicts the claim, and it fails the step. A listing or
+a fetch that got **no answer at all** — a request that timed out, a
+connection that dropped, a name that did not resolve, a 500 — says nothing
+about the locker, and is reported not applicable with a reason beginning
+"Could not run".
+
+A run that reached no verdict for that reason does not pass on the
+strength of the steps that did run: `outcome` is `not-applicable`, the
+report ends `OUTCOME: NOT VERIFIED` naming what gave no answer, and the
+command exits `1` — the same code an unreachable control plane exits with,
+so a script cannot read an outage as a clean bill of health.
 
 The report is printed in full locally, with per-session detail; after the
 first successful push on each new device, and on every `rein sync verify`

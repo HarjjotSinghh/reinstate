@@ -9,6 +9,70 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `rein sync verify` now applies "a step that got no answer is not a step
+  that failed" to **all four** steps, not only the fourth. Steps 1 and 2
+  drew the line the other way: a listing that timed out, a fetch whose
+  connection dropped, a 500 — none of them an answer about the locker — was
+  reported as a failed step, so the command that exists to establish trust
+  told a customer their locker failed a security check because a socket
+  did. A refusal is still an answer and still fails the step; no answer at
+  all is now `NOT APPLICABLE` with a reason beginning "Could not run". One
+  check that cannot run is still a failure, and the docs now name it rather
+  than leave it to be found: step 3 with no key on this device. The command
+  resolves a key before it runs, so it does not reach that state; the
+  `verify` package called without one does. A run
+  that opened nothing does not pass on the strength of the steps that ran:
+  its outcome is `not-applicable`, it ends `OUTCOME: NOT VERIFIED` naming
+  what gave no answer, and it exits `1` — the code an unreachable control
+  plane already used — so a script cannot read an outage as a clean bill of
+  health. A profile that could not be opened at all because the storage
+  endpoint was unreachable prints the same report, where it used to print a
+  bare SDK dial error and exit `4`.
+- `rein sync verify`'s isolation step now decides where the probe's request
+  landed **before** it turns the answers into a verdict. The order was the
+  other way round: a successful listing set "this account's credentials
+  reach a bucket that is not its own" and a `Fail`, and the pin — which can
+  only lower a verdict, never lift one — then ran and could not take the
+  alarm back. A report could therefore assert that credentials reached a
+  foreign bucket, and ask for a mail to `security@reinstate.dev`, on the
+  strength of an observation the pin had invalidated (a redirect, a request
+  that landed elsewhere, a transport that recorded nothing). The step still
+  fails on a probe that answered the credential, and it still says so; what
+  it no longer does is draw a conclusion about *buckets* from a request the
+  transport could not place.
+- `rein hop credentials --export` now also prints `REIN_LOCKER_PREFIX`, and
+  the by-hand recipe in [object format](docs/hop/object-format.md) passes it
+  as `--prefix` and in front of every key. The page asserted that a Hop
+  locker has no prefix; `internal/hop.Locker` carries the field and
+  `rein sync verify` honours it, so the recipe as printed listed nothing and
+  fetched nothing on any locker that had one. The value is empty on a locker
+  without a prefix and ends in `/` on one with it, so the same two lines work
+  either way. Reading it costs one control-plane request, made before the
+  mint so a failed lookup does not spend one. The command's help now lists
+  every name `--export` sets, which is what `docs/cli-reference.md` already
+  said and the help did not.
+- Five surfaces stated two claims about the locker absolutely while the code
+  carried an exception, and each round of review has closed one and left the
+  next. Both are now stated with their exception everywhere, and a gate holds
+  them together: `internal/doctest` walks every shipped page, every Go
+  comment and help string, and the rendered `rein --help` tree, and fails on
+  a sentence that says the locker holds "only ciphertext" without naming
+  `keyring.v1.json`, or describes the plaintext-`http` refusal without naming
+  the loopback address it exempts. It knows no list of files, so a page
+  written next year is held to the same rule. It found two surfaces nobody
+  had reported: `docs/architecture.md` and the website's copy of it, whose
+  "only ciphertext on object storage" design principle the plaintext keyring
+  falsifies. The plaintext refusal is also
+  driven end to end for the first time — through the real CLI and the real
+  S3 client against a fake locker bound to a **non-loopback** address of the
+  test machine, since httptest listens on loopback, the one
+  address the carve-out lets through, and the refusal had never run outside a
+  unit test of its predicate. That test skips on a machine with no
+  non-loopback address it can bind and dial, and the bench record says so:
+  [round three](docs/testing/results/2026-08-27-sync-verify-windows-round-three.md).
+- `rein sync verify`'s fourth step no longer tells a BYO reader that it asked
+  a control plane for a reference locker. On a profile with no control plane
+  it says what happened, which is nothing.
 - `rein pull --all` now skips a session whose remote snapshot this device
   already synced instead of restoring, rewriting, and backing up an
   identical file on every run, and no longer records a conflict for a local
@@ -208,8 +272,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   compares the scheme, the host and the port: case, a trailing slash, a
   trailing dot on the host and an implicit default port are the same
   endpoint, a different scheme or port is not, and a credentialed probe is
-  never sent unencrypted whatever the pin says, because the request carries
-  a live secret key and session token.
+  sent unencrypted to nothing but a loopback address whatever the pin says,
+  because the request carries a live secret key and session token.
   Everything else that stops the step is a check that **could not run**,
   reported not applicable with a reason beginning "Could not run", failing
   neither the run nor the exit code: a control plane that could not be
@@ -240,13 +304,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (safety) on any failed step. A tampered object fails: plaintext in
   place of ciphertext at step 2, a flipped byte at step 3. BYO storage runs
   the first three steps and reports the fourth as not applicable.
-  A check that could not run is never reported as a check that failed. A
+  A step that got no answer is not reported as a step that failed, on
+  any of the four. A
   profile that has pushed nothing yet marks all four steps **not
   applicable**, ends `OUTCOME: NOT YET VERIFIABLE`, exits `0`, and posts
-  nothing — there is no verdict for the console to show. A control plane
+  nothing — there is no verdict for the console to show. A control plane or
+  a storage endpoint
   that cannot be reached prints a report saying which checks did not run
-  and why (a Hop locker is listed with credentials the control plane mints,
-  so an outage stops all four) and exits `1`, the code every other hosted
+  and why (a Hop locker is listed with credentials the control plane mints
+  and opened with a keyring fetched from the bucket, so either outage stops
+  all four) and exits `1`, the code every other hosted
   command uses for that, instead of a bare dial error. And the outcome
   sentence now tells the three failures apart: objects that are ciphertext
   the key here cannot open names the likeliest cause (a different
