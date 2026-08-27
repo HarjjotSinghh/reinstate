@@ -50,9 +50,12 @@ type fakeControlPlane struct {
 	pairingSeq int
 
 	// Verification (see verify_fake_test.go): the reference locker the
-	// plane advertises (nil = none) and every report posted, in order.
-	reference *fakeReference
-	reports   []fakeReport
+	// plane advertises (nil = none), an HTTP status the reference lookup
+	// answers with instead (0 = answer normally), and every report posted,
+	// in order.
+	reference       *fakeReference
+	referenceStatus int
+	reports         []fakeReport
 }
 
 type fakeLocker struct {

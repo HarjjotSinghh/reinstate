@@ -29,6 +29,11 @@ const probeTimeout = 30 * time.Second
 // strings the control plane supplied, because only the response shows
 // where this account's credential actually went.
 type Exchange struct {
+	// Scheme is the URL scheme the request was sent under, lowercased. It
+	// is part of where the request went: `http` means the credential
+	// signing it went out in the clear, which the isolation step refuses
+	// whatever endpoint the control plane named.
+	Scheme string
 	// Host is the host (with port, when the URL carried one) the request
 	// was addressed to, lowercased.
 	Host string
@@ -83,7 +88,7 @@ type probeTransport struct {
 }
 
 func (p *probeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	ex := Exchange{Host: strings.ToLower(req.URL.Host)}
+	ex := Exchange{Scheme: strings.ToLower(req.URL.Scheme), Host: strings.ToLower(req.URL.Host)}
 	resp, err := p.base.RoundTrip(req)
 	if err != nil {
 		p.record(ex)

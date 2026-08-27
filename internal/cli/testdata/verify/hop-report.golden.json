@@ -52,7 +52,7 @@
           "reference locker lk-0000000000000000000000refr at <endpoint>, probe reference/probe.txt",
           "signed with access key id <access-key-id> (shown so steps 1 and 4 can be seen to name the same credential; an access key id is a public identifier, and the secret key and session token are never printed)"
         ],
-        "did": "Asked the control plane for its reference locker (a bucket the operator owns, holding one probe object), then tried to list it and read the probe with the same credentials that just listed this account's locker, over a client that refuses to follow a redirect anywhere else.",
+        "did": "Asked the control plane for its reference locker (a bucket the operator owns, holding one probe object), checked that it names a different bucket at the same storage endpoint step 1 listed and that reaching it would not put this device's credentials on the wire unencrypted, then tried to list it and read the probe with the same credentials that just listed this account's locker, over a client that refuses to follow a redirect anywhere else.",
         "id": "isolation",
         "name": "Prove this account's credentials are refused from another bucket",
         "observed": "Listing the reference locker was refused as access denied. Reading the probe object was refused as access denied.",

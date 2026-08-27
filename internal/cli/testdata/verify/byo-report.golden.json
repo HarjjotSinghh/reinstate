@@ -47,7 +47,7 @@
         "status": "pass"
       },
       {
-        "did": "Asked the control plane for its reference locker (a bucket the operator owns, holding one probe object), then tried to list it and read the probe with the same credentials that just listed this account's locker, over a client that refuses to follow a redirect anywhere else.",
+        "did": "Asked the control plane for its reference locker (a bucket the operator owns, holding one probe object), checked that it names a different bucket at the same storage endpoint step 1 listed and that reaching it would not put this device's credentials on the wire unencrypted, then tried to list it and read the probe with the same credentials that just listed this account's locker, over a client that refuses to follow a redirect anywhere else.",
         "id": "isolation",
         "name": "Prove this account's credentials are refused from another bucket",
         "observed": "Not applicable: BYO storage has no control plane and no reference locker. Whether your credentials reach other buckets is decided by your own bucket policy.",

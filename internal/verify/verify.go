@@ -16,6 +16,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"sort"
@@ -753,9 +754,26 @@ func describeSnapshot(name string, plain io.Reader) (string, []string, error) {
 	return summary, detail, nil
 }
 
+// isolationStep asks whether this account's credentials are refused by a
+// bucket that is not this account's.
+//
+// It reports Fail only for something it observed that contradicts the
+// claim: a reference locker that accepted the credential, a request that
+// landed somewhere other than the endpoint step 1 listed, a redirect
+// offered in place of an answer, or a control plane asking for the
+// credential to be sent over an unencrypted connection. Everything else
+// that stops the check — an outage, a control plane that answered an
+// error, a reference bucket that has been deleted, a dropped connection,
+// a credential that died between step 1 and here — is a check that could
+// not run, and is reported not-applicable with its reason. The two are
+// not the same thing and must not read as the same thing: a customer told
+// `OUTCOME: FAIL` by their trust-establishing command because the
+// operator misconfigured one row has been told a falsehood about their
+// own locker, and the alarm that matters is the one they will not believe
+// the second time.
 func isolationStep(ctx context.Context, o Options, r *Report, lockerAKID string, listed Status) {
 	step := Step{ID: StepIsolation, Name: "Prove this account's credentials are refused from another bucket",
-		Did: "Asked the control plane for its reference locker (a bucket the operator owns, holding one probe object), then tried to list it and read the probe with the same credentials that just listed this account's locker, over a client that refuses to follow a redirect anywhere else."}
+		Did: "Asked the control plane for its reference locker (a bucket the operator owns, holding one probe object), checked that it names a different bucket at the same storage endpoint step 1 listed and that reaching it would not put this device's credentials on the wire unencrypted, then tried to list it and read the probe with the same credentials that just listed this account's locker, over a client that refuses to follow a redirect anywhere else."}
 	switch {
 	case o.Storage == StorageBYO:
 		step.Status = NotApplicable
@@ -772,21 +790,26 @@ func isolationStep(ctx context.Context, o Options, r *Report, lockerAKID string,
 		// not a check that failed. It says nothing either way about where
 		// this account's credentials reach, and the summary says so.
 		step.Status = NotApplicable
-		step.Observed = "Could not run: the control plane could not be reached, so it could not say where its reference locker is and nothing about bucket scope was shown (" + o.ReferenceErr.Error() + "). The first three steps above ran entirely against storage and the key on this device and stand on their own; run rein sync verify again when the control plane is reachable."
+		step.Observed = "Could not run: the control plane could not be reached, so it could not say where its reference locker is and nothing about bucket scope was shown (" + o.ReferenceErr.Error() + "). " + stepsStandAlone
 		r.Steps = append(r.Steps, step)
 		return
 	case o.Reference == nil:
-		step.Status = Fail
-		step.Observed = "The control plane did not say where its reference locker is"
+		// The control plane answered, and what it answered was not a
+		// reference locker: an error status, or a row missing the bucket or
+		// the probe key. That is a fault on the operator's side of the
+		// service and says nothing about this account's credentials, so it
+		// is a check that could not run.
+		step.Status = NotApplicable
+		step.Observed = "Could not run: the control plane did not say where its reference locker is"
 		if o.ReferenceErr != nil {
-			step.Observed += ": " + o.ReferenceErr.Error()
+			step.Observed += " (" + o.ReferenceErr.Error() + ")"
 		}
-		step.Observed += "."
+		step.Observed += ", so nothing about bucket scope was shown. That is a fault on the control plane's side, not a finding about this locker. " + stepsStandAlone
 		r.Steps = append(r.Steps, step)
 		return
 	case o.OpenReference == nil:
-		step.Status = Fail
-		step.Observed = "No way to open the reference locker was configured."
+		step.Status = NotApplicable
+		step.Observed = "Could not run: no way to open the reference locker was configured on this device, so nothing was asked of it."
 		r.Steps = append(r.Steps, step)
 		return
 	case listed == NotApplicable:
@@ -810,38 +833,73 @@ func isolationStep(ctx context.Context, o Options, r *Report, lockerAKID string,
 	}
 	ref := *o.Reference
 	step.Detail = append(step.Detail, fmt.Sprintf("reference locker %s at %s, probe %s", ref.Bucket, ref.Endpoint, ref.Key))
-	if o.Locker.Endpoint == "" {
+	locker, lockerOK := parseEndpoint(o.Locker.Endpoint)
+	if !lockerOK {
 		// Without the locker's own endpoint there is nothing to pin the
 		// reference against, and an unpinned refusal is worth nothing: any
 		// host answers a foreign credential with 403. Unverifiable is
 		// not-applicable, never a pass.
 		step.Status = NotApplicable
-		step.Observed = "Not applicable: the storage endpoint this account's locker was listed at is not known here, so the reference locker cannot be pinned to it and a refusal from it would show nothing about bucket scope."
+		step.Observed = "Could not run: the storage endpoint this account's locker was listed at is not known here" + orInvalid(o.Locker.Endpoint) + ", so the reference locker cannot be pinned to it and a refusal from it would show nothing about bucket scope."
+		r.Steps = append(r.Steps, step)
+		return
+	}
+	if o.Locker.Bucket == "" {
+		// The step's whole sentence is "a bucket that is not this
+		// account's". With no name for this account's bucket, nothing here
+		// can tell the two apart.
+		step.Status = NotApplicable
+		step.Observed = "Could not run: the bucket step 1 listed is not known here, so nothing could show that the reference locker is a different bucket from this account's."
+		r.Steps = append(r.Steps, step)
+		return
+	}
+	if sameBucket(ref.Bucket, o.Locker.Bucket) {
+		// A reference locker that is this account's own bucket tests
+		// nothing: these credentials are meant to reach it, so it answers
+		// them, and the answer would be reported below as credentials
+		// reaching a bucket that is not their own — which would be exactly
+		// backwards. Refuse the probe and say why.
+		step.Status = NotApplicable
+		step.Observed = fmt.Sprintf("Could not run: the control plane named this account's own bucket (%s) as its reference locker. These credentials are supposed to reach that bucket, so nothing it answers says anything about other buckets. That is a fault on the control plane's side, not a finding about this locker. "+stepsStandAlone, o.Locker.Bucket)
 		r.Steps = append(r.Steps, step)
 		return
 	}
 	// A refusal only proves bucket scope when it comes from the same
-	// storage endpoint that accepted the credentials in step 1. A control
-	// plane pointing this step at some other host — any host answers a
-	// foreign credential with 403 — would otherwise buy a passing report.
-	pinned := endpointHost(ref.Endpoint)
-	if pinned == "" || pinned != endpointHost(o.Locker.Endpoint) {
+	// storage endpoint that accepted the credentials in step 1 — scheme,
+	// host and port. A control plane pointing this step at some other host
+	// — any host answers a foreign credential with 403 — would otherwise
+	// buy a passing report.
+	pinned, pinnedOK := parseEndpoint(ref.Endpoint)
+	if !pinnedOK || !pinned.equal(locker) {
 		step.Status = Fail
 		step.Observed = fmt.Sprintf("The control plane pointed this step at %s, but step 1 listed this account's locker at %s. A refusal from a different endpoint proves nothing about this locker's credentials, so nothing about bucket scope was shown.", orNone(ref.Endpoint), o.Locker.Endpoint)
 		r.Steps = append(r.Steps, step)
 		return
 	}
+	// The pin now agrees, which on a plaintext endpoint means both sides
+	// agree on sending a live secret key and session token where anything
+	// on the path can read them. No pin makes that the right thing to do,
+	// so the probe is not made at all. A loopback address is exempt because
+	// the request never reaches a network: that is the fake locker the
+	// tests and a local development control plane use, and no Hop endpoint
+	// is one.
+	if pinned.plaintext() && !pinned.loopback() {
+		step.Status = Fail
+		step.Observed = fmt.Sprintf("The control plane pointed this step at %s, which is plaintext http. This step signs its request with the same temporary credentials this device pushes with — a secret key and a session token — and those are never sent over an unencrypted connection, so no request was made and nothing about bucket scope was shown. Step 1 listed this account's locker at %s, so those credentials are already travelling unencrypted on every push: report this to the operator.", ref.Endpoint, o.Locker.Endpoint)
+		r.Steps = append(r.Steps, step)
+		return
+	}
 	probe, err := o.OpenReference(ctx, ref)
 	if err != nil {
-		step.Status = Fail
-		step.Observed = "Could not build a client for the reference locker: " + err.Error() + "."
+		step.Status = NotApplicable
+		step.Observed = "Could not run: no client for the reference locker could be built (" + err.Error() + "), so nothing was asked of it."
 		r.Steps = append(r.Steps, step)
 		return
 	}
 	b, akid := probe.Backend, probe.AccessKeyID
 	if b == nil {
-		step.Status = Fail
-		step.Observed = "No client for the reference locker was returned, so nothing was asked of it."
+		step.Status = NotApplicable
+		step.Observed = "Could not run: no client for the reference locker was returned, so nothing was asked of it."
 		r.Steps = append(r.Steps, step)
 		return
 	}
@@ -852,53 +910,81 @@ func isolationStep(ctx context.Context, o Options, r *Report, lockerAKID string,
 	var observed []string
 	// The step holds only when the credential that step 1 proved the
 	// locker accepts is the one the reference refuses. A credential that
-	// was rotated between the steps proves nothing about scope.
+	// was rotated between the steps proves nothing about scope — and
+	// proves nothing against the account either: locker credentials last
+	// an hour and a push may mint a new one at any time.
 	if lockerAKID != "" && akid != "" && lockerAKID != akid {
-		step.Status = Fail
-		observed = append(observed, fmt.Sprintf("The locker credential changed between step 1 (%s) and this step (%s), so a refusal here would not be about the credential the locker accepted. Run rein sync verify again.", lockerAKID, akid))
+		degrade(&step, NotApplicable)
+		observed = append(observed, fmt.Sprintf("Could not run: the locker credential changed between step 1 (%s) and this step (%s), so a refusal here would not be about the credential the locker accepted. Run rein sync verify again.", lockerAKID, akid))
 	}
 	objects, err := b.List(ctx, "")
 	switch {
 	case errors.Is(err, backend.ErrAccessDenied):
 		observed = append(observed, "Listing the reference locker was refused as access denied.")
 	case errors.Is(err, backend.ErrCredentialRejected):
-		step.Status = Fail
-		observed = append(observed, "Listing the reference locker failed because the credential itself was rejected — "+withCause(explainBackendError(err), err)+" — and a credential no bucket accepts is refused everywhere, so nothing about bucket scope was shown.")
+		degrade(&step, NotApplicable)
+		observed = append(observed, "Could not run: listing the reference locker failed because the credential itself was rejected — "+withCause(explainBackendError(err), err)+" — and a credential no bucket accepts is refused everywhere, so nothing about bucket scope was shown.")
 	case err == nil:
-		step.Status = Fail
+		degrade(&step, Fail)
 		r.foreignBucket = true
 		observed = append(observed, fmt.Sprintf("Listing the reference locker SUCCEEDED and returned %d object(s); this account's credentials reach a bucket that is not its own.", len(objects)))
 	default:
-		step.Status = Fail
-		observed = append(observed, "Listing the reference locker neither succeeded nor was refused as access denied: "+withCause(explainBackendError(err), err)+".")
+		// Neither a refusal nor a success: a bucket that has been deleted,
+		// an endpoint answering 500, a connection that dropped, a request
+		// that timed out. None of it says anything about bucket scope, and
+		// none of it is this account's doing.
+		degrade(&step, NotApplicable)
+		observed = append(observed, "Could not run: listing the reference locker neither succeeded nor was refused as access denied: "+withCause(explainBackendError(err), err)+".")
 	}
 	body, err := fetch(ctx, b, ref.Key)
 	switch {
 	case errors.Is(err, backend.ErrAccessDenied):
 		observed = append(observed, "Reading the probe object was refused as access denied.")
 	case errors.Is(err, backend.ErrCredentialRejected):
-		step.Status = Fail
-		observed = append(observed, "Reading the probe object failed because the credential itself was rejected — "+withCause(explainBackendError(err), err)+" — and a credential no bucket accepts is refused everywhere, so nothing about bucket scope was shown.")
+		degrade(&step, NotApplicable)
+		observed = append(observed, "Could not run: reading the probe object failed because the credential itself was rejected — "+withCause(explainBackendError(err), err)+" — and a credential no bucket accepts is refused everywhere, so nothing about bucket scope was shown.")
 	case err == nil:
-		step.Status = Fail
+		degrade(&step, Fail)
 		r.foreignBucket = true
 		observed = append(observed, fmt.Sprintf("Reading the probe object SUCCEEDED (%d bytes); this account's credentials can read another bucket's contents.", len(body)))
 	default:
-		step.Status = Fail
-		observed = append(observed, "Reading the probe object neither succeeded nor was refused as access denied: "+withCause(explainBackendError(err), err)+".")
+		degrade(&step, NotApplicable)
+		observed = append(observed, "Could not run: reading the probe object neither succeeded nor was refused as access denied: "+withCause(explainBackendError(err), err)+".")
 	}
 	// Everything above is what the S3 client made of the answers. The
 	// verdict is then pinned to the answers themselves, because the two
 	// endpoint strings compared earlier both came from the control plane
 	// and neither says where the request landed.
 	if note, verdict := pinToResponse(pinned, probe.Exchanges); verdict != Pass {
-		if verdict == Fail || step.Status == Pass {
-			step.Status = verdict
-		}
+		degrade(&step, verdict)
 		observed = append(observed, note)
 	}
 	step.Observed = strings.Join(observed, " ")
 	r.Steps = append(r.Steps, step)
+}
+
+// stepsStandAlone closes an isolation step that could not run for a reason
+// on the operator's side of the service. The reader has three steps that
+// did run and a fourth that says nothing; the sentence has to leave them
+// knowing which is which.
+const stepsStandAlone = "The first three steps above ran entirely against storage and the key on this device and stand on their own; run rein sync verify again later."
+
+// degrade moves a step's verdict, never upward: a Fail sticks, and a
+// NotApplicable only replaces a Pass. Two observations in one step must
+// not let the second one talk the first out of a failure.
+func degrade(step *Step, verdict Status) {
+	if verdict == Fail || (verdict == NotApplicable && step.Status == Pass) {
+		step.Status = verdict
+	}
+}
+
+// sameBucket reports whether two bucket names name the same bucket. S3
+// bucket names are lowercase, but the two strings here come from different
+// places — one from the control plane's reference row, one from the
+// locker record — and a comparison this step's honesty rests on should not
+// turn on the case somebody typed.
+func sameBucket(a, b string) bool {
+	return strings.EqualFold(strings.TrimSpace(a), strings.TrimSpace(b))
 }
 
 // pinToResponse judges the isolation step against what the probe's
@@ -910,7 +996,7 @@ func isolationStep(ctx context.Context, o Options, r *Report, lockerAKID string,
 // and a NotApplicable only over an otherwise-passing step. NotApplicable
 // is the verdict whenever the pin cannot be made, because an unverifiable
 // pin shows nothing and must not read as proof.
-func pinToResponse(pinned string, exchanges func() []Exchange) (string, Status) {
+func pinToResponse(pinned endpointURL, exchanges func() []Exchange) (string, Status) {
 	if exchanges == nil {
 		return "The reference probe's client was not instrumented, so where the request landed and what the endpoint answered could not be checked; nothing about bucket scope is claimed.", NotApplicable
 	}
@@ -922,8 +1008,9 @@ func pinToResponse(pinned string, exchanges func() []Exchange) (string, Status) 
 		if ex.RedirectedTo != "" {
 			return fmt.Sprintf("The reference locker answered with a redirect to %s, which the probe refused to follow: a credential is only refused by a bucket if it was sent to that bucket, and this one was not, so nothing about bucket scope was shown.", ex.RedirectedTo), Fail
 		}
-		if ex.Host != pinned {
-			return fmt.Sprintf("The reference probe's request went to %s, not to the pinned endpoint %s, so nothing about this locker's credentials was shown.", orNone(ex.Host), pinned), Fail
+		landed, ok := parseEndpoint(ex.Scheme + "://" + ex.Host)
+		if !ok || !landed.equal(pinned) {
+			return fmt.Sprintf("The reference probe's request went to %s, not to the pinned endpoint %s, so nothing about this locker's credentials was shown.", orNone(strings.TrimPrefix(ex.Scheme+"://"+ex.Host, "://")), pinned), Fail
 		}
 	}
 	refusals := 0
@@ -942,24 +1029,78 @@ func pinToResponse(pinned string, exchanges func() []Exchange) (string, Status) 
 	return "", Pass
 }
 
-// endpointHost is the host an endpoint URL addresses, lowercased and with
-// its port kept: a different port is a different endpoint. Scheme and any
-// trailing slash are ignored, so https://host, http://host and
-// https://host/ are the same endpoint, and an endpoint written as a bare
-// host is read as one.
-func endpointHost(s string) string {
-	s = strings.TrimSpace(s)
-	if s == "" {
-		return ""
+// endpointURL is an endpoint reduced to what the isolation step compares:
+// scheme, host and port.
+//
+// The scheme is part of it. http://host and https://host reach the same
+// machine, but this step's requests carry a live secret key and session
+// token, and one of the two hands them to anything on the path; a pin that
+// ignored the scheme would let a control plane downgrade the probe and
+// leak the credential while every string still matched. Case, a trailing
+// slash, a trailing dot on the host and an implicit default port are not
+// differences.
+type endpointURL struct {
+	scheme string // "http" or "https", lowercased
+	host   string // lowercased, no brackets, no trailing dot
+	port   string // explicit, or the scheme's default
+}
+
+// parseEndpoint reads an endpoint URL, reporting false for anything that
+// is not an absolute http or https URL with a host. The same string is
+// handed to the S3 client as its base endpoint, which needs a scheme too,
+// so a bare host is not an endpoint this step can either use or compare.
+func parseEndpoint(raw string) (endpointURL, bool) {
+	u, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil {
+		return endpointURL{}, false
 	}
-	if !strings.Contains(s, "//") {
-		s = "//" + s
+	e := endpointURL{
+		scheme: strings.ToLower(u.Scheme),
+		host:   strings.TrimSuffix(strings.ToLower(u.Hostname()), "."),
+		port:   u.Port(),
 	}
-	u, err := url.Parse(s)
-	if err != nil || u.Host == "" {
-		return ""
+	switch {
+	case e.host == "":
+		return endpointURL{}, false
+	case e.scheme == "https":
+		if e.port == "" {
+			e.port = "443"
+		}
+	case e.scheme == "http":
+		if e.port == "" {
+			e.port = "80"
+		}
+	default:
+		return endpointURL{}, false
 	}
-	return strings.ToLower(u.Host)
+	return e, true
+}
+
+// String is the canonical form, printed wherever the report names the
+// endpoint it compared rather than the string it was handed.
+func (e endpointURL) String() string {
+	host := e.host
+	if strings.Contains(host, ":") {
+		host = "[" + host + "]" // an IPv6 literal
+	}
+	return e.scheme + "://" + host + ":" + e.port
+}
+
+func (e endpointURL) equal(other endpointURL) bool { return e == other }
+
+// plaintext reports an endpoint whose requests, and the credentials
+// signing them, are readable by anything on the path.
+func (e endpointURL) plaintext() bool { return e.scheme == "http" }
+
+// loopback reports an address whose traffic never reaches a network. It is
+// the one place plaintext is not an exposure, and it is what the test
+// fakes and a locally run control plane use.
+func (e endpointURL) loopback() bool {
+	if e.host == "localhost" {
+		return true
+	}
+	ip := net.ParseIP(e.host)
+	return ip != nil && ip.IsLoopback()
 }
 
 func orNone(s string) string {
@@ -967,6 +1108,15 @@ func orNone(s string) string {
 		return "(none)"
 	}
 	return s
+}
+
+// orInvalid quotes an endpoint the report could not read, so a reader can
+// see what was wrong with it, and says nothing when there was none.
+func orInvalid(s string) string {
+	if strings.TrimSpace(s) == "" {
+		return ""
+	}
+	return fmt.Sprintf(" (%q is not an absolute http or https URL)", s)
 }
 
 func short(s string) string {

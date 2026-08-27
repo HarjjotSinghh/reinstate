@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"net/url"
 	"strconv"
 	"strings"
 	"testing"
@@ -15,6 +16,7 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/backend/memory"
 	"github.com/HarjjotSinghh/reinstate/internal/crypto"
 	"github.com/HarjjotSinghh/reinstate/internal/hop"
+	"github.com/HarjjotSinghh/reinstate/internal/keyring"
 	"github.com/HarjjotSinghh/reinstate/internal/schema"
 )
 
@@ -104,22 +106,36 @@ func (r refusing) Get(context.Context, string) (io.ReadCloser, backend.ObjectMet
 // denied is the reference locker as R2 presents it to a bucket-scoped key.
 var denied = refusing{err: &backend.Refusal{Code: "AccessDenied"}}
 
-// deniedOn is what a bucket-scoped credential sees on the wire at host: two
-// signed 403s, one per request the step makes. Every test that expects the
-// isolation step to pass has to state this, because the step is pinned to
-// the response and not to the endpoint strings alone.
-func deniedOn(host string) []Exchange {
+// deniedOn is what a bucket-scoped credential sees on the wire at
+// endpoint: two signed 403s, one per request the step makes. Every test
+// that expects the isolation step to pass has to state this, because the
+// step is pinned to the response and not to the endpoint strings alone.
+// The scheme is part of it — a probe that reached the right host over
+// http went out in the clear — so the whole endpoint is given here, not
+// the host alone.
+func deniedOn(endpoint string) []Exchange {
+	scheme, host := splitEndpoint(endpoint)
 	return []Exchange{
-		{Host: host, Status: 403, ErrorCode: "AccessDenied"},
-		{Host: host, Status: 403, ErrorCode: "AccessDenied"},
+		{Scheme: scheme, Host: host, Status: 403, ErrorCode: "AccessDenied"},
+		{Scheme: scheme, Host: host, Status: 403, ErrorCode: "AccessDenied"},
 	}
+}
+
+// splitEndpoint is what the probe transport records for a request to
+// endpoint: its scheme and host, as the URL carried them.
+func splitEndpoint(endpoint string) (scheme, host string) {
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return "", ""
+	}
+	return strings.ToLower(u.Scheme), strings.ToLower(u.Host)
 }
 
 func openRef(b backend.Backend, akid string, seen ...Exchange) func(context.Context, hop.Reference) (Probe, error) {
 	return func(_ context.Context, ref hop.Reference) (Probe, error) {
 		record := seen
 		if record == nil {
-			record = deniedOn(endpointHost(ref.Endpoint))
+			record = deniedOn(ref.Endpoint)
 		}
 		return Probe{Backend: b, AccessKeyID: akid, Exchanges: func() []Exchange { return record }}, nil
 	}
@@ -222,19 +238,9 @@ func TestRunFailures(t *testing.T) {
 		}, StepList, "the storage endpoint recognised the credential and refused the request anyway (AccessDenied)"},
 		{"reference reachable", func(o *Options, _ *memory.Store) {
 			o.OpenReference = openRef(leaky, "AKIAHOP1",
-				Exchange{Host: "s3.example", Status: 200},
-				Exchange{Host: "s3.example", Status: 200})
+				Exchange{Scheme: "https", Host: "s3.example", Status: 200},
+				Exchange{Scheme: "https", Host: "s3.example", Status: 200})
 		}, StepIsolation, "SUCCEEDED"},
-		{"credential rotated between steps", func(o *Options, _ *memory.Store) {
-			o.OpenReference = openRef(denied, "AKIAHOP2")
-		}, StepIsolation, "changed between step 1 (AKIAHOP1) and this step (AKIAHOP2)"},
-		{"reference refused for another reason", func(o *Options, _ *memory.Store) {
-			o.OpenReference = openRef(refusing{err: errors.New("dial tcp: connection refused")}, "AKIAHOP1",
-				Exchange{Host: "s3.example"}, Exchange{Host: "s3.example"})
-		}, StepIsolation, "neither succeeded nor was refused as access denied"},
-		{"reference unknown error", func(o *Options, _ *memory.Store) {
-			o.Reference, o.ReferenceErr = nil, errors.New("control plane down")
-		}, StepIsolation, "control plane down"},
 		// A control plane could point step 4 at any host it likes — every
 		// bucket answers a foreign credential with 403 — so a reference
 		// locker at a different endpoint than the one step 1 listed fails
@@ -271,6 +277,155 @@ func TestRunFailures(t *testing.T) {
 	}
 }
 
+// TestIsolationCouldNotRunIsNotAFailure: everything that stops step 4
+// without showing anything about this account's credentials is a check
+// that could not run. None of it is the account's doing — an operator
+// misconfiguration, a reference bucket that has been deleted, an endpoint
+// that answered 500, a dropped connection, an hourly credential that died
+// mid-command — and reporting any of it as `OUTCOME: FAIL` tells a
+// customer their locker failed a security check when it did not. The
+// report must say so, exit 0, and claim nothing about bucket scope.
+func TestIsolationCouldNotRunIsNotAFailure(t *testing.T) {
+	keys := rootKeys(t)
+	// unusable is a reference locker the step must never be handed. It is
+	// wide open, so a step that probed it anyway would report the loudest
+	// possible false alarm instead of quietly passing this test.
+	unusable := memory.New()
+	put(t, unusable, "reference/probe.txt", []byte("probe"))
+	tests := []struct {
+		name   string
+		mutate func(o *Options)
+		want   string
+	}{
+		{
+			// The integration case: the control plane answers 500 on
+			// GET /v1/verify/reference. Before this every account's
+			// trust-establishing command reported a failed security check
+			// because of one operator-side fault.
+			name: "the control plane answered an error",
+			mutate: func(o *Options) {
+				o.Reference, o.ReferenceErr = nil, &hop.Error{Status: 500, Code: "internal", Message: "internal error"}
+			},
+			want: "Could not run: the control plane did not say where its reference locker is",
+		},
+		{
+			name: "the control plane answered something that is not a reference locker",
+			mutate: func(o *Options) {
+				o.Reference, o.ReferenceErr = nil, errors.New("control plane returned an incomplete reference locker")
+			},
+			want: "control plane returned an incomplete reference locker",
+		},
+		{
+			name: "the reference bucket has been deleted",
+			mutate: func(o *Options) {
+				o.OpenReference = openRef(refusing{err: backend.ErrNotFound}, "AKIAHOP1",
+					Exchange{Scheme: "https", Host: "s3.example", Status: 404},
+					Exchange{Scheme: "https", Host: "s3.example", Status: 404})
+			},
+			want: "Could not run: listing the reference locker neither succeeded nor was refused as access denied",
+		},
+		{
+			name: "the connection dropped",
+			mutate: func(o *Options) {
+				o.OpenReference = openRef(refusing{err: errors.New("dial tcp: connection refused")}, "AKIAHOP1",
+					Exchange{Scheme: "https", Host: "s3.example"}, Exchange{Scheme: "https", Host: "s3.example"})
+			},
+			want: "Could not run: listing the reference locker neither succeeded nor was refused as access denied",
+		},
+		{
+			name: "the locker credential died between step 1 and step 4",
+			mutate: func(o *Options) {
+				o.OpenReference = openRef(refusing{err: &backend.Refusal{Code: "ExpiredToken", Credential: true}}, "AKIAHOP1",
+					Exchange{Scheme: "https", Host: "s3.example", Status: 403, ErrorCode: "ExpiredToken"},
+					Exchange{Scheme: "https", Host: "s3.example", Status: 403, ErrorCode: "ExpiredToken"})
+			},
+			want: "Could not run: listing the reference locker failed because the credential itself was rejected",
+		},
+		{
+			name:   "the locker credential was rotated between step 1 and step 4",
+			mutate: func(o *Options) { o.OpenReference = openRef(denied, "AKIAHOP2") },
+			want:   "Could not run: the locker credential changed between step 1 (AKIAHOP1) and this step (AKIAHOP2)",
+		},
+		{
+			// A reference row naming the account's own bucket would be
+			// answered by that bucket, and the answer read as credentials
+			// reaching a bucket that is not their own — exactly backwards.
+			name: "the reference locker is this account's own bucket",
+			mutate: func(o *Options) {
+				o.Reference = &hop.Reference{Endpoint: "https://s3.example", Bucket: "LK-1", Key: "reference/probe.txt"}
+				o.OpenReference = openRef(unusable, "AKIAHOP1")
+			},
+			want: "Could not run: the control plane named this account's own bucket (lk-1) as its reference locker",
+		},
+		{
+			name:   "the bucket step 1 listed is not known here",
+			mutate: func(o *Options) { o.Locker.Bucket = "" },
+			want:   "Could not run: the bucket step 1 listed is not known here",
+		},
+		{
+			name:   "no way to open the reference locker",
+			mutate: func(o *Options) { o.OpenReference = nil },
+			want:   "Could not run: no way to open the reference locker was configured on this device",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			store := lockerWith(t, keys, "")
+			o := Options{Backend: store, Keys: keys, Storage: StorageHop,
+				Locker:        LockerInfo{Endpoint: "https://s3.example", Bucket: "lk-1"},
+				Reference:     &hop.Reference{Endpoint: "https://s3.example", Bucket: "lk-ref", Key: "reference/probe.txt"},
+				OpenReference: openRef(denied, "AKIAHOP1"), CredentialID: credential("AKIAHOP1")}
+			tc.mutate(&o)
+			r := Run(context.Background(), o)
+			step := r.Steps[3]
+			if step.ID != StepIsolation || step.Status != NotApplicable || !strings.Contains(step.Observed, tc.want) {
+				t.Fatalf("isolation step %+v; want not-applicable containing %q", step, tc.want)
+			}
+			// The first three steps ran, so the report passes and exits 0;
+			// what it must not do is claim the isolation it never observed.
+			if r.Outcome != Pass || r.Failed() || r.IsolationChecked() {
+				t.Fatalf("outcome %s failed=%t isolation=%t", r.Outcome, r.Failed(), r.IsolationChecked())
+			}
+			if !strings.Contains(r.Summary, "was not checked (step 4 above says why)") || strings.Contains(r.Summary, "refused by a bucket") {
+				t.Fatalf("summary %q", r.Summary)
+			}
+			// The same distinction has to survive into the document a
+			// console or a script reads.
+			if u := r.ForUpload(); u.Outcome != Pass || u.Steps[3].Status != NotApplicable {
+				t.Fatalf("upload %+v", u.Steps[3])
+			}
+		})
+	}
+}
+
+// TestIsolationRefusesToProbeTheAccountsOwnBucket: the step must not send
+// the probe at all when the control plane names this account's own bucket.
+// Sending it would reach the bucket these credentials are for, and the
+// success would be reported as credentials reaching a bucket that is not
+// their own.
+func TestIsolationRefusesToProbeTheAccountsOwnBucket(t *testing.T) {
+	keys := rootKeys(t)
+	store := lockerWith(t, keys, "")
+	opened := 0
+	r := Run(context.Background(), Options{Backend: store, Keys: keys, Storage: StorageHop,
+		Locker:    LockerInfo{Endpoint: "https://s3.example", Bucket: "lk-1"},
+		Reference: &hop.Reference{Endpoint: "https://s3.example", Bucket: "lk-1", Key: "reference/probe.txt"},
+		OpenReference: func(ctx context.Context, ref hop.Reference) (Probe, error) {
+			opened++
+			return openRef(store, "AKIAHOP1")(ctx, ref)
+		},
+		CredentialID: credential("AKIAHOP1")})
+	if opened != 0 {
+		t.Fatalf("the probe was sent to this account's own bucket %d time(s)", opened)
+	}
+	if step := r.Steps[3]; step.Status != NotApplicable || !strings.Contains(step.Observed, "named this account's own bucket") {
+		t.Fatalf("isolation step %+v", step)
+	}
+	if r.Failed() || strings.Contains(r.Summary, "not its own") {
+		t.Fatalf("the account's own bucket was reported as a foreign one: %q", r.Summary)
+	}
+}
+
 func TestRunNotApplicable(t *testing.T) {
 	keys := rootKeys(t)
 	store := lockerWith(t, keys, "")
@@ -296,8 +451,15 @@ func TestRunNotApplicable(t *testing.T) {
 }
 
 // TestIsolationEndpointMustMatchStepOne: the reference locker only proves
-// bucket scope when it lives at the endpoint step 1 actually listed;
-// scheme and trailing-slash differences are the same endpoint.
+// bucket scope when it lives at the endpoint step 1 actually listed —
+// scheme, host and port. Case, a trailing slash, a trailing dot on the
+// host and an implicit default port are not differences; the scheme is.
+//
+// The scheme case is the one this table was written for. `http://<the same
+// host>` used to satisfy the pin, and the step then signed a request to it
+// with the live secret key and session token this device pushes with. The
+// probe is never sent over an unencrypted connection, whatever the pin
+// says.
 func TestIsolationEndpointMustMatchStepOne(t *testing.T) {
 	keys := rootKeys(t)
 	tests := []struct {
@@ -307,14 +469,25 @@ func TestIsolationEndpointMustMatchStepOne(t *testing.T) {
 		status   Status
 		observed string
 	}{
-		{"same endpoint modulo scheme and slash", "http://s3.example/", "https://s3.example", Pass, "refused as access denied"},
+		{"http where step 1 listed https", "https://s3.example", "http://s3.example", Fail,
+			"pointed this step at http://s3.example, but step 1 listed this account's locker at https://s3.example"},
+		{"https where step 1 listed http", "http://s3.example/", "https://s3.example", Fail,
+			"pointed this step at https://s3.example, but step 1 listed this account's locker at http://s3.example/"},
+		{"plaintext on both sides is refused outright", "http://s3.example", "http://s3.example", Fail,
+			"which is plaintext http. This step signs its request with the same temporary credentials this device pushes with"},
+		{"scheme case only", "HTTPS://S3.example", "https://s3.example", Pass, "refused as access denied"},
+		{"trailing slash and host case only", "https://S3.example/", "https://s3.example", Pass, "refused as access denied"},
+		{"an explicit default port is the same endpoint", "https://s3.example:443", "https://s3.example", Pass, "refused as access denied"},
+		{"a trailing dot on the host is the same endpoint", "https://s3.example.", "https://s3.example", Pass, "refused as access denied"},
+		{"an IPv6 literal is the same endpoint", "https://[2606:4700::1111]:443/", "https://[2606:4700::1111]", Pass, "refused as access denied"},
 		{"different host", "https://s3.example", "https://always-403.example", Fail, "pointed this step at https://always-403.example, but step 1 listed this account's locker at https://s3.example"},
 		{"same host, different port", "https://s3.example:9000", "https://s3.example", Fail, "pointed this step at https://s3.example, but step 1 listed this account's locker at https://s3.example:9000"},
-		{"scheme case only", "HTTPS://S3.example", "https://s3.example", Pass, "refused as access denied"},
+		{"a reference endpoint that is not a URL", "https://s3.example", "s3.example", Fail, "pointed this step at s3.example, but step 1 listed this account's locker at https://s3.example"},
 		// Without the locker's own endpoint there is nothing to pin the
 		// reference against, and an unpinnable refusal decides nothing: it
 		// is not-applicable, never a pass.
 		{"unknown locker endpoint", "", "https://always-403.example", NotApplicable, "the storage endpoint this account's locker was listed at is not known here"},
+		{"unparseable locker endpoint", "s3.example:9000", "https://always-403.example", NotApplicable, `("s3.example:9000" is not an absolute http or https URL)`},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -331,6 +504,51 @@ func TestIsolationEndpointMustMatchStepOne(t *testing.T) {
 			// can see where the step was pointed.
 			if !strings.Contains(strings.Join(step.Detail, "\n"), "at "+tc.ref) {
 				t.Fatalf("detail does not record the endpoint: %+v", step.Detail)
+			}
+		})
+	}
+}
+
+// TestIsolationNeverSendsTheCredentialOverPlaintext is the fix's whole
+// point: the pin compares two strings the control plane supplied, so a
+// plaintext endpoint that satisfies it must still not receive this
+// account's live secret key and session token. Nothing is sent, and the
+// step says why.
+func TestIsolationNeverSendsTheCredentialOverPlaintext(t *testing.T) {
+	keys := rootKeys(t)
+	for _, endpoint := range []string{"http://s3.example", "HTTP://S3.example/", "http://s3.example:80", "http://198.51.100.7:9000"} {
+		t.Run(endpoint, func(t *testing.T) {
+			store := lockerWith(t, keys, "")
+			opened := 0
+			r := Run(context.Background(), Options{Backend: store, Keys: keys, Storage: StorageHop,
+				Locker:    LockerInfo{Endpoint: endpoint, Bucket: "lk-1"},
+				Reference: &hop.Reference{Endpoint: endpoint, Bucket: "lk-ref", Key: "reference/probe.txt"},
+				OpenReference: func(ctx context.Context, ref hop.Reference) (Probe, error) {
+					opened++
+					return openRef(denied, "AKIAHOP1")(ctx, ref)
+				},
+				CredentialID: credential("AKIAHOP1")})
+			if opened != 0 {
+				t.Fatalf("the credential was offered to a plaintext endpoint %d time(s)", opened)
+			}
+			step := r.Steps[3]
+			if step.Status != Fail || !strings.Contains(step.Observed, "which is plaintext http") || r.IsolationChecked() {
+				t.Fatalf("isolation step %+v", step)
+			}
+		})
+	}
+	// Loopback is the exception, and only loopback: the request never
+	// reaches a network, which is what the fakes in these tests and a
+	// locally run control plane rely on.
+	for _, endpoint := range []string{"http://127.0.0.1:8080", "http://localhost:8080", "http://[::1]:8080"} {
+		t.Run(endpoint, func(t *testing.T) {
+			store := lockerWith(t, keys, "")
+			r := Run(context.Background(), Options{Backend: store, Keys: keys, Storage: StorageHop,
+				Locker:        LockerInfo{Endpoint: endpoint, Bucket: "lk-1"},
+				Reference:     &hop.Reference{Endpoint: endpoint, Bucket: "lk-ref", Key: "reference/probe.txt"},
+				OpenReference: openRef(denied, "AKIAHOP1"), CredentialID: credential("AKIAHOP1")})
+			if step := r.Steps[3]; step.Status != Pass {
+				t.Fatalf("a loopback probe was refused: %+v", step)
 			}
 		})
 	}
@@ -364,11 +582,14 @@ func TestSummaryClaimsOnlyWhatWasFetched(t *testing.T) {
 	}
 }
 
-// TestIsolationFailsWhenTheCredentialItselfIsRejected: a refusal that says
-// the credential is dead (unknown key id, bad signature, expired token) is
-// refused by every bucket, so it proves nothing about scope and must not
-// pass the isolation step. Only AccessDenied (or a bodiless 403) does.
-func TestIsolationFailsWhenTheCredentialItselfIsRejected(t *testing.T) {
+// TestIsolationDoesNotPassWhenTheCredentialItselfIsRejected: a refusal
+// that says the credential is dead (unknown key id, bad signature, expired
+// token) is what every bucket answers, so it proves nothing about scope and
+// must not pass the isolation step. It is not a failed check either — a
+// locker credential lasts an hour, and one that ran out between step 1 and
+// step 4 says nothing about the account — so it is a check that could not
+// run. Only AccessDenied (or a bodiless 403) passes.
+func TestIsolationDoesNotPassWhenTheCredentialItselfIsRejected(t *testing.T) {
 	keys := rootKeys(t)
 	for _, code := range []string{"InvalidAccessKeyId", "SignatureDoesNotMatch", "ExpiredToken", "ExpiredTokenException", "InvalidToken", "TokenRefreshRequired"} {
 		t.Run(code, func(t *testing.T) {
@@ -377,14 +598,14 @@ func TestIsolationFailsWhenTheCredentialItselfIsRejected(t *testing.T) {
 				Locker:    LockerInfo{Endpoint: "https://s3.example", Bucket: "lk-1"},
 				Reference: &hop.Reference{Endpoint: "https://s3.example", Bucket: "lk-ref", Key: "reference/probe.txt"},
 				OpenReference: openRef(refusing{err: &backend.Refusal{Code: code, Credential: true}}, "AKIAHOP1",
-					Exchange{Host: "s3.example", Status: 403, ErrorCode: code},
-					Exchange{Host: "s3.example", Status: 403, ErrorCode: code}),
+					Exchange{Scheme: "https", Host: "s3.example", Status: 403, ErrorCode: code},
+					Exchange{Scheme: "https", Host: "s3.example", Status: 403, ErrorCode: code}),
 				CredentialID: credential("AKIAHOP1")})
 			step := r.Steps[3]
-			if r.Outcome != Fail || step.Status != Fail || r.IsolationChecked() {
-				t.Fatalf("%s passed isolation: %+v", code, step)
+			if r.Failed() || step.Status != NotApplicable || r.IsolationChecked() {
+				t.Fatalf("%s: outcome %s, isolation %+v", code, r.Outcome, step)
 			}
-			for _, want := range []string{"the credential itself was rejected — ", code, "a credential no bucket accepts is refused everywhere, so nothing about bucket scope was shown"} {
+			for _, want := range []string{"Could not run: ", "the credential itself was rejected — ", code, "a credential no bucket accepts is refused everywhere, so nothing about bucket scope was shown"} {
 				if strings.Count(step.Observed, want) < 1 {
 					t.Fatalf("%s: observed %q lacks %q", code, step.Observed, want)
 				}
@@ -398,13 +619,49 @@ func TestIsolationFailsWhenTheCredentialItselfIsRejected(t *testing.T) {
 				Locker:    LockerInfo{Endpoint: "https://s3.example", Bucket: "lk-1"},
 				Reference: &hop.Reference{Endpoint: "https://s3.example", Bucket: "lk-ref", Key: "reference/probe.txt"},
 				OpenReference: openRef(refusing{err: &backend.Refusal{Code: code}}, "AKIAHOP1",
-					Exchange{Host: "s3.example", Status: 403, ErrorCode: code},
-					Exchange{Host: "s3.example", Status: 403, ErrorCode: code}),
+					Exchange{Scheme: "https", Host: "s3.example", Status: 403, ErrorCode: code},
+					Exchange{Scheme: "https", Host: "s3.example", Status: 403, ErrorCode: code}),
 				CredentialID: credential("AKIAHOP1")})
 			if r.Outcome != Pass || !r.IsolationChecked() {
 				t.Fatalf("%s did not pass isolation: %+v", code, r.Steps[3])
 			}
 		})
+	}
+}
+
+// reading is a backend that records every object fetched through it.
+type reading struct {
+	backend.Backend
+	got *[]string
+}
+
+func (r reading) Get(ctx context.Context, key string) (io.ReadCloser, backend.ObjectMeta, error) {
+	*r.got = append(*r.got, key)
+	return r.Backend.Get(ctx, key)
+}
+
+// TestVerifyNeverOpensTheKeyring pins a claim docs/hop/threat-model.md
+// makes in the sentence that matters most on the page: the checks do not
+// examine `keyring.v1.json`, so nothing here detects a planted keyring,
+// and the report says so by naming the keyring among the objects it
+// judged by name only. A step 2 that quietly started fetching it would
+// make that paragraph false.
+func TestVerifyNeverOpensTheKeyring(t *testing.T) {
+	keys := rootKeys(t)
+	store := lockerWith(t, keys, "")
+	put(t, store, keyring.ObjectName, []byte(`{"schema_version":1,"profile_id":"p","current_generation":1,"generations":[]}`))
+	var fetched []string
+	r := Run(context.Background(), Options{Backend: reading{Backend: store, got: &fetched}, Keys: keys, Storage: StorageBYO})
+	if !r.Passed() {
+		t.Fatalf("report %+v", r)
+	}
+	for _, key := range fetched {
+		if strings.Contains(key, keyring.ObjectName) {
+			t.Fatalf("the checks fetched %s; the threat model says they never do", key)
+		}
+	}
+	if !strings.Contains(r.Unopened, "the wrapped keyring") || !strings.Contains(r.Summary, "the wrapped keyring") {
+		t.Fatalf("the report does not name the keyring as unopened: %q / %q", r.Unopened, r.Summary)
 	}
 }
 

@@ -400,7 +400,10 @@ func TestSyncVerifyJourneyReferenceReachable(t *testing.T) {
 // TestSyncVerifyJourneyReferenceRejectsTheCredential: a 403 that says the
 // credential itself is bad (unknown key id, bad signature, expired token)
 // is what every bucket answers a dead credential, so it proves nothing
-// about scope: step 4 fails and says so, through the real S3 client.
+// about scope: step 4 reports that it could not run and says so, through
+// the real S3 client. It is not a failed verification — a locker
+// credential lasts an hour and this one died mid-command — so the run
+// exits 0 and claims nothing about bucket scope.
 //
 // Nothing here hand-sets the answer the fake gives for a foreign bucket.
 // The locker credential is dropped the moment step 4's first request
@@ -425,17 +428,19 @@ func TestSyncVerifyJourneyReferenceRejectsTheCredential(t *testing.T) {
 			}
 			j.plane.s3.Mu.Unlock()
 			out, _, exit := j.run("sync", "verify", "--post=false")
-			if exit != ExitSafety {
+			if exit != ExitOK {
 				t.Fatalf("exit=%d:\n%s", exit, out)
 			}
 			for _, want := range []string{
 				// The refusal keeps its code, and gains a cause a reader who
 				// has never signed an S3 request can act on.
 				"backend: credential rejected (" + code + ")",
-				"Listing the reference locker failed because the credential itself was rejected — ",
+				"Could not run: listing the reference locker failed because the credential itself was rejected — ",
 				"a credential no bucket accepts is refused everywhere, so nothing about bucket scope was shown.",
-				"Reading the probe object failed because the credential itself was rejected — ",
-				"OUTCOME: FAIL. At least one step did not hold.",
+				"Could not run: reading the probe object failed because the credential itself was rejected — ",
+				"Result:         NOT APPLICABLE",
+				"OUTCOME: PASS.",
+				"Whether the credentials reach other buckets was not checked (step 4 above says why)",
 			} {
 				if !strings.Contains(out, want) {
 					t.Fatalf("output missing %q:\n%s", want, out)
@@ -446,8 +451,10 @@ func TestSyncVerifyJourneyReferenceRejectsTheCredential(t *testing.T) {
 			}
 			// A credential the endpoint would not take is an ordinary
 			// operational fault, not a finding about the operator.
-			if strings.Contains(out, "security@reinstate.dev") {
-				t.Fatalf("a dead credential is reported as a security incident:\n%s", out)
+			for _, unwanted := range []string{"security@reinstate.dev", "OUTCOME: FAIL", "Result:         FAIL"} {
+				if strings.Contains(out, unwanted) {
+					t.Fatalf("a dead credential reads as a finding (%q):\n%s", unwanted, out)
+				}
 			}
 			// The fake answered the reference bucket with the credential's
 			// own code rather than AccessDenied, which is only possible
@@ -488,6 +495,132 @@ func TestSyncVerifyJourneyNoReferenceLocker(t *testing.T) {
 	human, _, code := j.run("sync", "verify", "--post=false")
 	if code != ExitOK || !strings.Contains(human, "OUTCOME: PASS. The objects checked (the index and the newest snapshot in the index) are ciphertext this device can open. Not opened and judged by name only: the wrapped keyring. Whether the credentials reach other buckets was not checked (step 4 above says why)") || strings.Contains(human, "refused by a bucket") {
 		t.Fatalf("human summary claims isolation:\n%s", human)
+	}
+}
+
+// TestSyncVerifyControlPlaneFaultsDoNotFailTheVerification drives the two
+// operator-side faults that used to reach every customer as a failed
+// security check, through the real CLI and the real S3 client:
+//
+//   - the control plane answers 500 on GET /v1/verify/reference. The
+//     client degraded only on `no_reference`, so a 500 arrived as "no
+//     reference locker" and failed the step — one misconfigured row and
+//     every account's trust-establishing command reports a failed check.
+//   - the control plane's reference row names the account's own bucket.
+//     Those credentials are supposed to reach it, so it answers them, and
+//     the answer was reported as credentials reaching a bucket that is not
+//     their own: the loudest possible false alarm, on the one check that
+//     exists to catch cross-account exposure.
+//
+// Both are checks that could not run. The report says so, exits 0, and
+// claims nothing about bucket scope.
+func TestSyncVerifyControlPlaneFaultsDoNotFailTheVerification(t *testing.T) {
+	tests := []struct {
+		name    string
+		break_  func(j *lockerJourney)
+		want    string
+		posted  int
+		unspoke []string
+	}{
+		{
+			name:   "the control plane answers 500",
+			break_: func(j *lockerJourney) { j.plane.referenceStatus = 500 },
+			want:   "Could not run: the control plane did not say where its reference locker is",
+			posted: 2,
+		},
+		{
+			name: "the reference row names the account's own bucket",
+			break_: func(j *lockerJourney) {
+				j.plane.reference = &fakeReference{bucket: j.plane.locker.bucket, key: "reference/probe.txt"}
+			},
+			want:    "Could not run: the control plane named this account's own bucket (lk-0000000000000000000000test) as its reference locker",
+			posted:  2,
+			unspoke: []string{"SUCCEEDED", "not its own"},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			j, _ := hostedVerifyJourney(t)
+			if _, errb, code := j.run("push", "--all"); code != ExitOK {
+				t.Fatalf("push exit=%d err=%q", code, errb)
+			}
+			j.plane.mu.Lock()
+			tc.break_(j)
+			j.plane.mu.Unlock()
+
+			out, errb, code := j.run("sync", "verify")
+			if code != ExitOK {
+				t.Fatalf("an operator-side fault exits %d, want %d:\n%s\n%s", code, ExitOK, out, errb)
+			}
+			for _, want := range append([]string{
+				tc.want,
+				"Result:         NOT APPLICABLE",
+				"OUTCOME: PASS. The objects checked (the index and the newest snapshot in the index) are ciphertext this device can open.",
+				"Whether the credentials reach other buckets was not checked (step 4 above says why)",
+			}, tc.want) {
+				if !strings.Contains(out, want) {
+					t.Fatalf("output missing %q:\n%s", want, out)
+				}
+			}
+			for _, unwanted := range append([]string{"OUTCOME: FAIL", "Result:         FAIL", "security@reinstate.dev", "refused by a bucket"}, tc.unspoke...) {
+				if strings.Contains(out, unwanted) {
+					t.Fatalf("an operator-side fault reads as a finding (%q):\n%s", unwanted, out)
+				}
+			}
+			// The same distinction reaches the account console: the posted
+			// report says the step did not run, not that it failed.
+			if n := len(j.plane.reports); n != tc.posted {
+				t.Fatalf("%d report(s) posted, want %d", n, tc.posted)
+			}
+			posted := j.plane.reports[len(j.plane.reports)-1].report
+			if posted.Outcome != verify.Pass || posted.Steps[3].Status != verify.NotApplicable {
+				t.Fatalf("posted report %+v", posted.Steps[3])
+			}
+		})
+	}
+}
+
+// TestSyncVerifyRefusesAReferenceEndpointStepOneDidNotList: the control
+// plane names a storage endpoint of its own choosing for the probe, and
+// this account's live credential is what signs the request. A reference
+// endpoint that is not the one step 1 listed — including the same host
+// over plaintext http, which is where a downgrade would put the secret key
+// and session token on the wire — is refused before the probe client is
+// built, and the credential is never offered to it.
+func TestSyncVerifyRefusesAReferenceEndpointStepOneDidNotList(t *testing.T) {
+	for _, elsewhere := range []string{"https://always-403.invalid.test", "http://storage.invalid.test:9000"} {
+		t.Run(elsewhere, func(t *testing.T) {
+			j, _ := hostedVerifyJourney(t)
+			if _, errb, code := j.run("push", "--all"); code != ExitOK {
+				t.Fatalf("push exit=%d err=%q", code, errb)
+			}
+			j.plane.mu.Lock()
+			j.plane.reference = &fakeReference{bucket: "lk-0000000000000000000000refr", key: "reference/probe.txt", endpoint: elsewhere}
+			j.plane.mu.Unlock()
+			// The first push already ran a verification against the honest
+			// reference row, so only what happens from here counts.
+			before := len(j.plane.s3.RequestLog())
+
+			out, _, code := j.run("sync", "verify", "--post=false")
+			if code != ExitSafety {
+				t.Fatalf("exit=%d:\n%s", code, out)
+			}
+			for _, want := range []string{
+				"The control plane pointed this step at " + elsewhere + ", but step 1 listed this account's locker at " + j.plane.s3.URL(),
+				"Result:         FAIL",
+			} {
+				if !strings.Contains(out, want) {
+					t.Fatalf("output missing %q:\n%s", want, out)
+				}
+			}
+			// Nothing was signed for that host: the step refused before a
+			// probe client existed, so no credential left this machine.
+			for _, entry := range j.plane.s3.RequestLog()[before:] {
+				if strings.Contains(entry, "(foreign bucket)") {
+					t.Fatalf("the credential was offered to an endpoint step 1 never listed: %s", entry)
+				}
+			}
+		})
 	}
 }
 

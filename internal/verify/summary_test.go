@@ -90,8 +90,8 @@ func TestSummaryTellsTheFailuresApart(t *testing.T) {
 			storage: StorageHop,
 			mutate: func(o *Options, _ *memory.Store) {
 				o.OpenReference = openRef(leaky, "AKIAHOP1",
-					Exchange{Host: "s3.example", Status: 200},
-					Exchange{Host: "s3.example", Status: 200})
+					Exchange{Scheme: "https", Host: "s3.example", Status: 200},
+					Exchange{Scheme: "https", Host: "s3.example", Status: 200})
 			},
 			outcome: Fail,
 			want: []string{
@@ -233,13 +233,25 @@ func TestIsolationDoesNotFailOnAnUnreachableControlPlane(t *testing.T) {
 	if !strings.Contains(r.Summary, "was not checked (step 4 above says why)") {
 		t.Fatalf("summary claims isolation: %q", r.Summary)
 	}
-	// A control plane that answered, and answered something unexpected, is
-	// still a failure: only a service nobody could reach is excused.
+	// A control plane that answered, and answered an error, is the same
+	// kind of non-event: the fault is on the operator's side of the
+	// service, and the customer's locker is not what failed. It used to
+	// fail the whole run, which meant one misconfigured control plane
+	// answering 500 told every account that its trust-establishing command
+	// had found a failed security check.
 	answered := Run(context.Background(), Options{Backend: store, Keys: keys, Storage: StorageHop,
 		Locker:       LockerInfo{Endpoint: "https://s3.example", Bucket: "lk-1"},
 		ReferenceErr: &hop.Error{Status: 500, Message: "internal error"}, CredentialID: credential("AKIAHOP1")})
-	if answered.Outcome != Fail || answered.Steps[3].Status != Fail {
-		t.Fatalf("a control plane answering 500 was excused: %+v", answered.Steps[3])
+	if answered.Failed() || answered.Steps[3].Status != NotApplicable {
+		t.Fatalf("a control plane answering 500 failed the run: %+v", answered.Steps[3])
+	}
+	for _, want := range []string{"Could not run: the control plane did not say where its reference locker is (internal error)", "That is a fault on the control plane's side, not a finding about this locker."} {
+		if !strings.Contains(answered.Steps[3].Observed, want) {
+			t.Fatalf("isolation step %q lacks %q", answered.Steps[3].Observed, want)
+		}
+	}
+	if strings.Contains(answered.Summary, securityReport) || !strings.Contains(answered.Summary, "was not checked (step 4 above says why)") {
+		t.Fatalf("summary %q", answered.Summary)
 	}
 }
 

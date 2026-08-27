@@ -13,6 +13,10 @@ import (
 // reference bucket that is simply "another name" behaves like R2.
 type fakeReference struct {
 	bucket, key string
+	// endpoint overrides the storage endpoint advertised for the reference
+	// locker; empty means the fake S3's own URL, which is what a correctly
+	// configured control plane answers.
+	endpoint string
 }
 
 // fakeReport is one posted verification report with the token that sent it.
@@ -33,12 +37,24 @@ func (f *fakeControlPlane) verifyReference(w http.ResponseWriter, r *http.Reques
 	if !f.authed(w, r) {
 		return
 	}
+	if f.referenceStatus != 0 {
+		// An operator-side fault: the row is unreadable, the storage
+		// provider is down, the handler panicked. The client half of the
+		// service has to survive it without telling every account that its
+		// locker failed a security check.
+		writeFakeError(w, f.referenceStatus, "internal error")
+		return
+	}
 	if f.reference == nil {
 		writeFakeErrorCode(w, 404, "no_reference", "this control plane has no reference locker; the isolation check cannot run here")
 		return
 	}
+	endpoint := f.reference.endpoint
+	if endpoint == "" {
+		endpoint = f.s3.URL()
+	}
 	_ = json.NewEncoder(w).Encode(map[string]any{
-		"endpoint": f.s3.URL(), "bucket": f.reference.bucket, "region": "auto", "key": f.reference.key,
+		"endpoint": endpoint, "bucket": f.reference.bucket, "region": "auto", "key": f.reference.key,
 	})
 }
 

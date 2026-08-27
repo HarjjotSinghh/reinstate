@@ -77,24 +77,29 @@ func TestIsolationIsPinnedToTheResponse(t *testing.T) {
 			want:    "answered 403 with no S3 error body",
 		},
 		{
+			// A reference bucket that has been deleted, an endpoint
+			// answering 500, and a host that is not there are all faults on
+			// the operator's side. None of them says anything about where
+			// this account's credentials reach, so none of them is a failed
+			// verification.
 			name:    "404",
 			handler: func(w http.ResponseWriter, _ *http.Request) { s3Error(w, http.StatusNotFound, "NoSuchBucket") },
-			status:  Fail,
-			want:    "neither succeeded nor was refused as access denied",
+			status:  NotApplicable,
+			want:    "Could not run: listing the reference locker neither succeeded nor was refused as access denied",
 		},
 		{
 			name: "500",
 			handler: func(w http.ResponseWriter, _ *http.Request) {
 				s3Error(w, http.StatusInternalServerError, "InternalError")
 			},
-			status: Fail,
-			want:   "neither succeeded nor was refused as access denied",
+			status: NotApplicable,
+			want:   "Could not run: listing the reference locker neither succeeded nor was refused as access denied",
 		},
 		{
 			name:   "connection refused",
 			closed: true,
-			status: Fail,
-			want:   "neither succeeded nor was refused as access denied",
+			status: NotApplicable,
+			want:   "Could not run: listing the reference locker neither succeeded nor was refused as access denied",
 		},
 		{
 			name:        "same host, different port",
