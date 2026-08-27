@@ -1,7 +1,16 @@
 # Reinstate Hop: sign-in, devices, and the locker
 
 Reinstate Hop is the paid hosted tier: a locker (a storage bucket provisioned
-for exactly one account, holding only ciphertext) plus a console. Every client
+for exactly one account) plus a console. Every session object Reinstate writes
+to the locker is ciphertext; one object it writes is not, and it is named here
+rather than rounded off.
+`keyring.v1.json` is plaintext by design: it holds no usable key, and it gives
+up the account's profile id, every enrolled device's id, public key and
+enrolment time, and one entry per key generation with the time it started — so
+a locker whose key has rolled over also shows which devices stopped being
+enrolled, and when. The [object format](hop/object-format.md#keyringv1json--the-wrapped-root-key)
+lists it in full and the [threat model](hop/threat-model.md) says what it is
+worth to an observer. Every client
 capability stays in the free CLI; Hop gates storage and the console only. This
 page covers what has landed in the client: passwordless sign-in, device
 tokens, syncing to the locker, and device approval (pairing). The daemon
@@ -18,6 +27,7 @@ rein account join
 rein devices [--json]
 rein devices approve [--request ID]
 rein devices revoke <device-id|name>
+rein sync verify [--json] [--post=false]
 rein sync migrate --to byo [--endpoint URL --bucket NAME] [--switch] [--forget-hop]
 ```
 
@@ -32,6 +42,7 @@ rein init --hop            # profile for the locker; provisions it
 rein account init          # root key on this device; recovery code shown once
 rein push --all            # first push: credentials minted, ciphertext lands
 rein hop status            # bucket, location, usage, limits, first push time
+rein sync verify           # the verification report, any time
 ```
 
 What each step leaves behind:
@@ -471,7 +482,137 @@ or `oc`. Later devices' hints do not move an existing locker.
 
 After the first completed push the client tells the control plane once, so
 the `first_push` event is counted from a push that finished rather than
-guessed from bucket size.
+guessed from bucket size. The same first push is followed, once per device,
+by the verification below.
+
+## Verifying the claim (`rein sync verify`)
+
+The claim is that every session object in the locker is ciphertext sealed
+by your devices, that your devices can open it, and that your account's
+credentials reach your locker and nothing else. `keyring.v1.json` is the
+one object that is not ciphertext: it is plaintext by design, holds no
+usable key, and gives up the account and device metadata the [object
+format](hop/object-format.md) lists in full. `rein sync verify` checks the
+claim and prints a **verification report** written for a non-expert: each
+step says what was done, what was seen, and PASS, FAIL or NOT
+APPLICABLE. Steps 1, 2 and 4
+can be repeated by hand with any S3 client and the credentials
+`rein hop credentials --export` prints. Step 3 can be, on BYO storage, where the key is your
+own passphrase; on a Hop locker it cannot, because the account's root key
+never leaves the device and no command exports it — a command that wrote
+it to a file would expose every object the account has ever written
+([object format](hop/object-format.md), "Reproducing the checks by
+hand").
+
+1. **List the locker** with the credentials this device pushes with,
+   following every listing page; shows `manifest.age`, `keyring.v1.json`,
+   and the snapshots by their opaque ids, and records (locally) the access
+   key id the listing was signed with.
+2. **Fetch an object and check it is ciphertext**: the index, and the one
+   snapshot the index records as updated last (snapshot ids are random, so
+   the index is the only thing that knows which that is). The bytes begin
+   with the age v1 header, the recipient type is named (X25519 for Hop,
+   scrypt for BYO), and none of the plaintext field names occur anywhere in
+   the body.
+3. **Decrypt it locally** with the key held on this device and show what it
+   contains. The index's revision, sessions per agent and entries, and a
+   snapshot's agent, session and payload size are printed as local detail
+   lines only; the step result that can be posted says just that the index
+   and a snapshot envelope decrypted and the payload checksum matches.
+   Nothing leaves the machine.
+4. **Prove isolation**: the control plane names its **reference locker**, a
+   bucket the operator owns holding one probe object; the same credentials
+   are used to list it and read the probe, and both must be refused as
+   **access denied** (R2 answers `AccessDenied`).
+
+   The verdict is pinned to the answer rather than to the endpoint the
+   control plane named, because both endpoint strings come from the
+   control plane and neither says where the request landed. The probe
+   client **refuses to follow a redirect**, so this account's credential
+   is only ever sent to the endpoint step 1 listed; the refusal must come
+   back from that endpoint, and it must be an S3 error naming its code.
+
+   The step **fails** only on something observed that contradicts the
+   claim: a reference locker that answered the credential, a request that
+   landed anywhere but the pinned endpoint, a redirect offered in place of
+   an answer, a reference locker at a **different storage endpoint** than
+   the one step 1 listed (scheme, host and port — case, a trailing slash,
+   a trailing dot and an implicit default port are the same endpoint; a
+   different scheme or port is not), or a **plaintext `http`** endpoint
+   that is not a loopback address, where the request would carry a live
+   secret key and session token in the clear: no request is made at all,
+   whatever the pin says.
+
+   Everything else that stops the step is a **check that could not run**,
+   reported not applicable with a reason, failing neither the run nor the
+   exit code: no reference locker advertised, a control plane that could
+   not be reached or that answered an error, a reference row naming this
+   account's **own** bucket (these credentials are supposed to reach it,
+   so nothing it answers is about other buckets), a step 1 that did not
+   pass or had nothing to check, a locker whose own bucket or endpoint is
+   not known here, a reference bucket that has been deleted or would not
+   answer, a credential rejected (`InvalidAccessKeyId`,
+   `SignatureDoesNotMatch`, `ExpiredToken`, `InvalidToken`) or rotated
+   between step 1 and step 4 — a credential no bucket accepts is refused
+   everywhere — and a **403 with no S3 error body**, which any web server
+   answers. Most of these are faults on the operator's side of the
+   service; none says anything about where this account's credentials
+   reach, and the outcome sentence then says isolation was not checked
+   rather than asserting it.
+
+   The step's local detail names the access key id and the reference
+   endpoint so the report shows the credential the locker accepted is the
+   one the reference refused, and where.
+
+**A step that got no answer is not a step that failed**, and that holds on
+all four steps rather than only on the fourth. Steps 1 and 2 draw the
+same line step 4 draws: a listing or a fetch the storage endpoint
+**refused** is an answer, it contradicts the claim, and it fails the step;
+a listing or a fetch that got **no answer at all** — a request that timed
+out, a connection that dropped, a name that did not resolve, a 500 — shows
+nothing either way and is reported not applicable with a reason beginning
+"Could not run". A run whose storage endpoint answered nothing has checked
+nothing, so it does not pass: `outcome` is `not-applicable` and the report
+ends `OUTCOME: NOT VERIFIED`, naming what could not be reached.
+
+The one check that cannot run and is still reported as a failure: step 3
+with no key on this device. `rein sync verify` resolves a key before it
+runs, so the command does not reach that state, but the `verify` package
+called without one does.
+
+The report ends with `OUTCOME: PASS`, `OUTCOME: FAIL`, `OUTCOME: NOT
+VERIFIED` (the storage endpoint or the control plane gave no answer), or —
+on a profile that has pushed nothing yet, where all four steps are not
+applicable and there is nothing to check — `OUTCOME: NOT YET VERIFIABLE`.
+Exit code `7`
+(`safety`) on any failed step, `0` when every step passed or did not
+apply, and `1` when the control plane or the storage endpoint could not be
+reached, which prints a report naming the checks that
+did not run rather than a bare dial error. The outcome sentence claims only what the steps observed:
+it calls ciphertext only the objects that were actually fetched — the
+index, and the snapshot the index records as updated last (a manifest-only
+locker verifies only the index; a snapshot chosen without the index, because
+the index would not open here, is called "one snapshot" and not the newest)
+— names what was judged by name only (the other snapshots, the keyring,
+anything unrecognised), says nothing about which device sealed them, and
+when step 4 is not applicable it says isolation was not checked instead of
+asserting it. The same sentence is in the document `--json` emits, as
+`report.summary`, beside `report.checked_objects` and `report.unopened`,
+so a script shows what a person reads rather than reducing the report to
+`outcome`. (See `testdata/verify/hop-report.golden.json` and
+`byo-report.golden.json` under `internal/cli` for the two shapes: the
+hosted one carries `locker.endpoint`, the isolation step, and the access
+key id; the BYO one does not.) On a Hop profile the **step results only** — never object contents,
+session ids, or project paths — are posted to the control plane for the
+account console; `--post=false` keeps them local. BYO storage runs steps
+1–3 and reports step 4 as not applicable.
+
+The first successful push from each new device runs the same checks and
+posts the report once; a push's `--json` output then carries
+`verification: {outcome, posted}`. A verification that cannot run or post
+never fails the push; it is noted on stderr and retried after the next
+push that uploads something. The [threat model](hop/threat-model.md) states what each step proves
+and what the operator can and cannot see.
 
 ### Limits and refusals
 
@@ -613,6 +754,8 @@ passphrase, or session content. Sign-in is a device-authorization style flow:
 | 7 | `POST /v1/locker/first-push` (bearer) | `200 {first, first_push_at}`; records the first push once. |
 | 8 | `GET /v1/devices` (bearer) | `200 {devices: [{id, name, platform, location_hint?, created_at, last_seen_at, revoked_at?}]}`; revoked devices stay listed with `revoked_at`. |
 | 9 | `DELETE /v1/devices/{id}` (bearer; `POST /v1/devices/{id}/revoke` is an alias) | `200 {device, revoked}`; `revoked` is `false` when it already was (idempotent). The token answers `401` on every authenticated route from then on, and the device no longer counts toward the device quota — but a locker credential minted before the revocation keeps working against the bucket until it expires, at most an hour, and the control plane cannot withdraw one. Another account's device or an unknown id: `404 {code: "device_unknown"}` (one answer, so ids cannot be probed across accounts); the calling device itself: `400 {code: "self_revoke"}`. The call carries no key material: the key generation rollover happens in the keyring before it, and `POST /v1/account/key-generation` raises the account floor after it. |
+| 10 | `GET /v1/verify/reference` (bearer) | `200 {endpoint, bucket, region, key}`: the operator's reference locker and its probe object, for `rein sync verify` step 4. `404 {code: "no_reference"}` when the control plane has none (the step is reported as not applicable). |
+| 11 | `POST /v1/verify-reports` (bearer) `{version: 1, generated_at, client_version, storage: "hop"\|"byo", outcome: "pass"\|"fail", steps: [{id, name, did, observed, status}]}` | `201 {id, received_at}`; stored per device for the console. Step results only; a body over 64 KB or with a verdict outside `pass`/`fail`/`not-applicable` is refused (400 for a bad field, 413 for an oversized body). |
 
 The CLI reads the locker with `GET /v1/locker` on every hosted command and
 only calls `POST /v1/locker` when the answer is `no_locker` (normally once,
@@ -628,7 +771,8 @@ stores only a hash, bound to one device record (name, platform, location
 hint, created, last seen). The CLI sends no telemetry; the control plane
 records `sign_up`, `device_enrolled`, `locker_provisioned`, `first_push`,
 `pairing_requested`, `pairing_approved`, `trial_started`, and
-`device_revoked` events as its only product metrics.
+`device_revoked`, `pairing_consumed` and `verify_reported` events as its
+only product metrics.
 
 ## Leaving Hop
 

@@ -36,14 +36,19 @@ type fakeControlPlane struct {
 	// Locker state (see hop_locker_test.go for the journeys).
 	s3 *s3test.Fake // nil until a test attaches one
 	// locker is the single account's bucket; provisioned on first POST.
-	locker      *fakeLocker
-	provisions  int      // POST /v1/locker calls; only the first should ever happen
-	hints       []string // location hints received at sign-in
-	mints       []string // access key ids minted, in order
-	credTTL     time.Duration
-	refuse      string // error code every mint answers with, when set
-	usageBytes  int64
-	firstPushes int
+	locker *fakeLocker
+	// lockerPrefix is the key prefix the locker record advertises. Hop
+	// provisions lockers without one, but the record carries the field and
+	// every client path honours it, so a journey can set one and see what
+	// a prefixed locker actually does.
+	lockerPrefix string
+	provisions   int      // POST /v1/locker calls; only the first should ever happen
+	hints        []string // location hints received at sign-in
+	mints        []string // access key ids minted, in order
+	credTTL      time.Duration
+	refuse       string // error code every mint answers with, when set
+	usageBytes   int64
+	firstPushes  int
 
 	// Pairing relays (see pairing_fake_test.go).
 	pairings   map[string]*fakePairing
@@ -60,6 +65,14 @@ type fakeControlPlane struct {
 	// noKeyGenerationFloor makes both floor routes answer 404, as a
 	// control plane that predates them does.
 	noKeyGenerationFloor bool
+
+	// Verification (see verify_fake_test.go): the reference locker the
+	// plane advertises (nil = none), an HTTP status the reference lookup
+	// answers with instead (0 = answer normally), and every report posted,
+	// in order.
+	reference       *fakeReference
+	referenceStatus int
+	reports         []fakeReport
 }
 
 type fakeLocker struct {
@@ -87,6 +100,7 @@ func newFakeControlPlane(t *testing.T) *fakeControlPlane {
 	mux.HandleFunc("POST /v1/locker/credentials", f.mintCredentials)
 	mux.HandleFunc("POST /v1/locker/first-push", f.firstPush)
 	f.registerPairing(mux)
+	f.registerVerify(mux)
 	mux.HandleFunc("GET /login/github/{link}", func(w http.ResponseWriter, r *http.Request) {
 		f.approveLink(w, r.PathValue("link"), "github")
 	})

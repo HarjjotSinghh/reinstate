@@ -14,10 +14,17 @@ func newHopCmd() *cobra.Command {
 		Use:   "hop",
 		Short: "Reinstate Hop: the account's locker and its usage",
 		Long: "Commands for the hosted tier beyond sign-in. The locker is the storage bucket\n" +
-			"provisioned for exactly one account; it holds only ciphertext and is reached\n" +
-			"with hourly credentials the control plane mints for this device.",
+			"provisioned for exactly one account, reached with hourly credentials the control\n" +
+			"plane mints for this device. Every session object Reinstate writes to it is\n" +
+			"ciphertext; one object it writes is not. `keyring.v1.json` is plaintext by\n" +
+			"design: it holds no usable key, and it names the account's profile id, every\n" +
+			"enrolled device's id, public key and enrolment time, and one entry per key\n" +
+			"generation with the time it started — so a locker with more than one\n" +
+			"generation also shows which devices stopped being enrolled, and when.\n" +
+			"docs/hop/object-format.md lists it in full.",
 	}
 	cmd.AddCommand(newHopStatusCmd())
+	cmd.AddCommand(newHopCredentialsCmd())
 	return cmd
 }
 

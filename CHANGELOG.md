@@ -237,6 +237,70 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `rein sync verify` now applies "a step that got no answer is not a step
+  that failed" to **all four** steps, not only the fourth. Steps 1 and 2
+  drew the line the other way: a listing that timed out, a fetch whose
+  connection dropped, a 500 — none of them an answer about the locker — was
+  reported as a failed step, so the command that exists to establish trust
+  told a customer their locker failed a security check because a socket
+  did. A refusal is still an answer and still fails the step; no answer at
+  all is now `NOT APPLICABLE` with a reason beginning "Could not run". One
+  check that cannot run is still a failure, and the docs now name it rather
+  than leave it to be found: step 3 with no key on this device. The command
+  resolves a key before it runs, so it does not reach that state; the
+  `verify` package called without one does. A run
+  that opened nothing does not pass on the strength of the steps that ran:
+  its outcome is `not-applicable`, it ends `OUTCOME: NOT VERIFIED` naming
+  what gave no answer, and it exits `1` — the code an unreachable control
+  plane already used — so a script cannot read an outage as a clean bill of
+  health. A profile that could not be opened at all because the storage
+  endpoint was unreachable prints the same report, where it used to print a
+  bare SDK dial error and exit `4`.
+- `rein sync verify`'s isolation step now decides where the probe's request
+  landed **before** it turns the answers into a verdict. The order was the
+  other way round: a successful listing set "this account's credentials
+  reach a bucket that is not its own" and a `Fail`, and the pin — which can
+  only lower a verdict, never lift one — then ran and could not take the
+  alarm back. A report could therefore assert that credentials reached a
+  foreign bucket, and ask for a mail to `security@reinstate.dev`, on the
+  strength of an observation the pin had invalidated (a redirect, a request
+  that landed elsewhere, a transport that recorded nothing). The step still
+  fails on a probe that answered the credential, and it still says so; what
+  it no longer does is draw a conclusion about *buckets* from a request the
+  transport could not place.
+- `rein hop credentials --export` now also prints `REIN_LOCKER_PREFIX`, and
+  the by-hand recipe in [object format](docs/hop/object-format.md) passes it
+  as `--prefix` and in front of every key. The page asserted that a Hop
+  locker has no prefix; `internal/hop.Locker` carries the field and
+  `rein sync verify` honours it, so the recipe as printed listed nothing and
+  fetched nothing on any locker that had one. The value is empty on a locker
+  without a prefix and ends in `/` on one with it, so the same two lines work
+  either way. Reading it costs one control-plane request, made before the
+  mint so a failed lookup does not spend one. The command's help now lists
+  every name `--export` sets, which is what `docs/cli-reference.md` already
+  said and the help did not.
+- Five surfaces stated two claims about the locker absolutely while the code
+  carried an exception, and each round of review has closed one and left the
+  next. Both are now stated with their exception everywhere, and a gate holds
+  them together: `internal/doctest` walks every shipped page, every Go
+  comment and help string, and the rendered `rein --help` tree, and fails on
+  a sentence that says the locker holds "only ciphertext" without naming
+  `keyring.v1.json`, or describes the plaintext-`http` refusal without naming
+  the loopback address it exempts. It knows no list of files, so a page
+  written next year is held to the same rule. It found two surfaces nobody
+  had reported: `docs/architecture.md` and the website's copy of it, whose
+  "only ciphertext on object storage" design principle the plaintext keyring
+  falsifies. The plaintext refusal is also
+  driven end to end for the first time — through the real CLI and the real
+  S3 client against a fake locker bound to a **non-loopback** address of the
+  test machine, since httptest listens on loopback, the one
+  address the carve-out lets through, and the refusal had never run outside a
+  unit test of its predicate. That test skips on a machine with no
+  non-loopback address it can bind and dial, and the bench record says so:
+  [round three](docs/testing/results/2026-08-27-sync-verify-windows-round-three.md).
+- `rein sync verify`'s fourth step no longer tells a BYO reader that it asked
+  a control plane for a reference locker. On a profile with no control plane
+  it says what happened, which is nothing.
 - `rein pull --all` now skips a session whose remote snapshot this device
   already synced instead of restoring, rewriting, and backing up an
   identical file on every run, and no longer records a conflict for a local
@@ -462,6 +526,195 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   words them the same way. Golden fixtures:
   `testdata/keyring/keyring.one-generation.json` and
   `keyring.two-generations.json` (two generations, one revocation).
+- `rein sync verify`: the checks behind the zero-knowledge claim, printed
+  as a **verification report** a non-expert can read and repeat step by
+  step. It lists the locker with this device's credentials; fetches an
+  object and shows it is ciphertext (age v1 header, recipient type, no
+  plaintext field name anywhere in the body); decrypts it locally and shows
+  what it contains (the index's revision and sessions per agent, a
+  snapshot's envelope and a payload checksum that matches, all as local
+  detail lines); and, on a Hop locker, asks the
+  control plane for its **reference locker** (a bucket the operator owns,
+  holding one probe object) and shows that the same credentials are refused
+  from it as access denied. That step is pinned to the response, not to the
+  endpoint the control plane named: the probe client refuses to follow a
+  redirect, so the locker credential is only ever sent to the endpoint step
+  1 listed, and the refusal has to arrive from that endpoint as an S3 error
+  naming its code. The probe makes exactly the two requests the step
+  describes and does not retry a refusal, which would only multiply the
+  record and the wait (`s3.Config.MaxAttempts`).
+  The step **fails** on what it observed contradicting the claim: a
+  reference locker that answered the credential, a request that landed
+  anywhere but the pinned endpoint, a redirect offered in place of an
+  answer, a reference locker at a different storage endpoint than the one
+  step 1 listed — any host refuses a foreign credential, so a refusal from
+  elsewhere proves nothing — or a **plaintext `http`** endpoint that is not
+  a loopback address, where no request is made at all. The endpoint pin
+  compares the scheme, the host and the port: case, a trailing slash, a
+  trailing dot on the host and an implicit default port are the same
+  endpoint, a different scheme or port is not, and a credentialed probe is
+  sent unencrypted to nothing but a loopback address whatever the pin says,
+  because the request carries a live secret key and session token.
+  Everything else that stops the step is a check that **could not run**,
+  reported not applicable with a reason beginning "Could not run", failing
+  neither the run nor the exit code: a control plane that could not be
+  reached **or that answered an error**, a reference row naming this
+  account's **own** bucket (these credentials are supposed to reach it, and
+  its answer used to be reported as credentials reaching a bucket that is
+  not their own — backwards, on the one check that exists to catch
+  cross-account exposure), a reference bucket that has been deleted, timed
+  out or dropped the connection, a locker credential rejected
+  (`InvalidAccessKeyId`, `ExpiredToken`) or rotated between step 1 and step
+  4, a run whose step 1 did not pass, a locker whose own bucket or storage
+  endpoint is not known on this device, and a 403 with no S3 error body
+  (any web server answers 403). Most of those are faults on the operator's
+  side of the service, and a trust-establishing command that reports them
+  as a failed security check teaches its reader to ignore the alarm.
+  The access key id used in steps 1 and 4 and the
+  reference endpoint are recorded as local detail. The outcome sentence
+  names only the objects that were actually fetched as ciphertext — the
+  index, and the snapshot the index records as updated last, chosen by
+  opening the index rather than by sorting random ids, and called "one
+  snapshot" when the index could not be opened to say — and lists what was
+  judged by name. Each step prints what was done, what was
+  seen, and PASS, FAIL, or NOT APPLICABLE; `--json` emits the report as
+  data, including `report.summary` (the outcome sentence itself),
+  `report.checked_objects` and `report.unopened`, so a consumer that
+  decodes the document rebuilds exactly the sentence a person reads rather
+  than inferring "everything verified" from `outcome: pass`. Exit `7`
+  (safety) on any failed step. A tampered object fails: plaintext in
+  place of ciphertext at step 2, a flipped byte at step 3. BYO storage runs
+  the first three steps and reports the fourth as not applicable.
+  A step that got no answer is not reported as a step that failed, on
+  any of the four. A
+  profile that has pushed nothing yet marks all four steps **not
+  applicable**, ends `OUTCOME: NOT YET VERIFIABLE`, exits `0`, and posts
+  nothing — there is no verdict for the console to show. A control plane or
+  a storage endpoint
+  that cannot be reached prints a report saying which checks did not run
+  and why (a Hop locker is listed with credentials the control plane mints
+  and opened with a keyring fetched from the bucket, so either outage stops
+  all four) and exits `1`, the code every other hosted
+  command uses for that, instead of a bare dial error. And the outcome
+  sentence now tells the three failures apart: objects that are ciphertext
+  the key here cannot open names the likeliest cause (a different
+  passphrase than the one given at `rein init`; a device enrolled against
+  another account) and what to try; only plaintext in the locker or a
+  credential that reached another bucket asks for a report to
+  `security@reinstate.dev`.
+  Every error the report shows names a cause in ordinary words and keeps
+  the underlying error after it: plaintext reads as "not an age envelope at
+  all" rather than age's "file is empty", a key that does not match reads
+  as the key rather than three layers of recipient-block prose, and a bare
+  S3 code (`InvalidAccessKeyId`) is glossed. The local project id and
+  archive path are redacted, because the harnesses store them as an
+  absolute path flattened into one directory name and this report exists to
+  be shown to somebody else; the access key id is still printed, with a
+  line saying why it is there and that it is not the secret half. On a Hop
+  profile the step results — opaque object names and object counts only,
+  never a session id, project path, agent name, session count, or content —
+  are posted to the control plane
+  for the account console (`--post=false` keeps them local), and the same
+  checks run automatically once per device after the first push that
+  uploaded something, without ever failing that push. The outcome sentence
+  claims isolation only when the isolation step actually ran and passed. The fake S3 used in
+  tests now refuses any bucket but its own with `AccessDenied`, as R2 does —
+  after checking the signature, not before, so a credential the endpoint
+  does not know is answered `InvalidAccessKeyId` whatever bucket it names,
+  which is the distinction step 4 rests on.
+  `backend.Refusal` keeps the storage error code and matches
+  `backend.ErrAccessDenied` or `backend.ErrCredentialRejected` (both still
+  match `backend.ErrUnauthorized`).
+  Windows record:
+  [`docs/testing/results/2026-08-27-sync-verify-windows-round-two.md`](docs/testing/results/2026-08-27-sync-verify-windows-round-two.md)
+  — fifteen `rein sync verify`, `rein hop credentials` and by-hand-recipe
+  journeys against the in-process fake control plane and fake S3, the
+  `internal/verify` unit checks, `make test-race` with no data race (the
+  first time it has been run on this repository at all), `go vet`, and the
+  three cross-builds, on the Windows 11 bench (NT 10.0.26200) on
+  2026-08-27. It says what it does not cover: no second device, no live
+  R2, no real `hopd`, and no AWS CLI. The first run of these journeys,
+  before this round of fixes, is
+  [`2026-08-27-sync-verify-windows.md`](docs/testing/results/2026-08-27-sync-verify-windows.md),
+  which now carries a note naming the three behaviours that changed after
+  it.
+  `rein hop credentials [--json] [--export]` mints one credential set for
+  the account's locker and prints it, so steps 1, 2 and 4 can actually be
+  repeated by hand with an S3 client — until now `docs/hop.md` promised a
+  by-hand reproduction and `docs/hop/object-format.md` shipped the recipe,
+  and on a Hop locker no command yielded the hourly credentials it needs.
+  These are the credentials `rein push` already uses: at most an hour old
+  and scoped by the provider to this account's bucket and no other. Every
+  session object they can read is ciphertext; `keyring.v1.json` is not, and
+  the command, its help text, the CLI reference and this entry no longer
+  say they "read nothing but ciphertext" (nor does `docs/hop.md` still
+  open the section by saying the locker holds only ciphertext). The
+  keyring is plaintext by design and holds no usable key, but it names the
+  account's profile id and every enrolled device's id, public key and
+  enrolment time, and each generation lists the devices enrolled in it — so
+  where there is more than one generation it also shows which devices
+  stopped being enrolled and when. A command that hands out a credential
+  says exactly that, in the caution it prints and in both pages that
+  describe it.
+  `--export` prints the values as shell `export` statements and nothing
+  else, plus `REIN_LOCKER_BUCKET`, so `eval "$(rein hop credentials
+  --export)"` works: the recipe's old first line eval'd bare assignments,
+  which are not exported and therefore invisible to the `aws` process, so
+  every command after it ran with no credentials. The recipe is now run
+  end to end by `internal/cli/hop_recipe_test.go` — this page's shell,
+  through `sh`, against the in-process fake locker, with `rein` replaced by
+  a shim replaying the real command's output and `aws` by one that records
+  what it was given and serves the object bodies (the AWS CLI is not a
+  dependency of this repository), followed by the same four requests made
+  for real with the credentials the recipe printed.
+  Step 3 needs the account's root key,
+  which never leaves the device and which no command exports; a command
+  that wrote it out would hand over every object the account has ever
+  written. The recipe now says so, rather than instructing the reader to
+  pass `age -d -i` an identity file nothing produces.
+  Both report shapes are pinned by a golden generated from the real CLI:
+  `internal/cli/testdata/verify/hop-report.golden.json` (a Hop locker,
+  with `locker.endpoint`, the isolation step and the access key id) and
+  `byo-report.golden.json` (BYO over the memory backend, which has none of
+  those).
+  New docs: `docs/hop/object-format.md` (the exact object layout and
+  envelope format) and `docs/hop/threat-model.md` (what the operator can
+  and cannot see, the assumptions, and how each verify step maps to each
+  claim). Both are published as the protocol, so both are stated against
+  the code rather than the intention: the concurrency token is the
+  object ETag under `If-Match` plus each session's recorded parent
+  snapshot, not the manifest's `revision` field; the default BYO prefix
+  is `profiles/<profile id>`, which does encode the account; `rein init`
+  writes and deletes a `probes/<uuid>` object and an interrupted run
+  leaves it behind; `keyring.v1.json` is plaintext and carries the
+  `profile_id` and every `device_id`, not only counts and dates; a device
+  key is generated at `rein account init`, `join` or `recover`, never at
+  `rein login`; a pull streams a payload into a temporary file beside the
+  destination while hashing it and renames only on a match; the device
+  location hint is listed among what the operator holds; the pairing
+  bullet states the offline-guess bound (60-bit code, argon2id
+  t=3/64 MiB/4 lanes); step 1 is described as listing what is there
+  rather than proving only three object kinds exist; and the threat model
+  describes the operator as a *write* adversary over a plaintext keyring
+  and says plainly that `rein sync verify` never fetches
+  `keyring.v1.json`, so nothing in the report speaks to a planted one
+  either way (a unit test holds the checks to that).
+  Neither page states a release property it cannot check: what a key
+  rollover ships as, and what it is worth against an operator that can
+  write to the bucket, are pointed at `docs/security-model.md` rather than
+  asserted here, and the format examples print `<schema version>` where a
+  number would go. `internal/doctest/object_format_test.go` substitutes
+  the constant the owning package defines
+  (`schema.ManifestSchemaVersion`, `schema.EnvelopeSchemaVersion`,
+  `keyring.SchemaVersion`), decodes each example into the struct the code
+  decodes that object into with unknown fields refused, and checks
+  `kind` and the keyring's `current_generation` — so a page can describe
+  less than the format but never something other than it, and a version
+  bump cannot leave a stale number on a published page.
+  `docs/hop.md`, `docs/hop/threat-model.md` and
+  `docs/hop/object-format.md` join the fourteen pages already under the
+  doc gate in `internal/doctest`, so a future overclaim on them is caught
+  the way it is everywhere else.
 
 - The S3-compatible backend can now obtain its keys from a credential source
   that expires and refreshes (`s3.CredentialSource`), the seam that lets a

@@ -36,6 +36,14 @@ func Static(accessKeyID, secretAccessKey string) StaticSource {
 	return StaticSource{creds: Credentials{AccessKeyID: accessKeyID, SecretAccessKey: secretAccessKey}}
 }
 
+// StaticCredentials wraps one already-minted credential set (session token
+// included) so a client can be built that never asks for another; rein sync
+// verify uses it to probe the reference locker with exactly the credential
+// the locker accepted.
+func StaticCredentials(c Credentials) StaticSource {
+	return StaticSource{creds: c}
+}
+
 // Credentials implements CredentialSource.
 func (s StaticSource) Credentials(context.Context) (Credentials, error) {
 	return s.creds, nil

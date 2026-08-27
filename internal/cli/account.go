@@ -639,7 +639,11 @@ func rootKeysFromConfig(ctx context.Context, cmd *cobra.Command, cfg *schema.Con
 		return nil, exit
 	}
 	if err != nil {
-		return nil, NewExitError(ExitAuthStorage, err.Error())
+		// The storage failure is kept reachable behind the exit error, not
+		// flattened into its message: `rein sync verify` has to be able to
+		// tell an endpoint that gave no answer from a locker that refused
+		// this device, and it cannot ask that of a string.
+		return nil, ExitErrorFrom(ExitAuthStorage, err)
 	}
 	anchor, err := loadKeyringAnchor(cmd, home, cfg)
 	if err != nil {

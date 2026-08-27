@@ -35,6 +35,11 @@ type Config struct {
 	Credentials CredentialSource
 	// HTTPClient optional for tests (fake server).
 	HTTPClient *http.Client
+	// MaxAttempts caps how many times the SDK tries one request; zero keeps
+	// the SDK default. `rein sync verify`'s reference probe sets it to 1:
+	// it exists to observe one answer, and retrying a refusal only
+	// multiplies the record and the wait.
+	MaxAttempts int
 }
 
 // Client wraps aws s3 client.
@@ -76,6 +81,9 @@ func New(ctx context.Context, cfg Config) (*Client, error) {
 	}
 	if cfg.HTTPClient != nil {
 		opts = append(opts, config.WithHTTPClient(cfg.HTTPClient))
+	}
+	if cfg.MaxAttempts > 0 {
+		opts = append(opts, config.WithRetryMaxAttempts(cfg.MaxAttempts))
 	}
 	awsCfg, err := config.LoadDefaultConfig(ctx, opts...)
 	if err != nil {
@@ -148,6 +156,21 @@ func credentialRejected(err error) bool {
 		return true
 	}
 	return false
+}
+
+// CurrentCredentials returns the credential set the client is signing with
+// right now, fetching one from the source if none is cached. It is how
+// rein sync verify probes the reference locker with exactly the credential
+// the locker accepted, without minting another.
+func (c *Client) CurrentCredentials(ctx context.Context) (Credentials, error) {
+	if c.creds == nil {
+		return Credentials{}, errors.New("s3: client uses the SDK default credential chain")
+	}
+	v, err := c.creds.Retrieve(ctx)
+	if err != nil {
+		return Credentials{}, err
+	}
+	return Credentials{AccessKeyID: v.AccessKeyID, SecretAccessKey: v.SecretAccessKey, SessionToken: v.SessionToken, Expires: v.Expires}, nil
 }
 
 func (c *Client) key(k string) string {
@@ -248,6 +271,8 @@ func (c *Client) Delete(ctx context.Context, key string) error {
 	return mapErr(err)
 }
 
+// List returns every object under prefix, following continuation tokens so
+// a locker with more than one page (1000 keys) is listed in full.
 func (c *Client) List(ctx context.Context, prefix string) ([]backend.ObjectMeta, error) {
 	full := c.key(prefix)
 	var res []backend.ObjectMeta
@@ -302,9 +327,14 @@ func mapErr(err error) error {
 			return backend.ErrNotFound
 		case "PreconditionFailed", "412":
 			return backend.ErrPrecondition
-		case "AccessDenied", "InvalidAccessKeyId", "SignatureDoesNotMatch", "Forbidden",
+		case "AccessDenied", "Forbidden":
+			// The credential was recognised; the request fell outside what it
+			// may do. "Forbidden" is a bodiless 403 (HEAD), which carries no
+			// code, so it is treated as the same scope refusal.
+			return &backend.Refusal{Code: apiErr.ErrorCode()}
+		case "InvalidAccessKeyId", "SignatureDoesNotMatch",
 			"ExpiredToken", "ExpiredTokenException", "InvalidToken", "TokenRefreshRequired":
-			return backend.ErrUnauthorized
+			return &backend.Refusal{Code: apiErr.ErrorCode(), Credential: true}
 		}
 	}
 	// HeadObject often returns 404 as http status without typed error on all backends

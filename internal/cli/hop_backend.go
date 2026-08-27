@@ -87,6 +87,11 @@ func hostedBackend(cmd *cobra.Command) (*s3.Client, *hop.Source, error) {
 		return nil, nil, err
 	}
 	source := hop.NewSource(client, tok.Token)
+	// Remembered before the first call rather than after the last: a
+	// command that has to say why it could not open the locker needs the
+	// control plane's own error, and that is only reachable through the
+	// source it was recorded on.
+	rememberHosted(cmd, source)
 	ctx := cmd.Context()
 	if ctx == nil {
 		ctx = context.Background()

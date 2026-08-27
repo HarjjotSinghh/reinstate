@@ -776,7 +776,7 @@ func newPushCmd() *cobra.Command {
 		Use:   "push",
 		Short: "Encrypt and upload local sessions",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			eng, _, home, err := engineFromConfig(cmd, "")
+			eng, cfg, home, err := engineFromConfig(cmd, "")
 			if err != nil {
 				return err
 			}
@@ -827,6 +827,7 @@ func newPushCmd() *cobra.Command {
 			var uploaded []string
 			var skipped int
 			var conflicted []string
+			var verification map[string]any
 			for _, it := range items {
 				a, ok := reg.Get(it.Agent)
 				if !ok {
@@ -936,6 +937,9 @@ func newPushCmd() *cobra.Command {
 					if err := hosted.ReportFirstPush(context.Background()); err != nil {
 						PrintHuman(cmd.ErrOrStderr(), "note: could not report the push to the control plane: %v", err)
 					}
+					// The first push from each device is followed by the
+					// verification, once; its report goes to the console.
+					verification = verifyAfterFirstPush(cmd, eng, cfg, home, hosted)
 				}
 			}
 			sort.Strings(conflicted)
@@ -947,9 +951,13 @@ func newPushCmd() *cobra.Command {
 					len(conflicted), strings.Join(conflicted, ", "), len(uploaded)))
 			}
 			if asJSON {
-				if err := WriteJSON(cmd.OutOrStdout(), map[string]any{
+				out := map[string]any{
 					"snapshots": uploaded, "skipped": skipped, "dry_run": dryRun, "conflicts": conflicted,
-				}); err != nil {
+				}
+				if verification != nil {
+					out["verification"] = verification
+				}
+				if err := WriteJSON(cmd.OutOrStdout(), out); err != nil {
 					return err
 				}
 				return conflictErr()

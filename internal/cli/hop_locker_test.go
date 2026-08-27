@@ -32,7 +32,7 @@ func (f *fakeControlPlane) authed(w http.ResponseWriter, r *http.Request) bool {
 
 func (f *fakeControlPlane) lockerView() map[string]any {
 	view := map[string]any{
-		"endpoint": f.s3.URL(), "bucket": f.locker.bucket, "region": "auto", "prefix": "",
+		"endpoint": f.s3.URL(), "bucket": f.locker.bucket, "region": "auto", "prefix": f.lockerPrefix,
 		"location_hint": "apac", "plan": "hop", "created_at": "2026-08-23T12:02:00Z",
 		"devices": len(f.tokens),
 		"usage":   map[string]any{"bytes": f.usageBytes, "objects": len(f.mints), "observed_at": "2026-08-23T12:02:00Z"},
@@ -141,6 +141,9 @@ type lockerJourney struct {
 	tokens  *credentials.MemoryDeviceTokenStore
 	secrets credentials.SecretStore
 	home    string
+	// ctx, when set, is the context every later run carries. The golden
+	// verification report pins its clock through it.
+	ctx context.Context
 	// shownCode captures the recovery code from the account init prompt.
 	shownCode string
 }
@@ -169,7 +172,7 @@ func (j *lockerJourney) run(args ...string) (stdout, stderr string, code int) {
 	j.t.Setenv("REINSTATE_HOME", j.home)
 	var out, errb bytes.Buffer
 	code = Execute(Options{
-		Name: "rein", Stdout: &out, Stderr: &errb, Args: args,
+		Name: "rein", Stdout: &out, Stderr: &errb, Args: args, Context: j.ctx,
 		AgentProcessChecker: func(_ context.Context, _ string, _ processcheck.Target) (bool, bool, error) { return false, true, nil },
 		DeviceTokenStore:    j.tokens,
 		DeviceSecrets:       j.secrets,

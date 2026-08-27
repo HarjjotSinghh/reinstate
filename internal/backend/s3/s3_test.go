@@ -26,9 +26,22 @@ func TestMapErr(t *testing.T) {
 	if mapErr(errors.New("PreconditionFailed")) != backend.ErrPrecondition {
 		t.Fatal("precondition")
 	}
-	api := &fakeAPIError{code: "AccessDenied", msg: "no"}
-	if mapErr(api) != backend.ErrUnauthorized {
-		t.Fatalf("auth %v", mapErr(api))
+	for _, tc := range []struct {
+		code   string
+		scope  bool
+		reject bool
+	}{
+		{"AccessDenied", true, false}, {"Forbidden", true, false},
+		{"InvalidAccessKeyId", false, true}, {"SignatureDoesNotMatch", false, true},
+		{"ExpiredToken", false, true}, {"InvalidToken", false, true},
+	} {
+		err := mapErr(&fakeAPIError{code: tc.code, msg: "no"})
+		if !errors.Is(err, backend.ErrUnauthorized) || errors.Is(err, backend.ErrAccessDenied) != tc.scope || errors.Is(err, backend.ErrCredentialRejected) != tc.reject {
+			t.Fatalf("%s mapped to %v", tc.code, err)
+		}
+		if !strings.Contains(err.Error(), tc.code) {
+			t.Fatalf("%s: code lost in %v", tc.code, err)
+		}
 	}
 }
 
