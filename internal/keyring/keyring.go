@@ -55,7 +55,19 @@ import (
 // without holding any key at all, and a generation that does not verify
 // makes the whole keyring untrusted. Version 4 also keeps version 3's rule
 // that every wrap is bound; unbound wraps no longer exist anywhere.
-const SchemaVersion = 4
+//
+// Version 5 pulls the recovery wrap inside that signature. Version 4 left it
+// out, and the cost was not confidentiality but diagnosis: a party with
+// write access could flip one byte of the wrap's ciphertext, and every later
+// `rein account recover` told the person their recovery code was wrong. At
+// that moment the one thing a person can act on is getting the code right,
+// and the product was telling them the one wrong thing. The recovery wrap is
+// fixed for the life of a generation — it is written once, by a caller
+// holding the code, and never appended to the way device wraps are — so
+// covering it costs nothing and turns a damaged wrap into a refusal that
+// names tampering. Device wraps are still deliberately outside the
+// signature; see generationMessage for why, and what stops that mattering.
+const SchemaVersion = 5
 
 // ObjectName is the keyring object's name inside the profile prefix. The
 // name is the object's identity in storage and does not change with the
@@ -87,8 +99,21 @@ var (
 	// public key other than the one this machine holds. It is always
 	// returned wrapped together with ErrDeviceNotEnrolled.
 	ErrDeviceKeyMismatch = errors.New("keyring: the keyring lists this device with a different public key")
-	ErrRecoveryMismatch  = errors.New("keyring: recovery code does not match this keyring")
-	ErrDeviceExists      = errors.New("keyring: device already enrolled")
+	// ErrRecoveryMismatch reports a recovery wrap that this code did not
+	// open. Since version 5 the wrap's ciphertext and parameters are inside
+	// the generation signature, so a keyring that parsed at all is holding
+	// the recovery wrap the account wrote: this is the typed code being
+	// wrong, or the keyring belonging to another account. It is not the
+	// answer for a damaged wrap — that is ErrRecoveryWrapMalformed, or a
+	// signature refusal before any code is asked for.
+	ErrRecoveryMismatch = errors.New("keyring: recovery code does not match this keyring")
+	// ErrRecoveryWrapMalformed reports a recovery wrap this build cannot
+	// even attempt: an unknown KDF or wrap format, a salt or ciphertext
+	// that is not base64, a ciphertext shorter than a nonce. None of these
+	// is a statement about the code that was typed, and reporting them as
+	// one sends a person to check the only thing that is not wrong.
+	ErrRecoveryWrapMalformed = errors.New("keyring: the recovery wrap is not well-formed")
+	ErrDeviceExists          = errors.New("keyring: device already enrolled")
 	// ErrStaleRootKey reports a root key that is not the current
 	// generation's: the caller's view of the keyring is behind a rollover.
 	ErrStaleRootKey = errors.New("keyring: root key does not belong to the current generation")
@@ -238,6 +263,32 @@ func New(profileID string, rootKey []byte, recoveryCode string, deviceID string,
 // That is the anchor's question — the key pinned in account.json, or the key
 // the typed recovery code derives — and callers supply it through
 // VerifyGenerations.
+//
+// # Which of these checks is load-bearing
+//
+// Several rules below are also enforced further along, and a mutation test
+// that removes one at a time will find them individually survivable. That is
+// defence in depth and worth keeping, but a later refactor tidying the
+// duplication must delete the right copy, so:
+//
+//   - **Load-bearing, delete nothing here:** the schema_version gate (no
+//     other reader checks it), the wrap-format rule (nothing else refuses an
+//     unbound wrap before it is opened), the duplicate device id rule
+//     (unwrapDevice takes the first match and would silently prefer it), and
+//     the closing VerifyGenerations call, which is what makes a keyring
+//     holding one unverifiable generation refuse to parse *at all* rather
+//     than relying on every caller to ask.
+//   - **Duplicated on purpose, and the copy to keep is the other one:**
+//     checkSignatureShape (VerifyGenerations refuses the same shapes and is
+//     run again by every caller against its anchor), the generation
+//     numbering rules — positive, no duplicates, no gaps — which
+//     VerifyGenerations re-derives when it looks up each generation's
+//     predecessor, and the current_generation presence check, which every
+//     caller reaches again through current().
+//
+// The rule of thumb: a check whose only other copy is inside
+// VerifyGenerations may be simplified away here; a check that exists only
+// here may not.
 func Parse(raw []byte) (*Keyring, error) {
 	var k Keyring
 	if err := json.Unmarshal(raw, &k); err != nil {
@@ -302,6 +353,13 @@ func Parse(raw []byte) (*Keyring, error) {
 // verify — the wrong length, or not base64. Whether it is *correct* is
 // VerifyGenerations' question; this only rules out an object that is
 // malformed before any key is involved.
+//
+// **Not load-bearing on its own, and deliberately kept.** VerifyGenerations,
+// which Parse runs a few lines later and which every read path runs again
+// against its anchor, refuses the same shapes and is the guard to keep.
+// Deleting this one changes an error message and nothing else; deleting
+// VerifyGenerations' equivalent opens the hole. See the note on Parse for
+// the full list of which of its checks are duplicated and which are not.
 func checkSignatureShape(g Generation) error {
 	sig, err := base64.StdEncoding.DecodeString(g.Signature)
 	if err != nil {
@@ -352,9 +410,18 @@ func (k *Keyring) bindingFor(g *Generation) binding {
 // generationMessage is the byte string one generation's signature covers:
 // the domain separator, the profile id, the account key, this generation's
 // number, created_at and recipient, the number and recipient of the
-// generation it follows (0 and "" for the first), and every revocation
-// record. Fields are length-prefixed, so no two different headers can
-// produce the same message.
+// generation it follows (0 and "" for the first), every revocation record,
+// and the whole recovery wrap — its derivation parameters, its salt, its
+// format, and its ciphertext. Fields are length-prefixed, so no two
+// different headers can produce the same message.
+//
+// The recovery wrap is covered because it is fixed for the life of a
+// generation and because leaving it out had a cost in the one moment it
+// mattered: a flipped byte in the ciphertext is indistinguishable, to the
+// AEAD, from a wrong code, so `rein account recover` reported a mistyped
+// recovery code to a person whose code was correct. Covered, the same
+// flipped byte fails the signature and the object is refused as tampered
+// with, which is what happened.
 //
 // The device wraps are deliberately not covered. They change after a
 // generation is written — a device enrolled later is given a wrap in every
@@ -387,6 +454,12 @@ func (k *Keyring) generationMessage(g, prev *Generation) []byte {
 	for _, r := range g.Revoked {
 		write(r.DeviceID, r.RevokedAt, r.RevokedBy)
 	}
+	write(g.Recovery.KDF,
+		strconv.FormatUint(uint64(g.Recovery.Time), 10),
+		strconv.FormatUint(uint64(g.Recovery.MemoryKiB), 10),
+		strconv.FormatUint(uint64(g.Recovery.Threads), 10),
+		strconv.Itoa(g.Recovery.Format),
+		g.Recovery.Salt, g.Recovery.Wrap)
 	return buf.Bytes()
 }
 
@@ -1140,19 +1213,23 @@ func unwrapWithRecoveryCode(wrap RecoveryWrap, recoveryCode string, bind binding
 	if err != nil {
 		return nil, err
 	}
+	// Everything below the AEAD open is a statement about the wrap, not
+	// about the code that was typed, and each one says so: a caller can
+	// tell "your code did not open this" from "this wrap is damaged" and
+	// tell the person the right thing to do.
 	if wrap.KDF != recoveryKDFName {
-		return nil, fmt.Errorf("keyring: unsupported recovery kdf %q", wrap.KDF)
+		return nil, fmt.Errorf("%w: generation %d names key derivation %q, which this version does not read", ErrRecoveryWrapMalformed, bind.generation, wrap.KDF)
 	}
 	if wrap.Format != WrapFormatBound {
-		return nil, fmt.Errorf("keyring: generation %d holds a recovery wrap of unknown format %d", bind.generation, wrap.Format)
+		return nil, fmt.Errorf("%w: generation %d holds a recovery wrap of unknown format %d", ErrRecoveryWrapMalformed, bind.generation, wrap.Format)
 	}
 	salt, err := base64.StdEncoding.DecodeString(wrap.Salt)
 	if err != nil {
-		return nil, fmt.Errorf("keyring: recovery salt is not valid base64")
+		return nil, fmt.Errorf("%w: generation %d has a recovery salt that is not valid base64", ErrRecoveryWrapMalformed, bind.generation)
 	}
 	cipher, err := base64.StdEncoding.DecodeString(wrap.Wrap)
 	if err != nil {
-		return nil, fmt.Errorf("keyring: recovery wrap is not valid base64")
+		return nil, fmt.Errorf("%w: generation %d has a recovery wrap that is not valid base64", ErrRecoveryWrapMalformed, bind.generation)
 	}
 	key := deriveRecoveryKey(canonical, salt, wrap)
 	defer crypto.Zero(key)
@@ -1161,14 +1238,14 @@ func unwrapWithRecoveryCode(wrap RecoveryWrap, recoveryCode string, bind binding
 		return nil, err
 	}
 	if len(cipher) < aead.NonceSize() {
-		return nil, fmt.Errorf("keyring: recovery wrap is truncated")
+		return nil, fmt.Errorf("%w: generation %d has a recovery wrap of %d bytes, shorter than the %d-byte nonce it must start with", ErrRecoveryWrapMalformed, bind.generation, len(cipher), aead.NonceSize())
 	}
 	rootKey, err := aead.Open(nil, cipher[:aead.NonceSize()], cipher[aead.NonceSize():], bind.recoveryAAD())
 	if err != nil {
 		return nil, ErrRecoveryMismatch
 	}
 	if len(rootKey) != crypto.RootKeySize {
-		return nil, fmt.Errorf("keyring: recovery wrap holds %d bytes, want %d", len(rootKey), crypto.RootKeySize)
+		return nil, fmt.Errorf("%w: generation %d has a recovery wrap holding %d bytes, want %d", ErrRecoveryWrapMalformed, bind.generation, len(rootKey), crypto.RootKeySize)
 	}
 	return rootKey, nil
 }
