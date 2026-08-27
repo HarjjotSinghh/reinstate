@@ -1,5 +1,13 @@
 # `rein sync verify` on the Windows bench — 2026-08-27
 
+> **Superseded in part.** A second round of fixes landed on this branch
+> after this run, and three of the behaviours recorded below changed
+> deliberately: a rejected locker credential, a control plane that answers
+> an error, and a reference bucket that will not answer now leave step 4
+> *not applicable* instead of failing the run. This record stands as what
+> was true when it was written; the current one is
+> [`2026-08-27-sync-verify-windows-round-two.md`](2026-08-27-sync-verify-windows-round-two.md).
+
 In-process bench run for ticket #12, recorded because the `[Unreleased]`
 CHANGELOG asserted a Windows run of these journeys on 2026-08-23 with no
 committed artefact behind it. The convention is a record under

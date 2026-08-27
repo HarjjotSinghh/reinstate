@@ -193,21 +193,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   holding one probe object) and shows that the same credentials are refused
   from it as access denied. That step is pinned to the response, not to the
   endpoint the control plane named: the probe client refuses to follow a
-  redirect, so the locker credential is only ever sent to the host step 1
-  listed, and the refusal has to arrive from that host as an S3 error
+  redirect, so the locker credential is only ever sent to the endpoint step
+  1 listed, and the refusal has to arrive from that endpoint as an S3 error
   naming its code. The probe makes exactly the two requests the step
   describes and does not retry a refusal, which would only multiply the
-  record and the wait (`s3.Config.MaxAttempts`). A rejection of the
-  credential itself (`InvalidAccessKeyId`,
-  `ExpiredToken`) fails the step because it shows nothing about scope, and so
-  do a redirect and a reference locker at a different storage endpoint than
-  the one step 1 listed — any host refuses a foreign credential, so a
-  refusal from elsewhere proves nothing. Where the step cannot conclude it
-  reports **not applicable** rather than passing: a 403 with no S3 error
-  body (any web server answers 403), a run whose step 1 did not pass (no
-  locker was shown to accept these credentials), and a locker whose own
-  storage endpoint is not known on this device (nothing to pin the
-  reference against). The access key id used in steps 1 and 4 and the
+  record and the wait (`s3.Config.MaxAttempts`).
+  The step **fails** on what it observed contradicting the claim: a
+  reference locker that answered the credential, a request that landed
+  anywhere but the pinned endpoint, a redirect offered in place of an
+  answer, a reference locker at a different storage endpoint than the one
+  step 1 listed — any host refuses a foreign credential, so a refusal from
+  elsewhere proves nothing — or a **plaintext `http`** endpoint that is not
+  a loopback address, where no request is made at all. The endpoint pin
+  compares the scheme, the host and the port: case, a trailing slash, a
+  trailing dot on the host and an implicit default port are the same
+  endpoint, a different scheme or port is not, and a credentialed probe is
+  never sent unencrypted whatever the pin says, because the request carries
+  a live secret key and session token.
+  Everything else that stops the step is a check that **could not run**,
+  reported not applicable with a reason beginning "Could not run", failing
+  neither the run nor the exit code: a control plane that could not be
+  reached **or that answered an error**, a reference row naming this
+  account's **own** bucket (these credentials are supposed to reach it, and
+  its answer used to be reported as credentials reaching a bucket that is
+  not their own — backwards, on the one check that exists to catch
+  cross-account exposure), a reference bucket that has been deleted, timed
+  out or dropped the connection, a locker credential rejected
+  (`InvalidAccessKeyId`, `ExpiredToken`) or rotated between step 1 and step
+  4, a run whose step 1 did not pass, a locker whose own bucket or storage
+  endpoint is not known on this device, and a 403 with no S3 error body
+  (any web server answers 403). Most of those are faults on the operator's
+  side of the service, and a trust-establishing command that reports them
+  as a failed security check teaches its reader to ignore the alarm.
+  The access key id used in steps 1 and 4 and the
   reference endpoint are recorded as local detail. The outcome sentence
   names only the objects that were actually fetched as ciphertext — the
   index, and the snapshot the index records as updated last, chosen by
@@ -260,21 +278,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `backend.ErrAccessDenied` or `backend.ErrCredentialRejected` (both still
   match `backend.ErrUnauthorized`).
   Windows record:
-  [`docs/testing/results/2026-08-27-sync-verify-windows.md`](docs/testing/results/2026-08-27-sync-verify-windows.md)
-  — twelve `rein sync verify` and `rein hop credentials` journeys against
-  the in-process fake control plane and fake S3, `make test-race` with no
-  data race (the first time it has been run on this repository at all),
-  `go vet`, and the three cross-builds, on the Windows 11 bench (NT
-  10.0.26200) on 2026-08-27. It says what it does not cover: no second
-  device, no live R2, no real `hopd`.
-  `rein hop credentials [--json]` mints one credential set for the
-  account's locker and prints it, so steps 1, 2 and 4 can actually be
+  [`docs/testing/results/2026-08-27-sync-verify-windows-round-two.md`](docs/testing/results/2026-08-27-sync-verify-windows-round-two.md)
+  — fifteen `rein sync verify`, `rein hop credentials` and by-hand-recipe
+  journeys against the in-process fake control plane and fake S3, the
+  `internal/verify` unit checks, `make test-race` with no data race (the
+  first time it has been run on this repository at all), `go vet`, and the
+  three cross-builds, on the Windows 11 bench (NT 10.0.26200) on
+  2026-08-27. It says what it does not cover: no second device, no live
+  R2, no real `hopd`, and no AWS CLI. The first run of these journeys,
+  before this round of fixes, is
+  [`2026-08-27-sync-verify-windows.md`](docs/testing/results/2026-08-27-sync-verify-windows.md),
+  which now carries a note naming the three behaviours that changed after
+  it.
+  `rein hop credentials [--json] [--export]` mints one credential set for
+  the account's locker and prints it, so steps 1, 2 and 4 can actually be
   repeated by hand with an S3 client — until now `docs/hop.md` promised a
   by-hand reproduction and `docs/hop/object-format.md` shipped the recipe,
   and on a Hop locker no command yielded the hourly credentials it needs.
-  These are the credentials `rein push` already uses: at most an hour old,
-  scoped by the provider to this account's bucket and no other, and able
-  to read nothing but ciphertext. Step 3 needs the account's root key,
+  These are the credentials `rein push` already uses: at most an hour old
+  and scoped by the provider to this account's bucket and no other. Every
+  session object they can read is ciphertext; `keyring.v1.json` is not, and
+  the command, the CLI reference, the object format and this entry no
+  longer say they "read nothing but ciphertext". The keyring is plaintext
+  by design and holds no usable key, but it names the account's profile id
+  and every enrolled device's id, public key and enrolment time, and each
+  generation lists the devices enrolled in it — so where there is more than
+  one generation it also shows which devices stopped being enrolled and
+  when. A command that hands out a credential says exactly that, in the
+  caution it prints and in both pages that describe it.
+  `--export` prints the values as shell `export` statements and nothing
+  else, plus `REIN_LOCKER_BUCKET`, so `eval "$(rein hop credentials
+  --export)"` works: the recipe's old first line eval'd bare assignments,
+  which are not exported and therefore invisible to the `aws` process, so
+  every command after it ran with no credentials. The recipe is now run
+  end to end by `internal/cli/hop_recipe_test.go` — this page's shell,
+  through `sh`, against the in-process fake locker, with `rein` replaced by
+  a shim replaying the real command's output and `aws` by one that records
+  what it was given and serves the object bodies (the AWS CLI is not a
+  dependency of this repository), followed by the same four requests made
+  for real with the credentials the recipe printed.
+  Step 3 needs the account's root key,
   which never leaves the device and which no command exports; a command
   that wrote it out would hand over every object the account has ever
   written. The recipe now says so, rather than instructing the reader to
@@ -301,11 +344,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   location hint is listed among what the operator holds; the pairing
   bullet states the offline-guess bound (60-bit code, argon2id
   t=3/64 MiB/4 lanes); step 1 is described as listing what is there
-  rather than proving only three object kinds exist; key-generation
-  rollover is marked as landing later rather than as current behaviour;
-  and the threat model now describes the operator as a *write* adversary
-  over an unauthenticated keyring, says which release closes it, and says
-  plainly that `rein sync verify` does not detect a planted keyring.
+  rather than proving only three object kinds exist; and the threat model
+  describes the operator as a *write* adversary over a plaintext keyring
+  and says plainly that `rein sync verify` never fetches
+  `keyring.v1.json`, so nothing in the report speaks to a planted one
+  either way (a unit test holds the checks to that).
+  Neither page states a release property it cannot check: what a key
+  rollover ships as, and what it is worth against an operator that can
+  write to the bucket, are pointed at `docs/security-model.md` rather than
+  asserted here, and the format examples print `<schema version>` where a
+  number would go. `internal/doctest/object_format_test.go` substitutes
+  the constant the owning package defines
+  (`schema.ManifestSchemaVersion`, `schema.EnvelopeSchemaVersion`,
+  `keyring.SchemaVersion`), decodes each example into the struct the code
+  decodes that object into with unknown fields refused, and checks
+  `kind` and the keyring's `current_generation` — so a page can describe
+  less than the format but never something other than it, and a version
+  bump cannot leave a stale number on a published page.
   `docs/hop.md`, `docs/hop/threat-model.md` and
   `docs/hop/object-format.md` join the fourteen pages already under the
   doc gate in `internal/doctest`, so a future overclaim on them is caught
