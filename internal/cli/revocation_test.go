@@ -1098,6 +1098,18 @@ func TestKeyringForgeryIsRefusedOnEveryReadPath(t *testing.T) {
 				t.Fatalf("object %s was written on a forged keyring", k)
 			}
 		}
+		// The two diagnostics hold no keys, exit 0, and must report the
+		// keyring as refused rather than as the account's key-model truth.
+		// They reach the refusal by different routes — an object that does
+		// not verify fails to load at all, while a replacement loads and
+		// is caught by the anchor — so both forgeries are driven through
+		// them, not only the one that parses.
+		for _, args := range [][]string{{"account", "status"}, {"devices"}} {
+			out, errb, code := a.run(args...)
+			if code != ExitOK || !strings.Contains(out, "this device refuses it") {
+				t.Fatalf("A %v on a forged keyring: exit=%d out=%q err=%q", args, code, out, errb)
+			}
+		}
 	}
 
 	// Forgery 1: a generation whose signature does not verify. A party with
@@ -1132,14 +1144,6 @@ func TestKeyringForgeryIsRefusedOnEveryReadPath(t *testing.T) {
 	t.Run("the whole keyring replaced", func(t *testing.T) {
 		put(forgeKeyring(t, ring, 2))
 		refuseEverywhere(t, "rewrite", "signed by a different account key")
-		out, _, code := a.run("account", "status")
-		if code != ExitOK || !strings.Contains(out, "this device refuses it") {
-			t.Fatalf("A account status on a replaced keyring: exit=%d out=%q", code, out)
-		}
-		out, _, code = a.run("devices")
-		if code != ExitOK || !strings.Contains(out, "this device refuses it") {
-			t.Fatalf("A devices on a replaced keyring: exit=%d out=%q", code, out)
-		}
 	})
 
 	// A forgery must not brick anything either: with the genuine object
