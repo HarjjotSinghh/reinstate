@@ -49,11 +49,15 @@ object storage; none of it is content.
 - **Key topology**: `keyring.v1.json` is plaintext, and it carries more
   than counts. Visible to anyone with bucket access: the account's
   `profile_id`, every enrolled `device_id`, every device's X25519 **public**
-  key, each device's enrolment time, and the number of key generations. It
+  key, each device's enrolment time, and one entry per key generation with
+  the time it started and its public root-key recipient. Each generation
+  lists the devices enrolled in it, so a locker with more than one
+  generation also shows which devices stopped being enrolled, and when. It
   carries no usable key. The identifiers name nothing a person is called,
   but they are stable, so an observer with bucket access can tell one
   account's locker from another's and count and follow its devices over
-  time.
+  time. "Bucket access" includes anyone holding a credential from
+  `rein hop credentials`, which is why that command says so.
 - **Verification reports**: the pass/fail per step a device posts,
   including object counts, object sizes, and the opaque object names the
   steps mention, plus the client version (`client_version`) that ran them.
@@ -122,21 +126,27 @@ object storage; none of it is content.
 - **An operator that holds both the control plane and the bucket, and
   writes.** Everything above treats the operator as an observer. It also
   owns the storage account, so it can *write* to a locker, and
-  `keyring.v1.json` is plaintext and unauthenticated: nothing on this
-  release cryptographically links one generation of it to the last. Such
-  an operator could append a generation wrapping a root key of its own
-  choosing to every listed device's published public key, and a device
-  that took its root key from the keyring would then seal new objects to a
-  key the operator holds. Two things blunt it today and neither closes it:
-  `rein account join` never treats a keyring that already lists this
-  device as proof of enrolment — it always opens a fresh pairing request
-  and uses only the root key the approval relayed, matched against the
-  keyring — and everything written *before* such a substitution stays
-  sealed to the key the operator does not have. **`rein sync verify` does
-  not detect a planted keyring**; it never opens `keyring.v1.json`, and
-  says so by naming it among the objects it judged by name only. Closing
-  this needs each generation to authenticate the last, which lands with
-  the key-generation work in #11.
+  `keyring.v1.json` is plaintext: an operator can replace it with a
+  keyring of its own, appending a generation that wraps a root key it
+  chose to every listed device's published public key. Whether a device
+  would adopt such a generation turns on one property of the keyring
+  format — whether each generation is authenticated by the one before it,
+  by something only a holder of the previous generation's root key could
+  produce. Where the format does not do that, a device that took its root
+  key from the keyring would seal new objects to a key the operator holds;
+  where it does, a planted generation is refused when it is read.
+  `internal/keyring` is where that is decided, and
+  [security-model.md](../security-model.md) describes the key model as it
+  ships. Two client-side facts hold either way, and neither is a
+  substitute: `rein account join` never treats a keyring that already
+  lists this device as proof of enrolment (it always opens a fresh pairing
+  request and uses only the root key the approval relayed, matched against
+  the keyring), and everything written *before* a substitution stays
+  sealed to the key the operator does not have.
+  **`rein sync verify` does not examine `keyring.v1.json` at all** — it
+  never fetches it, and says so by naming it among the objects it judged
+  by name only — so nothing in the verification report speaks to this
+  either way. A unit test holds the checks to that.
 - **Traffic analysis** beyond what is listed above: request timing, IP
   addresses, and sizes are visible to the operator and the storage provider
   as with any hosted service.
@@ -152,7 +162,47 @@ object storage; none of it is content.
 | 1. List the locker | Lists every object (every page) with the credentials this device pushes with and records the access key id locally. | These credentials reach this account's prefix, and this is everything under it: the object names, kinds and count, as a listing with nothing hidden. It does **not** prove the locker holds only the three object kinds — an object of any other name is listed, counted as "other", and passes this step; step 2 is what looks at bytes, and only at the two objects it fetches. What the operator sees from the same listing is counts, sizes and times, and nothing more. |
 | 2. Fetch and inspect | Downloads `manifest.age` (and one snapshot) and checks the raw bytes start with `age-encryption.org/v1`, names the recipient type (`X25519` for Hop, `scrypt` for BYO), and finds none of the field names that appear in the plaintext. | What is stored is an age envelope, not content. A tampered or plaintext object fails here. |
 | 3. Decrypt locally | Opens the same bytes with the key held on this device, shows the index it contains, and checks a snapshot's payload against the SHA-256 in its envelope. Nothing is sent anywhere. | The ciphertext is real (it opens to the expected structure with the expected key) and intact (authenticated; a flipped byte fails here). The key is on the device, not with the operator. |
-| 4. Isolation | Asks the control plane for its **reference locker** (an operator-owned bucket, named like any locker, holding one plaintext probe), checks it lives at the **same storage endpoint** step 1 listed (ignoring scheme case and a trailing slash; a different port or host fails the step, since every host answers a foreign credential with 403), then lists it and reads the probe with the credential that just listed this locker (same access key id, recorded locally in both steps along with the reference endpoint); expects `AccessDenied` both times, **from that host**, as an S3 error naming its code. The probe client refuses to follow a redirect, so the credential is never handed to a host the control plane did not pin, and a redirect fails the step. A refusal of the credential itself (`InvalidAccessKeyId`, `SignatureDoesNotMatch`, `ExpiredToken`, `InvalidToken`) fails the step: a dead credential is refused everywhere and shows nothing about scope. | A credential minted for this account, one the locker has just accepted, is refused from any other bucket at the same endpoint. Not applicable on BYO storage (no control plane), on a control plane that advertises no reference locker or could not be reached at all, when step 1 did not pass or had nothing to check, when the locker's own endpoint is not known on this device, or when the refusal was a 403 with no S3 error body — any web server answers 403, so that decides nothing and is never reported as a pass. |
+| 4. Isolation | Asks the control plane for its **reference locker** (an operator-owned bucket, named like any locker, holding one plaintext probe), checks it names a **different bucket** at the **same storage endpoint** step 1 listed — scheme, host and port, ignoring case, a trailing slash, a trailing dot and an implicit default port — then lists it and reads the probe with the credential that just listed this locker (same access key id, recorded locally in both steps along with the reference endpoint); expects `AccessDenied` both times, **from that endpoint**, as an S3 error naming its code. The probe client refuses to follow a redirect, so the credential is never handed to a host the control plane did not pin. | A credential minted for this account, one the locker has just accepted, is refused from any other bucket at the same endpoint. See below for what fails the step and what makes it not applicable. |
+
+### What fails step 4, and what makes it not applicable
+
+The distinction is the whole value of the step. A **failure** is something
+observed that contradicts the claim, and there are four:
+
+- the reference locker **answered** the credential — a successful listing
+  or a readable probe;
+- the request **landed somewhere other than the pinned endpoint**, or the
+  endpoint offered a **redirect** instead of an answer (the probe refuses
+  to follow one, so the credential is never sent to the redirect target);
+- the control plane named a **different endpoint** than the one step 1
+  listed;
+- the control plane named a **plaintext `http` endpoint** that is not a
+  loopback address. The step signs its request with the temporary secret
+  key and session token this device pushes with, and those are never sent
+  over an unencrypted connection, whatever endpoint was named — so no
+  request is made, and the step fails. (A loopback address is exempt
+  because nothing leaves the machine; no Hop endpoint is one.)
+
+Everything else that stops the step is a **check that could not run**. It
+is reported not applicable, with a reason beginning "Could not run", it
+does not fail the verification or change the exit code, and the outcome
+sentence says isolation was not checked rather than asserting it: BYO
+storage (no control plane); a control plane that advertises no reference
+locker, could not be reached, or answered an error; a reference row naming
+this account's **own** bucket (these credentials are meant to reach it, so
+it proves nothing — and treating its answer as a finding would be exactly
+backwards); a step 1 that did not pass or had nothing to check; a locker
+whose own bucket or endpoint is not known on this device; a reference
+bucket that has been deleted, timed out, or dropped the connection; a
+locker credential rejected (`InvalidAccessKeyId`, `SignatureDoesNotMatch`,
+`ExpiredToken`, `InvalidToken`) or rotated between step 1 and step 4 — a
+credential no bucket accepts is refused everywhere; and a 403 with no S3
+error body, which any web server answers.
+
+Most of those are faults on the operator's side of the service. Reporting
+them as a failed verification would tell a customer their locker failed a
+security check because a row on the control plane was wrong, and an alarm
+that fires for non-events is one nobody believes when it fires for real.
 
 The report is printed in full locally, with per-session detail; after the
 first successful push on each new device, and on every `rein sync verify`

@@ -194,13 +194,16 @@ by the verification below.
 
 ## Verifying the claim (`rein sync verify`)
 
-The claim is that the locker holds only ciphertext sealed by your devices,
-that your devices can open it, and that your account's credentials reach
-your locker and nothing else. `rein sync verify` checks all of it and
-prints a **verification report** written for a non-expert: each step says
-what was done, what was seen, and PASS or FAIL. Steps 1, 2 and 4 can be
-repeated by hand with any S3 client and the credentials `rein hop
-credentials` prints. Step 3 can be, on BYO storage, where the key is your
+The claim is that every session object in the locker is ciphertext sealed
+by your devices, that your devices can open it, and that your account's
+credentials reach your locker and nothing else. `keyring.v1.json` is the
+one object that is not ciphertext: it is plaintext by design, holds no
+usable key, and gives up the account and device metadata the [object
+format](hop/object-format.md) lists in full. `rein sync verify` checks the
+claim and prints a **verification report** written for a non-expert: each
+step says what was done, what was seen, and PASS or FAIL. Steps 1, 2 and 4
+can be repeated by hand with any S3 client and the credentials
+`rein hop credentials --export` prints. Step 3 can be, on BYO storage, where the key is your
 own passphrase; on a Hop locker it cannot, because the account's root key
 never leaves the device and no command exports it — a command that wrote
 it to a file would expose every object the account has ever written
@@ -232,27 +235,40 @@ hand").
    control plane named, because both endpoint strings come from the
    control plane and neither says where the request landed. The probe
    client **refuses to follow a redirect**, so this account's credential
-   is only ever sent to the host step 1 listed; the refusal must come back
-   from that host, and it must be an S3 error naming its code. A **403
-   with no S3 error body** is something any web server answers, so it
-   shows nothing and the step is reported **not applicable** rather than
-   passed. So is a run where step 1 did not pass — no locker was shown to
-   accept these credentials, and a refusal of a credential nothing accepts
-   is what every host gives — and a run where the locker's own storage
-   endpoint is not known on this device, which leaves nothing to pin the
-   reference against.
+   is only ever sent to the endpoint step 1 listed; the refusal must come
+   back from that endpoint, and it must be an S3 error naming its code.
 
-   A refusal that says the credential itself is bad (`InvalidAccessKeyId`,
-   `SignatureDoesNotMatch`, `ExpiredToken`, `InvalidToken`) is what every
-   bucket answers a dead credential, so it proves nothing about scope and
-   **fails** the step, as does a credential that changed between step 1
-   and step 4, a redirect offered by the reference endpoint, and a
-   reference locker at a **different storage endpoint** than the one step
-   1 listed (scheme case and a trailing slash are the same endpoint; a
-   different port is a different endpoint). The step's local detail names
-   the access key id and the reference endpoint so the report shows the
-   credential the locker accepted is the one the reference refused, and
-   where.
+   The step **fails** only on something observed that contradicts the
+   claim: a reference locker that answered the credential, a request that
+   landed anywhere but the pinned endpoint, a redirect offered in place of
+   an answer, a reference locker at a **different storage endpoint** than
+   the one step 1 listed (scheme, host and port — case, a trailing slash,
+   a trailing dot and an implicit default port are the same endpoint; a
+   different scheme or port is not), or a **plaintext `http`** endpoint
+   that is not a loopback address, where the request would carry a live
+   secret key and session token in the clear: no request is made at all,
+   whatever the pin says.
+
+   Everything else that stops the step is a **check that could not run**,
+   reported not applicable with a reason, failing neither the run nor the
+   exit code: no reference locker advertised, a control plane that could
+   not be reached or that answered an error, a reference row naming this
+   account's **own** bucket (these credentials are supposed to reach it,
+   so nothing it answers is about other buckets), a step 1 that did not
+   pass or had nothing to check, a locker whose own bucket or endpoint is
+   not known here, a reference bucket that has been deleted or would not
+   answer, a credential rejected (`InvalidAccessKeyId`,
+   `SignatureDoesNotMatch`, `ExpiredToken`, `InvalidToken`) or rotated
+   between step 1 and step 4 — a credential no bucket accepts is refused
+   everywhere — and a **403 with no S3 error body**, which any web server
+   answers. Most of these are faults on the operator's side of the
+   service; none says anything about where this account's credentials
+   reach, and the outcome sentence then says isolation was not checked
+   rather than asserting it.
+
+   The step's local detail names the access key id and the reference
+   endpoint so the report shows the credential the locker accepted is the
+   one the reference refused, and where.
 
 The report ends with `OUTCOME: PASS`, `OUTCOME: FAIL`, or — on a profile
 that has pushed nothing yet, where all four steps are not applicable and

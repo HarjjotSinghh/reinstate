@@ -13,6 +13,15 @@ machine; the **root key** is the account's single encryption key; the
 **keyring** is the object that carries the root key wrapped for each device;
 a **key generation** is one root key's lifetime.
 
+In the JSON examples below, `<…>` marks a value that varies per account or
+per object, and `<schema version>` marks the format version this build
+reads and writes — the constant in the Go package that owns the document,
+not a number this page repeats. A test
+(`internal/doctest/object_format_test.go`) parses each example on this
+page, substitutes those constants, and holds every field name in it to the
+struct the code decodes into, so an example here cannot drift from the
+format without the build saying so.
+
 ## Objects
 
 Every object lives under the profile **prefix** (`storage.prefix` for BYO,
@@ -22,7 +31,7 @@ empty for a Hop locker, whose bucket already belongs to one account):
 | --- | --- | --- | --- |
 | `manifest.age` | age envelope around the index | every push | yes, with `If-Match` on the previous ETag (compare-and-swap) |
 | `snapshots/<uuid>.age` | age envelope around one session snapshot | every push that uploads a session | never; created with `If-None-Match: *`, immutable, named by a random v4 UUID |
-| `keyring.v1.json` | plaintext JSON carrying wrapped keys | `rein account init`, `rein account join`/`rein devices approve`, `rein account recover` | yes, compare-and-swap |
+| `keyring.v1.json` | plaintext JSON carrying wrapped keys | the account commands that change the device set or the root key (`rein account init`, `rein account join`/`rein devices approve`, `rein account recover`) | yes, compare-and-swap |
 
 Nothing else is written during normal operation. `rein init` writes one
 `probes/<uuid>` object holding `ok` and deletes it again, as its check
@@ -69,7 +78,7 @@ A single JSON document, at most 4 MiB:
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": <schema version>,
   "revision": "<snapshot uuid of the last push>",
   "updated_at": "<RFC 3339>",
   "sessions": {
@@ -107,7 +116,7 @@ the agent adapter produced it (at most 32 GiB):
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": <schema version>,
   "kind": "reinstate-session-snapshot",
   "snapshot_id": "<uuid>",
   "parent_revision": "<uuid of the snapshot this replaces, or empty>",
@@ -140,7 +149,7 @@ not contain.
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": <schema version>,
   "profile_id": "<account id>",
   "current_generation": 1,
   "generations": [{
@@ -165,13 +174,17 @@ not contain.
   derived from the recovery code by argon2id (the parameters are recorded
   beside it so they can be raised later). The recovery code is shown once
   at `rein account init` and stored nowhere.
-- The `generations` array is a list because a future root key rollover
-  appends to it: older generations stay so objects sealed under them
-  remain readable, and every envelope written afterwards is sealed to the
-  newest key only. **Nothing on this release writes a second generation.**
-  Device revocation and the rollover that goes with it land with #11; see
-  [security-model.md](../security-model.md) for what does and does not
-  ship today.
+- The `generations` array is a list because a root-key rollover appends to
+  it: older generations stay, so objects sealed under them remain readable
+  by every device that held that key, and every envelope written afterwards
+  is sealed to the newest key only. `current_generation` names the newest;
+  a device opens the generation it holds a wrap in. Which commands roll the
+  key over is a property of the release rather than of the format:
+  [security-model.md](../security-model.md) describes the key model as it
+  ships. What a generation is worth against a party that can *write* to
+  the bucket — and what `rein sync verify` does and does not check about
+  this object, which is nothing — is in the [threat
+  model](threat-model.md).
 
 Pairing (device approval) relays a root-key wrap under a code-derived key
 through the control plane; it writes the joining device's wrap into this
@@ -185,10 +198,14 @@ large sessions are.
 
 `keyring.v1.json` is plaintext and gives up more than counts. It carries
 the account's `profile_id`, every enrolled `device_id`, every device's
-X25519 **public** key, each device's enrolment time, and the number of key
-generations — all of it visible in the example above. It carries no usable
-key. The identifiers are opaque outside the locker (they name nothing a
-person is called), but anyone with bucket access can tell one account's
+X25519 **public** key, each device's enrolment time, and one entry per key
+generation with the time it started and its public root-key recipient —
+all of it visible in the example above. Because each generation lists the
+devices enrolled *in that generation*, a locker with more than one shows
+which devices stopped being enrolled and when. It carries no usable key.
+The identifiers are opaque outside the locker (they name nothing a person
+is called), but anyone with bucket access — which includes anyone holding
+an hourly credential from `rein hop credentials` — can tell one account's
 locker from another's and count and track its devices. See the [threat
 model](threat-model.md) for what that means.
 
@@ -199,26 +216,65 @@ storage; on a Hop locker it cannot, and the reason is stated below rather
 than worked around.
 
 For BYO storage use the profile's own keys and coordinates. For a Hop
-locker, `rein hop credentials` mints one credential set and prints the
-bucket, endpoint and region beside it:
+locker, `rein hop credentials --export` mints one credential set and
+prints it as shell `export` statements — the coordinates included, so
+nothing below has to be filled in by hand:
 
 ```bash
-eval "$(rein hop credentials | grep '^AWS_')"            # an hour, this bucket only
-aws s3 ls s3://<bucket>/<prefix>/ --recursive            # step 1: the listing
-aws s3 cp s3://<bucket>/<prefix>/manifest.age - | head -c 22  # step 2: "age-encryption.org/v1"
-aws s3 cp s3://<bucket>/<prefix>/manifest.age - | strings | grep -c '"sessions"'   # step 2: 0
+eval "$(rein hop credentials --export)"
+
+aws s3api list-objects-v2 --endpoint-url "$AWS_ENDPOINT_URL" --bucket "$REIN_LOCKER_BUCKET" --query 'Contents[].Key' --output text
+
+aws s3 cp --endpoint-url "$AWS_ENDPOINT_URL" "s3://$REIN_LOCKER_BUCKET/manifest.age" - | head -c 22
+
+aws s3 cp --endpoint-url "$AWS_ENDPOINT_URL" "s3://$REIN_LOCKER_BUCKET/manifest.age" - | grep -a -c '"sessions"'
 ```
 
-Step 4 uses the same credentials against the operator's reference locker,
-whose bucket, region and probe key come from `GET /v1/verify/reference`
-with the device token (`rein sync verify` prints them in step 4's detail
-lines). Both requests must be refused with `AccessDenied`, from the same
-storage endpoint step 1 listed, as an S3 error body naming the code:
+The first command is step 1: every object under this account's prefix. A
+Hop locker has no prefix, so there is none to give; on BYO storage add
+`--prefix "<your prefix>"`. The second and third are step 2: the first 22
+bytes are the age v1 header line `age-encryption.org/v1`, and `"sessions"`
+— a field name that is in the index before encryption — appears nowhere in
+the body, so `grep -c` prints `0` (and exits 1, as `grep` does when it
+finds nothing).
+
+`--export` writes `export` statements rather than bare assignments on
+purpose: `aws` reads its credentials from the environment, and variables
+that are assigned but not exported are invisible to it. It sets
+`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`,
+`AWS_ENDPOINT_URL`, `AWS_REGION`, `AWS_DEFAULT_REGION` and
+`REIN_LOCKER_BUCKET`. `--endpoint-url` is passed explicitly as well
+because `AWS_ENDPOINT_URL` is only honoured by newer AWS CLI versions.
+
+Step 4 uses the same credentials against the operator's reference locker.
+Its bucket and probe key are printed by `rein sync verify` in step 4's
+detail line ("reference locker `<bucket>` at `<endpoint>`, probe
+`<key>`"); paste them in. Both requests must be refused with
+`AccessDenied`, from the same storage endpoint step 1 listed, as an S3
+error body naming the code:
 
 ```bash
-aws s3 ls s3://<reference bucket>/                       # step 4: AccessDenied
-aws s3 cp s3://<reference bucket>/<probe key> -          # step 4: AccessDenied
+REF_BUCKET=paste-the-reference-bucket-here
+REF_KEY=paste-the-probe-key-here
+
+aws s3api list-objects-v2 --endpoint-url "$AWS_ENDPOINT_URL" --bucket "$REF_BUCKET"
+
+aws s3api get-object --endpoint-url "$AWS_ENDPOINT_URL" --bucket "$REF_BUCKET" --key "$REF_KEY" /dev/stdout
 ```
+
+The endpoint is the same `$AWS_ENDPOINT_URL` throughout, and that is the
+point of step 4: a refusal only shows bucket scope when it comes from the
+endpoint that just accepted the credential. `rein sync verify` checks the
+scheme, host and port, and refuses to send the credential to a plaintext
+`http` endpoint at all.
+
+These commands are exercised by
+`internal/cli/hop_recipe_test.go`, which runs this section's shell through
+`sh` against the in-process fake locker and then makes the same four
+requests with the credentials the first line printed. What that test does
+not run is the `aws` binary itself: it stands in a shim that records the
+arguments and serves the object bodies, so the recipe's shell and its
+requests are covered and the AWS CLI's own argument handling is not.
 
 Step 3 needs the key. On BYO storage that is the passphrase you already
 have: `age -d manifest.age` reproduces the check exactly. On a Hop locker
