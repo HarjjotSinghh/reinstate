@@ -393,6 +393,13 @@ func TestKeyringAnchorRefusesAnUndecidedFloor(t *testing.T) {
 // The one form allowed to say nothing is the bare `keyringAnchor{}`: it is
 // the zero value returned beside an error, it is never used to check
 // anything, and check refuses it if it ever is.
+//
+// What this test reads is composite literals. A `var a keyringAnchor`
+// declaration is invisible to it — and is the one gap here that is covered
+// twice on purpose, because the zero value's floor is undecided and
+// check refuses it outright (TestKeyringAnchorRefusesAnUndecidedFloor
+// pins that). A route written that way fails closed at run time instead of
+// at review time, which is the weaker of the two but not nothing.
 func TestEveryKeyringAnchorDecidesTheFloor(t *testing.T) {
 	fset := token.NewFileSet()
 	pkgs, err := parser.ParseDir(fset, ".", func(fi os.FileInfo) bool {
