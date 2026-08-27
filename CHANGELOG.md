@@ -9,6 +9,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- **The key generation floor, and `rein sync verify`, exercised against the
+  real control plane for the first time (#11, #12).** The floor is the one
+  property neither repository could test: the client decides what to refuse
+  and the control plane decides what number to serve, and each side's tests
+  drove a fake of the other, so a wire-shape mistake would have passed both
+  suites and failed on the first real device.
+  `internal/cli/keygeneration_crossplane_test.go` (built with
+  `-tags hopacceptance`, skipped unless `REINSTATE_HOPD_BIN` names a `hopd`
+  binary) runs the real client in process against the real `hopd` over HTTP,
+  through the real sign-in flow, and drives the lagging-device attack: a
+  revoked device restores the genuine pre-revocation keyring and a device
+  that has run nothing since is refused on `push`, `pull` and
+  `sync verify`, each naming the control plane. Removing the floor from the
+  anchor reproduces the hole exactly, including a full `OUTCOME: PASS`
+  report on a rolled-back keyring. A second journey puts a proxy in front of
+  `hopd` that answers the floor route `404`, which is the documented
+  residual, and reproduces it. Recorded in
+  `docs/testing/results/2026-08-27-key-generation-floor-crossplane.md`,
+  including what the run does not establish.
+- **A floor a control plane cannot verify is no longer a permanent lockout
+  (#11).** `POST /v1/account/key-generation` is open to every enrolled
+  device and the control plane holds no keyring, so what it is told is a
+  claim. The client made that claim permanent: it wrote the live answer into
+  `account.json` before judging the keyring and then used the higher of the
+  two, so one report of a generation no keyring would ever reach refused
+  every command on every device of the account, and repairing the control
+  plane changed nothing — the only way back was `rein init --hop --force`
+  and `rein account recover`, with the recovery code, on every device. The
+  floor a command uses is now the live answer, with the recorded number as
+  the fallback for a control plane that has stopped serving the route at
+  all. Keeping the higher number defended against nothing a `404` would not
+  also achieve. What no control plane can move either way is the generation
+  each device recorded when it last read a keyring, which is written only
+  after that keyring was accepted.
+- **`rein sync verify` stops calling an answer silence (#12).** The rule
+  that a check which could not run is not a check that failed was carried by
+  an allowlist of the error shapes somebody had thought of, so every S3 code
+  the backend's switch has no case for — `NoSuchBucket` is the plainest —
+  and this package's own 64 MiB read limit were reported to a person as "the
+  storage endpoint gave no answer". Both are answers, and both used to fail
+  the run: a locker whose bucket is gone, or that will not serve its index
+  in a readable size, had stopped failing and started reporting a check that
+  could not run. `backend.APIAnswer` carries any structured answer the
+  backend cannot otherwise name, `verify.ErrObjectTooLarge` names the local
+  limit, and `TestEveryStorageCallClassifiesWhatCameBack` walks the package
+  so a storage call added later cannot skip the classifier the way the last
+  one could have.
+- **The foreign-bucket alarm survives a later redirect (#12).** The pin that
+  gates it was one boolean for the whole probe and was decided at the first
+  bad exchange, so a reference locker that answered this account's
+  credentials at the pinned endpoint and *then* redirected the next request
+  suppressed the finding it exists for. It is now decided over every
+  exchange, and a redirect still does not count as one: the request reached
+  the endpoint, but the answer was "go elsewhere".
 - **The account key generation floor closes the lagging device (#11).**
   Every defence the keyring had was local to one device: the generation it
   last unwrapped and that generation's root-key recipient. A device that
@@ -24,10 +78,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     false` rather than failing). `rein devices
     revoke` raises it once the rollover is in the keyring and the token is
     refused; every command that reads the keyring on a Hop profile asks for
-    it first and refuses a keyring below it (`ExitSafety`, naming the
-    control plane), before unwrapping anything — push, pull, `devices
-    approve`, `devices revoke`, `account recover`, `account join`, and the
-    two diagnostics.
+    it and refuses a keyring below it (`ExitSafety`, naming the control
+    plane) — push, pull, `devices approve`, `devices revoke`, `account
+    recover`, `account join`, and the two diagnostics. On all but `account
+    recover` the floor is established before anything is unwrapped; that
+    one opens the recovery wrap first so a mistyped code reads as a
+    mistyped code, zeroes those keys at once and writes nothing from them.
+    The floor a command uses is the live answer, with the number
+    `account.json` records as the fallback for a control plane that no
+    longer serves the route; a control plane answering a lower number is
+    believed, because keeping the higher one defended against nothing and
+    made a permanent account-wide lockout out of a route any enrolled
+    device may call with an unverifiable number.
   - **What it buys, stated both ways.** Against the revoked device — the
     adversary revocation exists to stop, and the realistic one — it closes
     the gap: the control plane refuses that device's token, so it can
@@ -72,8 +134,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   code, and the code was right. The wrap is written once, by a caller
   holding the code, and never appended to, so covering it costs nothing.
   The same edit now fails the generation signature and is refused as
-  tampering, by `keyring.Parse`, on every route, before a code is asked for
-  at all. `recovery code does not match` now means the code as typed or a
+  tampering, by `keyring.Parse`, on every route that loads the object —
+  though not always before the person has been asked for the code, since
+  `rein devices revoke` reads the code before it loads the keyring. What no
+  route does any more is report the damage *as* a wrong code. `recovery code does not match` now means the code as typed or a
   keyring belonging to another account, and says so; a wrap this build
   cannot attempt at all (unknown derivation or format, a salt or ciphertext
   that is not base64, a ciphertext shorter than its nonce) is a separate
@@ -286,8 +350,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   comment and help string, and the rendered `rein --help` tree, and fails on
   a sentence that says the locker holds "only ciphertext" without naming
   `keyring.v1.json`, or describes the plaintext-`http` refusal without naming
-  the loopback address it exempts. It knows no list of files, so a page
-  written next year is held to the same rule. It found two surfaces nobody
+  the loopback address it exempts. It holds no list of *pages*: it walks `docs`,
+  `internal`, `cmd`, `website/src` and the top-level prose files and finds
+  the claim wherever it is made, so a page written next year is held to the
+  same rule without being registered anywhere. What it does hold is a list
+  of file extensions and a list of phrasings, and both are limits worth
+  knowing: a claim in a `.json`, `.yml` or `.svg` is not read, and a
+  rewording outside the patterns is not matched. The extension list already
+  missed one shipped surface — a landing-page `figcaption` in an `.astro`
+  component, which said "stores only ciphertext in your bucket" for a month
+  — and now includes `.astro`, `.ts` and `.tsx`. It found two surfaces nobody
   had reported: `docs/architecture.md` and the website's copy of it, whose
   "only ciphertext on object storage" design principle the plaintext keyring
   falsifies. The plaintext refusal is also

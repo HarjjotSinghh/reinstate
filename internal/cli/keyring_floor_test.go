@@ -151,29 +151,101 @@ func TestControlPlaneFloorReachesADeviceThatLagsBehind(t *testing.T) {
 	if account.ControlPlaneKeyGeneration != 2 || account.ControlPlaneConfirmedAt == "" {
 		t.Fatalf("C did not record the confirmed floor: %+v", account)
 	}
-	// Two ways a live answer can go missing or backwards, and neither drops
-	// the account to generation 0 on a device that has confirmed a floor:
-	// the route stops being served, and the route answers below what it has
-	// already told this device.
-	for _, tc := range []struct {
-		name  string
-		setup func()
-	}{
-		{"the route stops being served", func() { plane.noKeyGenerationFloor = true }},
-		{"the route answers backwards", func() { plane.noKeyGenerationFloor = false; plane.keyGeneration = 0 }},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			plane.mu.Lock()
-			tc.setup()
-			plane.mu.Unlock()
-			out, errb, code := c.run("push", "--all", "--json")
-			if code != ExitSafety || !strings.Contains(out+errb, string(floorFromLastConfirmed)) {
-				t.Fatalf("C push: exit=%d out=%q err=%q", code, out, errb)
-			}
-			if !strings.Contains(out+errb, "current_generation 1 is below the 2") {
-				t.Fatalf("C push did not hold the floor it had confirmed: %q", out+errb)
-			}
-		})
+	// A control plane that stops serving the route leaves the last floor it
+	// confirmed to this device standing. That is the case the record exists
+	// for: a deployment rolled back below the route, or one that never had
+	// it, cannot silently drop a floor it has already given out.
+	plane.mu.Lock()
+	plane.noKeyGenerationFloor = true
+	plane.mu.Unlock()
+	out, errb, code := c.run("push", "--all", "--json")
+	if code != ExitSafety || !strings.Contains(out+errb, string(floorFromLastConfirmed)) {
+		t.Fatalf("C push against a control plane with no floor route: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if !strings.Contains(out+errb, "current_generation 1 is below the 2") {
+		t.Fatalf("C push did not hold the floor it had confirmed: %q", out+errb)
+	}
+
+	// A control plane that is answering, and answers a *lower* number, is
+	// believed. This is deliberate and it is a change from the first
+	// version of this floor, which kept the higher of the two.
+	//
+	// Keeping the higher number did not defend against a control plane that
+	// wants the floor gone -- that one answers 404 and gets the record, or
+	// simply never raises it -- and it made a permanent denial of service
+	// out of a route any enrolled device may call with a number nobody can
+	// verify: one report of a generation no keyring will reach was written
+	// into every device's account.json and refused every command on the
+	// account for good, with repairing the control plane no help at all.
+	// The floor is taken on trust from the control plane; the record is the
+	// fallback for one that has stopped answering, not a vote against one
+	// that is answering.
+	//
+	// What does not move is this device's own record of the generation it
+	// unwrapped, and that is the half a control plane cannot touch.
+	plane.mu.Lock()
+	plane.noKeyGenerationFloor = false
+	plane.keyGeneration = 0
+	plane.mu.Unlock()
+	if _, errb, code := c.run("push", "--all", "--json"); code != ExitOK {
+		t.Fatalf("C push after the control plane reported 0: exit=%d err=%q", code, errb)
+	}
+
+	// The device that did read generation 2 still refuses the rollback, on
+	// its own record, with no floor anywhere.
+	if _, errb, code := a.run("push", "--all", "--json"); code != ExitSafety || !strings.Contains(errb, string(floorFromLocalRecord)) {
+		t.Fatalf("A accepted the rollback once the control plane dropped its floor: exit=%d err=%q", code, errb)
+	}
+}
+
+// TestAnUnverifiableFloorIsNotAPermanentLockout is the regression the first
+// version of this floor introduced and this one closes.
+//
+// POST /v1/account/key-generation is open to every enrolled device and the
+// control plane cannot check what it is told, which the private docs record
+// as the price of taking the report on trust. What made that a lockout
+// rather than an outage was the client: it wrote the live answer into
+// account.json before the keyring was judged and then used the higher of
+// the two, so a single report of a generation no keyring would ever hold
+// refused every command on every device of the account, permanently, and
+// repairing the control plane changed nothing.
+//
+// The account has to come back when the control plane does.
+func TestAnUnverifiableFloorIsNotAPermanentLockout(t *testing.T) {
+	plane := newFakeControlPlane(t)
+	plane.s3 = s3test.NewPlain(t, "lk-000000000000000000000dosf")
+	t.Setenv(hopURLEnv, plane.srv.URL)
+	for _, env := range hopIntegrationEnv {
+		t.Setenv(env, "")
+	}
+	project := writeClaudeFixture(t)
+
+	a := newPairDevice(t, plane, "macbook")
+	for _, args := range [][]string{{"login"}, {"init", "--hop", "--project", "local/locker=" + project}, {"account", "init"}, {"push", "--all"}} {
+		if out, errb, code := a.run(args...); code != ExitOK {
+			t.Fatalf("A %v: exit=%d out=%q err=%q", args, code, out, errb)
+		}
+	}
+
+	// Any enrolled device may report anything; here it reports a generation
+	// this account will never reach.
+	plane.mu.Lock()
+	plane.keyGeneration = 1000
+	plane.mu.Unlock()
+	if _, errb, code := a.run("push", "--all"); code != ExitSafety {
+		t.Fatalf("a floor above every keyring did not refuse: exit=%d err=%q", code, errb)
+	}
+
+	// The control plane is put right. Every device works again, with no
+	// re-enrolment and no recovery code.
+	plane.mu.Lock()
+	plane.keyGeneration = 0
+	plane.mu.Unlock()
+	if out, errb, code := a.run("push", "--all"); code != ExitOK {
+		t.Fatalf("repairing the control plane did not bring the account back: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if _, errb, code := a.run("account", "status"); code != ExitOK {
+		t.Fatalf("account status after the floor was put right: exit=%d err=%q", code, errb)
 	}
 }
 

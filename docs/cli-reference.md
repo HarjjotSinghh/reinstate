@@ -177,9 +177,16 @@ plane's reference locker — a different bucket, at the same storage
 endpoint the listing used, over a client that refuses to follow a redirect
 elsewhere and sends the credential over plaintext `http` to nothing but a
 loopback address (`localhost`, `127.0.0.0/8`, `::1`), where the request
-does not leave the machine; every other plaintext endpoint is refused
-without a request being made. No Hop locker is at a loopback address; a
-locally run control plane in development is. The
+does not leave the machine. Any other plaintext endpoint is refused for
+**this step's probe** without a request being made. The scope of that
+sentence is worth being exact about, because the same command reaches two
+other plaintext endpoints and refuses neither: step 1 lists the locker at
+whatever endpoint the profile carries, plaintext or not, and `rein login`
+warns about a plaintext control plane and proceeds. `localhost` is taken
+at its word rather than resolved, so a machine whose hosts file points that
+name elsewhere would have the probe made to that host in the clear. No Hop
+locker is at a loopback address; a locally run control plane in development
+is. The
 outcome sentence names only what was fetched as ciphertext and lists what
 was judged by name. Each step prints what
 was done, what was seen, and PASS, FAIL, or NOT APPLICABLE, followed by

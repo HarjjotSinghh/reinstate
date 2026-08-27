@@ -204,18 +204,22 @@ func TestBoundWrapsRefuseTransplant(t *testing.T) {
 	})
 }
 
-// TestEarlierSchemaVersionsAreNotRead is the cutover. Versions 1 and 2 had
-// nothing tying one generation to the next, and version 3 tied them with a
-// MAC under the previous generation's root key — which the device being
-// revoked was, by definition, holding. Reading any of them would keep the
-// hole open, so all three are refused outright rather than upgraded in
-// place.
+// TestEarlierSchemaVersionsAreNotRead is the cutover, and every earlier
+// version is refused for a reason of its own. Versions 1 and 2 had nothing
+// tying one generation to the next. Version 3 tied them with a MAC under
+// the previous generation's root key — which the device being revoked was,
+// by definition, holding. Version 4 signed the generation but left the
+// recovery wrap outside the signature, so a flipped byte in the wrap read
+// to the person as a wrong recovery code. Reading any of them would keep
+// its hole open, so all four are refused outright rather than upgraded in
+// place, and the refusal has to say so: a message that gave one blanket
+// reason was wrong about version 4, which did authenticate its generations.
 func TestEarlierSchemaVersionsAreNotRead(t *testing.T) {
 	raw, err := os.ReadFile(goldenV2Path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, version := range []float64{1, 2, 3} {
+	for _, version := range []float64{1, 2, 3, 4} {
 		var obj map[string]any
 		_ = json.Unmarshal(raw, &obj)
 		obj["schema_version"] = version
@@ -224,9 +228,21 @@ func TestEarlierSchemaVersionsAreNotRead(t *testing.T) {
 		if err == nil || !strings.Contains(err.Error(), "unsupported schema_version") {
 			t.Fatalf("schema_version %v: got %v", version, err)
 		}
-		if !strings.Contains(err.Error(), "did not authenticate their key generations") {
+		if !strings.Contains(err.Error(), "each was left behind for its own reason") {
 			t.Fatalf("the refusal does not say why version %v is refused: %v", version, err)
 		}
+	}
+	// The reason given for version 4 has to be version 4's. Saying it did
+	// not authenticate its generations would be false of it, and false in
+	// the direction that matters: it is the version whose signature this
+	// one extends.
+	var obj map[string]any
+	_ = json.Unmarshal(raw, &obj)
+	obj["schema_version"] = float64(4)
+	bad, _ := json.Marshal(obj)
+	_, err = Parse(bad)
+	if err == nil || !strings.Contains(err.Error(), "4 left the recovery wrap outside the signature") {
+		t.Fatalf("version 4's refusal does not give version 4's reason: %v", err)
 	}
 }
 

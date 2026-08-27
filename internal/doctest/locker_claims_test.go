@@ -50,13 +50,13 @@ type claim struct {
 var lockerClaims = []claim{
 	{
 		name:      "what the locker holds",
-		made:      regexp.MustCompile(`(?i)(only|nothing but) ciphertext`),
+		made:      regexp.MustCompile(`(?i)(only|nothing but) ciphertext|every object[^.]{0,80}is ciphertext`),
 		exception: regexp.MustCompile(`keyring\.v1\.json`),
 		missing:   "name `keyring.v1.json`, the one object in the locker that is plaintext by design",
 	},
 	{
 		name:      "when the locker credential is sent",
-		made:      regexp.MustCompile("(?i)plaintext `?http|unencrypted connection"),
+		made:      regexp.MustCompile("(?i)plaintext `?http|cleartext `?http|unencrypted connection|unencrypted `?http"),
 		exception: regexp.MustCompile(`(?i)loopback`),
 		missing:   "name the loopback exemption, the one plaintext endpoint the credential is sent to",
 	},
@@ -66,7 +66,7 @@ var lockerClaims = []claim{
 // product's word: shipped documentation, the website's copy of it, and
 // the Go source that holds every help string and every sentence the
 // verification report prints.
-var claimSurfaces = []string{"docs", "internal", "cmd", "website/src/content", "README.md", "CHANGELOG.md", "PRODUCT.md", "ROADMAP.md", "AGENTS.md"}
+var claimSurfaces = []string{"docs", "internal", "cmd", "website/src", "README.md", "CHANGELOG.md", "PRODUCT.md", "ROADMAP.md", "AGENTS.md"}
 
 // excludedFromClaims is the whole of what this gate does not read, and
 // each entry is here for a reason that is not "it failed".
@@ -205,8 +205,15 @@ func claimFiles(t *testing.T, root string) []string {
 				return nil
 			}
 			switch {
-			case strings.HasSuffix(p, "_test.go"):
-			case strings.HasSuffix(p, ".go"), strings.HasSuffix(p, ".md"), strings.HasSuffix(p, ".mdx"):
+			case strings.HasSuffix(p, "_test.go"), strings.HasSuffix(p, ".test.ts"):
+			// The website's copy is not all in content/: a landing-page
+			// figcaption in an .astro component shipped "stores only
+			// ciphertext in your bucket" for a month while this gate read
+			// only content/, and a .ts test file pinned the string. The
+			// extensions are named here rather than left implicit, because
+			// the list is what the gate can see.
+			case strings.HasSuffix(p, ".go"), strings.HasSuffix(p, ".md"), strings.HasSuffix(p, ".mdx"),
+				strings.HasSuffix(p, ".astro"), strings.HasSuffix(p, ".ts"), strings.HasSuffix(p, ".tsx"):
 				out = append(out, p)
 			}
 			return nil

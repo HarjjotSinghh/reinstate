@@ -573,8 +573,11 @@ const SK = 'var(--sv-stroke)';
     </g>
   </svg>
   <figcaption>
-    Reinstate encrypts the session on the source device, stores only ciphertext
-    in your bucket, and restores the native session on the destination device.
+    Reinstate encrypts the session on the source device, stores every session
+    object as ciphertext in your bucket, and restores the native session on the
+    destination device. One object beside them is plaintext by design:
+    keyring.v1.json, which holds each device's copy of the key sealed to that
+    device and no usable key of its own.
   </figcaption>
 </figure>
 </div>

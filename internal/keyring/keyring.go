@@ -162,10 +162,15 @@ type Generation struct {
 	// Signature authenticates this generation: ed25519 over its own header
 	// — the profile id, the account key, this generation's number,
 	// created_at and recipient, the number and recipient of the generation
-	// it follows (0 and "" for the first), and every revocation record —
-	// under the account signing key the recovery code derives. Every
+	// it follows (0 and "" for the first), every revocation record, and the
+	// whole of Recovery (its kdf, parameters, format, salt and ciphertext)
+	// — under the account signing key the recovery code derives. Every
 	// generation carries one, the first included, and a keyring holding a
 	// generation whose signature does not verify is refused whole.
+	//
+	// Devices are the one part of a generation the signature does not
+	// cover, because wraps are appended after it is written; see
+	// generationMessage for what stops that mattering.
 	Signature string `json:"signature"`
 }
 
@@ -295,7 +300,7 @@ func Parse(raw []byte) (*Keyring, error) {
 		return nil, fmt.Errorf("keyring: invalid object: %w", err)
 	}
 	if k.SchemaVersion != SchemaVersion {
-		return nil, fmt.Errorf("keyring: unsupported schema_version %d (this version reads %d only; earlier formats did not authenticate their key generations against a key no device holds, and are not read)", k.SchemaVersion, SchemaVersion)
+		return nil, fmt.Errorf("keyring: unsupported schema_version %d (this version reads %d only; earlier formats are not read, and each was left behind for its own reason — 1 and 2 tied nothing between generations, 3 tied them under the previous generation's root key, which the device being revoked was holding, and 4 left the recovery wrap outside the signature, so damage to it read as a wrong recovery code)", k.SchemaVersion, SchemaVersion)
 	}
 	if k.ProfileID == "" || len(k.Generations) == 0 {
 		return nil, fmt.Errorf("keyring: profile_id and at least one generation are required")

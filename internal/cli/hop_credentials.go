@@ -4,6 +4,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"github.com/HarjjotSinghh/reinstate/internal/hop"
 )
 
 // newHopCredentialsCmd prints the locker credentials so a customer can
@@ -26,8 +28,11 @@ import (
 // They do not read "nothing but ciphertext", which is what this command
 // and four other places used to say. `keyring.v1.json` is plaintext by
 // design and sits in the same bucket, and anyone holding these credentials
-// reads it: the account's profile id, every enrolled device's id, public
-// key and enrolment time, and the key generations. It holds no usable key
+// reads it: the account's profile id, its public signing key, every
+// enrolled device's id, public key and enrolment time, the key generations
+// and their revocation records, and the recovery wrap with its argon2id
+// salt and parameters — the one part that can be worked on offline. It
+// holds no usable key
 // — every copy of the root key in it is wrapped to something the bucket
 // does not contain — but it is metadata about the account's devices, and a
 // command that hands out a credential has to say so rather than round it
@@ -56,11 +61,17 @@ scoped by the storage provider to this account's bucket and no other, and
 able to reach nothing this device cannot already reach. Every session
 object they can read is ciphertext; ` + "`" + `keyring.v1.json` + "`" + ` is not, and never
 was — it is plaintext by design and holds no usable key, but it names the
-account's profile id, every enrolled device's id, public key and enrolment
-time, and one entry per key generation with the time it started, so a
-locker whose key has rolled over also shows which devices stopped being
-enrolled and when. Each run mints a fresh set and counts against the
-hourly mint quota that rein hop status shows.
+account's profile id, its public signing key, every enrolled device's id,
+public key and enrolment time, and one entry per key generation with the
+time it started, so a locker whose key has rolled over also shows which
+devices stopped being enrolled, when, and at whose hand. It also carries
+the recovery wrap: the root key sealed under the recovery code, with the
+argon2id salt and parameters beside it. That is the one part of the object
+an offline attacker can work on, by guessing the code; the code carries 140
+random bits and the argon2id parameters are chosen against guessing, but a
+credential handed to someone else hands them that work to attempt.
+docs/hop/object-format.md lists the whole of it. Each run mints a fresh
+set and counts against the hourly mint quota that rein hop status shows.
 
 --export prints the same values as shell ` + "`" + `export` + "`" + ` statements and nothing
 else, for ` + "`" + `eval "$(rein hop credentials --export)"` + "`" + `. It sets
@@ -96,7 +107,15 @@ device and which no command exports.`,
 			out := cmd.OutOrStdout()
 			switch {
 			case asJSON:
-				return WriteJSON(out, creds)
+				// The prefix is in the JSON too. Without it, --json paid
+				// for the locker lookup and printed nothing from it, so a
+				// control plane that answered the mint and not the locker
+				// record failed a command that used to work — for a value
+				// the caller never got.
+				return WriteJSON(out, struct {
+					hop.LockerCredentials
+					Prefix string `json:"prefix"`
+				}{LockerCredentials: creds, Prefix: prefix})
 			case asExport:
 				// Only export statements, so the whole of stdout can be
 				// eval'd. The previous recipe piped this output through
@@ -133,7 +152,7 @@ device and which no command exports.`,
 			if creds.ExpiresAt != "" {
 				expiry = "at " + creds.ExpiresAt
 			}
-			PrintHuman(cmd.ErrOrStderr(), "note: these reach this account's own bucket and no other (rein sync verify step 4 checks that), and expire %s. Every session object in that bucket is ciphertext; keyring.v1.json is plaintext and names the account, its enrolled devices, and — on a locker whose key has rolled over — which devices stopped being enrolled and when. Treat the secret key and session token as secrets until they expire; the access key id is a public identifier.", expiry)
+			PrintHuman(cmd.ErrOrStderr(), "note: these reach this account's own bucket and no other (rein sync verify step 4 checks that), and expire %s. Every session object in that bucket is ciphertext; keyring.v1.json is plaintext and names the account, its enrolled devices, and — on a locker whose key has rolled over — which devices stopped being enrolled and when. It also carries the recovery wrap, with its argon2id salt and parameters, which is the one part someone can work on offline by guessing the recovery code (docs/hop/object-format.md lists the whole of it). Treat the secret key and session token as secrets until they expire; the access key id is a public identifier.", expiry)
 			return nil
 		},
 	}

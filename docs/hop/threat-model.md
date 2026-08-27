@@ -48,12 +48,15 @@ object storage; none of it is content.
   describe when the account pushes, not what.
 - **Key topology**: `keyring.v1.json` is plaintext, and it carries more
   than counts. Visible to anyone with bucket access: the account's
-  `profile_id`, every enrolled `device_id`, every device's X25519 **public**
-  key, each device's enrolment time, and one entry per key generation with
-  the time it started and its public root-key recipient. Each generation
-  lists the devices enrolled in it, so a locker with more than one
-  generation also shows which devices stopped being enrolled, and when. It
-  carries no usable key. The identifiers name nothing a person is called,
+  `profile_id`, the account's public signing key, every enrolled
+  `device_id`, every device's X25519 **public** key, each device's
+  enrolment time, and one entry per key generation with the time it
+  started, its public root-key recipient, and its signature. Each
+  generation lists the devices enrolled in it, and a generation started by
+  a revocation also records the device revoked, the device that revoked it,
+  and when — so a locker with more than one generation shows which devices
+  stopped being enrolled, when, and at whose hand. It carries no usable
+  key. The identifiers name nothing a person is called,
   but they are stable, so an observer with bucket access can tell one
   account's locker from another's and count and follow its devices over
   time. "Bucket access" includes anyone holding a credential from
@@ -128,25 +131,34 @@ object storage; none of it is content.
   owns the storage account, so it can *write* to a locker, and
   `keyring.v1.json` is plaintext: an operator can replace it with a
   keyring of its own, appending a generation that wraps a root key it
-  chose to every listed device's published public key. Whether a device
-  would adopt such a generation turns on one property of the keyring
-  format — whether each generation is authenticated by the one before it,
-  by something only a holder of the previous generation's root key could
-  produce. Where the format does not do that, a device that took its root
-  key from the keyring would seal new objects to a key the operator holds;
-  where it does, a planted generation is refused when it is read.
-  `internal/keyring` is where that is decided, and
-  [security-model.md](../security-model.md) describes the key model as it
-  ships. Two client-side facts hold either way, and neither is a
+  chose to every listed device's published public key. As it ships, every
+  generation carries an ed25519 signature under an account key **derived
+  from the recovery code**, so a planted generation is refused when it is
+  read: producing one needs the code, which is held by the person and is
+  in neither the locker nor the control plane. That is the mechanism;
+  [security-model.md](../security-model.md) describes the key model around
+  it and `internal/keyring` is where it is enforced.
+  What a signature cannot decide is *which* genuine keyring is current, so
+  a party with write access can restore an earlier one it can still open.
+  A device that has seen the rollover refuses that from its own record; a
+  device that has not is reached by the **account key generation floor**
+  the control plane carries — which is exactly the reach an operator
+  holding both does not have to respect, since it serves the floor too.
+  Two client-side facts hold whatever the operator does, and neither is a
   substitute: `rein account join` never treats a keyring that already
   lists this device as proof of enrolment (it always opens a fresh pairing
   request and uses only the root key the approval relayed, matched against
   the keyring), and everything written *before* a substitution stays
   sealed to the key the operator does not have.
-  **`rein sync verify` does not examine `keyring.v1.json` at all** — it
-  never fetches it, and says so by naming it among the objects it judged
-  by name only — so nothing in the verification report speaks to this
-  either way. A unit test holds the checks to that.
+  **The four checks of `rein sync verify` do not examine `keyring.v1.json`**
+  — none of them fetches it, and the report says so by naming it among the
+  objects it judged by name only, so no step's result speaks to a planted
+  keyring either way. A unit test holds the checks to that. The *command*
+  is a different matter and the difference is worth having: on a Hop
+  profile it opens the account's root key to run step 3, and that load is a
+  read path like any other, so a planted or rolled-back keyring stops the
+  command with `ExitSafety` before step 1 and produces no report at all
+  rather than a passing one.
 - **Traffic analysis** beyond what is listed above: request timing, IP
   addresses, and sizes are visible to the operator and the storage provider
   as with any hosted service.

@@ -344,5 +344,14 @@ func mapErr(err error) error {
 	if strings.Contains(err.Error(), "PreconditionFailed") {
 		return backend.ErrPrecondition
 	}
+	// The endpoint answered with an API error this switch has no case for
+	// -- NoSuchBucket, InvalidBucketName, AccountProblem, AllAccessDisabled,
+	// RequestTimeTooSkewed and whatever else a provider adds. It is still an
+	// answer, and callers that distinguish an answer from an outage need to
+	// see that it is one; the code travels with it so nothing has to parse
+	// the text.
+	if errors.As(err, &apiErr) {
+		return &backend.APIAnswer{Code: apiErr.ErrorCode(), Err: err}
+	}
 	return err
 }

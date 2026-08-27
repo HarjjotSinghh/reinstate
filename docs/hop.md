@@ -329,10 +329,15 @@ above.
 keyring and the control plane has refused the revoked token — where the
 control plane carries one; where it does not, the command says so on stderr
 and the floor stays wherever it was. Every command that reads the keyring on
-a Hop profile asks for the floor first and refuses a keyring below it
-(`ExitSafety`, naming the floor's source), before unwrapping anything: push,
-pull, `devices approve`, `devices revoke`, `account recover`, `account
-join`, and the two diagnostics.
+a Hop profile asks for the floor and refuses a keyring below it
+(`ExitSafety`, naming the floor's source): push, pull, `devices approve`,
+`devices revoke`, `account recover`, `account join`, and the two
+diagnostics. On all but one of them the floor is established before
+anything is unwrapped. The exception is `rein account recover`, which
+opens the recovery wrap first so that a mistyped code is reported as a
+mistyped code rather than as a rollback; the keys it opens are zeroed
+immediately, nothing is written from them, and the enrolment that follows
+goes through the same floor check as everything else.
 
 What that does and does not buy, precisely:
 
@@ -341,6 +346,16 @@ What that does and does not buy, precisely:
   laptop. The control plane refuses its token, so it can neither read the
   floor nor lower it, and it cannot stop another device from being told the
   account has moved on.
+- **The floor a command uses is the live answer**, and the number
+  `account.json` records is the fallback for a control plane that has
+  stopped serving the route at all (a deployment older than it, answering
+  `404`). A control plane that answers a *lower* number is believed:
+  keeping the higher one defended against nothing — the same party can
+  answer `404`, or never raise the floor — and it turned a route any
+  enrolled device may call, with a number nobody can verify, into a
+  permanent lockout of the whole account. What a control plane cannot move
+  either way is the generation each device recorded when it last read a
+  keyring, which is written only after that keyring was accepted.
 - **Against an operator holding both the control plane and the bucket it
   adds nothing**, because that party serves whatever floor it likes. The
   recovery-code signature on every generation and the local anchor are what

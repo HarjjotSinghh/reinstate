@@ -151,17 +151,49 @@ not contain.
 {
   "schema_version": <schema version>,
   "profile_id": "<account id>",
-  "current_generation": 1,
+  "current_generation": 2,
+  "account_key": "<base64>",
   "generations": [{
     "number": 1,
     "created_at": "<RFC 3339>",
     "recipient": "age1…",
-    "recovery": {"kdf": "argon2id", "time": 3, "memory_kib": 65536, "threads": 4, "salt": "<base64>", "wrap": "<base64>"},
-    "devices": [{"device_id": "<device id>", "public_key": "age1…", "enrolled_at": "<RFC 3339>", "wrap": "<base64>"}]
+    "recovery": {"kdf": "argon2id", "time": 3, "memory_kib": 65536, "threads": 4, "salt": "<base64>", "wrap": "<base64>", "format": 1},
+    "devices": [{"device_id": "<device id>", "public_key": "age1…", "enrolled_at": "<RFC 3339>", "wrap": "<base64>", "format": 1}],
+    "signature": "<base64>"
+  }, {
+    "number": 2,
+    "created_at": "<RFC 3339>",
+    "recipient": "age1…",
+    "recovery": {"kdf": "argon2id", "time": 3, "memory_kib": 65536, "threads": 4, "salt": "<base64>", "wrap": "<base64>", "format": 1},
+    "devices": [{"device_id": "<device id>", "public_key": "age1…", "enrolled_at": "<RFC 3339>", "wrap": "<base64>", "format": 1}],
+    "revoked": [{"device_id": "<device id>", "revoked_at": "<RFC 3339>", "revoked_by": "<device id>"}],
+    "signature": "<base64>"
   }]
 }
 ```
 
+Two generations are shown because one generation shows nothing about what a
+rollover looks like. A locker that has never had a device revoked carries
+one, with no `revoked` array.
+
+- `account_key` is the **public** half of the account signing key, and
+  `signature` on each generation is that generation authenticated under it.
+  The private half is derived from the recovery code and exists nowhere
+  else, so nothing in the locker can produce a signature. What the signature
+  covers is the generation's own header — the profile id, the account key,
+  the number, `created_at` and `recipient`, the number and recipient of the
+  generation it follows, every `revoked` record, and the whole `recovery`
+  object including its ciphertext. What it does **not** cover is `devices`,
+  because wraps are appended to a generation after it is written; a wrap is
+  accepted only when the key inside it derives the signed `recipient`, so
+  what a writer without the root key can do to that array is remove or
+  corrupt entries — denial of service, not key substitution.
+- `revoked` records which device's revocation started this generation. It is
+  a record for people and for status output; what actually removes a device
+  is the absence of its wrap.
+- `format` on a wrap says the wrap is bound to this profile and this
+  generation. It is the only value the parser accepts, and it is written
+  where an older unbound wrap would have had none.
 - `recipient` is the generation's root-key **public** key (age X25519
   recipient), so a device can confirm it unwrapped the right key.
 - Each `devices[].wrap` is the 32-byte root key age-encrypted to that
@@ -173,7 +205,11 @@ not contain.
 - `recovery.wrap` is the root key sealed with XChaCha20-Poly1305 under a key
   derived from the recovery code by argon2id (the parameters are recorded
   beside it so they can be raised later). The recovery code is shown once
-  at `rein account init` and stored nowhere.
+  at `rein account init` and stored nowhere. The whole object is inside the
+  generation's signature, so a flipped byte anywhere in it is refused as
+  tampering rather than reported to the person as a mistyped code — which
+  is what a damaged wrap used to look like, and it is the one thing a
+  person in that position cannot act on.
 - The `generations` array is a list because a root-key rollover appends to
   it: older generations stay, so objects sealed under them remain readable
   by every device that held that key, and every envelope written afterwards
@@ -197,10 +233,12 @@ last-modified time, and therefore roughly how often pushes happen and how
 large sessions are.
 
 `keyring.v1.json` is plaintext and gives up more than counts. It carries
-the account's `profile_id`, every enrolled `device_id`, every device's
-X25519 **public** key, each device's enrolment time, and one entry per key
-generation with the time it started and its public root-key recipient —
-all of it visible in the example above. Because each generation lists the
+the account's `profile_id`, the account's public signing key, every enrolled
+`device_id`, every device's X25519 **public** key, each device's enrolment
+time, and one entry per key generation with the time it started, its public
+root-key recipient, and — where a revocation started it — the id of the
+device that was revoked, the id of the device that revoked it, and when.
+All of it is visible in the example above. Because each generation lists the
 devices enrolled *in that generation*, a locker with more than one shows
 which devices stopped being enrolled and when. It carries no usable key.
 The identifiers are opaque outside the locker (they name nothing a person
@@ -276,7 +314,9 @@ scheme, host and port, and refuses to send the credential to a plaintext
 `http` endpoint — with one exemption, a loopback address (`localhost`,
 `127.0.0.0/8`, `::1`), where the request does not leave the machine. That
 is what the test fakes and a locally run control plane use; no Hop
-endpoint is one. Running these commands by hand has no such guard: `aws`
+endpoint is one. `localhost` is taken at its word rather than resolved, so
+a machine whose hosts file points that name elsewhere would have the probe
+made to that host in the clear. Running these commands by hand has no such guard: `aws`
 sends the credential wherever `--endpoint-url` points, so check the scheme
 yourself.
 

@@ -60,7 +60,7 @@ func TestSyncVerifyRefusesAPlaintextEndpointThroughTheRealClient(t *testing.T) {
 	}
 	for _, want := range []string{
 		"which is plaintext http",
-		"it sends those over an unencrypted connection to nothing but this machine's own loopback address",
+		"the only plaintext address it will send those to is this machine's own loopback",
 		"no request was made and nothing about bucket scope was shown",
 	} {
 		if !strings.Contains(step.Observed, want) {

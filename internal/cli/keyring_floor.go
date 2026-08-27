@@ -93,8 +93,12 @@ func noKeyGenerationFloor(source keyringFloorSource) keyringFloor {
 // It covers routes that go through keyringAnchor, which is every route that
 // reads the keyring today, and TestEveryKeyringAnchorDecidesTheFloor fails
 // on any new anchor built without a floor. A route that unwrapped a keyring
-// without building an anchor at all would evade both; trustKeyring is the
-// only way this package unwraps, and it takes an anchor.
+// without building an anchor at all would evade both, which is what
+// TestEveryKeyringUnwrapGoesThroughTheAnchor is for: it fails on any
+// Unwrap* call outside a trustKeyring(...) call except the two it names in
+// its own table with the reason each is safe. Both of those are in
+// `account recover`, so "trustKeyring is how this package unwraps" is true
+// with two recorded exceptions rather than without.
 type keyringFloorUndecidedError struct{}
 
 func (e *keyringFloorUndecidedError) Error() string {
@@ -136,13 +140,11 @@ func confirmKeyGenerationFloor(cmd *cobra.Command, home string, cfg *schema.Conf
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	confirmed, err := lastConfirmedKeyGenerationFloor(home)
-	if err != nil {
-		return keyringFloor{}, err
-	}
 	got, err := client.KeyGenerationFloor(ctx, tok.Token)
 	if errors.Is(err, hop.ErrNoKeyGenerationFloor) {
-		return confirmed, nil
+		// A deployment older than the route. The last floor it confirmed to
+		// this device is all there is, and it stands.
+		return lastConfirmedKeyGenerationFloor(home)
 	}
 	if err != nil {
 		return keyringFloor{}, hopExitError(err)
@@ -156,11 +158,25 @@ func confirmKeyGenerationFloor(cmd *cobra.Command, home string, cfg *schema.Conf
 	if err := rememberKeyGenerationFloor(home, floor); err != nil {
 		return keyringFloor{}, err
 	}
-	if confirmed.generation > floor.generation {
-		// The control plane is answering below what it has already told
-		// this device. Keep the higher number and say where it came from.
-		return confirmed, nil
-	}
+	// A live answer is the answer, even when it is lower than what this
+	// device recorded earlier.
+	//
+	// The earlier rule was max(live, recorded), to stop a control plane
+	// dropping a floor it had already served. It does not stop that -- the
+	// same control plane can answer 404 and the record is then all there
+	// is, which is the case the record exists for -- and it costs something
+	// real: any enrolled device may report a rollover the control plane
+	// cannot verify, so one POST of a number no keyring will ever reach
+	// wrote that number into every device's account.json and refused every
+	// command on the account for good. Repairing the control plane did not
+	// help, because the record outvoted it. The floor is taken on trust
+	// from the control plane either way; the record is the fallback for a
+	// control plane that has stopped answering, not a vote against one that
+	// is answering.
+	//
+	// What still refuses a rollback whatever the control plane says is this
+	// device's own record of the generation it last unwrapped, which is
+	// written only after a keyring was accepted at it.
 	return floor, nil
 }
 

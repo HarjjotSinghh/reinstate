@@ -761,7 +761,17 @@ func (e *keyringRolledBackError) Error() string {
 	if e.confirmedAt != "" {
 		when = fmt.Sprintf(" (as of %s)", e.confirmedAt)
 	}
-	return fmt.Sprintf("keyring current_generation %d is below the %d %s%s; the keyring was rolled back (a revoked device may have restored an older copy inside its credential window). Nothing was written; run rein devices revoke again from a device that saw generation %d", e.saw, e.floor, source, when, e.floor)
+	// The remedy differs by where the floor came from, and getting it wrong
+	// sends a person somewhere that cannot work. "Revoke again from a
+	// device that saw generation N" is right when this device saw N itself;
+	// it is wrong when the number came from the control plane and no device
+	// here ever held that generation, because revoking again reaches the
+	// next generation and not that one.
+	remedy := fmt.Sprintf("restore the account's keyring from a device that holds key generation %d, or run rein devices revoke again from one that does", e.floor)
+	if source == floorFromLocalRecord {
+		remedy = fmt.Sprintf("restore the account's keyring; this device itself unwrapped generation %d, so a copy of it existed here", e.floor)
+	}
+	return fmt.Sprintf("keyring current_generation %d is below the %d %s%s; the keyring was rolled back (a revoked device may have restored an older copy inside its credential window). Nothing was written; %s", e.saw, e.floor, source, when, remedy)
 }
 
 // keyringRewrittenError reports a keyring whose history no longer matches

@@ -76,6 +76,21 @@ func answered(err error) bool {
 	if errors.As(err, &refusal) {
 		return true
 	}
+	// Any structured answer from the endpoint counts, including one this
+	// build has no particular case for. The alternative -- an allowlist of
+	// the codes somebody thought of -- reports a NoSuchBucket as an
+	// endpoint that said nothing, which is both false and the wrong way
+	// round: it turns a locker whose bucket is gone into a step that
+	// "could not run".
+	var api *backend.APIAnswer
+	if errors.As(err, &api) {
+		return true
+	}
+	// A limit this check imposed on itself is not the endpoint's silence
+	// either. The bytes arrived; there were too many of them to read.
+	if errors.Is(err, ErrObjectTooLarge) {
+		return true
+	}
 	for _, sentinel := range []error{
 		backend.ErrUnauthorized, backend.ErrAccessDenied, backend.ErrCredentialRejected,
 		backend.ErrNotFound, backend.ErrPrecondition, backend.ErrAlreadyExists,

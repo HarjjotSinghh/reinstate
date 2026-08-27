@@ -221,6 +221,20 @@ func TestTheForeignBucketAlarmWaitsForThePin(t *testing.T) {
 			alarm:     false,
 		},
 		{
+			// The case a single boolean over the whole probe got wrong.
+			// The credential was answered at the pinned endpoint and only
+			// then redirected somewhere else; withholding the alarm here
+			// would hand a reference locker a way to read this account's
+			// objects and suppress the finding by redirecting the next
+			// request.
+			name: "the endpoint answered and then offered a redirect",
+			exchanges: []Exchange{
+				{Scheme: "https", Host: "s3.example", Status: 200},
+				{Scheme: "https", Host: "s3.example", RedirectedTo: "https://other.example/"},
+			},
+			alarm: true,
+		},
+		{
 			name:      "the transport recorded nothing",
 			exchanges: []Exchange{},
 			alarm:     false,

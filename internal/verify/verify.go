@@ -16,6 +16,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net"
 	"net/http"
 	"net/url"
@@ -66,6 +67,13 @@ const (
 	maxObjectBytes = 64 << 20
 	maxHeaderBytes = 4096
 )
+
+// ErrObjectTooLarge is this package's own limit, not the endpoint's answer
+// and not its silence: the object was served and there was more of it than
+// the check reads. It is a distinct error so the report can say that
+// rather than reporting an endpoint that gave no answer, which is what a
+// bare errors.New here was read as once the no-answer rule arrived.
+var ErrObjectTooLarge = errors.New("object larger than the 64 MiB the check reads")
 
 // accessKeyIDNote follows every access key id the report prints. The id
 // is there so a reader can see that the credential step 1's locker
@@ -334,12 +342,25 @@ func notStarted(o Options, because, listed, isolation, retry string) *Report {
 			"Could not run: no object could be fetched, because the locker could not be opened (see step 1)."},
 		{StepDecrypt, "Decrypt the object locally",
 			"Could not run: no object was fetched (see step 2). The key this step would have used never leaves this device and was never involved."},
-		{StepIsolation, "Prove this account's credentials are refused from another bucket", isolation},
+		{StepIsolation, "Prove this account's credentials are refused from another bucket", isolationFor(o.Storage, isolation)},
 	} {
 		r.Steps = append(r.Steps, Step{ID: s.id, Name: s.name, Did: "Nothing: the check did not start.", Observed: s.observed, Status: NotApplicable})
 	}
 	r.Summary = "NOT VERIFIED. Nothing was checked, because " + because + ". No step failed and nothing here says anything about what the locker holds. " + retry
 	return r
+}
+
+// isolationFor keeps the not-started report's step 4 truthful for a
+// profile that has no reference locker to speak of. The running report's
+// isolation step already carves BYO out; this is the other route into a
+// step-4 sentence, and it used to tell a BYO reader that step 1 could not
+// list the locker "so a refusal from another bucket would show nothing" —
+// about a bucket that does not exist for this profile at all.
+func isolationFor(storage, running string) string {
+	if storage == StorageBYO {
+		return "Not applicable: this profile stores to a bucket you configured yourself, so there is no control plane to name a reference locker and no operator-owned bucket to offer these credentials to. No request was made."
+	}
+	return running
 }
 
 // Unreachable reports an error that is a failure to reach an endpoint at
@@ -354,6 +375,16 @@ func notStarted(o Options, because, listed, isolation, retry string) *Report {
 // one of them is an outage.
 func Unreachable(err error) bool {
 	if err == nil || answered(err) {
+		return false
+	}
+	// A file this machine could not open is not an endpoint that did not
+	// answer, and it arrives here because syscall.Errno satisfies
+	// net.Error: it has Timeout() and Temporary(), so an *fs.PathError
+	// wrapping ENOENT or EACCES matches the net.Error case below. An
+	// unreadable config or device-key file would then be reported to a
+	// person as a storage outage, and the retry advice would be to wait.
+	var pathErr *fs.PathError
+	if errors.As(err, &pathErr) {
 		return false
 	}
 	var netErr net.Error
@@ -717,7 +748,7 @@ func fetch(ctx context.Context, b backend.Backend, k string) ([]byte, error) {
 		return nil, err
 	}
 	if len(body) > maxObjectBytes {
-		return nil, errors.New("object larger than the 64 MiB the check reads")
+		return nil, ErrObjectTooLarge
 	}
 	return body, nil
 }
@@ -994,7 +1025,7 @@ func isolationStep(ctx context.Context, o Options, r *Report, lockerAKID string,
 	// endpoint is one.
 	if pinned.plaintext() && !pinned.loopback() {
 		step.Status = Fail
-		step.Observed = fmt.Sprintf("The control plane pointed this step at %s, which is plaintext http. This step signs its request with the same temporary credentials this device pushes with — a secret key and a session token — and it sends those over an unencrypted connection to nothing but this machine's own loopback address, so no request was made and nothing about bucket scope was shown. Step 1 listed this account's locker at %s, so those credentials are already travelling unencrypted on every push: report this to the operator.", ref.Endpoint, o.Locker.Endpoint)
+		step.Observed = fmt.Sprintf("The control plane pointed this step at %s, which is plaintext http. This step signs its request with the same temporary credentials this device pushes with — a secret key and a session token — and the only plaintext address it will send those to is this machine's own loopback, so no request was made and nothing about bucket scope was shown. That rule is this step's alone: step 1 listed this account's locker at %s, so those credentials are already travelling unencrypted on every push. Report this to the operator.", ref.Endpoint, o.Locker.Endpoint)
 		r.Steps = append(r.Steps, step)
 		return
 	}
@@ -1148,13 +1179,36 @@ func pinToResponse(pinned endpointURL, exchanges func() []Exchange) pinResult {
 	if len(seen) == 0 {
 		return pinResult{note: "The reference probe made no request at all, so this account's credentials were never offered to another bucket and nothing about bucket scope was shown.", verdict: NotApplicable}
 	}
+	// placed answers one question and only one: was this account's
+	// credential answered at the pinned endpoint by the endpoint itself? It
+	// is what the foreign-bucket alarm turns on, so it is decided over
+	// every exchange before any of them ends this function. Deciding it
+	// inside the loop below made it false whenever a *later* exchange went
+	// astray, which suppressed the alarm for exactly the case it exists
+	// for: a reference locker that answers the listing at the pinned
+	// endpoint and then redirects the probe.
+	//
+	// A redirect does not count. The request reached the endpoint, but the
+	// answer was "go elsewhere" rather than anything about the bucket, and
+	// the probe did not follow it — so that exchange shows nothing about
+	// bucket scope even though it went to the right host.
+	placed := false
 	for _, ex := range seen {
 		if ex.RedirectedTo != "" {
-			return pinResult{note: fmt.Sprintf("The reference locker answered with a redirect to %s, which the probe refused to follow: a credential is only refused by a bucket if it was sent to that bucket, and this one was not, so nothing about bucket scope was shown.", ex.RedirectedTo), verdict: Fail}
+			continue
+		}
+		if landed, ok := parseEndpoint(ex.Scheme + "://" + ex.Host); ok && landed.equal(pinned) {
+			placed = true
+			break
+		}
+	}
+	for _, ex := range seen {
+		if ex.RedirectedTo != "" {
+			return pinResult{placed: placed, note: fmt.Sprintf("The reference locker answered with a redirect to %s, which the probe refused to follow: a credential is only refused by a bucket if it was sent to that bucket, and this one was not, so nothing further about bucket scope was shown.", ex.RedirectedTo), verdict: Fail}
 		}
 		landed, ok := parseEndpoint(ex.Scheme + "://" + ex.Host)
 		if !ok || !landed.equal(pinned) {
-			return pinResult{note: fmt.Sprintf("The reference probe's request went to %s, not to the pinned endpoint %s, so nothing about this locker's credentials was shown.", orNone(strings.TrimPrefix(ex.Scheme+"://"+ex.Host, "://")), pinned), verdict: Fail}
+			return pinResult{placed: placed, note: fmt.Sprintf("The reference probe's request went to %s, not to the pinned endpoint %s, so nothing about this locker's credentials was shown.", orNone(strings.TrimPrefix(ex.Scheme+"://"+ex.Host, "://")), pinned), verdict: Fail}
 		}
 	}
 	refusals := 0
