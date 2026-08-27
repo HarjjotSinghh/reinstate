@@ -101,6 +101,19 @@ device token lands in the OS keyring. `rein whoami` prints the account, the
 device, and the control plane. `REINSTATE_HOP_URL` or `[hop] url` selects a
 non-production control plane. See [docs/hop.md](hop.md).
 
+When the browser half refuses the sign-in — the account is at its plan's
+device quota, the link was opened too late, GitHub cancelled — `rein login`
+stops polling at once, prints the control plane's own sentence, says that
+this device was not enrolled and that the link is spent, and names the
+command that acts on it where that sentence does not (`rein devices` for the
+device quota, run on a machine that is still signed in to the account;
+`rein login --email ADDRESS` where GitHub is the obstacle). It exits `4`, or
+`1` for an expired link and for a control-plane fault. `--json` carries the
+refusal under `details.refusal` as `code`, `reason`, `known`, `terminal`,
+and `commands`. A refusal code newer than this CLI keeps the sentence and
+the exit code and loses only the added command. See
+[docs/hop.md](hop.md#when-a-sign-in-is-refused).
+
 ### `rein hop status`
 
 Shows the signed-in account's locker: endpoint, bucket, location, plan,

@@ -143,6 +143,14 @@ func runLogin(cmd *cobra.Command, o hopCommandOptions, addr string, asJSON, noBr
 		if errors.Is(err, context.Canceled) {
 			return NewExitError(ExitRuntime, "login cancelled")
 		}
+		// A refusal is the browser half saying why it enrolled nothing. It
+		// is reported here rather than through loginError because it is not
+		// an HTTP failure to be classified by status: the code and the
+		// sentence are the answer (see hop_refusal.go).
+		var refused *hop.RefusedError
+		if errors.As(err, &refused) {
+			return loginRefusalError(cmd.Root(), refused)
+		}
 		return loginError(err)
 	}
 	tok := credentials.DeviceToken{

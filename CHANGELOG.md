@@ -306,6 +306,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `rein login` now stops at a **refused** sign-in instead of polling to a
+  timeout. The browser half of a sign-in can end without enrolling a device
+  — the account is at its plan's device quota, the link was opened too
+  late, GitHub cancelled or refused the exchange, the address belongs to an
+  account linked to another GitHub identity, the control plane faulted —
+  and it renders a page saying so. The CLI was polling a session that
+  stayed pending, so a person got the actionable sentence in one window and
+  a bare timeout reported as an expiry in the other, on the command that is
+  the product's front door. The control plane now records the refusal and
+  the poll answers `403 {status: "refused", code, reason}`; `rein login`
+  stops at the first one, prints that exact sentence, says that this device
+  was not enrolled and that the link is spent, and exits `4` — or `1` for
+  the two that are nobody's to fix, an expired link and a control-plane
+  fault, which is the code an expired sign-in already used. Where the
+  sentence names an action but not the command that performs it, the CLI
+  adds the command: `rein devices` (and `rein devices revoke <device-id>`
+  on a build that carries device revocation) for the device quota, run on a
+  machine that is still signed in to the account because the refused one
+  holds no token for it, and `rein login --email <address>` where GitHub is
+  the obstacle. No upgrade URL is invented, because there is none. A code
+  from a control plane newer than the CLI keeps the sentence, the terminal
+  stop and the exit code, and loses only the added command. `--json`
+  carries the same under `details.refusal` as `code`, `reason`, `known`,
+  `terminal` and `commands`. `docs/hop.md` gains the code table, gated
+  against the codes the client declares, and its statement that a sixth
+  device on a five-device plan "can still sign in" is corrected: enrolment
+  now stops at the quota, and the mint-time check remains for the account a
+  plan change moved over its limit.
 - `rein sync verify` now applies "a step that got no answer is not a step
   that failed" to **all four** steps, not only the fourth. Steps 1 and 2
   drew the line the other way: a listing that timed out, a fetch whose

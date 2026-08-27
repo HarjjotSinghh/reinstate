@@ -37,6 +37,9 @@ const (
 	StatusApproved = "approved"
 	StatusExpired  = "expired"
 	StatusConsumed = "consumed"
+	// StatusRefused is the browser half of the sign-in ending without
+	// enrolling anything, and saying why. Terminal; see refusal.go.
+	StatusRefused = "refused"
 )
 
 // ResolveURL picks the control-plane URL: the environment first, then the
@@ -183,12 +186,26 @@ type pollResponse struct {
 	DeviceToken string   `json:"device_token,omitempty"`
 	Account     *Account `json:"account,omitempty"`
 	Device      *Device  `json:"device,omitempty"`
+	// Code and Reason arrive only on a refused answer, and a refused answer
+	// carries no token, account or device.
+	Code   string `json:"code,omitempty"`
+	Reason string `json:"reason,omitempty"`
 }
 
 // Poll reports the session status. The Approval is non-nil exactly once.
+// A refusal comes back as a *RefusedError and is terminal.
 func (c *Client) Poll(ctx context.Context, s LoginSession) (string, *Approval, error) {
 	var out pollResponse
 	err := c.do(ctx, http.MethodPost, "/v1/login/sessions/"+s.ID+"/poll", "", map[string]string{"poll_secret": s.PollSecret}, &out)
+	// A refusal is recognised by the body's own status rather than by the
+	// transport's. The control plane answers 403 for every one of them
+	// today, whatever status the browser page carried, and a client that
+	// keyed on 403 would misread the first refusal answered with anything
+	// else as an ordinary error and go on polling to a timeout — the very
+	// failure this answer exists to end.
+	if out.Status == StatusRefused {
+		return StatusRefused, nil, &RefusedError{Code: strings.TrimSpace(out.Code), Reason: out.Reason}
+	}
 	var he *Error
 	if errors.As(err, &he) && he.Status == http.StatusGone && out.Status != "" {
 		return out.Status, nil, nil
@@ -205,8 +222,12 @@ func (c *Client) Poll(ctx context.Context, s LoginSession) (string, *Approval, e
 	return out.Status, nil, nil
 }
 
-// WaitForApproval polls until the session is approved, expired, or ctx ends.
-// sleep is injectable so tests never wait.
+// WaitForApproval polls until the session is approved, refused, expired, or
+// ctx ends. sleep is injectable so tests never wait.
+//
+// A refusal leaves here as the *RefusedError [Poll] built, through the
+// error return below: it is terminal, so there is no polling on from it and
+// no case for it in the status switch.
 func (c *Client) WaitForApproval(ctx context.Context, s LoginSession, sleep func(context.Context, time.Duration) error) (*Approval, error) {
 	interval := time.Duration(s.IntervalSeconds) * time.Second
 	if interval <= 0 {

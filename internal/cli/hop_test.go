@@ -32,6 +32,12 @@ type fakeControlPlane struct {
 	emails   []string                // addresses a link was "sent" to
 	expireAt map[string]bool         // session ids reported as expired
 	seq      int
+	polls    int // POST .../poll calls, so a test can see a loop stop
+
+	// refuseSignIn, when set, is how the browser approval ends instead of
+	// enrolling: the page renders the sentence and the refusal is recorded
+	// on the session, so the poll answers `refused` (see hop_refusal_test.go).
+	refuseSignIn *fakeSignInRefusal
 
 	// Locker state (see hop_locker_test.go for the journeys).
 	s3 *s3test.Fake // nil until a test attaches one
@@ -86,6 +92,17 @@ type fakeSession struct {
 	status                          string
 	token                           string
 	identity                        hop.Identity
+	refusal                         *fakeSignInRefusal
+}
+
+// fakeSignInRefusal is one way the browser half of a sign-in can end
+// without enrolling a device. pageStatus is the browser page's own status,
+// which differs per refusal; the poll always answers 403, so a client that
+// switched on the poll's status would learn nothing from it.
+type fakeSignInRefusal struct {
+	code       string
+	reason     string
+	pageStatus int
 }
 
 func newFakeControlPlane(t *testing.T) *fakeControlPlane {
@@ -163,6 +180,16 @@ func (f *fakeControlPlane) approveLink(w http.ResponseWriter, link, method strin
 			http.Error(w, "Link already used", 410)
 			return
 		}
+		if r := f.refuseSignIn; r != nil {
+			// Recorded before the page is rendered, which is the whole
+			// point: the person reads the sentence in the browser and the
+			// CLI polling this session reads the same one.
+			s.status = hop.StatusRefused
+			s.refusal = r
+			w.WriteHeader(r.pageStatus)
+			_, _ = w.Write([]byte("<h1>Sign-in refused</h1><p>" + r.reason + "</p>"))
+			return
+		}
 		s.status = hop.StatusApproved
 		s.token = "hop_" + s.id
 		acct := hop.Account{ID: "acct-1", Plan: "hop", LocationHint: "apac", CreatedAt: "2026-08-23T12:00:00Z"}
@@ -186,6 +213,7 @@ func (f *fakeControlPlane) poll(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewDecoder(r.Body).Decode(&req)
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	f.polls++
 	s, ok := f.sessions[r.PathValue("id")]
 	if !ok || s.secret != req.PollSecret {
 		writeFakeError(w, 404, "unknown login session")
@@ -193,6 +221,12 @@ func (f *fakeControlPlane) poll(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	switch {
+	case s.status == hop.StatusRefused:
+		// 403 for every refusal whatever the browser page's status was,
+		// with the meaning in `code` and the browser's own sentence in
+		// `reason`. No token, account or device.
+		w.WriteHeader(403)
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "refused", "code": s.refusal.code, "reason": s.refusal.reason})
 	case s.status == hop.StatusConsumed:
 		w.WriteHeader(410)
 		_ = json.NewEncoder(w).Encode(map[string]string{"status": "consumed"})

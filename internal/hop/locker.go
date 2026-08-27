@@ -191,11 +191,13 @@ func lockerError(err error) error {
 		return err
 	}
 	switch he.Code {
-	case "quota_storage":
+	case CodeQuotaStorage:
 		return &QuotaError{Kind: QuotaStorage, Message: he.Message}
-	case "quota_devices":
+	case CodeQuotaDevices:
+		// The same code a refused sign-in carries (refusal.go): one plan
+		// limit, one word for it, whichever route ran into it.
 		return &QuotaError{Kind: QuotaDevices, Message: he.Message}
-	case "quota_push_rate":
+	case CodeQuotaPushRate:
 		return &QuotaError{Kind: QuotaPushRate, Message: he.Message}
 	case "no_locker":
 		return ErrNoLocker

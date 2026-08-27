@@ -469,9 +469,19 @@ On approval the control plane enrols this computer as a **device** under your
 provider), never in a file under `~/.reinstate`. `rein whoami` presents it
 and prints the account, the device, and the control plane it is bound to.
 
+A sign-in can also be **refused** in the browser — the account is at its
+device quota, the link was opened too late, GitHub cancelled. The control
+plane records why, and `rein login` stops polling at the first refusal and
+prints the same sentence the browser showed, rather than waiting out the
+clock and reporting an expiry. See
+[When a sign-in is refused](#when-a-sign-in-is-refused) for the codes, what
+the CLI adds to each, and what `--json` carries.
+
 Exit codes follow the usual contract: `2` for a malformed address, `4`
-(`auth_storage`) when the device is not signed in or its token was rejected,
-`1` for an unreachable control plane or an expired sign-in.
+(`auth_storage`) when the device is not signed in, when its token was
+rejected, and for a refused sign-in — except `login_expired` and
+`internal_error`, which exit `1` alongside an unreachable control plane and
+an expired sign-in.
 
 ## The locker
 
@@ -762,7 +772,7 @@ passphrase, or session content. Sign-in is a device-authorization style flow:
 | ---- | ------- | ------ |
 | 1 | `POST /v1/login/sessions` `{method: "github"\|"email", email?, device: {name, platform, location_hint?}}` | `201 {session_id, poll_secret, verification_url?, expires_at, interval_seconds}`. For `email` the link is mailed, not returned. |
 | 2 | Browser opens `verification_url` (GitHub OAuth) or the emailed link | The emailed link shows an "Approve this device?" form on `GET`; enrolment happens only on its `POST`, so mail link scanners that prefetch the link neither sign anyone in nor burn it. The control plane creates the account on first sight and enrols the device in one transaction. Each link works once and expires with the session. |
-| 3 | `POST /v1/login/sessions/{id}/poll` `{poll_secret}` | `200 {status: "pending"}` until approved; then exactly once `200 {status: "approved", device_token, account, device}`; afterwards `410 {status: "consumed"}`. Past `expires_at`: `410 {status: "expired"}`. Wrong secret: `404`. |
+| 3 | `POST /v1/login/sessions/{id}/poll` `{poll_secret}` | `200 {status: "pending"}` until approved; then exactly once `200 {status: "approved", device_token, account, device}`; afterwards `410 {status: "consumed"}`. Past `expires_at`: `410 {status: "expired"}`. If step 2 refused: `403 {status: "refused", code, reason}` (see [When a sign-in is refused](#when-a-sign-in-is-refused)). Wrong secret: `404`. |
 | 4 | `GET /v1/whoami` with `Authorization: Bearer <device_token>` | `200 {account, device}`; unknown or revoked token: `401`. |
 | 5 | `POST /v1/locker` (bearer) | Idempotent provisioning: `200 {endpoint, bucket, region, prefix, location_hint, plan, created_at, first_push_at?, devices, usage: {bytes, objects, observed_at}, quota: {storage_bytes, devices, mints_per_hour}}`. `GET /v1/locker` returns the same without provisioning (`404 {code: "no_locker"}` before the first `POST`). |
 | 6 | `POST /v1/locker/credentials` (bearer) | `200 {access_key_id, secret_access_key, session_token, expires_at, endpoint, bucket, region}`, valid for at most an hour and scoped to the bucket. Refusals carry a `code`: `quota_storage` (403), `quota_devices` (403), `quota_push_rate` (429), `no_locker` (404), `storage_unavailable` (502). |
@@ -776,10 +786,77 @@ The CLI reads the locker with `GET /v1/locker` on every hosted command and
 only calls `POST /v1/locker` when the answer is `no_locker` (normally once,
 from `rein init --hop`).
 
-The device quota is enforced when credentials are minted, not when a device
-enrols: a sixth device on a five-device plan can still sign in, after which
-no device on the account can mint until the count is back under the plan.
-`rein devices revoke` is the way out: a revoked device no longer counts.
+**Enrolment stops at the plan's device quota.** A sixth sign-in on a
+five-device plan is refused during step 2: the browser gets a `403` page,
+nothing is enrolled, and the refusal is recorded on the login session, so
+step 3 answers `refused` with `quota_devices` and the sentence that page
+showed. The count and the insert share one transaction, so two approvals
+racing cannot both take the last slot.
+
+The same quota is still checked when credentials are minted, and that check
+is not redundant: enrolment stopping at the quota does not help an account
+that is *already* over it — a plan change can move the limit under an
+existing set of devices — and on such an account no device can mint until
+the count is back under the plan. `rein hop status` shows the count against
+the limit; the way back under it is to revoke a device or move to a larger
+plan.
+
+### When a sign-in is refused
+
+Step 2 happens in a browser and step 3 is a CLI polling in a terminal, so
+every way step 2 can end other than enrolling a device is **recorded on the
+login session** before its page is rendered — except the two endings named
+below, which cannot be — and step 3 hands the CLI the code and the same
+sentence the page showed. Without the record the person reads what to do in
+one window while `rein login` polls to a timeout in the other and then
+reports an expiry, which is what this route did for the device quota.
+
+A refusal is **terminal**. The session is never approved afterwards, and the
+link enrols nothing if it is opened again — it re-renders the recorded
+refusal.
+
+<!-- sign-in refusal codes: gated by TestEverySignInRefusalCodeIsDocumented -->
+
+| Page | `code` | When |
+| --- | --- | --- |
+| `403` | `quota_devices` | The account already holds the `devices` its plan allows. The same code credential minting answers for the same limit; the sentence names the count and the plan |
+| `410` | `login_expired` | The link was opened after `expires_at`, or expired between the page and the approval |
+| `400` | `github_no_code` | GitHub returned the state with no authorization code, which is what cancelling or denying there looks like |
+| `502` | `github_rejected` | GitHub refused to exchange the code |
+| `409` | `account_linked` | The verified address belongs to an account already linked to a different GitHub identity. It is never relinked silently |
+| `500` | `internal_error` | The control plane could not finish the sign-in. Terminal like the rest, because the alternative is a CLI polling to a timeout while the browser shows an error; the cause is logged and never sent |
+
+The **Page** column is the browser's status. Step 3 answers `403` for every
+one of them, so a client switches on `code` and never on the status —
+including a `code` it has never seen, which a control plane newer than the
+client can send. `reason` is the sentence the person read in the browser and
+is safe to print verbatim.
+
+**Two endings record nothing**, and a CLI polling such a session keeps
+seeing `pending` until `expires_at`, when the poll answers `expired` and the
+wait ends — which is exactly the outcome the refusal answer exists to
+replace, so a client cannot drop its wait for it:
+
+- A request that names no login session: an unrecognised link token, a link
+  presented on the other method's route, a GitHub callback with no `state`.
+  There is nothing to record it on.
+- A refusal whose own write fails. The person still gets the page; the
+  control plane logs that the CLI will not hear it.
+
+What `rein login` does with the answer: it stops polling at the first
+refusal, prints the control plane's sentence verbatim, says that this device
+was not enrolled and that the link is spent, and exits `4` — except
+`login_expired` and `internal_error`, which exit `1`, the code an expired
+sign-in and an unreachable control plane already used. Where that sentence
+names an action but not the command that performs it, the CLI adds the
+command: `rein devices` (and, on a build that carries device revocation,
+`rein devices revoke <device-id>`) for `quota_devices`, run on a machine
+that is still signed in to the account, because the refused one holds no
+token for it; `rein login --email <address>` for `account_linked` and
+`github_rejected`. A code this client does not know keeps the sentence, the
+stop and exit `4`, and loses only the added command. `--json` carries the
+same under `details.refusal`: `code`, `reason`, `known`, `terminal`, and the
+`commands` the CLI named.
 
 Device tokens are 256-bit random values prefixed `hop_`. The control plane
 stores only a hash, bound to one device record (name, platform, location
