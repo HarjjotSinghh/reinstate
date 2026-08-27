@@ -298,14 +298,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   These are the credentials `rein push` already uses: at most an hour old
   and scoped by the provider to this account's bucket and no other. Every
   session object they can read is ciphertext; `keyring.v1.json` is not, and
-  the command, the CLI reference, the object format and this entry no
-  longer say they "read nothing but ciphertext". The keyring is plaintext
-  by design and holds no usable key, but it names the account's profile id
-  and every enrolled device's id, public key and enrolment time, and each
-  generation lists the devices enrolled in it — so where there is more than
-  one generation it also shows which devices stopped being enrolled and
-  when. A command that hands out a credential says exactly that, in the
-  caution it prints and in both pages that describe it.
+  the command, its help text, the CLI reference and this entry no longer
+  say they "read nothing but ciphertext" (nor does `docs/hop.md` still
+  open the section by saying the locker holds only ciphertext). The
+  keyring is plaintext by design and holds no usable key, but it names the
+  account's profile id and every enrolled device's id, public key and
+  enrolment time, and each generation lists the devices enrolled in it — so
+  where there is more than one generation it also shows which devices
+  stopped being enrolled and when. A command that hands out a credential
+  says exactly that, in the caution it prints and in both pages that
+  describe it.
   `--export` prints the values as shell `export` statements and nothing
   else, plus `REIN_LOCKER_BUCKET`, so `eval "$(rein hop credentials
   --export)"` works: the recipe's old first line eval'd bare assignments,
