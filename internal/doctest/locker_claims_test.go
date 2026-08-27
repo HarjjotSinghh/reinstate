@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/HarjjotSinghh/reinstate/internal/cli"
 )
@@ -129,6 +130,11 @@ func TestLockerClaimsCarryTheirExceptions(t *testing.T) {
 // rule, whatever it is assembled from. A Short or Long built up from
 // constants would satisfy the file-level walk above and still print a
 // bare claim to a person running `rein sync verify --help`.
+//
+// It reads Short, Long, Example and every flag's usage string, which is
+// the whole of what `--help` prints. The earlier version read Short and
+// Long only, so a claim in a flag description or an example was help text
+// this gate did not see.
 func TestLockerClaimsInCommandHelp(t *testing.T) {
 	root := cli.NewRoot(cli.Options{
 		Name:            "rein",
@@ -136,7 +142,9 @@ func TestLockerClaimsInCommandHelp(t *testing.T) {
 	})
 	var walk func(cmd *cobra.Command, path string)
 	walk = func(cmd *cobra.Command, path string) {
-		for _, text := range []string{cmd.Short, cmd.Long} {
+		texts := []string{cmd.Short, cmd.Long, cmd.Example}
+		cmd.Flags().VisitAll(func(f *pflag.Flag) { texts = append(texts, f.Usage) })
+		for _, text := range texts {
 			for _, paragraph := range strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n\n") {
 				for _, c := range lockerClaims {
 					if c.made.MatchString(paragraph) && !c.exception.MatchString(paragraph) {

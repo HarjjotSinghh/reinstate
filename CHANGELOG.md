@@ -57,7 +57,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   so a storage call written the way the existing ones are has to classify
   what came back or be listed as exempt with its reason. A call that reaches
   storage through a helper of another shape is outside what that gate sees,
-  and it says so.
+  and it says so. The help-text half of the same gate now reads `Example`
+  and every flag's usage string as well as `Short` and `Long`, which is the
+  whole of what `--help` prints; a bare claim in a flag description used to
+  be help text it did not see.
 - **The foreign-bucket alarm survives a later redirect (#12).** The pin that
   gates it was one boolean for the whole probe and was decided at the first
   bad exchange, so a reference locker that answered this account's
