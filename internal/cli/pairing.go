@@ -590,9 +590,9 @@ generation in the keyring (a fresh root key wrapped for every remaining
 device and under the recovery code, and signed by the account key that code
 derives; earlier generations stay so everything already in the locker
 remains readable), tells the control plane, which refuses the revoked
-device's token from then on, and raises the account's key generation floor
-there so the other devices refuse the earlier keyring even before they have
-read the new one.
+device's token from then on, and — where that control plane carries an
+account key generation floor — raises it, so the other devices refuse the
+earlier keyring even before they have read the new one.
 
 The revoked device keeps whatever it already pulled and cannot read what a
 device pushes once that device has the new key generation. It cannot mint

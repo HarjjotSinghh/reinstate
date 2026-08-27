@@ -315,11 +315,13 @@ generations is what this is for; authenticating one is the keyring's job,
 above.
 
 `rein devices revoke` raises the floor once the new generation is in the
-keyring and the control plane has refused the revoked token. Every command
-that reads the keyring on a Hop profile asks for the floor first and refuses
-a keyring below it (`ExitSafety`, naming the control plane as the source),
-before unwrapping anything: push, pull, `devices approve`, `devices revoke`,
-`account recover`, `account join`, and the two diagnostics.
+keyring and the control plane has refused the revoked token — where the
+control plane carries one; where it does not, the command says so on stderr
+and the floor stays wherever it was. Every command that reads the keyring on
+a Hop profile asks for the floor first and refuses a keyring below it
+(`ExitSafety`, naming the floor's source), before unwrapping anything: push,
+pull, `devices approve`, `devices revoke`, `account recover`, `account
+join`, and the two diagnostics.
 
 What that does and does not buy, precisely:
 
@@ -331,7 +333,8 @@ What that does and does not buy, precisely:
 - **Against an operator holding both the control plane and the bucket it
   adds nothing**, because that party serves whatever floor it likes. The
   recovery-code signature on every generation and the local anchor are what
-  cover that adversary, as far as they cover it — see the list below.
+  cover that adversary, as far as they cover it — see "What revocation
+  establishes, and what it does not", below.
 - **A profile on your own bucket has no control plane to ask**, so there the
   per-device floor and the local anchor remain the whole of it. `rein
   devices revoke` requires a signed-in Hop account, so revocation is a Hop
