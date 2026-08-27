@@ -223,16 +223,22 @@ nothing below has to be filled in by hand:
 ```bash
 eval "$(rein hop credentials --export)"
 
-aws s3api list-objects-v2 --endpoint-url "$AWS_ENDPOINT_URL" --bucket "$REIN_LOCKER_BUCKET" --query 'Contents[].Key' --output text
+aws s3api list-objects-v2 --endpoint-url "$AWS_ENDPOINT_URL" --bucket "$REIN_LOCKER_BUCKET" --prefix "$REIN_LOCKER_PREFIX" --query 'Contents[].Key' --output text
 
-aws s3 cp --endpoint-url "$AWS_ENDPOINT_URL" "s3://$REIN_LOCKER_BUCKET/manifest.age" - | head -c 22
+aws s3 cp --endpoint-url "$AWS_ENDPOINT_URL" "s3://$REIN_LOCKER_BUCKET/${REIN_LOCKER_PREFIX}manifest.age" - | head -c 22
 
-aws s3 cp --endpoint-url "$AWS_ENDPOINT_URL" "s3://$REIN_LOCKER_BUCKET/manifest.age" - | grep -a -c '"sessions"'
+aws s3 cp --endpoint-url "$AWS_ENDPOINT_URL" "s3://$REIN_LOCKER_BUCKET/${REIN_LOCKER_PREFIX}manifest.age" - | grep -a -c '"sessions"'
 ```
 
-The first command is step 1: every object under this account's prefix. A
-Hop locker has no prefix, so there is none to give; on BYO storage add
-`--prefix "<your prefix>"`. The second and third are step 2: the first 22
+The first command is step 1: every object under this account's prefix.
+`REIN_LOCKER_PREFIX` is that prefix as the locker record gives it —
+empty on a locker that has none, and ending in `/` on one that has a
+prefix — so both lines above work either way and nothing has to be edited.
+Hop lockers are provisioned without a prefix today, but the locker record
+carries the field (`internal/hop.Locker.Prefix`) and the client honours it
+everywhere, so the recipe passes it rather than assuming it away. On BYO
+storage the prefix is the one in your own `config.toml`. The second and
+third commands are step 2: the first 22
 bytes are the age v1 header line `age-encryption.org/v1`, and `"sessions"`
 — a field name that is in the index before encryption — appears nowhere in
 the body, so `grep -c` prints `0` (and exits 1, as `grep` does when it
@@ -242,9 +248,10 @@ finds nothing).
 purpose: `aws` reads its credentials from the environment, and variables
 that are assigned but not exported are invisible to it. It sets
 `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`,
-`AWS_ENDPOINT_URL`, `AWS_REGION`, `AWS_DEFAULT_REGION` and
-`REIN_LOCKER_BUCKET`. `--endpoint-url` is passed explicitly as well
-because `AWS_ENDPOINT_URL` is only honoured by newer AWS CLI versions.
+`AWS_ENDPOINT_URL`, `AWS_REGION`, `AWS_DEFAULT_REGION`,
+`REIN_LOCKER_BUCKET` and `REIN_LOCKER_PREFIX`. `--endpoint-url` is passed
+explicitly as well because `AWS_ENDPOINT_URL` is only honoured by newer
+AWS CLI versions.
 
 Step 4 uses the same credentials against the operator's reference locker.
 Its bucket and probe key are printed by `rein sync verify` in step 4's
@@ -266,7 +273,12 @@ The endpoint is the same `$AWS_ENDPOINT_URL` throughout, and that is the
 point of step 4: a refusal only shows bucket scope when it comes from the
 endpoint that just accepted the credential. `rein sync verify` checks the
 scheme, host and port, and refuses to send the credential to a plaintext
-`http` endpoint at all.
+`http` endpoint — with one exemption, a loopback address (`localhost`,
+`127.0.0.0/8`, `::1`), where the request does not leave the machine. That
+is what the test fakes and a locally run control plane use; no Hop
+endpoint is one. Running these commands by hand has no such guard: `aws`
+sends the credential wherever `--endpoint-url` points, so check the scheme
+yourself.
 
 These commands are exercised by
 `internal/cli/hop_recipe_test.go`, which runs this section's shell through

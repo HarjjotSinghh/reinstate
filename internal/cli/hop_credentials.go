@@ -56,13 +56,21 @@ scoped by the storage provider to this account's bucket and no other, and
 able to reach nothing this device cannot already reach. Every session
 object they can read is ciphertext; ` + "`" + `keyring.v1.json` + "`" + ` is not, and never
 was — it is plaintext by design and holds no usable key, but it names the
-account's profile id and every enrolled device's id, public key and
-enrolment time. Each run mints a fresh set and counts against the hourly
-mint quota that rein hop status shows.
+account's profile id, every enrolled device's id, public key and enrolment
+time, and one entry per key generation with the time it started, so a
+locker whose key has rolled over also shows which devices stopped being
+enrolled and when. Each run mints a fresh set and counts against the
+hourly mint quota that rein hop status shows.
 
 --export prints the same values as shell ` + "`" + `export` + "`" + ` statements and nothing
-else, for ` + "`" + `eval "$(rein hop credentials --export)"` + "`" + `; it adds
-REIN_LOCKER_BUCKET, which the documented recipe uses.
+else, for ` + "`" + `eval "$(rein hop credentials --export)"` + "`" + `. It sets
+AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN,
+AWS_ENDPOINT_URL, AWS_REGION and AWS_DEFAULT_REGION (both spellings,
+because different aws CLI versions read different ones), and two names of
+its own that the documented recipe uses: REIN_LOCKER_BUCKET, and
+REIN_LOCKER_PREFIX — the locker's key prefix, empty when it has none and
+ending in "/" when it has one, so a recipe can paste it in front of a key
+either way.
 
 The third check needs the account's root key, which never leaves the
 device and which no command exports.`,
@@ -72,6 +80,15 @@ device and which no command exports.`,
 			if err != nil {
 				return err
 			}
+			// The locker record is read before the mint, not after: it is
+			// where the key prefix lives, the printed values are wrong
+			// without it, and a failed lookup should not have spent one of
+			// the account's hourly mints first.
+			locker, err := client.LockerStatus(cmd.Context(), tok.Token)
+			if err != nil {
+				return hopExitError(err)
+			}
+			prefix := exportPrefix(locker.Prefix)
 			creds, err := client.MintCredentials(cmd.Context(), tok.Token)
 			if err != nil {
 				return hopExitError(err)
@@ -95,11 +112,13 @@ device and which no command exports.`,
 					{"AWS_REGION", creds.Region},
 					{"AWS_DEFAULT_REGION", creds.Region},
 					{"REIN_LOCKER_BUCKET", creds.Bucket},
+					{"REIN_LOCKER_PREFIX", prefix},
 				} {
 					PrintHuman(out, "export %s=%s", kv[0], shellQuote(kv[1]))
 				}
 			default:
 				PrintHuman(out, "Locker:  %s at %s (region %s)", creds.Bucket, creds.Endpoint, creds.Region)
+				PrintHuman(out, "Prefix:  %s", orNoPrefix(prefix))
 				PrintHuman(out, "Expires: %s", orNever(creds.ExpiresAt))
 				PrintHuman(out, "")
 				PrintHuman(out, "AWS_ACCESS_KEY_ID=%s", creds.AccessKeyID)
@@ -114,7 +133,7 @@ device and which no command exports.`,
 			if creds.ExpiresAt != "" {
 				expiry = "at " + creds.ExpiresAt
 			}
-			PrintHuman(cmd.ErrOrStderr(), "note: these reach this account's own bucket and no other (rein sync verify step 4 checks that), and expire %s. Every session object in that bucket is ciphertext; keyring.v1.json is plaintext and names the account and its enrolled devices. Treat the secret key and session token as secrets until they expire; the access key id is a public identifier.", expiry)
+			PrintHuman(cmd.ErrOrStderr(), "note: these reach this account's own bucket and no other (rein sync verify step 4 checks that), and expire %s. Every session object in that bucket is ciphertext; keyring.v1.json is plaintext and names the account, its enrolled devices, and — on a locker whose key has rolled over — which devices stopped being enrolled and when. Treat the secret key and session token as secrets until they expire; the access key id is a public identifier.", expiry)
 			return nil
 		},
 	}
@@ -122,6 +141,33 @@ device and which no command exports.`,
 	cmd.Flags().BoolVar(&asExport, "export", false, "print shell export statements and nothing else, for eval \"$(rein hop credentials --export)\"")
 	cmd.MarkFlagsMutuallyExclusive("json", "export")
 	return cmd
+}
+
+// exportPrefix is the locker's key prefix in the form the by-hand recipe
+// pastes in front of an object name: empty when the locker has no prefix,
+// and ending in a single "/" when it has one. Both forms work in
+// `--prefix "$REIN_LOCKER_PREFIX"` and in
+// `s3://$REIN_LOCKER_BUCKET/${REIN_LOCKER_PREFIX}manifest.age`, which is
+// why the trailing slash is part of the value rather than of the recipe.
+//
+// Hop provisions lockers without a prefix, so this is usually empty. The
+// field exists on the locker record, `internal/hop.Locker.Prefix`, and
+// the client honours it everywhere else, so a recipe that assumed it away
+// would break on the first locker that carried one.
+func exportPrefix(prefix string) string {
+	prefix = strings.Trim(strings.TrimSpace(prefix), "/")
+	if prefix == "" {
+		return ""
+	}
+	return prefix + "/"
+}
+
+// orNoPrefix names an empty prefix rather than printing a blank field.
+func orNoPrefix(prefix string) string {
+	if prefix == "" {
+		return "(none: every object is at the top of the bucket)"
+	}
+	return prefix
 }
 
 // shellQuote wraps a value in single quotes for POSIX `sh`, so an eval of

@@ -44,12 +44,37 @@ const recipeSection = "## Reproducing the checks by hand"
 // credential line has to put the values in the *environment*, where a
 // child process reads them. The shim prints what it inherited, so a
 // recipe whose first line exports nothing fails this test.
+//
+// It runs twice: once on a locker with no key prefix, which is how Hop
+// provisions them, and once on a locker whose record carries one. The
+// second case is not hypothetical — `internal/hop.Locker` has the field
+// and every client path honours it — and the recipe used to assert a Hop
+// locker had no prefix while `--export` printed none, so on a prefixed
+// locker the printed commands listed nothing and fetched nothing.
 func TestByHandRecipeRunsAsPrinted(t *testing.T) {
+	for _, prefix := range []string{"", "team/a"} {
+		name := "no prefix"
+		if prefix != "" {
+			name = "prefix " + prefix
+		}
+		t.Run(name, func(t *testing.T) { byHandRecipe(t, prefix) })
+	}
+}
+
+func byHandRecipe(t *testing.T, prefix string) {
 	shell, err := exec.LookPath("sh")
 	if err != nil {
 		t.Skip("no POSIX sh on PATH; the recipe is shell and cannot be run here")
 	}
-	j, _ := hostedVerifyJourney(t)
+	j := newLockerJourney(t)
+	j.plane.lockerPrefix = prefix
+	j, _ = hostedVerifyJourneyOn(t, j)
+	// The form the export prints and the recipe pastes in front of a key:
+	// empty, or ending in one slash.
+	at := ""
+	if prefix != "" {
+		at = prefix + "/"
+	}
 	if _, errb, code := j.run("push", "--all"); code != ExitOK {
 		t.Fatalf("push exit=%d err=%q", code, errb)
 	}
@@ -65,7 +90,7 @@ func TestByHandRecipeRunsAsPrinted(t *testing.T) {
 	dir := t.TempDir()
 	logPath := filepath.Join(dir, "aws.log")
 	manifestPath := filepath.Join(dir, "manifest.age")
-	if err := os.WriteFile(manifestPath, j.object("manifest.age"), 0o600); err != nil {
+	if err := os.WriteFile(manifestPath, j.object(at+"manifest.age"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	shimDir := filepath.Join(dir, "bin")
@@ -153,10 +178,16 @@ done
 		t.Fatalf("the recipe ran %d aws command(s), want 5:\n%s", invocations, raw)
 	}
 	log := string(raw)
-	for _, want := range []string{j.plane.locker.bucket, j.plane.reference.bucket, j.plane.reference.key, "manifest.age"} {
+	for _, want := range []string{j.plane.locker.bucket, j.plane.reference.bucket, j.plane.reference.key, at + "manifest.age"} {
 		if !strings.Contains(log, want) {
 			t.Fatalf("no aws command named %q:\n%s", want, log)
 		}
+	}
+	// The prefix reaches the commands the way the page says it does: as
+	// --prefix on the listing, and in front of the key on both reads. A
+	// recipe that dropped it would list an empty bucket and fetch nothing.
+	if !strings.Contains(log, "--prefix\t"+at) {
+		t.Fatalf("the listing did not carry --prefix %q:\n%s", at, log)
 	}
 
 	// The same requests, made for real against the fake locker with the
@@ -175,7 +206,7 @@ done
 	if err != nil {
 		t.Fatal(err)
 	}
-	objects, err := locker.List(ctx, "")
+	objects, err := locker.List(ctx, strings.TrimSuffix(env["REIN_LOCKER_PREFIX"], "/"))
 	if err != nil {
 		t.Fatalf("step 1 by hand: %v", err)
 	}
@@ -183,12 +214,12 @@ done
 	for _, o := range objects {
 		keys = append(keys, o.Key)
 	}
-	for _, want := range []string{"manifest.age", "keyring.v1.json"} {
+	for _, want := range []string{at + "manifest.age", at + "keyring.v1.json"} {
 		if !strings.Contains(strings.Join(keys, " "), want) {
 			t.Fatalf("step 1 by hand listed %v, without %s", keys, want)
 		}
 	}
-	body := readAll(t, locker, "manifest.age")
+	body := readAll(t, locker, env["REIN_LOCKER_PREFIX"]+"manifest.age")
 	if head := string(body[:22]); head != "age-encryption.org/v1\n" {
 		t.Fatalf("step 2 by hand: first 22 bytes %q", head)
 	}
@@ -294,10 +325,15 @@ func shellEnvironment(t *testing.T, shell, credentials string) map[string]string
 			env[name] = value
 		}
 	}
-	for _, name := range []string{"AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN", "AWS_ENDPOINT_URL", "AWS_REGION", "REIN_LOCKER_BUCKET"} {
+	// REIN_LOCKER_PREFIX is not here: it is legitimately empty on a locker
+	// with no prefix, so it is checked below for presence instead.
+	for _, name := range []string{"AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN", "AWS_ENDPOINT_URL", "AWS_REGION", "AWS_DEFAULT_REGION", "REIN_LOCKER_BUCKET"} {
 		if env[name] == "" {
 			t.Fatalf("%s did not reach a child process; the printed credentials are assignments, not exports:\n%s", name, out)
 		}
+	}
+	if _, ok := env["REIN_LOCKER_PREFIX"]; !ok {
+		t.Fatalf("REIN_LOCKER_PREFIX did not reach a child process; the recipe pastes it in front of every key:\n%s", out)
 	}
 	return env
 }
@@ -315,7 +351,7 @@ func withoutAWSEnvironment() []string {
 	kept := make([]string, 0, len(os.Environ()))
 	for _, entry := range os.Environ() {
 		name, _, _ := strings.Cut(entry, "=")
-		if strings.HasPrefix(name, "AWS_") || name == "REIN_LOCKER_BUCKET" {
+		if strings.HasPrefix(name, "AWS_") || strings.HasPrefix(name, "REIN_LOCKER_") {
 			continue
 		}
 		kept = append(kept, entry)

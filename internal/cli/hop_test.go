@@ -36,14 +36,19 @@ type fakeControlPlane struct {
 	// Locker state (see hop_locker_test.go for the journeys).
 	s3 *s3test.Fake // nil until a test attaches one
 	// locker is the single account's bucket; provisioned on first POST.
-	locker      *fakeLocker
-	provisions  int      // POST /v1/locker calls; only the first should ever happen
-	hints       []string // location hints received at sign-in
-	mints       []string // access key ids minted, in order
-	credTTL     time.Duration
-	refuse      string // error code every mint answers with, when set
-	usageBytes  int64
-	firstPushes int
+	locker *fakeLocker
+	// lockerPrefix is the key prefix the locker record advertises. Hop
+	// provisions lockers without one, but the record carries the field and
+	// every client path honours it, so a journey can set one and see what
+	// a prefixed locker actually does.
+	lockerPrefix string
+	provisions   int      // POST /v1/locker calls; only the first should ever happen
+	hints        []string // location hints received at sign-in
+	mints        []string // access key ids minted, in order
+	credTTL      time.Duration
+	refuse       string // error code every mint answers with, when set
+	usageBytes   int64
+	firstPushes  int
 
 	// Pairing relays (see pairing_fake_test.go).
 	pairings   map[string]*fakePairing

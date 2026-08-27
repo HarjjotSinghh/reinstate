@@ -32,7 +32,7 @@ func (f *fakeControlPlane) authed(w http.ResponseWriter, r *http.Request) bool {
 
 func (f *fakeControlPlane) lockerView() map[string]any {
 	view := map[string]any{
-		"endpoint": f.s3.URL(), "bucket": f.locker.bucket, "region": "auto", "prefix": "",
+		"endpoint": f.s3.URL(), "bucket": f.locker.bucket, "region": "auto", "prefix": f.lockerPrefix,
 		"location_hint": "apac", "plan": "hop", "created_at": "2026-08-23T12:02:00Z",
 		"devices": len(f.tokens),
 		"usage":   map[string]any{"bytes": f.usageBytes, "objects": len(f.mints), "observed_at": "2026-08-23T12:02:00Z"},
