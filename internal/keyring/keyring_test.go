@@ -19,8 +19,8 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/crypto"
 )
 
-// Golden inputs for testdata/keyring/keyring.v1.json. Synthetic values
-// generated for the fixture only; they protect nothing.
+// Golden inputs for testdata/keyring/keyring.one-generation.json. Synthetic
+// values generated for the fixture only; they protect nothing.
 const (
 	goldenProfileID    = "11111111-2222-4333-8444-555555555555"
 	goldenDeviceID     = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
@@ -28,6 +28,14 @@ const (
 	goldenDeviceKey    = "AGE-SECRET-KEY-1J7YHF3Y899CUH9V2WWWPDAR8DNUEASJDLAP9KY3KJ6YW0DZKL5XQQJJ87L"
 	goldenRecipient    = "age12zhh9qvam60p0vhsv0x423pn2y6u423lwa5f83s3hf6nju2gfcssjvyj2f"
 )
+
+// goldenPath is the one-generation fixture; goldenV2Path (generation_test.go)
+// is the rolled-over one. Both are written by this package's current format,
+// so both are regenerated together when the format changes deliberately.
+var goldenPath = filepath.Join("..", "..", "testdata", "keyring", "keyring.one-generation.json")
+
+// goldenStamp is the fixed clock both fixtures are written against.
+var goldenStamp = time.Date(2026, 8, 23, 12, 0, 0, 0, time.UTC)
 
 func goldenRootKey() []byte {
 	key := make([]byte, crypto.RootKeySize)
@@ -39,7 +47,7 @@ func goldenRootKey() []byte {
 
 func loadGolden(t *testing.T) *Keyring {
 	t.Helper()
-	raw, err := os.ReadFile(filepath.Join("..", "..", "testdata", "keyring", "keyring.v1.json"))
+	raw, err := os.ReadFile(goldenPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,11 +60,35 @@ func loadGolden(t *testing.T) *Keyring {
 
 // TestGoldenKeyringUnwraps pins the keyring object format: a fixture written
 // by this version must keep unwrapping under both paths in every later
-// version, or existing lockers become unreadable.
+// version, or existing lockers become unreadable. Set KEYRING_WRITE_GOLDEN=1
+// to regenerate it after a deliberate format change.
 func TestGoldenKeyringUnwraps(t *testing.T) {
+	if os.Getenv("KEYRING_WRITE_GOLDEN") == "1" {
+		identity, err := age.ParseX25519Identity(goldenDeviceKey)
+		if err != nil {
+			t.Fatal(err)
+		}
+		fresh, err := New(goldenProfileID, goldenRootKey(), goldenRecoveryCode, goldenDeviceID, identity, goldenStamp)
+		if err != nil {
+			t.Fatal(err)
+		}
+		raw, err := fresh.Marshal()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(goldenPath, raw, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
 	k := loadGolden(t)
-	if k.ProfileID != goldenProfileID || k.CurrentGeneration != 1 || k.DeviceCount() != 1 {
+	if k.SchemaVersion != SchemaVersion || k.ProfileID != goldenProfileID || k.CurrentGeneration != 1 || k.DeviceCount() != 1 {
 		t.Fatalf("unexpected golden shape: %+v", k)
+	}
+	if k.Generations[0].Signature == "" {
+		t.Fatal("generation 1 carries no signature")
+	}
+	if err := k.VerifyGenerations(""); err != nil {
+		t.Fatalf("the one-generation fixture does not verify: %v", err)
 	}
 	if k.Generations[0].Recipient != goldenRecipient {
 		t.Fatalf("recipient drifted: %s", k.Generations[0].Recipient)
@@ -108,7 +140,7 @@ func TestGoldenKeyringFailsClosed(t *testing.T) {
 		t.Fatalf("enrolled id with a different key: got %v", err)
 	}
 	// The fixture must contain no root key, recovery code, or device secret.
-	raw, _ := os.ReadFile(filepath.Join("..", "..", "testdata", "keyring", "keyring.v1.json"))
+	raw, _ := os.ReadFile(goldenPath)
 	for _, secret := range []string{goldenRecoveryCode, goldenDeviceKey, "0102030405060708"} {
 		if bytes.Contains(raw, []byte(secret)) {
 			t.Fatalf("keyring fixture leaks %q", secret)
@@ -189,21 +221,27 @@ func TestEnrolRejectsForeignRootKeyAndDuplicates(t *testing.T) {
 	}
 }
 
-func TestUnenrolRemovesOnlyTheMatchingWrap(t *testing.T) {
+func TestUnenrolAppendedRemovesOnlyTheMatchingWrap(t *testing.T) {
 	k := loadGolden(t)
 	device, _ := age.GenerateX25519Identity()
-	other, _ := age.GenerateX25519Identity()
-	if err := k.Enrol(goldenRootKey(), "new-device", device.Recipient(), time.Now()); err != nil {
+	appended, err := k.EnrolAll(map[int][]byte{1: goldenRootKey()}, "new-device", device.Recipient(), time.Now())
+	if err != nil {
 		t.Fatal(err)
 	}
+	if len(appended) != 1 || appended[0].Generation != 1 || appended[0].Wrap == "" {
+		t.Fatalf("EnrolAll reported %+v", appended)
+	}
 	before := k.DeviceCount()
-	if k.Unenrol("new-device", other.Recipient().String()) || k.DeviceCount() != before {
-		t.Fatal("removed a wrap made for a different public key")
+	if k.UnenrolAppended("new-device", []AppendedWrap{{Generation: 1, Wrap: "some other ciphertext"}}) || k.DeviceCount() != before {
+		t.Fatal("removed a wrap whose ciphertext does not match")
 	}
-	if k.Unenrol("missing", device.Recipient().String()) || k.Unenrol("new-device", "") || k.DeviceCount() != before {
-		t.Fatal("removed a wrap for an unknown device or an empty key")
+	if k.UnenrolAppended("missing", appended) || k.UnenrolAppended("new-device", nil) || k.DeviceCount() != before {
+		t.Fatal("removed a wrap for an unknown device, or with nothing to remove")
 	}
-	if !k.Unenrol("new-device", device.Recipient().String()) || k.DeviceCount() != before-1 || k.HasDevice("new-device") {
+	if k.UnenrolAppended("new-device", []AppendedWrap{{Generation: 9, Wrap: appended[0].Wrap}}) || k.DeviceCount() != before {
+		t.Fatal("removed a wrap from a generation the keyring does not hold")
+	}
+	if !k.UnenrolAppended("new-device", appended) || k.DeviceCount() != before-1 || k.HasDevice("new-device") {
 		t.Fatal("did not remove the matching wrap")
 	}
 	golden, err := age.ParseX25519Identity(goldenDeviceKey)
@@ -213,7 +251,7 @@ func TestUnenrolRemovesOnlyTheMatchingWrap(t *testing.T) {
 	if _, _, err := k.UnwrapForDevice(goldenDeviceID, golden); err != nil {
 		t.Fatalf("the original device's wrap was disturbed: %v", err)
 	}
-	if k.Unenrol("new-device", device.Recipient().String()) {
+	if k.UnenrolAppended("new-device", appended) {
 		t.Fatal("removed the same wrap twice")
 	}
 }

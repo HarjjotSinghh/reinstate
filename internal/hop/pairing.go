@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -22,6 +23,8 @@ const (
 	CodePairingDecided = "pairing_decided"
 	CodePairingRate    = "pairing_rate"
 	CodeWrongAccount   = "wrong_account"
+	CodeSelfRevoke     = "self_revoke"
+	CodeDeviceUnknown  = "device_unknown"
 )
 
 // PairingRequest is one device-approval request as the control plane
@@ -52,8 +55,33 @@ var (
 	ErrPairingDecided  = errors.New("the pairing request was already approved, collected, or cancelled")
 	ErrPairingConsumed = errors.New("the pairing payload was already collected")
 	ErrPairingRate     = errors.New("the pairing request was polled too often; run rein account join again")
-	ErrWrongAccount    = errors.New("the pairing request belongs to another account")
+	ErrWrongAccount    = errors.New("the request belongs to another account")
+	ErrSelfRevoke      = errors.New("a device cannot revoke itself; revoke it from another enrolled device")
+	ErrDeviceUnknown   = errors.New("no such device on this account")
 )
+
+// Revocation is the control plane's answer to a revocation: the device as
+// it now stands, and whether this call did the revoking (false when the
+// device was already revoked, which is not an error).
+type Revocation struct {
+	Device  Device `json:"device"`
+	Revoked bool   `json:"revoked"`
+}
+
+// RevokeDevice tells the control plane that device id is revoked: its token
+// is refused from then on and credential minting no longer counts it. The
+// call is idempotent. It carries no key material; the key generation
+// rollover happens in the keyring before this is called.
+func (c *Client) RevokeDevice(ctx context.Context, token, id string) (Revocation, error) {
+	var out Revocation
+	if err := c.do(ctx, http.MethodDelete, "/v1/devices/"+url.PathEscape(id), token, nil, &out); err != nil {
+		return Revocation{}, pairingError(err)
+	}
+	if out.Device.ID == "" {
+		return Revocation{}, errors.New("control plane answered the revocation without the device")
+	}
+	return out, nil
+}
 
 // CreatePairing opens a pairing request for this device.
 func (c *Client) CreatePairing(ctx context.Context, token, publicKey, salt, binding string) (PairingRequest, error) {
@@ -185,6 +213,10 @@ func pairingError(err error) error {
 		return ErrPairingRate
 	case CodeWrongAccount:
 		return ErrWrongAccount
+	case CodeSelfRevoke:
+		return ErrSelfRevoke
+	case CodeDeviceUnknown:
+		return ErrDeviceUnknown
 	}
 	if he.Status == http.StatusUnauthorized {
 		return ErrUnauthorized

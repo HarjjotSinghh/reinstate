@@ -2,6 +2,7 @@ package cli
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -33,6 +34,80 @@ func (f *fakeControlPlane) registerPairing(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/pairing/{id}/claim", f.claimPairing)
 	mux.HandleFunc("POST /v1/pairing/{id}/expire", f.expirePairing)
 	mux.HandleFunc("GET /v1/devices", f.listDevices)
+	mux.HandleFunc("DELETE /v1/devices/{id}", f.revokeDevice)
+	mux.HandleFunc("POST /v1/devices/{id}/revoke", f.revokeDevice)
+	mux.HandleFunc("GET "+hop.KeyGenerationPath, f.readKeyGeneration)
+	mux.HandleFunc("POST "+hop.KeyGenerationPath, f.raiseKeyGeneration)
+}
+
+// readKeyGeneration and raiseKeyGeneration are the account key-generation
+// floor, in the shape hopd serves it (private docs/hop.md, "Key
+// generation"): a per-account counter that only ever goes up, served to and
+// raised by authenticated devices. A revoked device's token is gone from
+// f.tokens, so identityFor answers 401 and it can neither read the floor
+// nor raise it. A report at or below the floor is not an error; it answers
+// with the floor as it stands and `raised: false`.
+//
+// Setting noKeyGenerationFloor makes the fake behave like a control plane
+// that predates the route, which is the case the client falls back for.
+func (f *fakeControlPlane) readKeyGeneration(w http.ResponseWriter, r *http.Request) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if _, ok := f.identityFor(w, r); !ok {
+		return
+	}
+	if f.noKeyGenerationFloor {
+		writeFakeError(w, 404, "this control plane does not carry a key generation floor")
+		return
+	}
+	f.keyGenerationReads++
+	_ = json.NewEncoder(w).Encode(f.keyGenerationView(false))
+}
+
+func (f *fakeControlPlane) raiseKeyGeneration(w http.ResponseWriter, r *http.Request) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	id, ok := f.identityFor(w, r)
+	if !ok {
+		return
+	}
+	if f.noKeyGenerationFloor {
+		writeFakeError(w, 404, "this control plane does not carry a key generation floor")
+		return
+	}
+	var req struct {
+		Generation int `json:"generation"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&req)
+	// hopd bounds the counter rather than verifying it; it holds no keyring
+	// and cannot see whether a rollover happened.
+	if req.Generation < 1 || req.Generation > fakeMaxKeyGeneration {
+		writeFakeErrorCode(w, 400, hop.CodeKeyGenerationRange,
+			fmt.Sprintf("generation must be a whole number between 1 and %d", fakeMaxKeyGeneration))
+		return
+	}
+	raised := req.Generation > f.keyGeneration
+	if raised {
+		f.keyGeneration = req.Generation
+		f.keyGenerationAt = time.Now().UTC().Format(time.RFC3339)
+		f.keyGenerationBy = id.Device.ID
+	}
+	_ = json.NewEncoder(w).Encode(f.keyGenerationView(raised))
+}
+
+// fakeMaxKeyGeneration mirrors internal/store.MaxKeyGeneration in hopd.
+const fakeMaxKeyGeneration = 1000
+
+func (f *fakeControlPlane) keyGenerationView(raised bool) map[string]any {
+	view := map[string]any{"generation": f.keyGeneration}
+	if f.keyGenerationAt != "" {
+		view["raised_at"] = f.keyGenerationAt
+		view["raised_by"] = f.keyGenerationBy
+	}
+	if raised {
+		view["raised"] = true
+	}
+	return view
 }
 
 // identityFor resolves the bearer token, answering the 401 itself.
@@ -72,7 +147,57 @@ func (f *fakeControlPlane) deviceByID(id string) hop.Device {
 			return identity.Device
 		}
 	}
+	if d, ok := f.revoked[id]; ok {
+		return d
+	}
 	return hop.Device{ID: id}
+}
+
+// revokeDevice is DELETE /v1/devices/{id}: like hopd, the device record
+// stays with revoked_at set, its token is forgotten so every later call
+// (minting and pairing included) answers 401, its pending pairing request
+// is expired, and a device_revoked event is recorded once.
+func (f *fakeControlPlane) revokeDevice(w http.ResponseWriter, r *http.Request) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	id, ok := f.identityFor(w, r)
+	if !ok {
+		return
+	}
+	target := r.PathValue("id")
+	if target == id.Device.ID {
+		writeFakeErrorCode(w, 400, "self_revoke", "a device cannot revoke itself; revoke it from another enrolled device")
+		return
+	}
+	if d, ok := f.revoked[target]; ok {
+		_ = json.NewEncoder(w).Encode(map[string]any{"device": d, "revoked": false})
+		return
+	}
+	for token, identity := range f.tokens {
+		if identity.Device.ID != target {
+			continue
+		}
+		if identity.Account.ID != id.Account.ID {
+			writeFakeErrorCode(w, 404, "device_unknown", "no such device on this account")
+			return
+		}
+		d := identity.Device
+		d.RevokedAt = time.Now().UTC().Format(time.RFC3339)
+		if f.revoked == nil {
+			f.revoked = map[string]hop.Device{}
+		}
+		f.revoked[target] = d
+		delete(f.tokens, token)
+		for _, p := range f.pairings {
+			if p.deviceID == target && p.status == "pending" {
+				p.status = "expired"
+			}
+		}
+		f.events = append(f.events, "device_revoked:"+target)
+		_ = json.NewEncoder(w).Encode(map[string]any{"device": d, "revoked": true})
+		return
+	}
+	writeFakeErrorCode(w, 404, "device_unknown", "no such device on this account")
 }
 
 func (f *fakeControlPlane) createPairing(w http.ResponseWriter, r *http.Request) {
@@ -231,9 +356,14 @@ func (f *fakeControlPlane) listDevices(w http.ResponseWriter, r *http.Request) {
 	devices := []hop.Device{}
 	seen := map[string]bool{}
 	for i := 1; i <= f.seq; i++ {
+		id := "dev-sess-" + strconv.Itoa(i)
+		if d, ok := f.revoked[id]; ok && !seen[id] {
+			seen[id] = true
+			devices = append(devices, d)
+		}
 		for _, identity := range f.tokens {
-			if identity.Device.ID == "dev-sess-"+strconv.Itoa(i) && !seen[identity.Device.ID] {
-				seen[identity.Device.ID] = true
+			if identity.Device.ID == id && !seen[id] {
+				seen[id] = true
 				devices = append(devices, identity.Device)
 			}
 		}

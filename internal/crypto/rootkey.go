@@ -59,6 +59,13 @@ func RootKeyIdentity(rootKey []byte) (*age.X25519Identity, error) {
 // with the identities of every key generation this device can read. The root
 // key itself is handed over by the keyring, never typed and never stored in
 // config.
+//
+// Which generation opens an envelope is decided by the envelope itself: an
+// age header carries one recipient stanza per key it was sealed to, and
+// age.Decrypt tries every identity offered against those stanzas. So an
+// object written before a revocation keeps opening under the generation
+// that wrote it, and one written after opens only for devices that hold the
+// new generation, without any generation number stored beside the object.
 type RootKeyProvider struct {
 	current *age.X25519Identity
 	all     []age.Identity
@@ -97,6 +104,15 @@ func (p *RootKeyProvider) Identities() ([]age.Identity, error) {
 		return nil, fmt.Errorf("root key provider has no key generations")
 	}
 	return append([]age.Identity(nil), p.all...), nil
+}
+
+// Generations reports how many key generations the provider can open,
+// the current one included.
+func (p *RootKeyProvider) Generations() int {
+	if p == nil {
+		return 0
+	}
+	return len(p.all)
 }
 
 // Recipient returns the current generation's public recipient string, the

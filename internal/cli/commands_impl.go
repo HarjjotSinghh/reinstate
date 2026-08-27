@@ -268,12 +268,7 @@ func newInitCmd() *cobra.Command {
 			}
 			keyringStore := credentials.NewKeyringStore()
 			if len(existingFiles) != 0 {
-				backupPath, err := fsx.BackupFiles(
-					home,
-					filepath.Join(home, "backups"),
-					"reinitialize",
-					existingFiles...,
-				)
+				backupPath, err := backupExistingInitFiles(home, "reinitialize", existingFiles)
 				if err != nil {
 					return NewExitError(ExitRuntime, "back up existing init state: "+err.Error())
 				}
@@ -354,8 +349,11 @@ func initHosted(cmd *cobra.Command, home string, existingFiles, projectMappings 
 		}
 		cfg.Projects = append(cfg.Projects, project)
 	}
+	// Read the sync state before the backup removes the enrolment record,
+	// so a re-initialization against the same account can keep it.
+	state := carriedSyncState(home, cfg.ProfileID)
 	if len(existingFiles) != 0 {
-		backupPath, err := fsx.BackupFiles(home, filepath.Join(home, "backups"), "reinitialize", existingFiles...)
+		backupPath, err := backupExistingInitFiles(home, "reinitialize", existingFiles)
 		if err != nil {
 			return NewExitError(ExitRuntime, "back up existing init state: "+err.Error())
 		}
@@ -368,19 +366,60 @@ func initHosted(cmd *cobra.Command, home string, existingFiles, projectMappings 
 	if err := config.SaveConfig(home, cfg); err != nil {
 		return err
 	}
-	if err := config.SaveState(home, schema.NewState()); err != nil {
+	if err := config.SaveState(home, state); err != nil {
 		return err
 	}
 	PrintHuman(cmd.OutOrStdout(), "initialized reinstate home for Reinstate Hop (config.toml + state.json); storage.type=%s", schema.StorageHop)
 	PrintHuman(cmd.OutOrStdout(), "locker %s at %s (location %s, plan %s)", locker.Bucket, locker.Endpoint, locker.LocationHint, locker.Plan)
 	PrintHuman(cmd.OutOrStdout(), "profile_id=%s device_id=%s", cfg.ProfileID, cfg.DeviceID)
+	if len(state.Sessions) != 0 {
+		PrintHuman(cmd.OutOrStdout(), "kept the sync state for %d session(s): the locker is the same one this home was already syncing with", len(state.Sessions))
+	}
 	PrintHuman(cmd.OutOrStdout(), "next: rein account init on this first device (or rein account join on another), then rein push")
 	return nil
 }
 
+// carriedSyncState decides what `rein init --hop --force` does with
+// state.json: keep the session records when the home is being pointed at the
+// same profile it already had, start empty otherwise.
+//
+// The reason is the documented way back onto a revoked machine. `--force` is
+// reached for there because it is the only thing that removes the enrolment
+// record — nothing else does — and clearing the sync state is collateral,
+// not the point. Without the records, `rein push` sees a local revision and
+// a remote snapshot that differ with no shared base, calls that a
+// divergence, and exits `6`: the last step of a recovery recipe fails on
+// state the recipe itself threw away.
+//
+// The records stay valid across that because the profile is the locker: same
+// account, same objects, same snapshot ids. Only the device id changed, and
+// no session record names one. A different profile is a different locker, so
+// there the empty state is correct and is what is written.
+//
+// The previous state is in the backup either way.
+func carriedSyncState(home, profileID string) *schema.State {
+	fresh := schema.NewState()
+	previous, err := config.LoadConfig(home)
+	if err != nil || previous.ProfileID != profileID {
+		return fresh
+	}
+	state, err := config.LoadState(home)
+	if err != nil || state == nil || len(state.Sessions) == 0 {
+		return fresh
+	}
+	fresh.Sessions = state.Sessions
+	fresh.LastManifestRev = state.LastManifestRev
+	fresh.LastRemoteETag = state.LastRemoteETag
+	return fresh
+}
+
+// existingInitFiles lists the files in home that a re-initialization
+// replaces. account.json is one of them: it records this device's place in
+// one account's keyring, and re-initializing can point the home at a
+// different account, profile, or device id.
 func existingInitFiles(home string) ([]string, error) {
 	var existing []string
-	for _, name := range []string{"config.toml", "state.json"} {
+	for _, name := range []string{"config.toml", "state.json", "account.json"} {
 		if _, err := os.Lstat(filepath.Join(home, name)); err == nil {
 			existing = append(existing, name)
 		} else if !os.IsNotExist(err) {
@@ -388,6 +427,27 @@ func existingInitFiles(home string) ([]string, error) {
 		}
 	}
 	return existing, nil
+}
+
+// backupExistingInitFiles copies the home's existing init state into one
+// timestamped backup set and then removes the enrolment record.
+//
+// Removing it is the point. init rewrites config.toml and state.json, but
+// nothing rewrites account.json, and both `rein account join` and `rein
+// account recover` refuse to run where one exists ("this device is already
+// enrolled"). A device that was revoked and is re-initializing to enrol
+// again would otherwise have no way forward: the record describes an
+// enrolment the account no longer has, and no command removed it. The copy
+// in the backup set keeps the history.
+func backupExistingInitFiles(home, name string, existing []string) (string, error) {
+	path, err := fsx.BackupFiles(home, filepath.Join(home, "backups"), name, existing...)
+	if err != nil {
+		return "", err
+	}
+	if err := os.Remove(config.AccountPath(home)); err != nil && !os.IsNotExist(err) {
+		return "", err
+	}
+	return path, nil
 }
 
 func requireRemoteProfileManifest(ctx context.Context, store backend.Backend, key string) error {
@@ -550,6 +610,9 @@ func refusedRestoreMessage(agent, sessionID, refuse string) string {
 func hostedNotEnrolledError(ctx context.Context, cfg *schema.Config, b backend.Backend, prefix string) error {
 	detail := " (encryption.type is " + cfg.Encryption.Type + ", the hosted tier uses " + schema.EncryptionRootKey + ")"
 	_, _, err := keyring.Load(ctx, b, keyring.ObjectKey(prefix))
+	if exit := exitForKeyringRefusal(err); exit != nil {
+		return exit
+	}
 	switch {
 	case err == nil:
 		return NewExitError(ExitConfig, "this device is not enrolled in the account's keyring yet; run rein account recover with your recovery code, or rein account join and approve it from an enrolled device"+detail)

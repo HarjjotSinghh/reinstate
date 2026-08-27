@@ -1,0 +1,32 @@
+{
+  "schema_version": 5,
+  "profile_id": "11111111-2222-4333-8444-555555555555",
+  "current_generation": 1,
+  "account_key": "8bJkOTbHPuLuMmIXrMWn/mdFd4eXtbisG84Nn5sjCfs=",
+  "generations": [
+    {
+      "number": 1,
+      "created_at": "2026-08-23T12:00:00Z",
+      "recipient": "age12zhh9qvam60p0vhsv0x423pn2y6u423lwa5f83s3hf6nju2gfcssjvyj2f",
+      "recovery": {
+        "kdf": "argon2id",
+        "time": 3,
+        "memory_kib": 65536,
+        "threads": 4,
+        "salt": "o1BZ0XNPDobSUo4CkHaDfQ==",
+        "wrap": "RxXzSIAYLFeVBRAR/lvAJUyJepCW6hiAFNj/LkKlRmtNz6HoJ+X/ml1lELo1bBEVWV7b52Ouoyk7E0mREJbpIVEApFEgaKng",
+        "format": 2
+      },
+      "devices": [
+        {
+          "device_id": "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+          "public_key": "age17t66a2ew0ukgt8m9mlunx0sfla9kyh3y5dyahpdg9vuu9lfvw5aqdas80z",
+          "enrolled_at": "2026-08-23T12:00:00Z",
+          "wrap": "YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBmOTZ3aS9Ta0ZBQmIzVUNGeEp3VTVXMlA3SlJ6TjAyUk9NcGhhTlpWYVJzCmJSMXNqczFkYUdvOWUvV3o3UXF1aUdXeDUxMVNVczNQcWQxOC9WdXFIYm8KLS0tIGw0eWhkQk9MVXBDVk0rZUdCdTFWVTl0MVBaSlZpQ0hUdmM2YWhPbGRjZWsKwi6NkL/6s+7SgMpq76/RnNyaXtuOwVXMQoh5ALwMt03T1NEBNumG0t8U9OMEcCK8NnmB2k+IV7aSgFfNNLEx8YBFvmJHA7KoREwamrieluOG6vpTMG9iD+S5bNI0kgtwG1eeSyF9n6UwhqGVT79xjzqBl9Nl7BfBdK83EnHlMtdBHpChqTkZeA==",
+          "format": 2
+        }
+      ],
+      "signature": "y5Tl2Drwh3smIDmHfzQRmE1boTGzmtUs+jHyClwCdVttiR3lYSyLC7k3PqiPP2uc+lqL1Dj9AZcZT04leJhQDQ=="
+    }
+  ]
+}
