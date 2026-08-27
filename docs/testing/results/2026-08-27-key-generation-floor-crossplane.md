@@ -36,9 +36,10 @@ this device?" does.
 The bucket was stood in for by `REINSTATE_BACKEND=memory` with one
 `REINSTATE_MEMORY_BACKEND_DIR` shared between the three device homes. That
 seam short-circuits the S3 client and nothing else: `confirmKeyGenerationFloor`
-keys off `cfg.Storage.Type`, so every command still asked the control plane
-for the floor. Writing into that directory directly is what stands in for a
-revoked device using the locker credential it was already given.
+keys off `cfg.Storage.Type`, so every command that reads the keyring still
+asked the control plane for the floor. Writing into that directory directly
+is what stands in for a revoked device using the locker credential it was
+already given.
 
 ## Journey 1 — the lagging device, against the real control plane
 

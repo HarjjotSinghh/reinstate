@@ -53,9 +53,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   in a readable size, had stopped failing and started reporting a check that
   could not run. `backend.APIAnswer` carries any structured answer the
   backend cannot otherwise name, `verify.ErrObjectTooLarge` names the local
-  limit, and `TestEveryStorageCallClassifiesWhatCameBack` walks the package
-  so a storage call added later cannot skip the classifier the way the last
-  one could have.
+  limit, and `TestEveryStorageCallClassifiesWhatCameBack` walks the package,
+  so a storage call written the way the existing ones are has to classify
+  what came back or be listed as exempt with its reason. A call that reaches
+  storage through a helper of another shape is outside what that gate sees,
+  and it says so.
 - **The foreign-bucket alarm survives a later redirect (#12).** The pin that
   gates it was one boolean for the whole probe and was decided at the first
   bad exchange, so a reference locker that answered this account's
