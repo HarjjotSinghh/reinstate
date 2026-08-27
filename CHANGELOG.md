@@ -19,7 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   accept it and keep sealing to the root key the revoked device holds. That
   was reproduced end to end.
   - **The control plane carries one monotonic key generation per account**
-    (`GET`/`POST /v1/account/key-generation`, bearer). `rein devices
+    (`GET`/`POST /v1/account/key-generation`, bearer; the counter is
+    `generation`, and a report at or below the floor answers `raised:
+    false` rather than failing). `rein devices
     revoke` raises it once the rollover is in the keyring and the token is
     refused; every command that reads the keyring on a Hop profile asks for
     it first and refuses a keyring below it (`ExitSafety`, naming the

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -40,9 +41,12 @@ func (f *fakeControlPlane) registerPairing(mux *http.ServeMux) {
 }
 
 // readKeyGeneration and raiseKeyGeneration are the account key-generation
-// floor: a per-account number that only ever goes up, served to and raised
-// by authenticated devices. A revoked device's token is gone from f.tokens,
-// so identityFor answers 401 and it can neither read the floor nor lower it.
+// floor, in the shape hopd serves it (private docs/hop.md, "Key
+// generation"): a per-account counter that only ever goes up, served to and
+// raised by authenticated devices. A revoked device's token is gone from
+// f.tokens, so identityFor answers 401 and it can neither read the floor
+// nor raise it. A report at or below the floor is not an error; it answers
+// with the floor as it stands and `raised: false`.
 //
 // Setting noKeyGenerationFloor makes the fake behave like a control plane
 // that predates the route, which is the case the client falls back for.
@@ -53,40 +57,57 @@ func (f *fakeControlPlane) readKeyGeneration(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	if f.noKeyGenerationFloor {
-		writeFakeErrorCode(w, 404, hop.CodeNoKeyGeneration, "this control plane does not carry a key generation floor")
+		writeFakeError(w, 404, "this control plane does not carry a key generation floor")
 		return
 	}
 	f.keyGenerationReads++
-	_ = json.NewEncoder(w).Encode(f.keyGenerationView())
+	_ = json.NewEncoder(w).Encode(f.keyGenerationView(false))
 }
 
 func (f *fakeControlPlane) raiseKeyGeneration(w http.ResponseWriter, r *http.Request) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	if _, ok := f.identityFor(w, r); !ok {
+	id, ok := f.identityFor(w, r)
+	if !ok {
 		return
 	}
 	if f.noKeyGenerationFloor {
-		writeFakeErrorCode(w, 404, hop.CodeNoKeyGeneration, "this control plane does not carry a key generation floor")
+		writeFakeError(w, 404, "this control plane does not carry a key generation floor")
 		return
 	}
 	var req struct {
-		KeyGeneration int `json:"key_generation"`
+		Generation int `json:"generation"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&req)
-	if req.KeyGeneration < 1 {
-		writeFakeError(w, 400, "key_generation must be at least 1")
+	// hopd bounds the counter rather than verifying it; it holds no keyring
+	// and cannot see whether a rollover happened.
+	if req.Generation < 1 || req.Generation > fakeMaxKeyGeneration {
+		writeFakeErrorCode(w, 400, hop.CodeKeyGenerationRange,
+			fmt.Sprintf("generation must be a whole number between 1 and %d", fakeMaxKeyGeneration))
 		return
 	}
-	if req.KeyGeneration > f.keyGeneration {
-		f.keyGeneration = req.KeyGeneration
+	raised := req.Generation > f.keyGeneration
+	if raised {
+		f.keyGeneration = req.Generation
 		f.keyGenerationAt = time.Now().UTC().Format(time.RFC3339)
+		f.keyGenerationBy = id.Device.ID
 	}
-	_ = json.NewEncoder(w).Encode(f.keyGenerationView())
+	_ = json.NewEncoder(w).Encode(f.keyGenerationView(raised))
 }
 
-func (f *fakeControlPlane) keyGenerationView() map[string]any {
-	return map[string]any{"key_generation": f.keyGeneration, "updated_at": f.keyGenerationAt}
+// fakeMaxKeyGeneration mirrors internal/store.MaxKeyGeneration in hopd.
+const fakeMaxKeyGeneration = 1000
+
+func (f *fakeControlPlane) keyGenerationView(raised bool) map[string]any {
+	view := map[string]any{"generation": f.keyGeneration}
+	if f.keyGenerationAt != "" {
+		view["raised_at"] = f.keyGenerationAt
+		view["raised_by"] = f.keyGenerationBy
+	}
+	if raised {
+		view["raised"] = true
+	}
+	return view
 }
 
 // identityFor resolves the bearer token, answering the 401 itself.

@@ -25,12 +25,12 @@ func TestKeyGenerationFloorAnswers(t *testing.T) {
 		// but must still not be reported as a successful read.
 		anyErr bool
 	}{
-		{name: "a floor", status: 200, body: map[string]any{"key_generation": 4, "updated_at": "2026-08-27T00:00:00Z"}, want: 4},
-		{name: "never raised", status: 200, body: map[string]any{"key_generation": 0}, want: 0},
+		{name: "a floor", status: 200, body: map[string]any{"generation": 4, "raised_at": "2026-08-27T00:00:00Z", "raised_by": "dev-1"}, want: 4},
+		{name: "never raised", status: 200, body: map[string]any{"generation": 0}, want: 0},
 		{name: "route not served", status: 404, body: map[string]any{"error": "not found"}, wantErr: ErrNoKeyGenerationFloor},
-		{name: "route not served, by code", status: 400, body: map[string]any{"code": CodeNoKeyGeneration, "error": "no floor"}, wantErr: ErrNoKeyGenerationFloor},
+		{name: "generation out of range", status: 400, body: map[string]any{"code": CodeKeyGenerationRange, "error": "generation must be a whole number between 1 and 1000"}, wantErr: ErrKeyGenerationRange},
 		{name: "token refused", status: 401, body: map[string]any{"error": "revoked"}, wantErr: ErrUnauthorized},
-		{name: "negative generation", status: 200, body: map[string]any{"key_generation": -1}, anyErr: true},
+		{name: "negative generation", status: 200, body: map[string]any{"generation": -1}, anyErr: true},
 		{name: "control plane error", status: 503, body: map[string]any{"error": "down"}, anyErr: true},
 	}
 	for _, tc := range cases {
@@ -72,7 +72,7 @@ func TestKeyGenerationFloorAnswers(t *testing.T) {
 // quietly turn the floor off; refusing keeps the caller's report honest.
 func TestRaiseKeyGenerationFloorRefusesAnAnswerBelowWhatItSent(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]any{"key_generation": 1})
+		_ = json.NewEncoder(w).Encode(map[string]any{"generation": 1})
 	}))
 	defer srv.Close()
 	if _, err := New(srv.URL).RaiseKeyGenerationFloor(context.Background(), "hop_token", 3); err == nil {
@@ -90,7 +90,7 @@ func TestRaiseKeyGenerationFloorSendsTheGeneration(t *testing.T) {
 			t.Errorf("unexpected request %s %s", r.Method, r.URL.Path)
 		}
 		_ = json.NewDecoder(r.Body).Decode(&seen)
-		_ = json.NewEncoder(w).Encode(map[string]any{"key_generation": 7, "updated_at": "2026-08-27T00:00:00Z"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"generation": 7, "raised_at": "2026-08-27T00:00:00Z", "raised": true})
 	}))
 	defer srv.Close()
 	client := New(srv.URL)
@@ -104,7 +104,7 @@ func TestRaiseKeyGenerationFloorSendsTheGeneration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if seen["key_generation"] != 5 {
+	if seen["generation"] != 5 {
 		t.Fatalf("request body %v", seen)
 	}
 	if got.Generation != 7 {

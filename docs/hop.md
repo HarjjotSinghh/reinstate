@@ -303,8 +303,16 @@ the lagging device missed. It carries one number per account:
 
 | route | who | answer |
 | --- | --- | --- |
-| `GET /v1/account/key-generation` (bearer) | any enrolled device | `200 {"key_generation": N, "updated_at"}`; `N` is `0` until a revocation raises it. `404 {code: "no_key_generation"}` from a control plane that does not carry one. |
-| `POST /v1/account/key-generation` (bearer) `{"key_generation": N}` | any enrolled device; in practice the one doing the revoking | `200 {"key_generation": M, "updated_at"}` where `M` is the higher of what it held and `N` — the number is monotonic, so reporting a smaller one raises nothing. The CLI refuses an answer below the `N` it sent, which catches a control plane that is not keeping it monotonic; it cannot compel one, and the row below says what that leaves open. |
+| `GET /v1/account/key-generation` (bearer) | any enrolled device of the account | `200 {"generation": n, "raised_at"?, "raised_by"?}`; `n` is `0` until a revocation raises it, and every keyring satisfies `0`. A control plane older than the route answers `404`. |
+| `POST /v1/account/key-generation` (bearer) `{"generation": n}` | any enrolled device; in practice the one doing the revoking | `200 {"generation": m, "raised": bool, "raised_at"?, "raised_by"?}` where `m` is the higher of what it held and `n` — the counter is monotonic, so reporting a smaller number raises nothing and answers `raised: false`, which is how a device that has not seen another's rollover learns it is behind. `400 {code: "key_generation_range"}` for a number outside `1..1000`. The CLI refuses an answer below the `n` it sent, which catches a control plane that is not keeping the counter monotonic; it cannot compel one, and the bullets below say what that leaves open. |
+
+`generation` is a **counter**, not a key and not a secret: it is the highest
+key generation any of the account's devices has reported rolling over to,
+and it is served to every enrolled device. The control plane holds no key
+and never sees a keyring, so a reported rollover is a claim rather than an
+observation — all it can refuse is a number no keyring could hold. Ordering
+generations is what this is for; authenticating one is the keyring's job,
+above.
 
 `rein devices revoke` raises the floor once the new generation is in the
 keyring and the control plane has refused the revoked token. Every command

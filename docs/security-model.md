@@ -222,7 +222,9 @@ nothing since would accept it — correctly, by every rule it holds — and
 keep sealing to the root key the revoked device still has.
 
 **The account key generation floor** closes that against the revoked
-device. The control plane carries one number per account, monotonic, and
+device. The control plane carries one counter per account, monotonic — a
+number, not a key, and one it cannot verify, since it holds no keyring; all
+it does is order generations, and
 `rein devices revoke` raises it once the rollover has landed in the keyring;
 every command that reads the keyring on a Hop profile asks for it and
 refuses a keyring below it, before unwrapping anything. It reaches the

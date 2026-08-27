@@ -23,7 +23,7 @@ import (
 //   - Against the revoked device — the adversary revocation exists to stop,
 //     and the realistic one, a stolen laptop — it closes the gap. The
 //     control plane refuses that device's token, so that device has no way
-//     to read or lower the floor, and every other device is told the
+//     to read or raise the floor, and every other device is told the
 //     account has moved on whether or not it has read the keyring.
 //   - Against an operator holding **both** the control plane and the bucket
 //     it adds nothing: that party can serve whatever floor it likes, to a
@@ -33,6 +33,9 @@ import (
 //   - A device that *has* confirmed a floor keeps the higher of that and
 //     whatever it is told next (see the client's caller), so an answer that
 //     goes backwards is not accepted from anyone.
+//   - The control plane holds no key and sees no keyring, so a reported
+//     rollover is a claim rather than an observation. It orders generations;
+//     authenticating one is the keyring's job, and stays here.
 //
 // See docs/hop.md and docs/security-model.md, which state all of that.
 
@@ -40,25 +43,37 @@ import (
 // account's key generation floor.
 const KeyGenerationPath = "/v1/account/key-generation"
 
-// CodeNoKeyGeneration is the refusal code a control plane that does not
-// carry a floor answers with.
-const CodeNoKeyGeneration = "no_key_generation"
+// CodeKeyGenerationRange is the refusal code for a reported generation
+// outside the range the control plane will store.
+const CodeKeyGenerationRange = "key_generation_range"
 
-// KeyGeneration is the account's key generation as the control plane holds
-// it. Generation is 0 when no device has ever reported one, which is the
-// answer for an account that has never had a revocation.
+// KeyGeneration is the account's key generation floor as the control plane
+// holds it. Generation is 0 on an account no revocation has touched, which
+// every keyring satisfies.
 type KeyGeneration struct {
-	Generation int `json:"key_generation"`
-	// UpdatedAt is when the control plane last raised the number, RFC3339.
-	// It is empty while the number is still 0.
-	UpdatedAt string `json:"updated_at,omitempty"`
+	Generation int `json:"generation"`
+	// RaisedAt and RaisedBy are absent while the floor is 0.
+	RaisedAt string `json:"raised_at,omitempty"`
+	RaisedBy string `json:"raised_by,omitempty"`
+	// Raised is the POST answer's report of whether that call moved the
+	// floor. A report at or below the floor is not an error: it answers
+	// with the floor as it stands and Raised false, which is how a device
+	// that has not seen another device's rollover learns it is behind.
+	Raised bool `json:"raised,omitempty"`
 }
 
 // ErrNoKeyGenerationFloor reports a control plane that does not serve the
-// floor at all: an older deployment, answering 404. It is not a refusal of
-// this device, and callers fall back to the last floor this device had
-// confirmed rather than treating the account as being at generation 0.
+// floor at all: a deployment older than the route, answering 404. It is not
+// a refusal of this device, and callers fall back to the last floor this
+// device had confirmed rather than treating the account as being at
+// generation 0.
 var ErrNoKeyGenerationFloor = errors.New("this control plane does not carry the account's key generation floor")
+
+// ErrKeyGenerationRange reports a generation the control plane will not
+// store. It bounds what one enrolled device can do to its own account's
+// floor; it is not a check that a rollover happened, which the control
+// plane cannot see.
+var ErrKeyGenerationRange = errors.New("the control plane refused that key generation as out of range")
 
 // KeyGenerationFloor reads the account's key generation floor. A revoked or
 // unknown token gets ErrUnauthorized; a control plane without the route
@@ -75,9 +90,9 @@ func (c *Client) KeyGenerationFloor(ctx context.Context, token string) (KeyGener
 }
 
 // RaiseKeyGenerationFloor tells the control plane the account has reached
-// generation. The control plane keeps the higher of what it holds and what
-// it is told, so no caller lowers the floor by reporting a smaller number —
-// not a device whose view is behind, and not one about to be revoked.
+// generation. The floor moves up to it and never down, so no caller lowers
+// it by reporting a smaller number — not a device whose view is behind, and
+// not one about to be revoked. It answers with the floor as it stands.
 //
 // The client checks the answer is not below what it sent, which catches a
 // control plane that is not keeping the number monotonic. That is a
@@ -89,7 +104,7 @@ func (c *Client) RaiseKeyGenerationFloor(ctx context.Context, token string, gene
 		return KeyGeneration{}, fmt.Errorf("key generation %d is not a generation that can be reported", generation)
 	}
 	var out KeyGeneration
-	in := map[string]int{"key_generation": generation}
+	in := map[string]int{"generation": generation}
 	if err := c.do(ctx, http.MethodPost, KeyGenerationPath, token, in, &out); err != nil {
 		return KeyGeneration{}, keyGenerationError(err)
 	}
@@ -104,7 +119,10 @@ func keyGenerationError(err error) error {
 	if !errors.As(err, &he) {
 		return err
 	}
-	if he.Code == CodeNoKeyGeneration || he.Status == http.StatusNotFound {
+	if he.Code == CodeKeyGenerationRange {
+		return fmt.Errorf("%w: %s", ErrKeyGenerationRange, he.Message)
+	}
+	if he.Status == http.StatusNotFound {
 		return ErrNoKeyGenerationFloor
 	}
 	if he.Status == http.StatusUnauthorized {

@@ -55,6 +55,7 @@ type fakeControlPlane struct {
 	// The account key-generation floor (see pairing_fake_test.go).
 	keyGeneration      int
 	keyGenerationAt    string
+	keyGenerationBy    string
 	keyGenerationReads int
 	// noKeyGenerationFloor makes both floor routes answer 404, as a
 	// control plane that predates them does.

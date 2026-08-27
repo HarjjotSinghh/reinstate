@@ -743,6 +743,12 @@ func runDevicesRevoke(cmd *cobra.Command, target string) error {
 	// on both halves, so a failure here is reported and re-run rather than
 	// left to a later command to notice.
 	carried, err := raiseKeyGenerationFloor(cmd, home, cfg, generation)
+	if errors.Is(err, hop.ErrKeyGenerationRange) {
+		// Retrying will not help: the number is past what the control
+		// plane will store, and the keyring has already moved. Say so
+		// rather than sending the operator round the loop again.
+		return NewExitError(ExitAuthStorage, fmt.Sprintf("device %s is revoked and the keyring is at key generation %d, but the control plane will not hold a floor that high (%v). The revocation stands; the account-wide floor is left where it was, so a device that has not yet read key generation %d has only its own record to go on. Move the account to a fresh locker rather than revoking again", victim.ID, generation, err, generation))
+	}
 	if err != nil {
 		return NewExitError(ExitAuthStorage, fmt.Sprintf("device %s is revoked and the keyring is at key generation %d, but the account's key generation floor could not be raised (%v); a device that has not yet read key generation %d would still accept the earlier keyring. Run rein devices revoke %s again", victim.ID, generation, err, generation, victim.ID))
 	}

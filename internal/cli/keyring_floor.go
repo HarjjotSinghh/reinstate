@@ -151,7 +151,7 @@ func confirmKeyGenerationFloor(cmd *cobra.Command, home string, cfg *schema.Conf
 		decided:     true,
 		generation:  got.Generation,
 		source:      floorFromControlPlane,
-		confirmedAt: got.UpdatedAt,
+		confirmedAt: got.RaisedAt,
 	}
 	if err := rememberKeyGenerationFloor(home, floor); err != nil {
 		return keyringFloor{}, err
@@ -241,7 +241,7 @@ func raiseKeyGenerationFloor(cmd *cobra.Command, home string, cfg *schema.Config
 	if err != nil {
 		return false, fmt.Errorf("raise the account's key generation floor to %d: %w", generation, err)
 	}
-	floor := keyringFloor{decided: true, generation: got.Generation, source: floorFromControlPlane, confirmedAt: got.UpdatedAt}
+	floor := keyringFloor{decided: true, generation: got.Generation, source: floorFromControlPlane, confirmedAt: got.RaisedAt}
 	if err := rememberKeyGenerationFloor(home, floor); err != nil {
 		return true, err
 	}
