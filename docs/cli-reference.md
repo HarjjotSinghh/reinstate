@@ -119,16 +119,24 @@ hand with any S3 client ([object format](hop/object-format.md),
 and expiry, then `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`,
 `AWS_SESSION_TOKEN` and `AWS_ENDPOINT_URL` on stdout, with a caution on
 stderr so the values can be redirected without it. `--json` emits the same
-fields as data.
+fields as data. `--export` prints shell `export` statements and nothing
+else — the four names above plus `AWS_REGION`, `AWS_DEFAULT_REGION` and
+`REIN_LOCKER_BUCKET` — for `eval "$(rein hop credentials --export)"`,
+which is how the documented recipe starts: a shell assignment that is
+never exported does not reach the `aws` process, which is why the flag
+exists. `--json` and `--export` cannot be combined.
 
 These are the credentials `rein push` already uses: valid for at most an
 hour, scoped by the storage provider to this account's bucket and no other
-(which is what step 4 of the verification tests), and able to read nothing
-but ciphertext. Each run mints a fresh set and counts against the
-push-rate limit `rein hop status` shows. The third check needs the
-account's root key, which never leaves the device and which no command
-exports. Exit `4` when the device is not signed in, its token was
-rejected, or the mint was refused by a quota.
+(which is what step 4 of the verification tests). Every session object
+they can read is ciphertext; `keyring.v1.json` is not, and is not meant to
+be — it is plaintext by design and holds no usable key, but it names the
+account's profile id and every enrolled device's id, public key and
+enrolment time, so a credential printed here hands that over too. Each run
+mints a fresh set and counts against the push-rate limit `rein hop status`
+shows. The third check needs the account's root key, which never leaves
+the device and which no command exports. Exit `4` when the device is not
+signed in, its token was rejected, or the mint was refused by a quota.
 
 ### `rein daemon`
 
@@ -158,12 +166,23 @@ plaintext field names in the body); decrypt it locally and show what it
 contains (the index, a snapshot's envelope and verified payload checksum);
 and, on a Hop locker, show that the same credentials are refused (access
 denied, not a rejection of the credential itself) from the control
-plane's reference locker at the storage endpoint the listing used, over a
-client that refuses to follow a redirect elsewhere. The outcome sentence
-names only what was fetched as ciphertext and lists what was judged by
-name. Each step prints what
+plane's reference locker — a different bucket, at the same storage
+endpoint the listing used, over a client that refuses to follow a redirect
+elsewhere and never sends the credential over plaintext `http`. The
+outcome sentence names only what was fetched as ciphertext and lists what
+was judged by name. Each step prints what
 was done, what was seen, and PASS, FAIL, or NOT APPLICABLE, followed by
 `OUTCOME: PASS` or `OUTCOME: FAIL`.
+
+A check that could not run is never reported as a check that failed. The
+fourth step is NOT APPLICABLE, with a reason beginning "Could not run",
+whenever the control plane could not be reached or answered an error, its
+reference row names this account's own bucket, the reference bucket has
+been deleted or would not answer, or the locker credential was rejected or
+rotated mid-run; the run's exit code is unaffected and the outcome
+sentence says isolation was not checked. The
+[threat model](hop/threat-model.md) lists every case, and what does fail
+the step.
 
 `--json` emits the report (`report.steps[].{id,name,did,observed,status,
 detail}`, `report.outcome`, `report.storage`, `report.locker`,
