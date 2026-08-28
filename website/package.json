@@ -42,7 +42,7 @@
     "test:agent-surface": "node --test scripts/check-agent-surface.node-test.mjs"
   },
   "dependencies": {
-    "@astrojs/mdx": "^7.0.6",
+    "@astrojs/mdx": "^7.0.8",
     "@astrojs/rss": "^4.0.19",
     "@astrojs/sitemap": "^3.7.3",
     "@astrojs/vercel": "^11.0.6",
