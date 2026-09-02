@@ -16,6 +16,7 @@ import (
 	"filippo.io/age"
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/chacha20poly1305"
+	"golang.org/x/crypto/hkdf"
 
 	"github.com/HarjjotSinghh/reinstate/internal/crypto"
 )
@@ -23,9 +24,10 @@ import (
 // Pairing (device approval) moves the root key from an enrolled device to a
 // joining device through the control plane, which relays ciphertext only.
 // The joining device shows a short code; the person types it on the
-// enrolled device. Both sides derive the same wrapping key from the code
-// with argon2id and a per-request salt; the code itself is never sent
-// anywhere. See docs/hop.md "Pairing" for the full argument.
+// enrolled device. Both sides derive the same Argon2id master from the
+// normalized code and a per-request salt; v2 expands purpose-specific keys
+// with HKDF-SHA256. The code itself is never sent anywhere. See docs/hop.md
+// "Pairing" for the full argument.
 //
 // Code shape: three groups of four Crockford base32 characters carrying 60
 // random bits, plus a fourth group that is a 20-bit checksum, so a typo is
@@ -44,8 +46,18 @@ const (
 const PairingCodeFormat = "XXXX-XXXX-XXXX-XXXX"
 
 const (
-	pairingBindInfo    = "reinstate/pairing/v1/bind"
-	pairingPayloadInfo = "reinstate/pairing/v1/payload"
+	// PairingVersion1 is the original protocol: one Argon2id output is used
+	// directly for both HMAC and AEAD. It remains compatibility-only for
+	// requests opened by older clients; this client does not create new ones.
+	PairingVersion1 = 1
+	// PairingVersion2 is the protocol emitted by this client. It expands the
+	// Argon2id master into domain-separated HMAC and AEAD keys.
+	PairingVersion2 = 2
+
+	pairingV1BindInfo    = "reinstate/pairing/v1/bind"
+	pairingV1PayloadInfo = "reinstate/pairing/v1/payload"
+	pairingV2BindInfo    = "reinstate/pairing/v2/bind"
+	pairingV2PayloadInfo = "reinstate/pairing/v2/payload"
 )
 
 // ErrPairingMismatch reports a payload or binding that was not produced
@@ -53,12 +65,15 @@ const (
 // request).
 var ErrPairingMismatch = errors.New("pairing: code does not match this request")
 
-// Pairing is one side's view of a pairing: the canonical code, the salt
-// published with the request, and the wrapping key derived from both.
+// Pairing is one side's view of a pairing: the wire protocol version, the
+// canonical code, the salt published with the request, and the Argon2id
+// master derived from both. Version 1 uses key directly; version 2 expands
+// it into purpose-specific keys.
 type Pairing struct {
-	Code string
-	Salt []byte
-	key  []byte
+	Version int
+	Code    string
+	Salt    []byte
+	key     []byte
 }
 
 // NewPairing draws a fresh code and salt for a joining device.
@@ -73,12 +88,18 @@ func NewPairing() (*Pairing, error) {
 	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
 		return nil, fmt.Errorf("generate pairing salt: %w", err)
 	}
-	return &Pairing{Code: code, Salt: salt, key: derivePairingKey(code, salt)}, nil
+	return &Pairing{Version: PairingVersion2, Code: code, Salt: salt, key: derivePairingKey(code, salt)}, nil
 }
 
-// PairingFromCode is the approving side: the code as typed and the salt
-// the joining device published.
-func PairingFromCode(typed string, salt []byte) (*Pairing, error) {
+// PairingFromCode is the approving side: the code as typed, the salt the
+// joining device published, and its wire protocol version. Missing version
+// (zero) is version 1 so requests opened by the original client remain
+// approvable; no other implicit version is accepted.
+func PairingFromCode(typed string, salt []byte, version int) (*Pairing, error) {
+	version, err := normalizePairingVersion(version)
+	if err != nil {
+		return nil, err
+	}
 	code, err := NormalizePairingCode(typed)
 	if err != nil {
 		return nil, err
@@ -86,7 +107,17 @@ func PairingFromCode(typed string, salt []byte) (*Pairing, error) {
 	if len(salt) != pairingSaltSize {
 		return nil, fmt.Errorf("pairing: salt must be %d bytes, got %d", pairingSaltSize, len(salt))
 	}
-	return &Pairing{Code: code, Salt: salt, key: derivePairingKey(code, salt)}, nil
+	return &Pairing{Version: version, Code: code, Salt: append([]byte(nil), salt...), key: derivePairingKey(code, salt)}, nil
+}
+
+func normalizePairingVersion(version int) (int, error) {
+	if version == 0 {
+		return PairingVersion1, nil
+	}
+	if version != PairingVersion1 && version != PairingVersion2 {
+		return 0, fmt.Errorf("pairing: unsupported protocol version %d (want 1 or 2)", version)
+	}
+	return version, nil
 }
 
 // Zero wipes the derived key.
@@ -117,9 +148,15 @@ func NormalizePairingCode(typed string) (string, error) {
 // was replaced in transit. The control plane, not knowing the code, can
 // neither forge nor verify it.
 func (p *Pairing) Binding(publicKey string) string {
-	mac := hmac.New(sha256.New, p.key)
-	mac.Write([]byte(pairingBindInfo))
-	mac.Write([]byte{0})
+	key := p.bindingKey()
+	defer crypto.Zero(key)
+	mac := hmac.New(sha256.New, key)
+	if p.Version == PairingVersion1 {
+		// Preserve the original byte sequence exactly: existing requests
+		// published this value before pairing versions existed on the wire.
+		mac.Write([]byte(pairingV1BindInfo))
+		mac.Write([]byte{0})
+	}
 	mac.Write([]byte(publicKey))
 	return base64.StdEncoding.EncodeToString(mac.Sum(nil))
 }
@@ -135,8 +172,9 @@ func (p *Pairing) VerifyBinding(publicKey, binding string) bool {
 }
 
 // SealRootKey wraps rootKey for the joining device: first to its public
-// key (age X25519), then under the code-derived key (XChaCha20-Poly1305)
-// with the request id, public key, and key generation as associated data.
+// key (age X25519), then under the protocol's payload key
+// (XChaCha20-Poly1305) with the request id, public key, and key generation as
+// associated data.
 // The result is what the approving device posts to the relay.
 func (p *Pairing) SealRootKey(rootKey []byte, pairingID string, recipient *age.X25519Recipient, generation int) (string, error) {
 	if len(rootKey) != crypto.RootKeySize {
@@ -153,7 +191,9 @@ func (p *Pairing) SealRootKey(rootKey []byte, pairingID string, recipient *age.X
 	if err := w.Close(); err != nil {
 		return "", err
 	}
-	aead, err := chacha20poly1305.NewX(p.key)
+	payloadKey := p.payloadKey(pairingID)
+	defer crypto.Zero(payloadKey)
+	aead, err := chacha20poly1305.NewX(payloadKey)
 	if err != nil {
 		return "", err
 	}
@@ -161,7 +201,7 @@ func (p *Pairing) SealRootKey(rootKey []byte, pairingID string, recipient *age.X
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return "", err
 	}
-	sealed := aead.Seal(nil, nonce, inner.Bytes(), pairingAAD(pairingID, recipient.String(), generation))
+	sealed := aead.Seal(nil, nonce, inner.Bytes(), p.aad(pairingID, recipient.String(), generation))
 	return base64.StdEncoding.EncodeToString(append(nonce, sealed...)), nil
 }
 
@@ -173,14 +213,16 @@ func (p *Pairing) OpenRootKey(payload, pairingID string, identity *age.X25519Ide
 	if err != nil {
 		return nil, fmt.Errorf("pairing: payload is not valid base64")
 	}
-	aead, err := chacha20poly1305.NewX(p.key)
+	payloadKey := p.payloadKey(pairingID)
+	defer crypto.Zero(payloadKey)
+	aead, err := chacha20poly1305.NewX(payloadKey)
 	if err != nil {
 		return nil, err
 	}
 	if len(raw) < aead.NonceSize() {
 		return nil, fmt.Errorf("pairing: payload is truncated")
 	}
-	inner, err := aead.Open(nil, raw[:aead.NonceSize()], raw[aead.NonceSize():], pairingAAD(pairingID, identity.Recipient().String(), generation))
+	inner, err := aead.Open(nil, raw[:aead.NonceSize()], raw[aead.NonceSize():], p.aad(pairingID, identity.Recipient().String(), generation))
 	if err != nil {
 		return nil, ErrPairingMismatch
 	}
@@ -198,8 +240,35 @@ func (p *Pairing) OpenRootKey(payload, pairingID string, identity *age.X25519Ide
 	return key, nil
 }
 
-func pairingAAD(pairingID, publicKey string, generation int) []byte {
-	return []byte(strings.Join([]string{pairingPayloadInfo, pairingID, publicKey, strconv.Itoa(generation)}, "\x00"))
+func (p *Pairing) aad(pairingID, publicKey string, generation int) []byte {
+	info := pairingV2PayloadInfo
+	if p.Version == PairingVersion1 {
+		info = pairingV1PayloadInfo
+	}
+	return []byte(strings.Join([]string{info, pairingID, publicKey, strconv.Itoa(generation)}, "\x00"))
+}
+
+func (p *Pairing) bindingKey() []byte {
+	if p.Version == PairingVersion1 {
+		return append([]byte(nil), p.key...)
+	}
+	return derivePairingSubkey(p.key, pairingV2BindInfo)
+}
+
+func (p *Pairing) payloadKey(pairingID string) []byte {
+	if p.Version == PairingVersion1 {
+		return append([]byte(nil), p.key...)
+	}
+	// The control plane's request id is length-delimited by the NUL after
+	// the fixed domain string. It is also present in aad: changing either
+	// occurrence makes the payload fail closed before age is asked to open.
+	return derivePairingSubkey(p.key, pairingV2PayloadInfo+"\x00"+pairingID)
+}
+
+func derivePairingSubkey(master []byte, info string) []byte {
+	key := make([]byte, chacha20poly1305.KeySize)
+	_, _ = io.ReadFull(hkdf.New(sha256.New, master, nil, []byte(info)), key)
+	return key
 }
 
 func derivePairingKey(canonicalCode string, salt []byte) []byte {

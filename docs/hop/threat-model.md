@@ -82,15 +82,24 @@ object storage; none of it is content.
   receives a root key, a device private key, a recovery code, or a
   passphrase.
 - **A pairing code, or what it relays**: approving a device relays the
-  root key sealed under a key derived from the code, which the control
-  plane never sees. What it holds is the joining device's public key, a
-  random salt, a binding value, and the ciphertext. Guessing the code
-  offline against that material costs one argon2id derivation
-  (t=3, 64 MiB, 4 lanes) per candidate across 2^60 candidates; the relay
-  also expires after ten minutes, hands the ciphertext out once, and
-  refuses after 600 polls. The bound is the argon2id cost times the
-  keyspace, not the ten minutes: the material can be kept and attacked
-  afterwards.
+  root key sealed under keys derived from the code, which the control plane
+  never sees. What it holds is pairing protocol version 1 or 2, the joining
+  device's public key, a random 16-byte salt, an HMAC binding value, and the
+  ciphertext. The offline oracle is the HMAC itself. For every candidate an
+  attacker normalizes the code to its uppercase dash-grouped ASCII form and
+  runs Argon2id with that salt, `t=3`, `m=65536 KiB`, `p=4`, and a 32-byte
+  output. V1 uses that output directly; v2 adds inexpensive HKDF-SHA256
+  expansion before checking HMAC-SHA256. There is no protocol-wide
+  millisecond estimate: elapsed time depends on the attacker's hardware.
+  The exact bound is one such Argon2id derivation per candidate across a
+  2^60 keyspace. The relay expires after ten minutes, hands the ciphertext
+  out once, and refuses after 600 polls, but captured material can be kept
+  and attacked afterwards, so those online limits do not reduce that
+  offline bound. V2 gives the binding HMAC and XChaCha20-Poly1305 payload
+  distinct HKDF info domains, and includes the server pairing id in the
+  payload-key info and again in AEAD associated data. Missing or integer 0
+  on the wire means v1 so a pending request survives an upgrade; new
+  requests use integer version 2.
 - **Another account's locker through this account's credentials**: a
   minted credential is scoped to exactly one bucket (the provider enforces
   it; the control plane never mints for any other).

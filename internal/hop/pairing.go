@@ -9,6 +9,13 @@ import (
 	"time"
 )
 
+// Pairing protocol versions. Version 0 is not emitted; on received requests
+// it means version 1 for compatibility with the original unversioned wire.
+const (
+	PairingVersion1 = 1
+	PairingVersion2 = 2
+)
+
 // Pairing-request statuses.
 const (
 	PairingPending  = "pending"
@@ -32,6 +39,7 @@ const (
 // device; the control plane cannot check or forge them.
 type PairingRequest struct {
 	ID              string `json:"id"`
+	Version         int    `json:"version"`
 	Status          string `json:"status"`
 	Device          Device `json:"device"`
 	PublicKey       string `json:"public_key"`
@@ -42,8 +50,26 @@ type PairingRequest struct {
 	IntervalSeconds int    `json:"interval_seconds,omitempty"`
 }
 
+// ProtocolVersion returns the request's effective pairing protocol. The
+// original wire omitted version, so both a missing field and explicit zero
+// mean v1. Values other than 1 and 2 are never guessed.
+func (p PairingRequest) ProtocolVersion() (int, error) {
+	return protocolVersion(p.Version)
+}
+
+func protocolVersion(version int) (int, error) {
+	if version == 0 {
+		return PairingVersion1, nil
+	}
+	if version != PairingVersion1 && version != PairingVersion2 {
+		return 0, fmt.Errorf("control plane returned unsupported pairing version %d (want 1 or 2)", version)
+	}
+	return version, nil
+}
+
 // PairingPayload is what the joining device collects exactly once.
 type PairingPayload struct {
+	Version       int
 	Payload       string
 	KeyGeneration int
 	ApprovedBy    Device
@@ -83,15 +109,24 @@ func (c *Client) RevokeDevice(ctx context.Context, token, id string) (Revocation
 	return out, nil
 }
 
-// CreatePairing opens a pairing request for this device.
+// CreatePairing opens a v2 pairing request for this device. Version is a JSON
+// integer on the wire; an old control plane that drops it cannot safely relay
+// the v2 binding to an approver and is refused explicitly.
 func (c *Client) CreatePairing(ctx context.Context, token, publicKey, salt, binding string) (PairingRequest, error) {
 	var out PairingRequest
-	err := c.do(ctx, http.MethodPost, "/v1/pairing", token, map[string]string{"public_key": publicKey, "salt": salt, "binding": binding}, &out)
+	err := c.do(ctx, http.MethodPost, "/v1/pairing", token, map[string]any{"version": PairingVersion2, "public_key": publicKey, "salt": salt, "binding": binding}, &out)
 	if err != nil {
 		return PairingRequest{}, pairingError(err)
 	}
-	if out.ID == "" {
-		return PairingRequest{}, errors.New("control plane returned an incomplete pairing request")
+	version, versionErr := out.ProtocolVersion()
+	if out.ID == "" || versionErr != nil || version != PairingVersion2 {
+		detail := ""
+		if versionErr != nil {
+			detail = ": " + versionErr.Error()
+		} else if version != PairingVersion2 {
+			detail = fmt.Sprintf(": returned pairing version %d for a v2 request", version)
+		}
+		return PairingRequest{}, errors.New("control plane returned an incomplete pairing request" + detail)
 	}
 	return out, nil
 }
@@ -116,9 +151,24 @@ func (c *Client) GetPairing(ctx context.Context, token, id string) (PairingReque
 	return out, nil
 }
 
-// ApprovePairing relays the sealed root key for request id.
-func (c *Client) ApprovePairing(ctx context.Context, token, id, payload string, generation int) error {
-	return pairingError(c.do(ctx, http.MethodPost, "/v1/pairing/"+id+"/approve", token, map[string]any{"payload": payload, "key_generation": generation}, nil))
+// ApprovePairing relays the sealed root key for request id and requires the
+// relay to confirm the same cryptographic protocol the approver used.
+func (c *Client) ApprovePairing(ctx context.Context, token, id, payload string, generation, expectedVersion int) error {
+	var out struct {
+		Status  string `json:"status"`
+		Version int    `json:"version"`
+	}
+	if err := c.do(ctx, http.MethodPost, "/v1/pairing/"+id+"/approve", token, map[string]any{"payload": payload, "key_generation": generation}, &out); err != nil {
+		return pairingError(err)
+	}
+	version, err := protocolVersion(out.Version)
+	if err != nil {
+		return err
+	}
+	if version != expectedVersion {
+		return fmt.Errorf("control plane approved pairing %s as version %d, want version %d", id, version, expectedVersion)
+	}
+	return nil
 }
 
 // ExpirePairing cancels a pending request.
@@ -128,27 +178,36 @@ func (c *Client) ExpirePairing(ctx context.Context, token, id string) error {
 
 type claimResponse struct {
 	Status        string  `json:"status"`
+	Version       int     `json:"version"`
 	Payload       string  `json:"payload,omitempty"`
 	KeyGeneration int     `json:"key_generation,omitempty"`
 	ApprovedBy    *Device `json:"approved_by,omitempty"`
 }
 
 // ClaimPairing polls request id once. The payload is non-nil exactly once.
-func (c *Client) ClaimPairing(ctx context.Context, token, id string) (string, *PairingPayload, error) {
+func (c *Client) ClaimPairing(ctx context.Context, token, id string, expectedVersion int) (string, *PairingPayload, error) {
 	var out claimResponse
 	err := c.do(ctx, http.MethodPost, "/v1/pairing/"+id+"/claim", token, nil, &out)
 	var he *Error
-	if errors.As(err, &he) && he.Status == http.StatusGone && out.Status != "" {
-		return out.Status, nil, nil
-	}
-	if err != nil {
+	gone := errors.As(err, &he) && he.Status == http.StatusGone && out.Status != ""
+	if err != nil && !gone {
 		return "", nil, pairingError(err)
+	}
+	version, versionErr := protocolVersion(out.Version)
+	if versionErr != nil {
+		return "", nil, versionErr
+	}
+	if version != expectedVersion {
+		return "", nil, fmt.Errorf("control plane answered pairing %s as version %d, want version %d", id, version, expectedVersion)
+	}
+	if gone {
+		return out.Status, nil, nil
 	}
 	if out.Status == PairingApproved {
 		if out.Payload == "" || out.KeyGeneration <= 0 {
 			return "", nil, errors.New("control plane approved the pairing without a payload")
 		}
-		p := &PairingPayload{Payload: out.Payload, KeyGeneration: out.KeyGeneration}
+		p := &PairingPayload{Version: version, Payload: out.Payload, KeyGeneration: out.KeyGeneration}
 		if out.ApprovedBy != nil {
 			p.ApprovedBy = *out.ApprovedBy
 		}
@@ -159,6 +218,10 @@ func (c *Client) ClaimPairing(ctx context.Context, token, id string) (string, *P
 
 // WaitForPairing polls until the request is approved, expired, or ctx ends.
 func (c *Client) WaitForPairing(ctx context.Context, token string, req PairingRequest, sleep func(context.Context, time.Duration) error) (*PairingPayload, error) {
+	version, err := req.ProtocolVersion()
+	if err != nil {
+		return nil, err
+	}
 	interval := time.Duration(req.IntervalSeconds) * time.Second
 	if interval <= 0 {
 		interval = 2 * time.Second
@@ -167,7 +230,7 @@ func (c *Client) WaitForPairing(ctx context.Context, token string, req PairingRe
 		sleep = defaultSleep
 	}
 	for {
-		status, payload, err := c.ClaimPairing(ctx, token, req.ID)
+		status, payload, err := c.ClaimPairing(ctx, token, req.ID, version)
 		if err != nil {
 			return nil, err
 		}

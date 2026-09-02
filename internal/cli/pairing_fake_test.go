@@ -17,6 +17,7 @@ import (
 // the payload.
 type fakePairing struct {
 	id, deviceID             string
+	version                  int
 	publicKey, salt, binding string
 	status                   string
 	payload                  string
@@ -134,7 +135,7 @@ func (f *fakeControlPlane) pairingView(p *fakePairing) map[string]any {
 		status = "expired"
 	}
 	return map[string]any{
-		"id": p.id, "status": status, "device": dev,
+		"id": p.id, "version": p.version, "status": status, "device": dev,
 		"public_key": p.publicKey, "salt": p.salt, "binding": p.binding,
 		"created_at": p.createdAt.Format(time.RFC3339Nano), "expires_at": p.expiresAt.Format(time.RFC3339Nano),
 		"interval_seconds": 0,
@@ -207,12 +208,22 @@ func (f *fakeControlPlane) createPairing(w http.ResponseWriter, r *http.Request)
 	if !ok {
 		return
 	}
-	var req struct{ PublicKey, Salt, Binding string }
-	var raw map[string]string
-	_ = json.NewDecoder(r.Body).Decode(&raw)
-	req.PublicKey, req.Salt, req.Binding = raw["public_key"], raw["salt"], raw["binding"]
+	var req struct {
+		Version   int    `json:"version"`
+		PublicKey string `json:"public_key"`
+		Salt      string `json:"salt"`
+		Binding   string `json:"binding"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&req)
+	if req.Version == 0 {
+		req.Version = hop.PairingVersion1
+	}
 	if req.PublicKey == "" || req.Salt == "" || req.Binding == "" {
 		writeFakeError(w, 400, "public_key, salt, and binding are required")
+		return
+	}
+	if req.Version != hop.PairingVersion1 && req.Version != hop.PairingVersion2 {
+		writeFakeError(w, 400, "version must be 1 or 2")
 		return
 	}
 	// Like hopd: one open request per device.
@@ -223,7 +234,7 @@ func (f *fakeControlPlane) createPairing(w http.ResponseWriter, r *http.Request)
 	}
 	f.pairingSeq++
 	p := &fakePairing{
-		id: "pair-" + strconv.Itoa(f.pairingSeq), deviceID: id.Device.ID,
+		id: "pair-" + strconv.Itoa(f.pairingSeq), deviceID: id.Device.ID, version: req.Version,
 		publicKey: req.PublicKey, salt: req.Salt, binding: req.Binding, status: "pending",
 		createdAt: time.Now().UTC(), expiresAt: time.Now().UTC().Add(10 * time.Minute),
 	}
@@ -288,7 +299,7 @@ func (f *fakeControlPlane) approvePairing(w http.ResponseWriter, r *http.Request
 		writeFakeError(w, 400, "payload and key_generation are required")
 	default:
 		p.status, p.payload, p.generation, p.approvedBy = "approved", req.Payload, req.KeyGeneration, id.Device.ID
-		_ = json.NewEncoder(w).Encode(map[string]string{"status": "approved"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"status": "approved", "version": p.version})
 	}
 }
 
@@ -313,17 +324,17 @@ func (f *fakeControlPlane) claimPairing(w http.ResponseWriter, r *http.Request) 
 	case p.expired || p.status == "expired":
 		p.payload = ""
 		w.WriteHeader(410)
-		_ = json.NewEncoder(w).Encode(map[string]string{"status": "expired"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"status": "expired", "version": p.version})
 	case p.status == "consumed":
 		w.WriteHeader(410)
-		_ = json.NewEncoder(w).Encode(map[string]string{"status": "consumed"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"status": "consumed", "version": p.version})
 	case p.status == "pending":
-		_ = json.NewEncoder(w).Encode(map[string]string{"status": "pending"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"status": "pending", "version": p.version})
 	default:
 		payload := p.payload
 		p.status, p.payload = "consumed", ""
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"status": "approved", "payload": payload, "key_generation": p.generation,
+			"status": "approved", "version": p.version, "payload": payload, "key_generation": p.generation,
 			"approved_by": f.deviceByID(p.approvedBy),
 		})
 	}

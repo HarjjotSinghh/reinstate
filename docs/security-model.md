@@ -93,17 +93,22 @@ copies on each machine are unaffected; only the encrypted remote copy is out
 of reach. The CLI states this at `account init` and `account recover`.
 
 Pairing (`rein account join` / `rein devices approve`): the joining device
-publishes its public key, a 16-byte salt, and an HMAC binding of the key
-under a wrapping key derived with argon2id (3 passes, 64 MiB, 4 lanes) from
-a 60-bit code it shows on screen. The approving device derives the same key
-from the typed code, verifies the binding in constant time (a control plane
-that swapped the public key is caught here), appends the new device's wrap
-to the keyring, and relays the root key wrapped to the new device's key and
-then sealed under the code-derived key with the request id, public key, and
-generation as associated data. The control plane stores the ciphertext for
-at most ten minutes, releases it once, and never holds the code. The joining
-device accepts the key only when the keyring's wrap for it opens to the
-same bytes, so neither channel can be substituted alone.
+publishes integer protocol version 2, its public key, a 16-byte salt, and an
+HMAC binding of that key. Both devices derive a 32-byte Argon2id master from
+the normalized 60-bit code and that salt (3 passes, 64 MiB, 4 lanes), then
+use HKDF-SHA256 with distinct `reinstate/pairing/v2/bind` and
+`reinstate/pairing/v2/payload` info domains for the HMAC and
+XChaCha20-Poly1305 keys. The payload info also includes the server pairing
+id. The approving device verifies the binding in constant time (a control
+plane that swapped the public key is caught here), appends the new device's
+wrap to the keyring, and relays the root key wrapped to the new device's key
+and then sealed with the request id, public key, and generation as associated
+data. Missing or integer-zero versions mean v1, whose single Argon2id output
+still verifies and opens existing pending requests. The control plane stores
+the ciphertext for at most ten minutes, releases it once, and never holds
+the code. The joining device accepts the key only when the keyring's wrap for
+it opens to the same bytes, so neither channel can be substituted alone. The
+exact byte-level contract is in [docs/hop.md](hop.md#adding-a-device-pairing).
 
 Key generations (`rein devices revoke`): revoking a device starts a new
 generation. The revoking device, holding the current root key and the

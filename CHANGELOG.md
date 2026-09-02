@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- **Pairing now separates its HMAC and payload keys (#18).** New pairing
+  requests carry integer protocol version 2 and expand the existing
+  Argon2id master with HKDF-SHA256 under distinct binding and payload
+  domains; the payload key is also bound to the server pairing id, which
+  remains in AEAD associated data. Missing or zero versions still mean v1,
+  and deterministic goldens pin v1 verification/opening so an approval
+  already pending during an upgrade remains usable. The account key and
+  root-key recipient anchors integrated with #11 already refuse a
+  self-consistent forged current-generation keyring before push fetches or
+  writes any locker data; the public CLI journey now asserts that ordering.
 - **The key generation floor, and `rein sync verify`, exercised against the
   real control plane for the first time (#11, #12).** The floor is the one
   property neither repository could test: the client decides what to refuse

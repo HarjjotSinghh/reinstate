@@ -222,9 +222,19 @@ one, with no `revoked` array.
   this object, which is nothing — is in the [threat
   model](threat-model.md).
 
-Pairing (device approval) relays a root-key wrap under a code-derived key
-through the control plane; it writes the joining device's wrap into this
-object and nothing else to the locker.
+Pairing (device approval) relays a root-key wrap through the control plane;
+it writes the joining device's wrap into this object and nothing else to the
+locker. The relay format is versioned independently of this keyring format.
+New requests send integer pairing `version` 2; a missing or zero value is v1,
+and explicit 1 and 2 are the only accepted values. Both versions derive a
+32-byte Argon2id result from the normalized pairing-code bytes and the exact
+16-byte request salt (`t=3`, `m=65536 KiB`, `p=4`). V1 uses that result for
+both HMAC-SHA256 and XChaCha20-Poly1305. V2 treats it as a master, expands a
+binding key with HKDF-SHA256 info `reinstate/pairing/v2/bind`, and expands a
+payload key with info `reinstate/pairing/v2/payload`, a zero byte, and the
+server pairing id. The id also remains in the payload's AEAD associated data.
+Existing pending v1 requests therefore still verify and open, while every new
+request uses separated, request-bound v2 keys.
 
 ## Sizes and counts an observer can derive
 

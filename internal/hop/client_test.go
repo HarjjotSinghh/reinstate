@@ -123,3 +123,114 @@ func TestWhoamiUnauthorized(t *testing.T) {
 		t.Fatalf("%+v err=%v", id, err)
 	}
 }
+
+func TestCreatePairingWritesIntegerVersion2(t *testing.T) {
+	var received struct {
+		Version   json.RawMessage `json:"version"`
+		PublicKey string          `json:"public_key"`
+		Salt      string          `json:"salt"`
+		Binding   string          `json:"binding"`
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/v1/pairing" || r.Header.Get("Authorization") != "Bearer hop_pair" {
+			t.Errorf("request %s %s auth=%q", r.Method, r.URL.Path, r.Header.Get("Authorization"))
+		}
+		if err := json.NewDecoder(r.Body).Decode(&received); err != nil {
+			t.Error(err)
+		}
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(PairingRequest{ID: "pair-1", Status: PairingPending, Version: PairingVersion2})
+	}))
+	defer srv.Close()
+
+	req, err := New(srv.URL).CreatePairing(context.Background(), "hop_pair", "age1public", "c2FsdA==", "YmluZGluZw==")
+	if err != nil || req.ID != "pair-1" || req.Version != PairingVersion2 {
+		t.Fatalf("request = %+v, %v", req, err)
+	}
+	if string(received.Version) != "2" {
+		t.Fatalf("version on wire = %s, want JSON integer 2", received.Version)
+	}
+	if received.PublicKey != "age1public" || received.Salt != "c2FsdA==" || received.Binding != "YmluZGluZw==" {
+		t.Fatalf("body = %+v", received)
+	}
+}
+
+func TestPairingWireVersionCompatibility(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		raw  string
+		want int
+		err  bool
+	}{
+		{name: "missing means v1", raw: `{"id":"legacy"}`, want: PairingVersion1},
+		{name: "zero means v1", raw: `{"id":"legacy","version":0}`, want: PairingVersion1},
+		{name: "explicit v1", raw: `{"id":"legacy","version":1}`, want: PairingVersion1},
+		{name: "v2", raw: `{"id":"current","version":2}`, want: PairingVersion2},
+		{name: "unsupported", raw: `{"id":"future","version":3}`, err: true},
+		{name: "string is not an integer", raw: `{"id":"wrong","version":"2"}`, err: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var req PairingRequest
+			decodeErr := json.Unmarshal([]byte(tc.raw), &req)
+			if tc.name == "string is not an integer" {
+				if decodeErr == nil {
+					t.Fatal("string version decoded as an integer")
+				}
+				return
+			}
+			if decodeErr != nil {
+				t.Fatal(decodeErr)
+			}
+			got, err := req.ProtocolVersion()
+			if tc.err {
+				if err == nil {
+					t.Fatalf("version %d accepted", req.Version)
+				}
+				return
+			}
+			if err != nil || got != tc.want {
+				t.Fatalf("ProtocolVersion() = %d, %v; want %d", got, err, tc.want)
+			}
+		})
+	}
+}
+
+func TestPairingVersionIsConfirmedAcrossTheRelay(t *testing.T) {
+	t.Run("create downgrade", func(t *testing.T) {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusCreated)
+			_ = json.NewEncoder(w).Encode(PairingRequest{ID: "pair-1"})
+		}))
+		defer srv.Close()
+		if _, err := New(srv.URL).CreatePairing(context.Background(), "hop_pair", "age1public", "c2FsdA==", "YmluZGluZw=="); err == nil || !strings.Contains(err.Error(), "version 1") {
+			t.Fatalf("v2 create accepted a v1 response: %v", err)
+		}
+	})
+
+	t.Run("claim downgrade", func(t *testing.T) {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			_ = json.NewEncoder(w).Encode(map[string]any{"status": PairingApproved, "version": PairingVersion1, "payload": "ciphertext", "key_generation": 1})
+		}))
+		defer srv.Close()
+		req := PairingRequest{ID: "pair-2", Version: PairingVersion2, IntervalSeconds: 1}
+		if _, err := New(srv.URL).WaitForPairing(context.Background(), "hop_pair", req, func(context.Context, time.Duration) error { return nil }); err == nil || !strings.Contains(err.Error(), "version 1, want version 2") {
+			t.Fatalf("v2 claim accepted a v1 response: %v", err)
+		}
+	})
+
+	for _, version := range []int{PairingVersion1, PairingVersion2} {
+		t.Run("approve v"+string(rune('0'+version)), func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				response := map[string]any{"status": PairingApproved}
+				if version == PairingVersion2 {
+					response["version"] = PairingVersion2
+				}
+				_ = json.NewEncoder(w).Encode(response)
+			}))
+			defer srv.Close()
+			if err := New(srv.URL).ApprovePairing(context.Background(), "hop_pair", "pair-3", "ciphertext", 1, version); err != nil {
+				t.Fatalf("approve v%d: %v", version, err)
+			}
+		})
+	}
+}

@@ -1032,6 +1032,24 @@ func TestKeyringForgeryIsRefusedOnEveryReadPath(t *testing.T) {
 	}
 	before := objectKeys(t, plane)
 
+	// A refusal must happen at the public keyring gate, before pull fetches
+	// ciphertext to decrypt or push writes any locker object. The fake's S3
+	// request log makes that ordering observable without reaching into the
+	// command implementation.
+	assertNoLockerDataAccess := func(t *testing.T, requests []string) {
+		t.Helper()
+		for _, request := range requests {
+			if strings.HasPrefix(request, "PUT ") || strings.HasPrefix(request, "DELETE ") {
+				t.Fatalf("a refused command changed the locker: %s", request)
+			}
+			for object := range before {
+				if object != key && strings.Contains(request, " "+object+" as ") {
+					t.Fatalf("a refused command fetched locker data before authenticating the keyring: %s", request)
+				}
+			}
+		}
+	}
+
 	// Something for a push to have to write.
 	root := filepath.Join(userHome, ".claude", "projects", claudeProjectDirectoryForTest(project))
 	meta, _ := json.Marshal(map[string]any{"type": "meta", "cwd": project})
@@ -1052,10 +1070,12 @@ func TestKeyringForgeryIsRefusedOnEveryReadPath(t *testing.T) {
 	refuseEverywhere := func(t *testing.T, label, want string) {
 		t.Helper()
 		for _, args := range [][]string{{"push", "--all", "--json"}, {"pull", "--all", "--json"}} {
+			logStart := len(plane.s3.RequestLog())
 			out, errb, code := a.run(args...)
 			if code != ExitSafety || !strings.Contains(errb, want) {
 				t.Fatalf("A %v on a forged keyring: exit=%d out=%q err=%q", args, code, out, errb)
 			}
+			assertNoLockerDataAccess(t, plane.s3.RequestLog()[logStart:])
 		}
 		if out, errb, code := a.revoke(bID, a.shownCode); code != ExitSafety || !strings.Contains(errb, want) {
 			t.Fatalf("A revoke on a forged keyring: exit=%d out=%q err=%q", code, out, errb)
@@ -1142,7 +1162,15 @@ func TestKeyringForgeryIsRefusedOnEveryReadPath(t *testing.T) {
 	// verifies against itself, so only the account key this device pinned
 	// at enrolment tells it from the account's own keyring.
 	t.Run("the whole keyring replaced", func(t *testing.T) {
-		put(forgeKeyring(t, ring, 2))
+		forgedRaw := forgeKeyring(t, ring, ring.CurrentGeneration)
+		forged, err := keyring.Parse(forgedRaw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if forged.CurrentGeneration != ring.CurrentGeneration || forged.CurrentRecipient() == account.KeyRecipient {
+			t.Fatalf("the replacement is not the current-generation recipient forgery this probe requires: genuine=%s forged=%s generation=%d", account.KeyRecipient, forged.CurrentRecipient(), forged.CurrentGeneration)
+		}
+		put(forgedRaw)
 		refuseEverywhere(t, "rewrite", "signed by a different account key")
 	})
 

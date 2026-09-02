@@ -438,7 +438,11 @@ func approvePairingRequest(ctx context.Context, cmd *cobra.Command, client *hop.
 	if err != nil {
 		return 0, NewExitError(ExitSafety, "the pairing request carries a malformed salt; nothing was approved")
 	}
-	pairing, err := keyring.PairingFromCode(typedCode, salt)
+	version, err := req.ProtocolVersion()
+	if err != nil {
+		return 0, NewExitError(ExitSafety, err.Error()+"; nothing was approved")
+	}
+	pairing, err := keyring.PairingFromCode(typedCode, salt, version)
 	if err != nil {
 		return 0, NewExitError(ExitUsage, err.Error())
 	}
@@ -525,7 +529,7 @@ func approvePairingRequest(ctx context.Context, cmd *cobra.Command, client *hop.
 	if err != nil {
 		return 0, NewExitError(ExitRuntime, err.Error())
 	}
-	if err := client.ApprovePairing(ctx, token, req.ID, payload, updated.CurrentGeneration); err != nil {
+	if err := client.ApprovePairing(ctx, token, req.ID, payload, updated.CurrentGeneration, version); err != nil {
 		// The control plane refused a request that was pending when the
 		// code was entered (it expired, or another device decided it). No
 		// wrap this call appended may outlive the request — in any

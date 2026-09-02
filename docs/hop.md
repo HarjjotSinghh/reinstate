@@ -127,34 +127,67 @@ the holder of the code can open it. The new machine opens it, confirms that
 the keyring's wrap for itself opens to the same root key of the same
 generation, and from then on reads and writes the locker.
 
-What the control plane sees: the new device's public key, a random salt, a
-binding value, and later a ciphertext; never the code. The code is 60
-random bits plus a checksum (`XXXX-XXXX-XXXX-XXXX`, Crockford base32; O/I/L
-are accepted for 0/1); the wrapping key is argon2id over the code and salt,
-so guessing the code offline against the relayed material costs one
-memory-hard derivation per candidate across 2^60 candidates. The relay
+What the control plane sees: protocol version 1 or 2, the new device's
+public key, a random salt, a binding value, and later a ciphertext; never
+the code. The code is 60 random bits plus a checksum
+(`XXXX-XXXX-XXXX-XXXX`, Crockford base32; O/I/L are accepted for 0/1).
+Every candidate costs one Argon2id derivation with `t=3`, `m=65536 KiB`,
+`p=4`, and a 32-byte output; the elapsed time is hardware-dependent rather
+than a protocol constant. The search spans 2^60 candidates. The relay
 expires after ten minutes, hands the ciphertext out once, and refuses
-after 600 polls. A wrong code on the approving side fails closed with
-nothing written anywhere; a typo is caught by the checksum first. A request
-that has already expired when the code is entered (the prompt can sit open
-while you walk to the other machine) is refused before anything is
-written; if the control plane refuses the relay after the wrap was
-appended (expired or decided meanwhile), the approving device removes that
-wrap again, so the new machine's next `rein account join` is a fresh
-request rather than a silent enrolment without an approval behind it. The
-joining machine never treats a keyring that already lists it as proof of
-enrolment: its public key is published in the request, so a control plane
-that also holds the bucket could write a keyring wrapping a root key of its
-own choosing for that key. `rein account join` therefore always opens a
-fresh request and waits for a code to be typed on an enrolled device, and
-only the root key received through that approval (and matched against the
-keyring) is ever used. If a device's local account record is lost, run
-`rein account join` again and approve it again, or `rein account recover`
-with the recovery code. The code
+after 600 polls.
+
+**Pairing cryptographic contract.** The Argon2id password is the ASCII bytes
+of the normalized, uppercase, dash-grouped code, including its three
+dashes. Its salt is exactly the 16 random bytes whose standard-base64 form
+is in the request. No pairing id enters Argon2id.
+
+New requests carry the JSON integer `"version": 2`. Version 2 treats the
+32-byte Argon2id result as a master and uses HKDF-SHA256 (empty salt,
+32-byte output) twice:
+
+- binding key: info `reinstate/pairing/v2/bind`; the published binding is
+  HMAC-SHA256 of the joining device's age recipient string;
+- payload key: info `reinstate/pairing/v2/payload`, one zero byte, then the
+  server-issued pairing id. That key drives XChaCha20-Poly1305 over an age
+  envelope addressed to the joining device.
+
+The v2 AEAD associated data is the zero-byte-separated sequence
+`reinstate/pairing/v2/payload`, server pairing id, joining-device recipient,
+and decimal key generation. The server pairing id is therefore bound both
+into the payload-key derivation and into the authenticated data; changing
+it fails before the inner age envelope is opened. The distinct HKDF info
+strings keep the binding HMAC key and payload AEAD key different.
+
+An unversioned request, or an integer version of 0, means version 1; explicit
+versions 1 and 2 are the only accepted values. Version 1 remains open and
+verifiable for requests already pending during an upgrade: it uses the
+Argon2id result directly for both HMAC and XChaCha20-Poly1305, computes the
+HMAC over `reinstate/pairing/v1/bind`, one zero byte, and the recipient, and
+uses the same four AEAD fields above with the v1 payload domain. This client
+only creates v2 requests. The relay returns the integer version on request,
+approval, and claim responses; the client refuses a version change rather
+than crossing the two cryptographic formats.
+
+A wrong code on the approving side fails closed with nothing written
+anywhere; a typo is caught by the checksum first. A request that has already
+expired when the code is entered (the prompt can sit open while you walk to
+the other machine) is refused before anything is written; if the control
+plane refuses the relay after the wrap was appended (expired or decided
+meanwhile), the approving device removes that wrap again, so the new
+machine's next `rein account join` is a fresh request rather than a silent
+enrolment without an approval behind it. The joining machine never treats a
+keyring that already lists it as proof of enrolment: its public key is
+published in the request, so a control plane that also holds the bucket
+could write a keyring wrapping a root key of its own choosing for that key.
+`rein account join` therefore always opens a fresh request and waits for a
+code to be typed on an enrolled device, and only the root key received
+through that approval (and matched against the keyring) is ever used. If a
+device's local account record is lost, run `rein account join` again and
+approve it again, or `rein account recover` with the recovery code. The code
 can be supplied to automation through `REINSTATE_PAIRING_CODE_FD` (a
 pre-opened descriptor, like `REINSTATE_PASSPHRASE_FD`); it is never a flag
-or a plain environment value. The full protocol and threat argument are in
-the control plane's `docs/hop.md`, "Pairing".
+or a plain environment value.
 
 `rein devices` shows every device enrolled under the account, whether the
 keyring holds a root-key wrap for it (and in which key generation), any
@@ -781,6 +814,7 @@ passphrase, or session content. Sign-in is a device-authorization style flow:
 | 9 | `DELETE /v1/devices/{id}` (bearer; `POST /v1/devices/{id}/revoke` is an alias) | `200 {device, revoked}`; `revoked` is `false` when it already was (idempotent). The token answers `401` on every authenticated route from then on, and the device no longer counts toward the device quota — but a locker credential minted before the revocation keeps working against the bucket until it expires, at most an hour, and the control plane cannot withdraw one. Another account's device or an unknown id: `404 {code: "device_unknown"}` (one answer, so ids cannot be probed across accounts); the calling device itself: `400 {code: "self_revoke"}`. The call carries no key material: the key generation rollover happens in the keyring before it, and `POST /v1/account/key-generation` raises the account floor after it. |
 | 10 | `GET /v1/verify/reference` (bearer) | `200 {endpoint, bucket, region, key}`: the operator's reference locker and its probe object, for `rein sync verify` step 4. `404 {code: "no_reference"}` when the control plane has none (the step is reported as not applicable). |
 | 11 | `POST /v1/verify-reports` (bearer) `{version: 1, generated_at, client_version, storage: "hop"\|"byo", outcome: "pass"\|"fail", steps: [{id, name, did, observed, status}]}` | `201 {id, received_at}`; stored per device for the console. Step results only; a body over 64 KB or with a verdict outside `pass`/`fail`/`not-applicable` is refused (400 for a bad field, 413 for an oversized body). |
+| 12 | `POST /v1/pairing` (bearer) `{version: 2, public_key, salt, binding}`; `GET /v1/pairing` lists pending requests; `POST /v1/pairing/{id}/approve` relays `{payload, key_generation}`; `POST /v1/pairing/{id}/claim` collects once. | Pairing views, approval answers, and claim answers carry integer `version`. Missing or 0 means v1 for compatibility; 1 and 2 are accepted, every other value is refused. New clients send 2 and refuse a response that changes it. The cryptographic fields remain opaque to the control plane. |
 
 The CLI reads the locker with `GET /v1/locker` on every hosted command and
 only calls `POST /v1/locker` when the answer is `no_locker` (normally once,
