@@ -65,21 +65,22 @@ func (s *fakeSyncer) counts() (int, int) {
 }
 
 type fakeAccount struct {
-	mu      sync.Mutex
-	pending []daemon.PendingApproval
-	devices []daemon.Device
-	err     error
-	polls   int
+	mu          sync.Mutex
+	pending     []daemon.PendingApproval
+	revocations []daemon.PendingRevocation
+	devices     []daemon.Device
+	err         error
+	polls       int
 }
 
-func (a *fakeAccount) Pending(context.Context) ([]daemon.PendingApproval, []daemon.Device, error) {
+func (a *fakeAccount) Pending(context.Context) ([]daemon.PendingApproval, []daemon.PendingRevocation, []daemon.Device, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	a.polls++
 	if a.err != nil {
-		return nil, nil, a.err
+		return nil, nil, nil, a.err
 	}
-	return append([]daemon.PendingApproval{}, a.pending...), append([]daemon.Device{}, a.devices...), nil
+	return append([]daemon.PendingApproval{}, a.pending...), append([]daemon.PendingRevocation{}, a.revocations...), append([]daemon.Device{}, a.devices...), nil
 }
 
 func (a *fakeAccount) set(p []daemon.PendingApproval) {
@@ -514,6 +515,28 @@ func TestLoopSurfacesPendingApprovalsOnce(t *testing.T) {
 	h.find(h.advance(time.Minute), "notify")
 	if n := h.notify.count(); n != 2 {
 		t.Fatalf("notifications=%d, want 2", n)
+	}
+}
+
+func TestLoopSurfacesConsoleRevocationRequestsOnce(t *testing.T) {
+	account := &fakeAccount{
+		devices:     []daemon.Device{{ID: "dev-a", Name: "macbook", This: true}, {ID: "dev-b", Name: "desktop"}},
+		revocations: []daemon.PendingRevocation{{RequestID: "revoke-1", DeviceID: "dev-b", DeviceName: "desktop", RequestedGeneration: 1}},
+	}
+	h := newHarness(t, account, nil)
+	events := h.start()
+	h.find(events, "notify")
+	h.find(events, "approvals")
+	if shown := h.notify.shown; len(shown) != 1 || shown[0] != "Reinstate: device revocation requested: Revoke desktop safely by running: rein devices revoke dev-b" {
+		t.Fatalf("notifications: %q", shown)
+	}
+	status := h.status()
+	if len(status.PendingRevocations) != 1 || status.PendingRevocations[0].RequestID != "revoke-1" {
+		t.Fatalf("pending revocations: %+v", status.PendingRevocations)
+	}
+	h.find(h.advance(time.Minute), "approvals")
+	if n := h.notify.count(); n != 1 {
+		t.Fatalf("re-notified the same revocation: %d", n)
 	}
 }
 

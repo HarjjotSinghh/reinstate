@@ -60,8 +60,10 @@ type fakeControlPlane struct {
 	pairings   map[string]*fakePairing
 	pairingSeq int
 	// Revoked devices keep their record (with revoked_at) but no token.
-	revoked map[string]hop.Device
-	events  []string // "<type>:<device id>" in order
+	revoked            map[string]hop.Device
+	revocationRequests map[string]*fakeRevocationRequest
+	revocationSeq      int
+	events             []string // "<type>:<device id>" in order
 
 	// The account key-generation floor (see pairing_fake_test.go).
 	keyGeneration      int

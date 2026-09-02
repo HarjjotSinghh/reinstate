@@ -195,6 +195,57 @@ func TestPairingWireVersionCompatibility(t *testing.T) {
 	}
 }
 
+func TestDeviceRevocationRequestWire(t *testing.T) {
+	var confirmed int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer hop_device" {
+			t.Errorf("authorization = %q", r.Header.Get("Authorization"))
+		}
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/device-revocation-requests":
+			_ = json.NewEncoder(w).Encode(map[string]any{"requests": []DeviceRevocationRequest{{
+				ID: "revoke-1", Status: RevocationRequestPending,
+				Target: Device{ID: "dev-lost", Name: "desktop"}, RequestedGeneration: 2,
+			}}})
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/device-revocation-requests/revoke-1/confirm":
+			var body struct {
+				Generation int `json:"generation"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Error(err)
+			}
+			confirmed = body.Generation
+			_ = json.NewEncoder(w).Encode(DeviceRevocationRequest{
+				ID: "revoke-1", Status: RevocationRequestConfirmed,
+				Target:              Device{ID: "dev-lost", Name: "desktop", RevokedAt: "2026-09-02T00:00:00Z"},
+				RequestedGeneration: 2, ConfirmedGeneration: body.Generation,
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	client := New(srv.URL)
+	requests, err := client.PendingDeviceRevocations(context.Background(), "hop_device")
+	if err != nil || len(requests) != 1 || requests[0].Target.ID != "dev-lost" || requests[0].RequestedGeneration != 2 {
+		t.Fatalf("requests = %+v, %v", requests, err)
+	}
+	result, err := client.ConfirmDeviceRevocation(context.Background(), "hop_device", "revoke-1", 3)
+	if err != nil || confirmed != 3 || result.Status != RevocationRequestConfirmed || !result.Target.Revoked() {
+		t.Fatalf("confirm = %+v, generation=%d, err=%v", result, confirmed, err)
+	}
+}
+
+func TestPendingDeviceRevocationsTreatsAnOldControlPlaneAsEmpty(t *testing.T) {
+	srv := httptest.NewServer(http.NotFoundHandler())
+	defer srv.Close()
+	requests, err := New(srv.URL).PendingDeviceRevocations(context.Background(), "hop_device")
+	if err != nil || len(requests) != 0 {
+		t.Fatalf("requests = %+v, %v", requests, err)
+	}
+}
+
 func TestPairingVersionIsConfirmedAcrossTheRelay(t *testing.T) {
 	t.Run("create downgrade", func(t *testing.T) {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

@@ -58,6 +58,15 @@ type PendingApproval struct {
 	ExpiresAt  time.Time `json:"expires_at"`
 }
 
+type PendingRevocation struct {
+	RequestID           string    `json:"request_id"`
+	DeviceID            string    `json:"device_id"`
+	DeviceName          string    `json:"device_name"`
+	Platform            string    `json:"platform,omitempty"`
+	RequestedGeneration int       `json:"requested_generation"`
+	RequestedAt         time.Time `json:"requested_at,omitempty"`
+}
+
 // Device is an enrolled device as the control plane lists it.
 type Device struct {
 	ID       string `json:"id"`
@@ -85,7 +94,8 @@ type Status struct {
 	Pull Outcome `json:"pull"`
 
 	// Pending lists devices waiting for approval right now.
-	Pending []PendingApproval `json:"pending_approvals"`
+	Pending            []PendingApproval   `json:"pending_approvals"`
+	PendingRevocations []PendingRevocation `json:"pending_revocations,omitempty"`
 	// Devices lists the account's enrolled devices (hop only).
 	Devices []Device `json:"devices,omitempty"`
 	// ApprovalsError is the last failure to reach the control plane.
@@ -95,7 +105,7 @@ type Status struct {
 }
 
 // StatusVersion is the status file format.
-const StatusVersion = 1
+const StatusVersion = 2
 
 // StaleAfter is how old a status file may be before readers treat the
 // daemon as stopped. The loop refreshes the file at least every

@@ -487,20 +487,24 @@ type hostedAccount struct {
 	opts Options
 }
 
-func (a *hostedAccount) Pending(ctx context.Context) ([]daemon.PendingApproval, []daemon.Device, error) {
+func (a *hostedAccount) Pending(ctx context.Context) ([]daemon.PendingApproval, []daemon.PendingRevocation, []daemon.Device, error) {
 	seams := hopCommandOptions{tokens: a.opts.DeviceTokenStore}
 	tok, err := seams.tokenStore().GetDeviceToken()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	client := hop.New(tok.ControlPlaneURL)
 	requests, err := client.PendingPairings(ctx, tok.Token)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
+	}
+	revocationRequests, err := client.PendingDeviceRevocations(ctx, tok.Token)
+	if err != nil {
+		return nil, nil, nil, err
 	}
 	devices, err := client.Devices(ctx, tok.Token)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	pending := make([]daemon.PendingApproval, 0, len(requests))
 	for _, r := range requests {
@@ -510,11 +514,19 @@ func (a *hostedAccount) Pending(ctx context.Context) ([]daemon.PendingApproval, 
 			Platform: r.Device.Platform, ExpiresAt: expires,
 		})
 	}
+	revocations := make([]daemon.PendingRevocation, 0, len(revocationRequests))
+	for _, request := range revocationRequests {
+		requestedAt, _ := time.Parse(time.RFC3339Nano, request.RequestedAt)
+		revocations = append(revocations, daemon.PendingRevocation{
+			RequestID: request.ID, DeviceID: request.Target.ID, DeviceName: request.Target.Name,
+			Platform: request.Target.Platform, RequestedGeneration: request.RequestedGeneration, RequestedAt: requestedAt,
+		})
+	}
 	list := make([]daemon.Device, 0, len(devices))
 	for _, d := range devices {
 		list = append(list, daemon.Device{ID: d.ID, Name: d.Name, Platform: d.Platform, This: d.ID == tok.DeviceID})
 	}
-	return pending, list, nil
+	return pending, revocations, list, nil
 }
 
 // ---------- install / uninstall / start / stop / status ----------
@@ -792,8 +804,11 @@ func newDaemonStatusCmd() *cobra.Command {
 					for _, p := range status.Pending {
 						PrintHuman(out, "pending:  device %q wants to join (expires %s); run rein devices approve", p.DeviceName, p.ExpiresAt.Local().Format(time.Kitchen))
 					}
-					if len(status.Pending) == 0 && status.ApprovalsError == "" {
-						PrintHuman(out, "pending:  no device is waiting for approval")
+					for _, request := range status.PendingRevocations {
+						PrintHuman(out, "pending:  Console requested revocation of %q; run rein devices revoke %s", request.DeviceName, request.DeviceID)
+					}
+					if len(status.Pending) == 0 && len(status.PendingRevocations) == 0 && status.ApprovalsError == "" {
+						PrintHuman(out, "pending:  no device approval or revocation requests")
 					}
 				}
 			}
@@ -878,6 +893,11 @@ func daemonSummaryLine(home string, now time.Time) string {
 		parts = append(parts, fmt.Sprintf("%q wants to join: rein devices approve", status.Pending[0].DeviceName))
 	} else if n > 1 {
 		parts = append(parts, fmt.Sprintf("%d devices want to join: rein devices approve", n))
+	}
+	if n := len(status.PendingRevocations); n == 1 {
+		parts = append(parts, fmt.Sprintf("revoke %q: rein devices revoke %s", status.PendingRevocations[0].DeviceName, status.PendingRevocations[0].DeviceID))
+	} else if n > 1 {
+		parts = append(parts, fmt.Sprintf("%d Console revocations pending: rein devices", n))
 	}
 	return strings.Join(parts, " · ")
 }

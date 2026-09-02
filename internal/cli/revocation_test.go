@@ -141,6 +141,55 @@ func deviceID(t *testing.T, d *pairDevice) string {
 // revocation racing an approval, in either order, converges on one
 // keyring where the approved device holds a wrap and the revoked one does
 // not.
+func TestConsoleRevocationRequestCompletesThroughDevicesRevoke(t *testing.T) {
+	plane := newFakeControlPlane(t)
+	plane.s3 = s3test.NewPlain(t, "lk-0000000000000000000console")
+	t.Setenv(hopURLEnv, plane.srv.URL)
+	for _, env := range []string{"REINSTATE_BACKEND", "REINSTATE_S3_ACCESS_KEY_ID", "REINSTATE_S3_SECRET_ACCESS_KEY", "REINSTATE_PASSPHRASE_FD", "REINSTATE_RECOVERY_CODE_FD", "REINSTATE_PAIRING_CODE_FD", "REINSTATE_HOP_LOCATION", "CLAUDE_CONFIG_DIR", "CODEX_HOME"} {
+		t.Setenv(env, "")
+	}
+	project := writeClaudeFixture(t)
+	a := newPairDevice(t, plane, "macbook")
+	for _, args := range [][]string{{"login"}, {"init", "--hop", "--project", "local/locker=" + project}, {"account", "init"}} {
+		if out, errb, code := a.run(args...); code != ExitOK {
+			t.Fatalf("A %v: exit=%d out=%q err=%q", args, code, out, errb)
+		}
+	}
+	b := newPairDevice(t, plane, "desktop")
+	if _, errb, code := b.run("login"); code != ExitOK {
+		t.Fatalf("B login: %d %q", code, errb)
+	}
+	if _, errb, code := b.run("init", "--hop", "--project", "local/locker="+filepath.Join(os.Getenv("HOME"), "Projects", "console-target")); code != ExitOK {
+		t.Fatalf("B init: %d %q", code, errb)
+	}
+	join := b.startJoin()
+	if out, errb, code := a.approve(join.code, false); code != ExitOK {
+		t.Fatalf("approve: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if out, errb, code := join.finish(t); code != ExitOK {
+		t.Fatalf("join: exit=%d out=%q err=%q", code, out, errb)
+	}
+	bID := deviceID(t, b)
+	requestID := plane.requestDeviceRevocation(bID)
+
+	out, errb, code := a.run("devices")
+	if code != ExitOK || !strings.Contains(out, "pending revocation") || !strings.Contains(out, requestID) || !strings.Contains(out, "rein devices revoke "+bID) {
+		t.Fatalf("devices: exit=%d out=%q err=%q", code, out, errb)
+	}
+	out, errb, code = a.revoke(bID, a.shownCode)
+	if code != ExitOK || !strings.Contains(out, "Console request "+requestID+" confirmed") || !strings.Contains(out, "key generation 2") {
+		t.Fatalf("revoke: exit=%d out=%q err=%q", code, out, errb)
+	}
+	plane.mu.Lock()
+	request := plane.revocationRequests[requestID]
+	_, revoked := plane.revoked[bID]
+	generation := plane.keyGeneration
+	plane.mu.Unlock()
+	if request.status != hop.RevocationRequestConfirmed || request.confirmedGeneration != 2 || !revoked || generation != 2 {
+		t.Fatalf("request=%+v revoked=%v generation=%d", request, revoked, generation)
+	}
+}
+
 func TestRevocationJourney(t *testing.T) {
 	plane := newFakeControlPlane(t)
 	plane.s3 = s3test.NewPlain(t, "lk-000000000000000000000revoke")

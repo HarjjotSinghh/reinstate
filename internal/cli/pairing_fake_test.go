@@ -28,6 +28,16 @@ type fakePairing struct {
 	createdAt, expiresAt     time.Time
 }
 
+type fakeRevocationRequest struct {
+	id                  string
+	target              string
+	status              string
+	requestedGeneration int
+	requestedAt         time.Time
+	confirmedGeneration int
+	confirmedBy         string
+}
+
 func (f *fakeControlPlane) registerPairing(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/pairing", f.createPairing)
 	mux.HandleFunc("GET /v1/pairing", f.listPairings)
@@ -37,8 +47,108 @@ func (f *fakeControlPlane) registerPairing(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/devices", f.listDevices)
 	mux.HandleFunc("DELETE /v1/devices/{id}", f.revokeDevice)
 	mux.HandleFunc("POST /v1/devices/{id}/revoke", f.revokeDevice)
+	mux.HandleFunc("GET /v1/device-revocation-requests", f.listRevocationRequests)
+	mux.HandleFunc("POST /v1/device-revocation-requests/{id}/confirm", f.confirmRevocationRequest)
 	mux.HandleFunc("GET "+hop.KeyGenerationPath, f.readKeyGeneration)
 	mux.HandleFunc("POST "+hop.KeyGenerationPath, f.raiseKeyGeneration)
+}
+
+func (f *fakeControlPlane) requestDeviceRevocation(target string) string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.revocationRequests == nil {
+		f.revocationRequests = map[string]*fakeRevocationRequest{}
+	}
+	f.revocationSeq++
+	id := "revoke-" + strconv.Itoa(f.revocationSeq)
+	f.revocationRequests[id] = &fakeRevocationRequest{
+		id: id, target: target, status: hop.RevocationRequestPending,
+		requestedGeneration: f.keyGeneration, requestedAt: time.Now().UTC(),
+	}
+	return id
+}
+
+func (f *fakeControlPlane) revocationRequestView(req *fakeRevocationRequest) hop.DeviceRevocationRequest {
+	return hop.DeviceRevocationRequest{
+		ID: req.id, Status: req.status, Target: f.deviceByID(req.target),
+		RequestedGeneration: req.requestedGeneration, RequestedAt: req.requestedAt.Format(time.RFC3339Nano),
+		ConfirmedBy: req.confirmedBy, ConfirmedGeneration: req.confirmedGeneration,
+	}
+}
+
+func (f *fakeControlPlane) listRevocationRequests(w http.ResponseWriter, r *http.Request) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if _, ok := f.identityFor(w, r); !ok {
+		return
+	}
+	requests := []hop.DeviceRevocationRequest{}
+	for _, req := range f.revocationRequests {
+		if req.status == hop.RevocationRequestPending {
+			requests = append(requests, f.revocationRequestView(req))
+		}
+	}
+	_ = json.NewEncoder(w).Encode(map[string]any{"requests": requests})
+}
+
+func (f *fakeControlPlane) confirmRevocationRequest(w http.ResponseWriter, r *http.Request) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	identity, ok := f.identityFor(w, r)
+	if !ok {
+		return
+	}
+	req := f.revocationRequests[r.PathValue("id")]
+	if req == nil {
+		writeFakeError(w, http.StatusNotFound, "unknown revocation request")
+		return
+	}
+	var body struct {
+		Generation int `json:"generation"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeFakeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if req.status != hop.RevocationRequestPending {
+		writeFakeErrorCode(w, http.StatusConflict, hop.CodeRevocationDecided, "this revocation request is no longer pending")
+		return
+	}
+	if identity.Device.ID == req.target {
+		writeFakeError(w, http.StatusForbidden, "the target device cannot confirm its own revocation")
+		return
+	}
+	if body.Generation <= req.requestedGeneration || body.Generation <= f.keyGeneration {
+		writeFakeErrorCode(w, http.StatusConflict, hop.CodeGenerationNotNewer, "generation must be newer")
+		return
+	}
+	var target hop.Device
+	for token, candidate := range f.tokens {
+		if candidate.Device.ID == req.target && candidate.Account.ID == identity.Account.ID {
+			target = candidate.Device
+			target.RevokedAt = time.Now().UTC().Format(time.RFC3339Nano)
+			delete(f.tokens, token)
+			break
+		}
+	}
+	if target.ID == "" {
+		writeFakeError(w, http.StatusNotFound, "unknown revocation request")
+		return
+	}
+	if f.revoked == nil {
+		f.revoked = map[string]hop.Device{}
+	}
+	f.revoked[target.ID] = target
+	f.keyGeneration = body.Generation
+	f.keyGenerationAt = time.Now().UTC().Format(time.RFC3339Nano)
+	f.keyGenerationBy = identity.Device.ID
+	req.status = hop.RevocationRequestConfirmed
+	req.confirmedBy = identity.Device.ID
+	req.confirmedGeneration = body.Generation
+	f.events = append(f.events, "device_revoked:"+target.ID)
+	view := f.revocationRequestView(req)
+	view.Target = target
+	_ = json.NewEncoder(w).Encode(view)
 }
 
 // readKeyGeneration and raiseKeyGeneration are the account key-generation

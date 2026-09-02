@@ -268,6 +268,10 @@ func runDevicesList(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return hopExitError(err)
 	}
+	revocations, err := client.PendingDeviceRevocations(ctx, tok.Token)
+	if err != nil {
+		return hopExitError(err)
+	}
 	// The keyring is the key-model truth; the control plane only knows
 	// enrolment. Best effort: a device with no configured storage still
 	// gets the control-plane view.
@@ -319,7 +323,7 @@ func runDevicesList(cmd *cobra.Command, _ []string) error {
 			}
 			rows = append(rows, row)
 		}
-		report := map[string]any{"devices": rows, "pending_pairings": pending}
+		report := map[string]any{"devices": rows, "pending_pairings": pending, "pending_revocations": revocations}
 		if keyringSeen {
 			report["key_generation"] = generation
 		}
@@ -346,12 +350,19 @@ func runDevicesList(cmd *cobra.Command, _ []string) error {
 	}
 	if len(pending) == 0 {
 		PrintHuman(out, "no pending pairing requests")
-		return nil
+	} else {
+		for _, p := range pending {
+			PrintHuman(out, "pending approval: %s (%s) asked to join at %s (request %s, expires %s)", p.Device.Name, p.Device.Platform, p.CreatedAt, p.ID, p.ExpiresAt)
+		}
+		PrintHuman(out, "run rein devices approve and enter the code shown on the new device")
 	}
-	for _, p := range pending {
-		PrintHuman(out, "pending approval: %s (%s) asked to join at %s (request %s, expires %s)", p.Device.Name, p.Device.Platform, p.CreatedAt, p.ID, p.ExpiresAt)
+	if len(revocations) == 0 {
+		PrintHuman(out, "no pending Console revocation requests")
+	} else {
+		for _, request := range revocations {
+			PrintHuman(out, "pending revocation: %s (%s), Console request %s; run rein devices revoke %s on another enrolled device", request.Target.Name, request.Target.Platform, request.ID, request.Target.ID)
+		}
 	}
-	PrintHuman(out, "run rein devices approve and enter the code shown on the new device")
 	return nil
 }
 
@@ -637,6 +648,17 @@ func runDevicesRevoke(cmd *cobra.Command, target string) error {
 	if err != nil {
 		return err
 	}
+	revocationRequests, err := client.PendingDeviceRevocations(ctx, tok.Token)
+	if err != nil {
+		return hopExitError(err)
+	}
+	var consoleRequestID string
+	for _, request := range revocationRequests {
+		if request.Target.ID == victim.ID {
+			consoleRequestID = request.ID
+			break
+		}
+	}
 	home, cfg, err := loadAccountHome()
 	if err != nil {
 		return err
@@ -732,31 +754,45 @@ func runDevicesRevoke(cmd *cobra.Command, target string) error {
 		return err
 	}
 
-	revocation, err := client.RevokeDevice(ctx, tok.Token, victim.ID)
-	if err != nil {
-		if already {
-			return hopExitError(err)
+	var revocation hop.Revocation
+	carried := false
+	if consoleRequestID != "" {
+		confirmed, confirmErr := client.ConfirmDeviceRevocation(ctx, tok.Token, consoleRequestID, generation)
+		if confirmErr != nil {
+			return NewExitError(ExitAuthStorage, fmt.Sprintf("the keyring moved to key generation %d without %s, but Console request %s could not be confirmed (%v); its token still works until confirmation succeeds. Run rein devices revoke %s again", generation, victim.ID, consoleRequestID, confirmErr, victim.ID))
 		}
-		return NewExitError(ExitAuthStorage, fmt.Sprintf("the keyring moved to key generation %d without %s, but the control plane could not be told (%v); its token still works until it is. Run rein devices revoke %s again", generation, victim.ID, err, victim.ID))
-	}
-	// Raise the account-wide floor last, once the keyring holds the new
-	// generation and the token is refused. This is what reaches the devices
-	// that have not read the keyring yet: without it, a device that has run
-	// nothing since the previous generation would accept the pre-rollover
-	// keyring the revoked device can still put back. Revoking is idempotent
-	// on both halves, so a failure here is reported and re-run rather than
-	// left to a later command to notice.
-	carried, err := raiseKeyGenerationFloor(cmd, home, cfg, generation)
-	if errors.Is(err, hop.ErrKeyGenerationRange) {
-		// Retrying will not help: the number is past what the control
-		// plane will store, and the keyring has already moved. Say so
-		// rather than sending the operator round the loop again.
-		return NewExitError(ExitAuthStorage, fmt.Sprintf("device %s is revoked and the keyring is at key generation %d, but the control plane will not hold a floor that high (%v). The revocation stands; the account-wide floor is left where it was, so a device that has not yet read key generation %d has only its own record to go on. Move the account to a fresh locker rather than revoking again", victim.ID, generation, err, generation))
-	}
-	if err != nil {
-		return NewExitError(ExitAuthStorage, fmt.Sprintf("device %s is revoked and the keyring is at key generation %d, but the account's key generation floor could not be raised (%v); a device that has not yet read key generation %d would still accept the earlier keyring. Run rein devices revoke %s again", victim.ID, generation, err, generation, victim.ID))
+		revocation = hop.Revocation{Device: confirmed.Target, Revoked: true}
+		carried = true
+	} else {
+		revocation, err = client.RevokeDevice(ctx, tok.Token, victim.ID)
+		if err != nil {
+			if already {
+				return hopExitError(err)
+			}
+			return NewExitError(ExitAuthStorage, fmt.Sprintf("the keyring moved to key generation %d without %s, but the control plane could not be told (%v); its token still works until it is. Run rein devices revoke %s again", generation, victim.ID, err, victim.ID))
+		}
+		// Raise the account-wide floor last, once the keyring holds the new
+		// generation and the token is refused. This is what reaches the devices
+		// that have not read the keyring yet: without it, a device that has run
+		// nothing since the previous generation would accept the pre-rollover
+		// keyring the revoked device can still put back. Revoking is idempotent
+		// on both halves, so a failure here is reported and re-run rather than
+		// left to a later command to notice.
+		carried, err = raiseKeyGenerationFloor(cmd, home, cfg, generation)
+		if errors.Is(err, hop.ErrKeyGenerationRange) {
+			// Retrying will not help: the number is past what the control
+			// plane will store, and the keyring has already moved. Say so
+			// rather than sending the operator round the loop again.
+			return NewExitError(ExitAuthStorage, fmt.Sprintf("device %s is revoked and the keyring is at key generation %d, but the control plane will not hold a floor that high (%v). The revocation stands; the account-wide floor is left where it was, so a device that has not yet read key generation %d has only its own record to go on. Move the account to a fresh locker rather than revoking again", victim.ID, generation, err, generation))
+		}
+		if err != nil {
+			return NewExitError(ExitAuthStorage, fmt.Sprintf("device %s is revoked and the keyring is at key generation %d, but the account's key generation floor could not be raised (%v); a device that has not yet read key generation %d would still accept the earlier keyring. Run rein devices revoke %s again", victim.ID, generation, err, generation, victim.ID))
+		}
 	}
 	out := cmd.OutOrStdout()
+	if consoleRequestID != "" {
+		PrintHuman(out, "Console request %s confirmed after the keyring reached generation %d", consoleRequestID, generation)
+	}
 	switch {
 	case already && !revocation.Revoked:
 		PrintHuman(out, "device %q (%s) was already revoked; key generation %d, %d enrolled device(s)", victim.Name, victim.ID, generation, updated.DeviceCount())

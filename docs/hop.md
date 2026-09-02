@@ -191,7 +191,8 @@ or a plain environment value.
 
 `rein devices` shows every device enrolled under the account, whether the
 keyring holds a root-key wrap for it (and in which key generation), any
-revoked devices, and any pending pairing request.
+revoked devices, pending pairing requests, and pending revocation requests
+started from the Console.
 
 ## Revoking a device (key generations)
 
@@ -202,6 +203,14 @@ from any other enrolled device.
 rein devices                         # find its id or name
 rein devices revoke desktop          # asks for the recovery code
 ```
+
+The Console can request the same operation, but it cannot perform it: the
+control plane has no root key or recovery code. The daemon notifies each
+remaining device, and `rein devices` prints the pending request and exact
+`rein devices revoke <device-id>` command. That command performs the same
+recovery-code-protected rollover, then confirms the Console request with the
+strictly newer generation. Only that confirmation revokes the target and
+raises the account floor.
 
 Revocation starts a new **key generation**. The revoking device unwraps the
 current root key, draws a fresh one, wraps it for every remaining device's
@@ -815,6 +824,8 @@ passphrase, or session content. Sign-in is a device-authorization style flow:
 | 10 | `GET /v1/verify/reference` (bearer) | `200 {endpoint, bucket, region, key}`: the operator's reference locker and its probe object, for `rein sync verify` step 4. `404 {code: "no_reference"}` when the control plane has none (the step is reported as not applicable). |
 | 11 | `POST /v1/verify-reports` (bearer) `{version: 1, generated_at, client_version, storage: "hop"\|"byo", outcome: "pass"\|"fail", steps: [{id, name, did, observed, status}]}` | `201 {id, received_at}`; stored per device for the console. Step results only; a body over 64 KB or with a verdict outside `pass`/`fail`/`not-applicable` is refused (400 for a bad field, 413 for an oversized body). |
 | 12 | `POST /v1/pairing` (bearer) `{version: 2, public_key, salt, binding}`; `GET /v1/pairing` lists pending requests; `POST /v1/pairing/{id}/approve` relays `{payload, key_generation}`; `POST /v1/pairing/{id}/claim` collects once. | Pairing views, approval answers, and claim answers carry integer `version`. Missing or 0 means v1 for compatibility; 1 and 2 are accepted, every other value is refused. New clients send 2 and refuse a response that changes it. The cryptographic fields remain opaque to the control plane. |
+| 13 | `GET /v1/device-revocation-requests` (bearer) | `200 {requests: [{id, status, target, requested_generation, requested_at}]}` for pending requests created in the Console. A control plane predating Console v1 answers `404`, which clients treat as an empty list. |
+| 14 | `POST /v1/device-revocation-requests/{id}/confirm` (bearer) `{generation}` | Confirms only from another enrolled device and only after a generation strictly newer than the request and current account floor. Success returns the confirmed request and revoked target. Stale generations return `409 {code: "generation_not_newer"}`; cancelled or completed requests return `409 {code: "revocation_decided"}`. |
 
 The CLI reads the locker with `GET /v1/locker` on every hosted command and
 only calls `POST /v1/locker` when the answer is `no_locker` (normally once,

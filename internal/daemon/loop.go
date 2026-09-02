@@ -24,7 +24,7 @@ type Syncer interface {
 // Account reaches the control plane for the account's devices and the
 // pairing requests waiting for approval. It is nil on BYO storage.
 type Account interface {
-	Pending(ctx context.Context) (pending []PendingApproval, devices []Device, err error)
+	Pending(ctx context.Context) (pending []PendingApproval, revocations []PendingRevocation, devices []Device, err error)
 }
 
 // Notifier shows an OS notification. Failures are logged and ignored.
@@ -199,7 +199,7 @@ func Run(ctx context.Context, opts Options) error {
 		status: Status{
 			Version: StatusVersion, PID: os.Getpid(), StartedAt: now, UpdatedAt: now,
 			Watch: opts.Watch, Roots: opts.Roots, Backend: opts.Backend,
-			Pending: []PendingApproval{},
+			Pending: []PendingApproval{}, PendingRevocations: []PendingRevocation{},
 		},
 		seen: map[string]bool{},
 	}
@@ -366,7 +366,7 @@ func (l *loop) approvals(ctx context.Context) Timer {
 	if l.opts.Account == nil {
 		return nil
 	}
-	pending, devices, err := l.guardAccount(ctx)
+	pending, revocations, devices, err := l.guardAccount(ctx)
 	now := l.opts.Clock.Now()
 	l.status.ApprovalsAt = now
 	if err != nil {
@@ -380,15 +380,20 @@ func (l *loop) approvals(ctx context.Context) Timer {
 	if pending == nil {
 		pending = []PendingApproval{}
 	}
+	if revocations == nil {
+		revocations = []PendingRevocation{}
+	}
 	l.status.Pending = pending
+	l.status.PendingRevocations = revocations
 	l.status.Devices = devices
 	current := map[string]bool{}
 	for _, p := range pending {
-		current[p.RequestID] = true
-		if l.seen[p.RequestID] {
+		key := "pair:" + p.RequestID
+		current[key] = true
+		if l.seen[key] {
 			continue
 		}
-		l.seen[p.RequestID] = true
+		l.seen[key] = true
 		name := p.DeviceName
 		if name == "" {
 			name = p.DeviceID
@@ -397,6 +402,26 @@ func (l *loop) approvals(ctx context.Context) Timer {
 		if l.opts.Notifier != nil {
 			if err := l.opts.Notifier.Notify("Reinstate: device wants to join",
 				fmt.Sprintf("%s wants to join your account. Run: rein devices approve", name)); err != nil {
+				l.opts.Logger.Printf("notify: %v", err)
+			}
+			l.observe(Event{Kind: "notify"})
+		}
+	}
+	for _, request := range revocations {
+		key := "revoke:" + request.RequestID
+		current[key] = true
+		if l.seen[key] {
+			continue
+		}
+		l.seen[key] = true
+		name := request.DeviceName
+		if name == "" {
+			name = request.DeviceID
+		}
+		l.opts.Logger.Printf("revocation pending: device %q (%s); run rein devices revoke %s", name, request.RequestID, request.DeviceID)
+		if l.opts.Notifier != nil {
+			if err := l.opts.Notifier.Notify("Reinstate: device revocation requested",
+				fmt.Sprintf("Revoke %s safely by running: rein devices revoke %s", name, request.DeviceID)); err != nil {
 				l.opts.Logger.Printf("notify: %v", err)
 			}
 			l.observe(Event{Kind: "notify"})
@@ -436,7 +461,7 @@ func (l *loop) guard(ctx context.Context, step func(context.Context) (string, er
 	return step(ctx)
 }
 
-func (l *loop) guardAccount(ctx context.Context) (pending []PendingApproval, devices []Device, err error) {
+func (l *loop) guardAccount(ctx context.Context) (pending []PendingApproval, revocations []PendingRevocation, devices []Device, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("recovered: %v", r)

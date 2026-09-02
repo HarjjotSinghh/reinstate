@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- **Console revocations complete only after a client-held key rollover (#14).**
+  The daemon surfaces pending Console requests without approving them, and
+  `rein devices` names the exact recovery-code-protected command. When that
+  command writes a strictly newer key generation, it confirms the pending
+  request so the control plane atomically raises the floor and revokes the
+  target. Older control planes keep the direct revocation flow.
 - **Pairing now separates its HMAC and payload keys (#18).** New pairing
   requests carry integer protocol version 2 and expand the existing
   Argon2id master with HKDF-SHA256 under distinct binding and payload

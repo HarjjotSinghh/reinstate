@@ -94,6 +94,31 @@ type Revocation struct {
 	Revoked bool   `json:"revoked"`
 }
 
+const (
+	RevocationRequestPending   = "pending"
+	RevocationRequestCancelled = "cancelled"
+	RevocationRequestConfirmed = "confirmed"
+
+	CodeGenerationNotNewer = "generation_not_newer"
+	CodeRevocationDecided  = "revocation_decided"
+)
+
+var (
+	ErrGenerationNotNewer = errors.New("the reported key generation is not newer than the pending revocation")
+	ErrRevocationDecided  = errors.New("the device revocation request is no longer pending")
+)
+
+type DeviceRevocationRequest struct {
+	ID                  string `json:"id"`
+	Status              string `json:"status"`
+	Target              Device `json:"target"`
+	RequestedGeneration int    `json:"requested_generation"`
+	RequestedAt         string `json:"requested_at"`
+	ConfirmedAt         string `json:"confirmed_at,omitempty"`
+	ConfirmedBy         string `json:"confirmed_by,omitempty"`
+	ConfirmedGeneration int    `json:"confirmed_generation,omitempty"`
+}
+
 // RevokeDevice tells the control plane that device id is revoked: its token
 // is refused from then on and credential minting no longer counts it. The
 // call is idempotent. It carries no key material; the key generation
@@ -105,6 +130,40 @@ func (c *Client) RevokeDevice(ctx context.Context, token, id string) (Revocation
 	}
 	if out.Device.ID == "" {
 		return Revocation{}, errors.New("control plane answered the revocation without the device")
+	}
+	return out, nil
+}
+
+func (c *Client) PendingDeviceRevocations(ctx context.Context, token string) ([]DeviceRevocationRequest, error) {
+	var out struct {
+		Requests []DeviceRevocationRequest `json:"requests"`
+	}
+	if err := c.do(ctx, http.MethodGet, "/v1/device-revocation-requests", token, nil, &out); err != nil {
+		var he *Error
+		if errors.As(err, &he) && he.Status == http.StatusNotFound {
+			return []DeviceRevocationRequest{}, nil
+		}
+		return nil, pairingError(err)
+	}
+	return out.Requests, nil
+}
+
+func (c *Client) ConfirmDeviceRevocation(ctx context.Context, token, id string, generation int) (DeviceRevocationRequest, error) {
+	var out DeviceRevocationRequest
+	if err := c.do(ctx, http.MethodPost, "/v1/device-revocation-requests/"+url.PathEscape(id)+"/confirm", token, map[string]int{"generation": generation}, &out); err != nil {
+		var he *Error
+		if errors.As(err, &he) {
+			switch he.Code {
+			case CodeGenerationNotNewer:
+				return DeviceRevocationRequest{}, ErrGenerationNotNewer
+			case CodeRevocationDecided:
+				return DeviceRevocationRequest{}, ErrRevocationDecided
+			}
+		}
+		return DeviceRevocationRequest{}, pairingError(err)
+	}
+	if out.ID == "" || out.Target.ID == "" || out.Status != RevocationRequestConfirmed {
+		return DeviceRevocationRequest{}, errors.New("control plane answered the revocation confirmation incompletely")
 	}
 	return out, nil
 }
