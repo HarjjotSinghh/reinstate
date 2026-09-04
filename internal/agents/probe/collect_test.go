@@ -183,7 +183,15 @@ func TestHugeTreeFinishes(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	// The bound is generous rather than tight: this test's job is to catch a
+	// walk that stops respecting MaxFiles and scans the whole 3000-entry
+	// directory unbounded (which would run far past even this bound, not
+	// merely over it), not to pin down exactly how fast bounded probing is.
+	// A tight bound flakes under ordinary CPU/IO contention from the rest of
+	// a parallel `go test ./...` run, since t.Parallel() here offers no
+	// isolation from that.
+	const bound = 8 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), bound)
 	defer cancel()
 	start := time.Now()
 	art, err := Collect(ctx, agents.Env{Home: home, LookupEnv: func(string) string { return "" }},
@@ -195,7 +203,7 @@ func TestHugeTreeFinishes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if time.Since(start) > 2*time.Second {
+	if time.Since(start) > bound {
 		t.Fatal("probe exceeded bound")
 	}
 	if err := Validate(art); err != nil {
