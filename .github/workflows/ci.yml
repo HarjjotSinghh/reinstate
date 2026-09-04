@@ -188,7 +188,7 @@ jobs:
       - name: Install Syft
         id: syft_attempt_1
         continue-on-error: true
-        uses: anchore/sbom-action/download-syft@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        uses: anchore/sbom-action/download-syft@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
 
       - name: Back off before the second Syft download attempt
         if: steps.syft_attempt_1.outcome == 'failure'
@@ -198,7 +198,7 @@ jobs:
         id: syft_attempt_2
         if: steps.syft_attempt_1.outcome == 'failure'
         continue-on-error: true
-        uses: anchore/sbom-action/download-syft@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        uses: anchore/sbom-action/download-syft@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
 
       - name: Back off before the final Syft download attempt
         if: steps.syft_attempt_1.outcome == 'failure' && steps.syft_attempt_2.outcome == 'failure'
@@ -206,7 +206,7 @@ jobs:
 
       - name: Install Syft (final attempt)
         if: steps.syft_attempt_1.outcome == 'failure' && steps.syft_attempt_2.outcome == 'failure'
-        uses: anchore/sbom-action/download-syft@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        uses: anchore/sbom-action/download-syft@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
 
       - name: Verify Syft is on PATH
         run: syft version
