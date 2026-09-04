@@ -7,11 +7,11 @@ toolchain go1.25.13
 require (
 	filippo.io/age v1.3.1
 	github.com/BurntSushi/toml v1.6.0
-	github.com/aws/aws-sdk-go-v2 v1.43.6
+	github.com/aws/aws-sdk-go-v2 v1.45.1
 	github.com/aws/aws-sdk-go-v2/config v1.32.31
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.30
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.107.2
-	github.com/aws/smithy-go v1.27.8
+	github.com/aws/smithy-go v1.28.1
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/google/uuid v1.6.0
