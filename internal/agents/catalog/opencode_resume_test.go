@@ -110,8 +110,8 @@ func TestOpenCodeDescriptorIsT5(t *testing.T) {
 	if got.Family != agents.FamilyEmbeddedDB {
 		t.Fatalf("Family = %s, want F3", got.Family)
 	}
-	if got.Version == nil || got.Version.Min != "1.18.21" || got.Version.Max != "1.18.27" {
-		t.Fatalf("Version = %+v, want the measured range 1.18.21-1.18.27", got.Version)
+	if got.Version == nil || got.Version.Min != "1.18.21" || got.Version.Max != "1.18.21" {
+		t.Fatalf("Version = %+v, want the single measured build 1.18.21", got.Version)
 	}
 	if got.NewIndexSource == nil || got.NewReader == nil || got.NewTarget == nil {
 		t.Fatal("missing T1/T2/T4 constructors")
