@@ -88,3 +88,87 @@ func printEnv(w io.Writer, shell string, pairs []envPair) {
 func psQuote(value string) string {
 	return strings.ReplaceAll(value, "'", "''")
 }
+
+// ambientOverrideEnv lists REINSTATE_* environment variables that let an
+// ordinary `rein` invocation route around whatever storage a device's own
+// home actually configures: REINSTATE_BACKEND=memory makes
+// internal/cli/commands_impl.go's openBackend use a local disk store
+// before it even looks at cfg.Storage.Type, REINSTATE_MEMORY_BACKEND_DIR
+// says where (internal/cli/commands_impl.go's memoryBackendRoot: "lets two
+// homes share one store", which is exactly the problem when it is left set
+// by accident rather than chosen on purpose), and the four REINSTATE_S3_*
+// names are the BYO credential/endpoint fallback (same file, and
+// internal/credentials.Resolve). None of them is a lab concept -- hoplab's
+// own isolation is REINSTATE_HOME plus the fourteen other pairs hopLabEnv
+// returns.
+//
+// Left set in an operator's shell from earlier, unrelated local testing
+// (REINSTATE_BACKEND=memory backed by one long-lived shared directory is
+// an ordinary way to run this project's own local e2e tests by hand, and
+// persists across every new shell once set at the Windows user level),
+// these silently redirect a hop-mode `rein login`/`init --hop`/`account
+// init` away from the lab's real hopd and fakelocker entirely, onto
+// whatever that shared directory already holds. See
+// docs/testing/windows-acceptance-host.md's Hop lab section for the dated
+// repro this produced on this exact host: a brand-new account against a
+// brand-new hopd and fakelocker, `rein account status --json` still
+// reporting a keyring that already held two devices, because a hop-mode
+// config's storage prefix is always empty (openBackend deliberately scopes
+// hop storage through the bucket the control plane names, not a shared
+// prefix) and the leaked REINSTATE_MEMORY_BACKEND_DIR pointed every
+// device -- and every account -- at the exact same flat "keyring.v1.json"
+// file on disk, left over from unrelated earlier work.
+//
+// Every environment hoplab builds -- the block `hoplab env` prints and
+// every subprocess pair.go launches itself (reinEnviron) -- clears all
+// seven, unconditionally, regardless of what the operator's own shell
+// carries.
+var ambientOverrideEnv = []string{
+	"REINSTATE_BACKEND",
+	"REINSTATE_MEMORY_BACKEND_DIR",
+	"REINSTATE_S3_ACCESS_KEY_ID",
+	"REINSTATE_S3_SECRET_ACCESS_KEY",
+	"REINSTATE_S3_ENDPOINT",
+	"REINSTATE_S3_BUCKET",
+	"REINSTATE_S3_REGION",
+}
+
+// printEnvClear writes an unset line (shell-appropriate) for each of keys,
+// meant to run right after printEnv's export lines in the same block --
+// see ambientOverrideEnv for what these are and why a lab environment must
+// clear them explicitly rather than merely not set them itself.
+func printEnvClear(w io.Writer, shell string, keys []string) {
+	for _, k := range keys {
+		if shell == "powershell" {
+			fmt.Fprintf(w, "Remove-Item Env:%s -ErrorAction SilentlyContinue\n", k)
+		} else {
+			fmt.Fprintf(w, "unset %s\n", k)
+		}
+	}
+}
+
+// stripEnv drops every "KEY=value" entry in base whose key is in keys,
+// regardless of value. Unlike mergeEnv's overlay (pair.go), which leaves
+// an override alone when its own value is empty (so it does not clobber
+// whatever the base environment already had), stripEnv unconditionally
+// removes the named keys -- how hoplab clears an ambient variable it wants
+// gone rather than merely absent from what it itself sets. See
+// ambientOverrideEnv.
+func stripEnv(base []string, keys []string) []string {
+	drop := make(map[string]bool, len(keys))
+	for _, k := range keys {
+		drop[k] = true
+	}
+	out := make([]string, 0, len(base))
+	for _, kv := range base {
+		key := kv
+		if i := strings.IndexByte(kv, '='); i >= 0 {
+			key = kv[:i]
+		}
+		if drop[key] {
+			continue
+		}
+		out = append(out, kv)
+	}
+	return out
+}

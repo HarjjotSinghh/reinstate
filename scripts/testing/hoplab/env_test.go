@@ -75,3 +75,76 @@ func TestHopLabEnvHomeAndUserprofileMatchTheDeviceHome(t *testing.T) {
 		t.Fatalf("USERPROFILE = %q, want %q", got["USERPROFILE"], h.Home)
 	}
 }
+
+func TestPrintEnvClearSh(t *testing.T) {
+	var out strings.Builder
+	printEnvClear(&out, "sh", []string{"REINSTATE_BACKEND", "REINSTATE_MEMORY_BACKEND_DIR"})
+	want := "unset REINSTATE_BACKEND\nunset REINSTATE_MEMORY_BACKEND_DIR\n"
+	if got := out.String(); got != want {
+		t.Fatalf("sh clear output = %q, want %q", got, want)
+	}
+}
+
+func TestPrintEnvClearPowerShell(t *testing.T) {
+	var out strings.Builder
+	printEnvClear(&out, "powershell", []string{"REINSTATE_BACKEND"})
+	want := "Remove-Item Env:REINSTATE_BACKEND -ErrorAction SilentlyContinue\n"
+	if got := out.String(); got != want {
+		t.Fatalf("powershell clear output = %q, want %q", got, want)
+	}
+}
+
+// TestAmbientOverrideEnvNamesTheKnownEscapeHatches pins the exact set: a
+// name silently added to internal/cli's REINSTATE_* env-var surface later
+// (openBackend, credentials.Resolve) needs a matching addition here, not
+// automatic coverage, so this test is meant to need updating when that
+// happens rather than passing by accident.
+func TestAmbientOverrideEnvNamesTheKnownEscapeHatches(t *testing.T) {
+	want := map[string]bool{
+		"REINSTATE_BACKEND":              true,
+		"REINSTATE_MEMORY_BACKEND_DIR":   true,
+		"REINSTATE_S3_ACCESS_KEY_ID":     true,
+		"REINSTATE_S3_SECRET_ACCESS_KEY": true,
+		"REINSTATE_S3_ENDPOINT":          true,
+		"REINSTATE_S3_BUCKET":            true,
+		"REINSTATE_S3_REGION":            true,
+	}
+	if len(ambientOverrideEnv) != len(want) {
+		t.Fatalf("ambientOverrideEnv has %d entries, want %d: %v", len(ambientOverrideEnv), len(want), ambientOverrideEnv)
+	}
+	seen := map[string]bool{}
+	for _, k := range ambientOverrideEnv {
+		if !want[k] {
+			t.Fatalf("unexpected ambientOverrideEnv entry %q", k)
+		}
+		if seen[k] {
+			t.Fatalf("ambientOverrideEnv lists %q twice", k)
+		}
+		seen[k] = true
+	}
+}
+
+func TestStripEnvDropsListedKeysRegardlessOfValue(t *testing.T) {
+	base := []string{
+		"REINSTATE_BACKEND=memory",
+		"OTHER=kept",
+		"REINSTATE_MEMORY_BACKEND_DIR=" + `D:\shared-from-earlier-testing`,
+		"PATH=C:\\Windows",
+	}
+	got := stripEnv(base, ambientOverrideEnv)
+	for _, kv := range got {
+		if strings.HasPrefix(kv, "REINSTATE_BACKEND=") || strings.HasPrefix(kv, "REINSTATE_MEMORY_BACKEND_DIR=") {
+			t.Fatalf("stripEnv left an ambient override in place: %v", got)
+		}
+	}
+	values := map[string]bool{}
+	for _, kv := range got {
+		values[kv] = true
+	}
+	if !values["OTHER=kept"] || !values["PATH=C:\\Windows"] {
+		t.Fatalf("stripEnv dropped an unrelated entry: %v", got)
+	}
+	if len(got) != 2 {
+		t.Fatalf("stripEnv = %v, want exactly the 2 unrelated entries", got)
+	}
+}
