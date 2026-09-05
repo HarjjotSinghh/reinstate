@@ -172,7 +172,7 @@ not re-verified against the real vendor binary since neither `2.1.262` nor
 | Cross-OS build | `GOOS=darwin go build ./...`, `GOOS=linux go build ./...` | PASS (Linux build likewise needed `GOTMPDIR` off the system drive) |
 | Doc gate | `go test ./internal/doctest/... -count=1`; `scripts/check-docs.sh` | PASS |
 | Secret scanner | `go test ./internal/fixture -count=1` | PASS |
-| Diff secret grep | `git diff release/v0.6.0-rc.1...HEAD \| grep -nE 'AKIA\|-----BEGIN\|passphrase=\|Bearer [A-Za-z0-9]'` | PASS — no match against the actual branch range (the prior draft of this record used `git diff -- .`, a working-tree diff that is empty by construction on a clean, committed branch and never scanned the introduced diff at all; corrected here) |
+| Diff secret grep | review-gates.md Gate 3, run against `git diff release/v0.6.0-rc.1...HEAD` (the actual branch range, not the working tree) | PASS — no match (the prior draft of this record ran the pattern against `git diff -- .`, a working-tree diff that is empty by construction on a clean, committed branch and never scanned the introduced diff at all; corrected here — and the pattern itself is deliberately not quoted in this row, since quoting it verbatim would make this very line match its own scan on every subsequent run) |
 
 ### Addendum — scope correction after review
 
