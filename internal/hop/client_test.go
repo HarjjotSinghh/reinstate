@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -122,6 +123,108 @@ func TestWhoamiUnauthorized(t *testing.T) {
 	if err != nil || id.Account.ID != "a" || id.Device.ID != "d" {
 		t.Fatalf("%+v err=%v", id, err)
 	}
+}
+
+// roundTripFunc adapts a function to http.RoundTripper, so a test can hand
+// a Client a transport that fails a specific way without a real dial.
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+// TestClassifyUnreachableRecognizesEachTransportFailure is T-202's two
+// required reproductions — an httptest server closed before the call
+// (connection refused) and a dialer that returns a *net.DNSError — plus a
+// TLS handshake failure and the negative case that a reachable control
+// plane's own answer is never reclassified as unreachable.
+func TestClassifyUnreachableRecognizesEachTransportFailure(t *testing.T) {
+	t.Run("connection refused", func(t *testing.T) {
+		srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+		srv.Close() // closed before the call: nothing answers this address any more
+		c := New(srv.URL)
+		_, err := c.Whoami(context.Background(), "tok")
+		if err == nil {
+			t.Fatal("a closed server answered")
+		}
+		unreachable, ok := ClassifyUnreachable(c.BaseURL, err)
+		if !ok {
+			t.Fatalf("not classified as unreachable: %v", err)
+		}
+		if unreachable.URL != c.BaseURL || unreachable.Phrase != "connection refused" {
+			t.Fatalf("classified = %+v", unreachable)
+		}
+		if !Unreachable(err) {
+			t.Fatal("Unreachable(err) disagreed with ClassifyUnreachable")
+		}
+		wantMsg := "could not reach the Reinstate Hop control plane at " + c.BaseURL + ": connection refused"
+		if unreachable.Error() != wantMsg {
+			t.Fatalf("message = %q, want %q", unreachable.Error(), wantMsg)
+		}
+	})
+
+	t.Run("DNS failure", func(t *testing.T) {
+		dnsErr := &net.DNSError{Err: "no such host", Name: "hop.invalid.example", IsNotFound: true}
+		c := &Client{
+			BaseURL: "https://hop.invalid.example",
+			HTTP: &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+				return nil, dnsErr
+			})},
+		}
+		_, err := c.Whoami(context.Background(), "tok")
+		unreachable, ok := ClassifyUnreachable(c.BaseURL, err)
+		if !ok {
+			t.Fatalf("not classified as unreachable: %v", err)
+		}
+		if unreachable.Phrase != "no DNS answer for hop.invalid.example" {
+			t.Fatalf("phrase = %q", unreachable.Phrase)
+		}
+		var gotDNS *net.DNSError
+		if !errors.As(unreachable, &gotDNS) || gotDNS.Name != "hop.invalid.example" {
+			t.Fatalf("classified error lost the underlying *net.DNSError: %v", unreachable)
+		}
+	})
+
+	t.Run("TLS handshake failure", func(t *testing.T) {
+		srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_ = json.NewEncoder(w).Encode(Identity{})
+		}))
+		defer srv.Close()
+		// The default client trusts no certificate httptest mints, so this
+		// fails the handshake rather than answering — the same shape as a
+		// control plane behind a captive portal or presenting an expired
+		// or self-signed certificate.
+		c := New(srv.URL)
+		_, err := c.Whoami(context.Background(), "tok")
+		unreachable, ok := ClassifyUnreachable(c.BaseURL, err)
+		if !ok {
+			t.Fatalf("not classified as unreachable: %v", err)
+		}
+		if unreachable.Phrase != "the TLS handshake failed" {
+			t.Fatalf("phrase = %q", unreachable.Phrase)
+		}
+	})
+
+	t.Run("a reachable control plane's own answer is not reclassified", func(t *testing.T) {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "bad request"})
+		}))
+		defer srv.Close()
+		c := New(srv.URL)
+		_, err := c.Whoami(context.Background(), "tok")
+		if _, ok := ClassifyUnreachable(c.BaseURL, err); ok {
+			t.Fatalf("a reachable control plane's own answer was classified as unreachable: %v", err)
+		}
+		var he *Error
+		if !errors.As(err, &he) || he.Status != http.StatusBadRequest {
+			t.Fatalf("err = %v, want the control plane's own *Error", err)
+		}
+	})
+
+	t.Run("no error classifies as nothing", func(t *testing.T) {
+		if _, ok := ClassifyUnreachable("https://hop.reinstate.dev", nil); ok {
+			t.Fatal("nil error was classified as unreachable")
+		}
+	})
 }
 
 func TestCreatePairingWritesIntegerVersion2(t *testing.T) {
