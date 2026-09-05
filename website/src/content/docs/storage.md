@@ -37,8 +37,8 @@ endpoint, region, bucket, and profile prefix separately; interactive
 - Reinstate installed on a trusted local device.
 
 Keep public website hosting and anonymous object access disabled. Reinstate does
-not require a Reinstate-hosted account or bucket. Reinstate Hop, the optional
-hosted tier built into the client, is not yet open; bring-your-own storage as
+not require a Reinstate-hosted account or bucket. [Reinstate Hop](/docs/hop), the
+optional hosted tier built into the client, is not yet open; bring-your-own storage as
 described on this page remains the only way to sync today.
 
 ## Storage configuration fields
@@ -187,3 +187,4 @@ policy.
 - [Use Amazon S3 step by step](/guides/use-s3-for-coding-agent-session-storage)
 - [Review encryption and credential boundaries](/docs/security-model)
 - [Understand the sync architecture](/docs/architecture)
+- [Reinstate Hop: sign-in, devices, and the locker](/docs/hop)
