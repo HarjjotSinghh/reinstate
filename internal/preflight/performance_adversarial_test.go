@@ -278,12 +278,37 @@ type phase3PerformanceFixture struct {
 	runtime   *phase3CountingRuntimeRunner
 }
 
+// loadTolerantTempDir is tb.TempDir for fixtures whose Verify may return on
+// cancellation or a shared deadline while an observer goroutine still holds a
+// handle under the directory. On Windows an open handle makes RemoveAll fail
+// with a sharing violation, and tb.TempDir reports that as a test failure
+// even though the test asserted nothing about cleanup. Retry briefly, then
+// leave the directory behind with a note rather than fail the test.
+func loadTolerantTempDir(tb testing.TB) string {
+	tb.Helper()
+	dir, err := os.MkdirTemp("", "preflight-perf-")
+	if err != nil {
+		tb.Fatal(err)
+	}
+	tb.Cleanup(func() {
+		var last error
+		for attempt := 0; attempt < 30; attempt++ {
+			if last = os.RemoveAll(dir); last == nil {
+				return
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+		tb.Logf("leaving %s behind after Verify returned early: %v", dir, last)
+	})
+	return dir
+}
+
 func newPhase3PerformanceFixture(tb testing.TB) *phase3PerformanceFixture {
 	tb.Helper()
 	value := &phase3PerformanceFixture{
-		workspace: tb.TempDir(),
-		agentRoot: tb.TempDir(),
-		userHome:  tb.TempDir(),
+		workspace: loadTolerantTempDir(tb),
+		agentRoot: loadTolerantTempDir(tb),
+		userHome:  loadTolerantTempDir(tb),
 	}
 	if err := os.Mkdir(filepath.Join(value.agentRoot, "projects"), 0o700); err != nil {
 		tb.Fatal(err)
