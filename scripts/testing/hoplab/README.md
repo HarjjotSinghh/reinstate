@@ -46,12 +46,13 @@ processes running until a later `hoplab stop`.
 | Command | Purpose |
 | ------- | ------- |
 | `start` | build/locate hopd and fakelocker, run them, print the env block |
-| `stop` | stop a lab (background, or from another terminal) |
+| `stop` | stop a lab (`-root <dir>`, or `-all` for every lab this registry still lists as running) |
+| `ps` | list every hopd/fakelocker pair `start` has recorded on this host, and whether each is still running |
 | `approve` | approve — or, with `-refuse`, decline — sign-in emails as they appear in the log |
 | `homes` | seed isolated device homes under `-root` |
 | `env` | print the env block for one seeded device |
-| `keyring save/load/clear` | move which device's token is active in the OS keyring |
-| `pair init/join` | pair two (or more) seeded devices into one Hop account, driving real `rein` non-interactively |
+| `keyring show/clear` | optional diagnostic: report or clear a device's OS-keyring entry (no pairing flow needs this) |
+| `pair init/join/recover` | pair two (or more) seeded devices into one Hop account, driving real `rein` non-interactively |
 
 Run `hoplab -h`, or any subcommand with no required flags, for the full
 flag list; the essentials are below.
@@ -72,6 +73,30 @@ hopd runs with `HOPD_STORAGE=fake`, `HOPD_EMAIL_SENDER=log`,
 and a fresh `<root>/hopd.db` — the 2026-08-24 lab's own configuration
 (`docs/testing/results/2026-08-24-first-push-acceptance-lab.md`). Its
 combined stdout+stderr goes to `<root>/hopd.log`.
+
+`start` refuses to proceed if `-hopd-addr` or `-locker-addr` already has a
+listener (naming the owning pid where it can identify one), rather than
+building and starting a second pair anyway: an earlier, uncleanly-stopped
+lab's `hopd` would otherwise still answer `/healthz` for the new lab's
+`waitHealthy` check, and everything after `start` would silently talk to
+the wrong control plane and locker (see
+`docs/testing/windows-acceptance-host.md`'s Hop lab section for the dated
+repro). Every successful `start` also records its two pids and addresses
+in a small registry file **outside `-root`**
+(`os.UserCacheDir()/reinstate-hoplab/labs/`, one file per `-root`), which
+`ps` and `stop -all` read:
+
+```bash
+./scripts/testing/hoplab/hoplab.sh ps
+# D:\ReinstateAcceptanceProjects\hoplab
+#   hopd    pid 66824    127.0.0.1:8082  alive=true
+#   locker  pid 69152    127.0.0.1:9002  alive=true
+#   started 2026-09-06T00:48:58+05:30, status: running
+
+./scripts/testing/hoplab/hoplab.sh stop -all
+# hoplab: stopped lab at D:\ReinstateAcceptanceProjects\hoplab (hopd pid 66824, fakelocker pid 69152)
+# hoplab: stopped 1 lab(s); removed 0 stale registry entry(ies) whose processes were already gone
+```
 
 ### `approve`
 
@@ -132,7 +157,34 @@ export CLINE_DATA_DIR="<root>\device-a\home\.cline\data"
 export COPILOT_HOME="<root>\device-a\home\.copilot"
 export CURSOR_CONFIG_DIR="<root>\device-a\home\.cursor"
 export PI_CODING_AGENT_DIR="<root>\device-a\home\.pi\agent"
+unset REINSTATE_BACKEND
+unset REINSTATE_MEMORY_BACKEND_DIR
+unset REINSTATE_S3_ACCESS_KEY_ID
+unset REINSTATE_S3_SECRET_ACCESS_KEY
+unset REINSTATE_S3_ENDPOINT
+unset REINSTATE_S3_BUCKET
+unset REINSTATE_S3_REGION
 ```
+
+The trailing `unset` lines (`Remove-Item Env:<name> -ErrorAction
+SilentlyContinue` for `-shell powershell`) matter as much as the exports
+above them: `REINSTATE_BACKEND`, `REINSTATE_MEMORY_BACKEND_DIR`, and the
+four `REINSTATE_S3_*` names are the product's own BYO-storage escape
+hatches (`internal/cli/commands_impl.go`'s `openBackend`,
+`internal/credentials.Resolve`), and if any is already set in the
+operator's shell — from earlier, unrelated local testing, the ordinary way
+to run this project's own local e2e tests by hand — it silently routes a
+hop-mode `rein login`/`init --hop`/`account init` around the lab's real
+`hopd`/`fakelocker` entirely. See
+`docs/testing/windows-acceptance-host.md`'s Hop lab section for the exact,
+dated repro this produced on this host (a brand-new account whose keyring
+already "had" two devices, because one such variable, left set at the
+Windows user level from unrelated earlier work, pointed every hop-mode
+account at one shared on-disk object). `hoplab pair` clears the same seven
+before launching any `rein` subprocess itself
+(`pair.go`'s `reinEnviron`/`stripEnv`), so this is defended twice: once for
+a human following this env block, once for `hoplab pair` driving `rein`
+directly.
 
 `REINSTATE_HOME` is a first-class override the product itself honours
 (`internal/config.Home`) — config, state, and device id all follow it, the
@@ -163,110 +215,115 @@ overrides on top are extra insurance against an operator's own shell
 already exporting one of them (an explicit env var always wins over a
 `HOME`-derived fallback in `hometree.ResolveRoot`, regardless of `HOME`).
 
-### `pair init`/`pair join` — put the two homes in one account
+### `pair init`/`pair join`/`pair recover` — put the two homes in one account
+
+Every device's own `REINSTATE_HOME` (from `homes`/`env`, above) already
+gets its own OS-keyring device-token entry
+(`internal/credentials.DeviceTokenEntry`, keyed off `REINSTATE_HOME`), so
+`pair` acts directly as whichever `-device` it is given — no `keyring
+load`/save swap needed before it, sequential or simultaneous.
+
+**Live pairing (`pair join`), no recovery code — prefer this whenever a
+second device is available:**
 
 ```bash
-./scripts/testing/hoplab/hoplab.sh keyring load -root <root> -device device-a
 ./scripts/testing/hoplab/hoplab.sh pair init -root <root> -device device-a -rein bin/rein.exe
-# prints the recovery code, and also saves it to <root>/hoplab-state.json
+# prints the recovery code (also saved to <root>/hoplab-state.json, for `pair recover` if ever needed)
 
-./scripts/testing/hoplab/hoplab.sh keyring load -root <root> -device device-b
-./scripts/testing/hoplab/hoplab.sh pair join -root <root> -device device-b -rein bin/rein.exe
+./scripts/testing/hoplab/hoplab.sh pair join -root <root> -device device-b -approver device-a -rein bin/rein.exe
+# device-b runs `rein account join` (publishes a pairing request, prints a code, waits);
+# device-a runs `rein devices approve`, fed that code -- no code ever typed or copied by hand
+```
+
+`pair join` is `internal/cli/pairing_test.go`'s own two-device journey
+(`startJoin`/`approveWhilePrompting`) driven against the real compiled
+`rein` binary instead of the in-process test harness: `-device` runs `rein
+init --hop --project hoplab-<device>=<its project>` then `rein account
+join`; once it has published its request and shown a pairing code,
+`-approver` runs `rein devices approve` fed that code through
+`REINSTATE_PAIRING_CODE_FD`. Both devices must have signed in under **the
+same email** first (`rein login` + `hoplab approve`, above) — hopd ties one
+account to one email.
+
+**Recovery-code pairing (`pair recover`) — only when no second device can
+approve live:**
+
+```bash
+./scripts/testing/hoplab/hoplab.sh pair recover -root <root> -device device-c -rein bin/rein.exe
 # reads the recovery code back from hoplab-state.json; pass -code to override
 ```
 
-`pair init` runs `rein init --hop --project hoplab-device-a=<device's project>`
-then `rein account init` for the first device; `pair join` runs `rein init
---hop --project ...` then `rein account recover` with the first device's
-recovery code, for every device after it — the exact sequence
+`pair recover` runs `rein init --hop --project ...` then `rein account
+recover` with the first device's recovery code — the exact sequence
 `internal/cli/keygeneration_crossplane_test.go` (`-tags hopacceptance`)
-proves works against a real `hopd`. Both devices must have signed in under
-**the same email** first (`rein login` + `hoplab approve`, above) — hopd
-ties one account to one email, and `account init` refuses a second device
+proves works against a real `hopd`. `account init` refuses a second device
 under a keyring that already exists ("enrol this device with `rein account
 recover` instead"), which is exactly what makes `account recover` the right
-command for every device after the first.
+command when no live approver is available.
 
-Both `rein account init`'s confirmation step and `rein account recover`
-read their secret from `REINSTATE_RECOVERY_CODE_FD`
-(`internal/crypto/passphrase.go`'s `ReadSecretFD` — the product's own
-documented non-interactive path: "automation sets
-`REINSTATE_RECOVERY_CODE_FD`"), never a hidden terminal prompt, because
-`hoplab` drives the real compiled `rein` binary as a separate process, not
-the in-process test harness (`hop_first_push_test.go`'s `hopDevice`) that
-has a prompt-callback seam to hook — and because a caller with no real
-terminal (an agent running this through a piped shell) cannot answer a
-hidden prompt at all. `pair init` wires that descriptor to a live pipe
-whose read end the child process inherits and feeds the freshly generated
-code back into the moment it appears in the child's own stderr (the code
-cannot be known before `account init` prints it); `pair join` wires it to
-a plain temp file carrying the already-known code. See
-`secretfd_windows.go` for the Windows handle-passing mechanics — in
-particular, why marking a handle inheritable is not sufficient by itself
-on a modern Go toolchain (`PROC_THREAD_ATTRIBUTE_HANDLE_LIST` restricts
-inheritance to an explicit list once any handle is in it) — and
-`secretfd_windows_test.go`, which proves the whole mechanism against the
-real `crypto.ReadSecretFD` function across a real process boundary.
+Both flows avoid a hidden terminal prompt entirely: `rein account
+init`/`account recover` read their secret from
+`REINSTATE_RECOVERY_CODE_FD`, and `rein devices approve` from
+`REINSTATE_PAIRING_CODE_FD` (`internal/crypto/passphrase.go`'s
+`ReadSecretFD` — the product's own documented non-interactive path:
+"automation sets `REINSTATE_RECOVERY_CODE_FD`"/`REINSTATE_PAIRING_CODE_FD`),
+because `hoplab` drives the real compiled `rein` binary as a separate
+process, not the in-process test harness (`hop_first_push_test.go`'s
+`hopDevice`) that has a prompt-callback seam to hook — and because a caller
+with no real terminal (an agent running this through a piped shell) cannot
+answer a hidden prompt at all. `pair init` and `pair join`'s joining device
+wire their descriptor to a live pipe whose read end the child process
+inherits and feeds the freshly generated code back the moment it appears in
+the child's own stderr (the code cannot be known before the command prints
+it); `pair recover` and `pair join`'s approving device wire theirs to a
+plain temp file carrying the already-known code. See `secretfd_windows.go`
+for the Windows handle-passing mechanics — in particular, why marking a
+handle inheritable is not sufficient by itself on a modern Go toolchain
+(`PROC_THREAD_ATTRIBUTE_HANDLE_LIST` restricts inheritance to an explicit
+list once any handle is in it) — and `secretfd_windows_test.go`, which
+proves the whole mechanism against the real `crypto.ReadSecretFD` function
+across a real process boundary.
 
 `-rein` (or `REINSTATE_REIN_BIN`) names the binary; it defaults to
 `bin/rein.exe`/`bin/reinstate.exe` under the repository root (`make
-build`'s own output). Like `rein login`, `pair init`/`pair join` act as
-whichever device's token is currently active in the OS keyring — `hoplab
-keyring load -device <name>` first, every time, same as any other
-sequential real-binary use of two devices (below).
+build`'s own output).
 
-#### What this does *not* isolate: the OS keyring device token
+### `keyring show`/`clear` — an optional diagnostic, not a pairing step
 
-Two real, simultaneously signed-in `rein` processes on **one Windows
-account** collide in the OS keyring: `credentials.KeyringStore` (which W4
-does not own — `internal/credentials/**`) uses one fixed service name
-(`"reinstate"`) and one fixed entry name (`"hop/device-token"`) regardless
-of `REINSTATE_HOME`. There is no `-service`/`-namespace` flag or file-backed
-alternative in the product code to route around this per device.
+No pairing flow above needs `keyring` any more: `pair`/`env` already give
+each device its own `REINSTATE_HOME`, and
+`internal/credentials.DeviceTokenEntry` (commit `2521485f`) already gives
+each `REINSTATE_HOME` its own OS-keyring entry, so `device-a` and
+`device-b` hold separate device tokens with no swap step. `keyring show`
+and `keyring clear` remain only as a read-only-by-default diagnostic for
+when something looks wrong:
 
-Two ways forward, depending on what the scenario needs:
+```bash
+./scripts/testing/hoplab/hoplab.sh keyring show -root <root> -device device-a
+# hoplab: device-a -> REINSTATE_HOME=<root>\device-a\reinstate -> OS-keyring entry "hop/device-token@<hash>"
+# hoplab: device token present: control_plane_url=http://127.0.0.1:8082 account_id=... device_id=...
 
-- **Truly simultaneous devices** (revocation, the lagging device, the
-  cross-plane key-generation floor — and pairing itself, if the scenario
-  specifically needs two real `rein` processes signed in at once rather
-  than sequentially): use the in-process pattern the CLI journeys already
-  run — `internal/cli`'s `hopDevice` in
-  `hop_first_push_test.go` gives each device its own
-  `credentials.MemoryDeviceTokenStore` and its own `REINSTATE_HOME`,
-  switched per call, all inside one Go test process.
-  `hop_first_push_acceptance_test.go` (`-tags hopacceptance`) and
-  `keygeneration_crossplane_test.go` run this exact pattern against a real
-  `hopd` — two and three devices at once — which is what makes them the
-  right vehicle for scenarios needing real simultaneity, not the compiled
-  `rein` binary run twice.
+./scripts/testing/hoplab/hoplab.sh keyring clear -root <root> -device device-a
+# removes device-a's device token, for a clean-slate `rein login` as it
+```
 
-- **Sequential real-binary use** (drive the actual `rein.exe`, e.g. under
-  `conptydriver`, as one device, then the other): `hoplab keyring save`
-  and `load` swap which device's token is the active one, using the same
-  `github.com/zalando/go-keyring` the product already depends on:
+`show` never prints the token itself, only where it lives and whether it
+is there. Both import `internal/credentials` for the service/entry-name
+rule (`DeviceTokenEntry`) rather than duplicating it as a literal — W4 does
+not own `internal/credentials/**`.
 
-  ```bash
-  # device A signs in for real
-  rein login --email you@example.com   # + hoplab approve, elsewhere
-  ./scripts/testing/hoplab/hoplab.sh keyring save -root <root> -device device-a
-
-  # device B signs in for real (overwrites the OS keyring's one slot)
-  rein login --email you@example.com
-  ./scripts/testing/hoplab/hoplab.sh keyring save -root <root> -device device-b
-
-  # act as device A again
-  ./scripts/testing/hoplab/hoplab.sh keyring load -root <root> -device device-a
-  rein whoami   # answers as device A
-
-  # act as device B again
-  ./scripts/testing/hoplab/hoplab.sh keyring load -root <root> -device device-b
-  ```
-
-  `keyring clear` removes whatever token is currently active (not a saved
-  snapshot), for a clean-slate `rein login`. `pair init`/`pair join`
-  (above) build directly on this save/load pattern to drive the actual
-  account-pairing commands (`rein account init`/`rein account recover`)
-  non-interactively, once each device has signed in this way.
+Two real, simultaneously signed-in `rein` **processes** still act
+independently only by real OS process, one per device — `hoplab pair`
+already drives them that way. A scenario that specifically needs the two
+devices' `rein` code running inside *one* process (revocation, the lagging
+device, the cross-plane key-generation floor) should use the in-process
+pattern the CLI journeys already run instead: `internal/cli`'s `hopDevice`
+in `hop_first_push_test.go` gives each device its own
+`credentials.MemoryDeviceTokenStore` and its own `REINSTATE_HOME`, switched
+per call, all inside one Go test process.
+`hop_first_push_acceptance_test.go` (`-tags hopacceptance`) and
+`keygeneration_crossplane_test.go` run this exact pattern against a real
+`hopd` — two and three devices at once.
 
 ## `-tags hopacceptance` and the cross-plane suite
 
@@ -292,6 +349,14 @@ device), hence `-count 2` above. `keygeneration_crossplane_test.go` starts
 its own `hopd` per test (`REINSTATE_HOPD_BIN`, no `hoplab start` needed for
 that suite) but a prebuilt binary from `hoplab start`'s build step is a
 fine source for `REINSTATE_HOPD_BIN` either way.
+
+Verified against a `hoplab`-started control plane on 2026-09-06:
+`TestHopFirstPushJourneyStaging` and both `TestKeyGeneration*` subtests
+pass (`GOTOOLCHAIN=go1.25.13 CGO_ENABLED=0 go test -tags hopacceptance
+./internal/cli -run <name> -count=1 -v`), the former exercising a real
+sign-in wait/approval, a real first push, and both a resumable (`codex`)
+and a blocked-only-because-not-installed (`claude`/`opencode`) resume
+check.
 
 ## What `-hopd-bin` / `REINSTATE_HOPD_BIN` and `-hosted-dir` /
 `REINSTATE_HOSTED_DIR` mean
