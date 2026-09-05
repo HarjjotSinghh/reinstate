@@ -1,16 +1,51 @@
 package credentials
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
 	"sync"
 
 	keyring "github.com/zalando/go-keyring"
 )
 
-// DeviceTokenRef is the OS keyring entry holding this device's Hop token.
+// DeviceTokenRef is the OS keyring entry holding the device token of the
+// default Reinstate home. A home selected with REINSTATE_HOME gets its own
+// entry (see DeviceTokenEntry), so two homes on one machine — two accounts,
+// or the two device identities of an acceptance lab — never share a slot.
 const DeviceTokenRef = "hop/device-token"
+
+// deviceTokenHomeEnv is the same override internal/config honours for the
+// home directory. It is read here, rather than through config, because a
+// token must land in the entry of the home that signed in even when no
+// config has been written yet (rein login runs before rein init).
+const deviceTokenHomeEnv = "REINSTATE_HOME"
+
+// DeviceTokenEntry returns the OS keyring entry for the home this process
+// uses: DeviceTokenRef for the default home, and a per-home entry derived
+// from REINSTATE_HOME otherwise.
+func DeviceTokenEntry() string {
+	return deviceTokenEntry(os.Getenv(deviceTokenHomeEnv))
+}
+
+func deviceTokenEntry(home string) string {
+	home = strings.TrimSpace(home)
+	if home == "" {
+		return DeviceTokenRef
+	}
+	home = filepath.Clean(home)
+	if runtime.GOOS == "windows" {
+		home = strings.ToLower(home)
+	}
+	sum := sha256.Sum256([]byte(home))
+	return DeviceTokenRef + "@" + hex.EncodeToString(sum[:8])
+}
 
 // DeviceToken is the sign-in credential of this device on the hosted tier.
 // It never appears in config files; only the OS keyring holds it.
@@ -40,7 +75,7 @@ func (k *KeyringStore) SetDeviceToken(t DeviceToken) error {
 	if err != nil {
 		return err
 	}
-	if err := keyring.Set(keyringService, DeviceTokenRef, string(raw)); err != nil {
+	if err := keyring.Set(keyringService, DeviceTokenEntry(), string(raw)); err != nil {
 		return fmt.Errorf("store device token in OS keyring: %w", err)
 	}
 	return nil
@@ -48,7 +83,7 @@ func (k *KeyringStore) SetDeviceToken(t DeviceToken) error {
 
 // GetDeviceToken loads the token from the OS keyring.
 func (k *KeyringStore) GetDeviceToken() (DeviceToken, error) {
-	raw, err := keyring.Get(keyringService, DeviceTokenRef)
+	raw, err := keyring.Get(keyringService, DeviceTokenEntry())
 	if errors.Is(err, keyring.ErrNotFound) {
 		return DeviceToken{}, ErrNoDeviceToken
 	}
@@ -67,7 +102,7 @@ func (k *KeyringStore) GetDeviceToken() (DeviceToken, error) {
 
 // DeleteDeviceToken removes the token; a missing entry is not an error.
 func (k *KeyringStore) DeleteDeviceToken() error {
-	err := keyring.Delete(keyringService, DeviceTokenRef)
+	err := keyring.Delete(keyringService, DeviceTokenEntry())
 	if errors.Is(err, keyring.ErrNotFound) {
 		return nil
 	}
