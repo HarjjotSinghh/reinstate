@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.6.0-rc.1] - YYYY-MM-DD
 
-Release candidate. Stable remains `v0.5.1`; the public installers still pin it.
+Release candidate. Stable remains `v0.5.1`; the public installers currently pin
+`v0.5.2-rc.1`, not this candidate.
 
 **Highlights.** Reinstate Hop ships as ordinary `rein` commands: `rein login` /
 `rein whoami`, `rein init --hop`, `rein hop status` / `rein hop credentials`,
