@@ -8,7 +8,7 @@ or point the client at; see
 [Choosing the control plane](#choosing-the-control-plane) for the staging and
 self-hosted URLs. No price, trial, or sign-up is attached to any of this.
 
-Reinstate Hop is the paid hosted tier: a locker (a storage bucket provisioned
+Reinstate Hop is the hosted tier: a locker (a storage bucket provisioned
 for exactly one account) plus a console. Every session object Reinstate writes
 to the locker is ciphertext; one object it writes is not, and it is named here
 rather than rounded off.
@@ -19,7 +19,7 @@ a locker whose key has rolled over also shows which devices stopped being
 enrolled, and when. The [object format](hop/object-format.md#keyringv1json--the-wrapped-root-key)
 lists it in full and the [threat model](hop/threat-model.md) says what it is
 worth to an observer. Every client
-capability stays in the free CLI; Hop gates storage and the console only. This
+capability stays in the CLI; Hop gates storage and the console only. This
 page covers everything the client does: `rein login` / `rein whoami`
 (passwordless sign-in), `rein init --hop` and `rein account init` / `recover`
 / `join` / `status` (the locker and the keyring), `rein devices` / `approve`
