@@ -198,21 +198,19 @@ not part of the current CLI. See
 
 Reinstate Hop is the optional hosted tier, shipped in `v0.6.0`: sign in and a
 **locker** (a storage bucket provisioned for exactly one account) syncs
-sessions with no bucket, key, or endpoint of your own to manage. `rein login`
-/ `rein whoami`, `rein init --hop`, `rein account init` / `recover` / `join`
-/ `status`, `rein devices` / `approve` / `revoke`, `rein hop status` /
-`credentials`, `rein sync verify`, `rein sync migrate --to byo`, and `rein
-daemon` are ordinary `rein` commands — no build tag, no flag. The locker
-holds only ciphertext, except `keyring.v1.json`, which is plaintext by
-design (see [docs/hop/object-format.md](docs/hop/object-format.md)).
-
-**Status:** the hosted control plane this client talks to by default is not
-open yet — the client ships anyway so the protocol and the commands above
-are public and testable today, against a control plane you run yourself or
-point at with `REINSTATE_HOP_URL` (see [docs/hop.md](docs/hop.md)). `v0.6.0`
-candidates and stable are certified on native Windows x64 only; macOS
-acceptance is deferred until that hardware returns
-([ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md)).
+sessions with no bucket, key, or endpoint of your own to manage, through
+ordinary `rein` commands — `rein login` / `rein whoami`, `rein init --hop`,
+`rein account init` / `recover` / `join` / `status`, `rein devices` /
+`approve` / `revoke`, `rein hop status` / `credentials`, `rein sync verify`,
+`rein sync migrate --to byo`, and `rein daemon` — no build tag, no flag.
+The locker holds only ciphertext, except `keyring.v1.json`, which is
+plaintext by design. The hosted control plane this client talks to by
+default is not open yet, so the client ships anyway and the protocol above
+is public and testable today against a control plane you run yourself or
+point at with `REINSTATE_HOP_URL`; `v0.6.0` candidates and stable are
+certified on native Windows x64 only, with macOS acceptance deferred until
+that hardware returns. See [docs/hop.md](docs/hop.md) and
+[ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md).
 
 ---
 
