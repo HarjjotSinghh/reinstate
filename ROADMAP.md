@@ -2,7 +2,7 @@
 
 > Status legend: ✅ done · 🚧 in progress · 📋 planned · 💭 exploring · ❌ won't do (for now)
 
-Last updated: **2026-08-16** · Maintainer: [Harjot Singh Rana](https://github.com/HarjjotSinghh)
+Last updated: **2026-09-05** · Maintainer: [Harjot Singh Rana](https://github.com/HarjjotSinghh)
 
 This roadmap is a living document. Priorities follow real activation signals —
 especially **successfully resumed tasks per active user** — and vendor format
@@ -291,13 +291,51 @@ Design and contracts:
 [agent catalog SDK](docs/adapters/agent-catalog-sdk.md),
 [Phase 5 acceptance](docs/testing/phase-5-universal-agent-coverage-acceptance.md).
 
+OpenCode reached T5 and Kimi Code CLI reached T2 in `v0.6.0`.
+
 ---
 
-## Phase 6 — Universal configuration + automatic cross-device sync 📋
+## Phase 6C — Cloud continuity (Hop) ✅
+
+Encrypted multi-device sync as the wedge, shipped ahead of Phase 6A/6B: a
+hosted locker (a storage bucket provisioned for exactly one account)
+alongside the existing BYO-storage path, plus a resident daemon that keeps
+either one in sync without anyone running `push` and `pull` by hand.
+
+**Gate:** an enrolled device pushes and pulls the locker as ciphertext with
+no key ever leaving the device, a lost device is revoked without losing
+access to history already synced, and a device migrates from Hop to its own
+bucket with the same session ids intact.
+
+*Shipped in `v0.6.0`. Acceptance is native Windows x64 only, with macOS rows
+deferred under [ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md)
+until that hardware returns; see
+[the Windows-first waiver](RELEASING.md#v060-windows-first-waiver). The
+hosted service this client talks to by default,
+[hop.reinstate.dev](docs/hop.md), opens separately and is not part of this
+gate — the client and protocol are what `v0.6.0` certifies.*
+
+| Item | Status |
+| ---- | ------ |
+| Device registry and revocation | ✅ |
+| Key rotation (key generations) | ✅ |
+| Hardened push/pull habit (daemon) | ✅ |
+| Machine migration UX (recovery code, `rein sync migrate --to byo`) | ✅ |
+| Additional backends (WebDAV, GCS) | 📋 |
+| Append-aware delta / CAS for large histories | 📋 |
+
+Detailed design direction: [docs/hop.md](docs/hop.md) and
+[docs/universal-configuration.md](docs/universal-configuration.md).
+
+---
+
+## Phase 6A/6B — Universal agent configuration + authentication coordination 📋
 
 Original multi-device superpower, now extended from sessions to the safe,
 portable parts of an AI development environment. It follows Phase 5 because
 rendering declared configuration into a harness requires a catalog of harnesses
+to render into. Retargeted to `v0.7.0`: Phase 6C shipped first, in `v0.6.0`,
+because the hosted locker and the daemon did not need a configuration catalog
 to render into.
 
 **Gate:** define an MCP server such as Mobbin once, preview and apply the
@@ -319,9 +357,11 @@ Unsupported mappings and missing authentication must be explicit.
 | Extensible capability schema for future harness features | 📋 |
 | `rein config import/diff/apply/status` with dry-run, backup, atomic write, rollback | 📋 |
 | Drift detection without overwriting unrelated native settings | 📋 |
+| Cross-device configuration reconciliation and drift reports | 📋 |
 | Capability matrix with explicit unsupported/lossy mappings | 📋 |
 | Supply-chain policy: source/version pinning, digests, permissions, confirmation | 📋 |
 | Claude Code, Codex, Grok, OpenCode, and Gemini CLI config targets | 📋 |
+| Encrypted sync scopes for non-secret desired-state profiles (sessions already sync in `v0.6.0`) | 📋 |
 
 Harnesses use different schemas and install mechanisms. Reinstate will
 normalize portable intent and let adapters render each harness's native format;
@@ -341,19 +381,6 @@ unsupported fields.
 The goal is **configure once, authenticate as few times as safely possible**.
 Raw API keys, OAuth tokens, cookies, and vendor credential stores remain
 excluded from sync.
-
-### 6C. Cloud continuity
-
-| Item | Status |
-| ---- | ------ |
-| Hardened push/pull habit (hooks: pull on start / push on exit) | 📋 |
-| Device registry + revocation | 📋 |
-| Key rotation helpers | 📋 |
-| Machine migration UX | 📋 |
-| Additional backends (WebDAV, GCS) | 📋 |
-| Encrypted sync scopes for sessions and non-secret desired-state profiles | 📋 |
-| Cross-device configuration reconciliation and drift reports | 📋 |
-| Append-aware delta / CAS for large histories | 📋 |
 
 Detailed design direction:
 [docs/universal-configuration.md](docs/universal-configuration.md).
@@ -485,6 +512,10 @@ handoffs attempted, config mismatches, remote resumes.
   remap, security model enforced, and every required native cross-device
   resume row verified on one exact release candidate
 - **Later minors:** Phase 2+ land behind flags or clear SemVer notes
+- **`v0.6.0`:** Phase 6C (Hop cloud continuity) ships ahead of Phase 6A/6B;
+  candidate and stable acceptance are native Windows x64 only, under the
+  waiver in [ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md),
+  with macOS rows deferred until that hardware returns
 - Releases: signed GitHub tags, checksums, SBOMs, source archive, and artifact
   attestations; see [RELEASING.md](RELEASING.md)
 
