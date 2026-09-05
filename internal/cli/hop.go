@@ -117,7 +117,7 @@ func runLogin(cmd *cobra.Command, o hopCommandOptions, addr string, asJSON, noBr
 
 	session, err := client.StartLogin(ctx, method, addr, info)
 	if err != nil {
-		return loginError(err)
+		return loginError(baseURL, err)
 	}
 	switch method {
 	case hop.MethodGitHub:
@@ -151,7 +151,7 @@ func runLogin(cmd *cobra.Command, o hopCommandOptions, addr string, asJSON, noBr
 		if errors.As(err, &refused) {
 			return loginRefusalError(cmd.Root(), refused)
 		}
-		return loginError(err)
+		return loginError(baseURL, err)
 	}
 	tok := credentials.DeviceToken{
 		Token:           approval.DeviceToken,
@@ -203,6 +203,9 @@ func newWhoamiCmd(o hopCommandOptions) *cobra.Command {
 			if errors.Is(err, hop.ErrUnauthorized) {
 				return NewExitError(ExitAuthStorage, "this device's token was rejected by the control plane (revoked or stale); run `rein login` again")
 			}
+			if unreachable, ok := hop.ClassifyUnreachable(tok.ControlPlaneURL, err); ok {
+				return controlPlaneUnreachableError(unreachable)
+			}
 			if err != nil {
 				return NewExitError(ExitRuntime, err.Error())
 			}
@@ -243,7 +246,7 @@ func accountLabel(a hop.Account) string {
 	return a.ID
 }
 
-func loginError(err error) error {
+func loginError(baseURL string, err error) error {
 	var he *hop.Error
 	if errors.As(err, &he) {
 		switch {
@@ -254,7 +257,29 @@ func loginError(err error) error {
 		}
 		return NewExitError(ExitAuthStorage, err.Error())
 	}
+	if unreachable, ok := hop.ClassifyUnreachable(baseURL, err); ok {
+		return controlPlaneUnreachableError(unreachable)
+	}
 	return NewExitError(ExitRuntime, err.Error())
+}
+
+// controlPlaneUnreachableError turns a classified transport failure to
+// reach the control plane into the one line `rein login` and `rein whoami`
+// print for it, plus the machine-readable form under --json:
+// details.kind = "control_plane_unreachable" and the URL that could not be
+// reached. The exit code is ExitRuntime — the same code an unclassified
+// network failure already returned here before this classification
+// existed, so a script matching on exit status alone sees no change.
+func controlPlaneUnreachableError(u *hop.UnreachableError) *ExitError {
+	lines := []string{
+		u.Error(),
+		"If you are not enrolled in Reinstate Hop, see https://reinstate.dev/docs/hop. " +
+			"To use another control plane, set REINSTATE_HOP_URL or [hop] url in config.toml.",
+	}
+	ee := NewExitError(ExitRuntime, strings.Join(lines, "\n"))
+	ee.Details["kind"] = hop.KindControlPlaneUnreachable
+	ee.Details["url"] = u.URL
+	return ee
 }
 
 func openSystemBrowser(url string) error {

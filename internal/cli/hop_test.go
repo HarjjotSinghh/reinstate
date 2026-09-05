@@ -465,11 +465,18 @@ func TestLoginFailures(t *testing.T) {
 			wantErr:  "plain address",
 		},
 		{
+			// http://127.0.0.1:1 refuses the connection outright (nothing
+			// ever listens on port 1), which is one of the three transport
+			// failures T-202 classifies.
+			// TestLoginAndWhoamiControlPlaneUnreachable below pins the full
+			// message and the --json form; this row only holds the
+			// family's exit code and message start steady alongside the
+			// rest of the failure table.
 			name:     "unreachable control plane",
 			args:     []string{"login"},
 			prepare:  func(h *hopHarness) { h.t.Setenv(hop.URLEnv, "http://127.0.0.1:1") },
 			wantCode: ExitRuntime,
-			wantErr:  "reach control plane",
+			wantErr:  "could not reach the Reinstate Hop control plane at",
 		},
 		{
 			name: "no-browser prints the url only",
@@ -518,6 +525,68 @@ func TestWhoamiWithoutOrWithRevokedToken(t *testing.T) {
 	if err := json.Unmarshal([]byte(errb), &e); err != nil || e.Code != "auth_storage" {
 		t.Fatalf("json error %+v err=%v", e, err)
 	}
+}
+
+// TestLoginAndWhoamiControlPlaneUnreachable is T-202: a control plane this
+// client cannot reach at all — no DNS answer, no route, no TLS handshake —
+// must read as one timeless sentence naming the URL and the cause, not
+// whatever text net/http happened to produce, and the exit code must not
+// move. http://127.0.0.1:1 refuses the connection outright everywhere this
+// suite runs (nothing listens on port 1), which is the deterministic half
+// of the two repro cases the task card names; the DNS-error dialer is
+// exercised at the internal/hop package level
+// (TestClassifyUnreachableRecognizesEachTransportFailure), where a custom
+// Transport can be injected without going through the CLI's own URL
+// resolution.
+func TestLoginAndWhoamiControlPlaneUnreachable(t *testing.T) {
+	const unreachableURL = "http://127.0.0.1:1"
+	wantFirstLine := "could not reach the Reinstate Hop control plane at " + unreachableURL + ": connection refused"
+	wantSecondLine := "If you are not enrolled in Reinstate Hop, see https://reinstate.dev/docs/hop. " +
+		"To use another control plane, set REINSTATE_HOP_URL or [hop] url in config.toml."
+
+	assertUnreachableJSON := func(t *testing.T, errb string, code int) {
+		t.Helper()
+		if code != ExitRuntime {
+			t.Fatalf("exit=%d, want ExitRuntime; stderr=%q", code, errb)
+		}
+		var e ErrorJSON
+		if err := json.Unmarshal([]byte(errb), &e); err != nil {
+			t.Fatalf("decode %v: %s", err, errb)
+		}
+		if !strings.Contains(e.Message, wantFirstLine) {
+			t.Fatalf("message = %q, want it to contain %q", e.Message, wantFirstLine)
+		}
+		if !strings.Contains(e.Message, wantSecondLine) {
+			t.Fatalf("message = %q, want it to contain %q", e.Message, wantSecondLine)
+		}
+		if e.Details["kind"] != hop.KindControlPlaneUnreachable {
+			t.Fatalf("details.kind = %v, want %q", e.Details["kind"], hop.KindControlPlaneUnreachable)
+		}
+		if e.Details["url"] != unreachableURL {
+			t.Fatalf("details.url = %v, want %q", e.Details["url"], unreachableURL)
+		}
+	}
+
+	t.Run("login", func(t *testing.T) {
+		h := newHopHarness(t)
+		h.t.Setenv(hop.URLEnv, unreachableURL)
+		_, errb, code := h.run("login", "--json")
+		assertUnreachableJSON(t, errb, code)
+		if _, err := h.tokens.GetDeviceToken(); err == nil {
+			t.Fatal("an unreachable control plane must not store a token")
+		}
+	})
+
+	t.Run("whoami", func(t *testing.T) {
+		h := newHopHarness(t)
+		if err := h.tokens.SetDeviceToken(credentials.DeviceToken{
+			Token: "hop_t", ControlPlaneURL: unreachableURL, AccountID: "a", DeviceID: "d",
+		}); err != nil {
+			t.Fatal(err)
+		}
+		_, errb, code := h.run("whoami", "--json")
+		assertUnreachableJSON(t, errb, code)
+	})
 }
 
 func TestControlPlaneURLResolution(t *testing.T) {
