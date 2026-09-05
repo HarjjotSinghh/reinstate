@@ -69,13 +69,20 @@ func OpenCode() agents.Descriptor {
 		},
 		Version: &agents.VersionSpec{
 			// `opencode --version` prints a bare stable version on stdout and
-			// nothing on stderr. Min and Max are the single build physically
-			// measured on macOS for this promotion; the range widens only as
-			// further builds are measured, never by assumption.
+			// nothing on stderr. Min/Max widen only as further builds are
+			// physically measured, never by assumption. 1.18.21 was the
+			// single build measured on macOS and native Windows for the T3-T5
+			// promotion; v0.6.0 widens the ceiling to 1.18.27 on native
+			// Windows physical evidence only (macOS pending, ADR 0005 D3): a
+			// session was created with the installed 1.18.27 build, indexed,
+			// and resumed through the launch plan Reinstate itself produced,
+			// returning a token that existed only in the original session's
+			// history. See
+			// docs/testing/results/2026-09-06-windows-range-widening-v060.md.
 			Args:  []string{"--version"},
 			Parse: parseOpenCodeVersion,
 			Min:   "1.18.21",
-			Max:   "1.18.21",
+			Max:   "1.18.27",
 		},
 		Process: agents.ProcessSpec{
 			// OpenCode ships as a single native executable, so the image name

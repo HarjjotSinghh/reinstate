@@ -51,7 +51,13 @@ func Claude() agents.Descriptor {
 			Args:  []string{"--version"},
 			Parse: parseClaudeVersion,
 			Min:   "2.1.219",
-			Max:   "2.1.238",
+			// Widened to 2.1.261 in v0.6.0 on native Windows physical resume
+			// evidence: a session was created with the installed 2.1.261
+			// build, indexed, and resumed through the launch plan Reinstate
+			// itself produced, returning a token that existed only in the
+			// original session's history. macOS pending (ADR 0005 D3). See
+			// docs/testing/results/2026-09-06-windows-range-widening-v060.md.
+			Max: "2.1.261",
 		},
 		Process: agents.ProcessSpec{
 			Images:      []string{"claude"},
