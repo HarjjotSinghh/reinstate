@@ -83,3 +83,64 @@ func TestMergeEnvOnEmptyBaseStillExportsOverrides(t *testing.T) {
 		t.Fatalf("mergeEnv(nil, ...) = %v", got)
 	}
 }
+
+func TestPairingCodePatternMatchesTheRealFormat(t *testing.T) {
+	stderr := "\nPairing code for this device (never sent to the control plane):\n\n    K3P9-7XQZ-M2VD-9RT4\n\nOn an already-enrolled device"
+	got := pairingCodePattern.FindString(stderr)
+	want := "K3P9-7XQZ-M2VD-9RT4"
+	if got != want {
+		t.Fatalf("pairingCodePattern.FindString = %q, want %q", got, want)
+	}
+}
+
+func TestIsHelpFlagRecognizesEveryForm(t *testing.T) {
+	for _, s := range []string{"-h", "--help", "-help", "help"} {
+		if !isHelpFlag(s) {
+			t.Errorf("isHelpFlag(%q) = false, want true", s)
+		}
+	}
+	for _, s := range []string{"init", "join", "recover", "-root", ""} {
+		if isHelpFlag(s) {
+			t.Errorf("isHelpFlag(%q) = true, want false", s)
+		}
+	}
+}
+
+// TestReinEnvironClearsAmbientOverridesFromTheOperatorShell is the
+// regression for the round-2 blocker repro: an operator's shell (or a
+// verifier's, or an earlier lab's leftover terminal) carrying
+// REINSTATE_BACKEND=memory and REINSTATE_MEMORY_BACKEND_DIR from earlier,
+// unrelated local testing must not reach a `rein` subprocess pair.go
+// launches -- see env.go's ambientOverrideEnv doc comment for the exact,
+// dated repro this produced (a brand-new hop-mode account whose keyring
+// already "had" two devices, because every hop-mode config's storage
+// prefix is empty and the leaked REINSTATE_MEMORY_BACKEND_DIR pointed
+// every account at one shared on-disk object left over from unrelated
+// earlier work).
+func TestReinEnvironClearsAmbientOverridesFromTheOperatorShell(t *testing.T) {
+	t.Setenv("REINSTATE_BACKEND", "memory")
+	t.Setenv("REINSTATE_MEMORY_BACKEND_DIR", `D:\shared-from-earlier-testing`)
+	t.Setenv("REINSTATE_S3_ACCESS_KEY_ID", "leaked-key")
+
+	h := BuildDeviceHome(`D:\lab`, "device-a")
+	env := reinEnviron(LabState{}, h)
+
+	for _, kv := range env {
+		for _, bad := range []string{"REINSTATE_BACKEND=", "REINSTATE_MEMORY_BACKEND_DIR=", "REINSTATE_S3_ACCESS_KEY_ID="} {
+			if strings.HasPrefix(kv, bad) {
+				t.Fatalf("reinEnviron carried an ambient override into the subprocess environment: %v", env)
+			}
+		}
+	}
+	// REINSTATE_HOME must still be h's own isolated home -- stripping the
+	// ambient overrides must not also strip hopLabEnv's own overlay.
+	found := false
+	for _, kv := range env {
+		if kv == "REINSTATE_HOME="+h.ReinstateHome {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("reinEnviron dropped REINSTATE_HOME=%s: %v", h.ReinstateHome, env)
+	}
+}
