@@ -7,445 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Security
-
-- **Console revocations complete only after a client-held key rollover (#14).**
-  The daemon surfaces pending Console requests without approving them, and
-  `rein devices` names the exact recovery-code-protected command. When that
-  command writes a strictly newer key generation, it confirms the pending
-  request so the control plane atomically raises the floor and revokes the
-  target. Older control planes keep the direct revocation flow.
-- **Pairing now separates its HMAC and payload keys (#18).** New pairing
-  requests carry integer protocol version 2 and expand the existing
-  Argon2id master with HKDF-SHA256 under distinct binding and payload
-  domains; the payload key is also bound to the server pairing id, which
-  remains in AEAD associated data. Missing or zero versions still mean v1,
-  and deterministic goldens pin v1 verification/opening so an approval
-  already pending during an upgrade remains usable. The account key and
-  root-key recipient anchors integrated with #11 already refuse a
-  self-consistent forged current-generation keyring before push fetches or
-  writes any locker data; the public CLI journey now asserts that ordering.
-- **The key generation floor, and `rein sync verify`, exercised against the
-  real control plane for the first time (#11, #12).** The floor is the one
-  property neither repository could test: the client decides what to refuse
-  and the control plane decides what number to serve, and each side's tests
-  drove a fake of the other, so a wire-shape mistake would have passed both
-  suites and failed on the first real device.
-  `internal/cli/keygeneration_crossplane_test.go` (built with
-  `-tags hopacceptance`, skipped unless `REINSTATE_HOPD_BIN` names a `hopd`
-  binary) runs the real client in process against the real `hopd` over HTTP,
-  through the real sign-in flow, and drives the lagging-device attack: a
-  revoked device restores the genuine pre-revocation keyring and a device
-  that has run nothing since is refused on `push`, `pull` and
-  `sync verify`, each naming the control plane. Removing the floor from the
-  anchor reproduces the hole exactly, including a full `OUTCOME: PASS`
-  report on a rolled-back keyring. A second journey puts a proxy in front of
-  `hopd` that answers the floor route `404`, which is the documented
-  residual, and reproduces it. Recorded in
-  `docs/testing/results/2026-08-27-key-generation-floor-crossplane.md`,
-  including what the run does not establish.
-- **A floor a control plane cannot verify is no longer a permanent lockout
-  (#11).** `POST /v1/account/key-generation` is open to every enrolled
-  device and the control plane holds no keyring, so what it is told is a
-  claim. The client made that claim permanent: it wrote the live answer into
-  `account.json` before judging the keyring and then used the higher of the
-  two, so one report of a generation no keyring would ever reach refused
-  every command on every device of the account, and repairing the control
-  plane changed nothing — the only way back was `rein init --hop --force`
-  and `rein account recover`, with the recovery code, on every device. The
-  floor a command uses is now the live answer, with the recorded number as
-  the fallback for a control plane that has stopped serving the route at
-  all. Keeping the higher number defended against nothing a `404` would not
-  also achieve. What no control plane can move either way is the generation
-  each device recorded when it last read a keyring, which is written only
-  after that keyring was accepted.
-- **`rein sync verify` stops calling an answer silence (#12).** The rule
-  that a check which could not run is not a check that failed was carried by
-  an allowlist of the error shapes somebody had thought of, so every S3 code
-  the backend's switch has no case for — `NoSuchBucket` is the plainest —
-  and this package's own 64 MiB read limit were reported to a person as "the
-  storage endpoint gave no answer". Both are answers, and both used to fail
-  the run: a locker whose bucket is gone, or that will not serve its index
-  in a readable size, had stopped failing and started reporting a check that
-  could not run. `backend.APIAnswer` carries any structured answer the
-  backend cannot otherwise name, `verify.ErrObjectTooLarge` names the local
-  limit, and `TestEveryStorageCallClassifiesWhatCameBack` walks the package,
-  so a storage call written the way the existing ones are has to classify
-  what came back or be listed as exempt with its reason. A call that reaches
-  storage through a helper of another shape is outside what that gate sees,
-  and it says so. The help-text half of the same gate now reads `Example`
-  and every flag's usage string as well as `Short` and `Long`, which is the
-  whole of what `--help` prints; a bare claim in a flag description used to
-  be help text it did not see.
-- **The foreign-bucket alarm survives a later redirect (#12).** The pin that
-  gates it was one boolean for the whole probe and was decided at the first
-  bad exchange, so a reference locker that answered this account's
-  credentials at the pinned endpoint and *then* redirected the next request
-  suppressed the finding it exists for. It is now decided over every
-  exchange, and a redirect still does not count as one: the request reached
-  the endpoint, but the answer was "go elsewhere".
-- **The account key generation floor closes the lagging device (#11).**
-  Every defence the keyring had was local to one device: the generation it
-  last unwrapped and that generation's root-key recipient. A device that
-  had *not* yet read a rollover held nothing a rollback would contradict —
-  the pre-revocation keyring is genuine and its signatures verify — so a
-  revoked device, inside the credential window this file describes, could
-  restore the earlier object and a device that had run nothing since would
-  accept it and keep sealing to the root key the revoked device holds. That
-  was reproduced end to end.
-  - **The control plane carries one monotonic key generation per account**
-    (`GET`/`POST /v1/account/key-generation`, bearer; the counter is
-    `generation`, and a report at or below the floor answers `raised:
-    false` rather than failing). `rein devices
-    revoke` raises it once the rollover is in the keyring and the token is
-    refused; every command that reads the keyring on a Hop profile asks for
-    it and refuses a keyring below it (`ExitSafety`, naming the control
-    plane) — push, pull, `devices approve`, `devices revoke`, `account
-    recover`, `account join`, and the two diagnostics. On all but `account
-    recover` the floor is established before anything is unwrapped; that
-    one opens the recovery wrap first so a mistyped code reads as a
-    mistyped code, zeroes those keys at once and writes nothing from them.
-    The floor a command uses is the live answer, with the number
-    `account.json` records as the fallback for a control plane that no
-    longer serves the route; a control plane answering a lower number is
-    believed, because keeping the higher one defended against nothing and
-    made a permanent account-wide lockout out of a route any enrolled
-    device may call with an unverifiable number.
-  - **What it buys, stated both ways.** Against the revoked device — the
-    adversary revocation exists to stop, and the realistic one — it closes
-    the gap: the control plane refuses that device's token, so it can
-    neither read the floor nor lower it. Against an operator holding *both*
-    the control plane and the bucket it adds nothing, because that party
-    serves whatever floor it likes; the generation signature and the local
-    anchor are what cover that adversary. `docs/hop.md` and
-    `docs/security-model.md` say both.
-  - **No offline trade.** Reaching a Hop locker already means minting
-    credentials from the same control plane in the same command, so there
-    is no device that can sync but not ask. The one case with no live
-    answer is a control plane that does not carry the floor (`404
-    no_key_generation`): the last floor it confirmed to this device stands,
-    recorded in `account.json` as `control_plane_key_generation` and
-    `control_plane_confirmed_at` and raised only upward, so a deployment
-    that stops serving it cannot drop the account back to generation 0.
-    `rein devices revoke` prints on stderr when it meets such a control
-    plane, rather than reporting a protection it did not get.
-  - **The claim, as it now reads.** A revoked device cannot open what a
-    device pushes *once that device has the new key generation* — which it
-    has as soon as it next reads the keyring, and which the floor makes it
-    check for even before then. Unqualified, the old sentence was false.
-    `docs/hop.md`, `docs/security-model.md`, `rein devices revoke --help`
-    and the message the command prints all carry the qualification, and
-    `TestControlPlaneFloorReachesADeviceThatLagsBehind` and
-    `TestWithoutAControlPlaneFloorALaggingDeviceAcceptsTheOldKeyring` hold
-    both halves to the code.
-  - **Every route, not one route.** The floor is part of `keyringAnchor`,
-    whose zero value is undecided and refuses every keyring, and two source
-    walks hold the class rather than the instance:
-    `TestEveryKeyringAnchorDecidesTheFloor` fails on any anchor built in
-    `internal/cli` without an explicit floor decision, and
-    `TestEveryKeyringUnwrapGoesThroughTheAnchor` fails on any keyring unwrap
-    that is not lexically inside a `trustKeyring` call — with the two
-    deliberate exceptions named in its own table, and the reason each is
-    safe. Both were confirmed by adding a route and watching them fail.
-- **The recovery wrap is inside the generation signature (#11), keyring
-  format 5.** It was outside, and the cost was a message: a party with
-  bucket write access could flip one byte of the ciphertext, and every
-  later `rein account recover` told the person their recovery code was
-  wrong — at the one moment where the only thing they can act on is the
-  code, and the code was right. The wrap is written once, by a caller
-  holding the code, and never appended to, so covering it costs nothing.
-  The same edit now fails the generation signature and is refused as
-  tampering, by `keyring.Parse`, on every route that loads the object —
-  though not always before the person has been asked for the code, since
-  `rein devices revoke` reads the code before it loads the keyring. What no
-  route does any more is report the damage *as* a wrong code. `recovery code does not match` now means the code as typed or a
-  keyring belonging to another account, and says so; a wrap this build
-  cannot attempt at all (unknown derivation or format, a salt or ciphertext
-  that is not base64, a ciphertext shorter than its nonce) is a separate
-  error that exits `7` and names damage rather than the code. Device wraps
-  are still deliberately outside the signature — they are appended after a
-  generation is written — and the reason that is safe is unchanged and
-  documented next to it.
-- **Key generations are now signed (#11).** A revoked device keeps working
-  locker credentials for the rest of their TTL, so it can write the keyring
-  object; until now nothing about a key generation was secret or
-  authenticated, and a party with bucket write access could append a
-  *higher* generation carrying a root key of its own, wrapped to every
-  listed device's published public key. Every remaining device adopted it —
-  and pinned it, since the floor check only refused a *lower* number. That
-  refuted the promise in `docs/hop.md`, `docs/security-model.md` and this
-  file that a revoked device "cannot open anything pushed after the
-  revocation".
-  - **Every generation carries an ed25519 signature** over its own header —
-    the profile id, the account key, the generation's number, `created_at`
-    and `recipient`, the number and recipient of the generation it follows,
-    and the revocations that started it — under a keypair derived from the
-    **recovery code** (argon2id, 3 passes, 64 MiB, 4 lanes, salted from the
-    profile id). The recovery code is the one secret no device ever holds,
-    and a revoked device never held it. `rein devices revoke` and `rein
-    account recover` already asked for the code, so signing adds no prompt
-    anywhere.
-  - **Verification needs no key at all.** The public half is published in
-    the keyring as `account_key` and pinned in `account.json` at enrolment,
-    so `keyring.Parse` verifies every generation itself: an object holding
-    one generation that does not verify does not parse, on any path. That
-    covers `push`, `pull`, `rein devices approve`, `rein devices revoke`,
-    `rein account recover` and `rein account join`, which exit `7`
-    (`ExitSafety`) with nothing written, and `rein account status` and
-    `rein devices`, which hold no keys, now check the same thing, and
-    report the keyring as refused rather than as the account's key-model
-    truth.
-  - **The local anchor.** A signature proves an internal fact, so a keyring
-    signed end to end under a key of the attacker's own is self-consistent
-    and nothing inside it could tell it from the account's. `account.json`
-    now records the account signing key alongside the generation this
-    device last unwrapped and that generation's root-key recipient (all
-    three public; none is key material). A keyring signed by a different
-    account key, rolled back below the recorded generation, or no longer
-    naming the recorded root key is refused with nothing written.
-  - **The cost is stated where it belongs.** Deriving a signing key from a
-    typed code means a party holding the keyring can guess the code offline
-    by testing candidate signatures. The same object already carries the
-    recovery wrap, which is attackable the same way at the same cost — one
-    argon2id derivation per candidate — and the code carries 140 bits of
-    entropy, so the search is 2^140 memory-hard derivations wide.
-    `docs/hop.md` and `docs/security-model.md` both state that bound, along
-    with what the claim does not cover: a fresh install with no anchor
-    trusts whichever code was typed into it, anyone who knows the recovery
-    code can sign a generation (and could already unwrap the root key),
-    denial of service by anyone who can write the bucket, and the fact that
-    revocation never re-encrypts what was already pushed.
-- Keyring format version 5, a clean cutover: versions 1 to 4 are no
-  longer read at all. Version 5 differs from 4 by one thing — the recovery
-  wrap's parameters, salt, format and ciphertext are inside the generation
-  signature — and the reason is in the Security section above. Versions 1
-  and 2 tied nothing between generations.
-  Version 3, added earlier in this cycle, tied each generation to the one
-  before it with an HMAC keyed by the **previous generation's root key** —
-  which is precisely the key held by the device being revoked, so within its
-  credential window that device could substitute the generation created to
-  remove it; and a reader holding no key for the previous generation skipped
-  the link rather than refusing it, so deleting that reader's wrap made the
-  link uncheckable instead of wrong. Both are closed by moving the key out
-  of every device's hands. Unbound (version 1) wraps stay refused
-  everywhere; the parser also refuses gaps in the generation numbering, a
-  signature of the wrong shape, and an unusable `account_key`. No keyring
-  has ever been deployed, so nothing needs migrating; a home written by an
-  earlier build starts again with `rein account init` against a fresh
-  locker. The golden fixtures under `testdata/keyring/` are regenerated.
-- `account.json` format version 2 (#11). Version 1 recorded neither the
-  account signing key nor the root-key recipient, and a record without them
-  silently skipped the anchor check — the one check that separates this
-  account's keyring from a replacement. All three anchor fields are now
-  required, so an enrolment record with a field deleted refuses the command
-  and names the remedy (`rein init --hop --force`, then `rein account join`
-  or `rein account recover`) instead of falling back to trusting whatever
-  is in storage. Neither value can be recovered from the record itself, and
-  taking them from the keyring being checked would anchor it to itself, so
-  there is no upgrade in place.
-
-### Fixed
-
-- A refused pairing approval no longer takes back wraps it never wrote
-  (#11). `UnenrolEverywhere` removed every `(device id, public key)` match
-  in every generation, while `EnrolInto` leaves a generation alone when it
-  already holds a wrap for that public key — and two approvals of the same
-  joining device carry the same public key, because the device generates its
-  key once, before its first request. So a rolled-back approval could strip
-  a competing approval's wrap, or the pre-revocation wraps of a device that
-  was revoked and is joining again. `EnrolAll` now reports the wraps it
-  actually appended, by generation and by ciphertext, and the rollback
-  removes exactly those.
-- `rein init --force` now backs up **and removes** `account.json`, so the
-  re-enrolment recipe in `docs/hop.md` works as written (#11). Run verbatim
-  it used to dead-end: nothing in the CLI removed the enrolment record, so
-  both `rein account recover` and `rein account join` exited `7`, "this
-  device is already enrolled", on the very machine the recipe is for. The
-  record is copied into the timestamped backup set alongside `config.toml`
-  and `state.json` first, and the "already enrolled" message now names `rein
-  init --hop --force` as the step that clears it. `rein sync migrate --to
-  byo` clears it the same way, since the BYO profile it writes has no
-  keyring behind it.
-- ...and now ends in a **working** `rein push` (#11). `rein init --hop
-  --force` is in that recipe for one reason — it is the only thing that
-  removes the enrolment record — and clearing `state.json` was collateral,
-  not the point. Without the session records the push that follows saw a
-  local revision and a remote snapshot that differ with no shared base,
-  recorded a conflict, and exited `6`: the last step of a recovery path
-  failing on state the path itself threw away. Re-initializing a home
-  against the **same profile** now carries the session records forward — the
-  profile is the locker, so the snapshot ids are still the account's, and
-  only the device id changed. A different profile is a different locker and
-  still starts clean, and the previous state is in the backup set either
-  way. `TestReEnrolmentRecipeEndsInAWorkingPush` runs the documented recipe
-  verbatim, with the session changed after the revocation as it would be on
-  a machine that was still in use.
-- `rein devices revoke`'s help text and success message say when the
-  revocation reaches a device that has not read the keyring (#11), rather
-  than implying it is instantaneous account-wide. The message names the key
-  generation, says what is not readable by the revoked device once a device
-  has it, and reports whether the control plane took the key generation
-  floor — because on a control plane that does not carry one the operator
-  needs to know the other devices are covered only as each next reads the
-  keyring.
-- `rein devices revoke`'s own help text and its success message no longer
-  claim the revoked device "cannot push" (#11). New credential mints are
-  refused instantly, but a credential the device already holds keeps working
-  against the bucket for the rest of its TTL — up to `MaxCredentialTTL`, an
-  hour — and `storage.Provider` exposes no way to withdraw one. `docs/hop.md`
-  already stated this correctly; the command now agrees, and the message
-  printed after a revocation tells the operator about the window.
-- `keyring.Parse` now says which of its checks are load-bearing and which
-  are duplicated further along (#11). Several are refused a second time by
-  `VerifyGenerations`, which every read path runs again against its anchor,
-  so a mutation test finds them individually survivable — that is defence in
-  depth, not dead code, and the note names the copy a later refactor should
-  delete (this one) and the copies that exist nowhere else (the
-  `schema_version` gate, the wrap-format rule, the duplicate device id rule,
-  and the closing `VerifyGenerations` call that makes an unverifiable
-  keyring fail to parse at all).
-- The keyring can no longer grow into an object the account cannot read
-  (#11). Every revocation appends a generation holding one wrap per
-  remaining device and none is ever removed, so at five devices the object
-  grew about 4.5 KiB per revocation while `keyring.Load` caps a read at
-  1 MiB: at a couple of hundred revocations an account would have written a
-  keyring that no push, pull, revocation or `rein account recover` could
-  read again.
-  A write past three quarters of the read cap is now refused with a message
-  naming the remedy, and that refusal exits `7` (`ExitSafety`) as
-  `docs/hop.md` says it does — it reached the user as the generic `4`
-  (`auth_storage`) until `keyring.ErrTooLarge` was mapped, and a table test
-  now pins the exit code of every keyring refusal so the two cannot drift
-  again. Compaction was considered and rejected: dropping a superseded
-  generation drops the only copy of the root key that opens everything
-  sealed under it.
-
-### Changed
-
-- `rein login` now stops at a **refused** sign-in instead of polling to a
-  timeout. The browser half of a sign-in can end without enrolling a device
-  — the account is at its plan's device quota, the link was opened too
-  late, GitHub cancelled or refused the exchange, the address belongs to an
-  account linked to another GitHub identity, the control plane faulted —
-  and it renders a page saying so. The CLI was polling a session that
-  stayed pending, so a person got the actionable sentence in one window and
-  a bare timeout reported as an expiry in the other, on the command that is
-  the product's front door. The control plane now records the refusal and
-  the poll answers `403 {status: "refused", code, reason}`; `rein login`
-  stops at the first one, prints that exact sentence, says that this device
-  was not enrolled and that the link is spent, and exits `4` — or `1` for
-  the two that are nobody's to fix, an expired link and a control-plane
-  fault, which is the code an expired sign-in already used. Where the
-  sentence names an action but not the command that performs it, the CLI
-  adds the command: `rein devices` (and `rein devices revoke <device-id>`
-  on a build that carries device revocation) for the device quota, run on a
-  machine that is still signed in to the account because the refused one
-  holds no token for it, and `rein login --email <address>` where GitHub is
-  the obstacle. No upgrade URL is invented, because there is none. A code
-  from a control plane newer than the CLI keeps the sentence, the terminal
-  stop and the exit code, and loses only the added command. `--json`
-  carries the same under `details.refusal` as `code`, `reason`, `known`,
-  `terminal` and `commands`. `docs/hop.md` gains the code table, gated
-  against the codes the client declares, and its statement that a sixth
-  device on a five-device plan "can still sign in" is corrected: enrolment
-  now stops at the quota, and the mint-time check remains for the account a
-  plan change moved over its limit.
-- `rein sync verify` now applies "a step that got no answer is not a step
-  that failed" to **all four** steps, not only the fourth. Steps 1 and 2
-  drew the line the other way: a listing that timed out, a fetch whose
-  connection dropped, a 500 — none of them an answer about the locker — was
-  reported as a failed step, so the command that exists to establish trust
-  told a customer their locker failed a security check because a socket
-  did. A refusal is still an answer and still fails the step; no answer at
-  all is now `NOT APPLICABLE` with a reason beginning "Could not run". One
-  check that cannot run is still a failure, and the docs now name it rather
-  than leave it to be found: step 3 with no key on this device. The command
-  resolves a key before it runs, so it does not reach that state; the
-  `verify` package called without one does. A run
-  that opened nothing does not pass on the strength of the steps that ran:
-  its outcome is `not-applicable`, it ends `OUTCOME: NOT VERIFIED` naming
-  what gave no answer, and it exits `1` — the code an unreachable control
-  plane already used — so a script cannot read an outage as a clean bill of
-  health. A profile that could not be opened at all because the storage
-  endpoint was unreachable prints the same report, where it used to print a
-  bare SDK dial error and exit `4`.
-- `rein sync verify`'s isolation step now decides where the probe's request
-  landed **before** it turns the answers into a verdict. The order was the
-  other way round: a successful listing set "this account's credentials
-  reach a bucket that is not its own" and a `Fail`, and the pin — which can
-  only lower a verdict, never lift one — then ran and could not take the
-  alarm back. A report could therefore assert that credentials reached a
-  foreign bucket, and ask for a mail to `security@reinstate.dev`, on the
-  strength of an observation the pin had invalidated (a redirect, a request
-  that landed elsewhere, a transport that recorded nothing). The step still
-  fails on a probe that answered the credential, and it still says so; what
-  it no longer does is draw a conclusion about *buckets* from a request the
-  transport could not place.
-- `rein hop credentials --export` now also prints `REIN_LOCKER_PREFIX`, and
-  the by-hand recipe in [object format](docs/hop/object-format.md) passes it
-  as `--prefix` and in front of every key. The page asserted that a Hop
-  locker has no prefix; `internal/hop.Locker` carries the field and
-  `rein sync verify` honours it, so the recipe as printed listed nothing and
-  fetched nothing on any locker that had one. The value is empty on a locker
-  without a prefix and ends in `/` on one with it, so the same two lines work
-  either way. Reading it costs one control-plane request, made before the
-  mint so a failed lookup does not spend one. The command's help now lists
-  every name `--export` sets, which is what `docs/cli-reference.md` already
-  said and the help did not.
-- Five surfaces stated two claims about the locker absolutely while the code
-  carried an exception, and each round of review has closed one and left the
-  next. Both are now stated with their exception everywhere, and a gate holds
-  them together: `internal/doctest` walks every shipped page, every Go
-  comment and help string, and the rendered `rein --help` tree, and fails on
-  a sentence that says the locker holds "only ciphertext" without naming
-  `keyring.v1.json`, or describes the plaintext-`http` refusal without naming
-  the loopback address it exempts. It holds no list of *pages*: it walks `docs`,
-  `internal`, `cmd`, `website/src` and the top-level prose files and finds
-  the claim wherever it is made, so a page written next year is held to the
-  same rule without being registered anywhere. What it does hold is a list
-  of file extensions and a list of phrasings, and both are limits worth
-  knowing: a claim in a `.json`, `.yml` or `.svg` is not read, and a
-  rewording outside the patterns is not matched. The extension list already
-  missed one shipped surface — a landing-page `figcaption` in an `.astro`
-  component, which said "stores only ciphertext in your bucket" for a month
-  — and now includes `.astro`, `.ts` and `.tsx`. It found two surfaces nobody
-  had reported: `docs/architecture.md` and the website's copy of it, whose
-  "only ciphertext on object storage" design principle the plaintext keyring
-  falsifies. The plaintext refusal is also
-  driven end to end for the first time — through the real CLI and the real
-  S3 client against a fake locker bound to a **non-loopback** address of the
-  test machine, since httptest listens on loopback, the one
-  address the carve-out lets through, and the refusal had never run outside a
-  unit test of its predicate. That test skips on a machine with no
-  non-loopback address it can bind and dial, and the bench record says so:
-  [round three](docs/testing/results/2026-08-27-sync-verify-windows-round-three.md).
-- `rein sync verify`'s fourth step no longer tells a BYO reader that it asked
-  a control plane for a reference locker. On a profile with no control plane
-  it says what happened, which is nothing.
-- `rein pull --all` now skips a session whose remote snapshot this device
-  already synced instead of restoring, rewriting, and backing up an
-  identical file on every run, and no longer records a conflict for a local
-  edit that has simply not been pushed yet (that edit belongs to the next
-  push). An explicit `rein pull --session` still restores and still records
-  a conflict when the local copy diverged. This keeps the daemon's
-  scheduled pulls from churning the backup directory.
-- Conflict records are keyed by the divergence (agent, session, local
-  revision, remote snapshot): `rein push --all` and `rein pull --all`
-  record the same unresolved divergence once rather than writing a fresh
-  `conflicts/c-*.json` on every run, so a daemon that pushes and pulls
-  every few seconds against one diverged session no longer grows the
-  directory without bound. `rein pull --all` also continues past a
-  diverged session instead of stopping at the first one: every other
-  session's newer snapshot is still restored, and the conflicted sessions
-  are reported together (exit code unchanged; `--json` adds `conflicts`).
-- Envelope encryption now sits behind a key-provider seam
-  (`internal/crypto.KeyProvider`). BYO storage keeps the age scrypt passphrase
-  model through `PassphraseProvider`, which writes identical envelopes and reads
-  every envelope written before the seam (covered by golden fixtures under
-  `testdata/crypto/pre-seam`). No CLI surface or behaviour changes for BYO
-  users; the seam exists so other key models can plug in without touching sync,
-  manifest, or conflict code.
-
 ### Added
 
 - The daemon: `rein daemon` runs a resident per-device process that keeps a
@@ -576,7 +137,311 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   own in-memory store, so two accounts sharing one running lab locker no
   longer find each other's keyring.
 
+- Grok Build moves to **T4, handoff destination**. `rein handoff <session> --to
+  grok` starts a **new** Grok Build session — never a cross-agent resume — with
+  `grok --session-id <uuid> "<briefing>"` in the verified workspace. The vendor
+  requires that the UUID not already exist under the target session directory,
+  so the target proves its absence when it plans and again immediately before
+  launch, and refuses rather than colliding. Because the identifier is pinned,
+  lineage resolves the destination session directly instead of reconciling it
+  from a post-launch scan; a session that never appeared is reported
+  `unresolved` and one UUID under two project directories is `ambiguous`,
+  never guessed. Nothing is written under the Grok root, including no
+  directory-trust record: no Grok trust file shape has been measured, and
+  inventing one would be a vendor-internal write on a guess.
+- The Grok upload warning now applies in both directions. Grok Build's
+  documented repository-content upload behaviour is a property of that process,
+  not of which side of a handoff it is on, so a handoff *into* Grok also forces
+  redaction, also prints the warning, and also refuses `--no-redact` with exit
+  `2`. Sending a briefing about the operator's repository into that CLI is the
+  direction the warning matters most in.
+- `rein handoff --to qwen` starts a **new** Qwen Code session (T4), seeded with
+  the capsule briefing and pinned to an id Reinstate chooses, so lineage
+  resolves instead of guessing. It is never a cross-agent resume and never
+  reconstructs the source thread. Reinstate writes nothing under the Qwen home.
+  Qwen refuses a duplicate `--session-id` itself, and Reinstate checks its own
+  index first so the refusal happens before a process is spawned.
+  **macOS evidence only** — the native Windows journey the tier requires has not
+  been run.
+- `rein resume qwen:<id>` and `rein fork qwen:<id>` launch Qwen Code's own CLI
+  against its own session (T3). The descriptor now carries the measured launch
+  argv (`--resume <id>`, `--resume <id> --fork-session`, `--continue`), a
+  fail-closed version range, and the process shape that lets the `agent.active`
+  liveness check see a running Qwen. The version range spans two versions
+  because Qwen self-updates into its own home directory and then runs the
+  updated copy, so one machine answers `--version` differently depending on
+  which root is in scope. **macOS evidence only** — the native Windows journey
+  the tier requires has not been run.
+- Qwen Code is now a handoff **source** (T2): `rein handoff --from qwen` reads a
+  Qwen session and builds a portable capsule that seeds a **new** session in the
+  destination agent. Native resume for Qwen stays refused, and Qwen is not a
+  destination either; both are higher rungs with their own evidence gates.
+  The reader is not the Claude reader with a different name. Qwen's top-level
+  record keys match Claude Code's, but its message body is a Gemini `Content`
+  value (`{"role":…,"parts":[…]}`), and `/rewind` is encoded by re-rooting the
+  `parentUuid` chain rather than by writing a marker — so the live conversation
+  is the chain walked back from the last record, and records left on the dead
+  branch are excluded and reported rather than replayed.
+- **Kimi Code CLI is now T2, a handoff source.** `rein handoff --from kimi`
+  reads `agents/main/wire.jsonl` and builds a portable capsule. A handoff
+  starts a *new* Claude Code or Codex session; it never reconstructs Kimi
+  history and it is not a cross-agent resume. Assistant text, tool calls, and
+  tool results are read from the `context.append_loop_event` records the CLI
+  writes today (`content.part`, `tool.call`, `tool.result`), and the older
+  `context.append_message` shape is still read so sessions migrated from the
+  legacy `kimi-cli` store keep working. `profile.bind` system prompts stay out
+  of the capsule, unknown record types are referenced with an opaque digest and
+  never copied into an event body, and a truncated last JSONL line is dropped.
+  The reader fails closed on an unrecognized `state.json` schema version or
+  `wire.jsonl` protocol major. Records that rewrite context history
+  (`context.clear`, `context.undo`, `context.apply_compaction`) are reported as
+  a parse warning rather than silently replayed. Native resume and fork stay
+  refused: no device journey has run `kimi -r <id>` against a real session.
+- Grok Build moves to **T3, verified resume**. `rein resume grok:<id>` and
+  `rein fork grok:<id>` launch `grok --resume <uuid>` and
+  `grok --resume <uuid> --fork-session` against the vendor's own session, after
+  the same executable-trust, workspace-identity and version preflight every
+  other native launch gets. The verified version range is `1.0.5`–`1.0.5`,
+  measured from `grok --version` on the macOS acceptance host; anything outside
+  it is `UNTESTED` and exits `5`. The physical device journey this tier
+  ultimately rests on is specified in
+  `docs/testing/grok-native-resume-acceptance.md` and has not been recorded on
+  either platform yet, so the tier is a code-complete claim awaiting
+  confirmation rather than an evidenced one, and every surface that names it
+  says so.
+- Grok's `--resume` flag accepts a session **ID or a title**, and resolves any
+  value that is not UUID-shaped as a title. Titles are neither unique nor
+  stable, so a title in that position could address a session the operator
+  never selected. Descriptors can now declare `NativeSpec.SessionIDPattern`,
+  the shape an identifier must have before it may be substituted into an argv
+  template. A Grok session whose recorded id is not a UUID stays read-only with
+  that reason stated, and the argv builder refuses the substitution outright,
+  so no route to a launch plan can put a title on a `grok` command line.
+- `rein resume` and `rein fork` now report whether the session being resumed is
+  already open in the agent that owns it. A detected live session is an
+  environment warning, `agent.active`, so it prompts on a terminal and requires
+  `--allow-environment-warning agent.active` in automation, exactly like every
+  other resume warning. It is a warning rather than a refusal because the vendor
+  CLI owns every write to its own store, so Reinstate has no basis to refuse
+  outright — but an operator who resumes a session they already have open
+  generally did not mean to. A host that cannot enumerate its own processes
+  reports that it could not tell, and still resumes; it is never told the
+  session is free on evidence that was not gathered. The probe runs concurrently
+  with the rest of preflight, so it does not add its cost to the launch path.
+  A structured handoff is unaffected: it only reads the source, and already
+  enforces its own `--allow-active` boundary against the same signal.
+
+### Changed
+
+- `rein login` now stops at a **refused** sign-in instead of polling to a
+  timeout. The browser half of a sign-in can end without enrolling a device
+  — the account is at its plan's device quota, the link was opened too
+  late, GitHub cancelled or refused the exchange, the address belongs to an
+  account linked to another GitHub identity, the control plane faulted —
+  and it renders a page saying so. The CLI was polling a session that
+  stayed pending, so a person got the actionable sentence in one window and
+  a bare timeout reported as an expiry in the other, on the command that is
+  the product's front door. The control plane now records the refusal and
+  the poll answers `403 {status: "refused", code, reason}`; `rein login`
+  stops at the first one, prints that exact sentence, says that this device
+  was not enrolled and that the link is spent, and exits `4` — or `1` for
+  the two that are nobody's to fix, an expired link and a control-plane
+  fault, which is the code an expired sign-in already used. Where the
+  sentence names an action but not the command that performs it, the CLI
+  adds the command: `rein devices` (and `rein devices revoke <device-id>`
+  on a build that carries device revocation) for the device quota, run on a
+  machine that is still signed in to the account because the refused one
+  holds no token for it, and `rein login --email <address>` where GitHub is
+  the obstacle. No upgrade URL is invented, because there is none. A code
+  from a control plane newer than the CLI keeps the sentence, the terminal
+  stop and the exit code, and loses only the added command. `--json`
+  carries the same under `details.refusal` as `code`, `reason`, `known`,
+  `terminal` and `commands`. `docs/hop.md` gains the code table, gated
+  against the codes the client declares, and its statement that a sixth
+  device on a five-device plan "can still sign in" is corrected: enrolment
+  now stops at the quota, and the mint-time check remains for the account a
+  plan change moved over its limit.
+- `rein sync verify` now applies "a step that got no answer is not a step
+  that failed" to **all four** steps, not only the fourth. Steps 1 and 2
+  drew the line the other way: a listing that timed out, a fetch whose
+  connection dropped, a 500 — none of them an answer about the locker — was
+  reported as a failed step, so the command that exists to establish trust
+  told a customer their locker failed a security check because a socket
+  did. A refusal is still an answer and still fails the step; no answer at
+  all is now `NOT APPLICABLE` with a reason beginning "Could not run". One
+  check that cannot run is still a failure, and the docs now name it rather
+  than leave it to be found: step 3 with no key on this device. The command
+  resolves a key before it runs, so it does not reach that state; the
+  `verify` package called without one does. A run
+  that opened nothing does not pass on the strength of the steps that ran:
+  its outcome is `not-applicable`, it ends `OUTCOME: NOT VERIFIED` naming
+  what gave no answer, and it exits `1` — the code an unreachable control
+  plane already used — so a script cannot read an outage as a clean bill of
+  health. A profile that could not be opened at all because the storage
+  endpoint was unreachable prints the same report, where it used to print a
+  bare SDK dial error and exit `4`.
+- `rein sync verify`'s isolation step now decides where the probe's request
+  landed **before** it turns the answers into a verdict. The order was the
+  other way round: a successful listing set "this account's credentials
+  reach a bucket that is not its own" and a `Fail`, and the pin — which can
+  only lower a verdict, never lift one — then ran and could not take the
+  alarm back. A report could therefore assert that credentials reached a
+  foreign bucket, and ask for a mail to `security@reinstate.dev`, on the
+  strength of an observation the pin had invalidated (a redirect, a request
+  that landed elsewhere, a transport that recorded nothing). The step still
+  fails on a probe that answered the credential, and it still says so; what
+  it no longer does is draw a conclusion about *buckets* from a request the
+  transport could not place.
+- `rein hop credentials --export` now also prints `REIN_LOCKER_PREFIX`, and
+  the by-hand recipe in [object format](docs/hop/object-format.md) passes it
+  as `--prefix` and in front of every key. The page asserted that a Hop
+  locker has no prefix; `internal/hop.Locker` carries the field and
+  `rein sync verify` honours it, so the recipe as printed listed nothing and
+  fetched nothing on any locker that had one. The value is empty on a locker
+  without a prefix and ends in `/` on one with it, so the same two lines work
+  either way. Reading it costs one control-plane request, made before the
+  mint so a failed lookup does not spend one. The command's help now lists
+  every name `--export` sets, which is what `docs/cli-reference.md` already
+  said and the help did not.
+- Five surfaces stated two claims about the locker absolutely while the code
+  carried an exception, and each round of review has closed one and left the
+  next. Both are now stated with their exception everywhere, and a gate holds
+  them together: `internal/doctest` walks every shipped page, every Go
+  comment and help string, and the rendered `rein --help` tree, and fails on
+  a sentence that says the locker holds "only ciphertext" without naming
+  `keyring.v1.json`, or describes the plaintext-`http` refusal without naming
+  the loopback address it exempts. It holds no list of *pages*: it walks `docs`,
+  `internal`, `cmd`, `website/src` and the top-level prose files and finds
+  the claim wherever it is made, so a page written next year is held to the
+  same rule without being registered anywhere. What it does hold is a list
+  of file extensions and a list of phrasings, and both are limits worth
+  knowing: a claim in a `.json`, `.yml` or `.svg` is not read, and a
+  rewording outside the patterns is not matched. The extension list already
+  missed one shipped surface — a landing-page `figcaption` in an `.astro`
+  component, which said "stores only ciphertext in your bucket" for a month
+  — and now includes `.astro`, `.ts` and `.tsx`. It found two surfaces nobody
+  had reported: `docs/architecture.md` and the website's copy of it, whose
+  "only ciphertext on object storage" design principle the plaintext keyring
+  falsifies. The plaintext refusal is also
+  driven end to end for the first time — through the real CLI and the real
+  S3 client against a fake locker bound to a **non-loopback** address of the
+  test machine, since httptest listens on loopback, the one
+  address the carve-out lets through, and the refusal had never run outside a
+  unit test of its predicate. That test skips on a machine with no
+  non-loopback address it can bind and dial, and the bench record says so:
+  [round three](docs/testing/results/2026-08-27-sync-verify-windows-round-three.md).
+- `rein sync verify`'s fourth step no longer tells a BYO reader that it asked
+  a control plane for a reference locker. On a profile with no control plane
+  it says what happened, which is nothing.
+- `rein pull --all` now skips a session whose remote snapshot this device
+  already synced instead of restoring, rewriting, and backing up an
+  identical file on every run, and no longer records a conflict for a local
+  edit that has simply not been pushed yet (that edit belongs to the next
+  push). An explicit `rein pull --session` still restores and still records
+  a conflict when the local copy diverged. This keeps the daemon's
+  scheduled pulls from churning the backup directory.
+- Conflict records are keyed by the divergence (agent, session, local
+  revision, remote snapshot): `rein push --all` and `rein pull --all`
+  record the same unresolved divergence once rather than writing a fresh
+  `conflicts/c-*.json` on every run, so a daemon that pushes and pulls
+  every few seconds against one diverged session no longer grows the
+  directory without bound. `rein pull --all` also continues past a
+  diverged session instead of stopping at the first one: every other
+  session's newer snapshot is still restored, and the conflicted sessions
+  are reported together (exit code unchanged; `--json` adds `conflicts`).
+- Envelope encryption now sits behind a key-provider seam
+  (`internal/crypto.KeyProvider`). BYO storage keeps the age scrypt passphrase
+  model through `PassphraseProvider`, which writes identical envelopes and reads
+  every envelope written before the seam (covered by golden fixtures under
+  `testdata/crypto/pre-seam`). No CLI surface or behaviour changes for BYO
+  users; the seam exists so other key models can plug in without touching sync,
+  manifest, or conflict code.
+
+- The agent conformance suite now checks what a cited device report is *about*,
+  not only which device produced it. From T3 upward a claim must cite a journey
+  naming that agent and that rung, on macOS and on native Windows, for every
+  rung from T3 to the declared tier. Two real claims had passed the earlier
+  filename-only check without the evidence they implied: Grok cited two
+  release-acceptance reports that mention it only in index and handoff-source
+  rows, and Qwen's T4 claim passed while its only Windows report covered T3.
+  The four Phase 3 and Phase 4 reports behind Claude Code and Codex CLI predate
+  the tier vocabulary entirely and are accepted as a closed list.
+
 ### Fixed
+
+- A refused pairing approval no longer takes back wraps it never wrote
+  (#11). `UnenrolEverywhere` removed every `(device id, public key)` match
+  in every generation, while `EnrolInto` leaves a generation alone when it
+  already holds a wrap for that public key — and two approvals of the same
+  joining device carry the same public key, because the device generates its
+  key once, before its first request. So a rolled-back approval could strip
+  a competing approval's wrap, or the pre-revocation wraps of a device that
+  was revoked and is joining again. `EnrolAll` now reports the wraps it
+  actually appended, by generation and by ciphertext, and the rollback
+  removes exactly those.
+- `rein init --force` now backs up **and removes** `account.json`, so the
+  re-enrolment recipe in `docs/hop.md` works as written (#11). Run verbatim
+  it used to dead-end: nothing in the CLI removed the enrolment record, so
+  both `rein account recover` and `rein account join` exited `7`, "this
+  device is already enrolled", on the very machine the recipe is for. The
+  record is copied into the timestamped backup set alongside `config.toml`
+  and `state.json` first, and the "already enrolled" message now names `rein
+  init --hop --force` as the step that clears it. `rein sync migrate --to
+  byo` clears it the same way, since the BYO profile it writes has no
+  keyring behind it.
+- ...and now ends in a **working** `rein push` (#11). `rein init --hop
+  --force` is in that recipe for one reason — it is the only thing that
+  removes the enrolment record — and clearing `state.json` was collateral,
+  not the point. Without the session records the push that follows saw a
+  local revision and a remote snapshot that differ with no shared base,
+  recorded a conflict, and exited `6`: the last step of a recovery path
+  failing on state the path itself threw away. Re-initializing a home
+  against the **same profile** now carries the session records forward — the
+  profile is the locker, so the snapshot ids are still the account's, and
+  only the device id changed. A different profile is a different locker and
+  still starts clean, and the previous state is in the backup set either
+  way. `TestReEnrolmentRecipeEndsInAWorkingPush` runs the documented recipe
+  verbatim, with the session changed after the revocation as it would be on
+  a machine that was still in use.
+- `rein devices revoke`'s help text and success message say when the
+  revocation reaches a device that has not read the keyring (#11), rather
+  than implying it is instantaneous account-wide. The message names the key
+  generation, says what is not readable by the revoked device once a device
+  has it, and reports whether the control plane took the key generation
+  floor — because on a control plane that does not carry one the operator
+  needs to know the other devices are covered only as each next reads the
+  keyring.
+- `rein devices revoke`'s own help text and its success message no longer
+  claim the revoked device "cannot push" (#11). New credential mints are
+  refused instantly, but a credential the device already holds keeps working
+  against the bucket for the rest of its TTL — up to `MaxCredentialTTL`, an
+  hour — and `storage.Provider` exposes no way to withdraw one. `docs/hop.md`
+  already stated this correctly; the command now agrees, and the message
+  printed after a revocation tells the operator about the window.
+- `keyring.Parse` now says which of its checks are load-bearing and which
+  are duplicated further along (#11). Several are refused a second time by
+  `VerifyGenerations`, which every read path runs again against its anchor,
+  so a mutation test finds them individually survivable — that is defence in
+  depth, not dead code, and the note names the copy a later refactor should
+  delete (this one) and the copies that exist nowhere else (the
+  `schema_version` gate, the wrap-format rule, the duplicate device id rule,
+  and the closing `VerifyGenerations` call that makes an unverifiable
+  keyring fail to parse at all).
+- The keyring can no longer grow into an object the account cannot read
+  (#11). Every revocation appends a generation holding one wrap per
+  remaining device and none is ever removed, so at five devices the object
+  grew about 4.5 KiB per revocation while `keyring.Load` caps a read at
+  1 MiB: at a couple of hundred revocations an account would have written a
+  keyring that no push, pull, revocation or `rein account recover` could
+  read again.
+  A write past three quarters of the read cap is now refused with a message
+  naming the remedy, and that refusal exits `7` (`ExitSafety`) as
+  `docs/hop.md` says it does — it reached the user as the generic `4`
+  (`auth_storage`) until `keyring.ErrTooLarge` was mapped, and a table test
+  now pins the exit code of every keyring refusal so the two cannot drift
+  again. Compaction was considered and rejected: dropping a superseded
+  generation drops the only copy of the root key that opens everything
+  sealed under it.
 
 - A hosted profile that is not enrolled yet no longer tells every device to
   run `rein account init`: when the locker already holds a keyring the
@@ -893,116 +758,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `/.well-known/api-catalog`, and the policy on `/developers`. A `/contact`
   page lists the public support channels and private security reporting.
 
-### Changed
-
-- The agent conformance suite now checks what a cited device report is *about*,
-  not only which device produced it. From T3 upward a claim must cite a journey
-  naming that agent and that rung, on macOS and on native Windows, for every
-  rung from T3 to the declared tier. Two real claims had passed the earlier
-  filename-only check without the evidence they implied: Grok cited two
-  release-acceptance reports that mention it only in index and handoff-source
-  rows, and Qwen's T4 claim passed while its only Windows report covered T3.
-  The four Phase 3 and Phase 4 reports behind Claude Code and Codex CLI predate
-  the tier vocabulary entirely and are accepted as a closed list.
-
-### Added
-
-- Grok Build moves to **T4, handoff destination**. `rein handoff <session> --to
-  grok` starts a **new** Grok Build session — never a cross-agent resume — with
-  `grok --session-id <uuid> "<briefing>"` in the verified workspace. The vendor
-  requires that the UUID not already exist under the target session directory,
-  so the target proves its absence when it plans and again immediately before
-  launch, and refuses rather than colliding. Because the identifier is pinned,
-  lineage resolves the destination session directly instead of reconciling it
-  from a post-launch scan; a session that never appeared is reported
-  `unresolved` and one UUID under two project directories is `ambiguous`,
-  never guessed. Nothing is written under the Grok root, including no
-  directory-trust record: no Grok trust file shape has been measured, and
-  inventing one would be a vendor-internal write on a guess.
-- The Grok upload warning now applies in both directions. Grok Build's
-  documented repository-content upload behaviour is a property of that process,
-  not of which side of a handoff it is on, so a handoff *into* Grok also forces
-  redaction, also prints the warning, and also refuses `--no-redact` with exit
-  `2`. Sending a briefing about the operator's repository into that CLI is the
-  direction the warning matters most in.
-- `rein handoff --to qwen` starts a **new** Qwen Code session (T4), seeded with
-  the capsule briefing and pinned to an id Reinstate chooses, so lineage
-  resolves instead of guessing. It is never a cross-agent resume and never
-  reconstructs the source thread. Reinstate writes nothing under the Qwen home.
-  Qwen refuses a duplicate `--session-id` itself, and Reinstate checks its own
-  index first so the refusal happens before a process is spawned.
-  **macOS evidence only** — the native Windows journey the tier requires has not
-  been run.
-- `rein resume qwen:<id>` and `rein fork qwen:<id>` launch Qwen Code's own CLI
-  against its own session (T3). The descriptor now carries the measured launch
-  argv (`--resume <id>`, `--resume <id> --fork-session`, `--continue`), a
-  fail-closed version range, and the process shape that lets the `agent.active`
-  liveness check see a running Qwen. The version range spans two versions
-  because Qwen self-updates into its own home directory and then runs the
-  updated copy, so one machine answers `--version` differently depending on
-  which root is in scope. **macOS evidence only** — the native Windows journey
-  the tier requires has not been run.
-- Qwen Code is now a handoff **source** (T2): `rein handoff --from qwen` reads a
-  Qwen session and builds a portable capsule that seeds a **new** session in the
-  destination agent. Native resume for Qwen stays refused, and Qwen is not a
-  destination either; both are higher rungs with their own evidence gates.
-  The reader is not the Claude reader with a different name. Qwen's top-level
-  record keys match Claude Code's, but its message body is a Gemini `Content`
-  value (`{"role":…,"parts":[…]}`), and `/rewind` is encoded by re-rooting the
-  `parentUuid` chain rather than by writing a marker — so the live conversation
-  is the chain walked back from the last record, and records left on the dead
-  branch are excluded and reported rather than replayed.
-- **Kimi Code CLI is now T2, a handoff source.** `rein handoff --from kimi`
-  reads `agents/main/wire.jsonl` and builds a portable capsule. A handoff
-  starts a *new* Claude Code or Codex session; it never reconstructs Kimi
-  history and it is not a cross-agent resume. Assistant text, tool calls, and
-  tool results are read from the `context.append_loop_event` records the CLI
-  writes today (`content.part`, `tool.call`, `tool.result`), and the older
-  `context.append_message` shape is still read so sessions migrated from the
-  legacy `kimi-cli` store keep working. `profile.bind` system prompts stay out
-  of the capsule, unknown record types are referenced with an opaque digest and
-  never copied into an event body, and a truncated last JSONL line is dropped.
-  The reader fails closed on an unrecognized `state.json` schema version or
-  `wire.jsonl` protocol major. Records that rewrite context history
-  (`context.clear`, `context.undo`, `context.apply_compaction`) are reported as
-  a parse warning rather than silently replayed. Native resume and fork stay
-  refused: no device journey has run `kimi -r <id>` against a real session.
-- Grok Build moves to **T3, verified resume**. `rein resume grok:<id>` and
-  `rein fork grok:<id>` launch `grok --resume <uuid>` and
-  `grok --resume <uuid> --fork-session` against the vendor's own session, after
-  the same executable-trust, workspace-identity and version preflight every
-  other native launch gets. The verified version range is `1.0.5`–`1.0.5`,
-  measured from `grok --version` on the macOS acceptance host; anything outside
-  it is `UNTESTED` and exits `5`. The physical device journey this tier
-  ultimately rests on is specified in
-  `docs/testing/grok-native-resume-acceptance.md` and has not been recorded on
-  either platform yet, so the tier is a code-complete claim awaiting
-  confirmation rather than an evidenced one, and every surface that names it
-  says so.
-- Grok's `--resume` flag accepts a session **ID or a title**, and resolves any
-  value that is not UUID-shaped as a title. Titles are neither unique nor
-  stable, so a title in that position could address a session the operator
-  never selected. Descriptors can now declare `NativeSpec.SessionIDPattern`,
-  the shape an identifier must have before it may be substituted into an argv
-  template. A Grok session whose recorded id is not a UUID stays read-only with
-  that reason stated, and the argv builder refuses the substitution outright,
-  so no route to a launch plan can put a title on a `grok` command line.
-- `rein resume` and `rein fork` now report whether the session being resumed is
-  already open in the agent that owns it. A detected live session is an
-  environment warning, `agent.active`, so it prompts on a terminal and requires
-  `--allow-environment-warning agent.active` in automation, exactly like every
-  other resume warning. It is a warning rather than a refusal because the vendor
-  CLI owns every write to its own store, so Reinstate has no basis to refuse
-  outright — but an operator who resumes a session they already have open
-  generally did not mean to. A host that cannot enumerate its own processes
-  reports that it could not tell, and still resumes; it is never told the
-  session is free on evidence that was not gathered. The probe runs concurrently
-  with the rest of preflight, so it does not add its cost to the launch path.
-  A structured handoff is unaffected: it only reads the source, and already
-  enforces its own `--allow-active` boundary against the same signal.
-
-### Fixed
-
 - A structured handoff to a destination that passes its prompt behind a flag
   launched without that flag. After the pipeline re-rendered the briefing it
   rebuilt argv from a per-agent switch whose default was a single positional
@@ -1049,6 +804,243 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   so a probe aimed at a prepared root read their real tree anyway, silently.
   `StorageSpec` gained `RootEnvSuffix` for this shape, and the catalog is now
   pinned to the reader's own resolution so the two cannot drift apart again.
+
+### Security
+
+- **Console revocations complete only after a client-held key rollover (#14).**
+  The daemon surfaces pending Console requests without approving them, and
+  `rein devices` names the exact recovery-code-protected command. When that
+  command writes a strictly newer key generation, it confirms the pending
+  request so the control plane atomically raises the floor and revokes the
+  target. Older control planes keep the direct revocation flow.
+- **Pairing now separates its HMAC and payload keys (#18).** New pairing
+  requests carry integer protocol version 2 and expand the existing
+  Argon2id master with HKDF-SHA256 under distinct binding and payload
+  domains; the payload key is also bound to the server pairing id, which
+  remains in AEAD associated data. Missing or zero versions still mean v1,
+  and deterministic goldens pin v1 verification/opening so an approval
+  already pending during an upgrade remains usable. The account key and
+  root-key recipient anchors integrated with #11 already refuse a
+  self-consistent forged current-generation keyring before push fetches or
+  writes any locker data; the public CLI journey now asserts that ordering.
+- **The key generation floor, and `rein sync verify`, exercised against the
+  real control plane for the first time (#11, #12).** The floor is the one
+  property neither repository could test: the client decides what to refuse
+  and the control plane decides what number to serve, and each side's tests
+  drove a fake of the other, so a wire-shape mistake would have passed both
+  suites and failed on the first real device.
+  `internal/cli/keygeneration_crossplane_test.go` (built with
+  `-tags hopacceptance`, skipped unless `REINSTATE_HOPD_BIN` names a `hopd`
+  binary) runs the real client in process against the real `hopd` over HTTP,
+  through the real sign-in flow, and drives the lagging-device attack: a
+  revoked device restores the genuine pre-revocation keyring and a device
+  that has run nothing since is refused on `push`, `pull` and
+  `sync verify`, each naming the control plane. Removing the floor from the
+  anchor reproduces the hole exactly, including a full `OUTCOME: PASS`
+  report on a rolled-back keyring. A second journey puts a proxy in front of
+  `hopd` that answers the floor route `404`, which is the documented
+  residual, and reproduces it. Recorded in
+  `docs/testing/results/2026-08-27-key-generation-floor-crossplane.md`,
+  including what the run does not establish.
+- **A floor a control plane cannot verify is no longer a permanent lockout
+  (#11).** `POST /v1/account/key-generation` is open to every enrolled
+  device and the control plane holds no keyring, so what it is told is a
+  claim. The client made that claim permanent: it wrote the live answer into
+  `account.json` before judging the keyring and then used the higher of the
+  two, so one report of a generation no keyring would ever reach refused
+  every command on every device of the account, and repairing the control
+  plane changed nothing — the only way back was `rein init --hop --force`
+  and `rein account recover`, with the recovery code, on every device. The
+  floor a command uses is now the live answer, with the recorded number as
+  the fallback for a control plane that has stopped serving the route at
+  all. Keeping the higher number defended against nothing a `404` would not
+  also achieve. What no control plane can move either way is the generation
+  each device recorded when it last read a keyring, which is written only
+  after that keyring was accepted.
+- **`rein sync verify` stops calling an answer silence (#12).** The rule
+  that a check which could not run is not a check that failed was carried by
+  an allowlist of the error shapes somebody had thought of, so every S3 code
+  the backend's switch has no case for — `NoSuchBucket` is the plainest —
+  and this package's own 64 MiB read limit were reported to a person as "the
+  storage endpoint gave no answer". Both are answers, and both used to fail
+  the run: a locker whose bucket is gone, or that will not serve its index
+  in a readable size, had stopped failing and started reporting a check that
+  could not run. `backend.APIAnswer` carries any structured answer the
+  backend cannot otherwise name, `verify.ErrObjectTooLarge` names the local
+  limit, and `TestEveryStorageCallClassifiesWhatCameBack` walks the package,
+  so a storage call written the way the existing ones are has to classify
+  what came back or be listed as exempt with its reason. A call that reaches
+  storage through a helper of another shape is outside what that gate sees,
+  and it says so. The help-text half of the same gate now reads `Example`
+  and every flag's usage string as well as `Short` and `Long`, which is the
+  whole of what `--help` prints; a bare claim in a flag description used to
+  be help text it did not see.
+- **The foreign-bucket alarm survives a later redirect (#12).** The pin that
+  gates it was one boolean for the whole probe and was decided at the first
+  bad exchange, so a reference locker that answered this account's
+  credentials at the pinned endpoint and *then* redirected the next request
+  suppressed the finding it exists for. It is now decided over every
+  exchange, and a redirect still does not count as one: the request reached
+  the endpoint, but the answer was "go elsewhere".
+- **The account key generation floor closes the lagging device (#11).**
+  Every defence the keyring had was local to one device: the generation it
+  last unwrapped and that generation's root-key recipient. A device that
+  had *not* yet read a rollover held nothing a rollback would contradict —
+  the pre-revocation keyring is genuine and its signatures verify — so a
+  revoked device, inside the credential window this file describes, could
+  restore the earlier object and a device that had run nothing since would
+  accept it and keep sealing to the root key the revoked device holds. That
+  was reproduced end to end.
+  - **The control plane carries one monotonic key generation per account**
+    (`GET`/`POST /v1/account/key-generation`, bearer; the counter is
+    `generation`, and a report at or below the floor answers `raised:
+    false` rather than failing). `rein devices
+    revoke` raises it once the rollover is in the keyring and the token is
+    refused; every command that reads the keyring on a Hop profile asks for
+    it and refuses a keyring below it (`ExitSafety`, naming the control
+    plane) — push, pull, `devices approve`, `devices revoke`, `account
+    recover`, `account join`, and the two diagnostics. On all but `account
+    recover` the floor is established before anything is unwrapped; that
+    one opens the recovery wrap first so a mistyped code reads as a
+    mistyped code, zeroes those keys at once and writes nothing from them.
+    The floor a command uses is the live answer, with the number
+    `account.json` records as the fallback for a control plane that no
+    longer serves the route; a control plane answering a lower number is
+    believed, because keeping the higher one defended against nothing and
+    made a permanent account-wide lockout out of a route any enrolled
+    device may call with an unverifiable number.
+  - **What it buys, stated both ways.** Against the revoked device — the
+    adversary revocation exists to stop, and the realistic one — it closes
+    the gap: the control plane refuses that device's token, so it can
+    neither read the floor nor lower it. Against an operator holding *both*
+    the control plane and the bucket it adds nothing, because that party
+    serves whatever floor it likes; the generation signature and the local
+    anchor are what cover that adversary. `docs/hop.md` and
+    `docs/security-model.md` say both.
+  - **No offline trade.** Reaching a Hop locker already means minting
+    credentials from the same control plane in the same command, so there
+    is no device that can sync but not ask. The one case with no live
+    answer is a control plane that does not carry the floor (`404
+    no_key_generation`): the last floor it confirmed to this device stands,
+    recorded in `account.json` as `control_plane_key_generation` and
+    `control_plane_confirmed_at` and raised only upward, so a deployment
+    that stops serving it cannot drop the account back to generation 0.
+    `rein devices revoke` prints on stderr when it meets such a control
+    plane, rather than reporting a protection it did not get.
+  - **The claim, as it now reads.** A revoked device cannot open what a
+    device pushes *once that device has the new key generation* — which it
+    has as soon as it next reads the keyring, and which the floor makes it
+    check for even before then. Unqualified, the old sentence was false.
+    `docs/hop.md`, `docs/security-model.md`, `rein devices revoke --help`
+    and the message the command prints all carry the qualification, and
+    `TestControlPlaneFloorReachesADeviceThatLagsBehind` and
+    `TestWithoutAControlPlaneFloorALaggingDeviceAcceptsTheOldKeyring` hold
+    both halves to the code.
+  - **Every route, not one route.** The floor is part of `keyringAnchor`,
+    whose zero value is undecided and refuses every keyring, and two source
+    walks hold the class rather than the instance:
+    `TestEveryKeyringAnchorDecidesTheFloor` fails on any anchor built in
+    `internal/cli` without an explicit floor decision, and
+    `TestEveryKeyringUnwrapGoesThroughTheAnchor` fails on any keyring unwrap
+    that is not lexically inside a `trustKeyring` call — with the two
+    deliberate exceptions named in its own table, and the reason each is
+    safe. Both were confirmed by adding a route and watching them fail.
+- **The recovery wrap is inside the generation signature (#11), keyring
+  format 5.** It was outside, and the cost was a message: a party with
+  bucket write access could flip one byte of the ciphertext, and every
+  later `rein account recover` told the person their recovery code was
+  wrong — at the one moment where the only thing they can act on is the
+  code, and the code was right. The wrap is written once, by a caller
+  holding the code, and never appended to, so covering it costs nothing.
+  The same edit now fails the generation signature and is refused as
+  tampering, by `keyring.Parse`, on every route that loads the object —
+  though not always before the person has been asked for the code, since
+  `rein devices revoke` reads the code before it loads the keyring. What no
+  route does any more is report the damage *as* a wrong code. `recovery code does not match` now means the code as typed or a
+  keyring belonging to another account, and says so; a wrap this build
+  cannot attempt at all (unknown derivation or format, a salt or ciphertext
+  that is not base64, a ciphertext shorter than its nonce) is a separate
+  error that exits `7` and names damage rather than the code. Device wraps
+  are still deliberately outside the signature — they are appended after a
+  generation is written — and the reason that is safe is unchanged and
+  documented next to it.
+- **Key generations are now signed (#11).** A revoked device keeps working
+  locker credentials for the rest of their TTL, so it can write the keyring
+  object; until now nothing about a key generation was secret or
+  authenticated, and a party with bucket write access could append a
+  *higher* generation carrying a root key of its own, wrapped to every
+  listed device's published public key. Every remaining device adopted it —
+  and pinned it, since the floor check only refused a *lower* number. That
+  refuted the promise in `docs/hop.md`, `docs/security-model.md` and this
+  file that a revoked device "cannot open anything pushed after the
+  revocation".
+  - **Every generation carries an ed25519 signature** over its own header —
+    the profile id, the account key, the generation's number, `created_at`
+    and `recipient`, the number and recipient of the generation it follows,
+    and the revocations that started it — under a keypair derived from the
+    **recovery code** (argon2id, 3 passes, 64 MiB, 4 lanes, salted from the
+    profile id). The recovery code is the one secret no device ever holds,
+    and a revoked device never held it. `rein devices revoke` and `rein
+    account recover` already asked for the code, so signing adds no prompt
+    anywhere.
+  - **Verification needs no key at all.** The public half is published in
+    the keyring as `account_key` and pinned in `account.json` at enrolment,
+    so `keyring.Parse` verifies every generation itself: an object holding
+    one generation that does not verify does not parse, on any path. That
+    covers `push`, `pull`, `rein devices approve`, `rein devices revoke`,
+    `rein account recover` and `rein account join`, which exit `7`
+    (`ExitSafety`) with nothing written, and `rein account status` and
+    `rein devices`, which hold no keys, now check the same thing, and
+    report the keyring as refused rather than as the account's key-model
+    truth.
+  - **The local anchor.** A signature proves an internal fact, so a keyring
+    signed end to end under a key of the attacker's own is self-consistent
+    and nothing inside it could tell it from the account's. `account.json`
+    now records the account signing key alongside the generation this
+    device last unwrapped and that generation's root-key recipient (all
+    three public; none is key material). A keyring signed by a different
+    account key, rolled back below the recorded generation, or no longer
+    naming the recorded root key is refused with nothing written.
+  - **The cost is stated where it belongs.** Deriving a signing key from a
+    typed code means a party holding the keyring can guess the code offline
+    by testing candidate signatures. The same object already carries the
+    recovery wrap, which is attackable the same way at the same cost — one
+    argon2id derivation per candidate — and the code carries 140 bits of
+    entropy, so the search is 2^140 memory-hard derivations wide.
+    `docs/hop.md` and `docs/security-model.md` both state that bound, along
+    with what the claim does not cover: a fresh install with no anchor
+    trusts whichever code was typed into it, anyone who knows the recovery
+    code can sign a generation (and could already unwrap the root key),
+    denial of service by anyone who can write the bucket, and the fact that
+    revocation never re-encrypts what was already pushed.
+- Keyring format version 5, a clean cutover: versions 1 to 4 are no
+  longer read at all. Version 5 differs from 4 by one thing — the recovery
+  wrap's parameters, salt, format and ciphertext are inside the generation
+  signature — and the reason is in the Security section above. Versions 1
+  and 2 tied nothing between generations.
+  Version 3, added earlier in this cycle, tied each generation to the one
+  before it with an HMAC keyed by the **previous generation's root key** —
+  which is precisely the key held by the device being revoked, so within its
+  credential window that device could substitute the generation created to
+  remove it; and a reader holding no key for the previous generation skipped
+  the link rather than refusing it, so deleting that reader's wrap made the
+  link uncheckable instead of wrong. Both are closed by moving the key out
+  of every device's hands. Unbound (version 1) wraps stay refused
+  everywhere; the parser also refuses gaps in the generation numbering, a
+  signature of the wrong shape, and an unusable `account_key`. No keyring
+  has ever been deployed, so nothing needs migrating; a home written by an
+  earlier build starts again with `rein account init` against a fresh
+  locker. The golden fixtures under `testdata/keyring/` are regenerated.
+- `account.json` format version 2 (#11). Version 1 recorded neither the
+  account signing key nor the root-key recipient, and a record without them
+  silently skipped the anchor check — the one check that separates this
+  account's keyring from a replacement. All three anchor fields are now
+  required, so an enrolment record with a field deleted refuses the command
+  and names the remedy (`rein init --hop --force`, then `rein account join`
+  or `rein account recover`) instead of falling back to trusting whatever
+  is in storage. Neither value can be recovered from the record itself, and
+  taking them from the keyring being checked would anchor it to itself, so
+  there is no upgrade in place.
 
 ## [0.5.2-rc.1] - 2026-08-23
 
