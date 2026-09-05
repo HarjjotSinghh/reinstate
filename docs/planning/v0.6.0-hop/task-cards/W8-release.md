@@ -11,10 +11,13 @@ template for exactly which files move together.
 One commit, `release: cut v0.6.0-rc.1`, containing:
 
 - `CHANGELOG.md`: `## [0.6.0-rc.1] - <today>`; the link block.
-- `CITATION.cff`: version and date **stay at the stable** (`0.5.1`) unless
-  the `v0.5.2-rc.1` commit moved them for a candidate — match what it did.
-- `internal/doctest/bootstrap_install_contract_test.go`: same rule; the
-  public bootstraps keep pinning `v0.5.1` for a candidate.
+- `CITATION.cff`: the `v0.5.2-rc.1` commit moved version and date to the
+  candidate; the coordinator already set `0.6.0-rc.1`, so only the date moves.
+- `website/public/install.sh`, `website/public/install.ps1`, and
+  `internal/doctest/bootstrap_install_contract_test.go`: the `v0.5.2-rc.1`
+  commit pinned the public bootstraps to the candidate itself (with the
+  canonical installer digests recomputed per `RELEASING.md` step 1); do the
+  same for `v0.6.0-rc.1`. This is the one place W8 edits `website/public/`.
 - `README.md`, `docs/getting-started.md`, `docs/cli-reference.md`,
   `docs/prompts/*.md`: the version sentences `v0.5.2-rc.1` touched.
 - `website/src/data/*` dates from W5's placeholders.

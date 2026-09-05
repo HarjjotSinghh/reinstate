@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0-rc.1] - YYYY-MM-DD
+
+Release candidate. Stable remains `v0.5.1`; the public installers currently pin
+`v0.5.2-rc.1`, not this candidate.
+
+**Highlights.** Reinstate Hop ships as ordinary `rein` commands: `rein login` /
+`rein whoami`, `rein init --hop`, `rein hop status` / `rein hop credentials`,
+`rein account init` / `recover` / `join` / `status`, `rein devices` /
+`approve` / `revoke`, `rein sync verify`, `rein sync migrate --to byo`, and
+`rein daemon` — sign-in, the locker, device pairing and revocation, key
+rotation, machine migration, and a resident sync process, all with no build
+tag or feature flag. OpenCode reaches T5 (encrypted sync) and Kimi Code CLI
+reaches T2 (handoff source). This candidate also carries everything
+`v0.5.2-rc.1` introduced: the interactive session switcher, the
+environment-warning checklist, the handoff studio, the `rein init` wizard
+with `--link` / `--paste` pairing codes, and the `ctrl+k` palette — every
+`--json` document stays byte-identical, and `--plain` or `REINSTATE_NO_TUI`
+still restores the frozen output.
+
+**Not yet certified.** Native Windows x64 acceptance is what this candidate
+exists to enable; macOS acceptance is deferred under
+[ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md) until
+that hardware returns. Stable remains `v0.5.1`. The hosted control plane this
+client talks to by default is not yet open; `REINSTATE_HOP_URL` and `[hop]
+url` point it at another one for labs and self-hosters.
+
 ### Added
 
 - The daemon: `rein daemon` runs a resident per-device process that keeps a
@@ -3014,7 +3040,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.5.0-rc.4...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.1...HEAD
+[0.6.0-rc.1]: https://github.com/HarjjotSinghh/reinstate/compare/v0.5.2-rc.1...v0.6.0-rc.1
 [0.5.0-rc.4]: https://github.com/HarjjotSinghh/reinstate/compare/v0.5.0-rc.3...v0.5.0-rc.4
 [0.5.0-rc.3]: https://github.com/HarjjotSinghh/reinstate/compare/v0.5.0-rc.2...v0.5.0-rc.3
 [0.5.0-rc.2]: https://github.com/HarjjotSinghh/reinstate/compare/v0.5.0-rc.1...v0.5.0-rc.2

@@ -48,7 +48,30 @@ func (runner *timedVersionRunner) Version(
 func TestVersionProbeGetsTheWholeWindow(t *testing.T) {
 	t.Parallel()
 
-	const window = 400 * time.Millisecond
+	// window sets the whole scale here: workspaceCost and the runner's own
+	// delay below are both proportions of it, and the margin the assertion
+	// requires (window - workspaceCost) scales with it too. It was 400ms
+	// (workspaceCost 300ms, a required margin of 100ms) until a `go test
+	// ./...` run — no extra load added, just that invocation's own
+	// cross-package parallelism — cost enough scheduling delay on its own
+	// to blow through all 400ms before the runner's 200ms delay completed,
+	// failing with "native agent version probe failed" at 0.41s: the same
+	// class of contention that made the shared-deadline bound in
+	// performance_adversarial_test.go flake under a parallel run (see the
+	// comment there). Widened 10x, keeping every ratio, so the required
+	// margin is a full second instead of 100ms.
+	//
+	// Scaling window alone past agentcheck's own DefaultTimeout (2s) would
+	// silently defeat the point of this test rather than just widen it:
+	// fixture.options.Agent.Timeout is left at its zero value below, which
+	// falls back to that 2s default inside agentcheck.Inspect regardless of
+	// window, and context.WithTimeout adopts whichever of two nested
+	// deadlines is earlier — so once window exceeds 2s, the probe would be
+	// bounded by that unrelated 2s default instead of by window, and
+	// "granted" would stop scaling with it at all. Setting Agent.Timeout to
+	// window explicitly keeps the shared verifier deadline the binding one
+	// at any window size, which is the thing this test exists to check.
+	const window = 4 * time.Second
 	// Long enough that the leftover after it would have starved the version
 	// probe, short enough to leave the window genuinely usable.
 	const workspaceCost = window * 3 / 4
@@ -73,6 +96,7 @@ func TestVersionProbeGetsTheWholeWindow(t *testing.T) {
 		budget: make(chan time.Duration, 1),
 	}
 	fixture.options.Timeout = window
+	fixture.options.Agent.Timeout = window
 	fixture.options.Agent.Runner = runner
 
 	report, err := Verify(context.Background(), Input{

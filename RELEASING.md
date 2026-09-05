@@ -23,6 +23,10 @@ How maintainers cut a **Reinstate** release.
 - [ ] Wrong-passphrase, tamper, backup, rollback, conflict, and installer tests pass
 - [ ] Snapshot archives, source archive, checksums, and SBOMs were inspected
 - [ ] Builds and vulnerability scans use the pinned Go 1.25.13 toolchain
+- [ ] For `v0.6.0`, the stable acceptance row is native Windows x64 under the
+      [Windows-first waiver](#v060-windows-first-waiver) instead of the
+      dual-platform row above, with the macOS rows recorded as deferred
+      rather than passed
 
 ### Supported platform boundary
 
@@ -38,6 +42,20 @@ evidence: they may be built, checksummed, SBOM-covered, and attested, but their
 absence or failure does not block a candidate or stable promotion. Never
 describe them as physically certified or supported. Issues #97 and #98 track
 that optional physical evidence.
+
+### v0.6.0 Windows-first waiver
+
+[ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md) permits
+`v0.6.0-rc.N` candidate and stable acceptance on native Windows x64
+(`windows/amd64`, never WSL) alone while the Apple Silicon macOS host is in
+repair. Every row the prior contracts require on macOS is carried as
+**deferred**, listed in issue #DEFERRED-MACOS, and re-run against the same
+stable tag once that hardware returns. No document, data file, or release
+note may state that `v0.6.0` was verified on macOS; if that later macOS run
+fails, the fix ships as `v0.6.1`, not by editing the record. This mirrors the
+`v0.2.0` reconciliation above: the boundary is narrowed and named, not hidden.
+It governs `v0.6.0` acceptance only — the dual-platform requirement above is
+unchanged for every other release.
 
 ### v0.3.0-rc.1 candidate evidence
 
@@ -348,6 +366,37 @@ Five candidates were published and failed physical acceptance before this one:
 found — an agent probe carrying a raw Git object hash — is why `v0.5.0-rc.6`
 exists.
 
+### v0.5.2-rc.1 candidate evidence
+
+Published 2026-08-23: the interactive CLI, OpenCode and Grok Build at T3/T4,
+and Qwen at T4. Never certified on either platform; no device report exists
+(#366). Its content ships inside `v0.6.0-rc.1` rather than standing alone,
+and there is no stable `v0.5.2` (ADR 0005, D4). #366 is re-pointed at the
+`v0.6.0` Windows run below.
+
+### v0.6.0-rc.1 candidate gate
+
+Carries the Hop client — sign-in, the locker, device pairing and revocation,
+key rotation, machine migration, and `rein daemon` — and everything
+`v0.5.2-rc.1` introduced: the interactive switcher, the handoff studio, the
+setup wizard, and the `ctrl+k` palette. OpenCode reaches T5 and Kimi Code CLI
+reaches T2.
+
+Governed by
+[`docs/testing/v0.6.0-windows-acceptance.md`](docs/testing/v0.6.0-windows-acceptance.md),
+which composes the Phase 5 generated matrix (178 rows on this branch's agent
+catalog, per `rein doctor --agents --acceptance-matrix`), the 22-row CLI
+matrix, and the Hop parity journeys (hosted #16) into one Windows column with
+an explicit deferred-macOS table, under the
+[Windows-first waiver](#v060-windows-first-waiver).
+
+The pre-tag snapshot run (a snapshot build of the release commit, before the
+tag is signed and pushed) is evidence that the candidate is ready for
+tagged-artifact acceptance; it does not itself authorize anything past that.
+
+Publication means ready for tagged-artifact acceptance. It does **not**
+authorize stable `v0.6.0`. Current stable remains `v0.5.1`.
+
 ## Steps
 
 ### 1. Prepare the release commit
@@ -399,7 +448,9 @@ git push origin vX.Y.Z
 The tag must point at the reviewed commit on protected `main`. Do not move or
 reuse a published tag. The matching public key and maintainer principal must
 be present in `.github/allowed_signers` so CI can verify the signature without
-depending on machine-local keyring state.
+depending on machine-local keyring state. `$REINSTATE_SIGNING_KEY` lives only
+on the maintainer's own machines; an agent never holds it and never runs this
+step.
 
 ### 3. GitHub Release workflow
 
