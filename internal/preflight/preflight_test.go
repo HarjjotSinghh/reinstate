@@ -544,6 +544,13 @@ type fixture struct {
 	options   Options
 }
 
+// fixtureProbeTimeout is newFixture's default budget for both the shared
+// verifier deadline (Options.Timeout) and each observer's own independent
+// sub-budget (Options.{Workspace,Agent,Runtime}.Timeout). See the comment on
+// the Options literal below for why every one of those needs its own
+// generous value under load, not just the shared deadline.
+const fixtureProbeTimeout = 10 * time.Second
+
 func newFixture(t *testing.T, remote string) *fixture {
 	t.Helper()
 	workspacePath := t.TempDir()
@@ -575,36 +582,49 @@ func newFixture(t *testing.T, remote string) *fixture {
 			default:
 				return nil, errors.New("unexpected git probe")
 			}
-		})},
+		}), Timeout: fixtureProbeTimeout},
 		Agent: agentcheck.Options{
 			Root:     agentRoot,
 			LookPath: func(string) (string, error) { return filepath.Join(agentRoot, agent), nil },
 			Runner:   agentVersionRunner{output: agentcheck.VersionOutput{Stdout: version}},
+			// See the Timeout comment below: agentcheck.Inspect nests its own
+			// context.WithTimeout(verifyCtx, Agent.Timeout) inside the shared
+			// verifier deadline, so raising only the top-level Options.Timeout
+			// leaves this sub-budget at agentcheck's own 2s default -- the
+			// nearer of the two deadlines still wins.
+			Timeout: fixtureProbeTimeout,
 		},
 		Capability: capability.Options{GOOS: "darwin", UserHome: t.TempDir(), ProjectRoot: workspacePath, WorkingDir: workspacePath},
-		Runtime:    runtimecheck.Options{Runner: versionRunner{}},
-		// Every synthetic probe above answers in-process with no real I/O,
-		// so this fixture's Verify() calls normally finish in low single-digit
-		// milliseconds. Left at zero, Options.Timeout falls back to the
-		// package's DefaultVerifierTimeout (2s), which is tight enough that
-		// scheduler contention from a concurrently running full `go test
-		// ./...` can push a fixture past it and flip its report from
-		// DecisionReady to DecisionBlocked -- the same root cause T-201
-		// fixed one call site at a time (shared_deadline,
+		Runtime:    runtimecheck.Options{Runner: versionRunner{}, Timeout: fixtureProbeTimeout},
+		// Every synthetic probe above answers in-process with no real I/O, so
+		// this fixture's Verify() calls normally finish in low single-digit
+		// milliseconds. Left at zero, each of Options.Timeout (the shared
+		// verifier deadline) and Options.{Workspace,Agent,Runtime}.Timeout
+		// (each observer's own sub-budget, independently defaulted -- see
+		// remainingTimeout in verify.go) falls back to a hardcoded 2s. That
+		// is tight enough that scheduler contention from a concurrently
+		// running full `go test ./...` can push either the shared deadline or
+		// one observer's own sub-budget past it and flip a report from
+		// DecisionReady to DecisionBlocked -- the same root cause T-201 fixed
+		// one call site at a time (shared_deadline,
 		// TestWarmVerifySyntheticLatencyAndProbeCount,
-		// TestVersionProbeGetsTheWholeWindow,
-		// TestVerifyPropagatesParentCancellationDuringRuntimeInspection)
-		// before a fifth, unguarded newFixture call
+		// TestVersionProbeGetsTheWholeWindow) before a fifth, unguarded
+		// newFixture call
 		// (TestVerifyGitUnavailableDoesNotManufactureDerivativeMismatches)
-		// reproduced it live under the adversarial parallel-load run this
-		// bound is meant to survive. Every other caller of newFixture shared
-		// the same exposure (including two in active_session_test.go), so
-		// this is a systematic default rather than another one-off widening:
-		// callers that need a tight or specific budget (e.g. the 25ms
-		// shared-deadline case, or the version-probe window tests) still set
-		// their own Options.Timeout after newFixture returns, which
-		// overrides this default.
-		Timeout: 10 * time.Second,
+		// reproduced the shared-deadline variant live under the adversarial
+		// parallel-load run this bound is meant to survive, and
+		// TestVerifyPropagatesParentCancellationDuringRuntimeInspection's own
+		// widened Options.Timeout=30s (below) turned out not to be enough on
+		// its own, because it never widened Agent.Timeout to match and so
+		// stayed exposed to the same 2s observer sub-budget under heavier
+		// load. Every other caller of newFixture shared the same two-layer
+		// exposure (including two in active_session_test.go), so this is a
+		// systematic default across both layers rather than another one-off
+		// widening: callers that need a tight or specific budget (e.g. the
+		// 25ms shared-deadline case, or the version-probe window tests) still
+		// set their own Options.Timeout / Options.Agent.Timeout after
+		// newFixture returns, which overrides these defaults.
+		Timeout: fixtureProbeTimeout,
 	}
 	return value
 }

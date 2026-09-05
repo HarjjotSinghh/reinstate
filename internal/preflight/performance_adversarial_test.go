@@ -322,17 +322,27 @@ func newPhase3PerformanceFixture(tb testing.TB) *phase3PerformanceFixture {
 		// CPU/goroutine scheduling contention documented beside the
 		// shared-deadline bound below, once ordinary scheduler delay alone
 		// can exceed it before a mock even runs.
-		Timeout:   10 * time.Second,
-		Workspace: workspace.ProbeOptions{Runner: value.git},
+		//
+		// This shared Options.Timeout alone is not enough: Workspace, Agent
+		// and Runtime below each nest their own context.WithTimeout inside
+		// it (see remainingTimeout in verify.go), independently defaulting
+		// to a hardcoded 2s if left unset regardless of this field's value —
+		// exactly the gap that let TestWarmVerifySyntheticLatencyAndProbeCount
+		// fail under a heavier adversarial load than this file's own
+		// TestVerifyHonorsParentCancellationAndSharedDeadline reproduces, so
+		// every sub-option gets the same fixtureProbeTimeout budget too.
+		Timeout:   fixtureProbeTimeout,
+		Workspace: workspace.ProbeOptions{Runner: value.git, Timeout: fixtureProbeTimeout},
 		Agent: agentcheck.Options{
 			Root: value.agentRoot,
 			LookPath: func(string) (string, error) {
 				return filepath.Join(value.agentRoot, "claude"), nil
 			},
-			Runner: value.agent,
+			Runner:  value.agent,
+			Timeout: fixtureProbeTimeout,
 		},
 		Capability: capability.Options{GOOS: "darwin", UserHome: value.userHome},
-		Runtime:    runtimecheck.Options{Runner: value.runtime},
+		Runtime:    runtimecheck.Options{Runner: value.runtime, Timeout: fixtureProbeTimeout},
 	}
 	return value
 }
