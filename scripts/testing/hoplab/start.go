@@ -48,6 +48,21 @@ func runStart(o startOptions) (*startResult, error) {
 		return nil, err
 	}
 
+	hopdAddr := nonEmpty(o.HopdAddr, "127.0.0.1:8082")
+	lockerAddr := nonEmpty(o.LockerAddr, "127.0.0.1:9002")
+	// Refused before any build or process starts: a stale hopd or
+	// fakelocker from an earlier, uncleanly-stopped lab left listening on
+	// one of these addresses would otherwise answer /healthz just fine in
+	// the new lab's place, and everything after start would silently talk
+	// to the wrong control plane and locker (the dated repro in
+	// docs/testing/windows-acceptance-host.md's Hop lab section).
+	if err := refuseListeningPort(hopdAddr, "hopd"); err != nil {
+		return nil, err
+	}
+	if err := refuseListeningPort(lockerAddr, "fakelocker"); err != nil {
+		return nil, err
+	}
+
 	hopdBin := o.HopdBin
 	if hopdBin == "" {
 		hopdBin, err = buildHopd(root, o.HostedDir)
@@ -60,8 +75,6 @@ func runStart(o startOptions) (*startResult, error) {
 		return nil, err
 	}
 
-	hopdAddr := nonEmpty(o.HopdAddr, "127.0.0.1:8082")
-	lockerAddr := nonEmpty(o.LockerAddr, "127.0.0.1:9002")
 	baseURL := "http://" + hopdAddr
 	lockerURL := "http://" + lockerAddr
 	dbPath := filepath.Join(root, "hopd.db")
@@ -111,6 +124,15 @@ func runStart(o startOptions) (*startResult, error) {
 	if err := state.save(); err != nil {
 		return nil, err
 	}
+	// Recorded outside root too (registry.go), so `hoplab ps`/`hoplab stop
+	// -all` can find these processes even from a terminal that never knew
+	// this -root, and even if root itself is later deleted.
+	if err := registerLab(registryEntry{
+		Root: root, HopdPID: hopdCmd.Process.Pid, HopdAddr: hopdAddr,
+		LockerPID: lockCmd.Process.Pid, LockerAddr: lockerAddr, StartedAt: time.Now().UTC(),
+	}); err != nil {
+		fmt.Fprintf(os.Stderr, "hoplab: warning: could not record this lab in the process registry (%v); `hoplab ps`/`hoplab stop -all` will not see it\n", err)
+	}
 	return &startResult{state: state, hopdCmd: hopdCmd, lockCmd: lockCmd, hopdLogF: logF}, nil
 }
 
@@ -138,6 +160,7 @@ func (r *startResult) runForeground(out io.Writer) error {
 		fmt.Fprintf(out, "hoplab: fakelocker exited on its own: %v\n", err)
 	}
 	r.stop()
+	_ = unregisterLab(r.state.Root)
 	return removeState(r.state.Root)
 }
 
@@ -173,7 +196,48 @@ func runStop(root string) error {
 			_ = p.Kill()
 		}
 	}
+	_ = unregisterLab(root)
 	return removeState(root)
+}
+
+// runStopAll kills every process the registry still lists as running,
+// across every -root this user has ever started `hoplab start` with on
+// this machine, and clears each entry (and its lab root's state.json,
+// best-effort -- the root may already be gone). It reports how many it
+// stopped and how many entries it removed because the process behind them
+// was already gone.
+func runStopAll(out io.Writer) error {
+	entries, err := listRegistry()
+	if err != nil {
+		return err
+	}
+	if len(entries) == 0 {
+		fmt.Fprintln(out, "hoplab: no labs recorded in the process registry")
+		return nil
+	}
+	stopped, stale := 0, 0
+	for _, e := range entries {
+		live := false
+		for _, pid := range []int{e.HopdPID, e.LockerPID} {
+			if pid <= 0 || !processAlive(pid) {
+				continue
+			}
+			live = true
+			if p, err := os.FindProcess(pid); err == nil {
+				_ = p.Kill()
+			}
+		}
+		if live {
+			stopped++
+			fmt.Fprintf(out, "hoplab: stopped lab at %s (hopd pid %d, fakelocker pid %d)\n", e.Root, e.HopdPID, e.LockerPID)
+		} else {
+			stale++
+		}
+		_ = unregisterLab(e.Root)
+		_ = removeState(e.Root)
+	}
+	fmt.Fprintf(out, "hoplab: stopped %d lab(s); removed %d stale registry entry(ies) whose processes were already gone\n", stopped, stale)
+	return nil
 }
 
 func waitHealthy(url string, timeout time.Duration) error {
