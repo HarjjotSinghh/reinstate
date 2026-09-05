@@ -583,6 +583,28 @@ func newFixture(t *testing.T, remote string) *fixture {
 		},
 		Capability: capability.Options{GOOS: "darwin", UserHome: t.TempDir(), ProjectRoot: workspacePath, WorkingDir: workspacePath},
 		Runtime:    runtimecheck.Options{Runner: versionRunner{}},
+		// Every synthetic probe above answers in-process with no real I/O,
+		// so this fixture's Verify() calls normally finish in low single-digit
+		// milliseconds. Left at zero, Options.Timeout falls back to the
+		// package's DefaultVerifierTimeout (2s), which is tight enough that
+		// scheduler contention from a concurrently running full `go test
+		// ./...` can push a fixture past it and flip its report from
+		// DecisionReady to DecisionBlocked -- the same root cause T-201
+		// fixed one call site at a time (shared_deadline,
+		// TestWarmVerifySyntheticLatencyAndProbeCount,
+		// TestVersionProbeGetsTheWholeWindow,
+		// TestVerifyPropagatesParentCancellationDuringRuntimeInspection)
+		// before a fifth, unguarded newFixture call
+		// (TestVerifyGitUnavailableDoesNotManufactureDerivativeMismatches)
+		// reproduced it live under the adversarial parallel-load run this
+		// bound is meant to survive. Every other caller of newFixture shared
+		// the same exposure (including two in active_session_test.go), so
+		// this is a systematic default rather than another one-off widening:
+		// callers that need a tight or specific budget (e.g. the 25ms
+		// shared-deadline case, or the version-probe window tests) still set
+		// their own Options.Timeout after newFixture returns, which
+		// overrides this default.
+		Timeout: 10 * time.Second,
 	}
 	return value
 }
