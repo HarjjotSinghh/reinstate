@@ -117,7 +117,7 @@
       "minimumTestedVersion": "1.18.21",
       "maximumTestedVersion": "1.18.21",
       "resumeMode": "OpenCode to OpenCode (T5 encrypted sync; T3 same-vendor resume and fork); OpenCode as a structured handoff destination (T4)",
-      "evidenceLevel": "macOS physical resume journey; native Windows journey pending",
+      "evidenceLevel": "T3 resume and T4 destination device journeys recorded on macOS and native Windows (2026-08-22); T5 encrypted-sync journeys recorded on macOS and native Windows (2026-08-23); v0.6.0 tagged-artifact acceptance pending on native Windows and deferred on macOS",
       "evidence": {
         "storagePage": "docs/session-storage/opencode.md",
         "fixtures": [
@@ -152,8 +152,8 @@
       "status": "handoff-destination",
       "minimumTestedVersion": "1.0.5",
       "maximumTestedVersion": "1.0.5",
-      "resumeMode": "Same-vendor native resume via grok --resume <uuid> (T3); handoff destination via grok --session-id <uuid> (T4); device journeys pending",
-      "evidenceLevel": "deterministic synthetic fixtures and a measured grok --version range; no T3 or T4 device journey recorded",
+      "resumeMode": "Same-vendor native resume via grok --resume <uuid> (T3); handoff destination via grok --session-id <uuid> (T4)",
+      "evidenceLevel": "deterministic synthetic fixtures, a measured grok --version range, and T3 resume and T4 destination device journeys recorded on macOS and native Windows (2026-08-22 and 2026-08-23); GD8 collected on macOS only",
       "evidence": {
         "storagePage": "docs/session-storage/grok.md",
         "fixtures": [
@@ -161,7 +161,12 @@
           "testdata/sessionindex/grok/windows",
           "testdata/handoff/grok"
         ],
-        "deviceReports": [],
+        "deviceReports": [
+          "docs/testing/results/2026-08-22-macos-grok-t3.md",
+          "docs/testing/results/2026-08-22-windows-grok-t3.md",
+          "docs/testing/results/2026-08-23-macos-grok-t4.md",
+          "docs/testing/results/2026-08-23-windows-grok-t4.md"
+        ],
         "probeReports": []
       },
       "lastTested": "2026-08-16",
