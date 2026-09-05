@@ -588,13 +588,44 @@ message from this run implies macOS evidence.
 $ gofmt -l .                                          # empty
 $ GOTOOLCHAIN=go1.25.13 go vet ./...                   # clean
 $ GOTOOLCHAIN=go1.25.13 go mod tidy -diff              # empty
-$ CGO_ENABLED=0 GOTOOLCHAIN=go1.25.13 go test ./... -count=1
-$ CGO_ENABLED=1 GOTOOLCHAIN=go1.25.13 go test -race ./internal/... -count=1
+$ CGO_ENABLED=0 GOTOOLCHAIN=go1.25.13 go test ./... -count=1        # all packages ok
+$ CGO_ENABLED=1 GOTOOLCHAIN=go1.25.13 go test -race ./internal/... -count=1   # all packages ok
 ```
 
-Results recorded in the structured report (`gates` field); this workstream
-made no product-code changes, so these are a baseline confirmation on the
-branch tip this report names, not a gate on a diff.
+All five clean on the final run. Full detail in the structured report's
+`gates` field; this workstream made no product-code changes, so these are a
+baseline confirmation on the branch tip this report names, not a gate on a
+diff.
+
+**A shared-`GOCACHE` finding, worth other executors knowing.** Several
+earlier attempts at the two `go test` gates on this host produced
+single-package, non-reproducing failures — `TestProbeRealRepositoryIsConcurrencySafe`
+(`internal/workspace`, "unexpected concurrent probe result"),
+`TestInspectTimeoutIsBoundedInfrastructureError` (`internal/runtimecheck`,
+its 1 s bound exceeded), and, worse, whole packages reported
+`[build failed]` or `fork/exec ...: The system cannot find the path
+specified` for binaries that had just been compiled — plus one very
+concrete `git remote add ...: The paging file is too small for this
+operation to complete.`. Every one of these vanished, and full and race
+suites both went completely clean end to end
+(`go test ./... -count=1` and `go test -race ./internal/... -count=1`,
+zero `FAIL` lines in either), once `GOCACHE`/`GOTMPDIR` were pointed at a
+private, worktree-local directory instead of this Windows account's
+default, shared `%LOCALAPPDATA%\go-build`. `df` showed `C:` at 92–97%
+free space during the bad runs (`go clean -cache` itself failed with
+"Access is denied" on a cache entry, implying a concurrent writer), and
+this account's Windows install has no working WMI (`Get-CimInstance`:
+"Critical error", the same class of sandbox limitation
+`windows-acceptance-host.md`'s "Orphan processes" section already
+documents for `tasklist`). Every executor on this release shares one
+Windows account and, by default, one `GOCACHE`; with several worktrees
+building and testing concurrently (this workstream, executor B, and
+whichever of W2/W3/W7 are also active), that one cache is a real point of
+mutual interference on this specific host. Setting a private `GOCACHE`/
+`GOTMPDIR` per worktree (removed after use here; nothing under
+`D:\ReinstateAcceptanceProjects\` was left behind for this) is a one-line
+workaround worth adopting generally, not a fix to anything in this
+repository.
 
 ## 6. Method notes
 
