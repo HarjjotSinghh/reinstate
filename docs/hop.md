@@ -1,6 +1,14 @@
 # Reinstate Hop: sign-in, devices, and the locker
 
-Reinstate Hop is the paid hosted tier: a locker (a storage bucket provisioned
+**Status.** The hosted control plane this client talks to by default,
+`https://hop.reinstate.dev`, is not open yet — nothing here is behind a build
+tag or a flag, so the client ships anyway and the protocol and the journeys
+below are public and testable today against a control plane you run yourself
+or point the client at; see
+[Choosing the control plane](#choosing-the-control-plane) for the staging and
+self-hosted URLs. No price, trial, or sign-up is attached to any of this.
+
+Reinstate Hop is the hosted tier: a locker (a storage bucket provisioned
 for exactly one account) plus a console. Every session object Reinstate writes
 to the locker is ciphertext; one object it writes is not, and it is named here
 rather than rounded off.
@@ -11,10 +19,13 @@ a locker whose key has rolled over also shows which devices stopped being
 enrolled, and when. The [object format](hop/object-format.md#keyringv1json--the-wrapped-root-key)
 lists it in full and the [threat model](hop/threat-model.md) says what it is
 worth to an observer. Every client
-capability stays in the free CLI; Hop gates storage and the console only. This
-page covers what has landed in the client: passwordless sign-in, device
-tokens, syncing to the locker, and device approval (pairing). The daemon
-follows.
+capability stays in the CLI; Hop gates storage and the console only. This
+page covers everything the client does: `rein login` / `rein whoami`
+(passwordless sign-in), `rein init --hop` and `rein account init` / `recover`
+/ `join` / `status` (the locker and the keyring), `rein devices` / `approve`
+/ `revoke` (pairing and revocation), `rein hop status` / `rein hop
+credentials`, `rein sync verify`, `rein sync migrate --to byo`, and `rein
+daemon` (the resident sync process).
 
 ## Commands
 
@@ -23,12 +34,19 @@ rein login [--email ADDRESS] [--no-browser] [--json]
 rein whoami [--json]
 rein init --hop [--project ID=PATH]... [--force]
 rein hop status [--json]
+rein hop credentials [--json] [--export]
+rein account init [--json]
 rein account join
+rein account recover [--json]
+rein account status [--json]
 rein devices [--json]
 rein devices approve [--request ID]
 rein devices revoke <device-id|name>
 rein sync verify [--json] [--post=false]
 rein sync migrate --to byo [--endpoint URL --bucket NAME] [--switch] [--forget-hop]
+rein daemon run [--pull-every DURATION] [--debounce DURATION]
+rein daemon install|start|stop|uninstall
+rein daemon status [--json]
 ```
 
 ## Your first push
@@ -48,6 +66,9 @@ rein sync verify           # the verification report, any time
 What each step leaves behind:
 
 - `rein login` stores a **device token** in the OS keyring and nothing else.
+  The token belongs to the Reinstate home that signed in: with
+  `REINSTATE_HOME` set, the keyring entry is derived from that path, so two
+  homes on one machine hold two tokens.
   The control plane now knows this device; the locker does not exist yet.
 - `rein init --hop` writes the profile (the account is the profile, this
   device is the device) and provisions the locker. No endpoint, bucket, or
@@ -683,6 +704,10 @@ and what the operator can and cannot see.
 
 ### Limits and refusals
 
+The plans below are what the control plane is built to enforce. Which of
+them the hosted service will offer, and on what terms, is not published;
+this page documents the protocol, not an offer.
+
 | Plan | Storage | Devices | Credential mints per hour |
 | --- | --- | --- | --- |
 | Hop | 5 GB | 5 | 60 |
@@ -894,10 +919,10 @@ was not enrolled and that the link is spent, and exits `4` — except
 `login_expired` and `internal_error`, which exit `1`, the code an expired
 sign-in and an unreachable control plane already used. Where that sentence
 names an action but not the command that performs it, the CLI adds the
-command: `rein devices` (and, on a build that carries device revocation,
-`rein devices revoke <device-id>`) for `quota_devices`, run on a machine
-that is still signed in to the account, because the refused one holds no
-token for it; `rein login --email <address>` for `account_linked` and
+command: `rein devices` and `rein devices revoke <device-id>` for
+`quota_devices`, run on a machine that is still signed in to the account,
+because the refused one holds no token for it; `rein login --email
+<address>` for `account_linked` and
 `github_rejected`. A code this client does not know keeps the sentence, the
 stop and exit `4`, and loses only the added command. `--json` carries the
 same under `details.refusal`: `code`, `reason`, `known`, `terminal`, and the
@@ -914,7 +939,7 @@ only product metrics.
 ## Leaving Hop
 
 Leaving is one command to your own bucket, available at any time, including
-the read-only period after a trial or subscription lapses:
+any read-only period the control plane applies to a lapsed account:
 
 ```bash
 export REINSTATE_S3_ACCESS_KEY_ID=... REINSTATE_S3_SECRET_ACCESS_KEY=...
@@ -952,4 +977,3 @@ passphrase.
 - Sign out a device from itself (revoke it from another device instead;
   `rein sync migrate --to byo --forget-hop` drops this device's token
   locally but does not revoke it at the control plane).
-- Run a daemon.

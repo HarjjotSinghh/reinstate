@@ -65,6 +65,9 @@ rein account recover
 rein account status [--json]
 rein devices [--json]
 rein devices approve [--request ID]
+rein devices revoke <device-id|name> [--json]
+rein hop status [--json]
+rein hop credentials [--json] [--export]
 rein daemon run [--pull-every DUR] [--debounce DUR] [--poll] [--verbose]
 rein daemon install|start|stop|uninstall
 rein daemon status [--json]
@@ -657,6 +660,16 @@ with the storage coordinates first).
   rejected by the checksum (exit `2`); with several requests pending,
   `--request ID` picks one (exit `2` otherwise). Only an enrolled device can
   approve.
+- `rein devices revoke <device-id|name>` — revoke a device that is lost,
+  retired, or no longer trusted, run from any other enrolled device. It
+  starts a new key generation (a fresh root key wrapped for every remaining
+  device and under the recovery code; earlier generations stay so everything
+  already in the locker remains readable), tells the control plane to refuse
+  the revoked device's token, and raises the account's key-generation floor
+  where the control plane carries one. A credential the revoked device
+  minted before revocation keeps working against the bucket until it
+  expires, at most an hour. A device cannot revoke itself. Revoking the same
+  device twice is harmless.
 - `rein account recover` — enrol a fresh machine from the recovery code
   (hidden prompt, or `REINSTATE_RECOVERY_CODE_FD` pointing at a pre-opened
   descriptor for automation, like `REINSTATE_PASSPHRASE_FD`). Unwraps the root
