@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 import {
@@ -184,7 +185,7 @@ describe('published GitHub CLI release contract', () => {
 
     const valid = spawnSync(
       process.execPath,
-      [checker.pathname, '--tag', TAG],
+      [fileURLToPath(checker), '--tag', TAG],
       {
         encoding: 'utf8',
         input: JSON.stringify(release()),
@@ -195,7 +196,7 @@ describe('published GitHub CLI release contract', () => {
 
     const malformed = spawnSync(
       process.execPath,
-      [checker.pathname, '--tag', TAG],
+      [fileURLToPath(checker), '--tag', TAG],
       {
         encoding: 'utf8',
         input: '{',

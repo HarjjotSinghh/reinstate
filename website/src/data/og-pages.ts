@@ -98,9 +98,9 @@ export const staticOgPages: OgPage[] = [
   {
     route: '/integrations/opencode',
     kind: 'Integration',
-    title: 'OpenCode is a T2 handoff source',
+    title: 'OpenCode reaches T5 encrypted sync',
     description:
-      'Read-only OpenCode discovery and portable handoff. Native resume and encrypted sync are not supported.',
+      'Encrypted same-vendor OpenCode session sync, native resume and fork, and portable handoff in both directions.',
   },
   {
     route: '/integrations/grok',

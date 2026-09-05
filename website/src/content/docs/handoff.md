@@ -1,12 +1,12 @@
 ---
 title: "Structured handoff between Claude Code and Codex"
 navTitle: "Structured handoff"
-description: "Continue the same coding-agent task in a new Claude Code or Codex session with Reinstate v0.4.0 structured handoff, without native resume or transcript translation."
+description: "Continue the same coding-agent task in a new Claude Code or Codex session with Reinstate structured handoff, without native resume or transcript translation."
 order: 16
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.5.2-rc.1"
+version: "v0.6.0-rc.1"
 updatedAt: 2026-08-16
 tags: ["handoff", "claude-code", "codex", "cli"]
 targetQuery: "Reinstate structured handoff"
@@ -34,7 +34,7 @@ rein resume claude:SESSION_ID --with codex --dry-run
 `rein resume --with` is a structured handoff convenience alias. It still starts
 a new destination session.
 
-## Directions in v0.4.0
+## Directions in v0.5.1
 
 | Source | Claude dest | Codex dest |
 | ------ | ----------- | ---------- |

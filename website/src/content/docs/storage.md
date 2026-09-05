@@ -6,8 +6,8 @@ order: 11
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.5.2-rc.1"
-updatedAt: 2026-08-16
+version: "v0.6.0-rc.1"
+updatedAt: 2026-09-05
 tags: ["storage", "s3", "cloudflare-r2", "encryption", "least-privilege"]
 targetQuery: "Reinstate session storage configuration"
 searchIntent: "how-to"
@@ -15,7 +15,7 @@ draft: false
 noindex: false
 ---
 
-Reinstate `v0.4.0` stores encrypted manifests and immutable session
+Reinstate `v0.5.1` stores encrypted manifests and immutable session
 snapshots in a private S3-compatible bucket you control. Configure the service
 endpoint, region, bucket, and profile prefix separately; interactive
 `rein init` stores the access-key pair in the operating-system keyring, not in
@@ -37,7 +37,9 @@ endpoint, region, bucket, and profile prefix separately; interactive
 - Reinstate installed on a trusted local device.
 
 Keep public website hosting and anonymous object access disabled. Reinstate does
-not require a Reinstate-hosted account or bucket.
+not require a Reinstate-hosted account or bucket. Reinstate Hop, the optional
+hosted tier built into the client, is not yet open; bring-your-own storage as
+described on this page remains the only way to sync today.
 
 ## Storage configuration fields
 

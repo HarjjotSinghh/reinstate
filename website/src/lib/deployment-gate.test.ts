@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 import { parseVercelDeploymentURL } from "../../scripts/parse-vercel-deployment-url.mjs";
@@ -5,7 +6,7 @@ import { parseVercelDeploymentURL } from "../../scripts/parse-vercel-deployment-
 const gate = new URL("../../scripts/vercel-ignore-production-branch.mjs", import.meta.url);
 
 function runGate(environment: string, branch: string) {
-  return spawnSync(process.execPath, [gate.pathname], {
+  return spawnSync(process.execPath, [fileURLToPath(gate)], {
     env: {
       ...process.env,
       VERCEL_ENV: environment,
