@@ -83,6 +83,7 @@ func Claude() agents.Descriptor {
 				"docs/testing/results/2026-08-11-windows-phase3-V030.md",
 				"docs/testing/results/2026-08-15-macos-phase4-V040RC11.md",
 				"docs/testing/results/2026-08-15-windows-phase4-V040RC11.md",
+				"docs/testing/results/2026-09-06-windows-range-widening-v060.md",
 			},
 		},
 		NewIndexSource: claudesrc.New,

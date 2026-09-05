@@ -109,6 +109,7 @@ func OpenCode() agents.Descriptor {
 				"docs/testing/results/2026-08-22-windows-opencode-t4.md",
 				"docs/testing/results/2026-08-23-macos-opencode-t5-journey.md",
 				"docs/testing/results/2026-08-23-windows-opencode-t5.md",
+				"docs/testing/results/2026-09-06-windows-range-widening-v060.md",
 			},
 		},
 		NewIndexSource: opencodesrc.NewSQLite,
