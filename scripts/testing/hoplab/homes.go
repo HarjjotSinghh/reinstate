@@ -19,6 +19,27 @@ import (
 // lagging device, and path-remap scenarios can tell device A and device B
 // apart on one host.
 //
+// Home is the whole isolated $HOME/%USERPROFILE% for this device, not only
+// the three agents this package seeds fixtures for. Of the 11 agents in
+// internal/agents/catalog, three (Claude, Codex, OpenCode) resolve their
+// root from an explicit RootEnv this package also sets directly
+// (CLAUDE_CONFIG_DIR, CODEX_HOME, XDG_DATA_HOME); the other eight with an
+// index source (Grok, Gemini, Kimi, Qwen, Cline, Copilot, Cursor, Pi) fall
+// back to a path under the caller's resolved home
+// (internal/agents/scan/hometree.ResolveRoot: RootEnv first, then
+// Candidates built from agents.Env.HomeDir, which is os.UserHomeDir when
+// unset -- on Windows, USERPROFILE, per os.UserHomeDir's own source) when
+// their own RootEnv is unset, as it is here. Leaving HOME/USERPROFILE
+// pointed at the real host account made every one of those eight agents'
+// real session data appear, identically, under both simulated devices --
+// see hopLabEnv and homes_isolation_test.go's
+// TestDeviceHomesDoNotLeakTheHostAccount, which reproduces and asserts
+// against exactly that, and
+// docs/testing/windows-acceptance-host.md's Hop lab section for the dated
+// repro that first found it. Setting HOME/USERPROFILE here is the same
+// fix `scripts/tuisandbox` already applies for its own single-home bench
+// (`sandboxEnv` in main.go): "every entry is load-bearing."
+//
 // What this does NOT isolate: the OS keyring device token. Two real,
 // simultaneously signed-in `rein` processes on one Windows account collide
 // there (credentials.KeyringStore uses one fixed service name and one fixed
@@ -34,6 +55,7 @@ import (
 type DeviceHome struct {
 	Name            string // "device-a", "device-b", ...
 	Root            string
+	Home            string // this device's whole isolated $HOME/%USERPROFILE% -- see hopLabEnv
 	ReinstateHome   string
 	ClaudeConfigDir string
 	CodexHome       string
@@ -49,6 +71,7 @@ func BuildDeviceHome(labRoot, name string) DeviceHome {
 	return DeviceHome{
 		Name:            name,
 		Root:            root,
+		Home:            home,
 		ReinstateHome:   filepath.Join(root, "reinstate"),
 		ClaudeConfigDir: filepath.Join(home, ".claude"),
 		CodexHome:       filepath.Join(home, ".codex"),
