@@ -96,7 +96,10 @@ const description =
         <tr>
           <td>6</td>
           <td>Universal non-secret configuration and automatic cross-device reconciliation</td>
-          <td>Planned</td>
+          <td>
+            Split: cloud continuity (6C, the Hop client) is in release preparation as a
+            candidate; universal configuration (6A/6B) remains planned for a later release
+          </td>
           <td>Render native harness configuration without raw credential or config-tree mirroring</td>
         </tr>
         <tr>
@@ -166,10 +169,13 @@ const description =
 
   <h2 id="configuration-direction">Universal configuration without unsafe mirroring</h2>
   <p>
-    Phase 6, not Phase 5, is the planned configuration layer. It will describe portable intent
-    for MCP servers, skills, instructions, hooks, plugins, marketplaces, and safe settings.
-    Adapters will preview and render each supported harness's native format. Raw API keys, OAuth
-    tokens, cookies, vendor credential stores, and unrelated native settings remain excluded.
+    Phase 6, not Phase 5, is the configuration and cloud-continuity layer, and it now splits in
+    two. Cloud continuity (6C), the Hop client for encrypted multi-device sync, is in release
+    preparation ahead of the rest. Universal configuration (6A/6B) remains planned: it will
+    describe portable intent for MCP servers, skills, instructions, hooks, plugins, marketplaces,
+    and safe settings. Adapters will preview and render each supported harness's native format.
+    Raw API keys, OAuth tokens, cookies, vendor credential stores, and unrelated native settings
+    remain excluded.
   </p>
 
   <h2 id="non-goals">Near-term non-goals</h2>
