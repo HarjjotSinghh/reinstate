@@ -113,6 +113,19 @@ environment; if the variables are no longer needed, remove them with
 `[Environment]::SetEnvironmentVariable('REINSTATE_BACKEND', $null, 'User')`
 and the same for the other two.
 
+## Q12 — Two rows need you at the keyboard
+
+- **H7, the daemon's Task Scheduler round trip.** `rein daemon install`
+  registers a scheduled task, which needs an elevated shell; no agent session
+  here can elevate. The foreground loop (push on change, scheduled pull, pull
+  before resume) passed. When convenient, from an elevated PowerShell in a
+  throwaway home: `rein daemon install`, `status`, `stop`, `start`,
+  `uninstall`, and paste the output into the run notes, or tell me and I will
+  drive it while you hold the elevation prompt.
+- **ConPTY (#367)** allocates again on this host: W4's driver drove the
+  interactive switcher and a Claude Code resume, so the reboot happened or the
+  state cleared. I will close #367 with that evidence when the PR opens.
+
 ## Q10 — Commit identity
 
 The Hop-era commits on this host are authored `Harjot Singh Rana
