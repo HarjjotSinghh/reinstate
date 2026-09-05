@@ -47,8 +47,10 @@ named after the session id.
 
 `opencode --version` prints a bare `MAJOR.MINOR.PATCH` on stdout with an empty
 stderr, and answers unchanged under the sanitized probe environment. The
-verified range is the single build physically measured, and widens only when
-another build is measured on a device.
+verified range widens only when a further build is physically measured on a
+device: `1.18.21` was the single build measured through `v0.5.1`; `v0.6.0`
+widens the range to `1.18.21`–`1.18.27` on native Windows physical evidence
+(macOS pending, ADR 0005 D3).
 
 A session row the vendor recorded without a working directory stays read-only:
 OpenCode is launched into a directory, so such a row has nowhere to go.
