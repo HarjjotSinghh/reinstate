@@ -4,8 +4,8 @@ description: "Configure a private Cloudflare R2 bucket and bucket-scoped S3 cred
 answer: "To use Cloudflare R2 with Reinstate, create a private R2 bucket, issue an Object Read & Write S3 API token scoped to that bucket, initialize Reinstate with the account or jurisdiction endpoint and region auto, then dry-run and push one selected session."
 author: "Harjot Singh Rana"
 publishedAt: 2026-07-27
-updatedAt: 2026-07-27
-reviewedAt: 2026-07-27
+updatedAt: 2026-09-05
+reviewedAt: 2026-09-05
 tags: ["Cloudflare R2", "encrypted storage", "session sync", "S3 API", "coding agents"]
 targetQuery: "use Cloudflare R2 for coding agent session storage"
 searchIntent: "how-to"
@@ -92,9 +92,10 @@ initialization.
   Cloudflare's encryption at rest is an additional provider control.
 - Session resume remains **same-vendor**: Claude Code to Claude Code and Codex
   CLI to Codex CLI.
-- Reinstate v0.4.0 is stable on Apple Silicon macOS and native Windows x64.
-  Intel macOS and Linux/WSL2 are preview and unverified. This guide is not
-  itself acceptance evidence.
+- Stable Reinstate `v0.5.1` passed dual-platform tagged-artifact acceptance
+  on Apple Silicon macOS and native Windows x64. Intel macOS
+  and Linux/WSL2 are preview and unverified. This guide is not itself
+  acceptance evidence.
 
 ## Before you begin
 

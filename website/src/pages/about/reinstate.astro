@@ -14,7 +14,7 @@ const description =
   {description}
   path="/about/reinstate"
   eyebrow="About Reinstate"
-  answer="Reinstate is an open-source continuity layer for coding-agent work. Stable v0.2.0 moves encrypted Claude Code and Codex sessions between configured devices and adds configless local search plus same-vendor native resume/fork. Stable v0.3.0 adds verified resume. Stable v0.4.0 adds explicit structured handoff into a new Claude Code or Codex session after dual-platform tagged-artifact acceptance PASS."
+  answer="Reinstate is an open-source continuity layer for coding-agent work. Stable v0.2.0 moves encrypted Claude Code and Codex sessions between configured devices and adds configless local search plus same-vendor native resume/fork. Stable v0.3.0 adds verified resume. Stable v0.4.0 adds explicit structured cross-agent handoff after dual-platform tagged-artifact acceptance PASS. Stable v0.5.1 adds universal agent coverage by support tier after dual-platform tagged-artifact acceptance PASS. The v0.6.0-rc.1 release candidate carries Reinstate Hop (cloud continuity) and the interactive CLI; it is not yet certified, with tagged-artifact acceptance pending on native Windows x64 and Apple Silicon macOS deferred."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'About Reinstate', path: '/about/reinstate' },
@@ -45,15 +45,21 @@ const description =
     <li>Credential exclusions, OS-keyring storage, restore backups, and atomic writes.</li>
     <li>Checksum-verifying installers and compatibility checks that fail closed.</li>
     <li>Configless local indexing, literal search, bounded inspect, and a TTY switcher.</li>
-    <li>Native same-vendor Claude Code/Codex resume and fork; read-only Gemini CLI/OpenCode discovery.</li>
+    <li>Native same-vendor Claude Code/Codex resume and fork; read-only discovery across a wider
+      agent catalog by support tier.</li>
     <li>Phase 3 verified-resume reports and gates for repository, agent, capability, and runtime state.</li>
     <li>Phase 4 structured handoff into a new Claude Code or Codex session.</li>
+    <li>Phase 5 universal agent coverage: one catalog, one support-tier ladder (T0–T5), honest T0.</li>
   </ul>
   <div class="pc-callout">
     <p>Stable evidence stays platform-specific.</p>
     <p>
-      Stable v0.4.0 is physically verified on Apple Silicon macOS and native Windows x64. Intel
-      macOS and Linux/WSL2 packages are preview and unverified rather than inferred support.
+      Stable <code>{product.stableRelease}</code> is physically verified on Apple Silicon macOS
+      and native Windows x64 (dual-platform tagged-artifact acceptance PASS). Intel macOS and
+      Linux/WSL2 packages are preview and unverified
+      rather than inferred support. The <code>v0.6.0-rc.1</code> release candidate — Reinstate
+      Hop and the interactive CLI — is not yet certified; its acceptance is native Windows x64
+      only, with Apple Silicon macOS deferred until that hardware returns.
     </p>
   </div>
 
@@ -62,7 +68,7 @@ const description =
       <dt>Latest public source tag</dt>
       <dd>
         <a href={product.currentReleaseUrl}>{product.currentRelease}</a>
-        (pre-1.0 stable; dual-platform structured handoff)
+        (release candidate; cloud continuity and the interactive CLI, not yet a stable claim)
       </dd>
     </div>
     <div>
@@ -108,12 +114,30 @@ const description =
         <tr>
           <td>4</td>
           <td>Explicit portable cross-agent checkpoints and capability diffs</td>
-          <td>Planned</td>
+          <td>Stable since v0.4.0</td>
         </tr>
         <tr>
-          <td>5+</td>
-          <td>Universal non-secret configuration, automatic sync, thin console, then team continuity</td>
-          <td>Planned</td>
+          <td>5</td>
+          <td>Universal agent coverage: one catalog, one support-tier ladder, honest T0</td>
+          <td>Stable since v0.5.0/v0.5.1</td>
+        </tr>
+        <tr>
+          <td>6C</td>
+          <td>Cloud continuity: Reinstate Hop (sign-in, locker, device pairing, daemon)</td>
+          <td>
+            <code>v0.6.0-rc.1</code> release candidate; not yet certified, native Windows x64
+            acceptance pending, Apple Silicon macOS deferred
+          </td>
+        </tr>
+        <tr>
+          <td>6A/6B</td>
+          <td>Universal non-secret configuration and automatic cross-device reconciliation</td>
+          <td>Planned for a later release</td>
+        </tr>
+        <tr>
+          <td>7+</td>
+          <td>Optional thin console, then team continuity</td>
+          <td>Exploring</td>
         </tr>
       </tbody>
     </table>

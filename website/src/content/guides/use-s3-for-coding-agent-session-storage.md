@@ -4,8 +4,8 @@ description: "Configure a private Amazon S3 bucket and least-privilege credentia
 answer: "To use Amazon S3 with Reinstate, create a private general purpose bucket, grant a dedicated non-root credential access only to the Reinstate object prefix, initialize Reinstate with the matching regional S3 endpoint and Region, then dry-run and push one selected session."
 author: "Harjot Singh Rana"
 publishedAt: 2026-07-27
-updatedAt: 2026-07-27
-reviewedAt: 2026-07-27
+updatedAt: 2026-09-05
+reviewedAt: 2026-09-05
 tags: ["Amazon S3", "encrypted storage", "session sync", "least privilege", "coding agents"]
 targetQuery: "use Amazon S3 for coding agent session storage"
 searchIntent: "how-to"
@@ -92,9 +92,10 @@ not by first-device initialization.
   credentials where possible.
 - Session resume remains **same-vendor**: Claude Code to Claude Code and Codex
   CLI to Codex CLI.
-- Reinstate v0.4.0 is stable on Apple Silicon macOS and native Windows x64.
-  Intel macOS and Linux/WSL2 are preview and unverified. This guide is not
-  itself acceptance evidence.
+- Stable Reinstate `v0.5.1` passed dual-platform tagged-artifact acceptance
+  on Apple Silicon macOS and native Windows x64. Intel macOS
+  and Linux/WSL2 are preview and unverified. This guide is not itself
+  acceptance evidence.
 
 ## Before you begin
 
