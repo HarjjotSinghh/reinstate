@@ -5,7 +5,7 @@ export const prerender = true;
 
 const title = 'Reinstate Roadmap: From Encrypted Sync to Work Continuity';
 const description =
-  'Review stable v0.4.0 structured handoff, the Phase 5 catalog-tier line, and which configuration features remain planned.';
+  "Review stable v0.5.1's universal agent coverage and structured handoff, the v0.6.0-rc.1 candidate, and which configuration features remain planned.";
 ---
 
 <PublicContentLayout
@@ -13,7 +13,7 @@ const description =
   {description}
   path="/roadmap"
   eyebrow="Product roadmap"
-  answer="Stable v0.2.0 implements encrypted same-vendor sync and local continuity. Stable v0.3.0 adds verified resume. Stable v0.4.0 adds explicit structured cross-agent handoff after dual-platform tagged-artifact acceptance PASS. Phase 5 is universal agent coverage by support tier. Phase 6 is universal configuration. Phase 7 is Console. Phase 8 is team continuity."
+  answer="Stable v0.2.0 implements encrypted same-vendor sync and local continuity. Stable v0.3.0 adds verified resume. Stable v0.4.0 adds explicit structured cross-agent handoff after dual-platform tagged-artifact acceptance PASS. Stable v0.5.1 adds universal agent coverage by support tier after dual-platform tagged-artifact acceptance PASS. Candidate v0.6.0-rc.1 carries Phase 6C cloud continuity (Reinstate Hop) and the interactive CLI, certified on native Windows x64 with Apple Silicon macOS deferred; Phase 6A/6B universal configuration remains planned. Phase 7 is Console. Phase 8 is team continuity."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'Roadmap', path: '/roadmap' },
@@ -30,12 +30,15 @@ const description =
   <div class="pc-callout">
     <p>Current release boundary</p>
     <p>
-      Stable <code>v0.4.0</code> supports encrypted same-vendor Claude Code and Codex session
-      synchronization, configless local continuity, Phase 3 verified resume, and Phase 4
-      structured handoff. Apple Silicon macOS and native Windows x64 are verified stable
-      platforms after dual-platform tagged-artifact acceptance PASS; Intel macOS and
-      Linux/WSL2 remain preview and unverified. See the
-      <a href="/changelog">changelog</a>. The v0.5.0 catalog line is not a published tag.
+      Stable <code>v0.5.1</code> supports encrypted same-vendor Claude Code and Codex session
+      synchronization, configless local continuity, verified resume, structured handoff, and
+      universal agent coverage by support tier, after dual-platform tagged-artifact acceptance
+      PASS. Apple Silicon macOS and native Windows x64 remain the verified stable platforms;
+      Intel macOS and Linux/WSL2 remain preview and unverified.
+      The publicly installed candidate, <code>v0.6.0-rc.1</code>, carries Reinstate Hop and the
+      interactive CLI experience; its tagged-artifact acceptance is pending on native Windows x64
+      only, with Apple Silicon macOS deferred until that hardware returns.
+      See the <a href="/changelog">changelog</a>.
     </p>
   </div>
 
@@ -160,8 +163,8 @@ const description =
   <h2 id="native-vs-handoff">Native resume and portable handoff stay distinct</h2>
   <p>
     Native resume preserves a vendor's own session format: Claude Code resumes Claude Code, and
-    Codex resumes Codex. A structured handoff is a different operation: stable
-    <code>v0.4.0</code> carries an explicit checkpoint—goal, decisions, rejected approaches,
+    Codex resumes Codex. A structured handoff is a different operation, added in stable
+    <code>v0.4.0</code>: it carries an explicit checkpoint—goal, decisions, rejected approaches,
     files, tests, and next action—so a <em>new</em> session in another agent can continue the same
     task. It is not a resume of the original session, and Reinstate will not market that lossy
     checkpoint as invisible transcript translation.
