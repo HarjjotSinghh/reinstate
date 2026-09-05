@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "reinstateVersion": "v0.5.2-rc.1",
-  "catalogLine": "v0.5.2-rc.1",
-  "lastReviewed": "2026-08-23",
+  "reinstateVersion": "v0.6.0-rc.1",
+  "catalogLine": "v0.6.0-rc.1",
+  "lastReviewed": "2026-09-05",
   "owner": {
     "name": "Harjot Singh Rana",
     "url": "https://harjot.co"
@@ -109,14 +109,14 @@
       "key": "opencode",
       "name": "OpenCode",
       "vendor": "anomalyco",
-      "tier": "T4",
+      "tier": "T5",
       "storageFamily": "F3",
       "t0Reason": null,
       "integrationPath": "/integrations/opencode",
       "status": "verified-resume",
       "minimumTestedVersion": "1.18.21",
       "maximumTestedVersion": "1.18.21",
-      "resumeMode": "OpenCode to OpenCode (T3 same-vendor resume and fork); OpenCode as a structured handoff destination (T4)",
+      "resumeMode": "OpenCode to OpenCode (T5 encrypted sync; T3 same-vendor resume and fork); OpenCode as a structured handoff destination (T4)",
       "evidenceLevel": "macOS physical resume journey; native Windows journey pending",
       "evidence": {
         "storagePage": "docs/session-storage/opencode.md",
