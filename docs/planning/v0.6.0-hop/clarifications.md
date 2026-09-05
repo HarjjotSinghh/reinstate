@@ -113,5 +113,32 @@ the public repo should switch.
 
 ## Executor questions
 
-_(Appended by executors during the run, newest first. Each entry: date,
-workstream, the question, and the assumption taken.)_
+_(Relayed by the coordinator from executor reports, newest first. Each
+entry: date, workstream, the question, and the decision taken.)_
+
+- **2026-09-06, W4.** The OS keyring held one device token per host, so two
+  Reinstate homes on one machine (the lab's "device A" and "device B")
+  overwrote each other's sign-in, and a fresh home could inherit a token
+  pointing at another control plane. **Decided:** fixed in the product
+  (`internal/credentials`, commit 2521485f): a home selected with
+  `REINSTATE_HOME` gets its own keyring entry; the default home is unchanged.
+  The lab's keyring save/load swap becomes unnecessary.
+- **2026-09-06, W4.** Should `hoplab pair` drive `rein account recover` or
+  the live `rein account join` + `rein devices approve` flow? **Decided:**
+  both, as separate subcommands; the H6 row needs join/approve, H5 needs
+  recover.
+- **2026-09-06, W2.** `internal/preflight` observers each default their own
+  sub-timeout to 2 s regardless of the shared `Options.Timeout`; two rounds
+  of test flakes came from that. Should `Verify` propagate the shared budget
+  to unset sub-timeouts? **Decided:** not in `v0.6.0`; production callers all
+  use the defaults, so there is no live gap. Worth a follow-up card after
+  stable.
+- **2026-09-06, W5.** Bumping `product.currentRelease` for a candidate forces
+  `CITATION.cff` and the changelog heading to move with it (release-truth
+  guards). **Decided:** the coordinator moves `CITATION.cff` on the release
+  branch (matching the `v0.5.2-rc.1` precedent) and W1's changelog heading
+  satisfies the other guard; W8 sets the dates.
+- **2026-09-06, W2.** Two `internal/workspace` tests skip on Windows because
+  symlink creation is unreliable there; symlinked-workspace probing is
+  therefore untested on the Windows host. **Decided:** carried as a known
+  gap in the Windows contract's run notes; not a `v0.6.0` change.
