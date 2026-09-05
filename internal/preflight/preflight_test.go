@@ -515,6 +515,17 @@ func TestVerifyPropagatesParentCancellationDuringRuntimeInspection(t *testing.T)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	fixture.options.Runtime.Runner = cancelingVersionRunner{cancel: cancel}
+	// This test's cancel() only fires once the pipeline reaches the runtime
+	// probe, after the concurrent agent probe has already been awaited. With
+	// the package's 2s DefaultVerifierTimeout (fixture.options.Timeout left
+	// at its zero value), ordinary scheduler contention from a parallel
+	// `go test ./...` run can make that agent probe alone exceed 2s, so the
+	// shared deadline — not this test's cancel() — ends Verify() first and
+	// the pipeline takes the (separately covered, by-design) blocked-report
+	// path instead of the parent-cancellation path under test. Widen the
+	// budget so the intended trigger, not an incidental default timeout, is
+	// what actually decides the outcome.
+	fixture.options.Timeout = 30 * time.Second
 
 	report, err := Verify(ctx, Input{
 		SessionRef: "claude:controlled", Agent: "claude", Workspace: fixture.workspace, SourceFresh: true,

@@ -103,8 +103,19 @@ func TestVerifyHonorsParentCancellationAndSharedDeadline(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if elapsed := time.Since(started); elapsed > 500*time.Millisecond {
-			t.Fatalf("deadline-bounded Verify() took %s", elapsed)
+		// The bound is generous rather than tight, same reasoning as
+		// TestHugeTreeFinishes (internal/agents/probe/collect_test.go,
+		// 2bc0367f): the 25ms Timeout above is what actually bounds the
+		// blocked agent probe, so this wall-clock check exists only to catch
+		// a regression where the shared deadline stops being honored at all
+		// (which would overshoot seconds, not milliseconds) — not to pin
+		// down how fast a synthetic deadline-bounded Verify() runs. Measured
+		// 0.4s alone and up to 1.19s under a parallel `go test ./...` run on
+		// this host; a 500ms bound flaked under that ordinary CPU/goroutine
+		// scheduling contention.
+		const bound = 3 * time.Second
+		if elapsed := time.Since(started); elapsed > bound {
+			t.Fatalf("deadline-bounded Verify() took %s, want <= %s", elapsed, bound)
 		}
 		if report.Decision != DecisionBlocked || report.BlockExitCode != exitcode.Compatibility {
 			t.Fatalf("deadline report = %s/%d, checks=%+v", report.Decision, report.BlockExitCode, report.Checks)
@@ -301,7 +312,17 @@ func newPhase3PerformanceFixture(tb testing.TB) *phase3PerformanceFixture {
 		SourceFresh: true,
 	}
 	value.options = Options{
-		Timeout:   2 * time.Second,
+		// Every probe here is a synthetic, in-memory mock that returns near
+		// instantly, so this Timeout is not what bounds a passing run's
+		// latency — it only decides how long Verify() waits before treating
+		// a probe as unmeasurable and reporting DecisionBlocked instead of
+		// DecisionReady (see TestWarmVerifySyntheticLatencyAndProbeCount,
+		// which asserts DecisionReady on every one of its 20 samples). A
+		// tight value here flakes under the same parallel `go test ./...`
+		// CPU/goroutine scheduling contention documented beside the
+		// shared-deadline bound below, once ordinary scheduler delay alone
+		// can exceed it before a mock even runs.
+		Timeout:   10 * time.Second,
 		Workspace: workspace.ProbeOptions{Runner: value.git},
 		Agent: agentcheck.Options{
 			Root: value.agentRoot,
