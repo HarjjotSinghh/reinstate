@@ -239,6 +239,29 @@ named session or change the reviewed policy; do not use a permission bypass.
 `--keep-remote` still refuses to replace a target that is in use, while
 `--keep-both` preserves both.
 
+## `rein login` or `rein whoami` says the control plane could not be reached
+
+```text
+could not reach the Reinstate Hop control plane at https://hop.reinstate.dev: connection refused
+```
+
+`rein` could not open a connection at all — no DNS answer, connection
+refused, or a failed TLS handshake — as opposed to the control plane
+answering with a rejection. Check, in order:
+
+1. `REINSTATE_HOP_URL` and `[hop] url` in `config.toml`: confirm the URL is
+   the control plane you intend to reach (see
+   [Choosing the control plane](hop.md#choosing-the-control-plane)).
+2. Network access to the host the message names — a proxy, firewall, or VPN
+   between this machine and it.
+3. The clock on this machine, if the cause names a TLS handshake: a system
+   clock far from correct fails certificate validation the same way an
+   expired certificate would.
+
+`--json` carries the same classification machine-readably: `details.kind`
+is `"control_plane_unreachable"` and `details.url` is the address that could
+not be reached.
+
 ## Still stuck?
 
 - [FAQ](faq.md)

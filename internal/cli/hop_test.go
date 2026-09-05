@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -18,6 +16,13 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/credentials"
 	"github.com/HarjjotSinghh/reinstate/internal/hop"
 )
+
+// The login and whoami command tests themselves live in login_test.go and
+// whoami_test.go (see file-ownership.md's internal/cli grant); this file
+// stays behind because fakeControlPlane and hopHarness below are shared
+// fixtures used well beyond those two commands — by, among others,
+// hop_locker_test.go, hop_refusal_test.go, pairing_test.go,
+// revocation_test.go, keyring_*_test.go, and daemon_test.go.
 
 // fakeControlPlane speaks the public Hop sign-in protocol in-process. It
 // approves a session when the "browser" visits the verification URL or,
@@ -340,222 +345,4 @@ func (h *hopHarness) run(args ...string) (stdout, stderr string, code int) {
 		DeviceName:       "laptop",
 	})
 	return out.String(), errb.String(), code
-}
-
-func TestLoginWithGitHubThenWhoami(t *testing.T) {
-	h := newHopHarness(t)
-
-	out, errb, code := h.run("login")
-	if code != ExitOK {
-		t.Fatalf("login exit=%d stdout=%q stderr=%q", code, out, errb)
-	}
-	if len(h.browsed) != 1 || !strings.Contains(h.browsed[0], "/login/github/") {
-		t.Fatalf("browser opened %v", h.browsed)
-	}
-	if !strings.Contains(errb, "Sign in with GitHub at:") || !strings.Contains(errb, h.browsed[0]) {
-		t.Fatalf("stderr %q", errb)
-	}
-	if !strings.Contains(out, "Signed in to Reinstate Hop as octo@example.com (GitHub @octocat)") || !strings.Contains(out, `enrolled as "laptop"`) {
-		t.Fatalf("stdout %q", out)
-	}
-	tok, err := h.tokens.GetDeviceToken()
-	if err != nil || !strings.HasPrefix(tok.Token, "hop_") || tok.ControlPlaneURL != h.plane.srv.URL || tok.DeviceID != "dev-sess-1" {
-		t.Fatalf("stored token %+v err=%v", tok, err)
-	}
-
-	out, errb, code = h.run("whoami")
-	if code != ExitOK {
-		t.Fatalf("whoami exit=%d stderr=%q", code, errb)
-	}
-	for _, want := range []string{"Account: octo@example.com (GitHub @octocat)", "Device:  laptop (", "Hop:     " + h.plane.srv.URL} {
-		if !strings.Contains(out, want) {
-			t.Fatalf("whoami output %q missing %q", out, want)
-		}
-	}
-
-	// A second login on a signed-in machine says so before enrolling again.
-	if _, errb, code := h.run("login"); code != ExitOK || !strings.Contains(errb, "already signed in (device dev-sess-1") {
-		t.Fatalf("re-login exit=%d stderr=%q", code, errb)
-	}
-	if tok, _ := h.tokens.GetDeviceToken(); tok.DeviceID != "dev-sess-2" {
-		t.Fatalf("re-login did not replace the token: %+v", tok)
-	}
-
-	out, _, code = h.run("whoami", "--json")
-	if code != ExitOK {
-		t.Fatalf("whoami --json exit=%d", code)
-	}
-	var got struct {
-		ControlPlane string      `json:"control_plane"`
-		Account      hop.Account `json:"account"`
-		Device       hop.Device  `json:"device"`
-	}
-	if err := json.Unmarshal([]byte(out), &got); err != nil {
-		t.Fatalf("json: %v %q", err, out)
-	}
-	if got.ControlPlane != h.plane.srv.URL || got.Account.GitHubLogin != "octocat" || got.Device.Name != "laptop" || got.Device.Platform == "" {
-		t.Fatalf("%+v", got)
-	}
-	if strings.Contains(out, "hop_") {
-		t.Fatalf("whoami --json leaked the device token: %q", out)
-	}
-}
-
-func TestLoginWithEmailLink(t *testing.T) {
-	h := newHopHarness(t)
-	// No browser is involved in email sign-in; the person clicks the link on
-	// any device. Approve it after the CLI has started polling.
-	h.browser = func(string) error { t.Fatal("email login must not open a browser"); return nil }
-	approved := false
-	var out, errb bytes.Buffer
-	code := Execute(Options{
-		Name: "rein", Stdout: &out, Stderr: &errb,
-		Args:             []string{"login", "--email", "You@Example.com", "--json"},
-		DeviceTokenStore: h.tokens,
-		OpenBrowser:      h.browser,
-		DeviceName:       "desktop",
-		LoginPollSleep: func(context.Context, time.Duration) error {
-			if !approved {
-				approved = true
-				h.plane.approveLatestEmail()
-			}
-			return nil
-		},
-	})
-	if code != ExitOK {
-		t.Fatalf("exit=%d stdout=%q stderr=%q", code, out.String(), errb.String())
-	}
-	if len(h.plane.emails) != 1 || h.plane.emails[0] != "You@Example.com" {
-		t.Fatalf("emails sent %v", h.plane.emails)
-	}
-	if errb.Len() != 0 {
-		t.Fatalf("--json must keep stderr quiet: %q", errb.String())
-	}
-	var got struct {
-		Account hop.Account `json:"account"`
-		Device  hop.Device  `json:"device"`
-	}
-	if err := json.Unmarshal(out.Bytes(), &got); err != nil || got.Account.Email != "You@Example.com" || got.Device.Name != "desktop" {
-		t.Fatalf("%+v err=%v out=%q", got, err, out.String())
-	}
-	if _, err := h.tokens.GetDeviceToken(); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestLoginFailures(t *testing.T) {
-	tests := []struct {
-		name     string
-		args     []string
-		prepare  func(h *hopHarness)
-		wantCode int
-		wantErr  string
-	}{
-		{
-			name:     "expired session",
-			args:     []string{"login"},
-			prepare:  func(h *hopHarness) { h.browser = func(string) error { h.plane.expireAt["sess-1"] = true; return nil } },
-			wantCode: ExitRuntime,
-			wantErr:  "expired",
-		},
-		{
-			name:     "bad email address",
-			args:     []string{"login", "--email", "nope"},
-			wantCode: ExitUsage,
-			wantErr:  "plain address",
-		},
-		{
-			name:     "unreachable control plane",
-			args:     []string{"login"},
-			prepare:  func(h *hopHarness) { h.t.Setenv(hop.URLEnv, "http://127.0.0.1:1") },
-			wantCode: ExitRuntime,
-			wantErr:  "reach control plane",
-		},
-		{
-			name: "no-browser prints the url only",
-			args: []string{"login", "--no-browser"},
-			prepare: func(h *hopHarness) {
-				h.browser = func(string) error { h.t.Fatal("browser opened"); return nil }
-				h.plane.expireAt["sess-1"] = true
-			},
-			wantCode: ExitRuntime,
-			wantErr:  "expired",
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			h := newHopHarness(t)
-			if tc.prepare != nil {
-				tc.prepare(h)
-			}
-			_, errb, code := h.run(tc.args...)
-			if code != tc.wantCode || !strings.Contains(errb, tc.wantErr) {
-				t.Fatalf("exit=%d want %d stderr=%q", code, tc.wantCode, errb)
-			}
-			if _, err := h.tokens.GetDeviceToken(); err == nil {
-				t.Fatal("a failed login must not store a token")
-			}
-		})
-	}
-}
-
-func TestWhoamiWithoutOrWithRevokedToken(t *testing.T) {
-	h := newHopHarness(t)
-	_, errb, code := h.run("whoami")
-	if code != ExitAuthStorage || !strings.Contains(errb, "not signed in") {
-		t.Fatalf("exit=%d stderr=%q", code, errb)
-	}
-	if _, _, code := h.run("login"); code != ExitOK {
-		t.Fatal("login failed")
-	}
-	tok, _ := h.tokens.GetDeviceToken()
-	h.plane.revoke(tok.Token)
-	_, errb, code = h.run("whoami", "--json")
-	if code != ExitAuthStorage || !strings.Contains(errb, "rejected") {
-		t.Fatalf("exit=%d stderr=%q", code, errb)
-	}
-	var e ErrorJSON
-	if err := json.Unmarshal([]byte(errb), &e); err != nil || e.Code != "auth_storage" {
-		t.Fatalf("json error %+v err=%v", e, err)
-	}
-}
-
-func TestControlPlaneURLResolution(t *testing.T) {
-	home := t.TempDir()
-	t.Setenv("REINSTATE_HOME", home)
-	t.Setenv(hop.URLEnv, "")
-	_ = os.Unsetenv(hop.URLEnv)
-	if got := controlPlaneURL(); got != hop.DefaultURL {
-		t.Fatalf("default %q", got)
-	}
-	cfg := "schema_version = 1\nprofile_id = \"p\"\ndevice_id = \"d\"\n[storage]\ntype = \"s3\"\n[hop]\nurl = \"https://staging.example/\"\n"
-	if err := os.WriteFile(filepath.Join(home, "config.toml"), []byte(cfg), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if got := controlPlaneURL(); got != "https://staging.example" {
-		t.Fatalf("config %q", got)
-	}
-	t.Setenv(hop.URLEnv, "http://127.0.0.1:9999/")
-	if got := controlPlaneURL(); got != "http://127.0.0.1:9999" {
-		t.Fatalf("env %q", got)
-	}
-}
-
-func TestPlaintextRemoteWarning(t *testing.T) {
-	tests := []struct {
-		url  string
-		want bool
-	}{
-		{"https://hop.reinstate.dev", false},
-		{"http://127.0.0.1:8080", false},
-		{"http://localhost:8080", false},
-		{"http://[::1]:8080", false},
-		{"http://staging.example", true},
-		{"http://10.0.0.5:8080", true},
-	}
-	for _, tc := range tests {
-		if got := plaintextRemote(tc.url); got != tc.want {
-			t.Errorf("plaintextRemote(%q) = %v, want %v", tc.url, got, tc.want)
-		}
-	}
 }

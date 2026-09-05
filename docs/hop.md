@@ -829,6 +829,26 @@ staging or a local build with, in order of precedence:
 The URL a device signed in against travels with its token, so `rein whoami`
 always asks the control plane that issued the token.
 
+### When it cannot be reached
+
+`rein login` and `rein whoami` classify three ways a control plane can fail
+to answer at all — no DNS answer, connection refused, a failed TLS
+handshake — and print one line naming the URL and the cause instead of
+whatever text the underlying network library produced:
+
+```text
+could not reach the Reinstate Hop control plane at https://hop.reinstate.dev: connection refused
+If you are not enrolled in Reinstate Hop, see https://reinstate.dev/docs/hop. To use another control plane, set REINSTATE_HOP_URL or [hop] url in config.toml.
+```
+
+The exit code is the same one an unreachable control plane already returned
+before this classification existed. Under `--json` the error's `details`
+carry `kind: "control_plane_unreachable"` and the `url` that could not be
+reached. A control plane that *answers* — a rejected token, a quota
+refusal, a bad request — is a different, reachable failure and is reported
+the way it always was; only a transport that gives no answer at all takes
+this path.
+
 ## Protocol
 
 The client is open and the protocol is public; the control plane's source is
