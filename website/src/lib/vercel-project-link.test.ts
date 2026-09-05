@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -68,7 +69,7 @@ describe('Vercel project link contract', () => {
       JSON.stringify(EXPECTED_VERCEL_PROJECT_LINK),
     );
 
-    const defaultResult = spawnSync(process.execPath, [checker.pathname], {
+    const defaultResult = spawnSync(process.execPath, [fileURLToPath(checker)], {
       cwd: root,
       encoding: 'utf8',
     });
@@ -79,7 +80,7 @@ describe('Vercel project link contract', () => {
     writeFileSync(explicitPath, JSON.stringify(EXPECTED_VERCEL_PROJECT_LINK));
     const explicitResult = spawnSync(
       process.execPath,
-      [checker.pathname, explicitPath],
+      [fileURLToPath(checker), explicitPath],
       { cwd: root, encoding: 'utf8' },
     );
     expect(explicitResult.status).toBe(0);
@@ -92,7 +93,7 @@ describe('Vercel project link contract', () => {
 
     const malformed = spawnSync(
       process.execPath,
-      [checker.pathname, malformedPath],
+      [fileURLToPath(checker), malformedPath],
       { encoding: 'utf8' },
     );
     expect(malformed.status).toBe(1);
@@ -100,7 +101,7 @@ describe('Vercel project link contract', () => {
 
     const unexpected = spawnSync(
       process.execPath,
-      [checker.pathname, malformedPath, 'extra'],
+      [fileURLToPath(checker), malformedPath, 'extra'],
       { encoding: 'utf8' },
     );
     expect(unexpected.status).toBe(1);
