@@ -51,6 +51,7 @@ processes running until a later `hoplab stop`.
 | `homes` | seed isolated device homes under `-root` |
 | `env` | print the env block for one seeded device |
 | `keyring save/load/clear` | move which device's token is active in the OS keyring |
+| `pair init/join` | pair two (or more) seeded devices into one Hop account, driving real `rein` non-interactively |
 
 Run `hoplab -h`, or any subcommand with no required flags, for the full
 flag list; the essentials are below.
@@ -118,9 +119,19 @@ prints the isolated env block for one seeded device:
 ```
 export REINSTATE_HOP_URL="http://127.0.0.1:8082"
 export REINSTATE_HOME="<root>\device-a\reinstate"
+export HOME="<root>\device-a\home"
+export USERPROFILE="<root>\device-a\home"
 export CLAUDE_CONFIG_DIR="<root>\device-a\home\.claude"
 export CODEX_HOME="<root>\device-a\home\.codex"
 export XDG_DATA_HOME="<root>\device-a\home\xdgdata"
+export GROK_HOME="<root>\device-a\home\.grok"
+export GEMINI_CLI_HOME="<root>\device-a\home\.gemini"
+export KIMI_CODE_HOME="<root>\device-a\home\.kimi-code"
+export QWEN_HOME="<root>\device-a\home\.qwen"
+export CLINE_DATA_DIR="<root>\device-a\home\.cline\data"
+export COPILOT_HOME="<root>\device-a\home\.copilot"
+export CURSOR_CONFIG_DIR="<root>\device-a\home\.cursor"
+export PI_CODING_AGENT_DIR="<root>\device-a\home\.pi\agent"
 ```
 
 `REINSTATE_HOME` is a first-class override the product itself honours
@@ -128,6 +139,81 @@ export XDG_DATA_HOME="<root>\device-a\home\xdgdata"
 same way `scripts/tuisandbox`'s single-home bench and the in-process CLI
 journeys (`hop_first_push_test.go`'s `hopDevice`, which sets it per call)
 already isolate device identity.
+
+`HOME`/`USERPROFILE` and the eight `*_HOME`/`*_DIR` variables after them are
+just as load-bearing as the four above, not decoration: of the 11 agents in
+`internal/agents/catalog`, only Claude/Codex/OpenCode have this package set
+their `RootEnv` directly (`CLAUDE_CONFIG_DIR`/`CODEX_HOME`/`XDG_DATA_HOME`);
+the other eight with an index source (Grok, Gemini, Kimi, Qwen, Cline,
+Copilot, Cursor, Pi) fall back to a path under the *real* process home when
+their own `RootEnv` is unset
+(`internal/agents/scan/hometree.ResolveRoot`: `RootEnv` first, then
+`Candidates` built from `agents.Env.HomeDir`, which is `os.UserHomeDir` —
+`USERPROFILE` on Windows — when unset). Leaving `HOME`/`USERPROFILE` at the
+real host account's value, as an earlier version of this package did,
+leaked the real host account's real sessions into every "isolated" device
+identically for all eight of those agents; see
+`docs/testing/windows-acceptance-host.md`'s Hop lab section for the exact,
+dated repro (48 sessions instead of 3) and
+`homes_isolation_test.go`'s `TestDeviceHomesDoNotLeakTheHostAccount` for
+the regression test. Setting `HOME`/`USERPROFILE` to the device's own
+isolated home is the same fix `scripts/tuisandbox`'s `sandboxEnv` already
+applies for its single-home bench; the eight explicit `*_HOME`/`*_DIR`
+overrides on top are extra insurance against an operator's own shell
+already exporting one of them (an explicit env var always wins over a
+`HOME`-derived fallback in `hometree.ResolveRoot`, regardless of `HOME`).
+
+### `pair init`/`pair join` — put the two homes in one account
+
+```bash
+./scripts/testing/hoplab/hoplab.sh keyring load -root <root> -device device-a
+./scripts/testing/hoplab/hoplab.sh pair init -root <root> -device device-a -rein bin/rein.exe
+# prints the recovery code, and also saves it to <root>/hoplab-state.json
+
+./scripts/testing/hoplab/hoplab.sh keyring load -root <root> -device device-b
+./scripts/testing/hoplab/hoplab.sh pair join -root <root> -device device-b -rein bin/rein.exe
+# reads the recovery code back from hoplab-state.json; pass -code to override
+```
+
+`pair init` runs `rein init --hop --project hoplab-device-a=<device's project>`
+then `rein account init` for the first device; `pair join` runs `rein init
+--hop --project ...` then `rein account recover` with the first device's
+recovery code, for every device after it — the exact sequence
+`internal/cli/keygeneration_crossplane_test.go` (`-tags hopacceptance`)
+proves works against a real `hopd`. Both devices must have signed in under
+**the same email** first (`rein login` + `hoplab approve`, above) — hopd
+ties one account to one email, and `account init` refuses a second device
+under a keyring that already exists ("enrol this device with `rein account
+recover` instead"), which is exactly what makes `account recover` the right
+command for every device after the first.
+
+Both `rein account init`'s confirmation step and `rein account recover`
+read their secret from `REINSTATE_RECOVERY_CODE_FD`
+(`internal/crypto/passphrase.go`'s `ReadSecretFD` — the product's own
+documented non-interactive path: "automation sets
+`REINSTATE_RECOVERY_CODE_FD`"), never a hidden terminal prompt, because
+`hoplab` drives the real compiled `rein` binary as a separate process, not
+the in-process test harness (`hop_first_push_test.go`'s `hopDevice`) that
+has a prompt-callback seam to hook — and because a caller with no real
+terminal (an agent running this through a piped shell) cannot answer a
+hidden prompt at all. `pair init` wires that descriptor to a live pipe
+whose read end the child process inherits and feeds the freshly generated
+code back into the moment it appears in the child's own stderr (the code
+cannot be known before `account init` prints it); `pair join` wires it to
+a plain temp file carrying the already-known code. See
+`secretfd_windows.go` for the Windows handle-passing mechanics — in
+particular, why marking a handle inheritable is not sufficient by itself
+on a modern Go toolchain (`PROC_THREAD_ATTRIBUTE_HANDLE_LIST` restricts
+inheritance to an explicit list once any handle is in it) — and
+`secretfd_windows_test.go`, which proves the whole mechanism against the
+real `crypto.ReadSecretFD` function across a real process boundary.
+
+`-rein` (or `REINSTATE_REIN_BIN`) names the binary; it defaults to
+`bin/rein.exe`/`bin/reinstate.exe` under the repository root (`make
+build`'s own output). Like `rein login`, `pair init`/`pair join` act as
+whichever device's token is currently active in the OS keyring — `hoplab
+keyring load -device <name>` first, every time, same as any other
+sequential real-binary use of two devices (below).
 
 #### What this does *not* isolate: the OS keyring device token
 
@@ -140,9 +226,11 @@ alternative in the product code to route around this per device.
 
 Two ways forward, depending on what the scenario needs:
 
-- **Truly simultaneous devices** (pairing, revocation, the lagging device,
-  the cross-plane key-generation floor): use the in-process pattern the CLI
-  journeys already run — `internal/cli`'s `hopDevice` in
+- **Truly simultaneous devices** (revocation, the lagging device, the
+  cross-plane key-generation floor — and pairing itself, if the scenario
+  specifically needs two real `rein` processes signed in at once rather
+  than sequentially): use the in-process pattern the CLI journeys already
+  run — `internal/cli`'s `hopDevice` in
   `hop_first_push_test.go` gives each device its own
   `credentials.MemoryDeviceTokenStore` and its own `REINSTATE_HOME`,
   switched per call, all inside one Go test process.
@@ -175,7 +263,10 @@ Two ways forward, depending on what the scenario needs:
   ```
 
   `keyring clear` removes whatever token is currently active (not a saved
-  snapshot), for a clean-slate `rein login`.
+  snapshot), for a clean-slate `rein login`. `pair init`/`pair join`
+  (above) build directly on this save/load pattern to drive the actual
+  account-pairing commands (`rein account init`/`rein account recover`)
+  non-interactively, once each device has signed in this way.
 
 ## `-tags hopacceptance` and the cross-plane suite
 
