@@ -101,6 +101,18 @@ the `v0.5.1` precedent re-ran the storage rows for exactly that change.
 checkout and not committed. Nobody in this plan touches it. Commit or discard
 it when you are back.
 
+## Q11 — Your machine has lab variables in its user environment
+
+`REINSTATE_BACKEND=memory` and `REINSTATE_MEMORY_BACKEND_DIR=D:\Projects\hop-10-lab\locker`
+are set as persistent user-level environment variables on this host (and
+`XDG_DATA_HOME` may be too). They silently redirect every `rein` command,
+including the Hop journeys, to a local store, which is what made the first
+lab pairing look broken. Every agent now unsets them per shell and the lab
+strips them for the processes it launches. I have not changed your machine's
+environment; if the variables are no longer needed, remove them with
+`[Environment]::SetEnvironmentVariable('REINSTATE_BACKEND', $null, 'User')`
+and the same for the other two.
+
 ## Q10 — Commit identity
 
 The Hop-era commits on this host are authored `Harjot Singh Rana
