@@ -49,13 +49,15 @@ Native Windows PowerShell:
 irm https://reinstate.dev/install.ps1 | iex
 ```
 
-Both bootstraps pin `v0.4.0`, verify the exact tagged canonical installer
-and release binary, install without elevation, configure a user-local PATH, and
-print the next command. They install the CLI only; interactive configuration
-begins when you run `rein init`.
+Both bootstraps pin the newest release candidate named in the
+[changelog](https://github.com/HarjjotSinghh/reinstate/blob/main/CHANGELOG.md),
+verify the exact tagged canonical installer and release binary, install
+without elevation, configure a user-local PATH, and print the next command.
+They install the CLI only; interactive configuration begins when you run
+`rein init`.
 
 The POSIX bootstrap can install the binary on Intel macOS, Linux, or WSL2, but
-those environments are optional and unverified for v0.4.0.
+those environments are optional and unverified for that candidate.
 
 Default locations:
 

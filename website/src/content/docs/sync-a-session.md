@@ -28,7 +28,7 @@ remote manifest.
 
 ## Prerequisites
 
-- Reinstate `v0.4.0` initialized on the source device.
+- Reinstate `v0.5.1` initialized on the source device.
 - A successful `rein setup check` with the selected adapter marked
   `SUPPORTED`.
 - An existing encrypted profile and reachable S3-compatible storage.

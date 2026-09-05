@@ -26,7 +26,7 @@ entry, and Reinstate home.
 
 ## Prerequisites
 
-- Reinstate `v0.4.0`, verified with `rein version --json`.
+- Reinstate `v0.5.1`, verified with `rein version --json`.
 - A private S3-compatible bucket, service endpoint, region, access-key ID, and
   secret access key.
 - One stable project ID and the repository's absolute path on this device.

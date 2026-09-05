@@ -20,7 +20,7 @@ OpenCode sessions without translating sessions across agents. Claude Code and
 Codex additionally support encrypted export/restore and native same-vendor
 resume/fork; Gemini CLI and OpenCode remain read-only.
 
-## Current v0.4.0 scope
+## Current v0.5.1 scope
 
 | Adapter | Local index | Native resume/fork | Encrypted sync | Structured handoff |
 | ------- | ----------- | ------------------ | -------------- | ------------------ |

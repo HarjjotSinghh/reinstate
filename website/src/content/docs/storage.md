@@ -15,7 +15,7 @@ draft: false
 noindex: false
 ---
 
-Reinstate `v0.4.0` stores encrypted manifests and immutable session
+Reinstate `v0.5.1` stores encrypted manifests and immutable session
 snapshots in a private S3-compatible bucket you control. Configure the service
 endpoint, region, bucket, and profile prefix separately; interactive
 `rein init` stores the access-key pair in the operating-system keyring, not in

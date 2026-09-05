@@ -188,10 +188,12 @@ syncing after an agent upgrade.
 
 ## Production ready?
 
-`v0.4.0` is the current pre-1.0 stable release on Apple Silicon macOS and
+`v0.5.1` is the current pre-1.0 stable release on Apple Silicon macOS and
 native Windows x64. It includes encrypted sync, local search, verified resume,
-and structured handoff. Public installers currently pin the newest release
-candidate pending dual-platform tagged-artifact acceptance; the
+structured handoff, and universal agent coverage across the support-tier
+catalog. Public installers currently pin the newest release candidate, whose
+tagged-artifact acceptance is pending on native Windows x64 (Apple Silicon
+macOS is deferred until that hardware returns); the
 [changelog](https://github.com/HarjjotSinghh/reinstate/blob/main/CHANGELOG.md)
 names it exactly. Intel macOS, WSL2, and other
 POSIX packages are optional and unverified. See the

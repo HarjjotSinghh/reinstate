@@ -1,7 +1,7 @@
 ---
-title: "Reinstate features and commands from v0.1.0 to v0.4.0"
+title: "Reinstate features and commands from v0.1.0 to v0.5.1"
 navTitle: "Features and commands"
-description: "See which Reinstate features and CLI commands shipped in stable v0.1.0 through v0.4.0, including encrypted sync, local search, verified resume, and structured handoff."
+description: "See which Reinstate features and CLI commands shipped in stable v0.1.0 through v0.5.1, including encrypted sync, verified resume, structured handoff, and agent coverage."
 order: 2
 author: "Harjot Singh Rana"
 status: current
@@ -15,9 +15,10 @@ draft: false
 noindex: false
 ---
 
-Stable **`v0.4.0`** is the current release. Use this page as the versioned
-feature map. Universal configuration, a Reinstate console, and team continuity
-remain later phases.
+Stable **`v0.5.1`** is the current release. It includes every shipped surface
+from Phase 1 through Phase 5. Use this page as the versioned feature map.
+Universal configuration, a Reinstate console, and team continuity remain
+later phases.
 
 A structured handoff starts a **new destination session continuing the same
 task**. Native resume stays same-vendor. Reinstate does not reconstruct a
