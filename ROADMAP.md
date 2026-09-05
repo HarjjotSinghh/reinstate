@@ -333,10 +333,9 @@ Detailed design direction: [docs/hop.md](docs/hop.md) and
 
 Original multi-device superpower, now extended from sessions to the safe,
 portable parts of an AI development environment. It follows Phase 5 because
-rendering declared configuration into a harness requires a catalog of harnesses
-to render into. Retargeted to `v0.7.0`: Phase 6C shipped first, in `v0.6.0`,
-because the hosted locker and the daemon did not need a configuration catalog
-to render into.
+rendering declared configuration requires a catalog of harnesses to render
+into. Retargeted to `v0.7.0`: Phase 6C shipped first, in `v0.6.0`, because the
+hosted locker and the daemon did not depend on that catalog.
 
 **Gate:** define an MCP server such as Mobbin once, preview and apply the
 correct native configuration to at least Claude Code, Codex, Grok, and
