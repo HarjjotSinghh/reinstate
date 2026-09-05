@@ -19,6 +19,13 @@ type LabState struct {
 	HopdDB      string `json:"hopd_db"`
 	LockerPID   int    `json:"locker_pid"`
 	LockerAddr  string `json:"locker_addr"`
+	// PairingRecoveryCode is the code `hoplab pair init` captured from the
+	// first device's `rein account init`, so `hoplab pair join` can enrol
+	// every later device without the caller copying it by hand. It is a
+	// synthetic lab account's recovery code, the same kind of ephemeral,
+	// lab-root-only secret keyring-device-token.json (keyring.go) already
+	// stores next to it -- never committed, never outside -root.
+	PairingRecoveryCode string `json:"pairing_recovery_code,omitempty"`
 }
 
 func statePath(root string) string { return filepath.Join(root, "hoplab-state.json") }

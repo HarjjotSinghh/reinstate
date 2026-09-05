@@ -48,6 +48,8 @@ func run(argv []string) int {
 		err = cmdEnv(rest)
 	case "keyring":
 		err = cmdKeyring(rest)
+	case "pair":
+		err = cmdPair(rest)
 	case "-h", "--help", "help":
 		usage()
 		return 0
@@ -74,6 +76,8 @@ commands:
   env      print the env block for one seeded device
   keyring  save/load/clear the OS keyring's Hop device token, to swap which
            device the real rein binary acts as
+  pair     init|join: pair two (or more) seeded devices into one Hop
+           account, driving the real rein binary non-interactively
 
 See README.md next to this program for full usage.
 `)
