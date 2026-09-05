@@ -126,10 +126,18 @@ the next catalog pass; do not open it.
 
 ### Evidence status
 
-The committed Grok device rows to date cover index, search, inspect and
-handoff-source behaviour. The physical journeys T3 and T4 require — real agent,
-real session, resumed with the continuation observed; and a real destination
-session started, acknowledged and reconciled — on macOS **and** native Windows,
-are specified in
+The physical journeys T3 and T4 require — real agent, real session, resumed
+with the continuation observed; and a real destination session started,
+acknowledged and reconciled — are recorded on macOS **and** native Windows.
+
+| Rung | macOS | Native Windows |
+| ---- | ----- | -------------- |
+| T3 resume | `2026-08-22-macos-grok-t3.md` | `2026-08-22-windows-grok-t3.md` |
+| T4 destination | `2026-08-23-macos-grok-t4.md`, 7 of 7 rows | `2026-08-23-windows-grok-t4.md`, 6 of 7 — that host has no Codex CLI, so `GD6`'s Codex leg is unmeasurable |
+
+One row is outstanding on both devices: `GD8`, the destination's own
+tool-approval prompt. Each T4 run set the vendor's approval setting to
+auto-approve so the tool loop would settle deterministically, which both reports
+disclose. See
 [testing/grok-native-resume-acceptance.md](../testing/grok-native-resume-acceptance.md)
-and have not been recorded on either platform.
+for the per-rung status table.

@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
 )
@@ -104,12 +105,22 @@ func TestHandoffFromRealisticClaudeInstall(t *testing.T) {
 
 	// Both roots are named, so detection recognises the planted layouts instead
 	// of racing a child process for a version string this test does not assert.
+	started := time.Now()
 	stdout, stderr, code := runHandoffCLIWithVendorRoots(t, home, vendorHome,
 		filepath.Join(vendorHome, ".claude"), filepath.Join(vendorHome, ".codex"),
 		sources, nil,
 		"handoff", "claude:"+record.ID, "--to", "codex", "--dry-run", "--json")
 	if code != ExitOK {
-		t.Fatalf("exit=%d stdout=%s stderr=%s", code, stdout, stderr)
+		// Elapsed is reported because this failed once, exactly once, with
+		// exit 5 at 10.01s while the machine was also running git and gh. Three
+		// unrelated 10s bounds could produce that -- the handoff store's write
+		// lock, the session index's open lock, and the agent version probe --
+		// and the error alone does not say which, so a bare exit code sends the
+		// next reader hunting. It has not reproduced in eleven deliberate
+		// attempts under CPU and I/O pressure, so this records the shape rather
+		// than guessing at a fix.
+		t.Fatalf("exit=%d after %s stdout=%s stderr=%s",
+			code, time.Since(started).Round(time.Millisecond), stdout, stderr)
 	}
 
 	var plan handoffPlanOutput

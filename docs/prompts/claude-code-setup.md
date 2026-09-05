@@ -1,14 +1,14 @@
 # Claude Code — Reinstate end-user setup prompt
 
 **Prompt version:** 9
-**Pinned Reinstate release:** `v0.5.1`
+**Pinned Reinstate release:** `v0.5.2-rc.1`
 
 Copy everything below the line into Claude Code.
 
 ---
 
 Set up Reinstate end to end on this device using the official public bootstrap,
-which must pin the exact release `v0.5.1`. Never substitute `latest`,
+which must pin the exact release `v0.5.2-rc.1`. Never substitute `latest`,
 `main`, or another version.
 
 Safety rules:
@@ -44,12 +44,12 @@ Complete this workflow:
      `https://reinstate.dev/install.ps1`
 3. Download the selected bootstrap to a temporary file before executing it.
    Inspect and report only its non-secret security contract:
-   - it pins `v0.5.1`;
+   - it pins `v0.5.2-rc.1`;
    - it downloads the canonical installer from that exact Git tag;
    - it verifies the canonical installer checksum before execution;
    - it does not resolve `latest`; and
    - the canonical installer downloads binaries only from
-     `https://github.com/HarjjotSinghh/reinstate/releases/download/v0.5.1/`.
+     `https://github.com/HarjjotSinghh/reinstate/releases/download/v0.5.2-rc.1/`.
    Stop if any condition is false.
 4. With normal approval, execute the inspected bootstrap. Do not bypass its
    checksum or replacement safeguards. It must install without elevation to

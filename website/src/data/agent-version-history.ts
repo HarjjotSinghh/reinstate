@@ -16,6 +16,12 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.5.2-rc.1': {
+    claude:
+      'Unchanged from v0.5.1: inclusive Claude Code range 2.1.219-2.1.238 and Codex CLI range 0.133.0-0.149.0.',
+    source:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.5.2-rc.1/docs/compatibility.md',
+  },
   'v0.5.1': {
     rangeChange:
       'Unchanged from v0.5.0: inclusive Claude Code range 2.1.219-2.1.238 and Codex CLI range 0.133.0-0.149.0.',

@@ -1050,6 +1050,351 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `StorageSpec` gained `RootEnvSuffix` for this shape, and the catalog is now
   pinned to the reader's own resolution so the two cannot drift apart again.
 
+## [0.5.2-rc.1] - 2026-08-23
+
+Release candidate. Stable remains `v0.5.1`; the public installers still pin it.
+
+**Highlights.** Bare `rein` now opens an interactive session switcher, with a
+readiness verdict per row, a handoff studio, a setup wizard, and a `ctrl+k`
+palette — every `--json` document stays byte-identical, and `--plain` or
+`REINSTATE_NO_TUI` restores the frozen output. OpenCode, Grok Build, and Qwen
+Code become handoff **destinations**, so `rein handoff --to` now reaches five
+agents instead of two. OpenCode and Grok Build also gained verified native
+resume.
+
+**Not yet certified.** The interactive surfaces have development verification on
+both platforms but no tagged-artifact acceptance; that is what this candidate
+exists to enable, per
+[testing/v0.5.2-cli-experience-acceptance.md](docs/testing/v0.5.2-cli-experience-acceptance.md).
+
+### Added
+
+- Bare `rein` opens an interactive session switcher on a terminal that can host
+  one. Typing filters, the arrow keys move, and the selected session is
+  previewed beside the list. It replaces a loop that reprinted the whole list
+  after every keystroke and accepted only `NUMBER`, `/text`, `i N`, `f N`,
+  `h N`, and `q`.
+
+- Each row carries a readiness verdict — ready, needs acknowledgement, cannot
+  resume — computed in the background from the same preflight report
+  `rein resume` enforces. The engine has always known this; it was only ever
+  shown after a session had been chosen and a launch attempted. A session that
+  cannot resume because its agent is read-only now says why.
+
+- Environment warnings are acknowledged with the spacebar. The flag path
+  required reading each check identifier off the screen and typing it back
+  exactly, once per warning. The screen shows the equivalent
+  `--allow-environment-warning` command line as it is built, and the
+  identifiers collected go to the same `preflight.Authorize` call the flags
+  feed, so nothing is granted that the flags could not grant.
+
+- A handoff studio measures the projection for each destination and policy
+  before anything is written, showing what the capsule carries, what it leaves
+  behind, and how many values redaction hid. `--policy checkpoint|balanced|full`
+  was previously an invisible trade-off. Its warnings are acknowledged in the
+  studio and forwarded, and the source's own agent is not offered as a
+  destination because the pipeline refuses a same-agent handoff.
+
+- `rein init` opens a setup wizard with provider presets for Cloudflare R2,
+  Amazon S3, Backblaze B2, and MinIO, validating each field as it is entered
+  and allowing any step to be revisited. It collects no secret material:
+  storage keys and the passphrase are still read through the existing
+  hidden-input path, after the full-screen program has released the terminal.
+
+- `rein init --link` prints a pairing code carrying the endpoint, bucket,
+  region, prefix, and profile ID, and `rein init --paste` starts setup from
+  one. The code carries no keys and no passphrase.
+
+- `ctrl+k` opens a command palette, matching on subsequences so `hof` finds
+  "hand off".
+
+- A global `--plain` flag, and `REINSTATE_NO_TUI`, force the frozen
+  non-interactive output on a terminal that could show the interactive UI.
+  `--json`, a non-terminal stream, `TERM=dumb`, a CI environment, and a
+  terminal below 40x10 select it automatically. On Windows an unset `TERM` no
+  longer counts as a dumb terminal, where it would have disabled the
+  interactive UI entirely.
+
+- `scripts/tuisandbox` builds a synthetic agent home with sessions in every
+  readiness state, so the interactive surfaces can be exercised by hand
+  without touching a real `~/.claude`.
+
+- **OpenCode reached T3 (verified resume).** `rein resume opencode:<id>` and
+  `rein fork` now launch OpenCode's own CLI against OpenCode's own session,
+  after the same executable, version, layout, workspace and liveness checks
+  every other T3 agent gets. OpenCode spells continuation as options rather than
+  verbs — `--session <id>`, with `--fork` as a modifier — so the argv is not
+  shaped like Codex's, and a session the vendor recorded without a working
+  directory stays read-only with that stated as the reason. The verified version
+  range is the single build physically measured on macOS, and widens only when
+  another build is measured on a device. Reinstate still never writes into the
+  OpenCode store: the index opens it read-only and immutable, and creates no
+  `-wal` or `-shm` beside it. macOS device journey recorded; native Windows is
+  pending and this tier is not complete without it.
+
+- The website now serves every page as Markdown through `Accept: text/markdown`
+  content negotiation (with `Vary: Accept` and a 406 contract), static `.md`
+  twins, `llms-full.txt`, an OpenAPI 3.1 document at `/openapi.json`, JSON
+  error bodies with codes and hints on every `/api/*` route, a Markdown 404
+  for non-browser clients, a `/developers` resource hub, and
+  `agent-instructions.md` plus when-to-use guidance in `llms.txt`.
+
+- The website API is now versioned under `/api/v1/` (the unversioned
+  `/api/waitlist` stays as a deprecated alias with RFC 9745 `Deprecation`
+  headers), answers with RFC 9457 `application/problem+json` errors, IETF
+  `RateLimit` headers (60 requests per client per minute, 429 with
+  `Retry-After`), and `Link` relations to `/openapi.json`, the RFC 9727
+  `/.well-known/api-catalog`, and the policy on `/developers`. A `/contact`
+  page lists the public support channels and private security reporting.
+
+- Grok Build moves to **T4, handoff destination**. `rein handoff <session> --to
+  grok` starts a **new** Grok Build session — never a cross-agent resume — with
+  `grok --session-id <uuid> "<briefing>"` in the verified workspace. The vendor
+  requires that the UUID not already exist under the target session directory,
+  so the target proves its absence when it plans and again immediately before
+  launch, and refuses rather than colliding. Because the identifier is pinned,
+  lineage resolves the destination session directly instead of reconciling it
+  from a post-launch scan; a session that never appeared is reported
+  `unresolved` and one UUID under two project directories is `ambiguous`,
+  never guessed. Nothing is written under the Grok root, including no
+  directory-trust record: no Grok trust file shape has been measured, and
+  inventing one would be a vendor-internal write on a guess.
+
+- The Grok upload warning now applies in both directions. Grok Build's
+  documented repository-content upload behaviour is a property of that process,
+  not of which side of a handoff it is on, so a handoff *into* Grok also forces
+  redaction, also prints the warning, and also refuses `--no-redact` with exit
+  `2`. Sending a briefing about the operator's repository into that CLI is the
+  direction the warning matters most in.
+
+- `rein handoff --to qwen` starts a **new** Qwen Code session (T4), seeded with
+  the capsule briefing and pinned to an id Reinstate chooses, so lineage
+  resolves instead of guessing. It is never a cross-agent resume and never
+  reconstructs the source thread. Reinstate writes nothing under the Qwen home.
+  Qwen refuses a duplicate `--session-id` itself, and Reinstate checks its own
+  index first so the refusal happens before a process is spawned.
+  **macOS evidence only** — the native Windows journey the tier requires has not
+  been run.
+
+- `rein resume qwen:<id>` and `rein fork qwen:<id>` launch Qwen Code's own CLI
+  against its own session (T3). The descriptor now carries the measured launch
+  argv (`--resume <id>`, `--resume <id> --fork-session`, `--continue`), a
+  fail-closed version range, and the process shape that lets the `agent.active`
+  liveness check see a running Qwen. The version range spans two versions
+  because Qwen self-updates into its own home directory and then runs the
+  updated copy, so one machine answers `--version` differently depending on
+  which root is in scope. **macOS evidence only** — the native Windows journey
+  the tier requires has not been run.
+
+- Qwen Code is now a handoff **source** (T2): `rein handoff --from qwen` reads a
+  Qwen session and builds a portable capsule that seeds a **new** session in the
+  destination agent. Native resume for Qwen stays refused, and Qwen is not a
+  destination either; both are higher rungs with their own evidence gates.
+  The reader is not the Claude reader with a different name. Qwen's top-level
+  record keys match Claude Code's, but its message body is a Gemini `Content`
+  value (`{"role":…,"parts":[…]}`), and `/rewind` is encoded by re-rooting the
+  `parentUuid` chain rather than by writing a marker — so the live conversation
+  is the chain walked back from the last record, and records left on the dead
+  branch are excluded and reported rather than replayed.
+
+- **Kimi Code CLI is now T2, a handoff source.** `rein handoff --from kimi`
+  reads `agents/main/wire.jsonl` and builds a portable capsule. A handoff
+  starts a *new* Claude Code or Codex session; it never reconstructs Kimi
+  history and it is not a cross-agent resume. Assistant text, tool calls, and
+  tool results are read from the `context.append_loop_event` records the CLI
+  writes today (`content.part`, `tool.call`, `tool.result`), and the older
+  `context.append_message` shape is still read so sessions migrated from the
+  legacy `kimi-cli` store keep working. `profile.bind` system prompts stay out
+  of the capsule, unknown record types are referenced with an opaque digest and
+  never copied into an event body, and a truncated last JSONL line is dropped.
+  The reader fails closed on an unrecognized `state.json` schema version or
+  `wire.jsonl` protocol major. Records that rewrite context history
+  (`context.clear`, `context.undo`, `context.apply_compaction`) are reported as
+  a parse warning rather than silently replayed. Native resume and fork stay
+  refused: no device journey has run `kimi -r <id>` against a real session.
+
+- Grok Build moves to **T3, verified resume**. `rein resume grok:<id>` and
+  `rein fork grok:<id>` launch `grok --resume <uuid>` and
+  `grok --resume <uuid> --fork-session` against the vendor's own session, after
+  the same executable-trust, workspace-identity and version preflight every
+  other native launch gets. The verified version range is `1.0.5`–`1.0.5`,
+  measured from `grok --version` on the macOS acceptance host; anything outside
+  it is `UNTESTED` and exits `5`. The physical device journey this tier
+  ultimately rests on is specified in
+  `docs/testing/grok-native-resume-acceptance.md` and has not been recorded on
+  either platform yet, so the tier is a code-complete claim awaiting
+  confirmation rather than an evidenced one, and every surface that names it
+  says so.
+
+- Grok's `--resume` flag accepts a session **ID or a title**, and resolves any
+  value that is not UUID-shaped as a title. Titles are neither unique nor
+  stable, so a title in that position could address a session the operator
+  never selected. Descriptors can now declare `NativeSpec.SessionIDPattern`,
+  the shape an identifier must have before it may be substituted into an argv
+  template. A Grok session whose recorded id is not a UUID stays read-only with
+  that reason stated, and the argv builder refuses the substitution outright,
+  so no route to a launch plan can put a title on a `grok` command line.
+
+- `rein resume` and `rein fork` now report whether the session being resumed is
+  already open in the agent that owns it. A detected live session is an
+  environment warning, `agent.active`, so it prompts on a terminal and requires
+  `--allow-environment-warning agent.active` in automation, exactly like every
+  other resume warning. It is a warning rather than a refusal because the vendor
+  CLI owns every write to its own store, so Reinstate has no basis to refuse
+  outright — but an operator who resumes a session they already have open
+  generally did not mean to. A host that cannot enumerate its own processes
+  reports that it could not tell, and still resumes; it is never told the
+  session is free on evidence that was not gathered. The probe runs concurrently
+  with the rest of preflight, so it does not add its cost to the launch path.
+  A structured handoff is unaffected: it only reads the source, and already
+  enforces its own `--allow-active` boundary against the same signal.
+
+### Changed
+
+- A clean launch prints one line of environment summary on an interactive
+  terminal instead of every passing check. Non-interactive output is unchanged.
+
+- `make` finds a Go toolchain installed by a version manager, prefers the mise
+  and asdf shim directories, and no longer needs `HOME` to be exported. When it
+  genuinely cannot find one it says so in a recipe rather than at parse time,
+  so `make -n`, `make help`, and `make clean` keep working.
+
+- The agent conformance suite now requires a T3+ tier claim to name a device
+  report from macOS **and** native Windows, and it applies the evidence rules to
+  every registered agent rather than to a hand-maintained list of five. Both
+  gaps let a verified-resume or handoff-destination claim rest on one platform:
+  the first because only probe reports were platform-checked, the second because
+  a newly promoted agent was simply absent from the check. WSL2 is a separate
+  device and does not satisfy native Windows. No shipped descriptor changes;
+  this only constrains what a future promotion may claim.
+
+- The agent conformance suite now checks what a cited device report is *about*,
+  not only which device produced it. From T3 upward a claim must cite a journey
+  naming that agent and that rung, on macOS and on native Windows, for every
+  rung from T3 to the declared tier. Two real claims had passed the earlier
+  filename-only check without the evidence they implied: Grok cited two
+  release-acceptance reports that mention it only in index and handoff-source
+  rows, and Qwen's T4 claim passed while its only Windows report covered T3.
+  The four Phase 3 and Phase 4 reports behind Claude Code and Codex CLI predate
+  the tier vocabulary entirely and are accepted as a closed list.
+
+### Fixed
+
+- Kimi Code CLI sessions from a current install are indexed with the files their
+  tool calls touched, and with their assistant turns counted. At wire protocol
+  `1.5` the assistant's whole side of a turn arrives as
+  `context.append_loop_event` — `content.part`, `tool.call`, `tool.result` — and
+  the index source read only the role `"assistant"` `context.append_message`
+  that the vendor writes solely for sessions migrated from the legacy
+  `kimi-cli` store. A real session therefore indexed **no** tool-touched files
+  at all. The committed fixtures encoded the same shape the reader expected, so
+  the tests agreed with the reader while neither agreed with the vendor.
+
+- OpenCode sessions written since the vendor last checkpointed are now indexed,
+  searchable and resumable. OpenCode journals in SQLite write-ahead mode and
+  does not checkpoint on exit, so the sessions a user has just worked in sit in
+  a `-wal` sidecar — on a new install, the entire store. Reinstate opened that
+  database with `immutable=1`, which is what stops it creating `-wal`/`-shm`
+  files under the agent's root and is also, by definition, what makes SQLite
+  ignore the log. Measured against OpenCode `1.18.21`: `opencode.db` held 4096
+  bytes and no `session` table while 543872 bytes sat in `opencode.db-wal`, and
+  `rein sessions --agent opencode` listed one of two real sessions. The store is
+  now read through a private copy of the database and its log, so the log's
+  contents are visible and nothing is written beside the vendor's database. A
+  store with no log is still read in place with no copy. If the vendor is
+  writing faster than the copy can be taken, the listing falls back to the
+  in-place read and says it is incomplete rather than presenting a short list as
+  the whole store. This affected the shipped T1 index and T2 handoff source, not
+  only newer work.
+
+- The OpenCode source fingerprint now covers the write-ahead log. A session
+  written since the last checkpoint changes only that file, so the fingerprint
+  was unchanged and an incremental refresh skipped the scan that would have
+  found it — the session stayed invisible however well the reader worked.
+||||||| parent of c6973e3 (fix(website): link documentation on main, not a retired branch)
+||||||| parent of 71d2a7a (fix(website): link documentation on main, not a retired branch)
+||||||| parent of c4743cf (fix(website): link documentation on main, not a retired branch)
+
+- Published pages no longer link documentation on a retired integration branch.
+  Sixteen entries in the compatibility data and nine integration pages pointed
+  at `feat/universal-agent-coverage`, which is behind `main` and is not the
+  default branch, so public evidence links named a branch rather than the
+  documentation as it stands. They now point at `main`, and a test asserts every
+  link into this repository names `main` or a released tag and resolves to a
+  path that exists. The existing link checker could not have caught this: it
+  audits the built pages but skips any link whose origin is not the site's own.
+
+- The `agent.active` liveness check could not see an agent Reinstate launched
+  itself. macOS `ps` fixes the width of its `comm` column when other columns are
+  requested alongside it, so a process started by absolute path — which is
+  exactly how a verified resume starts one — is reported with the first sixteen
+  characters of that path as its image, and matched no agent at all. The check
+  therefore answered "no running instance is using this session" for a session
+  that was open at that moment, for every agent, not one. Process matching now
+  also considers `argv[0]`, which survives the truncation.
+
+- The version and layout probe ignored an agent's declared root-variable suffix.
+  `StorageSpec.RootEnvSuffix` was honoured by the storage probe but not by
+  `agentcheck`, so with `XDG_DATA_HOME` set, OpenCode's marker was looked for one
+  directory above its store — the single case that variable exists to serve.
+
+- The layout probe required the storage marker to be a directory, so an agent
+  whose sessions live in one embedded database reported its layout as
+  unrecognized with the store sitting right there, and resume was refused.
+  A real regular file is now an accepted marker; symlinks and every other file
+  kind are still rejected.
+
+- A structured handoff to a destination that passes its prompt behind a flag
+  launched without that flag. After the pipeline re-rendered the briefing it
+  rebuilt argv from a per-agent switch whose default was a single positional
+  argument, which is Codex's shape; every other flag the destination had
+  planned — including a pinned `--session-id` — was discarded, so the launch
+  created a session the verifier could never resolve. The briefing is now
+  swapped into the argv element that already carried it, leaving the rest of
+  the destination's own plan intact.
+
+- A capability diff reported source instructions, MCP servers, and skills as
+  `degraded` at destinations Reinstate never enumerated. Capability discovery
+  covers Claude Code and Codex; anything else arrives with an empty inventory,
+  and "absent from an inventory nobody collected" is not a finding about the
+  destination. Those gaps are now `informational`.
+
+- Qwen Code sessions were indexed with an empty title, an empty prompt preview,
+  and search text that matched nothing the operator had typed. The index source
+  read the message body as Claude Code's `message.content[]` block array, and
+  Qwen writes Gemini's `message.parts[]`, so it found no text at all. The
+  committed fixtures had the same wrong shape, which is why every test passed.
+  Fixtures now match what the vendor actually writes, tool arguments are read as
+  file references, and a `type:"user"` record with `provenance:"system"` — a
+  cron prompt or a notification — can no longer become a session's title.
+
+- The vendor version probe now runs alongside the other preflight observations
+  instead of after them. Every observer shares one wall clock, but the workspace
+  probe runs first and shells out to Git, so in sequence the version probe was
+  left with whatever time that had not already spent. On a loaded host it was
+  routinely given a fraction of its stated budget, timed out, and reported an
+  installed agent as unmeasurable — and to a caller gating on version, "no
+  version" is indistinguishable from "no agent", so that became a refusal the
+  user could do nothing about. The shared deadline still bounds the probe; only
+  its starting point moved.
+
+- `rein handoff --to` and `rein resume --with` now validate the destination
+  against T4, the tier that actually has a handoff destination, instead of T3.
+  The flag help had always listed T4 agents while validation accepted T3 ones,
+  which no agent exercised until one reached T3 without being a destination.
+  Such an agent passed usage validation and then failed deep in the pipeline
+  with `unknown destination agent`, instead of being told which agents can
+  receive a handoff.
+
+- OpenCode now declares the root environment variable its reader already
+  honours. OpenCode reads `$XDG_DATA_HOME/opencode`, so the variable names the
+  parent of the root rather than the root itself, and the agent descriptor had
+  no way to express that — so it declared nothing. The consequence was not
+  cosmetic: OpenCode was the one indexed agent an operator could not redirect,
+  so a probe aimed at a prepared root read their real tree anyway, silently.
+  `StorageSpec` gained `RootEnvSuffix` for this shape, and the catalog is now
+  pinned to the reader's own resolution so the two cannot drift apart again.
+
 ## [0.5.1] - 2026-08-21
 
 ### Changed

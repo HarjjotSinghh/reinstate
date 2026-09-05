@@ -155,3 +155,40 @@ func TestNoFakeReleaseLinks(t *testing.T) {
 		_ = root
 	}
 }
+
+// TestChangelogSectionsAreNotDuplicated catches the fingerprint of a bad
+// CHANGELOG conflict resolution before it costs anything.
+//
+// [Unreleased] should carry each of Added/Changed/Fixed at most once. Repeated
+// headings mean somebody resolved a conflict by concatenating both sides, and
+// that state is unstable: the next person to hit a conflict in the same file
+// sees a mess and is tempted to take one side wholesale. That is exactly what
+// happened here. Successive merges left [Unreleased] with eight headings --
+// three "Fixed", two "Added" -- and the merge after that replaced the section
+// outright, deleting 163 lines and twenty bullets covering an entire
+// interactive-CLI feature set and a tier promotion, none of which was noticed
+// because nothing checked.
+//
+// Only [Unreleased] is checked. Released sections are frozen: [0.5.0-rc.4]
+// carries the same duplication, and correcting published notes after the fact
+// would rewrite a record people may already have read. The guard belongs on the
+// section that is still being edited, which is the only one that can be damaged.
+func TestChangelogSectionsAreNotDuplicated(t *testing.T) {
+	t.Parallel()
+
+	inUnreleased := false
+	seen := map[string]int{}
+	for _, line := range strings.Split(read(t, "CHANGELOG.md"), "\n") {
+		switch {
+		case strings.HasPrefix(line, "## "):
+			inUnreleased = strings.HasPrefix(line, "## [Unreleased]")
+		case inUnreleased && strings.HasPrefix(line, "### "):
+			heading := strings.TrimSpace(strings.TrimPrefix(line, "### "))
+			seen[heading]++
+			if seen[heading] > 1 {
+				t.Errorf("CHANGELOG.md [Unreleased] repeats %q %d times; a conflict was resolved by concatenation",
+					heading, seen[heading])
+			}
+		}
+	}
+}

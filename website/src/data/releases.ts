@@ -1,5 +1,11 @@
 export const releaseHistory = [
   {
+    version: 'v0.5.2-rc.1',
+    date: '2026-08-23',
+    summary:
+      'Release candidate; stable remains v0.5.1 and the public installers still pin it. Bare rein opens an interactive session switcher with a readiness verdict per row, a handoff studio, a setup wizard, and a ctrl+k palette, while every --json document stays byte-identical and --plain or REINSTATE_NO_TUI restores the frozen output. OpenCode, Grok Build, and Qwen Code become handoff destinations, so rein handoff --to reaches five agents instead of two; OpenCode and Grok Build also gained verified native resume. The interactive surfaces have development verification on both platforms but no tagged-artifact acceptance, which is what this candidate exists to enable.',
+  },
+  {
     version: 'v0.5.1',
     date: '2026-08-21',
     summary:

@@ -6,7 +6,7 @@ order: 16
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.5.1"
+version: "v0.5.2-rc.1"
 updatedAt: 2026-08-16
 tags: ["handoff", "claude-code", "codex", "cli"]
 targetQuery: "Reinstate structured handoff"
