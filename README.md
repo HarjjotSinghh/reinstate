@@ -216,10 +216,13 @@ that hardware returns. See [docs/hop.md](docs/hop.md) and
 
 ## Quick start
 
-> **Platform boundary:** the public installers pin candidate `v0.5.2-rc.1`, which
-> passed dual-platform tagged-artifact acceptance on Apple Silicon macOS and
-> native Windows x64. Intel macOS and Linux/WSL2
-> remain optional and unverified
+> **Platform boundary:** stable `v0.5.1` passed dual-platform tagged-artifact
+> acceptance on Apple Silicon macOS and native Windows x64. The public
+> installers pin candidate `v0.5.2-rc.1`, which was never certified on its own;
+> its content is certified inside `v0.6.0` on native Windows x64, with the
+> macOS rows deferred under
+> [ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md).
+> Intel macOS and Linux/WSL2 remain optional and unverified
 > ([#97](https://github.com/HarjjotSinghh/reinstate/issues/97),
 > [#98](https://github.com/HarjjotSinghh/reinstate/issues/98)).
 >

@@ -66,6 +66,9 @@ rein sync verify           # the verification report, any time
 What each step leaves behind:
 
 - `rein login` stores a **device token** in the OS keyring and nothing else.
+  The token belongs to the Reinstate home that signed in: with
+  `REINSTATE_HOME` set, the keyring entry is derived from that path, so two
+  homes on one machine hold two tokens.
   The control plane now knows this device; the locker does not exist yet.
 - `rein init --hop` writes the profile (the account is the profile, this
   device is the device) and provisions the locker. No endpoint, bucket, or
@@ -701,6 +704,10 @@ and what the operator can and cannot see.
 
 ### Limits and refusals
 
+The plans below are what the control plane is built to enforce. Which of
+them the hosted service will offer, and on what terms, is not published;
+this page documents the protocol, not an offer.
+
 | Plan | Storage | Devices | Credential mints per hour |
 | --- | --- | --- | --- |
 | Hop | 5 GB | 5 | 60 |
@@ -932,7 +939,7 @@ only product metrics.
 ## Leaving Hop
 
 Leaving is one command to your own bucket, available at any time, including
-the read-only period after a trial or subscription lapses:
+any read-only period the control plane applies to a lapsed account:
 
 ```bash
 export REINSTATE_S3_ACCESS_KEY_ID=... REINSTATE_S3_SECRET_ACCESS_KEY=...
