@@ -226,7 +226,7 @@ grandchild does not resolve to it.
 
 **Fix: launch `conptydriver.exe` itself from something that does not
 redirect its stdio** — a real interactive PowerShell/Windows Terminal
-session (the normal case `scripts/testing/conptydriver/hoplab.ps1`
+session (the normal case `scripts/testing/conptydriver/conptydriver.ps1`
 documents), or, from an automated context, PowerShell's `Start-Process`
 *without* `-RedirectStandardOutput`/`-RedirectStandardError` (a hidden
 window is fine: `-WindowStyle Hidden` does not redirect stdio, it only
