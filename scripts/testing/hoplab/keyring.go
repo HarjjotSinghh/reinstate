@@ -1,97 +1,112 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 
-	keyring "github.com/zalando/go-keyring"
+	"github.com/HarjjotSinghh/reinstate/internal/credentials"
 )
 
-// These two constants must track internal/credentials/keyring.go's
-// keyringService and devicetoken.go's DeviceTokenRef exactly: hoplab reads
-// and writes the very entry `rein login` and `rein whoami` use, through the
-// same OS keyring library the product already depends on
-// (github.com/zalando/go-keyring, already a direct module dependency --
-// this file adds no new one). W4 does not own internal/credentials, so this
-// mirrors the two names as literals rather than importing the package; a
-// credentials_test.go style guard there would catch drift if either name
-// ever changes, hoplab_test.go pins the literals used here.
-const (
-	hopKeyringService  = "reinstate"
-	hopDeviceTokenName = "hop/device-token"
-)
+// keyring.go is an optional, read-only-by-default diagnostic, not a step
+// any pairing flow needs any more. Every real `rein` process hoplab
+// launches (pair.go's reinEnviron) gets REINSTATE_HOME set to the acting
+// device's own home, and internal/credentials.DeviceTokenEntry derives a
+// distinct OS-keyring entry from that home (commit 2521485f: "give each
+// Reinstate home its own device-token entry") -- so device-a and device-b
+// already hold separate tokens with no save/load swap needed, the way an
+// earlier version of this package required (see git history for
+// keyringSave/keyringLoad, and docs/testing/windows-acceptance-host.md's
+// Hop lab section for what the swap workaround was covering for). This
+// file imports internal/credentials rather than duplicating its
+// service/entry-name rule, per the same instruction that removed the
+// duplicated literals.
+//
+// `hoplab keyring show`/`clear` exist only to answer "what did rein login
+// actually write, and where" when something looks wrong -- never a
+// password manager. show never prints the token itself, only where it
+// lives and whether it is there.
 
-// keyringSnapshotPath is where `hoplab keyring save` writes one device's
-// captured token, and where `load`/`clear` read it back from.
-func keyringSnapshotPath(labRoot, device string) string {
-	return filepath.Join(labRoot, device, "keyring-device-token.json")
+func keyringUsage(w *os.File) {
+	fmt.Fprint(w, `usage: hoplab keyring <show|clear> -root <dir> -device <name>
+
+Optional diagnostic only -- no pairing flow needs this any more (every
+device's REINSTATE_HOME already gets its own OS-keyring entry; see
+internal/credentials.DeviceTokenEntry).
+
+  show   report the OS-keyring entry -device's REINSTATE_HOME maps to, and
+         whether a device token currently sits there (never prints the
+         token itself).
+  clear  remove whatever device token sits at that entry, for a clean-slate
+         'rein login' as this device.
+`)
 }
 
-// keyringSave copies the OS keyring's current Hop device token into a file
-// under the named device's directory, so `rein login` can run again for a
-// different device without losing the first one: the real, single-slot OS
-// keyring is a hoplab limitation the type doc on DeviceHome explains, and
-// this pair of commands (save/load) is the workaround for a sequential,
-// real-binary two-device walk.
-func keyringSave(labRoot, device string) error {
-	raw, err := keyring.Get(hopKeyringService, hopDeviceTokenName)
-	if errors.Is(err, keyring.ErrNotFound) {
-		return fmt.Errorf("no device token is in the OS keyring right now; sign this device in first (`rein login`)")
-	}
-	if err != nil {
-		return fmt.Errorf("read the OS keyring: %w", err)
-	}
-	path := keyringSnapshotPath(labRoot, device)
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+// keyringEntryFor runs fn with REINSTATE_HOME set to h's Reinstate home --
+// exactly what a real `rein` subprocess for h would see (pair.go's
+// reinEnviron) -- so credentials.DeviceTokenEntry() resolves the same
+// entry name `rein login`/`rein whoami` would use for this device. The
+// process-wide env var is restored afterward; callers must not run this
+// concurrently with anything else that reads or sets REINSTATE_HOME in
+// this same process (fine for a single hoplab command invocation, which
+// is the only place this runs).
+func keyringEntryFor(h DeviceHome, fn func() error) error {
+	const homeEnv = "REINSTATE_HOME"
+	old, had := os.LookupEnv(homeEnv)
+	if err := os.Setenv(homeEnv, h.ReinstateHome); err != nil {
 		return err
 	}
-	// The captured value is the product's own device-token JSON
-	// (credentials.DeviceToken, opaque here); indent for a readable diff,
-	// this file never leaves the lab root and the secret scanner covers it
-	// like any other testdata/results artifact.
-	var pretty json.RawMessage = json.RawMessage(raw)
-	buf, err := json.MarshalIndent(pretty, "", "  ")
-	if err != nil {
-		// Not JSON for some reason -- still capture it verbatim rather than
-		// fail the snapshot.
-		return os.WriteFile(path, []byte(raw), 0o600)
-	}
-	return os.WriteFile(path, buf, 0o600)
+	defer func() {
+		if had {
+			_ = os.Setenv(homeEnv, old)
+		} else {
+			_ = os.Unsetenv(homeEnv)
+		}
+	}()
+	return fn()
 }
 
-// keyringLoad restores a device's captured token into the OS keyring,
-// making it the account `rein` sees until the next login or load.
-func keyringLoad(labRoot, device string) error {
-	path := keyringSnapshotPath(labRoot, device)
-	raw, err := os.ReadFile(path)
+// keyringShow reports the OS-keyring entry h's REINSTATE_HOME maps to, and
+// the non-secret fields of whatever device token is stored there (never
+// the bearer token itself).
+func keyringShow(h DeviceHome) error {
+	var entry string
+	var tok credentials.DeviceToken
+	var present bool
+	err := keyringEntryFor(h, func() error {
+		entry = credentials.DeviceTokenEntry()
+		t, err := credentials.NewKeyringStore().GetDeviceToken()
+		switch {
+		case err == nil:
+			tok, present = t, true
+			return nil
+		case errors.Is(err, credentials.ErrNoDeviceToken):
+			return nil
+		default:
+			return err
+		}
+	})
 	if err != nil {
-		if os.IsNotExist(err) {
-			return fmt.Errorf("no saved token for %s; run `hoplab keyring save --device %s` after signing that device in", device, device)
-		}
-		return err
+		return fmt.Errorf("read the OS keyring for %s: %w", h.Name, err)
 	}
-	// Un-indent back to the single-line form the product itself writes,
-	// though keyring.Set stores whatever string it is given either way.
-	var compact map[string]any
-	value := string(raw)
-	if json.Unmarshal(raw, &compact) == nil {
-		if b, err := json.Marshal(compact); err == nil {
-			value = string(b)
-		}
-	}
-	return keyring.Set(hopKeyringService, hopDeviceTokenName, value)
-}
-
-// keyringClear removes whatever device token is currently in the OS
-// keyring (not any saved snapshot), the way `rein login` again from a
-// clean slate needs.
-func keyringClear() error {
-	err := keyring.Delete(hopKeyringService, hopDeviceTokenName)
-	if errors.Is(err, keyring.ErrNotFound) {
+	fmt.Fprintf(os.Stderr, "hoplab: %s -> REINSTATE_HOME=%s -> OS-keyring entry %q\n", h.Name, h.ReinstateHome, entry)
+	if !present {
+		fmt.Fprintf(os.Stderr, "hoplab: no device token there; %s has not run `rein login` (with this REINSTATE_HOME), or it was cleared\n", h.Name)
 		return nil
 	}
-	return err
+	fmt.Fprintf(os.Stderr, "hoplab: device token present: control_plane_url=%s account_id=%s device_id=%s\n", tok.ControlPlaneURL, tok.AccountID, tok.DeviceID)
+	return nil
+}
+
+// keyringClearDevice removes h's device token from the OS keyring, for a
+// clean-slate `rein login` as this device. A missing entry is not an
+// error.
+func keyringClearDevice(h DeviceHome) error {
+	err := keyringEntryFor(h, func() error {
+		return credentials.NewKeyringStore().DeleteDeviceToken()
+	})
+	if err != nil {
+		return fmt.Errorf("clear the OS keyring entry for %s: %w", h.Name, err)
+	}
+	return nil
 }

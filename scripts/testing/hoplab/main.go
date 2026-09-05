@@ -50,6 +50,8 @@ func run(argv []string) int {
 		err = cmdKeyring(rest)
 	case "pair":
 		err = cmdPair(rest)
+	case "ps":
+		err = cmdPs(rest)
 	case "-h", "--help", "help":
 		usage()
 		return 0
@@ -74,10 +76,12 @@ commands:
   approve  approve (or, with -refuse, decline) sign-in emails as they appear
   homes    seed two (or more) isolated device homes under -root
   env      print the env block for one seeded device
-  keyring  save/load/clear the OS keyring's Hop device token, to swap which
-           device the real rein binary acts as
-  pair     init|join: pair two (or more) seeded devices into one Hop
-           account, driving the real rein binary non-interactively
+  keyring  optional diagnostic: show/clear the OS-keyring device-token
+           entry for one seeded device's REINSTATE_HOME
+  pair     init|join|recover: pair two (or more) seeded devices into one
+           Hop account, driving the real rein binary non-interactively
+  ps       list hopd/fakelocker processes hoplab has started on this host
+           (across every lab root), and whether each is still running
 
 See README.md next to this program for full usage.
 `)
@@ -113,17 +117,50 @@ func cmdStart(argv []string) error {
 
 func cmdStop(argv []string) error {
 	fs := flag.NewFlagSet("stop", flag.ExitOnError)
-	root := fs.String("root", "", "lab root directory (required)")
+	root := fs.String("root", "", "lab root directory (required unless -all)")
+	all := fs.Bool("all", false, "stop every lab the process registry still lists as running, across every -root ever used on this machine (see `hoplab ps`)")
 	if err := fs.Parse(argv); err != nil {
 		return err
 	}
+	if *all {
+		return runStopAll(os.Stderr)
+	}
 	if strings.TrimSpace(*root) == "" {
-		return fmt.Errorf("-root is required")
+		return fmt.Errorf("-root is required (or pass -all to stop every recorded lab)")
 	}
 	if err := runStop(*root); err != nil {
 		return err
 	}
 	fmt.Fprintln(os.Stderr, "hoplab: stopped")
+	return nil
+}
+
+func cmdPs(argv []string) error {
+	fs := flag.NewFlagSet("ps", flag.ExitOnError)
+	if err := fs.Parse(argv); err != nil {
+		return err
+	}
+	entries, err := listRegistry()
+	if err != nil {
+		return err
+	}
+	if len(entries) == 0 {
+		fmt.Println("no labs recorded (nothing started with `hoplab start` since the registry was last cleared)")
+		return nil
+	}
+	for _, e := range entries {
+		hopdLive := processAlive(e.HopdPID)
+		lockLive := processAlive(e.LockerPID)
+		status := "running"
+		if !hopdLive && !lockLive {
+			status = "stopped (stale entry; `hoplab stop -all` will clear it)"
+		} else if !hopdLive || !lockLive {
+			status = "partially running (one process exited without cleanup)"
+		}
+		fmt.Printf("%s\n  hopd    pid %-8d %s  alive=%v\n  locker  pid %-8d %s  alive=%v\n  started %s, status: %s\n",
+			e.Root, e.HopdPID, e.HopdAddr, hopdLive, e.LockerPID, e.LockerAddr, lockLive,
+			e.StartedAt.Local().Format(time.RFC3339), status)
+	}
 	return nil
 }
 
@@ -202,44 +239,43 @@ func cmdEnv(argv []string) error {
 		pairs = pairs[1:] // drop the empty REINSTATE_HOP_URL entry
 	}
 	printEnv(os.Stdout, *shell, pairs)
+	printEnvClear(os.Stdout, *shell, ambientOverrideEnv)
 	return nil
 }
 
 func cmdKeyring(argv []string) error {
 	if len(argv) == 0 {
-		return fmt.Errorf("want save|load|clear")
+		keyringUsage(os.Stderr)
+		return fmt.Errorf("want show|clear")
+	}
+	if isHelpFlag(argv[0]) {
+		keyringUsage(os.Stderr)
+		return nil
 	}
 	action, rest := argv[0], argv[1:]
+	if action != "show" && action != "clear" {
+		keyringUsage(os.Stderr)
+		return fmt.Errorf("want show|clear, got %q", action)
+	}
 	fs := flag.NewFlagSet("keyring "+action, flag.ExitOnError)
-	root := fs.String("root", "", "lab root directory")
+	fs.Usage = func() { keyringUsage(os.Stderr) }
+	root := fs.String("root", "", "lab root directory (matches -root given to `hoplab homes`)")
 	device := fs.String("device", "", "device name (matches a name given to `hoplab homes -devices`)")
 	if err := fs.Parse(rest); err != nil {
 		return err
 	}
+	if strings.TrimSpace(*root) == "" || strings.TrimSpace(*device) == "" {
+		return fmt.Errorf("%s needs -root and -device", action)
+	}
+	h := BuildDeviceHome(*root, *device)
 	switch action {
-	case "save":
-		if *root == "" || *device == "" {
-			return fmt.Errorf("save needs -root and -device")
-		}
-		if err := keyringSave(*root, *device); err != nil {
-			return err
-		}
-		fmt.Fprintf(os.Stderr, "hoplab: saved the current OS keyring device token as %s\n", *device)
-	case "load":
-		if *root == "" || *device == "" {
-			return fmt.Errorf("load needs -root and -device")
-		}
-		if err := keyringLoad(*root, *device); err != nil {
-			return err
-		}
-		fmt.Fprintf(os.Stderr, "hoplab: the OS keyring now holds %s's device token; `rein whoami` acts as it\n", *device)
+	case "show":
+		return keyringShow(h)
 	case "clear":
-		if err := keyringClear(); err != nil {
+		if err := keyringClearDevice(h); err != nil {
 			return err
 		}
-		fmt.Fprintln(os.Stderr, "hoplab: cleared the OS keyring device token")
-	default:
-		return fmt.Errorf("want save|load|clear, got %q", action)
+		fmt.Fprintf(os.Stderr, "hoplab: cleared the OS-keyring device-token entry for %s\n", *device)
 	}
 	return nil
 }
