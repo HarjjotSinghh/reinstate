@@ -1,6 +1,6 @@
 # Reinstate
 
-> Reinstate is an open-source tool that syncs encrypted coding-agent sessions across devices. The current pre-1.0 release candidate supports same-vendor Claude Code, Codex, and OpenCode session transfer across macOS and Windows with user-owned S3-compatible storage; stable currently covers Claude Code and Codex only.
+> Reinstate is an open-source tool that syncs encrypted coding-agent sessions across devices. Stable Reinstate supports same-vendor Claude Code and Codex session transfer between macOS and Windows with user-owned S3-compatible storage; the current pre-1.0 release candidate adds OpenCode but is certified on native Windows x64 only so far, with the Apple Silicon macOS run deferred until that hardware returns.
 
 Reinstate is a local command-line tool (`rein`, also `reinstate`), Apache-2.0, written in Go, requiring no hosted service, account, or API key. It finds and continues local coding-agent sessions, syncs encrypted Claude Code, Codex, and (in the current release candidate) OpenCode sessions between a user's own machines through storage they own, and hands a task off to a new Claude Code or Codex session through an explicit structured handoff. Reinstate Hop, an optional hosted tier built into the client, is not yet open (no pricing, trial, or sign-up); see https://reinstate.dev/docs/hop.
 
