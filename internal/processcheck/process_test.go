@@ -177,6 +177,11 @@ func TestSessionBusyWithoutProjectRoot(t *testing.T) {
 }
 
 func TestSessionBusyAcceptsSourceOnlyAgents(t *testing.T) {
+	if _, err := enumerateProcesses(context.Background()); err != nil {
+		// The host cannot list its processes at all; SessionBusy now reports
+		// that rather than answering, which is a different test's subject.
+		t.Skipf("process enumeration unavailable on this host: %v", err)
+	}
 	for _, agent := range []string{"grok", "gemini", "opencode"} {
 		if _, _, err := SessionBusy(context.Background(), agent, Target{Path: filepath.Join(t.TempDir(), "session.jsonl")}); err != nil {
 			t.Fatalf("source-only agent %q busy check: %v", agent, err)
