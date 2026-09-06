@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/HarjjotSinghh/reinstate/internal/agents"
+	"github.com/HarjjotSinghh/reinstate/internal/agents/scan/hometree"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
 )
 
@@ -233,4 +234,133 @@ func TestNewSessionNeedsNoSessionID(t *testing.T) {
 			t.Fatalf("error does not name the offending template: %v", err)
 		}
 	})
+}
+
+// fakeHometreeSource discovers files through hometree.Discover with whatever
+// Config a test hands it, and turns each into a minimal record. It exists so
+// the RootEnv negative and positive controls below can shape a source's root
+// resolution directly, the same way a fourth agent's real source would.
+type fakeHometreeSource struct {
+	cfg hometree.Config
+}
+
+func (f *fakeHometreeSource) Name() string { return "fake" }
+
+func (f *fakeHometreeSource) Scan(ctx context.Context) (sessionindex.ScanResult, error) {
+	_, files, err := hometree.Discover(ctx, f.cfg)
+	if err != nil {
+		return sessionindex.ScanResult{}, err
+	}
+	var result sessionindex.ScanResult
+	for _, file := range files {
+		result.Records = append(result.Records, sessionindex.Record{
+			ID:    filepath.Base(file.Path),
+			Agent: "fake",
+		})
+	}
+	return result, nil
+}
+
+// rootEnvFixtures matches the real claude/macos fixture, reused here only as
+// a stand-in vendor tree — the class under test is generic root resolution,
+// not claude's own layout.
+var rootEnvFixtures = Fixtures{Root: "testdata/sessionindex/claude", OS: []string{"macos"}}
+
+const rootEnvDescriptorKey = "fake-rootenv"
+
+// TestCheckRootEnvCatchesIgnoredOverride is the negative control for
+// F-CURSOR-ROOTENV: a source whose Config never sets RootEnv resolves through
+// Candidates (or nothing, once Candidates can't exist) no matter what the
+// declared environment variable is set to. This is the exact shape Cursor
+// shipped — Storage.RootEnv named CURSOR_CONFIG_DIR, but config() never
+// carried it into hometree.Config — and checkRootEnv must refuse it.
+func TestCheckRootEnvCatchesIgnoredOverride(t *testing.T) {
+	t.Parallel()
+	d := agents.Descriptor{
+		Key:    rootEnvDescriptorKey,
+		Family: agents.FamilyHomeTree,
+		Storage: agents.StorageSpec{
+			RootEnv: "FAKE_ROOTENV_IGNORED",
+		},
+		NewIndexSource: func(env agents.Env) (sessionindex.Source, error) {
+			cfg := hometree.Config{
+				// Explicit is honoured (matches every real source), but
+				// RootEnv is never set on cfg — the bug.
+				Explicit:    env.FixtureRoot,
+				Marker:      "projects",
+				SessionGlob: "projects/**/*.jsonl",
+			}
+			if home, err := env.HomeDir(); err == nil {
+				cfg.Candidates = []string{home.Join("unreachable-candidate")}
+			}
+			return &fakeHometreeSource{cfg: cfg}, nil
+		},
+	}
+	err := checkRootEnv(d, mustRepoRoot(t), rootEnvFixtures)
+	if err == nil {
+		t.Fatal("checkRootEnv passed a source that never wires RootEnv into hometree.Config")
+	}
+	if !strings.Contains(err.Error(), "FAKE_ROOTENV_IGNORED") {
+		t.Fatalf("error %q does not name the ignored variable", err)
+	}
+}
+
+// TestCheckRootEnvAcceptsWiredOverride is the positive control: a source that
+// does carry RootEnv into hometree.Config, the way Claude, Cline, Copilot, Pi,
+// and (after the fix) Cursor all do, must pass.
+func TestCheckRootEnvAcceptsWiredOverride(t *testing.T) {
+	t.Parallel()
+	d := agents.Descriptor{
+		Key:    rootEnvDescriptorKey,
+		Family: agents.FamilyHomeTree,
+		Storage: agents.StorageSpec{
+			RootEnv: "FAKE_ROOTENV_WIRED",
+		},
+		NewIndexSource: func(env agents.Env) (sessionindex.Source, error) {
+			cfg := hometree.Config{
+				Explicit:    env.FixtureRoot,
+				RootEnv:     "FAKE_ROOTENV_WIRED",
+				LookupEnv:   env.LookupEnv,
+				Marker:      "projects",
+				SessionGlob: "projects/**/*.jsonl",
+			}
+			return &fakeHometreeSource{cfg: cfg}, nil
+		},
+	}
+	if err := checkRootEnv(d, mustRepoRoot(t), rootEnvFixtures); err != nil {
+		t.Fatalf("checkRootEnv rejected a source that honours RootEnv: %v", err)
+	}
+}
+
+// TestCheckRootEnvSkipsDescriptorsWithoutOne keeps the check from demanding a
+// root environment variable that a descriptor never declared, and from
+// running past a descriptor's tier (below T1, or outside the hometree
+// family) that has no index source to exercise at all.
+func TestCheckRootEnvSkipsDescriptorsWithoutOne(t *testing.T) {
+	t.Parallel()
+	root := mustRepoRoot(t)
+	for _, d := range []agents.Descriptor{
+		{Key: "no-root-env", Family: agents.FamilyHomeTree, NewIndexSource: func(agents.Env) (sessionindex.Source, error) {
+			t.Fatal("NewIndexSource should not be called for a descriptor with no RootEnv")
+			return nil, nil
+		}},
+		{Key: "no-index-source", Family: agents.FamilyHomeTree, Storage: agents.StorageSpec{RootEnv: "X"}},
+		{Key: "cli-query", Family: agents.FamilyCLIQuery, Storage: agents.StorageSpec{RootEnv: "X"}, NewIndexSource: func(agents.Env) (sessionindex.Source, error) {
+			t.Fatal("NewIndexSource should not be called for a non-hometree family")
+			return nil, nil
+		}},
+	} {
+		if err := checkRootEnv(d, root, rootEnvFixtures); err != nil {
+			t.Fatalf("%s: checkRootEnv = %v, want nil", d.Key, err)
+		}
+	}
+}
+
+func mustRepoRoot(t *testing.T) string {
+	t.Helper()
+	root, err := repoRoot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return root
 }

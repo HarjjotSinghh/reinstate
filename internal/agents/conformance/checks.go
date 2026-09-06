@@ -460,6 +460,83 @@ func probeIsolationFS(wrapped *isolationFS) error {
 	return nil
 }
 
+// checkRootEnv closes the F-CURSOR-ROOTENV class of bug: a hometree source
+// whose catalog descriptor declares a root environment variable (Cursor's
+// CURSOR_CONFIG_DIR, Cline's CLINE_DATA_DIR, and so on) must honour that
+// variable through its own NewIndexSource construction, not merely through
+// the doctor --agents probe, which reads Storage.RootEnv straight off the
+// descriptor and would keep passing even if a source's own root resolution
+// never looked at it. Cursor shipped exactly that gap: RootEnv was declared
+// but never reached hometree.Config, so CURSOR_CONFIG_DIR isolated nothing
+// that sessions, search, inspect, resume, or fork actually used.
+//
+// Every fixture root is proven twice: seeding the env var with the fixture
+// yields the same records as scanning that root directly, and seeding it
+// with an empty directory yields none — so an override that is silently
+// ignored (falling through to a real candidate) cannot pass by accident.
+func checkRootEnv(d agents.Descriptor, repo string, fixtures Fixtures) error {
+	envName := strings.TrimSpace(d.Storage.RootEnv)
+	if envName == "" || d.NewIndexSource == nil || d.Family != agents.FamilyHomeTree {
+		return nil
+	}
+	// A Home that cannot exist keeps a mis-wired override from ever falling
+	// through to Candidates and reading a real device tree during this check.
+	unreachableHome := filepath.Join(os.TempDir(), "reinstate-conformance-unreachable-home")
+	for _, root := range scanRoots(d, repo, fixtures) {
+		baseline, err := scanOnce(d, root)
+		if err != nil {
+			return fmt.Errorf("rootenv %s: baseline scan of %s: %w", envName, root, err)
+		}
+
+		seeded, err := scanWithEnv(d, agents.Env{Home: unreachableHome, LookupEnv: constEnv(envName, root)})
+		if err != nil {
+			return fmt.Errorf("rootenv %s: seeded scan via env override: %w", envName, err)
+		}
+		if !reflect.DeepEqual(baseline.Records, seeded.Records) {
+			return fmt.Errorf("rootenv %s: %s override did not reach %s's own root resolution (baseline %d records, override %d)",
+				envName, envName, d.Key, len(baseline.Records), len(seeded.Records))
+		}
+
+		empty, err := os.MkdirTemp("", "reinstate-conformance-rootenv-empty-*")
+		if err != nil {
+			return fmt.Errorf("rootenv %s: create isolated dir: %w", envName, err)
+		}
+		isolated, scanErr := scanWithEnv(d, agents.Env{Home: unreachableHome, LookupEnv: constEnv(envName, empty)})
+		_ = os.RemoveAll(empty)
+		if scanErr != nil {
+			return fmt.Errorf("rootenv %s: isolated scan: %w", envName, scanErr)
+		}
+		if len(isolated.Records) != 0 {
+			return fmt.Errorf("rootenv %s: an isolated empty %s yielded %d records instead of none",
+				envName, envName, len(isolated.Records))
+		}
+	}
+	return nil
+}
+
+// constEnv is a LookupEnv that answers only for one variable, so a check that
+// seeds one override cannot accidentally see any other environment variable
+// (including a real one set in the host's own shell).
+func constEnv(name, value string) func(string) string {
+	return func(key string) string {
+		if key == name {
+			return value
+		}
+		return ""
+	}
+}
+
+// scanWithEnv builds a source through the descriptor's own NewIndexSource,
+// exactly as the CLI does, rather than reaching into hometree.Config
+// directly — the whole point is to prove the wiring between them.
+func scanWithEnv(d agents.Descriptor, env agents.Env) (sessionindex.ScanResult, error) {
+	source, err := d.NewIndexSource(env)
+	if err != nil {
+		return sessionindex.ScanResult{}, err
+	}
+	return source.Scan(context.Background())
+}
+
 func checkCorruption(d agents.Descriptor) error {
 	if d.NewIndexSource == nil || d.Family != agents.FamilyHomeTree {
 		return nil

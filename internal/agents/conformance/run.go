@@ -1,4 +1,4 @@
-// Package conformance enforces a descriptor's declared tier with nine checks.
+// Package conformance enforces a descriptor's declared tier with ten checks.
 package conformance
 
 import (
@@ -37,7 +37,7 @@ func Run(t Tester, d agents.Descriptor, fixtures Fixtures) {
 	}
 }
 
-// Evaluate runs the nine SDK checks without failing a test.
+// Evaluate runs the ten SDK checks without failing a test.
 func Evaluate(d agents.Descriptor, fixtures Fixtures) []Check {
 	root, err := repoRoot()
 	if err != nil {
@@ -49,6 +49,7 @@ func Evaluate(d agents.Descriptor, fixtures Fixtures) []Check {
 		{Name: "evidence", Err: checkEvidence(d, root)},
 		{Name: "determinism", Err: checkDeterminism(d, root, fixtures)},
 		{Name: "isolation", Err: checkIsolation(d, root, fixtures)},
+		{Name: "rootenv", Err: checkRootEnv(d, root, fixtures)},
 		{Name: "corruption", Err: checkCorruption(d)},
 		{Name: "privacy", Err: checkPrivacy(d, root, fixtures)},
 		{Name: "version", Err: checkVersion(d)},
