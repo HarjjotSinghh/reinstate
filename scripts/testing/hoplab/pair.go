@@ -63,7 +63,7 @@ var recoveryCodePattern = regexp.MustCompile(`\b(?:[0-9A-Z]{4}-){7}[0-9A-Z]{4}\b
 var pairingCodePattern = regexp.MustCompile(`\b(?:[0-9A-Z]{4}-){3}[0-9A-Z]{4}\b`)
 
 func pairUsage(w io.Writer) {
-	fmt.Fprint(w, `usage: hoplab pair <init|join|recover> -root <dir> -device <name> [flags]
+	_, _ = fmt.Fprint(w, `usage: hoplab pair <init|join|recover> -root <dir> -device <name> [flags]
 
   init     first device: rein init --hop, then rein account init.
            Prints the recovery code and saves it to hoplab-state.json for

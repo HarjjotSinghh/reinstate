@@ -54,10 +54,10 @@ func runApprove(ctx context.Context, o approveOptions, out io.Writer, a *Approve
 			seen[email.Link] = true
 			result, err := a.Approve(ctx, email.Link, o.Refuse)
 			if err != nil {
-				fmt.Fprintf(out, "hoplab approve: device %q (%s): FAILED: %v\n", email.Device, email.To, err)
+				_, _ = fmt.Fprintf(out, "hoplab approve: device %q (%s): FAILED: %v\n", email.Device, email.To, err)
 				continue
 			}
-			fmt.Fprintf(out, "hoplab approve: device %q (%s): %s\n", email.Device, email.To, result)
+			_, _ = fmt.Fprintf(out, "hoplab approve: device %q (%s): %s\n", email.Device, email.To, result)
 			approved++
 			if approved >= count {
 				return nil

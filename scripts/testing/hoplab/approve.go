@@ -97,7 +97,7 @@ func (a *Approver) Approve(ctx context.Context, link string, refuse bool) (Appro
 	if err != nil {
 		return "", fmt.Errorf("GET %s: %w", link, err)
 	}
-	getResp.Body.Close()
+	_ = getResp.Body.Close()
 	if getResp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("GET %s: unexpected status %s", link, getResp.Status)
 	}
@@ -112,7 +112,7 @@ func (a *Approver) Approve(ctx context.Context, link string, refuse bool) (Appro
 	if err != nil {
 		return "", fmt.Errorf("POST %s: %w", link, err)
 	}
-	postResp.Body.Close()
+	_ = postResp.Body.Close()
 	if postResp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("POST %s: unexpected status %s", link, postResp.Status)
 	}

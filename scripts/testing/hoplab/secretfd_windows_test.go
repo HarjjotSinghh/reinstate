@@ -34,14 +34,14 @@ func TestHelperProcessReadsRecoveryCodeFD(t *testing.T) {
 	}
 	secret, configured, err := crypto.ReadSecretFD(crypto.RecoveryCodeFDEnv)
 	if !configured {
-		os.Stderr.WriteString("REINSTATE_RECOVERY_CODE_FD was not configured\n")
+		_, _ = os.Stderr.WriteString("REINSTATE_RECOVERY_CODE_FD was not configured\n")
 		os.Exit(2)
 	}
 	if err != nil {
-		os.Stderr.WriteString("ReadSecretFD: " + err.Error() + "\n")
+		_, _ = os.Stderr.WriteString("ReadSecretFD: " + err.Error() + "\n")
 		os.Exit(3)
 	}
-	os.Stdout.Write(secret)
+	_, _ = os.Stdout.Write(secret)
 	os.Exit(0)
 }
 
