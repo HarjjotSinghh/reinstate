@@ -8,18 +8,24 @@ after it, it is a `v0.6.1`.
 Written 2026-09-05; status lines updated by the coordinator. Executors
 append to the last section only.
 
-**Where things stand (2026-09-06, evening).** Candidate PR
-[#404](https://github.com/HarjjotSinghh/reinstate/pull/404) is ready for
-review with CI green (GitGuardian aside, Q13); the deferred-macOS rows are
-[#403](https://github.com/HarjjotSinghh/reinstate/issues/403); follow-ups
-are #405–#408. The pre-tag Windows matrix ran four times on 2026-09-06 and
-stands at 185 of 200 rows, with the two Windows product defects it found
-fixed on the branch and every remaining row a host or definitional
-disposition (`RELEASING.md`, candidate gate). What is left is yours, in
-order: merge #404 (Q5 explains squash versus merge commit), sign and push
-`v0.6.0-rc.1` (Q5), fix the host for the tagged run (Q14 WMI, Q16 Claude
-Code sign-in, Q11 the lab variables, Q12 the elevated shell), then run the
-tagged dispatch or tell me to.
+**Where things stand (2026-09-07).** `v0.6.0-rc.1` was published 2026-09-06
+as a signed GitHub prerelease; its tagged-artifact native Windows acceptance
+([`docs/testing/results/2026-09-06-windows-v060rc1.md`](../../testing/results/2026-09-06-windows-v060rc1.md))
+ended at 201 of 216 required rows `PASS` — every Hop parity row (16/16) and
+every CLI experience row (22/22) passed; all 7 required-row failures were in
+the Phase 5 generated matrix (Cursor CLI root-env isolation, Cline/Cursor
+`message_count`, `push`/`pull --agent` completion, and OpenCode handoff
+determinism), plus one fixture gap (`grok:D4`, no committed
+`partial-final-record` fixture). That report does not authorize stable
+`v0.6.0`. `v0.6.0-rc.2` (2026-09-07) is the corrective candidate: it fixes
+exactly those seven rows and the fixture gap, changes no agent's tier, and
+widens no compatibility range (`RELEASING.md`, "v0.6.0-rc.1 candidate
+evidence" and "v0.6.0-rc.2 candidate gate"). `cline:C3`/`cursor:C3` (search
+excludes message body) remain a known gap, not fixed by this candidate.
+What is left is yours, in order: merge the `v0.6.0-rc.2` release commit,
+sign and push the `v0.6.0-rc.2` tag (Q5), then run the tagged dispatch
+([`docs/testing/v0.6.0-rc.2-agent-verification-prompts.md`](../../testing/v0.6.0-rc.2-agent-verification-prompts.md))
+against native Windows x64, or tell me to.
 
 ---
 

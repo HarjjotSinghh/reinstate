@@ -433,6 +433,87 @@ disposition with the same reason; a new reason is a new finding.
 Publication means ready for tagged-artifact acceptance. It does **not**
 authorize stable `v0.6.0`. Current stable remains `v0.5.1`.
 
+### v0.6.0-rc.1 candidate evidence
+
+`v0.6.0-rc.1` was published 2026-09-06 as a signed GitHub prerelease with
+both live installer routes pinning it. Its tagged-artifact native Windows
+acceptance is recorded at
+[`docs/testing/results/2026-09-06-windows-v060rc1.md`](docs/testing/results/2026-09-06-windows-v060rc1.md):
+**201 of 216** required rows `PASS` (3 `PARTIAL`, 7 `FAIL`, 5 `NOT TESTED`),
+device verdict `FAIL`. Every Hop parity row (section D, 16/16) and every CLI
+experience row (section C, 22/22) passed; the 7 required-row failures were
+all in the Phase 5 generated matrix:
+
+- `cursor:C6` (MAJOR, `F-CURSOR-ROOTENV`) — `CURSOR_CONFIG_DIR` isolated only
+  the `doctor --agents` probe, never `sessions`/`search`/`inspect`/`resume`/
+  `fork`, because Cursor's source never set `hometree.Config.RootEnv`.
+- `cline:C2`, `cursor:C2` (MINOR) — `message_count` unconditionally `0` for
+  both agents instead of derived from the vendor's own message-bearing file.
+- `cline:C3`, `cursor:C3` (MINOR) — search indexes id/title/project/workspace
+  only, never message body, for both agents.
+- `MatrixH:H6` (MINOR, `F-COMPLETION-PUSHPULL`) — `push --agent`/
+  `pull --agent` offered no shell-completion candidates.
+- `opencode:D5` (`PD-B1`) — two `--dry-run` handoffs over an unchanged
+  OpenCode source produced different `handoff_id`/destination `session_id`,
+  because the source boundary hashed OpenCode's entire shared `opencode.db`
+  instead of just that session's own rows.
+
+`claude:D4`/`codex:D4` re-recorded `PARTIAL` (fixture workspace does not
+resolve on Windows; correct refusal) and `opencode:D4` re-recorded
+`NOT TESTED` (definitional: a SQLite-only store has no JSONL boundary),
+carried unchanged from the pre-tag report. `grok:D4` was `NOT TESTED` for a
+new reason: no committed `partial-final-record` fixture existed for Grok
+Build. `qwen:E1/E2/E3/E5` stayed `PARTIAL`/`NOT TESTED` on an expired host
+credential, a host condition rather than a product defect. This report does
+**not** authorize stable `v0.6.0`. Corrective product fixes for the 7
+required-row failures, plus the `grok:D4` fixture gap, land in
+`v0.6.0-rc.2`.
+
+### v0.6.0-rc.2 candidate gate
+
+The corrective candidate. It changes no agent's tier and widens no
+compatibility range — `v0.6.0-rc.1`'s Claude Code, OpenCode, and Codex CLI
+ranges are unchanged — and fixes exactly the defects `v0.6.0-rc.1`'s tagged
+Windows run found:
+
+- Cursor CLI session discovery, search, inspect, resume, and fork now honour
+  `CURSOR_CONFIG_DIR` (`hometree.Config.RootEnv` set in `config()`, matching
+  every sibling T1 source), closing `F-CURSOR-ROOTENV`. A new conformance
+  check fails a hometree agent whose source ignores its declared root
+  environment variable, so this class of gap cannot regress silently.
+- Cline and Cursor `message_count` is derived from each vendor's own
+  message-bearing file (Cline's per-task `*.messages.json` sidecar; Cursor's
+  sibling `store.db`) instead of hard-coded `0`; Cursor `size_bytes` now
+  covers `store.db` as well as `meta.json`.
+- `rein push --agent` and `rein pull --agent` offer shell-completion
+  candidates, closing `F-COMPLETION-PUSHPULL`.
+- An OpenCode-sourced handoff's boundary hash now covers only that session's
+  own rows instead of the whole shared `opencode.db`, so repeated
+  `--dry-run` invocations over an unchanged session are deterministic,
+  closing `PD-B1`.
+- Committed Windows-shaped `partial-final-record` fixtures for Claude Code,
+  Codex, and Grok Build, plus a pipeline-level test
+  (`internal/handoff/partial_final_record_route_test.go`) that drives the
+  real `handoff.Plan()` route against every one and cross-checks the
+  resulting capsule's byte-exact truncation offset and SHA-256, closing the
+  `grok:D4` fixture gap.
+
+`cline:C3` and `cursor:C3` (search excludes message body) are **not**
+addressed by this candidate; they remain a known, documented gap alongside
+the pre-existing `opencode:C3` gap, tracked for a later release.
+
+Governed by the same
+[`docs/testing/v0.6.0-windows-acceptance.md`](docs/testing/v0.6.0-windows-acceptance.md)
+contract, specialised by
+[`docs/testing/v0.6.0-rc.2-agent-verification-prompts.md`](docs/testing/v0.6.0-rc.2-agent-verification-prompts.md).
+`rein doctor --agents --acceptance-matrix` on a binary built from this tree
+reports **178** Phase 5 rows (core `A:10, B:9, G:8, H:6` = 33, unchanged from
+`v0.6.0-rc.1`), plus the 22-row CLI matrix and the 16 Hop parity rows —
+**216** required rows in total, the same count as `v0.6.0-rc.1`.
+
+Publication means ready for tagged-artifact acceptance. It does **not**
+authorize stable `v0.6.0`. Current stable remains `v0.5.1`.
+
 ## Steps
 
 ### 1. Prepare the release commit

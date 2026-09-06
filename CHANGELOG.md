@@ -18,7 +18,121 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is implemented. See [docs/project-continuity.md](docs/project-continuity.md)
   and [ADR 0006](docs/adr/0006-project-continuity-scope.md).
 
+## [0.6.0-rc.2] - 2026-09-07
+
+Release candidate. Stable remains `v0.5.1`; the public installers now pin
+this candidate, superseding `v0.6.0-rc.1`.
+
+**Highlights.** `v0.6.0-rc.1`'s tagged-artifact native Windows acceptance
+([`docs/testing/results/2026-09-06-windows-v060rc1.md`](docs/testing/results/2026-09-06-windows-v060rc1.md))
+established that Reinstate Hop and the interactive CLI work end to end on
+native Windows: all 22 CLI-experience rows and all 16 Hop parity journey
+rows passed. It also found 7 required-row failures, all in the Phase 5
+generated matrix, none of them touching Hop, the daemon, sync, or the
+interactive surfaces. This candidate fixes exactly those seven rows, plus
+one fixture gap the same run found, and changes nothing else: no agent's
+tier moves, and no compatibility range widens.
+
+- **Cursor CLI session isolation.** `CURSOR_CONFIG_DIR` now isolates every
+  Cursor CLI command path — session discovery, search, inspect, resume, and
+  fork — not only `rein doctor --agents`. Cursor's source previously never
+  set `hometree.Config.RootEnv`, unlike every sibling T1 source, so a
+  redirect that looked like it worked was silently testing the operator's
+  real Cursor store instead of the isolated one. A new conformance check
+  fails a hometree agent whose source ignores its declared root environment
+  variable, so this class of gap cannot regress silently on another agent.
+- **Cline and Cursor `message_count`/`size_bytes`.** `message_count` for
+  both agents is derived from each vendor's own message-bearing file — Cline's
+  per-task `*.messages.json` sidecar, counted from its bounded, streamed
+  `messages` array without holding a message's content in memory; Cursor's
+  sibling `store.db`, counted read-only against a small set of recognized
+  table names (an unrecognized store still yields `0`) — instead of being
+  hard-coded to `0`. Cursor `size_bytes` now covers the store a session
+  actually lives in (`meta.json` plus `store.db`), not only the small
+  `meta.json` sidecar.
+- **`push`/`pull --agent` completion.** `rein push --agent` and
+  `rein pull --agent` now offer shell-completion candidates, matching
+  `sessions --agent`, `search --agent`, and `handoff --to`, which already did.
+- **OpenCode handoff determinism.** Two `--dry-run` handoffs from an
+  unchanged OpenCode session no longer mint different `handoff_id`/
+  destination `session_id` values. The source boundary previously hashed
+  OpenCode's entire shared `opencode.db` — which OpenCode's own CLI rewrites
+  as a side effect of ordinary commands — instead of just that session's own
+  rows.
+- **Windows partial-final-record fixtures.** Committed Windows-shaped
+  `partial-final-record` fixtures for Claude Code, Codex, and Grok Build,
+  plus a pipeline-level test
+  (`internal/handoff/partial_final_record_route_test.go`) that drives the
+  real `handoff.Plan()` route — the function `rein handoff --no-launch --json`
+  calls — against every committed macOS- and Windows-shaped fixture and
+  cross-checks the resulting capsule's byte-exact truncation offset and
+  SHA-256 against an independently recomputed boundary. This closes the
+  `grok:D4` fixture gap the rc.1 run found (no committed fixture existed for
+  Grok Build) and reaches the D4 acceptance rows the reader-level fixtures
+  alone did not. The claude/codex partial-final-record-windows fixture
+  READMEs are also corrected: the Windows-shaped recorded workspace was not,
+  as first documented, what lets the handoff capsule route reach its
+  byte-exact cross-check on native Windows — that route is gated by a
+  git-root directory name match (`sameProjectLeaf`), identically on every OS,
+  which the existing macOS-shaped fixture already satisfies under the same
+  conditions.
+
+`cline:C3`/`cursor:C3` (search indexes id, title, project, and workspace
+only, never message body, mirroring the pre-existing `opencode:C3` gap) are
+**not** fixed by this candidate and remain a known, documented gap.
+
+**Not yet certified.** Native Windows x64 tagged-artifact acceptance is what
+this candidate exists to enable; macOS acceptance is deferred under
+[ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md) until
+that hardware returns. Stable remains `v0.5.1`.
+
+### Fixed
+
+- Cursor CLI's `CURSOR_CONFIG_DIR` now isolates `sessions`, `search`,
+  `inspect`, `resume`, and `fork`, not only `doctor --agents`: Cursor's
+  `config()` now sets `hometree.Config.RootEnv`, matching every sibling T1
+  source (`cline`/`copilot`/`pi`).
+- Cline's and Cursor's `message_count` is no longer hard-coded to `0`: Cline
+  counts its per-task `*.messages.json` sidecar's `messages` array (bounded,
+  streamed, never holding a message's content in memory); Cursor counts rows
+  in its sibling `store.db`, read-only, against a small set of recognized
+  table names (schema unverified; an unrecognized store still yields `0`).
+  Cursor's `size_bytes` now reflects the store a session actually lives in
+  (`meta.json` plus `store.db`), not just the small `meta.json` sidecar.
+- `rein push --agent` and `rein pull --agent` now offer shell-completion
+  candidates (previously offered none), matching `sessions`/`search`/
+  `handoff`.
+- A handoff from an OpenCode source could mint a different handoff id and
+  destination session id across repeated `--dry-run` invocations over an
+  unchanged session, because the source boundary hashed OpenCode's entire
+  shared `opencode.db` file (which OpenCode's own CLI rewrites as a side
+  effect of ordinary commands) instead of just that session's own rows.
+- Corrected the claude/codex partial-final-record-windows fixture READMEs:
+  the Windows-shaped recorded workspace was not, as first documented, what
+  let the handoff capsule route reach its byte-exact cross-check on native
+  Windows — that route is gated by a git-root directory name match
+  (`sameProjectLeaf`), identically on every OS, which the existing
+  macOS-shaped fixture already satisfies under the same conditions.
+
+### Added
+
+- A rootenv conformance check that fails a hometree agent whose source
+  ignores its declared root environment variable, catching the class of gap
+  behind the Cursor CLI isolation fix on any future agent.
+- A pipeline-level test (`internal/handoff/partial_final_record_route_test.go`)
+  that drives the real `handoff.Plan()` route — the function
+  `rein handoff --no-launch --json` calls — against every committed
+  claude/codex/grok partial-final-record fixture (macOS- and Windows-shaped)
+  and cross-checks the resulting capsule's byte-exact truncation offset and
+  SHA-256 against an independently recomputed boundary, closing the `grok:D4`
+  acceptance gap the reader-level fixtures alone did not reach.
+
 ## [0.6.0-rc.1] - 2026-09-06
+
+`v0.6.0-rc.1`'s tagged-artifact native Windows acceptance ended at 201 of 216
+required rows `PASS` — every Hop and CLI-experience row passed; the 7
+required-row failures are fixed in `v0.6.0-rc.2`, above. This report does not
+authorize stable `v0.6.0`.
 
 Release candidate. Stable remains `v0.5.1`; the public installers now pin
 this candidate, superseding `v0.5.2-rc.1`, which was published but never
@@ -1411,9 +1525,6 @@ exists to enable, per
   written since the last checkpoint changes only that file, so the fingerprint
   was unchanged and an incremental refresh skipped the scan that would have
   found it — the session stayed invisible however well the reader worked.
-||||||| parent of c6973e3 (fix(website): link documentation on main, not a retired branch)
-||||||| parent of 71d2a7a (fix(website): link documentation on main, not a retired branch)
-||||||| parent of c4743cf (fix(website): link documentation on main, not a retired branch)
 
 - Published pages no longer link documentation on a retired integration branch.
   Sixteen entries in the compatibility data and nine integration pages pointed
@@ -3122,7 +3233,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.1...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.2...HEAD
+[0.6.0-rc.2]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.1...v0.6.0-rc.2
 [0.6.0-rc.1]: https://github.com/HarjjotSinghh/reinstate/compare/v0.5.2-rc.1...v0.6.0-rc.1
 [0.5.0-rc.4]: https://github.com/HarjjotSinghh/reinstate/compare/v0.5.0-rc.3...v0.5.0-rc.4
 [0.5.0-rc.3]: https://github.com/HarjjotSinghh/reinstate/compare/v0.5.0-rc.2...v0.5.0-rc.3
