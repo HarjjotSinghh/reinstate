@@ -95,6 +95,28 @@ describe('/api/{path} catch-all', () => {
   });
 });
 
+/**
+ * On Windows, closing the libsql client (resetWaitlistClient, below) can
+ * return before the OS finishes releasing its file handle on the sqlite
+ * file — deleting the temp directory right after can intermittently fail
+ * with EBUSY even though the client is already closed. Retry the removal
+ * for a short, bounded window; any other error (or one that outlasts the
+ * deadline) still fails the test.
+ */
+async function removeTempDirWhenReleased(dir: string): Promise<void> {
+  const deadline = Date.now() + 120000;
+  for (;;) {
+    try {
+      rmSync(dir, { recursive: true, force: true });
+      return;
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code !== 'EBUSY' || Date.now() > deadline) throw err;
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+  }
+}
+
 describe('waitlist API (v1 and deprecated alias)', () => {
   let dir: string;
 
@@ -106,10 +128,10 @@ describe('waitlist API (v1 and deprecated alias)', () => {
     resetWaitlistClient();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     resetWaitlistClient();
     delete process.env.TURSO_DATABASE_URL;
-    rmSync(dir, { recursive: true, force: true });
+    await removeTempDirWhenReleased(dir);
   });
 
   const post = (handler: typeof v1Post, path: string, body: string) =>

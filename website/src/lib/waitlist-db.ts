@@ -38,6 +38,9 @@ export function getWaitlistClient(): Client {
 
 /** Reset cached client (tests only). */
 export function resetWaitlistClient(): void {
+  if (client) {
+    client.close();
+  }
   client = null;
 }
 
