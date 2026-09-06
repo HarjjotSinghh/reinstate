@@ -17,10 +17,28 @@ Windows root (R1, 2026-08-12).
 | Storage root (Linux/macOS) | `~/.local/share/opencode` |
 | Storage root (Windows) | `%USERPROFILE%\.local\share\opencode` (same XDG layout; **not** `%LOCALAPPDATA%`) |
 | Env override | `XDG_DATA_HOME`, which names the **parent**; the root is `$XDG_DATA_HOME/opencode` |
-| Tables read | `session`, `project`, and whichever of `message` / `session_message` exists |
+| Tables read | `session`, `project`, whichever of `message` / `session_message` exists, and `part` when present |
 | Tables never opened | `credential`, `account`, `control_account`, `account_state` |
 | Project key | opaque 40-hex vendor id; never used as a display name |
 | Session ID shape | `ses_…` |
+
+## Search text (v0.6.0-rc.2, closes #405)
+
+Phase 5 Matrix row `opencode:C3` previously passed by title only: the
+index source's `search_text` carried `id`/title/project/workspace but
+never a message body. It now also carries the bounded, sanitized text
+of a session's `part` rows whose type is `"text"` and whose owning
+`message` row's `data` blob has `"role":"user"` — the same policy
+Claude Code's own reader applies, never assistant replies — read
+through the same `message`/`part` join the sync adapter
+(`internal/adapter/opencode`) already performs, one query per session,
+ordered by `part.id`, bounded to 20,000 rows and to the shared
+`MaxSearchTextBytes` budget. `PromptPreview` falls back to the first
+such part when the vendor recorded no `session.title`.
+A store still on the legacy `session_message`-only schema (no `part`
+table) keeps its `message_count` from that table but yields no search
+text: `session_message.data`'s per-row shape is unverified, and this
+reader does not guess at it.
 
 ## Verified resume (T3)
 

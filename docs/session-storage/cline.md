@@ -4,12 +4,19 @@
 reads `sessions/<slug>/<slug>.json`. **Current tier:** T1 (discover) ·
 **Phase 5 target:** T2. Resume and fork stay refused. `db/sessions.db`
 is not parsed. `*.messages.json` is never indexed as a session of its
-own, but `message_count` comes from it: the sidecar's `messages` array
-is counted with a bounded streaming reader that never decodes one
-message's content into a kept value, let alone the whole array. A
-missing, oversized (over 32 MiB), or malformed sidecar yields
-`message_count: 0` — the same as every session got before this reader
-existed — rather than a partial or guessed count.
+own, but `message_count` and search text both come from it, read in one
+streamed pass: the sidecar's `messages` array is counted, and the text
+of every `"role":"user"` message is collected into the bounded,
+sanitized `search_text` — the same policy Claude Code's own reader
+applies, indexing user turns only, never assistant replies. A missing,
+oversized (over 32 MiB), or malformed sidecar yields `message_count: 0`
+and no search text — the same as every session got before this reader
+read message bodies — rather than a partial or guessed result. One
+message's own encoding is bounded the same way one Claude JSONL event
+is (`MaxJSONLineBytes`, 4 MiB): an oversized message still counts as a
+turn but contributes no text. `PromptPreview` falls back to the
+sidecar's first user message when `meta.json`'s own `prompt` field is
+empty.
 
 Catalog key is `cline`. Descriptor: `internal/agents/catalog/cline.go`.
 
@@ -155,6 +162,11 @@ put these in `Excluded` **before** any read:
    stays F3, and this does not promote the source toward F2 or make
    `*.messages.json` a documented transcript to parse for anything
    beyond that one array's length.
+7. **v0.6.0-rc.2 (closes #405):** `search_text` now also carries the
+   sidecar's user-role message text, fixing Phase 5 Matrix row
+   `cline:C3` (`rein search` previously found only `id`/`title`/
+   `project`/`workspace`, never message body). Assistant text stays
+   out of the index, matching Claude Code's own reader.
 
 ## What a later probe must settle
 

@@ -89,8 +89,9 @@ not walk `projects/agent-transcripts`. Resume and fork stay refused.
 
 `meta.json` is a small index sidecar (observed 127–985 bytes); the
 session's actual content lives in the sibling `store.db` (observed
-69,632 bytes in the macOS probe). Two record fields now come from the
-pair together, not from `meta.json` alone:
+69,632 bytes in the macOS probe). `size_bytes`, `message_count`, and
+`search_text` all now come from the pair together, not from
+`meta.json` alone:
 
 - `size_bytes` is `meta.json`'s size plus `store.db`'s size, so it
   reflects the store the session actually lives in rather than only
@@ -106,14 +107,28 @@ pair together, not from `meta.json` alone:
   store using none of these names yields `message_count: 0` — the
   same value every Cursor session got before this reader existed —
   rather than a guessed count from an unrecognized schema.
+- `search_text` (v0.6.0-rc.2, closes #405, fixes Phase 5 Matrix row
+  `cursor:C3`) is read from that same winning table, and only when it
+  also has a recognized author column (`role`, `author`, `sender`, or
+  `type`) and a recognized body column (`text`, `content`, `body`, or
+  `message`) — both unverified like the table name itself. Only rows
+  whose author column reads `user` or `human` are indexed, matching
+  the policy Claude Code's own reader applies (never assistant
+  replies), ordered by `rowid`, bounded to 20,000 rows and to the
+  shared `MaxSearchTextBytes` budget. A recognized table with a row
+  count but no recognized author/body column pair contributes no text
+  — the same as before this reader read content, not a guess at an
+  unrecognized column's meaning. `PromptPreview` falls back to the
+  first such user row, since Cursor CLI's `meta.json` carries no
+  vendor session title to prefer instead.
 
 This does not promote Cursor toward F2, and it is not "inventing a
 `store.db` reader" in the sense the section below still means: no
-content is read, no schema is assumed to be *true*, and any store this
-guess does not match degrades to the pre-existing behavior instead of
-reporting a wrong number with confidence. A later probe that captures
-the real table name should replace the candidate list, not add to it
-indefinitely.
+schema is assumed to be *true*, and any store this guess does not
+match degrades to the pre-existing behavior instead of reporting a
+wrong number, or fabricated text, with confidence. A later probe that
+captures the real table and column names should replace the candidate
+lists, not add to them indefinitely.
 
 ## Why T0 is `layout_unverified`
 

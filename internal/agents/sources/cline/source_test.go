@@ -2,9 +2,12 @@ package cline
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/HarjjotSinghh/reinstate/internal/agents"
@@ -163,5 +166,140 @@ func TestUnknownLayoutIsSkipped(t *testing.T) {
 	}
 	if len(result.Warnings) == 0 {
 		t.Fatal("want a session_read_failed warning")
+	}
+}
+
+// writeClineSession seeds a synthetic <slug>.json / <slug>.messages.json
+// pair under root/sessions/<slug>/, no real content, matching the fixture
+// layout under testdata/sessionindex/cline.
+func writeClineSession(t *testing.T, root, slug, prompt string, messages []sidecarMessage) {
+	t.Helper()
+	dir := filepath.Join(root, "sessions", slug)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	meta := fmt.Sprintf(
+		`{"cwd":"/tmp/demo","session_id":%q,"started_at":"2026-08-19T06:51:03Z","status":"completed","prompt":%q}`,
+		slug, prompt,
+	)
+	if err := os.WriteFile(filepath.Join(dir, slug+".json"), []byte(meta), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	encoded, err := json.Marshal(struct {
+		SessionID string           `json:"sessionId"`
+		Messages  []sidecarMessage `json:"messages"`
+		Version   int              `json:"version"`
+	}{SessionID: slug, Messages: messages, Version: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, slug+".messages.json"), encoded, 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// TestSearchIndexesUserMessageBody covers Phase 5 Matrix C3 for Cline: search
+// must find text from the message body, not only id/title/project/workspace.
+// It also proves assistant-only text is excluded, matching the Claude
+// reader's policy.
+func TestSearchIndexesUserMessageBody(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	const userToken = "fixture-search-token-cline"
+	const assistantOnlyToken = "assistant-only-reply-marker-cline"
+	writeClineSession(t, root, "slug-search", "", []sidecarMessage{
+		{Role: "user", Text: "Investigate " + userToken + " in the retry loop"},
+		{Role: "assistant", Text: assistantOnlyToken},
+	})
+	result := scan(t, root)
+	if len(result.Records) != 1 {
+		t.Fatalf("records = %d warnings=%v", len(result.Records), result.Warnings)
+	}
+	record := result.Records[0]
+	if !strings.Contains(record.SearchText, userToken) {
+		t.Fatalf("search text does not contain the user message body: %q", record.SearchText)
+	}
+	if strings.Contains(record.SearchText, assistantOnlyToken) {
+		t.Fatalf("search text leaked assistant-only content: %q", record.SearchText)
+	}
+	// meta.json's own prompt was empty, so the preview must fall back to the
+	// sidecar's first user message rather than the bare session id.
+	if !strings.Contains(record.PromptPreview, userToken) {
+		t.Fatalf("prompt preview did not fall back to the first user message: %q", record.PromptPreview)
+	}
+}
+
+// TestSearchTextBoundHolds proves a message far larger than
+// sessionindex.MaxSearchTextBytes is truncated in the final SearchText
+// rather than reported whole.
+func TestSearchTextBoundHolds(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	const marker = "fixture-search-token-cline-bound"
+	oversized := marker + " " + strings.Repeat("padding ", 100000) // far over the 256 KiB search-text bound
+	writeClineSession(t, root, "slug-bound", "", []sidecarMessage{
+		{Role: "user", Text: oversized},
+	})
+	result := scan(t, root)
+	if len(result.Records) != 1 {
+		t.Fatalf("records = %d warnings=%v", len(result.Records), result.Warnings)
+	}
+	record := result.Records[0]
+	if !strings.Contains(record.SearchText, marker) {
+		t.Fatalf("search text lost the leading marker: %q", record.SearchText[:min(200, len(record.SearchText))])
+	}
+	if len(record.SearchText) > sessionindex.MaxSearchTextBytes {
+		t.Fatalf("search text = %d bytes, want at most %d", len(record.SearchText), sessionindex.MaxSearchTextBytes)
+	}
+}
+
+// TestSearchTextRedactsControlSequences proves message-body text goes
+// through the same SafeText sanitization the Claude reader applies, so a
+// terminal escape sequence embedded in a message cannot survive into the
+// stored index.
+func TestSearchTextRedactsControlSequences(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	const marker = "fixture-search-token-cline-escape"
+	writeClineSession(t, root, "slug-escape", "", []sidecarMessage{
+		{Role: "user", Text: "\x1b[31m" + marker + "\x1b[0m\n more text"},
+	})
+	result := scan(t, root)
+	if len(result.Records) != 1 {
+		t.Fatalf("records = %d warnings=%v", len(result.Records), result.Warnings)
+	}
+	record := result.Records[0]
+	if strings.Contains(record.SearchText, "\x1b") {
+		t.Fatalf("search text carries a raw terminal escape: %q", record.SearchText)
+	}
+	if !strings.Contains(record.SearchText, marker) {
+		t.Fatalf("search text lost the sanitized marker: %q", record.SearchText)
+	}
+}
+
+// TestMalformedSidecarStillYieldsRecord proves a *.messages.json this reader
+// cannot parse degrades to an empty search text rather than failing the
+// whole session record.
+func TestMalformedSidecarStillYieldsRecord(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	dir := filepath.Join(root, "sessions", "slug-malformed")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	meta := `{"cwd":"/tmp/demo","session_id":"slug-malformed","started_at":"2026-08-19T06:51:03Z","status":"completed","prompt":"a prompt"}`
+	if err := os.WriteFile(filepath.Join(dir, "slug-malformed.json"), []byte(meta), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "slug-malformed.messages.json"), []byte(`not json`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	result := scan(t, root)
+	if len(result.Records) != 1 {
+		t.Fatalf("records = %d warnings=%v", len(result.Records), result.Warnings)
+	}
+	record := result.Records[0]
+	if record.MessageCount != 0 {
+		t.Fatalf("message_count = %d, want 0 for a malformed sidecar", record.MessageCount)
 	}
 }

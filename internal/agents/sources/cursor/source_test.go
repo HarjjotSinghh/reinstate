@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -304,6 +305,134 @@ func execSQLTimes(t *testing.T, path, stmt string, n int) {
 		if _, err := db.Exec(stmt); err != nil {
 			t.Fatal(err)
 		}
+	}
+}
+
+// TestSearchIndexesMessageBody covers Phase 5 Matrix C3 for Cursor: search
+// must find text from the message body, not only id/title/project/workspace.
+// It also proves assistant-only text is excluded, matching the Claude
+// reader's policy, and that PromptPreview falls back to the first user
+// message (meta.json carries no vendor title for Cursor CLI sessions).
+func TestSearchIndexesMessageBody(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	metaPath := filepath.Join(root, "chats", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "sess-1", "meta.json")
+	writeMeta(t, metaPath, true)
+	storePath := storeDatabasePath(metaPath)
+	const userToken = "fixture-search-token-cursor"
+	const assistantOnlyToken = "assistant-only-reply-marker-cursor"
+	execSQL(t, storePath, `CREATE TABLE messages (id INTEGER PRIMARY KEY, role TEXT, text TEXT, ts INTEGER)`)
+	execSQL(t, storePath, fmt.Sprintf(
+		`INSERT INTO messages (role, text, ts) VALUES ('user', 'Investigate %s in the retry loop', 1), ('assistant', '%s', 2)`,
+		userToken, assistantOnlyToken,
+	))
+
+	result := scan(t, root)
+	if len(result.Records) != 1 {
+		t.Fatalf("records = %d warnings=%v", len(result.Records), result.Warnings)
+	}
+	record := result.Records[0]
+	if !strings.Contains(record.SearchText, userToken) {
+		t.Fatalf("search text does not contain the user message body: %q", record.SearchText)
+	}
+	if strings.Contains(record.SearchText, assistantOnlyToken) {
+		t.Fatalf("search text leaked assistant-only content: %q", record.SearchText)
+	}
+	if !strings.Contains(record.PromptPreview, userToken) {
+		t.Fatalf("prompt preview did not fall back to the first user message: %q", record.PromptPreview)
+	}
+}
+
+// TestSearchTextUnrecognizedColumnsLeavesTextEmpty proves a recognized
+// message table with no recognized text or role column still yields its row
+// count, exactly as before this reader read content, without guessing at an
+// unrecognized column's meaning.
+func TestSearchTextUnrecognizedColumnsLeavesTextEmpty(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	metaPath := filepath.Join(root, "chats", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "sess-1", "meta.json")
+	writeMeta(t, metaPath, true)
+	storePath := storeDatabasePath(metaPath)
+	execSQL(t, storePath, `CREATE TABLE messages (id INTEGER PRIMARY KEY, payload BLOB)`)
+	execSQL(t, storePath, `INSERT INTO messages (payload) VALUES (x'00')`)
+
+	result := scan(t, root)
+	if len(result.Records) != 1 {
+		t.Fatalf("records = %d warnings=%v", len(result.Records), result.Warnings)
+	}
+	record := result.Records[0]
+	if record.MessageCount != 1 {
+		t.Fatalf("message_count = %d, want 1", record.MessageCount)
+	}
+	if strings.Contains(record.SearchText, "\x00") {
+		t.Fatalf("search text carries raw column bytes: %q", record.SearchText)
+	}
+}
+
+// TestSearchTextBoundHolds proves a message far larger than
+// sessionindex.MaxSearchTextBytes is truncated in the final SearchText
+// rather than reported whole.
+func TestSearchTextBoundHolds(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	metaPath := filepath.Join(root, "chats", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "sess-1", "meta.json")
+	writeMeta(t, metaPath, true)
+	storePath := storeDatabasePath(metaPath)
+	const marker = "fixture-search-token-cursor-bound"
+	oversized := marker + " " + strings.Repeat("padding ", 100000)
+	execSQL(t, storePath, `CREATE TABLE messages (id INTEGER PRIMARY KEY, role TEXT, text TEXT, ts INTEGER)`)
+	db, err := sql.Open("sqlite", "file:"+storePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+	if _, err := db.Exec(`INSERT INTO messages (role, text, ts) VALUES ('user', ?, 1)`, oversized); err != nil {
+		t.Fatal(err)
+	}
+
+	result := scan(t, root)
+	if len(result.Records) != 1 {
+		t.Fatalf("records = %d warnings=%v", len(result.Records), result.Warnings)
+	}
+	record := result.Records[0]
+	if !strings.Contains(record.SearchText, marker) {
+		t.Fatalf("search text lost the leading marker: %q", record.SearchText[:min(200, len(record.SearchText))])
+	}
+	if len(record.SearchText) > sessionindex.MaxSearchTextBytes {
+		t.Fatalf("search text = %d bytes, want at most %d", len(record.SearchText), sessionindex.MaxSearchTextBytes)
+	}
+}
+
+// TestSearchTextRedactsControlSequences proves message-body text goes
+// through the same SafeText sanitization the Claude reader applies.
+func TestSearchTextRedactsControlSequences(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	metaPath := filepath.Join(root, "chats", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "sess-1", "meta.json")
+	writeMeta(t, metaPath, true)
+	storePath := storeDatabasePath(metaPath)
+	const marker = "fixture-search-token-cursor-escape"
+	execSQL(t, storePath, `CREATE TABLE messages (id INTEGER PRIMARY KEY, role TEXT, text TEXT, ts INTEGER)`)
+	db, err := sql.Open("sqlite", "file:"+storePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+	if _, err := db.Exec(`INSERT INTO messages (role, text, ts) VALUES ('user', ?, 1)`,
+		"\x1b[31m"+marker+"\x1b[0m\n more text"); err != nil {
+		t.Fatal(err)
+	}
+
+	result := scan(t, root)
+	if len(result.Records) != 1 {
+		t.Fatalf("records = %d warnings=%v", len(result.Records), result.Warnings)
+	}
+	record := result.Records[0]
+	if strings.Contains(record.SearchText, "\x1b") {
+		t.Fatalf("search text carries a raw terminal escape: %q", record.SearchText)
+	}
+	if !strings.Contains(record.SearchText, marker) {
+		t.Fatalf("search text lost the sanitized marker: %q", record.SearchText)
 	}
 }
 

@@ -15,6 +15,16 @@
 // does not match the recognized candidate table names degrades to the
 // message_count 0 this reader always reported before it existed, rather than
 // guessing.
+//
+// Search text is read the same way, from the same recognized table, and only
+// when that table also has a recognized author/role column and a recognized
+// body/text column (see messageRoleColumnCandidates and
+// messageTextColumnCandidates below) — a table with a row count but no
+// recognized author column contributes no text, since there is no way to
+// exclude assistant turns from a store this reader cannot identify authorship
+// in. Where text is available, only user-authored rows are indexed, matching
+// the policy internal/sessionindex/claude.go applies to Claude Code
+// transcripts.
 package cursor
 
 import (
@@ -50,6 +60,31 @@ const StoreDatabaseName = "store.db"
 // name is the live one and the rest are remnants, and summing would double
 // count a store mid-migration.
 var messageTableCandidates = []string{"messages", "message", "bubbles"}
+
+// messageTextColumnCandidates are the column names this reader recognizes as
+// holding one message row's body text. Like the table names above, the real
+// column names are unverified; a recognized table using none of these
+// column names still yields its row count, just no search text — the same
+// as this reader's behavior before content was ever read.
+var messageTextColumnCandidates = []string{"text", "content", "body", "message"}
+
+// messageRoleColumnCandidates are the column names this reader recognizes as
+// naming a message row's author, so only user-authored text is indexed. A
+// recognized table with a recognized text column but no recognized role
+// column still contributes no text: there is no way to exclude assistant
+// turns from it, and guessing every row is a user turn risks indexing the
+// agent's own replies as if the user had typed them.
+var messageRoleColumnCandidates = []string{"role", "author", "sender", "type"}
+
+// userRoleValues are the values this reader recognizes in a role column as
+// naming the user, tried in order.
+var userRoleValues = []string{"user", "human"}
+
+// maxTextRows bounds how many rows of one session's message table are read
+// for search text. Reading stops earlier, as soon as the shared
+// sessionindex.MaxSearchTextBytes budget is spent; this is a backstop against
+// a pathological store with a huge number of tiny rows.
+const maxTextRows = 20000
 
 // SessionGlob matches one CLI session metadata file.
 const SessionGlob = "chats/**/meta.json"
@@ -214,37 +249,48 @@ func parseSession(ctx context.Context, file hometree.File) (sessionindex.Record,
 	}
 
 	// meta.json is a small index sidecar; the session's actual content lives
-	// in the sibling store.db. size_bytes and message_count both come from
-	// the store the session lives in, not from the sidecar alone.
+	// in the sibling store.db. size_bytes, message_count, and search text all
+	// come from the store the session lives in, not from the sidecar alone.
 	sizeBytes := file.Size
 	sourceModTime := file.ModTime.UnixNano()
 	messageCount := 0
+	var messageText, firstUserText string
 	storePath := storeDatabasePath(file.Path)
 	if storeInfo, statErr := os.Stat(storePath); statErr == nil && storeInfo.Mode().IsRegular() {
 		sizeBytes += storeInfo.Size()
 		if storeModTime := storeInfo.ModTime().UnixNano(); storeModTime > sourceModTime {
 			sourceModTime = storeModTime
 		}
-		messageCount = countStoreMessages(ctx, storePath)
+		messageCount, messageText, firstUserText = readStoreMessages(ctx, storePath)
+	}
+
+	safeTitle := sessionindex.SafePreview(title)
+	// title above is always derived from the project name or the bare
+	// session id (Cursor's meta.json carries no vendor title), so the first
+	// user message, when one exists, is always a better preview.
+	preview := safeTitle
+	if fallback := sessionindex.SafePreview(firstUserText); fallback != "" {
+		preview = fallback
 	}
 
 	return sessionindex.Record{
 		Key:            sessionindex.CompositeReference(sessionindex.AgentCursor, id),
 		ID:             id,
 		Agent:          sessionindex.AgentCursor,
-		Title:          sessionindex.SafePreview(title),
+		Title:          safeTitle,
 		Project:        project,
 		Workspace:      workspace,
 		UpdatedAt:      updated,
 		SizeBytes:      sizeBytes,
 		MessageCount:   messageCount,
+		PromptPreview:  preview,
 		CanResume:      false,
 		CanFork:        false,
 		ReadOnlyReason: sessionindex.CursorReadOnlyReason,
 		SourcePath:     file.Path,
 		SourceModTime:  sourceModTime,
 		SourceSize:     sizeBytes,
-		SearchText:     sessionindex.BuildSearchText(id, title, project, workspace),
+		SearchText:     sessionindex.BuildSearchText(id, title, project, workspace, messageText),
 	}, nil
 }
 
@@ -253,29 +299,45 @@ func storeDatabasePath(metaPath string) string {
 	return filepath.Join(filepath.Dir(metaPath), StoreDatabaseName)
 }
 
-// countStoreMessages opens a session's store.db read-only through
-// vendorsqlite (never writing under the vendor's root) and counts rows in
-// whichever recognized message table the store actually has. Any failure to
-// open, query, or recognize the schema yields 0, not an error: the session
-// still gets a record from meta.json, just without a message count. Content
-// is never read — only COUNT(*), computed by SQLite itself.
+// countStoreMessages is a thin wrapper over readStoreMessages for callers
+// (and existing tests) that only need the count.
 func countStoreMessages(ctx context.Context, path string) int {
+	count, _, _ := readStoreMessages(ctx, path)
+	return count
+}
+
+// readStoreMessages opens a session's store.db read-only through
+// vendorsqlite (never writing under the vendor's root) exactly once, and
+// returns the row count of whichever recognized message table the store
+// actually has, that same table's bounded and sanitized user-authored
+// search text, and the first user row's raw text for use as a prompt
+// preview fallback. Any failure to open, query, or recognize the schema
+// yields a zero count and no text, not an error: the session still gets a
+// record from meta.json, just without them.
+func readStoreMessages(ctx context.Context, path string) (count int, searchText string, firstUserText string) {
 	if err := ctx.Err(); err != nil {
-		return 0
+		return 0, "", ""
 	}
 	handle, err := vendorsqlite.Open(path)
 	if err != nil {
-		return 0
+		return 0, "", ""
 	}
 	defer func() { _ = handle.Close() }()
-	return countMessageRows(ctx, handle.DB)
+	table, count := bestMessageTable(ctx, handle.DB)
+	searchText, firstUserText = readMessageText(ctx, handle.DB, table)
+	return count, searchText, firstUserText
 }
 
-func countMessageRows(ctx context.Context, db *sql.DB) int {
+// bestMessageTable reports which recognized message table has the largest
+// row count, and that count. If more than one candidate table is present,
+// the larger count wins, on the same reasoning OpenCode's reader uses for
+// its own migrated table pair: one name is the live one and the rest are
+// remnants, and summing would double count a store mid-migration.
+func bestMessageTable(ctx context.Context, db *sql.DB) (table string, count int) {
 	rows, err := db.QueryContext(ctx,
 		`SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('messages','message','bubbles')`)
 	if err != nil {
-		return 0
+		return "", 0
 	}
 	present := map[string]bool{}
 	for rows.Next() {
@@ -286,22 +348,21 @@ func countMessageRows(ctx context.Context, db *sql.DB) int {
 	}
 	closeErr := rows.Close()
 	if err := rows.Err(); err != nil {
-		return 0
+		return "", 0
 	}
 	if closeErr != nil {
-		return 0
+		return "", 0
 	}
 
-	best := 0
-	for _, table := range messageTableCandidates {
-		if !present[table] {
+	for _, candidate := range messageTableCandidates {
+		if !present[candidate] {
 			continue
 		}
 		if err := ctx.Err(); err != nil {
-			return best
+			return table, count
 		}
 		var query string
-		switch table {
+		switch candidate {
 		case "messages":
 			query = `SELECT COUNT(*) FROM messages`
 		case "message":
@@ -309,15 +370,123 @@ func countMessageRows(ctx context.Context, db *sql.DB) int {
 		case "bubbles":
 			query = `SELECT COUNT(*) FROM bubbles`
 		}
-		var count int
-		if scanErr := db.QueryRowContext(ctx, query).Scan(&count); scanErr != nil {
+		var candidateCount int
+		if scanErr := db.QueryRowContext(ctx, query).Scan(&candidateCount); scanErr != nil {
 			continue
 		}
-		if count > best {
-			best = count
+		if candidateCount > count {
+			count = candidateCount
+			table = candidate
 		}
 	}
-	return best
+	return table, count
+}
+
+// readMessageText reads the bounded, sanitized text of every user-authored
+// row in table, and returns the first such row's raw text separately for use
+// as a prompt preview fallback. table must be empty or one of
+// messageTableCandidates; any other value is refused rather than built into
+// a query. A table with no recognized text column, or no recognized role
+// column, contributes no text — see messageTextColumnCandidates and
+// messageRoleColumnCandidates.
+func readMessageText(ctx context.Context, db *sql.DB, table string) (searchText string, firstUserText string) {
+	if table == "" || !isRecognizedTable(table) {
+		return "", ""
+	}
+	columns, err := tableColumns(ctx, db, table)
+	if err != nil {
+		return "", ""
+	}
+	textColumn := pickColumn(columns, messageTextColumnCandidates)
+	roleColumn := pickColumn(columns, messageRoleColumnCandidates)
+	if textColumn == "" || roleColumn == "" {
+		return "", ""
+	}
+
+	placeholders := make([]string, len(userRoleValues))
+	args := make([]any, 0, len(userRoleValues)+1)
+	for index, value := range userRoleValues {
+		placeholders[index] = "?"
+		args = append(args, value)
+	}
+	// table, textColumn, and roleColumn are only ever one of a small number
+	// of fixed, hardcoded identifiers verified above (isRecognizedTable,
+	// messageTextColumnCandidates, messageRoleColumnCandidates), never a
+	// value read from the vendor's own data, so building the query by string
+	// concatenation carries no injection risk here.
+	query := `SELECT ` + textColumn + ` FROM ` + table +
+		` WHERE ` + roleColumn + ` IN (` + strings.Join(placeholders, ",") + `)` +
+		` ORDER BY rowid LIMIT ?`
+	args = append(args, maxTextRows)
+
+	rows, err := db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return "", ""
+	}
+	defer func() { _ = rows.Close() }()
+	var text sources.BoundedText
+	for rows.Next() {
+		if err := ctx.Err(); err != nil {
+			break
+		}
+		var value sql.NullString
+		if scanErr := rows.Scan(&value); scanErr != nil {
+			continue
+		}
+		if !value.Valid || value.String == "" {
+			continue
+		}
+		if firstUserText == "" {
+			firstUserText = value.String
+		}
+		text.Add(value.String)
+	}
+	return text.String(), firstUserText
+}
+
+// isRecognizedTable reports whether table is one of messageTableCandidates,
+// the only names ever interpolated into a query in this file.
+func isRecognizedTable(table string) bool {
+	for _, candidate := range messageTableCandidates {
+		if table == candidate {
+			return true
+		}
+	}
+	return false
+}
+
+// tableColumns reads a table's column names via PRAGMA table_info. table
+// must already be verified by isRecognizedTable.
+func tableColumns(ctx context.Context, db *sql.DB, table string) (map[string]bool, error) {
+	rows, err := db.QueryContext(ctx, `PRAGMA table_info(`+table+`)`)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	columns := map[string]bool{}
+	for rows.Next() {
+		var (
+			cid          int
+			name, ctype  string
+			notNull, pk  int
+			defaultValue sql.NullString
+		)
+		if err := rows.Scan(&cid, &name, &ctype, &notNull, &defaultValue, &pk); err != nil {
+			continue
+		}
+		columns[strings.ToLower(name)] = true
+	}
+	return columns, rows.Err()
+}
+
+// pickColumn returns the first candidate present in columns, or "".
+func pickColumn(columns map[string]bool, candidates []string) string {
+	for _, candidate := range candidates {
+		if columns[candidate] {
+			return candidate
+		}
+	}
+	return ""
 }
 
 func readMeta(path string) (meta, error) {

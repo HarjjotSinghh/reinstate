@@ -7,9 +7,14 @@
 //
 // Session metadata is pretty-printed JSON. Both platforms also write
 // db/sessions.db; that file is not parsed. *.messages.json is never indexed
-// as a session of its own, but message_count is read from it: the sidecar's
-// "messages" array is counted, bounded and streamed, without ever decoding
-// message content into memory.
+// as a session of its own, but message_count and search text are read from
+// it in one streamed pass: the sidecar's "messages" array is counted, and
+// the text of every user-role message is collected into the bounded,
+// sanitized SearchText the same policy internal/sessionindex/claude.go
+// applies to Claude Code transcripts — user turns only, never assistant
+// replies. One message's own text is bounded the same way one Claude JSONL
+// event is (sessionindex.MaxJSONLineBytes); an oversized message still
+// counts as a turn but contributes no text.
 package cline
 
 import (
@@ -124,7 +129,7 @@ func parseSession(file hometree.File) (sessionindex.Record, error) {
 	if err != nil {
 		return sessionindex.Record{}, err
 	}
-	messageCount := countMessages(messagesSidecarPath(file.Path))
+	messageCount, messageText, firstUserText := readMessagesSidecar(messagesSidecarPath(file.Path))
 	id := strings.TrimSpace(item.SessionID)
 	if id == "" {
 		id = strings.TrimSuffix(filepath.Base(file.Path), filepath.Ext(file.Path))
@@ -140,6 +145,16 @@ func parseSession(file hometree.File) (sessionindex.Record, error) {
 	title := sessionindex.SafePreview(item.Prompt)
 	if title == "" {
 		title = id
+	}
+	// meta.json's own "prompt" field usually already holds the first user
+	// turn, but when it is empty the sidecar's actual first user message is
+	// a better preview than falling straight to the bare session id.
+	preview := sessionindex.SafePreview(item.Prompt)
+	if preview == "" {
+		preview = sessionindex.SafePreview(firstUserText)
+	}
+	if preview == "" {
+		preview = title
 	}
 	updated := parseTime(item.EndedAt)
 	if updated.IsZero() {
@@ -158,14 +173,14 @@ func parseSession(file hometree.File) (sessionindex.Record, error) {
 		UpdatedAt:      updated,
 		SizeBytes:      file.Size,
 		MessageCount:   messageCount,
-		PromptPreview:  title,
+		PromptPreview:  preview,
 		CanResume:      false,
 		CanFork:        false,
 		ReadOnlyReason: sessionindex.ClineReadOnlyReason,
 		SourcePath:     file.Path,
 		SourceModTime:  file.ModTime.UnixNano(),
 		SourceSize:     file.Size,
-		SearchText:     sessionindex.BuildSearchText(id, title, project, workspace),
+		SearchText:     sessionindex.BuildSearchText(id, title, project, workspace, messageText),
 	}, nil
 }
 
@@ -211,37 +226,72 @@ func messagesSidecarPath(metaPath string) string {
 	return strings.TrimSuffix(metaPath, filepath.Ext(metaPath)) + ".messages.json"
 }
 
+// sidecarMessage is the shape of one entry in a Cline *.messages.json
+// sidecar's "messages" array. Only role and text are read; every other field
+// (timestamps, tool payloads, …) is left in the discarded json.RawMessage.
+type sidecarMessage struct {
+	Role string `json:"role"`
+	Text string `json:"text"`
+}
+
 // countMessages counts the entries in a Cline *.messages.json sidecar's
-// "messages" array without ever holding the whole file, or the content of
-// any one message, in memory. Every message is decoded into a throwaway
-// json.RawMessage and discarded immediately; only the count is kept. A
-// missing, oversized, or malformed sidecar is not an error: a task that has
-// not written one yet, or one this reader cannot make sense of, still gets a
-// record — just with message_count 0, the same as before this reader existed.
+// "messages" array. It is a thin wrapper over readMessagesSidecar for
+// callers that only need the count.
 func countMessages(path string) int {
+	count, _, _ := readMessagesSidecar(path)
+	return count
+}
+
+// readMessagesSidecar streams a Cline *.messages.json sidecar exactly once,
+// returning the total message count, the bounded and sanitized search text
+// of every user-role message (never assistant replies, matching the Claude
+// reader's own policy), and the first user message's raw text for use as a
+// prompt preview fallback. Every message is decoded into a throwaway
+// json.RawMessage first so the whole file is never held in memory at once;
+// one message whose own encoding exceeds sessionindex.MaxJSONLineBytes still
+// counts as a turn but contributes no text, the same bound Claude's reader
+// applies to one JSONL event. A missing, oversized, or malformed sidecar is
+// not an error: a task that has not written one yet, or one this reader
+// cannot make sense of, still gets a record — just with message_count 0 and
+// no search text, the same as before this reader existed.
+func readMessagesSidecar(path string) (count int, searchText string, firstUserText string) {
 	info, err := os.Stat(path)
 	if err != nil || !info.Mode().IsRegular() || info.Size() > maxMessagesSidecarBytes {
-		return 0
+		return 0, "", ""
 	}
 	file, err := os.Open(path)
 	if err != nil {
-		return 0
+		return 0, "", ""
 	}
 	defer func() { _ = file.Close() }()
 
 	dec := json.NewDecoder(file)
 	if !seekMessagesArray(dec) {
-		return 0
+		return 0, "", ""
 	}
-	count := 0
+	var text sources.BoundedText
 	for dec.More() {
-		var discard json.RawMessage
-		if err := dec.Decode(&discard); err != nil {
-			return 0
+		var raw json.RawMessage
+		if err := dec.Decode(&raw); err != nil {
+			return count, text.String(), firstUserText
 		}
 		count++
+		if len(raw) > sessionindex.MaxJSONLineBytes {
+			continue
+		}
+		var msg sidecarMessage
+		if json.Unmarshal(raw, &msg) != nil {
+			continue
+		}
+		if !strings.EqualFold(msg.Role, "user") || msg.Text == "" {
+			continue
+		}
+		if firstUserText == "" {
+			firstUserText = msg.Text
+		}
+		text.Add(msg.Text)
 	}
-	return count
+	return count, text.String(), firstUserText
 }
 
 // seekMessagesArray advances dec to just past the opening "[" of the

@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -46,9 +47,19 @@ const maxSessions = 10000
 // threshold. Reading a private copy of the database and its log sees them, and
 // still writes nothing under the agent root.
 //
-// Only the session, project and session_message tables are read. The same
-// database also holds credential and account tables, and those are never
-// opened.
+// Only the session, project, message, part, and session_message tables are
+// read. The same database also holds credential and account tables, and
+// those are never opened.
+//
+// Search text comes from the message+part pair the sync adapter
+// (internal/adapter/opencode) already reads: each part row's "text"-typed
+// content, for parts belonging to a "user"-role message, matching the policy
+// internal/sessionindex/claude.go applies to Claude Code transcripts — user
+// turns only, never assistant replies. A store still on the legacy
+// session_message schema (no part table) has no separately addressable part
+// text through this reader, so it keeps the message_count this reader
+// always reported and yields no search text, rather than guessing at that
+// table's unverified per-row shape.
 type SQLiteSource struct {
 	env agents.Env
 }
@@ -144,6 +155,7 @@ func (s *SQLiteSource) Scan(ctx context.Context) (sessionindex.ScanResult, error
 	// versions, so the count comes from whichever ones this store actually has
 	// rather than from a hard-coded name.
 	countExpr := messageCountExpression(ctx, db)
+	hasPart := partTablePresent(ctx, db)
 
 	rows, err := db.QueryContext(ctx, `
 SELECT s.id,
@@ -182,8 +194,10 @@ SELECT s.id,
 		if id == "" {
 			continue
 		}
+		searchText, firstUserText := readSessionSearchText(ctx, db, id, hasPart)
 		result.Records = append(result.Records,
-			recordFromRow(id, title, directory, projectName, worktree, updated, created, messages, path, modTime, size))
+			recordFromRow(id, title, directory, projectName, worktree, updated, created, messages,
+				path, modTime, size, searchText, firstUserText))
 	}
 	if err := rows.Err(); err != nil {
 		return result, warnOnly(&result, path, err)
@@ -242,10 +256,89 @@ func messageCountExpression(ctx context.Context, db *sql.DB) string {
 	}
 }
 
+// maxSearchParts bounds how many of one session's part rows are read for
+// search text. Reading stops earlier, as soon as the shared
+// sessionindex.MaxSearchTextBytes budget is spent; this is a backstop
+// against a pathological session with a huge number of tiny parts.
+const maxSearchParts = 20000
+
+// partTablePresent reports whether this store has the part table the sync
+// adapter reads. Its absence means a legacy session_message-only schema,
+// which carries no separately addressable part text through this reader.
+func partTablePresent(ctx context.Context, db *sql.DB) bool {
+	var name string
+	err := db.QueryRowContext(ctx,
+		`SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'part'`).Scan(&name)
+	return err == nil
+}
+
+// opencodeMessageEnvelope is the subset of a message.data JSON blob this
+// reader needs: just enough to tell a user turn from an assistant one.
+type opencodeMessageEnvelope struct {
+	Role string `json:"role"`
+}
+
+// opencodePartEnvelope is the subset of a part.data JSON blob this reader
+// needs. Only "text"-typed parts carry prose; every other part type (tool
+// calls, file diffs, …) is skipped.
+type opencodePartEnvelope struct {
+	Type string `json:"type"`
+	Text string `json:"text"`
+}
+
+// readSessionSearchText collects the bounded, sanitized text of one
+// session's user-authored text parts — matching the policy
+// internal/sessionindex/claude.go applies to Claude Code transcripts, never
+// assistant replies — and separately returns the first such part's raw text
+// for use as a prompt preview fallback. hasPart being false (a
+// session_message-only store) yields no text, not a guess at that legacy
+// table's unverified row shape.
+func readSessionSearchText(ctx context.Context, db *sql.DB, sessionID string, hasPart bool) (searchText string, firstUserText string) {
+	if !hasPart {
+		return "", ""
+	}
+	rows, err := db.QueryContext(ctx, `
+SELECT message.data, part.data
+  FROM part
+  JOIN message ON message.id = part.message_id
+ WHERE part.session_id = ?
+ ORDER BY part.id
+ LIMIT ?`, sessionID, maxSearchParts)
+	if err != nil {
+		return "", ""
+	}
+	defer func() { _ = rows.Close() }()
+
+	var text sources.BoundedText
+	for rows.Next() {
+		if err := ctx.Err(); err != nil {
+			break
+		}
+		var messageData, partData []byte
+		if scanErr := rows.Scan(&messageData, &partData); scanErr != nil {
+			continue
+		}
+		var message opencodeMessageEnvelope
+		if json.Unmarshal(messageData, &message) != nil || !strings.EqualFold(message.Role, "user") {
+			continue
+		}
+		var part opencodePartEnvelope
+		if json.Unmarshal(partData, &part) != nil || !strings.EqualFold(part.Type, "text") || part.Text == "" {
+			continue
+		}
+		if firstUserText == "" {
+			firstUserText = part.Text
+		}
+		text.Add(part.Text)
+	}
+	return text.String(), firstUserText
+}
+
 func recordFromRow(
 	id, title, directory, projectName, worktree string,
 	updated, created int64, messages int,
 	path string, modTime, size int64,
+	searchText, firstUserText string,
 ) sessionindex.Record {
 	workspace := strings.TrimSpace(directory)
 	if workspace == "" {
@@ -272,6 +365,16 @@ func recordFromRow(
 		safeTitle = id
 	}
 
+	// The vendor's own session.title is usually a real summary and stays the
+	// preferred preview; only when the vendor never recorded one does the
+	// first user message stand in for it.
+	preview := safeTitle
+	if strings.TrimSpace(title) == "" {
+		if fallback := sessionindex.SafePreview(firstUserText); fallback != "" {
+			preview = fallback
+		}
+	}
+
 	// OpenCode continues a session by id — `opencode --session <id>`, plus
 	// `--fork` for a branch — and it starts that session in a working
 	// directory. A row whose directory the vendor never recorded has nowhere to
@@ -292,13 +395,14 @@ func recordFromRow(
 		Workspace:      workspace,
 		UpdatedAt:      unixMillisOrSeconds(stamp),
 		MessageCount:   messages,
+		PromptPreview:  preview,
 		CanResume:      resumable,
 		CanFork:        resumable,
 		ReadOnlyReason: reason,
 		SourcePath:     path,
 		SourceModTime:  modTime,
 		SourceSize:     size,
-		SearchText:     sessionindex.BuildSearchText(id, safeTitle, project, workspace),
+		SearchText:     sessionindex.BuildSearchText(id, safeTitle, project, workspace, searchText),
 	}
 }
 

@@ -164,6 +164,13 @@ func recordFrom(values map[string]any) (sessionindex.Record, bool) {
 	}
 
 	sourcePath := "opencode://session/" + id
+	// `opencode session list --format json` — this source's only data — is
+	// metadata only; the vendor CLI never returns message bodies (see
+	// docs/session-storage/opencode.md, "Phase 4 constraint"). There is no
+	// text this source could add to SearchText without shelling out to read
+	// storage/message/ directly, which is a different, unshipped source. The
+	// shipped OpenCode index is the embedded-SQLite SQLiteSource in
+	// sqlite.go, whose search text does include message-part bodies.
 	return sessionindex.Record{
 		Key:            sessionindex.CompositeReference(sessionindex.AgentOpenCode, id),
 		ID:             id,

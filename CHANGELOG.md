@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Cline, Cursor, and OpenCode `search_text` now indexes message body,
+  not just id/title/project/workspace** (closes #405, fixes Phase 5
+  Matrix rows `cline:C3`, `cursor:C3`, `opencode:C3` — `cline:C3` and
+  `cursor:C3` were left as a documented gap in `v0.6.0-rc.2`).
+  `rein search` now finds a session by a word or phrase from what the
+  user actually typed, for all three sources, matching the policy
+  Claude Code's own reader already applied: only user-authored text is
+  indexed, never assistant replies, through the same bounded,
+  sanitized builder every reader uses (`sessionindex.BuildSearchText` /
+  `sources.BoundedText`), capped at the shared `MaxSearchTextBytes`
+  budget.
+  - **Cline** streams each session's `*.messages.json` sidecar once,
+    collecting `message_count` and search text together instead of two
+    passes; one oversized message still counts as a turn but
+    contributes no text.
+  - **Cursor** reads the same recognized `store.db` table
+    `message_count` already comes from, now also requiring a
+    recognized author column (`role`/`author`/`sender`/`type`) and a
+    recognized body column (`text`/`content`/`body`/`message`) before
+    indexing any text; a table with neither keeps the pre-existing
+    count-only behavior rather than guessing at an unrecognized
+    schema.
+  - **OpenCode**'s embedded-SQLite source reads the same
+    `message`+`part` join its own sync adapter already uses, one
+    query per session, for `"text"`-typed parts of `"role":"user"`
+    messages; a store still on the legacy `session_message`-only
+    schema (no `part` table) is unaffected. OpenCode's CLI-query
+    source (unused by the shipped catalog descriptor) is unchanged:
+    `opencode session list` returns metadata only, never message
+    bodies.
+  - All three sources now also set `PromptPreview` from the first
+    user message when the vendor recorded no usable title.
+
 ## [0.6.0-rc.2] - 2026-09-07
 
 Release candidate. Stable remains `v0.5.1`; the public installers now pin
