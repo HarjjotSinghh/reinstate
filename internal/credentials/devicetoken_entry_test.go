@@ -1,6 +1,7 @@
 package credentials
 
 import (
+	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
@@ -32,11 +33,12 @@ func TestDeviceTokenEntryGivesEveryOtherHomeItsOwnEntry(t *testing.T) {
 }
 
 func TestDeviceTokenEntryIgnoresTrailingSeparators(t *testing.T) {
-	if deviceTokenEntry(`D:\lab\home`) != deviceTokenEntry(`D:\lab\home\`) {
+	base := filepath.Join(t.TempDir(), "home")
+	if deviceTokenEntry(base) != deviceTokenEntry(base+string(filepath.Separator)) {
 		t.Fatal("a trailing separator changed the entry")
 	}
-	if deviceTokenEntry("/home/dev/.reinstate") != deviceTokenEntry("/home/dev/.reinstate/") {
-		t.Fatal("a trailing slash changed the entry")
+	if deviceTokenEntry(base) != deviceTokenEntry(filepath.Join(base, ".")) {
+		t.Fatal("a trailing dot segment changed the entry")
 	}
 }
 
