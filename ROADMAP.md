@@ -2,7 +2,7 @@
 
 > Status legend: ✅ done · 🚧 in progress · 📋 planned · 💭 exploring · ❌ won't do (for now)
 
-Last updated: **2026-09-05** · Maintainer: [Harjot Singh Rana](https://github.com/HarjjotSinghh)
+Last updated: **2026-09-06** · Maintainer: [Harjot Singh Rana](https://github.com/HarjjotSinghh)
 
 This roadmap is a living document. Priorities follow real activation signals —
 especially **successfully resumed tasks per active user** — and vendor format
@@ -36,13 +36,21 @@ reconcile that desired state across supported harnesses and devices. This is a
 configuration layer around existing tools, not a new harness or a reason to
 copy credentials.
 
+Continuity also covers what a project *knows*. Rules, decisions, and the
+knowledge an agent earns while working are state too, and today each harness
+keeps its own copy or none at all. Reinstate should carry one project
+understanding — reviewed context in the repository, learned memory with
+provenance in the encrypted store — so that a rule stated to one agent binds
+every agent, on every device.
+
 ### Value ladder
 
 1. One session → another (find and resume)
 2. One agent → another (portable handoff)
 3. One project environment → another (verified resume)
-4. One device → another (encrypted sync)
-5. Eventually one developer → another (team continuity)
+4. One project understanding → every agent (shared context and memory)
+5. One device → another (encrypted sync)
+6. Eventually one developer → another (team continuity)
 
 ### Product layers
 
@@ -51,8 +59,9 @@ copy credentials.
 | **1. Session recovery** | Everyone | discover, search, preview, resume, fork, export |
 | **2. Agent portability** | Multi-agent users | handoffs, checkpoints, capability compare |
 | **3. Environment continuity** | Serious users | MCP/skills/hooks/runtime/repo validation and repair |
-| **4. Cloud continuity** | Multi-device users | encrypted sync, backup, device handoff |
-| **5. Team continuity** | Teams (later) | shared checkpoints, onboarding, audit |
+| **4. Project understanding** | Multi-agent users | canonical rules and decisions, shared memory with provenance, capture and promotion, conflict reports |
+| **5. Cloud continuity** | Multi-device users | encrypted sync, backup, device handoff |
+| **6. Team continuity** | Teams (later) | shared checkpoints, onboarding, audit |
 
 We do **not** aim to be:
 
@@ -386,7 +395,142 @@ Detailed design direction:
 
 ---
 
-## Phase 7 — Reinstate Console (thin client, not a harness) 💭
+## Phase 7 — Project continuity 📋
+
+One project understanding, shared by every agent. Phase 6 carries the
+*configuration* of an agent environment. A project's rules, decisions, and
+hard-won knowledge are different state, and today they live wherever the agent
+that learned them keeps its own memory.
+
+The failure is ordinary. A rule stated to one agent binds that agent only.
+Claude Code keeps `CLAUDE.md` and its own per-project memory; Codex, Cursor,
+Grok, OpenCode, and Gemini CLI each keep separate instruction files and stores.
+The next agent then contradicts a decision the first one recorded, and nobody
+notices until review.
+
+**Gate:** state a project rule once and have Claude Code, Codex, Cursor, Grok,
+OpenCode, and Gemini CLI honor it; record a memory in one agent's session and
+retrieve it, with provenance, from a different agent on a second device; and
+have Reinstate flag a memory that a later decision contradicts instead of
+serving both as true.
+
+Targeted at `v0.8.0`, after Phase 6A/6B in `v0.7.0`: rendering project context
+into native instruction files reuses the configuration-adapter contract 6A
+defines, and durable context is exactly the kind of desired state 6A already
+knows how to preview, back up, and write atomically.
+
+### 7A. Canonical project context
+
+Durable, human-reviewed truth: rules, conventions, architecture, and decisions.
+It lives in the repository, is reviewed in pull requests, and stays readable
+with Reinstate uninstalled.
+
+| Item | Status |
+| ---- | ------ |
+| Canonical project tree (rules, conventions, architecture, decisions) committed to the repository | 📋 |
+| Path- and task-scoped rules instead of one file that grows until agents ignore it | 📋 |
+| Decision records with dates, rationale, and supersede links | 📋 |
+| `rein context init` / `adopt` / `list` / `show` | 📋 |
+| Adoption of existing `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, and editor rule files | 📋 |
+| Rendering through Phase 6A adapters into delimited generated regions that never overwrite hand-written prose | 📋 |
+| No lock-in: the canonical tree stays plain reviewable files | 📋 |
+
+`AGENTS.md` and the harness-native instruction files stay render targets.
+Reinstate does not fork the formats the ecosystem already reads.
+
+### 7B. Shared memory with provenance
+
+What an agent learns while working: gotchas, workarounds, rejected approaches,
+and observations that are true today and may not be true next month.
+
+| Item | Status |
+| ---- | ------ |
+| Typed records (fact, decision, gotcha, workaround, preference, rejected approach) | 📋 |
+| Provenance on every record: agent, session id, device, branch, commit, timestamp | 📋 |
+| Confidence, status, scope, supersede links, and expiry | 📋 |
+| Scoped retrieval — the records relevant to a task, never the whole store | 📋 |
+| Local encrypted store, synced as non-secret project state alongside sessions | 📋 |
+| Secret scanning on every record before it is stored or synced | 📋 |
+| `rein memory add` / `search` / `inspect` / `supersede` | 📋 |
+
+### 7C. Capture, promotion, and conflict detection
+
+The write path, which is the part no existing tool closes: something learned in
+one agent's session becomes reviewable project state for every agent.
+
+| Item | Status |
+| ---- | ------ |
+| Reinstate MCP server exposing memory search/add/update/supersede to any MCP-capable harness | 📋 |
+| Explicit capture only — a tool call or `rein remember`, never silent transcript mining | 📋 |
+| Review queue: an agent proposes a memory; it is not promoted on its own authority | 📋 |
+| `rein memory promote` — learned memory becomes reviewed context in the repository | 📋 |
+| Contradiction detection between a memory and a newer decision | 📋 |
+| Staleness signals: age, expiry, and evidence that no longer matches the tree | 📋 |
+| Bounded, redacted memory in `rein inspect` output | 📋 |
+
+### 7D. Cross-agent readiness
+
+| Item | Status |
+| ---- | ------ |
+| `rein status`: context, memory, skills, MCP, and auth per agent in one view | 📋 |
+| Drift between desired state and each harness's native state | 📋 |
+| Unreviewed memories and open conflicts reported as counts, not noise | 📋 |
+| Verified resume (Phase 3) reporting missing project context beside missing MCP servers | 📋 |
+| Cross-device reconciliation of context and memory, reusing Phase 6C sync | 📋 |
+
+Illustrative output (design direction, not a shipped command):
+
+```text
+Project    reinstate            Branch  main
+
+Context    14 rules · 8 decisions       1 conflict
+Memory     31 active · 2 stale          4 unreviewed
+
+             Context  Memory  Skills  MCP
+Claude Code  current  current   8/8    6/6
+Codex        current  current   8/8    6/6
+Cursor       drift    current   8/8    5/6
+OpenCode     current  current   8/8    6/6
+
+Conflict   memory/18 "use Redis for job queues"
+           contradicts decision 0041 (Redis replaced by SQS, 2026-08-14)
+```
+
+### Authenticate-once MCP gateway 💭
+
+The other half of the MCP problem is authentication: the same server has to be
+logged into separately in every harness. The shape of a fix is obvious — a
+local gateway every agent connects through, credentials in the OS keychain —
+and existing tools already occupy that position. Phase 6B ships native
+projection and guided login flows first. Reinstate builds a gateway only if all
+three hold:
+
+1. Declared MCP configuration reconciles cleanly, and authentication is still
+   the dominant reported friction.
+2. No existing gateway can simply be declared as desired state and reconciled
+   by Reinstate, instead of replaced by it.
+3. Routing every agent's tool calls through a Reinstate process measurably
+   improves continuity, rather than adding one more component to trust.
+
+### Boundaries
+
+| Not this | Why |
+| -------- | --- |
+| Silent transcript mining | Durable state is created by an explicit act, not inferred from conversation content |
+| A vector-database or knowledge-graph product | Retrieval stays scoped and explainable, and every record names where it came from |
+| A replacement for git | Reviewed project truth is committed; only learned memory and provenance live in the encrypted store |
+| Parallel-agent arbitration | Reinstate records who learned what; it does not claim files, lock edits, or referee two running agents |
+| A credential store | Authentication stays Phase 6B: secret references, keychain resolution, official login flows |
+
+Detailed design direction:
+[docs/project-continuity.md](docs/project-continuity.md),
+[ADR 0006](docs/adr/0006-project-continuity-scope.md), and the verified
+[landscape survey](docs/research/2026-09-06-phase-7-cross-agent-context-landscape.md)
+of what already exists in this space.
+
+---
+
+## Phase 8 — Reinstate Console (thin client, not a harness) 💭
 
 Optional UI that **selects and prepares** sessions; agents still **execute**.
 
@@ -403,7 +547,7 @@ Claude Code / Codex / Gemini / OpenCode own the agent loop.
 
 ---
 
-## Phase 8 — Team continuity 💭
+## Phase 9 — Team continuity 💭
 
 | Item | Status |
 | ---- | ------ |
@@ -429,6 +573,8 @@ Claude Code / Codex / Gemini / OpenCode own the agent loop.
 | Perfect silent Claude↔Codex transcript translation | Formats and tools differ; use portable handoffs |
 | Multi-tenant real-time CRDT collab | Sequential dual-machine (and dual-agent) use first |
 | Replacing git | Git remains source truth; Reinstate is context truth |
+| Inferring durable project rules from transcripts without an explicit act | Memory a person did not choose to keep is memory they cannot trust |
+| Parallel-agent file claims, locks, or arbitration | Harnesses own concurrent execution; Reinstate records provenance, not turns |
 | Shipping vendor API keys or copying vendor auth stores | Use local secret references and supported login flows; credentials never synced |
 | Reinstate-owned plugin runtime or agent marketplace | Coordinate native harness mechanisms; do not become an execution ecosystem |
 
@@ -496,6 +642,8 @@ Landing / docs survey:
 - Back up sessions automatically
 - Configure MCP servers once across harnesses and devices
 - Install the same skills, loops, plugins, and marketplaces across harnesses
+- Keep one set of project rules and decisions across every agent
+- Keep what one agent learned available to the next one
 - Recover sessions after crashes or reinstalls
 - Hand work to another developer
 
@@ -515,6 +663,10 @@ handoffs attempted, config mismatches, remote resumes.
   candidate and stable acceptance are native Windows x64 only, under the
   waiver in [ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md),
   with macOS rows deferred until that hardware returns
+- **`v0.7.0` then `v0.8.0`:** Phase 6A/6B (universal configuration and
+  authentication coordination) followed by Phase 7 (project continuity).
+  Neither is implemented today; both are roadmap direction until an
+  acceptance run says otherwise
 - Releases: signed GitHub tags, checksums, SBOMs, source archive, and artifact
   attestations; see [RELEASING.md](RELEASING.md)
 

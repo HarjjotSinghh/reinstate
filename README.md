@@ -531,7 +531,11 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 | **3** | Verified resume (stable `v0.3.0`) | ✅ |
 | **4** | Structured cross-agent handoffs (stable `v0.4.0`) | ✅ |
 | **5** | Universal agent coverage (stable `v0.5.1`) | ✅ |
-| **6–7** | Universal config + automatic sync, thin Console/ACP client, teams | 📋 / 💭 |
+| **6C** | Cloud continuity — Hop hosted sync, device registry, daemon (candidate `v0.6.0-rc.1`) | 🚧 |
+| **6A–6B** | Universal agent configuration + auth coordination | 📋 |
+| **7** | Project continuity — shared context and memory across agents | 📋 |
+| **8** | Reinstate Console (thin client) | 💭 |
+| **9** | Team continuity | 💭 |
 
 Full detail: **[ROADMAP.md](ROADMAP.md)**
 

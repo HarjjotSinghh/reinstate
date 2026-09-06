@@ -13,7 +13,7 @@ const description =
   {description}
   path="/roadmap"
   eyebrow="Product roadmap"
-  answer="Stable v0.2.0 implements encrypted same-vendor sync and local continuity. Stable v0.3.0 adds verified resume. Stable v0.4.0 adds explicit structured cross-agent handoff after dual-platform tagged-artifact acceptance PASS. Stable v0.5.1 adds universal agent coverage by support tier after dual-platform tagged-artifact acceptance PASS. The v0.6.0-rc.1 release candidate carries Phase 6C cloud continuity (Reinstate Hop) and the interactive CLI; it is not yet certified, with tagged-artifact acceptance pending on native Windows x64 and Apple Silicon macOS deferred; the public installers already pin this candidate while that acceptance run is pending. Phase 6A/6B universal configuration remains planned. Phase 7 is Console. Phase 8 is team continuity."
+  answer="Stable v0.2.0 implements encrypted same-vendor sync and local continuity. Stable v0.3.0 adds verified resume. Stable v0.4.0 adds explicit structured cross-agent handoff after dual-platform tagged-artifact acceptance PASS. Stable v0.5.1 adds universal agent coverage by support tier after dual-platform tagged-artifact acceptance PASS. The v0.6.0-rc.1 release candidate carries Phase 6C cloud continuity (Reinstate Hop) and the interactive CLI; it is not yet certified, with tagged-artifact acceptance pending on native Windows x64 and Apple Silicon macOS deferred; the public installers already pin this candidate while that acceptance run is pending. Phase 6A/6B universal configuration remains planned. Phase 7 is project continuity, planned and targeted at v0.8.0. Phase 8 is Console. Phase 9 is team continuity."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'Roadmap', path: '/roadmap' },
@@ -108,12 +108,22 @@ const description =
         </tr>
         <tr>
           <td>7</td>
+          <td>One project understanding: durable rules and decisions rendered to every agent, plus learned memory with provenance</td>
+          <td>Planned</td>
+          <td>
+            State a rule once and have every gated harness honor it; capture a memory in one
+            agent's session and retrieve it, with provenance, from another; flag a memory a
+            later decision contradicts
+          </td>
+        </tr>
+        <tr>
+          <td>8</td>
           <td>Optional thin console for selecting and preparing work</td>
           <td>Exploring</td>
           <td>Agents continue to own execution; Reinstate remains the continuity client</td>
         </tr>
         <tr>
-          <td>8</td>
+          <td>9</td>
           <td>Team checkpoints, onboarding, provenance, and policy</td>
           <td>Exploring</td>
           <td>Individual continuity must first be proven safe and useful</td>

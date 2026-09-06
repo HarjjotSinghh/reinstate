@@ -61,9 +61,11 @@ Reinstate provides **continuity infrastructure**:
 2. **Agent portability** — portable checkpoints / handoffs (not silent translation)
 3. **Environment continuity** — verify and eventually reconcile repo/branch,
    MCP/skills/hooks/loops/plugins/settings across supported harnesses
-4. **Cloud continuity** — E2EE BYO storage (R2/S3 first), path remapping,
+4. **Project understanding** (later) — one reviewed set of rules and decisions
+   rendered into every harness, plus learned memory with provenance
+5. **Cloud continuity** — E2EE BYO storage (R2/S3 first), path remapping,
    conflict-safe session and non-secret desired-state sync
-5. **Team continuity** (later) — shared checkpoints, provenance, policy
+6. **Team continuity** (later) — shared checkpoints, provenance, policy
 
 Agents remain the executors. Reinstate does **not** become a full ADE/IDE.
 It translates portable desired state into native harness configuration; it does
