@@ -33,7 +33,7 @@ func get(t *testing.T, b backend.Backend, key string) []byte {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer rc.Close()
+	defer func() { _ = rc.Close() }()
 	body, err := io.ReadAll(rc)
 	if err != nil {
 		t.Fatal(err)
