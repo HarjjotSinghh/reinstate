@@ -30,6 +30,7 @@
 | [Cross-agent continuation design](cross-agent-continuation.md) | Capsule, fidelity, pipeline, and security design |
 | [Local session storage map](session-storage-map.md) | Where each supported agent stores sessions, per OS, with confidence levels |
 | [Universal agent configuration](universal-configuration.md) | Planned cross-harness MCP/skills/loops/plugins/settings layer |
+| [Project continuity](project-continuity.md) | Planned canonical project context and shared memory with provenance |
 | [Compatibility](compatibility.md) | Environments and compatibility states |
 | [Security model](security-model.md) | Threat model and defaults |
 | [Comparison](comparison.md) | vs alternatives |

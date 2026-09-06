@@ -39,8 +39,11 @@ var (
 
 // Engine orchestrates immutable snapshots and the encrypted remote manifest.
 type Engine struct {
-	Backend               backend.Backend
-	Passphrase            string
+	Backend backend.Backend
+	// Keys seals every envelope the engine writes and opens every envelope it
+	// reads. BYO storage passes a crypto.PassphraseProvider; the engine never
+	// looks inside it.
+	Keys                  crypto.KeyProvider
 	Prefix                string
 	Platform              string
 	MaxPayloadSize        int64
@@ -50,20 +53,21 @@ type Engine struct {
 	Codec EnvelopeCodec
 }
 
-// EnvelopeCodec encrypts and authenticates sync envelopes.
+// EnvelopeCodec encrypts and authenticates sync envelopes with the keys a
+// KeyProvider supplies.
 type EnvelopeCodec interface {
-	Encrypt(io.Reader, io.Writer, string) error
-	DecryptReader(io.Reader, string) (io.Reader, error)
+	Encrypt(io.Reader, io.Writer, crypto.KeyProvider) error
+	DecryptReader(io.Reader, crypto.KeyProvider) (io.Reader, error)
 }
 
 type ageEnvelopeCodec struct{}
 
-func (ageEnvelopeCodec) Encrypt(source io.Reader, dest io.Writer, passphrase string) error {
-	return crypto.Encrypt(source, dest, passphrase)
+func (ageEnvelopeCodec) Encrypt(source io.Reader, dest io.Writer, keys crypto.KeyProvider) error {
+	return crypto.Seal(source, dest, keys)
 }
 
-func (ageEnvelopeCodec) DecryptReader(source io.Reader, passphrase string) (io.Reader, error) {
-	return crypto.DecryptReader(source, passphrase)
+func (ageEnvelopeCodec) DecryptReader(source io.Reader, keys crypto.KeyProvider) (io.Reader, error) {
+	return crypto.OpenReader(source, keys)
 }
 
 func (e *Engine) envelopeCodec() EnvelopeCodec {
@@ -79,8 +83,8 @@ func (e *Engine) PushSession(ctx context.Context, item PushItem, dryRun bool) (s
 	if e.Backend == nil {
 		return "", fmt.Errorf("backend required")
 	}
-	if e.Passphrase == "" {
-		return "", fmt.Errorf("passphrase required")
+	if e.Keys == nil {
+		return "", fmt.Errorf("key provider required")
 	}
 	if item.Agent == "" || item.SessionID == "" || item.LocalPath == "" {
 		return "", fmt.Errorf("agent, session id, and local path are required")
@@ -163,7 +167,7 @@ func (e *Engine) PushSession(ctx context.Context, item PushItem, dryRun bool) (s
 		return "", err
 	}
 	plain := io.MultiReader(bytes.NewReader(append(metaJSON, '\n')), source)
-	if err := e.envelopeCodec().Encrypt(plain, cipher, e.Passphrase); err != nil {
+	if err := e.envelopeCodec().Encrypt(plain, cipher, e.Keys); err != nil {
 		return "", err
 	}
 	if err := cipher.Sync(); err != nil {
@@ -235,7 +239,7 @@ func (e *Engine) loadManifest(ctx context.Context, allowMissing bool) (*schema.M
 	}
 	defer func() { _ = rc.Close() }()
 
-	plain, err := e.envelopeCodec().DecryptReader(rc, e.Passphrase)
+	plain, err := e.envelopeCodec().DecryptReader(rc, e.Keys)
 	if err != nil {
 		return nil, "", err
 	}
@@ -265,7 +269,7 @@ func (e *Engine) saveManifest(ctx context.Context, manifest *schema.Manifest, if
 		return err
 	}
 	var cipher bytes.Buffer
-	if err := e.envelopeCodec().Encrypt(bytes.NewReader(raw), &cipher, e.Passphrase); err != nil {
+	if err := e.envelopeCodec().Encrypt(bytes.NewReader(raw), &cipher, e.Keys); err != nil {
 		return err
 	}
 	opts := backend.PutOptions{ContentType: "application/octet-stream"}
@@ -318,7 +322,7 @@ func (e *Engine) PullArtifact(ctx context.Context, item PullItem, destDir string
 	}
 	defer func() { _ = rc.Close() }()
 
-	plain, err := e.envelopeCodec().DecryptReader(rc, e.Passphrase)
+	plain, err := e.envelopeCodec().DecryptReader(rc, e.Keys)
 	if err != nil {
 		return env, "", err
 	}

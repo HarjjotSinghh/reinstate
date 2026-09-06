@@ -328,6 +328,21 @@ func TestNothingStartsAcknowledged(t *testing.T) {
 }
 
 func TestTogglingAcknowledgement(t *testing.T) {
+	t.Run("a space reported as a rune toggles the item under the cursor", func(t *testing.T) {
+		// Bubble Tea's Windows console decoder never emits tea.KeySpace; the
+		// bar arrives as a single-rune KeyRunes message. Native Windows
+		// acceptance of v0.6.0-rc.1 found the checklist ignoring it.
+		driver, checklist := start(t, config{})
+
+		driver.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}})
+		assertSameSet(t, checklist.Acknowledged(), []string{warnNodeVersion}, "after one rune space")
+
+		driver.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}})
+		if got := checklist.Acknowledged(); len(got) != 0 {
+			t.Fatalf("a rune space did not untick: Acknowledged = %v", got)
+		}
+	})
+
 	t.Run("space toggles the item under the cursor", func(t *testing.T) {
 		driver, checklist := start(t, config{})
 

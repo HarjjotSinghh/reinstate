@@ -258,6 +258,11 @@ func newNativeActionCmd(options localCommandOptions, operation string, allowHand
 			if asJSON && !dryRun {
 				return NewExitError(ExitUsage, "--json requires --dry-run for native agent launches")
 			}
+			if !dryRun {
+				// With the daemon running, the latest snapshots land before
+				// the session is resolved and launched.
+				pullBeforeResume(cmd)
+			}
 			index, err := openLocalIndex(options)
 			if err != nil {
 				return err

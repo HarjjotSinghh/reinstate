@@ -83,6 +83,7 @@ export const FULL_TEXT_PRIORITY = [
   '/docs/limitations',
   '/docs/comparison',
   '/docs/universal-configuration',
+  '/docs/project-continuity',
   '/compatibility',
   '/compatibility/agent-version-history',
   '/security',

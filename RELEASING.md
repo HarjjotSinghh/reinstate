@@ -23,6 +23,10 @@ How maintainers cut a **Reinstate** release.
 - [ ] Wrong-passphrase, tamper, backup, rollback, conflict, and installer tests pass
 - [ ] Snapshot archives, source archive, checksums, and SBOMs were inspected
 - [ ] Builds and vulnerability scans use the pinned Go 1.25.13 toolchain
+- [ ] For `v0.6.0`, the stable acceptance row is native Windows x64 under the
+      [Windows-first waiver](#v060-windows-first-waiver) instead of the
+      dual-platform row above, with the macOS rows recorded as deferred
+      rather than passed
 
 ### Supported platform boundary
 
@@ -38,6 +42,22 @@ evidence: they may be built, checksummed, SBOM-covered, and attested, but their
 absence or failure does not block a candidate or stable promotion. Never
 describe them as physically certified or supported. Issues #97 and #98 track
 that optional physical evidence.
+
+### v0.6.0 Windows-first waiver
+
+[ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md) permits
+`v0.6.0-rc.N` candidate and stable acceptance on native Windows x64
+(`windows/amd64`, never WSL) alone while the Apple Silicon macOS host is in
+repair. Every row the prior contracts require on macOS is carried as
+**deferred**, listed in
+[#403](https://github.com/HarjjotSinghh/reinstate/issues/403), and re-run
+against the same stable tag once that hardware returns.
+No document, data file, or release note may state that `v0.6.0` was verified
+on macOS; if that later macOS run fails, the fix ships as `v0.6.1`, not by
+editing the record. This mirrors the
+`v0.2.0` reconciliation above: the boundary is narrowed and named, not hidden.
+It governs `v0.6.0` acceptance only — the dual-platform requirement above is
+unchanged for every other release.
 
 ### v0.3.0-rc.1 candidate evidence
 
@@ -348,6 +368,71 @@ Five candidates were published and failed physical acceptance before this one:
 found — an agent probe carrying a raw Git object hash — is why `v0.5.0-rc.6`
 exists.
 
+### v0.5.2-rc.1 candidate evidence
+
+Published 2026-08-23: the interactive CLI, OpenCode and Grok Build at T3/T4,
+and Qwen at T4. Never certified on either platform; no device report exists
+(#366). Its content ships inside `v0.6.0-rc.1` rather than standing alone,
+and there is no stable `v0.5.2` (ADR 0005, D4). #366 is re-pointed at the
+`v0.6.0` Windows run below.
+
+### v0.6.0-rc.1 candidate gate
+
+Carries the Hop client — sign-in, the locker, device pairing and revocation,
+key rotation, machine migration, and `rein daemon` — and everything
+`v0.5.2-rc.1` introduced: the interactive switcher, the handoff studio, the
+setup wizard, and the `ctrl+k` palette. OpenCode reaches T5 and Kimi Code CLI
+reaches T2.
+
+Governed by
+[`docs/testing/v0.6.0-windows-acceptance.md`](docs/testing/v0.6.0-windows-acceptance.md),
+which composes the Phase 5 generated matrix (**178** rows, per
+`rein doctor --agents --acceptance-matrix` on a binary built from the release
+commit), the 22-row CLI matrix, and the 16 Hop parity journey rows of section
+D (hosted #16) into one Windows column with an explicit deferred-macOS table,
+under the [Windows-first waiver](#v060-windows-first-waiver).
+
+The pre-tag snapshot run (a snapshot build of the release commit, before the
+tag is signed and pushed) is evidence that the candidate is ready for
+tagged-artifact acceptance; it does not itself authorize anything past that.
+It is recorded at
+`docs/testing/results/2026-09-06-windows-v060rc1-pretag.md`: four passes on
+2026-09-06, the last on commit `9dcef0c0`, ending at **185 of 200** required
+rows `PASS` (Phase 5 matrix plus CLI rows; the 16 Hop parity rows are
+recorded separately at 14 `PASS` / 2 `PARTIAL`). The run found two Windows
+product defects, both fixed on the branch and re-verified against a fresh
+snapshot: the warning checklist ignored the space bar on native Windows
+(CLI row 14), and a failed process enumeration was reported as "not busy"
+(Matrix E, row E5). Claude Code auto-updated from `2.1.261` to `2.1.263`
+between passes and the ceiling moved with it.
+
+**Dispositions carried into this candidate**, to be cleared or re-recorded
+by the tagged-artifact run:
+
+- **`opencode` C3** — search by message text finds nothing because the
+  OpenCode reader indexes id, title, project, workspace, and branch only,
+  as it has since `v0.5.0`; search by title passes. Documented reader
+  behaviour, tracked as #405. Not a regression.
+- **`opencode` D4** — a SQLite-only OpenCode store has no JSONL record
+  boundary to truncate; the row is definitional for that layout.
+- **E5 for every T3+ agent** — this host's WMI repository is damaged (both
+  `Get-CimInstance Win32_Process` and `tasklist` fail), so an active session
+  cannot be detected here; the fail-safe the fix introduced (the check
+  reports that it could not run, and does not refuse) was verified instead.
+  Host condition, clarifications Q14.
+- **`claude` E2, E3, D4** — every spawned `claude` process on this host
+  fails OAuth refresh while interactive sessions hold the token; `rein`
+  produces the correct launch plan at `2.1.263` (E1 passes) but the resumed
+  session cannot answer. Host condition, clarifications Q16.
+- **`qwen` E2, E3, D4** — the host's Qwen Code credential is expired.
+- **`gemini` D4, `kimi` D4** — no non-interactive credential on the host.
+
+The tagged run must record each of these as `PASS` or as the same
+disposition with the same reason; a new reason is a new finding.
+
+Publication means ready for tagged-artifact acceptance. It does **not**
+authorize stable `v0.6.0`. Current stable remains `v0.5.1`.
+
 ## Steps
 
 ### 1. Prepare the release commit
@@ -399,7 +484,9 @@ git push origin vX.Y.Z
 The tag must point at the reviewed commit on protected `main`. Do not move or
 reuse a published tag. The matching public key and maintainer principal must
 be present in `.github/allowed_signers` so CI can verify the signature without
-depending on machine-local keyring state.
+depending on machine-local keyring state. `$REINSTATE_SIGNING_KEY` lives only
+on the maintainer's own machines; an agent never holds it and never runs this
+step.
 
 ### 3. GitHub Release workflow
 

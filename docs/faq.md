@@ -152,9 +152,12 @@ still require its official login flow.
 
 ## Is my data sent to Reinstate servers?
 
-**No** for the open-source CLI. You point at **your** R2/S3-compatible bucket. A future
-optional hosted convenience layer would still be zero-knowledge (ciphertext
-only); it is not required.
+**No** by default. You point at **your** R2/S3-compatible bucket for BYO
+storage, and the local index never leaves the machine. The optional hosted
+tier, **Reinstate Hop**, ships in the client as of `v0.6.0`, but its control
+plane is not yet open — see [docs/hop.md](hop.md). When it is reachable, the
+locker holds only ciphertext, except `keyring.v1.json`, which is plaintext
+by design; it is not required.
 
 ## What if I lose my passphrase?
 

@@ -27,9 +27,12 @@ func AgentActive(ctx context.Context, agent string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	procs, err := listProcesses(ctx)
+	procs, err := enumerateProcesses(ctx)
 	if err != nil {
-		return false, nil
+		// An unanswerable question is not a "no". Callers that can act on
+		// the difference (preflight reports the check as unknown) must see
+		// the error rather than a confident negative.
+		return false, fmt.Errorf("processcheck: enumerate processes: %w", err)
 	}
 	for _, p := range procs {
 		if matchesAgentProcess(agent, p.Image, p.CommandLine) {
@@ -73,9 +76,13 @@ func SessionBusy(ctx context.Context, agent string, target Target) (busy bool, s
 		return active, false, activeErr
 	}
 
-	procs, err := listProcesses(ctx)
+	procs, err := enumerateProcesses(ctx)
 	if err != nil {
-		return false, false, nil
+		// Swallowing this made a host that cannot enumerate its own
+		// processes (a broken WMI repository, for one) report a confident
+		// "no running instance" for a session that was in fact open. The
+		// error is what lets preflight say the check could not run.
+		return false, false, fmt.Errorf("processcheck: enumerate processes: %w", err)
 	}
 	holders, _, err := sessionFileHolders(ctx, target.Path)
 	if err != nil {
@@ -303,3 +310,8 @@ func nativeVariant(name, agent string) bool {
 	}
 	return false
 }
+
+// enumerateProcesses is the platform process listing behind AgentActive and
+// SessionBusy; tests swap it to prove an enumeration failure is reported
+// rather than read as "nothing is running".
+var enumerateProcesses = listProcesses

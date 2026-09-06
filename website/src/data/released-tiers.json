@@ -1,6 +1,6 @@
 {
-  "_comment": "Tiers as of the release named below. compatibility.json must match this exactly. Updated only by a release; a promotion on main that is not released will fail the guard, which is the point.",
-  "release": "v0.5.2-rc.1",
+  "_comment": "Tiers as of the release named below. compatibility.json must match this exactly. Updated only by a release; a promotion on main that is not released will fail the guard, which is the point. OpenCode moves to T5 (encrypted sync) with this candidate, carried from the Hop client; Kimi's T2 (handoff source) already shipped with the prior candidate and is unrelated to this round. Neither is a stable claim yet: stable stays v0.5.1 until a Windows tagged-artifact run promotes it (reinstate#369 tracks a clearer next-release marker for this gap).",
+  "release": "v0.6.0-rc.1",
   "tiers": {
     "aider": "T0",
     "amp": "T0",
@@ -14,7 +14,7 @@
     "grok": "T4",
     "kimi": "T2",
     "minimax-code": "T0",
-    "opencode": "T4",
+    "opencode": "T5",
     "openhands": "T0",
     "pi": "T1",
     "qwen": "T4",

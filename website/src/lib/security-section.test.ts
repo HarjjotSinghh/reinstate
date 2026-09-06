@@ -79,7 +79,13 @@ describe('landing-page security section', () => {
     expect(vaultArt).toContain('<figcaption>');
     expect(vaultArt).toContain('stored as ciphertext in your bucket');
     expect(pipelineArt).toContain('<figcaption>');
-    expect(pipelineArt).toContain('stores only ciphertext');
+    expect(pipelineArt).toContain('as ciphertext in your bucket');
+    // The caption used to say "stores only ciphertext", which the locker
+    // does not: keyring.v1.json is plaintext by design. The exception is
+    // pinned here as well as in internal/doctest so a rewrite that drops it
+    // fails on both sides.
+    expect(pipelineArt).toContain('keyring.v1.json');
+    expect(vaultArt).toContain('keyring.v1.json');
   });
 
   it('keeps nav and footer pointing at the authoritative security page', () => {

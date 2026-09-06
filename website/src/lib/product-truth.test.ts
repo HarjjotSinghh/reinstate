@@ -99,14 +99,17 @@ describe('central product-truth drift guard', () => {
   });
 
   it('keeps the catalog line from claiming an unpublished tag or extra T5 agents', () => {
-    expect(product.currentRelease).toBe('v0.5.2-rc.1');
-    // Stable deliberately lags the candidate: the interactive surfaces have
-    // development verification but no tagged-artifact acceptance yet.
+    expect(product.currentRelease).toBe('v0.6.0-rc.1');
+    // Stable deliberately lags the candidate: Hop and the interactive
+    // surfaces have development verification but no tagged-artifact
+    // acceptance yet.
     expect(product.stableRelease).toBe('v0.5.1');
     expect(compatibility.reinstateVersion).toBe(product.currentRelease);
     expect(compatibility.catalogLine).toBe(product.currentRelease);
+    // OpenCode joins Claude Code and Codex at T5 with this candidate: the
+    // Hop client's encrypted sync. A new T5 agent must add itself here.
     expect(compatibilityAgents.filter((agent) => agent.tier === 'T5').map((agent) => agent.key)).toEqual(
-      ['claude', 'codex'],
+      ['claude', 'codex', 'opencode'],
     );
     // T3 is empty, and that is not a gap. Every agent with a verified resume
     // journey has also earned a destination, so nothing currently stops at the

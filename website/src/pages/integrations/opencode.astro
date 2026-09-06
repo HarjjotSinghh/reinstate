@@ -3,80 +3,148 @@ import PublicContentLayout from '../../layouts/PublicContentLayout.astro';
 
 export const prerender = true;
 
-const title = 'OpenCode as a T2 Handoff Source | Reinstate';
+const title = 'Sync OpenCode Sessions Across Devices | Reinstate';
 const description =
-  'OpenCode is a T2 handoff source: Reinstate can read sessions through the vendor CLI query family and build a portable capsule. Native resume and encrypted sync are not supported.';
+  'Reinstate encrypts and syncs OpenCode sessions across devices, natively resumes and forks them, and hands off into or out of OpenCode as a structured checkpoint.';
 ---
 
 <PublicContentLayout
   {title}
   {description}
   path="/integrations/opencode"
-  eyebrow="Integration · OpenCode · T2"
-  answer="OpenCode is T2: a handoff source and a read-only local index (F2 CLI query). Reinstate does not launch OpenCode as a native resume target and does not sync OpenCode sessions."
+  eyebrow="Integration · OpenCode · T5 (v0.6.0-rc.1 candidate)"
+  answer="OpenCode reaches T5 in the v0.6.0-rc.1 release candidate: encrypted same-vendor session sync, on top of T3 native resume and fork, T4 structured handoff destination, and T2 handoff source. This is not yet a stable claim; stable remains v0.5.1, where OpenCode is T2 only. Reinstate extracts a portable document from OpenCode's embedded SQLite store and reassembles it in the destination's own store. OpenCode-to-OpenCode sync only."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'Integrations', path: '/integrations' },
     { name: 'OpenCode', path: '/integrations/opencode' },
   ]}
-  tags={['OpenCode', 'T2 handoff source', 'read-only']}
+  tags={['OpenCode session sync', 'OpenCode resume', 'macOS', 'Windows']}
 >
   <h2 id="support-at-a-glance">OpenCode support at a glance</h2>
   <dl class="pc-facts">
     <div>
       <dt>Tier</dt>
-      <dd>T2 Handoff source</dd>
+      <dd>T5 Encrypted sync</dd>
+    </div>
+    <div>
+      <dt>Release</dt>
+      <dd><code>v0.6.0-rc.1</code> candidate (stable remains <code>v0.5.1</code>)</dd>
+    </div>
+    <div>
+      <dt>Session direction</dt>
+      <dd>OpenCode → OpenCode</dd>
     </div>
     <div>
       <dt>Storage family</dt>
-      <dd>F2 CLI query</dd>
+      <dd>F3 embedded SQLite session store</dd>
     </div>
     <div>
-      <dt>Native resume (T3)</dt>
-      <dd>Not supported</dd>
+      <dt>Tested version</dt>
+      <dd><code>1.18.21</code></dd>
     </div>
     <div>
-      <dt>Encrypted sync (T5)</dt>
-      <dd>Not supported</dd>
+      <dt>Remote storage</dt>
+      <dd>Your S3-compatible or Cloudflare R2 bucket</dd>
     </div>
   </dl>
   <p>
-    T2 means <code>rein handoff --from opencode</code> can build a portable capsule.
-    OpenCode is not a T3 resume agent and not a T5 sync agent.
+    OpenCode is the first embedded-SQLite agent to reach encrypted sync, alongside Claude Code
+    and Codex CLI. T5 sits on top of the lower tiers: T1 read-only local discovery, T2
+    <code>rein handoff --from opencode</code>, T3 <code>rein resume</code> / <code>rein fork</code>,
+    and T4 <code>rein handoff --to opencode</code>. A version outside the tested range is
+    <code>UNTESTED</code>; Reinstate permits read-only discovery but refuses export, restore, and
+    launch.
   </p>
 
-  <h2 id="what-t2-includes">What T2 includes</h2>
-  <ul>
-    <li>T1 read-only discovery, search, and inspect of local OpenCode sessions.</li>
-    <li>T2 structured handoff from OpenCode into a new Claude Code or Codex session.</li>
-    <li>Fail-closed behavior on an unrecognized layout (exit code <code>5</code>).</li>
-  </ul>
-
-  <h2 id="what-t2-excludes">What T2 excludes</h2>
-  <ul>
-    <li>No <code>rein resume</code> / <code>rein fork</code> of an OpenCode session.</li>
-    <li>No <code>rein handoff --to opencode</code> destination.</li>
-    <li>No <code>rein push</code> / <code>rein pull</code> of OpenCode sessions.</li>
-    <li>No write into OpenCode’s session store.</li>
-  </ul>
-
   <div class="pc-callout">
-    <p>Native resume is same-vendor, and OpenCode is not a T3 agent.</p>
+    <p>T5 is new in the <code>v0.6.0-rc.1</code> candidate, not yet a stable claim.</p>
     <p>
-      A handoff starts a <em>new</em> Claude Code or Codex session. It does not reconstruct
-      OpenCode history or translate the vendor transcript.
+      OpenCode's T5 encrypted sync, T4 handoff destination, and T3 native resume and fork all
+      ship with the <code>v0.6.0-rc.1</code> release candidate. Stable remains
+      <code>v0.5.1</code>, where OpenCode is T2 only, until a native Windows tagged-artifact run
+      promotes this candidate. See the <a href="/roadmap">release boundary</a> and the
+      <a href="/changelog">changelog</a>.
     </p>
   </div>
 
+  <h2 id="how-it-works">How OpenCode session sync works</h2>
+  <p>
+    OpenCode keeps every session in one embedded SQLite database rather than one file per
+    session, so the synced unit is a portable, deterministic JSON document extracted from the
+    <code>session</code>, <code>project</code>, <code>message</code>, and <code>part</code>
+    tables, with every absolute path normalized to a <code>${'${HOME}'}</code> /
+    <code>${'${REPO:<id>}'}</code> token. The <code>credential</code>, <code>account</code>,
+    <code>control_account</code>, and <code>account_state</code> tables are never opened.
+  </p>
+  <ol class="pc-steps">
+    <li>
+      Export reads the session's rows through the embedded store, tokenizes every known path, and
+      writes a single portable document as one tar entry.
+    </li>
+    <li>
+      Restore writes that document back into the destination's own <code>opencode.db</code>
+      through a checkpointed working copy, fingerprint-guarded and backed up, then an atomic
+      rename so a concurrent vendor write cannot corrupt the store.
+    </li>
+    <li>
+      Native resume and fork call OpenCode's own continuation flags —
+      <code>opencode --session &lt;id&gt;</code> and <code>opencode --session &lt;id&gt; --fork</code>
+      — against the restored session, since OpenCode has no separate <code>resume</code> or
+      <code>fork</code> verb.
+    </li>
+    <li>
+      A handoff into or out of OpenCode starts a <em>new</em> session through a bounded
+      bootstrap and a private, inspectable projection; it is never a cross-agent resume.
+    </li>
+  </ol>
+
+  <div class="pc-callout">
+    <p>Structural paths are portable; transcript prose is not rewritten.</p>
+    <p>
+      Reinstate changes known path fields needed for native resume and leaves free-form prompts,
+      responses, and unknown fields alone. A session row OpenCode recorded without a working
+      directory stays read-only, because OpenCode is always launched into a directory.
+    </p>
+  </div>
+
+  <h2 id="security-boundary">Security boundary</h2>
+  <p>
+    Reinstate reads the local OpenCode store and does not call a hosted OpenCode API or require
+    OpenCode account credentials. The <code>credential</code>, <code>account</code>,
+    <code>control_account</code>, and <code>account_state</code> tables are excluded from every
+    export, and a round-trip test fails if a credential value appears in one. Storage credentials
+    stay in the operating system keyring.
+  </p>
+  <p>
+    Session content is encrypted locally before upload. Because a transcript may contain
+    sensitive text produced during a coding task, read the
+    <a href="/security">security model and threat boundaries</a> before syncing real sessions.
+  </p>
+
+  <h2 id="limitations">Current limitations</h2>
+  <ul>
+    <li>OpenCode assigns its own session id; a handoff into OpenCode reconciles that id after launch rather than pinning it, and is never a cross-agent resume.</li>
+    <li>Close OpenCode before pulling into a live store; a write in the residual window between the pre-rename fingerprint check and the rename is not detected.</li>
+    <li>A version outside the tested range cannot be pushed, pulled, or launched.</li>
+    <li>Credentials, MCP servers, skills, plugins, hooks, and agent settings are not synced.</li>
+    <li>Reinstate is independent of the OpenCode maintainers and is not an official OpenCode product.</li>
+  </ul>
+
   <h2 id="evidence">Evidence</h2>
   <p>
-    Committed fixtures live under <code>testdata/sessionindex/opencode</code> and
-    <code>testdata/handoff/opencode</code>. A Windows physical path exists; there is no
-    T3 resume report. See the
+    Committed fixtures live under <code>testdata/adapters/opencode</code>,
+    <code>testdata/sessionindex/opencode</code>, and <code>testdata/handoff/opencode</code>.
+    Per <a href="https://github.com/HarjjotSinghh/reinstate/blob/main/docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md"
+      >ADR 0005</a
+    >, this <code>v0.6.0-rc.1</code> candidate's tagged-artifact acceptance for OpenCode's new
+    T5 tier is native Windows x64 only; Apple Silicon macOS is deferred until that hardware
+    returns, and no document here claims macOS verification for this candidate. See the
     <a href="https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/opencode.md"
       >OpenCode storage page</a
-    >
-    and the <a href="/compatibility">tier matrix</a>.
+    >, the <a href="https://github.com/HarjjotSinghh/reinstate/blob/main/docs/compatibility.md"
+      >compatibility record</a
+    >, and the <a href="/compatibility">tier matrix</a>.
   </p>
 
   <section class="pc-related" aria-labelledby="related-heading">
@@ -86,6 +154,7 @@ const description =
       <a href="/compatibility">Compatibility matrix</a>
       <a href="/docs/handoff">Structured handoff</a>
       <a href="/docs/adapters">Adapter documentation</a>
+      <a href="/changelog">Release changelog</a>
     </nav>
   </section>
 </PublicContentLayout>

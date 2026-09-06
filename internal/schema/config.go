@@ -22,6 +22,15 @@ type Config struct {
 	Agents                map[string]AgentConfig `toml:"agents"`
 	Projects              []ProjectConfig        `toml:"projects"`
 	Restore               RestoreConfig          `toml:"restore"`
+	Hop                   HopConfig              `toml:"hop,omitempty"`
+}
+
+// HopConfig points at the Reinstate Hop control plane. It holds no secret:
+// the device token lives in the OS keyring.
+type HopConfig struct {
+	// URL overrides the production control plane (for staging or a local
+	// hopd). REINSTATE_HOP_URL takes precedence over this value.
+	URL string `toml:"url"`
 }
 
 // Active-agent policies for restore.
@@ -50,6 +59,18 @@ type RestoreConfig struct {
 	ActiveAgentPolicy string `toml:"active_agent_policy"`
 }
 
+// Storage backend types.
+const (
+	// StorageS3 is BYO storage: an S3-compatible bucket the user owns,
+	// reached with keys from the OS keyring or environment.
+	StorageS3 = "s3"
+	// StorageHop is the hosted tier: the account's locker, reached with
+	// hourly credentials minted by the control plane for the signed-in
+	// device. Endpoint, bucket, and region come from the control plane, so
+	// none of them is stored here.
+	StorageHop = "hop"
+)
+
 // StorageConfig describes remote storage (no secrets).
 type StorageConfig struct {
 	Type          string `toml:"type"`
@@ -59,6 +80,18 @@ type StorageConfig struct {
 	Prefix        string `toml:"prefix"`
 	CredentialRef string `toml:"credential_ref"`
 }
+
+// Encryption key models. The selection decides which crypto.KeyProvider
+// every push and pull uses; nothing else in sync changes between them.
+const (
+	// EncryptionPassphrase is BYO storage: an age scrypt passphrase typed on
+	// every device.
+	EncryptionPassphrase = "age-scrypt"
+	// EncryptionRootKey is the hosted-tier model: a root key generated on the
+	// first device and carried by the keyring, never typed and never stored
+	// in config.
+	EncryptionRootKey = "root-key"
+)
 
 // EncryptionConfig selects client-side encryption.
 type EncryptionConfig struct {
@@ -97,7 +130,12 @@ func ValidateConfig(c *Config) error {
 		return fmt.Errorf("storage.type is required")
 	}
 	if c.Encryption.Type == "" {
-		c.Encryption.Type = "age-scrypt"
+		c.Encryption.Type = EncryptionPassphrase
+	}
+	switch c.Encryption.Type {
+	case EncryptionPassphrase, EncryptionRootKey:
+	default:
+		return fmt.Errorf("unsupported encryption.type %q (want %q or %q)", c.Encryption.Type, EncryptionPassphrase, EncryptionRootKey)
 	}
 	if c.Restore.ActiveAgentPolicy == "" {
 		c.Restore.ActiveAgentPolicy = DefaultActiveAgentPolicy

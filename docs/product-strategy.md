@@ -30,6 +30,15 @@ for every harness and device. Reinstate should provide a canonical non-secret
 desired-state profile and translate it through per-harness configuration
 adapters. Configure once; preview, reconcile, and verify everywhere.
 
+There is a third fracture, deeper than configuration: what the project
+**knows**. A rule or decision stated to one agent binds that agent only.
+Claude Code keeps `CLAUDE.md` and its own per-project memory; Codex, Cursor,
+Grok, OpenCode, and Gemini CLI each keep separate instruction files and
+stores, and none of them learn it. Reinstate should carry one project
+understanding — reviewed context in the repository, learned memory with
+provenance in the encrypted store — so the next agent does not re-derive or
+contradict what the first one already established.
+
 ---
 
 ## Positioning
@@ -50,8 +59,9 @@ Hierarchy of value:
 1. Task continuity
 2. Agent interoperability
 3. Environment restoration and configuration portability
-4. Device synchronization
-5. (Later) Team continuity
+4. Project understanding — canonical context and shared memory across agents
+5. Device synchronization
+6. (Later) Team continuity
 
 ### One-line spine
 
@@ -98,6 +108,8 @@ Reinstate must not win by recreating “another picker.”
 5. **Environment drift** — pre-resume mismatch report
 6. **Configure once** — reconcile MCP servers, skills, loops, plugins, and safe
    settings across supported harnesses
+7. **One project, one understanding** — canonical rules and decisions render
+   into every harness; memory an agent learns carries provenance to the next
 
 ---
 
@@ -118,8 +130,9 @@ Never claim perfect Claude ↔ Codex native transcript translation.
 ### 1. Continuity core (library / engine)
 
 Adapters, indexing, canonical schema, workspace fingerprints, checkpoints,
-encryption, sync protocol, session transforms, and universal configuration
-normalization/rendering.
+encryption, sync protocol, session transforms, universal configuration
+normalization/rendering, and project context and memory records with
+provenance.
 
 ### 2. Reinstate CLI / TUI (primary)
 
@@ -133,12 +146,17 @@ rein handoff …
 rein sync | push | pull
 rein mcp add …
 rein config diff | apply | sync
+rein context init | adopt | show
+rein memory add | search | promote
+rein status
 ```
 
 Launches sessions in **native agents by default**.
 
-The configuration commands are later-phase direction, not part of the current
-`v0.1` CLI. See [universal-configuration.md](universal-configuration.md).
+The configuration, context, and memory commands are later-phase direction, not
+part of the current `v0.1` CLI. See
+[universal-configuration.md](universal-configuration.md) and
+[project-continuity.md](project-continuity.md).
 
 ### 3. Reinstate Console (optional, thin client)
 
@@ -165,6 +183,8 @@ Do not build unless usage forces a revisit:
 - Agent marketplace
 - Reinstate-owned plugin runtime
 - Full IDE / ADE replacement
+- Silent transcript mining for durable project state
+- Parallel-agent file claims, locks, or arbitration
 
 Integrate with Orca, Conductor, T3 Code, editors, and agents instead.
 Reinstate may synchronize declarations for third-party marketplaces; it does
@@ -225,7 +245,11 @@ substrate for:
 - Phase 2 local index / switcher
 - Phase 3 verified resume
 - Phase 4 handoffs
-- Phase 5 universal configuration + automated multi-device habit
-- Phase 6 thin console / ACP
+- Phase 5 universal agent coverage
+- Phase 6C cloud continuity (Hop)
+- Phase 6A/6B universal agent configuration + authentication coordination
+- Phase 7 project continuity
+- Phase 8 thin console / ACP
+- Phase 9 team continuity (later)
 
 Do not rewrite the core for marketing pivots. **Reuse primitives.**

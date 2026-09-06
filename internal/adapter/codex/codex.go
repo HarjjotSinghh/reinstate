@@ -127,6 +127,11 @@ func (a *Adapter) Discover(ctx context.Context, opts adapter.DiscoverOptions) ([
 		return nil, err
 	}
 	sessionsDir := filepath.Join(inst.Root, "sessions")
+	if _, statErr := os.Stat(sessionsDir); os.IsNotExist(statErr) {
+		// A configured CODEX_HOME on a fresh device has no sessions directory
+		// until Codex runs; there is nothing to discover, not an error.
+		return nil, nil
+	}
 	err = filepath.Walk(sessionsDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err

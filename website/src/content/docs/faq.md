@@ -6,7 +6,7 @@ order: 7
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.5.2-rc.1"
+version: "v0.6.0-rc.1"
 updatedAt: 2026-08-16
 tags: ["faq", "session-sync", "claude-code", "codex", "security"]
 targetQuery: "what is Reinstate"
@@ -188,10 +188,14 @@ syncing after an agent upgrade.
 
 ## Production ready?
 
-`v0.4.0` is the current pre-1.0 stable release on Apple Silicon macOS and
+`v0.5.1` is the current pre-1.0 stable release on Apple Silicon macOS and
 native Windows x64. It includes encrypted sync, local search, verified resume,
-and structured handoff. Public installers currently pin candidate `v0.5.2-rc.1`
-pending dual-platform tagged-artifact acceptance. Intel macOS, WSL2, and other
+structured handoff, and universal agent coverage across the support-tier
+catalog. Public installers currently pin the newest release candidate, whose
+tagged-artifact acceptance is pending on native Windows x64 (Apple Silicon
+macOS is deferred until that hardware returns); the
+[changelog](https://github.com/HarjjotSinghh/reinstate/blob/main/CHANGELOG.md)
+names it exactly. Intel macOS, WSL2, and other
 POSIX packages are optional and unverified. See the
 [roadmap](https://github.com/HarjjotSinghh/reinstate/blob/main/ROADMAP.md)
 and [changelog](https://github.com/HarjjotSinghh/reinstate/blob/main/CHANGELOG.md),

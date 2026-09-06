@@ -246,6 +246,21 @@ func TestStepOrderAndSkipping(t *testing.T) {
 		}
 	})
 
+	t.Run("a space reported as a rune also answers the device question", func(t *testing.T) {
+		// Bubble Tea's Windows console decoder never emits tea.KeySpace; the
+		// bar arrives as a single-rune KeyRunes message.
+		driver, model := start(t, config{defaults: completeDefaults()})
+		advanceTo(t, driver, model, stepProfile)
+		driver.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}})
+		if !model.joinExisting {
+			t.Fatal("a rune space did not choose joining an existing profile")
+		}
+		driver.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}})
+		if model.joinExisting {
+			t.Fatal("a rune space did not toggle back")
+		}
+	})
+
 	t.Run("up and down also answer the device question", func(t *testing.T) {
 		for _, name := range []string{"up", "down", "tab"} {
 			t.Run(name, func(t *testing.T) {

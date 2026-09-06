@@ -195,6 +195,12 @@ func (c *Checklist) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return c, nil
 			}
 			switch typed.Runes[0] {
+			case ' ':
+				// Bubble Tea's Windows console decoder reports the space bar
+				// as a rune rather than tea.KeySpace, so without this branch
+				// a native Windows user could not tick a single warning.
+				c.toggle()
+				return c, nil
 			case 'a':
 				accept := !c.AllAccepted()
 				for index := range c.items {

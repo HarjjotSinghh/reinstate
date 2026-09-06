@@ -15,6 +15,9 @@ type State struct {
 	LastManifestRev string                  `json:"last_manifest_revision"`
 	Sessions        map[string]SessionState `json:"sessions"`
 	UpdatedAt       string                  `json:"updated_at"`
+	// VerifyReportedAt is when this device ran the post-first-push
+	// verification and posted its report; empty until then.
+	VerifyReportedAt string `json:"verify_reported_at,omitempty"`
 }
 
 // SessionState tracks one session's last known revision.

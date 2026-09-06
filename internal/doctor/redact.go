@@ -81,12 +81,18 @@ func isPathSeparator(value byte) bool {
 	return value == '/' || value == '\\'
 }
 
+// RedactedPathToken is what a removed path is replaced with. It is
+// exported so a caller that recognises a form RedactPath cannot — an
+// absolute path a harness has flattened into one directory name, say —
+// can remove that too and still read as one report.
+const RedactedPathToken = "[REDACTED_PATH]"
+
 // RedactPath removes absolute paths from human-facing output while preserving
 // already-redacted home tokens.
 func RedactPath(p string) string {
 	redacted := Redact(p)
 	if isAbsolutePath(redacted) {
-		return "[REDACTED_PATH]"
+		return RedactedPathToken
 	}
 	return redacted
 }

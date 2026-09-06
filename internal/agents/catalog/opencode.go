@@ -3,6 +3,8 @@ package catalog
 import (
 	"regexp"
 
+	"github.com/HarjjotSinghh/reinstate/internal/adapter"
+	opencodeadapter "github.com/HarjjotSinghh/reinstate/internal/adapter/opencode"
 	"github.com/HarjjotSinghh/reinstate/internal/agents"
 	opencodesrc "github.com/HarjjotSinghh/reinstate/internal/agents/sources/opencode"
 	"github.com/HarjjotSinghh/reinstate/internal/handoff"
@@ -17,14 +19,22 @@ func init() { agents.MustRegister(OpenCode()) }
 // number from being read out of some other vendor's sentence.
 var opencodeVersionPattern = regexp.MustCompile(`^((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))$`)
 
-// OpenCode is the shipped OpenCode descriptor (T4, F3).
+// OpenCode is the shipped OpenCode descriptor (T5, F3) — the first
+// embedded-SQLite agent to reach encrypted sync.
+//
+// The encrypted-sync adapter (internal/adapter/opencode) is wired through
+// NewSyncAdapter below, and the physical round-trip is recorded on both
+// platforms — macOS in docs/testing/results/2026-08-23-macos-opencode-t5-journey.md
+// and native Windows in docs/testing/results/2026-08-23-windows-opencode-t5.md
+// — so the tier contract's requirement that capabilities and tier agree exactly
+// is met by evidence, not assumption.
 func OpenCode() agents.Descriptor {
 	return agents.Descriptor{
 		Key:         sessionindex.AgentOpenCode,
 		DisplayName: "OpenCode",
 		Vendor:      "anomalyco",
 		DocsURL:     "https://opencode.ai",
-		Tier:        agents.TierHandoffTo,
+		Tier:        agents.TierSync,
 		Family:      agents.FamilyEmbeddedDB,
 		Storage: agents.StorageSpec{
 			// OpenCode reads $XDG_DATA_HOME/opencode, so the variable names the
@@ -59,13 +69,20 @@ func OpenCode() agents.Descriptor {
 		},
 		Version: &agents.VersionSpec{
 			// `opencode --version` prints a bare stable version on stdout and
-			// nothing on stderr. Min and Max are the single build physically
-			// measured on macOS for this promotion; the range widens only as
-			// further builds are measured, never by assumption.
+			// nothing on stderr. Min/Max widen only as further builds are
+			// physically measured, never by assumption. 1.18.21 was the
+			// single build measured on macOS and native Windows for the T3-T5
+			// promotion; v0.6.0 widens the ceiling to 1.18.27 on native
+			// Windows physical evidence only (macOS pending, ADR 0005 D3): a
+			// session was created with the installed 1.18.27 build, indexed,
+			// and resumed through the launch plan Reinstate itself produced,
+			// returning a token that existed only in the original session's
+			// history. See
+			// docs/testing/results/2026-09-06-windows-range-widening-v060.md.
 			Args:  []string{"--version"},
 			Parse: parseOpenCodeVersion,
 			Min:   "1.18.21",
-			Max:   "1.18.21",
+			Max:   "1.18.27",
 		},
 		Process: agents.ProcessSpec{
 			// OpenCode ships as a single native executable, so the image name
@@ -81,6 +98,8 @@ func OpenCode() agents.Descriptor {
 			Fixtures: []string{
 				"testdata/sessionindex/opencode/macos",
 				"testdata/sessionindex/opencode/windows",
+				"testdata/adapters/opencode/macos",
+				"testdata/adapters/opencode/windows",
 				"testdata/handoff/opencode",
 			},
 			DeviceReports: []string{
@@ -88,6 +107,9 @@ func OpenCode() agents.Descriptor {
 				"docs/testing/results/2026-08-22-windows-opencode-t3.md",
 				"docs/testing/results/2026-08-22-macos-opencode-t4-journey.md",
 				"docs/testing/results/2026-08-22-windows-opencode-t4.md",
+				"docs/testing/results/2026-08-23-macos-opencode-t5-journey.md",
+				"docs/testing/results/2026-08-23-windows-opencode-t5.md",
+				"docs/testing/results/2026-09-06-windows-range-widening-v060.md",
 			},
 		},
 		NewIndexSource: opencodesrc.NewSQLite,
@@ -99,6 +121,13 @@ func OpenCode() agents.Descriptor {
 			reader.DataRoot = env.FixtureRoot
 			reader.Getenv = env.LookupEnv
 			return reader, nil
+		},
+		NewSyncAdapter: func(env agents.Env) (adapter.Adapter, error) {
+			// Root is left empty so the adapter resolves $XDG_DATA_HOME/opencode
+			// itself: the store lives one segment below RootEnv, and env.FixtureRoot
+			// carries only the RootEnv value without that "opencode" suffix.
+			// Projects are injected by the CLI's registry via reflection.
+			return &opencodeadapter.Adapter{Home: env.Home}, nil
 		},
 	}
 }

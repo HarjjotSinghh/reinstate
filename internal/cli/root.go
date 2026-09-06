@@ -6,11 +6,13 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
 	"github.com/HarjjotSinghh/reinstate/internal/adapter"
+	"github.com/HarjjotSinghh/reinstate/internal/credentials"
 	"github.com/HarjjotSinghh/reinstate/internal/preflight"
 	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
@@ -67,6 +69,30 @@ type Options struct {
 	// is deliberate — a hanging vendor binary must not stall handoff planning —
 	// so the seam belongs here rather than in the timeout.
 	HandoffDestinationCompat adapter.Compatibility
+	// DeviceTokenStore overrides the OS keyring holding the Hop device token
+	// in deterministic tests. Production uses the native keyring.
+	DeviceTokenStore credentials.DeviceTokenStore
+	// OpenBrowser overrides launching the system browser for `rein login`.
+	OpenBrowser func(url string) error
+	// LoginPollSleep overrides the wait between login polls in tests.
+	LoginPollSleep func(context.Context, time.Duration) error
+	// DeviceName overrides the hostname `rein login` reports in tests.
+	DeviceName string
+	// DeviceSecrets overrides the OS keyring that holds this device's hosted
+	// key in deterministic tests. Production leaves it nil.
+	DeviceSecrets credentials.SecretStore
+	// RecoveryCodePrompt overrides hidden recovery-code entry in deterministic
+	// tests (both the forced re-entry at init and the prompt at recover).
+	// Production leaves it nil and reads a terminal or
+	// REINSTATE_RECOVERY_CODE_FD.
+	RecoveryCodePrompt func(prompt string) ([]byte, error)
+	// PairingCodePrompt overrides hidden pairing-code entry on the approving
+	// device in deterministic tests. Production leaves it nil and reads a
+	// terminal or REINSTATE_PAIRING_CODE_FD.
+	PairingCodePrompt func(prompt string) ([]byte, error)
+	// Daemon overrides the service manager, watcher, clock, and notifier
+	// behind rein daemon in deterministic tests. Production leaves it zero.
+	Daemon daemonSeams
 }
 
 type envelopeCodecContextKey struct{}
@@ -130,6 +156,12 @@ func NewRoot(opts Options) *cobra.Command {
 				term.IsTerminal(int(outputFile.Fd()))
 		}
 	}
+	hopOpts := hopCommandOptions{
+		tokens:      opts.DeviceTokenStore,
+		openBrowser: opts.OpenBrowser,
+		sleep:       opts.LoginPollSleep,
+		deviceName:  opts.DeviceName,
+	}
 	var jsonGlobal bool
 	root := &cobra.Command{
 		Use:           name,
@@ -140,6 +172,11 @@ func NewRoot(opts Options) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runSessionPicker(cmd, local)
 		},
+		// A device waiting for approval is announced before any command,
+		// from the daemon's status file; nothing here reaches the network.
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			announcePendingApprovals(cmd)
+		},
 	}
 	rootContext := opts.Context
 	if rootContext == nil {
@@ -147,6 +184,17 @@ func NewRoot(opts Options) *cobra.Command {
 	}
 	if opts.EnvelopeCodec != nil {
 		rootContext = context.WithValue(rootContext, envelopeCodecContextKey{}, opts.EnvelopeCodec)
+	}
+	rootContext = context.WithValue(rootContext, hopSeamsContextKey{}, hopOpts)
+	rootContext = context.WithValue(rootContext, hostedHolderContextKey{}, &hostedHolder{})
+	rootContext = context.WithValue(rootContext, daemonSeamsContextKey{}, opts.Daemon)
+	rootContext = context.WithValue(rootContext, rootOptionsContextKey{}, opts)
+	if opts.DeviceSecrets != nil || opts.RecoveryCodePrompt != nil || opts.PairingCodePrompt != nil {
+		rootContext = context.WithValue(rootContext, accountSeamsContextKey{}, accountSeams{
+			secrets:        opts.DeviceSecrets,
+			recoveryPrompt: opts.RecoveryCodePrompt,
+			pairingPrompt:  opts.PairingCodePrompt,
+		})
 	}
 	root.SetContext(rootContext)
 	if opts.Stdout != nil {
@@ -182,7 +230,13 @@ func NewRoot(opts Options) *cobra.Command {
 		newVersionCmd(),
 		newDoctorCmd(),
 		newSetupCmd(),
+		newLoginCmd(hopOpts),
+		newWhoamiCmd(hopOpts),
+		newHopCmd(),
+		newDevicesCmd(),
+		newDaemonCmd(opts),
 		newInitCmd(),
+		newAccountCmd(),
 		newListCmd(),
 		newSessionsCmd(local),
 		newSearchCmd(local),
@@ -198,6 +252,7 @@ func NewRoot(opts Options) *cobra.Command {
 		newDiffCmd(),
 		newPushCmd(),
 		newPullCmd(processChecker),
+		newSyncCmd(),
 		newConflictsCmd(processChecker),
 		newCompletionCmd(),
 	)

@@ -7,7 +7,7 @@ two-device synchronization, restore safety, and failure behavior.
 **Release under test:** `v0.1.0-rc.8`
 **Device A:** macOS  
 **Device B:** native 64-bit Windows  
-**Scope:** Claude Code and Codex CLI sessions only
+**Scope:** Claude Code and Codex CLI sessions (plus OpenCode at T5, §17b, for later release candidates)
 
 Passing a build or watching one happy-path demo is not enough. Every mandatory
 row in the final checklist must pass before Phase 1 is complete.
@@ -701,6 +701,41 @@ Mandatory result:
   vendor-safe fork of the Mac remote session; and
 - the resolved conflict disappears from the active list.
 
+## 17b. OpenCode T5 sync (release candidates after OpenCode reached T5)
+
+OpenCode syncs at T5 alongside Claude Code and Codex, so a release candidate
+must exercise it by procedure, not only by the one-off journeys in
+`results/2026-08-23-macos-opencode-t5-journey.md` and
+`results/2026-08-23-windows-opencode-t5.md`. Use a throwaway
+`XDG_DATA_HOME` on both devices and a store the **vendor** initialised
+(`opencode import` of a throwaway session); never Reinstate's own schema.
+
+On Device A (macOS), create a session with the vendor (`opencode run` inside
+the mapped project, marker `REINSTATE-PHASE1-OPENCODE-A1`), then:
+
+```sh
+rein push --agent opencode --session OPENCODE_SESSION_ID --dry-run
+rein push --agent opencode --session OPENCODE_SESSION_ID
+```
+
+On Device B (Windows), with OpenCode closed:
+
+```powershell
+rein pull --agent opencode --session OPENCODE_SESSION_ID --dry-run
+rein pull --agent opencode --session OPENCODE_SESSION_ID
+opencode --pure session list
+opencode --pure export OPENCODE_SESSION_ID
+```
+
+Mandatory result: the pre-existing Windows session and the pulled session are
+both listed; the export shows the `A1` marker and the assistant message's
+`parentID` pointing at the user message; `message.data` rows read straight from
+`opencode.db` are compact JSON (no newline inside a blob); the session's
+`directory` column is the Device B mapped path; the pre-restore backup under
+`$REINSTATE_HOME/backups` contains `opencode.db` and any `-wal`/`-shm` present.
+Then `opencode --session OPENCODE_SESSION_ID` resumes it. Repeat the leg
+Windows-to-Mac with marker `B1`. Record both rows in the sign-off checklist.
+
 ## 18. Automated integrity gates
 
 The pull request that publishes these installers must have green checks for:
@@ -740,6 +775,8 @@ Mark every mandatory row.
 | Existing Windows target is backed up before restore | | |
 | Claude Windows-to-Mac resume succeeds | | |
 | Codex Windows-to-Mac resume succeeds | | |
+| OpenCode Mac-to-Windows pull, vendor export, and resume succeed (§17b) | | |
+| OpenCode Windows-to-Mac pull, vendor export, and resume succeed (§17b) | | |
 | Existing Mac targets are backed up before restore | | |
 | Unchanged pushes skip without new snapshots | | |
 | Divergence records a conflict without overwrite | | |

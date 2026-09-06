@@ -7,7 +7,7 @@ export const prerender = true;
 
 const title = 'Coding-Agent Integrations by Support Tier | Reinstate';
 const description =
-  'See Reinstate integrations at T1 and above: T5 encrypted sync for Claude Code and Codex CLI, plus T2 handoff sources. T0 catalog names stay on the matrix.';
+  'See Reinstate coding-agent integrations by support tier: T5 encrypted sync, T4 handoff destinations, T2 handoff sources, and T1 discovery. T0 catalog names stay on the matrix.';
 
 const integrations = integrationAgents();
 ---
@@ -17,7 +17,7 @@ const integrations = integrationAgents();
   {description}
   path="/integrations"
   eyebrow="Coding-agent integrations"
-  answer="Encrypted sync (T5) covers Claude Code and Codex CLI only, same-vendor. Gemini CLI, OpenCode, Grok Build, and Kimi Code CLI are T2 handoff sources. T0 catalog agents appear on the matrix with a reason; they do not have integration pages."
+  answer="Encrypted sync (T5) covers Claude Code, Codex CLI, and OpenCode, same-vendor. Grok Build and Qwen Code are T4 handoff destinations with same-vendor native resume. Gemini CLI and Kimi Code CLI are T2 handoff sources. T0 catalog agents appear on the matrix with a reason; they do not have integration pages."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'Integrations', path: '/integrations' },
@@ -47,8 +47,9 @@ const integrations = integrationAgents();
 
   <h2 id="tier-matrix">Catalog tier matrix</h2>
   <p>
-    Breadth is a matrix. Encrypted sync covers Claude Code and Codex CLI. The other
-    catalog rows are T2 handoff sources or T0 known names.
+    Breadth is a matrix. Encrypted sync covers Claude Code, Codex CLI, and OpenCode. Grok Build
+    and Qwen Code add handoff destinations without sync. The remaining catalog rows are T2
+    handoff sources, T1 discover-only agents, or T0 known names.
   </p>
   <AgentTierMatrix caption="Catalog agent support tiers for integrations" />
 
@@ -58,9 +59,10 @@ const integrations = integrationAgents();
       <thead>
         <tr>
           <th scope="col">Capability</th>
-          <th scope="col">Claude Code (T5)</th>
-          <th scope="col">Codex CLI (T5)</th>
-          <th scope="col">Gemini / OpenCode / Grok / Kimi (T2)</th>
+          <th scope="col">Claude Code, Codex CLI, OpenCode (T5)</th>
+          <th scope="col">Grok Build, Qwen Code (T4)</th>
+          <th scope="col">Gemini CLI, Kimi Code CLI (T2)</th>
+          <th scope="col">Pi, Cursor CLI, Copilot CLI, Cline (T1)</th>
         </tr>
       </thead>
       <tbody>
@@ -69,17 +71,20 @@ const integrations = integrationAgents();
           <td>Included</td>
           <td>Included</td>
           <td>Included, read-only</td>
+          <td>Included, read-only</td>
         </tr>
         <tr>
           <td>Handoff source (T2)</td>
           <td>Included</td>
           <td>Included</td>
           <td>Included</td>
+          <td>Not supported</td>
         </tr>
         <tr>
           <td>Same-vendor native resume (T3)</td>
           <td>Included</td>
           <td>Included</td>
+          <td>Not supported</td>
           <td>Not supported</td>
         </tr>
         <tr>
@@ -87,11 +92,13 @@ const integrations = integrationAgents();
           <td>Included</td>
           <td>Included</td>
           <td>Not supported</td>
+          <td>Not supported</td>
         </tr>
         <tr>
           <td>Encrypted push and pull (T5)</td>
           <td>Same-vendor sessions</td>
-          <td>Same-vendor sessions</td>
+          <td>Not supported</td>
+          <td>Not supported</td>
           <td>Not supported</td>
         </tr>
         <tr>
@@ -99,9 +106,11 @@ const integrations = integrationAgents();
           <td>Not supported</td>
           <td>Not supported</td>
           <td>Not supported</td>
+          <td>Not supported</td>
         </tr>
         <tr>
           <td>MCP, skills, plugins, or settings sync</td>
+          <td>Later roadmap</td>
           <td>Later roadmap</td>
           <td>Later roadmap</td>
           <td>Later roadmap</td>
@@ -152,10 +161,10 @@ const integrations = integrationAgents();
 
   <h2 id="not-yet-supported">T0 names are not integrations</h2>
   <p>
-    Pi, Qwen Code, Cursor CLI, Cline, Roo Code, Aider, GitHub Copilot CLI,
-    Amp, OpenHands, and ZCode are T0. They appear in <code>rein doctor --agents</code> with a
-    machine-readable reason such as <code>layout_unverified</code>, <code>server_backed</code>,
-    or <code>desktop_only</code>. That is a complete result, not a preview of sync.
+    Roo Code, Aider, Amp, OpenHands, ZCode, MiniMax, and Antigravity CLI are T0. They appear in
+    <code>rein doctor --agents</code> with a machine-readable reason such as
+    <code>layout_unverified</code>, <code>server_backed</code>, or <code>desktop_only</code>.
+    That is a complete result, not a preview of sync.
   </p>
   <p>
     Reinstate is independent of Anthropic, OpenAI, Google, xAI, and the other vendors named

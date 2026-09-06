@@ -21,8 +21,10 @@ and structured handoff from five. A structured handoff continues the same task
 in a *new* Claude Code or Codex session. Apple Silicon macOS and native Windows
 x64 passed dual-platform tagged-artifact acceptance on candidate `v0.5.0-rc.6`
 (150/150 on both
-devices); the public installers pin candidate `v0.5.2-rc.1`, whose acceptance is still
-pending. Intel macOS and Linux/WSL2 downloads remain preview/unverified
+devices); the public installers pin candidate `v0.6.0-rc.1`, whose native
+Windows x64 acceptance is pending and whose macOS acceptance is deferred under
+[ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md).
+Intel macOS and Linux/WSL2 downloads remain preview/unverified
 pending issues
 [#97](https://github.com/HarjjotSinghh/reinstate/issues/97) and
 [#98](https://github.com/HarjjotSinghh/reinstate/issues/98).
@@ -194,12 +196,36 @@ not part of the current CLI. See
 
 ---
 
+## Reinstate Hop
+
+Reinstate Hop is the optional hosted tier, shipped in `v0.6.0`: sign in and a
+**locker** (a storage bucket provisioned for exactly one account) syncs
+sessions with no bucket, key, or endpoint of your own to manage, through
+ordinary `rein` commands — `rein login` / `rein whoami`, `rein init --hop`,
+`rein account init` / `recover` / `join` / `status`, `rein devices` /
+`approve` / `revoke`, `rein hop status` / `credentials`, `rein sync verify`,
+`rein sync migrate --to byo`, and `rein daemon` — no build tag, no flag.
+The locker holds only ciphertext, except `keyring.v1.json`, which is
+plaintext by design. The hosted control plane this client talks to by
+default is not open yet, so the client ships anyway and the protocol above
+is public and testable today against a control plane you run yourself or
+point at with `REINSTATE_HOP_URL`; `v0.6.0` candidates and stable are
+certified on native Windows x64 only, with macOS acceptance deferred until
+that hardware returns. See [docs/hop.md](docs/hop.md) and
+[ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md).
+
+---
+
 ## Quick start
 
-> **Platform boundary:** the public installers pin candidate `v0.5.2-rc.1`, which
-> passed dual-platform tagged-artifact acceptance on Apple Silicon macOS and
-> native Windows x64. Intel macOS and Linux/WSL2
-> remain optional and unverified
+> **Platform boundary:** stable `v0.5.1` passed dual-platform tagged-artifact
+> acceptance on Apple Silicon macOS and native Windows x64. The public
+> installers pin candidate `v0.6.0-rc.1`, which is certified on native Windows
+> x64 only, with the macOS rows deferred under
+> [ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md).
+> The earlier candidate `v0.5.2-rc.1` was published but never certified; its
+> content ships inside `v0.6.0`.
+> Intel macOS and Linux/WSL2 remain optional and unverified
 > ([#97](https://github.com/HarjjotSinghh/reinstate/issues/97),
 > [#98](https://github.com/HarjjotSinghh/reinstate/issues/98)).
 >
@@ -281,7 +307,7 @@ Apple Silicon macOS with Homebrew:
 brew install HarjjotSinghh/tap/reinstate
 ```
 
-The GitHub Release and `reinstate.dev` installers pin `v0.5.2-rc.1`. The Homebrew
+The GitHub Release and `reinstate.dev` installers pin `v0.6.0-rc.1`. The Homebrew
 tap may still list an earlier release until its formula is updated. Intel macOS
 and Linuxbrew remain optional and unverified.
 
@@ -333,7 +359,7 @@ yes-or-no list.
 | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | T5 | ✅ full | ✅ same-vendor | ✅ | ✅ | ✅ |
 | [OpenAI Codex CLI](https://github.com/openai/codex) | T5 | ✅ full | ✅ same-vendor | ✅ | ✅ | ✅ |
 | [Gemini CLI](https://github.com/google-gemini/gemini-cli) | T2 | ✅ read-only | — | ✅ source-only | — | — |
-| [OpenCode](https://opencode.ai) | T4 | ✅ read-only | ✅ same-vendor | ✅  | ✅ | — |
+| [OpenCode](https://opencode.ai) | T5 | ✅ read-only | ✅ same-vendor | ✅  | ✅ | ✅ |
 | [Grok Build](https://x.ai) | T4 | ✅ read-only | ✅ same-vendor | ✅ | ✅ | — |
 | [Kimi Code CLI](https://www.kimi.com/code) | T2 | ✅ read-only | — | ✅ source-only | — | — |
 | [Qwen Code](https://qwenlm.github.io/qwen-code-docs/) | T4 | ✅ read-only | ✅ same-vendor | ✅ | ✅ | — |
@@ -433,6 +459,8 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 | [Adapters](docs/adapters.md) | Per-agent layouts & support matrix |
 | [Universal configuration](docs/universal-configuration.md) | Planned MCP/skills/loops/plugins/settings portability |
 | [Security model](docs/security-model.md) | Threat model & defaults |
+| [Reinstate Hop](docs/hop.md) | Hosted-tier sign-in (`rein login`, `rein whoami`), the locker, device approval, `rein sync verify`, leaving for your own bucket (`rein sync migrate --to byo`), and the public protocol |
+| [Locker object format](docs/hop/object-format.md) and [threat model](docs/hop/threat-model.md) | What is written to storage, byte by byte; what the operator can and cannot see; how `rein sync verify` checks each claim |
 | [Comparison](docs/comparison.md) | vs native sync, claude-sync, DIY |
 | [FAQ](docs/faq.md) | Common questions |
 | [Troubleshooting](docs/troubleshooting.md) | Path remap, conflicts, large histories |
@@ -503,7 +531,11 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 | **3** | Verified resume (stable `v0.3.0`) | ✅ |
 | **4** | Structured cross-agent handoffs (stable `v0.4.0`) | ✅ |
 | **5** | Universal agent coverage (stable `v0.5.1`) | ✅ |
-| **6–7** | Universal config + automatic sync, thin Console/ACP client, teams | 📋 / 💭 |
+| **6C** | Cloud continuity — Hop hosted sync, device registry, daemon (candidate `v0.6.0-rc.1`) | 🚧 |
+| **6A–6B** | Universal agent configuration + auth coordination | 📋 |
+| **7** | Project continuity — shared context and memory across agents | 📋 |
+| **8** | Reinstate Console (thin client) | 💭 |
+| **9** | Team continuity | 💭 |
 
 Full detail: **[ROADMAP.md](ROADMAP.md)**
 

@@ -28,7 +28,7 @@ The Phase 2 local capability matrix is:
 | Claude Code | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64 | T5 |
 | OpenAI Codex CLI | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64 | T5 |
 | Gemini CLI | Read-only included | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac | T2 |
-| OpenCode | Read-only included | Same-vendor included | Resume journeys recorded on macOS and native Windows; destination journeys recorded on both, with the executed launch collected on macOS only | T4 |
+| OpenCode | Read-only included | Same-vendor included | Encrypted-sync round-trip recorded on macOS and native Windows: create with real OpenCode, `rein push`, cross-device `rein pull`, verified resume in the vendor with the remapped path | T5 |
 | Cursor CLI | Indexed (read-only) | Not implemented | Dual-platform probes committed; indexed from `meta.json`; no device journey for resume | T1 |
 | Grok Build | Read-only included | Same-vendor included | Resume and handoff-destination journeys recorded on macOS and native Windows | T4 |
 | Amp | Not readable locally (`server_backed`) | Not implemented | Not applicable | T0 |
@@ -133,12 +133,24 @@ with the new version, indexed by Reinstate, and resumed through the launch plan
 Reinstate itself produced; the resumed session returned a token that existed
 only in the original session's history, which a restarted session cannot
 answer. Versions above the maxima remain `UNTESTED` until a later matrix
-expands them again:
+expands them again.
 
-| Agent | Inclusive source-tested range (v0.5.1) |
+`v0.6.0` widens the Claude Code ceiling further, to `2.1.263`, and the OpenCode
+ceiling to `1.18.27`, both **widened on native Windows evidence; macOS
+pending** (ADR 0005 D2/D3 — the macOS host is in repair, so this release ships
+on the Windows-first acceptance waiver). On native Windows x64 a session was
+created with each new version, indexed by Reinstate, and resumed through the
+launch plan Reinstate itself produced; the resumed session returned a token
+that existed only in the original session's history, which a restarted
+session cannot answer. Codex CLI's ceiling is unchanged in `v0.6.0`. Versions
+above the maxima remain `UNTESTED` until a later matrix, run on both
+platforms, expands them again:
+
+| Agent | Inclusive source-tested range (v0.6.0) |
 | ----- | ------------------- |
-| Claude Code | `2.1.219`–`2.1.238` |
+| Claude Code | `2.1.219`–`2.1.263` |
 | OpenAI Codex CLI | `0.133.0`–`0.149.0` |
+| OpenCode | `1.18.21`–`1.18.27` |
 
 Stable `v0.2.0` still documents the older Phase 2 physical ceiling (Claude
 `2.1.219`–`2.1.220`, Codex through `0.146.0`). Destination-device Claude
@@ -175,7 +187,9 @@ Every transcript reader resolves the version from the installed executable
 through the same probe `rein inspect` reports; no reader reads a vendor version
 file. Gemini CLI and Grok Build have no version probe and are always judged on
 layout alone, which is the same rule rather than an exception. OpenCode has a
-version probe from T3 onward, bounded to the single build measured on a device.
+version probe from T3 onward. It was bounded to the single `1.18.21` build
+measured on a device through `v0.5.1`; `v0.6.0` widens it to `1.18.21`–`1.18.27`
+on native Windows evidence (macOS pending, ADR 0005 D3).
 | **Kimi Code CLI** | structured handoff | structured handoff | not in v0.4.0 | not in v0.4.0 | not planned |
 
 Phase 2 local records carry per-session `can_resume` and `can_fork`

@@ -41,6 +41,36 @@ Project paths are portable only when each device defines the same canonical ID:
 rein init --project github.com/acme/app=/absolute/local/path
 ```
 
+## Reinstate Hop
+
+```toml
+[hop]
+url = "https://hop.reinstate.dev"
+```
+
+Optional. `REINSTATE_HOP_URL` takes precedence; the default is the production
+control plane. The device token issued by `rein login` is never a config
+field: it lives in the OS keyring under `reinstate` / `hop/device-token`. See
+[hop.md](hop.md).
+
+A profile that syncs to the account's locker is written by `rein init --hop`:
+
+```toml
+[storage]
+type = "hop"
+
+[encryption]
+type = "root-key"
+
+[hop]
+url = "https://hop.reinstate.dev"
+```
+
+`endpoint`, `bucket`, `region`, and `credential_ref` stay empty: the control
+plane supplies the locker's coordinates and hourly credentials to the
+signed-in device on every run. `profile_id` is the account id and
+`device_id` the enrolled device id.
+
 ## Restore safety
 
 A restore replaces a vendor session file, so Reinstate first checks whether an
@@ -116,7 +146,15 @@ working in.
 
 ## Encryption
 
-Default: `age-scrypt` passphrase. Passphrase is not stored in config.
+`encryption.type` selects the key model; nothing else in sync changes.
+
+- `age-scrypt` (default): BYO storage. A passphrase typed on every device
+  derives the key. The passphrase is not stored in config.
+- `root-key`: the hosted key model. `rein account init`, `rein account join`,
+  or `rein account recover` sets this after enrolling the device; the root key is
+  unwrapped from the keyring in storage with the device key held in the OS
+  keyring. No passphrase is asked for. See the "Hosted key model" section of
+  [security-model.md](security-model.md).
 
 ## Universal agent configuration (roadmap)
 

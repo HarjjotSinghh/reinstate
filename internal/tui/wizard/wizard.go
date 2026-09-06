@@ -289,6 +289,14 @@ func (m *Model) updateKey(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.joinExisting = !m.joinExisting
 			return m, nil
 		}
+
+	case tea.KeyRunes:
+		// The Windows console decoder reports the space bar as a rune, never
+		// as tea.KeySpace; keep the profile-step toggle reachable there too.
+		if m.step == stepProfile && len(key.Runes) == 1 && key.Runes[0] == ' ' {
+			m.joinExisting = !m.joinExisting
+			return m, nil
+		}
 	}
 	return m.forwardToInput(key)
 }

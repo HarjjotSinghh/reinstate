@@ -5,7 +5,7 @@ export const prerender = true;
 
 const title = 'Reinstate Roadmap: From Encrypted Sync to Work Continuity';
 const description =
-  'Review stable v0.4.0 structured handoff, the Phase 5 catalog-tier line, and which configuration features remain planned.';
+  "Review stable v0.5.1's universal agent coverage and structured handoff, the v0.6.0-rc.1 candidate, and which configuration features remain planned.";
 ---
 
 <PublicContentLayout
@@ -13,7 +13,7 @@ const description =
   {description}
   path="/roadmap"
   eyebrow="Product roadmap"
-  answer="Stable v0.2.0 implements encrypted same-vendor sync and local continuity. Stable v0.3.0 adds verified resume. Stable v0.4.0 adds explicit structured cross-agent handoff after dual-platform tagged-artifact acceptance PASS. Phase 5 is universal agent coverage by support tier. Phase 6 is universal configuration. Phase 7 is Console. Phase 8 is team continuity."
+  answer="Stable v0.2.0 implements encrypted same-vendor sync and local continuity. Stable v0.3.0 adds verified resume. Stable v0.4.0 adds explicit structured cross-agent handoff after dual-platform tagged-artifact acceptance PASS. Stable v0.5.1 adds universal agent coverage by support tier after dual-platform tagged-artifact acceptance PASS. The v0.6.0-rc.1 release candidate carries Phase 6C cloud continuity (Reinstate Hop) and the interactive CLI; it is not yet certified, with tagged-artifact acceptance pending on native Windows x64 and Apple Silicon macOS deferred; the public installers already pin this candidate while that acceptance run is pending. Phase 6A/6B universal configuration remains planned. Phase 7 is project continuity, planned and targeted at v0.8.0. Phase 8 is Console. Phase 9 is team continuity."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'Roadmap', path: '/roadmap' },
@@ -30,12 +30,16 @@ const description =
   <div class="pc-callout">
     <p>Current release boundary</p>
     <p>
-      Stable <code>v0.4.0</code> supports encrypted same-vendor Claude Code and Codex session
-      synchronization, configless local continuity, Phase 3 verified resume, and Phase 4
-      structured handoff. Apple Silicon macOS and native Windows x64 are verified stable
-      platforms after dual-platform tagged-artifact acceptance PASS; Intel macOS and
-      Linux/WSL2 remain preview and unverified. See the
-      <a href="/changelog">changelog</a>. The v0.5.0 catalog line is not a published tag.
+      Stable <code>v0.5.1</code> supports encrypted same-vendor Claude Code and Codex session
+      synchronization, configless local continuity, verified resume, structured handoff, and
+      universal agent coverage by support tier, after dual-platform tagged-artifact acceptance
+      PASS. Apple Silicon macOS and native Windows x64 remain the verified stable platforms;
+      Intel macOS and Linux/WSL2 remain preview and unverified.
+      The <code>v0.6.0-rc.1</code> release candidate carries Reinstate Hop and the interactive
+      CLI experience but is not yet certified; its tagged-artifact acceptance is pending on
+      native Windows x64 only, with Apple Silicon macOS deferred until that hardware returns.
+      The public installers already pin this candidate while that acceptance run is pending; see
+      the <a href="/changelog">changelog</a> for the exact pinned tag.
     </p>
   </div>
 
@@ -96,17 +100,30 @@ const description =
         <tr>
           <td>6</td>
           <td>Universal non-secret configuration and automatic cross-device reconciliation</td>
-          <td>Planned</td>
+          <td>
+            Split: cloud continuity (6C, the Hop client) is in release preparation as a
+            candidate; universal configuration (6A/6B) remains planned for a later release
+          </td>
           <td>Render native harness configuration without raw credential or config-tree mirroring</td>
         </tr>
         <tr>
           <td>7</td>
+          <td>One project understanding: durable rules and decisions rendered to every agent, plus learned memory with provenance</td>
+          <td>Planned</td>
+          <td>
+            State a rule once and have every gated harness honor it; capture a memory in one
+            agent's session and retrieve it, with provenance, from another; flag a memory a
+            later decision contradicts
+          </td>
+        </tr>
+        <tr>
+          <td>8</td>
           <td>Optional thin console for selecting and preparing work</td>
           <td>Exploring</td>
           <td>Agents continue to own execution; Reinstate remains the continuity client</td>
         </tr>
         <tr>
-          <td>8</td>
+          <td>9</td>
           <td>Team checkpoints, onboarding, provenance, and policy</td>
           <td>Exploring</td>
           <td>Individual continuity must first be proven safe and useful</td>
@@ -157,8 +174,8 @@ const description =
   <h2 id="native-vs-handoff">Native resume and portable handoff stay distinct</h2>
   <p>
     Native resume preserves a vendor's own session format: Claude Code resumes Claude Code, and
-    Codex resumes Codex. A structured handoff is a different operation: stable
-    <code>v0.4.0</code> carries an explicit checkpoint—goal, decisions, rejected approaches,
+    Codex resumes Codex. A structured handoff is a different operation, added in stable
+    <code>v0.4.0</code>: it carries an explicit checkpoint—goal, decisions, rejected approaches,
     files, tests, and next action—so a <em>new</em> session in another agent can continue the same
     task. It is not a resume of the original session, and Reinstate will not market that lossy
     checkpoint as invisible transcript translation.
@@ -166,10 +183,13 @@ const description =
 
   <h2 id="configuration-direction">Universal configuration without unsafe mirroring</h2>
   <p>
-    Phase 6, not Phase 5, is the planned configuration layer. It will describe portable intent
-    for MCP servers, skills, instructions, hooks, plugins, marketplaces, and safe settings.
-    Adapters will preview and render each supported harness's native format. Raw API keys, OAuth
-    tokens, cookies, vendor credential stores, and unrelated native settings remain excluded.
+    Phase 6, not Phase 5, is the configuration and cloud-continuity layer, and it now splits in
+    two. Cloud continuity (6C), the Hop client for encrypted multi-device sync, is in release
+    preparation ahead of the rest. Universal configuration (6A/6B) remains planned: it will
+    describe portable intent for MCP servers, skills, instructions, hooks, plugins, marketplaces,
+    and safe settings. Adapters will preview and render each supported harness's native format.
+    Raw API keys, OAuth tokens, cookies, vendor credential stores, and unrelated native settings
+    remain excluded.
   </p>
 
   <h2 id="non-goals">Near-term non-goals</h2>
