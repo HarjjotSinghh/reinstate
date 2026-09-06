@@ -75,7 +75,13 @@ func (r *OpenCodeReader) Probe(ctx context.Context, record sessionindex.Record) 
 		}
 		return CompatibilitySupported, nil
 	}
-	// No message tree (SQLite-only / absent storage): metadata fallback.
+	// No message tree (SQLite-only / absent storage): the embedded store
+	// answers this directly when it has the session, with no vendor
+	// subprocess and no side effect on the vendor's own store. Only a store
+	// that cannot answer falls back to `opencode session list`.
+	if r.probeDatabaseSession(record.ID) {
+		return CompatibilitySupported, nil
+	}
 	if r.canListMetadata(ctx) {
 		return CompatibilitySupported, nil
 	}
