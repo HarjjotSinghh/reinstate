@@ -9,7 +9,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-func duplicatePassphraseFD(fd uintptr) (*os.File, error) {
+func duplicatePassphraseFD(fd int) (*os.File, error) {
 	process := windows.CurrentProcess()
 	var duplicate windows.Handle
 	if err := windows.DuplicateHandle(

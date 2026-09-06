@@ -46,14 +46,15 @@ func ReadSecretFD(envName string) (secret []byte, configured bool, err error) {
 	if rawFD == "" {
 		return nil, false, nil
 	}
-	// A descriptor or a Windows handle value fits comfortably in 32 bits;
-	// parsing at that width keeps the later uintptr conversion in range on
-	// every platform, which is what the integer-conversion analysis checks.
-	fd, err := strconv.ParseUint(rawFD, 10, 32)
+	// A descriptor or a Windows handle value fits comfortably in 31 bits;
+	// parsing at that width keeps every later conversion (int for dup,
+	// uintptr for a handle) in range on every platform, which is what the
+	// integer-conversion analysis checks.
+	parsed, err := strconv.ParseUint(rawFD, 10, 31)
 	if err != nil {
 		return nil, true, fmt.Errorf("%s must be a valid file descriptor", envName)
 	}
-	file, err := duplicatePassphraseFD(uintptr(fd))
+	file, err := duplicatePassphraseFD(int(parsed))
 	if err != nil || file == nil {
 		return nil, true, fmt.Errorf("%s is unavailable", envName)
 	}
