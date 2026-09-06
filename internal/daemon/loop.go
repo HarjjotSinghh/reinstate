@@ -52,8 +52,9 @@ type Change struct {
 
 // Event is one thing the loop did, for observers (tests, verbose logs).
 type Event struct {
-	// Kind is "start", "push", "pull", "approvals", "notify", "heartbeat",
-	// or "idle" (the loop is blocked waiting for the next trigger).
+	// Kind is "start", "change" (a watcher event was taken and the debounce
+	// timer armed), "push", "pull", "approvals", "notify", "heartbeat", or
+	// "idle" (the loop is blocked waiting for the next trigger).
 	Kind string
 	Err  error
 }
@@ -240,6 +241,10 @@ func Run(ctx context.Context, opts Options) error {
 			stopTimer(debounceT)
 			debounceT = opts.Clock.NewTimer(l.pushDelay(now))
 			l.opts.Logger.Printf("change: %s", change.Path)
+			// Observed after the debounce timer is armed, so a test that
+			// advances a fake clock can wait for this rather than race the
+			// loop to the timer.
+			l.observe(Event{Kind: "change"})
 		case <-timerC(debounceT):
 			debounceT = nil
 			if !l.dirty {

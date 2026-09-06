@@ -193,11 +193,25 @@ func (h *harness) advance(d time.Duration) []daemon.Event {
 	return h.until(h.clock.Advance(d))
 }
 
-// change delivers one file event and waits for the loop to take it.
+// change delivers one file event and waits for the loop to take it: the
+// "change" event is observed only after the debounce timer is armed, so an
+// idle left over from the previous step cannot satisfy this early.
 func (h *harness) change(path string) []daemon.Event {
 	h.t.Helper()
 	h.events <- daemon.Change{Path: path}
-	return h.until(1)
+	deadline := time.After(5 * time.Second)
+	var events []daemon.Event
+	for {
+		select {
+		case e := <-h.seen:
+			events = append(events, e)
+			if e.Kind == "change" {
+				return append(events, h.until(1)...)
+			}
+		case <-deadline:
+			h.t.Fatalf("loop did not take the change; events so far: %v", kinds(events))
+		}
+	}
 }
 
 // stop cancels the loop and waits for it to return.

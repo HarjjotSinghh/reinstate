@@ -147,6 +147,30 @@ func (r *runningDaemon) advance(d time.Duration) []daemon.Event {
 	return r.until(r.clock.Advance(d))
 }
 
+// waitFor discards events until one of kind arrives. A change is observed
+// only after the loop has armed its debounce timer, so waiting for it
+// before advancing the clock cannot race the loop; waiting for an idle
+// could, because an idle left over from the previous step satisfies it
+// before the change is even taken.
+func (r *runningDaemon) waitFor(kind string) daemon.Event {
+	r.t.Helper()
+	deadline := time.After(30 * time.Second)
+	var seen []string
+	for {
+		select {
+		case e := <-r.seen:
+			if e.Kind == kind {
+				return e
+			}
+			seen = append(seen, e.Kind)
+		case code := <-r.done:
+			r.t.Fatalf("daemon exited with %d before %q: out=%q err=%q", code, kind, r.stdout.String(), r.stderr.String())
+		case <-deadline:
+			r.t.Fatalf("no %q event; saw %v", kind, seen)
+		}
+	}
+}
+
 func (r *runningDaemon) stop() int {
 	r.t.Helper()
 	r.cancel()
@@ -251,7 +275,8 @@ func TestDaemonJourneyHop(t *testing.T) {
 		t.Fatal(err)
 	}
 	d.events <- daemon.Change{Path: sessionPath}
-	d.until(1)
+	d.waitFor("change")
+	d.until(1) // the idle that follows the change, so the next advance sees the push
 	if e := eventOf(t, d.advance(3*time.Second), "push"); e.Err != nil {
 		t.Fatalf("push after change: %v", e.Err)
 	}
@@ -645,7 +670,8 @@ func TestDaemonRunKeepsThePassphraseForItsLifetime(t *testing.T) {
 		t.Fatal(err)
 	}
 	d.events <- daemon.Change{Path: sessionPath}
-	d.until(1)
+	d.waitFor("change")
+	d.until(1) // the idle that follows the change, so the next advance sees the push
 	if e := eventOf(t, d.advance(3*time.Second), "push"); e.Err != nil {
 		t.Fatalf("push after change: %v", e.Err)
 	}
