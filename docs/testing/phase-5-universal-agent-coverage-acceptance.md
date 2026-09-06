@@ -153,6 +153,52 @@ Five rows per agent at T2 or above.
 | D4 | A truncated source produces a boundary at the last complete record, with offset and hash recorded |
 | D5 | Two runs over an unchanged source produce byte-identical capsules |
 
+**D5 — which fields are per-invocation identifiers.** "Byte-identical" is
+checked on the full `--dry-run --json` document. Two fields are the
+capsule's own content-derived identity (`handoff_id`, which is
+`Capsule.Identity.ID`: a hash of the canonical capsule minus that field
+itself, minus a self-referential `lineage_root`, and minus the projection
+size/hash fields computed after the ID is assigned) — given an unchanged
+source and an unchanged `$REINSTATE_HOME`, these are themselves
+deterministic and stay equal across repeated runs; `docs/testing/results/
+2026-09-06-windows-v060rc1-pretag.md`'s claim that they varied while
+`destination` stayed byte-identical describes matrix-wide state carried on a
+shared `$REINSTATE_HOME` across many rows, not a designed source of
+per-run randomness — a fresh `$REINSTATE_HOME` with no prior handoff for
+that exact session removes the variance entirely (see opencode:D5 below).
+For a **destination whose session id Reinstate itself derives**
+deterministically from `handoff_id` (Claude, Grok, Qwen — each hashes
+`Capsule.Identity.ID`), that destination `session_id` inherits whatever
+`handoff_id` does and is not independently random. For **Codex**, the
+destination has no session id at Plan time at all (Codex mints its own only
+on launch), so there is nothing to compare there. No destination's Plan-time
+session id is "minted by the destination vendor" in this codebase; only a
+launched Codex session ever is.
+
+**opencode:D5 — was a defect, not a per-invocation identifier (fixed).**
+Investigated with a real OpenCode 1.18.27 session under an isolated
+`XDG_DATA_HOME`: two `--dry-run --json` runs differed in `handoff_id`,
+`lineage_root`, **and** `destination.session_id` — every other T4/T5 source
+varies in only the first two. Root cause: the SQLite-backed source boundary
+(`internal/transcript/opencode_sqlite.go`) hashed the *entire* `opencode.db`
+file rather than the target session's own rows. That file is shared by every
+session in the store, and OpenCode's own CLI rewrites parts of it —
+bookkeeping tables this reader never reads — as a side effect of read-only
+commands such as `session list`, which `Probe()` was itself invoking on
+every SQLite-only compatibility check. Confirmed live: diffing
+`opencode.db` before/after one `opencode session list --format json` call
+showed the target session's own `session`/`message`/`part` rows
+byte-for-byte unchanged while the file's digest changed. Fixed by scoping
+the boundary digest to exactly the target session's own session, message,
+and part rows (ordered by id) — the same rows `Parse` turns into events —
+and by having `Probe()` answer straight from the database when it already
+has the session, instead of always shelling out. Two dry-runs over an
+unchanged real OpenCode session now produce a fully byte-identical
+document, `handoff_id` and `destination.session_id` included. Regression
+coverage: `TestOpenCodeDatabaseBoundaryIgnoresUnrelatedStoreChurn` and
+`TestOpenCodeProbeAnswersFromDatabaseWithoutShellingOut` in
+`internal/transcript/opencode_sqlite_test.go`.
+
 ---
 
 ## Matrix E — Per T3 agent (required, both platforms)

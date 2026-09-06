@@ -81,6 +81,18 @@ rein resume claude:<session-id> --with codex
 | `--show-redactions` | Show redaction categories and counts. Never the values. |
 | `--no-redact` | Skip secret redaction. Refused with exit `2` when the source is Grok. |
 
+`--dry-run`'s "no side effects" covers the source, not only the destination:
+reading a source never writes to the vendor's own session store, including a
+shared, multi-session store such as OpenCode's `opencode.db` — only the
+target session's own rows are ever read. Two `--dry-run` runs over an
+unchanged source therefore produce a byte-identical document, with two
+narrow, named exceptions: `handoff_id` and `lineage_root` are the capsule's
+own content-derived identity and stay equal too as long as
+`$REINSTATE_HOME` carries no new ancestor lineage entry for that exact
+session between the two runs (see acceptance rule D5 in
+[phase-5-universal-agent-coverage-acceptance.md](testing/phase-5-universal-agent-coverage-acceptance.md)
+for the precise rule and the OpenCode defect this closed).
+
 Running `rein handoff` from a different Git repository than the source session
 is refused with exit `5`. A launch without a real TTY fails closed before the
 destination process is created (exit `7`). A version probe that times out is
