@@ -11,9 +11,10 @@ c6c0997e571a13261f886aee1abf2f5c5f012639:docs/testing/results/2026-08-13-macos-p
 # Public ED25519 tag-signature SHA256 recorded in the v0.4.0-rc.7 macOS report.
 6028b3091d27106ddf13a0437e2a5c87dd551a3e:docs/testing/results/2026-08-15-macos-phase4-V040RC7.md:generic-api-key:49
 
-# v0.6.0-rc.1 candidate branch: a Hop parity report quoted the lab account's public
-# signing key before it was redacted to <account-key> in a later commit; the
-# pre-redaction commit stays in the branch history until the squash merge.
+# v0.6.0-rc.1 candidate branch, pre-squash history: the commits that first added
+# the synthetic keyring age identities (allowlisted by literal in .gitleaks.toml
+# at their current lines), and a Hop parity report that quoted the lab account's
+# public signing key before a later commit redacted it to <account-key>.
 00f297f9e2f376efa204ed3bc011497afe6c1607:internal/keyring/keyring_test.go:generic-api-key:28
 64e9fe500665925e91d23b84d0ef0c488093dd0a:docs/testing/results/2026-09-06-windows-hop-parity-v060-a.md:generic-api-key:562
 b49938a7e2bbfb5f2bb27abbe62142be2054c2e3:internal/keyring/generation_test.go:generic-api-key:23

@@ -433,6 +433,13 @@ url` point it at another one for labs and self-hosters.
 
 ### Fixed
 
+- The warning checklist's spacebar acknowledgement works on native Windows.
+  Bubble Tea's Windows console decoder reports the space bar as a rune
+  rather than as its space key, so a Windows user pressing the bar in the
+  checklist saw nothing happen and could only accept every warning at once
+  with `a`. The checklist and the `rein init` wizard's profile step now treat
+  a single-rune space the same as the key. Found by the `v0.6.0-rc.1`
+  pre-tag native Windows run (CLI experience row 14).
 - A refused pairing approval no longer takes back wraps it never wrote
   (#11). `UnenrolEverywhere` removed every `(device id, public key)` match
   in every generation, while `EnrolInto` leaves a generation alone when it
