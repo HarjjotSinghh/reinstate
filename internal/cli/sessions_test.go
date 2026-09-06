@@ -742,6 +742,8 @@ func TestAgentCompletionMatchesFlagTier(t *testing.T) {
 		{[]string{"__complete", "last", "--agent", ""}, agents.TierResume, true},
 		{[]string{"__complete", "handoff", "--to", ""}, agents.TierHandoffTo, false},
 		{[]string{"__complete", "handoff", "--from", ""}, agents.TierHandoffFrom, false},
+		{[]string{"__complete", "push", "--agent", ""}, agents.TierSync, false},
+		{[]string{"__complete", "pull", "--agent", ""}, agents.TierSync, false},
 	}
 	for _, tt := range tests {
 		t.Run(strings.Join(tt.args[1:3], " "), func(t *testing.T) {
