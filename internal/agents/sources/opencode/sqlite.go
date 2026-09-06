@@ -262,6 +262,25 @@ func messageCountExpression(ctx context.Context, db *sql.DB) string {
 // against a pathological session with a huge number of tiny parts.
 const maxSearchParts = 20000
 
+// maxRowTextBytes bounds how much of any single message.data / part.data
+// blob this reader ever pulls out of SQLite, via substr() in the SELECT
+// list itself rather than a Go-side check after the value is already in
+// hand. This is not a query-planner hint: it changes what messageData and
+// partData actually hold by the time rows.Scan runs, so one pathologically
+// large part (a pasted log or file dump saved as a single part — not even a
+// corrupted store) never has its full bytes pulled into process memory,
+// matching the same bound sessionindex.MaxJSONLineBytes applies to one
+// Claude Code JSONL event. A part.data blob truncated at this bound no
+// longer parses as JSON, so json.Unmarshal fails and the row contributes no
+// text — the same "counts as a turn, no text" outcome the Cline reader
+// applies to one oversized message, not a crash or a partial/garbled value.
+// Confirmed empirically against modernc.org/sqlite (the driver
+// vendorsqlite opens): scanning a substr(col, 1, N)-bounded column off a
+// 60 MiB row grows runtime.MemStats.TotalAlloc by only ~N bytes, not the
+// row's full size, where scanning the unbounded column grows it by the
+// full ~60 MiB.
+const maxRowTextBytes = sessionindex.MaxJSONLineBytes
+
 // partTablePresent reports whether this store has the part table the sync
 // adapter reads. Its absence means a legacy session_message-only schema,
 // which carries no separately addressable part text through this reader.
@@ -297,13 +316,16 @@ func readSessionSearchText(ctx context.Context, db *sql.DB, sessionID string, ha
 	if !hasPart {
 		return "", ""
 	}
+	// substr(...) bounds what SQLite ever returns for either blob to
+	// maxRowTextBytes — see its doc comment — so a pathologically large
+	// single message or part never lands in process memory whole.
 	rows, err := db.QueryContext(ctx, `
-SELECT message.data, part.data
+SELECT substr(message.data, 1, ?), substr(part.data, 1, ?)
   FROM part
   JOIN message ON message.id = part.message_id
  WHERE part.session_id = ?
  ORDER BY part.id
- LIMIT ?`, sessionID, maxSearchParts)
+ LIMIT ?`, maxRowTextBytes, maxRowTextBytes, sessionID, maxSearchParts)
 	if err != nil {
 		return "", ""
 	}

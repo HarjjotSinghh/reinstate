@@ -30,15 +30,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     recognized body column (`text`/`content`/`body`/`message`) before
     indexing any text; a table with neither keeps the pre-existing
     count-only behavior rather than guessing at an unrecognized
-    schema.
+    schema. Each row's own body column is additionally bounded to
+    4 MiB via `substr(column, 1, ?)` in the SQL itself, so one
+    pathologically large row (a pasted log saved as a single message)
+    is never pulled into process memory whole.
   - **OpenCode**'s embedded-SQLite source reads the same
     `message`+`part` join its own sync adapter already uses, one
     query per session, for `"text"`-typed parts of `"role":"user"`
     messages; a store still on the legacy `session_message`-only
-    schema (no `part` table) is unaffected. OpenCode's CLI-query
-    source (unused by the shipped catalog descriptor) is unchanged:
-    `opencode session list` returns metadata only, never message
-    bodies.
+    schema (no `part` table) is unaffected. Each row's `message.data`
+    and `part.data` blobs are likewise bounded to 4 MiB apiece via
+    `substr(...)` in the SQL itself; a blob truncated at that bound no
+    longer parses as JSON, so it contributes no text rather than a
+    garbled fragment. OpenCode's CLI-query source (unused by the
+    shipped catalog descriptor) is unchanged: `opencode session list`
+    returns metadata only, never message bodies.
   - All three sources now also set `PromptPreview` from the first
     user message when the vendor recorded no usable title.
 

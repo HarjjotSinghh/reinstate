@@ -86,6 +86,21 @@ var userRoleValues = []string{"user", "human"}
 // a pathological store with a huge number of tiny rows.
 const maxTextRows = 20000
 
+// maxRowTextBytes bounds how much of any single row's text column this
+// reader ever pulls out of SQLite, via substr() in the SELECT list itself
+// rather than a Go-side check after the value is already in hand. This is
+// not a query-planner hint: it changes what value.String actually holds by
+// the time rows.Scan runs, so a session with one pathologically large
+// message (a pasted log or file dump saved as a single row — not even a
+// corrupted store) never has that row's full bytes pulled into process
+// memory, matching the same bound sessionindex.MaxJSONLineBytes applies to
+// one Claude Code JSONL event. Confirmed empirically against
+// modernc.org/sqlite (the driver vendorsqlite opens): scanning a
+// substr(col, 1, N)-bounded column off a 60 MiB row grows
+// runtime.MemStats.TotalAlloc by only ~N bytes, not the row's full size,
+// where scanning the unbounded column grows it by the full ~60 MiB.
+const maxRowTextBytes = sessionindex.MaxJSONLineBytes
+
 // SessionGlob matches one CLI session metadata file.
 const SessionGlob = "chats/**/meta.json"
 
@@ -404,7 +419,10 @@ func readMessageText(ctx context.Context, db *sql.DB, table string) (searchText 
 	}
 
 	placeholders := make([]string, len(userRoleValues))
-	args := make([]any, 0, len(userRoleValues)+1)
+	args := make([]any, 0, len(userRoleValues)+2)
+	// The substr() bound is the first "?" in the query below, so its
+	// argument goes first too — database/sql binds positionally.
+	args = append(args, maxRowTextBytes)
 	for index, value := range userRoleValues {
 		placeholders[index] = "?"
 		args = append(args, value)
@@ -413,8 +431,11 @@ func readMessageText(ctx context.Context, db *sql.DB, table string) (searchText 
 	// of fixed, hardcoded identifiers verified above (isRecognizedTable,
 	// messageTextColumnCandidates, messageRoleColumnCandidates), never a
 	// value read from the vendor's own data, so building the query by string
-	// concatenation carries no injection risk here.
-	query := `SELECT ` + textColumn + ` FROM ` + table +
+	// concatenation carries no injection risk here. substr(...) bounds what
+	// SQLite ever returns for one row's text column to maxRowTextBytes — see
+	// its doc comment — so a pathologically large single row never lands in
+	// process memory whole.
+	query := `SELECT substr(` + textColumn + `, 1, ?) FROM ` + table +
 		` WHERE ` + roleColumn + ` IN (` + strings.Join(placeholders, ",") + `)` +
 		` ORDER BY rowid LIMIT ?`
 	args = append(args, maxTextRows)

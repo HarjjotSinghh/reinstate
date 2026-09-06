@@ -33,8 +33,20 @@ Claude Code's own reader applies, never assistant replies — read
 through the same `message`/`part` join the sync adapter
 (`internal/adapter/opencode`) already performs, one query per session,
 ordered by `part.id`, bounded to 20,000 rows and to the shared
-`MaxSearchTextBytes` budget. `PromptPreview` falls back to the first
-such part when the vendor recorded no `session.title`.
+`MaxSearchTextBytes` budget. Each row's `message.data` and `part.data`
+blobs are additionally bounded to 4 MiB apiece (`maxRowTextBytes`, the
+same ceiling `MaxJSONLineBytes` applies to one Claude Code JSONL
+event) via `substr(column, 1, ?)` *in the SQL SELECT itself*, not a
+check after the value is already in Go's hands — one pathologically
+large part (a pasted log or file dump saved as a single part) never
+lands in process memory whole, confirmed empirically against
+`modernc.org/sqlite`: scanning a `substr`-bounded column off a 60 MiB
+row grows allocation by only the bound, not the row's own size. A
+blob truncated at that bound no longer parses as JSON, so it
+contributes no text rather than a garbled fragment — the same "counts
+as a turn, no text" outcome the Cline reader applies to one oversized
+message. `PromptPreview` falls back to the first such part when the
+vendor recorded no `session.title`.
 A store still on the legacy `session_message`-only schema (no `part`
 table) keeps its `message_count` from that table but yields no search
 text: `session_message.data`'s per-row shape is unverified, and this

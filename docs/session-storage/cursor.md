@@ -115,12 +115,20 @@ session's actual content lives in the sibling `store.db` (observed
   whose author column reads `user` or `human` are indexed, matching
   the policy Claude Code's own reader applies (never assistant
   replies), ordered by `rowid`, bounded to 20,000 rows and to the
-  shared `MaxSearchTextBytes` budget. A recognized table with a row
-  count but no recognized author/body column pair contributes no text
-  — the same as before this reader read content, not a guess at an
-  unrecognized column's meaning. `PromptPreview` falls back to the
-  first such user row, since Cursor CLI's `meta.json` carries no
-  vendor session title to prefer instead.
+  shared `MaxSearchTextBytes` budget. Each row's own body column is
+  additionally bounded to 4 MiB (`maxRowTextBytes`, the same ceiling
+  `MaxJSONLineBytes` applies to one Claude Code JSONL event) via
+  `substr(column, 1, ?)` *in the SQL SELECT itself*, not a check after
+  the value is already in Go's hands — one pathologically large row (a
+  pasted log or file dump saved as a single message) never lands in
+  process memory whole, confirmed empirically against
+  `modernc.org/sqlite`: scanning a `substr`-bounded column off a 60 MiB
+  row grows allocation by only the bound, not the row's own size. A
+  recognized table with a row count but no recognized author/body
+  column pair contributes no text — the same as before this reader
+  read content, not a guess at an unrecognized column's meaning.
+  `PromptPreview` falls back to the first such user row, since Cursor
+  CLI's `meta.json` carries no vendor session title to prefer instead.
 
 This does not promote Cursor toward F2, and it is not "inventing a
 `store.db` reader" in the sense the section below still means: no

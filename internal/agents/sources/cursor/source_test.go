@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -433,6 +434,57 @@ func TestSearchTextRedactsControlSequences(t *testing.T) {
 	}
 	if !strings.Contains(record.SearchText, marker) {
 		t.Fatalf("search text lost the sanitized marker: %q", record.SearchText)
+	}
+}
+
+// TestSearchTextPerRowBoundLimitsMemory proves a single pathologically large
+// message row (a pasted log or file dump saved as one message, not even a
+// corrupted store) is never pulled into process memory whole: the SQL-level
+// substr(...) bound (maxRowTextBytes) must keep the allocation growth from
+// reading one such row within a small multiple of maxRowTextBytes, not the
+// row's own multi-hundred-megabyte size. This is the same empirical
+// methodology used to demonstrate the gap this test now closes: measuring
+// runtime.MemStats.TotalAlloc growth around the read, not just asserting on
+// the final (separately bounded) SearchText output.
+func TestSearchTextPerRowBoundLimitsMemory(t *testing.T) {
+	root := t.TempDir()
+	metaPath := filepath.Join(root, "chats", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "sess-1", "meta.json")
+	writeMeta(t, metaPath, true)
+	storePath := storeDatabasePath(metaPath)
+	execSQL(t, storePath, `CREATE TABLE messages (id INTEGER PRIMARY KEY, role TEXT, text TEXT, ts INTEGER)`)
+
+	db, err := sql.Open("sqlite", "file:"+storePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	const marker = "fixture-search-token-cursor-oversized-row"
+	const rowSize = 60 << 20 // 60 MiB: far larger than maxRowTextBytes (4 MiB).
+	oversized := marker + " " + strings.Repeat("x", rowSize)
+	if _, err := db.Exec(`INSERT INTO messages (role, text, ts) VALUES ('user', ?, 1)`, oversized); err != nil {
+		t.Fatal(err)
+	}
+
+	runtime.GC()
+	var before runtime.MemStats
+	runtime.ReadMemStats(&before)
+
+	searchText, _ := readMessageText(context.Background(), db, "messages")
+
+	var after runtime.MemStats
+	runtime.ReadMemStats(&after)
+	grew := after.TotalAlloc - before.TotalAlloc
+
+	if !strings.Contains(searchText, marker) {
+		t.Fatalf("search text lost the leading marker: %q", searchText[:min(200, len(searchText))])
+	}
+	// A generous ceiling: several multiples of maxRowTextBytes to absorb
+	// driver/runtime overhead, but two full orders of magnitude below the
+	// 60 MiB row — proving the row was not materialized whole.
+	const ceiling = 8 * maxRowTextBytes
+	if grew > ceiling {
+		t.Fatalf("reading one oversized row grew TotalAlloc by %d bytes, want at most %d (row was %d bytes) — the row was not bounded before materializing", grew, ceiling, rowSize)
 	}
 }
 

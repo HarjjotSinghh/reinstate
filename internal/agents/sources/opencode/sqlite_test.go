@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -373,6 +374,73 @@ func TestSearchTextRedactsControlSequences(t *testing.T) {
 	}
 	if !strings.Contains(record.SearchText, marker) {
 		t.Fatalf("search text lost the sanitized marker: %q", record.SearchText)
+	}
+}
+
+// TestSearchTextPerRowBoundLimitsMemory proves a single pathologically large
+// part (a pasted log or file dump saved as one part, not even a corrupted
+// store) is never pulled into process memory whole: the SQL-level
+// substr(...) bound (maxRowTextBytes) must keep the allocation growth from
+// reading one such row within a small multiple of maxRowTextBytes, not the
+// row's own multi-hundred-megabyte size. A part.data blob this large no
+// longer parses as JSON once substr has truncated it, so it correctly
+// contributes no text (the same "counts as a turn, no text" outcome the
+// Cline reader applies to one oversized message) rather than a crash or a
+// garbled value — this test asserts both: bounded memory growth, and a
+// record that still scans cleanly with no leaked partial text.
+func TestSearchTextPerRowBoundLimitsMemory(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, DatabaseName)
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+	stmts := []string{
+		`CREATE TABLE part (id TEXT PRIMARY KEY, message_id TEXT NOT NULL, session_id TEXT NOT NULL, data TEXT NOT NULL)`,
+		`CREATE TABLE message (id TEXT PRIMARY KEY, session_id TEXT NOT NULL, data TEXT NOT NULL)`,
+		`INSERT INTO message VALUES ('msg_user','ses_1','{"role":"user"}')`,
+	}
+	for _, s := range stmts {
+		if _, err := db.Exec(s); err != nil {
+			t.Fatalf("%s: %v", s, err)
+		}
+	}
+	const marker = "fixture-search-token-opencode-oversized-part"
+	const rowSize = 60 << 20 // 60 MiB: far larger than maxRowTextBytes (4 MiB).
+	payload, err := json.Marshal(map[string]string{
+		"type": "text",
+		"text": marker + " " + strings.Repeat("x", rowSize),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO part (id, message_id, session_id, data) VALUES ('prt_user','msg_user','ses_1',?)`,
+		string(payload)); err != nil {
+		t.Fatal(err)
+	}
+
+	runtime.GC()
+	var before runtime.MemStats
+	runtime.ReadMemStats(&before)
+
+	searchText, _ := readSessionSearchText(context.Background(), db, "ses_1", true)
+
+	var after runtime.MemStats
+	runtime.ReadMemStats(&after)
+	grew := after.TotalAlloc - before.TotalAlloc
+
+	// A generous ceiling: several multiples of maxRowTextBytes to absorb
+	// driver/runtime overhead, but two full orders of magnitude below the
+	// 60 MiB row — proving the row was not materialized whole.
+	const ceiling = 8 * maxRowTextBytes
+	if grew > ceiling {
+		t.Fatalf("reading one oversized part grew TotalAlloc by %d bytes, want at most %d (part was %d bytes) — the row was not bounded before materializing", grew, ceiling, rowSize)
+	}
+	// The truncated blob no longer parses as JSON, so it must contribute no
+	// text rather than a garbled fragment.
+	if strings.Contains(searchText, marker) {
+		t.Fatalf("search text unexpectedly kept text from a row the SQL-level bound should have truncated past valid JSON: %q", searchText[:min(200, len(searchText))])
 	}
 }
 
