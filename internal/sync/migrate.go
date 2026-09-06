@@ -278,6 +278,13 @@ func (m *Migration) copySnapshot(ctx context.Context, id, destKey string) (diges
 	if _, err := cipher.Seek(0, io.SeekStart); err != nil {
 		return "", 0, false, err
 	}
+	// The source read above may have completed after the run was
+	// cancelled; a backend that ignores the context would then write an
+	// object the caller no longer wants. An interrupted run must leave
+	// nothing behind past the last snapshot it finished verifying.
+	if err := ctx.Err(); err != nil {
+		return "", 0, false, err
+	}
 	_, err = m.Destination.Backend.Put(ctx, destKey, cipher, info.Size(), backend.PutOptions{
 		IfNoneMatch: true,
 		ContentType: "application/octet-stream",
