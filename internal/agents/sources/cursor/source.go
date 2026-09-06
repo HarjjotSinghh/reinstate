@@ -3,18 +3,31 @@
 // Layout, from the 2026-08-17 dual-platform probes:
 //
 //	~/.cursor/chats/<32-hex>/<uuid-v4>/meta.json
+//	~/.cursor/chats/<32-hex>/<uuid-v4>/store.db
 //
 // First-line keys on both platforms: createdAtMs, cwd, hasConversation,
 // schemaVersion, updatedAtMs. The editor tree under projects/ is excluded.
+//
+// meta.json is a small index sidecar; the session's own content lives in the
+// sibling store.db (SQLite). size_bytes is the two files combined, and
+// message_count is read from store.db read-only through vendorsqlite, table
+// name unverified (see doc/session-storage/cursor.md): a store whose schema
+// does not match the recognized candidate table names degrades to the
+// message_count 0 this reader always reported before it existed, rather than
+// guessing.
 package cursor
 
 import (
 	"context"
+	"crypto/sha256"
+	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -22,7 +35,21 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/agents/scan/hometree"
 	"github.com/HarjjotSinghh/reinstate/internal/agents/sources"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
+	"github.com/HarjjotSinghh/reinstate/internal/vendorsqlite"
 )
+
+// StoreDatabaseName is the per-session SQLite store beside meta.json.
+const StoreDatabaseName = "store.db"
+
+// messageTableCandidates are the table names this reader recognizes as
+// holding one row per message. The real schema is undocumented and
+// unverified (docs/session-storage/cursor.md); a store using none of these
+// names yields message_count 0, the same as before this reader existed. If
+// more than one candidate table is present, the larger count wins, on the
+// same reasoning OpenCode's reader uses for its own migrated table pair: one
+// name is the live one and the rest are remnants, and summing would double
+// count a store mid-migration.
+var messageTableCandidates = []string{"messages", "message", "bubbles"}
 
 // SessionGlob matches one CLI session metadata file.
 const SessionGlob = "chats/**/meta.json"
@@ -80,7 +107,7 @@ func (s *Source) Scan(ctx context.Context) (sessionindex.ScanResult, error) {
 		if err := ctx.Err(); err != nil {
 			return sessionindex.ScanResult{}, err
 		}
-		record, parseErr := parseSession(file)
+		record, parseErr := parseSession(ctx, file)
 		if parseErr != nil {
 			result.Warnings = append(result.Warnings, sessionindex.Warning{
 				Agent:   sessionindex.AgentCursor,
@@ -99,10 +126,39 @@ func (s *Source) Scan(ctx context.Context) (sessionindex.ScanResult, error) {
 	return result, nil
 }
 
-// Fingerprint summarises the source without opening any file, so an
-// unchanged refresh can skip parsing entirely.
+// Fingerprint summarises the source without opening any vendor file for its
+// content, so an unchanged refresh can skip parsing entirely.
+//
+// hometree.Fingerprint alone is not enough: its walk only matches
+// meta.json (SessionGlob), so a message recorded in a session's sibling
+// store.db would leave the meta.json-only hash unchanged and an incremental
+// refresh would keep serving a stale message_count and size_bytes forever.
+// Each meta.json's sibling store.db is stat-ed (never opened) and folded in.
 func (s *Source) Fingerprint(ctx context.Context) (string, bool, error) {
-	return hometree.Fingerprint(ctx, s.config())
+	base, ok, err := hometree.Fingerprint(ctx, s.config())
+	if err != nil || !ok {
+		return base, ok, err
+	}
+	_, files, err := hometree.Discover(ctx, s.config())
+	if err != nil {
+		return "", false, err
+	}
+	sum := sha256.New()
+	_, _ = sum.Write([]byte(base))
+	for _, file := range files {
+		if err := ctx.Err(); err != nil {
+			return "", false, err
+		}
+		info, statErr := os.Stat(storeDatabasePath(file.Path))
+		if statErr != nil || !info.Mode().IsRegular() {
+			continue
+		}
+		_, _ = sum.Write([]byte{0})
+		_, _ = sum.Write([]byte(strconv.FormatInt(info.ModTime().UnixNano(), 10)))
+		_, _ = sum.Write([]byte{0})
+		_, _ = sum.Write([]byte(strconv.FormatInt(info.Size(), 10)))
+	}
+	return hex.EncodeToString(sum.Sum(nil)), true, nil
 }
 
 func (s *Source) config() hometree.Config {
@@ -128,7 +184,7 @@ type meta struct {
 	SchemaVersion   *int        `json:"schemaVersion"`
 }
 
-func parseSession(file hometree.File) (sessionindex.Record, error) {
+func parseSession(ctx context.Context, file hometree.File) (sessionindex.Record, error) {
 	item, err := readMeta(file.Path)
 	if err != nil {
 		return sessionindex.Record{}, err
@@ -156,6 +212,22 @@ func parseSession(file hometree.File) (sessionindex.Record, error) {
 	if title == "unknown" {
 		title = id
 	}
+
+	// meta.json is a small index sidecar; the session's actual content lives
+	// in the sibling store.db. size_bytes and message_count both come from
+	// the store the session lives in, not from the sidecar alone.
+	sizeBytes := file.Size
+	sourceModTime := file.ModTime.UnixNano()
+	messageCount := 0
+	storePath := storeDatabasePath(file.Path)
+	if storeInfo, statErr := os.Stat(storePath); statErr == nil && storeInfo.Mode().IsRegular() {
+		sizeBytes += storeInfo.Size()
+		if storeModTime := storeInfo.ModTime().UnixNano(); storeModTime > sourceModTime {
+			sourceModTime = storeModTime
+		}
+		messageCount = countStoreMessages(ctx, storePath)
+	}
+
 	return sessionindex.Record{
 		Key:            sessionindex.CompositeReference(sessionindex.AgentCursor, id),
 		ID:             id,
@@ -164,15 +236,88 @@ func parseSession(file hometree.File) (sessionindex.Record, error) {
 		Project:        project,
 		Workspace:      workspace,
 		UpdatedAt:      updated,
-		SizeBytes:      file.Size,
+		SizeBytes:      sizeBytes,
+		MessageCount:   messageCount,
 		CanResume:      false,
 		CanFork:        false,
 		ReadOnlyReason: sessionindex.CursorReadOnlyReason,
 		SourcePath:     file.Path,
-		SourceModTime:  file.ModTime.UnixNano(),
-		SourceSize:     file.Size,
+		SourceModTime:  sourceModTime,
+		SourceSize:     sizeBytes,
 		SearchText:     sessionindex.BuildSearchText(id, title, project, workspace),
 	}, nil
+}
+
+// storeDatabasePath returns the store.db path beside a session's meta.json.
+func storeDatabasePath(metaPath string) string {
+	return filepath.Join(filepath.Dir(metaPath), StoreDatabaseName)
+}
+
+// countStoreMessages opens a session's store.db read-only through
+// vendorsqlite (never writing under the vendor's root) and counts rows in
+// whichever recognized message table the store actually has. Any failure to
+// open, query, or recognize the schema yields 0, not an error: the session
+// still gets a record from meta.json, just without a message count. Content
+// is never read — only COUNT(*), computed by SQLite itself.
+func countStoreMessages(ctx context.Context, path string) int {
+	if err := ctx.Err(); err != nil {
+		return 0
+	}
+	handle, err := vendorsqlite.Open(path)
+	if err != nil {
+		return 0
+	}
+	defer func() { _ = handle.Close() }()
+	return countMessageRows(ctx, handle.DB)
+}
+
+func countMessageRows(ctx context.Context, db *sql.DB) int {
+	rows, err := db.QueryContext(ctx,
+		`SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('messages','message','bubbles')`)
+	if err != nil {
+		return 0
+	}
+	present := map[string]bool{}
+	for rows.Next() {
+		var name string
+		if rows.Scan(&name) == nil {
+			present[name] = true
+		}
+	}
+	closeErr := rows.Close()
+	if err := rows.Err(); err != nil {
+		return 0
+	}
+	if closeErr != nil {
+		return 0
+	}
+
+	best := 0
+	for _, table := range messageTableCandidates {
+		if !present[table] {
+			continue
+		}
+		if err := ctx.Err(); err != nil {
+			return best
+		}
+		var query string
+		switch table {
+		case "messages":
+			query = `SELECT COUNT(*) FROM messages`
+		case "message":
+			query = `SELECT COUNT(*) FROM message`
+		case "bubbles":
+			query = `SELECT COUNT(*) FROM bubbles`
+		}
+		var count int
+		if scanErr := db.QueryRowContext(ctx, query).Scan(&count); scanErr != nil {
+			continue
+		}
+		if count > best {
+			best = count
+		}
+	}
+	return best
 }
 
 func readMeta(path string) (meta, error) {

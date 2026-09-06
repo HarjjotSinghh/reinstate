@@ -13,7 +13,10 @@ func init() { agents.MustRegister(Cursor()) }
 // different product and is not this key. Dual-platform probes on 2026-08-17
 // show CLI sessions as ~/.cursor/chats/<32-hex>/<uuid-v4>/meta.json. The
 // editor tree under projects/ stays excluded. store.db exists beside
-// meta.json and is not parsed.
+// meta.json; its content is never parsed, but size_bytes folds in its size
+// and message_count is a bounded read-only row count against a small set of
+// recognized table names (schema unverified; an unrecognized store degrades
+// to 0).
 //
 // T1 only. Sessions are indexed and searchable; resume and fork stay refused.
 func Cursor() agents.Descriptor {

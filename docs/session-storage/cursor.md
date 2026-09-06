@@ -2,8 +2,10 @@
 
 **Confidence: CLI chats documented on macOS and native Windows** —
 `meta.json` under `~/.cursor/chats/<32-hex>/<uuid-v4>/`. Editor `projects/`
-is excluded. T1 index source reads `meta.json` only; `store.db` is not
-parsed. **Current tier:** T1 (discover) · **Phase 5 target:** T2
+is excluded. T1 index source reads `meta.json`; `store.db`'s content is
+never parsed, but its size is folded into `size_bytes` and its row count
+into `message_count` (see "Fields read from `store.db`" below).
+**Current tier:** T1 (discover) · **Phase 5 target:** T2
 
 Catalog key `cursor` is **Cursor CLI**, the terminal agent. Descriptor:
 `internal/agents/catalog/cursor.go`. This page is not the in-editor Cursor
@@ -80,8 +82,38 @@ already had the same tree. Shape on both:
 ```
 
 `cursor-agent --version` is `2026.08.11-e8db854` on both. Promoted to T1
-on 2026-08-19 from `meta.json`. `store.db` is not parsed. Do not walk
-`projects/agent-transcripts`. Resume and fork stay refused.
+on 2026-08-19 from `meta.json`. `store.db`'s content is not parsed. Do
+not walk `projects/agent-transcripts`. Resume and fork stay refused.
+
+## Fields read from `store.db`
+
+`meta.json` is a small index sidecar (observed 127–985 bytes); the
+session's actual content lives in the sibling `store.db` (observed
+69,632 bytes in the macOS probe). Two record fields now come from the
+pair together, not from `meta.json` alone:
+
+- `size_bytes` is `meta.json`'s size plus `store.db`'s size, so it
+  reflects the store the session actually lives in rather than only
+  the tiny sidecar.
+- `message_count` is a `SELECT COUNT(*)` against `store.db`, opened
+  read-only through `internal/vendorsqlite` (immutable in place, or a
+  private copy when a `-wal` sidecar is present — the vendor's own
+  tree is never written to). **The table name is unverified**: no
+  probe has captured `store.db`'s schema. The reader recognizes
+  `messages`, `message`, and `bubbles`; if more than one is present,
+  the larger count wins, on the same reasoning as OpenCode's own
+  migrated-table pair (one name is live, the rest are remnants). A
+  store using none of these names yields `message_count: 0` — the
+  same value every Cursor session got before this reader existed —
+  rather than a guessed count from an unrecognized schema.
+
+This does not promote Cursor toward F2, and it is not "inventing a
+`store.db` reader" in the sense the section below still means: no
+content is read, no schema is assumed to be *true*, and any store this
+guess does not match degrades to the pre-existing behavior instead of
+reporting a wrong number with confidence. A later probe that captures
+the real table name should replace the candidate list, not add to it
+indefinitely.
 
 ## Why T0 is `layout_unverified`
 
@@ -99,7 +131,10 @@ T-030 cannot produce the evidence T1 requires.
 
 T1 required both a macOS probe and a native Windows probe. Those artifacts
 now exist; the descriptor moved to T1 on 2026-08-19 by indexing `meta.json`.
-Do not invent a `store.db` reader from this page.
+This page originally said not to invent a `store.db` reader from it; "Fields
+read from `store.db`" above is the narrow, later exception — a bounded row
+count and a file size, not a content reader, and still no substitute for a
+probe of the real schema.
 
 `unidentified_product` is the wrong reason: the official CLI is identified.
 `desktop_only` is the wrong reason: a terminal CLI exists. `server_backed`
