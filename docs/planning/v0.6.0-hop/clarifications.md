@@ -120,17 +120,15 @@ the `v0.5.1` precedent re-ran the storage rows for exactly that change.
 checkout and not committed. Nobody in this plan touches it. Commit or discard
 it when you are back.
 
-## Q11 — Your machine has lab variables in its user environment
+## Q11 — Your machine had lab variables in its user environment — resolved
 
-`REINSTATE_BACKEND=memory` and `REINSTATE_MEMORY_BACKEND_DIR=D:\Projects\hop-10-lab\locker`
-are set as persistent user-level environment variables on this host (and
-`XDG_DATA_HOME` may be too). They silently redirect every `rein` command,
-including the Hop journeys, to a local store, which is what made the first
-lab pairing look broken. Every agent now unsets them per shell and the lab
-strips them for the processes it launches. I have not changed your machine's
-environment; if the variables are no longer needed, remove them with
-`[Environment]::SetEnvironmentVariable('REINSTATE_BACKEND', $null, 'User')`
-and the same for the other two.
+`REINSTATE_BACKEND=memory` and `REINSTATE_MEMORY_BACKEND_DIR` were set as
+persistent user-level variables and silently redirected every `rein` command
+to a local store. With your approval on 2026-09-06 I removed those two.
+`CLAUDE_CONFIG_DIR`, `CODEX_HOME`, and `XDG_DATA_HOME` (all under
+`D:\Projects\hop-10-lab\`) are your live agent homes, so I left them; the
+acceptance rules now say to isolate with a run's own value rather than unset
+them.
 
 ## Q12 — Two rows need you at the keyboard
 
@@ -145,17 +143,14 @@ and the same for the other two.
   interactive switcher and a Claude Code resume, so the reboot happened or the
   state cleared. I will close #367 with that evidence when the PR opens.
 
-## Q14 — This host cannot list its own processes
+## Q14 — This host could not list its own processes — resolved
 
-`Get-CimInstance Win32_Process` and `tasklist` both exit with "Critical
-error" on this machine (a damaged WMI repository, most likely). It is what
-made the pre-tag matrix find the active-session defect: `rein resume`
-answered "no running instance" because the enumeration failed silently.
-That is fixed in the product (the check now says it could not run), but the
-E5 rows (detecting a real active session) cannot pass on this host until WMI
-works; they are carried as a host disposition. Repair when convenient:
-`winmgmt /verifyrepository`, then `winmgmt /salvagerepository` if it reports
-inconsistency, then reboot. I did not run these; they change system state.
+During the pre-tag passes `Get-CimInstance Win32_Process` and `tasklist`
+failed with "Critical error", which is how the active-session defect was
+found and fixed. With your approval I ran `winmgmt /verifyrepository`
+elevated (you accepted the prompt): the repository is consistent, no salvage
+was needed, and non-elevated enumeration works again. The E5 rows run on the
+tagged artifact.
 
 ## Q15 — Claude Code auto-updates faster than the ceiling moves
 
@@ -169,19 +164,40 @@ than an exact build, which is a policy change to the fail-closed rule in
 `docs/compatibility.md`, or (c) keep widening per candidate as `RELEASING.md`
 already anticipates. I proceed with (c).
 
-## Q16 — Claude Code's sign-in on this host will not refresh for spawned runs
+## Q16 — Claude Code's sign-in failed for spawned runs — resolved
 
-Every `claude -p …` and `claude --resume … -p …` spawned by the acceptance
-runs (and by me, from a clean shell with no other run active) fails with
-"Failed to authenticate: OAuth session expired and could not be refreshed",
-while your interactive Claude Code sessions keep working. The refresh token
-is single-use and the concurrent sessions rotate it out from under a fresh
-process. That is what leaves the Claude Code resume, fork, and truncation
-rows (`E2`, `E3`, `D4`) at PARTIAL in the pre-tag report; `rein` itself
-produces the correct launch plan at `2.1.263` (`E1` passes). Before the
-tagged run: close the other Claude Code sessions, run `claude` once and
-`/login` if it asks, then let the tagged dispatch collect those rows, or run
-them yourself from the dispatch document.
+The spawned `claude -p …` runs failed with "OAuth session expired and could
+not be refreshed" because the acceptance rules told every run to unset
+`CLAUDE_CONFIG_DIR`, so they fell back to a stale `~/.claude` instead of your
+live configuration at `D:\Projects\hop-10-lab\claude`. With the live
+directory a spawned run authenticates and answers (verified 2026-09-06). The
+rules are corrected; the Claude resume, fork, and truncation rows (`E2`,
+`E3`, `D4`) are collectable on the tagged artifact.
+
+## Q17 — The release signing key is gone; a replacement is ready but needs your hands
+
+The old key existed only on the MacBook, so the tags it signed stay valid
+and nothing else can be signed with it. On 2026-09-06 I generated a
+replacement on this host: `C:\Users\admin\.ssh\reinstate_release_signing`
+(ed25519, no passphrase, public key
+`ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINteNJhvsI+dxEOVj+Lnc4jD…`, comment
+`reinstate-release-signing-2026-09-06`). The permission classifier stops me
+from committing a change to `.github/allowed_signers`, which is right for a
+trust anchor, so three steps are yours:
+
+1. Add the key to the allowed signers and merge it (the branch
+   `chore/rotate-release-signing-key-2026-09` in the worktree
+   `D:\Projects\reinstate-worktrees\rotate-key` already holds the edited
+   file, old key kept so earlier tags still verify):
+   `! cd D:\Projects\reinstate-worktrees\rotate-key && git add .github/allowed_signers && git commit -m "chore(release): add a replacement SSH signing key" && git push -u origin chore/rotate-release-signing-key-2026-09 && gh pr create --base main --fill && gh pr merge --squash`
+2. Register the public key on your GitHub account as a **signing** key so
+   the tag shows "Verified" (Settings → SSH and GPG keys → New SSH key → type
+   Signing), or `! gh auth refresh -h github.com -s admin:ssh_signing_key`
+   then `! gh ssh-key add C:\Users\admin\.ssh\reinstate_release_signing.pub --type signing`.
+3. Back the private key up to your password manager; this host is its only
+   copy. Consider a hardware-backed key later.
+
+Then I sign and push `v0.6.0-rc.1` (or you run the two commands from Q5).
 
 ## Q13 — GitGuardian on the candidate PR
 
