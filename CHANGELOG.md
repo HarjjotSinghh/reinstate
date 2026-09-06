@@ -7,17 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-
-- `ROADMAP.md` gains a new Phase 7 — project continuity: one canonical
-  project context rendered into every harness, plus shared memory with
-  provenance, capture/promotion, and cross-agent readiness reporting.
-  Targeted at `v0.8.0`, after Phase 6A/6B in `v0.7.0`. Reinstate Console
-  renumbers from Phase 7 to Phase 8, and team continuity renumbers from
-  Phase 8 to Phase 9. This is a planning decision only; nothing in Phase 7
-  is implemented. See [docs/project-continuity.md](docs/project-continuity.md)
-  and [ADR 0006](docs/adr/0006-project-continuity-scope.md).
-
 ## [0.6.0-rc.2] - 2026-09-07
 
 Release candidate. Stable remains `v0.5.1`; the public installers now pin
@@ -126,6 +115,18 @@ that hardware returns. Stable remains `v0.5.1`.
   and cross-checks the resulting capsule's byte-exact truncation offset and
   SHA-256 against an independently recomputed boundary, closing the `grok:D4`
   acceptance gap the reader-level fixtures alone did not reach.
+
+### Changed
+
+- `ROADMAP.md` gains a new Phase 7 — project continuity: one canonical
+  project context rendered into every harness, plus shared memory with
+  provenance, capture/promotion, and cross-agent readiness reporting.
+  Targeted at `v0.8.0`, after Phase 6A/6B in `v0.7.0`. Reinstate Console
+  renumbers from Phase 7 to Phase 8, and team continuity renumbers from
+  Phase 8 to Phase 9. This is a planning decision only; nothing in Phase 7
+  is implemented. See [docs/project-continuity.md](docs/project-continuity.md)
+  and [ADR 0006](docs/adr/0006-project-continuity-scope.md).
+
 
 ## [0.6.0-rc.1] - 2026-09-06
 
