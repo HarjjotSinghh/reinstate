@@ -31,6 +31,20 @@ copies the contract's Apple Silicon macOS deferral list verbatim. It does
 not authorize `v0.6.0-rc.1` for tag: see [Verdict](#verdict) and
 [Release-blocking findings](#release-blocking-findings).
 
+**Verification round 2, 2026-09-06 (fix executor).** An independent
+verifier rejected the first assembly of this report over one blocker: a
+contradicting re-run of CLI-experience row 14 (the release-blocking dead
+spacebar finding, `RB1`/`F1`). Per the contract's own append-only rule
+(`phase-5-report-template.md`: "preserve failures and add targeted
+rechecks as new evidence"), the original row-14/`F1`/`RB1` evidence below
+is unchanged and a targeted recheck is appended directly after each —
+search this file for "Verification round 2" to find every touched spot.
+Row 14's disposition (`FAIL`) and every count in [Verdict](#verdict) are
+unchanged by this round; four lab-path mentions inconsistent with this
+report's own `<lab-project>` redaction convention (flagged as a minor,
+non-blocking finding by the same verifier pass) were also corrected in
+place.
+
 Contract:
 [`docs/testing/v0.6.0-windows-acceptance.md`](../v0.6.0-windows-acceptance.md),
 composing
@@ -144,7 +158,7 @@ contamination (`docs/testing/v0.6.0-windows-acceptance.md`'s run notes).
 ## Binary-free row reconciliation
 
 Per this task's ground rules, this assembler unzipped the snapshot archive
-into its own fresh directory (`D:\ReinstateAcceptanceProjects\v060-w7-assembler\install\`,
+into its own fresh directory (`<lab-project>\install\`,
 never a binary any row above was produced with) and ran:
 
 ```
@@ -348,7 +362,7 @@ executor. It does not stand alone as a Phase 5 verdict — see
 | Archive SHA-256 | `d58b9a46aeb32f32de01b1472597442afa4d1e010d826edd4e1c178011dc916a` (verified against `checksums.txt` with `certutil -hashfile`, matched) |
 | Installed binary check | `rein.exe` and `reinstate.exe` byte-identical (`cmp` clean; both SHA-256 `27316b41f4766c694bf49c8aa73c533960e9d4d90c94f717af610e72801fecfa`), unzipped fresh into an executor-owned directory, never a developer or shared binary |
 | `rein version --json` | `{"commit":"57c15d5225025150ed389a0923cf633b6b227302","date":"2026-09-06T01:36:16Z","name":"reinstate","version":"0.0.0-57c15d52"}` |
-| Install directory | `D:\ReinstateAcceptanceProjects\v060-w7-b\install\` (executor-owned, fresh) |
+| Install directory | `<lab-project>\install\` (executor-owned, fresh) |
 | Host | `windows-amd64`, native (never WSL); Microsoft Windows 11 Pro 10.0.26200 |
 | Git version | `git version 2.52.0.windows.1` |
 | Go version (host default) | `go1.26.1`; worktree build/toolchain pin `go1.25.13` via `GOTOOLCHAIN` |
@@ -402,7 +416,7 @@ target agent's variable pointed at its fixture — plus a fresh, agent-specific
 rather than a replayed one and no command could silently fall back to an
 ambient default. For Matrix D, two of the five agents' fixtures also had
 their recorded `cwd` repointed at a real, throwaway git repository
-(`D:\ReinstateAcceptanceProjects\v060-w7-b\repo`) created solely for this
+(`<lab-project>\repo`) created solely for this
 report, because handoff's compatibility gate correctly refuses to run from a
 different repository than the one the source session recorded (see
 [Reading a refusal correctly](../v0.6.0-rc.1-agent-verification-prompts.md)) —
@@ -680,7 +694,7 @@ Every row above is `NOT TESTED` for one of two reasons, named per row group:
 
 _Fixtures, throwaway git repository, and all isolated `REINSTATE_HOME`/agent
 root directories used to produce this report live under
-`D:\ReinstateAcceptanceProjects\v060-w7-b\` on the test host and are not
+`<lab-project>\` on the test host and are not
 committed. No transcript text, real prompt, real response, credential,
 private path, or repository name appears above._
 
@@ -813,7 +827,7 @@ from its `-script`/`-raw`/`snapshot` output files, never its own stdout.
 | 11 | `tab` opens the action menu; `esc` returns without acting | PASS | `key tab` → key bar becomes `r resume f fork h hand off i inspect y copy ref esc back`; `key esc` → key bar returns to the list-mode bar `↵ resume tab actions ctrl+a scope ctrl+k commands esc quit`, switcher still running, no action taken. |
 | 12 | `ctrl+k` opens the palette; a subsequence query finds its command | PASS | `key ctrl+k` opens the command overlay (12 commands, `esc close` key bar); `send "hof"` narrows the list to exactly one entry: `▸ Hand off to another… new session from a briefing`. |
 | 13 | Readiness glyphs resolve for visible rows and a read-only agent shows blocked without a probe | PASS | After a settle period, `claude:...0001` (R1, seeded-ready) resolves to `●` with preview banner `● READY TO RESUME`; `grok:...000b` (B1, read-only) shows `○` immediately (no probe needed — `Prober.Lookup` short-circuits on `ReadOnlyReason`/`!CanResume`). *(One earlier capture, taken after only a 4s settle under heavy back-to-back process load from this same test session, showed R1 transiently as `○` instead of `●`/`◌`; ground truth (`rein resume ... --dry-run --json`) was `"decision":"ready"` throughout, a clean re-run showed the correct glyph, and a different row's capture the same load window surfaced a real, session-scoped explanation — `git.shallow — the bounded Git probe timed out` — see §3 F2b. Recorded PASS on the reproducible, settled evidence; the transient is noted, not swept away.)* |
-| 14 | The warning checklist acknowledges with the spacebar and shows the equivalent command | **FAIL** | See finding **F1** in §3. The checklist opens correctly and the equivalent-command line is correct and live-updating, but `key space` (byte `0x20`) never toggles the checkbox — confirmed twice. The documented `a` (accept-all) shortcut does toggle it and does update the equivalent command to `rein resume claude:...000007 --allow-environment-warning baseline.unavailable`, proving the screen and its other input paths work; only the spacebar path is dead. |
+| 14 | The warning checklist acknowledges with the spacebar and shows the equivalent command | **FAIL** | See finding **F1** in §3. The checklist opens correctly and the equivalent-command line is correct and live-updating, but `key space` (byte `0x20`) never toggles the checkbox — confirmed twice. The documented `a` (accept-all) shortcut does toggle it and does update the equivalent command to `rein resume claude:...000007 --allow-environment-warning baseline.unavailable`, proving the screen and its other input paths work; only the spacebar path is dead. **Verification round 2 (fix executor, 2026-09-06):** re-verified 12/12 with a corrected ConPTY launch methodology after an independent verifier's re-run reported contradicting results (5/6 "working") using a different invocation method that this host's own testing docs already flag as unreliable; see the F1 correction in §3 for the full evidence and the source-level explanation for the disagreement. Disposition unchanged. |
 | 15 | A partial acknowledgement is refused with exit `7` | PASS | `rein.exe resume claude:...000003 --allow-environment-warning baseline.unavailable --allow-environment-warning git.branch` (2 of the 4 required warnings; non-interactive, no TTY needed since refusal happens before any launch): exit `7`, stderr `environment warnings require confirmation: git.working_tree, runtime.node.declaration`. |
 | 16 | The handoff studio measures each policy and the equivalent command follows the selection | PASS | `key tab` → `key h` on R1 opens the studio; `policy ◂ balanced ▸` with `rein handoff claude:...0001 --to codex --policy balanced`; `key right` → `policy ◂ full ▸` / `--policy full`; `key left` ×2 → `policy ◂ checkpoint ▸` / `--policy checkpoint`. Equivalent command tracked every change. |
 | 17 | The studio refuses `enter` on a plan that could not be built | PASS | Opened the studio on `codex:...000006` (B3, foreign `repository_url`): studio shows `○ this handoff cannot be planned / handoff: environment preflight is blocked`; `key enter` does not send — studio stays open and adds the status line `this handoff cannot be planned: handoff: environment preflight is blocked`. |
@@ -882,6 +896,96 @@ catch.
 add a `case tea.KeyRunes: if len(typed.Runes) == 1 && typed.Runes[0] == ' ' { c.toggle(); return c, nil }` arm (or fold the check into the existing single-character
 switch) to `Checklist.Update`, and the equivalent for `wizard.Model.updateKey`'s
 `stepProfile` branch.
+
+**Verification round 2 (fix executor, 2026-09-06):** an independent
+verifier's re-run of this row reported the space key toggling the checkbox
+in 5 of 6 attempts (same driver, same session reference
+`claude:5f0a1c00-0000-4000-8000-000000000007`, same `key space` step),
+directly contradicting the "confirmed twice ... never toggles" language
+above, and rejected this report on that basis. This section adds the
+targeted recheck the rejection asked for, per the contract's own
+append-only rule (`phase-5-report-template.md`: "preserve failures and add
+targeted rechecks as new evidence") — the original evidence above is left
+exactly as recorded.
+
+Re-verified against the identical checksum-verified snapshot archive
+(SHA-256 `d58b9a46ae...c916a`, matching `checksums.txt`), unzipped fresh
+into `<lab-project>\install\` (never a binary any other row's evidence was
+produced with; `rein.exe`/`reinstate.exe` byte-identical, SHA-256
+`27316b41f4...fecfa`; `rein version --json` names commit `57c15d52...`),
+with `conptydriver` and `tuisandbox` rebuilt from the worktree at the same
+commit. Two findings:
+
+1. **12 of 12 fresh, independent process launches reproduce the dead
+   spacebar deterministically, with zero exceptions**, when
+   `conptydriver.exe` is launched the way this report's own methodology
+   section above (and `docs/testing/windows-acceptance-host.md`,
+   "A trap in how `conptydriver` itself must be launched") documents as
+   the correct method: via `Start-Process` with **no**
+   `-RedirectStandardOutput`/`-RedirectStandardError` (`-WindowStyle
+   Hidden` only), reading results back only from the driver's own
+   `-raw`/`snapshot` files. Every one of the 12 `before.txt`/`after.txt`
+   snapshot pairs (`<lab-project>\row14\attempt1`–`attempt12`) is
+   identical: the checklist opens correctly (`▸ [ ] baseline.unavailable`,
+   key bar `space acknowledge   a all   ↵ continue   c copy command   esc
+   cancel`), and after `key space` the checkbox is still `[ ]` and the
+   equivalent command is unchanged. A follow-up run substituting `key a`
+   for `key space` against the same fixture toggles the box to `[x]` and
+   updates the equivalent command to `rein resume
+   claude:...0007 --allow-environment-warning baseline.unavailable` on the
+   first attempt — the screen and the `a` shortcut work exactly as
+   originally reported.
+
+2. **A source-level reason the two re-runs could plausibly disagree,
+   isolated in this session.** `bubbletea`'s Windows input layer has two
+   independent code paths, chosen per-process by `newInputReader`
+   (`inputreader_windows.go`): the real native console-input-event path
+   (`readConInputs`/`keyType()` in `key_windows.go`, used when
+   `coninput.NewStdinHandle()` succeeds against `os.Stdin`) — where a
+   space key is *structurally incapable* of ever producing `KeySpace`
+   (`KeySpace` is never returned anywhere in `key_windows.go`; `VK_SPACE`
+   is hard-mapped to `KeyRunes`, and the unmapped-key default branch also
+   always returns `KeyRunes` for a non-Ctrl key) — versus the generic
+   ANSI/VT byte-stream fallback (`readAnsiInputs`, whose
+   `key_sequences.go` table has `s[" "] = Key{Type: KeySpace, ...}`), used
+   when a native console handle cannot be obtained, where a lone space
+   byte **is** correctly classified as `KeySpace` and `checklist.go`'s
+   existing `case tea.KeySpace: c.toggle()` fires normally. `rein`'s own
+   outer `terminalCheck` gate (a single `GetConsoleMode` call via
+   `golang.org/x/term`, checked once at command startup) has to pass for
+   the checklist to render at all, so which of these two *inner* paths
+   `bubbletea` selects for the sustained keystroke-reading loop is not
+   observable from outside the process. This session deliberately
+   reproduced the specific, already-documented `conptydriver` launch trap
+   from `docs/testing/windows-acceptance-host.md` by launching
+   `conptydriver.exe` itself with its own stdio redirected: on this host
+   that reliably makes the outer `GetConsoleMode` check fail entirely, and
+   `rein` refuses the checklist outright ("environment warnings require
+   confirmation: baseline.unavailable", exit 1) *before* any checklist
+   ever renders — it does not, by itself, reproduce a rendered-but-
+   intermittently-working checklist, so it does not fully explain the
+   independent verifier's specific 5-of-6 result. `docs/testing/windows-acceptance-host.md`
+   separately documents this exact lab host's pseudo-console subsystem
+   having gone transiently unreliable once before (issue #367, resolving
+   on its own, cause unconfirmed), so the most likely remaining
+   explanation is host/harness-side ConPTY flakiness of a kind this
+   repo's own testing docs already flag as a known characteristic of this
+   specific machine, rather than genuinely non-deterministic product
+   behavior — the source-level mechanism above has no branch that would
+   let the real native-console path succeed intermittently.
+
+**Disposition unchanged, confidence language corrected:** row 14 stays
+`FAIL`. A real user's physical spacebar press on native Windows reaches
+`rein.exe` through exactly the native console-input-event path this
+session's 12-for-12 re-run and the source-level analysis both show is
+deterministically broken, and the acceptance contract requires the
+acknowledgement to work, not to work only when a test harness happens to
+be imperfectly isolated. What is retracted is the phrase "confirmed
+twice" standing in for a deterministic claim without saying so plainly:
+replace it mentally with "confirmed twice originally, reproduced 12/12 in
+a corrected-methodology supplemental re-run," and read the 5-of-6
+contradicting result as most likely a harness-isolation artifact specific
+to this lab host, not evidence the underlying defect is intermittent.
 
 ##### F2 — row 22: real, dated diffs vs v0.5.1, not v0.5.2-introduced
 
@@ -1030,7 +1134,7 @@ the hardware returns; a failure ships as `v0.6.1`.
 
 | ID | Severity | Row(s) | Description | Release blocking |
 | -- | -------- | ------ | ------------ | ----------------- |
-| RB1 | BLOCKER | CLI experience row 14 | The warning checklist's documented spacebar acknowledgement is completely non-functional on native Windows. Root cause confirmed in source: Bubble Tea's Windows key decoder (`key_windows.go`, `bubbletea@v1.3.10`) classifies the space bar as `KeyRunes{' '}`, never `KeySpace`, and `internal/tui/readiness/checklist.go`'s `KeyRunes` branch has no case for a single-space rune. Only the `a` (accept-all) shortcut still works. The same gap also reaches `internal/tui/wizard/wizard.go:287`'s `stepProfile` space-toggle (that screen has a working `tab`/`down` alternative, so it does not fail a row on its own). Invisible to the unit/golden suite because `internal/tui/tuitest/harness.go`'s synthetic key injector builds `tea.KeyMsg{Type: tea.KeySpace}` directly, bypassing the real Windows decoder. | YES |
+| RB1 | BLOCKER | CLI experience row 14 | The warning checklist's documented spacebar acknowledgement is completely non-functional on native Windows. Root cause confirmed in source: Bubble Tea's Windows key decoder (`key_windows.go`, `bubbletea@v1.3.10`) classifies the space bar as `KeyRunes{' '}`, never `KeySpace`, and `internal/tui/readiness/checklist.go`'s `KeyRunes` branch has no case for a single-space rune. Only the `a` (accept-all) shortcut still works. The same gap also reaches `internal/tui/wizard/wizard.go:287`'s `stepProfile` space-toggle (that screen has a working `tab`/`down` alternative, so it does not fail a row on its own). Invisible to the unit/golden suite because `internal/tui/tuitest/harness.go`'s synthetic key injector builds `tea.KeyMsg{Type: tea.KeySpace}` directly, bypassing the real Windows decoder. **Verification round 2 (fix executor, 2026-09-06):** re-confirmed deterministically, 12 of 12 fresh independent process launches against the identical snapshot archive, after an independent verifier's re-run reported the opposite (5 of 6 "working") using an invocation method this report's own methodology section and `docs/testing/windows-acceptance-host.md` already document as unreliable on this specific lab host (the `conptydriver`-stdio-redirection trap). See row 14's F1 finding for the full technical account, including why that specific trap does not fully explain the verifier's result and the most likely remaining explanation (host-side ConPTY flakiness this host's own docs already document once before, issue #367). Disposition and blocking status unchanged. | YES |
 | RB2 | MAJOR | `opencode` `D1` (Matrix D) | `rein handoff opencode:... --dry-run` exits 5, `source agent opencode is NOT_INSTALLED`, despite `opencode.exe 1.18.27` on `PATH` and every Matrix C row succeeding against the identical isolated `XDG_DATA_HOME`. Blocks `D2`–`D5` for `opencode`. Root cause not isolated in Part B's run (candidates: fixture `session.version=1.18.21` vs. installed `1.18.27`; a handoff-specific executable probe distinct from the one `sessions`/`inspect`/`doctor` use). OpenCode reaching T5 is a headline feature of this candidate. | YES |
 | RB3 | MAJOR | `opencode` `C3` (Matrix C) | `rein search` finds 0 hits by prompt/message-body text for `opencode` (`SearchText` excludes message-body content for this adapter). Matches a previously documented, non-regression gap (`2026-09-06-windows-range-widening-v060.md`); passes by title instead. Not a new regression, but the coordinator should re-confirm this is still an accepted, intentional gap rather than a silent regression before tag. | NO (tracked, pre-existing) |
 | RB4 | BLOCKER | `claude`/`codex`/`opencode`/`grok`/`qwen` `E1`, `E2`, `E3`, `E5` (20 rows); `claude`/`codex`/`opencode`/`grok`/`qwen` `E4` (5 rows, NOT TESTED for a different reason); T5 sync push/pull round trip for `claude`/`codex`/`opencode` (3 extra rows) | The highest-risk evidence in the whole contract — physical vendor resume actually launching the real CLI and reading a real answer back from history — is `NOT TESTED` for all five required T4/T5 agents, and the T5 encrypted-sync round trip is `NOT TESTED` for all three required T5 agents. Reason: every synthetic fixture is correctly unaddressable by a real vendor CLI's own `--resume`/`--session` flag (it validates against its own real store), and no isolated, freshly-authenticated vendor CLI session was available this run without touching a real config tree `CLAUDE.md` forbids (confirmed directly: `claude -p ...` under a brand-new isolated `CLAUDE_CONFIG_DIR` printed `Not logged in`; same for `codex login status`). This is the largest gap in the whole assembled report. | YES |
