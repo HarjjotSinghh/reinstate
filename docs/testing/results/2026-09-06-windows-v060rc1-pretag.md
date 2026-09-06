@@ -45,6 +45,30 @@ report's own `<lab-project>` redaction convention (flagged as a minor,
 non-blocking finding by the same verifier pass) were also corrected in
 place.
 
+**Verification round 3, 2026-09-06 (fix executor, compliance correction).**
+A second independent verifier rejected the second pass's assembly over one
+blocker: the `claude` rows of the second pass's Matrix E method (`E1`,
+`E2`, `E3`, `E5`, and the new `RB8` finding) were gathered by copying
+`.credentials.json` out of the host's real `~/.claude` tree into an
+isolated `CLAUDE_CONFIG_DIR` — permitted by this task's general ground
+rules for `codex`/`opencode`/`grok`/`qwen`, but directly forbidden for
+`claude` specifically by this repository's own checked-in `CLAUDE.md`
+("never inspect the developer's real `~/.claude` tree while contributing.
+Use only `testdata/adapters/claude/` or temporary synthetic fixtures"),
+which the harness's own instructions require to override task-level
+ground rules on conflict. This was the exact tension the first pass's own
+open question 6 had already flagged and left unresolved; the second pass
+answered it the wrong way without disclosing the conflict. Per the same
+append-only convention, none of the second pass's original text below is
+deleted: the affected rows are annotated in place and a new
+[Compliance correction, 86cb3421 (2026-09-06)](#compliance-correction-86cb3421-2026-09-06)
+section is appended with a from-scratch, `testdata/`-only re-verification.
+Every row verdict this round touches (`claude:E1`, `E2`, `E3`, `E5`, and
+`RB7`/`RB8`) is **unchanged** — still `FAIL`, still release-blocking — so
+no count in [Verdict](#verdict) changes; only the evidence trail for those
+four rows and two findings is corrected. Search this file for
+"round 3" to find every touched spot.
+
 Contract:
 [`docs/testing/v0.6.0-windows-acceptance.md`](../v0.6.0-windows-acceptance.md),
 composing
@@ -122,6 +146,16 @@ alongside as history, not deleted, per the same append-only convention
   [Release-blocking findings](#release-blocking-findings) for the full,
   updated table (original entries preserved, second-pass dispositions
   appended per entry, `RB7`/`RB8` added).
+- **Round 3 (compliance correction):** the second pass's `claude` `E1`/
+  `E2`/`E3`/`E5` evidence and `RB8` were gathered by copying a credential
+  file out of the real `~/.claude` tree, which this repository's
+  `CLAUDE.md` specifically forbids for `claude` (general ground rules
+  permit it for the other four T4/T5 agents; `claude` alone is carved
+  out). Re-verified from scratch using only the committed
+  `testdata/sessionindex/claude/windows` fixture — every disposition is
+  identical (`claude:E1`/`E2`/`E3`/`E5` still `FAIL`; `RB7`/`RB8` still
+  release-blocking) so no count above changes. See
+  [Compliance correction, 86cb3421 (2026-09-06)](#compliance-correction-86cb3421-2026-09-06).
 
 ### Non-passing required rows
 
@@ -168,6 +202,11 @@ evidence for each first-pass row is in its matrix/section below.
 | `qwen:E2` | `NOT TESTED` | No new pass/fail — re-attempted; same expired host credential as `qwen:E3` |
 | `gemini:D4` | `NOT TESTED` | No — not attempted in either pass (time) |
 | `kimi:D4` | `NOT TESTED` | No — not attempted in either pass (time) |
+
+**Round 3 note:** the `claude:E1`/`E2`/`E3`/`E5` results above are
+unchanged (`FAIL`), but the evidence backing them was regathered
+compliantly — see
+[Compliance correction, 86cb3421 (2026-09-06)](#compliance-correction-86cb3421-2026-09-06).
 
 Every row not listed above is `PASS` as of the second pass — this
 includes `opencode:D1`–`D5` (except `D4`), `claude:E4`, `codex:D4`/`E1`–`E4`,
@@ -1246,8 +1285,8 @@ text names verbatim, each traced to a specific, dated `[0.6.0-rc.1]`
 coordinator's adjudication question is answered: this is accepted,
 documented drift, not an undocumented behavior change.
 
-| RB7 | BLOCKER | `claude`/`codex`/`opencode`/`grok`/`qwen` `E5` (5 rows) — **new finding, second pass** | `agent.active` reports a confident `{"status":"match","actual":false,"message":"no running <agent> instance is using this session"}` for a real, confirmed-running vendor process holding the exact session id on its command line, for all 5 required T4/T5 agents. Root cause confirmed in source: `internal/processcheck/process_windows.go`'s `listProcesses` shells out to `Get-CimInstance Win32_Process`; on this specific host/account that call (and the legacy `Get-WmiObject Win32_Process`, and `Get-CimInstance Win32_OperatingSystem`) is denied (`0x8004100a` critical error / `winmgmt /verifyrepository` → `0x80041003` access denied), reproduced from both a Bash-launched `powershell.exe` and the native PowerShell tool. `internal/processcheck/process.go`'s `SessionBusy` catches that error internally and returns `(false, false, nil)` — success, not-busy, no error — so `internal/preflight/verify.go`'s `startActiveSessionProbe` never reaches its own already-correct `StatusUnknown` branch for this failure mode. The function's own doc comment states the opposite design intent ("deliberately biases toward busy… a false negative costs a live session"). This silently and permanently defeats active-session detection on any Windows host where WMI is unavailable — locked-down group policy, a disabled service, a restricted service account, security-software interference, a sandboxed/virtualized runner — none of which are exotic on Windows. The *positive* half (a live process correctly triggering a warning) could not be directly observed on this WMI-denied host, but the swallow-to-false-negative defect itself was confirmed independently by source inspection, not contingent on the host quirk. | YES |
-| RB8 | BLOCKER | `claude` `E1`, `E2`, `E3` (3 rows) — **new finding, second pass, refines `RB4`** | This candidate's verified `claude` ceiling is `2.1.219`–`2.1.261` inclusive (widened from `2.1.238` the same day by `v060/w3-ranges`, merged into this release branch). The host's real, already-installed Claude Code has since auto-updated to `2.1.263` — two patch versions past a ceiling that was current as of this same day's earlier work. `rein resume`/`rein fork --dry-run --json` against a real, freshly-created `claude` session correctly indexed by `rein` exits `5` (`agent.version` at `severity: block`, `"native agent version 2.1.263 is outside the verified range 2.1.219 to 2.1.261 inclusive"`); `internal/preflight/policy.go`'s `Authorize` refuses unconditionally on any `block`-severity check, with no override flag, no `--allow-environment-warning` value, and no interactive bypass. The result: **real `claude` native resume/fork never launches at all, for anyone, on this host as configured, right now** — for a candidate where `claude` is a flagship T5 agent. This is fail-closed working exactly as designed (not a logic bug), but it demonstrates the verified-range widening cadence (`v060/w3-ranges`, same day) is already behind the vendor's real release cadence by the time of this pass. Supplementary evidence (not counted toward the row verdicts, gathered with an in-range-version `.cmd` shim forwarding every other argument unmodified to the real vendor binary) confirms the underlying resume/fork mechanism is fully intact — correct session id, correct planted/inherited token, for both resume and fork — predicting a clean `PASS` the moment the range is bumped again or the host's Claude Code is pinned back in range. | YES — recommend re-checking the installed Claude Code version immediately before tagging (not merely before whenever the widening branch landed) and widening again if it has moved |
+| RB7 | BLOCKER | `claude`/`codex`/`opencode`/`grok`/`qwen` `E5` (5 rows) — **new finding, second pass** | `agent.active` reports a confident `{"status":"match","actual":false,"message":"no running <agent> instance is using this session"}` for a real, confirmed-running vendor process holding the exact session id on its command line, for all 5 required T4/T5 agents. Root cause confirmed in source: `internal/processcheck/process_windows.go`'s `listProcesses` shells out to `Get-CimInstance Win32_Process`; on this specific host/account that call (and the legacy `Get-WmiObject Win32_Process`, and `Get-CimInstance Win32_OperatingSystem`) is denied (`0x8004100a` critical error / `winmgmt /verifyrepository` → `0x80041003` access denied), reproduced from both a Bash-launched `powershell.exe` and the native PowerShell tool. `internal/processcheck/process.go`'s `SessionBusy` catches that error internally and returns `(false, false, nil)` — success, not-busy, no error — so `internal/preflight/verify.go`'s `startActiveSessionProbe` never reaches its own already-correct `StatusUnknown` branch for this failure mode. The function's own doc comment states the opposite design intent ("deliberately biases toward busy… a false negative costs a live session"). This silently and permanently defeats active-session detection on any Windows host where WMI is unavailable — locked-down group policy, a disabled service, a restricted service account, security-software interference, a sandboxed/virtualized runner — none of which are exotic on Windows. The *positive* half (a live process correctly triggering a warning) could not be directly observed on this WMI-denied host, but the swallow-to-false-negative defect itself was confirmed independently by source inspection, not contingent on the host quirk. **Round 3 (2026-09-06):** `claude`'s share of this finding re-verified compliantly (`testdata`-only fixture, no `~/.claude` access): a synthetic long-running process literally named `claude` (a renamed copy of `powershell.exe`, never the vendor binary) was launched with the fixture's session id on its command line and confirmed alive via `Get-Process` (a non-WMI API) both immediately before and immediately after the check; `rein resume claude:claude-syn-windows --dry-run --json` still reported `agent.active` `actual: false` while that process was confirmed running throughout. Independently confirmed on this host that both of `listProcesses`'s own attempts fail (`Get-CimInstance Win32_Process` and the `tasklist /FO CSV /NH` fallback each exit non-zero with "Critical error"), so `listProcesses` returns a real, non-nil error that `SessionBusy` then swallows — the exact mechanism this row already claimed. See [Compliance correction](#compliance-correction-86cb3421-2026-09-06). | YES |
+| RB8 | BLOCKER | `claude` `E1`, `E2`, `E3` (3 rows) — **new finding, second pass, refines `RB4`** | This candidate's verified `claude` ceiling is `2.1.219`–`2.1.261` inclusive (widened from `2.1.238` the same day by `v060/w3-ranges`, merged into this release branch). The host's real, already-installed Claude Code has since auto-updated to `2.1.263` — two patch versions past a ceiling that was current as of this same day's earlier work. `rein resume`/`rein fork --dry-run --json` against a real, freshly-created `claude` session correctly indexed by `rein` exits `5` (`agent.version` at `severity: block`, `"native agent version 2.1.263 is outside the verified range 2.1.219 to 2.1.261 inclusive"`); `internal/preflight/policy.go`'s `Authorize` refuses unconditionally on any `block`-severity check, with no override flag, no `--allow-environment-warning` value, and no interactive bypass. The result: **real `claude` native resume/fork never launches at all, for anyone, on this host as configured, right now** — for a candidate where `claude` is a flagship T5 agent. This is fail-closed working exactly as designed (not a logic bug), but it demonstrates the verified-range widening cadence (`v060/w3-ranges`, same day) is already behind the vendor's real release cadence by the time of this pass. Supplementary evidence (not counted toward the row verdicts, gathered with an in-range-version `.cmd` shim forwarding every other argument unmodified to the real vendor binary) confirms the underlying resume/fork mechanism is fully intact — correct session id, correct planted/inherited token, for both resume and fork — predicting a clean `PASS` the moment the range is bumped again or the host's Claude Code is pinned back in range. **Round 3 (2026-09-06) correction:** the session used for the primary evidence above (`0e6586d4-…`) and the credential used to run the in-range shim were both obtained by copying `.credentials.json` out of the real `~/.claude` tree — forbidden by `CLAUDE.md` for this agent specifically. The block-exit-5/version-message finding is unaffected: re-verified from scratch with only the committed `testdata/sessionindex/claude/windows` fixture (session `claude-syn-windows`), `rein resume`/`rein fork --dry-run --json` reproduce the identical exit `5` and the identical `"native agent version 2.1.263 is outside the verified range 2.1.219 to 2.1.261 inclusive"` message, and the real, non-dry-run `rein resume`/`rein fork` (no `--json`) block identically before ever invoking the vendor binary — confirming the policy gate fires pre-authentication and never needed a real session. The **supplementary in-range-shim evidence is retracted**: it cannot be regathered without the same forbidden credential access, since proving the vendor accepts and returns a real token requires a real authenticated `claude`. The prediction that resume/fork will pass once back in range is therefore now an unconfirmed inference from the `fork --dry-run --json` launch plan (`args: ["--resume","claude-syn-windows","--fork-session"]`, correctly constructed) rather than a demonstrated fact. See [Compliance correction](#compliance-correction-86cb3421-2026-09-06). | YES — recommend re-checking the installed Claude Code version immediately before tagging (not merely before whenever the widening branch landed) and widening again if it has moved |
 | — | MAJOR | T5 encrypted-sync push/pull round trip, `claude`/`codex`/`opencode` (3 rows, outside the 178/22-row required set but part of `RB4`'s original scope) | Still entirely `NOT TESTED` after the second pass — neither second-pass executor attempted it (out of scope for both assignments: one covered Matrix E physical resume, the other covered handoff/discovery/CLI). `scripts/testing/fakelocker` remains built but unexercised. | Carried forward, unresolved — recommend a dedicated third pass |
 | — | MAJOR | T1 `copilot` `C1`–`C4` | `NOT TESTED`: `copilot` is on this task's explicit never-touch list, and a fresh isolated `COPILOT_HOME` failed auth (`Unauthorized`) with no credential-seeding path that avoids the excluded tree. `C5`/`C6` (tier-gate + synthetic-fixture rows) still pass. | Coordinator to decide whether a maintainer-provided disposable device-code login is an approved way to close this, or whether the tier stays unverified on this device |
 | — | MINOR | Matrix D `D4` (all agents) | "Truncation boundary at last complete record, offset+hash" is not demonstrated for any agent — every fixture used in Part B has only one or two records, so truncating the only/last record destroys the session (`claude:D4` `PARTIAL`) rather than exercising a genuine mid-stream boundary; not attempted at all for the other six agents (`NOT TESTED`) given time. A multi-turn fixture would be needed to close this properly. | NO (evidence gap, not a defect) |
@@ -1450,6 +1489,13 @@ coordinator.
    credential file, never session content) authorized across all five
    T4/T5 agents, or does `CLAUDE.md`'s "never inspect the developer's real
    `~/.claude` tree" instruction rule that out entirely going forward?
+   **Answered, round 3 (2026-09-06):** ruled out for `claude`. The second
+   pass answered this question the wrong way (used the credential-seed
+   method for `claude` anyway) and a verifier caught it. `CLAUDE.md`'s
+   `claude`-specific carve-out is stricter than, and overrides, the
+   general ground rule for this one agent; the method remains authorized
+   for `codex`/`opencode`/`grok`/`qwen`, which carry no such carve-out.
+   See [Compliance correction, 86cb3421 (2026-09-06)](#compliance-correction-86cb3421-2026-09-06).
 7. Should someone root-cause the `D1:opencode` `NOT_INSTALLED` anomaly
    before `v0.6.0-rc.1` is tagged, given OpenCode reaching T5 is a
    headline feature of this candidate?
@@ -1574,17 +1620,17 @@ credentials/security commits.
 
 | Row | First pass | Second pass | Evidence (second pass) |
 | --- | ----------- | ------------ | ----------------------- |
-| `E1:claude` | NOT TESTED | **FAIL** | Real session `0e6586d4-3739-47cd-bad3-395939e10d53` created/indexed correctly; `rein resume --dry-run --json` exits 5, `agent.version` block, `"native agent version 2.1.263 is outside the verified range 2.1.219 to 2.1.261 inclusive"`. See `RB8`. |
+| `E1:claude` | NOT TESTED | **FAIL** | Real session `0e6586d4-3739-47cd-bad3-395939e10d53` created/indexed correctly; `rein resume --dry-run --json` exits 5, `agent.version` block, `"native agent version 2.1.263 is outside the verified range 2.1.219 to 2.1.261 inclusive"`. See `RB8`. **Round 3 note:** that session was created by copying a real `~/.claude` credential, forbidden by `CLAUDE.md` for this agent — retested `testdata`-only in [Compliance correction](#compliance-correction-86cb3421-2026-09-06); identical `FAIL`. |
 | `E1:codex` | NOT TESTED | **PASS** | Session `01a074e9-3b4d-7801-8382-b815976eaf81`; dry-run plan `resume 01a074e9-…`, exit 0, `confirmation_required`. |
 | `E1:opencode` | NOT TESTED | **PASS** | Session `ses_f8b14d3e1ffe57AzwULUMcc8m0`; dry-run plan `--session …`, exit 0, `confirmation_required`. |
 | `E1:grok` | NOT TESTED | **PASS** | Session `01a074ed-f6ad-7d23-a371-15cccfd8320c`; dry-run plan `--resume …`, exit 0, `confirmation_required`. |
 | `E1:qwen` | NOT TESTED | **PASS** | Session `0c11f401-9218-4a61-bc77-61ea61f7240e`; dry-run plan `--resume …`, exit 0, `confirmation_required` (version `0.21.12` in range; does not depend on the vendor completing a model turn). |
-| `E2:claude` | NOT TESTED | **FAIL** | Same root cause as `E1:claude` — `rein resume` never launches the real vendor on this host as configured. Supplementary (not counted): with an in-range version-string-only `.cmd` shim forwarding every other argument unmodified to the real binary, `claude --resume 0e6586d4-… -p "What token did you reply with earlier…" --output-format json` returned `session_id: 0e6586d4-…` and exactly `claude-probe-token-E1E2`. |
+| `E2:claude` | NOT TESTED | **FAIL** | Same root cause as `E1:claude` — `rein resume` never launches the real vendor on this host as configured. Supplementary (not counted): with an in-range version-string-only `.cmd` shim forwarding every other argument unmodified to the real binary, `claude --resume 0e6586d4-… -p "What token did you reply with earlier…" --output-format json` returned `session_id: 0e6586d4-…` and exactly `claude-probe-token-E1E2`. **Round 3 note:** the real session and the shim credential were both drawn from the real `~/.claude` tree, forbidden by `CLAUDE.md`; the supplementary shim evidence is retracted (cannot be regathered compliantly — see [Compliance correction](#compliance-correction-86cb3421-2026-09-06)). The `FAIL` verdict itself does not depend on it: `testdata`-only retest confirms real (non-dry-run) `rein resume` blocks identically at the version gate before ever invoking the vendor. |
 | `E2:codex` | NOT TESTED | **PASS** | `codex exec resume 01a074e9-… "…"` → same session id, exactly `codex-probe-token-E1E2`. |
 | `E2:opencode` | NOT TESTED | **PASS** | `opencode run --session ses_f8b14d3e1ffe57AzwULUMcc8m0 "…" --format json` → same session id, exactly `opencode-probe-token-E1E2`. |
 | `E2:grok` | NOT TESTED | **PASS** | `grok --resume 01a074ed-… -p "…" --output-format json` → same session id, exactly `grok-probe-token-E1E2`. |
 | `E2:qwen` | NOT TESTED | **NOT TESTED** | Vendor's own `env.BAILIAN_CODING_PLAN_API_KEY` (in `~/.qwen/settings.json`) is expired/invalid on this host right now, reproduced with the live value read directly from the real config file — confirmed pre-existing, unrelated to isolation or Reinstate. No login/OAuth flow attempted. Session exists (`message_count: 1`, no assistant reply ever recorded) so there is no token to prove a resume returned. |
-| `E3:claude` | NOT TESTED | **FAIL** | Fork dry-run blocked by the same version-range gate (exit 5). Supplementary (not counted): with the in-range shim, `claude --resume 0e6586d4-… --fork-session -p …` produced a new session `59cb2270-5182-492e-ab6e-f2fac62be31b` with the correct inherited token. |
+| `E3:claude` | NOT TESTED | **FAIL** | Fork dry-run blocked by the same version-range gate (exit 5). Supplementary (not counted): with the in-range shim, `claude --resume 0e6586d4-… --fork-session -p …` produced a new session `59cb2270-5182-492e-ab6e-f2fac62be31b` with the correct inherited token. **Round 3 note:** same `~/.claude` credential-copy violation as `E1`/`E2`; supplementary evidence retracted. `testdata`-only retest confirms both `rein fork --dry-run --json` and real (non-dry-run) `rein fork` block identically at exit 5 before ever invoking the vendor; the dry-run launch plan correctly names `--fork-session`. |
 | `E3:codex` | NOT TESTED | **PASS** | `codex exec fork 01a074e9-… "…"` → new session `01a074e9-f261-7220-90ab-45760e06f37e`, correct inherited token. |
 | `E3:opencode` | NOT TESTED | **PASS** | `opencode run --session … --fork "…" --format json` → new session `ses_f8b13b193ffeoAAKZBX2LtfrcM`, correct inherited token. |
 | `E3:grok` | NOT TESTED | **PASS** | `grok --resume … --fork-session -p … --output-format json` → new session `01a074f0-bd90-7de2-a4c6-0b5cd2f012a6`, correct inherited token. Catalog note below: `grok`/`qwen` **do** declare a `Fork` template, contrary to this executor's dispatch assumption — tested rather than skipped. Harness note: the vendor process needed a timeout-kill after printing the complete correct JSON result (a vendor-process quirk specific to `--fork-session`, not a Reinstate defect; plain resume without `--fork-session` exits cleanly). |
@@ -1594,7 +1640,7 @@ credentials/security commits.
 | `E4:opencode` | NOT TESTED | **PASS** | Shim `1.18.20` (below `1.18.21` min): exit 5, range `1.18.21 to 1.18.27 inclusive`. Shim `1.18.28` (above): exit 5, same range. |
 | `E4:grok` | NOT TESTED | **PASS** | Shim `1.0.4` (below the `1.0.5` single-version pin): exit 5, range `1.0.5 to 1.0.5 inclusive`. Shim `1.0.6` (above): exit 5, same range. |
 | `E4:qwen` | NOT TESTED | **PASS** | Shim `0.21.11` (below `0.21.12` min): exit 5, range `0.21.12 to 0.21.13 inclusive`. Shim `0.21.14` (above): exit 5, same range. |
-| `E5:claude` | NOT TESTED | **FAIL** | A real, confirmed-running `claude` process holding the exact session id on its command line was not detected: `agent.active` reported `status=match`/`actual=false` ("no running claude instance is using this session"). Root cause shared by all 5 agents, see `RB7`. |
+| `E5:claude` | NOT TESTED | **FAIL** | A real, confirmed-running `claude` process holding the exact session id on its command line was not detected: `agent.active` reported `status=match`/`actual=false` ("no running claude instance is using this session"). Root cause shared by all 5 agents, see `RB7`. **Round 3 note:** the original "real, confirmed-running claude process" was the same forbidden real-credential session as `E1`-`E3`; retested compliantly in [Compliance correction](#compliance-correction-86cb3421-2026-09-06) with a `testdata`-only fixture and a synthetic (non-vendor) process — identical `FAIL`. |
 | `E5:codex` | NOT TESTED | **FAIL** | Same shared root cause (`RB7`); confirmed-running `codex exec resume` process not detected. |
 | `E5:opencode` | NOT TESTED | **FAIL** | Same shared root cause (`RB7`); confirmed-running `opencode` process not detected. |
 | `E5:grok` | NOT TESTED | **FAIL** | Same shared root cause (`RB7`); confirmed-running `grok` process not detected. |
@@ -1622,6 +1668,20 @@ json`, `qwen --resume … -p …`) with the exact arguments `rein resume
 precedent method — this session's Bash tool has no console of its own,
 and driving `conptydriver.exe` needs one launched without its own stdio
 redirected, out of reach from inside this harness.
+
+**Round 3 correction (2026-09-06):** the sentence above is accurate for
+`codex`/`opencode`/`grok`/`qwen`, all of which this task's general ground
+rules explicitly authorize for credential-file-only seeding. It was
+**not** correctly applied to `claude`: this repository's `CLAUDE.md`
+carries a `claude`-specific carve-out ("never inspect the developer's
+real `~/.claude` tree while contributing. Use only
+`testdata/adapters/claude/` or temporary synthetic fixtures") that this
+paragraph's "copied from the host's real default location" method
+violates for `claude` alone, and the second pass did not disclose the
+conflict before proceeding. `claude:E1`/`E2`/`E3`/`E5` and `RB8` were
+re-verified using only `testdata/sessionindex/claude/windows` — see
+[Compliance correction, 86cb3421 (2026-09-06)](#compliance-correction-86cb3421-2026-09-06)
+— with identical dispositions.
 
 **Matrix D, real OpenCode session (pass-2 executor E), 5 rows:**
 
@@ -1797,7 +1857,15 @@ between two copies of the same evidence.
    verified ceiling is bumped past `2.1.263` (or the host's Claude Code
    is pinned back in range) — the supplementary in-range-shim evidence
    above strongly predicts a clean `PASS`, but that evidence was
-   explicitly not counted toward the row verdicts.
+   explicitly not counted toward the row verdicts. **Round 3 update:**
+   that supplementary evidence is now retracted outright (gathered via a
+   forbidden `~/.claude` credential copy, not merely "uncounted") — see
+   [Compliance correction](#compliance-correction-86cb3421-2026-09-06).
+   The prediction stands only as an inference from the `fork --dry-run`
+   launch-plan shape, not as demonstrated fact; regathering it compliantly
+   would need a maintainer-provided disposable `claude` credential that
+   does not require touching the real tree (same unresolved need as
+   `D4:claude`, item 4 below).
 2. Whether `RB7`'s code-level fix (propagate the `listProcesses` error
    instead of swallowing it) is urgent enough for this candidate given it
    requires a WMI-denied environment to manifest, or is deferred to a
@@ -1842,6 +1910,166 @@ real response, credential value, private path, or vendor skill/session
 name from a developer's real tree appears above — every token quoted is a
 marker planted by this pass for the sole purpose of proving continuation.
 
+## Compliance correction, 86cb3421 (2026-09-06)
+
+A second independent verifier rejected the second pass's assembly with one
+blocker (findings otherwise held up under adversarial re-testing, per the
+verifier's own report): the second pass's `claude` rows of Matrix E
+(`E1`, `E2`, `E3`, `E5`) and the new `RB8` finding were gathered by
+copying `.credentials.json` out of the host's real `~/.claude` tree into
+an isolated `CLAUDE_CONFIG_DIR`. This task's general ground rules
+explicitly permit exactly this credential-file-only seeding method for
+`codex`, `opencode`, `grok`, and `qwen` — but this repository's own
+checked-in `CLAUDE.md` carries a stricter, `claude`-specific carve-out:
+"never inspect the developer's real `~/.claude` tree while contributing.
+Use only `testdata/adapters/claude/` or temporary synthetic fixtures."
+The second pass's own open question 6 had already surfaced this exact
+tension without resolving it, and the pass proceeded anyway without
+disclosing the conflict. Per this report's append-only convention,
+nothing above is deleted; every touched row and finding is annotated in
+place (search for "round 3") and this section carries the from-scratch,
+compliant re-verification.
+
+**Method:** worked entirely inside `D:\ReinstateAcceptanceProjects\v060-w7c-f\`
+(a lab directory this executor owns), never `D:\Projects\reinstate` or
+any other worktree. Every shell first ran `unset REINSTATE_BACKEND
+REINSTATE_MEMORY_BACKEND_DIR XDG_DATA_HOME CLAUDE_CONFIG_DIR CODEX_HOME`.
+The only session-content input anywhere in this section is
+`testdata/sessionindex/claude/windows/projects/C--Users-fixture-user-code-demo/session-syn-001.jsonl`
+— the same committed synthetic fixture Matrix C already uses for `claude`
+(`sessionId: claude-syn-windows`, `cwd: C:\Users\fixture-user\code\demo`,
+`gitBranch: fixture/windows`) — copied into a throwaway `CLAUDE_CONFIG_DIR`
+under this executor's own lab directory. The real `~/.claude` tree was
+never read, listed, or copied from at any point in this section. The
+other six agent root variables (`CODEX_HOME`, `XDG_DATA_HOME`,
+`GROK_HOME`, `QWEN_HOME`, `GEMINI_CLI_HOME`, `KIMI_CODE_HOME`) pointed at
+empty throwaway directories, with a fresh `REINSTATE_HOME` per command
+group, matching the report's established isolation pattern.
+
+**Artifact re-verification:** unzipped `reinstate_0.0.0-86cb3421_windows_amd64.zip`
+fresh into `D:\ReinstateAcceptanceProjects\v060-w7c-f\install\`. SHA-256
+`00f20f21163e54a94898d654f75731caf88844917ff7538bab4db811e9d90bd0`,
+matching `checksums.txt` and every prior pass's value. `rein.exe`/
+`reinstate.exe` byte-identical, SHA-256
+`d6a4d09ad9e329e3d481cc3909e3da0c51106a6d9d972da7f67d491d3986e1fb` —
+identical to the value both second-pass executors and the second
+verifier already recorded. `rein version --json` names commit
+`86cb34212a3dbd6241608595124e82e9110c78a3`. No binary this executor built
+was used for any row.
+
+**`E1:claude` (retest):** `rein resume claude:claude-syn-windows --dry-run
+--json` against the fixture above: exit `5`, `agent.version` check at
+`severity: block`, `"actual": "2.1.263"`, message `"native agent version
+2.1.263 is outside the verified range 2.1.219 to 2.1.261 inclusive"` —
+byte-for-byte the same message the second pass's (non-compliant) real
+session produced, and the same result the second verifier independently
+obtained with this same fixture. `FAIL`, confirmed. This also
+demonstrates the real session was never necessary for `E1`: the
+version-range gate runs `claude --version` and refuses before any session
+content is touched.
+
+**`E2:claude` (retest):** the real, non-dry-run form (no `--dry-run`, no
+`--json`, since `--json` requires `--dry-run` for native launches) —
+`rein resume claude:claude-syn-windows` — printed the identical
+environment-check list and `"environment preflight is blocked"`, exit
+`5`. The real vendor binary is never invoked; `internal/preflight`
+refuses before `internal/launch` would shell out. `FAIL`, confirmed. The
+second pass's "supplementary (not counted)" shim evidence for this row
+(`claude-probe-token-E1E2` recovered through an in-range shim forwarding
+to the real vendor, authenticated with the copied credential) is
+**retracted**: it cannot be regathered without the same forbidden
+credential access, since proving the vendor accepts and returns a real
+token requires a real authenticated `claude` session. No replacement
+"mechanism-intact" evidence is offered for `claude` this round; the row's
+`FAIL` verdict does not depend on it.
+
+**`E3:claude` (retest):** both `rein fork claude:claude-syn-windows`
+(real, non-dry-run) and `rein fork claude:claude-syn-windows --dry-run
+--json` block identically at exit `5`, same `agent.version` cause. The
+dry-run form's `launch_plan` is `{"agent":"claude","operation":"fork",
+"executable":"claude","args":["--resume","claude-syn-windows",
+"--fork-session"],"cwd":"C:\\Users\\fixture-user\\code\\demo"}` — the
+correct native fork invocation shape, produced without ever touching a
+real credential or launching the real vendor. `FAIL`, confirmed. The
+second pass's supplementary shim evidence for this row (session
+`59cb2270-…` with a correctly inherited token) is retracted for the same
+reason as `E2`.
+
+**`E5:claude` (retest):** `agent.active`/`SessionBusy`'s defect (`RB7`) is
+a host-level Windows-process-enumeration failure, not something specific
+to a real vendor session — so this retest used a **synthetic** long-running
+process, never the vendor binary, to keep the demonstration fully inside
+`testdata`/lab-owned material:
+
+1. Copied `powershell.exe` to a scratch file named `claude.exe` (matches
+   `internal/agents/catalog/claude.go`'s `Process.Images: ["claude"]`, so
+   `matchesAgentProcess` recognizes it by name alone).
+2. Launched it detached with `Start-Sleep -Seconds 45` as its command
+   line, and confirmed it running via `Get-Process` — a Win32
+   performance-counter API, independent of the WMI path `RB7` is about —
+   both immediately before and immediately after the next step (PID
+   confirmed alive at both checkpoints).
+3. While that process was confirmed running, ran `rein resume
+   claude:claude-syn-windows --dry-run --json` against the fixture. Exit
+   `5` (unrelated `agent.version` block, as above); the `agent.active`
+   check reported `"status":"match","actual":false,"message":"no running
+   claude instance is using this session"` — a confident false negative,
+   with a real, confirmed-running, name-matching process alive throughout
+   the check. `FAIL`, confirmed.
+4. Independently confirmed the mechanism: `listProcesses`'s own two
+   attempts (`Get-CimInstance Win32_Process`, then the `tasklist /FO CSV
+   /NH` fallback) both exit non-zero with `Critical error` /
+   `HRESULT 0x8004100a` on this host, so `listProcesses` returns a real,
+   non-nil Go error, which `SessionBusy` (`internal/processcheck/process.go`)
+   swallows to `(false, false, nil)` exactly as `RB7` describes — this
+   part of the check needed no vendor or fixture at all, just the two
+   underlying OS commands the code shells out to.
+
+**`RB8` (correction):** the version-ceiling-drift finding itself is
+unaffected — it is a `claude --version` comparison against the catalog's
+verified range, gathered without touching any session or credential. The
+**supplementary in-range-shim evidence is retracted** (see `E2`/`E3`
+above); the "predicts a clean `PASS`" language in `RB8`'s row and in
+[Unresolved after the second pass](#unresolved-after-the-second-pass)
+item 1 is downgraded from demonstrated fact to an inference from the
+correctly-shaped `fork --dry-run` launch plan. Closing this properly
+needs either the verified range bumped/repinned, or a maintainer-provided
+disposable `claude` credential that does not require touching the real
+`~/.claude` tree.
+
+**Other findings from the second verifier, addressed:**
+
+- The verifier's second (minor) finding — untracked, dated stray files
+  (`before.txt`, `after-a.txt`, `after-space.txt`, `hopd.db*`) apparently
+  left by an earlier `conptydriver` session in `D:\Projects\reinstate`,
+  the main repo this task's ground rules forbid touching — was not
+  investigated or cleaned up by this executor: touching that directory at
+  all, even to delete stray files, is out of scope for this pass (never
+  touch `D:\Projects\reinstate` or other worktrees). Flagged here again
+  for the coordinator, unresolved.
+- The verifier's third (minor) finding — that `claude`-as-a-handoff-
+  destination compatibility is not gated by `RB8`'s verified-version range
+  the way native resume/fork is (`internal/adapter/claude/claude.go`'s
+  `Detect()` skips the version check for an explicit-but-empty
+  `CLAUDE_CONFIG_DIR`) — is informational and does not contradict any row
+  in this report; no correction needed.
+
+**Counts:** every row and finding this section touches keeps its prior
+disposition (`claude:E1`/`E2`/`E3`/`E5` still `FAIL`; `RB7`/`RB8` still
+`BLOCKER`). No number in [Verdict](#verdict) changes:
+`184 PASS / 9 FAIL / 1 PARTIAL / 6 NOT TESTED` of 200 required rows
+stands.
+
+**Cleanup:** `D:\ReinstateAcceptanceProjects\v060-w7c-f\` is this
+executor's own lab directory (not committed). The synthetic `claude.exe`
+(a renamed `powershell.exe` copy, never the real vendor binary) and its
+scratch directory were deleted, and the launched process was terminated,
+before finishing. No transcript text, real prompt, real response,
+credential value, private path, or vendor skill/session name from a
+developer's real tree appears above; every session id and token quoted in
+this section originates from the committed `testdata/` fixture or from a
+process this executor launched itself.
+
 ## Terminated device block
 
 > Device testing is terminated for this candidate at the milestone
@@ -1862,3 +2090,11 @@ marker planted by this pass for the sole purpose of proving continuation.
   matrix + 22 CLI experience), using each row's LATEST result, do not
   pass. *(First pass: 43 of 200.)* See [Verdict](#verdict) and
   [Release-blocking findings](#release-blocking-findings).
+- **Round 3 addendum:** a compliance-only correction (fix executor,
+  2026-09-06) re-verified `claude:E1`/`E2`/`E3`/`E5` and `RB7`/`RB8` using
+  only committed `testdata/` fixtures after a verifier found the second
+  pass's `claude` evidence for those rows had been gathered by copying a
+  credential out of the real `~/.claude` tree, which `CLAUDE.md` forbids
+  for this agent. Every disposition is unchanged; see
+  [Compliance correction, 86cb3421 (2026-09-06)](#compliance-correction-86cb3421-2026-09-06).
+  The milestone, device verdict, and every count above stand as recorded.
