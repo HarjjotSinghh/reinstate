@@ -18,7 +18,7 @@ import {
  * deadline) still fails the test.
  */
 async function removeTempDirWhenReleased(dir: string): Promise<void> {
-  const deadline = Date.now() + 30000;
+  const deadline = Date.now() + 120000;
   for (;;) {
     try {
       rmSync(dir, { recursive: true, force: true });

@@ -12,6 +12,6 @@ export default defineConfig({
     // default 10s hook timeout is occasionally too tight for that; give it
     // more room than the retry loop in waitlist-db.test.ts / api-routes.test.ts
     // needs, so the loop's own bounded deadline is what decides a real failure.
-    hookTimeout: 40000,
+    hookTimeout: process.platform === "win32" ? 150000 : 10000,
   },
 });
