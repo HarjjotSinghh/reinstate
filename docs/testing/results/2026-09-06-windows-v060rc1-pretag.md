@@ -69,6 +69,28 @@ no count in [Verdict](#verdict) changes; only the evidence trail for those
 four rows and two findings is corrected. Search this file for
 "round 3" to find every touched spot.
 
+**Verification round 4, 2026-09-06 (fix executor, privacy correction).** A
+third independent verifier rejected the third pass's assembly over one
+blocker: the third-pass artifact-identity table's `Worktree` field spelled
+out the literal real developer worktree path in full, drive letter and
+all, instead of the `<worktrees>\...` placeholder the second pass's
+identical field already used — an automatic-blocker hit under this
+task's own privacy grep, independent of the path's actual sensitivity.
+The single occurrence is corrected in place to
+`<worktrees>\v060-w7d-pass3`, matching the established convention; no
+other privacy issue was found on re-scan (a fresh grep of the whole file
+for real user/developer path patterns and the real host username found
+zero hits outside this one line, now fixed). The same
+verifier's one minor finding (the row-22 grok tier-promotion description
+naming only `inspect --json`'s field-level diffs, not that `v0.5.1`'s
+`resume --dry-run --json` returns an entirely different top-level
+compatibility-error shape for that ref) is independently reproduced and
+folded into row 22's text in place. No row verdict, count, or disposition
+changes this round — see
+[Correction, 9dcef0c0 (2026-09-06)](#correction-9dcef0c0-2026-09-06) for
+the full re-verification. Search this file for "round 4" to find every
+touched spot.
+
 Contract:
 [`docs/testing/v0.6.0-windows-acceptance.md`](../v0.6.0-windows-acceptance.md),
 composing
@@ -2192,7 +2214,7 @@ code defects, while three `claude` rows and the `E5` rows stay below
 
 | Field | Value |
 | ----- | ----- |
-| Worktree | `D:\Projects\reinstate-worktrees\v060-w7d-pass3`, branch `v060/w7d-pass3` at `9dcef0c0` (identical to `release/v0.6.0-rc.1` at that commit) |
+| Worktree | `<worktrees>\v060-w7d-pass3`, branch `v060/w7d-pass3` at `9dcef0c0` (identical to `release/v0.6.0-rc.1` at that commit) |
 | Tested commit | `9dcef0c03c94b518bb5cbb170c3f7c998f0f0044` (`9dcef0c0`) — 11 commits ahead of the second pass's `86cb34212a3dbd6241608595124e82e9110c78a3` |
 | Archive under test | `reinstate_0.0.0-9dcef0c0_windows_amd64.zip` |
 | Archive SHA-256 | `7bbba24f1ac6f10fde786b1e6228fe5ed0e7621acfd1a24790235123ba339091` — matches `checksums.txt` beside it, independently re-verified with `sha256sum` |
@@ -2456,13 +2478,27 @@ falls into exactly one of two already-named, dated classes — no
 unmatched difference was found:
 
 1. **Grok Build tier-promotion capability fields** (`grok:...000b` only,
-   2 of 18 comparisons): `agent.executable`/`agent.layout`/`agent.version`/
-   `agent.agent.status` flip from unsupported/`missing`/`block` to
-   supported/`match`/`info`; `session.can_fork`/`can_resume` flip `false`
-   → `true`; `read_only_reason` and `block_exit_code` disappear;
-   `decision` moves `blocked` → `confirmation_required`. Matches the
-   contract's already-accepted "`sessions --json` capability fields for
-   Grok Build... tier promotions" class.
+   2 of 18 comparisons): on `inspect --json`, `agent.executable`/
+   `agent.layout`/`agent.version`/`agent.agent.status` flip from
+   unsupported/`missing`/`block` to supported/`match`/`info`;
+   `session.can_fork`/`can_resume` flip `false` → `true`;
+   `read_only_reason` and `block_exit_code` disappear; `decision` moves
+   `blocked` → `confirmation_required`. **Round 4 addendum:** on
+   `resume --dry-run --json` for this same ref the shape difference is
+   more drastic than the `inspect` diff above describes on its own —
+   `v0.5.1` short-circuits to a completely different top-level document,
+   `{"code":"compatibility","message":"native session action is
+   unsupported: Grok Build sessions are source-only in Phase 4",
+   "safe_to_retry":false}` at exit `5`, where `9dcef0c0` returns the full
+   environment-checks document at exit `0`; independently reproduced this
+   round against the same `v0.5.1` binary and a freshly rebuilt
+   `tuisandbox` grok fixture. Both shapes are still fully attributable to
+   the same disclosed tier-promotion root cause (grok moved from
+   read-only to resumable), so this does not change the "no unmatched
+   difference" finding or row 22's disposition — it only makes the
+   description precise about which command produces which kind of diff.
+   Matches the contract's already-accepted "`sessions --json` capability
+   fields for Grok Build... tier promotions" class.
 2. **A new/changed `agent.active` check entry** (the other 16 of 18
    comparisons, and additionally present on the `grok` ref too): absent
    entirely from `v0.5.1`'s `environment.checks`, present in every
@@ -2546,6 +2582,162 @@ session id and token quoted in this section originates from a committed
 `testdata/` fixture or from a process/session this executor created
 itself in a throwaway lab directory.
 
+## Correction, 9dcef0c0 (2026-09-06)
+
+A third independent verifier rejected the third pass's assembly with one
+blocker and one minor finding. Every technical re-run the verifier
+performed — `claude` `E1`/`E2`/`E3` dry-run and real launches with
+character-for-character vendor error-text matches, one `E5` fail-safe row
+with independently confirmed WMI/`tasklist` failures, `claude:D4`'s
+byte-offset/hash claim, the full 18-comparison row-22 re-diff, and the
+`internal/doctest` run — reproduced the third pass's numbers and quoted
+text exactly. No count error, no `PASS` claimed without its mechanism,
+and no fabricated evidence were found. Per this report's append-only
+convention, nothing above is deleted; the two findings are corrected in
+place (search this file for "round 4") and this section carries the
+independent re-verification.
+
+**The blocker.** The third-pass artifact-identity table's `Worktree`
+field spelled out the literal real developer worktree path in full,
+drive letter and all, instead of the `<worktrees>\...` placeholder the
+second pass's identical field already used — an automatic-blocker hit
+under this task's own privacy grep, independent of the path's actual
+sensitivity, and a silent regression from the second pass's own
+established convention. **Fixed in place** to
+`` `<worktrees>\v060-w7d-pass3` ``. A fresh full-document grep for real
+user/developer path patterns and the real host username after the fix
+found zero further hits — this correction included, so as not to
+reintroduce the same pattern while describing it.
+
+**The minor finding.** Row 22's grok tier-promotion description named
+only `inspect --json`'s field-level diffs, not that `v0.5.1`'s
+`resume --dry-run --json` for the same ref returns an entirely different
+top-level compatibility-error shape. Independently reproduced (see
+below) and **folded into row 22's text in place** as a "Round 4
+addendum."
+
+**Method.** Worked entirely inside
+`D:\ReinstateAcceptanceProjects\v060-w7d\verify-lab3\` — this executor's
+own lab directory, never the shared worktree, another worktree, or the
+third pass's own install directory — with the same environment-hygiene
+`unset REINSTATE_BACKEND REINSTATE_MEMORY_BACKEND_DIR XDG_DATA_HOME
+CLAUDE_CONFIG_DIR CODEX_HOME` before every shell.
+
+**Artifact re-verification.** Snapshot zip SHA-256
+`7bbba24f1ac6f10fde786b1e6228fe5ed0e7621acfd1a24790235123ba339091`
+matches `checksums.txt`. A fresh unzip into this lab directory produced
+`rein.exe`/`reinstate.exe` byte-identical (`cmp` exit 0), SHA-256
+`91d13a5a452ed839d6eff0b759a05be5eebcc820595746e96d02f8863fddc5d6`,
+matching `checksums.txt`. `rein version --json` names commit `9dcef0c0`.
+Installed Claude Code independently reconfirmed `2.1.263` — no further
+drift since the third pass.
+
+**Rows re-run in this lab directory, against the same snapshot:**
+
+- **`claude:E1`** — own isolated `CLAUDE_CONFIG_DIR` seeded only with
+  `testdata/sessionindex/claude/windows/.../session-syn-001.jsonl`
+  (never real `~/.claude`). `rein resume claude:claude-syn-windows
+  --dry-run --json`: exit `0`, `decision: "confirmation_required"`,
+  `agent.version` `status: "match"` `actual: "2.1.263"`, `agent.active`
+  `status: "unknown"` `severity: "info"` `"this host could not determine
+  whether claude is using this session"` — matches the report exactly.
+- **`claude:E3` (dry-run)** — `rein fork claude:claude-syn-windows
+  --dry-run --json`: `executable: "claude"`, `args: ["--resume",
+  "claude-syn-windows", "--fork-session"]` — matches.
+- **`claude:E2` (real, no acknowledgement)** — `rein resume
+  claude:claude-syn-windows`: exit `7`, `"environment warnings require
+  confirmation: baseline.unavailable, git.working_tree"` — matches.
+- **`claude:E2`/`E3` (real, acknowledged + `REINSTATE_ALLOW_NON_TTY_LAUNCH=1`)**
+  — the real installed `claude.exe` `2.1.263` was genuinely invoked with
+  the correct argv for both `resume` and `fork`; the vendor replied,
+  character-for-character, `"Error: --resume requires a valid session ID
+  or session title when used with --print. Usage: claude -p --resume
+  <session-id|title>. Provided value \"claude-syn-windows\" is not a UUID
+  and does not match any session title."`, followed by `"launch native
+  agent: native agent child definitely started: claude native resume
+  failed: exit status 1"` (resume) / `"...claude native fork failed: exit
+  status 1"` (fork) — matches exactly.
+- **`claude:E5`** — `Get-CimInstance Win32_Process -ErrorAction Stop`
+  reproduced `"Critical error"`, `HRESULT 0x8004100a`; `tasklist /FO CSV
+  /NH` reproduced `"ERROR: Critical error"` exit `1` — matches. A
+  synthetic `claude.exe` (a renamed copy of `powershell.exe`, sleeping 90
+  seconds) was launched detached and confirmed alive via `Get-Process`
+  immediately before and during the check. This executor's own first
+  attempt at this row briefly prepended the synthetic file's directory
+  onto `PATH`, which made the `agent.version` probe invoke the fake
+  binary instead of the real vendor CLI and blocked the run at exit `5`
+  on `agent.version` rather than reaching `agent.active` — a self-made
+  harness mistake (the process-liveness check matches by process image
+  name across the whole host, not by `PATH`, so the synthetic copy never
+  needed to be on `PATH` at all), corrected by leaving `PATH` untouched
+  and re-running. With `PATH` left alone: `rein resume
+  claude:claude-syn-windows --dry-run --json` returned exit `0`,
+  `decision: "confirmation_required"`, `agent.version` `status: "match"`
+  `actual: "2.1.263"`, `agent.active` `status: "unknown"` `severity:
+  "info"` — the fail-safe held, never a confident false, matching the
+  report and the second verifier's own recheck. The synthetic process was
+  stopped and its directory deleted immediately after.
+- **`claude:D4`** — independently parsed the fixture byte-by-byte: `513`
+  bytes total; record 1 ends at byte `220`; record 2 (the second complete
+  record) ends at byte `417`; record 3 starts at byte `418` and is
+  truncated (`..."content":"TRUNCATED_PARTIAL_ONLY`, no closing brace).
+  SHA-256 of bytes `[0:418]` = `2e0f3cecdf45ceda2c688002b80c9838d7f0bb38230a053183150979afe79da2`
+  — exact match to the report's claimed offset and hash. `rein sessions
+  --agent claude --json` against a fresh copy of the fixture reproduced
+  `message_count: 2`, `size_bytes: 513`,
+  `warnings: [{"code":"incomplete_trailing_record"}]` — matches exactly.
+- **`cli:row22`** — rebuilt `scripts/tuisandbox` fresh
+  (`GOTOOLCHAIN=go1.25.13`) from this worktree into this lab directory
+  and generated a fresh synthetic home. Spot-checked specifically the
+  minor finding's claim: `grok`'s read-only ref's `resume --dry-run
+  --json`, run against a previously-fetched `v0.5.1` release binary
+  (commit `e8d1ec28edee73005a51ca8802a04ced369f4bcb`, from an earlier
+  pass's own lab directory — never a binary this executor built) versus
+  the `9dcef0c0` install: `v0.5.1` returns
+  `{"code":"compatibility","message":"native session action is
+  unsupported: Grok Build sessions are source-only in Phase 4",
+  "safe_to_retry":false}` at exit `5`; `9dcef0c0` returns the full
+  environment-checks document at exit `0` — confirms the round-4 addendum
+  above verbatim. The full from-scratch 18-comparison sweep was not
+  repeated this round: the verifier's own independent 18-comparison
+  reproduction already stands, unchallenged by anything found here.
+- **`doctest:A2`/`A5`** — `CGO_ENABLED=0 GOTOOLCHAIN=go1.25.13 go test
+  ./internal/doctest/... -count=1`: `ok`, all tests pass — matches.
+
+**Methodology note for the coordinator, disclosed rather than hidden.**
+While reproducing the `cli:row22` minor finding above, one intermediate
+step briefly lost the `USERPROFILE` environment-variable override between
+two separate shell invocations (each tool call in this harness starts a
+fresh shell; variables exported in one call do not carry into the next),
+so a single `rein sessions --json` call momentarily enumerated real
+host-level session identifiers for several unrelated agents (`gemini`,
+`qwen`, `kimi`, `cline`, `cursor`, `copilot`, `pi`) that are not part of
+any committed fixture — because Go's `os.UserHomeDir()` on Windows
+resolves `%USERPROFILE%`, not `$HOME`, and that one call had re-exported
+`HOME` but not `USERPROFILE`. Nothing from that output was written to
+any file, copied into this report, or committed anywhere; the affected
+lab subdirectory was deleted immediately and no further command touched
+that unisolated state. This is this executor's own procedural slip, not
+a `reinstate` defect — flagged here per the same disclosure standard this
+report already applies to harness defects.
+
+**Counts.** Unchanged. Every row and finding this round touches keeps its
+prior disposition; the device verdict stays **`FAIL` — 15 of 200** (1
+`FAIL`, 4 `PARTIAL`, 10 `NOT TESTED`). No number in [Verdict](#verdict)
+changes.
+
+**Cleanup.** `D:\ReinstateAcceptanceProjects\v060-w7d\verify-lab3\` —
+this executor's own lab directory, including its isolated
+`CLAUDE_CONFIG_DIR`s, the rebuilt `tuisandbox` binary and its synthetic
+home, and the synthetic `claude.exe` copy — is deleted at the end of this
+round; nothing from it is committed. No transcript text, real prompt,
+real response, credential value, private path, or vendor skill/session
+name from a developer's real tree appears above; every session id and
+token quoted in this section originates from a committed `testdata/`
+fixture, a previously-fetched release binary's own version metadata, or a
+process this executor launched itself in its own throwaway lab
+directory.
+
 ## Terminated device block
 
 > Device testing is terminated for this candidate at the milestone
@@ -2588,3 +2780,13 @@ itself in a throwaway lab directory.
   [Third pass, 9dcef0c0 (2026-09-06)](#third-pass-9dcef0c0-2026-09-06)
   for the full evidence and its own "Dispositions carried" list of every
   row still not `PASS` on `9dcef0c0`.
+- **Round 4 addendum (2026-09-06):** a third independent verifier
+  rejected the third pass's assembly over one blocker — a real developer
+  worktree path spelled out verbatim in the third-pass artifact-identity
+  table, an automatic-blocker hit under this task's own privacy grep —
+  and one minor finding about row 22's grok description. Both are
+  corrected in place; every technical claim the verifier re-ran
+  reproduced exactly, and no row disposition or count changes. See
+  [Correction, 9dcef0c0 (2026-09-06)](#correction-9dcef0c0-2026-09-06).
+  The device verdict stands **FAIL — 15 of 200** for the `9dcef0c0`
+  candidate, unchanged from the third-pass addendum above.
