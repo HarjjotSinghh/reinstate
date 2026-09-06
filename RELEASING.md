@@ -49,10 +49,11 @@ that optional physical evidence.
 `v0.6.0-rc.N` candidate and stable acceptance on native Windows x64
 (`windows/amd64`, never WSL) alone while the Apple Silicon macOS host is in
 repair. Every row the prior contracts require on macOS is carried as
-**deferred**, listed in issue #DEFERRED-MACOS, and re-run against the same
-stable tag once that hardware returns. No document, data file, or release
-note may state that `v0.6.0` was verified on macOS; if that later macOS run
-fails, the fix ships as `v0.6.1`, not by editing the record. This mirrors the
+**deferred**, listed in the deferred-macOS issue (number filled in when it is
+filed), and re-run against the same stable tag once that hardware returns.
+No document, data file, or release note may state that `v0.6.0` was verified
+on macOS; if that later macOS run fails, the fix ships as `v0.6.1`, not by
+editing the record. This mirrors the
 `v0.2.0` reconciliation above: the boundary is narrowed and named, not hidden.
 It governs `v0.6.0` acceptance only — the dual-platform requirement above is
 unchanged for every other release.
@@ -384,15 +385,18 @@ reaches T2.
 
 Governed by
 [`docs/testing/v0.6.0-windows-acceptance.md`](docs/testing/v0.6.0-windows-acceptance.md),
-which composes the Phase 5 generated matrix (178 rows on this branch's agent
-catalog, per `rein doctor --agents --acceptance-matrix`), the 22-row CLI
-matrix, and the Hop parity journeys (hosted #16) into one Windows column with
-an explicit deferred-macOS table, under the
-[Windows-first waiver](#v060-windows-first-waiver).
+which composes the Phase 5 generated matrix (**178** rows, per
+`rein doctor --agents --acceptance-matrix` on a binary built from the release
+commit), the 22-row CLI matrix, and the 16 Hop parity journey rows of section
+D (hosted #16) into one Windows column with an explicit deferred-macOS table,
+under the [Windows-first waiver](#v060-windows-first-waiver).
 
 The pre-tag snapshot run (a snapshot build of the release commit, before the
 tag is signed and pushed) is evidence that the candidate is ready for
 tagged-artifact acceptance; it does not itself authorize anything past that.
+It is recorded at
+`docs/testing/results/2026-09-06-windows-v060rc1-pretag.md` once W7 lands;
+pending as of this commit.
 
 Publication means ready for tagged-artifact acceptance. It does **not**
 authorize stable `v0.6.0`. Current stable remains `v0.5.1`.

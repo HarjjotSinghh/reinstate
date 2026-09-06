@@ -7,10 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.6.0-rc.1] - YYYY-MM-DD
+## [0.6.0-rc.1] - 2026-09-06
 
-Release candidate. Stable remains `v0.5.1`; the public installers currently pin
-`v0.5.2-rc.1`, not this candidate.
+Release candidate. Stable remains `v0.5.1`; the public installers now pin
+this candidate, superseding `v0.5.2-rc.1`, which was published but never
+certified on either platform.
 
 **Highlights.** Reinstate Hop ships as ordinary `rein` commands: `rein login` /
 `rein whoami`, `rein init --hop`, `rein hop status` / `rein hop credentials`,
@@ -256,6 +257,30 @@ url` point it at another one for labs and self-hosters.
   with the rest of preflight, so it does not add its cost to the launch path.
   A structured handoff is unaffected: it only reads the source, and already
   enforces its own `--allow-active` boundary against the same signal.
+- A disposable Windows Hop lab, `scripts/testing/hoplab`: a real `hopd` (the
+  private control plane) alongside `scripts/testing/fakelocker` standing in
+  for the bucket, both on loopback with fake storage and a log-only email
+  sender, plus a sign-in approver that clicks the links the log sender
+  prints and two isolated device homes seeded on one host. It drives live
+  join/approve and recovery-code pairing journeys — `rein account
+  init/recover/join/status` and `rein devices approve/revoke` — against real
+  vendor binaries without ever touching the developer's own agent trees, and
+  a process registry (`hoplab ps`) tracks every `hopd`/`fakelocker` pair
+  `start` has launched so a lab is never left running unnoticed. It never
+  reads, lists, or commits anything from the private control-plane
+  repository; that repository is referred to only by path, through
+  `REINSTATE_HOSTED_DIR` / `REINSTATE_HOPD_BIN`.
+- A Windows ConPTY driver, `scripts/testing/conptydriver`, for scripted
+  interactive-TUI acceptance: it runs a command under a real Windows pseudo
+  console (`CreatePseudoConsole`), drives it with a small step-script
+  grammar (`wait`, `send`, `key`, `snapshot`), and renders what actually
+  appeared through a real VT screen model rather than a regex strip of the
+  raw bytes. It answers the startup queries a Bubble Tea program issues
+  before it will draw a frame (cursor position, background color), so a TUI
+  under test does not stall waiting for a real terminal to reply. Built from
+  `golang.org/x/sys/windows` with no other new module dependency; on any
+  other `GOOS` it still builds cleanly, so cross-OS compilation stays green,
+  and every run there just reports that ConPTY is Windows-only.
 
 ### Changed
 
@@ -843,6 +868,23 @@ url` point it at another one for labs and self-hosters.
   so a probe aimed at a prepared root read their real tree anyway, silently.
   `StorageSpec` gained `RootEnvSuffix` for this shape, and the catalog is now
   pinned to the reader's own resolution so the two cannot drift apart again.
+- `rein login` and `rein whoami` now report an unreachable Hop control plane
+  in one line — `could not reach the Reinstate Hop control plane at <url>:
+  <cause>`, naming the URL and pointing at the hop docs — instead of the raw
+  transport error, and carry the same classification under `--json` as
+  `details.kind = "control_plane_unreachable"` plus `details.url`. The exit
+  code is unchanged: both commands already used the runtime-error exit for a
+  network failure, and this only replaces the message and adds the `--json`
+  detail. A reachable control plane's own answer — a rejected token, a quota
+  refusal, a bad request — is untouched.
+- Each Reinstate home selected with `REINSTATE_HOME` now holds its own
+  device-token entry in the OS keyring, derived from that home's path
+  (lower-cased and stable across trailing separators on Windows), instead of
+  every home on a host sharing one fixed entry. Two homes on one
+  machine — what an acceptance lab needs to pair and revoke devices without a
+  second computer — used to overwrite each other's sign-in, and a fresh home
+  could silently inherit a token pointing at another control plane. The
+  default home keeps the entry it always had.
 
 ### Security
 

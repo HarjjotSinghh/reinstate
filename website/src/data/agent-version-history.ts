@@ -18,7 +18,7 @@ const evidenceByVersion: Record<
 > = {
   'v0.6.0-rc.1': {
     rangeChange:
-      'Unchanged from v0.5.2-rc.1: inclusive Claude Code range 2.1.219-2.1.238 and Codex CLI range 0.133.0-0.149.0. Native Windows evidence for widening past that ceiling is tracked separately and, if it lands, ships with a later candidate.',
+      'Widens the inclusive Claude Code range to 2.1.219-2.1.261 (was 2.1.219-2.1.238 through v0.5.2-rc.1) and the OpenCode range to 1.18.21-1.18.27 (was the single 1.18.21 build). The Codex CLI range is unchanged at 0.133.0-0.149.0. Both new ceilings rest on native Windows physical resume evidence only, under ADR 0005: a session created with the installed version was indexed and resumed through the launch plan Reinstate produced, returning a token that existed only in that session\'s history. Apple Silicon macOS evidence for the widened part is pending.',
     compatibilityChange:
       'Carries the Hop client: OpenCode reaches encrypted sync (T5) and Kimi Code CLI becomes a handoff source (T2). Both are merged into this candidate but not yet part of a stable release; the published compatibility matrix moves with the tag, not with the tree.',
     implementationSource:

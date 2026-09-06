@@ -1,10 +1,7 @@
 export const releaseHistory = [
   {
     version: 'v0.6.0-rc.1',
-    // Placeholder date; W8 sets the real signed-tag date. Kept as a valid
-    // ISO date (not a literal "DD") because product.currentReleaseDate must
-    // equal this and /changelog runs that field through Intl.DateTimeFormat.
-    date: '2026-09-05',
+    date: '2026-09-06',
     summary:
       'Release candidate; stable remains v0.5.1 and this candidate does not by itself authorize promoting it. Carries Reinstate Hop as ordinary rein commands, unconditional on every install: rein login/whoami, an init --hop wizard with --link/--paste pairing, hop status/credentials, account init/recover/join/status, devices/approve/revoke, sync verify, sync migrate --to byo, and a background daemon. OpenCode reaches encrypted sync (T5) and Kimi Code CLI becomes a handoff source (T2). The hosted control plane itself is not deployed, so rein login against the default control-plane URL reports that in one sentence instead of hanging, the URL stays configurable for labs and self-hosters, and no pricing, billing, or sign-up ships. Also carries the interactive CLI experience from v0.5.2-rc.1 unchanged, with every --json document and non-TTY stream still byte-identical to v0.5.1. Acceptance for this candidate is native Windows x64 only; the Apple Silicon macOS run is deferred until that hardware returns and is not claimed here.',
   },
