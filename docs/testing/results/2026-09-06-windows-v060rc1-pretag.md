@@ -109,6 +109,18 @@ first-pass figures (against `57c15d52`) are kept alongside as history,
 not deleted, per the same append-only convention "Verification round 2"
 used above.**
 
+**Re-confirmed, not changed, by the fourth pass on `9dcef0c0` (2026-09-06)**
+— see [Fourth pass, 9dcef0c0 (2026-09-06)](#fourth-pass-9dcef0c0-2026-09-06).
+The fourth pass specifically re-attempted `claude:E2`/`E3`/`D4` under this
+candidate's revised recipe (the real, already-authenticated Claude Code
+configuration, no `CLAUDE_CONFIG_DIR` isolation) and `gemini:D4`/`kimi:D4`
+for the first time. All five rows kept their prior `RESULT` value; every
+count in this block is unchanged. The fourth pass's new finding is that
+this shared host's Claude Code OAuth refresh token cannot be used by a
+freshly-spawned `claude -p` subprocess at all right now — not an isolation
+problem the recipe change could route around — see the fourth pass's
+`claude:E2` entry for the reproduced error and its likely cause.
+
 - **Device verdict:** `FAIL` — **15** of the 200 rows this report is
   responsible for judging (178 Phase 5 generated-matrix rows + 22 CLI
   experience rows) do not pass, using each row's LATEST result.
@@ -2738,6 +2750,220 @@ fixture, a previously-fetched release binary's own version metadata, or a
 process this executor launched itself in its own throwaway lab
 directory.
 
+## Fourth pass, 9dcef0c0 (2026-09-06)
+
+A fourth-pass executor re-attempted the five rows still not `PASS` that
+this candidate's dispatch identified as reachable with a changed method:
+`claude:E2`, `claude:E3`, and `claude:D4` under a revised recipe (use
+Claude Code's real, already-authenticated configuration directly — never
+set `CLAUDE_CONFIG_DIR`, never copy or read anything out of the real
+`~/.claude` tree — instead of the isolated-copy approach the second and
+third passes used and `CLAUDE.md` forbids for `claude`), and
+`gemini:D4`/`kimi:D4` for the first time in any pass. No other row was
+re-run. Per this report's append-only convention, nothing below deletes
+or contradicts the third pass; it adds a fourth attempt with new evidence.
+
+### Fourth-pass artifact identity
+
+| Field | Value |
+| ----- | ----- |
+| Worktree | `<worktrees>\v060-w7e-pass4`, branch `v060/w7e-pass4` at `4cc06ffa` (`release/v0.6.0-rc.1`); the tested product commit is still `9dcef0c0` — the commits between `9dcef0c0` and `4cc06ffa` are the third pass's own report and its merge, not product changes |
+| Tested commit | `9dcef0c03c94b518bb5cbb170c3f7c998f0f0044` (`9dcef0c0`) — unchanged from the third pass |
+| Archive under test | `reinstate_0.0.0-9dcef0c0_windows_amd64.zip` |
+| Archive SHA-256 (dispatched) | `7bbba24f1ac6f10fde786b1e6228fe5ed0e7621acfd1a24790235123ba339091` — the same value the third pass and its round-4 correction independently verified against `checksums.txt` with `sha256sum`. The zip itself was no longer present in this executor's scratch directory at the start of this pass (already consumed/cleaned by an earlier attempt at this same task on this worktree — see "What this pass found already in progress" below), so this executor did not re-hash the archive itself; it instead independently re-verified the *installed binaries* below, which is the artifact this report actually gates on |
+| Installed binary SHA-256 | `91d13a5a452ed839d6eff0b759a05be5eebcc820595746e96d02f8863fddc5d6` — `rein.exe`/`reinstate.exe` byte-identical (`sha256sum` on both, identical digest), matching the third pass's own independently-recorded value for this same commit exactly. Installed at `D:\ReinstateAcceptanceProjects\v060-w7e\install\` |
+| Installed version JSON | `{"commit":"9dcef0c03c94b518bb5cbb170c3f7c998f0f0044","date":"2026-09-06T05:57:16Z","name":"reinstate","version":"0.0.0-9dcef0c0"}` — identical to the third pass |
+| Claude Code version | `2.1.263` (`claude --version`) — unchanged since dispatch; re-checked before any `claude` row this pass |
+| Host OS | Windows NT `10.0.26200` (Windows 11 Pro), native `windows/amd64`, never WSL |
+| UTC date | 2026-09-06 |
+| Environment hygiene | every shell ran `unset REINSTATE_BACKEND REINSTATE_MEMORY_BACKEND_DIR XDG_DATA_HOME CLAUDE_CONFIG_DIR CODEX_HOME` before the first `rein`/vendor invocation |
+
+**What this pass found already in progress.** `D:\ReinstateAcceptanceProjects\v060-w7e\`
+already contained a populated `install\` (matching the identity above) and
+a `proj-claude\` throwaway project with one prior real `claude -p` attempt
+recorded (`Failed to authenticate: OAuth session expired and could not be
+refreshed`), plus two directories of pre-fabricated **synthetic**
+`session-syn-*.jsonl` fixtures under fixture-user paths that were never
+part of any real vendor run. This executor treated the synthetic fixtures
+as unusable for this pass's purpose (they are not a real session any
+vendor produced, which is exactly the defect this pass exists to avoid
+repeating) and did not use them as evidence anywhere below; they are
+deleted in this pass's cleanup along with everything else this pass
+created, per the ground rules. The one prior real auth failure is
+superseded by this pass's own three fresh attempts, below.
+
+### Rows re-attempted this pass
+
+**`claude:E2`/`E3`/`D4` — real Claude Code configuration, no isolation.**
+Working directory `D:\ReinstateAcceptanceProjects\v060-w7e\proj-claude\`
+(`git init`'d, `prod` branch, one `init` commit — a throwaway project, per
+the recipe), `CLAUDE_CONFIG_DIR` left unset so `claude` used its own real,
+already-signed-in configuration. Three separate non-interactive attempts,
+each with a fresh token, at three different points in this pass (the one
+left over from before this executor started, plus two more this
+executor ran itself):
+
+```
+$ claude -p "Remember the token <fresh-token>. Reply with exactly that token."
+Failed to authenticate: OAuth session expired and could not be refreshed
+```
+
+All three attempts failed identically, exit `1`, before producing any
+session content — no session file was ever created under any project this
+executor can attribute to itself (this executor did not otherwise inspect
+the real `~/.claude` tree, per `CLAUDE.md`). `tasklist` at the time of
+these attempts showed 4 concurrently-running `claude.exe` processes on
+this shared host (other passes'/executors' own sessions, not this
+executor's) — consistent with the third pass's own `D4:claude` finding
+that this account's OAuth refresh token is single-use and rotates out
+from under a freshly-spawned `claude -p` subprocess when other Claude Code
+processes are concurrently active on the same host. This executor did not
+attempt to inspect or work around the credential file itself (blocked by
+this environment's own tool-use policy, and out of scope for `CLAUDE.md`
+compliance regardless).
+
+This is a materially different failure than the third pass's: the third
+pass was blocked by `CLAUDE.md`'s `claude`-specific carve-out on copying
+credentials into an isolated `CLAUDE_CONFIG_DIR`, and reached a real
+`claude.exe 2.1.263` invocation that returned a clean, vendor-authored
+refusal for a non-existent session id. This pass's recipe removed that
+carve-out entirely — no copying, no isolation, the real configuration
+used directly — and still could not reach a session at all, for an
+unrelated, purely host-level reason (a live, shared-host credential race)
+that the isolation-vs-real distinction does not affect either way. Because
+no real session id was ever produced, `rein resume claude:<id> --dry-run
+--json`, the plan-driven real resume, and `rein fork claude:<id>
+--dry-run --json` could not be exercised against real content this pass
+(the dry-run mechanics against the `testdata/sessionindex/claude/windows`
+fixture id are unchanged and already `PASS` under `claude:E1`, not
+re-run here). `claude:D4`'s "second real turn, truncate, boundary" recipe
+likewise could not be attempted without a first real turn.
+
+**Disposition: all three rows keep their third-pass `RESULT`
+(`claude:E2` `PARTIAL`, `claude:E3` `PARTIAL`, `claude:D4` `PARTIAL`) —
+unchanged.** Their reason text is updated: category stays `host`, but the
+specific blocker is now "this shared host's Claude Code OAuth refresh
+token could not be used by any freshly-spawned `claude` subprocess during
+this pass's window," not the `CLAUDE.md` carve-out (which this pass's
+recipe was specifically designed to route around, and did — the recipe
+change worked exactly as intended; the blocker it hit is a different,
+independent one).
+
+**`gemini:D4` — isolated `$GEMINI_CLI_HOME`, non-interactive.** Working
+directory `D:\ReinstateAcceptanceProjects\v060-w7e\proj-gemini\`
+(`git init`'d), `GEMINI_CLI_HOME=D:\ReinstateAcceptanceProjects\v060-w7e\ghome-d4`
+(a fresh, empty isolated home, per `docs/session-storage/gemini.md`'s
+documented `$GEMINI_CLI_HOME` override):
+
+```
+$ gemini -p "Remember the token <fresh-token>. Reply with exactly that token."
+(exit 41)
+Please set an Auth method in your D:\ReinstateAcceptanceProjects\v060-w7e\ghome-d4\.gemini\settings.json
+or specify one of the following environment variables before running:
+GEMINI_API_KEY, GOOGLE_GENAI_USE_VERTEXAI, GOOGLE_GENAI_USE_GCA
+```
+
+No `GEMINI_API_KEY` (or Vertex/GCA credential) is present in this
+environment. Per `docs/session-storage/gemini.md`'s own documented note,
+Google-account interactive sign-in was shut down for Gemini Code Assist
+individuals on 2026-06-18 and no longer creates sessions at all even when
+available — an API key is Gemini CLI's only non-interactive auth path, and
+this host/environment does not have one. **Disposition: `NOT TESTED`,
+unchanged from the third pass. Category changes from `time` (never
+attempted, in every prior pass) to `host` (attempted this pass, blocked
+by a missing credential this executor cannot obtain).**
+
+**`kimi:D4` — isolated `$KIMI_CODE_HOME`, non-interactive.** Working
+directory `D:\ReinstateAcceptanceProjects\v060-w7e\proj-kimi\`
+(`git init`'d), `KIMI_CODE_HOME=D:\ReinstateAcceptanceProjects\v060-w7e\khome-d4`
+(a fresh, empty isolated home, per `docs/session-storage/kimi.md`'s
+documented `$KIMI_CODE_HOME` override):
+
+```
+$ kimi -p "Remember the token <fresh-token>. Reply with exactly that token."
+kimi version 0.36.1
+error: failed to run prompt: No model configured. Run `kimi` and use
+/login to sign in, then retry; or set default_model in config.toml.
+(exit 1)
+```
+
+Kimi Code CLI's `/login` is a device-code flow that opens a browser and
+requires interactive completion; there is no non-interactive credential
+or API-key path this executor could supply in an isolated home.
+**Disposition: `NOT TESTED`, unchanged from the third pass. Category
+changes from `time` to `host`, same reasoning as `gemini:D4`.**
+
+### Recomputed verdict (fourth pass)
+
+Every row this pass touched kept its prior `RESULT` value, so every count
+in [Verdict](#verdict) is **unchanged**:
+
+- **Device verdict:** `FAIL` — **15** of 200 required rows do not pass,
+  using each row's latest result. Identical to the third pass.
+- **Phase 5 generated matrix (178 rows):** `163 PASS / 1 FAIL / 4 PARTIAL
+  / 10 NOT TESTED` — unchanged.
+- **CLI experience (22 rows):** `22 PASS / 0 FAIL / 0 PARTIAL / 0 NOT
+  TESTED` — unchanged (not re-run this pass).
+- **Combined (200 rows):** `185 PASS / 1 FAIL / 4 PARTIAL / 10 NOT
+  TESTED` — unchanged.
+- **Milestone:** `MATRIX_COMPLETE`, not `RECONCILED` — unchanged; the
+  same 10 rows remain genuinely `NOT TESTED`.
+
+### Dispositions carried (fourth pass)
+
+Every row of the 200 required that is still not `PASS` after this pass,
+with a reason category (`host`: WMI/expired vendor credential/OAuth
+rotation/missing non-interactive auth path; `definitional`: the
+documented reader/contract behavior itself, not a defect; `time`: not
+attempted, given the time available). Rows this pass touched are marked;
+all others carry their third-pass disposition forward unchanged (see
+[Dispositions carried](#dispositions-carried) under the third pass for
+their original text, preserved there per the append-only convention).
+
+| Row | Result | Category | Reason | Touched this pass? |
+| --- | ------ | -------- | ------ | ------------------- |
+| `opencode:C3` | `FAIL` | definitional | `rein search` does not index OpenCode message-body text by design; passes by title instead | No |
+| `claude:E2` | `PARTIAL` | host | this shared host's Claude Code OAuth refresh token could not be used by a freshly-spawned `claude` subprocess this pass, even with the real, non-isolated configuration; no real session id was produced to resume | **Yes** |
+| `claude:E3` | `PARTIAL` | host | same as `claude:E2`, fork variant | **Yes** |
+| `claude:D4` | `PARTIAL` | host | same OAuth blocker prevented a first real turn, so a second turn to truncate could not be produced; fixture-based evidence from the third pass stands unchanged | **Yes** |
+| `qwen:E3` | `PARTIAL` | host | fork mechanics proven distinct; content-inheritance blocked by this host's expired coding-plan credential — not re-run this pass | No |
+| `claude:E5` | `NOT TESTED` | host | this host's WMI and `tasklist` process enumeration both still fail; fail-safe re-verified in the third pass — not re-run this pass | No |
+| `codex:E5` | `NOT TESTED` | host | same as `claude:E5` — not re-run this pass | No |
+| `grok:E5` | `NOT TESTED` | host | same as `claude:E5` — not re-run this pass | No |
+| `qwen:E5` | `NOT TESTED` | host | same as `claude:E5` — not re-run this pass | No |
+| `opencode:E5` | `NOT TESTED` | host | same as `claude:E5` — not re-run this pass | No |
+| `opencode:D4` | `NOT TESTED` | definitional | the installed OpenCode's SQLite-only layout has no JSONL-style boundary to exercise — not re-run this pass | No |
+| `qwen:D4` | `NOT TESTED` | host | Qwen's coding-plan auth exchanges a short proxy token through a live exchange a credential-file copy does not carry — not re-run this pass | No |
+| `qwen:E2` | `NOT TESTED` | host | same expired credential as `qwen:E3` — not re-run this pass | No |
+| `gemini:D4` | `NOT TESTED` | host | no `GEMINI_API_KEY` (or other non-interactive credential) available in this environment; Google-account sign-in no longer creates sessions | **Yes** (category changed from `time`) |
+| `kimi:D4` | `NOT TESTED` | host | Kimi's `/login` is an interactive device-code flow; no non-interactive credential available in this environment | **Yes** (category changed from `time`) |
+
+Still 15 rows total (1 `FAIL`, 4 `PARTIAL`, 10 `NOT TESTED`) — identical
+to the third pass. Two rows' category moved from `time` to `host` because
+this pass attempted them for the first time and hit a concrete,
+reproducible auth blocker rather than simply running out of time.
+
+### Verification
+
+`go test ./internal/doctest/... -count=1` (after this section's edits):
+`ok`, `github.com/HarjjotSinghh/reinstate/internal/doctest`, exit 0.
+
+### Cleanup
+
+`D:\ReinstateAcceptanceProjects\v060-w7e\` — the throwaway projects
+(`proj-claude`, `proj-gemini`, `proj-kimi`), the isolated homes
+(`ghome-d4`, `khome-d4`), the leftover synthetic fixture scaffolding
+found already in progress (`rhome-d4`, `rhome-e1`, `row-d4`,
+`row-e1e2e3`, never used as evidence above), and this pass's own
+transcript/error capture files are deleted at the end of this pass; the
+unzipped `install\` is left in place, as it is the artifact under test,
+not session content. No real Claude Code session was ever produced this
+pass, so there is no real session to leave behind. No transcript text,
+real prompt, real response, credential value, private path, or vendor
+skill/session name from a developer's real tree appears above; every
+token quoted in this section is one this executor generated itself for a
+throwaway, never-authenticated attempt.
+
 ## Terminated device block
 
 > Device testing is terminated for this candidate at the milestone
@@ -2790,3 +3016,18 @@ directory.
   [Correction, 9dcef0c0 (2026-09-06)](#correction-9dcef0c0-2026-09-06).
   The device verdict stands **FAIL — 15 of 200** for the `9dcef0c0`
   candidate, unchanged from the third-pass addendum above.
+- **Fourth-pass addendum (2026-09-06):** a fourth-pass executor
+  re-attempted `claude:E2`/`E3`/`D4` using the real, already-authenticated
+  Claude Code configuration directly (no `CLAUDE_CONFIG_DIR` isolation),
+  and `gemini:D4`/`kimi:D4` for the first time in any pass. All five rows
+  kept their prior `RESULT`; the device verdict stands **FAIL — 15 of
+  200** for the `9dcef0c0` candidate, unchanged. The new finding: this
+  shared host's Claude Code account OAuth refresh token could not be used
+  by any freshly-spawned `claude` subprocess during this pass's window,
+  even with the real configuration and no credential copying — a live,
+  reproducible host constraint the isolation-vs-real recipe change does
+  not route around. `gemini:D4`/`kimi:D4` stay `NOT TESTED`, now for a
+  concrete reason (`host`: no non-interactive credential available in
+  this environment for either vendor) rather than simply not attempted.
+  See [Fourth pass, 9dcef0c0 (2026-09-06)](#fourth-pass-9dcef0c0-2026-09-06)
+  for the full evidence and its own "Dispositions carried" list.
