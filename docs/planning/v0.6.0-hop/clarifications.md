@@ -8,15 +8,18 @@ after it, it is a `v0.6.1`.
 Written 2026-09-05; status lines updated by the coordinator. Executors
 append to the last section only.
 
-**Where things stand (2026-09-06).** Candidate PR
-[#404](https://github.com/HarjjotSinghh/reinstate/pull/404) (draft) carries
-`release/v0.6.0-rc.1`; the deferred-macOS rows are
-[#403](https://github.com/HarjjotSinghh/reinstate/issues/403). Every Go,
-race, lint, vuln, and doc gate is green on the branch; the pre-tag Windows
-matrix (W7) runs next and its report lands on the same branch. After that
-the only steps left before a prerelease are yours: Q5 (sign the tag) and, if
-you want them closed, Q12 (the elevated-shell daemon row) and Q11 (the host
-variables).
+**Where things stand (2026-09-06, evening).** Candidate PR
+[#404](https://github.com/HarjjotSinghh/reinstate/pull/404) is ready for
+review with CI green (GitGuardian aside, Q13); the deferred-macOS rows are
+[#403](https://github.com/HarjjotSinghh/reinstate/issues/403); follow-ups
+are #405–#408. The pre-tag Windows matrix ran four times on 2026-09-06 and
+stands at 185 of 200 rows, with the two Windows product defects it found
+fixed on the branch and every remaining row a host or definitional
+disposition (`RELEASING.md`, candidate gate). What is left is yours, in
+order: merge #404 (Q5 explains squash versus merge commit), sign and push
+`v0.6.0-rc.1` (Q5), fix the host for the tagged run (Q14 WMI, Q16 Claude
+Code sign-in, Q11 the lab variables, Q12 the elevated shell), then run the
+tagged dispatch or tell me to.
 
 ---
 

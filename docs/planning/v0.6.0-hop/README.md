@@ -4,8 +4,10 @@ Ship the hosted-tier client ("Hop") and the interactive CLI as one stable
 release, certified on native Windows x64 now and on Apple Silicon macOS as soon
 as that hardware is back.
 
-**Status:** planned 2026-09-05; execution in progress on
-`release/v0.6.0-rc.1`.
+**Status:** planned 2026-09-05; M0–M3 done 2026-09-06 (PR #404 ready,
+CI green, pre-tag Windows matrix recorded at 185/200 with every remaining
+row a host or definitional disposition); M4 waits on the maintainer's
+signature (clarifications Q5).
 **Baseline:** stable `v0.5.1` (2026-08-21). `v0.5.2-rc.1` (2026-08-23) was
 tagged but never certified on either platform; its content ships here and no
 stable `v0.5.2` is cut.
@@ -193,10 +195,10 @@ Branch conventions:
 
 | M | Deliverable | Gate |
 | - | ----------- | ---- |
-| M0 | Integration branch exists; suite green after the merge | W0 report |
-| M1 | Docs, changelog, fixes, website truth, lab harness merged | Gates 0–3 per branch |
-| M2 | Ranges widened on Windows resume evidence; Hop parity journeys recorded PASS on Windows | Results docs committed |
-| M3 | Release commit; snapshot gates; pre-tag Windows matrix PASS | Results doc + PR open |
+| M0 ✅ | Integration branch exists; suite green after the merge | W0 report |
+| M1 ✅ | Docs, changelog, fixes, website truth, lab harness merged | Gates 0–3 per branch |
+| M2 ✅ | Ranges widened on Windows resume evidence; Hop parity journeys recorded on Windows (14 PASS, H5/H7 PARTIAL) | Results docs committed |
+| M3 ✅ | Release commit; snapshot gates; pre-tag Windows matrix recorded (185/200; dispositions in `RELEASING.md`) | Results doc + PR #404 ready |
 | M4 | Founder signs `v0.6.0-rc.1`; draft published | Release workflow green |
 | M5 | Windows tagged-artifact run PASS | Results doc committed to `main` |
 | M6 | Stable `v0.6.0` promoted, published, packages and website deployed | `RELEASING.md` record |
