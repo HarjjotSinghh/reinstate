@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"io"
 	"os"
 	"path/filepath"
@@ -165,6 +166,41 @@ func TestSnapshotJSONLAppendDoesNotChangeFrozenBoundary(t *testing.T) {
 	if copyBoundary.ByteOffset != frozen.ByteOffset || copyBoundary.SHA256 != frozen.SHA256 {
 		t.Fatalf("copy boundary mismatch: %+v vs %+v", copyBoundary, frozen)
 	}
+}
+
+// expectedJSONLBoundary independently computes the JSONL truncation boundary
+// for raw fixture bytes shaped as N valid, newline-terminated JSON records
+// followed by exactly one torn trailing record (either no terminating
+// newline at all, or a newline-terminated line that is not valid JSON): the
+// shape every committed partial-final-record fixture uses. It walks the file
+// itself with a plain split-and-validate loop — deliberately not the
+// production scanner in boundary.go — and is the cross-check the D4
+// truncation tests compare each reader's own Boundary fields against.
+func expectedJSONLBoundary(t *testing.T, raw []byte) (offset int64, digestHex string) {
+	t.Helper()
+	var pos, lastComplete int64
+	rest := raw
+	for {
+		nl := bytes.IndexByte(rest, '\n')
+		if nl < 0 {
+			break // trailing bytes with no terminating newline: never complete
+		}
+		line := bytes.TrimRight(rest[:nl], " \t\r")
+		consumed := int64(nl + 1)
+		if len(line) > 0 && json.Valid(line) {
+			lastComplete = pos + consumed
+		}
+		pos += consumed
+		rest = rest[nl+1:]
+	}
+	if lastComplete == 0 {
+		t.Fatalf("fixture has no complete, valid JSONL record")
+	}
+	if lastComplete == int64(len(raw)) {
+		t.Fatalf("fixture's last valid record reaches EOF; want a torn trailing record after it")
+	}
+	sum := sha256.Sum256(raw[:lastComplete])
+	return lastComplete, hex.EncodeToString(sum[:])
 }
 
 func TestRegistryRejectsDuplicateAndEmptyNames(t *testing.T) {
