@@ -545,6 +545,20 @@ against the derived CLI release at the immutable deployment URL, promotes only
 that verified deployment, and verifies both live routes again. Never run
 `vercel --prod` directly for a release.
 
+The script runs the website's own check chain locally before it deploys. A
+host that cannot run that chain (native Windows: the SQLite-backed tests and
+the PNG-render reproducibility check are bound to the Linux runner) may
+instead present the CI run that already certified the exact commit:
+
+```bash
+REINSTATE_DEPLOY_CI_RUN=<ci run id> ./scripts/deploy-website-production.sh website-vYYYY.MM.DD.N
+```
+
+The script then requires that run's head to be `HEAD` and its **Website**
+job to have succeeded, and still builds locally and plans IndexNow. It is a
+substitution of evidence, not a skip: the same checks ran, on the runner
+that is the arbiter for them.
+
 For a release candidate, start its committed candidate-specific acceptance
 dispatch only after both live routes install the new exact version. Apple
 Silicon macOS and native Windows x64 own the mandatory two-device matrix;

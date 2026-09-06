@@ -161,15 +161,42 @@ echo "CLI installer release: $cli_version"
   cd website
   npm ci
   node scripts/check-vercel-project-link.mjs
-  npm test
-  npm run build
-  npm run check:seo
-  npm run check:links
-  npm run check:agent-surface
-  npm run check:performance
-  npm run check:freshness
-  npm run check:indexnow
-  npm run check:lighthouse
+  if [ -n "${REINSTATE_DEPLOY_CI_RUN:-}" ]; then
+    # A host that cannot run the website's own check chain (native Windows:
+    # the SQLite-backed and PNG-render tests are bound to the Linux runner)
+    # may present the CI run that already certified this exact commit
+    # instead. The run's head must be HEAD and its Website job must have
+    # succeeded; the local build and the IndexNow plan still run here.
+    head_sha=$(git rev-parse HEAD)
+    gh run view "$REINSTATE_DEPLOY_CI_RUN" \
+      --repo HarjjotSinghh/reinstate \
+      --json headSha,jobs |
+      node -e '
+        const run = JSON.parse(require("fs").readFileSync(0, "utf8"));
+        const head = process.argv[1];
+        const website = (run.jobs || []).find((job) => job.name === "Website");
+        if (run.headSha !== head) {
+          console.error(`CI run is for ${run.headSha}, not HEAD ${head}`);
+          process.exit(1);
+        }
+        if (!website || website.conclusion !== "success") {
+          console.error("CI run has no successful Website job for HEAD");
+          process.exit(1);
+        }
+      ' "$head_sha"
+    echo "website checks certified by CI run $REINSTATE_DEPLOY_CI_RUN for $head_sha"
+    npm run build
+  else
+    npm test
+    npm run build
+    npm run check:seo
+    npm run check:links
+    npm run check:agent-surface
+    npm run check:performance
+    npm run check:freshness
+    npm run check:indexnow
+    npm run check:lighthouse
+  fi
   node scripts/indexnow.mjs \
     --current dist/client/sitemap-index.xml \
     --previous https://reinstate.dev/sitemap-index.xml \
