@@ -259,6 +259,19 @@ url` point it at another one for labs and self-hosters.
 
 ### Changed
 
+- Widen the fail-closed Claude Code compatibility range through `2.1.261` (was
+  `2.1.238`) and the OpenCode range through `1.18.27` (was `1.18.21`). The
+  Windows acceptance host had auto-updated past both ceilings and was refused
+  on resume, as would every user on a current install. Each new ceiling rests
+  on native Windows physical evidence only, under
+  [ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md): on
+  this host a session was created with the installed version, indexed by
+  Reinstate, and resumed through the launch plan Reinstate produced, and the
+  resumed session returned a token that existed only in the original session's
+  history; OpenCode also completed a push and pull round trip between two homes
+  with a stable snapshot revision. The macOS half of that evidence is pending,
+  and `docs/compatibility.md` says so beside each number. Recorded in
+  `docs/testing/results/2026-09-06-windows-range-widening-v060.md`.
 - `rein login` now stops at a **refused** sign-in instead of polling to a
   timeout. The browser half of a sign-in can end without enrolling a device
   — the account is at its plan's device quota, the link was opened too
