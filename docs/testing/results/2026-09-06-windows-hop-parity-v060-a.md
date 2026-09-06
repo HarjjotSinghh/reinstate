@@ -523,7 +523,7 @@ control-plane floor to 2.
 ```text
 $ ./bin/rein account status --json    # device A
 "keyring_present": false, "keyring_refused": true, "key_generation": 2,
-"error": "keyring: key generation is not signed by this account's key: generation 1 does not verify under account key plu9oh6JT+gUsrO8X5f000xiL46Xb9puOoeFzM31o1Q="
+"error": "keyring: key generation is not signed by this account's key: generation 1 does not verify under account key <account-key>"
 exit=0
 $ ./bin/rein devices --json           # same object, same error in keyring_error
 exit=0
@@ -551,7 +551,7 @@ account's object):
 ```text
 $ ./bin/rein account status --json    # device A, original account
 "keyring_present": true, "keyring_refused": true,
-"error": "keyring: the keyring is signed by a different account key: it is signed by account key VFLvwVLPiK2eMUFwqss0caWVYOS+GUSIkGRLddQES24=, not the plu9oh6JT+gUsrO8X5f000xiL46Xb9puOoeFzM31o1Q= expected here"
+"error": "keyring: the keyring is signed by a different account key: it is signed by account key <other-account-key>, not the <account-key> expected here"
 exit=0
 $ ./bin/rein devices --json
 exit=0
@@ -559,7 +559,7 @@ exit=0
 
 **Nothing was written**, verified directly rather than assumed: device
 A's `account.json` after all three attempts still reads
-`"key_generation": 2, "account_key": "plu9oh6JT+gUsrO8X5f000xiL46Xb9puOoeFzM31o1Q=", "control_plane_key_generation": 2`
+`"key_generation": 2, "account_key": "<account-key>", "control_plane_key_generation": 2`
 — its genuine anchor, from before any of the three corruptions, untouched
 by any of the three refused reads. And a write-path command against the
 same re-keyed object refuses too, not only the two diagnostics:

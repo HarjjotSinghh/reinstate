@@ -47,7 +47,7 @@ func ReadSecretFD(envName string) (secret []byte, configured bool, err error) {
 		return nil, false, nil
 	}
 	fd, err := strconv.ParseUint(rawFD, 10, 64)
-	if err != nil {
+	if err != nil || fd > uint64(^uintptr(0)) {
 		return nil, true, fmt.Errorf("%s must be a valid file descriptor", envName)
 	}
 	file, err := duplicatePassphraseFD(uintptr(fd))
