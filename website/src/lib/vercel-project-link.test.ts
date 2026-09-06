@@ -1,17 +1,20 @@
-import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   EXPECTED_VERCEL_PROJECT_LINK,
   validateVercelProjectLink,
 } from '../../scripts/check-vercel-project-link.mjs';
 
-const checker = new URL(
-  '../../scripts/check-vercel-project-link.mjs',
-  import.meta.url,
+// `URL#pathname` keeps a leading "/" before the drive letter on Windows
+// (e.g. "/D:/..."), which Node's module resolver then treats as relative to
+// `cwd` and doubles the drive prefix. `fileURLToPath` returns a real
+// platform path on every OS.
+const checkerPath = fileURLToPath(
+  new URL('../../scripts/check-vercel-project-link.mjs', import.meta.url),
 );
 const temporaryDirectories: string[] = [];
 
@@ -69,7 +72,7 @@ describe('Vercel project link contract', () => {
       JSON.stringify(EXPECTED_VERCEL_PROJECT_LINK),
     );
 
-    const defaultResult = spawnSync(process.execPath, [fileURLToPath(checker)], {
+    const defaultResult = spawnSync(process.execPath, [checkerPath], {
       cwd: root,
       encoding: 'utf8',
     });
@@ -80,7 +83,7 @@ describe('Vercel project link contract', () => {
     writeFileSync(explicitPath, JSON.stringify(EXPECTED_VERCEL_PROJECT_LINK));
     const explicitResult = spawnSync(
       process.execPath,
-      [fileURLToPath(checker), explicitPath],
+      [checkerPath, explicitPath],
       { cwd: root, encoding: 'utf8' },
     );
     expect(explicitResult.status).toBe(0);
@@ -93,7 +96,7 @@ describe('Vercel project link contract', () => {
 
     const malformed = spawnSync(
       process.execPath,
-      [fileURLToPath(checker), malformedPath],
+      [checkerPath, malformedPath],
       { encoding: 'utf8' },
     );
     expect(malformed.status).toBe(1);
@@ -101,7 +104,7 @@ describe('Vercel project link contract', () => {
 
     const unexpected = spawnSync(
       process.execPath,
-      [fileURLToPath(checker), malformedPath, 'extra'],
+      [checkerPath, malformedPath, 'extra'],
       { encoding: 'utf8' },
     );
     expect(unexpected.status).toBe(1);

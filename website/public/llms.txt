@@ -1,12 +1,12 @@
 # Reinstate
 
-> Reinstate is an open-source tool that syncs encrypted coding-agent sessions across devices. The current pre-1.0 release candidate supports same-vendor Claude Code and Codex session transfer across macOS and Windows with user-owned S3-compatible storage.
+> Reinstate is an open-source tool that syncs encrypted coding-agent sessions across devices. Stable Reinstate (`v0.5.1`) supports same-vendor Claude Code and Codex session transfer between macOS and Windows with user-owned S3-compatible storage; the current pre-1.0 release candidate (`v0.6.0-rc.1`, the version the public installers pin) adds OpenCode but is not yet certified, with native Windows x64 acceptance pending and the Apple Silicon macOS run deferred until that hardware returns.
 
-Reinstate is a local command-line tool (`rein`, also `reinstate`), Apache-2.0, written in Go, with no hosted service, account, or API key. It finds and continues local coding-agent sessions, syncs encrypted Claude Code and Codex sessions between a user's own machines through storage they own, and hands a task off to a new Claude Code or Codex session through an explicit structured handoff.
+Reinstate is a local command-line tool (`rein`, also `reinstate`), Apache-2.0, written in Go, requiring no hosted service, account, or API key. It finds and continues local coding-agent sessions, syncs encrypted Claude Code, Codex, and (in the current release candidate) OpenCode sessions between a user's own machines through storage they own, and hands a task off to a new Claude Code or Codex session through an explicit structured handoff. Reinstate Hop, an optional hosted tier built into the client, is not yet open (no pricing, trial, or sign-up); see https://reinstate.dev/docs/hop.
 
 **When to use Reinstate:** the job is about the continuity of a coding-agent session rather than the code. Continue a Claude Code or Codex session on another computer (work and personal, desktop and laptop, macOS and Windows); keep an encrypted, user-owned backup of sessions in Amazon S3, Cloudflare R2, or another S3-compatible bucket; find an earlier local session by project, branch, file, or phrase; resume or fork the newest resumable session from the terminal; or continue the same task in a new Claude Code or Codex session, including across those two vendors.
 
-**When not to use Reinstate:** versioning or sharing source code (use Git), remote desktop or cloud IDE needs, hosted coding agents, translating transcripts between agent vendors, or syncing credentials. Agents other than Claude Code and Codex are local-discovery or handoff-only; check the compatibility data before promising support.
+**When not to use Reinstate:** versioning or sharing source code (use Git), remote desktop or cloud IDE needs, hosted coding agents, translating transcripts between agent vendors, or syncing credentials. Only Claude Code, Codex, and OpenCode reach T5 encrypted sync; every other catalog agent is local-discovery, a handoff source, or a handoff destination only — check the compatibility data before promising support.
 
 **How an agent should call it:** in the user's shell, never over HTTP. Start with `rein version` and `rein doctor`; discover with `rein sessions --json`, `rein search "<terms>" --json`, and `rein inspect <agent>:<id> --json` (no storage, passphrase, or network needed); add `--dry-run` before `rein last`, `rein resume`, `rein fork`, `rein handoff`, `rein push`, or `rein pull`. Full guidance: https://reinstate.dev/agent-instructions.md. Every page below also answers `Accept: text/markdown` at its URL and has a Markdown twin at the same path plus `.md`.
 
@@ -46,6 +46,7 @@ Reinstate is a local command-line tool (`rein`, also `reinstate`), Apache-2.0, w
 - [Restore and resume one session](https://reinstate.dev/docs/restore-a-session): Dry-run, restore, verify, and natively resume on another computer
 - [Structured handoff](https://reinstate.dev/docs/handoff): Continue the same task in a new Claude Code or Codex session without transcript translation
 - [Storage](https://reinstate.dev/docs/storage): Storage fields, object layout, required permissions, and encrypted payloads
+- [Reinstate Hop](https://reinstate.dev/docs/hop): Passwordless sign-in, device pairing, the encrypted locker, verification, and the daemon (release candidate, not yet a stable claim)
 - [Architecture](https://reinstate.dev/docs/architecture): Adapter, path mapping, encryption, and restore design
 - [Adapters](https://reinstate.dev/docs/adapters): Agent compatibility and adapter behavior
 - [Security model](https://reinstate.dev/docs/security-model): Detailed threat model and security boundaries

@@ -16,7 +16,8 @@ const currentReleaseDate = new Intl.DateTimeFormat('en', {
 }).format(new Date(`${product.currentReleaseDate}T00:00:00Z`));
 const answer =
   `The latest published Reinstate tag is ${product.currentRelease}, dated ${currentReleaseDate}. ` +
-  `${product.currentRelease} is the current stable release. It adds Phase 4 structured cross-agent handoff on top of verified resume, local continuity, and encrypted sync after dual-platform tagged-artifact acceptance PASS.`;
+  `${product.currentRelease} is a release candidate, not the current stable release: stable remains ${product.stableRelease}. ` +
+  'It carries Reinstate Hop (cloud continuity) and the interactive CLI experience on top of verified resume, structured handoff, and universal agent coverage; its acceptance is native Windows x64 only, with Apple Silicon macOS deferred.';
 ---
 
 <PublicContentLayout
@@ -50,124 +51,97 @@ const answer =
   <h2 id={releaseAnchor(product.currentRelease)}>
     {product.currentRelease} · {currentReleaseDate}
   </h2>
-  <h3>Structured cross-agent handoff</h3>
+  <p>
+    <code>{product.currentRelease}</code> is a release candidate, not the current stable
+    release: stable remains <code>{product.stableRelease}</code>. Public installers currently
+    pin this candidate while its own acceptance run is pending, not stable. Its acceptance is
+    native Windows x64 only; the Apple Silicon macOS run is deferred until that hardware returns
+    and is not claimed here.
+  </p>
+  <h3>Reinstate Hop</h3>
   <ul>
     <li>
-      <code>rein handoff</code> and <code>rein resume --with</code> start a <em>new</em> Claude Code
-      or Codex session that continues the same task. This is not a resume of the source session.
+      Every hosted journey ships as an ordinary <code>rein</code> command, with no build tag or
+      feature flag: <code>rein login</code> / <code>rein whoami</code> (passwordless sign-in),
+      <code>rein init --hop</code> and <code>rein account init</code> / <code>recover</code> /
+      <code>join</code> / <code>status</code> (the locker and the keyring),
+      <code>rein devices</code> / <code>approve</code> / <code>revoke</code> (pairing and
+      revocation), <code>rein hop status</code> / <code>rein hop credentials</code>,
+      <code>rein sync verify</code>, <code>rein sync migrate --to byo</code>, and
+      <code>rein daemon</code> (a resident sync process; launchd on macOS, systemd
+      <code>--user</code> on Linux, Task Scheduler on Windows).
     </li>
     <li>
-      Claude Code, Codex CLI, Gemini CLI, OpenCode, and Grok Build can be handoff sources. Gemini
-      CLI, OpenCode, and Grok Build are source-only; Claude Code and Codex are the only
-      destinations.
+      <strong>The hosted control plane is not open.</strong> The default control-plane URL,
+      <code>https://hop.reinstate.dev</code>, does not resolve yet; <code>rein login</code>
+      against it reports that in one sentence instead of hanging, and
+      <code>REINSTATE_HOP_URL</code> / <code>[hop] url</code> point the client at a control
+      plane you run yourself or a staging instance. No pricing, billing, trial, or sign-up
+      ships in this release.
     </li>
     <li>
-      Each capsule component is labeled <code>exact</code>, <code>normalized</code>,
-      <code>summarized</code>, <code>referenced</code>, or <code>omitted</code>, so lossy transfer
-      stays visible rather than implied to be complete.
+      OpenCode reaches <strong>T5, encrypted sync</strong> — the first embedded-SQLite agent to
+      sync — and Kimi Code CLI reaches <strong>T2, a handoff source</strong>.
+    </li>
+    <li>
+      See <a href="/docs/hop">the Hop documentation</a> for the full sign-in, device, and locker
+      walkthrough.
     </li>
   </ul>
-  <h3>Fixes carried since v0.4.0-rc.2</h3>
+  <h3>The interactive CLI experience</h3>
   <p>
-    <code>v0.4.0-rc.2</code> was published for testing and <strong>failed</strong> its physical
-    dual-platform acceptance. Stable <code>v0.4.0</code> carries the product fixes for what that run found.
+    Carried unchanged from <code>v0.5.2-rc.1</code>, which this candidate supersedes without a
+    separate stable tag:
   </p>
   <ul>
     <li>
-      A structured handoff from a different Git repository than the source session is refused
-      (C4). Same-repo subdirectories remain allowed.
+      Bare <code>rein</code> opens an interactive session switcher with a readiness verdict per
+      row; a warning checklist replaces retyped <code>--allow-environment-warning</code>
+      identifiers; a handoff studio previews every policy; <code>rein init</code> becomes a
+      wizard with <code>--link</code> / <code>--paste</code> pairing codes; <code>ctrl+k</code>
+      opens a command palette.
     </li>
     <li>
-      Destination launch without a real TTY fails closed with <code>ErrNonInteractiveLaunch</code>
-      / exit <code>7</code> before LookPath or child spawn (F8).
+      Every <code>--json</code> document and non-TTY byte stream stays byte-identical to
+      <code>{product.stableRelease}</code>; <code>--plain</code> and
+      <code>REINSTATE_NO_TUI</code> freeze the old output.
     </li>
     <li>
-      Grok, Gemini, and OpenCode are valid source agents for the busy check, so a Grok-sourced
-      dry-run no longer exits <code>1</code> with <code>unsupported agent "grok"</code>.
-    </li>
-    <li>
-      A timed-out version probe classifies as <code>UNTESTED</code> / Compatibility (exit
-      <code>5</code>), never Runtime or absent.
-    </li>
-    <li>
-      <code>--no-redact</code> is a known flag for Codex and Claude sources; Grok still refuses
-      it with exit <code>2</code>.
-    </li>
-    <li>
-      With vendor isolation variables set, <code>rein list</code> does not show operator-home
-      sessions.
-    </li>
-    <li>
-      Checkpoint policy sidecar/events contain references only, not verbatim conversation
-      bodies, and output includes <code>projection_events</code>.
-    </li>
-    <li>
-      Removing a destination MCP or skill the source still has produces Missing +
-      <code>handoff.capability.*</code> warning IDs; Execute without acknowledging those IDs
-      does not launch.
-    </li>
-  </ul>
-  <h3>Fixes carried since v0.4.0-rc.1</h3>
-  <p>
-    <code>v0.4.0-rc.1</code> was published for testing and <strong>failed</strong> its physical
-    acceptance. Stable <code>v0.4.0</code> carries the fixes for what that run found.
-  </p>
-  <ul>
-    <li>
-      A Claude-sourced handoff no longer requires a version file that real installations never
-      create. Source version now resolves through the same probe <code>rein inspect</code> uses, so
-      Claude-sourced handoffs stop exiting <code>5</code> on every real install.
-    </li>
-    <li>
-      Transcript readers tokenize the paths they emit, so a session that had read a file no longer
-      fails capsule validation.
-    </li>
-    <li>
-      <code>changed_files</code> is populated from the live working tree. Every earlier handoff told
-      the destination <code>Changed files: (none)</code>.
-    </li>
-    <li>
-      A version probe that times out is classified as a failed measurement rather than an absent
-      agent, so a determinable out-of-range agent is refused instead of silently accepted.
-    </li>
-    <li>
-      Capsule validation checks path-typed fields instead of every string, so a message beginning
-      with a slash command no longer aborts the handoff.
+      OpenCode and Grok Build gain verified native resume; OpenCode, Grok Build, and Qwen Code
+      become handoff destinations alongside Claude Code and Codex.
     </li>
   </ul>
   <h3>Continuity and privacy boundary</h3>
   <ul>
     <li>
-      Native execution remains same-vendor; Reinstate does not translate transcripts across agents.
+      Native execution remains same-vendor; Reinstate does not translate transcripts across
+      agents.
     </li>
     <li>
-      Handoff parses the source locally with no source model call, and never writes vendor-internal
-      session files.
+      The Hop locker holds ciphertext plus one documented plaintext object,
+      <code>keyring.v1.json</code>; credentials are never synced.
     </li>
     <li>
-      Capsules stay owner-only under <code>$REINSTATE_HOME/handoffs/</code> and are hard-excluded
-      from sync.
-    </li>
-    <li>
-      Stable <code>{product.stableRelease}</code> verified resume, local continuity, and encrypted
-      sync remain available.
+      Stable <code>{product.stableRelease}</code> verified resume, local continuity, structured
+      handoff, and encrypted sync remain available and unchanged.
     </li>
   </ul>
   <h3>Acceptance boundary</h3>
   <ul>
     <li>
-      Dual-platform tagged-artifact acceptance on Apple Silicon macOS and native Windows x64
-      PASS. <code>v0.4.0-rc.1</code> through <code>v0.4.0-rc.10</code> were published and
-      failed that acceptance; <code>v0.4.0-rc.11</code> passed and was promoted to this stable
-      tag.
+      This candidate's acceptance runs on native Windows x64 (<code>windows/amd64</code>, never
+      WSL) only. Apple Silicon macOS acceptance is deferred until that hardware returns; nothing
+      here implies a macOS result.
     </li>
     <li>
-      Intel macOS and Linux/WSL2 remain optional, unsupported/unverified evidence and do not block
-      this stable release.
+      Verified compatibility ranges widen on native Windows physical resume evidence and are
+      marked "Windows evidence; macOS pending" until the deferred run lands. See the
+      <a href="/compatibility">compatibility matrix</a>.
     </li>
     <li>
-      Gemini CLI, OpenCode, and Grok Build remain handoff sources only. Native resume stays
-      same-vendor.
+      Passing this candidate's Windows run does not by itself authorize stable
+      <code>v0.6.0</code>; the deferred macOS rows and the promotion decision are recorded
+      separately.
     </li>
   </ul>
   <p>

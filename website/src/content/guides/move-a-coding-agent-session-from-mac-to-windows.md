@@ -4,8 +4,8 @@ description: "Move one encrypted Claude Code or Codex session from macOS to nati
 answer: "To move a coding-agent session from Mac to Windows with Reinstate, map one canonical project ID to the Mac and Windows checkout paths, push one selected Claude Code or Codex session from the Mac, join the same encrypted storage profile on native Windows, preview the pull, restore it, and resume it with the same vendor."
 author: "Harjot Singh Rana"
 publishedAt: 2026-07-27
-updatedAt: 2026-07-27
-reviewedAt: 2026-07-27
+updatedAt: 2026-09-06
+reviewedAt: 2026-09-06
 tags: ["macOS", "Windows", "path remapping", "session sync", "Claude Code", "Codex CLI"]
 targetQuery: "move coding agent session from Mac to Windows"
 searchIntent: "platform-specific"
@@ -30,7 +30,7 @@ estimatedMinutes: 17
 estimatedTaskMinutes: 45
 prerequisites:
   - "One native macOS computer and one native 64-bit Windows 11 computer you are authorized to configure"
-  - "Reinstate v0.4.0 plus a tested Claude Code or Codex CLI version on both computers"
+  - "Reinstate (stable v0.5.1, or the installer's v0.6.0-rc.1 candidate) plus a tested Claude Code or Codex CLI version on both computers"
   - "The same Git project checked out normally on both computers, even if its absolute paths differ"
   - "A private S3-compatible profile, its non-secret coordinates, and credentials for both OS keyrings"
   - "One harmless source session ID and a long encryption passphrase stored outside Reinstate"
@@ -55,7 +55,9 @@ howToSteps:
 ## What this guide proves—and what it does not
 
 This is an operator workflow for moving one supported, vendor-native session
-from macOS to **native Windows 11** through Reinstate `v0.4.0`. It uses
+from macOS to **native Windows 11** through Reinstate (stable `v0.5.1`, or
+the installer's `v0.6.0-rc.1` candidate, whose tagged-artifact acceptance is
+pending on native Windows x64 with macOS deferred). It uses
 the same commands and stop conditions as the repository's
 [Phase 1 Mac/Windows acceptance runbook](https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/phase-1-mac-windows-acceptance.md),
 but completing it on personal devices is not release certification.
