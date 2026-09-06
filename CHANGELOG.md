@@ -7,47 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-
-- **Cline, Cursor, and OpenCode `search_text` now indexes message body,
-  not just id/title/project/workspace** (closes #405, fixes Phase 5
-  Matrix rows `cline:C3`, `cursor:C3`, `opencode:C3` — `cline:C3` and
-  `cursor:C3` were left as a documented gap in `v0.6.0-rc.2`).
-  `rein search` now finds a session by a word or phrase from what the
-  user actually typed, for all three sources, matching the policy
-  Claude Code's own reader already applied: only user-authored text is
-  indexed, never assistant replies, through the same bounded,
-  sanitized builder every reader uses (`sessionindex.BuildSearchText` /
-  `sources.BoundedText`), capped at the shared `MaxSearchTextBytes`
-  budget.
-  - **Cline** streams each session's `*.messages.json` sidecar once,
-    collecting `message_count` and search text together instead of two
-    passes; one oversized message still counts as a turn but
-    contributes no text.
-  - **Cursor** reads the same recognized `store.db` table
-    `message_count` already comes from, now also requiring a
-    recognized author column (`role`/`author`/`sender`/`type`) and a
-    recognized body column (`text`/`content`/`body`/`message`) before
-    indexing any text; a table with neither keeps the pre-existing
-    count-only behavior rather than guessing at an unrecognized
-    schema. Each row's own body column is additionally bounded to
-    4 MiB via `substr(column, 1, ?)` in the SQL itself, so one
-    pathologically large row (a pasted log saved as a single message)
-    is never pulled into process memory whole.
-  - **OpenCode**'s embedded-SQLite source reads the same
-    `message`+`part` join its own sync adapter already uses, one
-    query per session, for `"text"`-typed parts of `"role":"user"`
-    messages; a store still on the legacy `session_message`-only
-    schema (no `part` table) is unaffected. Each row's `message.data`
-    and `part.data` blobs are likewise bounded to 4 MiB apiece via
-    `substr(...)` in the SQL itself; a blob truncated at that bound no
-    longer parses as JSON, so it contributes no text rather than a
-    garbled fragment. OpenCode's CLI-query source (unused by the
-    shipped catalog descriptor) is unchanged: `opencode session list`
-    returns metadata only, never message bodies.
-  - All three sources now also set `PromptPreview` from the first
-    user message when the vendor recorded no usable title.
-
 ## [0.6.0-rc.2] - 2026-09-07
 
 Release candidate. Stable remains `v0.5.1`; the public installers now pin
@@ -59,8 +18,12 @@ established that Reinstate Hop and the interactive CLI work end to end on
 native Windows: all 22 CLI-experience rows and all 16 Hop parity journey
 rows passed. It also found 7 required-row failures, all in the Phase 5
 generated matrix, none of them touching Hop, the daemon, sync, or the
-interactive surfaces. This candidate fixes exactly those seven rows, plus
-one fixture gap the same run found, and changes nothing else: no agent's
+interactive surfaces. This candidate fixes those seven rows, plus one
+fixture gap the same run found. It also carries one addition beyond that
+scope: `search_text` now indexes message body for Cline, Cursor, and
+OpenCode (closes #405), so `cline:C3`/`cursor:C3` — shipped as a known,
+documented gap — and `opencode:C3` — which previously passed by title
+only — now pass by message text too. Nothing else changes: no agent's
 tier moves, and no compatibility range widens.
 
 - **Cursor CLI session isolation.** `CURSOR_CONFIG_DIR` now isolates every
@@ -107,10 +70,6 @@ tier moves, and no compatibility range widens.
   which the existing macOS-shaped fixture already satisfies under the same
   conditions.
 
-`cline:C3`/`cursor:C3` (search indexes id, title, project, and workspace
-only, never message body, mirroring the pre-existing `opencode:C3` gap) are
-**not** fixed by this candidate and remain a known, documented gap.
-
 **Not yet certified.** Native Windows x64 tagged-artifact acceptance is what
 this candidate exists to enable; macOS acceptance is deferred under
 [ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md) until
@@ -143,6 +102,21 @@ that hardware returns. Stable remains `v0.5.1`.
   Windows — that route is gated by a git-root directory name match
   (`sameProjectLeaf`), identically on every OS, which the existing
   macOS-shaped fixture already satisfies under the same conditions.
+- Cline, Cursor, and OpenCode `search_text` now indexes message body, not
+  just id/title/project/workspace (closes #405), fixing Phase 5 Matrix rows
+  `cline:C3`, `cursor:C3`, and `opencode:C3` (`opencode:C3` previously
+  passed by title only): `rein search` now finds a session by a word or
+  phrase from what the user actually typed, for all three sources — only
+  user-authored text is indexed, never assistant replies. Cline streams
+  each session's `*.messages.json` sidecar once; Cursor reads the same
+  recognized `store.db` table `message_count` already comes from, now also
+  requiring a recognized author and body column; OpenCode's embedded-SQLite
+  source reads the same `message`+`part` join its own sync adapter already
+  uses. Every row's own text is bounded to 4 MiB at the SQL layer via
+  `substr(column, 1, ?)` before it ever reaches Go, and the combined result
+  stays within the shared `MaxSearchTextBytes` budget. All three sources
+  also now set `PromptPreview` from the first user message when the vendor
+  recorded no usable title.
 
 ### Added
 

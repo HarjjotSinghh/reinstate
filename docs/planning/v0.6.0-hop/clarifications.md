@@ -18,12 +18,29 @@ the Phase 5 generated matrix (Cursor CLI root-env isolation, Cline/Cursor
 determinism), plus one fixture gap (`grok:D4`, no committed
 `partial-final-record` fixture). That report does not authorize stable
 `v0.6.0`. `v0.6.0-rc.2` (2026-09-07) is the corrective candidate: it fixes
-exactly those seven rows and the fixture gap, changes no agent's tier, and
-widens no compatibility range (`RELEASING.md`, "v0.6.0-rc.1 candidate
-evidence" and "v0.6.0-rc.2 candidate gate"). `cline:C3`/`cursor:C3` (search
-excludes message body) remain a known gap, not fixed by this candidate.
-What is left is yours, in order: merge the `v0.6.0-rc.2` release commit,
-sign and push the `v0.6.0-rc.2` tag (Q5), then run the tagged dispatch
+those seven rows and the fixture gap, plus one addition beyond that scope —
+`cline:C3`/`cursor:C3` (search excluded message body) and the pre-existing
+`opencode:C3` gap (passed by title only) are now fixed too (closes #405,
+`search_text` indexes message body for all three sources) — changes no
+agent's tier, and widens no compatibility range (`RELEASING.md`,
+"v0.6.0-rc.1 candidate evidence" and "v0.6.0-rc.2 candidate gate").
+
+Two dispositions were adopted autonomously (Q19) so the stable gate is not
+permanently unreachable on this host: `opencode:D4` is `N/A (definitional)`
+— its SQLite-only store has no JSONL boundary the row's mechanism can apply
+to, regardless of fix — excluded from the required row count (215 of 216
+required going forward); and a `qwen:E1`/`E2`/`E3`/`E5` row that cannot
+complete because the acceptance host's Qwen Code OAuth token is expired is
+recorded `NOT TESTED (host credential)` and does not block the verdict,
+since Qwen Code is an optional agent (Q18). Full rules in
+[`docs/testing/v0.6.0-windows-acceptance.md`](../../testing/v0.6.0-windows-acceptance.md#dispositions-that-do-not-block-the-device-verdict)
+and [ADR 0005's amendment](../../adr/0005-v0.6.0-scope-and-windows-first-acceptance.md#amendment-2026-09-07).
+
+What is left is yours, in order: refresh the Qwen Code login on the
+acceptance host if you want those four rows to `PASS` outright rather than
+carry the host-credential disposition (Q18); accept or reject the two
+dispositions above (Q19); merge the `v0.6.0-rc.2` release commit; sign and
+push the `v0.6.0-rc.2` tag (Q5); then run the tagged dispatch
 ([`docs/testing/v0.6.0-rc.2-agent-verification-prompts.md`](../../testing/v0.6.0-rc.2-agent-verification-prompts.md))
 against native Windows x64, or tell me to.
 
@@ -204,6 +221,42 @@ trust anchor, so three steps are yours:
    copy. Consider a hardware-backed key later.
 
 Then I sign and push `v0.6.0-rc.1` (or you run the two commands from Q5).
+
+## Q18 — Refresh the Qwen Code login on the acceptance host
+
+Non-interactive `qwen -p` on the acceptance host returns `[API Error: 401
+invalid access token or token expired]`. Qwen Code's OAuth token there is
+expired, and refreshing it requires an interactive browser login — nothing
+I can do headlessly. Without a refresh, `qwen:E1`/`E2`/`E3`/`E5` cannot
+complete this candidate's tagged run and are recorded `NOT TESTED (host
+credential)` (Q19's disposition rule), which does not block the verdict
+since Qwen Code is an optional agent, but does mean those four rows stay
+untested rather than passing outright. Please sign into Qwen Code
+interactively on the acceptance host before, or during, the `v0.6.0-rc.2`
+tagged run, if you want those rows to actually run.
+
+## Q19 — Two disposition rules adopted without your sign-off, to unblock the stable gate
+
+As written, the required-row rule in ADR 0005 D2 makes a `PASS` device
+verdict impossible on this host: `opencode:D4`'s mechanism (a byte-exact
+JSONL truncation boundary) cannot exist for OpenCode's SQLite-only store,
+regardless of any fix, and `qwen:E1`/`E2`/`E3`/`E5` cannot complete while
+the host's Qwen Code credential is expired (Q18) and nobody but you can
+refresh it. Neither gap is a product defect or something an executor can
+close. I adopted two narrow dispositions autonomously, recorded as an
+[amendment to ADR 0005](../../adr/0005-v0.6.0-scope-and-windows-first-acceptance.md#amendment-2026-09-07)
+and detailed in
+[`docs/testing/v0.6.0-windows-acceptance.md`](../../testing/v0.6.0-windows-acceptance.md#dispositions-that-do-not-block-the-device-verdict):
+a row whose mechanism cannot exist for an agent's store layout is `N/A
+(definitional)` and excluded from the required count (today, only
+`opencode:D4`); and a row for an optional agent that cannot complete for
+lack of a host credential is `NOT TESTED (host credential)` and does not
+block the verdict, provided every required agent and at least one other
+optional agent at the same tier pass the same row. **You may reject
+either or both.** If you reject them, the stable gate waits for the Qwen
+Code login (Q18) to actually complete those four rows, and `opencode:D4`
+stays listed as `N/A` regardless — no fix makes a JSONL boundary exist in a
+store that has none.
 
 ## Q13 — GitGuardian on the candidate PR
 

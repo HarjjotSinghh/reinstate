@@ -9,10 +9,16 @@ as that hardware is back.
 201/216 required rows `PASS` (every Hop and CLI-experience row passed; all 7
 failures were in the Phase 5 generated matrix). `v0.6.0-rc.2` (2026-09-07) is
 the corrective candidate, fixing those 7 rows plus one fixture gap the same
-run found; it changes no agent tier and widens no compatibility range. What
-remains: a tagged-artifact Windows run against `v0.6.0-rc.2`, and the
-Apple Silicon macOS rows, still deferred until that hardware returns
-(#403).
+run found, plus one addition beyond that scope (`search_text` now indexes
+message body for Cline, Cursor, and OpenCode, closes #405); it changes no
+agent tier and widens no compatibility range. Under the disposition rules in
+[`docs/testing/v0.6.0-windows-acceptance.md`](../../testing/v0.6.0-windows-acceptance.md#dispositions-that-do-not-block-the-device-verdict),
+stable requires **215 of 216** rows `PASS` (`opencode:D4` is
+`N/A (definitional)`, excluded from the required count), plus a `qwen`
+host-credential disposition if the acceptance host's Qwen Code login is
+still unrefreshed. What remains: a tagged-artifact Windows run against
+`v0.6.0-rc.2`, and the Apple Silicon macOS rows, still deferred until that
+hardware returns (#403).
 **Baseline:** stable `v0.5.1` (2026-08-21). `v0.5.2-rc.1` (2026-08-23) was
 tagged but never certified on either platform; its content ships here and no
 stable `v0.5.2` is cut.

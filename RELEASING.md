@@ -498,9 +498,12 @@ Windows run found:
   resulting capsule's byte-exact truncation offset and SHA-256, closing the
   `grok:D4` fixture gap.
 
-`cline:C3` and `cursor:C3` (search excludes message body) are **not**
-addressed by this candidate; they remain a known, documented gap alongside
-the pre-existing `opencode:C3` gap, tracked for a later release.
+`cline:C3`, `cursor:C3`, and the pre-existing `opencode:C3` gap (search
+excluded message body, indexing id/title/project/workspace only) are now
+fixed as well (closes #405): all three sources index user-authored message
+text through the same bounded, sanitized builder every reader uses, capped
+at `MaxSearchTextBytes`; `opencode:C3`, which previously passed by title
+match alone, now also matches on body.
 
 Governed by the same
 [`docs/testing/v0.6.0-windows-acceptance.md`](docs/testing/v0.6.0-windows-acceptance.md)
@@ -509,7 +512,14 @@ contract, specialised by
 `rein doctor --agents --acceptance-matrix` on a binary built from this tree
 reports **178** Phase 5 rows (core `A:10, B:9, G:8, H:6` = 33, unchanged from
 `v0.6.0-rc.1`), plus the 22-row CLI matrix and the 16 Hop parity rows —
-**216** required rows in total, the same count as `v0.6.0-rc.1`.
+**216** rows in total, the same count as `v0.6.0-rc.1`, of which
+`opencode:D4` is `N/A (definitional)` under the disposition rules in
+[`docs/testing/v0.6.0-windows-acceptance.md`](docs/testing/v0.6.0-windows-acceptance.md#dispositions-that-do-not-block-the-device-verdict):
+**215 required**. A `qwen:E1`/`E2`/`E3`/`E5` row unable to complete because
+the host's Qwen Code credential is expired is recorded
+`NOT TESTED (host credential)` under the same rules and does not block the
+verdict, provided every required agent and at least one other T4 agent
+(`grok`) pass the same rows.
 
 Publication means ready for tagged-artifact acceptance. It does **not**
 authorize stable `v0.6.0`. Current stable remains `v0.5.1`.
