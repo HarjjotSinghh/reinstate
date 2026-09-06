@@ -3,6 +3,7 @@ package transcript
 import (
 	"context"
 	"errors"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -120,6 +121,86 @@ func TestGrokReaderParsesBasicAndCompactedFixtures(t *testing.T) {
 			for i := range events {
 				if again[i].ID != events[i].ID || again[i].ContentHash != events[i].ContentHash {
 					t.Fatalf("parse not deterministic at %d", i)
+				}
+			}
+		})
+	}
+}
+
+// TestGrokReaderPartialFinalRecordExcluded covers grok:D4: updates.jsonl (the
+// boundary authority) truncated mid-record, on both a macOS-shaped and a
+// native-Windows-shaped workspace, with the boundary offset and the SHA-256
+// of the bytes before it cross-checked against an independent computation.
+func TestGrokReaderPartialFinalRecordExcluded(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name        string
+		root        string
+		wantSession string
+	}{
+		{
+			name:        "macos",
+			root:        filepath.Join("..", "..", "testdata", "handoff", "grok", "partial-final-record"),
+			wantSession: "01987654-pf0m-0000-0000-000000000001",
+		},
+		{
+			name:        "windows",
+			root:        filepath.Join("..", "..", "testdata", "handoff", "grok", "partial-final-record-windows"),
+			wantSession: "01987654-pf0w-0000-0000-000000000002",
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			result, err := sessionindex.NewGrokSource(tc.root).Scan(context.Background())
+			if err != nil {
+				t.Fatalf("Scan() error = %v", err)
+			}
+			if len(result.Records) != 1 {
+				t.Fatalf("records = %d, want 1", len(result.Records))
+			}
+			record := result.Records[0]
+			if record.ID != tc.wantSession {
+				t.Fatalf("record ID = %q, want %q", record.ID, tc.wantSession)
+			}
+
+			reader := NewGrokReader()
+			boundary, err := reader.Snapshot(context.Background(), record)
+			if err != nil {
+				t.Fatalf("Snapshot() error = %v", err)
+			}
+			if !boundary.Partial {
+				t.Fatal("Partial = false, want true")
+			}
+			if !strings.HasSuffix(boundary.Path(), "updates.jsonl") {
+				t.Fatalf("boundary path = %q, want the updates.jsonl authority file", boundary.Path())
+			}
+
+			raw, err := os.ReadFile(boundary.Path())
+			if err != nil {
+				t.Fatalf("read fixture: %v", err)
+			}
+			wantOffset, wantDigest := expectedJSONLBoundary(t, raw)
+			if boundary.ByteOffset != wantOffset {
+				t.Fatalf("ByteOffset = %d, want %d (independently computed)", boundary.ByteOffset, wantOffset)
+			}
+			if boundary.SHA256 != wantDigest {
+				t.Fatalf("SHA256 = %q, want %q (independently computed)", boundary.SHA256, wantDigest)
+			}
+			if recomputed, err := DigestPrefix(boundary); err != nil || recomputed != wantDigest {
+				t.Fatalf("DigestPrefix = %q, err=%v, want %q", recomputed, err, wantDigest)
+			}
+
+			events, _, err := reader.Parse(context.Background(), boundary)
+			if err != nil {
+				t.Fatalf("Parse() error = %v", err)
+			}
+			for _, ev := range events {
+				for _, block := range ev.Blocks {
+					if strings.Contains(block.Text, "TRUNCATED_PARTIAL_ONLY") {
+						t.Fatalf("partial record surfaced: %+v", ev)
+					}
 				}
 			}
 		})
