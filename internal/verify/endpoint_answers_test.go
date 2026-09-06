@@ -107,8 +107,8 @@ func TestAnsweredIsNotAnAllowlistOfNames(t *testing.T) {
 		{name: "an API code with no case", err: &backend.APIAnswer{Code: "AccountProblem"}, want: true},
 		{name: "an API code wrapped by a caller", err: errors.Join(errors.New("backend: list"), &backend.APIAnswer{Code: "RequestTimeTooSkewed"}), want: true},
 		{name: "this package's own size limit", err: ErrObjectTooLarge, want: true},
-		{name: "a request that timed out", err: timeout, want: false},
-		{name: "a connection that dropped", err: dropped, want: false},
+		{name: "a request that timed out", err: errTimeout, want: false},
+		{name: "a connection that dropped", err: errDropped, want: false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := answered(tc.err); got != tc.want {

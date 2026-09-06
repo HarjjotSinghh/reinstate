@@ -62,8 +62,8 @@ func TestUnreachableIsAboutTheEndpointAndNotTheFilesystem(t *testing.T) {
 		{name: "a missing local file", err: &fs.PathError{Op: "open", Path: "account.json", Err: syscall.ENOENT}, want: false},
 		{name: "a local file this user may not read", err: &fs.PathError{Op: "open", Path: "device.key", Err: syscall.EACCES}, want: false},
 		{name: "a missing local file, wrapped", err: errors.Join(errors.New("load the device key"), &fs.PathError{Op: "open", Path: "device.key", Err: syscall.ENOENT}), want: false},
-		{name: "a request that timed out", err: timeout, want: true},
-		{name: "a connection that dropped", err: dropped, want: true},
+		{name: "a request that timed out", err: errTimeout, want: true},
+		{name: "a connection that dropped", err: errDropped, want: true},
 		{name: "a refusal the endpoint gave", err: nil, want: false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

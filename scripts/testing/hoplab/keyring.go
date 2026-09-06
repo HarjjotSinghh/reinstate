@@ -28,7 +28,7 @@ import (
 // lives and whether it is there.
 
 func keyringUsage(w *os.File) {
-	fmt.Fprint(w, `usage: hoplab keyring <show|clear> -root <dir> -device <name>
+	_, _ = fmt.Fprint(w, `usage: hoplab keyring <show|clear> -root <dir> -device <name>
 
 Optional diagnostic only -- no pairing flow needs this any more (every
 device's REINSTATE_HOME already gets its own OS-keyring entry; see

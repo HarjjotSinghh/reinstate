@@ -30,7 +30,7 @@ import (
 // unset, once this has run) afterward. This only removes what every test
 // would otherwise inherit unasked from whatever shell invoked `go test`.
 func TestMain(m *testing.M) {
-	os.Unsetenv("XDG_DATA_HOME")
-	os.Unsetenv("REINSTATE_MEMORY_BACKEND_DIR")
+	_ = os.Unsetenv("XDG_DATA_HOME")
+	_ = os.Unsetenv("REINSTATE_MEMORY_BACKEND_DIR")
 	os.Exit(m.Run())
 }

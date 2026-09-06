@@ -78,9 +78,9 @@ func hopLabEnv(s LabState, h DeviceHome) []envPair {
 func printEnv(w io.Writer, shell string, pairs []envPair) {
 	for _, p := range pairs {
 		if shell == "powershell" {
-			fmt.Fprintf(w, "$env:%s = '%s'\n", p.Key, psQuote(p.Value))
+			_, _ = fmt.Fprintf(w, "$env:%s = '%s'\n", p.Key, psQuote(p.Value))
 		} else {
-			fmt.Fprintf(w, "export %s=%q\n", p.Key, p.Value)
+			_, _ = fmt.Fprintf(w, "export %s=%q\n", p.Key, p.Value)
 		}
 	}
 }
@@ -140,9 +140,9 @@ var ambientOverrideEnv = []string{
 func printEnvClear(w io.Writer, shell string, keys []string) {
 	for _, k := range keys {
 		if shell == "powershell" {
-			fmt.Fprintf(w, "Remove-Item Env:%s -ErrorAction SilentlyContinue\n", k)
+			_, _ = fmt.Fprintf(w, "Remove-Item Env:%s -ErrorAction SilentlyContinue\n", k)
 		} else {
-			fmt.Fprintf(w, "unset %s\n", k)
+			_, _ = fmt.Fprintf(w, "unset %s\n", k)
 		}
 	}
 }

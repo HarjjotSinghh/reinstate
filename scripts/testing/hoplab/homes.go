@@ -164,7 +164,7 @@ func (h DeviceHome) seedOpenCode(sqlFixturePath, suffix string) error {
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	if _, err := db.Exec(script); err != nil {
 		return fmt.Errorf("hydrate %s: %w", dbPath, err)
 	}

@@ -79,7 +79,7 @@ func (d *hopDevice) run(args ...string) (stdout, stderr string, code int) {
 			if err != nil {
 				return err
 			}
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			return nil
 		},
 		LoginPollSleep: d.loginSleepFunc(),
@@ -249,7 +249,7 @@ func hydrateOpenCodeSchema(t *testing.T, dbPath, sqlPath string) {
 			}
 		}
 		s := strings.TrimSpace(strings.Join(lines, "\n"))
-		if s == "" || !(strings.HasPrefix(s, "CREATE") || strings.HasPrefix(s, "INSERT INTO migration")) {
+		if s == "" || (!strings.HasPrefix(s, "CREATE") && !strings.HasPrefix(s, "INSERT INTO migration")) {
 			continue
 		}
 		if _, err := db.Exec(s); err != nil {
@@ -328,7 +328,7 @@ func TestHopFirstPushJourney(t *testing.T) {
 		}
 		body := new(bytes.Buffer)
 		_, _ = body.ReadFrom(rc)
-		rc.Close()
+		_ = rc.Close()
 		for _, plaintext := range []string{"synthetic first push claude", "synthetic first push codex", "Synthetic OpenCode fixture request", recoveryCode} {
 			if strings.Contains(body.String(), plaintext) {
 				t.Fatalf("plaintext %q in the locker at %s", plaintext, o.Key)

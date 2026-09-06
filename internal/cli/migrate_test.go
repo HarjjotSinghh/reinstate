@@ -80,7 +80,7 @@ func (j *migrateJourney) runIn(home string, memoryBackend bool, passphrase strin
 			if err != nil {
 				return err
 			}
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			return nil
 		},
 		LoginPollSleep: func(ctx context.Context, _ time.Duration) error { return ctx.Err() },

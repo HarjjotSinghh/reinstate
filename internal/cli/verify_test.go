@@ -91,7 +91,7 @@ func (j *lockerJourney) object(key string) []byte {
 	if err != nil {
 		j.t.Fatalf("locker object %s: %v", key, err)
 	}
-	defer rc.Close()
+	defer func() { _ = rc.Close() }()
 	var buf bytes.Buffer
 	_, _ = buf.ReadFrom(rc)
 	return buf.Bytes()

@@ -24,7 +24,7 @@ func TestAnyBucketIsolatesBuckets(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return resp.StatusCode
 	}
 	if code := do(http.MethodPut, "/lk-one/keyring.v1.json", "{}"); code != http.StatusOK {

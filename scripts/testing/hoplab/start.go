@@ -89,7 +89,7 @@ func runStart(o startOptions) (*startResult, error) {
 	lockCmd.Stdout = logF
 	lockCmd.Stderr = logF
 	if err := lockCmd.Start(); err != nil {
-		logF.Close()
+		_ = logF.Close()
 		return nil, fmt.Errorf("start fakelocker: %w", err)
 	}
 
@@ -106,14 +106,14 @@ func runStart(o startOptions) (*startResult, error) {
 	hopdCmd.Stderr = logF
 	if err := hopdCmd.Start(); err != nil {
 		_ = lockCmd.Process.Kill()
-		logF.Close()
+		_ = logF.Close()
 		return nil, fmt.Errorf("start hopd: %w", err)
 	}
 
 	if err := waitHealthy(baseURL+"/healthz", 20*time.Second); err != nil {
 		_ = hopdCmd.Process.Kill()
 		_ = lockCmd.Process.Kill()
-		logF.Close()
+		_ = logF.Close()
 		return nil, fmt.Errorf("hopd did not become healthy: %w (see %s)", err, logPath)
 	}
 
@@ -147,17 +147,17 @@ func (r *startResult) runForeground(out io.Writer) error {
 	go func() { hopdDone <- r.hopdCmd.Wait() }()
 	go func() { lockDone <- r.lockCmd.Wait() }()
 
-	fmt.Fprintf(out, "hoplab: hopd pid %d on %s, fakelocker pid %d on %s; log at %s\n",
+	_, _ = fmt.Fprintf(out, "hoplab: hopd pid %d on %s, fakelocker pid %d on %s; log at %s\n",
 		r.hopdCmd.Process.Pid, r.state.HopdAddr, r.lockCmd.Process.Pid, r.state.LockerAddr, r.state.HopdLog)
-	fmt.Fprintln(out, "hoplab: Ctrl+C, or `hoplab stop --root "+r.state.Root+"` from another terminal, stops both.")
+	_, _ = fmt.Fprintln(out, "hoplab: Ctrl+C, or `hoplab stop --root "+r.state.Root+"` from another terminal, stops both.")
 
 	select {
 	case <-ctx.Done():
-		fmt.Fprintln(out, "hoplab: stopping (Ctrl+C)...")
+		_, _ = fmt.Fprintln(out, "hoplab: stopping (Ctrl+C)...")
 	case err := <-hopdDone:
-		fmt.Fprintf(out, "hoplab: hopd exited on its own: %v\n", err)
+		_, _ = fmt.Fprintf(out, "hoplab: hopd exited on its own: %v\n", err)
 	case err := <-lockDone:
-		fmt.Fprintf(out, "hoplab: fakelocker exited on its own: %v\n", err)
+		_, _ = fmt.Fprintf(out, "hoplab: fakelocker exited on its own: %v\n", err)
 	}
 	r.stop()
 	_ = unregisterLab(r.state.Root)
@@ -170,7 +170,7 @@ func (r *startResult) stop() {
 	_, _ = r.hopdCmd.Process.Wait()
 	_, _ = r.lockCmd.Process.Wait()
 	if r.hopdLogF != nil {
-		r.hopdLogF.Close()
+		_ = r.hopdLogF.Close()
 	}
 }
 
@@ -212,7 +212,7 @@ func runStopAll(out io.Writer) error {
 		return err
 	}
 	if len(entries) == 0 {
-		fmt.Fprintln(out, "hoplab: no labs recorded in the process registry")
+		_, _ = fmt.Fprintln(out, "hoplab: no labs recorded in the process registry")
 		return nil
 	}
 	stopped, stale := 0, 0
@@ -229,14 +229,14 @@ func runStopAll(out io.Writer) error {
 		}
 		if live {
 			stopped++
-			fmt.Fprintf(out, "hoplab: stopped lab at %s (hopd pid %d, fakelocker pid %d)\n", e.Root, e.HopdPID, e.LockerPID)
+			_, _ = fmt.Fprintf(out, "hoplab: stopped lab at %s (hopd pid %d, fakelocker pid %d)\n", e.Root, e.HopdPID, e.LockerPID)
 		} else {
 			stale++
 		}
 		_ = unregisterLab(e.Root)
 		_ = removeState(e.Root)
 	}
-	fmt.Fprintf(out, "hoplab: stopped %d lab(s); removed %d stale registry entry(ies) whose processes were already gone\n", stopped, stale)
+	_, _ = fmt.Fprintf(out, "hoplab: stopped %d lab(s); removed %d stale registry entry(ies) whose processes were already gone\n", stopped, stale)
 	return nil
 }
 
@@ -247,7 +247,7 @@ func waitHealthy(url string, timeout time.Duration) error {
 	for time.Now().Before(deadline) {
 		resp, err := client.Get(url)
 		if err == nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			if resp.StatusCode == http.StatusOK {
 				return nil
 			}

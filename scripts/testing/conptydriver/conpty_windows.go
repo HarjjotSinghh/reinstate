@@ -75,8 +75,8 @@ func StartConsole(args []string, cols, rows int, dir string) (Console, error) {
 	}
 	ptyOutR, ptyOutW, err := os.Pipe()
 	if err != nil {
-		ptyInR.Close()
-		ptyInW.Close()
+		_ = ptyInR.Close()
+		_ = ptyInW.Close()
 		return nil, fmt.Errorf("allocate console output pipe: %w", err)
 	}
 
@@ -85,29 +85,29 @@ func StartConsole(args []string, cols, rows int, dir string) (Console, error) {
 		windows.Coord{X: int16(cols), Y: int16(rows)},
 		windows.Handle(ptyInR.Fd()), windows.Handle(ptyOutW.Fd()), 0, &hpc,
 	); err != nil {
-		ptyInR.Close()
-		ptyInW.Close()
-		ptyOutR.Close()
-		ptyOutW.Close()
+		_ = ptyInR.Close()
+		_ = ptyInW.Close()
+		_ = ptyOutR.Close()
+		_ = ptyOutW.Close()
 		return nil, fmt.Errorf("CreatePseudoConsole: %w", err)
 	}
 
 	attrList, err := windows.NewProcThreadAttributeList(1)
 	if err != nil {
 		windows.ClosePseudoConsole(hpc)
-		ptyInR.Close()
-		ptyInW.Close()
-		ptyOutR.Close()
-		ptyOutW.Close()
+		_ = ptyInR.Close()
+		_ = ptyInW.Close()
+		_ = ptyOutR.Close()
+		_ = ptyOutW.Close()
 		return nil, fmt.Errorf("NewProcThreadAttributeList: %w", err)
 	}
 	if err := updateProcThreadAttributePseudoConsole(attrList.List(), hpc); err != nil {
 		attrList.Delete()
 		windows.ClosePseudoConsole(hpc)
-		ptyInR.Close()
-		ptyInW.Close()
-		ptyOutR.Close()
-		ptyOutW.Close()
+		_ = ptyInR.Close()
+		_ = ptyInW.Close()
+		_ = ptyOutR.Close()
+		_ = ptyOutW.Close()
 		return nil, fmt.Errorf("attach PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE: %w", err)
 	}
 
@@ -119,10 +119,10 @@ func StartConsole(args []string, cols, rows int, dir string) (Console, error) {
 	if err != nil {
 		attrList.Delete()
 		windows.ClosePseudoConsole(hpc)
-		ptyInR.Close()
-		ptyInW.Close()
-		ptyOutR.Close()
-		ptyOutW.Close()
+		_ = ptyInR.Close()
+		_ = ptyInW.Close()
+		_ = ptyOutR.Close()
+		_ = ptyOutW.Close()
 		return nil, fmt.Errorf("command line %q: %w", cmdLine, err)
 	}
 	var dirPtr *uint16
@@ -131,10 +131,10 @@ func StartConsole(args []string, cols, rows int, dir string) (Console, error) {
 		if err != nil {
 			attrList.Delete()
 			windows.ClosePseudoConsole(hpc)
-			ptyInR.Close()
-			ptyInW.Close()
-			ptyOutR.Close()
-			ptyOutW.Close()
+			_ = ptyInR.Close()
+			_ = ptyInW.Close()
+			_ = ptyOutR.Close()
+			_ = ptyOutW.Close()
 			return nil, fmt.Errorf("working directory %q: %w", dir, err)
 		}
 	}
@@ -150,10 +150,10 @@ func StartConsole(args []string, cols, rows int, dir string) (Console, error) {
 	attrList.Delete()
 	if err != nil {
 		windows.ClosePseudoConsole(hpc)
-		ptyInR.Close()
-		ptyInW.Close()
-		ptyOutR.Close()
-		ptyOutW.Close()
+		_ = ptyInR.Close()
+		_ = ptyInW.Close()
+		_ = ptyOutR.Close()
+		_ = ptyOutW.Close()
 		return nil, fmt.Errorf("CreateProcess %q: %w", cmdLine, err)
 	}
 
@@ -161,8 +161,8 @@ func StartConsole(args []string, cols, rows int, dir string) (Console, error) {
 	// their own copies of the ends we handed them; our copies would
 	// otherwise keep the pipe half-open after the child exits, so Read
 	// never sees EOF.
-	ptyInR.Close()
-	ptyOutW.Close()
+	_ = ptyInR.Close()
+	_ = ptyOutW.Close()
 
 	c := &winConsole{
 		hpc: hpc, process: pi.Process, thread: pi.Thread,

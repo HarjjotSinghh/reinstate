@@ -118,7 +118,7 @@ func opensWith(t *testing.T, plane *fakeControlPlane, key string, keys crypto.Ke
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer rc.Close()
+	defer func() { _ = rc.Close() }()
 	raw, _ := io.ReadAll(rc)
 	var out bytes.Buffer
 	return crypto.Open(bytes.NewReader(raw), &out, keys) == nil
@@ -684,7 +684,7 @@ func keyringObject(t *testing.T, plane *fakeControlPlane) (string, []byte) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer rc.Close()
+			defer func() { _ = rc.Close() }()
 			raw, err := io.ReadAll(rc)
 			if err != nil {
 				t.Fatal(err)
@@ -1141,8 +1141,8 @@ func TestKeyringForgeryIsRefusedOnEveryReadPath(t *testing.T) {
 		// approving device's refusal come into it. Both are failures
 		// closed, and both must name the same reason.
 		joinC, out, errb, code := c.tryStartJoin()
-		switch {
-		case joinC == nil:
+		switch joinC {
+		case nil:
 			if code != ExitSafety || !strings.Contains(errb, want) {
 				t.Fatalf("C join on a forged keyring: exit=%d out=%q err=%q", code, out, errb)
 			}

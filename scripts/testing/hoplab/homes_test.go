@@ -88,7 +88,7 @@ func TestDeviceHomeSeed(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open device-a opencode.db: %v", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	var directory string
 	if err := db.QueryRow("SELECT directory FROM session WHERE id = ?", "ses_fixture001a").Scan(&directory); err != nil {
 		t.Fatalf("query device-a session: %v", err)

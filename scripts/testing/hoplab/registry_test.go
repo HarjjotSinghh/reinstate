@@ -111,7 +111,7 @@ func TestRefuseListeningPortCatchesAnAlreadyBoundAddress(t *testing.T) {
 	if err != nil {
 		t.Skipf("could not bind a loopback port to test against: %v", err)
 	}
-	defer ln.Close()
+	defer func() { _ = ln.Close() }()
 	addr := ln.Addr().String()
 	if err := refuseListeningPort(addr, "test"); err == nil {
 		t.Fatalf("refuseListeningPort(%s): want an error, the port is already bound", addr)
@@ -124,7 +124,7 @@ func TestRefuseListeningPortAllowsAFreePort(t *testing.T) {
 		t.Skipf("could not bind a loopback port to find a free one: %v", err)
 	}
 	addr := ln.Addr().String()
-	ln.Close() // free it again; nothing else should grab it in the meantime on a test host
+	_ = ln.Close() // free it again; nothing else should grab it in the meantime on a test host
 	if err := refuseListeningPort(addr, "test"); err != nil {
 		t.Fatalf("refuseListeningPort(%s) on a free port: %v, want nil", addr, err)
 	}

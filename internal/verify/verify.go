@@ -570,9 +570,7 @@ func listStep(ctx context.Context, o Options, r *Report) (*inventory, string, St
 	for _, id := range inv.snapshots {
 		step.Detail = append(step.Detail, snapshotPrefix+id+".age")
 	}
-	for _, k := range inv.other {
-		step.Detail = append(step.Detail, k)
-	}
+	step.Detail = append(step.Detail, inv.other...)
 	r.Steps = append(r.Steps, step)
 	return inv, akid, step.Status
 }
@@ -1335,8 +1333,8 @@ func short(s string) string {
 // WriteHuman prints the report for a person: one block per step with what
 // was done, what was observed, and the verdict, then the overall outcome.
 func (r *Report) WriteHuman(w io.Writer) {
-	fmt.Fprintln(w, "VERIFICATION REPORT")
-	fmt.Fprintf(w, "Generated %s by %s; storage: %s.\n", r.GeneratedAt, r.ClientVersion, storageLabel(r.Storage))
+	_, _ = fmt.Fprintln(w, "VERIFICATION REPORT")
+	_, _ = fmt.Fprintf(w, "Generated %s by %s; storage: %s.\n", r.GeneratedAt, r.ClientVersion, storageLabel(r.Storage))
 	if r.Locker.Bucket != "" {
 		where := r.Locker.Bucket
 		if r.Locker.Prefix != "" {
@@ -1345,19 +1343,19 @@ func (r *Report) WriteHuman(w io.Writer) {
 		if r.Locker.Endpoint != "" {
 			where += " at " + r.Locker.Endpoint
 		}
-		fmt.Fprintf(w, "Checked: %s.\n", where)
+		_, _ = fmt.Fprintf(w, "Checked: %s.\n", where)
 	}
-	fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w)
 	for i, s := range r.Steps {
-		fmt.Fprintf(w, "Step %d: %s\n", i+1, s.Name)
-		fmt.Fprintf(w, "  What was done:  %s\n", s.Did)
-		fmt.Fprintf(w, "  What was seen:  %s\n", s.Observed)
+		_, _ = fmt.Fprintf(w, "Step %d: %s\n", i+1, s.Name)
+		_, _ = fmt.Fprintf(w, "  What was done:  %s\n", s.Did)
+		_, _ = fmt.Fprintf(w, "  What was seen:  %s\n", s.Observed)
 		for _, d := range s.Detail {
-			fmt.Fprintf(w, "                  - %s\n", d)
+			_, _ = fmt.Fprintf(w, "                  - %s\n", d)
 		}
-		fmt.Fprintf(w, "  Result:         %s\n\n", verdictLabel(s.Status))
+		_, _ = fmt.Fprintf(w, "  Result:         %s\n\n", verdictLabel(s.Status))
 	}
-	fmt.Fprintln(w, "OUTCOME: "+r.Summary)
+	_, _ = fmt.Fprintln(w, "OUTCOME: "+r.Summary)
 }
 
 // NotVerified reports a run that reached no verdict because the storage

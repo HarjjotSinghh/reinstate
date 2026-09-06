@@ -43,12 +43,12 @@ func (n noAnswer) Get(ctx context.Context, key string) (io.ReadCloser, backend.O
 	return nil, backend.ObjectMeta{}, n.err
 }
 
-// timeout is what a request that never came back looks like to the S3
+// errTimeout is what a request that never came back looks like to the S3
 // client: a net.Error the backend could not map to any refusal.
-var timeout = fmt.Errorf("backend: list: %w", &net.OpError{Op: "dial", Net: "tcp", Err: errors.New("i/o timeout")})
+var errTimeout = fmt.Errorf("backend: list: %w", &net.OpError{Op: "dial", Net: "tcp", Err: errors.New("i/o timeout")})
 
-// dropped is the other shape: the connection went away mid-response.
-var dropped = fmt.Errorf("backend: get: %w", io.ErrUnexpectedEOF)
+// errDropped is the other shape: the connection went away mid-response.
+var errDropped = fmt.Errorf("backend: get: %w", io.ErrUnexpectedEOF)
 
 // TestStepsOneAndTwoDoNotFailOnAnEndpointThatDidNotAnswer holds steps 1
 // and 2 to the rule step 4 already followed. A refusal is an answer and
@@ -69,7 +69,7 @@ func TestStepsOneAndTwoDoNotFailOnAnEndpointThatDidNotAnswer(t *testing.T) {
 	}{
 		{
 			name:        "the listing times out",
-			backend:     func(s *memory.Store) backend.Backend { return noAnswer{Backend: s, err: timeout} },
+			backend:     func(s *memory.Store) backend.Backend { return noAnswer{Backend: s, err: errTimeout} },
 			step:        StepList,
 			status:      NotApplicable,
 			observed:    "Could not run: the storage endpoint gave no answer to the listing",
@@ -81,8 +81,10 @@ func TestStepsOneAndTwoDoNotFailOnAnEndpointThatDidNotAnswer(t *testing.T) {
 			// One of the two objects still answered, so the run reaches a
 			// verdict on that one — and says, in the outcome sentence, that
 			// the other was not checked.
-			name:     "the index fetch drops the connection",
-			backend:  func(s *memory.Store) backend.Backend { return noAnswer{Backend: s, on: "manifest.age", err: dropped} },
+			name: "the index fetch drops the connection",
+			backend: func(s *memory.Store) backend.Backend {
+				return noAnswer{Backend: s, on: "manifest.age", err: errDropped}
+			},
 			step:     StepCiphertext,
 			status:   NotApplicable,
 			observed: "Could not run: the storage endpoint gave no answer for manifest.age",
@@ -156,7 +158,7 @@ func TestAnUnansweredRunIsNotTheSameAsAnEmptyLocker(t *testing.T) {
 		t.Fatalf("empty-locker summary %q", empty.Summary)
 	}
 	unreachable := Run(context.Background(), Options{
-		Backend: noAnswer{Backend: memory.New(), err: timeout}, Keys: keys, Storage: StorageBYO, ClientVersion: "rein test",
+		Backend: noAnswer{Backend: memory.New(), err: errTimeout}, Keys: keys, Storage: StorageBYO, ClientVersion: "rein test",
 	})
 	if unreachable.Outcome != NotApplicable || !unreachable.NotVerified() {
 		t.Fatalf("an unreachable locker reads as an empty one: %+v", unreachable)
@@ -174,7 +176,7 @@ func TestAFetchThatGotNoAnswerIsNotAPass(t *testing.T) {
 	keys := rootKeys(t)
 	store := lockerWith(t, keys, "team/a")
 	r := Run(context.Background(), Options{
-		Backend: noAnswer{Backend: store, on: ".age", err: dropped}, Prefix: "team/a", Keys: keys,
+		Backend: noAnswer{Backend: store, on: ".age", err: errDropped}, Prefix: "team/a", Keys: keys,
 		Storage: StorageBYO, ClientVersion: "rein test",
 	})
 	if stepOf(t, r, StepList).Status != Pass {
