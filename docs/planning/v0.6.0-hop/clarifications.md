@@ -137,6 +137,30 @@ and the same for the other two.
   interactive switcher and a Claude Code resume, so the reboot happened or the
   state cleared. I will close #367 with that evidence when the PR opens.
 
+## Q14 — This host cannot list its own processes
+
+`Get-CimInstance Win32_Process` and `tasklist` both exit with "Critical
+error" on this machine (a damaged WMI repository, most likely). It is what
+made the pre-tag matrix find the active-session defect: `rein resume`
+answered "no running instance" because the enumeration failed silently.
+That is fixed in the product (the check now says it could not run), but the
+E5 rows (detecting a real active session) cannot pass on this host until WMI
+works; they are carried as a host disposition. Repair when convenient:
+`winmgmt /verifyrepository`, then `winmgmt /salvagerepository` if it reports
+inconsistency, then reboot. I did not run these; they change system state.
+
+## Q15 — Claude Code auto-updates faster than the ceiling moves
+
+Claude Code went `2.1.238` → `2.1.261` → `2.1.263` on this host within two
+days, and each step refused every Claude resume row by design. I widened the
+ceiling twice with real resume evidence, and the tagged run will likely meet
+a newer build again. Options for you: (a) pin the host during acceptance
+(`DISABLE_AUTOUPDATER=1` in the environment Claude Code starts with), (b)
+accept a patch series (`2.1.x` up to a stated ceiling) as verified rather
+than an exact build, which is a policy change to the fail-closed rule in
+`docs/compatibility.md`, or (c) keep widening per candidate as `RELEASING.md`
+already anticipates. I proceed with (c).
+
 ## Q13 — GitGuardian on the candidate PR
 
 GitGuardian's check on #404 flags the synthetic keyring goldens the Hop tree
