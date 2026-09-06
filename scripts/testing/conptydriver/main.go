@@ -39,7 +39,7 @@ func run(argv []string) int {
 	exitTimeout := fs.Duration("exit-timeout", 15*time.Second, "how long to wait for the child to exit after the script finishes, before killing it")
 	bg := fs.String("bg", "rgb:0000/0000/0000", "the XParseColor rgb: string this console reports for an OSC 11 background-colour query")
 	fs.Usage = func() {
-		fmt.Fprintf(fs.Output(), "usage: conptydriver [flags] -- <command> [args...]\n\n")
+		_, _ = fmt.Fprintf(fs.Output(), "usage: conptydriver [flags] -- <command> [args...]\n\n")
 		fs.PrintDefaults()
 	}
 	if err := fs.Parse(argv); err != nil {
@@ -47,7 +47,7 @@ func run(argv []string) int {
 	}
 	args := fs.Args()
 	if len(args) == 0 {
-		fmt.Fprintln(os.Stderr, "conptydriver: a command is required after --")
+		_, _ = fmt.Fprintln(os.Stderr, "conptydriver: a command is required after --")
 		fs.Usage()
 		return 2
 	}
@@ -56,19 +56,19 @@ func run(argv []string) int {
 	if *rawPath != "" {
 		f, err := os.Create(*rawPath)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "conptydriver: %v\n", err)
+			_, _ = fmt.Fprintf(os.Stderr, "conptydriver: %v\n", err)
 			return 1
 		}
-		defer f.Close()
+		defer func() { _ = f.Close() }()
 		rawFile = f
 	}
 
 	console, err := StartConsole(args, *cols, *rows, *dir)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "conptydriver: %v\n", err)
+		_, _ = fmt.Fprintf(os.Stderr, "conptydriver: %v\n", err)
 		return 1
 	}
-	defer console.Close()
+	defer func() { _ = console.Close() }()
 
 	screen := NewScreen(*cols, *rows)
 	screen.SetBackgroundColorReply(*bg)
@@ -85,13 +85,13 @@ func run(argv []string) int {
 
 	f, err := os.Open(*scriptPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "conptydriver: %v\n", err)
+		_, _ = fmt.Fprintf(os.Stderr, "conptydriver: %v\n", err)
 		return 1
 	}
 	steps, err := ParseScript(f)
-	f.Close()
+	_ = f.Close()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "conptydriver: parsing %s: %v\n", *scriptPath, err)
+		_, _ = fmt.Fprintf(os.Stderr, "conptydriver: parsing %s: %v\n", *scriptPath, err)
 		return 1
 	}
 
@@ -100,13 +100,13 @@ func run(argv []string) int {
 	code, waitErr := waitOrKill(console, *exitTimeout)
 	switch {
 	case scriptErr != nil:
-		fmt.Fprintf(os.Stderr, "conptydriver: script failed: %v\n", scriptErr)
+		_, _ = fmt.Fprintf(os.Stderr, "conptydriver: script failed: %v\n", scriptErr)
 		return 1
 	case waitErr != nil:
-		fmt.Fprintf(os.Stderr, "conptydriver: %v\n", waitErr)
+		_, _ = fmt.Fprintf(os.Stderr, "conptydriver: %v\n", waitErr)
 		return 1
 	default:
-		fmt.Fprintf(os.Stdout, "conptydriver: child exited %d\n", code)
+		_, _ = fmt.Fprintf(os.Stdout, "conptydriver: child exited %d\n", code)
 		if code != 0 {
 			return 1
 		}
@@ -150,20 +150,20 @@ func waitOrKill(console Console, timeout time.Duration) (int, error) {
 // line-buffered, not a full keystroke-by-keystroke passthrough -- for that,
 // use a real Windows Terminal session or write a step script.
 func runInteractive(console Console) int {
-	fmt.Fprintln(os.Stderr, "conptydriver: interactive mode (line-buffered; Ctrl-D / Ctrl-Z to send EOF and exit)")
+	_, _ = fmt.Fprintln(os.Stderr, "conptydriver: interactive mode (line-buffered; Ctrl-D / Ctrl-Z to send EOF and exit)")
 	sc := bufio.NewScanner(os.Stdin)
 	for sc.Scan() {
 		if _, err := console.Write([]byte(sc.Text() + "\r")); err != nil {
-			fmt.Fprintf(os.Stderr, "conptydriver: write: %v\n", err)
+			_, _ = fmt.Fprintf(os.Stderr, "conptydriver: write: %v\n", err)
 			break
 		}
 	}
 	code, err := waitOrKillSoon(console)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "conptydriver: %v\n", err)
+		_, _ = fmt.Fprintf(os.Stderr, "conptydriver: %v\n", err)
 		return 1
 	}
-	fmt.Fprintf(os.Stdout, "conptydriver: child exited %d\n", code)
+	_, _ = fmt.Fprintf(os.Stdout, "conptydriver: child exited %d\n", code)
 	if code != 0 {
 		return 1
 	}
