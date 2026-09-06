@@ -51,7 +51,7 @@ type claim struct {
 var lockerClaims = []claim{
 	{
 		name:      "what the locker holds",
-		made:      regexp.MustCompile(`(?i)(only|nothing but) ciphertext|every object[^.]{0,80}is ciphertext`),
+		made:      regexp.MustCompile("(?i)(only|nothing but) ciphertext|every object[^.]{0,80}\bis ciphertext"),
 		exception: regexp.MustCompile(`keyring\.v1\.json`),
 		missing:   "name `keyring.v1.json`, the one object in the locker that is plaintext by design",
 	},
