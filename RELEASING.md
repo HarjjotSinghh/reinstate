@@ -396,8 +396,39 @@ The pre-tag snapshot run (a snapshot build of the release commit, before the
 tag is signed and pushed) is evidence that the candidate is ready for
 tagged-artifact acceptance; it does not itself authorize anything past that.
 It is recorded at
-`docs/testing/results/2026-09-06-windows-v060rc1-pretag.md` once W7 lands;
-pending as of this commit.
+`docs/testing/results/2026-09-06-windows-v060rc1-pretag.md`: four passes on
+2026-09-06, the last on commit `9dcef0c0`, ending at **185 of 200** required
+rows `PASS` (Phase 5 matrix plus CLI rows; the 16 Hop parity rows are
+recorded separately at 14 `PASS` / 2 `PARTIAL`). The run found two Windows
+product defects, both fixed on the branch and re-verified against a fresh
+snapshot: the warning checklist ignored the space bar on native Windows
+(CLI row 14), and a failed process enumeration was reported as "not busy"
+(Matrix E, row E5). Claude Code auto-updated from `2.1.261` to `2.1.263`
+between passes and the ceiling moved with it.
+
+**Dispositions carried into this candidate**, to be cleared or re-recorded
+by the tagged-artifact run:
+
+- **`opencode` C3** — search by message text finds nothing because the
+  OpenCode reader indexes id, title, project, workspace, and branch only,
+  as it has since `v0.5.0`; search by title passes. Documented reader
+  behaviour, tracked as #405. Not a regression.
+- **`opencode` D4** — a SQLite-only OpenCode store has no JSONL record
+  boundary to truncate; the row is definitional for that layout.
+- **E5 for every T3+ agent** — this host's WMI repository is damaged (both
+  `Get-CimInstance Win32_Process` and `tasklist` fail), so an active session
+  cannot be detected here; the fail-safe the fix introduced (the check
+  reports that it could not run, and does not refuse) was verified instead.
+  Host condition, clarifications Q14.
+- **`claude` E2, E3, D4** — every spawned `claude` process on this host
+  fails OAuth refresh while interactive sessions hold the token; `rein`
+  produces the correct launch plan at `2.1.263` (E1 passes) but the resumed
+  session cannot answer. Host condition, clarifications Q16.
+- **`qwen` E2, E3, D4** — the host's Qwen Code credential is expired.
+- **`gemini` D4, `kimi` D4** — no non-interactive credential on the host.
+
+The tagged run must record each of these as `PASS` or as the same
+disposition with the same reason; a new reason is a new finding.
 
 Publication means ready for tagged-artifact acceptance. It does **not**
 authorize stable `v0.6.0`. Current stable remains `v0.5.1`.

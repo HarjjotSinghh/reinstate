@@ -3031,3 +3031,27 @@ throwaway, never-authenticated attempt.
   this environment for either vendor) rather than simply not attempted.
   See [Fourth pass, 9dcef0c0 (2026-09-06)](#fourth-pass-9dcef0c0-2026-09-06)
   for the full evidence and its own "Dispositions carried" list.
+
+## Coordinator attempt, 9dcef0c0 (2026-09-06, after the fourth pass)
+
+Run by the coordinator from a shell with no acceptance executor active, to
+see whether the Claude Code rows were blocked by the executors' concurrency
+or by the host. Same artifact: `reinstate_0.0.0-9dcef0c0_windows_amd64.zip`,
+sha256 `7bbba24f1ac6f10fde786b1e6228fe5ed0e7621acfd1a24790235123ba339091`,
+unzipped into a fresh directory; `rein version --json` names commit
+`9dcef0c03c94b518bb5cbb170c3f7c998f0f0044`. Fresh `REINSTATE_HOME`; the
+lab variables unset; Claude Code `2.1.263`; real Claude Code configuration;
+throwaway Git project `<lab-project>`.
+
+| Row | Command (argv only) | Observed | Result |
+| --- | --- | --- | --- |
+| E1:claude | `claude -p "Remember the token <token>. Reply with exactly that token and nothing else." --output-format json` in `<lab-project>`; `rein search <token> --agent claude --json`; `rein resume claude:<id> --dry-run --json` | the vendor returned a session id; `rein search` found exactly that session (2 messages); the dry-run exited 0 with `executable=claude`, `args=["--resume","<id>"]`, `agent.version` `match`/`2.1.263`, `agent.active` `match`/`false` (enumeration succeeded in this shell) | PASS (unchanged) |
+| E2:claude | `claude --resume <id> -p "What token did I ask you to remember? Reply with only the token." --output-format json` (the plan's argv plus the vendor's non-interactive form) | `result` = `Failed to authenticate: OAuth session expired and could not be refreshed`; the session id echoed back; no token | PARTIAL (unchanged; host: OAuth refresh) |
+
+The vendor's first, session-creating call also reported `duration_api_ms 0`
+and no output tokens, so the session exists but holds no assistant turn.
+The OAuth refresh failure therefore reproduces without any executor
+concurrency; it is the host's Claude Code sign-in state (the maintainer's
+interactive sessions hold a live access token; spawned processes cannot
+refresh). Recorded as clarifications Q16. `E3` and `D4` for Claude Code stay
+as the fourth pass left them for the same reason.

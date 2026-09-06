@@ -77,9 +77,14 @@ attestations per `RELEASING.md` step 3, publish it as a **prerelease**, and
 tell me. The tagged-artifact Windows run (W7b) starts from there. The same
 shape applies to `v0.6.0` stable and the `website-vYYYY.MM.DD.N` tag.
 
-If you would rather I merge the candidate PR myself before you tag, say so;
-otherwise I leave the merge to you as well, since it is the step right before
-your signature.
+The merge is yours too, for one more reason: it is the largest branch this
+repository has ever taken. The repository's convention is a squash merge
+(`.gitleaks.toml` relies on it), which folds the Hop client's ticket-by-ticket
+history into one commit on `main`; `hop/main` and `release/v0.6.0-rc.1` keep
+that history on the remote either way. If you would rather keep it on `main`,
+use a merge commit instead. PR #404 is marked ready for review with CI green;
+merging it, then signing the tag, are the two steps that remain before the
+tagged Windows run.
 
 ## Q6 — The ConPTY host state (#367)
 
@@ -160,6 +165,20 @@ accept a patch series (`2.1.x` up to a stated ceiling) as verified rather
 than an exact build, which is a policy change to the fail-closed rule in
 `docs/compatibility.md`, or (c) keep widening per candidate as `RELEASING.md`
 already anticipates. I proceed with (c).
+
+## Q16 — Claude Code's sign-in on this host will not refresh for spawned runs
+
+Every `claude -p …` and `claude --resume … -p …` spawned by the acceptance
+runs (and by me, from a clean shell with no other run active) fails with
+"Failed to authenticate: OAuth session expired and could not be refreshed",
+while your interactive Claude Code sessions keep working. The refresh token
+is single-use and the concurrent sessions rotate it out from under a fresh
+process. That is what leaves the Claude Code resume, fork, and truncation
+rows (`E2`, `E3`, `D4`) at PARTIAL in the pre-tag report; `rein` itself
+produces the correct launch plan at `2.1.263` (`E1` passes). Before the
+tagged run: close the other Claude Code sessions, run `claude` once and
+`/login` if it asks, then let the tagged dispatch collect those rows, or run
+them yourself from the dispatch document.
 
 ## Q13 — GitGuardian on the candidate PR
 
