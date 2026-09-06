@@ -49,8 +49,9 @@ that optional physical evidence.
 `v0.6.0-rc.N` candidate and stable acceptance on native Windows x64
 (`windows/amd64`, never WSL) alone while the Apple Silicon macOS host is in
 repair. Every row the prior contracts require on macOS is carried as
-**deferred**, listed in the deferred-macOS issue (number filled in when it is
-filed), and re-run against the same stable tag once that hardware returns.
+**deferred**, listed in
+[#403](https://github.com/HarjjotSinghh/reinstate/issues/403), and re-run
+against the same stable tag once that hardware returns.
 No document, data file, or release note may state that `v0.6.0` was verified
 on macOS; if that later macOS run fails, the fix ships as `v0.6.1`, not by
 editing the record. This mirrors the
