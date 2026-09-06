@@ -184,7 +184,7 @@ func (f *fakeControlPlane) approveLink(w http.ResponseWriter, link, method strin
 			continue
 		}
 		if s.status != hop.StatusPending {
-			http.Error(w, "Link already used", 410)
+			http.Error(w, "Link already used", http.StatusGone)
 			return
 		}
 		if r := f.refuseSignIn; r != nil {
@@ -278,7 +278,7 @@ func (f *fakeControlPlane) approveLatestEmail() {
 	if err != nil {
 		f.t.Fatal(err)
 	}
-	get.Body.Close()
+	_ = get.Body.Close()
 	f.mu.Lock()
 	if latest.status != hop.StatusPending {
 		f.mu.Unlock()
@@ -289,7 +289,7 @@ func (f *fakeControlPlane) approveLatestEmail() {
 	if err != nil {
 		f.t.Fatal(err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 }
 
 func (f *fakeControlPlane) revoke(token string) {
@@ -323,7 +323,7 @@ func newHopHarness(t *testing.T) *hopHarness {
 		if err != nil {
 			return err
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return nil
 	}
 	t.Setenv("REINSTATE_HOME", t.TempDir())

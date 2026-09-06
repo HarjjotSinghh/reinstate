@@ -112,7 +112,7 @@ func (d *pairDevice) options(ro runOptions, args ...string) Options {
 			if err != nil {
 				return err
 			}
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			return nil
 		},
 		LoginPollSleep: sleep,

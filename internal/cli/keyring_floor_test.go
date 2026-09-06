@@ -402,6 +402,10 @@ func TestKeyringAnchorRefusesAnUndecidedFloor(t *testing.T) {
 // at review time, which is the weaker of the two but not nothing.
 func TestEveryKeyringAnchorDecidesTheFloor(t *testing.T) {
 	fset := token.NewFileSet()
+	//nolint:staticcheck // parser.ParseDir is deprecated in favor of golang.org/x/tools/go/packages,
+	// which is not a dependency of this module; this guard only walks the AST of one directory's
+	// non-test files (no build-tag-aware package resolution needed), so adding that dependency
+	// here would trade a source-walk for a module dependency with no behavioural gain.
 	pkgs, err := parser.ParseDir(fset, ".", func(fi os.FileInfo) bool {
 		return !strings.HasSuffix(fi.Name(), "_test.go")
 	}, 0)
@@ -486,6 +490,9 @@ func TestEveryKeyringUnwrapGoesThroughTheAnchor(t *testing.T) {
 	}
 
 	fset := token.NewFileSet()
+	//nolint:staticcheck // see the identical justification on TestEveryKeyringAnchorDecidesTheFloor
+	// above: parser.ParseDir is deprecated but golang.org/x/tools/go/packages is not a dependency
+	// of this module, and this guard needs only a plain AST walk of one directory.
 	pkgs, err := parser.ParseDir(fset, ".", func(fi os.FileInfo) bool {
 		return !strings.HasSuffix(fi.Name(), "_test.go")
 	}, 0)

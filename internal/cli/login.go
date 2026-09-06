@@ -187,10 +187,10 @@ func plaintextRemote(baseURL string) bool {
 func loginError(baseURL string, err error) error {
 	var he *hop.Error
 	if errors.As(err, &he) {
-		switch {
-		case he.Status == 400:
+		switch he.Status {
+		case 400:
 			return NewExitError(ExitUsage, err.Error())
-		case he.Status == 503:
+		case 503:
 			return NewExitError(ExitConfig, err.Error())
 		}
 		return NewExitError(ExitAuthStorage, err.Error())

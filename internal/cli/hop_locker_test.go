@@ -181,7 +181,7 @@ func (j *lockerJourney) run(args ...string) (stdout, stderr string, code int) {
 			if err != nil {
 				return err
 			}
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			return nil
 		},
 		LoginPollSleep: func(ctx context.Context, _ time.Duration) error { return ctx.Err() },
@@ -360,7 +360,7 @@ func TestLockerJourneyLoginInitPushStatus(t *testing.T) {
 		}
 		body := new(bytes.Buffer)
 		_, _ = body.ReadFrom(rc)
-		rc.Close()
+		_ = rc.Close()
 		if strings.Contains(body.String(), "synthetic locker journey") {
 			t.Fatalf("plaintext in the locker at %s", o.Key)
 		}
