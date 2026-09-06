@@ -24,7 +24,7 @@ const ranged = versionedAgents();
   {description}
   path="/compatibility"
   eyebrow="Compatibility"
-  answer="The catalog names eighteen coding agents. Encrypted sync (T5) covers Claude Code and Codex CLI. Gemini CLI, OpenCode, Grok Build, and Kimi Code CLI are T2 handoff sources. Five more are T1 read-only, and seven are T0: named, with a reason they are not usable. Native resume stays same-vendor."
+  answer="The catalog names eighteen coding agents. Encrypted sync (T5) covers Claude Code, Codex CLI, and OpenCode. Grok Build and Qwen Code are T4 handoff destinations with same-vendor native resume. Gemini CLI and Kimi Code CLI are T2 handoff sources. Four more are T1 read-only, and seven are T0: named, with a reason they are not usable. Native resume stays same-vendor."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'Compatibility', path: '/compatibility' },
@@ -50,7 +50,7 @@ const ranged = versionedAgents();
     not a probe.
   </p>
 
-  <h2 id="agent-version-matrix">Tested version ranges (T5)</h2>
+  <h2 id="agent-version-matrix">Tested version ranges</h2>
   <div class="pc-table-wrap">
     <table class="pc-table">
       <thead>
@@ -84,13 +84,14 @@ const ranged = versionedAgents();
     </table>
   </div>
   <p>
-    These ranges are the current source compatibility evidence for T5 encrypted sync on
-    macOS arm64 and deterministic synthetic fixtures. They are not a claim that every
-    platform row has passed physical-device certification. Prereleases and versions
-    outside each inclusive range are <code>UNTESTED</code>. The
+    Every agent with a fail-closed version range is listed here, whatever its tier —
+    T5 encrypted sync, T4 handoff destination and native resume, T2 handoff source, or
+    T1 discovery. Ranges reflect current source compatibility evidence and deterministic
+    synthetic fixtures; they are not a claim that every platform row has passed
+    physical-device certification. Prereleases and versions outside each inclusive range
+    are <code>UNTESTED</code>. The
     <a href="/compatibility/agent-version-history">agent-version change tracker</a> records
     when the inclusive ranges and fail-closed behavior changed across releases.
-    No catalog agent was promoted to T3 in the v0.5.0 line; Gemini CLI stays T2.
   </p>
 
   <h2 id="environment-matrix">Operating-system matrix</h2>
@@ -178,7 +179,7 @@ const ranged = versionedAgents();
     <li>Treating native Windows and WSL as one Reinstate device.</li>
     <li>Automatically sharing one agent-state directory between Windows and WSL.</li>
     <li>Exporting or restoring an untested agent layout.</li>
-    <li>Encrypted sync for any agent other than Claude Code and Codex CLI (T5 only).</li>
+    <li>Encrypted sync for any agent other than Claude Code, Codex CLI, and OpenCode (T5 only).</li>
     <li>Native resume for T2 handoff sources or T0 catalog names.</li>
     <li>Silent translation between vendor-native transcripts.</li>
     <li>Syncing vendor credentials, raw secrets, MCP settings, skills, or plugins.</li>

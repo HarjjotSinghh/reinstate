@@ -6,7 +6,7 @@ order: 15
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.5.2-rc.1"
+version: "v0.6.0-rc.1"
 updatedAt: 2026-08-16
 tags: ["limitations", "stable-release", "compatibility", "same-vendor-resume", "roadmap"]
 targetQuery: "Reinstate limitations"
@@ -15,14 +15,14 @@ draft: false
 noindex: false
 ---
 
-Reinstate `v0.4.0` is a pre-1.0 continuity layer with configless local
+Reinstate `v0.5.1` is a pre-1.0 continuity layer with configless local
 session indexing, encrypted same-vendor Claude Code and Codex session sync,
-verified resume, and structured handoff into a new destination session.
-It is not a cross-agent translator, repository
-synchronizer, remote desktop, coding harness, or universal agent configuration
-system.
+verified resume, structured handoff into a new destination session, and
+universal agent coverage across the support-tier catalog. It is not a
+cross-agent translator, repository synchronizer, remote desktop, coding
+harness, or universal agent configuration system.
 
-> **Stable platform boundary:** exact `v0.4.0` installed artifacts passed
+> **Stable platform boundary:** exact `v0.5.1` installed artifacts passed
 > dual-platform tagged-artifact acceptance on Apple Silicon macOS and native
 > Windows x64. Intel macOS and Linux/WSL2 are preview and unverified. This page
 > does not convert installer availability into a stable platform claim.

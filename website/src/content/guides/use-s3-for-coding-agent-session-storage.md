@@ -4,8 +4,8 @@ description: "Configure a private Amazon S3 bucket and least-privilege credentia
 answer: "To use Amazon S3 with Reinstate, create a private general purpose bucket, grant a dedicated non-root credential access only to the Reinstate object prefix, initialize Reinstate with the matching regional S3 endpoint and Region, then dry-run and push one selected session."
 author: "Harjot Singh Rana"
 publishedAt: 2026-07-27
-updatedAt: 2026-07-27
-reviewedAt: 2026-07-27
+updatedAt: 2026-09-05
+reviewedAt: 2026-09-05
 tags: ["Amazon S3", "encrypted storage", "session sync", "least privilege", "coding agents"]
 targetQuery: "use Amazon S3 for coding agent session storage"
 searchIntent: "how-to"
@@ -30,7 +30,7 @@ estimatedMinutes: 15
 estimatedTaskMinutes: 35
 prerequisites:
   - "An AWS account and authority to create a private S3 bucket, IAM policy, and access key"
-  - "Reinstate v0.4.0 on a compatible device with Claude Code or Codex CLI"
+  - "Reinstate (the installer's v0.6.0-rc.1 candidate; stable is v0.5.1) on a compatible device with Claude Code or Codex CLI"
   - "A harmless session in a repository whose absolute local path you know"
   - "A long encryption passphrase that will be entered privately and is not stored"
 howToSteps:
@@ -53,7 +53,8 @@ howToSteps:
 
 ## What this guide configures
 
-This guide connects Reinstate `v0.4.0` to an existing Amazon S3 bucket.
+This guide connects Reinstate — the installer's `v0.6.0-rc.1` candidate;
+stable is `v0.5.1` — to an existing Amazon S3 bucket.
 Amazon Web Services owns the bucket, Region, IAM identity, access key, public
 access settings, retention, and billing. Reinstate owns the local project
 mapping, encrypted profile manifest, encrypted session snapshots, and
@@ -92,9 +93,10 @@ not by first-device initialization.
   credentials where possible.
 - Session resume remains **same-vendor**: Claude Code to Claude Code and Codex
   CLI to Codex CLI.
-- Reinstate v0.4.0 is stable on Apple Silicon macOS and native Windows x64.
-  Intel macOS and Linux/WSL2 are preview and unverified. This guide is not
-  itself acceptance evidence.
+- Stable Reinstate `v0.5.1` passed dual-platform tagged-artifact acceptance
+  on Apple Silicon macOS and native Windows x64. Intel macOS
+  and Linux/WSL2 are preview and unverified. This guide is not itself
+  acceptance evidence.
 
 ## Before you begin
 
@@ -249,7 +251,8 @@ rein version --json
 rein setup check
 ```
 
-**Expected result:** the pinned installer reports `v0.4.0`. Before
+**Expected result:** the pinned installer reports `v0.6.0-rc.1`, the
+current release candidate; stable remains `v0.5.1`. Before
 initialization, `rein setup check` exits with code `3` and reports
 `config missing`. Resolve a platform, keyring, or installed-agent
 compatibility failure separately; a working S3 bucket cannot make an

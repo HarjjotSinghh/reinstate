@@ -189,7 +189,7 @@ Two rows per agent at T0.
 | - | --------- |
 | G1 | Claude Code and Codex CLI native resume and fork behave as in `v0.4.0` |
 | G2 | Claude to Codex and Codex to Claude structured handoff both complete |
-| G3 | Gemini, OpenCode, and Grok remain handoff sources and remain read-only |
+| G3 | Gemini, OpenCode, and Grok remain handoff sources and remain read-only (as written for the Phase 5 gate; OpenCode has since been raised to T5 — see the T5 journeys under `results/2026-08-23-*-opencode-t5*.md`, and read G3/G4 as "Gemini and Grok" for later releases) |
 | G4 | `rein push` and `rein pull` carry Claude and Codex sessions, and no other agent's |
 | G5 | Path remapping across macOS and Windows is unchanged |
 | G6 | Existing exit-code semantics are unchanged; no new exit codes were introduced |

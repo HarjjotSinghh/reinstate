@@ -4,7 +4,8 @@ import (
 	"io"
 	"sync/atomic"
 
-	"filippo.io/age"
+	"github.com/HarjjotSinghh/reinstate/internal/crypto"
+	"github.com/HarjjotSinghh/reinstate/internal/crypto/cryptotest"
 )
 
 // fastAgeEnvelopeCodec keeps the real age envelope format and decrypt path
@@ -13,28 +14,11 @@ type fastAgeEnvelopeCodec struct {
 	encryptions atomic.Int64
 }
 
-func (c *fastAgeEnvelopeCodec) Encrypt(source io.Reader, dest io.Writer, passphrase string) error {
+func (c *fastAgeEnvelopeCodec) Encrypt(source io.Reader, dest io.Writer, keys crypto.KeyProvider) error {
 	c.encryptions.Add(1)
-	recipient, err := age.NewScryptRecipient(passphrase)
-	if err != nil {
-		return err
-	}
-	recipient.SetWorkFactor(1)
-	writer, err := age.Encrypt(dest, recipient)
-	if err != nil {
-		return err
-	}
-	if _, err := io.Copy(writer, source); err != nil {
-		_ = writer.Close()
-		return err
-	}
-	return writer.Close()
+	return crypto.Seal(source, dest, cryptotest.FastScrypt(keys))
 }
 
-func (*fastAgeEnvelopeCodec) DecryptReader(source io.Reader, passphrase string) (io.Reader, error) {
-	identity, err := age.NewScryptIdentity(passphrase)
-	if err != nil {
-		return nil, err
-	}
-	return age.Decrypt(source, identity)
+func (*fastAgeEnvelopeCodec) DecryptReader(source io.Reader, keys crypto.KeyProvider) (io.Reader, error) {
+	return crypto.OpenReader(source, keys)
 }

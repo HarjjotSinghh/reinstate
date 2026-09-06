@@ -6,7 +6,7 @@ order: 2
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.5.2-rc.1"
+version: "v0.6.0-rc.1"
 updatedAt: 2026-08-16
 tags: ["architecture", "session-sync", "encryption", "path-remapping", "s3"]
 targetQuery: "how Reinstate works"
@@ -73,7 +73,9 @@ vendor-native sessions without becoming a coding harness.
 
 1. **Local-first** — agents remain the sole executors of sessions; Reinstate
    relocates files, it does not re-interpret or re-run them.
-2. **Zero-knowledge remote** — only ciphertext on object storage.
+2. **Zero-knowledge remote** — ciphertext on object storage, apart from
+   `keyring.v1.json`, which is plaintext by design, holds no usable key, and
+   names the account and its enrolled devices.
 3. **Native resume is same-vendor** — restore puts bytes where `claude --resume` /
    `codex resume` already know how to read them.
 4. **Cross-agent handoffs are explicit** — never silently

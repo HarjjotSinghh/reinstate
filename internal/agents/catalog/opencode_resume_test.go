@@ -95,27 +95,29 @@ func TestOpenCodeResumeArgvIsOptionShaped(t *testing.T) {
 	}
 }
 
-// TestOpenCodeDescriptorIsT4 keeps tier, capability constructors and the
+// TestOpenCodeDescriptorIsT5 keeps tier, capability constructors and the
 // measured version range together, so a later edit cannot move one alone.
-func TestOpenCodeDescriptorIsT4(t *testing.T) {
+// The sync adapter is wired now that the physical T5 round-trip is recorded on
+// both platforms (macOS and native Windows journeys under docs/testing/results).
+func TestOpenCodeDescriptorIsT5(t *testing.T) {
 	got := OpenCode()
 	if got.Key != sessionindex.AgentOpenCode {
 		t.Fatalf("Key = %q", got.Key)
 	}
-	if got.Tier != agents.TierHandoffTo {
-		t.Fatalf("Tier = %s, want T4", got.Tier)
+	if got.Tier != agents.TierSync {
+		t.Fatalf("Tier = %s, want T5", got.Tier)
 	}
 	if got.Family != agents.FamilyEmbeddedDB {
 		t.Fatalf("Family = %s, want F3", got.Family)
 	}
-	if got.Version == nil || got.Version.Min != "1.18.21" || got.Version.Max != "1.18.21" {
-		t.Fatalf("Version = %+v, want the single measured build 1.18.21", got.Version)
+	if got.Version == nil || got.Version.Min != "1.18.21" || got.Version.Max != "1.18.27" {
+		t.Fatalf("Version = %+v, want the measured range 1.18.21-1.18.27", got.Version)
 	}
 	if got.NewIndexSource == nil || got.NewReader == nil || got.NewTarget == nil {
 		t.Fatal("missing T1/T2/T4 constructors")
 	}
-	if got.NewSyncAdapter != nil {
-		t.Fatal("constructors above the declared T4")
+	if got.NewSyncAdapter == nil {
+		t.Fatal("T5 requires NewSyncAdapter to be wired")
 	}
 	if len(got.Process.Images) == 0 {
 		t.Fatal("T3 needs a ProcessSpec so a running OpenCode is recognized")

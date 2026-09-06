@@ -77,28 +77,28 @@ func TestReleaseAndSupportClaims(t *testing.T) {
 		}
 	}
 
-	// OpenCode moved up the ladder, so what these rows must not claim moved with
-	// it. Gemini is still a source-only agent and keeps both trailing columns
-	// pinned. OpenCode is a handoff destination as of T4, so only the encrypted
-	// sync column stays guarded — that is the claim it must not make, and
-	// pinning the handoff-target column too would now be pinning a falsehood.
+	// OpenCode moved up the ladder to T5, so its encrypted-sync column now reads
+	// as supported and is no longer a guarded claim. Gemini is still a
+	// source-only agent and keeps both trailing columns pinned. What stays
+	// pinned for OpenCode is the positive T5 claim, so a later edit cannot
+	// silently walk the promotion back either.
 	adapters := read(t, "docs/adapters.md")
 	for _, re := range []*regexp.Regexp{
 		regexp.MustCompile(`(?m)^\| Gemini CLI \|[^\n]*\| No \| No \|`),
-		regexp.MustCompile(`(?m)^\| OpenCode \|[^\n]*\| No \| [^|\n]*\|$`),
+		regexp.MustCompile(`(?m)^\| OpenCode \|[^\n]*\| Supported \(T5\) \| [^|\n]*\|$`),
 	} {
 		if !re.MatchString(adapters) {
-			t.Errorf("docs/adapters.md must keep read-only adapter capabilities explicit: %s", re.String())
+			t.Errorf("docs/adapters.md must keep adapter capabilities explicit: %s", re.String())
 		}
 	}
 
 	readme := read(t, "README.md")
 	for _, re := range []*regexp.Regexp{
 		regexp.MustCompile(`(?m)^\| \[Gemini CLI\][^\n]*\| — \| — \|`),
-		regexp.MustCompile(`(?m)^\| \[OpenCode\][^\n]*\| — \|$`),
+		regexp.MustCompile(`(?m)^\| \[OpenCode\][^\n]*\| T5 \|[^\n]*\| ✅ \|$`),
 	} {
 		if !re.MatchString(readme) {
-			t.Errorf("README.md must not claim Gemini native mutation, or OpenCode encrypted sync: %s", re.String())
+			t.Errorf("README.md capability claims are wrong (Gemini native mutation, or OpenCode sync): %s", re.String())
 		}
 	}
 

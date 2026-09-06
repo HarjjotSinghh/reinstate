@@ -26,7 +26,14 @@ const maxJSONLRecordBytes = 16 << 20
 
 const (
 	minimumVerifiedClaudeVersion = "2.1.219"
-	maximumVerifiedClaudeVersion = "2.1.238"
+	// maximumVerifiedClaudeVersion widened to 2.1.263 in v0.6.0 on native
+	// Windows physical evidence only (macOS pending, ADR 0005 D3): a session
+	// was created with the installed 2.1.263 build in a throwaway project,
+	// indexed by Reinstate, and resumed through the launch plan Reinstate
+	// itself produced, and the resumed session returned a token that existed
+	// only in the original session's history. See
+	// docs/testing/results/2026-09-06-windows-range-widening-v060.md.
+	maximumVerifiedClaudeVersion = "2.1.263"
 )
 
 // Adapter implements adapter.Adapter for Claude Code.
@@ -146,6 +153,11 @@ func (a *Adapter) Discover(ctx context.Context, opts adapter.DiscoverOptions) ([
 	}
 	// layout: root/projects/<project>/session-*.jsonl or recursive *.jsonl under projects
 	projects := filepath.Join(inst.Root, "projects")
+	if _, statErr := os.Stat(projects); os.IsNotExist(statErr) {
+		// A configured CLAUDE_CONFIG_DIR on a fresh device has no projects
+		// directory until Claude Code runs; nothing to discover, not an error.
+		return nil, nil
+	}
 	err = filepath.Walk(projects, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err

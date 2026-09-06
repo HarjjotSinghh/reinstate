@@ -3,37 +3,37 @@ import PublicContentLayout from '../../layouts/PublicContentLayout.astro';
 
 export const prerender = true;
 
-const title = 'Qwen Code as a T1 Discover Agent | Reinstate';
+const title = 'Qwen Code as a T4 Handoff Destination | Reinstate';
 const description =
-  'Qwen Code is T1: Reinstate can list, search, and inspect local sessions. Native resume, handoff, and encrypted sync are not supported.';
+  'Qwen Code is T4: Reinstate reads local sessions, hands off from and into Qwen, and launches qwen --resume against the vendor session. Encrypted sync is not supported.';
 ---
 
 <PublicContentLayout
   {title}
   {description}
   path="/integrations/qwen"
-  eyebrow="Integration · Qwen Code · T1"
-  answer="Qwen Code is T1: a read-only local index. Reinstate does not launch Qwen as a native resume target, does not use it as a handoff source or destination, and does not sync Qwen sessions."
+  eyebrow="Integration · Qwen Code · T4"
+  answer="Qwen Code is T4: a read-only local index, a handoff source, a handoff destination, and same-vendor native resume through the vendor's own CLI. A handoff into Qwen starts a new session and is never a cross-agent resume. Reinstate does not sync Qwen sessions."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'Integrations', path: '/integrations' },
     { name: 'Qwen Code', path: '/integrations/qwen' },
   ]}
-  tags={['Qwen Code', 'T1 discover', 'read-only']}
+  tags={['Qwen Code', 'T4 handoff destination', 'verified resume']}
 >
   <h2 id="support-at-a-glance">Qwen Code support at a glance</h2>
   <dl class="pc-facts">
     <div>
       <dt>Tier</dt>
-      <dd>T1 Discover</dd>
+      <dd>T4 Handoff destination</dd>
     </div>
     <div>
       <dt>Storage family</dt>
       <dd>F1 home tree</dd>
     </div>
     <div>
-      <dt>Native resume (T3)</dt>
-      <dd>Not supported</dd>
+      <dt>Verified version range</dt>
+      <dd>0.21.12 – 0.21.13</dd>
     </div>
     <div>
       <dt>Encrypted sync (T5)</dt>
@@ -41,35 +41,63 @@ const description =
     </div>
   </dl>
   <p>
-    T1 means <code>rein sessions --agent qwen</code>, search, and inspect work
-    against local Qwen Code sessions. Resume and fork stay refused.
+    T4 means <code>rein handoff &lt;session&gt; --to qwen</code> starts a <em>new</em> Qwen Code
+    session with <code>qwen --session-id &lt;uuid&gt;</code>, on top of the T3
+    <code>rein resume qwen:&lt;id&gt;</code> (<code>qwen --resume &lt;id&gt;</code>) and the T2
+    <code>rein handoff --from qwen</code>. Qwen Code is not a T5 sync agent.
   </p>
 
-  <h2 id="what-t1-includes">What T1 includes</h2>
+  <h2 id="what-t4-includes">What T4 includes</h2>
   <ul>
-    <li>Read-only discovery, search, and inspect of local Qwen Code sessions.</li>
-    <li>Fail-closed behavior on an unrecognized JSONL first-record shape.</li>
-    <li>Runtime sidecars (<code>*-runtime.json</code>) are not indexed.</li>
+    <li>T1 read-only discovery, search, and inspect of local Qwen Code sessions.</li>
+    <li>T2 structured handoff from Qwen Code into a new Claude Code or Codex session.</li>
+    <li>
+      T3 same-vendor <code>rein resume</code> (<code>qwen --resume &lt;id&gt;</code>) and
+      <code>rein fork</code> (<code>qwen --resume &lt;id&gt; --fork-session</code>).
+    </li>
+    <li>
+      T4 structured handoff <em>into</em> Qwen Code via <code>qwen --session-id &lt;uuid&gt;</code>.
+      That starts a new session and is never a cross-agent resume: Reinstate does not reconstruct
+      source history in Qwen.
+    </li>
+    <li>A bounded <code>qwen --version</code> probe with a fail-closed range of 0.21.12 – 0.21.13.</li>
+    <li>Fail-closed behavior on an unrecognized layout or version (exit code <code>5</code>).</li>
   </ul>
 
-  <h2 id="what-t1-excludes">What T1 excludes</h2>
+  <h2 id="what-t4-excludes">What T4 excludes</h2>
   <ul>
-    <li>No <code>rein resume</code> / <code>rein fork</code> of a Qwen session.</li>
-    <li>No structured handoff from or to Qwen Code.</li>
     <li>No <code>rein push</code> / <code>rein pull</code> of Qwen sessions.</li>
-    <li>No write into Qwen’s session store.</li>
+    <li>No write into Qwen Code's session store.</li>
+    <li>
+      No resume of an id Qwen does not recognize: an unknown <code>--resume</code> id exits
+      <code>1</code> with the vendor's own "No saved session found" message rather than opening a
+      picker.
+    </li>
   </ul>
 
   <div class="pc-callout">
-    <p>Native resume is same-vendor, and Qwen Code is not a T3 agent.</p>
+    <p>Native resume is same-vendor: it launches Qwen's own CLI (<code>qwen --resume</code>) against Qwen's own session.</p>
+    <p>
+      A handoff starts a <em>new</em> destination session in either direction. It does not
+      reconstruct vendor history or translate a transcript between vendors.
+    </p>
+    <p>
+      Qwen Code ships a managed self-updater, so one machine can answer <code>--version</code>
+      differently depending on which install root is in scope; the verified range spans the
+      bundled and the self-updated build observed on this host. A newer self-update outside that
+      range reports <code>UNTESTED</code> rather than being assumed compatible.
+    </p>
   </div>
 
   <h2 id="evidence">Evidence</h2>
   <p>
-    Dual-platform probes live under <code>docs/testing/results/agent-probes</code>.
-    Fixtures live under <code>testdata/sessionindex/qwen</code>. There is no T3
-    version probe and no T3 device report. See the
-    <a href="https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/qwen.md"
+    Committed fixtures live under <code>testdata/sessionindex/qwen</code> and
+    <code>testdata/handoff/qwen</code>, and the version range was measured from the real
+    binary. The resume journeys T3 rests on and the destination journey T4 rests on
+    are both recorded, on macOS and on native Windows (2026-08-22).
+    See the
+    <a
+      href="https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/qwen.md"
       >Qwen storage page</a
     >
     and the <a href="/compatibility">tier matrix</a>.
@@ -80,6 +108,7 @@ const description =
     <nav aria-label="Related pages">
       <a href="/integrations">All integrations</a>
       <a href="/compatibility">Compatibility matrix</a>
+      <a href="/docs/handoff">Structured handoff</a>
       <a href="/docs/adapters">Adapter documentation</a>
     </nav>
   </section>

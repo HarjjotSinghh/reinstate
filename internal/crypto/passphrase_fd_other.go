@@ -7,6 +7,6 @@ import (
 	"os"
 )
 
-func duplicatePassphraseFD(_ uintptr) (*os.File, error) {
+func duplicatePassphraseFD(_ int) (*os.File, error) {
 	return nil, errors.New("passphrase descriptor duplication is unavailable")
 }

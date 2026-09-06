@@ -1,0 +1,70 @@
+{
+  "schema_version": 5,
+  "profile_id": "11111111-2222-4333-8444-555555555555",
+  "current_generation": 2,
+  "account_key": "8bJkOTbHPuLuMmIXrMWn/mdFd4eXtbisG84Nn5sjCfs=",
+  "generations": [
+    {
+      "number": 1,
+      "created_at": "2026-08-23T12:00:00Z",
+      "recipient": "age12zhh9qvam60p0vhsv0x423pn2y6u423lwa5f83s3hf6nju2gfcssjvyj2f",
+      "recovery": {
+        "kdf": "argon2id",
+        "time": 3,
+        "memory_kib": 65536,
+        "threads": 4,
+        "salt": "JbVHjF6XxmjHebG9dJJkyw==",
+        "wrap": "CvD/cqtFS3lO2a4ivgNREQUHENHqhMHK6lMaCm/qiPDyx9Ba1zz+0Mto8R5/gZVJ/ZPOnNpd5QW6Mv6I73hqS2wQlDPWleMz",
+        "format": 2
+      },
+      "devices": [
+        {
+          "device_id": "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+          "public_key": "age17t66a2ew0ukgt8m9mlunx0sfla9kyh3y5dyahpdg9vuu9lfvw5aqdas80z",
+          "enrolled_at": "2026-08-23T12:00:00Z",
+          "wrap": "YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBhc3FzQ0dERi9wekdja2ptdmhKb1MyNy9VYytNMGJjdnpIRnc2bm1mOW0wCjYwbExndzgyMUxHUTIvSlBVa0VyZ1BoVnhSWXNCVFlneDB6QnJzYjZYUVkKLS0tIDZNamxTRUJBYzY3bnAzM0Q0azBDYkttQ3JFN0FYMnNnTVNJc0c2Sjh6QVUKZ+zMvYK46OfoGKE7ZBWlO8KUfHdC6CoiKC1IwKSlUTfm6X00NU3fXjtazuH+PlXxlMkcsJOvC/HWrj97ukqf+snbJqjYhnqsL0/MKQhRmF+NHRSrH5vnj5xhXeL568wJWr+E+9fvc17jq1niA5jp/31LxI1hwMi42GfbBx1msj6pJhAxBAtumQ==",
+          "format": 2
+        },
+        {
+          "device_id": "bbbbbbbb-cccc-4ddd-8eee-ffffffffffff",
+          "public_key": "age1wd0xqrf9p3qj8drznjpm3npeq2ksfm4mtrqxc9wqlrnqskfj3ssqchdtk3",
+          "enrolled_at": "2026-08-23T13:00:00Z",
+          "wrap": "YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBxNVhaQS9hWCt6UVVrc3NEaHhMTW9YRVRWVTU4N2ZGS0hQcmN5UjZEOGhzCmxDbUhaWDJ4TWI5elpVMTRSc2dROUR4NVkyYkVMZGppQ0ZCbFppWXhYOEEKLS0tIDRhQis4cUlWengyaSsyU1FYRW9aTWZQTlhGK3pPWHI4M0FKS0lGM0ZNUFUKzG4lqbD4mQWmAGRWQbqtXO8lCEKZFX+bTixdZw320fLjPRjqLGDKjt22HqNUiKE8qrFzpE3Rvc45SyQn33iFPRSb7nK9YC0knER6m58iEwCqteaKCzw8Ud9TvsNRW3VsU+i+fD9yfzI6ObCqpFpKFH0eGQPJeseBldLKrR6kkL1U0KopHziVLA==",
+          "format": 2
+        }
+      ],
+      "signature": "9jGmDfnnwOKto0+VfuAVN+FQKDizCzmYIGkHMHlSQmftA9ZVd7ZZP0gpGlcEgD4g5RR6GXnjcO1CRbCW1VbVAA=="
+    },
+    {
+      "number": 2,
+      "created_at": "2026-08-23T14:00:00Z",
+      "recipient": "age1s97wxeywjjtn080240gwh8pwgzvm65jpyfmtmte0wawk6j8mdqesw5u950",
+      "recovery": {
+        "kdf": "argon2id",
+        "time": 3,
+        "memory_kib": 65536,
+        "threads": 4,
+        "salt": "P0NFQNK0T9JGDnuEliJrsQ==",
+        "wrap": "THNbrHQvvPH15IJOzMKSsuNd6IoV9145LIHBAlWN4TGh/L+B0VwIQOpTp7FlnDDXkGskjJhNysCB4ar/jWAXzTcKWHtwMgkY",
+        "format": 2
+      },
+      "devices": [
+        {
+          "device_id": "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+          "public_key": "age17t66a2ew0ukgt8m9mlunx0sfla9kyh3y5dyahpdg9vuu9lfvw5aqdas80z",
+          "enrolled_at": "2026-08-23T12:00:00Z",
+          "wrap": "YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBTTW1zKzhBWWhGUlBTdVN5d3hFQVdJSFM3ZXBZZzdLTmhSYXR3OUdzK20wCmpIWXN2WXVlVUdLMDJweUVoNnFwcGRYdTBueUZWek5jTUNEazVvNWxWTDQKLS0tIDB2WHNhV2RBS1B0Y3FvbHdKbnBlSFBSdFpBS0hva1FscUNXRUtpaHdSbEkKtSftpZkNAYqAhLUDx0Imcmnme1/4SVMtGIHKVYbFyG8M89n+7hiGzJA02t3nDRMai5Nk0d4IFaq6woEXNB3GjQoAkJFDw4eczYIh/YKG6NfGbfHhzXf/xDH30NE3nIfLewjoIDTD5AnihB8Yxj+tR5Oq1u1hXEUjVHnJfC2qEjilQaMU9sE/rQ==",
+          "format": 2
+        }
+      ],
+      "revoked": [
+        {
+          "device_id": "bbbbbbbb-cccc-4ddd-8eee-ffffffffffff",
+          "revoked_at": "2026-08-23T14:00:00Z",
+          "revoked_by": "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
+        }
+      ],
+      "signature": "GkkOsXGtQzBkARUB8tO9QZL5SwtbR6XXnNDuxbj4JNvjeDf5gll+9YTPjp0pVUeZ0JvpRIt366LA/M9vHwvxAQ=="
+    }
+  ]
+}

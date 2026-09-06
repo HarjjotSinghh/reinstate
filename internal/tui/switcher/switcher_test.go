@@ -233,6 +233,8 @@ type config struct {
 	// read-only branch instead.
 	plainReadiness bool
 	clipboard      tui.ClipboardFunc
+	// daemon is the daemon summary for the status line.
+	daemon string
 }
 
 // start builds a switcher and drives it through the deterministic harness.
@@ -271,6 +273,7 @@ func start(t *testing.T, cfg config) (*tuitest.Driver, *Model, *fakeLoader) {
 		Now:        fixtureNow(),
 		Limit:      cfg.limit,
 		Clipboard:  cfg.clipboard,
+		Daemon:     cfg.daemon,
 	})
 	driver := tuitest.New(t, model, cfg.width, cfg.height)
 	return driver, model, loader
@@ -1056,6 +1059,41 @@ func TestClipboardCopiesTheReference(t *testing.T) {
 			t.Fatalf("status = %q, want the reference %q", model.status, want.Reference())
 		}
 	})
+}
+
+// TestDaemonLineFillsTheStatusLine covers the daemon summary the CLI passes
+// in: it is the status line while nothing transient is being said, and a
+// transient message wins, then gives the line back.
+func TestDaemonLineFillsTheStatusLine(t *testing.T) {
+	const line = `daemon running · pushed just now · pulled just now · 2 device(s) · "desktop" wants to join: rein devices approve`
+	driver, model, _ := start(t, config{daemon: line})
+	if !strings.Contains(driver.View(), line) {
+		t.Fatalf("daemon line missing from the frame:\n%s", driver.View())
+	}
+
+	// A transient status (the reference shown when there is no clipboard)
+	// takes the line over.
+	want := mustSelected(t, model)
+	driver.Keys("tab", "y")
+	frame := driver.View()
+	if model.status != want.Reference() || !strings.Contains(frame, want.Reference()) {
+		t.Fatalf("transient status %q should be shown, status=%q", want.Reference(), model.status)
+	}
+	if strings.Contains(frame, "daemon running") {
+		t.Fatal("the transient status must replace the daemon line, not sit beside it")
+	}
+
+	// Clearing the transient status hands the line back to the daemon.
+	model.status = ""
+	if !strings.Contains(driver.View(), "daemon running") {
+		t.Fatal("daemon line should return once the transient status clears")
+	}
+
+	// Without a daemon summary and nothing to say, there is no status line.
+	plain, _, _ := start(t, config{})
+	if strings.Contains(plain.View(), "daemon") {
+		t.Fatal("no daemon line expected when none was given")
+	}
 }
 
 // TestUntrustedTitlesCannotRepaintTheTerminal is a security invariant, not a

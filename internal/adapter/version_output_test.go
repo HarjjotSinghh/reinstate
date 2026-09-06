@@ -59,8 +59,15 @@ func TestRunVersionCommandUnblocksGrandchildPipes(t *testing.T) {
 	if err == nil {
 		t.Fatal("hanging grandchild --version returned success")
 	}
-	if elapsed > 5*time.Second {
-		t.Fatalf("RunVersionCommand blocked %s on pipes held by a grandchild", elapsed)
+	// The probe's own deadline is versionProbeTimeout (2 s). The defect this
+	// guards against is a RunVersionCommand that never returns while a
+	// grandchild holds the pipes, which overshoots by minutes, not seconds.
+	// Under a parallel `go test ./...` on a loaded host the deadline itself
+	// fired 6.6 s in, so the bound is a multiple of the deadline rather than
+	// a measurement of it (same shape as TestHugeTreeFinishes).
+	const bound = 20 * time.Second
+	if elapsed > bound {
+		t.Fatalf("RunVersionCommand blocked %s on pipes held by a grandchild, want <= %s", elapsed, bound)
 	}
 }
 

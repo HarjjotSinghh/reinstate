@@ -9,8 +9,8 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func duplicatePassphraseFD(fd uintptr) (*os.File, error) {
-	duplicate, err := unix.Dup(int(fd))
+func duplicatePassphraseFD(fd int) (*os.File, error) {
+	duplicate, err := unix.Dup(fd)
 	if err != nil {
 		return nil, err
 	}

@@ -219,8 +219,13 @@ func TestScanLargeInputBudget(t *testing.T) {
 	start := time.Now()
 	ms := Scan(text)
 	elapsed := time.Since(start)
-	if elapsed > 5*time.Second {
-		t.Fatalf("1 MiB Scan took %s (budget 5s)", elapsed)
+	// The defect this guards against is a scan that grows worse than linearly
+	// with input, which takes minutes on 1 MiB, not seconds. The race
+	// detector on a shared CI runner has pushed a healthy scan past 6 s, so
+	// the budget is a multiple of that rather than a measurement of it.
+	const budget = 30 * time.Second
+	if elapsed > budget {
+		t.Fatalf("1 MiB Scan took %s (budget %s)", elapsed, budget)
 	}
 	found := false
 	for _, m := range ms {

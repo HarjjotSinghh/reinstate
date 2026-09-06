@@ -153,5 +153,12 @@ configuration deepens continuity:
 5. Encrypted sync carries sessions and non-secret desired state to another
    device.
 
-See [ROADMAP.md](../ROADMAP.md), [architecture.md](architecture.md), and
+Configuration is declared desired state — what an environment should look
+like. [Project continuity](project-continuity.md) (Phase 7) is a different
+kind of state: what the project has decided and learned. It reuses this
+phase's configuration-adapter contract to render canonical context into the
+same native instruction files.
+
+See [ROADMAP.md](../ROADMAP.md), [architecture.md](architecture.md),
+[project-continuity.md](project-continuity.md), and
 [security-model.md](security-model.md).

@@ -6,7 +6,7 @@ order: 8
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.5.2-rc.1"
+version: "v0.6.0-rc.1"
 updatedAt: 2026-08-16
 tags:
   ["troubleshooting", "session-sync", "path-remapping", "passphrase", "codex"]
@@ -19,7 +19,7 @@ noindex: false
 Use the smallest possible command while diagnosing a sync problem: one agent
 and one explicit session ID. Do not paste passphrases, storage credentials,
 session text, raw configuration, or unredacted absolute paths into an issue.
-Reinstate `v0.4.0` is a stable pre-1.0 release; Claude Code and Codex
+Reinstate `v0.5.1` is a stable pre-1.0 release; Claude Code and Codex
 resume only with the same vendor. Local search shipped in `v0.2.0`.
 
 ## Why is the `rein` binary not found after installation?

@@ -6,9 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
+	"path"
 	"path/filepath"
 	"reflect"
+	"slices"
+	"sort"
 	"strings"
 	"time"
 
@@ -24,6 +28,8 @@ import (
 	"github.com/HarjjotSinghh/reinstate/internal/credentials"
 	"github.com/HarjjotSinghh/reinstate/internal/crypto"
 	"github.com/HarjjotSinghh/reinstate/internal/fsx"
+	"github.com/HarjjotSinghh/reinstate/internal/hop"
+	"github.com/HarjjotSinghh/reinstate/internal/keyring"
 	"github.com/HarjjotSinghh/reinstate/internal/lock"
 	"github.com/HarjjotSinghh/reinstate/internal/processcheck"
 	"github.com/HarjjotSinghh/reinstate/internal/schema"
@@ -79,6 +85,7 @@ func newInitCmd() *cobra.Command {
 		force                                                 bool
 		link                                                  bool
 		paste                                                 bool
+		hosted                                                bool
 	)
 	cmd := &cobra.Command{
 		Use:   "init",
@@ -103,6 +110,12 @@ func newInitCmd() *cobra.Command {
 			}
 			if err := config.EnsureLayout(home); err != nil {
 				return err
+			}
+			if hosted {
+				if endpoint != "" || bucket != "" || prefix != "" || paste || configuredProfileID != "" {
+					return NewExitError(ExitUsage, "--hop takes its endpoint, bucket, and profile from the signed-in account; do not combine it with --endpoint, --bucket, --prefix, --profile-id, or --paste")
+				}
+				return initHosted(cmd, home, existingFiles, projectMappings)
 			}
 			// Interactive setup collects the non-secret coordinates first, so a
 			// mistake in one field never discards the others and a bad value is
@@ -224,7 +237,7 @@ func newInitCmd() *cobra.Command {
 			ctx := context.Background()
 			if os.Getenv("REINSTATE_BACKEND") == "memory" {
 				if configuredProfileID != "" {
-					disk, err := memory.NewDisk(filepath.Join(home, "cache", "memory-backend"))
+					disk, err := memory.NewDisk(memoryBackendRoot(home))
 					if err != nil {
 						return NewExitError(ExitRuntime, err.Error())
 					}
@@ -255,12 +268,7 @@ func newInitCmd() *cobra.Command {
 			}
 			keyringStore := credentials.NewKeyringStore()
 			if len(existingFiles) != 0 {
-				backupPath, err := fsx.BackupFiles(
-					home,
-					filepath.Join(home, "backups"),
-					"reinitialize",
-					existingFiles...,
-				)
+				backupPath, err := backupExistingInitFiles(home, "reinitialize", existingFiles)
 				if err != nil {
 					return NewExitError(ExitRuntime, "back up existing init state: "+err.Error())
 				}
@@ -306,12 +314,112 @@ func newInitCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&link, "link", false, "print this profile's pairing code for another device")
 	cmd.Flags().BoolVar(&paste, "paste", false, "start setup from a pairing code printed by another device")
 	cmd.Flags().BoolVar(&force, "force", false, "back up and replace an already-initialized home")
+	cmd.Flags().BoolVar(&hosted, "hop", false, "use the Reinstate Hop locker of the signed-in account instead of your own bucket")
 	return cmd
 }
 
+// initHosted writes a config that syncs to the signed-in account's locker.
+// The profile is the account (one locker, one profile), the device is the
+// enrolled device, and no storage coordinate or credential is stored: the
+// control plane supplies them per session. Provisioning the locker is the
+// reachability probe.
+func initHosted(cmd *cobra.Command, home string, existingFiles, projectMappings []string) error {
+	tok, client, err := hostedSession(cmd)
+	if err != nil {
+		return err
+	}
+	if tok.AccountID == "" || tok.DeviceID == "" {
+		return NewExitError(ExitAuthStorage, "the stored device token predates locker support; run rein login again")
+	}
+	ctx := cmd.Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	locker, err := client.ProvisionLocker(ctx, tok.Token)
+	if err != nil {
+		return hopExitError(err)
+	}
+	cfg := schema.DefaultConfig(tok.AccountID, tok.DeviceID)
+	cfg.Storage = schema.StorageConfig{Type: schema.StorageHop}
+	cfg.Hop.URL = tok.ControlPlaneURL
+	for _, mapping := range projectMappings {
+		project, parseErr := parseProjectMapping(mapping)
+		if parseErr != nil {
+			return NewExitError(ExitUsage, parseErr.Error())
+		}
+		cfg.Projects = append(cfg.Projects, project)
+	}
+	// Read the sync state before the backup removes the enrolment record,
+	// so a re-initialization against the same account can keep it.
+	state := carriedSyncState(home, cfg.ProfileID)
+	if len(existingFiles) != 0 {
+		backupPath, err := backupExistingInitFiles(home, "reinitialize", existingFiles)
+		if err != nil {
+			return NewExitError(ExitRuntime, "back up existing init state: "+err.Error())
+		}
+		backupRelative, err := filepath.Rel(home, backupPath)
+		if err != nil {
+			return NewExitError(ExitRuntime, "report init backup path: "+err.Error())
+		}
+		PrintHuman(cmd.OutOrStdout(), "backed up existing config/state to %s before reinitializing", filepath.ToSlash(backupRelative))
+	}
+	if err := config.SaveConfig(home, cfg); err != nil {
+		return err
+	}
+	if err := config.SaveState(home, state); err != nil {
+		return err
+	}
+	PrintHuman(cmd.OutOrStdout(), "initialized reinstate home for Reinstate Hop (config.toml + state.json); storage.type=%s", schema.StorageHop)
+	PrintHuman(cmd.OutOrStdout(), "locker %s at %s (location %s, plan %s)", locker.Bucket, locker.Endpoint, locker.LocationHint, locker.Plan)
+	PrintHuman(cmd.OutOrStdout(), "profile_id=%s device_id=%s", cfg.ProfileID, cfg.DeviceID)
+	if len(state.Sessions) != 0 {
+		PrintHuman(cmd.OutOrStdout(), "kept the sync state for %d session(s): the locker is the same one this home was already syncing with", len(state.Sessions))
+	}
+	PrintHuman(cmd.OutOrStdout(), "next: rein account init on this first device (or rein account join on another), then rein push")
+	return nil
+}
+
+// carriedSyncState decides what `rein init --hop --force` does with
+// state.json: keep the session records when the home is being pointed at the
+// same profile it already had, start empty otherwise.
+//
+// The reason is the documented way back onto a revoked machine. `--force` is
+// reached for there because it is the only thing that removes the enrolment
+// record — nothing else does — and clearing the sync state is collateral,
+// not the point. Without the records, `rein push` sees a local revision and
+// a remote snapshot that differ with no shared base, calls that a
+// divergence, and exits `6`: the last step of a recovery recipe fails on
+// state the recipe itself threw away.
+//
+// The records stay valid across that because the profile is the locker: same
+// account, same objects, same snapshot ids. Only the device id changed, and
+// no session record names one. A different profile is a different locker, so
+// there the empty state is correct and is what is written.
+//
+// The previous state is in the backup either way.
+func carriedSyncState(home, profileID string) *schema.State {
+	fresh := schema.NewState()
+	previous, err := config.LoadConfig(home)
+	if err != nil || previous.ProfileID != profileID {
+		return fresh
+	}
+	state, err := config.LoadState(home)
+	if err != nil || state == nil || len(state.Sessions) == 0 {
+		return fresh
+	}
+	fresh.Sessions = state.Sessions
+	fresh.LastManifestRev = state.LastManifestRev
+	fresh.LastRemoteETag = state.LastRemoteETag
+	return fresh
+}
+
+// existingInitFiles lists the files in home that a re-initialization
+// replaces. account.json is one of them: it records this device's place in
+// one account's keyring, and re-initializing can point the home at a
+// different account, profile, or device id.
 func existingInitFiles(home string) ([]string, error) {
 	var existing []string
-	for _, name := range []string{"config.toml", "state.json"} {
+	for _, name := range []string{"config.toml", "state.json", "account.json"} {
 		if _, err := os.Lstat(filepath.Join(home, name)); err == nil {
 			existing = append(existing, name)
 		} else if !os.IsNotExist(err) {
@@ -319,6 +427,27 @@ func existingInitFiles(home string) ([]string, error) {
 		}
 	}
 	return existing, nil
+}
+
+// backupExistingInitFiles copies the home's existing init state into one
+// timestamped backup set and then removes the enrolment record.
+//
+// Removing it is the point. init rewrites config.toml and state.json, but
+// nothing rewrites account.json, and both `rein account join` and `rein
+// account recover` refuse to run where one exists ("this device is already
+// enrolled"). A device that was revoked and is re-initializing to enrol
+// again would otherwise have no way forward: the record describes an
+// enrolment the account no longer has, and no command removed it. The copy
+// in the backup set keeps the history.
+func backupExistingInitFiles(home, name string, existing []string) (string, error) {
+	path, err := fsx.BackupFiles(home, filepath.Join(home, "backups"), name, existing...)
+	if err != nil {
+		return "", err
+	}
+	if err := os.Remove(config.AccountPath(home)); err != nil && !os.IsNotExist(err) {
+		return "", err
+	}
+	return path, nil
 }
 
 func requireRemoteProfileManifest(ctx context.Context, store backend.Backend, key string) error {
@@ -419,50 +548,131 @@ func engineFromConfig(cmd *cobra.Command, passphrase string) (*sync.Engine, *sch
 			state.LastManifestRev != "" ||
 			len(state.Sessions) != 0
 	}
-	// Backend selection: disk-backed "memory" for local e2e, else S3.
-	var b backend.Backend
-	enginePrefix := ""
-	if os.Getenv("REINSTATE_BACKEND") == "memory" {
-		disk, err := memory.NewDisk(filepath.Join(home, "cache", "memory-backend"))
-		if err != nil {
-			return nil, nil, "", NewExitError(ExitRuntime, err.Error())
-		}
-		b = disk
-		enginePrefix = cfg.Storage.Prefix
-	} else {
-		creds, err := credentials.Resolve(home, cfg.Storage.CredentialRef)
-		if err != nil {
-			return nil, nil, "", NewExitError(ExitAuthStorage, err.Error())
-		}
-		client, err := s3.New(context.Background(), s3.Config{
-			Endpoint: cfg.Storage.Endpoint, Region: cfg.Storage.Region,
-			Bucket: cfg.Storage.Bucket, Prefix: cfg.Storage.Prefix,
-			AccessKey: creds.AccessKeyID, SecretKey: creds.SecretAccessKey,
-		})
-		if err != nil {
-			return nil, nil, "", NewExitError(ExitAuthStorage, err.Error())
-		}
-		b = client
+	b, enginePrefix, hosted, err := openBackend(cmd, cfg, home)
+	if err != nil {
+		return nil, nil, "", err
 	}
-	if passphrase == "" {
-		secret, err := crypto.ReadPassphrase(cmd.InOrStdin(), cmd.ErrOrStderr())
+	var keys crypto.KeyProvider
+	if cfg.Encryption.Type == schema.EncryptionRootKey {
+		keys, err = rootKeysFromConfig(context.Background(), cmd, cfg, home, b, enginePrefix)
 		if err != nil {
-			return nil, nil, "", NewExitError(ExitUsage, err.Error())
+			return nil, nil, "", hostedError(hosted, err)
 		}
-		passphrase = string(secret)
-		crypto.Zero(secret)
+	} else if hosted != nil {
+		return nil, nil, "", hostedError(hosted, hostedNotEnrolledError(context.Background(), cfg, b, enginePrefix))
+	} else {
+		if passphrase == "" {
+			passphrase = cachedPassphraseFrom(cmd)
+		}
+		if passphrase == "" {
+			secret, err := crypto.ReadPassphrase(cmd.InOrStdin(), cmd.ErrOrStderr())
+			if err != nil {
+				return nil, nil, "", NewExitError(ExitUsage, err.Error())
+			}
+			passphrase = string(secret)
+			crypto.Zero(secret)
+		}
+		keys = crypto.NewPassphraseProvider(passphrase)
 	}
 	var envelopeCodec sync.EnvelopeCodec
 	if commandContext := cmd.Context(); commandContext != nil {
 		envelopeCodec, _ = commandContext.Value(envelopeCodecContextKey{}).(sync.EnvelopeCodec)
 	}
-	return &sync.Engine{
+	eng := &sync.Engine{
 		Backend:               b,
-		Passphrase:            passphrase,
+		Keys:                  keys,
 		Prefix:                enginePrefix,
 		RequireRemoteManifest: requireRemoteManifest,
 		Codec:                 envelopeCodec,
-	}, cfg, home, nil
+	}
+	if hosted != nil {
+		rememberHosted(cmd, hosted)
+	}
+	return eng, cfg, home, nil
+}
+
+// refusedRestoreMessage names the agent and session an adapter refused to
+// restore. On a fresh device the usual cause is a vendor that has not been
+// installed (or run) yet, so the message says which one to set up.
+func refusedRestoreMessage(agent, sessionID, refuse string) string {
+	msg := fmt.Sprintf("%s session %s: %s", agent, sessionID, refuse)
+	if strings.Contains(refuse, string(adapter.CompatibilityNotInstalled)) {
+		msg += fmt.Sprintf("; install and run %s once on this device so its session layout exists, then pull again", agent)
+	}
+	return msg
+}
+
+// hostedNotEnrolledError explains a hosted profile that still uses the
+// passphrase model. The right next step depends on the locker: a fresh
+// account enrols with `rein account init`; an account whose keyring already
+// exists (a wiped or additional device) recovers or joins, and must not be
+// told to create a second root key.
+func hostedNotEnrolledError(ctx context.Context, cfg *schema.Config, b backend.Backend, prefix string) error {
+	detail := " (encryption.type is " + cfg.Encryption.Type + ", the hosted tier uses " + schema.EncryptionRootKey + ")"
+	_, _, err := keyring.Load(ctx, b, keyring.ObjectKey(prefix))
+	if exit := exitForKeyringRefusal(err); exit != nil {
+		return exit
+	}
+	switch {
+	case err == nil:
+		return NewExitError(ExitConfig, "this device is not enrolled in the account's keyring yet; run rein account recover with your recovery code, or rein account join and approve it from an enrolled device"+detail)
+	case errors.Is(err, keyring.ErrNotFound):
+		return NewExitError(ExitConfig, "the account has no root key yet; run rein account init on this first device"+detail)
+	default:
+		return NewExitError(ExitAuthStorage, err.Error())
+	}
+}
+
+// memoryBackendRoot is where the disk-backed "memory" backend keeps objects.
+// REINSTATE_MEMORY_BACKEND_DIR lets two homes share one store, which is how
+// the CLI journeys simulate two devices against one locker.
+func memoryBackendRoot(home string) string {
+	if dir := strings.TrimSpace(os.Getenv("REINSTATE_MEMORY_BACKEND_DIR")); dir != "" && filepath.IsAbs(dir) {
+		return dir
+	}
+	return filepath.Join(home, "cache", "memory-backend")
+}
+
+// backendFromConfig opens the configured storage: disk-backed "memory" for
+// local e2e, the hosted locker for storage.type "hop", else S3. The
+// returned prefix is the engine-side key prefix (empty when the client
+// already scopes keys).
+func backendFromConfig(cmd *cobra.Command, cfg *schema.Config, home string) (backend.Backend, string, error) {
+	b, prefix, _, err := openBackend(cmd, cfg, home)
+	return b, prefix, err
+}
+
+// openBackend is backendFromConfig that also returns the hosted credential
+// source when the locker is in use, so callers can report the control
+// plane's refusal instead of the storage layer's wrapped error.
+func openBackend(cmd *cobra.Command, cfg *schema.Config, home string) (backend.Backend, string, *hop.Source, error) {
+	if os.Getenv("REINSTATE_BACKEND") == "memory" {
+		disk, err := memory.NewDisk(memoryBackendRoot(home))
+		if err != nil {
+			return nil, "", nil, NewExitError(ExitRuntime, err.Error())
+		}
+		return disk, cfg.Storage.Prefix, nil, nil
+	}
+	if cfg.Storage.Type == schema.StorageHop {
+		client, source, err := hostedBackend(cmd)
+		if err != nil {
+			return nil, "", nil, err
+		}
+		return client, "", source, nil
+	}
+	creds, err := credentials.Resolve(home, cfg.Storage.CredentialRef)
+	if err != nil {
+		return nil, "", nil, NewExitError(ExitAuthStorage, err.Error())
+	}
+	client, err := s3.New(context.Background(), s3.Config{
+		Endpoint: cfg.Storage.Endpoint, Region: cfg.Storage.Region,
+		Bucket: cfg.Storage.Bucket, Prefix: cfg.Storage.Prefix,
+		AccessKey: creds.AccessKeyID, SecretKey: creds.SecretAccessKey,
+	})
+	if err != nil {
+		return nil, "", nil, NewExitError(ExitAuthStorage, err.Error())
+	}
+	return client, "", nil, nil
 }
 
 func newStatusCmd() *cobra.Command {
@@ -566,7 +776,7 @@ func newPushCmd() *cobra.Command {
 		Use:   "push",
 		Short: "Encrypt and upload local sessions",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			eng, _, home, err := engineFromConfig(cmd, "")
+			eng, cfg, home, err := engineFromConfig(cmd, "")
 			if err != nil {
 				return err
 			}
@@ -612,12 +822,25 @@ func newPushCmd() *cobra.Command {
 			}
 			remoteManifest, err := eng.FetchManifest(context.Background())
 			if err != nil {
-				return NewExitError(ExitAuthStorage, err.Error())
+				return hostedError(hostedFrom(cmd), NewExitError(ExitAuthStorage, err.Error()))
 			}
 			var uploaded []string
 			var skipped int
+			var conflicted []string
+			var verification map[string]any
 			for _, it := range items {
-				localHash, err := hashFile(it.LocalPath)
+				a, ok := reg.Get(it.Agent)
+				if !ok {
+					return NewExitError(ExitCompatibility, "adapter unavailable for "+it.Agent)
+				}
+				sessionMeta := adapter.Session{
+					ID:           it.SessionID,
+					Agent:        it.Agent,
+					ProjectID:    it.ProjectID,
+					Path:         it.LocalPath,
+					RelativePath: it.RelativePath,
+				}
+				localHash, err := sessionRevision(a, sessionMeta)
 				if err != nil {
 					return err
 				}
@@ -629,17 +852,6 @@ func newPushCmd() *cobra.Command {
 					prior.RemoteRevision == remote.SnapshotID {
 					skipped++
 					continue
-				}
-				a, ok := reg.Get(it.Agent)
-				if !ok {
-					return NewExitError(ExitCompatibility, "adapter unavailable for "+it.Agent)
-				}
-				sessionMeta := adapter.Session{
-					ID:           it.SessionID,
-					Agent:        it.Agent,
-					ProjectID:    it.ProjectID,
-					Path:         it.LocalPath,
-					RelativePath: it.RelativePath,
 				}
 				plan, err := a.PlanExport(context.Background(), sessionMeta, adapter.ExportOptions{DryRun: dryRun})
 				if err != nil {
@@ -675,12 +887,25 @@ func newPushCmd() *cobra.Command {
 								remoteSnapshot = remote.SnapshotID
 							}
 						}
+						// LocalRevision is the current local hash, the same
+						// key pull --all records for this divergence, so push
+						// and pull share one record instead of two.
 						_ = sync.SaveConflict(home, sync.Conflict{
 							Agent: it.Agent, SessionID: it.SessionID, ProjectID: it.ProjectID,
-							LocalRevision: it.BaseRevision, RemoteRevision: remoteSnapshot,
+							LocalRevision: localHash, RemoteRevision: remoteSnapshot,
 							RemoteSnapshot: remoteSnapshot,
 						})
-						return NewExitError(ExitConflict, err.Error())
+						if session != "" {
+							return NewExitError(ExitConflict, err.Error())
+						}
+						// push --all keeps going so one diverged session
+						// does not hold every other session's changes back
+						// (the daemon runs this push after every change).
+						conflicted = append(conflicted, key)
+						continue
+					}
+					if hosted := hostedFrom(cmd); hosted != nil && hosted.LastError() != nil {
+						return hostedError(hosted, err)
 					}
 					if strings.Contains(err.Error(), "credential") {
 						return NewExitError(ExitSafety, err.Error())
@@ -706,18 +931,43 @@ func newPushCmd() *cobra.Command {
 				if err := config.SaveState(home, state); err != nil {
 					return err
 				}
+				if hosted := hostedFrom(cmd); hosted != nil && len(uploaded) != 0 {
+					// The first_push product event comes from this report;
+					// a failed report never fails a push that completed.
+					if err := hosted.ReportFirstPush(context.Background()); err != nil {
+						PrintHuman(cmd.ErrOrStderr(), "note: could not report the push to the control plane: %v", err)
+					}
+					// The first push from each device is followed by the
+					// verification, once; its report goes to the console.
+					verification = verifyAfterFirstPush(cmd, eng, cfg, home, hosted)
+				}
+			}
+			sort.Strings(conflicted)
+			conflictErr := func() error {
+				if len(conflicted) == 0 {
+					return nil
+				}
+				return NewExitError(ExitConflict, fmt.Sprintf("%d session(s) diverged from the locker; conflict recorded for %s (pushed %d other snapshot(s))",
+					len(conflicted), strings.Join(conflicted, ", "), len(uploaded)))
 			}
 			if asJSON {
-				return WriteJSON(cmd.OutOrStdout(), map[string]any{
-					"snapshots": uploaded, "skipped": skipped, "dry_run": dryRun,
-				})
+				out := map[string]any{
+					"snapshots": uploaded, "skipped": skipped, "dry_run": dryRun, "conflicts": conflicted,
+				}
+				if verification != nil {
+					out["verification"] = verification
+				}
+				if err := WriteJSON(cmd.OutOrStdout(), out); err != nil {
+					return err
+				}
+				return conflictErr()
 			}
 			if dryRun {
 				PrintHuman(cmd.OutOrStdout(), "would push %d snapshot(s), would skip %d unchanged, dry_run=true", len(uploaded), skipped)
-				return nil
+				return conflictErr()
 			}
 			PrintHuman(cmd.OutOrStdout(), "pushed %d snapshot(s), skipped %d unchanged, dry_run=%v", len(uploaded), skipped, dryRun)
-			return nil
+			return conflictErr()
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "emit machine-readable JSON")
@@ -811,8 +1061,20 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 				ForkedSessionID string `json:"forked_session_id,omitempty"`
 			}
 			var plans []pullPlan
-			var pulled int
-			for _, s := range man.Sessions {
+			var pulled, skipped int
+			var conflicted []string
+			// Sessions restored so far are recorded even when a later one
+			// fails: otherwise the next pull finds a local copy it has no
+			// revision for and reports a conflict that never happened.
+			var restoredAny, stateSaved bool
+			defer func() {
+				if !dryRun && restoredAny && !stateSaved {
+					state.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+					_ = config.SaveState(home, state)
+				}
+			}()
+			for _, key := range slices.Sorted(maps.Keys(man.Sessions)) {
+				s := man.Sessions[key]
 				if agent != "" && s.Agent != agent {
 					continue
 				}
@@ -826,11 +1088,28 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 				// A forked restore never replaces the local file, so divergence
 				// protection does not apply to it.
 				if localSession, exists := localSessions[key]; exists && !forkSessions[key] {
-					localHash, hashErr := hashFile(localSession.Path)
+					localAdapter, ok := reg.Get(s.Agent)
+					if !ok {
+						return NewExitError(ExitCompatibility, "adapter unavailable for "+s.Agent)
+					}
+					localHash, hashErr := sessionRevision(localAdapter, localSession)
 					if hashErr != nil {
 						return hashErr
 					}
 					prior, known := state.Sessions[key]
+					if session == "" && known && prior.RemoteRevision == s.SnapshotID && prior.LocalRevision != "" {
+						// pull --all asks for what is newer remotely. This
+						// snapshot is the one this device last synced, so
+						// there is nothing newer to restore, and a local
+						// edit since then belongs to the next push, not to
+						// a conflict. Restoring anyway would rewrite and
+						// back up an identical file on every pull, which
+						// the daemon runs every few minutes. An explicit
+						// --session still restores (and still records a
+						// conflict when the local copy diverged).
+						skipped++
+						continue
+					}
 					if !known || prior.LocalRevision == "" || localHash != prior.LocalRevision {
 						conflict := sync.Conflict{
 							Agent: s.Agent, SessionID: s.SessionID, ProjectID: s.ProjectID,
@@ -842,7 +1121,15 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 								return err
 							}
 						}
-						return NewExitError(ExitConflict, "local session diverged; conflict recorded")
+						if session != "" {
+							return NewExitError(ExitConflict, "local session diverged; conflict recorded")
+						}
+						// pull --all keeps going: one diverged session must
+						// not hold back every other session's newer
+						// snapshot (the daemon runs this pull on a
+						// schedule). The conflicts are reported together.
+						conflicted = append(conflicted, key)
+						continue
 					}
 				}
 				dest := filepath.Join(home, "cache", "pull", s.SnapshotID)
@@ -879,7 +1166,7 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 					return err
 				}
 				if restorePlan.Refuse != "" {
-					return NewExitError(ExitCompatibility, restorePlan.Refuse)
+					return NewExitError(ExitCompatibility, refusedRestoreMessage(s.Agent, s.SessionID, restorePlan.Refuse))
 				}
 				plans = append(plans, pullPlan{
 					Agent: s.Agent, SessionID: s.SessionID, SnapshotID: s.SnapshotID,
@@ -920,7 +1207,7 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 					if err != nil {
 						return fmt.Errorf("verify restored session: %w", err)
 					}
-					localHash, err := hashFile(restored.Path)
+					localHash, err := sessionRevision(a, restored)
 					if err != nil {
 						return err
 					}
@@ -932,6 +1219,7 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 							LocalRevision: localHash, RemoteRevision: s.SnapshotID,
 							UpdatedAt: time.Now().UTC().Format(time.RFC3339),
 						}
+						restoredAny = true
 					}
 				}
 				pulled++
@@ -945,16 +1233,28 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 				if err := config.SaveState(home, state); err != nil {
 					return err
 				}
+				stateSaved = true
+			}
+			sort.Strings(conflicted)
+			conflictErr := func() error {
+				if len(conflicted) == 0 {
+					return nil
+				}
+				return NewExitError(ExitConflict, fmt.Sprintf("%d session(s) diverged locally; conflict recorded for %s (pulled %d other snapshot(s))",
+					len(conflicted), strings.Join(conflicted, ", "), pulled))
 			}
 			if asJSON {
-				return WriteJSON(cmd.OutOrStdout(), map[string]any{
-					"pulled": pulled, "dry_run": dryRun, "plans": plans,
-				})
+				if err := WriteJSON(cmd.OutOrStdout(), map[string]any{
+					"pulled": pulled, "skipped": skipped, "dry_run": dryRun, "plans": plans, "conflicts": conflicted,
+				}); err != nil {
+					return err
+				}
+				return conflictErr()
 			}
 			if dryRun {
-				PrintHuman(cmd.OutOrStdout(), "would pull %d snapshot(s), dry_run=true", pulled)
+				PrintHuman(cmd.OutOrStdout(), "would pull %d snapshot(s), would skip %d already synced, dry_run=true", pulled, skipped)
 			} else {
-				PrintHuman(cmd.OutOrStdout(), "pulled %d snapshot(s), dry_run=false", pulled)
+				PrintHuman(cmd.OutOrStdout(), "pulled %d snapshot(s), skipped %d already synced, dry_run=false", pulled, skipped)
 			}
 			for _, plan := range plans {
 				PrintHuman(cmd.OutOrStdout(), "  %s:%s -> %s (backups: %s)",
@@ -965,7 +1265,7 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 						plan.SessionID, plan.ForkedSessionID)
 				}
 			}
-			return nil
+			return conflictErr()
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "emit machine-readable JSON")
@@ -1183,7 +1483,7 @@ func resolveKeepLocal(
 	if err != nil {
 		return err
 	}
-	localHash, err := hashFile(selected.Path)
+	localHash, err := sessionRevision(selectedAdapter, selected)
 	if err != nil {
 		return err
 	}
@@ -1251,7 +1551,7 @@ func resolveKeepRemote(
 	if err != nil {
 		return fmt.Errorf("verify resolved session: %w", err)
 	}
-	localHash, err := hashFile(restored.Path)
+	localHash, err := sessionRevision(selectedAdapter, restored)
 	if err != nil {
 		return err
 	}
@@ -1400,11 +1700,29 @@ func requireSessionRestorable(
 }
 
 func forkRelativePath(source, sessionID string) string {
-	dir := filepath.ToSlash(filepath.Dir(filepath.FromSlash(source)))
-	if dir == "." {
-		return sessionID + ".jsonl"
+	slashSource := filepath.ToSlash(source)
+	// Keep the source's own extension so an embedded-store agent whose sessions
+	// are addressed as ".json" does not have a fork mislabelled ".jsonl".
+	ext := path.Ext(slashSource)
+	if ext == "" {
+		ext = ".jsonl"
 	}
-	return dir + "/" + sessionID + ".jsonl"
+	dir := path.Dir(slashSource)
+	if dir == "." {
+		return sessionID + ext
+	}
+	return dir + "/" + sessionID + ext
+}
+
+// sessionRevision returns a stable per-session content revision. Embedded-store
+// adapters implement adapter.SessionRevisioner because their sessions do not
+// each own a file to hash; a file-per-session adapter falls back to hashing the
+// session's file.
+func sessionRevision(a adapter.Adapter, s adapter.Session) (string, error) {
+	if revisioner, ok := a.(adapter.SessionRevisioner); ok {
+		return revisioner.SessionRevision(context.Background(), s)
+	}
+	return hashFile(s.Path)
 }
 
 // allPathsExist reports whether every path is already present on disk.

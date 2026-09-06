@@ -233,9 +233,22 @@ func TestVerifyAvoidsRedundantDoctestRuns(t *testing.T) {
 	if strings.Contains(raceCommand, "/internal/doctest") {
 		t.Fatalf("race gate repeats subprocess/document contracts: %s", raceCommand)
 	}
-	if strings.Contains(raceCommand, "/internal/crypto") {
+	if listsPackage(raceCommand, "/internal/crypto") {
 		t.Fatalf("race gate repeats production-strength scrypt: %s", raceCommand)
 	}
+}
+
+// listsPackage reports whether a go test command names the exact package
+// ending in suffix. A substring match would also catch child packages such
+// as internal/crypto/cryptotest, whose tests seal at the lowest scrypt cost
+// and belong in the fast gates.
+func listsPackage(command, suffix string) bool {
+	for _, field := range strings.Fields(command) {
+		if strings.HasSuffix(field, suffix) {
+			return true
+		}
+	}
+	return false
 }
 
 func TestCIVerificationUsesOptimizedRaceGate(t *testing.T) {
@@ -408,7 +421,7 @@ func TestQuickGateStaysFocusedAndNonRelease(t *testing.T) {
 	if !strings.Contains(text, "go vet ./...") {
 		t.Fatal("quick gate must retain go vet")
 	}
-	if strings.Contains(text, "/internal/doctest") || strings.Contains(text, "/internal/crypto") {
+	if strings.Contains(text, "/internal/doctest") || listsPackage(text, "/internal/crypto") {
 		t.Fatalf("quick gate includes a deliberately slow package:\n%s", text)
 	}
 	if strings.Contains(text, "-count=1") {
