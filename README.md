@@ -279,7 +279,7 @@ Bare `rein` opens the numbered switcher only on a TTY. For scripts use
 `rein sessions --json`; a non-TTY bare invocation exits promptly with that
 hint.
 
-### Install the v0.5.1 candidate
+### Install the v0.6.0-rc.2 candidate
 
 macOS, Linux, or WSL2:
 
@@ -293,7 +293,7 @@ Native Windows PowerShell:
 irm https://reinstate.dev/install.ps1 | iex
 ```
 
-Both bootstraps pin and verify `v0.5.1`, install without elevation, and
+Both bootstraps pin and verify `v0.6.0-rc.2`, install without elevation, and
 print the next command:
 
 ```bash
