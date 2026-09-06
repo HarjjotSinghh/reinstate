@@ -42,7 +42,7 @@
       },
       "lastTested": "2026-08-16",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-08-15-macos-phase4-V040RC11.md",
-      "notes": "Versions outside the inclusive range, including prereleases, fail closed as untested. v0.5.1 accepted Claude Code 2.1.219–2.1.238 on dual-platform physical evidence. v0.6.0 widens the ceiling to 2.1.261 on native Windows physical evidence; macOS pending (ADR 0005 D3): a session created with 2.1.261 was indexed, resumed through the launch plan Reinstate produced, and returned a token that existed only in the original session's history."
+      "notes": "Versions outside the inclusive range, including prereleases, fail closed as untested. v0.5.1 accepted Claude Code 2.1.219–2.1.238 on dual-platform physical evidence. v0.6.0 widens the ceiling to 2.1.263 on native Windows physical evidence; macOS pending (ADR 0005 D3): a session created with 2.1.263 was indexed, resumed through the launch plan Reinstate produced, and returned a token that existed only in the original session's history."
     },
     {
       "id": "codex",
