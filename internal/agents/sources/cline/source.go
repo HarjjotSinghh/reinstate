@@ -6,7 +6,10 @@
 //	~/.cline/data/sessions/<slug>/<slug>.messages.json
 //
 // Session metadata is pretty-printed JSON. Both platforms also write
-// db/sessions.db; that file is not parsed. *.messages.json is skipped.
+// db/sessions.db; that file is not parsed. *.messages.json is never indexed
+// as a session of its own, but message_count is read from it: the sidecar's
+// "messages" array is counted, bounded and streamed, without ever decoding
+// message content into memory.
 package cline
 
 import (
@@ -121,6 +124,7 @@ func parseSession(file hometree.File) (sessionindex.Record, error) {
 	if err != nil {
 		return sessionindex.Record{}, err
 	}
+	messageCount := countMessages(messagesSidecarPath(file.Path))
 	id := strings.TrimSpace(item.SessionID)
 	if id == "" {
 		id = strings.TrimSuffix(filepath.Base(file.Path), filepath.Ext(file.Path))
@@ -153,6 +157,7 @@ func parseSession(file hometree.File) (sessionindex.Record, error) {
 		Workspace:      workspace,
 		UpdatedAt:      updated,
 		SizeBytes:      file.Size,
+		MessageCount:   messageCount,
 		PromptPreview:  title,
 		CanResume:      false,
 		CanFork:        false,
@@ -192,6 +197,89 @@ func readMeta(path string) (meta, error) {
 		return meta{}, err
 	}
 	return item, nil
+}
+
+// maxMessagesSidecarBytes bounds the *.messages.json read. The sidecar holds
+// every turn of the task, so it is not covered by MaxJSONLineBytes (sized for
+// one metadata file); a sidecar over this bound is treated as unreadable and
+// message_count stays 0 rather than trusting a partial scan.
+const maxMessagesSidecarBytes = 32 << 20
+
+// messagesSidecarPath returns the *.messages.json path beside a session's
+// <slug>.json metadata file, per the documented layout.
+func messagesSidecarPath(metaPath string) string {
+	return strings.TrimSuffix(metaPath, filepath.Ext(metaPath)) + ".messages.json"
+}
+
+// countMessages counts the entries in a Cline *.messages.json sidecar's
+// "messages" array without ever holding the whole file, or the content of
+// any one message, in memory. Every message is decoded into a throwaway
+// json.RawMessage and discarded immediately; only the count is kept. A
+// missing, oversized, or malformed sidecar is not an error: a task that has
+// not written one yet, or one this reader cannot make sense of, still gets a
+// record — just with message_count 0, the same as before this reader existed.
+func countMessages(path string) int {
+	info, err := os.Stat(path)
+	if err != nil || !info.Mode().IsRegular() || info.Size() > maxMessagesSidecarBytes {
+		return 0
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		return 0
+	}
+	defer func() { _ = file.Close() }()
+
+	dec := json.NewDecoder(file)
+	if !seekMessagesArray(dec) {
+		return 0
+	}
+	count := 0
+	for dec.More() {
+		var discard json.RawMessage
+		if err := dec.Decode(&discard); err != nil {
+			return 0
+		}
+		count++
+	}
+	return count
+}
+
+// seekMessagesArray advances dec to just past the opening "[" of the
+// top-level "messages" key, skipping every other key's value unread. It
+// never decodes "messages" itself, so the caller controls exactly how much
+// of the array is materialized at once.
+func seekMessagesArray(dec *json.Decoder) bool {
+	tok, err := dec.Token()
+	if err != nil {
+		return false
+	}
+	if delim, ok := tok.(json.Delim); !ok || delim != '{' {
+		return false
+	}
+	for dec.More() {
+		keyTok, err := dec.Token()
+		if err != nil {
+			return false
+		}
+		key, ok := keyTok.(string)
+		if !ok {
+			return false
+		}
+		if key != "messages" {
+			var discard json.RawMessage
+			if err := dec.Decode(&discard); err != nil {
+				return false
+			}
+			continue
+		}
+		valueTok, err := dec.Token()
+		if err != nil {
+			return false
+		}
+		delim, ok := valueTok.(json.Delim)
+		return ok && delim == '['
+	}
+	return false
 }
 
 func parseTime(value string) time.Time {
