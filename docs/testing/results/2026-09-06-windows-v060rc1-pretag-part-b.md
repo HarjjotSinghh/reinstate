@@ -29,10 +29,18 @@ executor. It does not stand alone as a Phase 5 verdict — see
 ## Scope and status
 
 - **Rows covered:** Matrix C (C1–C6) for `claude`, `codex`, `opencode`, `grok`,
-  `qwen`, `gemini`, `kimi`; Matrix D (D1–D5) for `claude`, `codex`, `opencode`,
-  `grok`, `qwen`; Matrix E (E1–E6) for the same five, **partially** (see
-  below). Total assigned rows: 107. Rows with a genuine PASS/FAIL result in
-  this report: **71**. Rows recorded `NOT TESTED` with a named blocker: **36**.
+  `qwen`, `gemini`, `kimi`; Matrix D (D1–D5) for all seven agents (`gemini`
+  and `kimi` as handoff **source**, `--to claude`, per their T2 tier — they
+  are never valid `--to` destinations); Matrix E (E1–E6) for the five T4/T5
+  agents, **partially** (see below). Total assigned rows: **107**
+  (5 × 17 + 2 × 11), matching the generated acceptance matrix's per-agent
+  counts for these seven keys.
+- **Required-row counts:** `70 PASS / 2 FAIL / 1 PARTIAL / 34 NOT TESTED`
+  (sums to 107). Plus **3 additional rows beyond the 107** — the T5 sync
+  round trip this executor's assignment also calls for — all `NOT TESTED`
+  (see [Section 4](#4-t5-encrypted-sync-round-trip-claude-codex-opencode)).
+  Per the contract, `PARTIAL` and `NOT TESTED` do not pass a required row, so
+  **35 of 107** assigned rows do not pass.
 - **This report does not authorize `v0.6.0-rc.1` acceptance by itself.** A
   large fraction of the highest-risk rows — physical vendor resume (E1/E2),
   fork (E3), active-session detection (E5), and the T5 encrypted-sync round
@@ -138,11 +146,19 @@ executor caused and corrected, not a product defect — see
 
 \* See [Section 6](#6-harness-and-methodology-findings) for the caveat named in each starred row.
 
-## 2. Matrix D — Per T2+ agent (`claude`, `codex`, `opencode`, `grok`, `qwen`)
+## 2. Matrix D — Per T2+ agent (all seven)
 
-All five are T4+ this candidate, so D1–D5 apply. Destination for each row is
-named in the evidence column; `claude`'s own source row uses `codex` as
-destination (a source cannot meaningfully hand off to itself).
+The five T4/T5 agents are handoff sources with a full destination choice;
+`claude`'s own source row uses `codex` as destination (a source cannot
+meaningfully hand off to itself). `gemini` and `kimi` are T2 — handoff
+**source** only, never a valid `--to` destination (`rein handoff --help`
+lists exactly `claude|codex|grok|opencode|qwen`) — so their D-rows below use
+`--to claude` with `gemini`/`kimi` as the source, exactly as Matrix D's own
+definition names T2+ (not only T4+) as in scope, and as the generated
+acceptance matrix confirms (`gemini`/`kimi` each carry `D1`–`D5` in their
+11-row set alongside `C1`–`C6`).
+
+### 2a. `claude`, `codex`, `opencode`, `grok`, `qwen`
 
 | Row | Description | Result | Evidence |
 | --- | ------------ | ------ | -------- |
@@ -171,6 +187,29 @@ destination (a source cannot meaningfully hand off to itself).
 | `D5:opencode` | as above | NOT TESTED | blocked by `D1:opencode` |
 | `D5:grok` | as above | PASS | same comparison, same result |
 | `D5:qwen` | as above | PASS | same comparison, same result |
+
+### 2b. `gemini`, `kimi` (source; destination fixed to `claude`)
+
+An earlier pass of this run's fixture setup left both agents' recorded `cwd`
+mangled by a shell-quoting error (a literal control byte in place of part of
+the path), which made the workspace genuinely absent on disk and blocked
+`D1` with `workspace.available: missing` / `agent.executable: missing`. That
+was a fixture-authoring defect in this run, not a product defect — it is
+disclosed and corrected below rather than silently fixed and hidden; the
+first (broken) attempt is not counted as a row result.
+
+| Row | Description | Result | Evidence |
+| --- | ------------ | ------ | -------- |
+| `D1:gemini` | `--dry-run` handoff produces a capsule + fidelity report | PASS | `rein handoff gemini:gemini-rewind-win --to claude --dry-run --json` (fixture `directories` repointed to the throwaway real repo) → `rc=0`, 4,076-byte capsule with `fidelity`, `parse`, `destination.args`, `workspace` |
+| `D1:kimi` | as above | PASS | `rein handoff kimi:session_01912345-6789-7abc-def0-123456789abc --to claude --dry-run --json` (fixture `cwd` repointed) → `rc=0`, 4,716-byte capsule |
+| `D2:gemini` | Capsule contains no content the source didn't, no invented turn | PASS | `fidelity.components` shows only `exact`/`normalized`/`omitted`, never a silently-filled field |
+| `D2:kimi` | as above | PASS | same pattern |
+| `D3:gemini` | Unknown records `referenced`/`omitted` with a reason, never guessed | PASS | `constraints`/`decisions` omitted with `"reason":"requires_optional_summarizer"`; `pending` omitted with `"reason":"interrupted_not_replayed"` |
+| `D3:kimi` | as above | PASS | `constraints`/`decisions` omitted with `"reason":"requires_optional_summarizer"`; `metadata` omitted with `"reason":"harness_meta_record"` |
+| `D4:gemini` | Truncated source: boundary at last complete record, offset + hash recorded | NOT TESTED | same single/few-record fixture-size limitation noted under `D4:claude`; not attempted given time |
+| `D4:kimi` | as above | NOT TESTED | as above |
+| `D5:gemini` | Two runs over an unchanged source produce byte-identical capsules | PASS | two `--dry-run` runs compared field-by-field; identical except `handoff_id`/`lineage_root` |
+| `D5:kimi` | as above | PASS | same comparison, same result |
 
 ## 3. Matrix E — Per T3 agent (`claude`, `codex`, `opencode`, `grok`, `qwen`)
 
