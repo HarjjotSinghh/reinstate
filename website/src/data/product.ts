@@ -27,7 +27,7 @@ export const product = {
   initialPublicReleaseDate: '2026-07-25',
   stableRelease: 'v0.5.1',
   releaseStatus: 'v0.6.0-rc.2 candidate · stable remains v0.5.1 · v0.6.0-rc.1 tagged Windows run ended 201/216, its defects fixed here · native Windows tagged-artifact acceptance pending, macOS deferred',
-  lastVerified: '2026-09-07',
+  lastVerified: '2026-09-06',
   programmingLanguage: 'Go',
   requiresAccount: false,
   maintainer: {
