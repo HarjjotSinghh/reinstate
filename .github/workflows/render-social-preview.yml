@@ -6,13 +6,24 @@ name: Render social preview
 # a maintainer working on Windows regenerates here rather than committing a
 # local render that the `website` job then rejects.
 #
-#   gh workflow run render-social-preview.yml --ref <branch>
+#   gh workflow run render-social-preview.yml --ref <branch>   (once this
+#   file is on main; GitHub only registers manual workflows from there)
 #   gh run download <run-id> --name github-social-preview
 #   copy the two files over website/public/brand/github-social.png and
 #   assets/brand-kit/png/github-social-1280x640.png, then commit.
+#
+# On a release branch, where a manual dispatch is not yet possible, it runs
+# on push whenever one of the inputs to the render changes.
 
 on:
   workflow_dispatch:
+  push:
+    branches: ["release/**"]
+    paths:
+      - ".github/workflows/render-social-preview.yml"
+      - "website/scripts/generate-github-social.ts"
+      - "website/src/data/product.ts"
+      - "website/src/lib/github-social*"
 
 permissions:
   contents: read
