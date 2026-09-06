@@ -108,6 +108,7 @@ func (s *Source) Fingerprint(ctx context.Context) (string, bool, error) {
 func (s *Source) config() hometree.Config {
 	cfg := hometree.Config{
 		Explicit:    s.env.FixtureRoot,
+		RootEnv:     "CURSOR_CONFIG_DIR",
 		LookupEnv:   s.env.LookupEnv,
 		Marker:      "chats",
 		SessionGlob: SessionGlob,

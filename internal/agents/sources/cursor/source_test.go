@@ -77,6 +77,56 @@ func TestEditorTreeIsNotIndexed(t *testing.T) {
 	}
 }
 
+// TestCursorConfigDirOverridesDiscovery is the regression for F-CURSOR-ROOTENV:
+// config() used to omit hometree.Config.RootEnv, so CURSOR_CONFIG_DIR isolated
+// only the doctor --agents probe (which reads the catalog descriptor directly)
+// and never session discovery, search, inspect, resume, or fork, which all go
+// through Scan via this Source's config(). A seeded override must be honoured
+// and an empty override must yield nothing, both without ever touching a real
+// home directory.
+func TestCursorConfigDirOverridesDiscovery(t *testing.T) {
+	t.Parallel()
+	seeded := fixture(t, "macos")
+	nonexistentHome := filepath.Join(t.TempDir(), "no-such-home")
+
+	lookupSeeded := func(key string) string {
+		if key == "CURSOR_CONFIG_DIR" {
+			return seeded
+		}
+		return ""
+	}
+	source, err := New(agents.Env{Home: nonexistentHome, LookupEnv: lookupSeeded})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := source.Scan(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Records) != 1 || result.Records[0].ID != "01987654-3210-7890-abcd-ef0123456789" {
+		t.Fatalf("seeded CURSOR_CONFIG_DIR: records = %+v", result.Records)
+	}
+
+	empty := t.TempDir()
+	lookupEmpty := func(key string) string {
+		if key == "CURSOR_CONFIG_DIR" {
+			return empty
+		}
+		return ""
+	}
+	source, err = New(agents.Env{Home: nonexistentHome, LookupEnv: lookupEmpty})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err = source.Scan(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Records) != 0 {
+		t.Fatalf("isolated CURSOR_CONFIG_DIR: records = %+v", result.Records)
+	}
+}
+
 func TestEmptyConversationIsSkipped(t *testing.T) {
 	t.Parallel()
 	root := t.TempDir()
