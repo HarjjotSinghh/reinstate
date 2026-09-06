@@ -1,0 +1,55 @@
+name: Render social preview
+
+# Renders the two tracked GitHub social-preview PNGs on the same Linux runner
+# the Website job checks them on, and hands them back as an artifact. The
+# renderer's PNG bytes differ between a Windows host and the Linux runner, so
+# a maintainer working on Windows regenerates here rather than committing a
+# local render that the `website` job then rejects.
+#
+#   gh workflow run render-social-preview.yml --ref <branch>
+#   gh run download <run-id> --name github-social-preview
+#   copy the two files over website/public/brand/github-social.png and
+#   assets/brand-kit/png/github-social-1280x640.png, then commit.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    name: Render on Linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22.12.0"
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+
+      - name: Install website dependencies
+        working-directory: website
+        run: npm ci
+
+      - name: Render the social preview
+        working-directory: website
+        run: npm run generate:github-social
+
+      - name: Confirm the render is what the check expects
+        working-directory: website
+        run: npm run check:github-social
+
+      - name: Upload the rendered PNGs
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: github-social-preview
+          path: |
+            website/public/brand/github-social.png
+            assets/brand-kit/png/github-social-1280x640.png
+          if-no-files-found: error
+          retention-days: 3

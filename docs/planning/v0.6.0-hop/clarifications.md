@@ -5,7 +5,18 @@ records. Each one names the assumption the work proceeds under, so nothing is
 blocked on an answer. Overturning an answer before stable promotion is cheap;
 after it, it is a `v0.6.1`.
 
-Written 2026-09-05. Executors append to the last section only.
+Written 2026-09-05; status lines updated by the coordinator. Executors
+append to the last section only.
+
+**Where things stand (2026-09-06).** Candidate PR
+[#404](https://github.com/HarjjotSinghh/reinstate/pull/404) (draft) carries
+`release/v0.6.0-rc.1`; the deferred-macOS rows are
+[#403](https://github.com/HarjjotSinghh/reinstate/issues/403). Every Go,
+race, lint, vuln, and doc gate is green on the branch; the pre-tag Windows
+matrix (W7) runs next and its report lands on the same branch. After that
+the only steps left before a prerelease are yours: Q5 (sign the tag) and, if
+you want them closed, Q12 (the elevated-shell daemon row) and Q11 (the host
+variables).
 
 ---
 

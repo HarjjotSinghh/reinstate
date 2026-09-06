@@ -114,3 +114,45 @@ regexTarget = "line"
 regexes = [
   '''pack-8c7ffa580563b675b1fd27a53df219b761e4d0a1''',
 ]
+
+# Synthetic age identities for the keyring goldens. Both were generated for
+# the fixtures alone, are committed on purpose so the generation and pairing
+# tests are deterministic, and protect nothing: no locker, no account, no
+# device has ever been enrolled under either. `age-secret-key` matches them on
+# prefix shape; the literals are spelled out so only these two are allowed.
+[[allowlists]]
+description = "Synthetic age device identities used by the keyring goldens"
+targetRules = ["age-secret-key"]
+condition = "AND"
+paths = [
+  '''^internal/keyring/keyring_test\.go$''',
+  '''^internal/keyring/generation_test\.go$''',
+  '''^\.gitleaks\.toml$''',
+]
+regexes = [
+  '''^AGE-SECRET-KEY-1J7YHF3Y899CUH9V2WWWPDAR8DNUEASJDLAP9KY3KJ6YW0DZKL5XQQJJ87L$''',
+  '''^AGE-SECRET-KEY-1VS4RSCKH9SR69GZ3KNZEJFATML08MLNAY3TV79RAX2YAKVS87V6Q9AEM8G$''',
+]
+
+# Pairing-protocol golden values (the derived master, binding, and payload
+# keys for protocol versions 1 and 2) and the synthetic account signing key
+# inside the committed keyring fixtures. They pin the wire format so an
+# upgrade cannot silently change how a pending approval verifies; they are
+# derived from the synthetic identities above and authenticate nothing.
+# `generic-api-key` matches them on entropy behind a `key`-shaped field name.
+[[allowlists]]
+description = "Pairing-protocol goldens and the fixture keyring's synthetic account key"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = [
+  '''^internal/keyring/pairing_test\.go$''',
+  '''^testdata/keyring/keyring\.one-generation\.json$''',
+  '''^testdata/keyring/keyring\.two-generations\.json$''',
+  '''^\.gitleaks\.toml$''',
+]
+regexes = [
+  '''^ad711a3c71a643be681add3822ecb716ff3064a12b5f66e38e1e2b4da2cd528c$''',
+  '''^ccfe47c51cd8d04a60bf04c40304868a8f85003e4e2a370cbd306c2bc7daed3a$''',
+  '''^19471fce98d98c55c9ca380e8d1d0aa3104529582f393cdb4a8cc4a6894edff5$''',
+  '''^8bJkOTbHPuLuMmIXrMWn/mdFd4eXtbisG84Nn5sjCfs=$''',
+]
