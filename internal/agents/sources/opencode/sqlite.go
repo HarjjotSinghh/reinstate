@@ -263,9 +263,11 @@ func messageCountExpression(ctx context.Context, db *sql.DB) string {
 const maxSearchParts = 20000
 
 // maxRowTextBytes bounds how much of any single message.data / part.data
-// blob this reader ever pulls out of SQLite, via substr() in the SELECT
-// list itself rather than a Go-side check after the value is already in
-// hand. This is not a query-planner hint: it changes what messageData and
+// blob this reader ever pulls out of SQLite, via substr() over
+// CAST(col AS BLOB) in the SELECT list itself rather than a Go-side check
+// after the value is already in hand. The CAST matters: SQLite's substr()
+// counts characters on TEXT input and bytes on BLOB input, so without it a
+// row of 4-byte runes would come back four times the intended size. This is not a query-planner hint: it changes what messageData and
 // partData actually hold by the time rows.Scan runs, so one pathologically
 // large part (a pasted log or file dump saved as a single part — not even a
 // corrupted store) never has its full bytes pulled into process memory,
@@ -320,7 +322,7 @@ func readSessionSearchText(ctx context.Context, db *sql.DB, sessionID string, ha
 	// maxRowTextBytes — see its doc comment — so a pathologically large
 	// single message or part never lands in process memory whole.
 	rows, err := db.QueryContext(ctx, `
-SELECT substr(message.data, 1, ?), substr(part.data, 1, ?)
+SELECT substr(CAST(message.data AS BLOB), 1, ?), substr(CAST(part.data AS BLOB), 1, ?)
   FROM part
   JOIN message ON message.id = part.message_id
  WHERE part.session_id = ?

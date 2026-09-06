@@ -87,8 +87,12 @@ var userRoleValues = []string{"user", "human"}
 const maxTextRows = 20000
 
 // maxRowTextBytes bounds how much of any single row's text column this
-// reader ever pulls out of SQLite, via substr() in the SELECT list itself
-// rather than a Go-side check after the value is already in hand. This is
+// reader ever pulls out of SQLite, via substr() over CAST(col AS BLOB) in
+// the SELECT list itself rather than a Go-side check after the value is
+// already in hand. The CAST matters: SQLite's substr() counts characters on
+// TEXT input and bytes on BLOB input, so without it a row of 4-byte runes
+// (emoji, CJK, box-drawing terminal output) would come back four times the
+// intended size. This is
 // not a query-planner hint: it changes what value.String actually holds by
 // the time rows.Scan runs, so a session with one pathologically large
 // message (a pasted log or file dump saved as a single row — not even a
@@ -435,7 +439,7 @@ func readMessageText(ctx context.Context, db *sql.DB, table string) (searchText 
 	// SQLite ever returns for one row's text column to maxRowTextBytes — see
 	// its doc comment — so a pathologically large single row never lands in
 	// process memory whole.
-	query := `SELECT substr(` + textColumn + `, 1, ?) FROM ` + table +
+	query := `SELECT substr(CAST(` + textColumn + ` AS BLOB), 1, ?) FROM ` + table +
 		` WHERE ` + roleColumn + ` IN (` + strings.Join(placeholders, ",") + `)` +
 		` ORDER BY rowid LIMIT ?`
 	args = append(args, maxTextRows)
@@ -457,6 +461,9 @@ func readMessageText(ctx context.Context, db *sql.DB, table string) (searchText 
 		if !value.Valid || value.String == "" {
 			continue
 		}
+		// The BLOB-bounded substr may end mid-sequence; drop any torn
+		// trailing bytes rather than hand invalid UTF-8 downstream.
+		value.String = strings.ToValidUTF8(value.String, "")
 		if firstUserText == "" {
 			firstUserText = value.String
 		}

@@ -464,3 +464,60 @@ func contains(haystack, needle string) bool {
 	}
 	return false
 }
+
+// TestSearchTextPerRowBoundCountsBytesNotRunes pins the CAST(... AS BLOB)
+// in readSessionSearchText's substr(): SQLite counts characters on TEXT
+// input, so without the cast a 60 MiB part of 4-byte runes would come back
+// as 16 MiB. The ceiling is tight enough that a character-counted bound
+// fails it.
+func TestSearchTextPerRowBoundCountsBytesNotRunes(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, DatabaseName)
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+	stmts := []string{
+		`CREATE TABLE part (id TEXT PRIMARY KEY, message_id TEXT NOT NULL, session_id TEXT NOT NULL, data TEXT NOT NULL)`,
+		`CREATE TABLE message (id TEXT PRIMARY KEY, session_id TEXT NOT NULL, data TEXT NOT NULL)`,
+		`INSERT INTO message VALUES ('msg_user','ses_1','{"role":"user"}')`,
+	}
+	for _, s := range stmts {
+		if _, err := db.Exec(s); err != nil {
+			t.Fatalf("%s: %v", s, err)
+		}
+	}
+	const rowSize = 60 << 20 // 60 MiB of 4-byte runes: 15 Mi characters.
+	payload, err := json.Marshal(map[string]string{
+		"type": "text",
+		"text": strings.Repeat("😀", rowSize/4),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO part (id, message_id, session_id, data) VALUES ('prt_user','msg_user','ses_1',?)`,
+		string(payload)); err != nil {
+		t.Fatal(err)
+	}
+
+	runtime.GC()
+	var before runtime.MemStats
+	runtime.ReadMemStats(&before)
+
+	searchText, _ := readSessionSearchText(context.Background(), db, "ses_1", true)
+
+	var after runtime.MemStats
+	runtime.ReadMemStats(&after)
+	grew := after.TotalAlloc - before.TotalAlloc
+
+	if searchText != "" {
+		t.Fatalf("a part truncated at the byte bound must contribute no text, got %d bytes", len(searchText))
+	}
+	// A rune-counted substr would return 16 MiB here and multiply the
+	// Go-side copies with it; the ceiling sits well below that.
+	const ceiling = 8 * maxRowTextBytes
+	if grew > ceiling {
+		t.Fatalf("reading one multibyte part grew TotalAlloc by %d bytes, want at most %d — substr counted runes, not bytes", grew, ceiling)
+	}
+}

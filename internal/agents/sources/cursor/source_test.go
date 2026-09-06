@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/HarjjotSinghh/reinstate/internal/agents"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
@@ -475,14 +476,16 @@ func TestSearchTextPerRowBoundLimitsMemory(t *testing.T) {
 	var after runtime.MemStats
 	runtime.ReadMemStats(&after)
 	grew := after.TotalAlloc - before.TotalAlloc
+	t.Logf("TotalAlloc grew by %d bytes", grew)
 
 	if !strings.Contains(searchText, marker) {
 		t.Fatalf("search text lost the leading marker: %q", searchText[:min(200, len(searchText))])
 	}
 	// A generous ceiling: several multiples of maxRowTextBytes to absorb
-	// driver/runtime overhead, but two full orders of magnitude below the
+	// driver/runtime overhead and the Go-side copies (Scan, ToValidUTF8,
+	// SafeText: measured ~35 MB for a 4 MiB value), yet well below the
 	// 60 MiB row — proving the row was not materialized whole.
-	const ceiling = 8 * maxRowTextBytes
+	const ceiling = 12 * maxRowTextBytes
 	if grew > ceiling {
 		t.Fatalf("reading one oversized row grew TotalAlloc by %d bytes, want at most %d (row was %d bytes) — the row was not bounded before materializing", grew, ceiling, rowSize)
 	}
@@ -499,5 +502,57 @@ func writeMeta(t *testing.T, path string, hasConversation bool) {
 	)
 	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// TestSearchTextPerRowBoundCountsBytesNotRunes pins the CAST(... AS BLOB)
+// in readMessageText's substr(): SQLite counts characters on TEXT input, so
+// without the cast a 60 MiB row of 4-byte runes would come back as 16 MiB.
+// The ceiling here is tight enough that a character-counted bound fails it.
+func TestSearchTextPerRowBoundCountsBytesNotRunes(t *testing.T) {
+	root := t.TempDir()
+	metaPath := filepath.Join(root, "chats", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "sess-1", "meta.json")
+	writeMeta(t, metaPath, true)
+	storePath := storeDatabasePath(metaPath)
+	execSQL(t, storePath, `CREATE TABLE messages (id INTEGER PRIMARY KEY, role TEXT, text TEXT, ts INTEGER)`)
+
+	db, err := sql.Open("sqlite", "file:"+storePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	const marker = "fixture-search-token-cursor-multibyte-row"
+	const rowSize = 60 << 20 // 60 MiB of 4-byte runes: 15 Mi characters.
+	oversized := marker + " " + strings.Repeat("😀", rowSize/4)
+	if _, err := db.Exec(`INSERT INTO messages (role, text, ts) VALUES ('user', ?, 1)`, oversized); err != nil {
+		t.Fatal(err)
+	}
+
+	runtime.GC()
+	var before runtime.MemStats
+	runtime.ReadMemStats(&before)
+
+	searchText, firstUser := readMessageText(context.Background(), db, "messages")
+
+	var after runtime.MemStats
+	runtime.ReadMemStats(&after)
+	grew := after.TotalAlloc - before.TotalAlloc
+	t.Logf("TotalAlloc grew by %d bytes", grew)
+
+	if !strings.Contains(searchText, marker) {
+		t.Fatalf("search text lost the leading marker: %q", searchText[:min(200, len(searchText))])
+	}
+	if !utf8.ValidString(firstUser) {
+		t.Fatal("first user text is not valid UTF-8 after the byte-bounded read")
+	}
+	if len(firstUser) > maxRowTextBytes {
+		t.Fatalf("first user text is %d bytes, want at most %d", len(firstUser), maxRowTextBytes)
+	}
+	// Measured: ~39 MB with the byte-counted bound, ~137 MB when substr
+	// counts runes instead; the ceiling sits between the two.
+	const ceiling = 12 * maxRowTextBytes
+	if grew > ceiling {
+		t.Fatalf("reading one multibyte row grew TotalAlloc by %d bytes, want at most %d — substr counted runes, not bytes", grew, ceiling)
 	}
 }
