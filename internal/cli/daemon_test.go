@@ -136,7 +136,8 @@ func (r *runningDaemon) until(n int) []daemon.Event {
 		case code := <-r.done:
 			r.t.Fatalf("daemon exited with %d: out=%q err=%q", code, r.stdout.String(), r.stderr.String())
 		case <-deadline:
-			r.t.Fatalf("daemon did not settle; events: %v\nstdout=%q\nstderr=%q", events, r.stdout.String(), r.stderr.String())
+			logText, _ := os.ReadFile(daemon.LogPath(os.Getenv("REINSTATE_HOME")))
+			r.t.Fatalf("daemon did not settle; events: %v\nstdout=%q\nstderr=%q\ndaemon.log=%q", events, r.stdout.String(), r.stderr.String(), logText)
 		}
 	}
 	return events

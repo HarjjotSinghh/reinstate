@@ -107,6 +107,10 @@ func (d *pairDevice) options(ro runOptions, args ...string) Options {
 		AgentProcessChecker: func(_ context.Context, _ string, _ processcheck.Target) (bool, bool, error) { return false, true, nil },
 		DeviceTokenStore:    d.tokens,
 		DeviceSecrets:       d.secrets,
+		// A device on the passphrase model would otherwise seal at age's
+		// production scrypt cost, which the race detector on a shared CI
+		// runner stretched past the daemon harness's settle window.
+		EnvelopeCodec: &fastAgeEnvelopeCodec{},
 		OpenBrowser: func(u string) error {
 			resp, err := http.Get(u)
 			if err != nil {
