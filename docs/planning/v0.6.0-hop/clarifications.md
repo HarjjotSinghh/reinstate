@@ -253,10 +253,12 @@ a row whose mechanism cannot exist for an agent's store layout is `N/A
 lack of a host credential is `NOT TESTED (host credential)` and does not
 block the verdict, provided every required agent and at least one other
 optional agent at the same tier pass the same row. **You may reject
-either or both.** If you reject them, the stable gate waits for the Qwen
-Code login (Q18) to actually complete those four rows, and `opencode:D4`
-stays listed as `N/A` regardless — no fix makes a JSONL boundary exist in a
-store that has none.
+either or both.** Rejecting (b) means the stable gate waits for the Qwen
+Code login (Q18) to actually complete those four rows. Rejecting (a) means
+`opencode:D4` reverts to `NOT TESTED (definitional)`, which never passes a
+required row, so stable then waits for you to drop that row from the
+required set explicitly — no fix makes a JSONL boundary exist in a store
+that has none.
 
 ## Q13 — GitGuardian on the candidate PR
 
