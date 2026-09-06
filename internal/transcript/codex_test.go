@@ -172,32 +172,70 @@ func TestCodexReaderParallelToolLinking(t *testing.T) {
 
 func TestCodexReaderPartialFinalRecord(t *testing.T) {
 	t.Parallel()
-	reader := &CodexReader{}
-	path := fixturePath(t, "partial-final-record", "rollout-2026-08-01T14-00-00-00000000-0000-4000-8000-00000000ff01.jsonl")
-	boundary, err := reader.Snapshot(context.Background(), sessionindex.Record{
-		Agent: sessionindex.AgentCodex, SourcePath: path,
-	})
-	if err != nil {
-		t.Fatalf("Snapshot: %v", err)
+	cases := []struct {
+		name     string
+		caseName string
+		file     string
+	}{
+		{
+			name:     "macos",
+			caseName: "partial-final-record",
+			file:     "rollout-2026-08-01T14-00-00-00000000-0000-4000-8000-00000000ff01.jsonl",
+		},
+		{
+			name:     "windows",
+			caseName: "partial-final-record-windows",
+			file:     "rollout-2026-08-01T14-00-00-00000000-0000-4000-8000-00000000ff02.jsonl",
+		},
 	}
-	if !boundary.Partial {
-		t.Fatal("Partial = false, want true for trailing incomplete line")
-	}
-	events, _, err := reader.Parse(context.Background(), boundary)
-	if err != nil {
-		t.Fatalf("Parse: %v", err)
-	}
-	for _, ev := range events {
-		if strings.Contains(eventText(ev), "PARTIAL_LINE_SHOULD_NOT_PARSE") {
-			t.Fatal("partial trailing record surfaced in events")
-		}
-	}
-	info, err := os.Stat(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if boundary.ByteOffset >= info.Size() {
-		t.Fatalf("ByteOffset %d should exclude trailing partial (size %d)", boundary.ByteOffset, info.Size())
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			path := fixturePath(t, tc.caseName, tc.file)
+			raw, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatalf("read fixture: %v", err)
+			}
+			wantOffset, wantDigest := expectedJSONLBoundary(t, raw)
+
+			reader := &CodexReader{}
+			boundary, err := reader.Snapshot(context.Background(), sessionindex.Record{
+				Agent: sessionindex.AgentCodex, SourcePath: path,
+			})
+			if err != nil {
+				t.Fatalf("Snapshot: %v", err)
+			}
+			if !boundary.Partial {
+				t.Fatal("Partial = false, want true for trailing incomplete line")
+			}
+			if boundary.ByteOffset != wantOffset {
+				t.Fatalf("ByteOffset = %d, want %d (independently computed)", boundary.ByteOffset, wantOffset)
+			}
+			if boundary.SHA256 != wantDigest {
+				t.Fatalf("SHA256 = %q, want %q (independently computed)", boundary.SHA256, wantDigest)
+			}
+			if recomputed, err := DigestPrefix(boundary); err != nil || recomputed != wantDigest {
+				t.Fatalf("DigestPrefix = %q, err=%v, want %q", recomputed, err, wantDigest)
+			}
+
+			events, _, err := reader.Parse(context.Background(), boundary)
+			if err != nil {
+				t.Fatalf("Parse: %v", err)
+			}
+			for _, ev := range events {
+				if strings.Contains(eventText(ev), "PARTIAL_LINE_SHOULD_NOT_PARSE") {
+					t.Fatal("partial trailing record surfaced in events")
+				}
+			}
+			info, err := os.Stat(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if boundary.ByteOffset >= info.Size() {
+				t.Fatalf("ByteOffset %d should exclude trailing partial (size %d)", boundary.ByteOffset, info.Size())
+			}
+		})
 	}
 }
 

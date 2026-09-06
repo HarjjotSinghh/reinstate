@@ -1,1 +1,1 @@
-{"sessionId":"1787123369440_fixture","messages":[],"version":1}
+{"sessionId":"1787123369440_fixture","messages":[{"role":"user","text":"Keep dest argv clean","ts":1787123369450},{"role":"assistant","text":"Quoted the destination path before building argv.","ts":1787123369800},{"role":"assistant","text":"Re-ran the build; argv now round-trips through quoting.","ts":1787123370100},{"role":"user","text":"Confirmed on this host","ts":1787123370400}],"version":1}

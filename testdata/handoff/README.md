@@ -8,15 +8,16 @@ secret-like patterns appear.
 
 ```text
 claude/{long-history,compaction,parallel-tools,subagents,attachments,
-        absolute-paths,slash-commands,partial-final-record,unknown-records,
+        absolute-paths,slash-commands,partial-final-record,
+        partial-final-record-windows,unknown-records,
         os-roots/{macos,windows,wsl}}/
 codex/{long-history,forks,parallel-tools,reasoning-items,absolute-paths,
-       slash-commands,partial-final-record,unknown-records,
-       os-roots/{macos,windows,wsl}}/
+       slash-commands,partial-final-record,partial-final-record-windows,
+       unknown-records,os-roots/{macos,windows,wsl}}/
 gemini/{rewind,legacy-json,jsonl}/
 qwen/{basic,rewound,partial-final-record,unknown-records}/
 opencode/{storage,metadata-only}/
-grok/{basic,compacted}/
+grok/{basic,compacted,partial-final-record,partial-final-record-windows}/
 adversarial/{prompt-injection,secret-leakage,fence-breakout,oversized}/  # WP-24
 golden/{capsule,projection}/  # capsule goldens: WP-25
 ```

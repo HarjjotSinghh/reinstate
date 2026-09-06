@@ -2,8 +2,10 @@
 
 **Confidence: CLI chats documented on macOS and native Windows** —
 `meta.json` under `~/.cursor/chats/<32-hex>/<uuid-v4>/`. Editor `projects/`
-is excluded. T1 index source reads `meta.json` only; `store.db` is not
-parsed. **Current tier:** T1 (discover) · **Phase 5 target:** T2
+is excluded. T1 index source reads `meta.json`; `store.db`'s content is
+never parsed, but its size is folded into `size_bytes` and its row count
+into `message_count` (see "Fields read from `store.db`" below).
+**Current tier:** T1 (discover) · **Phase 5 target:** T2
 
 Catalog key `cursor` is **Cursor CLI**, the terminal agent. Descriptor:
 `internal/agents/catalog/cursor.go`. This page is not the in-editor Cursor
@@ -80,8 +82,61 @@ already had the same tree. Shape on both:
 ```
 
 `cursor-agent --version` is `2026.08.11-e8db854` on both. Promoted to T1
-on 2026-08-19 from `meta.json`. `store.db` is not parsed. Do not walk
-`projects/agent-transcripts`. Resume and fork stay refused.
+on 2026-08-19 from `meta.json`. `store.db`'s content is not parsed. Do
+not walk `projects/agent-transcripts`. Resume and fork stay refused.
+
+## Fields read from `store.db`
+
+`meta.json` is a small index sidecar (observed 127–985 bytes); the
+session's actual content lives in the sibling `store.db` (observed
+69,632 bytes in the macOS probe). `size_bytes`, `message_count`, and
+`search_text` all now come from the pair together, not from
+`meta.json` alone:
+
+- `size_bytes` is `meta.json`'s size plus `store.db`'s size, so it
+  reflects the store the session actually lives in rather than only
+  the tiny sidecar.
+- `message_count` is a `SELECT COUNT(*)` against `store.db`, opened
+  read-only through `internal/vendorsqlite` (immutable in place, or a
+  private copy when a `-wal` sidecar is present — the vendor's own
+  tree is never written to). **The table name is unverified**: no
+  probe has captured `store.db`'s schema. The reader recognizes
+  `messages`, `message`, and `bubbles`; if more than one is present,
+  the larger count wins, on the same reasoning as OpenCode's own
+  migrated-table pair (one name is live, the rest are remnants). A
+  store using none of these names yields `message_count: 0` — the
+  same value every Cursor session got before this reader existed —
+  rather than a guessed count from an unrecognized schema.
+- `search_text` (v0.6.0-rc.2, closes #405, fixes Phase 5 Matrix row
+  `cursor:C3`) is read from that same winning table, and only when it
+  also has a recognized author column (`role`, `author`, `sender`, or
+  `type`) and a recognized body column (`text`, `content`, `body`, or
+  `message`) — both unverified like the table name itself. Only rows
+  whose author column reads `user` or `human` are indexed, matching
+  the policy Claude Code's own reader applies (never assistant
+  replies), ordered by `rowid`, bounded to 20,000 rows and to the
+  shared `MaxSearchTextBytes` budget. Each row's own body column is
+  additionally bounded to 4 MiB (`maxRowTextBytes`, the same ceiling
+  `MaxJSONLineBytes` applies to one Claude Code JSONL event) via
+  `substr(column, 1, ?)` *in the SQL SELECT itself*, not a check after
+  the value is already in Go's hands — one pathologically large row (a
+  pasted log or file dump saved as a single message) never lands in
+  process memory whole, confirmed empirically against
+  `modernc.org/sqlite`: scanning a `substr`-bounded column off a 60 MiB
+  row grows allocation by only the bound, not the row's own size. A
+  recognized table with a row count but no recognized author/body
+  column pair contributes no text — the same as before this reader
+  read content, not a guess at an unrecognized column's meaning.
+  `PromptPreview` falls back to the first such user row, since Cursor
+  CLI's `meta.json` carries no vendor session title to prefer instead.
+
+This does not promote Cursor toward F2, and it is not "inventing a
+`store.db` reader" in the sense the section below still means: no
+schema is assumed to be *true*, and any store this guess does not
+match degrades to the pre-existing behavior instead of reporting a
+wrong number, or fabricated text, with confidence. A later probe that
+captures the real table and column names should replace the candidate
+lists, not add to them indefinitely.
 
 ## Why T0 is `layout_unverified`
 
@@ -99,7 +154,10 @@ T-030 cannot produce the evidence T1 requires.
 
 T1 required both a macOS probe and a native Windows probe. Those artifacts
 now exist; the descriptor moved to T1 on 2026-08-19 by indexing `meta.json`.
-Do not invent a `store.db` reader from this page.
+This page originally said not to invent a `store.db` reader from it; "Fields
+read from `store.db`" above is the narrow, later exception — a bounded row
+count and a file size, not a content reader, and still no substitute for a
+probe of the real schema.
 
 `unidentified_product` is the wrong reason: the official CLI is identified.
 `desktop_only` is the wrong reason: a terminal CLI exists. `server_backed`

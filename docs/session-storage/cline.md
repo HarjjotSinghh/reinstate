@@ -3,7 +3,20 @@
 **Confidence: Documented on macOS and native Windows.** T1 index source
 reads `sessions/<slug>/<slug>.json`. **Current tier:** T1 (discover) ·
 **Phase 5 target:** T2. Resume and fork stay refused. `db/sessions.db`
-and `*.messages.json` are not parsed.
+is not parsed. `*.messages.json` is never indexed as a session of its
+own, but `message_count` and search text both come from it, read in one
+streamed pass: the sidecar's `messages` array is counted, and the text
+of every `"role":"user"` message is collected into the bounded,
+sanitized `search_text` — the same policy Claude Code's own reader
+applies, indexing user turns only, never assistant replies. A missing,
+oversized (over 32 MiB), or malformed sidecar yields `message_count: 0`
+and no search text — the same as every session got before this reader
+read message bodies — rather than a partial or guessed result. One
+message's own encoding is bounded the same way one Claude JSONL event
+is (`MaxJSONLineBytes`, 4 MiB): an oversized message still counts as a
+turn but contributes no text. `PromptPreview` falls back to the
+sidecar's first user message when `meta.json`'s own `prompt` field is
+empty.
 
 Catalog key is `cline`. Descriptor: `internal/agents/catalog/cline.go`.
 
@@ -50,6 +63,11 @@ Pretty-printed JSON: the probe's first-line sampler recorded no keys
 saw `cwd`, `session_id`, `workspace_root`, `prompt`, `started_at`,
 `status`, `messages_path`. `cline history --json` listed that session.
 That is an F2 candidate, not a shipped read API.
+
+The reader derives the sidecar path from the metadata filename
+(`<slug>.json` → `<slug>.messages.json`) rather than trusting
+`messages_path`, since that field's value was only ever seen in a
+key-only probe sample, never read as a string.
 
 ## Device evidence (2026-08-19, native Windows amd64)
 
@@ -139,6 +157,16 @@ put these in `Excluded` **before** any read:
    candidate. It is not a shipped read API.
 5. Workspace / project attribution is unknown. `ProjectKey` is `none`
    until a probe shows a recorded path.
+6. `message_count` is read from `*.messages.json`'s `messages` array
+   length. This is a structural count, not a content read: the family
+   stays F3, and this does not promote the source toward F2 or make
+   `*.messages.json` a documented transcript to parse for anything
+   beyond that one array's length.
+7. **v0.6.0-rc.2 (closes #405):** `search_text` now also carries the
+   sidecar's user-role message text, fixing Phase 5 Matrix row
+   `cline:C3` (`rein search` previously found only `id`/`title`/
+   `project`/`workspace`, never message body). Assistant text stays
+   out of the index, matching Claude Code's own reader.
 
 ## What a later probe must settle
 

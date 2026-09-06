@@ -1,1 +1,1 @@
-{"sessionId":"1787122263475_fixture","messages":[],"version":1}
+{"sessionId":"1787122263475_fixture","messages":[{"role":"user","text":"Bound the retry budget","ts":1787122263480},{"role":"assistant","text":"Added a max-attempts ceiling to the retry loop.","ts":1787122263900},{"role":"user","text":"Looks good, ship it","ts":1787122264200}],"version":1}

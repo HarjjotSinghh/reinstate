@@ -6,7 +6,7 @@ order: 2
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.6.0-rc.1"
+version: "v0.6.0-rc.2"
 updatedAt: 2026-09-05
 tags: ["cli", "features", "session-sync", "handoff", "verified-resume"]
 targetQuery: "Reinstate features and commands"
@@ -17,7 +17,7 @@ noindex: false
 
 Stable **`v0.5.1`** is the current release. It includes every shipped surface
 from Phase 1 through Phase 5. Use this page as the versioned feature map. The
-`v0.6.0-rc.1` release candidate — Reinstate Hop (cloud continuity) and the
+`v0.6.0-rc.2` release candidate — Reinstate Hop (cloud continuity) and the
 interactive CLI — is covered in its own section below and is not yet a
 stable claim: its acceptance is native Windows x64 only, with Apple Silicon
 macOS deferred. Universal configuration, a Reinstate console, and team
@@ -41,7 +41,7 @@ The `rein` and `reinstate` names run the same binary.
 | `v0.5.1` | 2026-08-21 | Patch: pure-Go SQLite driver bump; no product-surface change |
 
 Mandatory verified platforms remain Apple Silicon macOS and native Windows
-x64. Intel macOS and Linux/WSL2 stay preview/unverified. The `v0.6.0-rc.1`
+x64. Intel macOS and Linux/WSL2 stay preview/unverified. The `v0.6.0-rc.2`
 release candidate is not in this table because it is not yet a stable line;
 see the release-candidate section near the bottom of this page.
 
@@ -57,15 +57,15 @@ see the release-candidate section near the bottom of this page.
 | `rein handoff`, `handoff list`, `inspect`, `export` | 0.4 | no |
 | `rein resume --with claude\|codex` | 0.4 | no |
 | `rein doctor --agents [--acceptance-matrix]` | 0.5 | no |
-| `rein login`, `rein whoami` | 0.6.0-rc.1 (candidate) | no |
-| `rein init --hop`, `rein account init\|recover\|join\|status` | 0.6.0-rc.1 (candidate) | yes |
-| `rein devices [approve\|revoke]`, `rein hop status\|credentials` | 0.6.0-rc.1 (candidate) | yes |
-| `rein sync verify`, `rein sync migrate --to byo` | 0.6.0-rc.1 (candidate) | yes |
-| `rein daemon run\|install\|start\|stop\|uninstall\|status` | 0.6.0-rc.1 (candidate) | yes |
-| bare `rein` interactive switcher, `ctrl+k` palette, `--plain` | 0.6.0-rc.1 (candidate) | no |
+| `rein login`, `rein whoami` | 0.6.0-rc.2 (candidate) | no |
+| `rein init --hop`, `rein account init\|recover\|join\|status` | 0.6.0-rc.2 (candidate) | yes |
+| `rein devices [approve\|revoke]`, `rein hop status\|credentials` | 0.6.0-rc.2 (candidate) | yes |
+| `rein sync verify`, `rein sync migrate --to byo` | 0.6.0-rc.2 (candidate) | yes |
+| `rein daemon run\|install\|start\|stop\|uninstall\|status` | 0.6.0-rc.2 (candidate) | yes |
+| bare `rein` interactive switcher, `ctrl+k` palette, `--plain` | 0.6.0-rc.2 (candidate) | no |
 
 Flag-level syntax lives in the [CLI reference](/docs/cli-reference). Rows
-marked "candidate" ship in `v0.6.0-rc.1`, not in stable `v0.5.1`.
+marked "candidate" ship in `v0.6.0-rc.2`, not in stable `v0.5.1`.
 
 ## v0.1.0 — encrypted sync
 
@@ -149,9 +149,9 @@ encrypted sync beyond Claude Code and Codex CLI; Reinstate Hop; the
 interactive CLI; universal configuration; and Intel macOS or Linux as
 verified platforms.
 
-## v0.6.0-rc.1 — Reinstate Hop and the interactive CLI (release candidate)
+## v0.6.0-rc.2 — Reinstate Hop and the interactive CLI (release candidate)
 
-`v0.6.0-rc.1` is a release candidate, not a stable claim: stable remains
+`v0.6.0-rc.2` is a release candidate, not a stable claim: stable remains
 `v0.5.1`, and this candidate's acceptance is native Windows x64 only, with
 Apple Silicon macOS deferred until that hardware returns.
 

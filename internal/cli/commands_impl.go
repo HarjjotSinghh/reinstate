@@ -973,6 +973,7 @@ func newPushCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&asJSON, "json", false, "emit machine-readable JSON")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "plan only")
 	cmd.Flags().StringVar(&agent, "agent", "", "agent filter")
+	registerAgentCompletion(cmd, "agent", agents.TierSync, false)
 	cmd.Flags().StringVar(&session, "session", "", "session id")
 	cmd.Flags().BoolVar(&all, "all", false, "all sessions")
 	return cmd
@@ -1271,6 +1272,7 @@ func newPullCmd(processChecker AgentProcessChecker) *cobra.Command {
 	cmd.Flags().BoolVar(&asJSON, "json", false, "emit machine-readable JSON")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "plan only")
 	cmd.Flags().StringVar(&agent, "agent", "", "agent filter")
+	registerAgentCompletion(cmd, "agent", agents.TierSync, false)
 	cmd.Flags().StringVar(&session, "session", "", "session id")
 	cmd.Flags().BoolVar(&all, "all", false, "all sessions")
 	cmd.Flags().BoolVar(&allowActiveAgents, "allow-active-agents", false,

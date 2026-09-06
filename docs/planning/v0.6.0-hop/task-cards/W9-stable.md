@@ -4,9 +4,11 @@
 the signatures and publication; the coordinator reviews.
 
 Preconditions: W7b's tagged-artifact Windows report is `PASS` on every
-required row and committed to `main`; the founder has recorded the stable
-promotion decision (a sentence in `RELEASING.md`'s `v0.6.0` stable evidence
-section is enough).
+required row under the contract's disposition rules
+([`docs/testing/v0.6.0-windows-acceptance.md`](../../../testing/v0.6.0-windows-acceptance.md#dispositions-that-do-not-block-the-device-verdict))
+and committed to `main`; the founder has recorded the stable promotion
+decision (a sentence in `RELEASING.md`'s `v0.6.0` stable evidence section is
+enough).
 
 ## T-901 — Stable release commit
 

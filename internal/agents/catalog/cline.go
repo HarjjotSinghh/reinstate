@@ -11,9 +11,10 @@ func init() { agents.MustRegister(Cline()) }
 //
 // Promoted on 2026-08-19 from dual-platform AGENT-PROBE-V1. Both platforms
 // write ~/.cline/data/sessions/<slug>/<slug>.json after cline 3.0.55.
-// db/sessions.db and *.messages.json are not parsed. cline history --json
-// listed the session on both platforms; that is an F2 candidate, not a
-// shipped read API.
+// db/sessions.db is not parsed. *.messages.json is never indexed as a
+// session of its own, but message_count is read from its "messages" array,
+// bounded and streamed. cline history --json listed the session on both
+// platforms; that is an F2 candidate, not a shipped read API.
 //
 // T1 only. Sessions are indexed and searchable; resume and fork stay refused.
 func Cline() agents.Descriptor {

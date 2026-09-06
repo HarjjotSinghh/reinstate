@@ -16,9 +16,17 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.6.0-rc.2': {
+    rangeChange:
+      'Unchanged from v0.6.0-rc.1: inclusive Claude Code range 2.1.219-2.1.263 and OpenCode range 1.18.21-1.18.27. The Codex CLI range stays 0.133.0-0.149.0.',
+    compatibilityChange:
+      'Corrective candidate after v0.6.0-rc.1 tagged-artifact acceptance on native Windows x64 found 7 required-row failures (201 of 216 rows passed). No agent tier changes; fixes Cursor CLI session-discovery isolation, Cline/Cursor message_count and Cursor size_bytes, push/pull --agent completion, OpenCode handoff determinism, and adds Windows-shaped partial-final-record fixtures for Claude Code, Codex, and Grok Build. See CHANGELOG.md.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.6.0-rc.2/docs/compatibility.md',
+  },
   'v0.6.0-rc.1': {
     rangeChange:
-      'Widens the inclusive Claude Code range to 2.1.219-2.1.261 (was 2.1.219-2.1.238 through v0.5.2-rc.1) and the OpenCode range to 1.18.21-1.18.27 (was the single 1.18.21 build). The Codex CLI range is unchanged at 0.133.0-0.149.0. Both new ceilings rest on native Windows physical resume evidence only, under ADR 0005: a session created with the installed version was indexed and resumed through the launch plan Reinstate produced, returning a token that existed only in that session\'s history. Apple Silicon macOS evidence for the widened part is pending.',
+      'Widens the inclusive Claude Code range to 2.1.219-2.1.263 (was 2.1.219-2.1.238 through v0.5.2-rc.1) and the OpenCode range to 1.18.21-1.18.27 (was the single 1.18.21 build). The Codex CLI range is unchanged at 0.133.0-0.149.0. Both new ceilings rest on native Windows physical resume evidence only, under ADR 0005: a session created with the installed version was indexed and resumed through the launch plan Reinstate produced, returning a token that existed only in that session\'s history. Apple Silicon macOS evidence for the widened part is pending.',
     compatibilityChange:
       'Carries the Hop client: OpenCode reaches encrypted sync (T5) and Kimi Code CLI becomes a handoff source (T2). Both are merged into this candidate but not yet part of a stable release; the published compatibility matrix moves with the tag, not with the tree.',
     implementationSource:

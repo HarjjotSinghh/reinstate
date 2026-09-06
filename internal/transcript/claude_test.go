@@ -221,25 +221,69 @@ func TestClaudeSubagentsContentNeverAppears(t *testing.T) {
 
 func TestClaudePartialFinalRecordExcluded(t *testing.T) {
 	t.Parallel()
-	r := &ClaudeReader{}
-	rec := fixtureRecord(t, "partial-final-record")
-	b, err := r.Snapshot(context.Background(), rec)
-	if err != nil {
-		t.Fatalf("Snapshot: %v", err)
+	cases := []struct {
+		name       string
+		fixtureDir string
+		projectDir string
+	}{
+		{name: "macos", fixtureDir: "partial-final-record", projectDir: "-Users-fixture-user-code-demo"},
+		{name: "windows", fixtureDir: "partial-final-record-windows", projectDir: "C--Users-fixture-user-code-demo"},
 	}
-	if !b.Partial {
-		t.Fatal("Partial = false, want true")
-	}
-	events, _, err := r.Parse(context.Background(), b)
-	if err != nil {
-		t.Fatalf("Parse: %v", err)
-	}
-	for _, ev := range events {
-		for _, block := range ev.Blocks {
-			if strings.Contains(block.Text, "TRUNCATED_PARTIAL_ONLY") {
-				t.Fatalf("partial record surfaced: %+v", ev)
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			path := filepath.Join(
+				repoRoot(t), "testdata", "handoff", "claude", tc.fixtureDir,
+				"projects", tc.projectDir, "session-syn-001.jsonl",
+			)
+			raw, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatalf("read fixture: %v", err)
 			}
-		}
+			wantOffset, wantDigest := expectedJSONLBoundary(t, raw)
+			info, err := os.Stat(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			r := &ClaudeReader{}
+			b, err := r.Snapshot(context.Background(), sessionindex.Record{
+				Key:           "claude:00000000-0000-4000-8000-000000000001",
+				ID:            "00000000-0000-4000-8000-000000000001",
+				Agent:         "claude",
+				SourcePath:    path,
+				SourceModTime: info.ModTime().UnixNano(),
+				SourceSize:    info.Size(),
+			})
+			if err != nil {
+				t.Fatalf("Snapshot: %v", err)
+			}
+			if !b.Partial {
+				t.Fatal("Partial = false, want true")
+			}
+			if b.ByteOffset != wantOffset {
+				t.Fatalf("ByteOffset = %d, want %d (independently computed)", b.ByteOffset, wantOffset)
+			}
+			if b.SHA256 != wantDigest {
+				t.Fatalf("SHA256 = %q, want %q (independently computed)", b.SHA256, wantDigest)
+			}
+			if recomputed, err := DigestPrefix(b); err != nil || recomputed != wantDigest {
+				t.Fatalf("DigestPrefix = %q, err=%v, want %q", recomputed, err, wantDigest)
+			}
+
+			events, _, err := r.Parse(context.Background(), b)
+			if err != nil {
+				t.Fatalf("Parse: %v", err)
+			}
+			for _, ev := range events {
+				for _, block := range ev.Blocks {
+					if strings.Contains(block.Text, "TRUNCATED_PARTIAL_ONLY") {
+						t.Fatalf("partial record surfaced: %+v", ev)
+					}
+				}
+			}
+		})
 	}
 }
 
