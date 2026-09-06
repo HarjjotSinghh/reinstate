@@ -119,10 +119,12 @@ regexes = [
 # the fixtures alone, are committed on purpose so the generation and pairing
 # tests are deterministic, and protect nothing: no locker, no account, no
 # device has ever been enrolled under either. `age-secret-key` matches them on
-# prefix shape; the literals are spelled out so only these two are allowed.
+# prefix shape, and `generic-api-key` on entropy behind the `Key` in their
+# Go identifiers; the literals are spelled out so only these two are allowed,
+# in every commit that carries them.
 [[allowlists]]
 description = "Synthetic age device identities used by the keyring goldens"
-targetRules = ["age-secret-key"]
+targetRules = ["age-secret-key", "generic-api-key"]
 condition = "AND"
 paths = [
   '''^internal/keyring/keyring_test\.go$''',
