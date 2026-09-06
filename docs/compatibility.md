@@ -135,7 +135,7 @@ only in the original session's history, which a restarted session cannot
 answer. Versions above the maxima remain `UNTESTED` until a later matrix
 expands them again.
 
-`v0.6.0` widens the Claude Code ceiling further, to `2.1.261`, and the OpenCode
+`v0.6.0` widens the Claude Code ceiling further, to `2.1.263`, and the OpenCode
 ceiling to `1.18.27`, both **widened on native Windows evidence; macOS
 pending** (ADR 0005 D2/D3 — the macOS host is in repair, so this release ships
 on the Windows-first acceptance waiver). On native Windows x64 a session was
@@ -148,7 +148,7 @@ platforms, expands them again:
 
 | Agent | Inclusive source-tested range (v0.6.0) |
 | ----- | ------------------- |
-| Claude Code | `2.1.219`–`2.1.261` |
+| Claude Code | `2.1.219`–`2.1.263` |
 | OpenAI Codex CLI | `0.133.0`–`0.149.0` |
 | OpenCode | `1.18.21`–`1.18.27` |
 

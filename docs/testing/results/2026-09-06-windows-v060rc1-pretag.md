@@ -1377,7 +1377,7 @@ of these are `internal/**` product defects.
    `hop-10-lab` directories and separately declined to use them for the
    live-resume evidence `H5` needed — see `RB4`.)
 4. **(Part A) `cursor-agent` CLI is installed but non-functional** on
-   this host (`C:\Users\admin\AppData\Local\cursor-agent\cursor-agent.cmd`),
+   this host (`<host-user-profile>\AppData\Local\cursor-agent\cursor-agent.cmd`),
    crashing on every invocation with a Node `Cannot find module
    tree-sitter` error, independent of Reinstate. `cursor` Matrix C rows
    were still completed using real pre-existing sessions (presumably
@@ -1540,7 +1540,7 @@ second-pass executor.
 
 | Field | Value |
 | ----- | ----- |
-| Worktree | `D:\Projects\reinstate-worktrees\v060-w7c-rerun`, branch `v060/w7c-rerun` at `86cb3421` (identical to `release/v0.6.0-rc.1` at that commit) |
+| Worktree | `<worktrees>\v060-w7c-rerun`, branch `v060/w7c-rerun` at `86cb3421` (identical to `release/v0.6.0-rc.1` at that commit) |
 | Tested commit | `86cb34212a3dbd6241608595124e82e9110c78a3` (`86cb3421`) — 11 commits ahead of the first pass's `57c15d5225025150ed389a0923cf633b6b227302` |
 | Archive under test | `reinstate_0.0.0-86cb3421_windows_amd64.zip` |
 | Archive SHA-256 | `00f20f21163e54a94898d654f75731caf88844917ff7538bab4db811e9d90bd0` — matches `checksums.txt` beside it; independently re-verified by both second-pass executors with `sha256sum` |
@@ -1931,7 +1931,7 @@ place (search for "round 3") and this section carries the from-scratch,
 compliant re-verification.
 
 **Method:** worked entirely inside `D:\ReinstateAcceptanceProjects\v060-w7c-f\`
-(a lab directory this executor owns), never `D:\Projects\reinstate` or
+(a lab directory this executor owns), never `<shared-checkout>` or
 any other worktree. Every shell first ran `unset REINSTATE_BACKEND
 REINSTATE_MEMORY_BACKEND_DIR XDG_DATA_HOME CLAUDE_CONFIG_DIR CODEX_HOME`.
 The only session-content input anywhere in this section is
@@ -2041,11 +2041,11 @@ disposable `claude` credential that does not require touching the real
 
 - The verifier's second (minor) finding — untracked, dated stray files
   (`before.txt`, `after-a.txt`, `after-space.txt`, `hopd.db*`) apparently
-  left by an earlier `conptydriver` session in `D:\Projects\reinstate`,
+  left by an earlier `conptydriver` session in `<shared-checkout>`,
   the main repo this task's ground rules forbid touching — was not
   investigated or cleaned up by this executor: touching that directory at
   all, even to delete stray files, is out of scope for this pass (never
-  touch `D:\Projects\reinstate` or other worktrees). Flagged here again
+  touch `<shared-checkout>` or other worktrees). Flagged here again
   for the coordinator, unresolved.
 - The verifier's third (minor) finding — that `claude`-as-a-handoff-
   destination compatibility is not gated by `RB8`'s verified-version range

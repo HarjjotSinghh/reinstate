@@ -477,9 +477,9 @@ func testFallbackDefinitions() map[string]definition {
 			},
 			Parse: parseClaudeVersion,
 			Min:   "2.1.219",
-			// Widened to 2.1.261 in v0.6.0 on native Windows physical resume
+			// Widened to 2.1.263 in v0.6.0 on native Windows physical resume
 			// evidence; macOS pending (ADR 0005 D3).
-			Max: "2.1.261",
+			Max: "2.1.263",
 		}),
 		"codex": definitionFrom(Definition{
 			Executable:      "codex",

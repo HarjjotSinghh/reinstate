@@ -137,6 +137,16 @@ and the same for the other two.
   interactive switcher and a Claude Code resume, so the reboot happened or the
   state cleared. I will close #367 with that evidence when the PR opens.
 
+## Q13 — GitGuardian on the candidate PR
+
+GitGuardian's check on #404 flags the synthetic keyring goldens the Hop tree
+carries (two test age identities, the pairing-protocol golden keys, the
+fixture keyring's account key). They are fixtures that protect nothing;
+gitleaks now allowlists each literal by path in `.gitleaks.toml` and its
+check is green. GitGuardian is configured only in its dashboard, which I
+cannot reach: mark those incidents as false positives there, or tell me
+the check is not required for merge.
+
 ## Q10 — Commit identity
 
 The Hop-era commits on this host are authored `Harjot Singh Rana

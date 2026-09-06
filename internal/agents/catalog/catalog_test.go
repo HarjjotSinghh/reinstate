@@ -18,7 +18,7 @@ func TestShippedAgentsRegisterAtDeclaredTiers(t *testing.T) {
 		min    string
 		max    string
 	}{
-		{sessionindex.AgentClaude, agents.TierSync, agents.FamilyHomeTree, "2.1.219", "2.1.261"},
+		{sessionindex.AgentClaude, agents.TierSync, agents.FamilyHomeTree, "2.1.219", "2.1.263"},
 		{sessionindex.AgentCodex, agents.TierSync, agents.FamilyHomeTree, "0.133.0", "0.149.0"},
 		{sessionindex.AgentGemini, agents.TierHandoffFrom, agents.FamilyHomeTree, "0.55.1", "0.55.1"},
 		{sessionindex.AgentOpenCode, agents.TierSync, agents.FamilyEmbeddedDB, "1.18.21", "1.18.27"},

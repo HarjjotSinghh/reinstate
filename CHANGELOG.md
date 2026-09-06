@@ -284,7 +284,7 @@ url` point it at another one for labs and self-hosters.
 
 ### Changed
 
-- Widen the fail-closed Claude Code compatibility range through `2.1.261` (was
+- Widen the fail-closed Claude Code compatibility range through `2.1.263` (was
   `2.1.238`) and the OpenCode range through `1.18.27` (was `1.18.21`). The
   Windows acceptance host had auto-updated past both ceilings and was refused
   on resume, as would every user on a current install. Each new ceiling rests
@@ -433,6 +433,15 @@ url` point it at another one for labs and self-hosters.
 
 ### Fixed
 
+- The active-session check says when it could not run. `processcheck`
+  swallowed a failed process enumeration and answered "not busy", so on a
+  host whose WMI repository is broken (both `Get-CimInstance Win32_Process`
+  and `tasklist` exit with "Critical error") `rein resume` reported a
+  confident "no running instance is using this session" for a session that
+  was open in another console. The enumeration error now reaches preflight,
+  which already reports `agent.active` as a check that could not run rather
+  than a fact. Found by the `v0.6.0-rc.1` pre-tag native Windows run (Matrix
+  E, row E5, every T3+ agent).
 - The warning checklist's spacebar acknowledgement works on native Windows.
   Bubble Tea's Windows console decoder reports the space bar as a rune
   rather than as its space key, so a Windows user pressing the bar in the
