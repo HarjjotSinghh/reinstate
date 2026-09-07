@@ -79,8 +79,11 @@ named after the session id.
 stderr, and answers unchanged under the sanitized probe environment. The
 verified range widens only when a further build is physically measured on a
 device: `1.18.21` was the single build measured through `v0.5.1`; `v0.6.0`
-widens the range to `1.18.21`–`1.18.27` on native Windows physical evidence
-(macOS pending, ADR 0005 D3).
+widens the range to `1.18.21`–`1.18.27` on native Windows physical evidence,
+then to `1.18.21`–`1.18.29` after the acceptance host self-updated past that
+ceiling mid-cycle, again on native Windows physical evidence (macOS pending,
+ADR 0005 D3). See
+[2026-09-07-windows-range-widening-opencode-v060.md](../testing/results/2026-09-07-windows-range-widening-opencode-v060.md).
 
 A session row the vendor recorded without a working directory stays read-only:
 OpenCode is launched into a directory, so such a row has nowhere to go.

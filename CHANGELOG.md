@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Widened the verified OpenCode range to `1.18.29`.** The acceptance
+  host's OpenCode self-updated past the in-tree ceiling (`1.18.27`), so
+  every `opencode:E5`/`opencode:E6` row refused with exit `5` — correct,
+  fail-closed behavior. Against the shared live OpenCode store, a real
+  OpenCode `1.18.29` session was created in a throwaway project and
+  identified by a token planted in its own first turn (never by scanning
+  other sessions in the store), then indexed, resumed, and forked through
+  the launch plan Reinstate produces; the resumed session returned that
+  same token, which existed only in the original session's history.
+  Session row shape (`session`/`message`/`part` tables and columns),
+  `--session`/`--session … --fork`/`--continue`, the non-interactive `run`
+  form, version-output parsing, and the structured-handoff capsule path
+  are all unchanged from `1.18.27`. Widened on native Windows evidence
+  only, under ADR 0005 D3; macOS evidence is pending (`#403`). See
+  [`docs/testing/results/2026-09-07-windows-range-widening-opencode-v060.md`](docs/testing/results/2026-09-07-windows-range-widening-opencode-v060.md).
+
 ## [0.6.0-rc.4] - 2026-09-07
 
 Release candidate. Stable remains `v0.5.1`; the public installers now pin

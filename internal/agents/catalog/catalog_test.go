@@ -21,7 +21,7 @@ func TestShippedAgentsRegisterAtDeclaredTiers(t *testing.T) {
 		{sessionindex.AgentClaude, agents.TierSync, agents.FamilyHomeTree, "2.1.219", "2.1.263"},
 		{sessionindex.AgentCodex, agents.TierSync, agents.FamilyHomeTree, "0.133.0", "0.149.0"},
 		{sessionindex.AgentGemini, agents.TierHandoffFrom, agents.FamilyHomeTree, "0.55.1", "0.55.1"},
-		{sessionindex.AgentOpenCode, agents.TierSync, agents.FamilyEmbeddedDB, "1.18.21", "1.18.27"},
+		{sessionindex.AgentOpenCode, agents.TierSync, agents.FamilyEmbeddedDB, "1.18.21", "1.18.29"},
 		{sessionindex.AgentGrok, agents.TierHandoffTo, agents.FamilyHomeTree, "1.0.5", "1.0.5"},
 	}
 	keys := agents.Keys()
