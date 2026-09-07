@@ -25,7 +25,7 @@
 | [Agent support tiers](agent-support-tiers.md) | T0–T5 ladder and evidence gates |
 | [Agent catalog SDK](adapters/agent-catalog-sdk.md) | Descriptor contract and how to add an agent |
 | [Agent storage probe](testing/agent-storage-probe.md) | Redacted `AGENT-PROBE-V1` evidence contract |
-| [Features and commands](features.md) | What shipped in v0.1.0 through v0.4.0 |
+| [Features and commands](features.md) | What shipped in v0.1.0 through v0.5.1 |
 | [Cross-agent handoff](handoff.md) | Phase 4 structured handoff: continue the same task in a new Claude Code or Codex session |
 | [Cross-agent continuation design](cross-agent-continuation.md) | Capsule, fidelity, pipeline, and security design |
 | [Local session storage map](session-storage-map.md) | Where each supported agent stores sessions, per OS, with confidence levels |
