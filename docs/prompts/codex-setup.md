@@ -54,7 +54,7 @@ Execution contract:
    `~/.local/bin` or `%LOCALAPPDATA%\Programs\Reinstate\bin`, and explain any
    PATH update.
 5. Reconfirm the exact effective Reinstate home, then run
-   `rein version --json` and require `0.5.0-rc.1`. Run
+   `rein version --json` and require `v0.6.0-rc.5`. Run
    `rein setup check`. Before initialization, a missing-config result is
    expected; platform, keyring, or Codex compatibility failures are blockers.
    If the home is already initialized, stop and report it; never re-run `init`

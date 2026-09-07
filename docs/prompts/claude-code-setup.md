@@ -57,7 +57,7 @@ Complete this workflow:
    `%LOCALAPPDATA%\Programs\Reinstate\bin` on native Windows and explain any
    PATH change.
 5. Reconfirm the exact effective Reinstate home, then run
-   `rein version --json`. Require version `0.5.0-rc.1`. Run
+   `rein version --json`. Require version `v0.6.0-rc.5`. Run
    `rein setup check`; before initialization, only a missing-config failure is
    expected. Any platform, keyring, or Claude compatibility failure must be
    reported and must not be called success. If the home is already initialized,
