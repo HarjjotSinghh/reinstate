@@ -20,14 +20,14 @@ export const product = {
   supportedAgents: ['Claude Code', 'Codex'],
   supportedOperatingSystems: ['macOS', 'Windows'],
   supportedStorage: ['Amazon S3', 'Cloudflare R2', 'S3-compatible storage'],
-  currentRelease: 'v0.6.0-rc.2',
+  currentRelease: 'v0.6.0-rc.3',
   currentReleaseUrl:
-    'https://github.com/HarjjotSinghh/reinstate/tree/v0.6.0-rc.2',
+    'https://github.com/HarjjotSinghh/reinstate/tree/v0.6.0-rc.3',
   currentReleaseDate: '2026-09-07',
   initialPublicReleaseDate: '2026-07-25',
   stableRelease: 'v0.5.1',
-  releaseStatus: 'v0.6.0-rc.2 candidate · stable remains v0.5.1 · v0.6.0-rc.1 tagged Windows run ended 201/216, its defects fixed here · native Windows tagged-artifact acceptance pending, macOS deferred',
-  lastVerified: '2026-09-06',
+  releaseStatus: 'v0.6.0-rc.3 candidate · stable remains v0.5.1 · v0.6.0-rc.2 tagged Windows run ended FAIL (203/215), its Cursor store-schema defect fixed here · native Windows tagged-artifact acceptance pending, macOS deferred',
+  lastVerified: '2026-09-07',
   programmingLanguage: 'Go',
   requiresAccount: false,
   maintainer: {

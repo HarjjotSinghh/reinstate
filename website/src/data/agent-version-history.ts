@@ -16,6 +16,14 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.6.0-rc.3': {
+    rangeChange:
+      'Unchanged from v0.6.0-rc.2: inclusive Claude Code range 2.1.219-2.1.263 and OpenCode range 1.18.21-1.18.27. The Codex CLI range stays 0.133.0-0.149.0.',
+    compatibilityChange:
+      'Corrective candidate after v0.6.0-rc.2 tagged-artifact acceptance on native Windows x64 ended device verdict FAIL (203/5/2/5 of 215 required rows). Fixes exactly the Cursor CLI store reader: a post-commit schema-only inspection of real Cursor CLI 2026.08.11 store.db files found blobs/meta tables, not the messages/message/bubbles shape the prior reader guessed at, so message_count and search_text now read the real schema. No agent tier changes. See CHANGELOG.md.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.6.0-rc.3/docs/compatibility.md',
+  },
   'v0.6.0-rc.2': {
     rangeChange:
       'Unchanged from v0.6.0-rc.1: inclusive Claude Code range 2.1.219-2.1.263 and OpenCode range 1.18.21-1.18.27. The Codex CLI range stays 0.133.0-0.149.0.',

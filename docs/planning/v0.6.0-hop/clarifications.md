@@ -17,13 +17,31 @@ the Phase 5 generated matrix (Cursor CLI root-env isolation, Cline/Cursor
 `message_count`, `push`/`pull --agent` completion, and OpenCode handoff
 determinism), plus one fixture gap (`grok:D4`, no committed
 `partial-final-record` fixture). That report does not authorize stable
-`v0.6.0`. `v0.6.0-rc.2` (2026-09-07) is the corrective candidate: it fixes
-those seven rows and the fixture gap, plus one addition beyond that scope —
-`cline:C3`/`cursor:C3` (search excluded message body) and the pre-existing
-`opencode:C3` gap (passed by title only) are now fixed too (closes #405,
-`search_text` indexes message body for all three sources) — changes no
-agent's tier, and widens no compatibility range (`RELEASING.md`,
-"v0.6.0-rc.1 candidate evidence" and "v0.6.0-rc.2 candidate gate").
+`v0.6.0`. `v0.6.0-rc.2` (2026-09-07) fixed those seven rows and the fixture
+gap, plus one addition beyond that scope — `cline:C3`/`cursor:C3` (search
+excluded message body) and the pre-existing `opencode:C3` gap (passed by
+title only) were fixed too (closes #405, `search_text` indexes message body
+for all three sources). Its own tagged-artifact native Windows acceptance
+([`docs/testing/results/2026-09-07-windows-v060rc2.md`](../../testing/results/2026-09-07-windows-v060rc2.md))
+ended device verdict `FAIL`: **203 PASS / 5 PARTIAL / 2 FAIL / 5 NOT TESTED**
+of **215** required rows. All 22 CLI rows and 15 of 16 Hop rows passed; the
+seven rc.1 required-row failures cleared. A post-commit coordinator finding
+(report §0.12) found the real Cursor CLI `store.db` schema — `blobs(id,
+data)` / `meta(key, value)` — is not the `messages`/`message`/`bubbles`
+shape the `v0.6.0-rc.2` reader guessed at and no real store ever had, so
+real Cursor CLI sessions kept reporting `message_count: 0` and were not
+found by search; `cursor:C2`/`cursor:C3` were re-scored `FAIL` on real data.
+The other nine blocking rows — `cline:C3`, `pi:C3` (host/harness, could not
+create a real vendor-CLI session), `grok:E1`/`E2`/`E3` (new
+`F-GROK-MCP-RECONNECT` finding, host MCP-reconnect stall), `qwen:E1`/`E2`/
+`E3` (host credential, excused only when `grok`'s same row passes, which it
+did not this run), and `MatrixH:H7` (no operator available to accept UAC) —
+are host/harness/operator-availability gaps unrelated to the Cursor store
+schema. `v0.6.0-rc.3` (2026-09-07) is the current candidate: it changes
+exactly one thing beyond `v0.6.0-rc.2` — the Cursor CLI store reader
+(`c03337bc`) — and nothing else: no agent's tier moves, no compatibility
+range widens (`RELEASING.md`, "v0.6.0-rc.2 candidate evidence" and
+"v0.6.0-rc.3 candidate gate").
 
 Two dispositions were adopted autonomously (Q19) so the stable gate is not
 permanently unreachable on this host: `opencode:D4` is `N/A (definitional)`
@@ -31,17 +49,25 @@ permanently unreachable on this host: `opencode:D4` is `N/A (definitional)`
 to, regardless of fix — excluded from the required row count (215 of 216
 required going forward); and a `qwen:E1`/`E2`/`E3`/`E5` row that cannot
 complete because the acceptance host's Qwen Code OAuth token is expired is
-recorded `NOT TESTED (host credential)` and does not block the verdict,
-since Qwen Code is an optional agent (Q18). Full rules in
+recorded `NOT TESTED (host credential)` and does not block the verdict when
+its condition holds (Q18). Full rules in
 [`docs/testing/v0.6.0-windows-acceptance.md`](../../testing/v0.6.0-windows-acceptance.md#dispositions-that-do-not-block-the-device-verdict)
 and [ADR 0005's amendment](../../adr/0005-v0.6.0-scope-and-windows-first-acceptance.md#amendment-2026-09-07).
+At the `v0.6.0-rc.2` tagged run, that second condition (another optional
+agent at the same tier passing the same row) held for `qwen:E5` only —
+`grok:E1`/`E2`/`E3` did not themselves pass this run, so `qwen:E1`/`E2`/`E3`
+stayed blocking despite the disposition existing.
 
-What is left is yours, in order: refresh the Qwen Code login on the
-acceptance host if you want those four rows to `PASS` outright rather than
-carry the host-credential disposition (Q18); accept or reject the two
-dispositions above (Q19); merge the `v0.6.0-rc.2` release commit; sign and
-push the `v0.6.0-rc.2` tag (Q5); then run the tagged dispatch
-([`docs/testing/v0.6.0-rc.2-agent-verification-prompts.md`](../../testing/v0.6.0-rc.2-agent-verification-prompts.md))
+What is left is yours, in order: decide whether to reinstall/upgrade the
+broken `cursor-agent` install (Q21); re-authenticate Cline (Q20) and refresh
+the Qwen Code login (Q18) if you want those rows to `PASS` outright rather
+than carry host-credential dispositions; confirm you know of no account or
+xAI-side change behind the new Grok stall (Q22); pick a time window to
+accept the `MatrixH:H7` UAC prompt (Q23); accept or reject the two
+`v0.6.0-rc.2`-era dispositions (Q19); merge the `v0.6.0-rc.3` release
+commit; sign and push the `v0.6.0-rc.3` tag (Q5); then run the tagged
+dispatch
+([`docs/testing/v0.6.0-rc.3-agent-verification-prompts.md`](../../testing/v0.6.0-rc.3-agent-verification-prompts.md))
 against native Windows x64, or tell me to.
 
 ---
@@ -232,8 +258,15 @@ complete this candidate's tagged run and are recorded `NOT TESTED (host
 credential)` (Q19's disposition rule), which does not block the verdict
 since Qwen Code is an optional agent, but does mean those four rows stay
 untested rather than passing outright. Please sign into Qwen Code
-interactively on the acceptance host before, or during, the `v0.6.0-rc.2`
+interactively on the acceptance host before, or during, the `v0.6.0-rc.3`
 tagged run, if you want those rows to actually run.
+
+**Update (`v0.6.0-rc.2` tagged run, 2026-09-07):** still unrefreshed. All
+four rows were recorded `NOT TESTED (host credential)`; the disposition's
+second condition (another T4 agent passing the same row) held only for
+`qwen:E5` (`grok:E5` was `PASS`) — `grok:E1`/`E2`/`E3` did not themselves
+pass this run (Q22), so `qwen:E1`/`E2`/`E3` stayed blocking despite the
+rule existing. Still yours to refresh whenever convenient.
 
 ## Q19 — Two disposition rules adopted without your sign-off, to unblock the stable gate
 
@@ -259,6 +292,72 @@ Code login (Q18) to actually complete those four rows. Rejecting (a) means
 required row, so stable then waits for you to drop that row from the
 required set explicitly — no fix makes a JSONL boundary exist in a store
 that has none.
+
+**Update (`v0.6.0-rc.2` tagged run, 2026-09-07):** both rules were applied
+mechanically to a real run for the first time (report §0.7, §12).
+`opencode:D4` stayed `N/A (definitional)`, unchanged. The `qwen` rule's
+second condition depends on `grok` passing the same row each time, which is
+not guaranteed run to run — this run it held for `qwen:E5` only, not
+`qwen:E1`/`E2`/`E3` (Q18's update, above). The rule itself is unchanged and
+still awaits your acceptance or rejection; what changed is evidence that it
+behaves as written, including the case where it does not excuse a row.
+
+## Q20 — Cline account needs re-authentication
+
+Non-interactive `cline` on the acceptance host returns `Unauthorized: Please
+make sure you're using the latest version of Cline and re-authenticate your
+Cline account`, even against the live Cline configuration
+(`CLINE_CONFIG_DIR` unset, the host's own real Cline install). Nothing I can
+do headlessly re-authenticates a Cline account — it needs an interactive
+sign-in. Without it, `cline:C3`'s real-vendor-session evidence stays
+`NOT TESTED (host credential)` on the `v0.6.0-rc.3` tagged run (excused only
+if `copilot:C3` and `pi:C3` both `PASS` the same run). Please sign into
+Cline interactively on the acceptance host before, or during, that run if
+you want the row to run for real.
+
+## Q21 — `cursor-agent` is broken on this host
+
+`cursor-agent` `2026.08.11` fails immediately with `Error: Cannot find
+module 'tree-sitter'` from its own bundled `index.js`; the installed
+versions directory under this host's Cursor CLI installation has no
+`node_modules` at all, so no fresh real Cursor CLI session can be created
+here. `v0.6.0-rc.3`'s `cursor:C2`/`cursor:C3` rows work around this by
+reading the host's real `~/.cursor` `store.db` through `rein` alone,
+read-only, under the T1-discovery exception — that evidence does not need a
+working `cursor-agent`. Reinstalling or upgrading `cursor-agent` on this
+host is a separate decision I have not made for you: it touches a real
+vendor CLI install outside this repository, and I do not know whether you
+use this host's Cursor CLI for anything else that a reinstall could
+disturb. Tell me if you want it reinstalled, and whether before or after
+the `v0.6.0-rc.3` tagged run.
+
+## Q22 — Grok Build started stalling on every prompt on this host
+
+Two isolated-home probes (`GROK_HOME` seeded only with `auth.json`, stdin
+closed, no shared MCP servers) with `grok -p` never produced a completed
+reply within 150 s or 400 s respectively. The session's own
+`logs/unified.jsonl` shows the prompt queued (`shell.prompt.queued`) for
+minutes before `shell.handle_prompt.start` fires, then nothing further in
+the budget. `grok` passed all four `E`-row journeys (`E1`/`E2`/`E3`/`E5`) on
+this same host at `v0.6.0-rc.1` (2026-09-06) with no such delay. Nothing
+about this host's Grok Build install, `PATH`, or credential changed between
+that run and this one that I made or can see. Do you know of an account
+change, an xAI-side rate limit or maintenance window, or anything else on
+your end that could explain a new multi-minute stall between the CLI
+queuing a prompt and starting to handle it? Without an answer, `v0.6.0-rc.3`
+retries with a longer per-turn budget and records whatever stall evidence
+it finds; it does not otherwise change the Grok Build reader or client.
+
+## Q23 — `MatrixH:H7` needs you at the keyboard for one UAC prompt
+
+The daemon's Task Scheduler round trip (`rein daemon install`) needs an
+elevated shell; the `v0.6.0-rc.2` tagged run declined the elevation prompt
+twice with nobody available to accept it (the identical mechanism passed in
+full on this same host at `v0.6.0-rc.1`, so this is availability of an
+acceptor, not a regression). Please give me a time window when you can sit
+at this machine for a few minutes to accept one UAC prompt during the
+`v0.6.0-rc.3` tagged run, or tell me to keep recording the row `PARTIAL`
+with that reason until you are available.
 
 ## Q13 — GitGuardian on the candidate PR
 
