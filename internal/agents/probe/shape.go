@@ -45,6 +45,34 @@ var (
 	reWorkspaceBucket = regexp.MustCompile(`(?i)^([a-z][a-z0-9]{0,7})_(.+)_([0-9a-f]{8,64})$`)
 )
 
+// knownVendorNames is the closed set of literal path segments the probe may
+// carry into a committed artifact unshaped. Every entry is a fixed name a
+// vendor's own layout puts on disk — the marker or a literal (non-wildcard)
+// component of a catalog descriptor's Storage.SessionGlob — never a value
+// derived from a user's projects, repositories, or accounts:
+//
+//	tmp, sessions, chats, projects   -- Storage.Marker across the catalog
+//	session-state, cache, conversations -- more Storage.Marker values
+//	state, summary, events, meta     -- the stem of a fixed session filename
+//	                                     (state.json, summary.json,
+//	                                     events.jsonl, meta.json)
+//	opencode                          -- OpenCode's own database file stem
+//	                                     (opencode.db), not a project name
+//	runtime                           -- Qwen's own "<session-id>-runtime.json"
+//	                                     sidecar suffix
+//
+// A directory that is not on this list is either shape-matched by one of the
+// rules above (a UUID, a hash, a slug, a workspace bucket, …) or falls
+// through to <slug>. Nothing reaches the artifact by merely failing to look
+// suspicious — the previous rule, which is exactly how a project directory
+// under Gemini's tmp/ (Matrix B4) survived normalization verbatim.
+var knownVendorNames = map[string]bool{
+	"tmp": true, "sessions": true, "chats": true, "projects": true,
+	"session-state": true, "cache": true, "conversations": true,
+	"state": true, "summary": true, "events": true, "meta": true,
+	"opencode": true, "runtime": true,
+}
+
 // normalizeComponent collapses identifying names to a token.
 func normalizeComponent(name string) string {
 	name = strings.TrimSpace(name)
@@ -121,13 +149,13 @@ func normalizeStem(stem string) string {
 	if looksLikeEncodedPath(stem) {
 		return "<path-slug>"
 	}
-	// Hyphenated leftovers are project or workspace names, not vendor
-	// constants. reSafeName accepts [A-Za-z0-9._-], which would otherwise
-	// keep those filenames verbatim in a committed artifact.
-	if strings.Contains(stem, "-") {
-		return "<slug>"
-	}
-	if reSafeName.MatchString(stem) && !looksIdentifying(stem) {
+	// Every remaining stem is shaped unless it is a fixed name a vendor's own
+	// layout puts on disk. A stem that merely fails to look suspicious is not
+	// evidence that it is vendor-fixed rather than a user's project, repository,
+	// or workspace name — the allowlist is closed rather than a denylist of
+	// patterns that look identifying, which is what let a plain project-name
+	// directory under Gemini's tmp/ (Matrix B4) survive normalization verbatim.
+	if reSafeName.MatchString(stem) && knownVendorNames[strings.ToLower(stem)] {
 		return stem
 	}
 	return "<slug>"
@@ -203,23 +231,6 @@ func isSlug(name string) bool {
 		return true
 	}
 	return false
-}
-
-func looksIdentifying(name string) bool {
-	if strings.Contains(name, "@") {
-		return true
-	}
-	letters := 0
-	uppers := 0
-	for _, r := range name {
-		if unicode.IsLetter(r) {
-			letters++
-			if unicode.IsUpper(r) {
-				uppers++
-			}
-		}
-	}
-	return letters >= 6 && uppers >= 2 && uppers*2 >= letters
 }
 
 func treePath(components []string) string {

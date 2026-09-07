@@ -43,6 +43,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   screen, so an all-projects page resolves each row exactly as a
   single-project page does for the same record.
 
+- **Agent probe: every tree segment is shape-normalized, not only its
+  children (Matrix B4).** A directory or file name survived into a
+  committed `rein doctor --agents --json` artifact verbatim whenever it
+  merely failed to *look* suspicious — no hyphen, no digits, no mixed
+  case — which is exactly the shape of a plain project name. Gemini CLI's
+  `tmp/<project>/chats/` bucket is sometimes named for the project rather
+  than the `sha256` hash it also uses, and two such directories reached a
+  committed probe artifact unredacted. The normalizer now closes the set:
+  a path segment survives unshaped only when it is a fixed vendor name
+  from a small allowlist (`tmp`, `sessions`, `chats`, `projects`, and a
+  handful of other literal marker/filename stems declared across the
+  catalog); every other segment collapses to a shape token
+  (`<slug>`, `<uuid-v4>`, `<32-hex>`, …), regardless of how ordinary it
+  looks. `docs/testing/results/agent-probes/2026-08-21-windows-gemini.json`
+  is regenerated from a synthetic tree with the same shape as the leaked
+  original, never the real one.
+- **Agent probe: an existing empty root now differs from an absent one in
+  the JSON (Matrix B7).** Pointing an agent's root environment variable
+  (or a fixture root) at a directory that exists but lacks the vendor's
+  marker never added that root's own `exists`/`marker_present` state to
+  `candidate_roots` — only a declared home-directory candidate did, and a
+  root missing its marker left `resolved_root` `null` either way — so
+  `CLINE_DATA_DIR` set to an existing empty directory and to a
+  nonexistent path produced byte-identical output apart from the
+  timestamp. Every RootEnv- and fixture-root override now contributes its
+  own `candidate_roots` entry carrying `exists`/`marker_present`,
+  uniformly for every shipped hometree agent that declares a `RootEnv`.
+
 ## [0.6.0-rc.4] - 2026-09-07
 
 Release candidate. Stable remains `v0.5.1`; the public installers now pin
