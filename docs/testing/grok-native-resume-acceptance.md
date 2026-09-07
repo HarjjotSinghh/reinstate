@@ -36,7 +36,7 @@ run the rows; if it does not, record the row as `UNCOLLECTED`, not `PASS`.
 ## Preconditions
 
 1. Grok Build **1.0.5** on both devices. The 2026-08-17 native Windows probe
-   recorded `0.2.101`; the catalog's verified range is `1.0.5`–`1.0.5`, so an
+   recorded `0.2.101`; the catalog's verified range is `1.0.5`–`1.0.13`, so an
    un-upgraded Windows host is expected to report `UNTESTED` and exit `5`.
    That outcome is itself a valid row (`GV1`), but it does not satisfy `GR1`.
 2. A throwaway `GROK_HOME` for every command that could write. Never point a
