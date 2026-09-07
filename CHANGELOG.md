@@ -7,7 +7,117 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0-rc.6] - 2026-09-08
+
+Release candidate. Stable remains `v0.5.1`; the public installers now pin
+this candidate, superseding `v0.6.0-rc.5`.
+
+**Highlights.** `v0.6.0-rc.5`'s tagged-artifact native Windows acceptance
+([`docs/testing/results/2026-09-07-windows-v060rc5.md`](docs/testing/results/2026-09-07-windows-v060rc5.md),
+with two same-artifact rechecks, §23–§24) ended device verdict `FAIL`:
+`211 PASS / 4 PARTIAL / 0 FAIL / 0 NOT TESTED` of `215` required rows —
+**zero product defects.** The four `PARTIAL` rows, reproduced identically
+across the run and both rechecks: `grok:E1`/`E2`/`E3` (live backend
+connectivity to xAI, `F-GROK-BACKEND-CONNECTIVITY`, compounded by the
+acceptance host's live `grok` self-updating from the verified `1.0.5` to
+`1.0.13` mid-cycle) and `MatrixH:H7` (the daemon round-trip mechanism
+completed on both rechecks for the first time this release, but `#424`
+meant the elevated process still read the live agent-home roots rather
+than the isolated ones staged for it, and the rule's own byte-for-byte
+digest-equality pass condition proved unmeasurable on this live,
+multi-session host — ordinary concurrent activity changes those roots
+between any two timestamps regardless of what `rein` did).
+
+This candidate changes exactly two things beyond `v0.6.0-rc.5`: the
+verified Grok Build range widens to `1.0.13` on the maintainer's own
+console evidence (below), since the pinned `1.0.5` binary no longer
+completes a prompt against xAI from any console, including the
+maintainer's own, while `1.0.13` answers instantly there; and
+`MatrixH:H7`'s live-home check is refined from aggregate byte-for-byte
+digest equality — shown unmeasurable by both `v0.6.0-rc.5` rechecks — to a
+full per-file before/after listing of only the session-bearing subtrees
+(`<CLAUDE_CONFIG_DIR>/projects`, the persistent `<CODEX_HOME>/sessions`,
+`<XDG_DATA_HOME>/opencode`), with every differing entry attributed to a
+process other than `rein`. `#424` itself (the daemon Task-Scheduler task
+not pinning the agent-root environment it was installed under) is
+scheduled for `v0.6.1`, not this candidate — the refined `H7` check lets
+the daemon round-trip mechanism verify without waiting for it. No other
+agent's tier moves, and no other compatibility range widens.
+
+Because Grok cannot currently be driven to a completed conversational turn
+from this harness — headless or ConPTY — in the current environment, the
+completed-turn `grok:E1`–`E3` rows against `1.0.13` are executed by the
+maintainer at their own console in this candidate's own tagged run, and the
+transcript is recorded by the executor as the row's evidence, the same
+"human does the one step the harness cannot" shape `MatrixH:H7`'s UAC
+prompt already depends on.
+
+### Changed
+
+- **Widened the verified Grok Build range to `1.0.13`.** The acceptance
+  host's Grok Build self-updated past the in-tree ceiling (`1.0.5`), so a
+  real launch plan against it correctly refused with exit `5`
+  (`agent.version`, outside the verified `1.0.5`–`1.0.5` range) — the same
+  drift the `v0.6.0-rc.5` tagged report's own §23/§24 rechecks had already
+  found. Widened under the maintainer's standing policy (2026-09-07, Q27):
+  when a vendor CLI self-updates past the verified ceiling, Reinstate widens
+  the range on native Windows evidence rather than block — Reinstate always
+  wants to support the latest version. This widening's evidence is
+  read-only (`grok --version`/`--help` output shape, and the session file
+  layout and JSON key names observed under a real Grok home, never message
+  content or ids), since Grok cannot currently be driven to a completed
+  conversational turn from this harness; the completed-turn `grok:E1`–`E3`
+  rows against `1.0.13` are deferred to the `v0.6.0-rc.6` tagged run, to be
+  executed by the maintainer at their own console and recorded by the
+  executor. Version-output parsing and every launch-plan-relevant `--help`
+  flag (`--resume`, `--fork-session`, `--continue`, `--session-id`) are
+  unchanged from `1.0.5`. See
+  [`docs/testing/results/2026-09-08-windows-range-widening-grok-v060.md`](docs/testing/results/2026-09-08-windows-range-widening-grok-v060.md).
+
+### Changed (docs)
+
+- **`MatrixH:H7`'s live-home check refined from digest equality to
+  per-file listing with attribution.** Three tagged-artifact exercises of
+  the corrected fresh-Hop-account rule (the `v0.6.0-rc.5` run and its two
+  same-artifact rechecks) all reached, or nearly reached, the daemon
+  mechanism, and none produced a clean `PASS`: `#424` (the
+  Task-Scheduler-spawned daemon follows the ambient login environment, not
+  the environment `daemon install` ran under) meant it read live agent
+  trees even when the installing shell's own environment was correctly
+  isolated, and — independent of `#424` — aggregate byte-for-byte digest
+  equality of a live, heavily-used, multi-session agent-home root is not a
+  measurable pass condition, since ordinary concurrent activity (backup
+  rotation, the executor's own `file-history` writes, other sessions'
+  project growth, SQLite WAL churn) changes those roots between any two
+  timestamps regardless of what `rein` did. The rule now decides `PASS` on
+  a full per-file before/after listing of only the session-bearing
+  subtrees, zero snapshots restored, and per-entry attribution to a
+  process other than `rein`, with every differing entry named in the
+  report regardless of disposition. Also adds the standing
+  `NOT TESTED (version drift)` disposition for a vendor CLI self-update
+  discovered mid-run, and records the maintainer's standing vendor
+  self-update policy (Q27). See
+  [ADR 0005 Amendment 2](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md#amendment-2-2026-09-08)
+  and
+  [`docs/testing/v0.6.0-windows-acceptance.md`](docs/testing/v0.6.0-windows-acceptance.md#run-notes).
+  Docs/contract only — no product behavior changes.
+
+**Not yet certified.** Native Windows x64 tagged-artifact acceptance is what
+this candidate exists to enable; macOS acceptance is deferred under
+[ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md) until
+that hardware returns. Stable remains `v0.5.1`.
+
 ## [0.6.0-rc.5] - 2026-09-07
+
+Its tagged-artifact native Windows acceptance
+([`docs/testing/results/2026-09-07-windows-v060rc5.md`](docs/testing/results/2026-09-07-windows-v060rc5.md),
+with two same-artifact rechecks) ended device verdict `FAIL`: `211 PASS /
+4 PARTIAL / 0 FAIL / 0 NOT TESTED` of `215` required rows — zero product
+defects; the four `PARTIAL` rows were `grok:E1`/`E2`/`E3` (live backend
+connectivity, compounded by the host's `grok` self-updating to `1.0.13`
+outside the verified range) and `MatrixH:H7` (operator/harness
+availability, the digest-equality pass condition proving unmeasurable on a
+live host). `v0.6.0-rc.6` supersedes it.
 
 Release candidate. Stable remains `v0.5.1`; the public installers now pin
 this candidate, superseding `v0.6.0-rc.4`.
@@ -3557,7 +3667,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.5...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.6...HEAD
+[0.6.0-rc.6]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.5...v0.6.0-rc.6
 [0.6.0-rc.5]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.4...v0.6.0-rc.5
 [0.6.0-rc.4]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.3...v0.6.0-rc.4
 [0.6.0-rc.3]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.2...v0.6.0-rc.3

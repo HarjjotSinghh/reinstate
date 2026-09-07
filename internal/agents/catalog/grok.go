@@ -94,7 +94,13 @@ func Grok() agents.Descriptor {
 			Args:  []string{"--version"},
 			Parse: parseGrokVersion,
 			// Pinned to the single build measured on the macOS acceptance host
-			// (2026-08-22, `grok --version` = "grok 1.0.5 (5115b46bc909)").
+			// (2026-08-22, `grok --version` = "grok 1.0.5 (5115b46bc909)"),
+			// widened to 1.0.13 on 2026-09-08 after the acceptance host
+			// self-updated past 1.0.5 mid-cycle, under the maintainer's
+			// standing policy that Reinstate widens the range on native
+			// Windows evidence rather than block when a vendor CLI self-updates
+			// past the verified ceiling (2026-09-07, Q27). See
+			// docs/testing/results/2026-09-08-windows-range-widening-grok-v060.md.
 			// The range widens only when another build is physically measured.
 			Min: sessionindex.GrokMinVerifiedVersion,
 			Max: sessionindex.GrokMaxVerifiedVersion,
@@ -131,6 +137,7 @@ func Grok() agents.Descriptor {
 				"docs/testing/results/2026-08-23-macos-grok-t4.md",
 				"docs/testing/results/2026-08-23-windows-grok-t4.md",
 				"docs/testing/results/2026-08-23-macos-grok-gd8.md",
+				"docs/testing/results/2026-09-08-windows-range-widening-grok-v060.md",
 			},
 		},
 		NewIndexSource: groksrc.New,

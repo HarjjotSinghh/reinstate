@@ -31,12 +31,16 @@ const GrokTitleAddressableReason = "Grok Build session id is not a UUID; --resum
 
 // GrokMinVerifiedVersion and GrokMaxVerifiedVersion are the inclusive Grok
 // Build range Reinstate has physically measured, from `grok --version` on the
-// macOS acceptance host (2026-08-22, "grok 1.0.5 (5115b46bc909)"). They live
-// here rather than in the catalog descriptor because the handoff destination
-// gate and the resume version probe must not be able to drift apart.
+// macOS acceptance host (2026-08-22, "grok 1.0.5 (5115b46bc909)"), widened to
+// 1.0.13 on 2026-09-08 under the maintainer's standing self-update policy
+// (2026-09-07, Q27) after the acceptance host self-updated past 1.0.5 mid-cycle
+// — see docs/testing/results/2026-09-08-windows-range-widening-grok-v060.md.
+// They live here rather than in the catalog descriptor because the handoff
+// destination gate and the resume version probe must not be able to drift
+// apart.
 const (
 	GrokMinVerifiedVersion = "1.0.5"
-	GrokMaxVerifiedVersion = "1.0.5"
+	GrokMaxVerifiedVersion = "1.0.13"
 )
 
 var grokSessionID = regexp.MustCompile(GrokSessionIDPattern)

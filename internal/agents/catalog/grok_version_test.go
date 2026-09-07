@@ -21,6 +21,15 @@ func TestGrokVersionParsesShippedOutput(t *testing.T) {
 		{"no channel", "grok 1.0.5 (5115b46bc909)", "1.0.5"},
 		{"no build id", "grok 1.0.5", "1.0.5"},
 		{"channel without build id", "grok 1.0.5 [beta]", "1.0.5"},
+		// Measured on the acceptance host, 2026-09-08, after it self-updated
+		// past 1.0.5 mid-cycle: `grok --version` =
+		// "grok 1.0.13 (5e9a58528b76) [stable]". Same shape as 1.0.5 — a hex
+		// build id and a [stable] channel — so no pattern change was needed
+		// to widen the range. See
+		// docs/testing/results/2026-09-08-windows-range-widening-grok-v060.md.
+		{"windows 1.0.13", "grok 1.0.13 (5e9a58528b76) [stable]", "1.0.13"},
+		{"no channel 1.0.13", "grok 1.0.13 (5e9a58528b76)", "1.0.13"},
+		{"no build id 1.0.13", "grok 1.0.13", "1.0.13"},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			got, ok := parseGrokVersion(agents.VersionOutput{Stdout: testCase.line})

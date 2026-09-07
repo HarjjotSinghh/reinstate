@@ -52,13 +52,22 @@ under the target session directory. It never resumes.
 ### Version range
 
 `grok --version` prints one stdout line, `grok <semver>` with an optional
-parenthesised build id, and nothing on stderr. The catalog pins the inclusive
+parenthesised build id, and nothing on stderr. The catalog pinned the inclusive
 range `1.0.5`–`1.0.5`, measured on the macOS acceptance host on 2026-08-22
-(`grok 1.0.5 (5115b46bc909)`). The 2026-08-17 native Windows probe recorded
-`0.2.101`; that build predates this measurement and its `--version` shape has
-not been measured, so a Windows host still on `0.2.101` is reported `UNTESTED`
-and refused with exit `5` until it is upgraded or a second build is physically
-measured and the range widens.
+(`grok 1.0.5 (5115b46bc909)`); `v0.6.0` widens it to `1.0.5`–`1.0.13` on native
+Windows physical evidence, after the acceptance host self-updated past `1.0.5`
+mid-cycle, under the maintainer's standing policy that a vendor CLI
+self-updating past the verified ceiling widens the range rather than blocks
+(2026-09-07, Q27). Read-only evidence — `grok --version`/`--help` output shape
+and the session file layout under the real Grok home — was gathered from the
+real `1.0.13` binary; a completed-turn resume/fork journey against `1.0.13` is
+deferred to the `v0.6.0-rc.6` tagged run, executed by the maintainer at their
+console (macOS pending, ADR 0005 D3). See
+[2026-09-08-windows-range-widening-grok-v060.md](../testing/results/2026-09-08-windows-range-widening-grok-v060.md).
+The 2026-08-17 native Windows probe recorded `0.2.101`; that build predates
+this measurement and its `--version` shape has not been measured, so a
+Windows host still on `0.2.101` is reported `UNTESTED` and refused with exit
+`5` until it is upgraded.
 
 ### Workspace key encoding (R2 — Documented)
 
@@ -134,6 +143,7 @@ acknowledged and reconciled — are recorded on macOS **and** native Windows.
 | ---- | ----- | -------------- |
 | T3 resume | `2026-08-22-macos-grok-t3.md` | `2026-08-22-windows-grok-t3.md` |
 | T4 destination | `2026-08-23-macos-grok-t4.md`, 7 of 7 rows | `2026-08-23-windows-grok-t4.md`, 6 of 7 — that host has no Codex CLI, so `GD6`'s Codex leg is unmeasurable |
+| Range widening (`1.0.5`–`1.0.13`) | pending (ADR 0005 D3) | read-only evidence recorded `2026-09-08`; completed-turn `E1`–`E3` deferred to the `v0.6.0-rc.6` tagged run — `2026-09-08-windows-range-widening-grok-v060.md` |
 
 One row is outstanding on both devices: `GD8`, the destination's own
 tool-approval prompt. Each T4 run set the vendor's approval setting to

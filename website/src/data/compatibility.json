@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "reinstateVersion": "v0.6.0-rc.5",
-  "catalogLine": "v0.6.0-rc.5",
+  "reinstateVersion": "v0.6.0-rc.6",
+  "catalogLine": "v0.6.0-rc.6",
   "lastReviewed": "2026-09-07",
   "owner": {
     "name": "Harjot Singh Rana",
@@ -151,9 +151,9 @@
       "integrationPath": "/integrations/grok",
       "status": "handoff-destination",
       "minimumTestedVersion": "1.0.5",
-      "maximumTestedVersion": "1.0.5",
+      "maximumTestedVersion": "1.0.13",
       "resumeMode": "Same-vendor native resume via grok --resume <uuid> (T3); handoff destination via grok --session-id <uuid> (T4)",
-      "evidenceLevel": "deterministic synthetic fixtures, a measured grok --version range, and T3 resume and T4 destination device journeys recorded on macOS and native Windows (2026-08-22 and 2026-08-23); GD8 collected on macOS only",
+      "evidenceLevel": "deterministic synthetic fixtures, a measured grok --version range, and T3 resume and T4 destination device journeys recorded on macOS and native Windows (2026-08-22 and 2026-08-23); GD8 collected on macOS only; native Windows range-widening read-only evidence (2026-09-08), completed-turn evidence deferred to the v0.6.0-rc.6 tagged run",
       "evidence": {
         "storagePage": "docs/session-storage/grok.md",
         "fixtures": [
@@ -165,13 +165,14 @@
           "docs/testing/results/2026-08-22-macos-grok-t3.md",
           "docs/testing/results/2026-08-22-windows-grok-t3.md",
           "docs/testing/results/2026-08-23-macos-grok-t4.md",
-          "docs/testing/results/2026-08-23-windows-grok-t4.md"
+          "docs/testing/results/2026-08-23-windows-grok-t4.md",
+          "docs/testing/results/2026-09-08-windows-range-widening-grok-v060.md"
         ],
         "probeReports": []
       },
-      "lastTested": "2026-08-16",
+      "lastTested": "2026-09-07",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/grok.md",
-      "notes": "T4 handoff destination. A handoff into Grok starts a new session and is never a cross-agent resume. Not a synced agent."
+      "notes": "T4 handoff destination. A handoff into Grok starts a new session and is never a cross-agent resume. Not a synced agent. The ceiling was widened from 1.0.5 to 1.0.13 after the acceptance host self-updated past 1.0.5 mid-cycle, under the maintainer's standing self-update policy (2026-09-07, Q27); read-only evidence only (version/help output shape, session file layout) — completed-turn resume/fork evidence is deferred to the v0.6.0-rc.6 tagged run, executed by the maintainer."
     },
     {
       "id": "kimi",

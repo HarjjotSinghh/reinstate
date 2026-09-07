@@ -55,21 +55,43 @@ operator/elevation-availability gap on `MatrixH:H7` (the run's shell held no
 administrator rights, and that run's misreading of "fresh lab account" as a
 Windows account, rather than a Hop account, meant the row's own UAC prompt
 was never reached).
-`v0.6.0-rc.5` (2026-09-07) is the current candidate: it changes exactly
-these things beyond rc.4 — agent-probe shape normalization at every tree
-depth with root state reported (closes `B4`/`B7`), the switcher's
-all-projects readiness (closes row `13`), the sync-completion contract text
-(closes `G4`), and the verified OpenCode range (`1.18.21`–`1.18.29`, Windows
-evidence, closes `opencode:E5`/`E6`); no other agent tier changes, no other
-compatibility range widens. Under the disposition rules in
+`v0.6.0-rc.5` (2026-09-07) changed exactly these things beyond rc.4 —
+agent-probe shape normalization at every tree depth with root state
+reported (closes `B4`/`B7`), the switcher's all-projects readiness (closes
+row `13`), the sync-completion contract text (closes `G4`), and the
+verified OpenCode range (`1.18.21`–`1.18.29`, Windows evidence, closes
+`opencode:E5`/`E6`); no other agent tier changed, no other compatibility
+range widened. Its own tagged-artifact native Windows acceptance
+([report](../../testing/results/2026-09-07-windows-v060rc5.md), plus two
+same-artifact rechecks, §23–§24) ended device verdict `FAIL`: **211 PASS /
+4 PARTIAL / 0 FAIL / 0 NOT TESTED** of **215** required rows — **zero
+product defects.** All six required-row gaps that candidate's own fixes
+targeted cleared to `PASS`. Four required rows stayed not-`PASS` across the
+run and both rechecks: `grok:E1`/`E2`/`E3` (live backend connectivity to
+xAI, compounded by the host's live `grok` self-updating from `1.0.5` to
+`1.0.13` mid-cycle) and `MatrixH:H7` (the daemon round-trip mechanism
+completed on both rechecks for the first time this release, but `#424`
+meant it still read live agent-home roots, and the rule's own
+digest-equality pass condition proved unmeasurable on this live,
+multi-session host).
+`v0.6.0-rc.6` (2026-09-08) is the current candidate: it changes exactly
+these things beyond rc.5 — the verified Grok Build range widens to
+`1.0.13` on the maintainer's own console evidence (completed-turn
+`grok:E1`–`E3` evidence is executed by the maintainer at their own console
+in this candidate's own tagged run), and `MatrixH:H7`'s live-home check is
+refined from aggregate digest equality to a per-file before/after listing
+with per-entry attribution; `#424` itself is scheduled for `v0.6.1`, not
+this candidate. No other agent tier changes, no other compatibility range
+widens. Under the disposition rules in
 [`docs/testing/v0.6.0-windows-acceptance.md`](../../testing/v0.6.0-windows-acceptance.md#dispositions-that-do-not-block-the-device-verdict),
 stable requires **215 of 216** rows `PASS` (`opencode:D4` is
 `N/A (definitional)`, excluded from the required count), plus whatever
 dispositions are still open on the acceptance host when that run happens.
-What remains: merging and tagging `v0.6.0-rc.5`, a tagged-artifact Windows
-run against it (with `MatrixH:H7` under the corrected fresh-Hop-account
-isolation method and go-signal wait that `#424` motivated), and the Apple
-Silicon macOS rows, still deferred until that hardware returns (#403).
+What remains: merging and tagging `v0.6.0-rc.6`, a tagged-artifact Windows
+run against it (with `MatrixH:H7` under the refined per-file listing method
+and go-signal wait, and `grok:E1`–`E3` run by the maintainer at their own
+console), and the Apple Silicon macOS rows, still deferred until that
+hardware returns (#403).
 **Baseline:** stable `v0.5.1` (2026-08-21). `v0.5.2-rc.1` (2026-08-23) was
 tagged but never certified on either platform; its content ships here and no
 stable `v0.5.2` is cut.
