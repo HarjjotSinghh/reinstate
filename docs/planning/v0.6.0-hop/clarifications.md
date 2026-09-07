@@ -310,10 +310,13 @@ Cline account`, even against the live Cline configuration
 (`CLINE_CONFIG_DIR` unset, the host's own real Cline install). Nothing I can
 do headlessly re-authenticates a Cline account — it needs an interactive
 sign-in. Without it, `cline:C3`'s real-vendor-session evidence stays
-`NOT TESTED (host credential)` on the `v0.6.0-rc.3` tagged run (excused only
-if `copilot:C3` and `pi:C3` both `PASS` the same run). Please sign into
-Cline interactively on the acceptance host before, or during, that run if
-you want the row to run for real.
+`NOT TESTED (host credential)` on the `v0.6.0-rc.3` tagged run (excused, per
+the contract's disposition rule, once any *one* other optional T1 agent —
+`copilot:C3`, `cursor:C3`, or `pi:C3` — `PASS`es the same run; it is not a
+conjunction of two named agents. This candidate's Cursor store fix is
+expected to flip `cursor:C3` to `PASS`, which alone would excuse this row).
+Please sign into Cline interactively on the acceptance host before, or
+during, that run if you want the row to run for real regardless.
 
 ## Q21 — `cursor-agent` is broken on this host
 

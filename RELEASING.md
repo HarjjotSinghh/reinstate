@@ -592,11 +592,17 @@ unchanged.
   real Cursor CLI data both real sessions now report a non-zero
   `message_count` and are found by `rein search <word> --agent cursor`.
 
-This candidate does not attempt the `grok` MCP-reconnect finding, the
-`cline`/`cursor`/`pi` C3 real-vendor-session evidence gap, or `MatrixH:H7`'s
+This candidate does not attempt the `grok` MCP-reconnect finding, `cline:C3`'s
+or `pi:C3`'s real-vendor-session evidence gap (host-credential and harness
+issues, unrelated to the Cursor store schema), or `MatrixH:H7`'s
 operator-availability gap — those remain open findings from the `v0.6.0-rc.2`
-tagged run, unrelated to the Cursor store schema, and are re-tested as
-carried dispositions rather than closed here.
+tagged run and are re-tested as carried dispositions rather than closed here.
+`cursor:C2` and `cursor:C3` are the T1 C-tier gap this candidate does close:
+the store-schema fix above is expected to flip both to `PASS` against the
+real host store, which under the contract's disposition rule (a
+`NOT TESTED (host credential)` row is excused once any *one* other optional
+agent at the same tier `PASS`es the same row) is also expected to excuse
+`cline:C3` if Cline is still unauthenticated when this run happens.
 
 Governed by the same
 [`docs/testing/v0.6.0-windows-acceptance.md`](docs/testing/v0.6.0-windows-acceptance.md)
