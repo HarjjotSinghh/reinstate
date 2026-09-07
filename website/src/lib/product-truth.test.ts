@@ -99,7 +99,7 @@ describe('central product-truth drift guard', () => {
   });
 
   it('keeps the catalog line from claiming an unpublished tag or extra T5 agents', () => {
-    expect(product.currentRelease).toBe('v0.6.0-rc.3');
+    expect(product.currentRelease).toBe('v0.6.0-rc.4');
     // Stable deliberately lags the candidate: Hop and the interactive
     // surfaces have development verification but no tagged-artifact
     // acceptance yet.

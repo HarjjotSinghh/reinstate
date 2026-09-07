@@ -6,7 +6,7 @@ order: 7
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.6.0-rc.3"
+version: "v0.6.0-rc.4"
 updatedAt: 2026-08-16
 tags: ["faq", "session-sync", "claude-code", "codex", "security"]
 targetQuery: "what is Reinstate"

@@ -7,8 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
+## [0.6.0-rc.4] - 2026-09-07
 
+Release candidate. Stable remains `v0.5.1`; the public installers now pin
+this candidate, superseding `v0.6.0-rc.3`.
+
+**Highlights.** `v0.6.0-rc.3`'s tagged-artifact native Windows acceptance
+([`docs/testing/results/2026-09-07-windows-v060rc3.md`](docs/testing/results/2026-09-07-windows-v060rc3.md))
+established device verdict `FAIL`: `201 PASS / 3 PARTIAL / 1 FAIL / 10 NOT
+TESTED` of `215` required rows. All 22 CLI-experience rows and all 16 Hop
+parity rows passed, and that candidate's own fix — the Cursor CLI store
+reader reading the real `blobs`/`meta` schema — was confirmed on real data
+(`cursor:C2`/`cursor:C3` both `PASS`). Two root causes accounted for the
+fourteen non-`PASS` required rows: a confirmed code defect (`pi:C3` — a
+fresh, planted-token Pi session was created and completed live, but
+`rein search`/`rein inspect` found nothing, because the reader handed the
+whole `message` object to the shared text-flattening helper instead of
+`message.content`, the real shape Pi's `version:3` sessions use) and a
+version-compatibility block (the acceptance host's real Qwen Code
+self-updated to `0.23.0`, above the verified `0.21.12`–`0.21.13` ceiling, so
+ten Qwen rows correctly refused with exit `5` before building a launch
+plan). The remaining three (`codex:E5`, `opencode:E5`, `grok:E5`) are a
+headless-harness gap — no PTY available to attach a genuinely active
+vendor process — not a product defect; this candidate does not attempt
+them. This candidate changes exactly the two things above and nothing
+else: no other agent tier moves, no other compatibility range widens, and
+nothing in Hop, the daemon, the interactive CLI, or any other agent's
+reader is touched.
+
+- **Pi reader indexes real (version 3) session text.** Pi's real session
+  files carry each turn's text as `message.content` parts
+  (`{"type":"text","text":...}` alongside tool/thinking parts), but the
+  reader handed the whole `message` object to the shared text-flattening
+  helper, which only reads a top-level `text` key — so `prompt_preview`
+  and search text were silently empty for every real Pi session while
+  `message_count` stayed correct. The reader now reads `message.content`,
+  keeps reading the legacy `version:1` top-level `text` shape, and — like
+  the Claude and Codex readers — indexes only user-turn text, never
+  assistant, thinking, or tool-use text. See
+  [`docs/session-storage/pi.md`](docs/session-storage/pi.md).
 - **Widened the verified Qwen Code range to `0.23.0`.** The acceptance
   host's Qwen Code self-updated past the in-tree ceiling (`0.21.13`), so
   every Qwen resume/fork/handoff row refused with exit `5` — correct,
@@ -24,23 +61,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pending (`#403`). See
   [`docs/testing/results/2026-09-07-windows-range-widening-qwen-v060.md`](docs/testing/results/2026-09-07-windows-range-widening-qwen-v060.md).
 
+**Not yet certified.** Native Windows x64 tagged-artifact acceptance is what
+this candidate exists to enable; macOS acceptance is deferred under
+[ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md) until
+that hardware returns. Stable remains `v0.5.1`.
+
 ### Fixed
 
-- **Pi reader indexes real (version 3) session text.** Pi's real session
-  files carry each turn's text as `message.content` parts
-  (`{"type":"text","text":...}` alongside tool/thinking parts), but the
-  reader handed the whole `message` object to the shared text-flattening
-  helper, which only reads a top-level `text` key — so `prompt_preview`
-  and search text were silently empty for every real Pi session while
-  `message_count` stayed correct. The reader now reads `message.content`,
-  keeps reading the legacy `version:1` top-level `text` shape, and — like
-  the Claude and Codex readers — indexes only user-turn text, never
-  assistant, thinking, or tool-use text.
+- Pi's real `version:3` session format (`message.content[].text`) is now
+  what `prompt_preview` and search text read: `internal/agents/sources/pi/source.go`'s
+  `readConversation` previously called `ExtractTextContent(item["message"])`,
+  and `ExtractTextContent`'s `map[string]any` branch only reads a top-level
+  `"text"` key, never descending into `message.content[].text`. The reader
+  now reads `message.content` directly, still reads the legacy `version:1`
+  top-level `text` shape, and — matching the Claude and Codex readers —
+  indexes only user-turn text, never assistant, thinking, or tool-use text.
+  `message_count` was unaffected by the defect and is unchanged. Fixed
+  against a fresh, real Pi session created via `pi -p` on native Windows
+  acceptance evidence (`docs/testing/results/2026-09-07-windows-v060rc3.md`
+  §16, `F-PI-CONTENT-EXTRACTION`).
+
+### Changed
+
+- **Widened the verified Qwen Code range to `0.21.12`–`0.23.0`** (was
+  `0.21.12`–`0.21.13`). The `v0.6.0-rc.3` tagged acceptance run found the
+  host's real Qwen Code had self-updated to `0.23.0`, above the in-tree
+  ceiling, so every Qwen resume/fork/handoff row correctly refused with
+  exit `5` before building a launch plan. Against an isolated `QWEN_HOME`,
+  a real Qwen Code `0.23.0` session was created, indexed, resumed, and
+  forked through the launch plan Reinstate produces, and the resumed
+  session returned a token that existed only in the original session's
+  history. Session file location and naming, the first-user-message shape,
+  `--resume`, `--resume … --fork-session`, `--session-id`, and
+  version-output parsing are unchanged from `0.21.13`; a new
+  `contextWindowSize` field on `assistant` records is silently ignored by
+  the existing reader. Widened on native Windows evidence only, under
+  ADR 0005 D3; macOS evidence is pending (`#403`). See
+  [`docs/testing/results/2026-09-07-windows-range-widening-qwen-v060.md`](docs/testing/results/2026-09-07-windows-range-widening-qwen-v060.md).
 
 ## [0.6.0-rc.3] - 2026-09-07
 
-Release candidate. Stable remains `v0.5.1`; the public installers now pin
-this candidate, superseding `v0.6.0-rc.2`.
+Release candidate. Stable remains `v0.5.1`. Its own tagged-artifact native
+Windows acceptance
+([`docs/testing/results/2026-09-07-windows-v060rc3.md`](docs/testing/results/2026-09-07-windows-v060rc3.md))
+ended device verdict `FAIL` (`201 PASS / 3 PARTIAL / 1 FAIL / 10 NOT TESTED`
+of `215` required rows; all 22 CLI-experience rows and all 16 Hop parity
+rows passed, and this candidate's own Cursor CLI store-schema fix was
+confirmed on real data) and found a new Pi reader defect (`pi:C3`) and a
+Qwen Code version-compatibility block; it does not authorize stable
+`v0.6.0`. `v0.6.0-rc.4`, above, fixes both, supersedes it, and is what the
+public installers now pin.
 
 **Highlights.** `v0.6.0-rc.2`'s tagged-artifact native Windows acceptance
 ([`docs/testing/results/2026-09-07-windows-v060rc2.md`](docs/testing/results/2026-09-07-windows-v060rc2.md))
@@ -3355,7 +3425,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.3...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.4...HEAD
+[0.6.0-rc.4]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.3...v0.6.0-rc.4
 [0.6.0-rc.3]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.2...v0.6.0-rc.3
 [0.6.0-rc.2]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.1...v0.6.0-rc.2
 [0.6.0-rc.1]: https://github.com/HarjjotSinghh/reinstate/compare/v0.5.2-rc.1...v0.6.0-rc.1

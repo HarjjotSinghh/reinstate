@@ -37,37 +37,74 @@ create a real vendor-CLI session), `grok:E1`/`E2`/`E3` (new
 `E3` (host credential, excused only when `grok`'s same row passes, which it
 did not this run), and `MatrixH:H7` (no operator available to accept UAC) —
 are host/harness/operator-availability gaps unrelated to the Cursor store
-schema. `v0.6.0-rc.3` (2026-09-07) is the current candidate: it changes
-exactly one thing beyond `v0.6.0-rc.2` — the Cursor CLI store reader
-(`c03337bc`) — and nothing else: no agent's tier moves, no compatibility
-range widens (`RELEASING.md`, "v0.6.0-rc.2 candidate evidence" and
-"v0.6.0-rc.3 candidate gate").
+schema. `v0.6.0-rc.3` (2026-09-07) changed exactly one thing beyond
+`v0.6.0-rc.2` — the Cursor CLI store reader (`c03337bc`) — and nothing else:
+no agent's tier moved, no compatibility range widened (`RELEASING.md`,
+"v0.6.0-rc.2 candidate evidence" and "v0.6.0-rc.3 candidate gate"). Its own
+tagged-artifact native Windows acceptance
+([`docs/testing/results/2026-09-07-windows-v060rc3.md`](../../testing/results/2026-09-07-windows-v060rc3.md))
+ended device verdict `FAIL`: **201 PASS / 3 PARTIAL / 1 FAIL / 10 NOT
+TESTED** of **215** required rows. All 22 CLI rows and all 16 Hop rows
+passed, and this candidate's own Cursor store-schema fix was confirmed
+`PASS` on real data (`cursor:C2`, `cursor:C3`). Fourteen required rows
+blocked the verdict: a confirmed code defect (`pi:C3` — the reader never
+read `message.content` for real `version:3` Pi sessions, so `prompt_preview`
+and search text were silently empty); a version-compatibility block
+(`qwen:D1`–`D5`, `E1`/`E2`/`E3`/`E5`/`E6` — the host's real Qwen Code
+self-updated to `0.23.0`, above the verified `0.21.13` ceiling, correctly
+refusing before building a launch plan); and a headless-harness gap
+(`codex:E5`, `opencode:E5`, `grok:E5` — no PTY available to attach a
+genuinely active vendor process). A lab incident also occurred during this
+run: the `H7` daemon Task Scheduler started ran with the host's login
+environment (not the isolated home `rein daemon install` ran under) and
+pulled synthetic sessions into the live Claude, Codex, and OpenCode stores;
+cleaned up, tracked as
+[issue #424](https://github.com/HarjjotSinghh/reinstate/issues/424).
+`v0.6.0-rc.4` (2026-09-07) is the current candidate: it changes exactly two
+things beyond `v0.6.0-rc.3` — the Pi reader, and the verified Qwen Code
+range (`0.21.12`–`0.23.0`, Windows evidence) — and nothing else: no other
+agent's tier moves, no other compatibility range widens.
 
 Two dispositions were adopted autonomously (Q19) so the stable gate is not
 permanently unreachable on this host: `opencode:D4` is `N/A (definitional)`
 — its SQLite-only store has no JSONL boundary the row's mechanism can apply
 to, regardless of fix — excluded from the required row count (215 of 216
-required going forward); and a `qwen:E1`/`E2`/`E3`/`E5` row that cannot
-complete because the acceptance host's Qwen Code OAuth token is expired is
-recorded `NOT TESTED (host credential)` and does not block the verdict when
-its condition holds (Q18). Full rules in
+required going forward); and a row for an optional agent that cannot
+complete because of a host credential is recorded `NOT TESTED (host
+credential)` and does not block the verdict when its condition holds. At
+the `v0.6.0-rc.3` tagged run, zero rows qualified for that second
+disposition — the `qwen` gap that run found was a version-compatibility
+block, not a credential gap, so it does not match the disposition's own
+text regardless of whether `grok`'s same row passed (report §0.9, §20).
+Full rules in
 [`docs/testing/v0.6.0-windows-acceptance.md`](../../testing/v0.6.0-windows-acceptance.md#dispositions-that-do-not-block-the-device-verdict)
 and [ADR 0005's amendment](../../adr/0005-v0.6.0-scope-and-windows-first-acceptance.md#amendment-2026-09-07).
-At the `v0.6.0-rc.2` tagged run, that second condition (another optional
-agent at the same tier passing the same row) held for `qwen:E5` only —
-`grok:E1`/`E2`/`E3` did not themselves pass this run, so `qwen:E1`/`E2`/`E3`
-stayed blocking despite the disposition existing.
 
-What is left is yours, in order: decide whether to reinstall/upgrade the
-broken `cursor-agent` install (Q21); re-authenticate Cline (Q20) and refresh
-the Qwen Code login (Q18) if you want those rows to `PASS` outright rather
-than carry host-credential dispositions; confirm you know of no account or
-xAI-side change behind the new Grok stall (Q22); pick a time window to
-accept the `MatrixH:H7` UAC prompt (Q23); accept or reject the two
-`v0.6.0-rc.2`-era dispositions (Q19); merge the `v0.6.0-rc.3` release
-commit; sign and push the `v0.6.0-rc.3` tag (Q5); then run the tagged
-dispatch
-([`docs/testing/v0.6.0-rc.3-agent-verification-prompts.md`](../../testing/v0.6.0-rc.3-agent-verification-prompts.md))
+**Q18, Q20, Q22, and Q23 were answered by you on 2026-09-07**: you refreshed
+the Qwen Code login, re-authenticated Cline, and confirmed no account or
+xAI-side change behind the Grok stall; you accepted the UAC prompt for the
+`v0.6.0-rc.3` tagged run's `MatrixH:H7` (that round trip's mechanism passed,
+though its incidental live-store write is the `#424` incident above, not a
+row defect). Their update notes below record what each answer's tagged run
+then showed. **Q21 remains open** — `cursor-agent` is still broken on the
+acceptance host (`Error: Cannot find module 'tree-sitter'`); not needed,
+since `cursor:C2`/`cursor:C3` run `rein`-only against the real store instead.
+**Q24 is done** — the two synthetic/incidental OpenCode session rows the
+`v0.6.0-rc.3` run's harness incidents left in the live `opencode.db` were
+removed by you after that report was committed. **Q25 is new**: the
+`MatrixH:H7` lab-isolation rule this candidate's dispatch adds (a fresh lab
+account, before/after listing digests of the live agent roots, and a
+go-ahead file poll for the UAC prompt) and issue #424 itself, for you to
+confirm.
+
+What is left is yours, in order: confirm the `MatrixH:H7` lab-isolation
+method (Q25) and whether/when to fix `#424` itself (a separate, smaller
+ticket, not part of this candidate); decide whether to reinstall/upgrade the
+broken `cursor-agent` install (Q21) — still not required; accept or reject
+the disposition rules (Q19, unchanged since the `v0.6.0-rc.2` update); merge
+the `v0.6.0-rc.4` release commit; sign and push the `v0.6.0-rc.4` tag (Q5);
+then run the tagged dispatch
+([`docs/testing/v0.6.0-rc.4-agent-verification-prompts.md`](../../testing/v0.6.0-rc.4-agent-verification-prompts.md))
 against native Windows x64, or tell me to.
 
 ---
@@ -268,6 +305,23 @@ second condition (another T4 agent passing the same row) held only for
 pass this run (Q22), so `qwen:E1`/`E2`/`E3` stayed blocking despite the
 rule existing. Still yours to refresh whenever convenient.
 
+**Answered (2026-09-07):** you refreshed the Qwen Code login interactively
+before the `v0.6.0-rc.3` tagged run. That run's own probe (`qwen -p "Reply
+PONG"`-style) and its planted-token `C3` session both completed
+successfully against the live default home — the credential is no longer
+the blocker. What the refreshed login exposed instead: the host's real
+Qwen Code had also self-updated to `0.23.0`, above the in-tree verified
+ceiling `0.21.12`–`0.21.13`, so every launch-plan-building row (`D1`–`D5`,
+`E1`/`E2`/`E3`/`E5`/`E6`) refused with `exit 5` (`agent.version` block, not
+a credential failure) instead of running. Zero rows qualified for the
+`NOT TESTED (host credential)` disposition this run — a row that does not
+match the disposition's own definition does not get its exemption,
+regardless of `grok`'s own results. `v0.6.0-rc.4` widens the verified range
+to `0.21.12`–`0.23.0` (see
+[`docs/testing/results/2026-09-07-windows-range-widening-qwen-v060.md`](../../testing/results/2026-09-07-windows-range-widening-qwen-v060.md)),
+which is expected to let all ten rows run for real against the same
+refreshed login.
+
 ## Q19 — Two disposition rules adopted without your sign-off, to unblock the stable gate
 
 As written, the required-row rule in ADR 0005 D2 makes a `PASS` device
@@ -318,6 +372,13 @@ expected to flip `cursor:C3` to `PASS`, which alone would excuse this row).
 Please sign into Cline interactively on the acceptance host before, or
 during, that run if you want the row to run for real regardless.
 
+**Answered (2026-09-07):** you re-authenticated Cline interactively before
+the `v0.6.0-rc.3` tagged run. Cline answered live and a fresh
+planted-token session was created and found by `rein search` — `cline:C3`
+`PASS`ed outright this run rather than falling back to the host-credential
+disposition. No further action needed; carried forward as `PASS` on `v0.6.0-rc.4`'s
+dispatch unless something regresses.
+
 ## Q21 — `cursor-agent` is broken on this host
 
 `cursor-agent` `2026.08.11` fails immediately with `Error: Cannot find
@@ -333,6 +394,12 @@ vendor CLI install outside this repository, and I do not know whether you
 use this host's Cursor CLI for anything else that a reinstall could
 disturb. Tell me if you want it reinstalled, and whether before or after
 the `v0.6.0-rc.3` tagged run.
+
+**Still open (2026-09-07):** `cursor-agent` remains broken on this host; you
+have not asked for a reinstall. Not needed — `cursor:C2`/`cursor:C3` ran
+`rein`-only, read-only against the real store at both the `v0.6.0-rc.3`
+tagged run (`PASS`) and are expected to again on `v0.6.0-rc.4`. Still yours
+whenever you want it fixed for other reasons.
 
 ## Q22 — Grok Build started stalling on every prompt on this host
 
@@ -351,6 +418,14 @@ queuing a prompt and starting to handle it? Without an answer, `v0.6.0-rc.3`
 retries with a longer per-turn budget and records whatever stall evidence
 it finds; it does not otherwise change the Grok Build reader or client.
 
+**Answered (2026-09-07):** you confirmed no account or xAI-side change on
+your end. The `v0.6.0-rc.3` tagged run's retry (stdin closed, isolated
+`GROK_HOME`, ten-minute budget) completed `grok:E1`/`E2`/`E3` — the same
+symptom family as before (a completed reply after roughly eleven minutes),
+just inside the longer budget this time, confirming the isolated-`GROK_HOME`
+retry method rather than an account or platform fix. No further action
+needed on your end; `v0.6.0-rc.4`'s dispatch keeps the same retry method.
+
 ## Q23 — `MatrixH:H7` needs you at the keyboard for one UAC prompt
 
 The daemon's Task Scheduler round trip (`rein daemon install`) needs an
@@ -361,6 +436,76 @@ acceptor, not a regression). Please give me a time window when you can sit
 at this machine for a few minutes to accept one UAC prompt during the
 `v0.6.0-rc.3` tagged run, or tell me to keep recording the row `PARTIAL`
 with that reason until you are available.
+
+**Answered (2026-09-07):** you gave a time window and accepted the UAC
+prompt during the `v0.6.0-rc.3` tagged run. `MatrixH:H7`'s own mechanism
+completed in full and was scored `PASS` (report §18). That same round
+trip's elevated `daemon stop`/`daemon start` half is what wrote synthetic
+content into this host's real, live agent stores — the Task Scheduler task
+`rein daemon install` created pins only `--home`, not the agent-root
+environment variables, so it silently followed the login environment
+instead of the isolated device home once running under Task Scheduler
+rather than the shell `install` ran in. That is not something accepting the
+UAC prompt could have prevented; it is filed as
+[issue #424](https://github.com/HarjjotSinghh/reinstate/issues/424) (see
+Q25). No further action needed from you on the UAC prompt itself;
+`v0.6.0-rc.4`'s dispatch adds a lab-isolation method (Q25) so the row's
+mechanism can be re-verified without the same incident recurring, and still
+needs you at the keyboard for the same one prompt.
+
+## Q24 — Two stray OpenCode session rows the `v0.6.0-rc.3` harness incidents left in the live store
+
+The same incidents behind Q25/`#424` — the `H7` daemon pull and the T5
+push/pull round trip's unisolated device-B pull — wrote two rows into this
+host's real, live `opencode.db` alongside the files the report's own
+cleanup already removed: the synthetic `ses_fixture001a` (the `H7` daemon
+pull) and one throwaway T5 session an executor created directly against
+that database. The live store was compared read-only against a pristine
+pre-incident backup by session id and holds every backup session plus
+exactly those two additions — nothing from the backup is missing, so the
+store did not need rolling back, only those two rows removing (report
+§0.11(c)). I do not have write access to your live OpenCode store, so I
+could not remove them myself.
+
+**Answered (2026-09-07):** you removed both rows from the live
+`opencode.db` yourself after the `v0.6.0-rc.3` report was committed. No
+further action needed.
+
+## Q25 — `MatrixH:H7` lab isolation and issue #424
+
+The `v0.6.0-rc.3` tagged run's `H7` incident (Q23's answer, above;
+[`docs/testing/results/2026-09-07-windows-v060rc3.md`](../../testing/results/2026-09-07-windows-v060rc3.md)
+§16, §21) showed that `rein daemon install`'s Task Scheduler task
+definition pins `--home` but not `CLAUDE_CONFIG_DIR`/`CODEX_HOME`/
+`XDG_DATA_HOME`, so a daemon Task Scheduler restarts (a `daemon stop`/
+`daemon start`, or an ordinary login-triggered relaunch) silently follows
+whichever agent-root environment variables are live in the process's
+ambient environment at that moment — the operator's real login environment
+for a real end-user, which is arguably correct, but it is exactly what
+turned this lab's intended-isolated `H7` test into a write into this host's
+real Claude, Codex, and OpenCode stores. I filed
+[issue #424](https://github.com/HarjjotSinghh/reinstate/issues/424) to fix
+this properly (record the agent-root variables — or resolved roots — at
+install time, show them in `rein daemon status`, and refuse to start when
+the resolved roots differ unless `--allow-root-change` is given); this
+candidate does not attempt that fix.
+
+In the meantime, `v0.6.0-rc.4`'s dispatch
+([`docs/testing/v0.6.0-rc.4-agent-verification-prompts.md`](../../testing/v0.6.0-rc.4-agent-verification-prompts.md),
+"Lab isolation for `MatrixH:H7`") adds a run-method guard so the row can be
+re-verified without depending on `#424` landing first: run `H7` from a
+fresh lab account with zero pushed sessions (so the daemon's pull, even if
+it does follow the login environment, is a no-op with nothing synthetic to
+write); record a sorted-listing SHA-256 digest (paths and sizes) of that
+account's live Claude, Codex, and OpenCode roots before and after the round
+trip, and require them identical; and poll
+`D:/ReinstateAcceptanceProjects/h7-go.txt` for your go-ahead before
+attempting the elevation, so the row still waits for you at the keyboard
+for the one UAC prompt rather than attempting to route around it. Please
+confirm: (a) this method is acceptable for re-verifying `H7` on
+`v0.6.0-rc.4`, and (b) when you would like `#424` itself scheduled — it is
+a small, separable fix and does not need to block this candidate's tagged
+run.
 
 ## Q13 — GitGuardian on the candidate PR
 
