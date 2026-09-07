@@ -9,25 +9,40 @@
 // schemaVersion, updatedAtMs. The editor tree under projects/ is excluded.
 //
 // meta.json is a small index sidecar; the session's own content lives in the
-// sibling store.db (SQLite). size_bytes is the two files combined, and
-// message_count is read from store.db read-only through vendorsqlite, table
-// name unverified (see doc/session-storage/cursor.md): a store whose schema
-// does not match the recognized candidate table names degrades to the
-// message_count 0 this reader always reported before it existed, rather than
-// guessing.
+// sibling store.db (SQLite). Its real schema — established 2026-09-07 by a
+// schema-only, read-only inspection of two real Cursor CLI 2026.08.11
+// store.db files (table/column names via sqlite_master and
+// pragma table_info, JSON key names and blob magic bytes only; see
+// docs/session-storage/cursor.md) — is two tables:
 //
-// Search text is read the same way, from the same recognized table, and only
-// when that table also has a recognized author/role column and a recognized
-// body/text column (see messageRoleColumnCandidates and
-// messageTextColumnCandidates below) — a table with a row count but no
-// recognized author column contributes no text, since there is no way to
-// exclude assistant turns from a store this reader cannot identify authorship
-// in. Where text is available, only user-authored rows are indexed, matching
-// the policy internal/sessionindex/claude.go applies to Claude Code
-// transcripts.
+//	blobs(id TEXT, data BLOB)   -- id is 64-char hex; one row per turn
+//	meta(key, value)            -- observed one row, key "0"; never read
+//
+// There is no messages/message/bubbles table; the v0.6.0-rc.2 reader that
+// looked for one never matched a real store, so real sessions always
+// reported message_count 0. blobs.data is either a JSON object beginning
+// with the byte '{' — keys seen: role (system/user/assistant), content (a
+// string, or an array of {type, text, …} parts with type text or
+// reasoning), providerOptions — or a non-JSON binary blob (protobuf-like,
+// first bytes observed as 0x0a 0x20…). message_count counts blobs rows
+// whose data is a JSON object with role user or assistant; system rows are
+// excluded from the count, matching the user/assistant-only search policy
+// below. blobs carries no ordering column, so rows are read by rowid, which
+// is best-effort only.
+//
+// Search text is the sanitized, bounded content of every user-role blob
+// (never assistant or system), matching the policy
+// internal/sessionindex/claude.go applies to Claude Code transcripts.
+// PromptPreview falls back to the first such user blob's raw content, since
+// meta.json carries no vendor session title. A store using neither this
+// shape nor any recognized shape (including the old rc.2 messages/message/
+// bubbles guess, which was never real) degrades to message_count 0 and no
+// text — the same value every Cursor session got before either reader
+// existed — rather than guessing.
 package cursor
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"database/sql"
@@ -51,58 +66,42 @@ import (
 // StoreDatabaseName is the per-session SQLite store beside meta.json.
 const StoreDatabaseName = "store.db"
 
-// messageTableCandidates are the table names this reader recognizes as
-// holding one row per message. The real schema is undocumented and
-// unverified (docs/session-storage/cursor.md); a store using none of these
-// names yields message_count 0, the same as before this reader existed. If
-// more than one candidate table is present, the larger count wins, on the
-// same reasoning OpenCode's reader uses for its own migrated table pair: one
-// name is the live one and the rest are remnants, and summing would double
-// count a store mid-migration.
-var messageTableCandidates = []string{"messages", "message", "bubbles"}
+// blobsTable and metaTable are the only two tables the real Cursor CLI
+// store.db schema has (see the package doc comment). metaTable is never
+// queried; it is named here only so its absence never gets confused for an
+// unrecognized store shape by a future reader.
+const (
+	blobsTable = "blobs"
+	metaTable  = "meta"
+)
 
-// messageTextColumnCandidates are the column names this reader recognizes as
-// holding one message row's body text. Like the table names above, the real
-// column names are unverified; a recognized table using none of these
-// column names still yields its row count, just no search text — the same
-// as this reader's behavior before content was ever read.
-var messageTextColumnCandidates = []string{"text", "content", "body", "message"}
+// maxBlobRows bounds how many rows of one session's blobs table are ever
+// scanned, for message_count as well as search text. Real sessions this
+// reader was built against held 11 blobs; this is a backstop against a
+// pathological store with a huge number of rows, the same role maxTextRows
+// played in the v0.6.0-rc.2 reader. A store past this bound undercounts
+// rather than scanning unbounded.
+const maxBlobRows = 20000
 
-// messageRoleColumnCandidates are the column names this reader recognizes as
-// naming a message row's author, so only user-authored text is indexed. A
-// recognized table with a recognized text column but no recognized role
-// column still contributes no text: there is no way to exclude assistant
-// turns from it, and guessing every row is a user turn risks indexing the
-// agent's own replies as if the user had typed them.
-var messageRoleColumnCandidates = []string{"role", "author", "sender", "type"}
-
-// userRoleValues are the values this reader recognizes in a role column as
-// naming the user, tried in order.
-var userRoleValues = []string{"user", "human"}
-
-// maxTextRows bounds how many rows of one session's message table are read
-// for search text. Reading stops earlier, as soon as the shared
-// sessionindex.MaxSearchTextBytes budget is spent; this is a backstop against
-// a pathological store with a huge number of tiny rows.
-const maxTextRows = 20000
-
-// maxRowTextBytes bounds how much of any single row's text column this
-// reader ever pulls out of SQLite, via substr() over CAST(col AS BLOB) in
-// the SELECT list itself rather than a Go-side check after the value is
-// already in hand. The CAST matters: SQLite's substr() counts characters on
-// TEXT input and bytes on BLOB input, so without it a row of 4-byte runes
-// (emoji, CJK, box-drawing terminal output) would come back four times the
-// intended size. This is
-// not a query-planner hint: it changes what value.String actually holds by
-// the time rows.Scan runs, so a session with one pathologically large
-// message (a pasted log or file dump saved as a single row — not even a
-// corrupted store) never has that row's full bytes pulled into process
-// memory, matching the same bound sessionindex.MaxJSONLineBytes applies to
-// one Claude Code JSONL event. Confirmed empirically against
-// modernc.org/sqlite (the driver vendorsqlite opens): scanning a
-// substr(col, 1, N)-bounded column off a 60 MiB row grows
-// runtime.MemStats.TotalAlloc by only ~N bytes, not the row's full size,
-// where scanning the unbounded column grows it by the full ~60 MiB.
+// maxRowTextBytes bounds how much of any single blobs row's data column
+// this reader ever pulls out of SQLite, via substr() over CAST(data AS
+// BLOB) in the SELECT list itself rather than a Go-side check after the
+// value is already in hand. The CAST matters: SQLite's substr() counts
+// characters on TEXT input and bytes on BLOB input, so without it a row of
+// 4-byte runes (emoji, CJK, box-drawing terminal output) would come back
+// four times the intended size. This is not a query-planner hint: it
+// changes what the scanned []byte actually holds by the time rows.Scan
+// runs, so a session with one pathologically large message (a pasted log or
+// file dump saved as a single row's content — not even a corrupted store)
+// never has that row's full bytes pulled into process memory, matching the
+// same bound sessionindex.MaxJSONLineBytes applies to one Claude Code JSONL
+// event. The bound is large enough to always reach role (a few bytes into
+// every observed blob) and the start of content, but never the whole blob
+// when it is huge: confirmed empirically against modernc.org/sqlite (the
+// driver vendorsqlite opens), scanning a substr(col, 1, N)-bounded column
+// off a 60 MiB row grows runtime.MemStats.TotalAlloc by only ~N bytes, not
+// the row's full size, where scanning the unbounded column grows it by the
+// full ~60 MiB.
 const maxRowTextBytes = sessionindex.MaxJSONLineBytes
 
 // SessionGlob matches one CLI session metadata file.
@@ -327,12 +326,11 @@ func countStoreMessages(ctx context.Context, path string) int {
 
 // readStoreMessages opens a session's store.db read-only through
 // vendorsqlite (never writing under the vendor's root) exactly once, and
-// returns the row count of whichever recognized message table the store
-// actually has, that same table's bounded and sanitized user-authored
-// search text, and the first user row's raw text for use as a prompt
-// preview fallback. Any failure to open, query, or recognize the schema
-// yields a zero count and no text, not an error: the session still gets a
-// record from meta.json, just without them.
+// returns the number of user/assistant blobs in it, the bounded and
+// sanitized text of the user-role ones, and the first such row's raw text
+// for use as a prompt preview fallback. Any failure to open, query, or
+// recognize the schema yields a zero count and no text, not an error: the
+// session still gets a record from meta.json, just without them.
 func readStoreMessages(ctx context.Context, path string) (count int, searchText string, firstUserText string) {
 	if err := ctx.Err(); err != nil {
 		return 0, "", ""
@@ -342,111 +340,37 @@ func readStoreMessages(ctx context.Context, path string) (count int, searchText 
 		return 0, "", ""
 	}
 	defer func() { _ = handle.Close() }()
-	table, count := bestMessageTable(ctx, handle.DB)
-	searchText, firstUserText = readMessageText(ctx, handle.DB, table)
-	return count, searchText, firstUserText
+	if !hasBlobsTable(ctx, handle.DB) {
+		// Defensive fallback: a store using any other shape — including the
+		// v0.6.0-rc.2 reader's messages/message/bubbles guess, which no real
+		// store ever had — yields message_count 0 and no text, the same as
+		// every Cursor session reported before either reader existed.
+		return 0, "", ""
+	}
+	return scanBlobs(ctx, handle.DB)
 }
 
-// bestMessageTable reports which recognized message table has the largest
-// row count, and that count. If more than one candidate table is present,
-// the larger count wins, on the same reasoning OpenCode's reader uses for
-// its own migrated table pair: one name is the live one and the rest are
-// remnants, and summing would double count a store mid-migration.
-func bestMessageTable(ctx context.Context, db *sql.DB) (table string, count int) {
+// hasBlobsTable reports whether the store has the real schema's blobs
+// table.
+func hasBlobsTable(ctx context.Context, db *sql.DB) bool {
+	var name string
+	err := db.QueryRowContext(ctx,
+		`SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?`, blobsTable).Scan(&name)
+	return err == nil
+}
+
+// scanBlobs reads every blobs row, bounded per row (maxRowTextBytes, via
+// substr(CAST(data AS BLOB), 1, ?) in the query itself) and in total
+// (maxBlobRows), and returns the count of user/assistant-role rows, the
+// bounded and sanitized search text of the user-role ones, and the first
+// such row's raw text. blobs has no ordering column; rowid is the only
+// order available, and is treated as best-effort.
+func scanBlobs(ctx context.Context, db *sql.DB) (count int, searchText string, firstUserText string) {
 	rows, err := db.QueryContext(ctx,
-		`SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('messages','message','bubbles')`)
+		`SELECT substr(CAST(data AS BLOB), 1, ?) FROM `+blobsTable+` ORDER BY rowid LIMIT ?`,
+		maxRowTextBytes, maxBlobRows)
 	if err != nil {
-		return "", 0
-	}
-	present := map[string]bool{}
-	for rows.Next() {
-		var name string
-		if rows.Scan(&name) == nil {
-			present[name] = true
-		}
-	}
-	closeErr := rows.Close()
-	if err := rows.Err(); err != nil {
-		return "", 0
-	}
-	if closeErr != nil {
-		return "", 0
-	}
-
-	for _, candidate := range messageTableCandidates {
-		if !present[candidate] {
-			continue
-		}
-		if err := ctx.Err(); err != nil {
-			return table, count
-		}
-		var query string
-		switch candidate {
-		case "messages":
-			query = `SELECT COUNT(*) FROM messages`
-		case "message":
-			query = `SELECT COUNT(*) FROM message`
-		case "bubbles":
-			query = `SELECT COUNT(*) FROM bubbles`
-		}
-		var candidateCount int
-		if scanErr := db.QueryRowContext(ctx, query).Scan(&candidateCount); scanErr != nil {
-			continue
-		}
-		if candidateCount > count {
-			count = candidateCount
-			table = candidate
-		}
-	}
-	return table, count
-}
-
-// readMessageText reads the bounded, sanitized text of every user-authored
-// row in table, and returns the first such row's raw text separately for use
-// as a prompt preview fallback. table must be empty or one of
-// messageTableCandidates; any other value is refused rather than built into
-// a query. A table with no recognized text column, or no recognized role
-// column, contributes no text — see messageTextColumnCandidates and
-// messageRoleColumnCandidates.
-func readMessageText(ctx context.Context, db *sql.DB, table string) (searchText string, firstUserText string) {
-	if table == "" || !isRecognizedTable(table) {
-		return "", ""
-	}
-	columns, err := tableColumns(ctx, db, table)
-	if err != nil {
-		return "", ""
-	}
-	textColumn := pickColumn(columns, messageTextColumnCandidates)
-	roleColumn := pickColumn(columns, messageRoleColumnCandidates)
-	if textColumn == "" || roleColumn == "" {
-		return "", ""
-	}
-
-	placeholders := make([]string, len(userRoleValues))
-	args := make([]any, 0, len(userRoleValues)+2)
-	// The substr() bound is the first "?" in the query below, so its
-	// argument goes first too — database/sql binds positionally.
-	args = append(args, maxRowTextBytes)
-	for index, value := range userRoleValues {
-		placeholders[index] = "?"
-		args = append(args, value)
-	}
-	// table, textColumn, and roleColumn are only ever one of a small number
-	// of fixed, hardcoded identifiers verified above (isRecognizedTable,
-	// messageTextColumnCandidates, messageRoleColumnCandidates), never a
-	// value read from the vendor's own data, so building the query by string
-	// concatenation carries no injection risk here. substr(...) bounds what
-	// SQLite ever returns for one row's text column to maxRowTextBytes — see
-	// its doc comment — so a pathologically large single row never lands in
-	// process memory whole.
-	query := `SELECT substr(CAST(` + textColumn + ` AS BLOB), 1, ?) FROM ` + table +
-		` WHERE ` + roleColumn + ` IN (` + strings.Join(placeholders, ",") + `)` +
-		` ORDER BY rowid LIMIT ?`
-	args = append(args, maxTextRows)
-
-	rows, err := db.QueryContext(ctx, query, args...)
-	if err != nil {
-		return "", ""
+		return 0, "", ""
 	}
 	defer func() { _ = rows.Close() }()
 	var text sources.BoundedText
@@ -454,67 +378,150 @@ func readMessageText(ctx context.Context, db *sql.DB, table string) (searchText 
 		if err := ctx.Err(); err != nil {
 			break
 		}
-		var value sql.NullString
-		if scanErr := rows.Scan(&value); scanErr != nil {
+		var prefix []byte
+		if scanErr := rows.Scan(&prefix); scanErr != nil {
 			continue
 		}
-		if !value.Valid || value.String == "" {
+		if len(prefix) == 0 || prefix[0] != '{' {
+			// Not a JSON object: one of the non-JSON binary blobs (observed
+			// first bytes 0x0a 0x20…, protobuf-like). Skipped by its first
+			// byte, never decoded.
 			continue
 		}
-		// The BLOB-bounded substr may end mid-sequence; drop any torn
-		// trailing bytes rather than hand invalid UTF-8 downstream.
-		value.String = strings.ToValidUTF8(value.String, "")
-		if firstUserText == "" {
-			firstUserText = value.String
+		role, ok := decodeBlobRole(prefix)
+		if !ok {
+			// Malformed JSON, or a "role" field this bounded prefix could
+			// not reach: not counted, matching this reader's policy of
+			// never guessing at a shape it cannot confirm.
+			continue
 		}
-		text.Add(value.String)
+		switch role {
+		case "user":
+			count++
+			if userText := decodeBlobUserText(prefix); userText != "" {
+				if firstUserText == "" {
+					firstUserText = userText
+				}
+				text.Add(userText)
+			}
+		case "assistant":
+			count++
+			// "system" (and any other role value) is excluded from the
+			// count, matching the user/assistant-only policy every other
+			// reader in this package applies to search text.
+		}
 	}
-	return text.String(), firstUserText
+	return count, text.String(), firstUserText
 }
 
-// isRecognizedTable reports whether table is one of messageTableCandidates,
-// the only names ever interpolated into a query in this file.
-func isRecognizedTable(table string) bool {
-	for _, candidate := range messageTableCandidates {
-		if table == candidate {
-			return true
-		}
-	}
-	return false
-}
-
-// tableColumns reads a table's column names via PRAGMA table_info. table
-// must already be verified by isRecognizedTable.
-func tableColumns(ctx context.Context, db *sql.DB, table string) (map[string]bool, error) {
-	rows, err := db.QueryContext(ctx, `PRAGMA table_info(`+table+`)`)
+// decodeBlobRole reads the "role" field from a bounded JSON prefix of one
+// blobs.data value, stopping as soon as it has that field so a "content"
+// value many times larger than the prefix bound (maxRowTextBytes) is never
+// decoded to reach it. Every key encountered before "role" is skipped by
+// discarding its raw value rather than materializing it, which only
+// fails — safely, as ok=false — when that earlier value itself runs past
+// the prefix bound. The two real stores this reader was built against
+// always wrote "role" first (observed key order role, content,
+// providerOptions), so that is not the common case.
+func decodeBlobRole(prefix []byte) (role string, ok bool) {
+	dec := json.NewDecoder(bytes.NewReader(prefix))
+	tok, err := dec.Token()
 	if err != nil {
-		return nil, err
+		return "", false
 	}
-	defer func() { _ = rows.Close() }()
-	columns := map[string]bool{}
-	for rows.Next() {
-		var (
-			cid          int
-			name, ctype  string
-			notNull, pk  int
-			defaultValue sql.NullString
-		)
-		if err := rows.Scan(&cid, &name, &ctype, &notNull, &defaultValue, &pk); err != nil {
-			continue
+	if delim, isDelim := tok.(json.Delim); !isDelim || delim != '{' {
+		return "", false
+	}
+	for dec.More() {
+		keyTok, err := dec.Token()
+		if err != nil {
+			return "", false
 		}
-		columns[strings.ToLower(name)] = true
+		key, isString := keyTok.(string)
+		if !isString {
+			return "", false
+		}
+		if key == "role" {
+			var value string
+			if err := dec.Decode(&value); err != nil {
+				return "", false
+			}
+			return value, true
+		}
+		var discard json.RawMessage
+		if err := dec.Decode(&discard); err != nil {
+			return "", false
+		}
 	}
-	return columns, rows.Err()
+	return "", false
 }
 
-// pickColumn returns the first candidate present in columns, or "".
-func pickColumn(columns map[string]bool, candidates []string) string {
-	for _, candidate := range candidates {
-		if columns[candidate] {
-			return candidate
+// decodeBlobUserText reads the "content" field of a bounded JSON prefix as
+// plain text: a string, or the joined text of its type:"text" parts (a
+// type:"reasoning" part is the model's own chain of thought, never user
+// text, and is skipped the same way an assistant reply is — there are none
+// in a user-role blob, but the shape is shared). When content runs past the
+// prefix bound the object is no longer valid JSON as a whole, so this falls
+// back to a raw scan for the value instead of contributing nothing.
+func decodeBlobUserText(prefix []byte) string {
+	var envelope struct {
+		Content json.RawMessage `json:"content"`
+	}
+	if json.Unmarshal(prefix, &envelope) == nil {
+		return blobContentText(envelope.Content)
+	}
+	return rawBlobContentText(prefix)
+}
+
+// blobContentText normalizes a decoded "content" value to plain text.
+func blobContentText(raw json.RawMessage) string {
+	if len(raw) == 0 {
+		return ""
+	}
+	var asString string
+	if json.Unmarshal(raw, &asString) == nil {
+		return asString
+	}
+	var parts []struct {
+		Type string `json:"type"`
+		Text string `json:"text"`
+	}
+	if json.Unmarshal(raw, &parts) == nil {
+		var joined strings.Builder
+		for _, part := range parts {
+			if part.Type != "text" || part.Text == "" {
+				continue
+			}
+			if joined.Len() > 0 {
+				joined.WriteByte('\n')
+			}
+			joined.WriteString(part.Text)
 		}
+		return joined.String()
 	}
 	return ""
+}
+
+// rawBlobContentText is the fallback for a "content" string value long
+// enough to run past the bounded prefix (maxRowTextBytes): the surrounding
+// object is not valid JSON once truncated, so this looks for the literal
+// `"content":"` marker instead of decoding, and returns everything the
+// prefix captured after it, with any torn trailing byte sequence dropped.
+// The JSON backslash-escaping in that tail is deliberately left undone —
+// this path exists to keep a pathologically large single row's leading text
+// inside the bound (see TestSearchTextPerRowBoundLimitsMemory), not to
+// reproduce an oversized value in full; no reader should pull one into
+// memory whole. A parts-array content value that runs past the bound is not
+// recovered here — the marker only matches a string value — and
+// contributes no text, the same conservative default as an unrecognized
+// shape.
+func rawBlobContentText(prefix []byte) string {
+	const marker = `"content":"`
+	index := bytes.Index(prefix, []byte(marker))
+	if index < 0 {
+		return ""
+	}
+	return strings.ToValidUTF8(string(prefix[index+len(marker):]), "")
 }
 
 func readMeta(path string) (meta, error) {

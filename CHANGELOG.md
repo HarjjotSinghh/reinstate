@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- **Cursor CLI reads the real `store.db` schema.** A schema-only, read-only
+  inspection of two real Cursor CLI `2026.08.11` stores (a pending native
+  Windows acceptance report's §0, item 12 first surfaced the gap this
+  closes) found `blobs(id TEXT, data BLOB)` and `meta(key, value)` —
+  not the `messages`/`message`/`bubbles` tables the `v0.6.0-rc.2` reader
+  guessed at and no real store ever had, so every real Cursor CLI session
+  reported `message_count: 0` regardless of how many turns it held, and
+  `search_text` never indexed a real session's message body despite
+  `cursor:C3` being marked fixed. `message_count` now counts `blobs` rows
+  whose `data` is a JSON object with `role` `user` or `assistant` (`system`
+  rows are excluded); `search_text` and `PromptPreview` come from the
+  `content` of `user`-role blobs only (a string, or the joined text of
+  `type:"text"` parts), bounded per row and in total the same way the prior
+  reader was. On this host's own real Cursor CLI data, both real sessions
+  now report a non-zero `message_count` and are found by
+  `rein search <word> --agent cursor`. Non-JSON binary blobs (the majority
+  of rows in both real stores) are skipped by their first byte, never
+  decoded; a store using neither shape — including the old guess — still
+  degrades to `message_count: 0` and no text, not an error. See
+  [`docs/session-storage/cursor.md`](docs/session-storage/cursor.md).
+
 ## [0.6.0-rc.2] - 2026-09-07
 
 Release candidate. Stable remains `v0.5.1`; the public installers now pin
