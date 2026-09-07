@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "reinstateVersion": "v0.6.0-rc.4",
-  "catalogLine": "v0.6.0-rc.4",
-  "lastReviewed": "2026-09-05",
+  "reinstateVersion": "v0.6.0-rc.5",
+  "catalogLine": "v0.6.0-rc.5",
+  "lastReviewed": "2026-09-07",
   "owner": {
     "name": "Harjot Singh Rana",
     "url": "https://harjot.co"
@@ -115,7 +115,7 @@
       "integrationPath": "/integrations/opencode",
       "status": "verified-resume",
       "minimumTestedVersion": "1.18.21",
-      "maximumTestedVersion": "1.18.27",
+      "maximumTestedVersion": "1.18.29",
       "resumeMode": "OpenCode to OpenCode (T5 encrypted sync; T3 same-vendor resume and fork); OpenCode as a structured handoff destination (T4)",
       "evidenceLevel": "T3 resume and T4 destination device journeys recorded on macOS and native Windows (2026-08-22); T5 encrypted-sync journeys recorded on macOS and native Windows (2026-08-23); v0.6.0 tagged-artifact acceptance pending on native Windows and deferred on macOS",
       "evidence": {
@@ -138,7 +138,7 @@
       },
       "lastTested": "2026-08-22",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/opencode.md",
-      "notes": "T5 encrypted same-vendor sync, on top of T4 structured handoff destination, T3 verified same-vendor resume and fork, and a T2 handoff source. OpenCode assigns its own session id, so a handoff starts a new session and its id is reconciled after launch rather than pinned; a handoff is never a cross-agent resume. v0.6.0 widens the verified range from the single 1.18.21 build to 1.18.21–1.18.27 on native Windows physical evidence; macOS pending (ADR 0005 D3)."
+      "notes": "T5 encrypted same-vendor sync, on top of T4 structured handoff destination, T3 verified same-vendor resume and fork, and a T2 handoff source. OpenCode assigns its own session id, so a handoff starts a new session and its id is reconciled after launch rather than pinned; a handoff is never a cross-agent resume. v0.6.0 widens the verified range from the single 1.18.21 build to 1.18.21–1.18.27, then to 1.18.21–1.18.29 after the acceptance host self-updated past that ceiling, each on native Windows physical evidence; macOS pending (ADR 0005 D3)."
     },
     {
       "id": "grok",

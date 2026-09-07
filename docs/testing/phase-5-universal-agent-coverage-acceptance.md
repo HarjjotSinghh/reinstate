@@ -24,7 +24,9 @@ backed by committed evidence, and that no existing capability regressed.
 - No new handoff destinations. Claude Code and Codex CLI remain the only
   targets.
 - No new synced agents. Claude Code and Codex CLI remain the only agents
-  `push` and `pull` carry.
+  `push` and `pull` carry, as written for the Phase 5 gate; OpenCode's later
+  T5 promotion (see the G3/G4 notes above) added it to the sync-capable set
+  for releases after `v0.5.1` without this phase's own scope changing.
 - No cross-agent transcript translation, at any tier, ever.
 - No configuration support. That is Phase 6.
 
@@ -236,7 +238,7 @@ Two rows per agent at T0.
 | G1 | Claude Code and Codex CLI native resume and fork behave as in `v0.4.0` |
 | G2 | Claude to Codex and Codex to Claude structured handoff both complete |
 | G3 | Gemini, OpenCode, and Grok remain handoff sources and remain read-only (as written for the Phase 5 gate; OpenCode has since been raised to T5 — see the T5 journeys under `results/2026-08-23-*-opencode-t5*.md`, and read G3/G4 as "Gemini and Grok" for later releases) |
-| G4 | `rein push` and `rein pull` carry Claude and Codex sessions, and no other agent's |
+| G4 | `rein push` and `rein pull` carry sessions for every agent the catalog marks sync-capable (Claude Code, Codex CLI, OpenCode at T5), and no other agent's (corrected 2026-09-07, after the `v0.6.0-rc.4` run scored the row `FAIL` against this row's prior literal text — "Claude and Codex sessions, and no other agent's" — even though the underlying behavior was unchanged from `v0.6.0-rc.3`'s own `PASS`; see `MatrixG:G4` in the `2026-09-07-windows-v060rc4.md` report) |
 | G5 | Path remapping across macOS and Windows is unchanged |
 | G6 | Existing exit-code semantics are unchanged; no new exit codes were introduced |
 | G7 | An index built by `v0.4.0` upgrades without data loss, or migrates with an explicit message |

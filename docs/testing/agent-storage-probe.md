@@ -113,6 +113,36 @@ being a filesystem root — `Users`, `home`, `var`, `tmp`, a Windows drive lette
 — rather than on counting segments, so vendor prefixes like `wd_` stay
 readable.
 
+Rule 4's normalizer is a closed allowlist, not a heuristic for what looks
+suspicious. A path segment survives a probe artifact unshaped only when it is
+a fixed name a vendor's own layout puts on disk — a descriptor's
+`Storage.Marker`, or a literal (non-wildcard) component of its
+`Storage.SessionGlob`, such as `tmp`, `sessions`, `chats`, `projects`, or the
+stem of a fixed session filename (`state.json`, `summary.json`). Every other
+segment is shaped, however ordinary it looks: no hyphen, no digits, and no
+mixed case used to be enough for a segment to pass through verbatim, and a
+project directory has exactly that shape. Gemini CLI's `tmp/<project>/chats/`
+bucket is sometimes named for the project rather than the `sha256` hash it
+also uses, and two such directories reached a committed probe artifact this
+way before the allowlist closed.
+
+The allowlist has to be closed over whole segments, not merely consulted
+somewhere in the normalizer, or it reopens the same hole from a different
+angle. A handful of shape rules split a stem into a fixed prefix plus a hash
+or a trailing counter — `<prefix>_<32-hex>`, `<prefix>-<N-hex>`,
+`<prefix>_<project>_<N-hex>`, `<prefix>-<n>` — and every one of those
+prefixes is now run back through the same allowlist before it is used, not
+spliced into the returned shape as the regex captured it. Splicing the raw
+capture group in is exactly how `harjot-project-11` or
+`acme-corp-secret-repo-25` would have ridden through unshaped: each matches
+`<project-name>-<2+ digits>` precisely as well as the vendor-fixed
+`pack-<40-hex>` (Git's own object-pack naming) does, and a prefix that is
+merely not checked against the allowlist cannot tell the two apart. A real
+committed artifact carried exactly this leak before the fix closed it: a
+dated backup filename, `settings.json.bak-20260716-13`, whose prefix
+(`settings.json.bak-20260716`) is not a fixed vendor name and now collapses
+to `<slug>-<n>` like any other non-vendor prefix would.
+
 The probe opens every file read-only, reads at most the first line of a
 sampled file, and never writes, renames, or locks anything under an agent
 root.
@@ -198,6 +228,19 @@ For the same reason the `installed` column of `rein doctor --agents` reports
 only whether the executable is on `PATH`. Root presence is the separate `root`
 column. An explicit `RootEnv` or fixture root bypasses the marker gate, because
 pointing the probe at a directory is an instruction rather than a guess.
+
+### An existing empty root is distinguishable from an absent one
+
+Every root the probe considers — a declared home-directory candidate, an
+explicit `RootEnv` override, or a fixture root — contributes its own entry to
+`candidate_roots` carrying `exists` and `marker_present`, whether or not it
+goes on to become `resolved_root`. This applies uniformly to every shipped
+hometree agent that declares a `RootEnv`, not only the ones a tester happens
+to override by hand: pointing `CLINE_DATA_DIR` at a directory that exists but
+has no `sessions` subdirectory yet reports `{"exists": true, "marker_present":
+false}` for that root, while pointing it at a path that does not exist at all
+reports `{"exists": false, "marker_present": false}` — two different JSON
+documents, not the same one twice with a different timestamp.
 
 ---
 

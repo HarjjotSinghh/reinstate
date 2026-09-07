@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/HarjjotSinghh/reinstate/internal/agents"
+	"github.com/HarjjotSinghh/reinstate/internal/agents/catalog"
 )
 
 func TestEmptyHomeProducesCompleteArtifact(t *testing.T) {
@@ -222,7 +223,12 @@ func TestShapeNormalization(t *testing.T) {
 		{"-Users-alice-code-demo", "<slug>"},
 		{"%2FUsers%2Falice%2Fcode", "<slug>"},
 		{"42", "<n>"},
-		{"session-001", "session-<n>"},
+		// "session" is deliberately NOT on the vendor allowlist (only the
+		// plural "sessions" marker is): unlike "pack" (Git's own object-pack
+		// prefix) there is no fixed vendor filename whose stem is the bare
+		// word "session", so a "session-<n>"-shaped stem must collapse the
+		// same as any other non-vendor prefix would.
+		{"session-001", "<slug>-<n>"},
 		{"sessions", "sessions"},
 		{"state.json", "state.json"},
 		// Cursor buckets projects as an absolute path with separators
@@ -246,12 +252,38 @@ func TestShapeNormalization(t *testing.T) {
 		// ran in the home directory, whose basename is the account name.
 		{"wd_harjjotsinghh_f6c3da451c53", "wd_<project>_<12-hex>"},
 		{"wd_my_project_abcdef1234567890", "wd_<project>_<16-hex>"},
-		// Too short a tail to be a content hash.
-		{"wd_alice_abcdef", "wd_alice_abcdef"},
+		// Too short a tail to be a content hash, so the workspace-bucket rule
+		// does not fire — but the stem is still not a fixed vendor name, so
+		// the closed allowlist (Matrix B4) collapses it rather than letting
+		// it ride through verbatim the way a merely-not-suspicious-looking
+		// stem used to.
+		{"wd_alice_abcdef", "<slug>"},
 		// Git object names under a marketplace checkout. The trailing-digits
 		// rule used to split the hash and leave most of it verbatim.
 		{"pack-8c7ffa580563b675b1fd27a53df219b761e4d0a1", "pack-<40-hex>"},
 		{"pack-8c7ffa580563b675b1fd27a53df219b761e4d0a1.idx", "pack-<40-hex>.idx"},
+		// rc.5 review finding: rePrefHex, reLongHexTail, reWorkspaceBucket, and
+		// reTrailing each returned their regex capture group as a literal path
+		// segment without checking it against knownVendorNames, so an
+		// arbitrary project/customer/account name followed by a hash or a
+		// counter rode through unshaped even though the stem as a whole
+		// matched one of these "vendor pattern" rules. Every prefix below is
+		// not a fixed vendor name, so it must collapse to <slug> even though
+		// the rest of the stem still matches the same regex a vendor name
+		// would.
+		{"harjot-project-11", "<slug>-<n>"},
+		{"acme-corp-secret-repo-25", "<slug>-<n>"},
+		// The exact leak this finding pointed at in the committed Gemini
+		// evidence doc: a backup filename whose vendor-unknown prefix
+		// (everything before the ext.Ext(8)-char cutoff pulled it back into
+		// the stem) survived reTrailing verbatim.
+		{"settings.json.bak-20260716-13", "<slug>-<n>"},
+		{"acmecorp_deadbeefdeadbeefdeadbeefdeadbeef", "<slug>_<32-hex>"},
+		{"acmecorp-8c7ffa580563b675b1fd27a53df219b761e4d0a1", "<slug>-<40-hex>"},
+		{"acmecorp_portfolio-25_6d65015f0cb0", "<slug>_<project>_<12-hex>"},
+		// The prefix that IS a fixed vendor name still survives its
+		// trailing-digit form.
+		{"pack-42", "pack-<n>"},
 	}
 	for _, tt := range tests {
 		if got := normalizeComponent(tt.in); got != tt.want {
@@ -355,9 +387,34 @@ func TestAccountNameIsRedactedFromShapes(t *testing.T) {
 	if strings.Contains(strings.ToLower(string(blob)), "arjunmehta") {
 		t.Fatalf("artifact leaked the account name: %s", blob)
 	}
+	// Two entries: the bucket directory itself, and the session file inside
+	// it — "session.jsonl" is not a fixed vendor name (Matrix B4), so it is
+	// shaped too now, rather than surviving as a literal name that happened
+	// not to look suspicious.
+	//
+	// The bucket's own name — wd_arjunmehta_ab12cd34-17 — ends in "-17", not
+	// in 8-64 bare hex, so it never matches reWorkspaceBucket's fixed
+	// wd_<workspace>_<hash> shape; it falls through to reTrailing instead,
+	// which captures "wd_arjunmehta_ab12cd34" as one prefix. Per the rc.5
+	// review fix, that whole captured prefix is validated against the vendor
+	// allowlist as a single unit — "wd" alone is allowlisted, but
+	// "wd_arjunmehta_ab12cd34" is not — so it collapses to <slug> rather
+	// than surviving with only the account name inside it swapped for
+	// <user>. That is a stricter, safer shape than this test previously
+	// asserted (a mixed vendor-prefix-plus-free-form stem no longer keeps
+	// any of its free-form half just because the fixed prefix happened to
+	// be at the front), and it still means the account name cannot survive:
+	// there is nothing left of the original stem to contain it.
 	shapes := art.Agents[0].NameShapes
-	if len(shapes) != 1 || shapes[0].Shape != "wd_<user>_ab12cd34-<n>" {
-		t.Fatalf("redaction dropped the surrounding structure: %+v", shapes)
+	byPath := map[string]string{}
+	for _, s := range shapes {
+		byPath[s.Path] = s.Shape
+	}
+	if got := byPath["projects/*"]; got != "<slug>-<n>" {
+		t.Fatalf("bucket directory shape = %q, want a fully shaped, non-vendor name: %+v", got, shapes)
+	}
+	if got := byPath["projects/*/*"]; got != "<slug>.jsonl" {
+		t.Fatalf("session file shape = %q, want a shaped, non-vendor filename: %+v", got, shapes)
 	}
 }
 
@@ -743,4 +800,206 @@ func TestRootEnvSuffixReachesTheRoot(t *testing.T) {
 				rec.ResolvedRoot)
 		}
 	})
+}
+
+// TestGeminiTmpProjectDirectoriesAreShaped covers Matrix B4 for Gemini's
+// layout: tmp/<project>/chats/session-*.json*. The project directory is
+// sometimes a project name rather than the sha256 hash Gemini also uses
+// (docs/session-storage/gemini.md), and a plain project-name directory
+// matched none of the shape rules — it has no hyphen, no digits, no mixed
+// case — so it reached the artifact verbatim while everything beneath it was
+// normalized. Real Gemini catalog descriptor, synthetic tree: never the
+// operator's real ~/.gemini.
+func TestGeminiTmpProjectDirectoriesAreShaped(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	// Plain, lowercase, single-word project names: no hyphen, no digit, no
+	// uppercase letter, and therefore nothing the old shape rules caught.
+	projects := []string{"revenuedash", "shipfast"}
+	for _, project := range projects {
+		chats := filepath.Join(root, "tmp", project, "chats")
+		if err := os.MkdirAll(chats, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		body := []byte(`{"sessionId":"01987654-3210-7890-abcd-ef0123456789"}` + "\n")
+		if err := os.WriteFile(filepath.Join(chats, "session-1.json"), body, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	art, err := Collect(context.Background(), agents.Env{
+		Home:        t.TempDir(),
+		LookupEnv:   func(string) string { return "" },
+		FixtureRoot: root,
+	}, []agents.Descriptor{catalog.Gemini()}, Options{
+		LookPath: func(string) (string, error) { return "", os.ErrNotExist },
+		Now:      func() time.Time { return time.Date(2026, 9, 7, 0, 0, 0, 0, time.UTC) },
+		Version:  "0.5.0-dev",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := Validate(art); err != nil {
+		t.Fatal(err)
+	}
+	blob, err := json.Marshal(art)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, project := range projects {
+		if strings.Contains(string(blob), project) {
+			t.Fatalf("gemini tmp/ project directory %q reached the artifact verbatim: %s", project, blob)
+		}
+	}
+	// The children below the project directory must still normalize, so this
+	// is not passing merely because nothing walked.
+	if len(art.Agents[0].Tree) == 0 {
+		t.Fatal("gemini tree is empty; the fixture root did not resolve")
+	}
+}
+
+// TestExistingEmptyOverrideRootDiffersFromAbsent covers Matrix B7: an
+// operator-named root that exists but is empty must be distinguishable from
+// one that does not exist at all. Before this, an env-overridden root's own
+// exists/marker_present state was never added to candidate_roots — only a
+// declared home-directory candidate was, and an override that missed its
+// marker left resolved_root nil either way — so pointing CLINE_DATA_DIR at an
+// existing empty directory and at a nonexistent one produced byte-identical
+// JSON apart from the timestamp.
+func TestExistingEmptyOverrideRootDiffersFromAbsent(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name string
+		desc func() agents.Descriptor
+		env  string
+	}{
+		{"cline", catalog.Cline, "CLINE_DATA_DIR"},
+		{"kimi", catalog.Kimi, "KIMI_CODE_HOME"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			// Separate temp dirs so neither override sits under home, and the
+			// declared home-directory candidate stays identical across both
+			// runs — the only thing that may differ is the override itself.
+			home := t.TempDir()
+			empty := t.TempDir()
+			absent := filepath.Join(t.TempDir(), "does-not-exist")
+
+			collect := func(override string) Artifact {
+				t.Helper()
+				art, err := Collect(context.Background(), agents.Env{
+					Home: home,
+					LookupEnv: func(key string) string {
+						if key == tc.env {
+							return override
+						}
+						return ""
+					},
+				}, []agents.Descriptor{tc.desc()}, Options{
+					LookPath: func(string) (string, error) { return "", os.ErrNotExist },
+					Now:      func() time.Time { return time.Date(2026, 9, 7, 0, 0, 0, 0, time.UTC) },
+					Version:  "0.5.0-dev",
+				})
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := Validate(art); err != nil {
+					t.Fatal(err)
+				}
+				return art
+			}
+
+			emptyArt := collect(empty)
+			absentArt := collect(absent)
+
+			emptyRoots, err := json.Marshal(emptyArt.Agents[0].CandidateRoots)
+			if err != nil {
+				t.Fatal(err)
+			}
+			absentRoots, err := json.Marshal(absentArt.Agents[0].CandidateRoots)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(emptyRoots) == string(absentRoots) {
+				t.Fatalf("an existing empty override root produced the same candidate_roots as an absent one: %s", emptyRoots)
+			}
+
+			foundEmptyEntry := false
+			for _, c := range emptyArt.Agents[0].CandidateRoots {
+				if c.RelativeTo == "env" {
+					foundEmptyEntry = true
+					if !c.Exists || c.MarkerPresent {
+						t.Fatalf("existing empty override root reported as %+v, want exists without a marker", c)
+					}
+				}
+			}
+			if !foundEmptyEntry {
+				t.Fatalf("no env-relative candidate root for the existing empty override: %+v", emptyArt.Agents[0].CandidateRoots)
+			}
+
+			for _, c := range absentArt.Agents[0].CandidateRoots {
+				if c.RelativeTo == "env" && c.Exists {
+					t.Fatalf("absent override root reported exists=true: %+v", c)
+				}
+			}
+		})
+	}
+}
+
+// TestEveryRootEnvAgentReportsOverrideRootState is the uniform, catalog-wide
+// form of TestExistingEmptyOverrideRootDiffersFromAbsent: every shipped
+// hometree agent that declares a RootEnv must carry the override root's own
+// exists/marker_present state in candidate_roots, not only its declared
+// home-directory candidates. A per-agent list would need updating by hand
+// each time an agent gains a RootEnv, and Matrix B7 failed for exactly one
+// agent (Cline) that such a list would not have covered.
+func TestEveryRootEnvAgentReportsOverrideRootState(t *testing.T) {
+	t.Parallel()
+	tested := 0
+	for _, d := range agents.All() {
+		envName := strings.TrimSpace(d.Storage.RootEnv)
+		if envName == "" || d.Family != agents.FamilyHomeTree {
+			continue
+		}
+		d := d
+		tested++
+		t.Run(d.Key, func(t *testing.T) {
+			t.Parallel()
+			home := t.TempDir()
+			empty := t.TempDir()
+
+			art, err := Collect(context.Background(), agents.Env{
+				Home: home,
+				LookupEnv: func(key string) string {
+					if key == envName {
+						return empty
+					}
+					return ""
+				},
+			}, []agents.Descriptor{d}, Options{
+				LookPath: func(string) (string, error) { return "", os.ErrNotExist },
+				Now:      func() time.Time { return time.Date(2026, 9, 7, 0, 0, 0, 0, time.UTC) },
+				Version:  "0.5.0-dev",
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := Validate(art); err != nil {
+				t.Fatal(err)
+			}
+			for _, c := range art.Agents[0].CandidateRoots {
+				if c.RelativeTo == "env" {
+					if !c.Exists || c.MarkerPresent {
+						t.Fatalf("%s: existing empty override root reported as %+v, want exists without a marker", d.Key, c)
+					}
+					return
+				}
+			}
+			t.Fatalf("%s: no env-relative candidate root for an existing empty %s override", d.Key, envName)
+		})
+	}
+	if tested == 0 {
+		t.Fatal("no shipped hometree agent declares a RootEnv; this test is not exercising anything")
+	}
 }

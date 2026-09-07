@@ -298,7 +298,7 @@ Correct:
 > Reinstate indexes Kimi Code CLI sessions and can hand off from them. Native
 > resume for Kimi is not yet verified.
 
-> Encrypted sync covers Claude Code and Codex CLI.
+> Encrypted sync covers Claude Code, Codex CLI, and OpenCode.
 
 Incorrect, and blocked by the website contract tests in
 `website/src/lib/comparison-pages.test.ts`:

@@ -257,6 +257,19 @@ func resolveCandidates(env agents.Env, home agents.HomeDir, d agents.Descriptor)
 		if rel.RelativeTo != "home" {
 			rel = RelativeRoot{RelativeTo: "env", Suffix: ""}
 		}
+		// The override root's own state is reported like any declared
+		// candidate, whether or not it goes on to resolve. Without this, an
+		// env-overridden root that exists but is empty and one that does not
+		// exist at all produced the identical candidate_roots list — the
+		// declared home-directory candidates, unaffected by an override that
+		// never appears anywhere in the artifact — so Matrix B7 could not
+		// tell the two apart from the JSON.
+		candidates = append(candidates, CandidateRoot{
+			RelativeTo:    rel.RelativeTo,
+			Suffix:        rel.Suffix,
+			Exists:        exists,
+			MarkerPresent: marker,
+		})
 		// An explicit RootEnv is an instruction, not a hint: it replaces a
 		// home-directory guess whether or not it resolves. Letting the guess
 		// survive when the named path is missing or unmarked meant a tester
@@ -277,6 +290,14 @@ func resolveCandidates(env agents.Env, home agents.HomeDir, d agents.Descriptor)
 		if rel.RelativeTo != "home" {
 			rel = RelativeRoot{RelativeTo: "fixture", Suffix: ""}
 		}
+		// Same reasoning as the RootEnv branch above: a fixture root's state
+		// is reported even when it does not resolve.
+		candidates = append(candidates, CandidateRoot{
+			RelativeTo:    rel.RelativeTo,
+			Suffix:        rel.Suffix,
+			Exists:        exists,
+			MarkerPresent: marker,
+		})
 		if exists && (d.Storage.Marker == "" || marker) {
 			resolved = &rel
 			resolvedAbs = env.FixtureRoot

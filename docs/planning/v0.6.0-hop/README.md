@@ -35,18 +35,41 @@ rows), a headless-harness gap for three T3+ agents (`codex:E5`,
 daemon started by Task Scheduler ran with the host's login environment and
 pulled synthetic sessions into the live agent stores (cleaned up;
 [#424](https://github.com/HarjjotSinghh/reinstate/issues/424)).
-`v0.6.0-rc.4` (2026-09-07) is the current candidate: it changes exactly two
-things beyond rc.3 — the Pi reader and the verified Qwen Code range
-(`0.21.12`–`0.23.0`, Windows evidence); no other agent tier changes, no
-other compatibility range widens. Under the disposition rules in
+`v0.6.0-rc.4` (2026-09-07) changed exactly two things beyond rc.3 — the Pi
+reader and the verified Qwen Code range (`0.21.12`–`0.23.0`, Windows
+evidence); no other agent tier changed, no other compatibility range
+widened. Its own tagged-artifact native Windows acceptance
+([report](../../testing/results/2026-09-07-windows-v060rc4.md)) ended
+device verdict `FAIL`: **208 PASS / 1 PARTIAL / 4 FAIL / 2 NOT TESTED** of
+**215** required rows. Both of that candidate's own fixes were confirmed on
+real data (every `pi`/`qwen` row `PASS`). It found two new agent-probe
+findings (`MatrixB:B4` — real project-name path segments reaching a
+committed artifact unshaped; `MatrixB:B7` — an existing-but-empty overridden
+agent root indistinguishable from an absent one), a stale sync-completion
+contract sentence scored against unchanged shipped behavior (`MatrixG:G4`),
+a confirmed interactive-CLI defect (CLI row `13` — the switcher's
+all-projects scope showed every visible row as unresumable regardless of
+true state), an OpenCode version-compatibility block (host self-updated to
+`1.18.29`, above the verified `1.18.27` ceiling), and an
+operator/elevation-availability gap on `MatrixH:H7` (the run's shell held no
+administrator rights, and that run's misreading of "fresh lab account" as a
+Windows account, rather than a Hop account, meant the row's own UAC prompt
+was never reached).
+`v0.6.0-rc.5` (2026-09-07) is the current candidate: it changes exactly
+these things beyond rc.4 — agent-probe shape normalization at every tree
+depth with root state reported (closes `B4`/`B7`), the switcher's
+all-projects readiness (closes row `13`), the sync-completion contract text
+(closes `G4`), and the verified OpenCode range (`1.18.21`–`1.18.29`, Windows
+evidence, closes `opencode:E5`/`E6`); no other agent tier changes, no other
+compatibility range widens. Under the disposition rules in
 [`docs/testing/v0.6.0-windows-acceptance.md`](../../testing/v0.6.0-windows-acceptance.md#dispositions-that-do-not-block-the-device-verdict),
 stable requires **215 of 216** rows `PASS` (`opencode:D4` is
 `N/A (definitional)`, excluded from the required count), plus whatever
 dispositions are still open on the acceptance host when that run happens.
-What remains: merging and tagging `v0.6.0-rc.4`, a tagged-artifact Windows
-run against it (with `MatrixH:H7` under the fresh-lab-account isolation
-method that `#424` motivated), and the Apple Silicon macOS rows, still
-deferred until that hardware returns (#403).
+What remains: merging and tagging `v0.6.0-rc.5`, a tagged-artifact Windows
+run against it (with `MatrixH:H7` under the corrected fresh-Hop-account
+isolation method and go-signal wait that `#424` motivated), and the Apple
+Silicon macOS rows, still deferred until that hardware returns (#403).
 **Baseline:** stable `v0.5.1` (2026-08-21). `v0.5.2-rc.1` (2026-08-23) was
 tagged but never certified on either platform; its content ships here and no
 stable `v0.5.2` is cut.

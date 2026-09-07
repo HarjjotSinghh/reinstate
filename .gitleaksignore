@@ -28,3 +28,9 @@ b262757e124b9a5d462d26f6148d4d888f6b6d65:docs/testing/results/2026-09-07-windows
 b262757e124b9a5d462d26f6148d4d888f6b6d65:docs/testing/results/2026-09-07-windows-v060rc3-part-b.md:generic-api-key:140
 b262757e124b9a5d462d26f6148d4d888f6b6d65:docs/testing/results/2026-09-07-windows-v060rc3-part-b.md:generic-api-key:142
 3d285b8897223e46061e0d68603d640af35f29f0:docs/testing/results/2026-09-07-windows-v060rc3-part-d.md:generic-api-key:165
+
+# v0.6.0-rc.4 tagged Windows acceptance, executor part file (removed again by
+# the assembly commit): the disposable Hop lab account's public signing key
+# quoted from a keyring snapshot and from `rein account status`.
+5c1f28b7a4d8cb54b3058fd0f3a25c68e4bcbf08:docs/testing/results/2026-09-07-windows-v060rc4-part-d.md:generic-api-key:182
+5c1f28b7a4d8cb54b3058fd0f3a25c68e4bcbf08:docs/testing/results/2026-09-07-windows-v060rc4-part-d.md:generic-api-key:184

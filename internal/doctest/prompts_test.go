@@ -49,6 +49,24 @@ func TestEndUserPromptContracts(t *testing.T) {
 				t.Errorf("%s contains forbidden end-user instruction %q", path, forbidden)
 			}
 		}
+
+		// The post-install version check must require the same release the
+		// bootstrap contract pins, not a stale literal left over from an
+		// earlier release. Find the line instructing `rein version --json`
+		// and assert the required version on that same line is the current
+		// publicBootstrapVersion.
+		versionCheckLine := ""
+		for _, line := range strings.Split(body, "\n") {
+			if strings.Contains(line, "rein version --json") {
+				versionCheckLine = line
+				break
+			}
+		}
+		if versionCheckLine == "" {
+			t.Errorf("%s is missing the post-install `rein version --json` check", path)
+		} else if !strings.Contains(versionCheckLine, publicBootstrapVersion) {
+			t.Errorf("%s: the `rein version --json` requirement line %q does not require %s (stale pinned version)", path, versionCheckLine, publicBootstrapVersion)
+		}
 	}
 }
 

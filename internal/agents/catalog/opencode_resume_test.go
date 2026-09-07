@@ -23,6 +23,7 @@ func TestParseOpenCodeVersion(t *testing.T) {
 		ok     bool
 	}{
 		{name: "measured", output: agents.VersionOutput{Stdout: "1.18.21\n"}, want: "1.18.21", ok: true},
+		{name: "windows managed self-update", output: agents.VersionOutput{Stdout: "1.18.29\n"}, want: "1.18.29", ok: true},
 		{name: "windows newline", output: agents.VersionOutput{Stdout: "1.18.21\r\n"}, want: "1.18.21", ok: true},
 		{name: "no trailing newline", output: agents.VersionOutput{Stdout: "1.18.21"}, want: "1.18.21", ok: true},
 		{name: "stderr present", output: agents.VersionOutput{Stdout: "1.18.21\n", Stderr: "warn\n"}},
@@ -110,8 +111,8 @@ func TestOpenCodeDescriptorIsT5(t *testing.T) {
 	if got.Family != agents.FamilyEmbeddedDB {
 		t.Fatalf("Family = %s, want F3", got.Family)
 	}
-	if got.Version == nil || got.Version.Min != "1.18.21" || got.Version.Max != "1.18.27" {
-		t.Fatalf("Version = %+v, want the measured range 1.18.21-1.18.27", got.Version)
+	if got.Version == nil || got.Version.Min != "1.18.21" || got.Version.Max != "1.18.29" {
+		t.Fatalf("Version = %+v, want the measured range 1.18.21-1.18.29", got.Version)
 	}
 	if got.NewIndexSource == nil || got.NewReader == nil || got.NewTarget == nil {
 		t.Fatal("missing T1/T2/T4 constructors")

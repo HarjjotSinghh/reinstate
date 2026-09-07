@@ -16,6 +16,14 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.6.0-rc.5': {
+    rangeChange:
+      'Widens the verified OpenCode range to 1.18.21-1.18.29 (was 1.18.21-1.18.27 through v0.6.0-rc.4), on native Windows evidence only, under ADR 0005 D3: against the shared live OpenCode store, a real OpenCode 1.18.29 session was created in a throwaway project and identified by a token planted in its own first turn, then indexed, resumed, and forked through the launch plan Reinstate produces, and the resumed session returned that same token. Session row shape (session/message/part tables and columns), --session, --session --fork, --continue, the non-interactive run form, version-output parsing, and the structured-handoff capsule path are unchanged from 1.18.27. Claude Code (2.1.219-2.1.263) and Qwen Code (0.21.12-0.23.0) ranges are unchanged. macOS evidence is pending.',
+    compatibilityChange:
+      'Corrective candidate after v0.6.0-rc.4 tagged-artifact acceptance on native Windows x64 ended device verdict FAIL (208/1/4/2 of 215 required rows; both of that candidate\'s own fixes, the Pi reader and the widened Qwen Code range, were confirmed). Fixes the agent probe redaction gap that let real project-name path segments reach a committed artifact unshaped (MatrixB:B4), the gap where an existing-but-empty overridden agent root was indistinguishable from an absent one (MatrixB:B7), and the interactive switcher\'s all-projects readiness defect that showed every visible row as unresumable regardless of true state. Widens the verified OpenCode range to 1.18.29. No agent tier changes. See CHANGELOG.md.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.6.0-rc.5/docs/compatibility.md',
+  },
   'v0.6.0-rc.4': {
     rangeChange:
       'Widens the verified Qwen Code range to 0.21.12-0.23.0 (was 0.21.12-0.21.13 through v0.6.0-rc.3), on native Windows physical-resume evidence only, under ADR 0005 D3: a real Qwen Code 0.23.0 session was created, indexed, resumed, and forked through the launch plan Reinstate produces, and the resumed session returned a token that existed only in the original session\'s history. Session file location and naming, the first-user-message shape, --resume, --resume --fork-session, --session-id, and version-output parsing are unchanged from 0.21.13. Claude Code (2.1.219-2.1.263) and OpenCode (1.18.21-1.18.27) ranges are unchanged. macOS evidence for the widened part is pending.',

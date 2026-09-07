@@ -16,7 +16,7 @@ describe('SEO product truth', () => {
     expect(product.licenseName).toBe('Apache-2.0');
     expect(product.requiresAccount).toBe(false);
     expect(product.releaseStatus).toBe(
-      'v0.6.0-rc.4 candidate · stable remains v0.5.1 · v0.6.0-rc.3 tagged Windows run ended FAIL (201/3/1/10 of 215), pi:C3 a confirmed code defect and qwen version drift the largest blockers · this candidate fixes the Pi reader and widens the verified Qwen Code range to 0.23.0 · native Windows tagged-artifact acceptance pending, macOS deferred',
+      'v0.6.0-rc.5 candidate · stable remains v0.5.1 · v0.6.0-rc.4 tagged Windows run ended FAIL (208/1/4/2 of 215), a probe redaction gap, an empty-vs-absent override root gap, the switcher all-projects readiness defect, a stale sync-completion contract sentence, an OpenCode version drift, and an H7 operator-availability gap the largest blockers · this candidate fixes the probe normalization, the switcher readiness, and the sync-completion wording, and widens the verified OpenCode range to 1.18.29 · native Windows tagged-artifact acceptance pending, macOS deferred',
     );
     expect(product.initialPublicReleaseDate).toBe('2026-07-25');
     expect(product.stableRelease).toBe('v0.5.1');

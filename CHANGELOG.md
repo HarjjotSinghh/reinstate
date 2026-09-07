@@ -7,10 +7,142 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.6.0-rc.4] - 2026-09-07
+## [0.6.0-rc.5] - 2026-09-07
 
 Release candidate. Stable remains `v0.5.1`; the public installers now pin
-this candidate, superseding `v0.6.0-rc.3`.
+this candidate, superseding `v0.6.0-rc.4`.
+
+**Highlights.** `v0.6.0-rc.4`'s tagged-artifact native Windows acceptance
+([`docs/testing/results/2026-09-07-windows-v060rc4.md`](docs/testing/results/2026-09-07-windows-v060rc4.md))
+established device verdict `FAIL`: `208 PASS / 1 PARTIAL / 4 FAIL / 2 NOT
+TESTED` of `215` required rows. Both of that candidate's own fixes — the Pi
+reader indexing `message.content`, and the widened Qwen Code range — were
+fully confirmed (every `pi`/`qwen` row `PASS`). Seven required rows blocked
+the verdict, none attributed to either fix: two new agent-probe findings
+(`MatrixB:B4` — the `gemini` agent's probed `tmp/` tree leaked two real,
+un-normalized project-name directory segments verbatim, with only the
+segments beneath them shape-normalized; `MatrixB:B7` — an existing-but-empty
+overridden agent root was indistinguishable from an absent one in the JSON),
+a documentation/contract mismatch (`MatrixG:G4` — `push`/`pull` completion
+already includes `opencode`, but the row's own text still read "Claude and
+Codex sessions, and no other agent's", so identical, unchanged shipped
+behavior scored `FAIL` against stale wording), a confirmed interactive-CLI
+defect (CLI row `13` — the switcher's default all-projects scope showed
+every visible row as unresumable regardless of true state, traced to
+`Probe` fanning out one goroutine per row and exhausting the shared
+per-report timeout budget on a page with many more rows than any
+single-project page holds), a host version-compatibility block
+(`opencode:E5`/`E6` — the host's real OpenCode self-updated to `1.18.29`,
+above the verified `1.18.27` ceiling, correctly refusing before reaching
+either row's mechanism), and an operator/elevation-availability gap
+(`MatrixH:H7` — the mandatory lab-isolation prerequisite itself needed
+administrator rights the run's session never held). This candidate changes
+exactly these things: the agent probe now shape-normalizes every tree
+segment at every depth and reports each overridden root's own `exists`/
+`marker_present` state (closes `B4`/`B7`); the switcher's readiness
+resolution now bounds concurrent verifications to a small fixed pool
+regardless of page size (closes row `13`); the sync-completion contract
+text is corrected to name `opencode` alongside `claude`/`codex` (closes
+`G4`); and the verified OpenCode range widens to `1.18.29` on native
+Windows evidence (closes the `opencode:E5`/`E6` version-compatibility
+block). `MatrixH:H7` is not attempted by this candidate; it depends on
+operator/elevation availability, not product code, and is re-tested as a
+carried disposition.
+
+**Not yet certified.** Native Windows x64 tagged-artifact acceptance is what
+this candidate exists to enable; macOS acceptance is deferred under
+[ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md) until
+that hardware returns. Stable remains `v0.5.1`.
+
+### Fixed
+
+- **Interactive switcher: readiness resolves for the all-projects scope.**
+  Launching bare `rein` from a working directory outside any tracked
+  project — the switcher's default all-projects scope, and the most common
+  launch condition — showed every visible row as `CANNOT RESUME` /
+  `Blocked` regardless of true state. The cause was not scope-specific
+  record loading: `Probe` starts one goroutine per visible row, and a page
+  with many more rows than any single project ever holds (the all-projects
+  default routinely does) fanned out that many concurrent environment
+  verifications at once, exhausting the shared per-report timeout budget
+  before otherwise-healthy checks could finish — a timed-out check reports
+  itself blocked, indistinguishable on screen from a session that genuinely
+  cannot resume. `internal/tui/readiness.Prober` now bounds concurrent
+  verifications to a small fixed pool regardless of how many rows are on
+  screen, so an all-projects page resolves each row exactly as a
+  single-project page does for the same record.
+
+- **Agent probe: every tree segment is shape-normalized, not only its
+  children (Matrix B4).** A directory or file name survived into a
+  committed `rein doctor --agents --json` artifact verbatim whenever it
+  merely failed to *look* suspicious — no hyphen, no digits, no mixed
+  case — which is exactly the shape of a plain project name. Gemini CLI's
+  `tmp/<project>/chats/` bucket is sometimes named for the project rather
+  than the `sha256` hash it also uses, and two such directories reached a
+  committed probe artifact unredacted. The normalizer now closes the set:
+  a path segment survives unshaped only when it is a fixed vendor name
+  from a small allowlist (`tmp`, `sessions`, `chats`, `projects`, and a
+  handful of other literal marker/filename stems declared across the
+  catalog); every other segment collapses to a shape token
+  (`<slug>`, `<uuid-v4>`, `<32-hex>`, …), regardless of how ordinary it
+  looks. Closing the set required more than adding the allowlist itself:
+  the shape rules that split a stem into a fixed prefix plus a hash or a
+  trailing counter (`<prefix>_<32-hex>`, `<prefix>-<N-hex>`,
+  `<prefix>_<project>_<N-hex>`, `<prefix>-<n>`) were returning that prefix
+  as the raw regex capture, never checked against the allowlist, so
+  `harjot-project-11` or a dated backup filename like
+  `settings.json.bak-20260716-13` matched the same "vendor pattern" shape
+  as `pack-<40-hex>` (Git's own object-pack naming) and rode through
+  unshaped. Every such captured prefix is now validated the same way a
+  whole stem is, and collapses to `<slug>` when it is not one of the fixed
+  vendor names.
+  `docs/testing/results/agent-probes/2026-08-21-windows-gemini.json`
+  is regenerated (again) from a synthetic tree with the same shape as the
+  leaked original, never the real one.
+- **Agent probe: an existing empty root now differs from an absent one in
+  the JSON (Matrix B7).** Pointing an agent's root environment variable
+  (or a fixture root) at a directory that exists but lacks the vendor's
+  marker never added that root's own `exists`/`marker_present` state to
+  `candidate_roots` — only a declared home-directory candidate did, and a
+  root missing its marker left `resolved_root` `null` either way — so
+  `CLINE_DATA_DIR` set to an existing empty directory and to a
+  nonexistent path produced byte-identical output apart from the
+  timestamp. Every RootEnv- and fixture-root override now contributes its
+  own `candidate_roots` entry carrying `exists`/`marker_present`,
+  uniformly for every shipped hometree agent that declares a `RootEnv`.
+
+### Changed
+
+- **Widened the verified OpenCode range to `1.18.29`.** The acceptance
+  host's OpenCode self-updated past the in-tree ceiling (`1.18.27`), so
+  every `opencode:E5`/`opencode:E6` row refused with exit `5` — correct,
+  fail-closed behavior. Against the shared live OpenCode store, a real
+  OpenCode `1.18.29` session was created in a throwaway project and
+  identified by a token planted in its own first turn (never by scanning
+  other sessions in the store), then indexed, resumed, and forked through
+  the launch plan Reinstate produces; the resumed session returned that
+  same token, which existed only in the original session's history.
+  Session row shape (`session`/`message`/`part` tables and columns),
+  `--session`/`--session … --fork`/`--continue`, the non-interactive `run`
+  form, version-output parsing, and the structured-handoff capsule path
+  are all unchanged from `1.18.27`. Widened on native Windows evidence
+  only, under ADR 0005 D3; macOS evidence is pending (`#403`). See
+  [`docs/testing/results/2026-09-07-windows-range-widening-opencode-v060.md`](docs/testing/results/2026-09-07-windows-range-widening-opencode-v060.md).
+
+## [0.6.0-rc.4] - 2026-09-07
+
+Release candidate. Stable remains `v0.5.1`. Its own tagged-artifact native
+Windows acceptance
+([`docs/testing/results/2026-09-07-windows-v060rc4.md`](docs/testing/results/2026-09-07-windows-v060rc4.md))
+ended device verdict `FAIL` (`208 PASS / 1 PARTIAL / 4 FAIL / 2 NOT TESTED`
+of `215` required rows; both of this candidate's own fixes — the Pi reader
+and the widened Qwen Code range — were confirmed) and found a probe
+redaction gap, an empty-vs-absent override root gap, a stale sync-completion
+contract sentence, the switcher's all-projects readiness defect, an
+OpenCode version-compatibility block, and an operator-availability gap on
+`MatrixH:H7`; it does not authorize stable `v0.6.0`. `v0.6.0-rc.5`, above,
+fixes the code and contract-text findings, is not yet certified either, and
+supersedes it as what the public installers now pin.
 
 **Highlights.** `v0.6.0-rc.3`'s tagged-artifact native Windows acceptance
 ([`docs/testing/results/2026-09-07-windows-v060rc3.md`](docs/testing/results/2026-09-07-windows-v060rc3.md))
@@ -3425,7 +3557,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.4...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.5...HEAD
+[0.6.0-rc.5]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.4...v0.6.0-rc.5
 [0.6.0-rc.4]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.3...v0.6.0-rc.4
 [0.6.0-rc.3]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.2...v0.6.0-rc.3
 [0.6.0-rc.2]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.1...v0.6.0-rc.2

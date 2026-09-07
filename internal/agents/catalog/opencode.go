@@ -72,17 +72,22 @@ func OpenCode() agents.Descriptor {
 			// nothing on stderr. Min/Max widen only as further builds are
 			// physically measured, never by assumption. 1.18.21 was the
 			// single build measured on macOS and native Windows for the T3-T5
-			// promotion; v0.6.0 widens the ceiling to 1.18.27 on native
-			// Windows physical evidence only (macOS pending, ADR 0005 D3): a
-			// session was created with the installed 1.18.27 build, indexed,
-			// and resumed through the launch plan Reinstate itself produced,
-			// returning a token that existed only in the original session's
-			// history. See
-			// docs/testing/results/2026-09-06-windows-range-widening-v060.md.
+			// promotion; v0.6.0 widened the ceiling to 1.18.27 on native
+			// Windows physical evidence (2026-09-06), then to 1.18.29 on
+			// further native Windows physical evidence (2026-09-07, ADR 0005
+			// D3): the acceptance host self-updated past the 1.18.27 ceiling,
+			// so a session was created with the installed 1.18.29 build,
+			// indexed, and resumed through the launch plan Reinstate itself
+			// produced, returning a token that existed only in the original
+			// session's history. macOS evidence for the widened part remains
+			// pending. See
+			// docs/testing/results/2026-09-06-windows-range-widening-v060.md
+			// and
+			// docs/testing/results/2026-09-07-windows-range-widening-opencode-v060.md.
 			Args:  []string{"--version"},
 			Parse: parseOpenCodeVersion,
 			Min:   "1.18.21",
-			Max:   "1.18.27",
+			Max:   "1.18.29",
 		},
 		Process: agents.ProcessSpec{
 			// OpenCode ships as a single native executable, so the image name
@@ -110,6 +115,7 @@ func OpenCode() agents.Descriptor {
 				"docs/testing/results/2026-08-23-macos-opencode-t5-journey.md",
 				"docs/testing/results/2026-08-23-windows-opencode-t5.md",
 				"docs/testing/results/2026-09-06-windows-range-widening-v060.md",
+				"docs/testing/results/2026-09-07-windows-range-widening-opencode-v060.md",
 			},
 		},
 		NewIndexSource: opencodesrc.NewSQLite,

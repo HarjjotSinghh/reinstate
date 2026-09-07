@@ -60,10 +60,36 @@ environment (not the isolated home `rein daemon install` ran under) and
 pulled synthetic sessions into the live Claude, Codex, and OpenCode stores;
 cleaned up, tracked as
 [issue #424](https://github.com/HarjjotSinghh/reinstate/issues/424).
-`v0.6.0-rc.4` (2026-09-07) is the current candidate: it changes exactly two
-things beyond `v0.6.0-rc.3` — the Pi reader, and the verified Qwen Code
-range (`0.21.12`–`0.23.0`, Windows evidence) — and nothing else: no other
-agent's tier moves, no other compatibility range widens.
+`v0.6.0-rc.4` (2026-09-07) changed exactly two things beyond `v0.6.0-rc.3` —
+the Pi reader, and the verified Qwen Code range (`0.21.12`–`0.23.0`,
+Windows evidence) — and nothing else: no other agent's tier moves, no other
+compatibility range widens. Its own tagged-artifact native Windows
+acceptance
+([`docs/testing/results/2026-09-07-windows-v060rc4.md`](../../testing/results/2026-09-07-windows-v060rc4.md))
+ended device verdict `FAIL`: **208 PASS / 1 PARTIAL / 4 FAIL / 2 NOT
+TESTED** of **215** required rows. Both of that candidate's own fixes were
+confirmed on real data (every `pi`/`qwen` row `PASS`). Seven required rows
+blocked the verdict, none attributed to either fix: two new agent-probe
+findings (`MatrixB:B4`, real project-name path segments reaching a
+committed artifact unshaped; `MatrixB:B7`, an existing-but-empty overridden
+agent root indistinguishable from an absent one), a stale sync-completion
+contract sentence scored against unchanged shipped behavior (`MatrixG:G4`),
+a confirmed interactive-CLI defect (CLI row `13`, the switcher's
+all-projects scope showing every visible row as unresumable regardless of
+true state), a version-compatibility block (the host's real OpenCode
+self-updated to `1.18.29`, above the verified `1.18.27` ceiling), and an
+operator/elevation-availability gap on `MatrixH:H7` (that run's shell held
+no administrator rights, and its executor misread "fresh lab account" as a
+new Windows OS account rather than a new Hop account, so the row's own UAC
+prompt was never reached). `v0.6.0-rc.5` (2026-09-07) is the current
+candidate: it changes exactly these things beyond `v0.6.0-rc.4` —
+agent-probe shape normalization at every tree depth with root state
+reported (closes `B4`/`B7`), the switcher's all-projects readiness (closes
+row `13`), the sync-completion contract text and the `MatrixH:H7`
+lab-isolation wording (both docs/contract corrections, not behavior
+changes), and the verified OpenCode range (`1.18.21`–`1.18.29`, Windows
+evidence, closes `opencode:E5`/`E6`) — and nothing else: no other agent's
+tier moves, no other compatibility range widens.
 
 Two dispositions were adopted autonomously (Q19) so the stable gate is not
 permanently unreachable on this host: `opencode:D4` is `N/A (definitional)`
@@ -97,14 +123,16 @@ account, before/after listing digests of the live agent roots, and a
 go-ahead file poll for the UAC prompt) and issue #424 itself, for you to
 confirm.
 
-What is left is yours, in order: confirm the `MatrixH:H7` lab-isolation
-method (Q25) and whether/when to fix `#424` itself (a separate, smaller
-ticket, not part of this candidate); decide whether to reinstall/upgrade the
-broken `cursor-agent` install (Q21) — still not required; accept or reject
-the disposition rules (Q19, unchanged since the `v0.6.0-rc.2` update); merge
-the `v0.6.0-rc.4` release commit; sign and push the `v0.6.0-rc.4` tag (Q5);
-then run the tagged dispatch
-([`docs/testing/v0.6.0-rc.4-agent-verification-prompts.md`](../../testing/v0.6.0-rc.4-agent-verification-prompts.md))
+What is left is yours, in order: confirm you (or another maintainer) will be
+reachable near the keyboard for a window during the `v0.6.0-rc.5` run for
+`MatrixH:H7`'s UAC prompt (Q26); decide whether to pin vendor CLI versions
+for the duration of a run (Q27); decide whether/when to fix `#424` itself
+(a separate, smaller ticket, not part of this candidate); decide whether to
+reinstall/upgrade the broken `cursor-agent` install (Q21) — still not
+required; accept or reject the disposition rules (Q19, unchanged since the
+`v0.6.0-rc.2` update); merge the `v0.6.0-rc.5` release commit; sign and push
+the `v0.6.0-rc.5` tag (Q5); then run the tagged dispatch
+([`docs/testing/v0.6.0-rc.5-agent-verification-prompts.md`](../../testing/v0.6.0-rc.5-agent-verification-prompts.md))
 against native Windows x64, or tell me to.
 
 ---
@@ -506,6 +534,61 @@ confirm: (a) this method is acceptable for re-verifying `H7` on
 `v0.6.0-rc.4`, and (b) when you would like `#424` itself scheduled — it is
 a small, separable fix and does not need to block this candidate's tagged
 run.
+
+**Wording corrected (2026-09-07), after the `v0.6.0-rc.4` tagged run.**
+"Fresh lab account" was ambiguous and that run's executor read it as a
+fresh **Windows** user account — which needs administrator rights to
+create — could not set one up, and abandoned the row before its own UAC
+prompt was even reached, polling the go-signal file for only a few minutes
+instead of the intended long wait. The rule always meant a fresh **Hop**
+account (created through the lab's `hopd`, via `hoplab pair init` or the
+account init flow) with zero pushed sessions — not a new Windows login —
+needing no elevation beyond the row's own single UAC prompt. The corrected
+rule, plus the precise go-signal poll cadence (every 60 s, for up to 150
+minutes, starting only after every other row in the executor's part is
+done), is now recorded as the contract text in
+[`docs/testing/v0.6.0-windows-acceptance.md`](../../testing/v0.6.0-windows-acceptance.md)
+(Run notes) rather than left to each candidate's dispatch to restate. See
+Q26 and Q27 below.
+
+## Q26 — `MatrixH:H7` needs you at the keyboard during the `v0.6.0-rc.5` run
+
+`H7`'s UAC prompt cannot be accepted unattended (Q23), and the corrected
+lab-isolation rule (Q25, above) still routes through that same single
+elevation. Beyond accepting the prompt itself, `H7` now depends on the
+operator go-signal file
+(`D:/ReinstateAcceptanceProjects/h7-go.txt`, polled every 60 s for up to
+150 minutes, starting only once every other row in the executor's part is
+done) so the row does not attempt the elevation before you are actually
+available to accept it. Please confirm you (or another maintainer with
+admin rights on the acceptance host) will be reachable near the keyboard
+for a window inside the `v0.6.0-rc.5` run so this go-signal mechanism has
+someone to signal for; if no maintainer is reachable, the row records
+`PARTIAL` (operator/harness availability) after the full 150-minute wait,
+the same disposition `H7` has carried on more than one prior run.
+
+## Q27 — Should the acceptance lab pin vendor CLI versions for a run?
+
+Vendor self-updates keep moving the compatible-range ceiling mid-run,
+independent of anything this candidate changes: this cycle alone saw
+Claude Code self-update to `2.1.263`, Qwen Code to `0.23.0`, and OpenCode
+to `1.18.29` (`website/src/data/compatibility.json` now verifies OpenCode
+through `1.18.29`, widened after `v0.6.0-rc.4`'s tagged run found the
+acceptance host had already self-updated past the prior `1.18.27` ceiling)
+— each discovered because a real vendor
+binary on the acceptance host updated itself between runs, not because the
+lab requested a newer version. Widening the verified range each time is
+real evidence, not padding, but it also means a run's outcome can depend on
+exactly when a vendor happened to auto-update relative to when the row ran,
+which makes two runs against the "same" dispatch not strictly comparable.
+Please decide: (a) pin vendor CLI versions for the duration of a single
+acceptance run (disabling or deferring vendor auto-update on the lab
+account for that window) so a run's evidence is tied to one known version
+per agent, or (b) keep the current practice of widening the verified range
+on whatever version the host's vendor binary has already self-updated to,
+treating each new ceiling as evidence rather than drift. Either is
+workable; this only needs your call before it becomes an inconsistency
+between reports.
 
 ## Q13 — GitGuardian on the candidate PR
 
