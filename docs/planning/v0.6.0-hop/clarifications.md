@@ -507,6 +507,59 @@ confirm: (a) this method is acceptable for re-verifying `H7` on
 a small, separable fix and does not need to block this candidate's tagged
 run.
 
+**Wording corrected (2026-09-07), after the `v0.6.0-rc.4` tagged run.**
+"Fresh lab account" was ambiguous and that run's executor read it as a
+fresh **Windows** user account — which needs administrator rights to
+create — could not set one up, and abandoned the row before its own UAC
+prompt was even reached, polling the go-signal file for only a few minutes
+instead of the intended long wait. The rule always meant a fresh **Hop**
+account (created through the lab's `hopd`, via `hoplab pair init` or the
+account init flow) with zero pushed sessions — not a new Windows login —
+needing no elevation beyond the row's own single UAC prompt. The corrected
+rule, plus the precise go-signal poll cadence (every 60 s, for up to 150
+minutes, starting only after every other row in the executor's part is
+done), is now recorded as the contract text in
+[`docs/testing/v0.6.0-windows-acceptance.md`](../../testing/v0.6.0-windows-acceptance.md)
+(Run notes) rather than left to each candidate's dispatch to restate. See
+Q26 and Q27 below.
+
+## Q26 — `MatrixH:H7` needs you at the keyboard during the `v0.6.0-rc.5` run
+
+`H7`'s UAC prompt cannot be accepted unattended (Q23), and the corrected
+lab-isolation rule (Q25, above) still routes through that same single
+elevation. Beyond accepting the prompt itself, `H7` now depends on the
+operator go-signal file
+(`D:/ReinstateAcceptanceProjects/h7-go.txt`, polled every 60 s for up to
+150 minutes, starting only once every other row in the executor's part is
+done) so the row does not attempt the elevation before you are actually
+available to accept it. Please confirm you (or another maintainer with
+admin rights on the acceptance host) will be reachable near the keyboard
+for a window inside the `v0.6.0-rc.5` run so this go-signal mechanism has
+someone to signal for; if no maintainer is reachable, the row records
+`PARTIAL` (operator/harness availability) after the full 150-minute wait,
+the same disposition `H7` has carried on more than one prior run.
+
+## Q27 — Should the acceptance lab pin vendor CLI versions for a run?
+
+Vendor self-updates keep moving the compatible-range ceiling mid-run,
+independent of anything this candidate changes: this cycle alone saw
+Claude Code self-update to `2.1.263`, Qwen Code to `0.23.0`, and OpenCode
+toward `1.18.29` (`website/src/data/compatibility.json` currently verifies
+OpenCode only through `1.18.27`) — each discovered because a real vendor
+binary on the acceptance host updated itself between runs, not because the
+lab requested a newer version. Widening the verified range each time is
+real evidence, not padding, but it also means a run's outcome can depend on
+exactly when a vendor happened to auto-update relative to when the row ran,
+which makes two runs against the "same" dispatch not strictly comparable.
+Please decide: (a) pin vendor CLI versions for the duration of a single
+acceptance run (disabling or deferring vendor auto-update on the lab
+account for that window) so a run's evidence is tied to one known version
+per agent, or (b) keep the current practice of widening the verified range
+on whatever version the host's vendor binary has already self-updated to,
+treating each new ceiling as evidence rather than drift. Either is
+workable; this only needs your call before it becomes an inconsistency
+between reports.
+
 ## Q13 — GitGuardian on the candidate PR
 
 GitGuardian's check on #404 flags the synthetic keyring goldens the Hop tree
