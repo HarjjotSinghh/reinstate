@@ -567,10 +567,11 @@ and no real store ever had. `cursor:C2` (real `message_count` still `0`)
 and `cursor:C3` (search by body cannot succeed against tables the real store
 lacks) were re-scored `FAIL` on that finding; the fix targets a schema that
 does not exist. This report does **not** authorize stable `v0.6.0`.
-Corrective work for the Cursor CLI store schema lands in `v0.6.0-rc.3`; the
-`grok` MCP-reconnect finding, the `cline`/`cursor`/`pi` C3 real-session
-evidence gap, and `MatrixH:H7`'s operator-availability gap remain open and
-are not this candidate's scope.
+Corrective work for the Cursor CLI store schema, which closes `cursor:C2`
+and `cursor:C3`, lands in `v0.6.0-rc.3`; the `grok` stall, the `cline` and
+`pi` C3 real-session evidence gap, the expired Qwen credential, and
+`MatrixH:H7`'s operator-availability gap are host and operator conditions
+that remain open and are not product changes in that candidate.
 
 ### v0.6.0-rc.3 candidate gate
 
