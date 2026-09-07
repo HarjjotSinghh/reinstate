@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Widened the verified Qwen Code range to `0.23.0`.** The acceptance
+  host's Qwen Code self-updated past the in-tree ceiling (`0.21.13`), so
+  every Qwen resume/fork/handoff row refused with exit `5` — correct,
+  fail-closed behavior. Against an isolated `QWEN_HOME`, a real Qwen Code
+  `0.23.0` session was created, indexed, resumed, and forked through the
+  launch plan Reinstate produces, and the resumed session returned a token
+  that existed only in the original session's history. Session file
+  location and naming, the first-user-message shape, `--resume`,
+  `--resume … --fork-session`, `--session-id`, and version-output parsing
+  are unchanged from `0.21.13`; a new `contextWindowSize` field on
+  `assistant` records is silently ignored by the existing reader. Widened
+  on native Windows evidence only, under ADR 0005 D3; macOS evidence is
+  pending (`#403`). See
+  [`docs/testing/results/2026-09-07-windows-range-widening-qwen-v060.md`](docs/testing/results/2026-09-07-windows-range-widening-qwen-v060.md).
+
 ### Fixed
 
 - **Pi reader indexes real (version 3) session text.** Pi's real session

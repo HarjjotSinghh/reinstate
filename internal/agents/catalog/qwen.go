@@ -99,14 +99,15 @@ func Qwen() agents.Descriptor {
 			// documented flag surface was read from. A single-version range
 			// would refuse every install that has not self-updated.
 			//
-			// A newer managed update (0.21.15 was observed installing itself
-			// mid-journey) is deliberately outside this range: only its
-			// `--version` output has been seen, not its storage layout, so it
-			// reports UNTESTED and the operator can still proceed with
-			// --allow-untested. See the device report for the drift this
-			// updater causes between the probed version and the running one.
+			// Widened to 0.23.0 on 2026-09-07 native-Windows evidence (ADR
+			// 0005 D3): a real Qwen Code 0.23.0 install (the acceptance
+			// host's managed self-update) created a session, was resumed and
+			// forked through the vendor's own argv, and read back the token
+			// planted in its first turn. Record shape, project-bucket
+			// naming, and version-output parsing are unchanged from 0.21.13.
+			// See docs/testing/results/2026-09-07-windows-range-widening-qwen-v060.md.
 			Min: "0.21.12",
-			Max: "0.21.13",
+			Max: "0.23.0",
 		},
 		Process: agents.ProcessSpec{
 			// Measured from `ps -axo pid=,comm=,args=` against a live
