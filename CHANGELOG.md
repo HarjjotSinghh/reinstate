@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Pi reader indexes real (version 3) session text.** Pi's real session
+  files carry each turn's text as `message.content` parts
+  (`{"type":"text","text":...}` alongside tool/thinking parts), but the
+  reader handed the whole `message` object to the shared text-flattening
+  helper, which only reads a top-level `text` key — so `prompt_preview`
+  and search text were silently empty for every real Pi session while
+  `message_count` stayed correct. The reader now reads `message.content`,
+  keeps reading the legacy `version:1` top-level `text` shape, and — like
+  the Claude and Codex readers — indexes only user-turn text, never
+  assistant, thinking, or tool-use text.
+
 ## [0.6.0-rc.3] - 2026-09-07
 
 Release candidate. Stable remains `v0.5.1`; the public installers now pin

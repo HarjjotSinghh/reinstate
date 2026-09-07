@@ -76,7 +76,7 @@ below are what the vendor currently publishes.
 | Session storage default | `~/.pi/agent/sessions/` (under the config root, not a sibling of it) | **macOS:** present |
 | Session path | `sessions/--<cwd-with-slashes-as-hyphens>--/<timestamp>_<uuid>.jsonl` | **macOS:** `sessions/<slug>/<slug>-<uuid-v4>.jsonl` |
 | Session format | JSONL; first line `type=session` header (`version`, `id`, `cwd`); later lines tree entries with `id` / `parentId` | **macOS first line:** `cwd, id, timestamp, type, version` |
-| Header versions | v1 linear (legacy), v2 tree, v3 `hookMessage` → `custom`; load migrates to v3 | Unverified |
+| Header versions | v1 linear (legacy), v2 tree, v3 `hookMessage` → `custom`; load migrates to v3 | **macOS/Windows, 2026-09-07:** `pi -p` writes `version:3` |
 | Project scoping | Yes: one cwd-slug directory per working directory | **macOS:** one slug directory |
 | Project key | Path slug (`/` → `-`, wrapped in `--…--`). Windows encoding unknown | **macOS:** collapsed to `<slug>`; Windows unknown |
 | HTML / JSONL export | `/export [file]`, `--export <in> [out]`, RPC `export_html` write to a caller path (RPC default `/tmp/session.html`), not into the session tree | Unverified |
@@ -93,6 +93,47 @@ below are what the vendor currently publishes.
 default session root is outside `~/.pi/agent`. The published default is
 `~/.pi/agent/sessions/`. A T1 scanner must still honor the session-dir
 override without treating it as `<config>/sessions`.
+
+## Turn shape (version 3) and what T1 indexes
+
+Confirmed 2026-09-07 from a real `pi -p` session (own throwaway project,
+Anthropic provider, `0.73.1`). The header line is `type:"session"`; every
+turn after it is `type:"message"` for **both** user and assistant turns —
+the speaker lives on the nested `message.role`, not on the top-level
+`type`:
+
+```json
+{"type":"message","id":"...","message":{"role":"user","content":[{"type":"text","text":"..."}]}}
+{"type":"message","id":"...","message":{"role":"assistant","content":[{"type":"thinking","thinking":"..."},{"type":"tool_use","id":"...","input":{}},{"type":"text","text":"..."}]}}
+```
+
+`message.content` is an array of typed parts, not a string. Other line
+`type`s observed between turns (`model_change`, `thinking_level_change`)
+carry no message and are skipped.
+
+**Indexing policy**, matching the Claude and Codex readers:
+
+- `prompt_preview` and `search_text` are built only from `text` /
+  `input_text` parts of **user** turns (`message.role == "user"`). Assistant
+  text, `thinking` parts, and `tool_use` parts are never indexed.
+- `message_count` counts every `user` and `assistant` turn regardless of
+  whether it carried readable text (a tool-only assistant turn still
+  counts).
+- The legacy `version:1` shape (`{"type":"user","text":"..."}`, no
+  `message` wrapper) is still read: the top-level `type` is the role and
+  the top-level `text` is the content.
+- A turn whose role cannot be resolved (`message` present but not an
+  object, and no legacy top-level `type` of `user`/`assistant`/`human`/`ai`)
+  is not counted and contributes no text — it is not guessed.
+
+Fixed 2026-09-07 (`F-PI-CONTENT-EXTRACTION`, filed against `pi:C3` on the
+`v0.6.0-rc.3` tagged Windows acceptance run):
+`prompt_preview` and `search_text` were previously silently empty for every
+real Pi session because the reader passed the whole `message` object to
+the shared text-flattening helper instead of `message.content`, and that
+helper only reads a top-level `text` key on a map. `message_count` was
+unaffected because the miscount only touched extracted text, not the
+per-line role match.
 
 ## What this task settled
 

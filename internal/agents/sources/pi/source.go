@@ -183,16 +183,9 @@ func readConversation(path string) (conversation, error) {
 		if stamp := sources.EventTimestamp(item); stamp != 0 {
 			out.updated = time.Unix(stamp, 0).UTC()
 		}
-		kind := strings.ToLower(sources.FirstString(item, "type"))
-		text := sources.ExtractTextContent(item["message"])
-		if text == "" {
-			text = sources.ExtractTextContent(item["content"])
-		}
-		if text == "" {
-			text = sources.FirstString(item, "text")
-		}
-		switch kind {
-		case "user", "human", "message":
+		role, text := turnRoleAndText(item)
+		switch role {
+		case "user", "human":
 			out.messages++
 			out.prompts.Add(text)
 			if out.firstPrompt == "" && text != "" {
@@ -210,4 +203,37 @@ func readConversation(path string) (conversation, error) {
 		return conversation{}, fmt.Errorf("pi conversation is empty")
 	}
 	return out, nil
+}
+
+// turnRoleAndText resolves the speaker role and readable text for one JSONL
+// item.
+//
+// Real (version 3) turn items look like:
+//
+//	{"type":"message","id":"...","message":{"role":"user","content":[{"type":"text","text":"..."}]}}
+//
+// The top-level "type" is "message" for both user and assistant turns, so
+// the role lives on the nested message object, and the readable text is
+// message.content — an array of typed parts (text/input_text plus
+// tool/thinking parts that ExtractTextContent already ignores) — never the
+// message wrapper itself.
+//
+// The legacy (version 1) shape has no "message" wrapper: the role is the
+// top-level "type" directly and the text is a top-level "text" string.
+//
+//	{"type":"user","text":"..."}
+func turnRoleAndText(item map[string]any) (role, text string) {
+	if message, ok := item["message"].(map[string]any); ok {
+		role = strings.ToLower(sources.FirstString(message, "role"))
+		text = sources.ExtractTextContent(message["content"])
+		if role != "" {
+			return role, text
+		}
+	}
+	// No usable nested message: fall back to the legacy top-level shape.
+	role = strings.ToLower(sources.FirstString(item, "type"))
+	if text == "" {
+		text = sources.FirstString(item, "text")
+	}
+	return role, text
 }
