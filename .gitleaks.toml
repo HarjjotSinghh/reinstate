@@ -158,3 +158,21 @@ regexes = [
   '''^19471fce98d98c55c9ca380e8d1d0aa3104529582f393cdb4a8cc4a6894edff5$''',
   '''^8bJkOTbHPuLuMmIXrMWn/mdFd4eXtbisG84Nn5sjCfs=$''',
 ]
+
+# Planted search tokens in acceptance evidence. A tagged-artifact run mints a
+# random token, puts it in a prompt to its own throwaway session ("Reply with
+# exactly this token and nothing else: <token>"), and then proves `rein search`
+# finds that session by it. The report has to quote the command verbatim, and
+# the token's entropy trips `generic-api-key`. It is not a credential: it was
+# invented for one search row and is never presented to any service.
+[[allowlists]]
+description = "Planted search tokens quoted verbatim in acceptance evidence"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = [
+  '''^docs/testing/results/.*\.md$''',
+]
+regexTarget = "line"
+regexes = [
+  '''exactly this token and nothing else''',
+]
