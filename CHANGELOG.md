@@ -25,6 +25,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   only, under ADR 0005 D3; macOS evidence is pending (`#403`). See
   [`docs/testing/results/2026-09-07-windows-range-widening-opencode-v060.md`](docs/testing/results/2026-09-07-windows-range-widening-opencode-v060.md).
 
+### Fixed
+
+- **Interactive switcher: readiness resolves for the all-projects scope.**
+  Launching bare `rein` from a working directory outside any tracked
+  project — the switcher's default all-projects scope, and the most common
+  launch condition — showed every visible row as `CANNOT RESUME` /
+  `Blocked` regardless of true state. The cause was not scope-specific
+  record loading: `Probe` starts one goroutine per visible row, and a page
+  with many more rows than any single project ever holds (the all-projects
+  default routinely does) fanned out that many concurrent environment
+  verifications at once, exhausting the shared per-report timeout budget
+  before otherwise-healthy checks could finish — a timed-out check reports
+  itself blocked, indistinguishable on screen from a session that genuinely
+  cannot resume. `internal/tui/readiness.Prober` now bounds concurrent
+  verifications to a small fixed pool regardless of how many rows are on
+  screen, so an all-projects page resolves each row exactly as a
+  single-project page does for the same record.
+
 ## [0.6.0-rc.4] - 2026-09-07
 
 Release candidate. Stable remains `v0.5.1`; the public installers now pin

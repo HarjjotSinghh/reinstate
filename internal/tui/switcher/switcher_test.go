@@ -3,17 +3,22 @@
 package switcher
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/HarjjotSinghh/reinstate/internal/preflight"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
 	"github.com/HarjjotSinghh/reinstate/internal/tui"
+	"github.com/HarjjotSinghh/reinstate/internal/tui/readiness"
 	"github.com/HarjjotSinghh/reinstate/internal/tui/tuitest"
 	"github.com/HarjjotSinghh/reinstate/internal/ui"
 )
@@ -1320,6 +1325,234 @@ func TestBlockedReadOnlySessionExplainsWhy(t *testing.T) {
 			}
 		})
 	}
+}
+
+// loadSensitiveVerifier stands in for preflight.Verify's real behavior under
+// contention: a check backed by a subprocess takes measurable wall time, and
+// a shared, fixed timeout budget is what turns "too many probes ran at once"
+// into "this session cannot resume". It reports blocked whenever more than
+// limit calls are in flight at once, and ready otherwise — mirroring a real
+// report that starts failing checks once concurrent load exceeds what its
+// timeout budget can absorb.
+type loadSensitiveVerifier struct {
+	limit    int32
+	inFlight int32
+	// peak records the highest concurrency actually observed, so a passing
+	// test can additionally assert the cap was exercised rather than the
+	// corpus simply being too small to matter.
+	peak int32
+}
+
+func (v *loadSensitiveVerifier) verify(_ context.Context, _ sessionindex.Record) (preflight.Report, error) {
+	current := atomic.AddInt32(&v.inFlight, 1)
+	defer atomic.AddInt32(&v.inFlight, -1)
+	for {
+		observed := atomic.LoadInt32(&v.peak)
+		if current <= observed || atomic.CompareAndSwapInt32(&v.peak, observed, current) {
+			break
+		}
+	}
+	// Give sibling probes a chance to overlap before this one returns, the
+	// way a real subprocess-backed check takes measurable wall time rather
+	// than answering instantly.
+	time.Sleep(15 * time.Millisecond)
+	if current > v.limit {
+		return preflight.Report{Decision: preflight.DecisionBlocked}, nil
+	}
+	return preflight.Report{Decision: preflight.DecisionReady}, nil
+}
+
+// runProbeConcurrently executes a Probe command the way Bubble Tea's own
+// runtime does: every leaf command in a batch on its own goroutine, all
+// started together. tuitest.Driver deliberately drains commands one at a
+// time for deterministic golden frames, which would hide exactly the
+// contention this test exists to catch, so it is bypassed here.
+func runProbeConcurrently(t *testing.T, cmd tea.Cmd) {
+	t.Helper()
+	if cmd == nil {
+		return
+	}
+	msg := cmd()
+	batch, ok := msg.(tea.BatchMsg)
+	if !ok {
+		return
+	}
+	var group sync.WaitGroup
+	for _, leaf := range batch {
+		leaf := leaf
+		group.Add(1)
+		go func() {
+			defer group.Done()
+			leaf()
+		}()
+	}
+	group.Wait()
+}
+
+// manyRecords builds n distinct, resumable, same-bucket records so a viewport
+// tall enough to show all of them puts that many probes on screen at once —
+// the shape of the switcher's default all-projects scope on a real index,
+// where nothing narrows the session count.
+func manyRecords(n int) []sessionindex.Record {
+	records := make([]sessionindex.Record, 0, n)
+	for i := 0; i < n; i++ {
+		records = append(records, sessionindex.Record{
+			Key:       fmt.Sprintf("claude:scopeall-%02d", i),
+			ID:        fmt.Sprintf("scopeall-%02d", i),
+			Agent:     sessionindex.AgentClaude,
+			Title:     fmt.Sprintf("Session %02d", i),
+			Project:   fmt.Sprintf("project-%02d", i),
+			UpdatedAt: fixtureNow().Add(-time.Duration(i) * time.Minute),
+			CanResume: true,
+			CanFork:   true,
+		})
+	}
+	return records
+}
+
+// TestScopeAllDoesNotOverwhelmReadinessProbing is a regression test for the
+// rc.5 defect where launching the switcher outside any tracked project (its
+// default ScopeAll, "all projects") showed every visible row as CANNOT
+// RESUME / Blocked regardless of true state, while the identical records
+// scoped to a single project read correctly.
+//
+// The cause was never ScopeAll's record loading: Probe hands back one
+// goroutine per visible record, and a page with many more rows than any
+// single project's session count fanned out that many concurrent
+// verifications at once, starving the shared per-report timeout budget until
+// otherwise-healthy checks timed out and were read as blocked. This proves
+// the switcher keeps probing under the shared cap regardless of how many rows
+// a scope happens to produce, so a many-row all-projects page resolves each
+// row exactly as a low-concurrency single-project page would for the same
+// underlying record.
+func TestScopeAllDoesNotOverwhelmReadinessProbing(t *testing.T) {
+	tests := []struct {
+		name    string
+		project string // Options.Project; empty selects ScopeAll
+		records []sessionindex.Record
+	}{
+		{
+			name:    "all projects: many more visible rows than the concurrency cap",
+			project: "",
+			records: manyRecords(20),
+		},
+		{
+			name:    "single project: a handful of visible rows",
+			project: projectReinstate,
+			records: manyRecords(20)[:2],
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			verifier := &loadSensitiveVerifier{limit: 4}
+			prober := readiness.New(verifier.verify)
+			capability := ui.Capability{
+				Mode: ui.ModeFull, Color: ui.ColorNone, Unicode: true, Width: 120, Height: 40,
+			}
+			model := New(Options{
+				Theme:      ui.NewTheme(capability),
+				Capability: capability,
+				Loader:     &fakeLoader{records: test.records},
+				Readiness:  prober,
+				Project:    test.project,
+				Now:        fixtureNow(),
+			})
+
+			// Bypass loadCmd's own goroutine indirection: hand the fixed page
+			// straight to Update, exactly what the loader's result would
+			// produce, and capture the probeVisible command it schedules.
+			_, cmd := model.Update(loadedMsg{records: test.records})
+			runProbeConcurrently(t, cmd)
+
+			for _, record := range test.records {
+				if got := prober.Lookup(record); got != ui.ReadinessReady {
+					t.Errorf("Lookup(%s) = %v, want %v (peak concurrent probes seen: %d)",
+						record.Key, got, ui.ReadinessReady, atomic.LoadInt32(&verifier.peak))
+				}
+			}
+		})
+	}
+}
+
+// TestReadinessIsIndependentOfScope locks in the invariant the rc.4 report's
+// initial hypothesis assumed might already be broken: the exact same records
+// probe to the exact same readiness whether the switcher is scoped to a
+// single project or to every project. Scope selects which records get
+// loaded; it must never change how an already-loaded record's readiness is
+// computed or looked up.
+func TestReadinessIsIndependentOfScope(t *testing.T) {
+	records := []sessionindex.Record{
+		{
+			Key: "claude:same-01", ID: "same-01", Agent: sessionindex.AgentClaude,
+			Project: projectReinstate, UpdatedAt: fixtureNow().Add(-time.Minute),
+			CanResume: true, CanFork: true,
+		},
+		{
+			Key: "codex:same-02", ID: "same-02", Agent: sessionindex.AgentCodex,
+			Project: projectReinstate, UpdatedAt: fixtureNow().Add(-2 * time.Minute),
+			CanResume: true, CanFork: true,
+		},
+		{
+			Key: "grok:same-03", ID: "same-03", Agent: sessionindex.AgentGrok,
+			Project: projectReinstate, UpdatedAt: fixtureNow().Add(-3 * time.Minute),
+			ReadOnlyReason: "read-only session source",
+		},
+	}
+
+	tests := []struct {
+		name    string
+		project string // Options.Project; empty selects ScopeAll
+	}{
+		{name: "all projects", project: ""},
+		{name: "single project", project: projectReinstate},
+	}
+
+	results := make(map[string]map[string]ui.Readiness, len(tests))
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			prober := readiness.New(readinessVerifyByKey)
+			capability := ui.Capability{
+				Mode: ui.ModeFull, Color: ui.ColorNone, Unicode: true, Width: 120, Height: 40,
+			}
+			model := New(Options{
+				Theme:      ui.NewTheme(capability),
+				Capability: capability,
+				Loader:     &fakeLoader{records: records},
+				Readiness:  prober,
+				Project:    test.project,
+				Now:        fixtureNow(),
+			})
+			// tuitest.New drives Init (which loads and, on that same synchronous
+			// drain, probes every visible row) to a settled frame.
+			tuitest.New(t, model, capability.Width, capability.Height)
+
+			got := make(map[string]ui.Readiness, len(records))
+			for _, record := range records {
+				got[record.Key] = prober.Lookup(record)
+			}
+			results[test.name] = got
+		})
+	}
+
+	for _, record := range records {
+		all, single := results["all projects"][record.Key], results["single project"][record.Key]
+		if all != single {
+			t.Errorf("record %s: all-projects readiness = %v, single-project readiness = %v; scope must not change the answer",
+				record.Key, all, single)
+		}
+	}
+}
+
+// readinessVerifyByKey answers deterministically from the record alone, so
+// TestReadinessIsIndependentOfScope's two switcher instances — one per scope
+// — see identical inputs produce identical outputs with nothing left to
+// chance.
+func readinessVerifyByKey(_ context.Context, record sessionindex.Record) (preflight.Report, error) {
+	if strings.Contains(record.Key, "same-02") {
+		return preflight.Report{Decision: preflight.DecisionConfirmationRequired}, nil
+	}
+	return preflight.Report{Decision: preflight.DecisionReady}, nil
 }
 
 // flattenFrame joins a rendered frame into one whitespace-collapsed line so a

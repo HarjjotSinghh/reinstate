@@ -36,13 +36,39 @@ type Result struct {
 // worth reading again. It carries no payload because the cache is the state.
 type ProbedMsg struct{ Keys []string }
 
+// maxConcurrentProbes bounds how many verifications run at once.
+//
+// A single probe is not free: preflight.Verify spawns several sequential Git
+// processes plus a vendor version probe, all sharing one short, fixed wall
+// clock (preflight.DefaultVerifierTimeout). Probe hands back one tea.Cmd per
+// record and Bubble Tea runs every command in a batch on its own goroutine
+// simultaneously, so fanning out one goroutine per visible row starts that
+// many independent report pipelines — and that many times as many OS
+// processes — in the same instant. A page with a handful of rows absorbs
+// this fine; a page with a couple dozen (the switcher's default all-projects
+// scope routinely has more rows than any single project does) does not: the
+// resulting process-creation stampede blows through each report's own
+// timeout budget before its checks can finish, and a timed-out check reports
+// itself blocked — indistinguishable, on screen, from a session that
+// genuinely cannot resume. Capping how many verifications run at once keeps
+// each one inside the budget it was actually given, independent of how many
+// rows happen to be on screen at once.
+const maxConcurrentProbes = 4
+
 // Prober computes readiness lazily and remembers the answer.
 //
 // Probing is deliberately not eager over the whole index. A single report runs
 // workspace and vendor-version checks, so probing hundreds of rows would cost
-// far more than it tells anyone. Only rows that reach the screen are probed.
+// far more than it tells anyone. Only rows that reach the screen are probed,
+// and even those share a bounded pool of concurrent verifications rather than
+// all starting at once — see maxConcurrentProbes.
 type Prober struct {
 	verify VerifyFunc
+	// slots bounds concurrent verifications. A buffered channel is used as a
+	// semaphore: probeOne sends before verifying and receives after, so at
+	// most cap(slots) verifications run at any moment regardless of how many
+	// records Probe was asked to cover in one call.
+	slots chan struct{}
 
 	mu      sync.Mutex
 	cache   map[string]Result
@@ -54,6 +80,7 @@ type Prober struct {
 func New(verify VerifyFunc) *Prober {
 	return &Prober{
 		verify:  verify,
+		slots:   make(chan struct{}, maxConcurrentProbes),
 		cache:   make(map[string]Result),
 		pending: make(map[string]struct{}),
 	}
@@ -142,6 +169,23 @@ func (p *Prober) Probe(ctx context.Context, records []sessionindex.Record) tea.C
 
 func (p *Prober) probeOne(ctx context.Context, record sessionindex.Record) tea.Cmd {
 	return func() tea.Msg {
+		// Wait for a free slot before verifying at all, so at most
+		// maxConcurrentProbes reports run concurrently no matter how many
+		// commands Bubble Tea started in this batch. A context that is
+		// cancelled while still queued (the surface quit, or the caller's
+		// deadline passed) is left pending rather than answered: nothing was
+		// learned about the record's own environment, so it deserves another
+		// try later, not a cached verdict manufactured from a queueing delay.
+		select {
+		case p.slots <- struct{}{}:
+		case <-ctx.Done():
+			p.mu.Lock()
+			delete(p.pending, record.Key)
+			p.mu.Unlock()
+			return ProbedMsg{}
+		}
+		defer func() { <-p.slots }()
+
 		report, err := p.verify(ctx, record)
 		result := Result{Key: record.Key, Report: report, Err: err}
 		result.Readiness = FromReport(report, err)
