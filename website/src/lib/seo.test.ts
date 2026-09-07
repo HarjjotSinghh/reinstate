@@ -16,7 +16,7 @@ describe('SEO product truth', () => {
     expect(product.licenseName).toBe('Apache-2.0');
     expect(product.requiresAccount).toBe(false);
     expect(product.releaseStatus).toBe(
-      'v0.6.0-rc.5 candidate · stable remains v0.5.1 · v0.6.0-rc.4 tagged Windows run ended FAIL (208/1/4/2 of 215), a probe redaction gap, an empty-vs-absent override root gap, the switcher all-projects readiness defect, a stale sync-completion contract sentence, an OpenCode version drift, and an H7 operator-availability gap the largest blockers · this candidate fixes the probe normalization, the switcher readiness, and the sync-completion wording, and widens the verified OpenCode range to 1.18.29 · native Windows tagged-artifact acceptance pending, macOS deferred',
+      'v0.6.0-rc.6 candidate · stable remains v0.5.1 · v0.6.0-rc.5 tagged Windows run (plus two same-artifact rechecks) ended FAIL (211/4/0/0 of 215), zero product defects, grok:E1-E3 live-backend-connectivity plus a grok version drift to 1.0.13 and an H7 digest-equality-unmeasurable gap the four PARTIAL rows · this candidate widens the verified Grok Build range to 1.0.13 and refines the H7 live-home check to per-file listing with attribution · native Windows tagged-artifact acceptance pending, macOS deferred',
     );
     expect(product.initialPublicReleaseDate).toBe('2026-07-25');
     expect(product.stableRelease).toBe('v0.5.1');

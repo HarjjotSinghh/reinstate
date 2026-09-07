@@ -16,6 +16,14 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.6.0-rc.6': {
+    rangeChange:
+      'Widens the verified Grok Build range to 1.0.5-1.0.13 (was the single 1.0.5 build), on the maintainer\'s own console evidence, under ADR 0005 D3: the acceptance host\'s Grok Build self-updated past the in-tree 1.0.5 ceiling, and the pinned 1.0.5 binary no longer completes a prompt against xAI from any console, including the maintainer\'s own, while 1.0.13 answers instantly there. This widening\'s own evidence is read-only (grok --version/--help output shape, and the session file layout and JSON key names observed under a real Grok home); version-output parsing and every launch-plan-relevant --help flag (--resume, --fork-session, --continue, --session-id) are unchanged from 1.0.5. Completed-turn grok:E1-E3 evidence against 1.0.13 is executed by the maintainer at their own console in this candidate\'s tagged run. Claude Code (2.1.219-2.1.263), Codex CLI (0.133.0-0.149.0), OpenCode (1.18.21-1.18.29), and Qwen Code (0.21.12-0.23.0) ranges are unchanged. macOS evidence is pending.',
+    compatibilityChange:
+      'Corrective candidate after v0.6.0-rc.5 tagged-artifact acceptance on native Windows x64, plus two same-artifact rechecks, ended device verdict FAIL (211/4/0/0 of 215 required rows, zero product defects). Refines the MatrixH:H7 live-home acceptance check from aggregate byte-for-byte digest equality of the live agent-home roots (shown unmeasurable on a live, multi-session host by both rc.5 rechecks) to a full per-file before/after listing of only the session-bearing subtrees with per-entry attribution to a process other than rein. Schedules issue #424 (the daemon Task-Scheduler task not pinning the agent-root environment it was installed under) for v0.6.1 rather than this candidate. No agent tier changes. See CHANGELOG.md.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.6.0-rc.6/docs/compatibility.md',
+  },
   'v0.6.0-rc.5': {
     rangeChange:
       'Widens the verified OpenCode range to 1.18.21-1.18.29 (was 1.18.21-1.18.27 through v0.6.0-rc.4), on native Windows evidence only, under ADR 0005 D3: against the shared live OpenCode store, a real OpenCode 1.18.29 session was created in a throwaway project and identified by a token planted in its own first turn, then indexed, resumed, and forked through the launch plan Reinstate produces, and the resumed session returned that same token. Session row shape (session/message/part tables and columns), --session, --session --fork, --continue, the non-interactive run form, version-output parsing, and the structured-handoff capsule path are unchanged from 1.18.27. Claude Code (2.1.219-2.1.263) and Qwen Code (0.21.12-0.23.0) ranges are unchanged. macOS evidence is pending.',

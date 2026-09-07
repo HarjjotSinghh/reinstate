@@ -124,15 +124,15 @@ go-ahead file poll for the UAC prompt) and issue #424 itself, for you to
 confirm.
 
 What is left is yours, in order: confirm you (or another maintainer) will be
-reachable near the keyboard for a window during the `v0.6.0-rc.5` run for
-`MatrixH:H7`'s UAC prompt (Q26); decide whether to pin vendor CLI versions
-for the duration of a run (Q27); decide whether/when to fix `#424` itself
-(a separate, smaller ticket, not part of this candidate); decide whether to
-reinstall/upgrade the broken `cursor-agent` install (Q21) — still not
-required; accept or reject the disposition rules (Q19, unchanged since the
-`v0.6.0-rc.2` update); merge the `v0.6.0-rc.5` release commit; sign and push
-the `v0.6.0-rc.5` tag (Q5); then run the tagged dispatch
-([`docs/testing/v0.6.0-rc.5-agent-verification-prompts.md`](../../testing/v0.6.0-rc.5-agent-verification-prompts.md))
+reachable near the keyboard for a window during the `v0.6.0-rc.6` run for
+`MatrixH:H7`'s UAC prompt (Q26), and at the console for the `grok:E1`–`E3`
+transcript (Q28); accept or reject the refined `H7` live-home check and the
+`#424` scheduling (Q25/Q29); decide whether to reinstall/upgrade the broken
+`cursor-agent` install (Q21) — still not required; accept or reject the
+disposition rules (Q19, unchanged since the `v0.6.0-rc.2` update); merge the
+`v0.6.0-rc.6` release commit; sign and push the `v0.6.0-rc.6` tag (Q5); then
+run the tagged dispatch
+([`docs/testing/v0.6.0-rc.6-agent-verification-prompts.md`](../../testing/v0.6.0-rc.6-agent-verification-prompts.md))
 against native Windows x64, or tell me to.
 
 **Where things stand (2026-09-08).** `v0.6.0-rc.5`'s tagged run

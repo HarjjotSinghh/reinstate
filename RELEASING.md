@@ -846,6 +846,115 @@ from `v0.6.0-rc.4`), plus the 22-row CLI matrix and the 16 Hop parity rows
 Publication means ready for tagged-artifact acceptance. It does **not**
 authorize stable `v0.6.0`. Current stable remains `v0.5.1`.
 
+### v0.6.0-rc.5 candidate evidence
+
+`v0.6.0-rc.5` was published 2026-09-07 as a signed GitHub prerelease with
+both live installer routes pinning it. Its tagged-artifact native Windows
+acceptance is recorded at
+[`docs/testing/results/2026-09-07-windows-v060rc5.md`](docs/testing/results/2026-09-07-windows-v060rc5.md):
+device verdict `FAIL`, **211 PASS / 4 PARTIAL / 0 FAIL / 0 NOT TESTED** of
+**215** required rows — **zero product defects**. All six required-row gaps
+this candidate's own fixes targeted (`MatrixB:B4`, `MatrixB:B7`,
+`MatrixG:G4`, CLI row `13`, `opencode:E5`, `opencode:E6`) cleared to `PASS`.
+Two same-artifact rechecks followed the same day (report §23, §24), each
+re-exercising the same four not-`PASS` required rows a second and third
+time:
+
+- `grok:E1`, `grok:E2`, `grok:E3` (`PARTIAL`, host/harness,
+  `F-GROK-BACKEND-CONNECTIVITY`) — the live `grok` backend never completed
+  a conversational turn against xAI, reproduced six independent times
+  across the run and both rechecks, headless and under `conptydriver`
+  alike. The second recheck found this compounded by the acceptance host's
+  live `grok` self-updating from the verified `1.0.5` to `1.0.13` mid-cycle,
+  outside the verified range.
+- `MatrixH:H7` (`PARTIAL`, operator/harness availability, refined reason
+  each time) — the daemon round-trip mechanism ran to completion on both
+  rechecks, for the first time this release, but `#424` (the
+  Task-Scheduler-spawned daemon following the ambient login environment,
+  not the environment `daemon install` ran under) meant the elevated
+  process still read the live agent-home roots rather than the isolated
+  ones staged for it, and the rule's own byte-for-byte digest-equality pass
+  condition proved unmeasurable on this live, heavily-used, multi-session
+  development host: ordinary concurrent activity (backup rotation, the
+  executor's own `file-history` writes, other sessions' project growth,
+  SQLite WAL churn) changed the live roots between any two timestamps
+  regardless of what `rein` did.
+
+Every carried `v0.6.0-rc.4` disposition cleared (report §18): all six
+required-row gaps that candidate's fixes targeted flipped to `PASS`, and
+`MatrixH:H7`'s operator/elevation-availability gap re-recorded with a
+genuinely different, more specific reason (the mechanism itself now
+completing, blocked instead on `#424` and digest-equality measurability).
+
+This report does not authorize stable `v0.6.0`. Following the maintainer's
+standing vendor self-update policy (Q27, 2026-09-07,
+[ADR 0005 Amendment 2](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md#amendment-2-2026-09-08)),
+the verified Grok Build range widens to `1.0.13` in `v0.6.0-rc.6`, on the
+maintainer's own console evidence, since the pinned `1.0.5` binary no
+longer works for anyone including the maintainer while `1.0.13` answers
+instantly; and `MatrixH:H7`'s live-home check is refined from digest
+equality to a per-file before/after listing with per-entry attribution,
+which the two rechecks' own evidence showed can verify the mechanism
+without it. `#424` itself is scheduled for `v0.6.1`, not `v0.6.0-rc.6`.
+
+### v0.6.0-rc.6 candidate gate
+
+The corrective candidate. It changes exactly two things: the verified Grok
+Build range, and the `MatrixH:H7` live-home acceptance check. No other
+agent's tier moves, and no other compatibility range widens —
+`v0.6.0-rc.5`'s Claude Code, Codex CLI, OpenCode, and Qwen Code ranges are
+unchanged.
+
+- The verified Grok Build range widens to `1.0.5`–`1.0.13` (was the single
+  build `1.0.5`), on the maintainer's own console evidence, under ADR 0005
+  D3: the acceptance host's `grok` self-updated past `1.0.5` mid-cycle, and
+  the pinned `1.0.5` binary no longer completes a prompt against xAI from
+  any console, including the maintainer's own, while `1.0.13` answers
+  instantly there. This widening's own evidence is read-only
+  (`grok --version`/`--help` output shape, and the session file layout and
+  JSON key names observed under a real Grok home, never message content or
+  ids); version-output parsing and every launch-plan-relevant `--help` flag
+  are unchanged from `1.0.5`. See
+  [`docs/testing/results/2026-09-08-windows-range-widening-grok-v060.md`](docs/testing/results/2026-09-08-windows-range-widening-grok-v060.md).
+  Because Grok cannot currently be driven to a completed conversational
+  turn from this harness — headless or ConPTY — in the current
+  environment, the completed-turn `grok:E1`–`E3` rows against `1.0.13` are
+  executed by the maintainer at their own console in this candidate's
+  tagged run, and the transcript is recorded by the executor as the row's
+  evidence.
+- `MatrixH:H7`'s live-home check is refined from aggregate byte-for-byte
+  digest equality of the live agent-home roots — shown unmeasurable on a
+  live, multi-session host by both `v0.6.0-rc.5` rechecks — to a full
+  per-file before/after listing of only the session-bearing subtrees
+  (`<CLAUDE_CONFIG_DIR>/projects`, the persistent `<CODEX_HOME>/sessions`,
+  `<XDG_DATA_HOME>/opencode`), with zero snapshots restored and every
+  differing entry attributed to a process other than `rein`. `#424` itself
+  is scheduled for `v0.6.1`, not this candidate. See
+  [`docs/testing/v0.6.0-windows-acceptance.md`](docs/testing/v0.6.0-windows-acceptance.md#run-notes)
+  and
+  [ADR 0005 Amendment 2](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md#amendment-2-2026-09-08).
+  No behavior changed for `rein daemon install`'s own mechanism.
+
+`grok:E1`–`E3` and `MatrixH:H7` are the required-row gaps this candidate's
+own changes target: the widening and the refined check are expected to
+flip all four to `PASS`, given a maintainer reachable at the console and
+at the keyboard for the one UAC prompt.
+
+Governed by the same
+[`docs/testing/v0.6.0-windows-acceptance.md`](docs/testing/v0.6.0-windows-acceptance.md)
+contract, specialised by
+[`docs/testing/v0.6.0-rc.6-agent-verification-prompts.md`](docs/testing/v0.6.0-rc.6-agent-verification-prompts.md).
+`rein doctor --agents --acceptance-matrix` on a binary built from this tree
+reports **178** Phase 5 rows (core `A:10, B:9, G:8, H:6` = 33, unchanged
+from `v0.6.0-rc.5`), plus the 22-row CLI matrix and the 16 Hop parity rows
+— **216** rows in total, the same count as `v0.6.0-rc.5`, of which
+`opencode:D4` is `N/A (definitional)` under the disposition rules in
+[`docs/testing/v0.6.0-windows-acceptance.md`](docs/testing/v0.6.0-windows-acceptance.md#dispositions-that-do-not-block-the-device-verdict):
+**215 required**.
+
+Publication means ready for tagged-artifact acceptance. It does **not**
+authorize stable `v0.6.0`. Current stable remains `v0.5.1`.
+
 ## Steps
 
 ### 1. Prepare the release commit

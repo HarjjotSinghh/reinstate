@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "reinstateVersion": "v0.6.0-rc.5",
-  "catalogLine": "v0.6.0-rc.5",
+  "reinstateVersion": "v0.6.0-rc.6",
+  "catalogLine": "v0.6.0-rc.6",
   "lastReviewed": "2026-09-07",
   "owner": {
     "name": "Harjot Singh Rana",
@@ -170,7 +170,7 @@
         ],
         "probeReports": []
       },
-      "lastTested": "2026-09-08",
+      "lastTested": "2026-09-07",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/grok.md",
       "notes": "T4 handoff destination. A handoff into Grok starts a new session and is never a cross-agent resume. Not a synced agent. The ceiling was widened from 1.0.5 to 1.0.13 after the acceptance host self-updated past 1.0.5 mid-cycle, under the maintainer's standing self-update policy (2026-09-07, Q27); read-only evidence only (version/help output shape, session file layout) — completed-turn resume/fork evidence is deferred to the v0.6.0-rc.6 tagged run, executed by the maintainer."
     },

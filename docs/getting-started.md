@@ -11,7 +11,7 @@ client-side-encrypted, user-owned object storage.
 Dual-platform tagged-artifact acceptance passed on candidate `v0.4.0-rc.11`
 (Apple Silicon macOS 44/44, native Windows x64 44/44).
 
-> **Release status:** the public installers pin candidate `v0.6.0-rc.5`; stable remains `v0.5.1`.
+> **Release status:** the public installers pin candidate `v0.6.0-rc.6`; stable remains `v0.5.1`.
 > This candidate's native Windows x64 tagged-artifact acceptance is pending;
 > the Apple Silicon macOS run is deferred until that hardware returns.
 > Intel macOS and Linux/WSL2 remain optional,
@@ -74,7 +74,7 @@ proves only the exact signed release it pins.
 brew install HarjjotSinghh/tap/reinstate
 ```
 
-The GitHub Release pins `v0.6.0-rc.5`; the tap may still list an earlier
+The GitHub Release pins `v0.6.0-rc.6`; the tap may still list an earlier
 tag until package-publish catches up. Intel macOS and Linuxbrew remain
 optional and unverified for this release.
 
@@ -100,7 +100,7 @@ and the current PowerShell process.
 
 Both public bootstraps:
 
-1. pin `v0.6.0-rc.5`;
+1. pin `v0.6.0-rc.6`;
 2. download the canonical installer from that exact signed Git tag;
 3. verify the canonical installer SHA-256;
 4. download only the matching GitHub Release asset and `checksums.txt`;
