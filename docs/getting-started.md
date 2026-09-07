@@ -11,7 +11,7 @@ client-side-encrypted, user-owned object storage.
 Dual-platform tagged-artifact acceptance passed on candidate `v0.4.0-rc.11`
 (Apple Silicon macOS 44/44, native Windows x64 44/44).
 
-> **Release status:** the public installers pin candidate `v0.6.0-rc.3`; stable remains `v0.5.1`.
+> **Release status:** the public installers pin candidate `v0.6.0-rc.4`; stable remains `v0.5.1`.
 > This candidate's native Windows x64 tagged-artifact acceptance is pending;
 > the Apple Silicon macOS run is deferred until that hardware returns.
 > Intel macOS and Linux/WSL2 remain optional,
@@ -68,16 +68,17 @@ $env:REINSTATE_HOME = Join-Path $HOME ".reinstate-phase3-local"
 Do not use a public installer as evidence for another commit. The installer
 proves only the exact signed release it pins.
 
-### Install v0.4.0 with Homebrew on Apple Silicon macOS
+### Install the current candidate with Homebrew on Apple Silicon macOS
 
 ```sh
 brew install HarjjotSinghh/tap/reinstate
 ```
 
-The GitHub Release pins `v0.4.0`; the tap may still list `v0.3.0` until package-publish catches up. Intel macOS and Linuxbrew remain
+The GitHub Release pins `v0.6.0-rc.4`; the tap may still list an earlier
+tag until package-publish catches up. Intel macOS and Linuxbrew remain
 optional and unverified for this release.
 
-### Install v0.4.0 on macOS, Linux, or WSL2
+### Install the current candidate on macOS, Linux, or WSL2
 
 ```sh
 curl -fsSL https://reinstate.dev/install.sh | sh
@@ -87,7 +88,7 @@ The default installation directory is `~/.local/bin`. The bootstrap prints an
 absolute `rein init` command that works immediately and adds the directory to
 the appropriate shell startup file for new terminals.
 
-### Install v0.4.0 on native Windows PowerShell
+### Install the current candidate on native Windows PowerShell
 
 ```powershell
 irm https://reinstate.dev/install.ps1 | iex
@@ -99,7 +100,7 @@ and the current PowerShell process.
 
 Both public bootstraps:
 
-1. pin `v0.4.0`;
+1. pin `v0.6.0-rc.4`;
 2. download the canonical installer from that exact signed Git tag;
 3. verify the canonical installer SHA-256;
 4. download only the matching GitHub Release asset and `checksums.txt`;

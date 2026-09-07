@@ -1,5 +1,6 @@
 ---
 import PublicContentLayout from '../layouts/PublicContentLayout.astro';
+import { product } from '../data/product';
 
 export const prerender = true;
 
@@ -13,7 +14,7 @@ const description =
   {description}
   path="/glossary"
   eyebrow="Terminology"
-  answer="Reinstate uses precise terms for the identity, encryption, path-mapping, and compatibility boundaries of coding-agent session continuity. This glossary defines the current v0.1.0 implementation and labels later roadmap concepts so a profile is not mistaken for an account, or native resume for cross-agent translation."
+  answer={`Reinstate uses precise terms for the identity, encryption, path-mapping, and compatibility boundaries of coding-agent session continuity. This glossary defines the stable ${product.stableRelease} implementation and labels later roadmap concepts so a profile is not mistaken for an account, or native resume for cross-agent translation.`}
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'Glossary', path: '/glossary' },

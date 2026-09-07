@@ -6,7 +6,7 @@ order: 9
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.6.0-rc.3"
+version: "v0.6.0-rc.4"
 updatedAt: 2026-08-16
 tags: ["installation", "cli", "macos", "windows", "wsl2"]
 targetQuery: "install Reinstate CLI"

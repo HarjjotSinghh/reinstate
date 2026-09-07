@@ -620,6 +620,115 @@ reports **178** Phase 5 rows (core `A:10, B:9, G:8, H:6` = 33, unchanged from
 Publication means ready for tagged-artifact acceptance. It does **not**
 authorize stable `v0.6.0`. Current stable remains `v0.5.1`.
 
+### v0.6.0-rc.3 candidate evidence
+
+`v0.6.0-rc.3` was published 2026-09-07 as a signed GitHub prerelease with
+both live installer routes pinning it. Its tagged-artifact native Windows
+acceptance is recorded at
+[`docs/testing/results/2026-09-07-windows-v060rc3.md`](docs/testing/results/2026-09-07-windows-v060rc3.md):
+device verdict `FAIL`, **201 PASS / 3 PARTIAL / 1 FAIL / 10 NOT TESTED** of
+**215** required rows. All 22 CLI-experience rows and all 16 Hop parity rows
+passed, and this candidate's own fix — the Cursor CLI store reader reading
+the real `blobs`/`meta` schema — was confirmed `PASS` on real data
+(`cursor:C2`, `cursor:C3`). Fourteen required rows blocked the verdict:
+
+- `pi:C3` (`FAIL`, product, new this run) — a fresh, planted-token Pi
+  session was created and completed live through Pi's own Anthropic login,
+  writing a real `version:3` session with the token in a `role:"user"`
+  message on disk, but `rein search` found 0 matches and `rein inspect`
+  showed no `prompt_preview` at all. Root-caused to
+  `internal/agents/sources/pi/source.go`'s `readConversation` calling
+  `ExtractTextContent(item["message"])`, whose `map[string]any` branch only
+  reads a top-level `"text"` key, never descending into
+  `message.content[].text` — the real shape. Not a host/credential/harness
+  gap: a confirmed code defect.
+- `qwen:D1`–`D5`, `E1`/`E2`/`E3`/`E5`/`E6` (10 rows, `NOT TESTED`,
+  host/harness, new this run) — the host's real Qwen Code self-updated to
+  `0.23.0`, above the verified `0.21.12`–`0.21.13` ceiling; every
+  launch-plan-building row correctly refused (`exit 5`, `agent.version`
+  block) before reaching a scoreable outcome. Zero rows this run qualified
+  for the `NOT TESTED (host credential)` disposition — this is a
+  version-compatibility block, not a credential gap.
+- `codex:E5`, `opencode:E5`, `grok:E5` (`PARTIAL`, harness gap, new this
+  run) — this run's headless harness could not attach a genuinely active,
+  TTY-requiring vendor process for three of five T3+ agents (`claude:E5`
+  fully confirmed the underlying `agent.active` mechanism).
+
+Every carried `v0.6.0-rc.2` disposition cleared or was re-recorded (report
+§18): 7 cleared (`cursor:C2`, `cursor:C3`, `cline:C3`, `grok:E1`, `grok:E2`,
+`grok:E3`, `MatrixH:H7` — the round trip's own mechanism passed) and 6
+re-recorded (`pi:C3`, `qwen:E1`/`E2`/`E3`/`E5`, plus `opencode:D4`,
+unchanged `N/A (definitional)`), none regressed on the same underlying
+cause.
+
+Two harness incidents wrote real content into this host's live agent
+directories during this run (report §21;
+[issue #424](https://github.com/HarjjotSinghh/reinstate/issues/424)): the
+elevated `H7` `daemon stop`/`daemon start` round trip and the T5 push/pull
+round trip's device-B pull step both picked up the host's real, persistent
+`CLAUDE_CONFIG_DIR`/`CODEX_HOME`/`XDG_DATA_HOME` instead of an isolated
+device home, because `rein daemon install`'s Task Scheduler task definition
+pins only `--home`, not the agent-root environment variables. A pristine
+pre-incident backup of the affected OpenCode store was located and
+SHA-256-verified; cleanup of the stray Claude and Codex files was completed
+2026-09-07 before the report was committed (report §0.11); the live
+OpenCode store still needs its two synthetic/incidental session rows
+removed by the maintainer (report §0.11(c), tracked as clarifications Q24).
+Issue #424 tracks the product fix (record the agent-root variables the
+daemon was installed under and refuse a mismatch).
+
+This report does not authorize stable `v0.6.0`. Corrective work for the Pi
+reader (closes the `pi:C3` code defect) and the Qwen Code range widening
+(closes the ten `qwen:D`/`E` rows as a resolved version block, not a
+defect) lands in `v0.6.0-rc.4`; the three `E5` harness-gap rows (`codex`,
+`opencode`, `grok`) are not attempted by that candidate and remain open
+findings for a ConPTY-driven follow-up.
+
+### v0.6.0-rc.4 candidate gate
+
+The corrective candidate. It changes exactly two things: the Pi reader, and
+the verified Qwen Code range. No other agent's tier moves, and no other
+compatibility range widens — `v0.6.0-rc.3`'s Claude Code, OpenCode, and
+Codex CLI ranges are unchanged.
+
+- Pi's real `version:3` session format (`message.content[].text`) is now
+  what `prompt_preview` and `search_text` read: the reader now reads
+  `message.content` directly instead of handing the whole `message` object
+  to the shared text-flattening helper, still reads the legacy `version:1`
+  top-level `text` shape, and — matching the Claude and Codex readers —
+  indexes only user-turn text, never assistant, thinking, or tool-use text.
+  `message_count` is unaffected and unchanged.
+- The verified Qwen Code range widens to `0.21.12`–`0.23.0` (was
+  `0.21.12`–`0.21.13`), on native Windows physical-resume evidence only,
+  under ADR 0005 D3: a real Qwen Code `0.23.0` session was created,
+  indexed, resumed, and forked through the launch plan Reinstate produces,
+  and the resumed session returned a token that existed only in the
+  original session's history. See
+  [`docs/testing/results/2026-09-07-windows-range-widening-qwen-v060.md`](docs/testing/results/2026-09-07-windows-range-widening-qwen-v060.md).
+
+This candidate does not attempt the `codex:E5`/`opencode:E5`/`grok:E5`
+headless-harness gap (recommend a ConPTY-driven follow-up, per report §16
+`F-E5-NO-PTY`) — those remain open findings from the `v0.6.0-rc.3` tagged
+run and are re-tested here as carried dispositions rather than closed.
+`pi:C3` and `qwen:D1`–`D5`/`E1`/`E2`/`E3`/`E5`/`E6` are the required-row
+gaps this candidate does close: the fixes above are expected to flip all
+eleven to `PASS`.
+
+Governed by the same
+[`docs/testing/v0.6.0-windows-acceptance.md`](docs/testing/v0.6.0-windows-acceptance.md)
+contract, specialised by
+[`docs/testing/v0.6.0-rc.4-agent-verification-prompts.md`](docs/testing/v0.6.0-rc.4-agent-verification-prompts.md).
+`rein doctor --agents --acceptance-matrix` on a binary built from this tree
+reports **178** Phase 5 rows (core `A:10, B:9, G:8, H:6` = 33, unchanged
+from `v0.6.0-rc.3`), plus the 22-row CLI matrix and the 16 Hop parity rows
+— **216** rows in total, the same count as `v0.6.0-rc.3`, of which
+`opencode:D4` is `N/A (definitional)` under the disposition rules in
+[`docs/testing/v0.6.0-windows-acceptance.md`](docs/testing/v0.6.0-windows-acceptance.md#dispositions-that-do-not-block-the-device-verdict):
+**215 required**.
+
+Publication means ready for tagged-artifact acceptance. It does **not**
+authorize stable `v0.6.0`. Current stable remains `v0.5.1`.
+
 ## Steps
 
 ### 1. Prepare the release commit

@@ -12,7 +12,7 @@ Installed on the host at planning time (re-check; Claude Code auto-updates):
 | Claude Code | `2.1.261` | `2.1.219`–`2.1.238` | `internal/adapter/claude/claude.go`, `internal/agentcheck/agent.go`, `internal/agents/catalog/claude.go` |
 | OpenCode | `1.18.27` | `1.18.21`–`1.18.21` | `internal/agents/catalog/opencode.go` (and any adapter constant) |
 | Codex CLI | `0.149.0` | `0.133.0`–`0.149.0` | in range |
-| Qwen Code | `0.21.13` | `0.21.12`–`0.21.13` | in range |
+| Qwen Code | `0.23.0` | `0.21.12`–`0.23.0` | widened on `v0.6.0-rc.4` native Windows evidence, `internal/agents/catalog/qwen.go` — see `docs/testing/results/2026-09-07-windows-range-widening-qwen-v060.md` |
 | Grok Build | `1.0.5` | `1.0.5` | in range |
 
 ## T-301 / T-302 — Widen Claude Code and OpenCode

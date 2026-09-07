@@ -2,6 +2,7 @@
 import PublicContentLayout from '../../layouts/PublicContentLayout.astro';
 import compatibility from '../../data/compatibility.json';
 import { agentVersionHistory } from '../../data/agent-version-history';
+import { product } from '../../data/product';
 
 export const prerender = true;
 
@@ -17,6 +18,9 @@ const displayDate = (date: string) =>
     day: 'numeric',
     timeZone: 'UTC',
   }).format(new Date(`${date}T00:00:00Z`));
+
+const claudeRange = compatibility.agents.find((agent) => agent.key === 'claude');
+const codexRange = compatibility.agents.find((agent) => agent.key === 'codex');
 ---
 
 <PublicContentLayout
@@ -24,7 +28,7 @@ const displayDate = (date: string) =>
   {description}
   path="/compatibility/agent-version-history"
   eyebrow="Compatibility history"
-  answer="Reinstate v0.2.0 accepts stable Claude Code versions 2.1.219–2.1.220 and Codex CLI versions 0.133.0–0.146.0. Codex CLI 0.146.0 passed the complete Phase 2 physical matrix on macOS and native Windows; versions outside the ranges still fail closed."
+  answer={`Reinstate ${compatibility.reinstateVersion} (stable ${product.stableRelease}) accepts Claude Code versions ${claudeRange?.minimumTestedVersion}–${claudeRange?.maximumTestedVersion} and Codex CLI versions ${codexRange?.minimumTestedVersion}–${codexRange?.maximumTestedVersion}, each on evidence reviewed ${claudeRange?.lastTested}; versions outside the ranges still fail closed.`}
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'Compatibility', path: '/compatibility' },

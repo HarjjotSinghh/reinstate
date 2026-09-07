@@ -16,6 +16,14 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.6.0-rc.4': {
+    rangeChange:
+      'Widens the verified Qwen Code range to 0.21.12-0.23.0 (was 0.21.12-0.21.13 through v0.6.0-rc.3), on native Windows physical-resume evidence only, under ADR 0005 D3: a real Qwen Code 0.23.0 session was created, indexed, resumed, and forked through the launch plan Reinstate produces, and the resumed session returned a token that existed only in the original session\'s history. Session file location and naming, the first-user-message shape, --resume, --resume --fork-session, --session-id, and version-output parsing are unchanged from 0.21.13. Claude Code (2.1.219-2.1.263) and OpenCode (1.18.21-1.18.27) ranges are unchanged. macOS evidence for the widened part is pending.',
+    compatibilityChange:
+      'Corrective candidate after v0.6.0-rc.3 tagged-artifact acceptance on native Windows x64 ended device verdict FAIL (201/3/1/10 of 215 required rows; all 22 CLI rows and all 16 Hop rows passed, and the Cursor CLI store-schema fix was confirmed on real data). Fixes exactly two things: the Pi reader now indexes message.content for prompt_preview and search text (a confirmed code defect, pi:C3), and the verified Qwen Code range widens to 0.23.0 (a version-compatibility block, not a defect). No agent tier changes. See CHANGELOG.md.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.6.0-rc.4/docs/compatibility.md',
+  },
   'v0.6.0-rc.3': {
     rangeChange:
       'Unchanged from v0.6.0-rc.2: inclusive Claude Code range 2.1.219-2.1.263 and OpenCode range 1.18.21-1.18.27. The Codex CLI range stays 0.133.0-0.149.0.',

@@ -18,3 +18,13 @@ c6c0997e571a13261f886aee1abf2f5c5f012639:docs/testing/results/2026-08-13-macos-p
 00f297f9e2f376efa204ed3bc011497afe6c1607:internal/keyring/keyring_test.go:generic-api-key:28
 64e9fe500665925e91d23b84d0ef0c488093dd0a:docs/testing/results/2026-09-06-windows-hop-parity-v060-a.md:generic-api-key:562
 b49938a7e2bbfb5f2bb27abbe62142be2054c2e3:internal/keyring/generation_test.go:generic-api-key:23
+
+# v0.6.0-rc.3 tagged Windows acceptance, executor part files (removed again by
+# the assembly commit): four planted search tokens the run minted for its own
+# throwaway sessions, and the disposable Hop lab account's public signing key
+# quoted from a keyring snapshot. None authenticates anything.
+b262757e124b9a5d462d26f6148d4d888f6b6d65:docs/testing/results/2026-09-07-windows-v060rc3-part-b.md:generic-api-key:136
+b262757e124b9a5d462d26f6148d4d888f6b6d65:docs/testing/results/2026-09-07-windows-v060rc3-part-b.md:generic-api-key:139
+b262757e124b9a5d462d26f6148d4d888f6b6d65:docs/testing/results/2026-09-07-windows-v060rc3-part-b.md:generic-api-key:140
+b262757e124b9a5d462d26f6148d4d888f6b6d65:docs/testing/results/2026-09-07-windows-v060rc3-part-b.md:generic-api-key:142
+3d285b8897223e46061e0d68603d640af35f29f0:docs/testing/results/2026-09-07-windows-v060rc3-part-d.md:generic-api-key:165

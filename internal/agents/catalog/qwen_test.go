@@ -121,6 +121,7 @@ func TestParseQwenVersion(t *testing.T) {
 	}{
 		{name: "bundled npm install", output: agents.VersionOutput{Stdout: "0.21.12\n"}, want: "0.21.12", ok: true},
 		{name: "managed self-update", output: agents.VersionOutput{Stdout: "0.21.13\n"}, want: "0.21.13", ok: true},
+		{name: "windows managed self-update", output: agents.VersionOutput{Stdout: "0.23.0\n"}, want: "0.23.0", ok: true},
 		{name: "windows newline", output: agents.VersionOutput{Stdout: "0.21.13\r\n"}, want: "0.21.13", ok: true},
 		{name: "no trailing newline", output: agents.VersionOutput{Stdout: "0.21.13"}, want: "0.21.13", ok: true},
 		// The QWEN_HOME redirect warning lands on stderr, and a version read
@@ -146,21 +147,28 @@ func TestParseQwenVersion(t *testing.T) {
 // TestQwenVersionRangeSpansTheSelfUpdater is the reason the range is not a
 // single version: Qwen installs updates into <QWEN_HOME>/updates/npm and runs
 // them, so the same machine answers --version differently depending on which
-// root is in scope. Both ends were measured on macOS on 2026-08-22.
+// root is in scope. The lower end was measured on macOS on 2026-08-22; the
+// upper end was widened to 0.23.0 on native Windows evidence on 2026-09-07
+// (see docs/testing/results/2026-09-07-windows-range-widening-qwen-v060.md).
 func TestQwenVersionRangeSpansTheSelfUpdater(t *testing.T) {
 	version := Qwen().Version
-	if version.Min != "0.21.12" || version.Max != "0.21.13" {
-		t.Fatalf("range = %s–%s, want the measured 0.21.12–0.21.13", version.Min, version.Max)
+	if version.Min != "0.21.12" || version.Max != "0.23.0" {
+		t.Fatalf("range = %s–%s, want the measured 0.21.12–0.23.0", version.Min, version.Max)
 	}
-	for _, in := range []string{"0.21.12", "0.21.13"} {
+	for _, in := range []string{"0.21.12", "0.21.13", "0.23.0"} {
 		if !adapter.StableVersionInRange(in, version.Min, version.Max) {
 			t.Fatalf("%s is a measured version but falls outside the declared range", in)
 		}
 	}
-	// 0.21.15 exists and was seen installing itself, but only its --version
-	// output has been observed. Fail closed until its layout is verified.
-	if adapter.StableVersionInRange("0.21.15", version.Min, version.Max) {
-		t.Fatal("0.21.15 is unverified and must report UNTESTED, not SUPPORTED")
+	// 0.21.15 sits inside the widened range's endpoints and is covered by it,
+	// same as any other interior patch version.
+	if !adapter.StableVersionInRange("0.21.15", version.Min, version.Max) {
+		t.Fatal("0.21.15 sits inside the widened 0.21.12-0.23.0 range and must report SUPPORTED")
+	}
+	// 0.23.1 is one past the new ceiling and has not been measured. Fail
+	// closed until a probe confirms its layout.
+	if adapter.StableVersionInRange("0.23.1", version.Min, version.Max) {
+		t.Fatal("0.23.1 is unverified and must report UNTESTED, not SUPPORTED")
 	}
 }
 

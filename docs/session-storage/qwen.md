@@ -3,8 +3,10 @@
 **Confidence: Documented on macOS and native Windows** —
 official product identified; both platforms have a real JSONL conversation
 with matching first-line keys; T1 index source, T2 transcript reader, T3 native
-resume, and T4 handoff destination shipped; macOS journeys recorded, native
-Windows journey outstanding.
+resume, and T4 handoff destination shipped; macOS and native Windows journeys
+recorded for both T3 and T4. Verified range widened to `0.21.12`-`0.23.0` on
+native Windows evidence only (2026-09-07); macOS evidence for the widened part
+is pending.
 **Current tier:** T4 (handoff destination) · **Phase 5 target:** T2 (exceeded)
 
 Catalog key is `qwen`.
@@ -307,8 +309,43 @@ Reinstate writes nothing under `$QWEN_HOME`. Qwen did not prompt for workspace
 trust on a first launch in a fresh root, so there is no trust record to
 pre-accept.
 
-**The T3 and T4 claims are still one platform short.** A native Windows journey
-has not been run.
+The native Windows T3 and T4 journeys ran the same day as the macOS ones:
+[`2026-08-22-windows-qwen-t3.md`](../testing/results/2026-08-22-windows-qwen-t3.md)
+and
+[`2026-08-22-windows-qwen-t4.md`](../testing/results/2026-08-22-windows-qwen-t4.md).
+Both claims now have dual-platform evidence.
+
+## Verified range widened to 0.23.0 (2026-09-07, native Windows amd64)
+
+The acceptance host's managed self-update moved `qwen --version` from
+`0.21.13` to `0.23.0`, which is what a later probe must always expect from
+this vendor's own updater (see
+["The managed self-updater moves the version underfoot"](#the-managed-self-updater-moves-the-version-underfoot)
+above). Widened on native Windows evidence only, under
+[ADR 0005](../adr/0005-v0.6.0-scope-and-windows-first-acceptance.md) D3:
+journey:
+[`2026-09-07-windows-range-widening-qwen-v060.md`](../testing/results/2026-09-07-windows-range-widening-qwen-v060.md).
+
+Against an isolated `QWEN_HOME` seeded only with the credential file `qwen`
+0.23.0 needs, the session file location and naming
+(`projects/<slug>/chats/<uuid-v4>.jsonl`), the first-user-message shape, the
+`--resume` and `--resume … --fork-session` forms, `--session-id` (new session
+and id-collision refusal), `qwen sessions list --json`, and the bare-semver
+`--version` line are all unchanged from `0.21.13`. `0.23.0` records add a
+`contextWindowSize` field to `assistant` records; `transcript.QwenReader`
+decodes into a fixed struct and silently ignores fields it does not name, so
+this is not a reader change. `0.23.0` also writes new per-project
+`meta.json` and `extract-cursor.json` files and a `memory/` directory
+alongside `projects/<slug>/`, none of which match the `projects/**/chats/*.jsonl`
+session glob, so they do not pollute the index. No `<sessionId>.runtime.json`
+sidecar was observed in this journey's non-interactive (`-p`/`--resume`) runs;
+the prior `0.21.13` sidecar evidence above was also gathered without a
+non-interactive baseline to compare against, so this is recorded as an open
+observation, not a claimed regression.
+
+**The Windows-only widening rule applies here too.** macOS evidence for
+`0.23.0` is pending (ADR 0005); the verified range is native-Windows-only
+until a macOS probe confirms the same shape.
 
 ## Secrets in the same tree
 

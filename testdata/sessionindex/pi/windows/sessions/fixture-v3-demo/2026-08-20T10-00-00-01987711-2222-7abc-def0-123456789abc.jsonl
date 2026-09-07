@@ -1,0 +1,5 @@
+{"type":"session","version":3,"id":"01987711-2222-7abc-def0-123456789abc","timestamp":"2026-08-20T10:00:00.000Z","cwd":"C:\\Users\\fixture-user\\code\\demo-v3"}
+{"type":"model_change","id":"b1","parentId":null,"timestamp":"2026-08-20T10:00:00.100Z","provider":"anthropic","modelId":"fixture-model"}
+{"type":"thinking_level_change","id":"b2","parentId":"b1","timestamp":"2026-08-20T10:00:00.150Z","thinkingLevel":"medium"}
+{"type":"message","id":"b3","parentId":"b2","timestamp":"2026-08-20T10:00:01.000Z","message":{"role":"user","content":[{"type":"text","text":"Keep dest argv clean fixture-v3-search-token"}],"timestamp":1755683401000}}
+{"type":"message","id":"b4","parentId":"b3","timestamp":"2026-08-20T10:00:05.000Z","message":{"role":"assistant","content":[{"type":"thinking","thinking":"checking newlines"},{"type":"tool_use","id":"tu2","name":"read","input":{"path":"agentcheck.go"}},{"type":"text","text":"Checking newlines."}],"stopReason":"stop","timestamp":1755683405000}}
