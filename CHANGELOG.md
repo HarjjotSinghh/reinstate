@@ -7,10 +7,86 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.6.0-rc.2] - 2026-09-07
+## [0.6.0-rc.3] - 2026-09-07
 
 Release candidate. Stable remains `v0.5.1`; the public installers now pin
-this candidate, superseding `v0.6.0-rc.1`.
+this candidate, superseding `v0.6.0-rc.2`.
+
+**Highlights.** `v0.6.0-rc.2`'s tagged-artifact native Windows acceptance
+([`docs/testing/results/2026-09-07-windows-v060rc2.md`](docs/testing/results/2026-09-07-windows-v060rc2.md))
+established device verdict `FAIL`: `203 PASS / 5 PARTIAL / 2 FAIL / 5 NOT
+TESTED` of `215` required rows. All 22 CLI-experience rows passed, and 15 of
+16 Hop parity rows passed (`MatrixH:H7` blocked on UAC-elevation availability
+for the operator, not a product defect). The seven required-row failures
+`v0.6.0-rc.1` found were cleared. That same run's own post-commit
+coordinator finding (§0.12) is what this candidate exists to fix: a
+schema-only, read-only inspection of two real Cursor CLI `2026.08.11`
+`store.db` files found `blobs(id TEXT, data BLOB)` and `meta(key, value)` —
+not the `messages`/`message`/`bubbles` tables the `v0.6.0-rc.2` reader
+guessed at and no real store ever had. On real data `cursor:C2` and
+`cursor:C3` were re-scored `PASS`/`PARTIAL` → `FAIL` on that finding, moving
+the tagged run's required counts from `204/6/0/5` to `203/5/2/5`. This
+candidate changes exactly the Cursor CLI store reader and nothing else: no
+agent tier moves, no compatibility range widens, and nothing in Hop, the
+daemon, the interactive CLI, or any other agent's reader is touched.
+
+- **Cursor CLI reads the real `store.db` schema.** `message_count` now
+  counts `blobs` rows whose `data` is a JSON object with `role` `user` or
+  `assistant` (`system` rows are excluded); `search_text` and
+  `PromptPreview` come from the `content` of `user`-role blobs only (a
+  string, or the joined text of `type:"text"` parts), bounded per row and in
+  total the same way the prior reader was. On this host's own real Cursor
+  CLI data, both real sessions now report a non-zero `message_count` and are
+  found by `rein search <word> --agent cursor`. Non-JSON binary blobs (the
+  majority of rows in both real stores) are skipped by their first byte,
+  never decoded; a store using neither shape — including the old
+  `v0.6.0-rc.2` guess, which was never real — still degrades to
+  `message_count: 0` and no text, not an error. See
+  [`docs/session-storage/cursor.md`](docs/session-storage/cursor.md).
+
+**Not yet certified.** Native Windows x64 tagged-artifact acceptance is what
+this candidate exists to enable; macOS acceptance is deferred under
+[ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md) until
+that hardware returns. Stable remains `v0.5.1`.
+
+### Fixed
+
+- Cursor CLI's real `store.db` schema (`blobs`/`meta`, not the
+  `messages`/`message`/`bubbles` shape `v0.6.0-rc.2` guessed at) is now what
+  `message_count`, `search_text`, and `PromptPreview` read: `message_count`
+  counts `blobs` rows whose `data` is a JSON object with `role` `user` or
+  `assistant` (`system` rows excluded, matching the search policy);
+  `search_text`/`PromptPreview` come from the `content` of `user`-role blobs
+  only. Every row is read bounded (`substr(CAST(data AS BLOB), 1, ?)` at 4
+  MiB in the SQL `SELECT` itself, `role` read by a streaming decoder that
+  stops as soon as it has that field), and the scan is bounded in total to
+  20,000 rows. A row whose first byte is not `{` — the majority of rows in
+  both real inspected stores — is skipped by that one byte, never decoded.
+  On this host's own real Cursor CLI data both real sessions now report a
+  non-zero `message_count` and are found by `rein search <word> --agent
+  cursor`; the fixtures under `testdata/sessionindex/cursor/` are
+  regenerated as synthetic `blobs`/`meta` stores in the real shape.
+
+**Correction to the `[0.6.0-rc.2]` section below.** That section's Cursor
+CLI `message_count`/`search_text`/`cursor:C3` claims described a
+`messages`/`message`/`bubbles` store schema no real Cursor CLI store ever
+had — a guess, not an inspected fact. The `v0.6.0-rc.2` fix was real code
+that ran correctly against that guessed schema (confirmed by the `v0.6.0-rc.2`
+tagged run's own dispatch-prescribed synthetic-fixture method), but on real
+Cursor CLI `2026.08.11` data `message_count` stayed `0` and `search_text`
+never indexed a real session's message body. The `[0.6.0-rc.2]` entries
+below are left as first written, per this changelog's practice of not
+editing a released section after the fact; this note is the correction.
+
+## [0.6.0-rc.2] - 2026-09-07
+
+Release candidate. Stable remains `v0.5.1`. Its own tagged-artifact native
+Windows acceptance
+([`docs/testing/results/2026-09-07-windows-v060rc2.md`](docs/testing/results/2026-09-07-windows-v060rc2.md))
+ended device verdict `FAIL` (`203 PASS / 5 PARTIAL / 2 FAIL / 5 NOT TESTED`
+of `215` required rows, after a post-commit finding re-scored the real-data
+Cursor CLI rows); it does not authorize stable `v0.6.0`. `v0.6.0-rc.3`,
+above, supersedes it and is what the public installers now pin.
 
 **Highlights.** `v0.6.0-rc.1`'s tagged-artifact native Windows acceptance
 ([`docs/testing/results/2026-09-06-windows-v060rc1.md`](docs/testing/results/2026-09-06-windows-v060rc1.md))
@@ -3249,7 +3325,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.2...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.3...HEAD
+[0.6.0-rc.3]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.2...v0.6.0-rc.3
 [0.6.0-rc.2]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.1...v0.6.0-rc.2
 [0.6.0-rc.1]: https://github.com/HarjjotSinghh/reinstate/compare/v0.5.2-rc.1...v0.6.0-rc.1
 [0.5.0-rc.4]: https://github.com/HarjjotSinghh/reinstate/compare/v0.5.0-rc.3...v0.5.0-rc.4

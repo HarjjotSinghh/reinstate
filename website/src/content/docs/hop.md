@@ -1,12 +1,12 @@
 ---
 title: "Reinstate Hop: Sign-In, Devices, and the Locker"
 navTitle: "Reinstate Hop"
-description: "See how Reinstate Hop's passwordless sign-in, device pairing, encrypted locker, verification, and daemon work in the v0.6.0-rc.2 candidate."
+description: "See how Reinstate Hop's passwordless sign-in, device pairing, encrypted locker, verification, and daemon work in the v0.6.0-rc.3 candidate."
 order: 17
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.6.0-rc.2"
+version: "v0.6.0-rc.3"
 updatedAt: 2026-09-05
 tags: ["hop", "hosted-tier", "keyring", "device-pairing", "daemon"]
 targetQuery: "what is reinstate hop"
@@ -26,7 +26,7 @@ in the CLI; Hop only gates storage and the console.
 > run yourself or point the client at (see
 > [Choosing the control plane](#choosing-the-control-plane)). No price,
 > trial, or sign-up is attached to any of this, and Hop ships in the
-> `v0.6.0-rc.2` release candidate, not yet a stable claim — stable remains
+> `v0.6.0-rc.3` release candidate, not yet a stable claim — stable remains
 > `v0.5.1`, where Hop does not exist.
 
 Every session object Reinstate writes to the locker is ciphertext, with one

@@ -7,17 +7,31 @@ as that hardware is back.
 **Status:** planned 2026-09-05; M0–M4 done — `v0.6.0-rc.1` was published
 2026-09-06 and its tagged-artifact native Windows acceptance ended at
 201/216 required rows `PASS` (every Hop and CLI-experience row passed; all 7
-failures were in the Phase 5 generated matrix). `v0.6.0-rc.2` (2026-09-07) is
-the corrective candidate, fixing those 7 rows plus one fixture gap the same
-run found, plus one addition beyond that scope (`search_text` now indexes
-message body for Cline, Cursor, and OpenCode, closes #405); it changes no
-agent tier and widens no compatibility range. Under the disposition rules in
+failures were in the Phase 5 generated matrix). `v0.6.0-rc.2` (2026-09-07)
+fixed those 7 rows plus one fixture gap the same run found, plus one
+addition beyond that scope (`search_text` now indexes message body for
+Cline, Cursor, and OpenCode, closes #405); its own tagged-artifact native
+Windows acceptance
+([report](../../testing/results/2026-09-07-windows-v060rc2.md)) ended device
+verdict `FAIL`: **203 PASS / 5 PARTIAL / 2 FAIL / 5 NOT TESTED** of **215**
+required rows. All 22 CLI rows and 15 of 16 Hop rows passed; the seven rc.1
+failures cleared. A post-commit finding (report §0.12) found the real
+Cursor CLI `store.db` schema (`blobs`/`meta`) is not what the `v0.6.0-rc.2`
+reader read (it guessed `messages`/`message`/`bubbles`, which no real store
+has), re-scoring `cursor:C2`/`cursor:C3` `FAIL`; the other nine blocking
+rows (`cline:C3`, `pi:C3`, `grok:E1`/`E2`/`E3`, `qwen:E1`/`E2`/`E3`,
+`MatrixH:H7`) are host/harness/operator-availability gaps unrelated to
+Cursor. `v0.6.0-rc.3` (2026-09-07) is the current candidate: it changes
+exactly the Cursor CLI store reader to read the real schema and nothing
+else; no agent tier changes, no compatibility range widens. Under the
+disposition rules in
 [`docs/testing/v0.6.0-windows-acceptance.md`](../../testing/v0.6.0-windows-acceptance.md#dispositions-that-do-not-block-the-device-verdict),
 stable requires **215 of 216** rows `PASS` (`opencode:D4` is
-`N/A (definitional)`, excluded from the required count), plus a `qwen`
-host-credential disposition if the acceptance host's Qwen Code login is
-still unrefreshed. What remains: a tagged-artifact Windows run against
-`v0.6.0-rc.2`, and the Apple Silicon macOS rows, still deferred until that
+`N/A (definitional)`, excluded from the required count), plus `qwen` and
+`cline` host-credential dispositions and a `MatrixH:H7` operator-acceptor
+disposition if those are still unresolved on the acceptance host. What
+remains: merging and tagging `v0.6.0-rc.3`, a tagged-artifact Windows run
+against it, and the Apple Silicon macOS rows, still deferred until that
 hardware returns (#403).
 **Baseline:** stable `v0.5.1` (2026-08-21). `v0.5.2-rc.1` (2026-08-23) was
 tagged but never certified on either platform; its content ships here and no

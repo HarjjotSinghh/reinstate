@@ -524,6 +524,102 @@ verdict, provided every required agent and at least one other T4 agent
 Publication means ready for tagged-artifact acceptance. It does **not**
 authorize stable `v0.6.0`. Current stable remains `v0.5.1`.
 
+### v0.6.0-rc.2 candidate evidence
+
+`v0.6.0-rc.2` was published 2026-09-07 as a signed GitHub prerelease with
+both live installer routes pinning it. Its tagged-artifact native Windows
+acceptance is recorded at
+[`docs/testing/results/2026-09-07-windows-v060rc2.md`](docs/testing/results/2026-09-07-windows-v060rc2.md):
+device verdict `FAIL`, **203 PASS / 5 PARTIAL / 2 FAIL / 5 NOT TESTED** of
+**215** required rows (as first assembled: `204/6/0/5`; `cursor:C2` and
+`cursor:C3` were re-scored `PASS`/`PARTIAL` → `FAIL` post-commit — see
+below). All 22 CLI-experience rows passed and 15 of 16 Hop parity rows
+passed; the seven required-row failures `v0.6.0-rc.1` found were cleared.
+Eleven required rows blocked the verdict:
+
+- `cline:C3`, `cursor:C3`, `pi:C3` (`PARTIAL`, host/harness) — the fixed
+  search-by-message-body mechanism was confirmed via a substitute method,
+  but the specific "session created via the vendor's own CLI" evidence the
+  dispatch calls for could not be produced this run (credential-policy
+  block, broken `cursor-agent` install, no configured Pi model/API key).
+- `grok:E1`/`E2` (`PARTIAL`) and `grok:E3` (`NOT TESTED`), new this run
+  (`F-GROK-MCP-RECONNECT`) — this host's shared, global MCP server set
+  repeats connect/disconnect context noise on every `--resume` turn,
+  blocking a completed reply; `rein`'s own launch plan, argv, and
+  active-session detection were independently confirmed correct.
+- `qwen:E1`/`E2`/`E3` (`NOT TESTED (host credential)`, blocking) — the
+  host-credential disposition that would excuse these requires `grok` (the
+  other optional T4 agent) to `PASS` the same row, which it did not this
+  run because of the finding above; `qwen:E5` did qualify (`grok:E5` was
+  `PASS`) and did not block.
+- `MatrixH:H7` (`PARTIAL`, new this run) — UAC elevation was declined twice
+  with no interactive operator available to accept the prompt; the
+  identical mechanism passed in full at `v0.6.0-rc.1` on this same host,
+  so this is availability of an acceptor, not a regression, but it still
+  does not match either contract disposition.
+
+A post-commit coordinator finding (report §0.12) is what corrective work
+after this report addresses: a schema-only, read-only inspection of the
+host's two real Cursor CLI `2026.08.11` `store.db` files found
+`blobs(id TEXT, data BLOB)` and `meta(key, value)` — not the
+`messages`/`message`/`bubbles` tables the `v0.6.0-rc.2` reader recognized
+and no real store ever had. `cursor:C2` (real `message_count` still `0`)
+and `cursor:C3` (search by body cannot succeed against tables the real store
+lacks) were re-scored `FAIL` on that finding; the fix targets a schema that
+does not exist. This report does **not** authorize stable `v0.6.0`.
+Corrective work for the Cursor CLI store schema, which closes `cursor:C2`
+and `cursor:C3`, lands in `v0.6.0-rc.3`; the `grok` stall, the `cline` and
+`pi` C3 real-session evidence gap, the expired Qwen credential, and
+`MatrixH:H7`'s operator-availability gap are host and operator conditions
+that remain open and are not product changes in that candidate.
+
+### v0.6.0-rc.3 candidate gate
+
+The corrective candidate. It changes exactly the Cursor CLI store reader
+and nothing else: no agent's tier moves, and no compatibility range widens
+— `v0.6.0-rc.2`'s Claude Code, OpenCode, and Codex CLI ranges are
+unchanged.
+
+- Cursor CLI's `message_count` now counts `blobs` rows whose `data` is a
+  JSON object with `role` `user` or `assistant` (`system` rows excluded,
+  matching the search policy) instead of the `messages`/`message`/
+  `bubbles` tables `v0.6.0-rc.2` guessed at and no real store ever had.
+  `search_text` and `PromptPreview` come from the `content` of `user`-role
+  blobs only. Every row is read bounded (4 MiB per row in the SQL `SELECT`
+  itself, `role` read by a streaming decoder that stops as soon as it has
+  that field), and the scan is bounded in total to 20,000 rows. A row whose
+  first byte is not `{` — the majority of rows in both real inspected
+  stores — is skipped by that one byte, never decoded. On this host's own
+  real Cursor CLI data both real sessions now report a non-zero
+  `message_count` and are found by `rein search <word> --agent cursor`.
+
+This candidate does not attempt the `grok` MCP-reconnect finding, `cline:C3`'s
+or `pi:C3`'s real-vendor-session evidence gap (host-credential and harness
+issues, unrelated to the Cursor store schema), or `MatrixH:H7`'s
+operator-availability gap — those remain open findings from the `v0.6.0-rc.2`
+tagged run and are re-tested as carried dispositions rather than closed here.
+`cursor:C2` and `cursor:C3` are the T1 C-tier gap this candidate does close:
+the store-schema fix above is expected to flip both to `PASS` against the
+real host store, which under the contract's disposition rule (a
+`NOT TESTED (host credential)` row is excused once any *one* other optional
+agent at the same tier `PASS`es the same row) is also expected to excuse
+`cline:C3` if Cline is still unauthenticated when this run happens.
+
+Governed by the same
+[`docs/testing/v0.6.0-windows-acceptance.md`](docs/testing/v0.6.0-windows-acceptance.md)
+contract, specialised by
+[`docs/testing/v0.6.0-rc.3-agent-verification-prompts.md`](docs/testing/v0.6.0-rc.3-agent-verification-prompts.md).
+`rein doctor --agents --acceptance-matrix` on a binary built from this tree
+reports **178** Phase 5 rows (core `A:10, B:9, G:8, H:6` = 33, unchanged from
+`v0.6.0-rc.2`), plus the 22-row CLI matrix and the 16 Hop parity rows —
+**216** rows in total, the same count as `v0.6.0-rc.2`, of which
+`opencode:D4` is `N/A (definitional)` under the disposition rules in
+[`docs/testing/v0.6.0-windows-acceptance.md`](docs/testing/v0.6.0-windows-acceptance.md#dispositions-that-do-not-block-the-device-verdict):
+**215 required**.
+
+Publication means ready for tagged-artifact acceptance. It does **not**
+authorize stable `v0.6.0`. Current stable remains `v0.5.1`.
+
 ## Steps
 
 ### 1. Prepare the release commit

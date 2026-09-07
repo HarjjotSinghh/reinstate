@@ -96,47 +96,84 @@ session's actual content lives in the sibling `store.db` (observed
 - `size_bytes` is `meta.json`'s size plus `store.db`'s size, so it
   reflects the store the session actually lives in rather than only
   the tiny sidecar.
-- `message_count` is a `SELECT COUNT(*)` against `store.db`, opened
-  read-only through `internal/vendorsqlite` (immutable in place, or a
-  private copy when a `-wal` sidecar is present — the vendor's own
-  tree is never written to). **The table name is unverified**: no
-  probe has captured `store.db`'s schema. The reader recognizes
-  `messages`, `message`, and `bubbles`; if more than one is present,
-  the larger count wins, on the same reasoning as OpenCode's own
-  migrated-table pair (one name is live, the rest are remnants). A
-  store using none of these names yields `message_count: 0` — the
-  same value every Cursor session got before this reader existed —
-  rather than a guessed count from an unrecognized schema.
-- `search_text` (v0.6.0-rc.2, closes #405, fixes Phase 5 Matrix row
-  `cursor:C3`) is read from that same winning table, and only when it
-  also has a recognized author column (`role`, `author`, `sender`, or
-  `type`) and a recognized body column (`text`, `content`, `body`, or
-  `message`) — both unverified like the table name itself. Only rows
-  whose author column reads `user` or `human` are indexed, matching
-  the policy Claude Code's own reader applies (never assistant
-  replies), ordered by `rowid`, bounded to 20,000 rows and to the
-  shared `MaxSearchTextBytes` budget. Each row's own body column is
-  additionally bounded to 4 MiB (`maxRowTextBytes`, the same ceiling
-  `MaxJSONLineBytes` applies to one Claude Code JSONL event) via
-  `substr(column, 1, ?)` *in the SQL SELECT itself*, not a check after
-  the value is already in Go's hands — one pathologically large row (a
-  pasted log or file dump saved as a single message) never lands in
-  process memory whole, confirmed empirically against
-  `modernc.org/sqlite`: scanning a `substr`-bounded column off a 60 MiB
-  row grows allocation by only the bound, not the row's own size. A
-  recognized table with a row count but no recognized author/body
-  column pair contributes no text — the same as before this reader
-  read content, not a guess at an unrecognized column's meaning.
-  `PromptPreview` falls back to the first such user row, since Cursor
-  CLI's `meta.json` carries no vendor session title to prefer instead.
 
-This does not promote Cursor toward F2, and it is not "inventing a
-`store.db` reader" in the sense the section below still means: no
-schema is assumed to be *true*, and any store this guess does not
-match degrades to the pre-existing behavior instead of reporting a
-wrong number, or fabricated text, with confidence. A later probe that
-captures the real table and column names should replace the candidate
-lists, not add to them indefinitely.
+### The real schema (2026-09-07)
+
+The `v0.6.0-rc.2` reader above guessed at `messages`/`message`/`bubbles`
+table names and never matched a real store: every real Cursor CLI session
+reported `message_count: 0` regardless of how many turns it held (the
+[`v0.6.0-rc.2` tagged Windows acceptance report](../testing/results/2026-09-07-windows-v060rc2.md)'s
+§0.12 first surfaced this gap, re-scoring `cursor:C2`/`cursor:C3` `FAIL`).
+A schema-only, read-only
+inspection of two real Cursor CLI `2026.08.11` `store.db` files (table and
+column names via `sqlite_master`
+and `pragma table_info`, JSON key names and blob magic bytes only — no
+message text, title, path, or id was ever read into a record or a fixture)
+found the real shape:
+
+```
+blobs(id TEXT, data BLOB)   -- one row per turn; id is a 64-char hex string
+meta(key, value)            -- observed a single row, key "0"; never read
+```
+
+There is no ordering column; rows are read by `rowid`, best-effort only.
+`blobs.data` is either:
+
+- a JSON object, always observed beginning with the byte `{` — keys seen:
+  `role` (`system`, `user`, or `assistant`), `content` (a plain JSON string,
+  or an array of `{type, text, …}` parts with `type` `text` or
+  `reasoning`), and `providerOptions`; or
+- a non-JSON binary blob (protobuf-like; first bytes observed as
+  `0x0a 0x20…`, never decoded).
+
+Both real sessions inspected held 11 `blobs` rows: 1 `system`, 2 `user`, 1
+`assistant`, 7 binary.
+
+- `message_count` counts `blobs` rows whose `data` is a JSON object with
+  `role` `user` or `assistant`; `system` rows are excluded from the count
+  (they hold the vendor's own system prompt, not a turn), matching the
+  user/assistant-only policy `search_text` already applies below. Read
+  read-only through `internal/vendorsqlite` (immutable in place, or a
+  private copy when a `-wal` sidecar is present — the vendor's own tree is
+  never written to), bounded to `maxBlobRows` (20,000) rows scanned. Every
+  row is read via `substr(CAST(data AS BLOB), 1, ?)` bounded to
+  `maxRowTextBytes` (4 MiB, the same ceiling `MaxJSONLineBytes` applies to
+  one Claude Code JSONL event) *in the SQL SELECT itself*; a row whose first
+  byte is not `{` (a binary blob) is skipped by that one byte, never
+  decoded; `role` is then read by a streaming JSON decoder that stops as
+  soon as it has that field, so a `content` value many times larger than the
+  bound is never decoded to reach it (the real store always writes `role`
+  before `content`); a row that is not valid JSON, or whose `role` field
+  this bounded prefix could not reach, is skipped rather than guessed.
+- `search_text` (closes #405, fixes Phase 5 Matrix row `cursor:C3`, and
+  corrects `cursor:C2`/`cursor:C3`'s re-scoring against the real schema) is
+  the bounded, sanitized `content` text of every `user`-role blob only,
+  ordered by `rowid`, matching the policy Claude Code's own reader applies
+  (never assistant or system text). `content` is decoded from the same
+  bounded prefix as `role`: a plain string decodes directly; a parts array
+  joins the `type:"text"` parts and skips `type:"reasoning"` (the model's
+  own chain of thought, not the user's words). When `content` itself runs
+  past the 4 MiB prefix bound, the surrounding object is no longer valid
+  JSON as a whole; a raw fallback scan for the literal `"content":"` marker
+  recovers the leading captured text instead of contributing nothing —
+  confirmed empirically against `modernc.org/sqlite`: scanning a
+  `substr`-bounded column off a 60 MiB row grows allocation by only the
+  bound, not the row's own size. `PromptPreview` falls back to the first
+  such user row's raw text, since Cursor CLI's `meta.json` carries no vendor
+  session title to prefer instead.
+- A store using neither this shape nor any other recognized shape —
+  including the old `v0.6.0-rc.2` `messages`/`message`/`bubbles` guess,
+  which was never real — degrades to `message_count: 0` and no
+  `search_text`, the same value every Cursor session got before either
+  reader existed, rather than a guessed count or fabricated text.
+
+This does not promote Cursor toward F2: it is a private-file content reader
+built from a device-verified schema, not a machine-readable session list.
+Any store that does not match the schema above (a future Cursor CLI version
+migrates it, for instance) degrades to the pre-existing zero-count behavior
+instead of reporting a wrong number, or fabricated text, with confidence. A
+later probe that finds the schema has changed should update this page and
+the reader together, not layer a second guess on top.
 
 ## Why T0 is `layout_unverified`
 

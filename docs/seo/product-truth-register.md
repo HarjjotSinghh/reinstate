@@ -3,11 +3,14 @@
 Last reviewed: 2026-09-07
 Canonical website source: `website/src/data/product.ts`
 Stable release: `v0.5.1`, dated 2026-08-21.
-Reviewed candidate: `v0.6.0-rc.2`, dated 2026-09-07; native Windows x64
+Reviewed candidate: `v0.6.0-rc.3`, dated 2026-09-07; native Windows x64
 tagged-artifact acceptance is still pending for it, and Apple Silicon macOS
-acceptance is deferred under ADR 0005. `v0.5.2-rc.1` (2026-08-23) and
-`v0.6.0-rc.1` (2026-09-06) were both published candidates that were
-superseded without stable promotion; their content ships inside `v0.6.0-rc.2`.
+acceptance is deferred under ADR 0005. `v0.5.2-rc.1` (2026-08-23),
+`v0.6.0-rc.1` (2026-09-06), and `v0.6.0-rc.2` (2026-09-07, tagged Windows run
+ended device verdict `FAIL`, 203/215 required rows, on a Cursor CLI
+store-schema defect this candidate fixes) were all published candidates that
+were superseded without stable promotion; their content ships inside
+`v0.6.0-rc.3`.
 
 This is the required output of the repository-local
 `reinstate-product-truth` workflow. It separates released facts from roadmap
@@ -34,7 +37,7 @@ marketing claim.
 | Paths | Recognized structural project roots are tokenized and expanded through a canonical project ID; arbitrary prose is not rewritten | `internal/pathmap`, adapter tests, configuration docs |
 | License | Apache-2.0 | `LICENSE`, `product.ts` |
 | Account requirement | The CLI does not require a Reinstate account | released architecture and `product.ts` |
-| Current release | Stable is `v0.5.1`, dated 2026-08-21. `v0.6.0-rc.2`, dated 2026-09-07, is the current candidate awaiting native Windows x64 tagged-artifact acceptance (macOS deferred under ADR 0005). | `website/src/data/product.ts`, `CHANGELOG.md` section `[0.6.0-rc.2]`, release history |
+| Current release | Stable is `v0.5.1`, dated 2026-08-21. `v0.6.0-rc.3`, dated 2026-09-07, is the current candidate awaiting native Windows x64 tagged-artifact acceptance (macOS deferred under ADR 0005). | `website/src/data/product.ts`, `CHANGELOG.md` section `[0.6.0-rc.3]`, release history |
 | Maintainer | Harjot Singh Rana | repository metadata and `product.ts` |
 
 ## Conflicting claims and resolution
