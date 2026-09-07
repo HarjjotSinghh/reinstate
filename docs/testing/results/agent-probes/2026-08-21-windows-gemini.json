@@ -38,80 +38,56 @@
         {
           "path": "*",
           "kind": "file",
-          "count": 5,
-          "median_bytes": 1959
+          "count": 1,
+          "median_bytes": 52
         },
         {
           "path": "*/*",
           "kind": "file",
           "count": 1,
-          "median_bytes": 4415
+          "median_bytes": 27
         },
         {
           "path": "projects.json",
           "kind": "file",
           "count": 1,
-          "median_bytes": 932
-        },
-        {
-          "path": "settings.json.bak-20260716-<n>",
-          "kind": "file",
-          "count": 1,
-          "median_bytes": 284
+          "median_bytes": 21
         },
         {
           "path": "state.json",
           "kind": "file",
           "count": 1,
-          "median_bytes": 53
+          "median_bytes": 36
         },
         {
           "path": "tmp",
           "kind": "dir",
-          "children": 8
+          "children": 6
         },
         {
           "path": "tmp/*",
           "kind": "dir",
-          "children": 2,
-          "sample_count": 8
-        },
-        {
-          "path": "tmp/*/*",
-          "kind": "dir",
           "children": 1,
-          "sample_count": 3
-        },
-        {
-          "path": "tmp/*/*",
-          "kind": "file",
-          "count": 9,
-          "median_bytes": 72
-        },
-        {
-          "path": "tmp/*/*/*",
-          "kind": "file",
-          "count": 3,
-          "median_bytes": 299
+          "sample_count": 6
         },
         {
           "path": "tmp/*/chats",
           "kind": "dir",
           "children": 1,
-          "sample_count": 7
+          "sample_count": 6
         },
         {
           "path": "tmp/*/chats/*",
           "kind": "file",
-          "count": 9,
-          "median_bytes": 881841
+          "count": 6,
+          "median_bytes": 138
         }
       ],
       "name_shapes": [
         {
           "path": "*",
           "shape": "<slug>",
-          "samples": 7
+          "samples": 2
         },
         {
           "path": "*/*",
@@ -121,22 +97,12 @@
         {
           "path": "tmp/*",
           "shape": "<64-hex>",
-          "samples": 8
-        },
-        {
-          "path": "tmp/*/*",
-          "shape": "<slug>.txt",
-          "samples": 12
-        },
-        {
-          "path": "tmp/*/*/*",
-          "shape": "<slug>.md",
-          "samples": 3
+          "samples": 6
         },
         {
           "path": "tmp/*/chats/*",
           "shape": "<slug>.json",
-          "samples": 9
+          "samples": 6
         }
       ],
       "first_line_keys": {

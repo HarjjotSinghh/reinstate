@@ -223,7 +223,12 @@ func TestShapeNormalization(t *testing.T) {
 		{"-Users-alice-code-demo", "<slug>"},
 		{"%2FUsers%2Falice%2Fcode", "<slug>"},
 		{"42", "<n>"},
-		{"session-001", "session-<n>"},
+		// "session" is deliberately NOT on the vendor allowlist (only the
+		// plural "sessions" marker is): unlike "pack" (Git's own object-pack
+		// prefix) there is no fixed vendor filename whose stem is the bare
+		// word "session", so a "session-<n>"-shaped stem must collapse the
+		// same as any other non-vendor prefix would.
+		{"session-001", "<slug>-<n>"},
 		{"sessions", "sessions"},
 		{"state.json", "state.json"},
 		// Cursor buckets projects as an absolute path with separators
@@ -257,6 +262,28 @@ func TestShapeNormalization(t *testing.T) {
 		// rule used to split the hash and leave most of it verbatim.
 		{"pack-8c7ffa580563b675b1fd27a53df219b761e4d0a1", "pack-<40-hex>"},
 		{"pack-8c7ffa580563b675b1fd27a53df219b761e4d0a1.idx", "pack-<40-hex>.idx"},
+		// rc.5 review finding: rePrefHex, reLongHexTail, reWorkspaceBucket, and
+		// reTrailing each returned their regex capture group as a literal path
+		// segment without checking it against knownVendorNames, so an
+		// arbitrary project/customer/account name followed by a hash or a
+		// counter rode through unshaped even though the stem as a whole
+		// matched one of these "vendor pattern" rules. Every prefix below is
+		// not a fixed vendor name, so it must collapse to <slug> even though
+		// the rest of the stem still matches the same regex a vendor name
+		// would.
+		{"harjot-project-11", "<slug>-<n>"},
+		{"acme-corp-secret-repo-25", "<slug>-<n>"},
+		// The exact leak this finding pointed at in the committed Gemini
+		// evidence doc: a backup filename whose vendor-unknown prefix
+		// (everything before the ext.Ext(8)-char cutoff pulled it back into
+		// the stem) survived reTrailing verbatim.
+		{"settings.json.bak-20260716-13", "<slug>-<n>"},
+		{"acmecorp_deadbeefdeadbeefdeadbeefdeadbeef", "<slug>_<32-hex>"},
+		{"acmecorp-8c7ffa580563b675b1fd27a53df219b761e4d0a1", "<slug>-<40-hex>"},
+		{"acmecorp_portfolio-25_6d65015f0cb0", "<slug>_<project>_<12-hex>"},
+		// The prefix that IS a fixed vendor name still survives its
+		// trailing-digit form.
+		{"pack-42", "pack-<n>"},
 	}
 	for _, tt := range tests {
 		if got := normalizeComponent(tt.in); got != tt.want {
@@ -364,15 +391,29 @@ func TestAccountNameIsRedactedFromShapes(t *testing.T) {
 	// it — "session.jsonl" is not a fixed vendor name (Matrix B4), so it is
 	// shaped too now, rather than surviving as a literal name that happened
 	// not to look suspicious.
+	//
+	// The bucket's own name — wd_arjunmehta_ab12cd34-17 — ends in "-17", not
+	// in 8-64 bare hex, so it never matches reWorkspaceBucket's fixed
+	// wd_<workspace>_<hash> shape; it falls through to reTrailing instead,
+	// which captures "wd_arjunmehta_ab12cd34" as one prefix. Per the rc.5
+	// review fix, that whole captured prefix is validated against the vendor
+	// allowlist as a single unit — "wd" alone is allowlisted, but
+	// "wd_arjunmehta_ab12cd34" is not — so it collapses to <slug> rather
+	// than surviving with only the account name inside it swapped for
+	// <user>. That is a stricter, safer shape than this test previously
+	// asserted (a mixed vendor-prefix-plus-free-form stem no longer keeps
+	// any of its free-form half just because the fixed prefix happened to
+	// be at the front), and it still means the account name cannot survive:
+	// there is nothing left of the original stem to contain it.
 	shapes := art.Agents[0].NameShapes
 	byPath := map[string]string{}
 	for _, s := range shapes {
 		byPath[s.Path] = s.Shape
 	}
-	if got := byPath["projects/*"]; got != "wd_<user>_ab12cd34-<n>" {
-		t.Fatalf("redaction dropped the surrounding structure: %+v", shapes)
+	if got := byPath["projects/*"]; got != "<slug>-<n>" {
+		t.Fatalf("bucket directory shape = %q, want a fully shaped, non-vendor name: %+v", got, shapes)
 	}
-	if got := byPath["projects/wd_<user>_ab12cd34-<n>/*"]; got != "<slug>.jsonl" {
+	if got := byPath["projects/*/*"]; got != "<slug>.jsonl" {
 		t.Fatalf("session file shape = %q, want a shaped, non-vendor filename: %+v", got, shapes)
 	}
 }

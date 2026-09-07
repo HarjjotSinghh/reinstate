@@ -56,9 +56,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   handful of other literal marker/filename stems declared across the
   catalog); every other segment collapses to a shape token
   (`<slug>`, `<uuid-v4>`, `<32-hex>`, …), regardless of how ordinary it
-  looks. `docs/testing/results/agent-probes/2026-08-21-windows-gemini.json`
-  is regenerated from a synthetic tree with the same shape as the leaked
-  original, never the real one.
+  looks. Closing the set required more than adding the allowlist itself:
+  the shape rules that split a stem into a fixed prefix plus a hash or a
+  trailing counter (`<prefix>_<32-hex>`, `<prefix>-<N-hex>`,
+  `<prefix>_<project>_<N-hex>`, `<prefix>-<n>`) were returning that prefix
+  as the raw regex capture, never checked against the allowlist, so
+  `harjot-project-11` or a dated backup filename like
+  `settings.json.bak-20260716-13` matched the same "vendor pattern" shape
+  as `pack-<40-hex>` (Git's own object-pack naming) and rode through
+  unshaped. Every such captured prefix is now validated the same way a
+  whole stem is, and collapses to `<slug>` when it is not one of the fixed
+  vendor names.
+  `docs/testing/results/agent-probes/2026-08-21-windows-gemini.json`
+  is regenerated (again) from a synthetic tree with the same shape as the
+  leaked original, never the real one.
 - **Agent probe: an existing empty root now differs from an absent one in
   the JSON (Matrix B7).** Pointing an agent's root environment variable
   (or a fixture root) at a directory that exists but lacks the vendor's

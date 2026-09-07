@@ -60,17 +60,49 @@ var (
 //	                                     (opencode.db), not a project name
 //	runtime                           -- Qwen's own "<session-id>-runtime.json"
 //	                                     sidecar suffix
+//	wd                                -- Kimi Code's own "wd_" workspace
+//	                                     bucket prefix (working directory),
+//	                                     paired with reWorkspaceBucket
+//	pack                              -- Git's own object-pack file prefix
+//	                                     (pack-<hex>.idx / .pack), a universal
+//	                                     on-disk naming convention rather than
+//	                                     anything derived from repository
+//	                                     content, seen under a marketplace or
+//	                                     plugin checkout beneath an agent root
 //
 // A directory that is not on this list is either shape-matched by one of the
 // rules above (a UUID, a hash, a slug, a workspace bucket, …) or falls
 // through to <slug>. Nothing reaches the artifact by merely failing to look
 // suspicious — the previous rule, which is exactly how a project directory
 // under Gemini's tmp/ (Matrix B4) survived normalization verbatim.
+//
+// The allowlist is closed over whole segments, not substrings, so every rule
+// below that captures a variable prefix out of a stem — rePrefHex,
+// reLongHexTail, reWorkspaceBucket, reTrailing — must run that captured
+// prefix back through shapedPrefix rather than splicing the regex capture
+// group into the returned shape directly. Splicing the raw capture group in
+// is what let "harjot-project-11" or "acme-corp-secret-repo-25" (or, in a
+// real committed artifact, "settings.json.bak-20260716-13") ride through
+// reTrailing unshaped: each one matches [prefix][-_]?[2+ digits] exactly as
+// well as the vendor-fixed "pack-42" does, and an unvalidated capture group
+// cannot tell the two apart merely by not looking suspicious.
 var knownVendorNames = map[string]bool{
 	"tmp": true, "sessions": true, "chats": true, "projects": true,
 	"session-state": true, "cache": true, "conversations": true,
 	"state": true, "summary": true, "events": true, "meta": true,
-	"opencode": true, "runtime": true,
+	"opencode": true, "runtime": true, "wd": true, "pack": true,
+}
+
+// shapedPrefix returns prefix unshaped only when it is an exact,
+// case-insensitive match for a fixed vendor name in knownVendorNames; every
+// other captured prefix collapses to the generic <slug> token, same as a
+// stem that matches none of normalizeStem's rules. See the closed-allowlist
+// note on knownVendorNames.
+func shapedPrefix(prefix string) string {
+	if knownVendorNames[strings.ToLower(prefix)] {
+		return prefix
+	}
+	return "<slug>"
 }
 
 // normalizeComponent collapses identifying names to a token.
@@ -129,13 +161,13 @@ func normalizeStem(stem string) string {
 		return fmt.Sprintf("<%d-hex>", len(stem))
 	}
 	if m := rePrefHex.FindStringSubmatch(stem); len(m) == 3 {
-		return m[1] + "_<32-hex>"
+		return shapedPrefix(m[1]) + "_<32-hex>"
 	}
 	if m := reLongHexTail.FindStringSubmatch(stem); len(m) == 3 {
-		return fmt.Sprintf("%s-<%d-hex>", m[1], len(m[2]))
+		return fmt.Sprintf("%s-<%d-hex>", shapedPrefix(m[1]), len(m[2]))
 	}
 	if m := reWorkspaceBucket.FindStringSubmatch(stem); len(m) == 4 {
-		return fmt.Sprintf("%s_<project>_<%d-hex>", m[1], len(m[3]))
+		return fmt.Sprintf("%s_<project>_<%d-hex>", shapedPrefix(m[1]), len(m[3]))
 	}
 	if isSlug(stem) {
 		return "<slug>"
@@ -144,7 +176,7 @@ func normalizeStem(stem string) string {
 		return "<n>"
 	}
 	if m := reTrailing.FindStringSubmatch(stem); len(m) == 3 && len(m[2]) >= 2 {
-		return m[1] + "-<n>"
+		return shapedPrefix(m[1]) + "-<n>"
 	}
 	if looksLikeEncodedPath(stem) {
 		return "<path-slug>"
