@@ -60,10 +60,36 @@ environment (not the isolated home `rein daemon install` ran under) and
 pulled synthetic sessions into the live Claude, Codex, and OpenCode stores;
 cleaned up, tracked as
 [issue #424](https://github.com/HarjjotSinghh/reinstate/issues/424).
-`v0.6.0-rc.4` (2026-09-07) is the current candidate: it changes exactly two
-things beyond `v0.6.0-rc.3` — the Pi reader, and the verified Qwen Code
-range (`0.21.12`–`0.23.0`, Windows evidence) — and nothing else: no other
-agent's tier moves, no other compatibility range widens.
+`v0.6.0-rc.4` (2026-09-07) changed exactly two things beyond `v0.6.0-rc.3` —
+the Pi reader, and the verified Qwen Code range (`0.21.12`–`0.23.0`,
+Windows evidence) — and nothing else: no other agent's tier moves, no other
+compatibility range widens. Its own tagged-artifact native Windows
+acceptance
+([`docs/testing/results/2026-09-07-windows-v060rc4.md`](../../testing/results/2026-09-07-windows-v060rc4.md))
+ended device verdict `FAIL`: **208 PASS / 1 PARTIAL / 4 FAIL / 2 NOT
+TESTED** of **215** required rows. Both of that candidate's own fixes were
+confirmed on real data (every `pi`/`qwen` row `PASS`). Seven required rows
+blocked the verdict, none attributed to either fix: two new agent-probe
+findings (`MatrixB:B4`, real project-name path segments reaching a
+committed artifact unshaped; `MatrixB:B7`, an existing-but-empty overridden
+agent root indistinguishable from an absent one), a stale sync-completion
+contract sentence scored against unchanged shipped behavior (`MatrixG:G4`),
+a confirmed interactive-CLI defect (CLI row `13`, the switcher's
+all-projects scope showing every visible row as unresumable regardless of
+true state), a version-compatibility block (the host's real OpenCode
+self-updated to `1.18.29`, above the verified `1.18.27` ceiling), and an
+operator/elevation-availability gap on `MatrixH:H7` (that run's shell held
+no administrator rights, and its executor misread "fresh lab account" as a
+new Windows OS account rather than a new Hop account, so the row's own UAC
+prompt was never reached). `v0.6.0-rc.5` (2026-09-07) is the current
+candidate: it changes exactly these things beyond `v0.6.0-rc.4` —
+agent-probe shape normalization at every tree depth with root state
+reported (closes `B4`/`B7`), the switcher's all-projects readiness (closes
+row `13`), the sync-completion contract text and the `MatrixH:H7`
+lab-isolation wording (both docs/contract corrections, not behavior
+changes), and the verified OpenCode range (`1.18.21`–`1.18.29`, Windows
+evidence, closes `opencode:E5`/`E6`) — and nothing else: no other agent's
+tier moves, no other compatibility range widens.
 
 Two dispositions were adopted autonomously (Q19) so the stable gate is not
 permanently unreachable on this host: `opencode:D4` is `N/A (definitional)`
@@ -97,14 +123,16 @@ account, before/after listing digests of the live agent roots, and a
 go-ahead file poll for the UAC prompt) and issue #424 itself, for you to
 confirm.
 
-What is left is yours, in order: confirm the `MatrixH:H7` lab-isolation
-method (Q25) and whether/when to fix `#424` itself (a separate, smaller
-ticket, not part of this candidate); decide whether to reinstall/upgrade the
-broken `cursor-agent` install (Q21) — still not required; accept or reject
-the disposition rules (Q19, unchanged since the `v0.6.0-rc.2` update); merge
-the `v0.6.0-rc.4` release commit; sign and push the `v0.6.0-rc.4` tag (Q5);
-then run the tagged dispatch
-([`docs/testing/v0.6.0-rc.4-agent-verification-prompts.md`](../../testing/v0.6.0-rc.4-agent-verification-prompts.md))
+What is left is yours, in order: confirm you (or another maintainer) will be
+reachable near the keyboard for a window during the `v0.6.0-rc.5` run for
+`MatrixH:H7`'s UAC prompt (Q26); decide whether to pin vendor CLI versions
+for the duration of a run (Q27); decide whether/when to fix `#424` itself
+(a separate, smaller ticket, not part of this candidate); decide whether to
+reinstall/upgrade the broken `cursor-agent` install (Q21) — still not
+required; accept or reject the disposition rules (Q19, unchanged since the
+`v0.6.0-rc.2` update); merge the `v0.6.0-rc.5` release commit; sign and push
+the `v0.6.0-rc.5` tag (Q5); then run the tagged dispatch
+([`docs/testing/v0.6.0-rc.5-agent-verification-prompts.md`](../../testing/v0.6.0-rc.5-agent-verification-prompts.md))
 against native Windows x64, or tell me to.
 
 ---
@@ -544,8 +572,10 @@ the same disposition `H7` has carried on more than one prior run.
 Vendor self-updates keep moving the compatible-range ceiling mid-run,
 independent of anything this candidate changes: this cycle alone saw
 Claude Code self-update to `2.1.263`, Qwen Code to `0.23.0`, and OpenCode
-toward `1.18.29` (`website/src/data/compatibility.json` currently verifies
-OpenCode only through `1.18.27`) — each discovered because a real vendor
+to `1.18.29` (`website/src/data/compatibility.json` now verifies OpenCode
+through `1.18.29`, widened after `v0.6.0-rc.4`'s tagged run found the
+acceptance host had already self-updated past the prior `1.18.27` ceiling)
+— each discovered because a real vendor
 binary on the acceptance host updated itself between runs, not because the
 lab requested a newer version. Widening the verified range each time is
 real evidence, not padding, but it also means a run's outcome can depend on

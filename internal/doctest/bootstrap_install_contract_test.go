@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	publicBootstrapVersion       = "v0.6.0-rc.4"
+	publicBootstrapVersion       = "v0.6.0-rc.5"
 	publicPOSIXInstallerSHA256   = "7776adb4ace8aa333745cd3f3e42b3a10d1400b9394c612d065c20a739db2e66"
 	publicWindowsInstallerSHA256 = "02c68984964556e7c685a275bde72dc812162e0b898be0f26718a0813efc0dfe"
 )

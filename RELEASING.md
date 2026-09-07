@@ -729,6 +729,123 @@ from `v0.6.0-rc.3`), plus the 22-row CLI matrix and the 16 Hop parity rows
 Publication means ready for tagged-artifact acceptance. It does **not**
 authorize stable `v0.6.0`. Current stable remains `v0.5.1`.
 
+### v0.6.0-rc.4 candidate evidence
+
+`v0.6.0-rc.4` was published 2026-09-07 as a signed GitHub prerelease with
+both live installer routes pinning it. Its tagged-artifact native Windows
+acceptance is recorded at
+[`docs/testing/results/2026-09-07-windows-v060rc4.md`](docs/testing/results/2026-09-07-windows-v060rc4.md):
+device verdict `FAIL`, **208 PASS / 1 PARTIAL / 4 FAIL / 2 NOT TESTED** of
+**215** required rows. Both of this candidate's own fixes were confirmed on
+real data: `pi:C3` now `PASS` on a fresh planted-token session (search finds
+it, `prompt_preview` is populated), and every `qwen` row `C1`–`E6` `PASS`es
+against the real installed `0.23.0`. Seven required rows blocked the
+verdict, none attributed to either fix:
+
+- `MatrixB:B4` (`FAIL`, product, new this run) — the `gemini` agent's
+  probed `tree` includes two real, un-normalized project-name directory
+  segments under `tmp/`, verbatim from the host; every path segment
+  *beneath* each is correctly shape-normalized, only the top segment is
+  not. `v0.6.0-rc.3`'s B4 evidence exercised a different agent's mechanism
+  for the same generic assertion and found no defect there.
+- `MatrixB:B7` (`FAIL`, product, new this run) — an overridden agent root
+  (`CLINE_DATA_DIR`) that exists but is empty is indistinguishable from one
+  that does not exist at all: `doctor --agents --json` output is
+  byte-identical apart from the timestamp in both cases.
+- `MatrixG:G4` (`FAIL`, documentation/contract, not a regression) —
+  `push`/`pull --agent` completion (and `defaultRegistry()`) already
+  include `opencode` alongside `claude`/`codex`, matching identical shipped
+  behavior `v0.6.0-rc.3`'s own G4 row scored `PASS`; the contract's row
+  text ("Claude and Codex sessions, and no other agent's") was never
+  updated to match, and this run's executor scored the row against that
+  literal text.
+- CLI row `13` (`FAIL`, product, new this run) — the interactive switcher's
+  default `ScopeAll` scope shows every visible session as unresumable
+  regardless of true state, isolated to `internal/tui/switcher`'s
+  `ScopeAll` record-loading path via black-box A/B testing; root cause not
+  confirmed against the tagged binary's own source by that run.
+- `opencode:E5`, `opencode:E6` (`NOT TESTED`, host/harness,
+  `F-OPENCODE-VERSION-DRIFT`) — the host's real OpenCode auto-updated to
+  `1.18.29`, above the verified ceiling `1.18.27`, mid-run; every
+  launch-plan-building row past the point of drift correctly refused
+  (`exit 5`, `agent.version` block). `opencode` is a required agent, so
+  this does not qualify for the `NOT TESTED (host credential)` disposition.
+- `MatrixH:H7` (`PARTIAL`, operator/harness availability, new reason this
+  run) — the run's shell held no administrator rights, and the mandatory
+  lab-isolation prerequisite (a fresh Windows account) itself needs
+  elevation to create; the row's own UAC prompt could not be reached at
+  all. No live-agent-home write occurred this run (the opposite risk from
+  `v0.6.0-rc.3`'s incident on the same row).
+
+Every carried `v0.6.0-rc.3` disposition cleared or was re-recorded (report
+§18): 14 cleared (`pi:C3`, `qwen:D1`–`D5`, `qwen:E1`/`E2`/`E3`/`E5`/`E6`,
+`codex:E5`, `grok:E5`, `opencode:D4`) and 2 re-recorded (`opencode:E5`,
+`MatrixH:H7` — both with a genuinely different reason than the disposition
+they carried forward), 0 regressed on the same underlying cause.
+
+This report does not authorize stable `v0.6.0`. Corrective work for the
+probe redaction/correctness gaps (closes `MatrixB:B4`/`B7`), the switcher's
+all-projects readiness (closes CLI row `13`), the stale sync-completion
+contract text (closes `MatrixG:G4`), and the OpenCode range widening
+(closes `opencode:E5`/`E6` as a resolved version block, not a defect) lands
+in `v0.6.0-rc.5`; `MatrixH:H7`'s operator/elevation-availability gap is not
+attempted by that candidate and remains an open finding for a run with a
+reachable maintainer.
+
+### v0.6.0-rc.5 candidate gate
+
+The corrective candidate. It changes exactly four things: the agent probe's
+shape normalization and root-state reporting, the interactive switcher's
+readiness resolution, the sync-completion contract wording, and the
+verified OpenCode range. No other agent's tier moves, and no other
+compatibility range widens — `v0.6.0-rc.4`'s Claude Code and Qwen Code
+ranges are unchanged.
+
+- Every tree segment the agent probe walks is now shape-normalized at every
+  depth, not only a segment's children, and every RootEnv- or fixture-root
+  override now reports its own `exists`/`marker_present` state in
+  `candidate_roots`, so an existing-but-empty override is distinguishable
+  from an absent one. Closes `MatrixB:B4` and `MatrixB:B7`.
+- `internal/tui/readiness.Prober` now bounds concurrent verifications to a
+  small fixed pool regardless of how many rows are on screen, so the
+  switcher's default all-projects scope resolves readiness exactly as a
+  single-project scope does for the same record. Closes CLI row `13`.
+- The sync-completion contract row (`MatrixG:G4`) now names `opencode`
+  alongside `claude`/`codex`, matching the shipped, unchanged behavior both
+  this candidate and `v0.6.0-rc.3` observed; the lab-isolation rule for
+  `MatrixH:H7` is corrected to route through the operator go-signal file
+  method. No behavior changed for either row's mechanism.
+- The verified OpenCode range widens to `1.18.21`–`1.18.29` (was
+  `1.18.21`–`1.18.27`), on native Windows evidence only, under ADR 0005 D3:
+  against the shared live OpenCode store, a real OpenCode `1.18.29` session
+  was created in a throwaway project, identified by a planted token, and
+  indexed, resumed, and forked through the launch plan Reinstate produces,
+  returning that same token. See
+  [`docs/testing/results/2026-09-07-windows-range-widening-opencode-v060.md`](docs/testing/results/2026-09-07-windows-range-widening-opencode-v060.md).
+
+This candidate does not attempt `MatrixH:H7`'s operator/elevation-
+availability gap — it remains an open finding from the `v0.6.0-rc.4` tagged
+run and is re-tested here as a carried disposition, dependent on a
+maintainer being reachable near the keyboard during the run (per the
+go-signal method above). `MatrixB:B4`, `MatrixB:B7`, `MatrixG:G4`, CLI row
+`13`, and `opencode:E5`/`E6` are the required-row gaps this candidate does
+close: the fixes above are expected to flip all six to `PASS`.
+
+Governed by the same
+[`docs/testing/v0.6.0-windows-acceptance.md`](docs/testing/v0.6.0-windows-acceptance.md)
+contract, specialised by
+[`docs/testing/v0.6.0-rc.5-agent-verification-prompts.md`](docs/testing/v0.6.0-rc.5-agent-verification-prompts.md).
+`rein doctor --agents --acceptance-matrix` on a binary built from this tree
+reports **178** Phase 5 rows (core `A:10, B:9, G:8, H:6` = 33, unchanged
+from `v0.6.0-rc.4`), plus the 22-row CLI matrix and the 16 Hop parity rows
+— **216** rows in total, the same count as `v0.6.0-rc.4`, of which
+`opencode:D4` is `N/A (definitional)` under the disposition rules in
+[`docs/testing/v0.6.0-windows-acceptance.md`](docs/testing/v0.6.0-windows-acceptance.md#dispositions-that-do-not-block-the-device-verdict):
+**215 required**.
+
+Publication means ready for tagged-artifact acceptance. It does **not**
+authorize stable `v0.6.0`. Current stable remains `v0.5.1`.
+
 ## Steps
 
 ### 1. Prepare the release commit
