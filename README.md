@@ -220,8 +220,8 @@ that hardware returns. See [docs/hop.md](docs/hop.md) and
 
 > **Platform boundary:** stable `v0.5.1` passed dual-platform tagged-artifact
 > acceptance on Apple Silicon macOS and native Windows x64. The public
-> installers pin candidate `v0.6.0-rc.3`, which is certified on native Windows
-> x64 only, with the macOS rows deferred under
+> installers pin candidate `v0.6.0-rc.3`, whose native Windows x64 acceptance
+> is pending, with the macOS rows deferred under
 > [ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md).
 > The earlier candidate `v0.5.2-rc.1` was published but never certified; its
 > content ships inside `v0.6.0`.

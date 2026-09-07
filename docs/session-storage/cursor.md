@@ -101,9 +101,10 @@ session's actual content lives in the sibling `store.db` (observed
 
 The `v0.6.0-rc.2` reader above guessed at `messages`/`message`/`bubbles`
 table names and never matched a real store: every real Cursor CLI session
-reported `message_count: 0` regardless of how many turns it held (a
-pending native Windows acceptance report's §0, item 12 first surfaced this
-gap, re-scoring `cursor:C2`/`cursor:C3` `FAIL`). A schema-only, read-only
+reported `message_count: 0` regardless of how many turns it held (the
+[`v0.6.0-rc.2` tagged Windows acceptance report](../testing/results/2026-09-07-windows-v060rc2.md)'s
+§0.12 first surfaced this gap, re-scoring `cursor:C2`/`cursor:C3` `FAIL`).
+A schema-only, read-only
 inspection of two real Cursor CLI `2026.08.11` `store.db` files (table and
 column names via `sqlite_master`
 and `pragma table_info`, JSON key names and blob magic bytes only — no
