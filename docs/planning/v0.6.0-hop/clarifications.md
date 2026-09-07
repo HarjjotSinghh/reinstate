@@ -135,6 +135,34 @@ the `v0.6.0-rc.5` tag (Q5); then run the tagged dispatch
 ([`docs/testing/v0.6.0-rc.5-agent-verification-prompts.md`](../../testing/v0.6.0-rc.5-agent-verification-prompts.md))
 against native Windows x64, or tell me to.
 
+**Where things stand (2026-09-08).** `v0.6.0-rc.5`'s tagged run
+([`docs/testing/results/2026-09-07-windows-v060rc5.md`](../../testing/results/2026-09-07-windows-v060rc5.md))
+ended device verdict `FAIL`: **211 PASS / 4 PARTIAL / 0 FAIL / 0 NOT
+TESTED** of **215** required rows — `grok:E1`/`E2`/`E3`
+(`F-GROK-BACKEND-CONNECTIVITY`) and `MatrixH:H7` (operator/harness
+availability). You then answered Q27 (do not pin vendor CLI versions;
+widen on native Windows evidence — adopted as standing policy, ADR 0005
+Amendment 2). Two same-artifact rechecks of those same four rows followed
+(report §23, §24): both left `grok:E1`/`E2`/`E3` `PARTIAL` a fifth and
+sixth time (the backend connectivity failure, now compounded by the host's
+live `grok` self-updating to `1.0.13`, outside the verified `1.0.5` range),
+and both left `MatrixH:H7` `PARTIAL` — the daemon mechanism ran to
+completion on both rechecks for the first time across the candidate, but
+`#424` (Q25) meant the elevated process still read the live agent-home
+roots rather than the isolated ones staged for it, and the rule's own
+digest-equality pass condition proved unmeasurable on this live,
+multi-session host. Neither recheck authorized stable. `v0.6.0-rc.6`
+responds to all of that: the `H7` live-home check is refined (Q25/Q26,
+above) to a per-file before/after listing with per-entry attribution
+instead of aggregate digest equality, `#424` itself is scheduled for
+`v0.6.1` rather than blocking this candidate (Q29), the `grok` verified
+range widens to `1.0.13` on the maintainer's own console evidence (Q27,
+Q28) since the pinned `1.0.5` binary no longer works for anyone on this
+host, and — because this harness cannot drive `grok 1.0.13` to a
+completion in the current environment, headless or ConPTY — `grok:E1`-`E3`
+in the `v0.6.0-rc.6` tagged run are executed by the maintainer at their own
+console, with the transcript recorded as the row's evidence (Q28).
+
 ---
 
 ## Q1 — Is `v0.6.0` "Hop plus the interactive CLI"?
@@ -551,6 +579,36 @@ done), is now recorded as the contract text in
 (Run notes) rather than left to each candidate's dispatch to restate. See
 Q26 and Q27 below.
 
+**H7 rule refined again (2026-09-08), after the `v0.6.0-rc.5` rechecks.**
+The corrected rule above got three tagged-artifact exercises on `v0.6.0-rc.5`
+(the run itself, plus two same-artifact rechecks; report §12, §23, §24) —
+all three reached, or nearly reached, the daemon mechanism, and none
+produced a clean `PASS`. Two separate problems, not one: `#424` itself (the
+elevated, Task-Scheduler-spawned daemon read from and pushed real snapshots
+out of the host's *live* Claude/Codex/OpenCode roots even though the
+installing shell's own environment was correctly isolated — the design gap
+this issue already names); and, independent of `#424`, that the rule's own
+byte-for-byte digest-equality pass condition is not measurable on this
+heavily-used, multi-session host — ordinary concurrent activity (backup
+rotation, the executor's own session writing `file-history` as a side
+effect of its own tool use, other sessions' project growth, SQLite WAL
+churn) changes the live roots between any two timestamps regardless of what
+`rein` did, as both rechecks' own per-file diffs showed once a full
+before-listing was actually preserved. The rule is refined accordingly —
+full text in
+[`docs/testing/v0.6.0-windows-acceptance.md`](../../testing/v0.6.0-windows-acceptance.md#run-notes)
+and [ADR 0005 Amendment 2](../../adr/0005-v0.6.0-scope-and-windows-first-acceptance.md#amendment-2-2026-09-08):
+digest equality is retired as the pass condition; a full per-file
+before/after listing of only the session-bearing subtrees
+(`<CLAUDE_CONFIG_DIR>/projects`, the *persistent* `<CODEX_HOME>/sessions`,
+`<XDG_DATA_HOME>/opencode`), zero snapshots restored, and per-entry
+attribution to a process other than `rein` now decide `PASS`; every
+differing entry is named in the report regardless of disposition; and
+`#424` reading the live roots is recorded, not failed, on its own, since it
+is a documented design gap now scheduled for `v0.6.1` (Q29, below). The
+operator go-signal mechanism is unchanged — see Q26 below, which still
+applies to `v0.6.0-rc.6`.
+
 ## Q26 — `MatrixH:H7` needs you at the keyboard during the `v0.6.0-rc.5` run
 
 `H7`'s UAC prompt cannot be accepted unattended (Q23), and the corrected
@@ -566,6 +624,20 @@ for a window inside the `v0.6.0-rc.5` run so this go-signal mechanism has
 someone to signal for; if no maintainer is reachable, the row records
 `PARTIAL` (operator/harness availability) after the full 150-minute wait,
 the same disposition `H7` has carried on more than one prior run.
+
+**Still applies, unchanged, to `v0.6.0-rc.6` (2026-09-08).** The `v0.6.0-rc.5`
+run and both its rechecks each found the go-signal file already present at
+their first poll check, so a maintainer was reachable each time; the row's
+own mechanism ran to completion on the second and third of those three
+attempts (§23, §24). None of that removes the UAC prompt itself — Windows
+elevation still cannot be accepted unattended by anything this harness
+runs — so the same confirmation is needed again for `v0.6.0-rc.6`: you (or
+another maintainer with admin rights on the acceptance host) reachable near
+the keyboard for a window inside that run for `H7`'s one elevation click.
+The go-signal mechanism, its 60 s / 150-minute poll cadence, and the
+`PARTIAL` (operator/harness availability) fallback are all unchanged; what
+changed is the row's own pass condition, refined above (Q25) after what the
+`v0.6.0-rc.5` rechecks showed about digest equality.
 
 ## Q27 — Should the acceptance lab pin vendor CLI versions for a run?
 
@@ -589,6 +661,68 @@ on whatever version the host's vendor binary has already self-updated to,
 treating each new ceiling as evidence rather than drift. Either is
 workable; this only needs your call before it becomes an inconsistency
 between reports.
+
+**Answered (2026-09-07):** (b) — do not pin. When a vendor CLI self-updates
+past the verified ceiling, widen the range on native Windows evidence
+rather than block; Reinstate always wants to support the latest version.
+Adopted as standing policy, recorded in
+[ADR 0005 Amendment 2](../../adr/0005-v0.6.0-scope-and-windows-first-acceptance.md#amendment-2-2026-09-08)
+and, for the case where drift is found mid-run rather than resolved before
+it starts, as the `NOT TESTED (version drift)` disposition in
+[`docs/testing/v0.6.0-windows-acceptance.md`](../../testing/v0.6.0-windows-acceptance.md#dispositions-that-do-not-block-the-device-verdict).
+This is already in effect for `v0.6.0-rc.6`: the host's `grok` self-updated
+from the verified `1.0.5` to `1.0.13` on 2026-09-07, and the `1.0.5` binary
+no longer completes a prompt against xAI even from your own console while
+`1.0.13` answers instantly there, so the range widens to `1.0.13` on your
+own console evidence rather than staying pinned to a build that no longer
+works for anyone (Q28, below).
+
+## Q28 — `grok` E1-E3 in the `v0.6.0-rc.6` run: the maintainer runs them at the console
+
+The host's live `grok` self-updated from the verified `1.0.5` to `1.0.13`
+on 2026-09-07 (Q27, above). That self-update compounds, rather than
+replaces, the pre-existing live backend connectivity problem
+`F-GROK-BACKEND-CONNECTIVITY`: across the `v0.6.0-rc.5` run and its two
+same-artifact rechecks, the old `1.0.5` binary was confirmed to hang
+against xAI — six independent reproductions, headless and under
+`conptydriver` alike, none completing a recall — and does not complete a
+prompt even from your own console today. `1.0.13`, by contrast, answers
+instantly from your console. Put together: the pinned `1.0.5` build this
+harness has always driven `grok` through is not just outside the range
+that will widen (Q27) but is itself no longer a live, working backend on
+this host, while the version that *does* work (`1.0.13`) cannot be driven
+to a completion by this harness — headless or ConPTY — in the current
+environment (the same `conptydriver` mechanism that drives every other
+optional agent's `E1`-`E3` rows does not get `grok 1.0.13` to a completion
+either, and no further harness change was attempted once your own console
+had already confirmed `1.0.13` itself is not the problem).
+
+Rather than record `grok:E1`/`E2`/`E3` `PARTIAL` a third consecutive tagged
+run for a cause this harness cannot resolve, `v0.6.0-rc.6`'s dispatch has
+you run those three rows yourself, at your own console, against `1.0.13`
+— the resume/fork completion exchange the row needs, in your own working
+`grok` session — and paste the transcript back for the executor to record
+as the row's evidence, the same way `H7`'s UAC prompt already depends on
+you at the keyboard for the one step this harness cannot do unattended.
+This is not a new precedent: it is the same "human does the one step the
+harness cannot" shape as `H7`, applied to a row whose backend, not its
+harness, is the blocker.
+
+## Q29 — `#424` scheduling and the `1.0.13` widening, together
+
+Two small, separate decisions, both closed the same way this update:
+`#424` (the daemon Task-Scheduler task not pinning the agent-root
+environment it was installed under — Q25) is scheduled for `v0.6.1`, not
+`v0.6.0-rc.6`: it is a documented design gap, already understood and
+already filed, and the refined `H7` live-home check (Q25, above) lets that
+row verify the daemon round-trip mechanism without waiting for `#424` to
+land. Separately, the `grok` range widening to `1.0.13` (Q27's policy,
+applied) ships already in `v0.6.0-rc.6` rather than waiting for a later
+candidate — the host's own vendor CLI has already moved, `1.0.5` no longer
+works for anyone including you, and there is no reason to hold evidence
+that already exists. Both are recorded together here because they were
+decided together: neither blocks the other, and neither blocks
+`v0.6.0-rc.6`'s tagged run.
 
 ## Q13 — GitGuardian on the candidate PR
 
