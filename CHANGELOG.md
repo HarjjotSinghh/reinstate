@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Widened the verified Grok Build range to `1.0.13`.** The acceptance
+  host's Grok Build self-updated past the in-tree ceiling (`1.0.5`), so a
+  real launch plan against it correctly refused with exit `5`
+  (`agent.version`, outside the verified `1.0.5`–`1.0.5` range) — the same
+  drift the `v0.6.0-rc.5` tagged report's own §23/§24 rechecks had already
+  found. Widened under the maintainer's standing policy (2026-09-07, Q27):
+  when a vendor CLI self-updates past the verified ceiling, Reinstate widens
+  the range on native Windows evidence rather than block — Reinstate always
+  wants to support the latest version. This widening's evidence is
+  read-only (`grok --version`/`--help` output shape, and the session file
+  layout and JSON key names observed under a real Grok home, never message
+  content or ids), since Grok cannot currently be driven to a completed
+  conversational turn from this harness; the completed-turn `grok:E1`–`E3`
+  rows against `1.0.13` are deferred to the `v0.6.0-rc.6` tagged run, to be
+  executed by the maintainer at their own console and recorded by the
+  executor. Version-output parsing and every launch-plan-relevant `--help`
+  flag (`--resume`, `--fork-session`, `--continue`, `--session-id`) are
+  unchanged from `1.0.5`. See
+  [`docs/testing/results/2026-09-08-windows-range-widening-grok-v060.md`](docs/testing/results/2026-09-08-windows-range-widening-grok-v060.md).
+
 ## [0.6.0-rc.5] - 2026-09-07
 
 Release candidate. Stable remains `v0.5.1`; the public installers now pin
