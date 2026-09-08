@@ -30,7 +30,7 @@ The Phase 2 local capability matrix is:
 | Gemini CLI | Read-only included | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac | T2 |
 | OpenCode | Read-only included | Same-vendor included | Encrypted-sync round-trip recorded on macOS and native Windows: create with real OpenCode, `rein push`, cross-device `rein pull`, verified resume in the vendor with the remapped path | T5 |
 | Cursor CLI | Indexed (read-only) | Not implemented | Dual-platform probes committed; indexed from `meta.json`; no device journey for resume | T1 |
-| Grok Build | Read-only included | Same-vendor included | Resume and handoff-destination journeys recorded on macOS and native Windows; verified range widened to 1.0.5-1.0.13 on native Windows evidence (macOS pending; completed-turn resume/fork deferred to the v0.6.0-rc.6 tagged run) | T4 |
+| Grok Build | Read-only included | Same-vendor included | Resume and handoff-destination journeys recorded on macOS and native Windows; verified range widened to 1.0.5-1.0.13 on native Windows evidence (macOS pending; completed-turn resume/fork confirmed via the maintainer's own console transcript in the v0.6.0-rc.6 tagged run) | T4 |
 | Amp | Not readable locally (`server_backed`) | Not implemented | Not applicable | T0 |
 | ZCode | Not implemented (`desktop_only`) | Not implemented | Not applicable | T0 |
 | OpenHands | Not implemented | Not implemented | Not applicable | T0 |
@@ -149,8 +149,8 @@ Grok Build ceiling to `1.0.13` after the acceptance host self-updated past
 self-updating past the verified ceiling widens the range rather than blocks
 (2026-09-07, Q27): read-only evidence (`--version`/`--help` output shape,
 session file layout) was gathered against the real `1.0.13` binary, and the
-completed-turn resume/fork evidence is deferred to the `v0.6.0-rc.6` tagged
-run, executed by the maintainer at their own console (macOS pending,
+completed-turn resume/fork evidence was confirmed via the maintainer's own
+console transcript in the `v0.6.0-rc.6` tagged run (macOS pending,
 ADR 0005 D3). The same self-update policy widens the Codex CLI ceiling to
 `0.153.4` after the acceptance host's Codex CLI self-updated past `0.149.0`
 mid-cycle: read-only evidence (`--version`/`--help` output shape, session

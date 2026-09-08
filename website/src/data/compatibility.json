@@ -154,7 +154,7 @@
       "minimumTestedVersion": "1.0.5",
       "maximumTestedVersion": "1.0.13",
       "resumeMode": "Same-vendor native resume via grok --resume <uuid> (T3); handoff destination via grok --session-id <uuid> (T4)",
-      "evidenceLevel": "deterministic synthetic fixtures, a measured grok --version range, and T3 resume and T4 destination device journeys recorded on macOS and native Windows (2026-08-22 and 2026-08-23); GD8 collected on macOS only; native Windows range-widening read-only evidence (2026-09-08), completed-turn evidence deferred to the v0.6.0-rc.6 tagged run",
+      "evidenceLevel": "deterministic synthetic fixtures, a measured grok --version range, and T3 resume and T4 destination device journeys recorded on macOS and native Windows (2026-08-22 and 2026-08-23); GD8 collected on macOS only; native Windows range-widening read-only evidence (2026-09-08), completed-turn evidence confirmed via the maintainer's own console transcript in the v0.6.0-rc.6 tagged run",
       "evidence": {
         "storagePage": "docs/session-storage/grok.md",
         "fixtures": [
@@ -171,9 +171,9 @@
         ],
         "probeReports": []
       },
-      "lastTested": "2026-09-07",
+      "lastTested": "2026-09-08",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/grok.md",
-      "notes": "T4 handoff destination. A handoff into Grok starts a new session and is never a cross-agent resume. Not a synced agent. The ceiling was widened from 1.0.5 to 1.0.13 after the acceptance host self-updated past 1.0.5 mid-cycle, under the maintainer's standing self-update policy (2026-09-07, Q27); read-only evidence only (version/help output shape, session file layout) — completed-turn resume/fork evidence is deferred to the v0.6.0-rc.6 tagged run, executed by the maintainer."
+      "notes": "T4 handoff destination. A handoff into Grok starts a new session and is never a cross-agent resume. Not a synced agent. The ceiling was widened from 1.0.5 to 1.0.13 after the acceptance host self-updated past 1.0.5 mid-cycle, under the maintainer's standing self-update policy (2026-09-07, Q27); read-only evidence only (version/help output shape, session file layout) — completed-turn resume/fork evidence was confirmed via the maintainer's own console transcript in the v0.6.0-rc.6 tagged run."
     },
     {
       "id": "kimi",
