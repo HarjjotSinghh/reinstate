@@ -215,11 +215,15 @@ with no real terminal (an agent driving this through a piped shell, exactly
 what rejected the previous round of this branch) can still complete it:
 
 - **`pair init`** — the first device: `rein init --hop`, then `rein
-  account init`. Saves the recovery code to a mode-0600 sibling file,
-  `<root>/hoplab-recovery-code.secret`, for a later `pair recover`, and
-  prints only a redacted, length-only acknowledgement -- never the code
-  itself, and never into `hoplab-state.json` (shared, world-readable, meant
-  to be read and copied freely for pids/addresses/log paths). See "Updated
+  account init`. Saves the recovery code to a sibling file,
+  `<root>/hoplab-recovery-code.secret`, for a later `pair recover`: written
+  mode 0600 on every OS, and on Windows additionally locked to the current
+  user only by replacing the file's DACL outright (mode bits alone do not
+  restrict access there --
+  `scripts/testing/hoplab/secretacl_windows.go`). It prints only a
+  redacted, length-only acknowledgement -- never the code itself, and
+  never into `hoplab-state.json` (shared, world-readable, meant to be read
+  and copied freely for pids/addresses/log paths). See "Updated
   2026-09-09" below.
 - **`pair join`** — the live path, preferred whenever a second device is
   available: the joining device runs `rein init --hop` then `rein account
@@ -279,6 +283,19 @@ hoplab: device-a initialized the account; recovery code (39 chars, redacted) sav
 
 The transcript above is kept unedited as the historical record of the
 2026-09-06 verification run.
+
+**Updated 2026-09-09 (later the same day):** the previous update above
+described `<root>/hoplab-recovery-code.secret` as a "mode-0600" file and
+called that owner-only. On Windows it was not: `os.WriteFile`'s mode bits
+are a no-op there, so the file actually inherited its parent directory's
+ACL, not an owner-only one. `saveRecoveryCode` (`state.go`) now calls
+`restrictSecretFileACL` (`secretacl_windows.go`) after every write, which
+replaces the file's DACL with a single, non-inherited ACE naming only the
+current user, verified by `TestSaveRecoveryCodeAppliesAnOwnerOnlyACL`
+(`secretacl_windows_test.go`) reading the DACL back with
+`GetNamedSecurityInfo`/`GetAce` rather than trusting the mode bits. Every
+other OS keeps the original 0600-only behavior, which was already correct
+there.
 
 ```json
 {"profile_id": "b9442b52-a15e-4668-81b8-78111f84ea6c", "device_id": "452f6282-8b5a-4936-8cca-8da75b3f8aa5", "enrolled_via": "init", "recovery_code_confirmed": true, "enrolled_devices": 2, "device_in_keyring": true, ...}

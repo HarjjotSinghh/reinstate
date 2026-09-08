@@ -46,9 +46,14 @@ func recoveryCodePath(root string) string {
 	return filepath.Join(root, "hoplab-recovery-code.secret")
 }
 
-// saveRecoveryCode writes code to root's mode-0600 sibling file, or removes
-// that file when code is empty (a LabState with no pairing recovery code
-// yet -- the common case for every action except `pair init`).
+// saveRecoveryCode writes code to root's owner-only sibling file, or
+// removes that file when code is empty (a LabState with no pairing
+// recovery code yet -- the common case for every action except `pair
+// init`). The file is written 0o600 on every OS, then locked down further
+// by restrictSecretFileACL: on Windows, mode bits alone do not create a
+// restrictive DACL (see secretacl_windows.go), so that call is what
+// actually makes the file owner-only there; on every other OS it is a
+// no-op because 0o600 already means that (secretacl_other.go).
 func saveRecoveryCode(root, code string) error {
 	if strings.TrimSpace(code) == "" {
 		if err := os.Remove(recoveryCodePath(root)); err != nil && !os.IsNotExist(err) {
@@ -56,7 +61,14 @@ func saveRecoveryCode(root, code string) error {
 		}
 		return nil
 	}
-	return os.WriteFile(recoveryCodePath(root), []byte(code+"\n"), 0o600)
+	path := recoveryCodePath(root)
+	if err := os.WriteFile(path, []byte(code+"\n"), 0o600); err != nil {
+		return err
+	}
+	if err := restrictSecretFileACL(path); err != nil {
+		return fmt.Errorf("restrict %s to the current user: %w", path, err)
+	}
+	return nil
 }
 
 // loadRecoveryCode reads back whatever saveRecoveryCode last wrote, trimmed

@@ -228,8 +228,10 @@ second device is available:**
 
 ```bash
 ./scripts/testing/hoplab/hoplab.sh pair init -root <root> -device device-a -rein bin/rein.exe
-# saves the recovery code to <root>/hoplab-recovery-code.secret (mode 0600), for `pair recover`
-# if ever needed; prints only a redacted, length-only acknowledgement -- never the code itself
+# saves the recovery code to <root>/hoplab-recovery-code.secret -- mode 0600
+# everywhere, plus a real owner-only Windows ACL (mode bits alone don't restrict
+# access on that OS) -- for `pair recover` if ever needed; prints only a
+# redacted, length-only acknowledgement -- never the code itself
 
 ./scripts/testing/hoplab/hoplab.sh pair join -root <root> -device device-b -approver device-a -rein bin/rein.exe
 # device-b runs `rein account join` (publishes a pairing request, prints a code, waits);
