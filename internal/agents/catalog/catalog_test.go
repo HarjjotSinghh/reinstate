@@ -19,7 +19,7 @@ func TestShippedAgentsRegisterAtDeclaredTiers(t *testing.T) {
 		max    string
 	}{
 		{sessionindex.AgentClaude, agents.TierSync, agents.FamilyHomeTree, "2.1.219", "2.1.263"},
-		{sessionindex.AgentCodex, agents.TierSync, agents.FamilyHomeTree, "0.133.0", "0.149.0"},
+		{sessionindex.AgentCodex, agents.TierSync, agents.FamilyHomeTree, "0.133.0", "0.153.4"},
 		{sessionindex.AgentGemini, agents.TierHandoffFrom, agents.FamilyHomeTree, "0.55.1", "0.55.1"},
 		{sessionindex.AgentOpenCode, agents.TierSync, agents.FamilyEmbeddedDB, "1.18.21", "1.18.29"},
 		{sessionindex.AgentGrok, agents.TierHandoffTo, agents.FamilyHomeTree, "1.0.5", "1.0.13"},
@@ -66,6 +66,11 @@ func TestVersionParsersMatchAgentcheckShape(t *testing.T) {
 		{name: "claude canonical", parse: parseClaudeVersion, output: agents.VersionOutput{Stdout: "2.1.220 (Claude Code)\n"}, want: "2.1.220", ok: true},
 		{name: "claude stderr", parse: parseClaudeVersion, output: agents.VersionOutput{Stdout: "2.1.220 (Claude Code)\n", Stderr: "warn\n"}},
 		{name: "codex canonical", parse: parseCodexVersion, output: agents.VersionOutput{Stdout: "codex-cli 0.147.0\n"}, want: "0.147.0", ok: true},
+		// Measured on the acceptance host, 2026-09-08, after it self-updated
+		// past 0.149.0 mid-cycle: `codex --version` = "codex-cli 0.153.4".
+		// Same shape as 0.147.0. See
+		// docs/testing/results/2026-09-08-windows-range-widening-codex-v060.md.
+		{name: "codex windows 0.153.4", parse: parseCodexVersion, output: agents.VersionOutput{Stdout: "codex-cli 0.153.4\n"}, want: "0.153.4", ok: true},
 		{name: "codex reject suffix", parse: parseCodexVersion, output: agents.VersionOutput{Stdout: "codex-cli 0.147.0-beta.1\n"}},
 	}
 	for _, tt := range tests {

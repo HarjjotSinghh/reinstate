@@ -22,9 +22,15 @@ import (
 
 const maxJSONLRecordBytes = 16 << 20
 
+// minimumVerifiedCodexVersion and maximumVerifiedCodexVersion are the
+// inclusive Codex CLI range Reinstate has physically measured. The ceiling
+// widened to 0.153.4 on 2026-09-08 after the acceptance host's Codex CLI
+// self-updated past 0.149.0 mid-cycle, under the maintainer's standing
+// self-update policy (2026-09-07, Q27) -- see
+// docs/testing/results/2026-09-08-windows-range-widening-codex-v060.md.
 const (
 	minimumVerifiedCodexVersion = "0.133.0"
-	maximumVerifiedCodexVersion = "0.149.0"
+	maximumVerifiedCodexVersion = "0.153.4"
 )
 
 // Adapter implements adapter.Adapter for Codex.

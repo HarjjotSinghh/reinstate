@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Widened the verified Codex CLI range to `0.153.4`.** The acceptance
+  host's Codex CLI self-updated past the in-tree ceiling (`0.149.0`), so a
+  real launch plan against it correctly refused with exit `5`
+  (`agent.version`, outside the verified `0.133.0`–`0.149.0` range) — the
+  same drift the `v0.6.0-rc.6` tagged report's own `codex:E1`–`E3` rows
+  recorded as `NOT TESTED (version drift)`. Widened under the maintainer's
+  standing policy (2026-09-07, Q27): when a vendor CLI self-updates past the
+  verified ceiling, Reinstate widens the range on native Windows evidence
+  rather than block — Reinstate always wants to support the latest version.
+  This widening's evidence is read-only (`codex --version`/`--help`/
+  `exec --help`/`resume --help`/`fork --help` output shape, a sanitized
+  `rein doctor --agents --json` probe of the real `CODEX_HOME`, and a
+  committed fixture home exercised through `rein resume --dry-run --json`),
+  since the host's Codex account usage limit blocks any completed
+  conversational turn until `10:13` local on `2026-09-08`; the
+  completed-turn `codex:E1`–`E3` rows against `0.153.4` are deferred to the
+  `v0.6.0-rc.7` tagged run, once the account limit resets. Version-output
+  parsing and every launch-plan-relevant `--help` flag (`resume`, `fork`,
+  the positional prompt argument) are unchanged from `0.149.0`. See
+  [`docs/testing/results/2026-09-08-windows-range-widening-codex-v060.md`](docs/testing/results/2026-09-08-windows-range-widening-codex-v060.md).
+
 ## [0.6.0-rc.6] - 2026-09-08
 
 Release candidate. Stable remains `v0.5.1`; the public installers now pin

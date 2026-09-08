@@ -49,7 +49,13 @@ func Codex() agents.Descriptor {
 			Args:  []string{"--version"},
 			Parse: parseCodexVersion,
 			Min:   "0.133.0",
-			Max:   "0.149.0",
+			// Widened to 0.153.4 on 2026-09-08 after the acceptance host's
+			// Codex CLI self-updated past 0.149.0 mid-cycle, under the
+			// maintainer's standing policy that Reinstate widens the range on
+			// native Windows evidence rather than block when a vendor CLI
+			// self-updates past the verified ceiling (2026-09-07, Q27). See
+			// docs/testing/results/2026-09-08-windows-range-widening-codex-v060.md.
+			Max: "0.153.4",
 		},
 		Process: agents.ProcessSpec{
 			Images:      []string{"codex"},
@@ -73,6 +79,7 @@ func Codex() agents.Descriptor {
 				"docs/testing/results/2026-08-11-windows-phase3-V030.md",
 				"docs/testing/results/2026-08-15-macos-phase4-V040RC11.md",
 				"docs/testing/results/2026-08-15-windows-phase4-V040RC11.md",
+				"docs/testing/results/2026-09-08-windows-range-widening-codex-v060.md",
 			},
 		},
 		NewIndexSource: codexsrc.New,

@@ -26,7 +26,7 @@ The Phase 2 local capability matrix is:
 | Agent | Local discovery/search/inspect | Native resume/fork | Physical Phase 2 evidence | Tier |
 | ----- | ------------------------------ | ------------------ | ------------------------- | ---- |
 | Claude Code | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64 | T5 |
-| OpenAI Codex CLI | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64 | T5 |
+| OpenAI Codex CLI | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64; verified range widened to 0.133.0-0.153.4 on native Windows evidence (macOS pending; completed-turn resume/fork evidence deferred to the v0.6.0-rc.7 tagged run once the acceptance host's Codex account usage limit resets) | T5 |
 | Gemini CLI | Read-only included | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac | T2 |
 | OpenCode | Read-only included | Same-vendor included | Encrypted-sync round-trip recorded on macOS and native Windows: create with real OpenCode, `rein push`, cross-device `rein pull`, verified resume in the vendor with the remapped path | T5 |
 | Cursor CLI | Indexed (read-only) | Not implemented | Dual-platform probes committed; indexed from `meta.json`; no device journey for resume | T1 |
@@ -143,22 +143,27 @@ repair, so this release ships on the Windows-first acceptance waiver). On
 native Windows x64 a session was created with each new version, indexed by
 Reinstate, and resumed through the launch plan Reinstate itself produced; the
 resumed session returned a token that existed only in the original session's
-history, which a restarted session cannot answer. Codex CLI's ceiling is
-unchanged in `v0.6.0`. `v0.6.0` also widens the Grok Build ceiling to `1.0.13`
-after the acceptance host self-updated past `1.0.5` mid-cycle, under the
-maintainer's standing policy that a vendor CLI self-updating past the verified
-ceiling widens the range rather than blocks (2026-09-07, Q27): read-only
-evidence (`--version`/`--help` output shape, session file layout) was
-gathered against the real `1.0.13` binary, and the completed-turn resume/fork
-evidence is deferred to the `v0.6.0-rc.6` tagged run, executed by the
-maintainer at their own console (macOS pending, ADR 0005 D3). Versions above
-the maxima remain `UNTESTED` until a later matrix, run on both platforms,
-expands them again:
+history, which a restarted session cannot answer. `v0.6.0` also widens the
+Grok Build ceiling to `1.0.13` after the acceptance host self-updated past
+`1.0.5` mid-cycle, under the maintainer's standing policy that a vendor CLI
+self-updating past the verified ceiling widens the range rather than blocks
+(2026-09-07, Q27): read-only evidence (`--version`/`--help` output shape,
+session file layout) was gathered against the real `1.0.13` binary, and the
+completed-turn resume/fork evidence is deferred to the `v0.6.0-rc.6` tagged
+run, executed by the maintainer at their own console (macOS pending,
+ADR 0005 D3). The same self-update policy widens the Codex CLI ceiling to
+`0.153.4` after the acceptance host's Codex CLI self-updated past `0.149.0`
+mid-cycle: read-only evidence (`--version`/`--help` output shape, session
+file layout) was gathered against the real `0.153.4` binary, and the
+completed-turn `codex:E1`–`E3` resume/fork evidence is deferred to the
+`v0.6.0-rc.7` tagged run, once the acceptance host's Codex account usage
+limit resets (macOS pending, ADR 0005 D3). Versions above the maxima remain
+`UNTESTED` until a later matrix, run on both platforms, expands them again:
 
 | Agent | Inclusive source-tested range (v0.6.0) |
 | ----- | ------------------- |
 | Claude Code | `2.1.219`–`2.1.263` |
-| OpenAI Codex CLI | `0.133.0`–`0.149.0` |
+| OpenAI Codex CLI | `0.133.0`–`0.153.4` |
 | OpenCode | `1.18.21`–`1.18.29` |
 | Grok Build | `1.0.5`–`1.0.13` |
 
