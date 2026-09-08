@@ -227,6 +227,11 @@ const floorGrid = [
           </button>
         </div>
 
+        <p class="release-line">
+          Stable: <code>{product.stableRelease}</code><span aria-hidden="true"> · </span>Installer
+          candidate: <code>{product.currentRelease}</code> (not yet certified)
+        </p>
+
         <div class="conversion-meta">
           <nav class="hero-links" aria-label="Installation resources">
             <a
@@ -1027,6 +1032,18 @@ const floorGrid = [
     outline-offset: 3px;
   }
 
+  .release-line {
+    margin: 0.5rem 0 0;
+    color: var(--ink-3);
+    font-size: 0.78rem;
+    text-align: center;
+    text-wrap: pretty;
+  }
+  .release-line code {
+    color: var(--ink-2);
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    font-weight: 650;
+  }
   .conversion-meta {
     display: flex;
     align-items: center;
