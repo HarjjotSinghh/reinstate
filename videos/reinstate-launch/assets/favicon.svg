@@ -1,8 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Reinstate">
-  <!-- Pure Tight · dark · rounded tile -->
-  <rect width="64" height="64" rx="14" fill="#131f1a"/>
-  <rect x="14" y="14" width="28" height="28" rx="5.5" fill="none" stroke="#f4f6ef" stroke-width="3.6"/>
-  <rect x="22" y="22" width="28" height="28" rx="5.5" fill="#131f1a" stroke="#f4f6ef" stroke-width="3.6"/>
-  <path d="M30.5 33 L34.5 37 L30.5 41" fill="none" stroke="#f4f6ef" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M37 41 H42.5" fill="none" stroke="#f4f6ef" stroke-width="2.7" stroke-linecap="round"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" aria-label="Reinstate" role="img" viewBox="0 0 64 64"><rect width="64" height="64" fill="#131f1a" rx="14"/><rect width="28" height="28" x="14" y="14" fill="none" stroke="#f4f6ef" stroke-width="3.6" rx="5.5"/><rect width="28" height="28" x="22" y="22" fill="#131f1a" stroke="#f4f6ef" stroke-width="3.6" rx="5.5"/><path fill="none" stroke="#f4f6ef" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.7" d="M30.5 33 L34.5 37 L30.5 41"/><path fill="none" stroke="#f4f6ef" stroke-linecap="round" stroke-width="2.7" d="M37 41 H42.5"/></svg>
