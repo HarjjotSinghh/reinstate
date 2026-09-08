@@ -25,7 +25,7 @@ The Phase 2 local capability matrix is:
 
 | Agent | Local discovery/search/inspect | Native resume/fork | Physical Phase 2 evidence | Tier |
 | ----- | ------------------------------ | ------------------ | ------------------------- | ---- |
-| Claude Code | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64 | T5 |
+| Claude Code | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64; verified range widened to 2.1.219-2.1.265 on native Windows evidence (macOS pending; completed-turn resume evidence: a session created with the installed 2.1.265 build was found by search, resumed through the launch plan Reinstate produced, and answered a recall question with a token that existed only in that session's own first turn) | T5 |
 | OpenAI Codex CLI | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64; verified range widened to 0.133.0-0.153.4 on native Windows evidence (macOS pending; completed-turn resume/fork evidence confirmed via real, completed conversational turns in the v0.6.0-rc.7 tagged run) | T5 |
 | Gemini CLI | Read-only included | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac | T2 |
 | OpenCode | Read-only included | Same-vendor included | Encrypted-sync round-trip recorded on macOS and native Windows: create with real OpenCode, `rein push`, cross-device `rein pull`, verified resume in the vendor with the remapped path | T5 |
@@ -157,12 +157,22 @@ mid-cycle: read-only evidence (`--version`/`--help` output shape, session
 file layout) was gathered against the real `0.153.4` binary, and the
 completed-turn `codex:E1`–`E3` resume/fork evidence was confirmed via real,
 completed conversational turns in the `v0.6.0-rc.7` tagged run (macOS
-pending, ADR 0005 D3). Versions above the maxima remain
+pending, ADR 0005 D3). The same self-update policy widens the Claude Code
+ceiling again, to `2.1.265`, after the acceptance host's Claude Code
+self-updated past `2.1.263` mid-cycle: a session created with the installed
+`2.1.265` build was found by `rein search` on its own planted token, resumed
+through the launch plan Reinstate itself produced — both as a dry-run and,
+through a real ConPTY session, as an actual interactive launch that restored
+the session's own prior history — and answered a recall question with a
+token that existed only in that session's own first turn (macOS pending,
+ADR 0005 D3). See
+[`2026-09-09-windows-range-widening-claude-v060.md`](testing/results/2026-09-09-windows-range-widening-claude-v060.md).
+Versions above the maxima remain
 `UNTESTED` until a later matrix, run on both platforms, expands them again:
 
 | Agent | Inclusive source-tested range (v0.6.0) |
 | ----- | ------------------- |
-| Claude Code | `2.1.219`–`2.1.263` |
+| Claude Code | `2.1.219`–`2.1.265` |
 | OpenAI Codex CLI | `0.133.0`–`0.153.4` |
 | OpenCode | `1.18.21`–`1.18.29` |
 | Grok Build | `1.0.5`–`1.0.13` |

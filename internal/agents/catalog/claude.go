@@ -55,9 +55,17 @@ func Claude() agents.Descriptor {
 			// evidence: a session was created with the installed 2.1.263
 			// build, indexed, and resumed through the launch plan Reinstate
 			// itself produced, returning a token that existed only in the
-			// original session's history. macOS pending (ADR 0005 D3). See
-			// docs/testing/results/2026-09-06-windows-range-widening-v060.md.
-			Max: "2.1.263",
+			// original session's history. Widened again to 2.1.265 on
+			// 2026-09-09 after the acceptance host's Claude Code self-updated
+			// past 2.1.263 mid-cycle, under the maintainer's standing policy
+			// that Reinstate widens the range on native Windows evidence
+			// rather than block when a vendor CLI self-updates past the
+			// verified ceiling (2026-09-07, Q27). macOS pending
+			// (ADR 0005 D3). See
+			// docs/testing/results/2026-09-06-windows-range-widening-v060.md
+			// and
+			// docs/testing/results/2026-09-09-windows-range-widening-claude-v060.md.
+			Max: "2.1.265",
 		},
 		Process: agents.ProcessSpec{
 			Images:      []string{"claude"},
@@ -84,6 +92,7 @@ func Claude() agents.Descriptor {
 				"docs/testing/results/2026-08-15-macos-phase4-V040RC11.md",
 				"docs/testing/results/2026-08-15-windows-phase4-V040RC11.md",
 				"docs/testing/results/2026-09-06-windows-range-widening-v060.md",
+				"docs/testing/results/2026-09-09-windows-range-widening-claude-v060.md",
 			},
 		},
 		NewIndexSource: claudesrc.New,

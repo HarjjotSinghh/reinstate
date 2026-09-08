@@ -20,9 +20,9 @@
       "integrationPath": "/integrations/claude-code",
       "status": "primary-release-target",
       "minimumTestedVersion": "2.1.219",
-      "maximumTestedVersion": "2.1.263",
+      "maximumTestedVersion": "2.1.265",
       "resumeMode": "Claude Code to Claude Code (T5 encrypted sync; T3 same-vendor resume)",
-      "evidenceLevel": "source checks, deterministic synthetic fixtures, and dual-platform tagged-artifact acceptance",
+      "evidenceLevel": "source checks, deterministic synthetic fixtures, dual-platform tagged-artifact acceptance, and native Windows range-widening completed-turn evidence (2026-09-09)",
       "evidence": {
         "storagePage": "docs/session-storage/claude.md",
         "fixtures": [
@@ -36,13 +36,15 @@
         ],
         "deviceReports": [
           "docs/testing/results/2026-08-15-macos-phase4-V040RC11.md",
-          "docs/testing/results/2026-08-15-windows-phase4-V040RC11.md"
+          "docs/testing/results/2026-08-15-windows-phase4-V040RC11.md",
+          "docs/testing/results/2026-09-06-windows-range-widening-v060.md",
+          "docs/testing/results/2026-09-09-windows-range-widening-claude-v060.md"
         ],
         "probeReports": []
       },
-      "lastTested": "2026-08-16",
+      "lastTested": "2026-09-09",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-08-15-macos-phase4-V040RC11.md",
-      "notes": "Versions outside the inclusive range, including prereleases, fail closed as untested. v0.5.1 accepted Claude Code 2.1.219–2.1.238 on dual-platform physical evidence. v0.6.0 widens the ceiling to 2.1.263 on native Windows physical evidence; macOS pending (ADR 0005 D3): a session created with 2.1.263 was indexed, resumed through the launch plan Reinstate produced, and returned a token that existed only in the original session's history."
+      "notes": "Versions outside the inclusive range, including prereleases, fail closed as untested. v0.5.1 accepted Claude Code 2.1.219–2.1.238 on dual-platform physical evidence. v0.6.0 widens the ceiling to 2.1.263 on native Windows physical evidence, then to 2.1.265 after the acceptance host self-updated past 2.1.263 mid-cycle, under the maintainer's standing self-update policy (2026-09-07, Q27): a session created with 2.1.265 was found by search, resumed through the launch plan Reinstate produced (both as a dry-run and as a real interactive ConPTY-driven launch that restored the session's own history), and a completed turn against that session answered a recall question with a token that existed only in the original session's history."
     },
     {
       "id": "codex",

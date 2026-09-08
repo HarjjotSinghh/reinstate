@@ -497,8 +497,10 @@ func testFallbackDefinitions() map[string]definition {
 			Parse: parseClaudeVersion,
 			Min:   "2.1.219",
 			// Widened to 2.1.263 in v0.6.0 on native Windows physical resume
-			// evidence; macOS pending (ADR 0005 D3).
-			Max: "2.1.263",
+			// evidence, then to 2.1.265 on 2026-09-09 after the acceptance
+			// host self-updated past 2.1.263 mid-cycle; macOS pending
+			// (ADR 0005 D3).
+			Max: "2.1.265",
 		}),
 		"codex": definitionFrom(Definition{
 			Executable:      "codex",

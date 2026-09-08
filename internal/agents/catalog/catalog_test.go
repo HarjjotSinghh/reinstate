@@ -18,7 +18,7 @@ func TestShippedAgentsRegisterAtDeclaredTiers(t *testing.T) {
 		min    string
 		max    string
 	}{
-		{sessionindex.AgentClaude, agents.TierSync, agents.FamilyHomeTree, "2.1.219", "2.1.263"},
+		{sessionindex.AgentClaude, agents.TierSync, agents.FamilyHomeTree, "2.1.219", "2.1.265"},
 		{sessionindex.AgentCodex, agents.TierSync, agents.FamilyHomeTree, "0.133.0", "0.153.4"},
 		{sessionindex.AgentGemini, agents.TierHandoffFrom, agents.FamilyHomeTree, "0.55.1", "0.55.1"},
 		{sessionindex.AgentOpenCode, agents.TierSync, agents.FamilyEmbeddedDB, "1.18.21", "1.18.29"},
@@ -65,6 +65,11 @@ func TestVersionParsersMatchAgentcheckShape(t *testing.T) {
 	}{
 		{name: "claude canonical", parse: parseClaudeVersion, output: agents.VersionOutput{Stdout: "2.1.220 (Claude Code)\n"}, want: "2.1.220", ok: true},
 		{name: "claude stderr", parse: parseClaudeVersion, output: agents.VersionOutput{Stdout: "2.1.220 (Claude Code)\n", Stderr: "warn\n"}},
+		// Measured on the acceptance host, 2026-09-09, after it self-updated
+		// past 2.1.263 mid-cycle: `claude --version` = "2.1.265 (Claude
+		// Code)". Same shape as 2.1.220. See
+		// docs/testing/results/2026-09-09-windows-range-widening-claude-v060.md.
+		{name: "claude windows 2.1.265", parse: parseClaudeVersion, output: agents.VersionOutput{Stdout: "2.1.265 (Claude Code)\n"}, want: "2.1.265", ok: true},
 		{name: "codex canonical", parse: parseCodexVersion, output: agents.VersionOutput{Stdout: "codex-cli 0.147.0\n"}, want: "0.147.0", ok: true},
 		// Measured on the acceptance host, 2026-09-08, after it self-updated
 		// past 0.149.0 mid-cycle: `codex --version` = "codex-cli 0.153.4".

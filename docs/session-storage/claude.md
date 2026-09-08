@@ -18,6 +18,33 @@
 | New session with pinned ID | `claude --session-id <uuid>` (UUID must be valid) |
 | Initial prompt | Positional argument: `claude "<prompt>"` |
 
+### Version range
+
+`claude --version` prints one stdout line, `<semver> (Claude Code)`, and
+nothing on stderr. The catalog's inclusive range was `2.1.219`–`2.1.238`,
+raised on dual-platform physical resume evidence during `v0.5.1`, then to
+`2.1.263` during `v0.6.0` on native Windows evidence after the acceptance
+host self-updated past the prior ceiling mid-cycle. `v0.6.0` widens the
+ceiling again, to `2.1.265`, for the same reason, under the maintainer's
+standing policy that a vendor CLI self-updating past the verified ceiling
+widens the range rather than blocks (2026-09-07, Q27). This widening's own
+evidence is a completed round trip against the real `2.1.265` binary: a
+session created with a planted token was found by `rein search`, resumed
+through the launch plan `rein resume` produces — both as a dry-run and,
+through a real ConPTY session (`scripts/testing/conptydriver`), as an
+actual interactive launch that restored the session's own prior history —
+and a fresh completed turn against that same session answered a recall
+question with the token, which existed only in the session's own first
+turn. The session file layout
+(`<root>/projects/<project-key>/<session-uuid>.jsonl`) and the documented
+per-event fields (`sessionId`, `cwd`, `version`, `gitBranch`) are unchanged;
+the freshly `2.1.265`-authored fixture also carries new record types
+(`ai-title`, `queue-operation`, `attachment`, `atis-latch`, `last-prompt`)
+that the adapter does not need to special-case, since it tokenizes complete
+JSONL records generically rather than keying off a specific first-line
+shape (macOS pending, ADR 0005 D3). See
+[2026-09-09-windows-range-widening-claude-v060.md](../testing/results/2026-09-09-windows-range-widening-claude-v060.md).
+
 ### `--session-id` collision policy (R5 — Unverified / fail closed)
 
 Vendor docs used by Reinstate confirm that `claude --session-id <uuid>` pins a

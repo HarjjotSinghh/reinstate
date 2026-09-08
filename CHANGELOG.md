@@ -64,6 +64,25 @@ that hardware returns. Stable remains `v0.5.1`.
   agent probe genuinely failed," and only the former is treated as
   still-checking.
 
+### Changed
+
+- Widen the fail-closed Claude Code compatibility range through `2.1.265`
+  (was `2.1.263`). The Windows acceptance host had auto-updated past the
+  ceiling and was refused on resume, as would every user on a current
+  install; two `internal/handoff` tests that build a real launch plan
+  against the live installed agent were failing the release gate for the
+  same reason. The new ceiling rests on native Windows evidence only, under
+  [ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md): a
+  session was created with the installed `2.1.265` build, found by `rein
+  search` on its own planted token, and resumed through the launch plan
+  Reinstate itself produced — both as a dry-run and, through a real ConPTY
+  session, as an actual interactive launch that restored the session's own
+  prior history in a real console — and a completed turn against that
+  session answered a recall question with a token that existed only in the
+  original session's history. The macOS half of that evidence is pending,
+  and `docs/compatibility.md` says so beside the number. Recorded in
+  `docs/testing/results/2026-09-09-windows-range-widening-claude-v060.md`.
+
 ## [0.6.0-rc.7] - 2026-09-08
 
 Its tagged-artifact native Windows acceptance
