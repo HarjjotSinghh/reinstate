@@ -1,11 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 48" role="img" aria-label="Reinstate wordmark">
-  <!-- Geometric wordmark reference — Funnel Display style approximation for SVG isolation -->
-  <text
-    x="0" y="36"
-    font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif"
-    font-size="34"
-    font-weight="800"
-    letter-spacing="-0.04em"
-    fill="#131f1a">reinstate</text>
-  <rect x="248" y="12" width="10" height="10" rx="2" fill="#b8ff3c"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" aria-label="Reinstate wordmark" role="img" viewBox="0 0 280 48"><text x="0" y="36" fill="#131f1a" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="34" font-weight="800" letter-spacing="-.04em">reinstate</text><rect width="10" height="10" x="248" y="12" fill="#b8ff3c" rx="2"/></svg>
