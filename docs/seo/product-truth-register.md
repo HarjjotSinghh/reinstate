@@ -1,9 +1,9 @@
 # Reinstate product-truth register
 
-Last reviewed: 2026-09-07
+Last reviewed: 2026-09-08
 Canonical website source: `website/src/data/product.ts`
 Stable release: `v0.5.1`, dated 2026-08-21.
-Reviewed candidate: `v0.6.0-rc.6`, dated 2026-09-08; native Windows x64
+Reviewed candidate: `v0.6.0-rc.7`, dated 2026-09-08; native Windows x64
 tagged-artifact acceptance is still pending for it, and Apple Silicon macOS
 acceptance is deferred under ADR 0005. `v0.5.2-rc.1` (2026-08-23),
 `v0.6.0-rc.1` (2026-09-06), `v0.6.0-rc.2` (2026-09-07, tagged Windows run
@@ -16,14 +16,17 @@ verdict `FAIL`, 208/215 required rows, on a probe redaction gap, an empty-
 vs-absent override root gap, a stale sync-completion contract sentence, the
 switcher's all-projects readiness defect, an OpenCode version-compatibility
 block, and an operator-availability gap on `MatrixH:H7`, all addressed by
-`v0.6.0-rc.5`), and `v0.6.0-rc.5` (2026-09-07, tagged Windows run plus two
+`v0.6.0-rc.5`), `v0.6.0-rc.5` (2026-09-07, tagged Windows run plus two
 same-artifact rechecks ended device verdict `FAIL`, 211/215 required rows,
 zero product defects, on a live `grok` backend-connectivity gap compounded
 by a `grok` version drift to `1.0.13`, and a `MatrixH:H7` disposition whose
 digest-equality pass condition proved unmeasurable on a live host, both
-addressed by this candidate) were all published candidates that were
-superseded without stable promotion; their content ships inside
-`v0.6.0-rc.6`.
+addressed by `v0.6.0-rc.6`), and `v0.6.0-rc.6` (2026-09-08, tagged Windows
+run ended device verdict `FAIL`, 211/215 required rows, zero product
+defects, on a Codex account usage-limit gap on `MatrixG:G1` and a Codex CLI
+version-drift gap on `codex:E1`–`E3`, addressed by this candidate) were all
+published candidates that were superseded without stable promotion; their
+content ships inside `v0.6.0-rc.7`.
 
 This is the required output of the repository-local
 `reinstate-product-truth` workflow. It separates released facts from roadmap
@@ -50,7 +53,7 @@ marketing claim.
 | Paths | Recognized structural project roots are tokenized and expanded through a canonical project ID; arbitrary prose is not rewritten | `internal/pathmap`, adapter tests, configuration docs |
 | License | Apache-2.0 | `LICENSE`, `product.ts` |
 | Account requirement | The CLI does not require a Reinstate account | released architecture and `product.ts` |
-| Current release | Stable is `v0.5.1`, dated 2026-08-21. `v0.6.0-rc.6`, dated 2026-09-08, is the current candidate awaiting native Windows x64 tagged-artifact acceptance (macOS deferred under ADR 0005). | `website/src/data/product.ts`, `CHANGELOG.md` section `[0.6.0-rc.6]`, release history |
+| Current release | Stable is `v0.5.1`, dated 2026-08-21. `v0.6.0-rc.7`, dated 2026-09-08, is the current candidate awaiting native Windows x64 tagged-artifact acceptance (macOS deferred under ADR 0005). | `website/src/data/product.ts`, `CHANGELOG.md` section `[0.6.0-rc.7]`, release history |
 | Maintainer | Harjot Singh Rana | repository metadata and `product.ts` |
 
 ## Conflicting claims and resolution

@@ -17,6 +17,26 @@
 | Initial prompt | Positional argument: `codex "<prompt>"` |
 | Non-interactive | `codex exec …`, `codex exec --last` |
 
+### Version range
+
+`codex --version` prints one stdout line, `codex-cli <semver>`, and nothing on
+stderr. The catalog's inclusive range was `0.133.0`–`0.149.0`, raised on
+dual-platform physical resume evidence during `v0.5.1`. `v0.6.0` widens the
+ceiling to `0.153.4` on native Windows evidence, after the acceptance host's
+Codex CLI self-updated past `0.149.0` mid-cycle, under the maintainer's
+standing policy that a vendor CLI self-updating past the verified ceiling
+widens the range rather than blocks (2026-09-07, Q27). This widening's own
+evidence is read-only — `codex --version`/`--help`/`exec --help`/
+`resume --help`/`fork --help` output shape, `rein doctor --agents --json`'s
+sanitized probe of the real, live `CODEX_HOME`, and a committed fixture home
+exercised through `rein resume --dry-run --json` — gathered against the real
+`0.153.4` binary; the host's Codex account usage limit blocks any completed
+conversational turn until `10:13` local on `2026-09-08`, so the completed-turn
+`codex:E1`–`E3` resume/fork rows against `0.153.4` are deferred to the
+`v0.6.0-rc.7` tagged run, executed once the limit resets (macOS pending,
+ADR 0005 D3). See
+[2026-09-08-windows-range-widening-codex-v060.md](../testing/results/2026-09-08-windows-range-widening-codex-v060.md).
+
 ### Initial-prompt argv ceiling (R6 — Documented / Unverified)
 
 Codex accepts a new-session prompt as `codex "<bootstrap>"` (**Documented**).

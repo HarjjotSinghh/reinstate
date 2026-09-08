@@ -74,24 +74,42 @@ completed on both rechecks for the first time this release, but `#424`
 meant it still read live agent-home roots, and the rule's own
 digest-equality pass condition proved unmeasurable on this live,
 multi-session host).
-`v0.6.0-rc.6` (2026-09-08) is the current candidate: it changes exactly
-these things beyond rc.5 — the verified Grok Build range widens to
-`1.0.13` on the maintainer's own console evidence (completed-turn
-`grok:E1`–`E3` evidence is executed by the maintainer at their own console
-in this candidate's own tagged run), and `MatrixH:H7`'s live-home check is
-refined from aggregate digest equality to a per-file before/after listing
-with per-entry attribution; `#424` itself is scheduled for `v0.6.1`, not
-this candidate. No other agent tier changes, no other compatibility range
+`v0.6.0-rc.6` (2026-09-08) changed exactly these things beyond rc.5 — the
+verified Grok Build range widened to `1.0.13` on the maintainer's own
+console evidence (completed-turn `grok:E1`–`E3` evidence executed by the
+maintainer at their own console in that candidate's own tagged run), and
+`MatrixH:H7`'s live-home check refined from aggregate digest equality to a
+per-file before/after listing with per-entry attribution; `#424` itself
+remains scheduled for `v0.6.1`, not that candidate. No other agent tier
+changed, no other compatibility range widened. Its own tagged-artifact
+native Windows acceptance
+([report](../../testing/results/2026-09-08-windows-v060rc6.md)) ended
+device verdict `FAIL`: **211 PASS / 1 PARTIAL / 0 FAIL / 3 NOT TESTED** of
+**215** required rows — **zero product defects.** Both required-row gaps
+that candidate's own fixes targeted cleared to `PASS`: `grok:E1`–`E3` via
+the maintainer's own console transcript, and `MatrixH:H7` via the refined
+per-file-listing rule. Two new, genuinely blocking gaps surfaced, neither
+present at `v0.6.0-rc.5`: `MatrixG:G1`'s Codex half (`PARTIAL`,
+host/account — the acceptance host's live, authenticated Codex account was
+usage-limit exhausted) and `codex:E1`–`E3` (`NOT TESTED (version drift)` —
+the host's Codex CLI self-updated to `0.153.4`, past the in-tree `0.149.0`
+ceiling).
+`v0.6.0-rc.7` (2026-09-08) is the current candidate: it changes exactly one
+thing beyond rc.6 — the verified Codex CLI range widens to `0.153.4` on
+native Windows evidence, under the maintainer's standing self-update
+policy; completed-turn `codex:E1`–`E3` evidence is deferred to this
+candidate's own tagged run, once the acceptance host's Codex account usage
+limit resets. No other agent tier changes, no other compatibility range
 widens. Under the disposition rules in
 [`docs/testing/v0.6.0-windows-acceptance.md`](../../testing/v0.6.0-windows-acceptance.md#dispositions-that-do-not-block-the-device-verdict),
 stable requires **215 of 216** rows `PASS` (`opencode:D4` is
 `N/A (definitional)`, excluded from the required count), plus whatever
 dispositions are still open on the acceptance host when that run happens.
-What remains: merging and tagging `v0.6.0-rc.6`, a tagged-artifact Windows
-run against it (with `MatrixH:H7` under the refined per-file listing method
-and go-signal wait, and `grok:E1`–`E3` run by the maintainer at their own
-console), and the Apple Silicon macOS rows, still deferred until that
-hardware returns (#403).
+What remains: merging and tagging `v0.6.0-rc.7`, a tagged-artifact Windows
+run against it (with `codex:E1`–`E3` and `MatrixG:G1`'s Codex half re-run
+once the acceptance host's Codex account usage limit resets), and the
+Apple Silicon macOS rows, still deferred until that hardware returns
+(#403).
 **Baseline:** stable `v0.5.1` (2026-08-21). `v0.5.2-rc.1` (2026-08-23) was
 tagged but never certified on either platform; its content ships here and no
 stable `v0.5.2` is cut.

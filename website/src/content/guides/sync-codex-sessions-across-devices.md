@@ -59,7 +59,7 @@ This is **Codex to Codex** same-vendor continuity. Phase 1 does not turn a Codex
 rollout into a Claude Code transcript, and it does not silently reconstruct a
 session for another coding agent.
 
-The current public installer pins candidate `v0.6.0-rc.6`, whose
+The current public installer pins candidate `v0.6.0-rc.7`, whose
 tagged-artifact acceptance is pending on native Windows x64 (Apple Silicon
 macOS is deferred until that hardware returns); Intel macOS and Linux/WSL2
 remain preview and unverified. Stable is `v0.5.1`. Confirm the platform and
@@ -76,7 +76,7 @@ transferring real work.
   either mutating command.
 - Snapshots and manifests are encrypted locally; storage credentials stay in
   the OS keyring, and the passphrase is not stored.
-- The installer-pinned `v0.6.0-rc.6` candidate's tagged-artifact acceptance
+- The installer-pinned `v0.6.0-rc.7` candidate's tagged-artifact acceptance
   is pending on native Windows x64, with macOS deferred; stable `v0.5.1`
   remains dual-platform verified. This guide is not acceptance evidence for
   any other environment.
@@ -154,7 +154,7 @@ rein setup check
 ```
 
 **Expected result:** `rein version --json` returns a JSON object whose version
-is `v0.6.0-rc.6` for the currently pinned installer (stable remains
+is `v0.6.0-rc.7` for the currently pinned installer (stable remains
 `v0.5.1`). Before initialization,
 `rein setup check` exits with code `3` and reports `config missing`. That one
 pre-init failure is expected; a platform, keyring, or Codex compatibility

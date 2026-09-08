@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "reinstateVersion": "v0.6.0-rc.6",
-  "catalogLine": "v0.6.0-rc.6",
+  "reinstateVersion": "v0.6.0-rc.7",
+  "catalogLine": "v0.6.0-rc.7",
   "lastReviewed": "2026-09-07",
   "owner": {
     "name": "Harjot Singh Rana",
@@ -55,9 +55,9 @@
       "integrationPath": "/integrations/codex",
       "status": "primary-release-target",
       "minimumTestedVersion": "0.133.0",
-      "maximumTestedVersion": "0.149.0",
+      "maximumTestedVersion": "0.153.4",
       "resumeMode": "Codex to Codex (T5 encrypted sync; T3 same-vendor resume)",
-      "evidenceLevel": "source checks, deterministic synthetic fixtures, and dual-platform tagged-artifact acceptance",
+      "evidenceLevel": "source checks, deterministic synthetic fixtures, and dual-platform tagged-artifact acceptance; native Windows range-widening read-only evidence (2026-09-08), completed-turn evidence deferred to the v0.6.0-rc.7 tagged run",
       "evidence": {
         "storagePage": "docs/session-storage/codex.md",
         "fixtures": [
@@ -68,13 +68,14 @@
         ],
         "deviceReports": [
           "docs/testing/results/2026-08-15-macos-phase4-V040RC11.md",
-          "docs/testing/results/2026-08-15-windows-phase4-V040RC11.md"
+          "docs/testing/results/2026-08-15-windows-phase4-V040RC11.md",
+          "docs/testing/results/2026-09-08-windows-range-widening-codex-v060.md"
         ],
         "probeReports": []
       },
-      "lastTested": "2026-08-16",
+      "lastTested": "2026-09-08",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-08-15-macos-phase4-V040RC11.md",
-      "notes": "v0.5.1 accepts Codex CLI 0.133.0–0.149.0. The ceiling moved to 0.149.0 on dual-platform physical evidence: on macOS and on Windows a session created with 0.149.0 was indexed, resumed through the launch plan Reinstate produced, and returned a token that existed only in the original session's history. Versions outside the inclusive range, including prereleases, fail closed as untested."
+      "notes": "v0.5.1 accepts Codex CLI 0.133.0–0.149.0. The ceiling moved to 0.149.0 on dual-platform physical evidence: on macOS and on Windows a session created with 0.149.0 was indexed, resumed through the launch plan Reinstate produced, and returned a token that existed only in the original session's history. v0.6.0 widens the ceiling to 0.153.4 after the acceptance host's Codex CLI self-updated past 0.149.0 mid-cycle, under the maintainer's standing self-update policy (2026-09-07, Q27); read-only evidence only (version/help output shape, session file layout) — completed-turn resume/fork evidence is deferred to the v0.6.0-rc.7 tagged run, once the acceptance host's Codex account usage limit resets. Versions outside the inclusive range, including prereleases, fail closed as untested."
     },
     {
       "id": "gemini",
@@ -153,7 +154,7 @@
       "minimumTestedVersion": "1.0.5",
       "maximumTestedVersion": "1.0.13",
       "resumeMode": "Same-vendor native resume via grok --resume <uuid> (T3); handoff destination via grok --session-id <uuid> (T4)",
-      "evidenceLevel": "deterministic synthetic fixtures, a measured grok --version range, and T3 resume and T4 destination device journeys recorded on macOS and native Windows (2026-08-22 and 2026-08-23); GD8 collected on macOS only; native Windows range-widening read-only evidence (2026-09-08), completed-turn evidence deferred to the v0.6.0-rc.6 tagged run",
+      "evidenceLevel": "deterministic synthetic fixtures, a measured grok --version range, and T3 resume and T4 destination device journeys recorded on macOS and native Windows (2026-08-22 and 2026-08-23); GD8 collected on macOS only; native Windows range-widening read-only evidence (2026-09-08), completed-turn evidence confirmed via the maintainer's own console transcript in the v0.6.0-rc.6 tagged run",
       "evidence": {
         "storagePage": "docs/session-storage/grok.md",
         "fixtures": [
@@ -170,9 +171,9 @@
         ],
         "probeReports": []
       },
-      "lastTested": "2026-09-07",
+      "lastTested": "2026-09-08",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/grok.md",
-      "notes": "T4 handoff destination. A handoff into Grok starts a new session and is never a cross-agent resume. Not a synced agent. The ceiling was widened from 1.0.5 to 1.0.13 after the acceptance host self-updated past 1.0.5 mid-cycle, under the maintainer's standing self-update policy (2026-09-07, Q27); read-only evidence only (version/help output shape, session file layout) — completed-turn resume/fork evidence is deferred to the v0.6.0-rc.6 tagged run, executed by the maintainer."
+      "notes": "T4 handoff destination. A handoff into Grok starts a new session and is never a cross-agent resume. Not a synced agent. The ceiling was widened from 1.0.5 to 1.0.13 after the acceptance host self-updated past 1.0.5 mid-cycle, under the maintainer's standing self-update policy (2026-09-07, Q27); read-only evidence only (version/help output shape, session file layout) — completed-turn resume/fork evidence was confirmed via the maintainer's own console transcript in the v0.6.0-rc.6 tagged run."
     },
     {
       "id": "kimi",

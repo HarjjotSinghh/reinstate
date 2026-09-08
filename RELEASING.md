@@ -955,6 +955,101 @@ from `v0.6.0-rc.5`), plus the 22-row CLI matrix and the 16 Hop parity rows
 Publication means ready for tagged-artifact acceptance. It does **not**
 authorize stable `v0.6.0`. Current stable remains `v0.5.1`.
 
+### v0.6.0-rc.6 candidate evidence
+
+`v0.6.0-rc.6` was published 2026-09-08 as a signed GitHub prerelease with
+both live installer routes pinning it. Its tagged-artifact native Windows
+acceptance is recorded at
+[`docs/testing/results/2026-09-08-windows-v060rc6.md`](docs/testing/results/2026-09-08-windows-v060rc6.md):
+device verdict `FAIL`, **211 PASS / 1 PARTIAL / 0 FAIL / 3 NOT TESTED** of
+**215** required rows — **zero product defects**. Both required-row gaps
+this candidate's own fixes targeted (`grok:E1`–`E3`, `MatrixH:H7`) cleared
+to `PASS`:
+
+- `grok:E1`, `grok:E2`, `grok:E3` (`PASS`, via the maintainer's own console
+  transcript against the widened `1.0.13`) — the planted token was
+  recalled on resume and fork, and the catalog reflected both sessions.
+- `MatrixH:H7` (`PASS`, via the refined per-file-listing rule) — the
+  go-signal appeared within the first poll interval, the full
+  `install`/`status`/`stop`/`start`/`uninstall` round trip completed
+  through real `schtasks`, debounced push and scheduled pull were both
+  directly observed, and every one of 71 before/after diff lines was
+  attributed to a non-`rein` cause, with zero snapshots restored.
+
+Two new, genuinely blocking gaps surfaced, neither present at
+`v0.6.0-rc.5`:
+
+- `MatrixG:G1` (`PARTIAL`, host/account, new this run) — the Claude half
+  fully `PASS`; the Codex half `NOT TESTED`, because the host's live,
+  authenticated Codex account was usage-limit exhausted, reproduced on 3
+  independent attempts against both the drifted default CLI and a second,
+  in-range CLI.
+- `codex:E1`, `codex:E2`, `codex:E3` (`NOT TESTED (version drift)`) — a
+  real, non-`--dry-run` resume against the live Codex binary was correctly
+  refused (version drift, the host's installed `0.153.4` outside the
+  then-verified `0.133.0`–`0.149.0` range).
+
+This report does not authorize stable `v0.6.0`. Following the maintainer's
+standing vendor self-update policy (Q27,
+[ADR 0005 Amendment 2](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md#amendment-2-2026-09-08)),
+the verified Codex CLI range widens to `0.153.4` in `v0.6.0-rc.7`, on
+read-only native Windows evidence, since the pinned `0.149.0` ceiling no
+longer covers the host's own installed CLI. The Codex account usage-limit
+constraint is orthogonal to the version ceiling and is not fixed by the
+widening: the completed-turn `codex:E1`–`E3` rows against `0.153.4`, and
+`MatrixG:G1`'s Codex half, are deferred to the `v0.6.0-rc.7` tagged run,
+once the account limit resets at `10:13` local, `2026-09-08`.
+
+### v0.6.0-rc.7 candidate gate
+
+The corrective candidate. It changes exactly one thing: the verified Codex
+CLI range. No other agent's tier moves, and no other compatibility range
+widens — `v0.6.0-rc.6`'s Claude Code, Grok Build, OpenCode, and Qwen Code
+ranges are unchanged.
+
+- The verified Codex CLI range widens to `0.133.0`–`0.153.4` (was
+  `0.133.0`–`0.149.0`), on native Windows evidence, under ADR 0005 D3: the
+  acceptance host's Codex CLI self-updated past `0.149.0` mid-cycle, so a
+  real launch plan against it correctly refused with exit `5`
+  (`agent.version`, outside the then-verified range) — the same drift the
+  `v0.6.0-rc.6` tagged report's own `codex:E1`–`E3` rows recorded as
+  `NOT TESTED (version drift)`. This widening's own evidence is read-only
+  (`codex --version`/`--help`/`exec --help`/`resume --help`/`fork --help`
+  output shape, a sanitized `rein doctor --agents --json` probe of the
+  real `CODEX_HOME`, and a real before/after `rein resume --dry-run --json`
+  launch-plan build against a committed synthetic fixture); version-output
+  parsing and every launch-plan-relevant `--help` flag (`resume`, `fork`,
+  the positional prompt argument) are unchanged from `0.149.0`. See
+  [`docs/testing/results/2026-09-08-windows-range-widening-codex-v060.md`](docs/testing/results/2026-09-08-windows-range-widening-codex-v060.md).
+  Because the host's live, authenticated Codex account is usage-limit
+  exhausted until `10:13` local, `2026-09-08`, the completed-turn
+  `codex:E1`–`E3` rows against `0.153.4` are executed for the first time in
+  this candidate's own tagged run, once the account limit resets; the
+  executor runs every other row first and, if a Codex turn returns the
+  usage-limit error, waits until `10:15` local and retries, up to 60
+  minutes of waiting, recording the exact error line and times.
+
+`MatrixG:G1`'s Codex half and `codex:E1`–`E3` are the required-row gaps
+this candidate's own change targets: the widening is expected to flip the
+version-drift half to `PASS` once a real conversational turn is attempted;
+the account-limit half is not fixed by this candidate and depends on the
+host's own usage limit resetting.
+
+Governed by the same
+[`docs/testing/v0.6.0-windows-acceptance.md`](docs/testing/v0.6.0-windows-acceptance.md)
+contract, specialised by
+[`docs/testing/v0.6.0-rc.7-agent-verification-prompts.md`](docs/testing/v0.6.0-rc.7-agent-verification-prompts.md).
+`rein doctor --agents --acceptance-matrix` on a binary built from this tree
+reports **178** Phase 5 rows (core `A:10, B:9, G:8, H:6` = 33, unchanged
+from `v0.6.0-rc.6`), plus the 22-row CLI matrix and the 16 Hop parity rows
+— **216** rows in total, the same count as `v0.6.0-rc.6`, of which
+`opencode:D4` is `N/A (definitional)` under the disposition rules in
+[`docs/testing/v0.6.0-windows-acceptance.md`](docs/testing/v0.6.0-windows-acceptance.md#dispositions-that-do-not-block-the-device-verdict):
+**215 required**.
+
+Publication means ready for tagged-artifact acceptance. It does **not**
+authorize stable `v0.6.0`. Current stable remains `v0.5.1`.
+
 ## Steps
 
 ### 1. Prepare the release commit

@@ -7,7 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0-rc.7] - 2026-09-08
+
+Release candidate. Stable remains `v0.5.1`; the public installers now pin
+this candidate, superseding `v0.6.0-rc.6`.
+
+**Highlights.** `v0.6.0-rc.6`'s tagged-artifact native Windows acceptance
+([`docs/testing/results/2026-09-08-windows-v060rc6.md`](docs/testing/results/2026-09-08-windows-v060rc6.md))
+ended device verdict `FAIL`: `211 PASS / 1 PARTIAL / 0 FAIL / 3 NOT TESTED`
+of `215` required rows — **zero product defects.** This candidate's own two
+targeted fixes were both confirmed: `grok:E1`–`E3` cleared to `PASS` via
+the maintainer's own console transcript against `1.0.13`, and `MatrixH:H7`
+cleared to `PASS` via the refined per-file-listing rule. The run surfaced
+two new, genuinely blocking gaps, neither present at `v0.6.0-rc.5`:
+`MatrixG:G1`'s Codex half (`PARTIAL`, host/account — the acceptance host's
+live, authenticated Codex account was usage-limit exhausted) and
+`codex:E1`–`E3` (`NOT TESTED (version drift)` — the host's Codex CLI
+self-updated to `0.153.4`, past the in-tree `0.149.0` ceiling).
+
+This candidate changes exactly one thing beyond `v0.6.0-rc.6`: the verified
+Codex CLI range widens to `0.153.4` on native Windows evidence, under the
+maintainer's standing self-update policy (2026-09-07, Q27). No other
+agent's tier moves, and no other compatibility range widens.
+
+**Not yet certified.** Native Windows x64 tagged-artifact acceptance is what
+this candidate exists to enable; macOS acceptance is deferred under
+[ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md) until
+that hardware returns. Stable remains `v0.5.1`.
+
+### Changed
+
+- **Widened the verified Codex CLI range to `0.153.4`.** The acceptance
+  host's Codex CLI self-updated past the in-tree ceiling (`0.149.0`), so a
+  real launch plan against it correctly refused with exit `5`
+  (`agent.version`, outside the verified `0.133.0`–`0.149.0` range) — the
+  same drift the `v0.6.0-rc.6` tagged report's own `codex:E1`–`E3` rows
+  recorded as `NOT TESTED (version drift)`. Widened under the maintainer's
+  standing policy (2026-09-07, Q27): when a vendor CLI self-updates past the
+  verified ceiling, Reinstate widens the range on native Windows evidence
+  rather than block — Reinstate always wants to support the latest version.
+  This widening's evidence is read-only (`codex --version`/`--help`/
+  `exec --help`/`resume --help`/`fork --help` output shape, a sanitized
+  `rein doctor --agents --json` probe of the real `CODEX_HOME`, and a
+  committed fixture home exercised through `rein resume --dry-run --json`),
+  since the host's Codex account usage limit blocks any completed
+  conversational turn until `10:13` local on `2026-09-08`; the
+  completed-turn `codex:E1`–`E3` rows against `0.153.4` are deferred to the
+  `v0.6.0-rc.7` tagged run, once the account limit resets. Version-output
+  parsing and every launch-plan-relevant `--help` flag (`resume`, `fork`,
+  the positional prompt argument) are unchanged from `0.149.0`. See
+  [`docs/testing/results/2026-09-08-windows-range-widening-codex-v060.md`](docs/testing/results/2026-09-08-windows-range-widening-codex-v060.md).
+
 ## [0.6.0-rc.6] - 2026-09-08
+
+Its tagged-artifact native Windows acceptance
+([`docs/testing/results/2026-09-08-windows-v060rc6.md`](docs/testing/results/2026-09-08-windows-v060rc6.md))
+ended device verdict `FAIL`: `211 PASS / 1 PARTIAL / 0 FAIL / 3 NOT TESTED`
+of `215` required rows — zero product defects; `grok:E1`–`E3` and
+`MatrixH:H7` cleared to `PASS`, and the two open rows were `MatrixG:G1`'s
+Codex half (host account usage limit) and `codex:E1`–`E3` (Codex CLI
+version drift past the verified ceiling). `v0.6.0-rc.7` supersedes it.
 
 Release candidate. Stable remains `v0.5.1`; the public installers now pin
 this candidate, superseding `v0.6.0-rc.5`.
@@ -3667,7 +3726,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.6...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.7...HEAD
+[0.6.0-rc.7]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.6...v0.6.0-rc.7
 [0.6.0-rc.6]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.5...v0.6.0-rc.6
 [0.6.0-rc.5]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.4...v0.6.0-rc.5
 [0.6.0-rc.4]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.3...v0.6.0-rc.4

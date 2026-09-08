@@ -175,4 +175,5 @@ paths = [
 regexTarget = "line"
 regexes = [
   '''exactly this token and nothing else''',
+  '''Remember this exact token for later''',
 ]

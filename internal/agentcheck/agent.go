@@ -491,7 +491,9 @@ func testFallbackDefinitions() map[string]definition {
 			},
 			Parse: parseCodexVersion,
 			Min:   "0.133.0",
-			Max:   "0.149.0",
+			// Widened to 0.153.4 in v0.6.0 on native Windows self-update
+			// evidence; macOS pending (ADR 0005 D3).
+			Max: "0.153.4",
 		}),
 	}
 }
