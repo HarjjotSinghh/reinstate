@@ -252,6 +252,48 @@ func TestVerifyGitUnavailableDoesNotManufactureDerivativeMismatches(t *testing.T
 	}
 }
 
+// TestVerifyDeterministicAgentProbeFailureIsGenuinelyBlockedNotUninspectable
+// is the full-stack pin for CLI experience row 13's v0.6.0-rc.8 follow-on
+// regression. A version probe that fails deterministically — the executable
+// answers `--version` with a real, immediate error, never touching the
+// clock — must not be reported the same way as a probe that simply ran out
+// of time (TestVerifyHonorsParentCancellationAndSharedDeadline's "shared
+// deadline" case, in performance_adversarial_test.go): this is a genuine,
+// reproducible finding, so it must carry exitcode.Compatibility, not
+// exitcode.Runtime, which is exactly the signal
+// internal/tui/readiness.uninspectable now relies on to tell "still checking"
+// apart from "cannot resume." Before the exit-code split this test locks in,
+// both cases produced the identical Check shape (Status unknown, ExitCode
+// exitcode.Compatibility), which is what let a permanently broken agent
+// install render as indefinitely "still checking" in the switcher instead of
+// Blocked. Status stays Unknown even after the fix — StatusError is reserved
+// system-wide for "the check's own machinery failed" and validCheckExit
+// enforces that it always pairs with ExitCode Runtime, so ExitCode alone
+// carries the distinction here.
+func TestVerifyDeterministicAgentProbeFailureIsGenuinelyBlockedNotUninspectable(t *testing.T) {
+	t.Parallel()
+	fixture := newFixture(t, "https://example.com/org/repo.git")
+	// agentVersionRunner returns err immediately, without ever consulting the
+	// context it is given — the version probe measures a real, fast failure,
+	// not a deadline.
+	fixture.options.Agent.Runner = agentVersionRunner{err: errors.New("exec: exit status 127")}
+
+	report, err := Verify(context.Background(), Input{
+		SessionRef: "claude:controlled", Agent: "claude", Workspace: fixture.workspace,
+		SourceFresh: true,
+	}, fixture.options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.Decision != DecisionBlocked || report.BlockExitCode != exitcode.Compatibility {
+		t.Fatalf("deterministic agent-probe-failure decision = %s/%d; checks=%+v", report.Decision, report.BlockExitCode, report.Checks)
+	}
+	check := findCheck(t, report, "agent.version")
+	if check.Status != StatusUnknown || check.Severity != SeverityBlock || check.ExitCode != exitcode.Compatibility {
+		t.Fatalf("deterministic agent-probe-failure agent.version = %+v, want unknown/block/compatibility (never exitcode.Runtime — that would make it indistinguishable from a mere timeout)", check)
+	}
+}
+
 func TestAuthorizeRequiresExactFreshWarningSet(t *testing.T) {
 	t.Parallel()
 	report := validPolicyReport([]Check{

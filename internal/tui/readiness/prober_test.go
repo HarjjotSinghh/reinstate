@@ -223,9 +223,41 @@ func TestFromReportDistinguishesUninspectableFromGenuineBlocks(t *testing.T) {
 				{ID: "agent.executable", Status: preflight.StatusPresent, Severity: preflight.SeverityInfo},
 				{ID: "agent.layout", Status: preflight.StatusMatch, Severity: preflight.SeverityInfo},
 				{ID: "agent.version", Status: preflight.StatusUnknown, Severity: preflight.SeverityBlock,
-					ExitCode: exitcode.Compatibility, Message: "the native agent version probe failed"},
+					ExitCode: exitcode.Runtime, Message: "the native agent version probe failed"},
 			}},
 			want: ui.ReadinessUnknown,
+		},
+		{
+			// The v0.6.0-rc.8 follow-on regression: this check carries the
+			// identical Status and Message as the timeout-shaped case above —
+			// only ExitCode tells them apart (see agentChecks and
+			// agentcheck.Result.TimedOut) — because the underlying probe
+			// failure here is genuine and deterministic (a corrupted,
+			// tampered, or otherwise non-launchable agent executable) rather
+			// than a clock running out. It must read Blocked, not "still
+			// checking" — see uninspectable's doc comment for why Status
+			// alone cannot be the signal.
+			name: "genuinely blocked report: the agent-version probe deterministically failed (a broken executable, not a timeout)",
+			report: preflight.Report{Decision: preflight.DecisionBlocked, Checks: []preflight.Check{
+				{ID: "agent.executable", Status: preflight.StatusPresent, Severity: preflight.SeverityInfo},
+				{ID: "agent.layout", Status: preflight.StatusMatch, Severity: preflight.SeverityInfo},
+				{ID: "agent.version", Status: preflight.StatusUnknown, Severity: preflight.SeverityBlock,
+					ExitCode: exitcode.Compatibility, Message: "the native agent version probe failed"},
+			}},
+			want: ui.ReadinessBlocked,
+		},
+		{
+			// The out-of-range/unrecognized-version branch of agentChecks'
+			// default case never comes from a timeout at all (the probe
+			// completed and returned a real, parseable version), but it
+			// shares the timeout case's Status (unknown) — only ExitCode
+			// distinguishes it too.
+			name: "genuinely blocked report: the installed agent version is outside the verified range",
+			report: preflight.Report{Decision: preflight.DecisionBlocked, Checks: []preflight.Check{
+				{ID: "agent.version", Status: preflight.StatusUnknown, Severity: preflight.SeverityBlock,
+					ExitCode: exitcode.Compatibility, Message: "native agent version 99.0.0 is outside the verified range 2.1.219 to 2.1.263 inclusive"},
+			}},
+			want: ui.ReadinessBlocked,
 		},
 		{
 			name: "timeout-shaped blocked report: capability discovery was cancelled by the deadline",
@@ -298,7 +330,8 @@ func TestProbeCachingAndRetryMatchesFromReport(t *testing.T) {
 			name: "timeout-shaped blocked report",
 			respond: func(sessionindex.Record) (preflight.Report, error) {
 				return preflight.Report{Decision: preflight.DecisionBlocked, Checks: []preflight.Check{
-					{ID: "agent.version", Status: preflight.StatusUnknown, Severity: preflight.SeverityBlock},
+					{ID: "agent.version", Status: preflight.StatusUnknown, Severity: preflight.SeverityBlock,
+						ExitCode: exitcode.Runtime},
 				}}, nil
 			},
 			wantReadiness: ui.ReadinessUnknown,
@@ -382,7 +415,8 @@ func TestProbeCachingAndRetryMatchesFromReport(t *testing.T) {
 func TestProbeStopsRetryingAtMaxProbeRetries(t *testing.T) {
 	verifier := newFakeVerifier(func(sessionindex.Record) (preflight.Report, error) {
 		return preflight.Report{Decision: preflight.DecisionBlocked, Checks: []preflight.Check{
-			{ID: "agent.version", Status: preflight.StatusUnknown, Severity: preflight.SeverityBlock},
+			{ID: "agent.version", Status: preflight.StatusUnknown, Severity: preflight.SeverityBlock,
+				ExitCode: exitcode.Runtime},
 		}}, nil
 	})
 	prober := New(verifier.verify)
@@ -439,7 +473,7 @@ func TestRow13AnUninspectableBlockSelfCorrectsOnRetry(t *testing.T) {
 		if attempt == 1 {
 			return preflight.Report{Decision: preflight.DecisionBlocked, Checks: []preflight.Check{
 				{ID: "agent.version", Status: preflight.StatusUnknown, Severity: preflight.SeverityBlock,
-					Message: "the native agent version probe failed"},
+					ExitCode: exitcode.Runtime, Message: "the native agent version probe failed"},
 			}}, nil
 		}
 		return preflight.Report{Decision: preflight.DecisionReady}, nil

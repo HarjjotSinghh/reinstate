@@ -267,7 +267,42 @@ func agentChecks(result agentcheck.Result, readOnly bool) []Check {
 		version.Status, version.Severity, version.Message = StatusUnknown, SeverityInfo, "the native agent version is not determinable; the session layout is still readable"
 	case readOnly && sourceOnlyAgent(result):
 		version.Status, version.Severity, version.Message = StatusUnknown, SeverityInfo, "source-only agents have no native verified-resume version range"
+	case result.Status == agentcheck.StatusError && result.TimedOut:
+		// The probe (and its one retry, if it got one) ran out of its
+		// allotted window without ever producing an answer — nothing about
+		// this executable was actually established, favorable or not. This
+		// must carry the same exit code as every other "the verifier could
+		// not produce trustworthy evidence" result (capabilityChecks'
+		// cancelled-probe check, runtimeChecks' StatusError case) rather than
+		// exitcode.Compatibility, which names an *observed* compatibility
+		// problem: a caller distinguishing could-not-evaluate from a genuine
+		// finding (readiness.uninspectable) keys off exactly this code, and a
+		// momentarily busy host must not be indistinguishable from a broken
+		// agent install.
+		version.Status, version.Severity, version.Message = StatusUnknown, SeverityBlock, result.Message
+		if strings.TrimSpace(version.Message) == "" {
+			version.Message = "the native agent version probe failed"
+		}
+		version.Repair, version.ExitCode = "retry once the host is less busy", exitcode.Runtime
 	case result.Status == agentcheck.StatusError:
+		// A deterministic problem: the executable could not be launched to
+		// capture its identity, exited with a real error unrelated to the
+		// clock, or was swapped out from under the probe mid-measurement.
+		// Every one of these reproduces identically on a bare retry, so this
+		// is a genuine, actionable finding — not an evidentiary gap — and
+		// must read as Blocked rather than "still checking" no matter how
+		// many times it is re-probed.
+		//
+		// Status stays Unknown here rather than becoming StatusError: Status
+		// error's meaning is reserved system-wide for "the check's own
+		// machinery failed" and is inseparable from ExitCode Runtime
+		// (validCheckExit enforces exactly that pairing — a StatusError check
+		// with any other exit code fails report validation). What is known
+		// here is a fact about the *agent*, not a failure of the check
+		// itself, so it takes the same Status other agent.version findings
+		// (an out-of-range or unrecognized version, below) already use, and
+		// ExitCode alone — Compatibility, not Runtime — is what marks it as
+		// a real finding rather than an evidentiary gap.
 		version.Status, version.Severity, version.Message = StatusUnknown, SeverityBlock, result.Message
 		if strings.TrimSpace(version.Message) == "" {
 			version.Message = "the native agent version probe failed"

@@ -84,6 +84,61 @@ func TestInstalledVersionSeparatesFailedProbeFromAbsentVersion(t *testing.T) {
 	}
 }
 
+// TestInspectDistinguishesTimedOutFromDeterministicProbeFailure pins
+// Result.TimedOut, the signal preflight's agentChecks reads to decide
+// between exitcode.Runtime ("nothing was established") and
+// exitcode.Compatibility ("a real, reproducible finding") — see verify.go's
+// agentChecks and readiness.uninspectable's doc comment for why this
+// distinction is load-bearing: both failure shapes otherwise produce an
+// identical Result{Status: StatusError}, which is exactly what let CLI
+// experience row 13 regress in v0.6.0-rc.8.
+func TestInspectDistinguishesTimedOutFromDeterministicProbeFailure(t *testing.T) {
+	t.Parallel()
+
+	t.Run("a probe that only ran out of time is TimedOut", func(t *testing.T) {
+		t.Parallel()
+		hang := versionRunnerFunc(func(ctx context.Context, _ string, _ ...string) (VersionOutput, error) {
+			<-ctx.Done()
+			return VersionOutput{}, ctx.Err()
+		})
+		_, opts := installedAgent(t, hang, 20*time.Millisecond)
+		result := Inspect(context.Background(), "claude", opts)
+		if result.Status != StatusError || !result.TimedOut {
+			t.Fatalf("hung probe result = %+v, want Status error and TimedOut true", result)
+		}
+	})
+
+	t.Run("a probe that fails deterministically, fast, is not TimedOut", func(t *testing.T) {
+		t.Parallel()
+		broken := versionRunnerFunc(func(context.Context, string, ...string) (VersionOutput, error) {
+			return VersionOutput{}, errors.New("exec format error")
+		})
+		_, opts := installedAgent(t, broken, time.Second)
+		result := Inspect(context.Background(), "claude", opts)
+		if result.Status != StatusError || result.TimedOut {
+			t.Fatalf("deterministically-failed probe result = %+v, want Status error and TimedOut false", result)
+		}
+	})
+
+	t.Run("a probe whose retry also runs out of time is still TimedOut", func(t *testing.T) {
+		t.Parallel()
+		// The outer context outlives the first attempt (so a retry is
+		// actually scheduled, per Inspect's `ctx.Err() == nil` gate) but not
+		// the retry's own, wider window.
+		outerCtx, cancel := context.WithTimeout(context.Background(), 60*time.Millisecond)
+		defer cancel()
+		hang := versionRunnerFunc(func(ctx context.Context, _ string, _ ...string) (VersionOutput, error) {
+			<-ctx.Done()
+			return VersionOutput{}, ctx.Err()
+		})
+		_, opts := installedAgent(t, hang, 10*time.Millisecond)
+		result := Inspect(outerCtx, "claude", opts)
+		if result.Status != StatusError || !result.TimedOut {
+			t.Fatalf("retried-and-still-hung probe result = %+v, want Status error and TimedOut true", result)
+		}
+	})
+}
+
 // Agent CLIs are language runtimes whose startup can exceed a two-second budget
 // on a loaded machine. One slow moment must not decide compatibility, so a
 // timed-out probe is measured once more before it is called a failure.

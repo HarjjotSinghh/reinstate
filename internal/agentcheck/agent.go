@@ -55,6 +55,18 @@ type Result struct {
 	Version           string `json:"version,omitempty"`
 	Status            Status `json:"status"`
 	Message           string `json:"message"`
+	// TimedOut is true only when Status is StatusError *and* the failure was
+	// the version probe's own deadline expiring (its context, or the shared
+	// preflight budget it inherits, ran out before either the identity
+	// capture or the `--version` invocation returned) rather than a
+	// deterministic problem with the executable itself. It is what lets a
+	// caller distinguish "nothing was established about this agent because
+	// there was no time to look" from "the executable is not launchable,
+	// answered with a real error, or changed while being inspected" — two
+	// StatusError causes that otherwise produce an identical Result. See
+	// versionProbe.run and preflight's agentChecks, which is the one caller
+	// that reads it.
+	TimedOut bool `json:"-"`
 	// ExecutablePath binds the private executable selected by LookPath to the
 	// later native launch. It is deliberately absent from public JSON.
 	ExecutablePath string `json:"-"`
@@ -218,6 +230,13 @@ func Inspect(ctx context.Context, agentName string, opts Options) Result {
 	if probe.err != nil {
 		result.Status = StatusError
 		result.Message = probe.message
+		// probe.timedOut is set from probeCtx.Err() at the point of failure
+		// (see versionProbe.run), which is the *last* attempt run — the retry
+		// above, when one happened. A first-attempt timeout that the retry
+		// then resolved never reaches here at all, so this is always "the
+		// answer we are actually returning was cut short by the clock," not a
+		// stale flag from an earlier, superseded attempt.
+		result.TimedOut = probe.timedOut
 		return result
 	}
 	result.ExecutableIdentity = probe.identity

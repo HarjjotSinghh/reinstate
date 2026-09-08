@@ -277,22 +277,24 @@ func (p *Prober) probeOne(ctx context.Context, record sessionindex.Record) tea.C
 // rather than a finding — see uninspectable. preflight.Verify shares one wall
 // clock across several independent observers (internal/preflight/verify.go),
 // and a budget that expires mid-observation is recorded as a normal, no-error
-// report: the check in question is marked Status unknown (or, for an
-// infrastructure failure such as a cancelled capability scan or a git
-// subprocess that could not complete, Status error with ExitCode
+// report: the check in question is marked Severity block with ExitCode
 // exitcode.Runtime — verify.go's own preferredBlockExit names that exit code
 // as meaning specifically "the verifier could not produce trustworthy
-// evidence"), and Severity block, which on its own makes the whole report
-// Blocked. Nothing about the environment was actually established in that
-// case, so a row rendering it must not read any more confidently than a
-// report that errored outright — this is row 13 of the CLI experience matrix,
-// "readiness glyphs resolve for visible rows; a read-only agent shows blocked
-// without a probe," and its v0.6.0-rc.7 regression: under load (a ScopeAll
-// listing with many rows to probe at once) enough checks timed out that most
-// launches showed at least one row as Blocked whose ground truth was Ready or
-// Warn, and — because FromReport could not yet tell a timeout-shaped Blocked
-// report from a genuine one, and Probe cached whatever it returned as
-// final — the wrong glyph never corrected itself.
+// evidence," as opposed to exitcode.Compatibility or exitcode.Safety, both of
+// which name an independently observed problem — and Severity block alone
+// makes the whole report Blocked. Nothing about the environment was actually
+// established in the exitcode.Runtime case, so a row rendering it must not
+// read any more confidently than a report that errored outright — this is
+// row 13 of the CLI experience matrix, "readiness glyphs resolve for visible
+// rows; a read-only agent shows blocked without a probe," and its
+// v0.6.0-rc.7 regression: under load (a ScopeAll listing with many rows to
+// probe at once) enough checks timed out that most launches showed at least
+// one row as Blocked whose ground truth was Ready or Warn, and — because
+// FromReport could not yet tell a timeout-shaped Blocked report from a
+// genuine one, and Probe cached whatever it returned as final — the wrong
+// glyph never corrected itself. Its own v0.6.0-rc.8 follow-on regression
+// showed that Status alone (specifically, StatusUnknown) is not a safe stand-in
+// for that exit code: see uninspectable's comment.
 func FromReport(report preflight.Report, err error) ui.Readiness {
 	if err != nil {
 		return ui.ReadinessUnknown
@@ -315,17 +317,33 @@ func FromReport(report preflight.Report, err error) ui.Readiness {
 // uninspectable reports whether a Blocked report's decision rests entirely on
 // checks that could not be evaluated, rather than on any actual finding.
 //
-// A blocking check counts as a could-not-evaluate result — not a finding —
-// when its Status is StatusUnknown (the check's own value for "not
-// determined": distinct from StatusMissing or StatusChanged, which are
-// positive observations even when what they observed is bad news) or when it
-// is StatusError with ExitCode exitcode.Runtime, the exit code
-// preferredBlockExit documents as meaning specifically "the verifier could
-// not produce trustworthy evidence" (as opposed to exitcode.Compatibility or
-// exitcode.Safety, both independently observed problems). A report with no
+// The one and only signal for "could not evaluate" is ExitCode
+// exitcode.Runtime, the code preferredBlockExit (verify.go) documents as
+// meaning specifically "the verifier could not produce trustworthy evidence"
+// — as opposed to exitcode.Compatibility or exitcode.Safety, both
+// independently observed problems. Status is deliberately *not* part of this
+// test, even though every check this function currently sees with a
+// could-not-evaluate meaning happens to carry Status unknown: verify.go's
+// agentChecks proved that Status alone is not a reliable signal. A version
+// probe that ran out of its own time budget and a version probe that
+// deterministically failed against a corrupted, tampered, or simply
+// non-launchable executable both surface as agentcheck.StatusError, and nothing
+// forced the resulting preflight Check to pick a different Status for the
+// two — before the exit-code split introduced alongside this comment,
+// agentChecks gave both the identical shape (Status unknown, Severity block,
+// ExitCode exitcode.Compatibility), which is indistinguishable from a
+// once-in-a-while contention timeout and made this function treat a
+// permanently, deterministically broken agent install as "still checking"
+// forever (CLI experience row 13's v0.6.0-rc.8 regression: the row never
+// settled, and the actionable repair message the check exists to carry —
+// "install a native agent version verified by this Reinstate release", or
+// "retry ... or pass --allow-untested" — never reached the screen). Keying
+// only off ExitCode, which agentChecks now sets to exitcode.Runtime
+// specifically and only for the genuinely time-starved case, resolves the
+// ambiguity at its source instead of guessing from Status. A report with no
 // blocking check at all is not "uninspectable" by this definition — Decision
 // is only Blocked when at least one exists — so this only returns true when
-// every blocking check present is one of these two shapes.
+// every blocking check present carries ExitCode exitcode.Runtime.
 func uninspectable(report preflight.Report) bool {
 	sawBlock := false
 	for _, check := range report.Checks {
@@ -333,10 +351,7 @@ func uninspectable(report preflight.Report) bool {
 			continue
 		}
 		sawBlock = true
-		if check.Status == preflight.StatusUnknown {
-			continue
-		}
-		if check.Status == preflight.StatusError && check.ExitCode == exitcode.Runtime {
+		if check.ExitCode == exitcode.Runtime {
 			continue
 		}
 		return false

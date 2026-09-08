@@ -30,6 +30,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   path itself (an actual `rein resume`, and the warning checklist) is
   unchanged.
 
+  A follow-up closed a gap in that same fix: the "not determined in time"
+  test above relied on a check's Status alone, but a version probe against a
+  corrupted, tampered, or otherwise non-launchable native agent executable
+  produced the identical Status — so a session with a permanently,
+  deterministically broken agent install also rendered `◌` and retried
+  forever instead of settling on `○` with its actual repair message. The
+  check now carries an explicit signal for "the clock ran out" versus "the
+  agent probe genuinely failed," and only the former is treated as
+  still-checking.
+
 ## [0.6.0-rc.7] - 2026-09-08
 
 Release candidate. Stable remains `v0.5.1`; the public installers now pin
