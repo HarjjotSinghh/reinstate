@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/HarjjotSinghh/reinstate/internal/agentcheck"
+	"github.com/HarjjotSinghh/reinstate/internal/exitcode"
 	"github.com/HarjjotSinghh/reinstate/internal/workspace"
 )
 
@@ -156,5 +157,17 @@ func TestVersionProbeStillHonoursTheWindow(t *testing.T) {
 	}
 	if err == nil && report.Decision != DecisionBlocked {
 		t.Fatalf("an unmeasurable agent produced decision %q, want blocked", report.Decision)
+	}
+	// A genuine, real-time timeout — not a synthetic Result{TimedOut: true}
+	// literal — must reach the check as exitcode.Runtime. This is what lets
+	// internal/tui/readiness.uninspectable tell it apart from the
+	// deterministic-failure case in
+	// TestVerifyDeterministicAgentProbeFailureIsGenuinelyBlockedNotUninspectable
+	// (preflight_test.go), which is otherwise identical (Status unknown,
+	// Severity block, same message shape).
+	if err == nil {
+		if check := findCheck(t, report, "agent.version"); check.Severity == SeverityBlock && check.ExitCode != exitcode.Runtime {
+			t.Fatalf("timed-out agent.version check = %+v, want ExitCode exitcode.Runtime", check)
+		}
 	}
 }

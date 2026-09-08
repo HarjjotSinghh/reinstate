@@ -9,7 +9,7 @@ Installed on the host at planning time (re-check; Claude Code auto-updates):
 
 | Agent | Installed | Verified range in tree | Where |
 | ----- | --------- | ---------------------- | ----- |
-| Claude Code | `2.1.261` | `2.1.219`–`2.1.238` | `internal/adapter/claude/claude.go`, `internal/agentcheck/agent.go`, `internal/agents/catalog/claude.go` |
+| Claude Code | `2.1.265` | `2.1.219`–`2.1.265` | widened on `v0.6.0-rc.8` native Windows evidence (completed-turn: search, dry-run, and a real ConPTY-driven `rein resume` restoring session history, plus a `-p` recall completion), `internal/adapter/claude/claude.go`, `internal/agentcheck/agent.go`, `internal/agents/catalog/claude.go` — see `docs/testing/results/2026-09-09-windows-range-widening-claude-v060.md` |
 | OpenCode | `1.18.29` | `1.18.21`–`1.18.29` | widened on `v0.6.0-rc.5` native Windows evidence, `internal/agents/catalog/opencode.go` — see `docs/testing/results/2026-09-07-windows-range-widening-opencode-v060.md` |
 | Codex CLI | `0.153.4` | `0.133.0`–`0.153.4` | widened on `v0.6.0-rc.7` native Windows evidence (read-only; completed-turn deferred to the rc.7 tagged run after the account usage limit resets), `internal/adapter/codex/codex.go` — see `docs/testing/results/2026-09-08-windows-range-widening-codex-v060.md` |
 | Qwen Code | `0.23.0` | `0.21.12`–`0.23.0` | widened on `v0.6.0-rc.4` native Windows evidence, `internal/agents/catalog/qwen.go` — see `docs/testing/results/2026-09-07-windows-range-widening-qwen-v060.md` |

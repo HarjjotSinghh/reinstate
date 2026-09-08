@@ -66,16 +66,17 @@ func pairUsage(w io.Writer) {
 	_, _ = fmt.Fprint(w, `usage: hoplab pair <init|join|recover> -root <dir> -device <name> [flags]
 
   init     first device: rein init --hop, then rein account init.
-           Prints the recovery code and saves it to hoplab-state.json for
-           a later 'pair recover'.
+           Saves the recovery code to a mode-restricted sibling file (never
+           hoplab-state.json, never stdout) for a later 'pair recover', and
+           prints a redacted acknowledgement instead of the code itself.
   join     live device approval, no recovery code: -device runs rein init
            --hop then rein account join (publishes a pairing code and
            waits); -approver (an already-enrolled device) runs rein
            devices approve, fed that code non-interactively.
   recover  enrol -device from a recovery code (rein init --hop, then rein
-           account recover): -code, or the code 'pair init' saved to
-           hoplab-state.json when omitted. Use this only when no second
-           device is available to approve live -- prefer 'pair join'.
+           account recover): -code, or the code 'pair init' saved when
+           omitted. Use this only when no second device is available to
+           approve live -- prefer 'pair join'.
 
 flags:
   -root <dir>       lab root (matches -root given to 'hoplab homes')
@@ -112,7 +113,7 @@ func cmdPair(argv []string) error {
 	approver := fs.String("approver", "", "join only: the already-enrolled device that runs `rein devices approve`")
 	reinBin := fs.String("rein", os.Getenv("REINSTATE_REIN_BIN"), "path to the rein/reinstate binary under test (env REINSTATE_REIN_BIN; default: bin/rein.exe or bin/reinstate.exe under the repo root)")
 	timeout := fs.Duration("timeout", 30*time.Second, "give up waiting on the rein subprocess(es) after this long")
-	code := fs.String("code", "", "recover only: the recovery code from `pair init`; default: read back from hoplab-state.json")
+	code := fs.String("code", "", "recover only: the recovery code from `pair init`; default: read back from its mode-restricted sibling file")
 	if err := fs.Parse(rest); err != nil {
 		return err
 	}
@@ -143,10 +144,14 @@ func cmdPair(argv []string) error {
 		s.Root = *root
 		s.PairingRecoveryCode = recoveryCode
 		if err := s.save(); err != nil {
-			return fmt.Errorf("save the recovery code to %s: %w", statePath(*root), err)
+			return fmt.Errorf("save the recovery code under %s: %w", *root, err)
 		}
-		fmt.Fprintf(os.Stderr, "hoplab: %s initialized the account; recovery code saved to %s for `pair recover`\n", *device, statePath(*root))
-		fmt.Println(recoveryCode)
+		// Never the code itself: it already lives only in the mode-0600
+		// file save() just wrote (recoveryCodePath) and in rein's own
+		// account-recovery record. A length-only acknowledgement is enough
+		// to confirm something was captured without adding stdout/log
+		// capture as a second place the plaintext code could leak from.
+		fmt.Fprintf(os.Stderr, "hoplab: %s initialized the account; recovery code (%d chars, redacted) saved to %s for `pair recover`\n", *device, len(recoveryCode), recoveryCodePath(*root))
 		return nil
 	case "join":
 		approverName := strings.TrimSpace(*approver)

@@ -8,10 +8,13 @@ import (
 	"fmt"
 	"reflect"
 	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/HarjjotSinghh/reinstate/internal/exitcode"
 	"github.com/HarjjotSinghh/reinstate/internal/preflight"
 	"github.com/HarjjotSinghh/reinstate/internal/sessionindex"
 	"github.com/HarjjotSinghh/reinstate/internal/ui"
@@ -189,6 +192,405 @@ func TestFromReportMapsEveryDecision(t *testing.T) {
 			}
 		}
 	})
+}
+
+// TestFromReportDistinguishesUninspectableFromGenuineBlocks is the table-driven
+// mapping test for row 13 of the CLI experience matrix, "readiness glyphs
+// resolve for visible rows; a read-only agent shows blocked without a probe",
+// and its v0.6.0-rc.7 regression.
+//
+// preflight.Verify shares one wall clock across several independent
+// observers. When that clock runs out mid-observation the check in question
+// comes back as a normal, no-error report — not a verify error — with
+// Status unknown (or, for an infrastructure failure such as a cancelled
+// capability scan, Status error with ExitCode exitcode.Runtime) and Severity
+// block, and that alone makes Decision Blocked. Nothing about the session was
+// actually established in that case, so it must read the same as a probe
+// that failed outright: Unknown, not Blocked. A report whose Blocked decision
+// rests on an actual finding (a missing workspace, a foreign repository) must
+// still read Blocked — that is what keeps a genuinely unresumable session
+// from disappearing into "checking" forever.
+func TestFromReportDistinguishesUninspectableFromGenuineBlocks(t *testing.T) {
+	tests := []struct {
+		name   string
+		report preflight.Report
+		err    error
+		want   ui.Readiness
+	}{
+		{
+			name: "timeout-shaped blocked report: the agent-version probe never got an answer",
+			report: preflight.Report{Decision: preflight.DecisionBlocked, Checks: []preflight.Check{
+				{ID: "agent.executable", Status: preflight.StatusPresent, Severity: preflight.SeverityInfo},
+				{ID: "agent.layout", Status: preflight.StatusMatch, Severity: preflight.SeverityInfo},
+				{ID: "agent.version", Status: preflight.StatusUnknown, Severity: preflight.SeverityBlock,
+					ExitCode: exitcode.Runtime, Message: "the native agent version probe failed"},
+			}},
+			want: ui.ReadinessUnknown,
+		},
+		{
+			// The v0.6.0-rc.8 follow-on regression: this check carries the
+			// identical Status and Message as the timeout-shaped case above —
+			// only ExitCode tells them apart (see agentChecks and
+			// agentcheck.Result.TimedOut) — because the underlying probe
+			// failure here is genuine and deterministic (a corrupted,
+			// tampered, or otherwise non-launchable agent executable) rather
+			// than a clock running out. It must read Blocked, not "still
+			// checking" — see uninspectable's doc comment for why Status
+			// alone cannot be the signal.
+			name: "genuinely blocked report: the agent-version probe deterministically failed (a broken executable, not a timeout)",
+			report: preflight.Report{Decision: preflight.DecisionBlocked, Checks: []preflight.Check{
+				{ID: "agent.executable", Status: preflight.StatusPresent, Severity: preflight.SeverityInfo},
+				{ID: "agent.layout", Status: preflight.StatusMatch, Severity: preflight.SeverityInfo},
+				{ID: "agent.version", Status: preflight.StatusUnknown, Severity: preflight.SeverityBlock,
+					ExitCode: exitcode.Compatibility, Message: "the native agent version probe failed"},
+			}},
+			want: ui.ReadinessBlocked,
+		},
+		{
+			// The out-of-range/unrecognized-version branch of agentChecks'
+			// default case never comes from a timeout at all (the probe
+			// completed and returned a real, parseable version), but it
+			// shares the timeout case's Status (unknown) — only ExitCode
+			// distinguishes it too.
+			name: "genuinely blocked report: the installed agent version is outside the verified range",
+			report: preflight.Report{Decision: preflight.DecisionBlocked, Checks: []preflight.Check{
+				{ID: "agent.version", Status: preflight.StatusUnknown, Severity: preflight.SeverityBlock,
+					ExitCode: exitcode.Compatibility, Message: "native agent version 99.0.0 is outside the verified range 2.1.219 to 2.1.263 inclusive"},
+			}},
+			want: ui.ReadinessBlocked,
+		},
+		{
+			name: "timeout-shaped blocked report: capability discovery was cancelled by the deadline",
+			report: preflight.Report{Decision: preflight.DecisionBlocked, Checks: []preflight.Check{
+				{ID: "capability.probe.cancelled.deadbeef", Status: preflight.StatusError, Severity: preflight.SeverityBlock,
+					ExitCode: exitcode.Runtime, Message: "capability discovery exceeded the bounded preflight deadline"},
+			}},
+			want: ui.ReadinessUnknown,
+		},
+		{
+			name: "genuinely blocked report: the recorded workspace does not exist",
+			report: preflight.Report{Decision: preflight.DecisionBlocked, Checks: []preflight.Check{
+				{ID: "workspace.available", Status: preflight.StatusMissing, Severity: preflight.SeverityBlock,
+					ExitCode: exitcode.Compatibility, Message: "the recorded workspace does not exist"},
+			}},
+			want: ui.ReadinessBlocked,
+		},
+		{
+			name: "genuinely blocked report: the session records a foreign repository",
+			report: preflight.Report{Decision: preflight.DecisionBlocked, Checks: []preflight.Check{
+				{ID: "git.repository", Status: preflight.StatusChanged, Severity: preflight.SeverityBlock,
+					ExitCode: exitcode.Safety, Message: "the session records a foreign repository_url"},
+			}},
+			want: ui.ReadinessBlocked,
+		},
+		{
+			name: "a genuine finding outranks an uninspectable check alongside it",
+			report: preflight.Report{Decision: preflight.DecisionBlocked, Checks: []preflight.Check{
+				{ID: "agent.version", Status: preflight.StatusUnknown, Severity: preflight.SeverityBlock},
+				{ID: "workspace.available", Status: preflight.StatusMissing, Severity: preflight.SeverityBlock},
+			}},
+			want: ui.ReadinessBlocked,
+		},
+		{
+			name:   "ready report",
+			report: preflight.Report{Decision: preflight.DecisionReady},
+			want:   ui.ReadinessReady,
+		},
+		{
+			name: "verify returned an error",
+			report: preflight.Report{Decision: preflight.DecisionBlocked, Checks: []preflight.Check{
+				{ID: "workspace.available", Status: preflight.StatusMissing, Severity: preflight.SeverityBlock},
+			}},
+			err:  errProbe,
+			want: ui.ReadinessUnknown,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := FromReport(test.report, test.err); got != test.want {
+				t.Fatalf("FromReport(...) = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
+// TestProbeCachingAndRetryMatchesFromReport is the Prober-level half of the
+// row 13 table: FromReport's mapping decides the glyph, but the prober's own
+// job is what makes that mapping matter — an Unknown answer must be retried
+// on the next Probe call rather than sticking forever, while a terminal
+// answer (Ready, Warn, or a genuinely Blocked report) must never be re-probed.
+func TestProbeCachingAndRetryMatchesFromReport(t *testing.T) {
+	tests := []struct {
+		name          string
+		respond       func(sessionindex.Record) (preflight.Report, error)
+		wantReadiness ui.Readiness
+		wantRetried   bool
+	}{
+		{
+			name: "timeout-shaped blocked report",
+			respond: func(sessionindex.Record) (preflight.Report, error) {
+				return preflight.Report{Decision: preflight.DecisionBlocked, Checks: []preflight.Check{
+					{ID: "agent.version", Status: preflight.StatusUnknown, Severity: preflight.SeverityBlock,
+						ExitCode: exitcode.Runtime},
+				}}, nil
+			},
+			wantReadiness: ui.ReadinessUnknown,
+			wantRetried:   true,
+		},
+		{
+			name: "genuinely blocked report",
+			respond: func(sessionindex.Record) (preflight.Report, error) {
+				return preflight.Report{Decision: preflight.DecisionBlocked, Checks: []preflight.Check{
+					{ID: "workspace.available", Status: preflight.StatusMissing, Severity: preflight.SeverityBlock},
+				}}, nil
+			},
+			wantReadiness: ui.ReadinessBlocked,
+			wantRetried:   false,
+		},
+		{
+			name: "ready report",
+			respond: func(sessionindex.Record) (preflight.Report, error) {
+				return preflight.Report{Decision: preflight.DecisionReady}, nil
+			},
+			wantReadiness: ui.ReadinessReady,
+			wantRetried:   false,
+		},
+		{
+			name: "verify error",
+			respond: func(sessionindex.Record) (preflight.Report, error) {
+				return preflight.Report{}, errProbe
+			},
+			wantReadiness: ui.ReadinessUnknown,
+			wantRetried:   true,
+		},
+	}
+	for index, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			verifier := newFakeVerifier(test.respond)
+			prober := New(verifier.verify)
+			record := resumable(fmt.Sprintf("claude:case-%d", index))
+
+			drain(t, prober.Probe(context.Background(), []sessionindex.Record{record}))
+			if got := prober.Lookup(record); got != test.wantReadiness {
+				t.Fatalf("Lookup after the first probe = %v, want %v", got, test.wantReadiness)
+			}
+			if got := verifier.count(record.Key); got != 1 {
+				t.Fatalf("the first Probe ran verify %d times, want 1", got)
+			}
+
+			cmd := prober.Probe(context.Background(), []sessionindex.Record{record})
+			if test.wantRetried {
+				if cmd == nil {
+					t.Fatal("a second Probe call declined to retry a record whose answer was Unknown")
+				}
+				drain(t, cmd)
+				if got := verifier.count(record.Key); got != 2 {
+					t.Fatalf("after the retry, verify ran %d times, want 2", got)
+				}
+				// A retry that has not resolved yet must not flicker the glyph.
+				if got := prober.Lookup(record); got != ui.ReadinessUnknown {
+					t.Fatalf("Lookup while a retry is settling = %v, want %v", got, ui.ReadinessUnknown)
+				}
+			} else {
+				if cmd != nil {
+					t.Fatal("a second Probe call re-verified a terminal (non-retryable) answer")
+				}
+				if got := verifier.count(record.Key); got != 1 {
+					t.Fatalf("verify ran %d times for a terminal answer, want exactly 1", got)
+				}
+				if got := prober.Lookup(record); got != test.wantReadiness {
+					t.Fatalf("Lookup after the no-op Probe = %v, want %v", got, test.wantReadiness)
+				}
+			}
+		})
+	}
+}
+
+// TestProbeStopsRetryingAtMaxProbeRetries bounds the retry loop: a record
+// whose report keeps coming back uninspectable must not compete for
+// MaxConcurrentProbes' slots forever. After maxProbeRetries attempts, Probe
+// stops scheduling it — the row is left reading "checking"
+// (ui.ReadinessUnknown, the same glyph it already had, so nothing flickers)
+// rather than being promoted to anything else on no real evidence.
+func TestProbeStopsRetryingAtMaxProbeRetries(t *testing.T) {
+	verifier := newFakeVerifier(func(sessionindex.Record) (preflight.Report, error) {
+		return preflight.Report{Decision: preflight.DecisionBlocked, Checks: []preflight.Check{
+			{ID: "agent.version", Status: preflight.StatusUnknown, Severity: preflight.SeverityBlock,
+				ExitCode: exitcode.Runtime},
+		}}, nil
+	})
+	prober := New(verifier.verify)
+	record := resumable("claude:durably-uninspectable")
+
+	for attempt := 1; attempt <= maxProbeRetries; attempt++ {
+		cmd := prober.Probe(context.Background(), []sessionindex.Record{record})
+		if cmd == nil {
+			t.Fatalf("attempt %d: Probe declined to (re)probe before the retry cap was reached", attempt)
+		}
+		drain(t, cmd)
+		if got := verifier.count(record.Key); got != attempt {
+			t.Fatalf("after attempt %d, verify ran %d times, want %d", attempt, got, attempt)
+		}
+		if got := prober.Lookup(record); got != ui.ReadinessUnknown {
+			t.Fatalf("Lookup after attempt %d = %v, want %v (it must never flicker to anything else)", attempt, got, ui.ReadinessUnknown)
+		}
+	}
+
+	// The cap is reached: a further Probe call declines to try again.
+	if cmd := prober.Probe(context.Background(), []sessionindex.Record{record}); cmd != nil {
+		t.Fatal("Probe scheduled another attempt after the retry cap was reached")
+	}
+	if got := verifier.count(record.Key); got != maxProbeRetries {
+		t.Fatalf("verify ran %d times in total, want exactly %d (the cap)", got, maxProbeRetries)
+	}
+	if got := prober.Lookup(record); got != ui.ReadinessUnknown {
+		t.Fatalf("Lookup once the cap is reached = %v, want %v", got, ui.ReadinessUnknown)
+	}
+}
+
+// TestRow13AnUninspectableBlockSelfCorrectsOnRetry is the named regression
+// test for CLI experience row 13, "readiness glyphs resolve for visible rows;
+// a read-only agent shows blocked without a probe", and its v0.6.0-rc.7
+// regression: under a ScopeAll listing with many rows to probe at once,
+// enough preflight checks missed their shared deadline that most launches
+// showed at least one row as Blocked whose ground truth was Ready — and,
+// because the wrong verdict was cached exactly like a real one, it never
+// self-corrected for the life of the process.
+//
+// This simulates the shape that regression actually produced: a first probe
+// that comes back in the exact could-not-evaluate-in-time shape
+// preflight.Verify leaves behind (a normal report, Decision Blocked, with
+// only an unresolved check behind it), followed by a second attempt that
+// completes normally — the shape a host produces once whatever contention
+// caused the first timeout has passed. The row must read "checking"
+// throughout, never Blocked, and must land on the correct answer without
+// anything else (a keystroke, a reload) asking again.
+func TestRow13AnUninspectableBlockSelfCorrectsOnRetry(t *testing.T) {
+	const key = "claude:row-13"
+	attempt := 0
+	verifier := newFakeVerifier(func(sessionindex.Record) (preflight.Report, error) {
+		attempt++
+		if attempt == 1 {
+			return preflight.Report{Decision: preflight.DecisionBlocked, Checks: []preflight.Check{
+				{ID: "agent.version", Status: preflight.StatusUnknown, Severity: preflight.SeverityBlock,
+					ExitCode: exitcode.Runtime, Message: "the native agent version probe failed"},
+			}}, nil
+		}
+		return preflight.Report{Decision: preflight.DecisionReady}, nil
+	})
+	prober := New(verifier.verify)
+	record := resumable(key)
+
+	drain(t, prober.Probe(context.Background(), []sessionindex.Record{record}))
+	if got := prober.Lookup(record); got != ui.ReadinessUnknown {
+		t.Fatalf("after the timeout-shaped report, Lookup = %v, want %v (never Blocked — this is the rc.7 regression)",
+			got, ui.ReadinessUnknown)
+	}
+
+	cmd := prober.Probe(context.Background(), []sessionindex.Record{record})
+	if cmd == nil {
+		t.Fatal("Probe did not retry a row that was still reading Unknown")
+	}
+	drain(t, cmd)
+	if got := prober.Lookup(record); got != ui.ReadinessReady {
+		t.Fatalf("after the retry succeeded, Lookup = %v, want %v", got, ui.ReadinessReady)
+	}
+	if got := verifier.count(key); got != 2 {
+		t.Fatalf("verify ran %d times, want exactly 2 (the timed-out attempt and the retry that succeeded)", got)
+	}
+}
+
+// TestProbeNeverExceedsMaxConcurrentProbes proves the concurrency cap itself,
+// not just that concurrent access is race-free (TestProbeIsSafeUnderConcurrency
+// covers that): every command Probe hands back for a page of 25 records is run
+// from its own goroutine at once, exactly like Bubble Tea would, and the
+// number actually executing inside verify at any instant must never rise
+// above MaxConcurrentProbes even though 25 commands started together — and
+// every one of the 25 must still resolve once the cap lets it through.
+func TestProbeNeverExceedsMaxConcurrentProbes(t *testing.T) {
+	const recordCount = 25
+
+	var current int32
+	var peak int32
+	started := make(chan struct{}, recordCount)
+	gate := make(chan struct{})
+
+	verifier := newFakeVerifier(func(sessionindex.Record) (preflight.Report, error) {
+		n := atomic.AddInt32(&current, 1)
+		for {
+			p := atomic.LoadInt32(&peak)
+			if n <= p {
+				break
+			}
+			if atomic.CompareAndSwapInt32(&peak, p, n) {
+				break
+			}
+		}
+		started <- struct{}{}
+		<-gate // held open until the test has confirmed the first wave's size
+		atomic.AddInt32(&current, -1)
+		return preflight.Report{Decision: preflight.DecisionReady}, nil
+	})
+	prober := New(verifier.verify)
+	records := resumableRecords(recordCount)
+
+	commands := batchCommands(t, prober.Probe(context.Background(), records))
+	if len(commands) != recordCount {
+		t.Fatalf("Probe scheduled %d commands, want one per record (%d)", len(commands), recordCount)
+	}
+
+	messages := make(chan tea.Msg, recordCount)
+	var group sync.WaitGroup
+	for _, cmd := range commands {
+		group.Add(1)
+		go func(cmd tea.Cmd) {
+			defer group.Done()
+			messages <- cmd()
+		}(cmd)
+	}
+
+	// Exactly MaxConcurrentProbes commands can acquire a slot and reach
+	// started; the rest block inside Probe's own semaphore. Waiting on the
+	// channel is deterministic — no sleep-and-poll — for the count that must
+	// arrive; a short grace period then checks that a 7th never sneaks in.
+	for i := 0; i < MaxConcurrentProbes; i++ {
+		select {
+		case <-started:
+		case <-time.After(5 * time.Second):
+			t.Fatalf("only %d of MaxConcurrentProbes (%d) probes had started", i, MaxConcurrentProbes)
+		}
+	}
+	select {
+	case <-started:
+		t.Fatal("more than MaxConcurrentProbes probes were running at once")
+	case <-time.After(50 * time.Millisecond):
+	}
+	if got := atomic.LoadInt32(&current); got != MaxConcurrentProbes {
+		t.Fatalf("concurrent probes in flight = %d, want exactly %d", got, MaxConcurrentProbes)
+	}
+
+	close(gate)
+	group.Wait()
+	close(messages)
+
+	if got := atomic.LoadInt32(&peak); got != MaxConcurrentProbes {
+		t.Fatalf("peak concurrent probes = %d, want exactly %d", got, MaxConcurrentProbes)
+	}
+
+	seen := make(map[string]struct{}, recordCount)
+	for msg := range messages {
+		for _, key := range probedKeys(t, []tea.Msg{msg}) {
+			seen[key] = struct{}{}
+		}
+	}
+	if len(seen) != recordCount {
+		t.Fatalf("%d distinct records were reported resolved, want %d", len(seen), recordCount)
+	}
+	for _, record := range records {
+		if got := prober.Lookup(record); got != ui.ReadinessReady {
+			t.Fatalf("Lookup(%q) = %v, want %v", record.Key, got, ui.ReadinessReady)
+		}
+	}
 }
 
 // TestUnresumableRecordsAreNeverProbed is a cost invariant as much as a

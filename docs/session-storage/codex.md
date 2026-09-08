@@ -31,10 +31,10 @@ evidence is read-only — `codex --version`/`--help`/`exec --help`/
 sanitized probe of the real, live `CODEX_HOME`, and a committed fixture home
 exercised through `rein resume --dry-run --json` — gathered against the real
 `0.153.4` binary; the host's Codex account usage limit blocks any completed
-conversational turn until `10:13` local on `2026-09-08`, so the completed-turn
-`codex:E1`–`E3` resume/fork rows against `0.153.4` are deferred to the
-`v0.6.0-rc.7` tagged run, executed once the limit resets (macOS pending,
-ADR 0005 D3). See
+conversational turn until `10:13` local on `2026-09-08`; the completed-turn
+`codex:E1`–`E3` resume/fork rows against `0.153.4` were confirmed via real,
+completed conversational turns in the `v0.6.0-rc.7` tagged run (macOS
+pending, ADR 0005 D3). See
 [2026-09-08-windows-range-widening-codex-v060.md](../testing/results/2026-09-08-windows-range-widening-codex-v060.md).
 
 ### Initial-prompt argv ceiling (R6 — Documented / Unverified)

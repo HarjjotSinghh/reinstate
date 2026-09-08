@@ -2,7 +2,7 @@
 
 Binary names: `rein` and `reinstate` (identical behavior).
 
-Public installers pin candidate `v0.6.0-rc.7`, including the Phase 1/2 surface,
+Public installers pin candidate `v0.6.0-rc.8`, including the Phase 1/2 surface,
 Phase 3 verified resume, the Phase 4 structured-handoff surface, and the
 Phase 5 catalog/T1 index surface. Native Windows x64 tagged-artifact
 acceptance for this candidate is pending; the Apple Silicon macOS run is
@@ -377,6 +377,13 @@ background for the rows on screen:
 ○  cannot resume: blocked, or a read-only agent
 ◌  still being checked
 ```
+
+`○` means an environment check actually found a reason the session cannot
+resume — a missing workspace, a foreign repository, and the like. A check
+that could not be evaluated in the background prober's own time budget (a
+momentarily busy host, not a finding) leaves the row on `◌` instead, and it
+is retried automatically; it never settles on `○` for a reason that amounts
+to "still checking."
 
 `h` opens the handoff studio, which measures the projection for each
 destination and policy before anything is written, and states the exact

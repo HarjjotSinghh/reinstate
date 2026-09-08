@@ -125,8 +125,12 @@ func TestClaudeSupportedVersionRange(t *testing.T) {
 		{version: "2.1.229", want: true},
 		{version: "2.1.238", want: true},
 		{version: "2.1.261", want: true},
+		// 2.1.264 was the first out-of-range build before the 2026-09-09
+		// widening to 2.1.265; it is now inside the range.
 		{version: "2.1.263", want: true},
-		{version: "2.1.264", want: false},
+		{version: "2.1.264", want: true},
+		{version: "2.1.265", want: true},
+		{version: "2.1.266", want: false},
 		{version: "2.2.0", want: false},
 		{version: "2.1.220-beta.1", want: false},
 		{version: "not-a-version", want: false},

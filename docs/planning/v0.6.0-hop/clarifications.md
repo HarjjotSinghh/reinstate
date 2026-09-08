@@ -191,6 +191,41 @@ ceiling and is not fixed by the widening: it resets at `10:13` local on
 and `MatrixG:G1`'s Codex half, are deferred to the `v0.6.0-rc.7` tagged
 run's own codex rows, collected once that limit resets.
 
+**Where things stand (2026-09-09, updated).** `v0.6.0-rc.7`'s tagged run
+([`docs/testing/results/2026-09-08-windows-v060rc7.md`](../../testing/results/2026-09-08-windows-v060rc7.md))
+ended device verdict `FAIL`: **214 PASS / 0 PARTIAL / 1 FAIL / 0 NOT
+TESTED** of **215** required rows. That candidate's own targeted fix — the
+widened Codex CLI range — was fully confirmed on real, completed
+conversational turns against `0.153.4`, the account usage-limit constraint
+had already cleared before the run started, and every row carried from
+`v0.6.0-rc.6` (`MatrixG:G1`'s Codex half, `codex:E1`-`E3`, `grok:E1`-`E3`,
+`MatrixH:H7`) cleared to `PASS`. One new, genuinely blocking regression
+surfaced: CLI row `13`, where the all-projects switcher rendered a `Ready`
+or `Warn` session as `Blocked` in 11 of 15 independent launches,
+non-self-correcting once wrong — the `v0.6.0-rc.5` fix for this defect
+class (bounding concurrent readiness verifications) turned out to be
+incomplete: under load, a check could still miss its share of the shared
+preflight timeout, and the result was read exactly like a real blocking
+finding rather than "not determined in time."
+
+`v0.6.0-rc.8` fixes exactly that regression and nothing else:
+`internal/tui/readiness.FromReport` now tells a real finding apart from a
+timed-out check, an unresolved probe is retried rather than cached as
+final, and the background prober gets its own more generous timeout budget
+instead of sharing the interactive launch path's strict one. A follow-up
+closes a related gap the same investigation found: a permanently,
+deterministically broken agent install (a corrupted or out-of-range
+executable) produced the identical "timed out" shape as a check that
+simply ran out of time, so it also rendered "still checking" forever
+instead of settling on `Blocked` with its actual repair message —
+`agentcheck.Result` now carries an explicit signal for which case is which.
+No agent tier changes, no compatibility range widens. Its own
+tagged-artifact acceptance re-tests CLI row `13` under an expanded,
+at-least-15-launch method (all of which must match, tighter than rc.7's own
+sample) plus a new check against a `tuisandbox` home seeded with
+`-stale-claude`, proving a genuinely out-of-range agent still settles on
+`Blocked` rather than looping forever.
+
 ---
 
 ## Q1 — Is `v0.6.0` "Hop plus the interactive CLI"?

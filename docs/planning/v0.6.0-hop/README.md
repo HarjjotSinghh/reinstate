@@ -94,20 +94,34 @@ host/account — the acceptance host's live, authenticated Codex account was
 usage-limit exhausted) and `codex:E1`–`E3` (`NOT TESTED (version drift)` —
 the host's Codex CLI self-updated to `0.153.4`, past the in-tree `0.149.0`
 ceiling).
-`v0.6.0-rc.7` (2026-09-08) is the current candidate: it changes exactly one
-thing beyond rc.6 — the verified Codex CLI range widens to `0.153.4` on
-native Windows evidence, under the maintainer's standing self-update
-policy; completed-turn `codex:E1`–`E3` evidence is deferred to this
-candidate's own tagged run, once the acceptance host's Codex account usage
-limit resets. No other agent tier changes, no other compatibility range
-widens. Under the disposition rules in
+`v0.6.0-rc.7` (2026-09-08) changed exactly one thing beyond rc.6 — the
+verified Codex CLI range widened to `0.153.4` on native Windows evidence,
+under the maintainer's standing self-update policy. No other agent tier
+changed, no other compatibility range widened. Its own tagged-artifact
+native Windows acceptance
+([report](../../testing/results/2026-09-08-windows-v060rc7.md)) ended
+device verdict `FAIL`: **214 PASS / 0 PARTIAL / 1 FAIL / 0 NOT TESTED** of
+**215** required rows. This candidate's own targeted fix was fully
+confirmed on real, completed conversational turns, and every row carried
+from rc.6 cleared to `PASS`. It found one new, genuinely blocking
+regression: CLI row `13` (the all-projects switcher rendered a `Ready` or
+`Warn` session as `Blocked` in 11 of 15 independent launches, a defect
+class the `v0.6.0-rc.5` fix had only partly closed).
+`v0.6.0-rc.8` (2026-09-09) is the current candidate: it changes exactly one
+thing beyond rc.7 — the readiness path (`internal/tui/readiness`,
+`internal/preflight`, `internal/agentcheck`), fixing exactly that
+regression and, in a follow-up, a related gap where a permanently,
+deterministically broken agent install also rendered "still checking"
+forever instead of settling on `Blocked` with its actual repair message.
+No agent tier changes, no compatibility range widens. Under the disposition
+rules in
 [`docs/testing/v0.6.0-windows-acceptance.md`](../../testing/v0.6.0-windows-acceptance.md#dispositions-that-do-not-block-the-device-verdict),
 stable requires **215 of 216** rows `PASS` (`opencode:D4` is
 `N/A (definitional)`, excluded from the required count), plus whatever
 dispositions are still open on the acceptance host when that run happens.
-What remains: merging and tagging `v0.6.0-rc.7`, a tagged-artifact Windows
-run against it (with `codex:E1`–`E3` and `MatrixG:G1`'s Codex half re-run
-once the acceptance host's Codex account usage limit resets), and the
+What remains: merging and tagging `v0.6.0-rc.8`, a tagged-artifact Windows
+run against it (with CLI row `13` re-tested under the expanded,
+at-least-15-launch method plus a `-stale-claude` settle check), and the
 Apple Silicon macOS rows, still deferred until that hardware returns
 (#403).
 **Baseline:** stable `v0.5.1` (2026-08-21). `v0.5.2-rc.1` (2026-08-23) was

@@ -117,10 +117,16 @@ func TestVerifyHonorsParentCancellationAndSharedDeadline(t *testing.T) {
 		if elapsed := time.Since(started); elapsed > bound {
 			t.Fatalf("deadline-bounded Verify() took %s, want <= %s", elapsed, bound)
 		}
-		if report.Decision != DecisionBlocked || report.BlockExitCode != exitcode.Compatibility {
+		// exitcode.Runtime, not exitcode.Compatibility: nothing about the
+		// agent was actually established here, only that the shared deadline
+		// ran out before the version probe could answer. See
+		// agentcheck.Result.TimedOut and readiness.uninspectable's doc
+		// comment — this is the exact shape that function must read as
+		// could-not-evaluate rather than as a genuine compatibility finding.
+		if report.Decision != DecisionBlocked || report.BlockExitCode != exitcode.Runtime {
 			t.Fatalf("deadline report = %s/%d, checks=%+v", report.Decision, report.BlockExitCode, report.Checks)
 		}
-		if check := phase3FindCheck(report, "agent.version"); check.Status != StatusUnknown || check.Severity != SeverityBlock || check.ExitCode != exitcode.Compatibility {
+		if check := phase3FindCheck(report, "agent.version"); check.Status != StatusUnknown || check.Severity != SeverityBlock || check.ExitCode != exitcode.Runtime {
 			t.Fatalf("agent deadline check = %+v", check)
 		}
 		if check := phase3FindCheckByActual(report, string(capability.DiagnosticCancelled)); check.ID != "" {

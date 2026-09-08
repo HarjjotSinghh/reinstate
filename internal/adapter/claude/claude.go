@@ -31,9 +31,15 @@ const (
 	// was created with the installed 2.1.263 build in a throwaway project,
 	// indexed by Reinstate, and resumed through the launch plan Reinstate
 	// itself produced, and the resumed session returned a token that existed
-	// only in the original session's history. See
-	// docs/testing/results/2026-09-06-windows-range-widening-v060.md.
-	maximumVerifiedClaudeVersion = "2.1.263"
+	// only in the original session's history. Widened again to 2.1.265 on
+	// 2026-09-09 after the acceptance host's Claude Code self-updated past
+	// 2.1.263 mid-cycle, under the maintainer's standing policy that
+	// Reinstate widens the range on native Windows evidence rather than
+	// block when a vendor CLI self-updates past the verified ceiling
+	// (2026-09-07, Q27). See
+	// docs/testing/results/2026-09-06-windows-range-widening-v060.md and
+	// docs/testing/results/2026-09-09-windows-range-widening-claude-v060.md.
+	maximumVerifiedClaudeVersion = "2.1.265"
 )
 
 // Adapter implements adapter.Adapter for Claude Code.

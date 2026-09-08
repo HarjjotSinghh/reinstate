@@ -2,8 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // LabState is what one `hoplab start` run records under its lab root, so a
@@ -22,20 +24,77 @@ type LabState struct {
 	// PairingRecoveryCode is the code `hoplab pair init` captured from the
 	// first device's `rein account init`, so `hoplab pair join` can enrol
 	// every later device without the caller copying it by hand. It is a
-	// synthetic lab account's recovery code, the same kind of ephemeral,
-	// lab-root-only secret keyring-device-token.json (keyring.go) already
-	// stores next to it -- never committed, never outside -root.
-	PairingRecoveryCode string `json:"pairing_recovery_code,omitempty"`
+	// synthetic lab account's recovery code -- deliberately excluded from
+	// this struct's own JSON (json:"-"): hoplab-state.json is a shared,
+	// world-readable (0644) file meant to be read and copied around freely
+	// (pids, log paths, addresses), so the code itself must never round-trip
+	// through it in the clear. save()/loadState() instead shuttle it through
+	// a dedicated, mode-0600 sibling file (recoveryCodePath, below) that
+	// never leaves -root and is never committed -- the same treatment
+	// keyring-device-token.json (keyring.go) already gets from the OS
+	// keyring next to it.
+	PairingRecoveryCode string `json:"-"`
 }
 
 func statePath(root string) string { return filepath.Join(root, "hoplab-state.json") }
 
+// recoveryCodePath is the mode-restricted sibling file that actually holds
+// a `hoplab pair init` recovery code, kept out of hoplab-state.json's own
+// JSON so a shared, world-readable state file never carries account-recovery
+// secret material. See PairingRecoveryCode's doc comment.
+func recoveryCodePath(root string) string {
+	return filepath.Join(root, "hoplab-recovery-code.secret")
+}
+
+// saveRecoveryCode writes code to root's owner-only sibling file, or
+// removes that file when code is empty (a LabState with no pairing
+// recovery code yet -- the common case for every action except `pair
+// init`). The file is written 0o600 on every OS, then locked down further
+// by restrictSecretFileACL: on Windows, mode bits alone do not create a
+// restrictive DACL (see secretacl_windows.go), so that call is what
+// actually makes the file owner-only there; on every other OS it is a
+// no-op because 0o600 already means that (secretacl_other.go).
+func saveRecoveryCode(root, code string) error {
+	if strings.TrimSpace(code) == "" {
+		if err := os.Remove(recoveryCodePath(root)); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+		return nil
+	}
+	path := recoveryCodePath(root)
+	if err := os.WriteFile(path, []byte(code+"\n"), 0o600); err != nil {
+		return err
+	}
+	if err := restrictSecretFileACL(path); err != nil {
+		return fmt.Errorf("restrict %s to the current user: %w", path, err)
+	}
+	return nil
+}
+
+// loadRecoveryCode reads back whatever saveRecoveryCode last wrote, trimmed
+// of the trailing newline. Its own os.IsNotExist error surfaces unchanged so
+// callers can tell "no code saved yet" apart from a real read failure, the
+// same distinction loadState already makes for a missing hoplab-state.json.
+func loadRecoveryCode(root string) (string, error) {
+	b, err := os.ReadFile(recoveryCodePath(root))
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(b)), nil
+}
+
 func (s LabState) save() error {
+	if err := saveRecoveryCode(s.Root, s.PairingRecoveryCode); err != nil {
+		return fmt.Errorf("write %s: %w", recoveryCodePath(s.Root), err)
+	}
 	b, err := json.MarshalIndent(s, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(statePath(s.Root), b, 0o644)
+	if err := os.WriteFile(statePath(s.Root), b, 0o644); err != nil {
+		return fmt.Errorf("write %s: %w", statePath(s.Root), err)
+	}
+	return nil
 }
 
 func loadState(root string) (LabState, error) {
@@ -47,13 +106,21 @@ func loadState(root string) (LabState, error) {
 	if err := json.Unmarshal(b, &s); err != nil {
 		return s, err
 	}
+	code, err := loadRecoveryCode(root)
+	if err != nil && !os.IsNotExist(err) {
+		return s, err
+	}
+	s.PairingRecoveryCode = code
 	return s, nil
 }
 
 func removeState(root string) error {
 	err := os.Remove(statePath(root))
-	if os.IsNotExist(err) {
-		return nil
+	if err != nil && !os.IsNotExist(err) {
+		return err
 	}
-	return err
+	if rcErr := os.Remove(recoveryCodePath(root)); rcErr != nil && !os.IsNotExist(rcErr) {
+		return rcErr
+	}
+	return nil
 }

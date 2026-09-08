@@ -1050,6 +1050,107 @@ from `v0.6.0-rc.6`), plus the 22-row CLI matrix and the 16 Hop parity rows
 Publication means ready for tagged-artifact acceptance. It does **not**
 authorize stable `v0.6.0`. Current stable remains `v0.5.1`.
 
+### v0.6.0-rc.7 candidate evidence
+
+`v0.6.0-rc.7` was published 2026-09-08 as a signed GitHub prerelease with
+both live installer routes pinning it. Its tagged-artifact native Windows
+acceptance is recorded at
+[`docs/testing/results/2026-09-08-windows-v060rc7.md`](docs/testing/results/2026-09-08-windows-v060rc7.md):
+device verdict `FAIL`, **214 PASS / 0 PARTIAL / 1 FAIL / 0 NOT TESTED** of
+**215** required rows. This candidate's own targeted fix (the widened Codex
+CLI range) was fully confirmed:
+
+- `MatrixG:G1` (both the Claude and the Codex half), `codex:E1`, `codex:E2`,
+  `codex:E3` (all `PASS`, on real, completed conversational turns against
+  the live `0.153.4` binary, no wait-and-retry cycle needed — the host's
+  Codex account usage limit had already reset before the run started).
+- `grok:E1`, `grok:E2`, `grok:E3` (`PASS` again, via the executor-driven
+  path — the maintainer console fallback was not needed).
+- `MatrixH:H7` (`PASS`, via the refined per-file-listing rule — a
+  verification-round-1 correction after the original submission's own
+  `PARTIAL` disposition text was found self-contradicting the contract's own
+  "a shorter poll window is not a basis for `PARTIAL`" text; on recheck the
+  operator go-signal file was already present, and the full elevated
+  `daemon install`/`status`/`stop`/`start`/`uninstall` round trip reached a
+  clean `PASS`).
+
+All four of `v0.6.0-rc.6`'s carried release-blocking rows are cleared this
+run. One new, genuinely blocking regression surfaced, not present at
+`v0.6.0-rc.6`:
+
+- CLI row `13` (`FAIL`, new finding) — the interactive switcher's default
+  `ScopeAll` scope resolved at least one visible session row's readiness
+  glyph to the wrong value (`○ Blocked` standing in for `●`/`◐`) in 11 of
+  15 independent launches (73%), non-self-correcting within a launch's
+  lifetime once wrong; `ScopeProject` was unaffected. Source-level pointer:
+  `internal/tui/readiness/prober.go`'s own doc comment on
+  `maxConcurrentProbes` already named this exact process-creation-stampede
+  failure mode.
+
+This report does not authorize stable `v0.6.0`. `v0.6.0-rc.8` fixes exactly
+this regression and nothing else.
+
+### v0.6.0-rc.8 candidate gate
+
+The corrective candidate. It changes exactly one thing: the interactive
+switcher's readiness path. No other agent's tier moves, and no
+compatibility range widens — `v0.6.0-rc.7`'s Claude Code, Codex CLI, Grok
+Build, OpenCode, and Qwen Code ranges are unchanged.
+
+- `internal/tui/readiness.FromReport` now maps a `Blocked` decision to
+  `Unknown` when every blocking check is itself a could-not-evaluate result
+  (Status `unknown`, or Status `error` with `ExitCode` `exitcode.Runtime` —
+  the code `preferredBlockExit` already documents as "the verifier could not
+  produce trustworthy evidence") rather than an actual finding; a report
+  with even one genuine finding (a missing workspace, a foreign repository)
+  still reads `Blocked`. `Prober` no longer caches an `Unknown` result as
+  final: it retries the check on the next probe pass, bounded by
+  `maxProbeRetries` so a durably slow host cannot loop forever.
+  `preflight.WithTimeout` (new) gives the background prober its own, more
+  generous `readiness.ProbeTimeout` (12s) instead of sharing the interactive
+  launch path's strict `preflight.DefaultVerifierTimeout` (2s);
+  `MaxConcurrentProbes` raises 4 → 6. The launch path itself (an actual
+  `rein resume`, and the warning checklist) is unchanged. See
+  [eb0a9b39](https://github.com/HarjjotSinghh/reinstate/commit/eb0a9b39885d44ed005ca600f1902f5c5b72c686).
+- A follow-up closes a gap in that same fix: `readiness.uninspectable`'s
+  blanket "Status `unknown` is always still checking" rule was ambiguous,
+  because a version probe that simply ran out of its shared deadline carried
+  the exact same shape (Status `unknown`, Severity `block`, `ExitCode`
+  `exitcode.Compatibility`) as a version probe that failed deterministically
+  against a corrupted, tampered, or otherwise non-launchable executable, or
+  an installed version outside the verified range — so a permanently,
+  deterministically broken agent install also rendered "still checking"
+  forever. `agentcheck.Result` now carries `TimedOut`, set only when the
+  version probe's own failure is the context deadline expiring rather than a
+  real error; `readiness.uninspectable` keys purely off the resulting exit
+  code (`exitcode.Runtime` for a genuine timeout, `exitcode.Compatibility`
+  for a deterministic failure) rather than guessing from Status alone. See
+  [e7de157e](https://github.com/HarjjotSinghh/reinstate/commit/e7de157e69b59f0afce49926ddd3f93091a521d7).
+
+CLI row `13` is the required-row gap this candidate's own change targets:
+the fix is expected to flip it to `PASS` on a repeat of the exact
+`v0.6.0-rc.4`/`rc.6`/`rc.7`-documented method (bare `rein` from a cwd
+outside any Git checkout, `ScopeAll`, every rendered glyph cross-checked
+against `rein resume <id> --dry-run --json` ground truth), across at least
+15 independent launches, all of which must match, plus a launch against a
+tuisandbox home seeded with `-stale-claude` proving a genuinely
+out-of-range agent still settles on `Blocked` rather than checking forever.
+
+Governed by the same
+[`docs/testing/v0.6.0-windows-acceptance.md`](docs/testing/v0.6.0-windows-acceptance.md)
+contract, specialised by
+[`docs/testing/v0.6.0-rc.8-agent-verification-prompts.md`](docs/testing/v0.6.0-rc.8-agent-verification-prompts.md).
+`rein doctor --agents --acceptance-matrix` on a binary built from this tree
+reports **178** Phase 5 rows (core `A:10, B:9, G:8, H:6` = 33, unchanged
+from `v0.6.0-rc.7`), plus the 22-row CLI matrix and the 16 Hop parity rows
+— **216** rows in total, the same count as `v0.6.0-rc.7`, of which
+`opencode:D4` is `N/A (definitional)` under the disposition rules in
+[`docs/testing/v0.6.0-windows-acceptance.md`](docs/testing/v0.6.0-windows-acceptance.md#dispositions-that-do-not-block-the-device-verdict):
+**215 required**.
+
+Publication means ready for tagged-artifact acceptance. It does **not**
+authorize stable `v0.6.0`. Current stable remains `v0.5.1`.
+
 ## Steps
 
 ### 1. Prepare the release commit

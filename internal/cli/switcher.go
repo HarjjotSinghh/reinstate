@@ -333,12 +333,26 @@ func runNamedCommand(cmd *cobra.Command, name string) error {
 // healthy the environment actually is, so passing a constant there makes every
 // row in the list read "cannot resume". Freshness is per-agent and comes from
 // the refresh the caller already performed.
+//
+// The verifier the closure calls through is options.verifier bound to
+// readiness.ProbeTimeout instead of whatever budget options.verifier itself
+// carries — a copy, made here, that only this background prober sees.
+// options itself (and so its own verifier, on its own default budget) is
+// passed to every other caller in this file unchanged: an actual resume
+// attempt and the warning checklist still authorize against the launch
+// path's strict, interactive budget, exactly as before. See
+// preflight.WithTimeout and readiness.ProbeTimeout for why a background
+// prober needs the wider window: the launch path's own two-second bound is
+// tuned for a user waiting on one report, not for however many rows the
+// all-projects scope happens to be showing at once.
 func newReadinessProber(
 	options localCommandOptions,
 	index *sessionindex.Index,
 	refresh sessionindex.RefreshResult,
 ) *readiness.Prober {
+	probeOptions := options
+	probeOptions.verifier = preflight.WithTimeout(options.verifier, readiness.ProbeTimeout)
 	return readiness.New(func(ctx context.Context, record sessionindex.Record) (preflight.Report, error) {
-		return verifyLocalRecord(ctx, options, index, record, refresh.SourceFresh(record.Agent))
+		return verifyLocalRecord(ctx, probeOptions, index, record, refresh.SourceFresh(record.Agent))
 	})
 }

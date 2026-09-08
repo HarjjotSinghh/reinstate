@@ -1445,7 +1445,7 @@ func TestScopeAllDoesNotOverwhelmReadinessProbing(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			verifier := &loadSensitiveVerifier{limit: 4}
+			verifier := &loadSensitiveVerifier{limit: readiness.MaxConcurrentProbes}
 			prober := readiness.New(verifier.verify)
 			capability := ui.Capability{
 				Mode: ui.ModeFull, Color: ui.ColorNone, Unicode: true, Width: 120, Height: 40,
