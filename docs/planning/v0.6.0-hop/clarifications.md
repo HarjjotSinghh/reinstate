@@ -123,17 +123,19 @@ account, before/after listing digests of the live agent roots, and a
 go-ahead file poll for the UAC prompt) and issue #424 itself, for you to
 confirm.
 
-What is left is yours, in order: confirm you (or another maintainer) will be
-reachable near the keyboard for a window during the `v0.6.0-rc.6` run for
-`MatrixH:H7`'s UAC prompt (Q26), and at the console for the `grok:E1`–`E3`
-transcript (Q28); accept or reject the refined `H7` live-home check and the
-`#424` scheduling (Q25/Q29); decide whether to reinstall/upgrade the broken
-`cursor-agent` install (Q21) — still not required; accept or reject the
-disposition rules (Q19, unchanged since the `v0.6.0-rc.2` update); merge the
-`v0.6.0-rc.6` release commit; sign and push the `v0.6.0-rc.6` tag (Q5); then
-run the tagged dispatch
-([`docs/testing/v0.6.0-rc.6-agent-verification-prompts.md`](../../testing/v0.6.0-rc.6-agent-verification-prompts.md))
-against native Windows x64, or tell me to.
+What is left is yours, in order: decide whether you want a separate,
+API-key-authenticated Codex account kept available for acceptance runs so
+an exhausted usage limit does not block a tagged run's Codex rows again
+(Q30); decide whether to reinstall/upgrade the broken `cursor-agent`
+install (Q21) — still not required; accept or reject the disposition
+rules (Q19, unchanged since the `v0.6.0-rc.2` update); merge the
+`v0.6.0-rc.7` release commit; sign and push the `v0.6.0-rc.7` tag (Q5);
+then run the tagged dispatch
+([`docs/testing/v0.6.0-rc.7-agent-verification-prompts.md`](../../testing/v0.6.0-rc.7-agent-verification-prompts.md))
+against native Windows x64 — running every other row first, and, for
+`codex:E1`–`E3` and `MatrixG:G1`'s Codex half, waiting for the account's
+usage limit to reset (`10:13` local, `2026-09-08`) and retrying up to 60
+minutes per the executor rule — or tell me to.
 
 **Where things stand (2026-09-08).** `v0.6.0-rc.5`'s tagged run
 ([`docs/testing/results/2026-09-07-windows-v060rc5.md`](../../testing/results/2026-09-07-windows-v060rc5.md))
@@ -162,6 +164,32 @@ host, and — because this harness cannot drive `grok 1.0.13` to a
 completion in the current environment, headless or ConPTY — `grok:E1`-`E3`
 in the `v0.6.0-rc.6` tagged run are executed by the maintainer at their own
 console, with the transcript recorded as the row's evidence (Q28).
+
+**Where things stand (2026-09-08, updated).** `v0.6.0-rc.6`'s tagged run
+([`docs/testing/results/2026-09-08-windows-v060rc6.md`](../../testing/results/2026-09-08-windows-v060rc6.md))
+ended device verdict `FAIL`: **211 PASS / 1 PARTIAL / 0 FAIL / 3 NOT
+TESTED** of **215** required rows — **zero product defects.** Both of that
+candidate's own targeted fixes cleared: `grok:E1`-`E3` `PASS` via your own
+console transcript against `1.0.13`, and `MatrixH:H7` `PASS` via the
+refined per-file-listing rule with you reachable inside the go-signal
+window. Two new, genuinely blocking gaps surfaced, neither present at
+`v0.6.0-rc.5`: `MatrixG:G1`'s Codex half (`PARTIAL` — this host's live,
+authenticated Codex account was usage-limit exhausted, reproduced on 3
+independent attempts against both the drifted default CLI and a second,
+in-range CLI) and `codex:E1`-`E3` (`NOT TESTED (version drift)` — this
+host's Codex CLI self-updated to `0.153.4`, past the in-tree `0.149.0`
+ceiling, so `rein` correctly refused to build a live launch plan against
+it). Following Q27's standing policy, `v0.6.0-rc.7` widens the verified
+Codex CLI range to `0.153.4` on read-only native Windows evidence plus a
+real before/after `--dry-run` launch-plan build against a committed
+fixture
+([`docs/testing/results/2026-09-08-windows-range-widening-codex-v060.md`](../../testing/results/2026-09-08-windows-range-widening-codex-v060.md)).
+The Codex account usage-limit constraint is orthogonal to the version
+ceiling and is not fixed by the widening: it resets at `10:13` local on
+`2026-09-08` on its own, independent of anything this repository changes
+(Q30, below). The completed-turn `codex:E1`-`E3` rows against `0.153.4`,
+and `MatrixG:G1`'s Codex half, are deferred to the `v0.6.0-rc.7` tagged
+run's own codex rows, collected once that limit resets.
 
 ---
 
@@ -723,6 +751,27 @@ works for anyone including you, and there is no reason to hold evidence
 that already exists. Both are recorded together here because they were
 decided together: neither blocks the other, and neither blocks
 `v0.6.0-rc.6`'s tagged run.
+
+## Q30 — Codex account usage limit: is an API-key alternative wanted for acceptance runs?
+
+`v0.6.0-rc.6`'s tagged run found the acceptance host's live, authenticated
+Codex account usage-limit exhausted (`codex exec` prints "You've hit your
+usage limit ... try again at 10:13 AM"), reproduced on 3 independent
+attempts against both the drifted default CLI and a second, in-range CLI
+(`MatrixG:G1`'s Codex half). It blocks any row needing a completed Codex
+conversational turn — `codex:E1`-`E3` and `MatrixG:G1`'s Codex half —
+until the limit resets on its own; nothing in `v0.6.0-rc.7`'s Codex
+range widening fixes this constraint, and it is orthogonal to the version
+ceiling that widening addresses. **Assumed for now:** wait for the
+account's own reset (`10:13` local, `2026-09-08`) and re-run those rows
+against `v0.6.0-rc.7`'s own tag, per the executor rule (run every other
+row first, then wait up to 60 minutes and retry on the usage-limit error,
+recording the exact error line and times). Not yet decided: whether you
+want a separate Codex account authenticated by API key, rather than the
+interactive login this host's account uses, kept available specifically
+for acceptance runs so a future exhausted usage limit does not block a
+tagged run's Codex rows again. Tell me if you want that set up, and
+whether it should live on this host or a separate one.
 
 ## Q13 — GitGuardian on the candidate PR
 
