@@ -284,9 +284,15 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.probeVisible()
 
 	case readiness.ProbedMsg:
-		// The cache is the state; this message only says it is worth reading
-		// again, so a redraw is the entire handler.
-		return m, nil
+		// The cache is the state, so a redraw is most of the handler — but a
+		// probe that came back Unknown because its report could not be
+		// evaluated in time is retried (readiness.Prober bounds this: see
+		// maxProbeRetries), and retrying only on the next keystroke would
+		// leave a row reading "checking" forever on a quiet screen nobody is
+		// touching. Asking again here is what lets that retry actually
+		// happen; probeVisible is already a no-op once nothing on screen
+		// still needs an answer, so this never loops.
+		return m, m.probeVisible()
 
 	case tui.ClipboardMsg:
 		m.status = typed.String()

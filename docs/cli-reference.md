@@ -378,6 +378,13 @@ background for the rows on screen:
 ◌  still being checked
 ```
 
+`○` means an environment check actually found a reason the session cannot
+resume — a missing workspace, a foreign repository, and the like. A check
+that could not be evaluated in the background prober's own time budget (a
+momentarily busy host, not a finding) leaves the row on `◌` instead, and it
+is retried automatically; it never settles on `○` for a reason that amounts
+to "still checking."
+
 `h` opens the handoff studio, which measures the projection for each
 destination and policy before anything is written, and states the exact
 `rein handoff` command for the current selection.
