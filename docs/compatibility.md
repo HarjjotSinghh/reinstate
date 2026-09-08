@@ -26,7 +26,7 @@ The Phase 2 local capability matrix is:
 | Agent | Local discovery/search/inspect | Native resume/fork | Physical Phase 2 evidence | Tier |
 | ----- | ------------------------------ | ------------------ | ------------------------- | ---- |
 | Claude Code | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64 | T5 |
-| OpenAI Codex CLI | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64; verified range widened to 0.133.0-0.153.4 on native Windows evidence (macOS pending; completed-turn resume/fork evidence deferred to the v0.6.0-rc.7 tagged run once the acceptance host's Codex account usage limit resets) | T5 |
+| OpenAI Codex CLI | Included | Same-vendor included | Tagged-artifact acceptance passed on Apple Silicon macOS and native Windows x64; verified range widened to 0.133.0-0.153.4 on native Windows evidence (macOS pending; completed-turn resume/fork evidence confirmed via real, completed conversational turns in the v0.6.0-rc.7 tagged run) | T5 |
 | Gemini CLI | Read-only included | Not supported in Phase 2 | Physical path passed on Windows; unavailable on test Mac | T2 |
 | OpenCode | Read-only included | Same-vendor included | Encrypted-sync round-trip recorded on macOS and native Windows: create with real OpenCode, `rein push`, cross-device `rein pull`, verified resume in the vendor with the remapped path | T5 |
 | Cursor CLI | Indexed (read-only) | Not implemented | Dual-platform probes committed; indexed from `meta.json`; no device journey for resume | T1 |
@@ -155,9 +155,9 @@ ADR 0005 D3). The same self-update policy widens the Codex CLI ceiling to
 `0.153.4` after the acceptance host's Codex CLI self-updated past `0.149.0`
 mid-cycle: read-only evidence (`--version`/`--help` output shape, session
 file layout) was gathered against the real `0.153.4` binary, and the
-completed-turn `codex:E1`–`E3` resume/fork evidence is deferred to the
-`v0.6.0-rc.7` tagged run, once the acceptance host's Codex account usage
-limit resets (macOS pending, ADR 0005 D3). Versions above the maxima remain
+completed-turn `codex:E1`–`E3` resume/fork evidence was confirmed via real,
+completed conversational turns in the `v0.6.0-rc.7` tagged run (macOS
+pending, ADR 0005 D3). Versions above the maxima remain
 `UNTESTED` until a later matrix, run on both platforms, expands them again:
 
 | Agent | Inclusive source-tested range (v0.6.0) |

@@ -52,7 +52,7 @@ and has no Phase 3 baselines; the paths are separate by design. Neither version
 needs a sync profile, storage credentials, an encryption passphrase, keyring
 access, or a network backend. Stable `v0.2.0` contains the Phase 1 sync surface
 and Phase 2 local continuity. The public installers pin candidate
-`v0.6.0-rc.7`. Stable remains `v0.5.1`. Intel macOS plus Linux/WSL2 remain
+`v0.6.0-rc.8`. Stable remains `v0.5.1`. Intel macOS plus Linux/WSL2 remain
 optional and unverified.
 
 ## Why not just use git?

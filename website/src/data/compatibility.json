@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "reinstateVersion": "v0.6.0-rc.7",
-  "catalogLine": "v0.6.0-rc.7",
+  "reinstateVersion": "v0.6.0-rc.8",
+  "catalogLine": "v0.6.0-rc.8",
   "lastReviewed": "2026-09-07",
   "owner": {
     "name": "Harjot Singh Rana",
@@ -57,7 +57,7 @@
       "minimumTestedVersion": "0.133.0",
       "maximumTestedVersion": "0.153.4",
       "resumeMode": "Codex to Codex (T5 encrypted sync; T3 same-vendor resume)",
-      "evidenceLevel": "source checks, deterministic synthetic fixtures, and dual-platform tagged-artifact acceptance; native Windows range-widening read-only evidence (2026-09-08), completed-turn evidence deferred to the v0.6.0-rc.7 tagged run",
+      "evidenceLevel": "source checks, deterministic synthetic fixtures, and dual-platform tagged-artifact acceptance; native Windows range-widening read-only evidence (2026-09-08), completed-turn evidence confirmed via real, completed conversational turns in the v0.6.0-rc.7 tagged run",
       "evidence": {
         "storagePage": "docs/session-storage/codex.md",
         "fixtures": [
@@ -75,7 +75,7 @@
       },
       "lastTested": "2026-09-08",
       "source": "https://github.com/HarjjotSinghh/reinstate/blob/main/docs/testing/results/2026-08-15-macos-phase4-V040RC11.md",
-      "notes": "v0.5.1 accepts Codex CLI 0.133.0–0.149.0. The ceiling moved to 0.149.0 on dual-platform physical evidence: on macOS and on Windows a session created with 0.149.0 was indexed, resumed through the launch plan Reinstate produced, and returned a token that existed only in the original session's history. v0.6.0 widens the ceiling to 0.153.4 after the acceptance host's Codex CLI self-updated past 0.149.0 mid-cycle, under the maintainer's standing self-update policy (2026-09-07, Q27); read-only evidence only (version/help output shape, session file layout) — completed-turn resume/fork evidence is deferred to the v0.6.0-rc.7 tagged run, once the acceptance host's Codex account usage limit resets. Versions outside the inclusive range, including prereleases, fail closed as untested."
+      "notes": "v0.5.1 accepts Codex CLI 0.133.0–0.149.0. The ceiling moved to 0.149.0 on dual-platform physical evidence: on macOS and on Windows a session created with 0.149.0 was indexed, resumed through the launch plan Reinstate produced, and returned a token that existed only in the original session's history. v0.6.0 widens the ceiling to 0.153.4 after the acceptance host's Codex CLI self-updated past 0.149.0 mid-cycle, under the maintainer's standing self-update policy (2026-09-07, Q27); read-only evidence only (version/help output shape, session file layout) — completed-turn resume/fork evidence was confirmed via real, completed conversational turns in the v0.6.0-rc.7 tagged run. Versions outside the inclusive range, including prereleases, fail closed as untested."
     },
     {
       "id": "gemini",

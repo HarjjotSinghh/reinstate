@@ -30,7 +30,7 @@ estimatedMinutes: 15
 estimatedTaskMinutes: 35
 prerequisites:
   - "An AWS account and authority to create a private S3 bucket, IAM policy, and access key"
-  - "Reinstate (the installer's v0.6.0-rc.7 candidate; stable is v0.5.1) on a compatible device with Claude Code or Codex CLI"
+  - "Reinstate (the installer's v0.6.0-rc.8 candidate; stable is v0.5.1) on a compatible device with Claude Code or Codex CLI"
   - "A harmless session in a repository whose absolute local path you know"
   - "A long encryption passphrase that will be entered privately and is not stored"
 howToSteps:
@@ -53,7 +53,7 @@ howToSteps:
 
 ## What this guide configures
 
-This guide connects Reinstate — the installer's `v0.6.0-rc.7` candidate;
+This guide connects Reinstate — the installer's `v0.6.0-rc.8` candidate;
 stable is `v0.5.1` — to an existing Amazon S3 bucket.
 Amazon Web Services owns the bucket, Region, IAM identity, access key, public
 access settings, retention, and billing. Reinstate owns the local project
@@ -251,7 +251,7 @@ rein version --json
 rein setup check
 ```
 
-**Expected result:** the pinned installer reports `v0.6.0-rc.7`, the
+**Expected result:** the pinned installer reports `v0.6.0-rc.8`, the
 current release candidate; stable remains `v0.5.1`. Before
 initialization, `rein setup check` exits with code `3` and reports
 `config missing`. Resolve a platform, keyring, or installed-agent

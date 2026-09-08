@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0-rc.8] - 2026-09-09
+
+Release candidate. Stable remains `v0.5.1`; the public installers now pin
+this candidate, superseding `v0.6.0-rc.7`.
+
+**Highlights.** `v0.6.0-rc.7`'s tagged-artifact native Windows acceptance
+([`docs/testing/results/2026-09-08-windows-v060rc7.md`](docs/testing/results/2026-09-08-windows-v060rc7.md))
+ended device verdict `FAIL`: `214 PASS / 0 PARTIAL / 1 FAIL / 0 NOT TESTED`
+of `215` required rows — that candidate's own targeted fix (the widened
+Codex CLI range) was fully confirmed on real, completed conversational
+turns, and `grok:E1`–`E3` and `MatrixH:H7` both cleared to `PASS` again,
+clearing every row carried from `v0.6.0-rc.6`. The run surfaced one new,
+genuinely blocking regression: CLI row 13, where the interactive switcher's
+default all-projects scope rendered at least one visible `Ready` or `Warn`
+session as `○ Blocked` in 11 of 15 independent launches, non-self-correcting
+once wrong. This candidate fixes exactly that regression and nothing else.
+
+**Not yet certified.** Native Windows x64 tagged-artifact acceptance is what
+this candidate exists to enable; macOS acceptance is deferred under
+[ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md) until
+that hardware returns. Stable remains `v0.5.1`.
+
 ### Fixed
 
 - **Interactive switcher: a session that is fine no longer shows as blocked
@@ -16,19 +38,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   shared preflight timeout and come back marked "could not be evaluated" —
   which `internal/tui/readiness.FromReport` then read exactly like a real
   finding, so a healthy session's row rendered `○ CANNOT RESUME` and, once
-  cached, stayed wrong for the life of the process. `FromReport` now tells
-  the two apart: a report is only `Blocked` when at least one blocking check
-  names an actual finding (a missing workspace, a foreign repository); a
-  report whose blocking checks all mean "not determined in time" resolves to
-  `◌` (still checking) instead. That answer is no longer cached as final,
-  either — the prober retries it on the next probe pass, bounded so a
-  durably slow host cannot loop forever. The background prober also now runs
-  on its own, more generous timeout budget instead of sharing the
-  interactive launch path's strict two-second one, and its concurrency cap
-  is a little higher, so a many-row listing actually finishes settling
-  inside that budget rather than merely failing more legibly. The launch
-  path itself (an actual `rein resume`, and the warning checklist) is
-  unchanged.
+  cached, stayed wrong for the life of the process. This is CLI row 13,
+  confirmed regressed in the tagged `v0.6.0-rc.7` acceptance run (11 of 15
+  independent all-projects launches had at least one row wrongly Blocked).
+  `FromReport` now tells the two apart: a report is only `Blocked` when at
+  least one blocking check names an actual finding (a missing workspace, a
+  foreign repository); a report whose blocking checks all mean "not
+  determined in time" resolves to `◌` (still checking) instead. That answer
+  is no longer cached as final, either — the prober retries it on the next
+  probe pass, bounded so a durably slow host cannot loop forever. The
+  background prober also now runs on its own, more generous timeout budget
+  instead of sharing the interactive launch path's strict two-second one,
+  and its concurrency cap is a little higher, so a many-row listing
+  actually finishes settling inside that budget rather than merely failing
+  more legibly. The launch path itself (an actual `rein resume`, and the
+  warning checklist) is unchanged.
 
   A follow-up closed a gap in that same fix: the "not determined in time"
   test above relied on a check's Status alone, but a version probe against a
@@ -41,6 +65,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   still-checking.
 
 ## [0.6.0-rc.7] - 2026-09-08
+
+Its tagged-artifact native Windows acceptance
+([`docs/testing/results/2026-09-08-windows-v060rc7.md`](docs/testing/results/2026-09-08-windows-v060rc7.md))
+ended device verdict `FAIL`: `214 PASS / 0 PARTIAL / 1 FAIL / 0 NOT TESTED`
+of `215` required rows; this candidate's own widened Codex CLI range was
+fully confirmed, and the sole blocker was a new CLI row 13 regression, fixed
+in `v0.6.0-rc.8`. `v0.6.0-rc.8` supersedes it.
 
 Release candidate. Stable remains `v0.5.1`; the public installers now pin
 this candidate, superseding `v0.6.0-rc.6`.
@@ -3759,7 +3790,8 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.7...HEAD
+[Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.8...HEAD
+[0.6.0-rc.8]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.7...v0.6.0-rc.8
 [0.6.0-rc.7]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.6...v0.6.0-rc.7
 [0.6.0-rc.6]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.5...v0.6.0-rc.6
 [0.6.0-rc.5]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.4...v0.6.0-rc.5
