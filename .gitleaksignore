@@ -34,3 +34,9 @@ b262757e124b9a5d462d26f6148d4d888f6b6d65:docs/testing/results/2026-09-07-windows
 # quoted from a keyring snapshot and from `rein account status`.
 5c1f28b7a4d8cb54b3058fd0f3a25c68e4bcbf08:docs/testing/results/2026-09-07-windows-v060rc4-part-d.md:generic-api-key:182
 5c1f28b7a4d8cb54b3058fd0f3a25c68e4bcbf08:docs/testing/results/2026-09-07-windows-v060rc4-part-d.md:generic-api-key:184
+
+# v0.6.0-rc.6 tagged Windows acceptance: the maintainer's console transcript
+# for grok E1-E3 plants a recall token with the sentence "Remember this exact
+# token for later: <token>"; the token was minted for that one row.
+6d5de83d5e14f6a690ca986f12ff79b81c00bacb:docs/testing/results/2026-09-08-windows-v060rc6.md:generic-api-key:470
+bcd826b6b9de2642d62fed013ca11a4c45f9cc4c:docs/testing/results/2026-09-08-windows-v060rc6-part-b.md:generic-api-key:198
