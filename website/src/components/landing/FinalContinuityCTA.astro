@@ -202,12 +202,25 @@ const credibility = [
         ))
       }
 
+      <p class="install-verify">
+        Checksum-verified install of candidate <code>{product.currentRelease}</code>.
+        For certified stable, use <a
+          href={product.stableReleaseUrl}
+          rel="noopener noreferrer"
+          target="_blank">GitHub Releases</a
+        > <code>{product.stableRelease}</code>.
+      </p>
+
       <div class="console-foot">
-        <span><i aria-hidden="true">✓</i> checksum verified</span>
         <span>installs <code>rein</code> + <code>reinstate</code></span>
       </div>
       <p class="sr-only" aria-live="polite" data-copy-status></p>
     </div>
+
+    <p class="release-line">
+      Stable: <code>{product.stableRelease}</code><span aria-hidden="true"> · </span>Installer
+      candidate: <code>{product.currentRelease}</code> (not yet certified)
+    </p>
 
     <div class="install-actions">
       <a
@@ -666,6 +679,39 @@ const credibility = [
   .copy-command[data-state='copied'] .copy-icon--done {
     display: block;
   }
+  .install-verify {
+    margin: 0;
+    padding: 0.65rem 1.1rem;
+    border-top: 1px solid var(--rule);
+    background: color-mix(in oklab, var(--paper-2) 78%, transparent);
+    font-size: 0.78rem;
+    line-height: 1.5;
+    text-wrap: pretty;
+    color: var(--ink-2);
+  }
+  .install-verify code {
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    font-weight: 650;
+    color: var(--ink);
+  }
+  .install-verify a {
+    color: var(--prim-deep);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+  .release-line {
+    margin: 1.2rem 0 0;
+    font-size: 0.8rem;
+    text-align: center;
+    text-wrap: pretty;
+    color: var(--ink-3);
+  }
+  .release-line code {
+    font-family: var(--font-mono);
+    font-weight: 650;
+    color: var(--ink-2);
+  }
   .console-foot {
     display: flex;
     flex-wrap: wrap;
@@ -678,10 +724,6 @@ const credibility = [
     font-size: 0.66rem;
     color: var(--ink-3);
   }
-  .console-foot i {
-    margin-right: 0.25rem;
-    color: var(--sv-prim-deep);
-  }
   .console-foot code {
     color: var(--ink-2);
   }
@@ -691,6 +733,9 @@ const credibility = [
     justify-content: center;
     gap: 0.65rem;
     margin-top: 1.6rem;
+  }
+  .release-line + .install-actions {
+    margin-top: 1rem;
   }
   .cta-link {
     display: inline-flex;

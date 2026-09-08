@@ -1,7 +1,7 @@
 ---
 title: "Install the Reinstate CLI"
 navTitle: "Install the CLI"
-description: "Install the pinned Reinstate stable release on macOS, native Windows, or WSL2, verify its checksum and version, and diagnose PATH failures."
+description: "Install the pinned Reinstate installer candidate on macOS, native Windows, or WSL2, verify its checksum and version, and diagnose PATH failures."
 order: 9
 author: "Harjot Singh Rana"
 status: current

@@ -26,6 +26,8 @@ export const product = {
   currentReleaseDate: '2026-09-08',
   initialPublicReleaseDate: '2026-07-25',
   stableRelease: 'v0.5.1',
+  stableReleaseUrl:
+    'https://github.com/HarjjotSinghh/reinstate/releases/tag/v0.5.1',
   releaseStatus: 'v0.6.0-rc.7 candidate · stable remains v0.5.1 · v0.6.0-rc.6 tagged Windows run ended FAIL (211/1/0/3 of 215), zero product defects, grok:E1-E3 and MatrixH:H7 both cleared to PASS, MatrixG:G1 Codex-account usage-limit exhaustion and a Codex CLI version drift to 0.153.4 the open rows · this candidate widens the verified Codex CLI range to 0.153.4 · native Windows tagged-artifact acceptance pending, macOS deferred',
   lastVerified: '2026-09-08',
   programmingLanguage: 'Go',
