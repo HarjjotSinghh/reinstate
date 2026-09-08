@@ -228,7 +228,8 @@ second device is available:**
 
 ```bash
 ./scripts/testing/hoplab/hoplab.sh pair init -root <root> -device device-a -rein bin/rein.exe
-# prints the recovery code (also saved to <root>/hoplab-state.json, for `pair recover` if ever needed)
+# saves the recovery code to <root>/hoplab-recovery-code.secret (mode 0600), for `pair recover`
+# if ever needed; prints only a redacted, length-only acknowledgement -- never the code itself
 
 ./scripts/testing/hoplab/hoplab.sh pair join -root <root> -device device-b -approver device-a -rein bin/rein.exe
 # device-b runs `rein account join` (publishes a pairing request, prints a code, waits);
@@ -250,7 +251,7 @@ approve live:**
 
 ```bash
 ./scripts/testing/hoplab/hoplab.sh pair recover -root <root> -device device-c -rein bin/rein.exe
-# reads the recovery code back from hoplab-state.json; pass -code to override
+# reads the recovery code back from <root>/hoplab-recovery-code.secret; pass -code to override
 ```
 
 `pair recover` runs `rein init --hop --project ...` then `rein account

@@ -215,8 +215,12 @@ with no real terminal (an agent driving this through a piped shell, exactly
 what rejected the previous round of this branch) can still complete it:
 
 - **`pair init`** — the first device: `rein init --hop`, then `rein
-  account init`. Prints the recovery code and saves it to
-  `<root>/hoplab-state.json` for a later `pair recover`.
+  account init`. Saves the recovery code to a mode-0600 sibling file,
+  `<root>/hoplab-recovery-code.secret`, for a later `pair recover`, and
+  prints only a redacted, length-only acknowledgement -- never the code
+  itself, and never into `hoplab-state.json` (shared, world-readable, meant
+  to be read and copied freely for pids/addresses/log paths). See "Updated
+  2026-09-09" below.
 - **`pair join`** — the live path, preferred whenever a second device is
   available: the joining device runs `rein init --hop` then `rein account
   join` (which publishes a pairing request, prints a short code, and
@@ -259,6 +263,22 @@ hoplab: device-a initialized the account; recovery code saved to <root>\hoplab-s
 $ ./scripts/testing/hoplab/hoplab.sh pair join -root <root> -device device-b -approver device-a -rein bin/rein.exe
 hoplab: device-b joined the account live, approved by device-a
 ```
+
+**Updated 2026-09-09:** `pair init` no longer prints the raw recovery code
+to stdout, and no longer persists it into `hoplab-state.json` (0644, meant
+to be read and copied around freely). It now writes the code only to
+`<root>/hoplab-recovery-code.secret` (mode 0600) and prints a redacted,
+length-only acknowledgement in its place; `pair recover` reads the code
+back from that file transparently, so the flow verified below is otherwise
+unchanged. A repeat of this transcript today prints, with no
+`<recovery-code>` line at all:
+
+```
+hoplab: device-a initialized the account; recovery code (39 chars, redacted) saved to <root>\hoplab-recovery-code.secret for `pair recover`
+```
+
+The transcript above is kept unedited as the historical record of the
+2026-09-06 verification run.
 
 ```json
 {"profile_id": "b9442b52-a15e-4668-81b8-78111f84ea6c", "device_id": "452f6282-8b5a-4936-8cca-8da75b3f8aa5", "enrolled_via": "init", "recovery_code_confirmed": true, "enrolled_devices": 2, "device_in_keyring": true, ...}
