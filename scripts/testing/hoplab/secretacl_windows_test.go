@@ -15,11 +15,16 @@ import (
 // access to instead of a value that could drift across hosts.
 func currentUserSID(t *testing.T) string {
 	t.Helper()
-	tok, err := windows.OpenCurrentProcessToken()
-	if err != nil {
-		t.Fatalf("OpenCurrentProcessToken: %v", err)
+	// OpenCurrentProcessToken is deprecated; open the token explicitly
+	// with the same TOKEN_QUERY access it requested under the hood, the
+	// same fix applied to restrictSecretFileACL in secretacl_windows.go.
+	var tok windows.Token
+	if err := windows.OpenProcessToken(windows.CurrentProcess(), windows.TOKEN_QUERY, &tok); err != nil {
+		t.Fatalf("OpenProcessToken: %v", err)
 	}
-	defer tok.Close()
+	defer func() {
+		_ = tok.Close()
+	}()
 	user, err := tok.GetTokenUser()
 	if err != nil {
 		t.Fatalf("GetTokenUser: %v", err)

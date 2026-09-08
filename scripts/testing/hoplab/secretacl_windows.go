@@ -30,11 +30,17 @@ import (
 // keep whatever the parent already granted alongside the new ACE, which
 // would defeat the point.
 func restrictSecretFileACL(path string) error {
-	tok, err := windows.OpenCurrentProcessToken()
-	if err != nil {
+	// OpenCurrentProcessToken is deprecated in favor of calling
+	// OpenProcessToken(CurrentProcess(), ...) directly with the access
+	// this code actually needs (TOKEN_QUERY, to read the token's user
+	// SID below).
+	var tok windows.Token
+	if err := windows.OpenProcessToken(windows.CurrentProcess(), windows.TOKEN_QUERY, &tok); err != nil {
 		return fmt.Errorf("open the current process token: %w", err)
 	}
-	defer tok.Close()
+	defer func() {
+		_ = tok.Close()
+	}()
 
 	user, err := tok.GetTokenUser()
 	if err != nil {
