@@ -1,6 +1,6 @@
 # Reinstate product-truth register
 
-Last reviewed: 2026-09-07
+Last reviewed: 2026-09-08
 Canonical website source: `website/src/data/product.ts`
 Stable release: `v0.5.1`, dated 2026-08-21.
 Reviewed candidate: `v0.6.0-rc.7`, dated 2026-09-08; native Windows x64
