@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `rein daemon install` now records the agent-root environment the
+  installing shell resolved (`CLAUDE_CONFIG_DIR`, `CODEX_HOME`,
+  `XDG_DATA_HOME`, and the rest `rein doctor --agents --json` reports as
+  `root_env`) and `rein daemon run` pins the process to exactly those
+  values at startup, instead of inheriting whatever its own launch context
+  carries. A Windows scheduled task previously resolved these variables
+  from the login environment rather than the environment `install` ran in,
+  so a device whose installing shell pointed at an isolated agent home
+  (a lab, a sandbox) could have its scheduled daemon read and push the
+  operator's real Claude Code, Codex, and OpenCode session stores instead
+  (#424, `docs/testing/results/2026-09-09-windows-v060rc8.md` row
+  `MatrixH:H7`). `rein daemon status` now reports the pinned roots, and
+  `rein daemon run` refuses to start when the environment it resolves
+  disagrees with what was recorded at install (exit `7`, safety) unless
+  started with the new `--allow-root-change` flag, which still runs
+  pinned to the recorded roots rather than adopting the drift. Reinstall
+  (`rein daemon install`) to record a new baseline after an intentional
+  environment change. launchd and systemd installs were unaffected (their
+  service definitions already carry a per-service environment block); this
+  closes the same gap for Windows Task Scheduler, uniformly, on every
+  platform.
+
 ## [0.6.0] - 2026-09-09
 
 Stable release. Supersedes `v0.5.1` (2026-08-21). Authorized by
