@@ -155,22 +155,36 @@ func CompareAgentRoots(recorded, current AgentRoots) []AgentRootsDiff {
 	return diffs
 }
 
-// ApplyAgentRoots sets every recorded variable into the process environment
-// via setenv (typically os.Setenv), so a process resolves agent roots the
-// way install did regardless of what its own launch context carried. It
-// only sets variables that were recorded; one that was unset at install is
-// left exactly as the process's own environment already has it; the
-// startup refusal in `rein daemon run` is what catches that case turning up
-// unexpectedly set.
-func ApplyAgentRoots(roots AgentRoots, setenv func(string, string) error) error {
-	names := make([]string, 0, len(roots))
-	for name := range roots {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	for _, name := range names {
-		if err := setenv(name, roots[name]); err != nil {
-			return fmt.Errorf("set %s: %w", name, err)
+// ApplyAgentRoots pins the process environment for every name in names to
+// exactly what roots recorded: setenv for a name present in roots, unsetenv
+// for a name absent from it. names should be the full catalog of agent-root
+// variables (every RootEnv name the caller's agent catalog declares), not
+// just the ones present in roots — that is what makes this a *pin* rather
+// than a partial overlay: a variable nobody customized at install time
+// (commonly CODEX_HOME, say) is pinned to unset exactly as firmly as one
+// that was customized is pinned to its recorded value, regardless of
+// whatever the process's own launch environment happens to carry for it.
+//
+// This matters specifically for `rein daemon run --allow-root-change`
+// (reinstate#424): the flag only lifts the startup refusal, it does not
+// adopt drift, so every catalog variable not in roots must end up unset
+// here even if the calling process currently has it set to something the
+// install-time environment never saw — otherwise the daemon would silently
+// watch whatever root its drifted launch context happened to carry, the
+// exact class of bug #424 was filed to close, just triggered by a variable
+// going from unset to set instead of the reverse.
+func ApplyAgentRoots(roots AgentRoots, names []string, setenv func(string, string) error, unsetenv func(string) error) error {
+	sorted := append([]string(nil), names...)
+	sort.Strings(sorted)
+	for _, name := range sorted {
+		if value, ok := roots[name]; ok {
+			if err := setenv(name, value); err != nil {
+				return fmt.Errorf("set %s: %w", name, err)
+			}
+			continue
+		}
+		if err := unsetenv(name); err != nil {
+			return fmt.Errorf("unset %s: %w", name, err)
 		}
 	}
 	return nil

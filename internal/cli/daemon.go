@@ -205,7 +205,7 @@ func applyInstalledAgentRoots(home string, allowChange bool) error {
 				"); this looks like a scheduled or supervised start inheriting a different login environment (reinstate#424) — run rein daemon install again to update the recorded roots, or start with --allow-root-change to keep the recorded roots and start anyway")
 		}
 	}
-	if err := daemon.ApplyAgentRoots(recorded, os.Setenv); err != nil {
+	if err := daemon.ApplyAgentRoots(recorded, agentRootEnvNames(), os.Setenv, os.Unsetenv); err != nil {
 		return NewExitError(ExitRuntime, "apply the recorded agent-root environment: "+err.Error())
 	}
 	return nil

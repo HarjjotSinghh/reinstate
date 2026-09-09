@@ -202,12 +202,17 @@ func TestCompareAgentRootsDiffFields(t *testing.T) {
 
 func TestApplyAgentRoots(t *testing.T) {
 	roots := AgentRoots{"CLAUDE_CONFIG_DIR": "/pinned/claude", "CODEX_HOME": "/pinned/codex"}
+	names := []string{"CLAUDE_CONFIG_DIR", "CODEX_HOME"}
 	applied := map[string]string{}
 	setenv := func(name, value string) error {
 		applied[name] = value
 		return nil
 	}
-	if err := ApplyAgentRoots(roots, setenv); err != nil {
+	unsetenv := func(name string) error {
+		t.Fatalf("unsetenv(%q) called, but every name in names is present in roots", name)
+		return nil
+	}
+	if err := ApplyAgentRoots(roots, names, setenv, unsetenv); err != nil {
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(applied, map[string]string(roots)) {
@@ -215,25 +220,85 @@ func TestApplyAgentRoots(t *testing.T) {
 	}
 }
 
+// TestApplyAgentRootsUnsetsNamesAbsentFromRoots is the regression this fix
+// exists for: a catalog variable that was unset at install time (absent
+// from roots) must be force-unset, not left as whatever the calling
+// process's own environment currently carries for it. Without this, a
+// variable nobody customized at install could pick up drift from the
+// daemon's own launch environment under --allow-root-change, reopening the
+// #424 mechanism from the opposite direction (unset -> set instead of
+// set -> unset).
+func TestApplyAgentRootsUnsetsNamesAbsentFromRoots(t *testing.T) {
+	roots := AgentRoots{"CLAUDE_CONFIG_DIR": "/pinned/claude"}
+	// CODEX_HOME was never customized at install (absent from roots) but
+	// the calling process currently has it set to something roots never
+	// saw — exactly the drift ApplyAgentRoots must erase, not adopt.
+	names := []string{"CLAUDE_CONFIG_DIR", "CODEX_HOME"}
+	applied := map[string]string{}
+	unset := map[string]bool{}
+	setenv := func(name, value string) error {
+		applied[name] = value
+		return nil
+	}
+	unsetenv := func(name string) error {
+		unset[name] = true
+		return nil
+	}
+	if err := ApplyAgentRoots(roots, names, setenv, unsetenv); err != nil {
+		t.Fatal(err)
+	}
+	if applied["CLAUDE_CONFIG_DIR"] != "/pinned/claude" {
+		t.Fatalf("applied = %#v, want CLAUDE_CONFIG_DIR pinned", applied)
+	}
+	if !unset["CODEX_HOME"] {
+		t.Fatalf("unset = %#v, want CODEX_HOME force-unset (it was absent from roots)", unset)
+	}
+	if _, ok := applied["CODEX_HOME"]; ok {
+		t.Fatalf("applied = %#v, CODEX_HOME must never be setenv'd — it was absent from roots", applied)
+	}
+}
+
 func TestApplyAgentRootsPropagatesError(t *testing.T) {
 	roots := AgentRoots{"CLAUDE_CONFIG_DIR": "/a"}
+	names := []string{"CLAUDE_CONFIG_DIR"}
 	wantErr := errors.New("setenv refused")
-	err := ApplyAgentRoots(roots, func(string, string) error { return wantErr })
+	err := ApplyAgentRoots(roots, names, func(string, string) error { return wantErr }, func(string) error { return nil })
 	if err == nil || !errors.Is(err, wantErr) {
 		t.Fatalf("err = %v, want wrapping %v", err, wantErr)
 	}
 }
 
-// TestApplyAgentRootsRealSetenv exercises the intended call shape (os.Setenv)
-// end to end, restoring the environment afterward.
+// TestApplyAgentRootsPropagatesUnsetError checks the unset side of the same
+// error contract: a failing unsetenv (a name absent from roots) must also
+// surface, not be swallowed.
+func TestApplyAgentRootsPropagatesUnsetError(t *testing.T) {
+	names := []string{"CODEX_HOME"}
+	wantErr := errors.New("unsetenv refused")
+	err := ApplyAgentRoots(AgentRoots{}, names, func(string, string) error { return nil }, func(string) error { return wantErr })
+	if err == nil || !errors.Is(err, wantErr) {
+		t.Fatalf("err = %v, want wrapping %v", err, wantErr)
+	}
+}
+
+// TestApplyAgentRootsRealSetenv exercises the intended call shape
+// (os.Setenv/os.Unsetenv) end to end, restoring the environment afterward:
+// one recorded variable is pinned to its value, one unrecorded-but-currently
+// -set variable is force-unset.
 func TestApplyAgentRootsRealSetenv(t *testing.T) {
-	name := "REINSTATE_TEST_AGENT_ROOT_VAR"
-	t.Setenv(name, "")
-	if err := ApplyAgentRoots(AgentRoots{name: "/pinned"}, os.Setenv); err != nil {
+	pinned := "REINSTATE_TEST_AGENT_ROOT_VAR"
+	drifted := "REINSTATE_TEST_AGENT_ROOT_DRIFT_VAR"
+	t.Setenv(pinned, "")
+	t.Setenv(drifted, "/drifted/from/launch/env")
+	roots := AgentRoots{pinned: "/pinned"}
+	names := []string{pinned, drifted}
+	if err := ApplyAgentRoots(roots, names, os.Setenv, os.Unsetenv); err != nil {
 		t.Fatal(err)
 	}
-	if got := os.Getenv(name); got != "/pinned" {
+	if got := os.Getenv(pinned); got != "/pinned" {
 		t.Fatalf("got %q", got)
+	}
+	if got, ok := os.LookupEnv(drifted); ok {
+		t.Fatalf("drifted var still set to %q, want unset (it was absent from roots)", got)
 	}
 }
 

@@ -835,6 +835,19 @@ func TestApplyInstalledAgentRoots(t *testing.T) {
 			wantCode:      ExitSafety,
 			wantErrSubstr: "recorded=unset current=/surprising/new/root",
 		},
+		{
+			// The gap this fix closes: --allow-root-change must not let a
+			// variable that was unset at install (absent from the recorded
+			// baseline) silently adopt whatever the process's own launch
+			// environment now carries for it. It must end up force-unset,
+			// pinned to unset just as firmly as a customized variable is
+			// pinned to its recorded value.
+			name:         "recorded unset, current newly set, override given: starts pinned to unset, never adopts the drifted value",
+			recordSpec:   &daemon.AgentRoots{},
+			envValue:     "/surprising/new/root",
+			allowChange:  true,
+			wantEnvAfter: "",
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
