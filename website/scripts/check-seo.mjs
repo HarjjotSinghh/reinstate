@@ -22,7 +22,6 @@ const UNSUPPORTED_AGENTS = [
   ['GitHub Copilot', /\b(?:github\s+)?copilot\b/i],
   ['Goose', /\bgoose\b/i],
   ['Kiro', /\bkiro\b/i],
-  ['OpenCode', /\bopen\s*code\b/i],
   ['Roo Code', /\broo\s+code\b/i],
   ['Sourcegraph Cody', /\b(?:sourcegraph\s+)?cody\b/i],
   ['Tabnine', /\btabnine\b/i],
@@ -30,10 +29,12 @@ const UNSUPPORTED_AGENTS = [
   ['Zed AI', /\bzed\s+ai\b/i],
 ];
 
-// Catalog agents on this denylist may be named on their own integration route only.
+// Agents Reinstate does not carry as a supported surface. OpenCode left this
+// list in v0.6.0, which promoted it to T5 alongside Claude Code and Codex CLI;
+// Grok Build and Qwen Code (T4 native resume) were never on it. The rest are
+// read-only or uncatalogued and may be named on their own integration route only.
 const T2_METADATA_ROUTES = new Map([
   ['Gemini CLI', '/integrations/gemini'],
-  ['OpenCode', '/integrations/opencode'],
   ['Cursor', '/integrations/cursor'],
   ['GitHub Copilot', '/integrations/copilot'],
   ['Cline', '/integrations/cline'],
@@ -567,7 +568,7 @@ function inspectProductClaims(value, context, errors, route) {
           'JSONLD_UNSUPPORTED_AGENT',
           context,
           `JSON-LD ${location} names unsupported coding agent "${name}".`,
-          'Keep structured-data compatibility claims limited to Claude Code and Codex; discuss roadmap tools only in clearly qualified page copy.',
+          'Keep structured-data compatibility claims to the agents this release carries (Claude Code, Codex CLI, and OpenCode sync; Grok Build and Qwen Code native resume); discuss read-only or roadmap tools only in clearly qualified page copy.',
         );
       }
     }
