@@ -15,33 +15,38 @@ Reinstate reads it. Support states live in
 
 ## Shipped readers
 
+Current tier is what stable `v0.6.0` ships; see
+[../compatibility.md](../compatibility.md) for the authoritative matrix.
+
 | Agent | Page | Tier |
 | ----- | ---- | ---- |
 | Claude Code | [claude.md](claude.md) | T5 |
 | Codex CLI | [codex.md](codex.md) | T5 |
+| OpenCode | [opencode.md](opencode.md) | T5 |
+| Qwen Code | [qwen.md](qwen.md) | T4 |
+| Grok Build | [grok.md](grok.md) | T4 |
 | Gemini CLI | [gemini.md](gemini.md) | T2 |
-| OpenCode | [opencode.md](opencode.md) | T2 |
-| Grok Build | [grok.md](grok.md) | T2 |
 | Kimi Code CLI | [kimi.md](kimi.md) | T2 |
+| Pi | [pi.md](pi.md) | T1 |
+| Cursor CLI | [cursor.md](cursor.md) | T1 |
+| GitHub Copilot CLI | [copilot.md](copilot.md) | T1 |
+| Cline | [cline.md](cline.md) | T1 |
 
-## Phase 5 candidates
+## T0 candidates
 
-| Agent | Page | Current | Target |
-| ----- | ---- | ------- | ------ |
-| Pi | [pi.md](pi.md) | T0 | T3 |
-| Qwen Code | [qwen.md](qwen.md) | T0 | T2 |
-| Cursor CLI | [cursor.md](cursor.md) | T0 | T1 |
-| GitHub Copilot CLI | [copilot.md](copilot.md) | T0 | T1 |
-| Aider | [aider.md](aider.md) | T0 | T1 |
-| Cline | [cline.md](cline.md) | T0 | T1 |
-| Roo Code | [roo.md](roo.md) | T0 | T1 |
-| Amp | [amp.md](amp.md) | T0 | T1 or T0 |
-| OpenHands | [openhands.md](openhands.md) | T0 | T0 |
-| ZCode | [zcode.md](zcode.md) | T0 | T0 |
-| MiniMax | [minimax.md](minimax.md) | T0 | T0 |
-| Antigravity CLI | [antigravity.md](antigravity.md) | T0 | T0 |
+Not usable yet; `rein doctor --agents` names each with a reason.
 
-Every row on every candidate page starts `Unverified`. Promotion requires a
+| Agent | Page | Target |
+| ----- | ---- | ------ |
+| Aider | [aider.md](aider.md) | T1 |
+| Roo Code | [roo.md](roo.md) | T1 |
+| Amp | [amp.md](amp.md) | T1 or T0 |
+| OpenHands | [openhands.md](openhands.md) | T0 |
+| ZCode | [zcode.md](zcode.md) | T0 |
+| MiniMax | [minimax.md](minimax.md) | T0 |
+| Antigravity CLI | [antigravity.md](antigravity.md) | T0 |
+
+Every row on every T0 candidate page starts `Unverified`. Promotion requires a
 redacted device probe; see [../testing/agent-storage-probe.md](../testing/agent-storage-probe.md).
 
 ## Committed device evidence

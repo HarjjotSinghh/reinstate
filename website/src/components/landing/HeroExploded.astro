@@ -2,6 +2,8 @@
 import { product } from '../../data/product';
 import { box, fmt, P } from '../../lib/iso';
 
+const isCandidateAheadOfStable = product.currentRelease !== product.stableRelease;
+
 const verifiedDate = new Intl.DateTimeFormat('en', {
   year: 'numeric',
   month: 'long',
@@ -228,8 +230,18 @@ const floorGrid = [
         </div>
 
         <p class="release-line">
-          Stable: <code>{product.stableRelease}</code><span aria-hidden="true"> · </span>Installer
-          candidate: <code>{product.currentRelease}</code> (not yet certified)
+          {
+            isCandidateAheadOfStable ? (
+              <Fragment>
+                Stable: <code>{product.stableRelease}</code><span aria-hidden="true"> · </span>Installer
+                candidate: <code>{product.currentRelease}</code> (not yet certified)
+              </Fragment>
+            ) : (
+              <Fragment>
+                Stable: <code>{product.stableRelease}</code>
+              </Fragment>
+            )
+          }
         </p>
 
         <div class="conversion-meta">
