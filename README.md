@@ -143,8 +143,9 @@ sensitive artifacts. Reinstate instead provides
 
 Phase 5 stable `v0.6.0`:
 
-- **Directional structured handoff** — Claude Code and Codex are destinations;
-  Claude Code, Codex, Gemini, OpenCode, and Grok are sources
+- **Directional structured handoff** — Claude Code, Codex, OpenCode, Grok
+  Build, and Qwen Code are destinations; those five plus Gemini CLI and Kimi
+  Code CLI are sources
 - **No source model dependency** — parse and checkpoint locally while the
   source CLI is closed, logged out, rate-limited, or offline
 - **Auditable fidelity** — each component is labeled `exact`, `normalized`,

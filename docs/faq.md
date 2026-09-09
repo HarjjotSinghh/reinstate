@@ -192,12 +192,16 @@ reported explicitly rather than fabricated.
 
 ## Production ready?
 
-Pre-1.0. Stable `v0.5.1` includes Phase 1 encrypted sync, Phase 2 local
-continuity, Phase 3 verified resume, Phase 4 structured handoff, and Phase 5
-universal agent coverage. Apple
-Silicon macOS and native Windows x64 are physically verified; Intel macOS and
-Linux/WSL2 remain preview and unverified. See [ROADMAP.md](../ROADMAP.md) and
-[CHANGELOG.md](../CHANGELOG.md). Use with backups; report bugs via GitHub Issues.
+Pre-1.0. Stable `v0.6.0` is the current release, certified by native Windows
+x64 tagged-artifact acceptance PASS under the single-platform waiver in
+[ADR 0005](adr/0005-v0.6.0-scope-and-windows-first-acceptance.md); Apple
+Silicon macOS acceptance is deferred to
+[#403](https://github.com/HarjjotSinghh/reinstate/issues/403). It includes
+Phase 1 encrypted sync, Phase 2 local continuity, Phase 3 verified resume,
+Phase 4 structured handoff, Phase 5 universal agent coverage, and Reinstate
+Hop (cloud continuity). Intel macOS and Linux/WSL2 remain preview and
+unverified. See [ROADMAP.md](../ROADMAP.md) and [CHANGELOG.md](../CHANGELOG.md).
+Use with backups; report bugs via GitHub Issues.
 
 ## How do I contribute?
 
