@@ -47,9 +47,9 @@ direction, not current CLI syntax or support.
 
 | Area | Reinstate boundary |
 | --- | --- |
-| Agents | Claude Code and Codex full local/sync capabilities; Gemini CLI and OpenCode read-only local indexing |
-| Resume | Claude Code → Claude Code; Codex → Codex |
-| Primary platforms | Apple Silicon macOS and native Windows x64, stable and physically verified |
+| Agents | Claude Code, Codex CLI, and OpenCode carry encrypted sync; Grok Build and Qwen Code add native resume; Gemini CLI, Kimi Code, Cline, Copilot CLI, Cursor CLI, and Pi are indexed read-only |
+| Resume | Same-vendor only: Claude Code, Codex CLI, OpenCode, Grok Build, and Qwen Code each resume their own sessions |
+| Primary platforms | Native Windows x64, physically verified for `v0.6.0`; Apple Silicon macOS deferred for this release under the single-platform waiver ([#403](https://github.com/HarjjotSinghh/reinstate/issues/403)) |
 | Preview platforms | Intel macOS, Linux, and WSL2 are unverified; WSL1 unsupported |
 | Storage | User-owned S3-compatible object storage; R2 recommended |
 | Transfer model | Manual push/pull of full immutable snapshots |

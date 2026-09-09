@@ -461,8 +461,9 @@ new objects uploaded while the rule is active are also subject to expiration.
   Put/Get/Head/Delete/List and conditional-write behavior used by Reinstate.
 - Phase 1 transfers full immutable session snapshots; delta transfer,
   retention controls, and remote garbage collection remain later work.
-- Current native resume is same-vendor only. Stable physical verification is
-  limited to Apple Silicon macOS and native Windows x64.
+- Current native resume is same-vendor only. Stable physical verification for
+  `v0.6.0` is limited to native Windows x64; Apple Silicon macOS is deferred
+  for this release (#403) and was verified for `v0.5.1` and before.
 
 ## Cloudflare R2 storage FAQ
 

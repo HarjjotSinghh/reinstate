@@ -144,7 +144,8 @@ failures before synchronization.
   uninitialized device is ready to sync.
 
 Save command output only after redacting private paths. Binary verification is
-not proof of stable support outside Apple Silicon macOS and native Windows x64.
+not proof of stable support outside native Windows x64, the platform `v0.6.0`
+is certified on (Apple Silicon macOS deferred, #403).
 
 ## Failure paths
 
