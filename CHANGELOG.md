@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- website: update `astro` (7.1.4 → 7.3.2), `js-yaml` (4.3.1 → 4.3.2), `sharp`
+  (0.35.3 → 0.35.4), and `svgo` (4.0.2 → 4.1.0) in `website/package-lock.json`
+  to clear six Dependabot alerts — critical `astro` AVIF/RCE
+  (GHSA-26w7-cxv4-gfx2) and moderate `astro` base-path auth bypass
+  (GHSA-376h-93r7-7g6f), high `js-yaml` `!!omap`/merge-key CPU DoS
+  (GHSA-2883-xcg3-v3hh), high `sharp` libheif RCE (GHSA-rgj7-g3m4-5g8c), and
+  high plus moderate `svgo` `removeScripts` sanitization bypasses
+  (GHSA-w27v-7q3p-w38r, GHSA-4vpr-x523-8j87). All four stayed on their
+  existing Astro 7.x / semver-compatible lines; no `package.json` range
+  changes were needed.
+
 ## [0.6.0] - 2026-09-09
 
 Stable release. Supersedes `v0.5.1` (2026-08-21). Authorized by
