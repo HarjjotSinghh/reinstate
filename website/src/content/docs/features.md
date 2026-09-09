@@ -1,13 +1,13 @@
 ---
-title: "Reinstate features and commands from v0.1.0 to v0.5.1"
+title: "Reinstate features and commands from v0.1.0 to v0.6.0"
 navTitle: "Features and commands"
-description: "See which Reinstate features and CLI commands shipped in stable v0.1.0 through v0.5.1, including encrypted sync, verified resume, structured handoff, and agent coverage."
+description: "See which Reinstate features and CLI commands shipped in stable v0.1.0 through v0.6.0: encrypted sync, verified resume, handoff, and cloud continuity."
 order: 2
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.6.0-rc.8"
-updatedAt: 2026-09-05
+version: "v0.6.0"
+updatedAt: 2026-09-09
 tags: ["cli", "features", "session-sync", "handoff", "verified-resume"]
 targetQuery: "Reinstate features and commands"
 searchIntent: "navigational"
@@ -15,13 +15,13 @@ draft: false
 noindex: false
 ---
 
-Stable **`v0.5.1`** is the current release. It includes every shipped surface
-from Phase 1 through Phase 5. Use this page as the versioned feature map. The
-`v0.6.0-rc.8` release candidate — Reinstate Hop (cloud continuity) and the
-interactive CLI — is covered in its own section below and is not yet a
-stable claim: its acceptance is native Windows x64 only, with Apple Silicon
-macOS deferred. Universal configuration, a Reinstate console, and team
-continuity remain later phases.
+Stable **`v0.6.0`** is the current release. It includes every shipped surface
+from Phase 1 through Phase 6C. Use this page as the versioned feature map.
+Reinstate Hop (cloud continuity) and the interactive CLI — covered in their
+own section below — are certified by native Windows x64 tagged-artifact
+acceptance PASS under the single-platform waiver in ADR 0005; Apple Silicon
+macOS acceptance is deferred (#403). Universal configuration, a Reinstate
+console, and team continuity remain later phases.
 
 A structured handoff starts a **new destination session continuing the same
 task**. Native resume stays same-vendor. Reinstate does not reconstruct a
@@ -39,11 +39,15 @@ The `rein` and `reinstate` names run the same binary.
 | `v0.4.0` | 2026-08-16 | Structured handoff into a new Claude Code or Codex session |
 | `v0.5.0` | 2026-08-21 | Universal agent coverage: 18-agent catalog, `rein doctor --agents` |
 | `v0.5.1` | 2026-08-21 | Patch: pure-Go SQLite driver bump; no product-surface change |
+| `v0.6.0` | 2026-09-09 | Reinstate Hop (cloud continuity), interactive TUI switcher, OpenCode T5, Kimi Code CLI T2 |
 
-Mandatory verified platforms remain Apple Silicon macOS and native Windows
-x64. Intel macOS and Linux/WSL2 stay preview/unverified. The `v0.6.0-rc.8`
-release candidate is not in this table because it is not yet a stable line;
-see the release-candidate section near the bottom of this page.
+Mandatory verified platform for `v0.6.0` is native Windows x64, certified by
+tagged-artifact acceptance PASS under the single-platform waiver in ADR
+0005; Apple Silicon macOS acceptance is deferred (#403). Earlier stable
+lines (`v0.5.1` and before) passed dual-platform tagged-artifact acceptance
+on both Apple Silicon macOS and native Windows x64. Intel macOS and
+Linux/WSL2 stay preview/unverified. See the `v0.6.0` section near the
+bottom of this page.
 
 ## Command map
 
@@ -57,15 +61,15 @@ see the release-candidate section near the bottom of this page.
 | `rein handoff`, `handoff list`, `inspect`, `export` | 0.4 | no |
 | `rein resume --with claude\|codex` | 0.4 | no |
 | `rein doctor --agents [--acceptance-matrix]` | 0.5 | no |
-| `rein login`, `rein whoami` | 0.6.0-rc.8 (candidate) | no |
-| `rein init --hop`, `rein account init\|recover\|join\|status` | 0.6.0-rc.8 (candidate) | yes |
-| `rein devices [approve\|revoke]`, `rein hop status\|credentials` | 0.6.0-rc.8 (candidate) | yes |
-| `rein sync verify`, `rein sync migrate --to byo` | 0.6.0-rc.8 (candidate) | yes |
-| `rein daemon run\|install\|start\|stop\|uninstall\|status` | 0.6.0-rc.8 (candidate) | yes |
-| bare `rein` interactive switcher, `ctrl+k` palette, `--plain` | 0.6.0-rc.8 (candidate) | no |
+| `rein login`, `rein whoami` | 0.6 | no |
+| `rein init --hop`, `rein account init\|recover\|join\|status` | 0.6 | yes |
+| `rein devices [approve\|revoke]`, `rein hop status\|credentials` | 0.6 | yes |
+| `rein sync verify`, `rein sync migrate --to byo` | 0.6 | yes |
+| `rein daemon run\|install\|start\|stop\|uninstall\|status` | 0.6 | yes |
+| bare `rein` interactive switcher, `ctrl+k` palette, `--plain` | 0.6 | no |
 
 Flag-level syntax lives in the [CLI reference](/docs/cli-reference). Rows
-marked "candidate" ship in `v0.6.0-rc.8`, not in stable `v0.5.1`.
+marked `0.6` ship in stable `v0.6.0`.
 
 ## v0.1.0 — encrypted sync
 
@@ -141,19 +145,21 @@ evidence. Dual-platform tagged-artifact acceptance passed across the full
 `v0.5.1` is a patch on top of `v0.5.0`: a pure-Go SQLite driver bump with no
 product-surface change, re-verified on both platforms.
 
-## Not in stable v0.5.1
+## Not in stable v0.6.0
 
-Reconstructed cross-agent sessions; Gemini CLI, OpenCode, Grok Build, Qwen
-Code, or Kimi Code CLI as handoff destinations or native-resume agents;
-encrypted sync beyond Claude Code and Codex CLI; Reinstate Hop; the
-interactive CLI; universal configuration; and Intel macOS or Linux as
-verified platforms.
+Reconstructed cross-agent sessions; Gemini CLI or Kimi Code CLI as handoff
+destinations or native-resume agents; encrypted sync beyond Claude Code,
+Codex CLI, and OpenCode; universal configuration; team continuity; Apple
+Silicon macOS acceptance for `v0.6.0` (deferred to #403); and Intel macOS or
+Linux as verified platforms.
 
-## v0.6.0-rc.8 — Reinstate Hop and the interactive CLI (release candidate)
+## v0.6.0 — Reinstate Hop and the interactive CLI
 
-`v0.6.0-rc.8` is a release candidate, not a stable claim: stable remains
-`v0.5.1`, and this candidate's acceptance is native Windows x64 only, with
-Apple Silicon macOS deferred until that hardware returns.
+Stable `v0.6.0` is certified by native Windows x64 tagged-artifact
+acceptance PASS (215/215 required rows) under the single-platform waiver in
+ADR 0005; Apple Silicon macOS acceptance is deferred to
+[#403](https://github.com/HarjjotSinghh/reinstate/issues/403) until that
+hardware returns.
 
 ```sh
 rein login
@@ -177,7 +183,7 @@ sync, the first embedded-SQLite agent to sync) and **Kimi Code CLI reaches
 T2** (handoff source). See [Reinstate Hop](/docs/hop) for the full command
 reference.
 
-This candidate also carries the interactive CLI experience introduced by an
+`v0.6.0` also carries the interactive CLI experience introduced by an
 earlier, uncertified candidate, unchanged: bare `rein` opens a session
 switcher with a readiness verdict
 per row, a handoff studio, a setup wizard with `--link` / `--paste` pairing

@@ -99,11 +99,11 @@ describe('central product-truth drift guard', () => {
   });
 
   it('keeps the catalog line from claiming an unpublished tag or extra T5 agents', () => {
-    expect(product.currentRelease).toBe('v0.6.0-rc.8');
-    // Stable deliberately lags the candidate: Hop and the interactive
-    // surfaces have development verification but no tagged-artifact
-    // acceptance yet.
-    expect(product.stableRelease).toBe('v0.5.1');
+    expect(product.currentRelease).toBe('v0.6.0');
+    // Stable v0.6.0 is authorized by native Windows x64 tagged-artifact
+    // acceptance PASS (215/215); current and stable are the same release
+    // again until a new candidate is cut.
+    expect(product.stableRelease).toBe('v0.6.0');
     expect(compatibility.reinstateVersion).toBe(product.currentRelease);
     expect(compatibility.catalogLine).toBe(product.currentRelease);
     // OpenCode joins Claude Code and Codex at T5 with this candidate: the

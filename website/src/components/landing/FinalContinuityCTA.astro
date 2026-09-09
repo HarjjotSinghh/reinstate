@@ -4,6 +4,8 @@ import LogoMark from '../LogoMark.astro';
 import ContinuityFitArt from './art/ContinuityFitArt.astro';
 import InstallEdgeArt from './art/InstallEdgeArt.astro';
 
+const isCandidateAheadOfStable = product.currentRelease !== product.stableRelease;
+
 const fitItems = [
   {
     number: '01',
@@ -203,12 +205,22 @@ const credibility = [
       }
 
       <p class="install-verify">
-        Checksum-verified install of candidate <code>{product.currentRelease}</code>.
-        For certified stable, use <a
-          href={product.stableReleaseUrl}
-          rel="noopener noreferrer"
-          target="_blank">GitHub Releases</a
-        > <code>{product.stableRelease}</code>.
+        {
+          isCandidateAheadOfStable ? (
+            <Fragment>
+              Checksum-verified install of candidate <code>{product.currentRelease}</code>.
+              For certified stable, use <a
+                href={product.stableReleaseUrl}
+                rel="noopener noreferrer"
+                target="_blank">GitHub Releases</a
+              > <code>{product.stableRelease}</code>.
+            </Fragment>
+          ) : (
+            <Fragment>
+              Checksum-verified install of stable <code>{product.currentRelease}</code>.
+            </Fragment>
+          )
+        }
       </p>
 
       <div class="console-foot">
@@ -218,8 +230,18 @@ const credibility = [
     </div>
 
     <p class="release-line">
-      Stable: <code>{product.stableRelease}</code><span aria-hidden="true"> · </span>Installer
-      candidate: <code>{product.currentRelease}</code> (not yet certified)
+      {
+        isCandidateAheadOfStable ? (
+          <Fragment>
+            Stable: <code>{product.stableRelease}</code><span aria-hidden="true"> · </span>Installer
+            candidate: <code>{product.currentRelease}</code> (not yet certified)
+          </Fragment>
+        ) : (
+          <Fragment>
+            Stable: <code>{product.stableRelease}</code>
+          </Fragment>
+        )
+      }
     </p>
 
     <div class="install-actions">

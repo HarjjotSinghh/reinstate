@@ -1,5 +1,11 @@
 export const releaseHistory = [
   {
+    version: 'v0.6.0',
+    date: '2026-09-09',
+    summary:
+      'Stable release. Reinstate Hop hosted-tier client (login/whoami, init --hop, account init/recover/join, devices approve/revoke, sync verify/migrate, and a background daemon), the interactive TUI switcher, and universal agent coverage across the shipped catalog with OpenCode promoted to T5 (encrypted same-vendor sync) and Kimi Code CLI to T2 (handoff source). Adds message-text search for Cline, Cursor CLI, OpenCode, and Pi, and a real Cursor CLI store reader. Verified vendor ranges: Claude Code through 2.1.265, Codex CLI through 0.153.4, OpenCode through 1.18.29, Qwen Code through 0.23.0, Grok Build through 1.0.13. Authorized by native Windows x64 tagged-artifact acceptance PASS on candidate v0.6.0-rc.8: 215 of 215 required rows (opencode:D4 N/A, definitional), under the single-platform waiver in ADR 0005 — Apple Silicon macOS acceptance is deferred to #403. Nine candidates preceded it: v0.6.0-rc.1 through rc.7 were each published and each failed their own tagged Windows run, v0.5.2-rc.1 was published and never certified, and v0.6.0-rc.8 is the candidate whose tagged run authorizes this release. Carries one open disposition: the daemon installed through Task Scheduler does not pin the agent-root environment it was installed under (#424, scheduled for v0.6.1). The hosted control plane is not open: no pricing, trial, or sign-up ships.',
+  },
+  {
     version: 'v0.6.0-rc.8',
     date: '2026-09-09',
     summary:

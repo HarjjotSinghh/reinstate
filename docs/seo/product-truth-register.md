@@ -2,11 +2,24 @@
 
 Last reviewed: 2026-09-09
 Canonical website source: `website/src/data/product.ts`
-Stable release: `v0.5.1`, dated 2026-08-21.
-Reviewed candidate: `v0.6.0-rc.8`, dated 2026-09-09; native Windows x64
-tagged-artifact acceptance is still pending for it, and Apple Silicon macOS
-acceptance is deferred under ADR 0005. `v0.5.2-rc.1` (2026-08-23),
-`v0.6.0-rc.1` (2026-09-06), `v0.6.0-rc.2` (2026-09-07, tagged Windows run
+Stable release: `v0.6.0`, dated 2026-09-09. Supersedes `v0.5.1`
+(2026-08-21). Authorized by native Windows x64 tagged-artifact acceptance
+PASS on candidate `v0.6.0-rc.8`
+(`docs/testing/results/2026-09-09-windows-v060rc8.md`): 215 of 215 required
+rows PASS (`opencode:D4` `N/A (definitional)`), under the single-platform
+waiver in ADR 0005 — Apple Silicon macOS acceptance is deferred to
+[#403](https://github.com/HarjjotSinghh/reinstate/issues/403) and is not
+claimed anywhere. Two dispositions are carried rather than resolved:
+`opencode:D4` stays `N/A (definitional)` (a SQLite-only store has no JSONL
+record boundary), and the daemon installed through Task Scheduler does not
+pin the agent-root environment it was installed under
+([#424](https://github.com/HarjjotSinghh/reinstate/issues/424), scheduled
+for `v0.6.1`).
+
+Nine candidates preceded it: `v0.5.2-rc.1` (2026-08-23, published but never
+certified on either platform, content shipping inside `v0.6.0-rc.1`),
+`v0.6.0-rc.1` (2026-09-06, tagged Windows run ended device verdict `FAIL`,
+201/216 required rows), `v0.6.0-rc.2` (2026-09-07, tagged Windows run
 ended device verdict `FAIL`, 203/215 required rows, on a Cursor CLI
 store-schema defect `v0.6.0-rc.3` fixed), `v0.6.0-rc.3` (2026-09-07, tagged
 Windows run ended device verdict `FAIL`, 201/215 required rows, on a Pi
@@ -21,7 +34,7 @@ same-artifact rechecks ended device verdict `FAIL`, 211/215 required rows,
 zero product defects, on a live `grok` backend-connectivity gap compounded
 by a `grok` version drift to `1.0.13`, and a `MatrixH:H7` disposition whose
 digest-equality pass condition proved unmeasurable on a live host, both
-addressed by `v0.6.0-rc.6`), and `v0.6.0-rc.6` (2026-09-08, tagged Windows
+addressed by `v0.6.0-rc.6`), `v0.6.0-rc.6` (2026-09-08, tagged Windows
 run ended device verdict `FAIL`, 211/215 required rows, zero product
 defects, on a Codex account usage-limit gap on `MatrixG:G1` and a Codex CLI
 version-drift gap on `codex:E1`–`E3`, addressed by `v0.6.0-rc.7`), and
@@ -29,9 +42,10 @@ version-drift gap on `codex:E1`–`E3`, addressed by `v0.6.0-rc.7`), and
 214/215 required rows, this candidate's own targeted fix — the widened
 Codex CLI range — fully confirmed and every row carried from `v0.6.0-rc.6`
 cleared to `PASS`, on a new interactive-switcher readiness regression on
-CLI row `13`, addressed by this candidate) were all published candidates
-that were superseded without stable promotion; their content ships inside
-`v0.6.0-rc.8`.
+CLI row `13`, addressed by `v0.6.0-rc.8`) were all published candidates
+superseded without stable promotion of their own; `v0.6.0-rc.8`
+(2026-09-09) is the candidate whose tagged-artifact acceptance, above,
+directly authorizes stable `v0.6.0`.
 
 This is the required output of the repository-local
 `reinstate-product-truth` workflow. It separates released facts from roadmap
@@ -58,7 +72,7 @@ marketing claim.
 | Paths | Recognized structural project roots are tokenized and expanded through a canonical project ID; arbitrary prose is not rewritten | `internal/pathmap`, adapter tests, configuration docs |
 | License | Apache-2.0 | `LICENSE`, `product.ts` |
 | Account requirement | The CLI does not require a Reinstate account | released architecture and `product.ts` |
-| Current release | Stable is `v0.5.1`, dated 2026-08-21. `v0.6.0-rc.8`, dated 2026-09-09, is the current candidate awaiting native Windows x64 tagged-artifact acceptance (macOS deferred under ADR 0005). | `website/src/data/product.ts`, `CHANGELOG.md` section `[0.6.0-rc.8]`, release history |
+| Current release | Stable is `v0.6.0`, dated 2026-09-09, certified by native Windows x64 tagged-artifact acceptance PASS (macOS deferred under ADR 0005, #403). Supersedes `v0.5.1` (2026-08-21). | `website/src/data/product.ts`, `CHANGELOG.md` section `[0.6.0]`, release history |
 | Maintainer | Harjot Singh Rana | repository metadata and `product.ts` |
 
 ## Conflicting claims and resolution
@@ -69,7 +83,7 @@ marketing claim.
 | Live GitHub topics | Previously incomplete | Resolved 2026-08-27 | Eleven topics are now applied and verified against the GitHub API: `agents`, `claude-code`, `codex`, `context`, `state`, `cli`, `developer-tools`, `encryption`, `go`, `golang`, `session-management`. |
 | Live GitHub social preview image | The generic social image may still not match the canonical entity/brand packet | Unverified | The reproducible 1280×640 image is prepared. Whether it has been applied was not checked — the GitHub API does not expose it in the fields queried on 2026-08-27. Confirm in repository settings before treating this as done. |
 | Candidate surfaces | Phase 4 structured handoff is stable in `v0.4.0` | Verified | Docs must not describe handoff as pending candidate work. |
-| Roadmap surfaces | Universal configuration and team continuity can be mistaken for current features | Planned | Current pages separate stable `v0.5.1` from later roadmap work. |
+| Roadmap surfaces | Universal configuration and team continuity can be mistaken for current features | Planned | Current pages separate stable `v0.6.0` from later roadmap work. |
 | OS language | Availability of a Linux binary can be mistaken for certified Phase 1 Linux agent resume | Ambiguous without qualification | Published install and guide copy says plain Linux is not a certified Phase 1 agent-resume target. |
 | `rein doctor --self-test` | “Synthetic storage test” could be read as a probe of configured remote storage | Ambiguous | CLI reference now states that the self-test uses in-memory sync and local files; real storage evidence comes from `init`, `status`, or scoped sync operations. |
 | Structured data | A schema type or claim could exceed visible current content | Unsupported if unmatched | Generated-build CI now requires visible parity for page/article names, FAQ questions, HowTo steps, breadcrumbs, and dates. |

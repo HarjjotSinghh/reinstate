@@ -1,6 +1,6 @@
 {
-  "_comment": "Tiers as of the release named below. compatibility.json must match this exactly. Updated only by a release; a promotion on main that is not released will fail the guard, which is the point. OpenCode moved to T5 (encrypted sync) and Kimi to T2 (handoff source) seven candidates ago, carried from the Hop client; this candidate changes no agent's tier and widens no range, only fixing an interactive-switcher readiness regression the prior candidate's tagged run found (see CHANGELOG.md). Not a stable claim yet: stable stays v0.5.1 until a Windows tagged-artifact run promotes it (reinstate#369 tracks a clearer next-release marker for this gap).",
-  "release": "v0.6.0-rc.8",
+  "_comment": "Tiers as of the release named below. compatibility.json must match this exactly. Updated only by a release; a promotion on main that is not released will fail the guard, which is the point. OpenCode reaches T5 (encrypted sync) and Kimi reaches T2 (handoff source) in stable v0.6.0, carried from the Hop client through eight release candidates. Verified against 'rein doctor --agents --json' on a binary built from the v0.6.0 release commit: declared_tier matches this table for every agent. Stable claim, authorized by native Windows x64 tagged-artifact acceptance PASS (215/215); Apple Silicon macOS acceptance is deferred to #403 under ADR 0005.",
+  "release": "v0.6.0",
   "tiers": {
     "aider": "T0",
     "amp": "T0",

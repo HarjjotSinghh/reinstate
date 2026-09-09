@@ -6,8 +6,8 @@ order: 14
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.6.0-rc.8"
-updatedAt: 2026-08-16
+version: "v0.6.0"
+updatedAt: 2026-09-09
 tags: ["cli", "command-reference", "session-sync", "troubleshooting", "handoff"]
 targetQuery: "Reinstate CLI commands"
 searchIntent: "navigational"
@@ -16,7 +16,7 @@ noindex: false
 ---
 
 The `rein` and `reinstate` names run the same binary. This reference covers
-every command shipped by Reinstate `v0.5.1`, including what it does, what
+every command shipped by Reinstate `v0.6.0`, including what it does, what
 success looks like, the flags it accepts, platform-specific behavior, common
 failures, and the available recovery path.
 
@@ -29,7 +29,7 @@ failures, and the available recovery path.
 
 ## Prerequisites
 
-- Install and verify `v0.5.1` before relying on this syntax.
+- Install and verify `v0.6.0` before relying on this syntax.
 - Run `rein init` before commands that need configuration or remote storage.
 - Close the selected Claude Code or Codex process before a mutating pull or
   `conflicts resolve --keep-remote`.

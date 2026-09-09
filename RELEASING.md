@@ -1151,6 +1151,35 @@ from `v0.6.0-rc.7`), plus the 22-row CLI matrix and the 16 Hop parity rows
 Publication means ready for tagged-artifact acceptance. It does **not**
 authorize stable `v0.6.0`. Current stable remains `v0.5.1`.
 
+### v0.6.0 stable evidence
+
+Native Windows x64 tagged-artifact acceptance PASS on candidate `v0.6.0-rc.8`,
+under the [Windows-first waiver](#v060-windows-first-waiver): `215 PASS / 0
+PARTIAL / 0 FAIL / 0 NOT TESTED` of `215` required rows (`216` rows total, one
+`N/A (definitional)`: `opencode:D4`), adversarially verified
+(`docs/testing/results/2026-09-09-windows-v060rc8.md`).
+
+This authorizes the signed stable `v0.6.0` tag. Apple Silicon macOS acceptance
+is deferred to [#403](https://github.com/HarjjotSinghh/reinstate/issues/403)
+under [ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md)
+and is not claimed for this release. Intel macOS and Linux/WSL2 remain
+optional and unverified.
+
+Two dispositions are carried into this release rather than resolved by it:
+
+- **`opencode:D4`** — `N/A (definitional)`: OpenCode's SQLite-only store has
+  no JSONL record boundary the row's mechanism applies to. Unchanged since
+  `v0.6.0-rc.1`.
+- **`#424`** — the daemon installed through Task Scheduler does not pin the
+  agent-root environment it was installed under. Scheduled for `v0.6.1`.
+
+Nine candidates preceded this release: `v0.6.0-rc.1` (201/216) through
+`v0.6.0-rc.7` (214/215) were each published and each failed their own
+tagged-artifact native Windows run; `v0.5.2-rc.1` (2026-08-23) was published
+and never certified on either platform, and its content ships inside
+`v0.6.0-rc.1` rather than standing alone; `v0.6.0-rc.8` is the candidate whose
+tagged-artifact acceptance, above, directly authorizes this release.
+
 ## Steps
 
 ### 1. Prepare the release commit

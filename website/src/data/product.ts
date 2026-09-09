@@ -20,16 +20,16 @@ export const product = {
   supportedAgents: ['Claude Code', 'Codex'],
   supportedOperatingSystems: ['macOS', 'Windows'],
   supportedStorage: ['Amazon S3', 'Cloudflare R2', 'S3-compatible storage'],
-  currentRelease: 'v0.6.0-rc.8',
+  currentRelease: 'v0.6.0',
   currentReleaseUrl:
-    'https://github.com/HarjjotSinghh/reinstate/tree/v0.6.0-rc.8',
+    'https://github.com/HarjjotSinghh/reinstate/tree/v0.6.0',
   currentReleaseDate: '2026-09-09',
   initialPublicReleaseDate: '2026-07-25',
-  stableRelease: 'v0.5.1',
+  stableRelease: 'v0.6.0',
   stableReleaseUrl:
-    'https://github.com/HarjjotSinghh/reinstate/releases/tag/v0.5.1',
-  releaseStatus: 'v0.6.0-rc.8 candidate · stable remains v0.5.1 · v0.6.0-rc.7 tagged Windows run ended FAIL (214/0/1/0 of 215), the widened Codex CLI range fully confirmed and every rc.6-carried row cleared to PASS, CLI row 13 (all-projects switcher readiness) the one open row · this candidate fixes exactly that regression · native Windows tagged-artifact acceptance pending, macOS deferred',
-  lastVerified: '2026-09-08',
+    'https://github.com/HarjjotSinghh/reinstate/releases/tag/v0.6.0',
+  releaseStatus: 'v0.6.0 stable · native Windows x64 tagged-artifact acceptance PASS (215/215 required rows, docs/testing/results/2026-09-09-windows-v060rc8.md) under the single-platform waiver (ADR 0005) · Apple Silicon macOS acceptance deferred to #403 · supersedes v0.5.1',
+  lastVerified: '2026-09-09',
   programmingLanguage: 'Go',
   requiresAccount: false,
   maintainer: {

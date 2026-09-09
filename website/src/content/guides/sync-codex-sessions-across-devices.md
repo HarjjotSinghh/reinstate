@@ -4,8 +4,8 @@ description: "Set up encrypted Codex CLI session sync between two computers with
 answer: "To sync a Codex CLI session across devices, install Reinstate on both computers, assign the repository one canonical project ID, push one explicit Codex session, dry-run and pull it on the destination, then continue it with the native codex resume command."
 author: "Harjot Singh Rana"
 publishedAt: 2026-07-27
-updatedAt: 2026-07-27
-reviewedAt: 2026-07-27
+updatedAt: 2026-09-09
+reviewedAt: 2026-09-09
 tags: ["Codex CLI", "session sync", "multi-device", "path mapping", "end-to-end encryption"]
 targetQuery: "how to sync Codex sessions across devices"
 searchIntent: "agent-specific"
@@ -59,12 +59,12 @@ This is **Codex to Codex** same-vendor continuity. Phase 1 does not turn a Codex
 rollout into a Claude Code transcript, and it does not silently reconstruct a
 session for another coding agent.
 
-The current public installer pins candidate `v0.6.0-rc.8`, whose
-tagged-artifact acceptance is pending on native Windows x64 (Apple Silicon
-macOS is deferred until that hardware returns); Intel macOS and Linux/WSL2
-remain preview and unverified. Stable is `v0.5.1`. Confirm the platform and
-Codex CLI range on the [compatibility page](/compatibility) before
-transferring real work.
+The current public installer pins stable `v0.6.0`, certified by native
+Windows x64 tagged-artifact acceptance PASS under the single-platform
+waiver in ADR 0005 (Apple Silicon macOS acceptance is deferred to #403);
+Intel macOS and Linux/WSL2 remain preview and unverified. Confirm the
+platform and Codex CLI range on the [compatibility page](/compatibility)
+before transferring real work.
 
 ## Key points
 
@@ -76,10 +76,9 @@ transferring real work.
   either mutating command.
 - Snapshots and manifests are encrypted locally; storage credentials stay in
   the OS keyring, and the passphrase is not stored.
-- The installer-pinned `v0.6.0-rc.8` candidate's tagged-artifact acceptance
-  is pending on native Windows x64, with macOS deferred; stable `v0.5.1`
-  remains dual-platform verified. This guide is not acceptance evidence for
-  any other environment.
+- The installer-pinned stable `v0.6.0` passed native Windows x64
+  tagged-artifact acceptance; Apple Silicon macOS acceptance is deferred to
+  #403. This guide is not acceptance evidence for any other environment.
 
 ## Before you begin
 
@@ -102,7 +101,7 @@ own stable identifier and reuse it exactly on each device.
 
 | Environment | Installer path | Current qualification |
 | --- | --- | --- |
-| macOS native arm64 | POSIX installer | Stable and physically verified. |
+| macOS native arm64 | POSIX installer | Deferred for `v0.6.0` (#403); earlier stable releases were physically verified here. |
 | macOS native amd64 | POSIX installer | Preview and unverified; do not infer certification from installer success. |
 | Windows 11 native amd64 | PowerShell installer | Stable and physically verified. |
 | Linux native | POSIX installer | Preview and unverified. |
@@ -154,8 +153,7 @@ rein setup check
 ```
 
 **Expected result:** `rein version --json` returns a JSON object whose version
-is `v0.6.0-rc.8` for the currently pinned installer (stable remains
-`v0.5.1`). Before initialization,
+is `v0.6.0` for the currently pinned installer. Before initialization,
 `rein setup check` exits with code `3` and reports `config missing`. That one
 pre-init failure is expected; a platform, keyring, or Codex compatibility
 failure is a separate blocker that must be resolved.

@@ -6,8 +6,8 @@ order: 15
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.6.0-rc.8"
-updatedAt: 2026-08-16
+version: "v0.6.0"
+updatedAt: 2026-09-09
 tags: ["limitations", "stable-release", "compatibility", "same-vendor-resume", "roadmap"]
 targetQuery: "Reinstate limitations"
 searchIntent: "evaluation"
@@ -15,17 +15,22 @@ draft: false
 noindex: false
 ---
 
-Reinstate `v0.5.1` is a pre-1.0 continuity layer with configless local
-session indexing, encrypted same-vendor Claude Code and Codex session sync,
-verified resume, structured handoff into a new destination session, and
-universal agent coverage across the support-tier catalog. It is not a
-cross-agent translator, repository synchronizer, remote desktop, coding
-harness, or universal agent configuration system.
+Reinstate `v0.6.0` is a pre-1.0 continuity layer with configless local
+session indexing, encrypted same-vendor Claude Code, Codex, and OpenCode
+session sync, verified resume, structured handoff into a new destination
+session, Reinstate Hop (cloud continuity), and universal agent coverage
+across the support-tier catalog. It is not a cross-agent translator,
+repository synchronizer, remote desktop, coding harness, or universal agent
+configuration system.
 
-> **Stable platform boundary:** exact `v0.5.1` installed artifacts passed
-> dual-platform tagged-artifact acceptance on Apple Silicon macOS and native
-> Windows x64. Intel macOS and Linux/WSL2 are preview and unverified. This page
-> does not convert installer availability into a stable platform claim.
+> **Stable platform boundary:** exact `v0.6.0` installed artifacts passed
+> native Windows x64 tagged-artifact acceptance PASS under the
+> single-platform waiver in ADR 0005; Apple Silicon macOS acceptance is
+> deferred to #403. Earlier stable releases (`v0.5.1` and before) passed
+> dual-platform tagged-artifact acceptance on both Apple Silicon macOS and
+> native Windows x64. Intel macOS and Linux/WSL2 are preview and unverified.
+> This page does not convert installer availability into a stable platform
+> claim.
 
 ## Prerequisites
 
@@ -49,7 +54,7 @@ direction, not current CLI syntax or support.
 | Storage | User-owned S3-compatible object storage; R2 recommended |
 | Transfer model | Manual push/pull of full immutable snapshots |
 | Configuration | Reinstate session-sync config only |
-| Release status | Stable `v0.5.1` on verified platforms; pre-1.0 formats and interfaces may still change |
+| Release status | Stable `v0.6.0` on verified platforms; pre-1.0 formats and interfaces may still change |
 
 Versions outside the tested stable ranges, including prereleases, are
 `UNTESTED`. Recognizable untested sessions may be discovered read-only, but
@@ -60,7 +65,7 @@ unsafe compatibility override.
 
 Reinstate preserves each supported vendor's native representation. It does not
 make a Claude Code transcript natively resumable in Codex or a Codex rollout
-natively resumable in Claude Code. Stable `v0.5.1` structured handoff starts a
+natively resumable in Claude Code. Stable `v0.6.0` structured handoff starts a
 new destination session with a visible, lossy projection. Reconstructed
 conversations are not shipped.
 

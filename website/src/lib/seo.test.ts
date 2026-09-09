@@ -16,10 +16,10 @@ describe('SEO product truth', () => {
     expect(product.licenseName).toBe('Apache-2.0');
     expect(product.requiresAccount).toBe(false);
     expect(product.releaseStatus).toBe(
-      'v0.6.0-rc.8 candidate · stable remains v0.5.1 · v0.6.0-rc.7 tagged Windows run ended FAIL (214/0/1/0 of 215), the widened Codex CLI range fully confirmed and every rc.6-carried row cleared to PASS, CLI row 13 (all-projects switcher readiness) the one open row · this candidate fixes exactly that regression · native Windows tagged-artifact acceptance pending, macOS deferred',
+      'v0.6.0 stable · native Windows x64 tagged-artifact acceptance PASS (215/215 required rows, docs/testing/results/2026-09-09-windows-v060rc8.md) under the single-platform waiver (ADR 0005) · Apple Silicon macOS acceptance deferred to #403 · supersedes v0.5.1',
     );
     expect(product.initialPublicReleaseDate).toBe('2026-07-25');
-    expect(product.stableRelease).toBe('v0.5.1');
+    expect(product.stableRelease).toBe('v0.6.0');
   });
 
   it('keeps the advertised release synchronized with the changelog', () => {

@@ -1,13 +1,21 @@
 # Compatibility
 
-Stable `v0.5.1` is the current Phase 5 release: universal agent coverage on top
-of structured handoff and verified resume for Claude Code and Codex, on Apple
-Silicon macOS and native Windows x64, after dual-platform tagged-artifact
-acceptance PASS on candidate `v0.5.0-rc.6`. Intel macOS and Linux/WSL2 remain optional,
-unsupported/unverified evidence and do not block stable.
+Stable `v0.6.0` is the current release: Reinstate Hop (cloud continuity), the
+interactive TUI switcher, and universal agent coverage on top of structured
+handoff and verified resume for Claude Code and Codex. Certified by native
+Windows x64 tagged-artifact acceptance PASS (215/215 required rows) under
+the single-platform waiver in
+[ADR 0005](adr/0005-v0.6.0-scope-and-windows-first-acceptance.md); Apple
+Silicon macOS acceptance is deferred to
+[#403](https://github.com/HarjjotSinghh/reinstate/issues/403). Earlier
+stable releases (`v0.5.1` and before) passed dual-platform tagged-artifact
+acceptance on both Apple Silicon macOS and native Windows x64. Intel macOS
+and Linux/WSL2 remain optional, unsupported/unverified evidence and do not
+block stable.
 
-Candidate history (RC1–RC11) lived under `docs/testing/results/` and earlier
-CHANGELOG sections; those records do not rewrite this stable claim.
+Candidate history (RC1–RC11, plus the `v0.6.0` candidate series) lived under
+`docs/testing/results/` and earlier CHANGELOG sections; those records do not
+rewrite this stable claim.
 
 Stable Reinstate `v0.2.0` implements **same-vendor encrypted session sync** and
 the Phase 2 local continuity surface for:

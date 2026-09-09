@@ -7,7 +7,96 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-09
+
+Stable release. Supersedes `v0.5.1` (2026-08-21). Authorized by
+tagged-artifact native Windows x64 acceptance of candidate `v0.6.0-rc.8`
+([`docs/testing/results/2026-09-09-windows-v060rc8.md`](docs/testing/results/2026-09-09-windows-v060rc8.md)):
+device verdict `PASS`, `215 PASS / 0 PARTIAL / 0 FAIL / 0 NOT TESTED` of
+`215` required rows (`216` rows total, `1` `N/A (definitional)`:
+`opencode:D4` — OpenCode's SQLite-only store has no JSONL record boundary
+the row's mechanism applies to), adversarially verified.
+
+**Single-platform certification under a waiver.** [ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md)
+waives the usual dual-platform gate for this release only: Apple Silicon
+macOS acceptance is deferred to
+[#403](https://github.com/HarjjotSinghh/reinstate/issues/403) and is not
+claimed anywhere in this release. Every present-tense platform claim for
+`v0.6.0` says native Windows x64 certified, macOS deferred.
+
+**Highlights.** The Reinstate Hop hosted-tier client ships as ordinary
+`rein` commands: `login`/`whoami`, an `init --hop` wizard, `account
+init`/`recover`/`join`/`status`, `devices approve`/`revoke`, `sync
+verify`/`migrate --to byo`, and a background daemon. The hosted control
+plane itself is not open — no pricing, trial, or sign-up ships. Bare `rein`
+opens the interactive TUI switcher (per-row readiness, a handoff studio, a
+setup wizard, a `ctrl+k` palette); `--plain`/`REINSTATE_NO_TUI` keep every
+`--json` document and non-TTY stream byte-identical. Universal agent
+coverage moves again: OpenCode reaches **T5** (encrypted same-vendor sync)
+and Kimi Code CLI reaches **T2** (handoff source); OpenCode, Grok Build, and
+Qwen Code are structured-handoff destinations. Message-text search now
+covers Cline, Cursor CLI, OpenCode, and Pi, and Cursor CLI sessions are read
+from their real `blobs`/`meta` SQLite schema rather than a guessed one. The
+verified vendor ranges, each widened on native Windows physical evidence
+under the waiver: Claude Code through `2.1.265`, Codex CLI through
+`0.153.4`, OpenCode through `1.18.29`, Qwen Code through `0.23.0`, and Grok
+Build through `1.0.13`.
+
+**Dispositions carried.** `opencode:D4` stays `N/A (definitional)`: a
+SQLite-only store has no JSONL record boundary. The daemon installed
+through Task Scheduler does not pin the agent-root environment it was
+installed under ([#424](https://github.com/HarjjotSinghh/reinstate/issues/424),
+scheduled for `v0.6.1`).
+
+### Added
+
+- Reinstate Hop hosted-tier client: sign-in, the locker, device pairing and
+  revocation, key rotation, machine migration, and `rein daemon`.
+- The interactive TUI switcher, a handoff studio, a setup wizard, and the
+  `ctrl+k` palette.
+- Message-text search for Cline, Cursor CLI, OpenCode, and Pi.
+- A real Cursor CLI store reader (`blobs`/`meta` schema).
+
+### Changed
+
+- OpenCode reaches T5 (encrypted same-vendor sync); Kimi Code CLI reaches
+  T2 (handoff source). OpenCode, Grok Build, and Qwen Code become
+  structured-handoff destinations.
+- Verified vendor ranges widen on native Windows physical evidence: Claude
+  Code to `2.1.265`, Codex CLI to `0.153.4`, OpenCode to `1.18.29`, Qwen
+  Code to `0.23.0`, and Grok Build to `1.0.13`.
+
+### Fixed
+
+- The interactive switcher no longer shows a healthy session as blocked: a
+  preflight check that could not be evaluated inside its shared timeout
+  budget no longer reads as a blocking finding, an unresolved verdict is
+  retried instead of cached as final, and a permanently, deterministically
+  broken agent install still settles on `Blocked` with its actual repair
+  message rather than checking forever.
+- Cursor CLI session discovery, search, inspect, resume, and fork now
+  isolate `CURSOR_CONFIG_DIR` on every command path; `message_count` and
+  search text are read from each vendor's own message-bearing store instead
+  of defaulting to empty.
+- The agent probe no longer reaches a committed artifact unshaped at every
+  tree depth, and an existing-but-empty overridden agent root is no longer
+  indistinguishable from an absent one.
+
+Nine candidates preceded this release: `v0.6.0-rc.1` (201/216) through
+`v0.6.0-rc.7` (214/215) were each published and each failed their own
+tagged-artifact native Windows run; `v0.5.2-rc.1` (2026-08-23) was published
+and never certified, and its content ships inside `v0.6.0-rc.1` rather than
+standing alone; `v0.6.0-rc.8` is the candidate whose tagged-artifact
+acceptance directly authorizes this release. Every candidate is recorded
+below with the evidence that produced it.
+
 ## [0.6.0-rc.8] - 2026-09-09
+
+Its tagged-artifact native Windows acceptance
+([`docs/testing/results/2026-09-09-windows-v060rc8.md`](docs/testing/results/2026-09-09-windows-v060rc8.md))
+ended device verdict `PASS`: `215 PASS / 0 PARTIAL / 0 FAIL / 0 NOT TESTED`
+of `215` required rows (`opencode:D4` `N/A (definitional)`, unchanged),
+adversarially verified. This authorizes stable `v0.6.0`.
 
 Release candidate. Stable remains `v0.5.1`; the public installers now pin
 this candidate, superseding `v0.6.0-rc.7`.
@@ -3810,6 +3899,7 @@ See [ROADMAP.md](ROADMAP.md) for the authoritative phase list. Highlights:
 ---
 
 [Unreleased]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.8...HEAD
+[0.6.0]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.8...v0.6.0
 [0.6.0-rc.8]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.7...v0.6.0-rc.8
 [0.6.0-rc.7]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.6...v0.6.0-rc.7
 [0.6.0-rc.6]: https://github.com/HarjjotSinghh/reinstate/compare/v0.6.0-rc.5...v0.6.0-rc.6

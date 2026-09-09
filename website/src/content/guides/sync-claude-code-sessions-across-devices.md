@@ -4,8 +4,8 @@ description: "Set up encrypted Claude Code session sync between two computers wi
 answer: "To sync a Claude Code session across devices, install Reinstate on both computers, map the same canonical project ID to each local repository path, push one explicit Claude session from the source, dry-run and pull it on the destination, then resume it with Claude Code."
 author: "Harjot Singh Rana"
 publishedAt: 2026-07-27
-updatedAt: 2026-07-27
-reviewedAt: 2026-07-27
+updatedAt: 2026-09-09
+reviewedAt: 2026-09-09
 tags: ["Claude Code", "session sync", "multi-device", "path mapping", "end-to-end encryption"]
 targetQuery: "how to sync Claude Code sessions across devices"
 searchIntent: "agent-specific"
@@ -58,10 +58,10 @@ project layout.
 This is **Claude Code to Claude Code** continuity. Reinstate Phase 1 does not
 translate a Claude transcript into Codex or any other agent format.
 
-The current public installer pins candidate `v0.6.0-rc.8`, whose
-tagged-artifact acceptance is pending on native Windows x64 (Apple Silicon
-macOS is deferred until that hardware returns); Intel macOS and Linux/WSL2
-remain preview and unverified. Stable is `v0.5.1`. Check the
+The current public installer pins stable `v0.6.0`, certified by native
+Windows x64 tagged-artifact acceptance PASS under the single-platform
+waiver in ADR 0005 (Apple Silicon macOS acceptance is deferred to #403);
+Intel macOS and Linux/WSL2 remain preview and unverified. Check the
 [compatibility page](/compatibility) before using another platform or a
 newer Claude Code version.
 
@@ -75,10 +75,9 @@ newer Claude Code version.
   either mutating command.
 - Snapshots and manifests are encrypted locally; storage credentials stay in
   the OS keyring, and the passphrase is not stored.
-- The installer-pinned `v0.6.0-rc.8` candidate's tagged-artifact acceptance
-  is pending on native Windows x64, with macOS deferred; stable `v0.5.1`
-  remains dual-platform verified. This guide is not acceptance evidence for
-  any other environment.
+- The installer-pinned stable `v0.6.0` passed native Windows x64
+  tagged-artifact acceptance; Apple Silicon macOS acceptance is deferred to
+  #403. This guide is not acceptance evidence for any other environment.
 
 ## Before you begin
 
@@ -102,7 +101,7 @@ device.
 
 | Environment | Installer path | Current qualification |
 | --- | --- | --- |
-| macOS native arm64 | POSIX installer | Stable and physically verified. |
+| macOS native arm64 | POSIX installer | Deferred for `v0.6.0` (#403); earlier stable releases were physically verified here. |
 | macOS native amd64 | POSIX installer | Preview and unverified; do not infer certification from installer success. |
 | Windows 11 native amd64 | PowerShell installer | Stable and physically verified. |
 | Linux native | POSIX installer | Preview and unverified. |
@@ -154,8 +153,7 @@ rein setup check
 ```
 
 **Expected result:** `rein version --json` returns a JSON object whose version
-is `v0.6.0-rc.8` for the currently pinned installer (stable remains
-`v0.5.1`). Before initialization,
+is `v0.6.0` for the currently pinned installer. Before initialization,
 `rein setup check` exits with code `3` and reports `config missing`. That one
 pre-init failure is expected; a platform, keyring, or Claude Code compatibility
 failure is a separate blocker that must be resolved.
