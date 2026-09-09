@@ -253,6 +253,8 @@ func (s *Screen) applyCSI(final byte, params string) []byte {
 		s.eraseDisplay(get(0, 0))
 	case 'K': // EL: erase in line
 		s.eraseLine(get(0, 0))
+	case 'X': // ECH: erase character (blank N cells at the cursor, no cursor move)
+		s.eraseChars(get(0, 1))
 	case 'n': // DSR: device status report
 		if get(0, 0) == 6 {
 			return []byte("\x1b[" + strconv.Itoa(s.cursorRow+1) + ";" + strconv.Itoa(s.cursorCol+1) + "R")
@@ -282,6 +284,23 @@ func (s *Screen) eraseDisplay(mode int) {
 		for r := range s.cells {
 			s.cells[r] = blankRow(s.cols)
 		}
+	}
+}
+
+// eraseChars implements ECH (CSI Ps X): blank n cells starting at the
+// cursor, without moving the cursor. Local test-harness fix, uncommitted:
+// this CSI final byte previously had no case in applyCSI's switch (fell
+// into "parsed and discarded"), so a real terminal's blanked cells stayed
+// stale in this renderer's own grid — see acceptance report evidence for
+// CLI row 9 (part C, 2026-09-09-windows-v060rc8-part-c.md) for the capture
+// artifact this produced and traced back to here.
+func (s *Screen) eraseChars(n int) {
+	if s.cursorRow < 0 || s.cursorRow >= s.rows || n <= 0 {
+		return
+	}
+	row := s.cells[s.cursorRow]
+	for c := s.cursorCol; c < s.cols && c < s.cursorCol+n; c++ {
+		row[c] = ' '
 	}
 }
 

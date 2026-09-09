@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "reinstateVersion": "v0.6.0-rc.8",
-  "catalogLine": "v0.6.0-rc.8",
+  "reinstateVersion": "v0.6.0",
+  "catalogLine": "v0.6.0",
   "lastReviewed": "2026-09-07",
   "owner": {
     "name": "Harjot Singh Rana",
@@ -120,7 +120,7 @@
       "minimumTestedVersion": "1.18.21",
       "maximumTestedVersion": "1.18.29",
       "resumeMode": "OpenCode to OpenCode (T5 encrypted sync; T3 same-vendor resume and fork); OpenCode as a structured handoff destination (T4)",
-      "evidenceLevel": "T3 resume and T4 destination device journeys recorded on macOS and native Windows (2026-08-22); T5 encrypted-sync journeys recorded on macOS and native Windows (2026-08-23); v0.6.0 tagged-artifact acceptance pending on native Windows and deferred on macOS",
+      "evidenceLevel": "T3 resume and T4 destination device journeys recorded on macOS and native Windows (2026-08-22); T5 encrypted-sync journeys recorded on macOS and native Windows (2026-08-23); v0.6.0 tagged-artifact acceptance PASS on native Windows (2026-09-09), deferred on macOS (#403)",
       "evidence": {
         "storagePage": "docs/session-storage/opencode.md",
         "fixtures": [

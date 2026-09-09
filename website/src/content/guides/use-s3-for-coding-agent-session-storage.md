@@ -4,8 +4,8 @@ description: "Configure a private Amazon S3 bucket and least-privilege credentia
 answer: "To use Amazon S3 with Reinstate, create a private general purpose bucket, grant a dedicated non-root credential access only to the Reinstate object prefix, initialize Reinstate with the matching regional S3 endpoint and Region, then dry-run and push one selected session."
 author: "Harjot Singh Rana"
 publishedAt: 2026-07-27
-updatedAt: 2026-09-05
-reviewedAt: 2026-09-05
+updatedAt: 2026-09-09
+reviewedAt: 2026-09-09
 tags: ["Amazon S3", "encrypted storage", "session sync", "least privilege", "coding agents"]
 targetQuery: "use Amazon S3 for coding agent session storage"
 searchIntent: "how-to"
@@ -30,7 +30,7 @@ estimatedMinutes: 15
 estimatedTaskMinutes: 35
 prerequisites:
   - "An AWS account and authority to create a private S3 bucket, IAM policy, and access key"
-  - "Reinstate (the installer's v0.6.0-rc.8 candidate; stable is v0.5.1) on a compatible device with Claude Code or Codex CLI"
+  - "Reinstate (stable v0.6.0) on a compatible device with Claude Code or Codex CLI"
   - "A harmless session in a repository whose absolute local path you know"
   - "A long encryption passphrase that will be entered privately and is not stored"
 howToSteps:
@@ -53,8 +53,9 @@ howToSteps:
 
 ## What this guide configures
 
-This guide connects Reinstate — the installer's `v0.6.0-rc.8` candidate;
-stable is `v0.5.1` — to an existing Amazon S3 bucket.
+This guide connects Reinstate — stable `v0.6.0`, certified by native
+Windows x64 tagged-artifact acceptance PASS under the single-platform
+waiver in ADR 0005 — to an existing Amazon S3 bucket.
 Amazon Web Services owns the bucket, Region, IAM identity, access key, public
 access settings, retention, and billing. Reinstate owns the local project
 mapping, encrypted profile manifest, encrypted session snapshots, and
@@ -93,10 +94,12 @@ not by first-device initialization.
   credentials where possible.
 - Session resume remains **same-vendor**: Claude Code to Claude Code and Codex
   CLI to Codex CLI.
-- Stable Reinstate `v0.5.1` passed dual-platform tagged-artifact acceptance
-  on Apple Silicon macOS and native Windows x64. Intel macOS
-  and Linux/WSL2 are preview and unverified. This guide is not itself
-  acceptance evidence.
+- Stable Reinstate `v0.6.0` passed native Windows x64 tagged-artifact
+  acceptance under the single-platform waiver in ADR 0005; Apple Silicon
+  macOS acceptance is deferred to #403. Earlier stable releases (`v0.5.1`
+  and before) passed dual-platform tagged-artifact acceptance on both.
+  Intel macOS and Linux/WSL2 are preview and unverified. This guide is not
+  itself acceptance evidence.
 
 ## Before you begin
 
@@ -113,7 +116,7 @@ real transcript, or downloaded snapshot into a prompt.
 
 | Environment | Installer path | Current qualification |
 | --- | --- | --- |
-| macOS native arm64 | POSIX installer | Stable and physically verified. |
+| macOS native arm64 | POSIX installer | Deferred for `v0.6.0` (#403); earlier stable releases were physically verified here. |
 | macOS native amd64 | POSIX installer | Preview and unverified. |
 | Windows 11 native amd64 | PowerShell installer | Stable and physically verified. |
 | Linux native | POSIX installer | Preview and unverified. |
@@ -251,8 +254,8 @@ rein version --json
 rein setup check
 ```
 
-**Expected result:** the pinned installer reports `v0.6.0-rc.8`, the
-current release candidate; stable remains `v0.5.1`. Before
+**Expected result:** the pinned installer reports `v0.6.0`, the current
+stable release. Before
 initialization, `rein setup check` exits with code `3` and reports
 `config missing`. Resolve a platform, keyring, or installed-agent
 compatibility failure separately; a working S3 bucket cannot make an
@@ -473,8 +476,9 @@ Permanent deletion is irreversible.
   lifecycle restoration.
 - Phase 1 transfers full immutable session snapshots; delta transfer,
   retention controls, and remote garbage collection remain later work.
-- Current native resume is same-vendor only. Stable physical verification is
-  limited to Apple Silicon macOS and native Windows x64.
+- Current native resume is same-vendor only. Stable physical verification for
+  `v0.6.0` is limited to native Windows x64; Apple Silicon macOS is deferred
+  for this release (#403) and was verified for `v0.5.1` and before.
 
 ## Amazon S3 storage FAQ
 

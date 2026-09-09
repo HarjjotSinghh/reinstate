@@ -163,6 +163,13 @@ export const DEFAULT_ROUTE_DEFINITIONS = [
     {
       path: '/compatibility/agent-version-history',
       label: 'Compatibility version history',
+      // This route is an append-only ledger: every release and every vendor
+      // range widening adds a row, so its HTML grows monotonically while the
+      // rest of the public content set does not. v0.6.0's own entries put it
+      // at the shared 16 KiB gzip ceiling. Give it a route-specific ceiling
+      // with room for the next few releases rather than silently trimming the
+      // record; revisit if it approaches this one.
+      limits: { htmlRaw: 96 * KIB, htmlGzip: 20 * KIB },
     },
     {
       path: '/glossary',
@@ -176,20 +183,22 @@ export const DEFAULT_ROUTE_DEFINITIONS = [
       path: '/tools/path-mapping-visualizer',
       label: 'Path-mapping visualizer',
     },
-  ].map(({ path, label }) => ({
+  ].map(({ path, label, limits }) => ({
     path,
     label,
     required: true,
-    budget:
-      [
+    budget: {
+      ...PUBLIC_CONTENT_LIMITS,
+      ...([
         '/compare/reinstate-vs-manual-session-copying',
         '/tools/path-mapping-visualizer',
       ].includes(path)
-        ? {
-            ...PUBLIC_CONTENT_LIMITS,
-            blockingStyleCount: 5,
-          }
-        : PUBLIC_CONTENT_LIMITS,
+        ? { blockingStyleCount: 5 }
+        : {}),
+      // A route may raise a single dimension for a documented reason; see the
+      // comment where it is declared.
+      ...(limits ?? {}),
+    },
   })),
   {
     path: '/404',

@@ -4,7 +4,8 @@ Ship the hosted-tier client ("Hop") and the interactive CLI as one stable
 release, certified on native Windows x64 now and on Apple Silicon macOS as soon
 as that hardware is back.
 
-**Status:** planned 2026-09-05; M0–M4 done — `v0.6.0-rc.1` was published
+**Status:** planned 2026-09-05; released 2026-09-09 (M0–M5 done, M6 pending
+the founder's publish/package/website steps) — `v0.6.0-rc.1` was published
 2026-09-06 and its tagged-artifact native Windows acceptance ended at
 201/216 required rows `PASS` (every Hop and CLI-experience row passed; all 7
 failures were in the Phase 5 generated matrix). `v0.6.0-rc.2` (2026-09-07)
@@ -107,26 +108,26 @@ from rc.6 cleared to `PASS`. It found one new, genuinely blocking
 regression: CLI row `13` (the all-projects switcher rendered a `Ready` or
 `Warn` session as `Blocked` in 11 of 15 independent launches, a defect
 class the `v0.6.0-rc.5` fix had only partly closed).
-`v0.6.0-rc.8` (2026-09-09) is the current candidate: it changes exactly one
-thing beyond rc.7 — the readiness path (`internal/tui/readiness`,
-`internal/preflight`, `internal/agentcheck`), fixing exactly that
-regression and, in a follow-up, a related gap where a permanently,
-deterministically broken agent install also rendered "still checking"
-forever instead of settling on `Blocked` with its actual repair message.
-No agent tier changes, no compatibility range widens. Under the disposition
-rules in
-[`docs/testing/v0.6.0-windows-acceptance.md`](../../testing/v0.6.0-windows-acceptance.md#dispositions-that-do-not-block-the-device-verdict),
-stable requires **215 of 216** rows `PASS` (`opencode:D4` is
-`N/A (definitional)`, excluded from the required count), plus whatever
-dispositions are still open on the acceptance host when that run happens.
-What remains: merging and tagging `v0.6.0-rc.8`, a tagged-artifact Windows
-run against it (with CLI row `13` re-tested under the expanded,
-at-least-15-launch method plus a `-stale-claude` settle check), and the
-Apple Silicon macOS rows, still deferred until that hardware returns
+`v0.6.0-rc.8` (2026-09-09) changed exactly one thing beyond rc.7 — the
+readiness path (`internal/tui/readiness`, `internal/preflight`,
+`internal/agentcheck`), fixing exactly that regression and, in a follow-up,
+a related gap where a permanently, deterministically broken agent install
+also rendered "still checking" forever instead of settling on `Blocked`
+with its actual repair message. No agent tier changes, no compatibility
+range widens. Its own tagged-artifact native Windows acceptance
+([report](../../testing/results/2026-09-09-windows-v060rc8.md)) ended
+device verdict `PASS`: **215 PASS / 0 PARTIAL / 0 FAIL / 0 NOT TESTED** of
+**215** required rows (`opencode:D4` `N/A (definitional)`, unchanged),
+adversarially verified — CLI row `13` cleared under the expanded,
+at-least-15-launch method plus the `-stale-claude` settle check.
+
+**Status: released 2026-09-09.** This authorized the signed stable `v0.6.0`
+tag. Apple Silicon macOS rows remain deferred until that hardware returns
 (#403).
-**Baseline:** stable `v0.5.1` (2026-08-21). `v0.5.2-rc.1` (2026-08-23) was
-tagged but never certified on either platform; its content ships here and no
-stable `v0.5.2` is cut.
+**Baseline:** stable `v0.6.0` (2026-09-09), superseding `v0.5.1`
+(2026-08-21). `v0.5.2-rc.1` (2026-08-23) was tagged but never certified on
+either platform; its content shipped inside `v0.6.0-rc.1` and no stable
+`v0.5.2` was cut.
 **Source trees:** public `hop/main` (Hop client, 131 commits past `main`) and
 public `main` (`v0.5.2-rc.1`). The private control plane
 (`reinstate-hosted`, `hopd`) is a lab dependency only; nothing in it is
@@ -315,8 +316,8 @@ Branch conventions:
 | M1 ✅ | Docs, changelog, fixes, website truth, lab harness merged | Gates 0–3 per branch |
 | M2 ✅ | Ranges widened on Windows resume evidence; Hop parity journeys recorded on Windows (14 PASS, H5/H7 PARTIAL) | Results docs committed |
 | M3 ✅ | Release commit; snapshot gates; pre-tag Windows matrix recorded (185/200; dispositions in `RELEASING.md`) | Results doc + PR #404 ready |
-| M4 | Founder signs `v0.6.0-rc.1`; draft published | Release workflow green |
-| M5 | Windows tagged-artifact run PASS | Results doc committed to `main` |
+| M4 ✅ | Founder signs `v0.6.0-rc.1`; draft published | Release workflow green |
+| M5 ✅ | Windows tagged-artifact run PASS | Results doc committed to `main` |
 | M6 | Stable `v0.6.0` promoted, published, packages and website deployed | `RELEASING.md` record |
 
 M4 and the stable tag in M6 need the founder. Everything else runs

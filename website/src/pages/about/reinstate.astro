@@ -14,7 +14,7 @@ const description =
   {description}
   path="/about/reinstate"
   eyebrow="About Reinstate"
-  answer="Reinstate is an open-source continuity layer for coding-agent work. Stable v0.2.0 moves encrypted Claude Code and Codex sessions between configured devices and adds configless local search plus same-vendor native resume/fork. Stable v0.3.0 adds verified resume. Stable v0.4.0 adds explicit structured cross-agent handoff after dual-platform tagged-artifact acceptance PASS. Stable v0.5.1 adds universal agent coverage by support tier after dual-platform tagged-artifact acceptance PASS. The v0.6.0-rc.8 release candidate carries Reinstate Hop (cloud continuity) and the interactive CLI; it is not yet certified, with tagged-artifact acceptance pending on native Windows x64 and Apple Silicon macOS deferred."
+  answer="Reinstate is an open-source continuity layer for coding-agent work. Stable v0.2.0 moves encrypted Claude Code and Codex sessions between configured devices and adds configless local search plus same-vendor native resume/fork. Stable v0.3.0 adds verified resume. Stable v0.4.0 adds explicit structured cross-agent handoff after dual-platform tagged-artifact acceptance PASS. Stable v0.5.1 adds universal agent coverage by support tier after dual-platform tagged-artifact acceptance PASS. Stable v0.6.0 adds Reinstate Hop (cloud continuity) and the interactive CLI, certified by native Windows x64 tagged-artifact acceptance PASS under a single-platform waiver (ADR 0005); Apple Silicon macOS acceptance is deferred to issue #403."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'About Reinstate', path: '/about/reinstate' },
@@ -54,12 +54,12 @@ const description =
   <div class="pc-callout">
     <p>Stable evidence stays platform-specific.</p>
     <p>
-      Stable <code>{product.stableRelease}</code> is physically verified on Apple Silicon macOS
-      and native Windows x64 (dual-platform tagged-artifact acceptance PASS). Intel macOS and
-      Linux/WSL2 packages are preview and unverified
-      rather than inferred support. The <code>v0.6.0-rc.8</code> release candidate — Reinstate
-      Hop and the interactive CLI — is not yet certified; its acceptance is native Windows x64
-      only, with Apple Silicon macOS deferred until that hardware returns.
+      Stable <code>{product.stableRelease}</code> is physically verified on native Windows x64
+      (tagged-artifact acceptance PASS) under a single-platform waiver (ADR 0005); Apple Silicon
+      macOS acceptance is deferred to issue #403 until that hardware returns. Earlier stable
+      releases (v0.5.1 and before) passed dual-platform tagged-artifact acceptance on both Apple
+      Silicon macOS and native Windows x64. Intel macOS and Linux/WSL2 packages remain preview
+      and unverified rather than inferred support.
     </p>
   </div>
 
@@ -68,7 +68,7 @@ const description =
       <dt>Latest public source tag</dt>
       <dd>
         <a href={product.currentReleaseUrl}>{product.currentRelease}</a>
-        (release candidate; cloud continuity and the interactive CLI, not yet a stable claim)
+        (stable; cloud continuity and the interactive CLI, certified native Windows x64 only)
       </dd>
     </div>
     <div>
@@ -81,7 +81,7 @@ const description =
     </div>
     <div>
       <dt>Supported operating systems</dt>
-      <dd>Apple Silicon macOS and native Windows x64 verified; Intel macOS and Linux/WSL2 preview</dd>
+      <dd>Native Windows x64 verified for v0.6.0 (Apple Silicon macOS deferred, issue #403); both remain the supported platform boundary. Intel macOS and Linux/WSL2 preview</dd>
     </div>
   </dl>
 
@@ -125,8 +125,8 @@ const description =
           <td>6C</td>
           <td>Cloud continuity: Reinstate Hop (sign-in, locker, device pairing, daemon)</td>
           <td>
-            <code>v0.6.0-rc.8</code> release candidate; not yet certified, native Windows x64
-            acceptance pending, Apple Silicon macOS deferred
+            Stable <code>v0.6.0</code>; native Windows x64 tagged-artifact acceptance PASS,
+            Apple Silicon macOS deferred (#403)
           </td>
         </tr>
         <tr>

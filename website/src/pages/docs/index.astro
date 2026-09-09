@@ -16,13 +16,14 @@ const docs = await getOrderedDocs();
   article={false}
 >
   <p>
-    Reinstate's stable v0.5.1 CLI finds local sessions across its full agent catalog by
-    support tier without configuration, syncs same-vendor Claude Code and Codex sessions
-    between devices through client-side-encrypted S3-compatible storage, and continues the
-    same task in a new Claude Code or Codex session via structured handoff. The
-    v0.6.0-rc.8 release candidate carries Reinstate Hop (cloud continuity) and the
-    interactive CLI; it is not yet certified, with native Windows x64 acceptance pending and
-    Apple Silicon macOS deferred. Universal configuration remains roadmap work.
+    Reinstate's stable v0.6.0 CLI finds local sessions across its full agent catalog by
+    support tier without configuration, syncs same-vendor Claude Code, Codex, and OpenCode
+    sessions between devices through client-side-encrypted S3-compatible storage, and
+    continues the same task in a new Claude Code, Codex, OpenCode, Grok Build, or Qwen Code
+    session via structured handoff. Reinstate Hop (cloud continuity) and the interactive CLI
+    are certified by native Windows x64 tagged-artifact acceptance PASS under the
+    single-platform waiver in ADR 0005; Apple Silicon macOS acceptance is deferred to #403.
+    Universal configuration remains roadmap work.
   </p>
   <p>
     Prefer the short CLI alias <code>rein</code>. Full name <code>reinstate</code> is the same binary.

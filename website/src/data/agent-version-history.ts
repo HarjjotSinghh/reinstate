@@ -16,6 +16,14 @@ const evidenceByVersion: Record<
     'rangeChange' | 'compatibilityChange' | 'implementationSource'
   >
 > = {
+  'v0.6.0': {
+    rangeChange:
+      'Claude Code (2.1.219-2.1.265), Codex CLI (0.133.0-0.153.4), Grok Build (1.0.5-1.0.13), OpenCode (1.18.21-1.18.29), and Qwen Code (0.21.12-0.23.0) — every range unchanged from v0.6.0-rc.8, now certified stable. OpenCode reaches T5 (encrypted same-vendor sync) and Kimi Code CLI reaches T2 (handoff source).',
+    compatibilityChange:
+      'Stable release. Authorized by native Windows x64 tagged-artifact acceptance PASS on candidate v0.6.0-rc.8: 215 of 215 required rows (opencode:D4 N/A, definitional), under the single-platform waiver in ADR 0005 — Apple Silicon macOS acceptance is deferred to #403. Carries the Reinstate Hop hosted-tier client, the interactive TUI switcher, and message-text search for Cline, Cursor CLI, OpenCode, and Pi. One disposition is carried rather than resolved: the daemon installed through Task Scheduler does not pin the agent-root environment it was installed under (#424, scheduled for v0.6.1). See CHANGELOG.md.',
+    implementationSource:
+      'https://github.com/HarjjotSinghh/reinstate/blob/v0.6.0/docs/testing/results/2026-09-09-windows-v060rc8.md',
+  },
   'v0.6.0-rc.8': {
     rangeChange:
       'Claude Code (2.1.219-2.1.263), Codex CLI (0.133.0-0.153.4), Grok Build (1.0.5-1.0.13), OpenCode (1.18.21-1.18.29), and Qwen Code (0.21.12-0.23.0) ranges are all unchanged from v0.6.0-rc.7. No agent tier changes. macOS evidence remains pending.',

@@ -15,9 +15,9 @@ const currentReleaseDate = new Intl.DateTimeFormat('en', {
   timeZone: 'UTC',
 }).format(new Date(`${product.currentReleaseDate}T00:00:00Z`));
 const answer =
-  `The latest published Reinstate tag is ${product.currentRelease}, dated ${currentReleaseDate}. ` +
-  `${product.currentRelease} is a release candidate, not the current stable release: stable remains ${product.stableRelease}. ` +
-  'It carries Reinstate Hop (cloud continuity) and the interactive CLI experience on top of verified resume, structured handoff, and universal agent coverage; its acceptance is native Windows x64 only, with Apple Silicon macOS deferred.';
+  `The latest published Reinstate tag is ${product.currentRelease}, dated ${currentReleaseDate}, and it is the current stable release, superseding v0.5.1. ` +
+  'It is certified by native Windows x64 tagged-artifact acceptance PASS (215/215 required rows) on candidate v0.6.0-rc.8, under the single-platform waiver in ADR 0005; Apple Silicon macOS acceptance is deferred to #403. ' +
+  'It carries Reinstate Hop (cloud continuity) and the interactive CLI experience on top of verified resume, structured handoff, and universal agent coverage.';
 ---
 
 <PublicContentLayout
@@ -52,11 +52,14 @@ const answer =
     {product.currentRelease} · {currentReleaseDate}
   </h2>
   <p>
-    <code>{product.currentRelease}</code> is a release candidate, not the current stable
-    release: stable remains <code>{product.stableRelease}</code>. Public installers currently
-    pin this candidate while its own acceptance run is pending, not stable. Its acceptance is
-    native Windows x64 only; the Apple Silicon macOS run is deferred until that hardware returns
-    and is not claimed here.
+    <code>{product.currentRelease}</code> is the current stable release, superseding
+    <code>v0.5.1</code> (2026-08-21). Public installers pin this release. It is certified by
+    native Windows x64 tagged-artifact acceptance PASS (215/215 required rows) on candidate
+    <code>v0.6.0-rc.8</code>, under the single-platform waiver in{' '}
+    <a href="https://github.com/HarjjotSinghh/reinstate/blob/main/docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md">ADR 0005</a>.
+    Apple Silicon macOS acceptance is deferred to{' '}
+    <a href="https://github.com/HarjjotSinghh/reinstate/issues/403">#403</a> until that hardware
+    returns and is not claimed here.
   </p>
   <h3>Reinstate Hop</h3>
   <ul>
@@ -90,8 +93,9 @@ const answer =
   </ul>
   <h3>The interactive CLI experience</h3>
   <p>
-    Carried unchanged from <code>v0.5.2-rc.1</code>, which this candidate supersedes without a
-    separate stable tag:
+    Carried unchanged from <code>v0.5.2-rc.1</code>, a candidate that was published and never
+    certified: its content ships inside <code>{product.currentRelease}</code> without a separate
+    stable tag of its own.
   </p>
   <ul>
     <li>
@@ -103,7 +107,7 @@ const answer =
     </li>
     <li>
       Every <code>--json</code> document and non-TTY byte stream stays byte-identical to
-      <code>{product.stableRelease}</code>; <code>--plain</code> and
+      <code>v0.5.1</code>; <code>--plain</code> and
       <code>REINSTATE_NO_TUI</code> freeze the old output.
     </li>
     <li>
@@ -129,26 +133,26 @@ const answer =
   <h3>Acceptance boundary</h3>
   <ul>
     <li>
-      This candidate's acceptance runs on native Windows x64 (<code>windows/amd64</code>, never
-      WSL) only. Apple Silicon macOS acceptance is deferred until that hardware returns; nothing
-      here implies a macOS result.
+      This release's acceptance ran on native Windows x64 (<code>windows/amd64</code>, never
+      WSL) only, under the single-platform waiver in ADR 0005. Apple Silicon macOS acceptance is
+      deferred to #403 until that hardware returns; nothing here implies a macOS result.
     </li>
     <li>
-      Verified compatibility ranges widen on native Windows physical resume evidence and are
+      Verified compatibility ranges widened on native Windows physical resume evidence and are
       marked "Windows evidence; macOS pending" until the deferred run lands. See the
       <a href="/compatibility">compatibility matrix</a>.
     </li>
     <li>
-      Passing this candidate's Windows run does not by itself authorize stable
-      <code>v0.6.0</code>; the deferred macOS rows and the promotion decision are recorded
-      separately.
+      The tagged-artifact native Windows x64 acceptance of candidate <code>v0.6.0-rc.8</code>
+      (215/215 required rows PASS, adversarially verified) is what authorized stable
+      <code>v0.6.0</code>; the deferred macOS rows remain tracked separately under #403.
     </li>
   </ul>
   <p>
     <a href={product.currentReleaseUrl}>View the {product.currentRelease} tag on GitHub</a>.
   </p>
 
-  <h2 id="release-history">Release-candidate history</h2>
+  <h2 id="release-history">Release history</h2>
   <div class="pc-table-wrap">
     <table class="pc-table">
       <thead>

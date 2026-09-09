@@ -2,12 +2,13 @@
 
 Binary names: `rein` and `reinstate` (identical behavior).
 
-Public installers pin candidate `v0.6.0-rc.8`, including the Phase 1/2 surface,
+Public installers pin stable `v0.6.0`, including the Phase 1/2 surface,
 Phase 3 verified resume, the Phase 4 structured-handoff surface, and the
 Phase 5 catalog/T1 index surface. Native Windows x64 tagged-artifact
-acceptance for this candidate is pending; the Apple Silicon macOS run is
-deferred until that hardware returns. Stable remains `v0.5.1`. Intel macOS
-and Linux/WSL2 remain optional and unverified.
+acceptance passed (215/215 required rows); Apple Silicon macOS acceptance is
+deferred to [#403](https://github.com/HarjjotSinghh/reinstate/issues/403)
+under the single-platform waiver. Intel macOS and Linux/WSL2 remain optional
+and unverified.
 
 Stable `v0.3.0` includes the Phase 3 environment report and
 `--allow-environment-warning` flag. The command synopsis below additionally

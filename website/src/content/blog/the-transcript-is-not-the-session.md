@@ -189,14 +189,15 @@ If the answer is yes and you continue anyway, you are asking an agent to act on
 statements you already know are stale. If you want to see what the checking
 looks like when it is written down, [restoring a session](/docs/restore-a-session)
 walks the path, and the source is Apache-2.0, so the check list is readable
-rather than something you take on faith. Stable is `v0.5.1`, dated 2026-08-21.
+rather than something you take on faith. Stable is `v0.6.0`, dated 2026-09-09.
 When a session does move between machines, snapshots are encrypted locally with
 an age envelope before upload and land in storage you own: S3, Cloudflare R2, or
 S3-compatible. Auth and credential files are excluded by policy, and there is no
-Reinstate account anywhere in that path. The mandatory release targets for agent
-resume today are Apple Silicon macOS and native Windows x64. Intel macOS and
-Linux/WSL2 are optional and unverified, and are not certified Phase 1
-agent-resume targets.
+Reinstate account anywhere in that path. Native Windows x64 is the certified
+release target for agent resume in `v0.6.0`; Apple Silicon macOS acceptance is
+deferred for this release under a single-platform waiver. Intel macOS and
+Linux/WSL2 are optional and unverified, and are not certified agent-resume
+targets.
 
 The transcript was never the hard part. The conditions it assumed are, and
 nothing in the file will tell you whether they still hold.

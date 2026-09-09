@@ -68,7 +68,8 @@ regexes = [
   '''^msg_fixture(?:asst|user)001$''',
 ]
 
-# The SHA256 fingerprint of the release signing key, quoted verbatim from
+# The SHA256 fingerprints of the release signing keys (the original and the
+# 2026-09-06 replacement), quoted verbatim from
 # `git verify-tag` output in acceptance reports ("Good \"git\" signature ...
 # ED25519 key SHA256:..."). It is the fingerprint of a *public* key: the key
 # itself is committed at `.github/allowed_signers`, and every report that
@@ -89,6 +90,7 @@ paths = [
 ]
 regexes = [
   '''uXE5rh19MaNxQO/0pgR8n2K73xR\+ck0O7fwf351W030''',
+  '''0P4/a2ZBw25hhf0mCN5s2NsUlDiqRqshv8vGNgMPHjU''',
 ]
 
 # A Git packfile name from a marketplace checkout, used as an input to the

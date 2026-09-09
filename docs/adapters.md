@@ -41,8 +41,8 @@ fail-closed per-surface record.
 
 ## Capability matrix
 
-| Adapter | Local index | Native resume/fork | v0.4.0 handoff source | v0.4.0 handoff target | Encrypted sync | Universal config |
-| ------- | ----------- | ------------------ | --------------------- | --------------------- | -------------- | ---------------- |
+| Adapter | Local index | Native resume/fork | Handoff source | Handoff target | Encrypted sync | Universal config |
+| ------- | ----------- | ------------------ | --------------- | --------------- | -------------- | ---------------- |
 | Claude Code | Included in `v0.2.0` | Included in `v0.2.0` | Yes | Yes | Supported | Later |
 | OpenAI Codex CLI | Included in `v0.2.0` | Included in `v0.2.0` | Yes | Yes | Supported | Later |
 | Gemini CLI | Read-only in `v0.2.0` | No | Source-only | No | No | Later |

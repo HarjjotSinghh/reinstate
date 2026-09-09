@@ -5,7 +5,7 @@ export const prerender = true;
 
 const title = 'Reinstate Roadmap: From Encrypted Sync to Work Continuity';
 const description =
-  "Review stable v0.5.1's universal agent coverage and structured handoff, the v0.6.0-rc.8 candidate, and which configuration features remain planned.";
+  "Review stable v0.6.0's Reinstate Hop, interactive CLI, universal agent coverage, and structured handoff, and which configuration features remain planned.";
 ---
 
 <PublicContentLayout
@@ -13,7 +13,7 @@ const description =
   {description}
   path="/roadmap"
   eyebrow="Product roadmap"
-  answer="Stable v0.2.0 implements encrypted same-vendor sync and local continuity. Stable v0.3.0 adds verified resume. Stable v0.4.0 adds explicit structured cross-agent handoff after dual-platform tagged-artifact acceptance PASS. Stable v0.5.1 adds universal agent coverage by support tier after dual-platform tagged-artifact acceptance PASS. The v0.6.0-rc.8 release candidate carries Phase 6C cloud continuity (Reinstate Hop) and the interactive CLI; it is not yet certified, with tagged-artifact acceptance pending on native Windows x64 and Apple Silicon macOS deferred; the public installers already pin this candidate while that acceptance run is pending. Phase 6A/6B universal configuration remains planned. Phase 7 is project continuity, planned and targeted at v0.8.0. Phase 8 is Console. Phase 9 is team continuity."
+  answer="Stable v0.2.0 implements encrypted same-vendor sync and local continuity. Stable v0.3.0 adds verified resume. Stable v0.4.0 adds explicit structured cross-agent handoff after dual-platform tagged-artifact acceptance PASS. Stable v0.5.1 adds universal agent coverage by support tier after dual-platform tagged-artifact acceptance PASS. Stable v0.6.0 adds Phase 6C cloud continuity (Reinstate Hop) and the interactive CLI, certified by native Windows x64 tagged-artifact acceptance PASS under a single-platform waiver (ADR 0005); Apple Silicon macOS acceptance is deferred to issue #403. Phase 6A/6B universal configuration remains planned. Phase 7 is project continuity, planned and targeted at v0.8.0. Phase 8 is Console. Phase 9 is team continuity."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'Roadmap', path: '/roadmap' },
@@ -30,16 +30,16 @@ const description =
   <div class="pc-callout">
     <p>Current release boundary</p>
     <p>
-      Stable <code>v0.5.1</code> supports encrypted same-vendor Claude Code and Codex session
-      synchronization, configless local continuity, verified resume, structured handoff, and
-      universal agent coverage by support tier, after dual-platform tagged-artifact acceptance
-      PASS. Apple Silicon macOS and native Windows x64 remain the verified stable platforms;
-      Intel macOS and Linux/WSL2 remain preview and unverified.
-      The <code>v0.6.0-rc.8</code> release candidate carries Reinstate Hop and the interactive
-      CLI experience but is not yet certified; its tagged-artifact acceptance is pending on
-      native Windows x64 only, with Apple Silicon macOS deferred until that hardware returns.
-      The public installers already pin this candidate while that acceptance run is pending; see
-      the <a href="/changelog">changelog</a> for the exact pinned tag.
+      Stable <code>v0.6.0</code> supports encrypted same-vendor Claude Code, Codex, and
+      OpenCode session synchronization, configless local continuity, verified resume,
+      structured handoff, universal agent coverage by support tier, Reinstate Hop (cloud
+      continuity), and the interactive CLI experience. Certified by native Windows x64
+      tagged-artifact acceptance PASS under the single-platform waiver in ADR 0005; Apple
+      Silicon macOS acceptance is deferred to issue #403 until that hardware returns. Earlier
+      stable releases (v0.5.1 and before) passed dual-platform tagged-artifact acceptance on
+      both Apple Silicon macOS and native Windows x64; Intel macOS and Linux/WSL2 remain
+      preview and unverified. See the <a href="/changelog">changelog</a> for the exact pinned
+      tag.
     </p>
   </div>
 
@@ -101,8 +101,9 @@ const description =
           <td>6</td>
           <td>Universal non-secret configuration and automatic cross-device reconciliation</td>
           <td>
-            Split: cloud continuity (6C, the Hop client) is in release preparation as a
-            candidate; universal configuration (6A/6B) remains planned for a later release
+            Split: cloud continuity (6C, the Hop client) shipped stable in v0.6.0, certified
+            on native Windows x64 (macOS deferred, #403); universal configuration (6A/6B)
+            remains planned for v0.7.0
           </td>
           <td>Render native harness configuration without raw credential or config-tree mirroring</td>
         </tr>

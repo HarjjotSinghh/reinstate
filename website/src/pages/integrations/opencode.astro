@@ -12,8 +12,8 @@ const description =
   {title}
   {description}
   path="/integrations/opencode"
-  eyebrow="Integration · OpenCode · T5 (v0.6.0-rc.8 candidate)"
-  answer="OpenCode reaches T5 in the v0.6.0-rc.8 release candidate: encrypted same-vendor session sync, on top of T3 native resume and fork, T4 structured handoff destination, and T2 handoff source. This is not yet a stable claim; stable remains v0.5.1, where OpenCode is T2 only. Reinstate extracts a portable document from OpenCode's embedded SQLite store and reassembles it in the destination's own store. OpenCode-to-OpenCode sync only."
+  eyebrow="Integration · OpenCode · T5 (stable v0.6.0)"
+  answer="OpenCode reaches T5 in stable v0.6.0: encrypted same-vendor session sync, on top of T3 native resume and fork, T4 structured handoff destination, and T2 handoff source. Certified by native Windows x64 tagged-artifact acceptance PASS under the single-platform waiver in ADR 0005; Apple Silicon macOS acceptance is deferred to #403. Reinstate extracts a portable document from OpenCode's embedded SQLite store and reassembles it in the destination's own store. OpenCode-to-OpenCode sync only."
   breadcrumbs={[
     { name: 'Home', path: '/' },
     { name: 'Integrations', path: '/integrations' },
@@ -29,7 +29,7 @@ const description =
     </div>
     <div>
       <dt>Release</dt>
-      <dd><code>v0.6.0-rc.8</code> candidate (stable remains <code>v0.5.1</code>)</dd>
+      <dd>Stable <code>v0.6.0</code> (native Windows x64 certified, macOS deferred #403)</dd>
     </div>
     <div>
       <dt>Session direction</dt>
@@ -58,12 +58,13 @@ const description =
   </p>
 
   <div class="pc-callout">
-    <p>T5 is new in the <code>v0.6.0-rc.8</code> candidate, not yet a stable claim.</p>
+    <p>T5 is new in stable <code>v0.6.0</code>.</p>
     <p>
       OpenCode's T5 encrypted sync, T4 handoff destination, and T3 native resume and fork all
-      ship with the <code>v0.6.0-rc.8</code> release candidate. Stable remains
-      <code>v0.5.1</code>, where OpenCode is T2 only, until a native Windows tagged-artifact run
-      promotes this candidate. See the <a href="/roadmap">release boundary</a> and the
+      ship in stable <code>v0.6.0</code>, certified by native Windows x64 tagged-artifact
+      acceptance PASS under the single-platform waiver in ADR 0005; Apple Silicon macOS
+      acceptance is deferred to #403. Earlier stable releases (<code>v0.5.1</code> and before)
+      had OpenCode at T2 only. See the <a href="/roadmap">release boundary</a> and the
       <a href="/changelog">changelog</a>.
     </p>
   </div>
@@ -137,9 +138,9 @@ const description =
     <code>testdata/sessionindex/opencode</code>, and <code>testdata/handoff/opencode</code>.
     Per <a href="https://github.com/HarjjotSinghh/reinstate/blob/main/docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md"
       >ADR 0005</a
-    >, this <code>v0.6.0-rc.8</code> candidate's tagged-artifact acceptance for OpenCode's new
-    T5 tier is native Windows x64 only; Apple Silicon macOS is deferred until that hardware
-    returns, and no document here claims macOS verification for this candidate. See the
+    >, stable <code>v0.6.0</code>'s tagged-artifact acceptance for OpenCode's new
+    T5 tier is native Windows x64 only (PASS); Apple Silicon macOS is deferred to #403 until
+    that hardware returns, and no document here claims macOS verification for this release. See the
     <a href="https://github.com/HarjjotSinghh/reinstate/blob/main/docs/session-storage/opencode.md"
       >OpenCode storage page</a
     >, the <a href="https://github.com/HarjjotSinghh/reinstate/blob/main/docs/compatibility.md"

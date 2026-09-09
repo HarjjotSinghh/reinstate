@@ -1,13 +1,13 @@
 ---
 title: "Install the Reinstate CLI"
 navTitle: "Install the CLI"
-description: "Install the pinned Reinstate installer candidate on macOS, native Windows, or WSL2, verify its checksum and version, and diagnose PATH failures."
+description: "Install the pinned stable Reinstate release on macOS, native Windows, or WSL2, verify its checksum and version, and diagnose PATH failures."
 order: 9
 author: "Harjot Singh Rana"
 status: current
 schemaType: web-page
-version: "v0.6.0-rc.8"
-updatedAt: 2026-08-16
+version: "v0.6.0"
+updatedAt: 2026-09-09
 tags: ["installation", "cli", "macos", "windows", "wsl2"]
 targetQuery: "install Reinstate CLI"
 searchIntent: "how-to"
@@ -16,16 +16,17 @@ noindex: false
 ---
 
 Install Reinstate with the official bootstrap for your operating system, then
-require `rein version --json` to report the pinned candidate named in the
+require `rein version --json` to report the pinned stable release named in the
 [changelog](https://github.com/HarjjotSinghh/reinstate/blob/main/CHANGELOG.md).
 The bootstrap verifies the canonical tagged installer, release checksum,
 downloaded binary, and reported version before replacing an existing
 installation.
 
-> **Release status:** the publicly installed candidate is a pre-1.0 release
-> whose tagged-artifact acceptance is pending on native Windows x64 (Apple
-> Silicon macOS is deferred until that hardware returns). Stable remains
-> `v0.5.1`; Intel macOS and Linux/WSL2 remain optional and unverified.
+> **Release status:** the publicly installed release is stable `v0.6.0`, a
+> pre-1.0 release certified by native Windows x64 tagged-artifact acceptance
+> PASS under the single-platform waiver in ADR 0005 (Apple Silicon macOS is
+> deferred to #403 until that hardware returns). Intel macOS and Linux/WSL2
+> remain optional and unverified.
 
 ## Prerequisites
 
@@ -143,7 +144,8 @@ failures before synchronization.
   uninitialized device is ready to sync.
 
 Save command output only after redacting private paths. Binary verification is
-not proof of stable support outside Apple Silicon macOS and native Windows x64.
+not proof of stable support outside native Windows x64, the platform `v0.6.0`
+is certified on (Apple Silicon macOS deferred, #403).
 
 ## Failure paths
 

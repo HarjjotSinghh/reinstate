@@ -7,25 +7,27 @@
 ### Find, verify, resume, and hand off coding-agent work
 
 **Your agents lose context every time you switch. Reinstate carries it
-across.** Indexes 11 agents in stable `v0.5.1`. Full
+across.** Indexes 11 agents in stable `v0.6.0`. Full
 continuity on 2 — Claude Code and Codex.
 
 Reinstate is the open-source continuity layer for coding-agent work: search,
 resume, and hand off tasks across agents, projects, environments, and devices,
 with optional encrypted sync through your own S3-compatible storage.
 
-Stable `v0.5.1` adds universal agent coverage on top of the Phase 4 structured
-handoff: an agent catalog with an explicit tier per agent, `rein doctor
---agents` with a redacted storage probe, session discovery for eleven agents,
-and structured handoff from five. A structured handoff continues the same task
-in a *new* Claude Code or Codex session. Apple Silicon macOS and native Windows
-x64 passed dual-platform tagged-artifact acceptance on candidate `v0.5.0-rc.6`
-(150/150 on both
-devices); the public installers pin candidate `v0.6.0-rc.8`, whose native
-Windows x64 acceptance is pending and whose macOS acceptance is deferred under
-[ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md).
-Intel macOS and Linux/WSL2 downloads remain preview/unverified
-pending issues
+Stable `v0.6.0` adds Reinstate Hop (cloud continuity), the interactive TUI
+switcher, and moves OpenCode to T5 and Kimi Code CLI to T2 on top of the
+Phase 4 structured handoff and Phase 5 universal agent coverage: an agent
+catalog with an explicit tier per agent, `rein doctor --agents` with a
+redacted storage probe, session discovery for eleven agents, and structured
+handoff from five. A structured handoff continues the same task in a *new*
+Claude Code or Codex session. `v0.6.0` is certified by native Windows x64
+tagged-artifact acceptance PASS (215/215 required rows) on candidate
+`v0.6.0-rc.8`, under the single-platform waiver in
+[ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md);
+Apple Silicon macOS acceptance is deferred to
+[#403](https://github.com/HarjjotSinghh/reinstate/issues/403) until that
+hardware returns. Intel macOS and Linux/WSL2 downloads remain
+preview/unverified pending issues
 [#97](https://github.com/HarjjotSinghh/reinstate/issues/97) and
 [#98](https://github.com/HarjjotSinghh/reinstate/issues/98).
 
@@ -139,10 +141,11 @@ sensitive artifacts. Reinstate instead provides
 
 ## Features
 
-Phase 5 stable `v0.5.1`:
+Phase 5 stable `v0.6.0`:
 
-- **Directional structured handoff** — Claude Code and Codex are destinations;
-  Claude Code, Codex, Gemini, OpenCode, and Grok are sources
+- **Directional structured handoff** — Claude Code, Codex, OpenCode, Grok
+  Build, and Qwen Code are destinations; those five plus Gemini CLI and Kimi
+  Code CLI are sources
 - **No source model dependency** — parse and checkpoint locally while the
   source CLI is closed, logged out, rate-limited, or offline
 - **Auditable fidelity** — each component is labeled `exact`, `normalized`,
@@ -209,22 +212,25 @@ The locker holds only ciphertext, except `keyring.v1.json`, which is
 plaintext by design. The hosted control plane this client talks to by
 default is not open yet, so the client ships anyway and the protocol above
 is public and testable today against a control plane you run yourself or
-point at with `REINSTATE_HOP_URL`; `v0.6.0` candidates and stable are
-certified on native Windows x64 only, with macOS acceptance deferred until
-that hardware returns. See [docs/hop.md](docs/hop.md) and
+point at with `REINSTATE_HOP_URL`; `v0.6.0` is certified on native Windows
+x64 only, with macOS acceptance deferred until that hardware returns. See
+[docs/hop.md](docs/hop.md) and
 [ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md).
 
 ---
 
 ## Quick start
 
-> **Platform boundary:** stable `v0.5.1` passed dual-platform tagged-artifact
-> acceptance on Apple Silicon macOS and native Windows x64. The public
-> installers pin candidate `v0.6.0-rc.8`, whose native Windows x64 acceptance
-> is pending, with the macOS rows deferred under
+> **Platform boundary:** stable `v0.6.0` is certified by native Windows x64
+> tagged-artifact acceptance PASS (215/215 required rows) on candidate
+> `v0.6.0-rc.8`, under the single-platform waiver in
 > [ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md).
-> The earlier candidate `v0.5.2-rc.1` was published but never certified; its
-> content ships inside `v0.6.0`.
+> Apple Silicon macOS acceptance is deferred to
+> [#403](https://github.com/HarjjotSinghh/reinstate/issues/403) until that
+> hardware returns and is not claimed. Earlier stable releases (`v0.5.1` and
+> before) passed dual-platform tagged-artifact acceptance on both Apple
+> Silicon macOS and native Windows x64. The earlier candidate `v0.5.2-rc.1`
+> was published but never certified; its content ships inside `v0.6.0`.
 > Intel macOS and Linux/WSL2 remain optional and unverified
 > ([#97](https://github.com/HarjjotSinghh/reinstate/issues/97),
 > [#98](https://github.com/HarjjotSinghh/reinstate/issues/98)).
@@ -279,7 +285,7 @@ Bare `rein` opens the numbered switcher only on a TTY. For scripts use
 `rein sessions --json`; a non-TTY bare invocation exits promptly with that
 hint.
 
-### Install the v0.6.0-rc.8 candidate
+### Install v0.6.0
 
 macOS, Linux, or WSL2:
 
@@ -293,7 +299,7 @@ Native Windows PowerShell:
 irm https://reinstate.dev/install.ps1 | iex
 ```
 
-Both bootstraps pin and verify `v0.6.0-rc.8`, install without elevation, and
+Both bootstraps pin and verify `v0.6.0`, install without elevation, and
 print the next command:
 
 ```bash
@@ -307,7 +313,7 @@ Apple Silicon macOS with Homebrew:
 brew install HarjjotSinghh/tap/reinstate
 ```
 
-The GitHub Release and `reinstate.dev` installers pin `v0.6.0-rc.8`. The Homebrew
+The GitHub Release and `reinstate.dev` installers pin `v0.6.0`. The Homebrew
 tap may still list an earlier release until its formula is updated. Intel macOS
 and Linuxbrew remain optional and unverified.
 
@@ -368,11 +374,11 @@ yes-or-no list.
 | [GitHub Copilot CLI](https://docs.github.com/en/copilot/concepts/agents/copilot-cli/about-copilot-cli) | T1 | ✅ read-only | — | — | — | — |
 | [Cline](https://docs.cline.bot/) | T1 | ✅ read-only | — | — | — | — |
 
-This table is stable `v0.5.1`, which indexes all 11 agents above.
+This table is stable `v0.6.0`, which indexes all 11 agents above.
 Stable `v0.4.0` indexed 5 — Claude Code, Codex CLI, Gemini CLI, Grok Build,
 and OpenCode.
 
-Structured handoff in stable `v0.5.1` starts a new destination session.
+Structured handoff in stable `v0.6.0` starts a new destination session.
 Native resume/fork and encrypted sync remain same-vendor.
 
 Details: **[docs/adapters.md](docs/adapters.md)**
@@ -452,7 +458,7 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 | --- | ----------- |
 | **Website** | [reinstate.dev](https://reinstate.dev) — product, documentation, compatibility, and security |
 | [Getting started](docs/getting-started.md) | Configless local index plus optional encrypted sync |
-| [Features and commands](docs/features.md) | What shipped in v0.1.0 through v0.5.1 |
+| [Features and commands](docs/features.md) | What shipped in v0.1.0 through v0.6.0 |
 | [Verified resume](docs/verified-resume.md) | Phase 3 environment report, provenance, policy, and privacy contract |
 | [Cross-agent handoff](docs/handoff.md) | Phase 4 scope, fidelity, security, storage, and directional support |
 | [Architecture](docs/architecture.md) | Pipeline, packages, design principles |
@@ -531,7 +537,7 @@ Report vulnerabilities privately: **[SECURITY.md](SECURITY.md)** · model: **[do
 | **3** | Verified resume (stable `v0.3.0`) | ✅ |
 | **4** | Structured cross-agent handoffs (stable `v0.4.0`) | ✅ |
 | **5** | Universal agent coverage (stable `v0.5.1`) | ✅ |
-| **6C** | Cloud continuity — Hop hosted sync, device registry, daemon (candidate `v0.6.0-rc.8`) | 🚧 |
+| **6C** | Cloud continuity — Hop hosted sync, device registry, daemon (stable `v0.6.0`) | ✅ |
 | **6A–6B** | Universal agent configuration + auth coordination | 📋 |
 | **7** | Project continuity — shared context and memory across agents | 📋 |
 | **8** | Reinstate Console (thin client) | 💭 |

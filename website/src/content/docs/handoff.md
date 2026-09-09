@@ -6,8 +6,8 @@ order: 16
 author: "Harjot Singh Rana"
 status: current
 schemaType: tech-article
-version: "v0.6.0-rc.8"
-updatedAt: 2026-08-16
+version: "v0.6.0"
+updatedAt: 2026-09-09
 tags: ["handoff", "claude-code", "codex", "cli"]
 targetQuery: "Reinstate structured handoff"
 searchIntent: "how-to"
@@ -15,9 +15,10 @@ draft: false
 noindex: false
 ---
 
-Stable `v0.5.1` lets you continue the same task in a **new** Claude Code or
-Codex session. This is not native resume, not a transferred session, and not a
-lossless copy of the source transcript.
+Stable `v0.6.0` lets you continue the same task in a **new** Claude Code,
+Codex, OpenCode, Grok Build, or Qwen Code session. This is not native
+resume, not a transferred session, and not a lossless copy of the source
+transcript.
 
 ## Commands
 
@@ -34,18 +35,21 @@ rein resume claude:SESSION_ID --with codex --dry-run
 `rein resume --with` is a structured handoff convenience alias. It still starts
 a new destination session.
 
-## Directions in v0.5.1
+## Directions in v0.6.0
 
-| Source | Claude dest | Codex dest |
-| ------ | ----------- | ---------- |
-| Claude Code | same-vendor native resume | structured handoff |
-| Codex CLI | structured handoff | same-vendor native resume |
-| Gemini CLI | structured handoff (source-only) | structured handoff (source-only) |
-| OpenCode | structured handoff (source-only) | structured handoff (source-only) |
-| Grok Build | structured handoff (source-only) | structured handoff (source-only) |
-| Kimi Code CLI | structured handoff (source-only) | structured handoff (source-only) |
+| Source | Claude dest | Codex dest | OpenCode dest | Grok Build dest | Qwen Code dest |
+| ------ | ----------- | ---------- | -------------- | ---------------- | --------------- |
+| Claude Code | same-vendor native resume | structured handoff | structured handoff | structured handoff | structured handoff |
+| Codex CLI | structured handoff | same-vendor native resume | structured handoff | structured handoff | structured handoff |
+| Gemini CLI | structured handoff (source-only) | structured handoff (source-only) | structured handoff (source-only) | structured handoff (source-only) | structured handoff (source-only) |
+| OpenCode | structured handoff | structured handoff | same-vendor native resume | structured handoff | structured handoff |
+| Grok Build | structured handoff | structured handoff | structured handoff | same-vendor native resume | structured handoff |
+| Qwen Code | structured handoff | structured handoff | structured handoff | structured handoff | same-vendor native resume |
+| Kimi Code CLI | structured handoff (source-only) | structured handoff (source-only) | structured handoff (source-only) | structured handoff (source-only) | structured handoff (source-only) |
 
-Gemini CLI, OpenCode, Grok Build, and Kimi Code CLI are not handoff destinations.
+OpenCode, Grok Build, and Qwen Code joined Claude Code and Codex CLI as
+handoff destinations in `v0.6.0`; OpenCode additionally reaches T5 encrypted
+same-vendor sync. Gemini CLI and Kimi Code CLI remain handoff sources only.
 
 ## First reply
 
@@ -67,7 +71,7 @@ and [getting started](/docs/getting-started).
 
 ## Prerequisites
 
-- Stable `v0.5.1` installed (`rein version --json`)
+- Stable `v0.6.0` installed (`rein version --json`)
 - Apple Silicon macOS or native Windows x64 for certified dest-ack
 - A logged-in destination Claude Code or Codex CLI in the fail-closed range
 - The source session on this device; dest launch needs a real TTY

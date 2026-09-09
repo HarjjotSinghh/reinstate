@@ -8,10 +8,14 @@ Stable Phase 2 adds universal local indexing, literal
 search, metadata inspection, and same-vendor resume/fork without cloud
 configuration. Stable `v0.3.0` added Phase 3 verified resume. Stable `v0.4.0`
 added Phase 4 explicit structured handoff, which continues the same task in a
-new Claude Code or Codex session. Stable `v0.5.1` adds Phase 5 universal agent
+new Claude Code or Codex session. Stable `v0.5.1` added Phase 5 universal agent
 coverage: a catalog of eighteen agents, session discovery for eleven, and
 structured handoff from five, after dual-platform tagged-artifact acceptance
-PASS. A later universal configuration layer will reconcile supported MCP servers,
+PASS. Stable `v0.6.0` adds Reinstate Hop (cloud continuity), the interactive
+TUI switcher, and moves OpenCode to T5 and Kimi Code CLI to T2, certified by
+native Windows x64 tagged-artifact acceptance PASS under the single-platform
+waiver in ADR 0005 (Apple Silicon macOS deferred, #403). A later universal
+configuration layer will reconcile supported MCP servers,
 skills, hooks/loops, plugins, marketplaces, and safe settings across harnesses
 and devices.
 
@@ -51,9 +55,11 @@ Stable `v0.5.1` uses a private derived index at
 and has no Phase 3 baselines; the paths are separate by design. Neither version
 needs a sync profile, storage credentials, an encryption passphrase, keyring
 access, or a network backend. Stable `v0.2.0` contains the Phase 1 sync surface
-and Phase 2 local continuity. The public installers pin candidate
-`v0.6.0-rc.8`. Stable remains `v0.5.1`. Intel macOS plus Linux/WSL2 remain
-optional and unverified.
+and Phase 2 local continuity. The public installers pin stable
+`v0.6.0`, certified by native Windows x64 tagged-artifact acceptance;
+Apple Silicon macOS acceptance is deferred to
+[#403](https://github.com/HarjjotSinghh/reinstate/issues/403). Intel macOS
+plus Linux/WSL2 remain optional and unverified.
 
 ## Why not just use git?
 
@@ -186,12 +192,16 @@ reported explicitly rather than fabricated.
 
 ## Production ready?
 
-Pre-1.0. Stable `v0.5.1` includes Phase 1 encrypted sync, Phase 2 local
-continuity, Phase 3 verified resume, Phase 4 structured handoff, and Phase 5
-universal agent coverage. Apple
-Silicon macOS and native Windows x64 are physically verified; Intel macOS and
-Linux/WSL2 remain preview and unverified. See [ROADMAP.md](../ROADMAP.md) and
-[CHANGELOG.md](../CHANGELOG.md). Use with backups; report bugs via GitHub Issues.
+Pre-1.0. Stable `v0.6.0` is the current release, certified by native Windows
+x64 tagged-artifact acceptance PASS under the single-platform waiver in
+[ADR 0005](adr/0005-v0.6.0-scope-and-windows-first-acceptance.md); Apple
+Silicon macOS acceptance is deferred to
+[#403](https://github.com/HarjjotSinghh/reinstate/issues/403). It includes
+Phase 1 encrypted sync, Phase 2 local continuity, Phase 3 verified resume,
+Phase 4 structured handoff, Phase 5 universal agent coverage, and Reinstate
+Hop (cloud continuity). Intel macOS and Linux/WSL2 remain preview and
+unverified. See [ROADMAP.md](../ROADMAP.md) and [CHANGELOG.md](../CHANGELOG.md).
+Use with backups; report bugs via GitHub Issues.
 
 ## How do I contribute?
 

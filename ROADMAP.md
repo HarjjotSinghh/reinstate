@@ -316,9 +316,11 @@ no key ever leaving the device, a lost device is revoked without losing
 access to history already synced, and a device migrates from Hop to its own
 bucket with the same session ids intact.
 
-*Shipped in `v0.6.0`. Acceptance is native Windows x64 only, with macOS rows
-deferred under [ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md)
-until that hardware returns; see
+*Shipped in stable `v0.6.0` (2026-09-09) after native Windows x64
+tagged-artifact acceptance PASS on candidate `v0.6.0-rc.8` (215/215 required
+rows). Acceptance is native Windows x64 only, with macOS rows deferred under
+[ADR 0005](docs/adr/0005-v0.6.0-scope-and-windows-first-acceptance.md) until
+that hardware returns; see
 [the Windows-first waiver](RELEASING.md#v060-windows-first-waiver). The
 hosted service this client talks to by default,
 [hop.reinstate.dev](docs/hop.md), opens separately and is not part of this

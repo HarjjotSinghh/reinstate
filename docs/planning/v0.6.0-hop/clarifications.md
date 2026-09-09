@@ -226,6 +226,19 @@ sample) plus a new check against a `tuisandbox` home seeded with
 `-stale-claude`, proving a genuinely out-of-range agent still settles on
 `Blocked` rather than looping forever.
 
+**Status: released 2026-09-09.** `v0.6.0-rc.8`'s tagged-artifact native
+Windows acceptance
+([`docs/testing/results/2026-09-09-windows-v060rc8.md`](../../testing/results/2026-09-09-windows-v060rc8.md))
+ended device verdict `PASS`: **215 PASS / 0 PARTIAL / 0 FAIL / 0 NOT
+TESTED** of **215** required rows (`opencode:D4` `N/A (definitional)`,
+unchanged), adversarially verified — CLI row `13` cleared. This authorizes
+the stable `v0.6.0` release commit (`chore(release): v0.6.0`, T-901). What
+remains is the founder's own steps (T-902 in
+[`W9-stable.md`](task-cards/W9-stable.md)): sign and push the `v0.6.0` tag,
+verify the draft, publish, let package managers run, and deploy the
+website. Apple Silicon macOS acceptance stays deferred to
+[#403](https://github.com/HarjjotSinghh/reinstate/issues/403).
+
 ---
 
 ## Q1 — Is `v0.6.0` "Hop plus the interactive CLI"?
