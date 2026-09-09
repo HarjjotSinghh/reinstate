@@ -3,8 +3,13 @@ package cli
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
+	"os/user"
 	"path/filepath"
+	"reflect"
+	"runtime"
+	"sort"
 	"strings"
 	"sync"
 	"testing"
@@ -690,5 +695,490 @@ func TestDaemonRunKeepsThePassphraseForItsLifetime(t *testing.T) {
 	withSecretFD(t, "REINSTATE_PASSPHRASE_FD", "daemon-test-passphrase-not-real")
 	if out, errb, code := a.run("pull", "--all", "--json"); code != ExitOK || !strings.Contains(out, `"skipped": 1`) {
 		t.Fatalf("pull after the daemon: exit=%d out=%q err=%q", code, out, errb)
+	}
+}
+
+// ---------- #424: pinning the agent-root environment ----------
+
+// blankAgentRootEnv clears every catalog RootEnv variable for the
+// lifetime of the test, so a test's own env, uninvolved agent roots this
+// host happens to have configured (this repo's own dev environment sets
+// CLAUDE_CONFIG_DIR, CODEX_HOME, and XDG_DATA_HOME to isolated fixture
+// paths) never leak into what #424's capture and comparison resolve. It
+// never touches a real, unisolated agent home: every one of these
+// variables is either already a synthetic fixture path on this host or is
+// cleared outright, and nothing under this package writes through them.
+func blankAgentRootEnv(t *testing.T) {
+	t.Helper()
+	for _, name := range agentRootEnvNames() {
+		t.Setenv(name, "")
+	}
+}
+
+// TestAgentRootEnvNames asserts the fixed, catalog-derived variable set
+// install-time capture, startup comparison, and status all agree on: the
+// three home variables reinstate#424 names explicitly, sorted, with no
+// duplicates even though catalog descriptors can share a variable (OpenCode
+// and any future agent reusing XDG_DATA_HOME).
+func TestAgentRootEnvNames(t *testing.T) {
+	names := agentRootEnvNames()
+	for _, want := range []string{"CLAUDE_CONFIG_DIR", "CODEX_HOME", "XDG_DATA_HOME"} {
+		found := false
+		for _, n := range names {
+			if n == want {
+				found = true
+			}
+		}
+		if !found {
+			t.Errorf("agentRootEnvNames() = %v, missing %q", names, want)
+		}
+	}
+	sorted := append([]string{}, names...)
+	sort.Strings(sorted)
+	if !reflect.DeepEqual(names, sorted) {
+		t.Fatalf("agentRootEnvNames() = %v, not sorted", names)
+	}
+	seen := map[string]int{}
+	for _, n := range names {
+		seen[n]++
+	}
+	for name, n := range seen {
+		if n > 1 {
+			t.Fatalf("agentRootEnvNames() repeats %q", name)
+		}
+	}
+}
+
+// TestResolvedAgentRoots checks the getenv-driven capture that both
+// `daemon install` and `daemon run` use, against a fake environment rather
+// than the process's real one.
+func TestResolvedAgentRoots(t *testing.T) {
+	fake := map[string]string{"CLAUDE_CONFIG_DIR": `D:\iso\claude`, "CODEX_HOME": "", "XDG_DATA_HOME": "  "}
+	got := resolvedAgentRoots(func(name string) string { return fake[name] })
+	want := daemon.AgentRoots{"CLAUDE_CONFIG_DIR": `D:\iso\claude`}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("resolvedAgentRoots() = %#v, want %#v", got, want)
+	}
+}
+
+func TestFormatAgentRootDiffs(t *testing.T) {
+	diffs := []daemon.AgentRootsDiff{
+		{Name: "CLAUDE_CONFIG_DIR", Recorded: `D:\iso\claude`, Current: ""},
+		{Name: "CODEX_HOME", Recorded: "", Current: `D:\login\codex`},
+	}
+	got := formatAgentRootDiffs(diffs)
+	want := `CLAUDE_CONFIG_DIR recorded=D:\iso\claude current=unset; CODEX_HOME recorded=unset current=D:\login\codex`
+	if got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+	if formatAgentRootDiffs(nil) != "" {
+		t.Fatalf("empty diffs should format to \"\"")
+	}
+}
+
+// TestApplyInstalledAgentRoots is the table-driven core of #424: no
+// recorded baseline is a no-op; a baseline that matches the process's own
+// environment is applied harmlessly; a baseline that disagrees refuses
+// unless allowChange is set, and even then the process ends up pinned to
+// the *recorded* roots, never the drifted ones it was launched with — the
+// entire point of --allow-root-change is to permit the start, not to adopt
+// the drift.
+func TestApplyInstalledAgentRoots(t *testing.T) {
+	// The variable under test must be one applyInstalledAgentRoots actually
+	// resolves (agentRootEnvNames(), the catalog's RootEnv set) — a made-up
+	// name would never appear on the "current" side of the comparison and
+	// would make every case look like a mismatch.
+	const testVar = "CLAUDE_CONFIG_DIR"
+
+	cases := []struct {
+		name          string
+		recordSpec    *daemon.AgentRoots // nil: never call daemon install's WriteAgentRoots
+		envValue      string             // "" leaves testVar unset
+		allowChange   bool
+		wantErr       bool
+		wantCode      int
+		wantErrSubstr string
+		wantEnvAfter  string
+	}{
+		{
+			name:         "no recorded baseline: skip the check entirely, env left untouched",
+			recordSpec:   nil,
+			envValue:     `D:\whatever\the\login\shell\has`,
+			wantEnvAfter: `D:\whatever\the\login\shell\has`,
+		},
+		{
+			name:         "recorded matches current: applied, no error",
+			recordSpec:   &daemon.AgentRoots{testVar: "/iso/agent-home"},
+			envValue:     "/iso/agent-home",
+			wantEnvAfter: "/iso/agent-home",
+		},
+		{
+			name:          "recorded set, current unset (the H7 mechanism): refused without the flag",
+			recordSpec:    &daemon.AgentRoots{testVar: "/iso/agent-home"},
+			envValue:      "",
+			wantErr:       true,
+			wantCode:      ExitSafety,
+			wantErrSubstr: "recorded=/iso/agent-home current=unset",
+		},
+		{
+			name:         "recorded set, current unset, override given: starts pinned to the recorded root, not the drifted (unset) one",
+			recordSpec:   &daemon.AgentRoots{testVar: "/iso/agent-home"},
+			envValue:     "",
+			allowChange:  true,
+			wantEnvAfter: "/iso/agent-home",
+		},
+		{
+			name:          "recorded unset, current newly set: refused without the flag too",
+			recordSpec:    &daemon.AgentRoots{},
+			envValue:      "/surprising/new/root",
+			wantErr:       true,
+			wantCode:      ExitSafety,
+			wantErrSubstr: "recorded=unset current=/surprising/new/root",
+		},
+		{
+			// The gap this fix closes: --allow-root-change must not let a
+			// variable that was unset at install (absent from the recorded
+			// baseline) silently adopt whatever the process's own launch
+			// environment now carries for it. It must end up force-unset,
+			// pinned to unset just as firmly as a customized variable is
+			// pinned to its recorded value.
+			name:         "recorded unset, current newly set, override given: starts pinned to unset, never adopts the drifted value",
+			recordSpec:   &daemon.AgentRoots{},
+			envValue:     "/surprising/new/root",
+			allowChange:  true,
+			wantEnvAfter: "",
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			blankAgentRootEnv(t)
+			home := t.TempDir()
+			if c.recordSpec != nil {
+				if err := daemon.WriteAgentRoots(home, *c.recordSpec); err != nil {
+					t.Fatal(err)
+				}
+			}
+			t.Setenv(testVar, c.envValue)
+
+			err := applyInstalledAgentRoots(home, c.allowChange)
+			if c.wantErr {
+				if err == nil {
+					t.Fatalf("err = nil, want a refusal")
+				}
+				ee, ok := err.(*ExitError)
+				if !ok {
+					t.Fatalf("err = %v (%T), want *ExitError", err, err)
+				}
+				if ee.Code != c.wantCode {
+					t.Fatalf("code = %d, want %d", ee.Code, c.wantCode)
+				}
+				if !strings.Contains(ee.Message, c.wantErrSubstr) {
+					t.Fatalf("message %q does not contain %q", ee.Message, c.wantErrSubstr)
+				}
+				if !strings.Contains(ee.Message, "reinstate#424") {
+					t.Fatalf("message %q should reference reinstate#424", ee.Message)
+				}
+				if !strings.Contains(ee.Message, "--allow-root-change") {
+					t.Fatalf("message %q should name the override flag", ee.Message)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("err = %v, want nil", err)
+			}
+			if got := os.Getenv(testVar); got != c.wantEnvAfter {
+				t.Fatalf("env after = %q, want %q", got, c.wantEnvAfter)
+			}
+		})
+	}
+}
+
+// TestDaemonInstallRecordsAgentRootsAndUninstallClearsThem is the
+// persistence half of #424 through the real CLI commands: `daemon install`
+// captures the agent-root environment the installing shell resolved and
+// `daemon uninstall` drops the recorded baseline so a later install starts
+// clean. It never touches a real agent home: CLAUDE_CONFIG_DIR and
+// CODEX_HOME point at throwaway directories under t.TempDir() for the
+// whole test.
+func TestDaemonInstallRecordsAgentRootsAndUninstallClearsThem(t *testing.T) {
+	blankAgentRootEnv(t)
+	plane := newFakeControlPlane(t)
+	plane.s3 = s3test.NewPlain(t, "lk-00000000000000000i424root")
+	t.Setenv(hopURLEnv, plane.srv.URL)
+	isolatedClaude := filepath.Join(t.TempDir(), "isolated-claude-home")
+	for _, env := range []string{"REINSTATE_BACKEND", "REINSTATE_PASSPHRASE_FD", "REINSTATE_RECOVERY_CODE_FD"} {
+		t.Setenv(env, "")
+	}
+	t.Setenv("CLAUDE_CONFIG_DIR", isolatedClaude)
+	project := writeClaudeFixture(t)
+	manager := &fakeManager{}
+	a := newPairDevice(t, plane, "macbook")
+	run := func(args ...string) (string, string, int) {
+		t.Helper()
+		t.Setenv("REINSTATE_HOME", a.home)
+		out, errb := &syncBuffer{}, &syncBuffer{}
+		code := a.execute(runOptions{stdout: out, stderr: errb, daemon: daemonSeams{manager: manager, executable: "/opt/rein/bin/rein"}}, args...)
+		return out.String(), errb.String(), code
+	}
+	for _, args := range [][]string{{"login"}, {"init", "--hop", "--project", "local/locker=" + project}} {
+		if out, errb, code := a.run(args...); code != ExitOK {
+			t.Fatalf("%v: exit=%d out=%q err=%q", args, code, out, errb)
+		}
+	}
+	if out, errb, code := a.run("account", "init"); code != ExitOK {
+		t.Fatalf("account init: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if _, err := daemon.ReadAgentRoots(a.home); !errors.Is(err, daemon.ErrNoAgentRoots) {
+		t.Fatalf("before install: err=%v, want ErrNoAgentRoots", err)
+	}
+	if out, errb, code := run("daemon", "install"); code != ExitOK {
+		t.Fatalf("install: exit=%d out=%q err=%q", code, out, errb)
+	} else if !strings.Contains(out, "pinned agent roots: CLAUDE_CONFIG_DIR") {
+		t.Fatalf("install output did not announce the pinned roots: %q", out)
+	}
+	roots, err := daemon.ReadAgentRoots(a.home)
+	if err != nil {
+		t.Fatalf("after install: %v", err)
+	}
+	if want := (daemon.AgentRoots{"CLAUDE_CONFIG_DIR": isolatedClaude}); !reflect.DeepEqual(roots, want) {
+		t.Fatalf("recorded roots = %#v, want %#v", roots, want)
+	}
+	if out, errb, code := run("daemon", "uninstall"); code != ExitOK {
+		t.Fatalf("uninstall: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if _, err := daemon.ReadAgentRoots(a.home); !errors.Is(err, daemon.ErrNoAgentRoots) {
+		t.Fatalf("after uninstall: err=%v, want ErrNoAgentRoots", err)
+	}
+}
+
+// TestDaemonStatusReportsAgentRoots checks that `rein daemon status`
+// (human and --json) surfaces the pinned roots and, once the environment
+// drifts from what was recorded, a clear warning that the next `daemon
+// run` will refuse.
+func TestDaemonStatusReportsAgentRoots(t *testing.T) {
+	blankAgentRootEnv(t)
+	home := t.TempDir()
+	t.Setenv("REINSTATE_HOME", home)
+	manager := &fakeManager{}
+	stdout, stderr := &syncBuffer{}, &syncBuffer{}
+	opts := Options{Name: "rein", Stdout: stdout, Stderr: stderr, Daemon: daemonSeams{manager: manager}}
+
+	status := func() (string, string) {
+		t.Helper()
+		stdout.b.Reset()
+		stderr.b.Reset()
+		opts.Args = []string{"daemon", "status"}
+		if code := Execute(opts); code != ExitOK {
+			t.Fatalf("status: exit=%d out=%q err=%q", code, stdout.String(), stderr.String())
+		}
+		return stdout.String(), stderr.String()
+	}
+	statusJSON := func() map[string]any {
+		t.Helper()
+		stdout.b.Reset()
+		stderr.b.Reset()
+		opts.Args = []string{"daemon", "status", "--json"}
+		if code := Execute(opts); code != ExitOK {
+			t.Fatalf("status --json: exit=%d out=%q err=%q", code, stdout.String(), stderr.String())
+		}
+		var payload map[string]any
+		if err := json.Unmarshal([]byte(stdout.String()), &payload); err != nil {
+			t.Fatal(err)
+		}
+		return payload
+	}
+
+	// No baseline recorded yet (daemon install was never run here).
+	out, _ := status()
+	if !strings.Contains(out, "roots:    no baseline recorded") {
+		t.Fatalf("status without a baseline: %q", out)
+	}
+	payload := statusJSON()
+	roots, _ := payload["agent_roots"].(map[string]any)
+	if recorded, _ := roots["recorded"].(bool); recorded {
+		t.Fatalf("agent_roots.recorded should be false before install: %#v", roots)
+	}
+
+	// Record a baseline as `daemon install` would, then match the current
+	// environment: no drift warning.
+	pinned := daemon.AgentRoots{"CLAUDE_CONFIG_DIR": `D:\iso\claude`}
+	if err := daemon.WriteAgentRoots(home, pinned); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("CLAUDE_CONFIG_DIR", `D:\iso\claude`)
+	out, _ = status()
+	if !strings.Contains(out, `root:     CLAUDE_CONFIG_DIR=D:\iso\claude`) {
+		t.Fatalf("status did not print the pinned root: %q", out)
+	}
+	if strings.Contains(out, "environment changed since install") {
+		t.Fatalf("status warned about drift when the environment matches: %q", out)
+	}
+	payload = statusJSON()
+	roots, _ = payload["agent_roots"].(map[string]any)
+	if recorded, _ := roots["recorded"].(bool); !recorded {
+		t.Fatalf("agent_roots.recorded should be true: %#v", roots)
+	}
+	if match, _ := roots["matches_current_environment"].(bool); !match {
+		t.Fatalf("agent_roots.matches_current_environment should be true: %#v", roots)
+	}
+
+	// Drift the environment away from what was recorded.
+	t.Setenv("CLAUDE_CONFIG_DIR", `D:\login\claude`)
+	out, _ = status()
+	if !strings.Contains(out, "environment changed since install") || !strings.Contains(out, "--allow-root-change") {
+		t.Fatalf("status did not warn about the drift: %q", out)
+	}
+	payload = statusJSON()
+	roots, _ = payload["agent_roots"].(map[string]any)
+	if match, _ := roots["matches_current_environment"].(bool); match {
+		t.Fatalf("agent_roots.matches_current_environment should be false after drift: %#v", roots)
+	}
+	if _, ok := roots["diffs"]; !ok {
+		t.Fatalf("agent_roots.diffs missing after drift: %#v", roots)
+	}
+}
+
+// TestDaemonRunRefusesWhenAgentRootsDrifted is the end-to-end regression
+// test for #424 / Hop row H7: a home whose recorded agent roots point at
+// an isolated location, run under a process whose own environment (as a
+// scheduled task's login environment would be) no longer has that
+// override, refuses to start instead of silently falling back to the
+// live/default agent roots — and --allow-root-change lets it start
+// (still pinned to the recorded, isolated root, never the live one).
+func TestDaemonRunRefusesWhenAgentRootsDrifted(t *testing.T) {
+	blankAgentRootEnv(t)
+	plane := newFakeControlPlane(t)
+	plane.s3 = s3test.NewPlain(t, "lk-00000000000000i424refusal")
+	t.Setenv(hopURLEnv, plane.srv.URL)
+	isolatedClaude := filepath.Join(t.TempDir(), "isolated-claude-home")
+	for _, env := range []string{"REINSTATE_BACKEND", "REINSTATE_PASSPHRASE_FD", "REINSTATE_RECOVERY_CODE_FD"} {
+		t.Setenv(env, "")
+	}
+	t.Setenv("CLAUDE_CONFIG_DIR", isolatedClaude)
+	project := writeClaudeFixture(t)
+	a := newPairDevice(t, plane, "macbook")
+	t.Setenv("REINSTATE_HOME", a.home)
+	for _, args := range [][]string{{"login"}, {"init", "--hop", "--project", "local/locker=" + project}, {"account", "init"}} {
+		if out, errb, code := a.run(args...); code != ExitOK {
+			t.Fatalf("%v: exit=%d out=%q err=%q", args, code, out, errb)
+		}
+	}
+	if err := daemon.WriteAgentRoots(a.home, daemon.AgentRoots{"CLAUDE_CONFIG_DIR": isolatedClaude}); err != nil {
+		t.Fatal(err)
+	}
+
+	// The login environment the scheduled task would actually inherit: no
+	// CLAUDE_CONFIG_DIR override at all, unlike the shell that installed.
+	t.Setenv("CLAUDE_CONFIG_DIR", "")
+	withSecretFD(t, "REINSTATE_PASSPHRASE_FD", "daemon-test-passphrase-not-real")
+
+	out, errb, code := a.run("daemon", "run", "--home", a.home)
+	if code != ExitSafety {
+		t.Fatalf("daemon run with drifted roots: exit=%d out=%q err=%q", code, out, errb)
+	}
+	if !strings.Contains(errb, "CLAUDE_CONFIG_DIR") || !strings.Contains(errb, "reinstate#424") || !strings.Contains(errb, "--allow-root-change") {
+		t.Fatalf("refusal message: %q", errb)
+	}
+
+	// --allow-root-change permits the start: run() blocks on the loop, so
+	// call applyInstalledAgentRoots directly (the same function `daemon
+	// run` calls first) to prove the override actually clears the refusal
+	// and pins the recorded root rather than the drifted one, without
+	// standing up the whole loop.
+	withSecretFD(t, "REINSTATE_PASSPHRASE_FD", "daemon-test-passphrase-not-real")
+	if err := applyInstalledAgentRoots(a.home, true); err != nil {
+		t.Fatalf("applyInstalledAgentRoots with allowChange=true: %v", err)
+	}
+	if got := os.Getenv("CLAUDE_CONFIG_DIR"); got != isolatedClaude {
+		t.Fatalf("CLAUDE_CONFIG_DIR after override = %q, want the pinned %q, not the drifted login value", got, isolatedClaude)
+	}
+}
+
+// TestWindowsDaemonInstallRegistersRealTaskWithPinnedRoots is the one
+// Windows-native proof for #424: it drives the exact pieces `rein daemon
+// install` uses — resolvedAgentRoots, daemon.WriteAgentRoots, and a real
+// schtasksManager over the real schtasks.exe — against a throwaway --home
+// and a harmless registered command (hostname.exe, which exits immediately
+// on any arguments rather than running anything), then reads both back:
+// `schtasks /Query` for the registration itself, and the persisted
+// agent-roots.json for the pinned environment. It never touches a live
+// agent home (CLAUDE_CONFIG_DIR/CODEX_HOME point at synthetic fixture
+// paths for the whole test) and always removes the task it registers.
+// Skips cleanly off Windows, without schtasks, or without permission to
+// register a task (schtasks /Create refuses a UAC-filtered admin token —
+// docs/hop.md, "run rein daemon install from an elevated shell").
+func TestWindowsDaemonInstallRegistersRealTaskWithPinnedRoots(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("schtasks is Windows-only")
+	}
+	if _, err := os.Stat(`C:\Windows\System32\schtasks.exe`); err != nil {
+		t.Skip("schtasks.exe not found on this host")
+	}
+	blankAgentRootEnv(t)
+	isolatedClaude := filepath.Join(t.TempDir(), "isolated-claude-home")
+	isolatedCodex := filepath.Join(t.TempDir(), "isolated-codex-home")
+	t.Setenv("CLAUDE_CONFIG_DIR", isolatedClaude)
+	t.Setenv("CODEX_HOME", isolatedCodex)
+
+	home := t.TempDir()
+	manager, err := daemon.NewManager(runtime.GOOS, t.TempDir(), nil) // nil runner: the real ExecRunner
+	if err != nil {
+		t.Fatal(err)
+	}
+	spec := daemon.Spec{
+		Label: "com.reinstate.daemon.test-i424-" + t.Name(),
+		// A harmless, throwaway action: hostname.exe exits immediately (a
+		// nonzero code, "unsupported option") on any extra arguments
+		// rather than running anything or waiting on input, so the task
+		// Install unconditionally runs once (schtasks /Run) can never
+		// hang or touch a real agent home.
+		Executable: `C:\Windows\System32\hostname.exe`,
+		Home:       home,
+		LogPath:    filepath.Join(daemon.Dir(home), "launch.log"),
+	}
+	// Matches daemonSpec(): an XML whose principal names no user can be
+	// refused ("Access is denied") under a UAC-filtered admin token.
+	if u, err := user.Current(); err == nil {
+		spec.UserID = u.Username
+	}
+	ctx := context.Background()
+	if err := manager.Install(ctx, spec); err != nil {
+		t.Skipf("schtasks /Create refused (likely needs an elevated shell; docs/hop.md): %v", err)
+	}
+	t.Cleanup(func() {
+		if err := manager.Uninstall(context.Background(), spec); err != nil {
+			t.Errorf("cleanup: uninstall %s: %v", spec.Label, err)
+		}
+		state, err := manager.Status(context.Background(), spec)
+		if err == nil && state.Installed {
+			t.Errorf("cleanup left %s registered", spec.Label)
+		}
+	})
+
+	// This is the install step's other half: record the agent-root
+	// environment the (synthetic, isolated) installing shell resolved,
+	// next to the same throwaway --home schtasks was just told to serve.
+	roots := resolvedAgentRoots(os.Getenv)
+	if err := daemon.WriteAgentRoots(home, roots); err != nil {
+		t.Fatal(err)
+	}
+
+	// Read back what was registered: the real Task Scheduler entry ...
+	state, err := manager.Status(ctx, spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !state.Installed {
+		t.Fatalf("status after install: %+v", state)
+	}
+
+	// ... and the roots pinned alongside it.
+	got, err := daemon.ReadAgentRoots(home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := daemon.AgentRoots{"CLAUDE_CONFIG_DIR": isolatedClaude, "CODEX_HOME": isolatedCodex}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("recorded roots = %#v, want %#v", got, want)
 	}
 }

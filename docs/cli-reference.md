@@ -181,6 +181,29 @@ works on BYO storage too). See [docs/hop.md](hop.md#the-daemon). Exit `4`
 when a hosted daemon's device is not signed in; `3` when the home is not
 configured for the root-key model.
 
+`rein daemon install` also records the agent-root environment the
+installing shell resolved: `CLAUDE_CONFIG_DIR`, `CODEX_HOME`,
+`XDG_DATA_HOME`, and every other variable the agent catalog declares (the
+same names `rein doctor --agents --json` reports as `root_env`), for
+whichever of them are set. `rein daemon run` — however it starts, at login
+or by hand — pins its own environment to exactly those values rather than
+whatever its own launch context carries, which is what closes reinstate#424:
+a Windows scheduled task previously resolved these variables from the
+login environment, not the environment `install` ran in. `rein daemon
+status` reports the pinned roots (`root:` lines, or `roots: none pinned`)
+and, when the environment this shell resolves right now disagrees with
+what was recorded, a warning that the next `daemon run` will refuse; `--json`
+carries the same facts under `agent_roots` (`recorded`, `roots`,
+`matches_current_environment`, `diffs`). `rein daemon run` itself refuses
+to start on a mismatch — exit `7` (safety) — unless started with
+`--allow-root-change`, which still runs pinned to the *recorded* roots, not
+the drifted ones it happened to launch with; run `rein daemon install`
+again to make an intentional environment change the new recorded baseline.
+A home installed before this fix has no recorded baseline and is
+unaffected until reinstalled. launchd and systemd carry a per-service
+environment block already, so this was always correct there; the fix and
+the refusal apply uniformly on every platform regardless.
+
 ### `rein sync verify`
 
 Runs the checks behind the zero-knowledge claim against the configured

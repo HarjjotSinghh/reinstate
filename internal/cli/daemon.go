@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/HarjjotSinghh/reinstate/internal/adapter"
+	"github.com/HarjjotSinghh/reinstate/internal/agents"
 	"github.com/HarjjotSinghh/reinstate/internal/config"
 	"github.com/HarjjotSinghh/reinstate/internal/crypto"
 	"github.com/HarjjotSinghh/reinstate/internal/daemon"
@@ -92,6 +93,14 @@ type daemonRunFlags struct {
 	home      string
 	// env is install-only: extra KEY=VALUE pairs for the service.
 	env []string
+	// allowRootChange lets `daemon run` start even when the agent-root
+	// environment it resolves right now (CLAUDE_CONFIG_DIR, CODEX_HOME,
+	// XDG_DATA_HOME, and the rest agents.All() declares) disagrees with
+	// what `rein daemon install` recorded. The daemon still runs pinned to
+	// the recorded roots either way (#424) — this only permits the start;
+	// it does not adopt the changed environment. `rein daemon install`
+	// again to make the current environment the new recorded baseline.
+	allowRootChange bool
 }
 
 func (f *daemonRunFlags) bind(cmd *cobra.Command) {
@@ -99,6 +108,7 @@ func (f *daemonRunFlags) bind(cmd *cobra.Command) {
 	cmd.Flags().DurationVar(&f.debounce, "debounce", daemon.DefaultDebounce, "quiet period after a session change before the push")
 	cmd.Flags().BoolVar(&f.poll, "poll", false, "scan the session stores on a timer instead of watching them")
 	cmd.Flags().StringVar(&f.home, "home", "", "Reinstate home to serve (the scheduled task on Windows passes it this way)")
+	cmd.Flags().BoolVar(&f.allowRootChange, "allow-root-change", false, "start even though the agent-root environment differs from what rein daemon install recorded (the daemon still runs pinned to the recorded roots)")
 }
 
 // args renders the flags back for the service definition, omitting
@@ -114,7 +124,91 @@ func (f daemonRunFlags) args() []string {
 	if f.poll {
 		out = append(out, "--poll")
 	}
+	if f.allowRootChange {
+		out = append(out, "--allow-root-change")
+	}
 	return out
+}
+
+// agentRootEnvNames lists, sorted and deduplicated, every RootEnv variable
+// the agent catalog declares (CLAUDE_CONFIG_DIR, CODEX_HOME, XDG_DATA_HOME,
+// and the rest) — the same variable names `rein doctor --agents --json`
+// reports as root_env. This is the fixed set of variables the daemon's
+// install-time capture, startup pin, and status report all agree on.
+func agentRootEnvNames() []string {
+	seen := map[string]struct{}{}
+	var names []string
+	for _, d := range agents.All() {
+		name := strings.TrimSpace(d.Storage.RootEnv)
+		if name == "" {
+			continue
+		}
+		if _, ok := seen[name]; ok {
+			continue
+		}
+		seen[name] = struct{}{}
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
+}
+
+// resolvedAgentRoots captures the agent-root environment the current
+// process actually resolves: every agentRootEnvNames() variable that getenv
+// reports with a non-blank value. `rein daemon install` calls this to
+// record the baseline; `rein daemon run` calls it again at startup to
+// compare against that baseline.
+func resolvedAgentRoots(getenv func(string) string) daemon.AgentRoots {
+	return daemon.ResolveAgentRoots(agentRootEnvNames(), getenv)
+}
+
+// formatAgentRootDiffs renders a CompareAgentRoots result as one clause per
+// variable, "NAME recorded=X current=Y" ("unset" standing in for a variable
+// that was blank or unset on that side), for the refusal message and
+// status line.
+func formatAgentRootDiffs(diffs []daemon.AgentRootsDiff) string {
+	parts := make([]string, 0, len(diffs))
+	for _, d := range diffs {
+		recorded, current := d.Recorded, d.Current
+		if recorded == "" {
+			recorded = "unset"
+		}
+		if current == "" {
+			current = "unset"
+		}
+		parts = append(parts, fmt.Sprintf("%s recorded=%s current=%s", d.Name, recorded, current))
+	}
+	return strings.Join(parts, "; ")
+}
+
+// applyInstalledAgentRoots pins the process's agent-root environment to
+// whatever `rein daemon install` recorded for home (#424): a scheduled task
+// (Windows Task Scheduler carries no per-action environment), a systemd or
+// launchd supervisor restart, or any other relaunch otherwise resolves
+// CLAUDE_CONFIG_DIR/CODEX_HOME/XDG_DATA_HOME and the rest from whatever its
+// own launch context carries, not from the environment install ran in. A
+// home with no recorded baseline (installed before this fix shipped, or
+// never installed at all) skips the check: there is nothing to pin against
+// or compare with, so `rein daemon run` behaves exactly as before.
+func applyInstalledAgentRoots(home string, allowChange bool) error {
+	recorded, err := daemon.ReadAgentRoots(home)
+	if errors.Is(err, daemon.ErrNoAgentRoots) {
+		return nil
+	}
+	if err != nil {
+		return NewExitError(ExitRuntime, "read the recorded agent-root environment: "+err.Error())
+	}
+	current := resolvedAgentRoots(os.Getenv)
+	if diffs := daemon.CompareAgentRoots(recorded, current); len(diffs) > 0 {
+		if !allowChange {
+			return NewExitError(ExitSafety, "the agent-root environment differs from what rein daemon install recorded ("+formatAgentRootDiffs(diffs)+
+				"); this looks like a scheduled or supervised start inheriting a different login environment (reinstate#424) — run rein daemon install again to update the recorded roots, or start with --allow-root-change to keep the recorded roots and start anyway")
+		}
+	}
+	if err := daemon.ApplyAgentRoots(recorded, agentRootEnvNames(), os.Setenv, os.Unsetenv); err != nil {
+		return NewExitError(ExitRuntime, "apply the recorded agent-root environment: "+err.Error())
+	}
+	return nil
 }
 
 func newDaemonCmd(opts Options) *cobra.Command {
@@ -174,6 +268,9 @@ func runDaemon(cmd *cobra.Command, opts Options, flags daemonRunFlags, verbose b
 	}
 	home, cfg, err := loadAccountHome()
 	if err != nil {
+		return err
+	}
+	if err := applyInstalledAgentRoots(home, flags.allowRootChange); err != nil {
 		return err
 	}
 	syncer := &inProcessSyncer{opts: opts}
@@ -636,10 +733,26 @@ func newDaemonInstallCmd() *cobra.Command {
 			if err := os.MkdirAll(daemon.Dir(home), 0o700); err != nil {
 				return NewExitError(ExitRuntime, err.Error())
 			}
+			// Record the agent-root environment this shell resolved before
+			// registering the service, so a later scheduled or supervised
+			// start pins exactly these roots instead of whatever its own
+			// launch context happens to carry (#424).
+			roots := resolvedAgentRoots(os.Getenv)
+			if err := daemon.WriteAgentRoots(home, roots); err != nil {
+				return NewExitError(ExitRuntime, "record the agent-root environment: "+err.Error())
+			}
 			if err := manager.Install(cmd.Context(), spec); err != nil {
 				return NewExitError(ExitRuntime, fmt.Sprintf("install with %s: %v", manager.Kind(), err))
 			}
 			PrintHuman(cmd.OutOrStdout(), "installed %s %s (%s)", manager.Kind(), spec.Label, manager.DefinitionPath(spec))
+			if len(roots) > 0 {
+				names := make([]string, 0, len(roots))
+				for name := range roots {
+					names = append(names, name)
+				}
+				sort.Strings(names)
+				PrintHuman(cmd.OutOrStdout(), "pinned agent roots: %s", strings.Join(names, ", "))
+			}
 			PrintHuman(cmd.OutOrStdout(), "the daemon starts at login and is starting now; rein daemon status shows it, log: %s", daemon.LogPath(home))
 			return nil
 		},
@@ -669,6 +782,10 @@ func newDaemonUninstallCmd() *cobra.Command {
 			if daemonGone(home, 5*time.Second) {
 				_ = os.Remove(daemon.StatusPath(home))
 			}
+			// Drop the recorded agent-root baseline with the registration;
+			// a later install records a fresh one for whatever environment
+			// that install runs in.
+			_ = daemon.RemoveAgentRoots(home)
 			PrintHuman(cmd.OutOrStdout(), "uninstalled %s %s; the log under %s is kept", manager.Kind(), spec.Label, daemon.Dir(home))
 			return nil
 		},
@@ -747,6 +864,7 @@ func newDaemonStatusCmd() *cobra.Command {
 			status, statusErr := daemon.ReadStatus(home)
 			now := daemonNow(cmd)
 			alive := statusErr == nil && status.Alive(now)
+			recordedRoots, haveRoots, rootDiffs := agentRootsStatus(home)
 			if asJSON {
 				payload := map[string]any{
 					"service": map[string]any{
@@ -759,6 +877,7 @@ func newDaemonStatusCmd() *cobra.Command {
 				if statusErr == nil {
 					payload["status"] = status
 				}
+				payload["agent_roots"] = agentRootsJSON(recordedRoots, haveRoots, rootDiffs)
 				return WriteJSON(cmd.OutOrStdout(), payload)
 			}
 			out := cmd.OutOrStdout()
@@ -770,6 +889,7 @@ func newDaemonStatusCmd() *cobra.Command {
 				}
 			}
 			PrintHuman(out, "login:    %s %s, %s", manager.Kind(), spec.Label, registration)
+			printAgentRootsHuman(out, recordedRoots, haveRoots, rootDiffs)
 			switch {
 			case errors.Is(statusErr, daemon.ErrNoStatus):
 				PrintHuman(out, "daemon:   never ran for %s", home)
@@ -818,6 +938,68 @@ func newDaemonStatusCmd() *cobra.Command {
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "emit machine-readable JSON")
 	return cmd
+}
+
+// agentRootsStatus reports the agent-root baseline `rein daemon install`
+// recorded for home (have is false when none was ever recorded), and how it
+// compares to what this process would resolve right now — the same
+// comparison `rein daemon run` makes at startup, so `rein daemon status`
+// can show whether the next start will refuse.
+func agentRootsStatus(home string) (recorded daemon.AgentRoots, have bool, diffs []daemon.AgentRootsDiff) {
+	recorded, err := daemon.ReadAgentRoots(home)
+	if err != nil {
+		return nil, false, nil
+	}
+	current := resolvedAgentRoots(os.Getenv)
+	return recorded, true, daemon.CompareAgentRoots(recorded, current)
+}
+
+// agentRootsJSON is the "agent_roots" field of `rein daemon status --json`.
+func agentRootsJSON(recorded daemon.AgentRoots, have bool, diffs []daemon.AgentRootsDiff) map[string]any {
+	if !have {
+		return map[string]any{"recorded": false}
+	}
+	out := map[string]any{
+		"recorded":                    true,
+		"roots":                       recorded,
+		"matches_current_environment": len(diffs) == 0,
+	}
+	if len(diffs) > 0 {
+		diffOut := make([]map[string]any, 0, len(diffs))
+		for _, d := range diffs {
+			diffOut = append(diffOut, map[string]any{
+				"name": d.Name, "recorded": d.Recorded, "current": d.Current,
+			})
+		}
+		out["diffs"] = diffOut
+	}
+	return out
+}
+
+// printAgentRootsHuman prints the roots block for `rein daemon status`
+// (non-JSON): the roots pinned at install, and — when the environment this
+// shell resolves right now disagrees — a warning that the next `rein daemon
+// run` will refuse unless reinstalled or started with --allow-root-change.
+func printAgentRootsHuman(out io.Writer, recorded daemon.AgentRoots, have bool, diffs []daemon.AgentRootsDiff) {
+	if !have {
+		PrintHuman(out, "roots:    no baseline recorded (install predates this check, or has not run)")
+		return
+	}
+	if len(recorded) == 0 {
+		PrintHuman(out, "roots:    none pinned; every agent used its default location at install")
+	} else {
+		names := make([]string, 0, len(recorded))
+		for name := range recorded {
+			names = append(names, name)
+		}
+		sort.Strings(names)
+		for _, name := range names {
+			PrintHuman(out, "root:     %s=%s", name, recorded[name])
+		}
+	}
+	if len(diffs) > 0 {
+		PrintHuman(out, "roots:    environment changed since install (%s); rein daemon install to update the pin, or rein daemon run --allow-root-change to start anyway with the pinned roots", formatAgentRootDiffs(diffs))
+	}
 }
 
 func describeOutcome(now time.Time, o daemon.Outcome) string {

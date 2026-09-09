@@ -811,11 +811,35 @@ that token with "Access is denied"; run `rein daemon install` from an
 elevated shell on such an account. Standard user accounts install from any
 shell.
 
+`rein daemon install` also pins the agent-root environment the installing
+shell resolved: `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, `XDG_DATA_HOME`, and any
+other variable the agent catalog declares (`rein doctor --agents --json`
+reports the same names as `root_env`), for whichever were set. Without
+this, a Windows scheduled task run at login resolves those variables from
+the login environment rather than the environment `install` ran in — the
+launchd and systemd definitions already carry a per-service environment
+block, so they were never affected, but Task Scheduler's action has no such
+block. A shell that installed with an isolated agent home (a lab, a
+sandbox) could otherwise have its scheduled daemon read and push the
+operator's real Claude Code, Codex, and OpenCode stores instead
+([#424](https://github.com/HarjjotSinghh/reinstate/issues/424)). `rein
+daemon run` — at login or by hand, on every platform — now pins its
+process to exactly the roots recorded at install and refuses to start
+(exit `7`, safety) when the environment it actually resolves disagrees,
+naming which variable and what each side recorded; pass `--allow-root-change`
+to start anyway (still pinned to the *recorded* roots, never the drifted
+ones), or run `rein daemon install` again to record the new environment as
+the baseline. A home installed before this fix carries no recorded
+baseline and is unaffected until it is reinstalled.
+
 `rein daemon status` reads the status file the daemon writes after every
 action: whether the daemon is registered and running, the last push and
 pull, the watched roots, and — on Hop — the enrolled devices and any
-pending approvals. The interactive switcher shows the same one-line
-summary on its status line.
+pending approvals. It also reports the pinned agent-root environment
+(`root:` lines, or `roots: none pinned` when install found nothing to
+override) and, if the environment has since drifted, a warning that the
+next `daemon run` will refuse. The interactive switcher shows the same
+one-line summary on its status line.
 
 ## Choosing the control plane
 
