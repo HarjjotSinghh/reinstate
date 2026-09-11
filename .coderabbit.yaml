@@ -1,0 +1,15 @@
+# CodeRabbit configuration: cut notification noise on automated PRs.
+# Docs: https://docs.coderabbit.ai/getting-started/yaml-configuration
+language: en-US
+reviews:
+  # Don't post "Review skipped" status comments (one email per bot PR).
+  review_status: false
+  auto_review:
+    # Silently skip bot-authored PRs (Dependabot, GitHub Actions).
+    # Manual review still available via `@coderabbitai review`.
+    ignore_usernames:
+      - dependabot[bot]
+      - github-actions[bot]
+    ignore_title_keywords:
+      - "chore(deps)"
+      - "chore(deps-dev)"
